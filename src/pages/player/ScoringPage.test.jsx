@@ -996,3 +996,139 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
     mockUseScoring.scoringView = { ...mockUseScoring.scoringView, isDecided: false };
   });
 });
+
+/**
+ * LA TABLA de la FE #732: un partido cerrado sin jugarlo hasta el final.
+ *
+ * Tras conceder, la pantalla seguía en «Empate · 0 hoyos» con la anotación
+ * abierta. Con RyderCupAM#384 la vista trae el ganador (`decidedResult` con
+ * score CONCEDED o W/O).
+ *
+ *   #   caso                        | qué pasa
+ *   ----|---------------------------|-----------------------------------------------
+ *   K1  concedido                   | cabecera «Europa (Concedido)», no «CONCEDED para…»
+ *   K2  walkover                    | cabecera «… (Walkover)»
+ *   K3  cerrado                     | aviso en lugar de la casilla; sin modal de decidido
+ *   K4  cerrado                     | ni «Enviar tarjeta» ni «Conceder»
+ *   K5  decidido por los hoyos      | como siempre: «4&2 para …» y su modal
+ */
+describe('ScoringPage · un partido cerrado sin jugarlo hasta el final (FE #732)', () => {
+  const cerrar = (matchStatus, score, winner = 'A') => {
+    mockUseScoring.scoringView.matchStatus = matchStatus;
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner, score };
+    mockUseScoring.canSubmitScorecard = true;
+  };
+
+  afterEach(() => {
+    mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+    mockUseScoring.scoringView.isDecided = false;
+    mockUseScoring.scoringView.decidedResult = null;
+    mockUseScoring.scoringView.matchStanding = null;
+    mockUseScoring.canSubmitScorecard = false;
+    mockUseScoring.hasSubmitted = false;
+  });
+
+  it.each([
+    ['K1: concedido', 'CONCEDED', 'CONCEDED', 'leaderboard.conceded {"team":"Europe"}'],
+    ['K2: walkover', 'WALKOVER', 'W/O', 'leaderboard.walkover {"team":"Europe"}'],
+  ])('%s: la cabecera lo dice como la clasificación', (_caso, estado, score, texto) => {
+    cerrar(estado, score);
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent(texto);
+  });
+
+  it('K3: en lugar de la casilla, un aviso; y sin el modal de «decidido»', () => {
+    cerrar('CONCEDED', 'CONCEDED', 'B');
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('partido-cerrado')).toHaveTextContent(
+      'closed.conceded {"team":"USA"}'
+    );
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+    expect(screen.queryByTestId('early-end-modal')).toBeNull();
+  });
+
+  it('K4: ni enviar tarjeta ni conceder', () => {
+    cerrar('WALKOVER', 'W/O');
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.queryByText('submit.button')).toBeNull();
+    expect(screen.queryByText('concede.button')).toBeNull();
+  });
+
+  it('K4b: ni el aviso de «la tarjeta no está lista»: no hay tarjeta que entregar', () => {
+    cerrar('CONCEDED', 'CONCEDED');
+    mockUseScoring.canSubmitScorecard = false;
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.queryByText('submit.notReady')).toBeNull();
+  });
+
+  it('K6: cerrado sin ganador (backend anterior a RyderCupAM#384): aviso genérico, sin el marcador de los hoyos', () => {
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    mockUseScoring.scoringView.matchStanding = { status: '2UP', leadingTeam: 'A', holesPlayed: 5 };
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('partido-cerrado')).toHaveTextContent('closed.generic');
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('closed.title');
+    expect(screen.getByTestId('marcador-del-partido')).not.toHaveTextContent('2UP');
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+  });
+
+  it('K6b: y sin marcador de hoyos también lo dice arriba', () => {
+    mockUseScoring.scoringView.matchStatus = 'WALKOVER';
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent('closed.title');
+  });
+
+  it('K7: entregada su tarjeta y cerrado después por walkover, ya no espera a nadie', () => {
+    cerrar('WALKOVER', 'W/O');
+    mockUseScoring.hasSubmitted = true;
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+
+    expect(screen.getByText('submit.matchCompleted')).toBeInTheDocument();
+  });
+
+  it('K8: si se cierra con el modal de conceder abierto, el modal se va (CodeRabbit)', () => {
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('concede.button'));
+    expect(screen.getByTestId('concede-match-modal')).toBeInTheDocument();
+
+    // Llega cerrado y sin ganador (un backend anterior): isDecided sigue false
+    mockUseScoring.scoringView.matchStatus = 'CONCEDED';
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('concede-match-modal')).toBeNull();
+  });
+
+  it('K9: y el de enviar la tarjeta, igual', () => {
+    mockUseScoring.canSubmitScorecard = true;
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByText('tabs.scorecard'));
+    fireEvent.click(screen.getByText('submit.button'));
+    expect(screen.getByTestId('submit-scorecard-modal')).toBeInTheDocument();
+
+    mockUseScoring.scoringView.matchStatus = 'WALKOVER';
+    rerender(<ScoringPage />);
+
+    expect(screen.queryByTestId('submit-scorecard-modal')).toBeNull();
+  });
+
+  it('K5: decidido por los hoyos sigue como siempre', () => {
+    mockUseScoring.scoringView.isDecided = true;
+    mockUseScoring.scoringView.decidedResult = { winner: 'A', score: '4&2' };
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('marcador-del-partido')).toHaveTextContent(
+      'leaderboard.wins {"team":"Europe","score":"4&2"}'
+    );
+    expect(screen.getByTestId('hole-input')).toBeInTheDocument();
+    expect(screen.getByTestId('early-end-modal')).toBeInTheDocument();
+  });
+});

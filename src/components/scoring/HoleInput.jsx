@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ValidationIcon from './ValidationIcon';
 import ScoreInputPanel from './ScoreInputPanel';
+import { HuecoParaAnotar } from './HuecoParaAnotar';
+import { clasesDelHueco } from './clasesDelHueco';
 
 const HoleInput = ({
   holeNumber,
@@ -91,6 +93,15 @@ const HoleInput = ({
       : val;
   };
 
+  // El siguiente hueco por anotar: el tuyo antes que el del rival (FE #725).
+  // La raya ya es un golpe anotado; solo cuenta lo que se puede tocar
+  const siguienteHueco =
+    !isOwnScoreLocked && ownValue === undefined
+      ? 'own'
+      : !isMarkerScoreLocked && markedValue === undefined
+        ? 'marked'
+        : null;
+
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -118,16 +129,17 @@ const HoleInput = ({
                 onClick={() => setOpenPanel('own')}
                 className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
                   ownValue === undefined
-                    ? 'bg-white border-2 border-dashed border-gray-300 hover:border-gray-400'
+                    ? clasesDelHueco(siguienteHueco === 'own')
                     : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
-                <span
-                  data-testid="own-score-value"
-                  className={`text-2xl font-bold ${ownValue === undefined ? 'text-gray-400' : 'text-gray-900'}`}
-                >
-                  {displayScore(ownValue, t('input.pickedUp'))}
-                </span>
+                {ownValue === undefined ? (
+                  <HuecoParaAnotar siguiente={siguienteHueco === 'own'} />
+                ) : (
+                  <span data-testid="own-score-value" className="text-2xl font-bold text-gray-900">
+                    {displayScore(ownValue, t('input.pickedUp'))}
+                  </span>
+                )}
               </button>
             ) : (
               <p data-testid="own-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
@@ -157,16 +169,17 @@ const HoleInput = ({
                 onClick={() => setOpenPanel('marked')}
                 className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
                   markedValue === undefined
-                    ? 'bg-white border-2 border-dashed border-gray-300 hover:border-gray-400'
+                    ? clasesDelHueco(siguienteHueco === 'marked')
                     : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
-                <span
-                  data-testid="marked-score-value"
-                  className={`text-2xl font-bold ${markedValue === undefined ? 'text-gray-400' : 'text-gray-900'}`}
-                >
-                  {displayScore(markedValue, t('input.pickedUp'))}
-                </span>
+                {markedValue === undefined ? (
+                  <HuecoParaAnotar siguiente={siguienteHueco === 'marked'} />
+                ) : (
+                  <span data-testid="marked-score-value" className="text-2xl font-bold text-gray-900">
+                    {displayScore(markedValue, t('input.pickedUp'))}
+                  </span>
+                )}
               </button>
             ) : (
               <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">

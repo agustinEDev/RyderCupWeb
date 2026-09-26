@@ -43,7 +43,10 @@ vi.mock('../composition', () => ({
   getAdjacentCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   createGolfCourseRequestUseCase: { execute: vi.fn() },
 }));
-vi.mock('../utils/competitionFormValidation', () => ({ validateCompetitionForm: () => null }));
+const mockValidar = vi.fn(() => null);
+vi.mock('../utils/competitionFormValidation', () => ({
+  validateCompetitionForm: (...a) => mockValidar(...a),
+}));
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
@@ -208,5 +211,52 @@ describe('CreateCompetition · editar (FE #710)', () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(screen.getByDisplayValue('La de B')).toBeInTheDocument();
+  });
+
+  it('E7: si falla al guardar, el aviso se lleva a la vista y recibe el foco (FE #731)', async () => {
+    // El botón está abajo y el aviso arriba: desde el botón solo se veía el toast
+    const desplazar = vi.fn();
+    const original = globalThis.Element.prototype.scrollIntoView;
+    globalThis.Element.prototype.scrollIntoView = desplazar;
+    mockDetalle.mockResolvedValueOnce(competicion('ACTIVE'));
+    mockActualizar.mockRejectedValueOnce(
+      Object.assign(new Error('Solo el creador puede actualizar'), { status: 403 })
+    );
+    pintaEdicion();
+
+    fireEvent.click(await screen.findByText('edit.updateCompetition'));
+
+    const aviso = await screen.findByRole('alert');
+    expect(aviso).toHaveTextContent('Solo el creador puede actualizar');
+    await waitFor(() => expect(desplazar).toHaveBeenCalled());
+    expect(document.activeElement).toBe(aviso);
+    // Con un anillo que se vea al recibir el foco, no sin contorno (CodeRabbit)
+    expect(aviso.className).not.toMatch(/(^|\s)outline-none(\s|$)/);
+    expect(aviso.className).toContain('focus:ring-2');
+    globalThis.Element.prototype.scrollIntoView = original;
+  });
+
+  it('E8: si el mismo error de validación se repite, el foco vuelve al aviso (revisión local)', async () => {
+    // Los dos cambios del mensaje —vaciarlo y ponerlo igual— se juntan en un
+    // render, y un efecto que mirara solo el texto no se volvía a ejecutar
+    const original = globalThis.Element.prototype.scrollIntoView;
+    globalThis.Element.prototype.scrollIntoView = vi.fn();
+    mockValidar.mockReturnValue({ key: 'nameRequired' });
+    mockDetalle.mockResolvedValueOnce(competicion('ACTIVE'));
+    pintaEdicion();
+    // Cargada del todo: mientras carga, la página pasa un momento por la
+    // pantalla de espera y el aviso se pintaría después
+    await screen.findByDisplayValue('Campeonato del club');
+
+    fireEvent.click(screen.getByText('edit.updateCompetition'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('alert')));
+
+    const guardar = screen.getByText('edit.updateCompetition');
+    guardar.focus();
+    fireEvent.click(guardar);
+
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('alert')));
+    mockValidar.mockReturnValue(null);
+    globalThis.Element.prototype.scrollIntoView = original;
   });
 });

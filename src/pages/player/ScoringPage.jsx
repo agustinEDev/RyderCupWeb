@@ -142,7 +142,14 @@ const ScoringPage = () => {
         score: scoringView.decidedResult.score,
       }
       : null;
-  const showEarlyEnd = !!scoringView?.isDecided && !earlyEndDismissed && !matchSummary && !hasSubmitted;
+  // Cerrado sin jugarlo hasta el final —concedido o walkover—: ya no queda
+  // nada que anotar ni que entregar, y se dice como en la clasificación (#732)
+  const cerradoSinJugar =
+    scoringView?.matchStatus === 'CONCEDED' || scoringView?.matchStatus === 'WALKOVER';
+  const claveDelCierre = scoringView?.matchStatus === 'WALKOVER' ? 'walkover' : 'conceded';
+  const cierre = cerradoSinJugar && resultadoDecidido ? { team: resultadoDecidido.team } : null;
+  const showEarlyEnd =
+    !!scoringView?.isDecided && !cerradoSinJugar && !earlyEndDismissed && !matchSummary && !hasSubmitted;
 
   const currentUserId = user?.id;
 
@@ -439,12 +446,18 @@ const ScoringPage = () => {
             </h1>
             <p className="text-sm text-gray-500">{scoringView?.matchFormat}</p>
           </div>
-          {(resultadoDecidido || scoringView?.matchStanding) && (
+          {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
             <div className="text-right" data-testid="marcador-del-partido">
               <p className="text-lg font-bold text-primary">
                 {/* Decidido, su resultado y no el marcador del último hoyo
                     jugado: un 4&2 que siguió hasta el 18 decía «4UP» (#710) */}
-                {resultadoDecidido
+                {cierre
+                  ? t(`leaderboard.${claveDelCierre}`, cierre)
+                  : cerradoSinJugar
+                  // Sin ganador (un backend anterior): cerrado, sin el marcador
+                  // de los hoyos, que puede dar por ganador a quien concedió
+                  ? t('closed.title')
+                  : resultadoDecidido
                   ? t('leaderboard.wins', resultadoDecidido)
                   : scoringView.matchStanding.status === 'AS'
                     ? t('input.allSquare')
@@ -507,7 +520,16 @@ const ScoringPage = () => {
               </div>
             )}
 
-            {currentHoleData && !aunNoAbre && (
+            {cerradoSinJugar && (
+              <p
+                data-testid="partido-cerrado"
+                className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700"
+              >
+                {cierre ? t(`closed.${claveDelCierre}`, cierre) : t('closed.generic')}
+              </p>
+            )}
+
+            {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <HoleInput
                 key={currentHole}
                 matchFormat={scoringView?.matchFormat}
@@ -578,7 +600,7 @@ const ScoringPage = () => {
               matchFormat={scoringView?.matchFormat}
             />
 
-            {canSubmitScorecard && (
+            {canSubmitScorecard && !cerradoSinJugar && (
               <button
                 onClick={() => setShowSubmitModal(true)}
                 disabled={isSubmitting}
@@ -591,7 +613,7 @@ const ScoringPage = () => {
             {/* Un partido decidido con algún hoyo sin validar no se puede
                 entregar. Sin este aviso, «no puedo entregar porque falta un
                 hoyo» se ve igual que «no puedo entregar y no sé por qué» */}
-            {scoringView?.isDecided && canScore && !hasSubmitted && !canSubmitScorecard && (
+            {scoringView?.isDecided && !cerradoSinJugar && canScore && !hasSubmitted && !canSubmitScorecard && (
               <p className="text-center text-sm text-gray-500">{t('submit.notReady')}</p>
             )}
 
@@ -602,7 +624,8 @@ const ScoringPage = () => {
                 <p className="text-green-600 font-medium">
                   {t(esFoursomes ? 'submit.pairSubmitted' : 'submit.alreadySubmitted')}
                 </p>
-                {scoringView?.matchStatus === 'COMPLETED' ? (
+                {/* Concedido o walkover también lo terminan: ya no se espera a nadie */}
+                {scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar ? (
                   <p className="text-gray-500">{t('submit.matchCompleted')}</p>
                 ) : pendingPlayers.length > 0 && (
                   <p className="text-gray-500">
@@ -655,13 +678,15 @@ const ScoringPage = () => {
       />
 
       <ConcedeMatchModal
-        isOpen={showConcedeModal && !scoringView?.isDecided}
+        // Cerrado mientras estaba abierto, ya no hay nada que conceder ni que
+        // entregar, aunque llegue sin ganador (CodeRabbit en la #735)
+        isOpen={showConcedeModal && !scoringView?.isDecided && !cerradoSinJugar}
         onConfirm={handleConcede}
         onClose={() => setShowConcedeModal(false)}
       />
 
       <SubmitScorecardModal
-        isOpen={showSubmitModal && canSubmitScorecard}
+        isOpen={showSubmitModal && canSubmitScorecard && !cerradoSinJugar}
         validatedHoles={validatedHoles}
         totalHoles={holesToSubmit}
         isSubmitting={isSubmitting}

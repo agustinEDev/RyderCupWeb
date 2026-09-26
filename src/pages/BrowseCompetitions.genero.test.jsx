@@ -26,6 +26,7 @@ vi.mock('../hooks/useAuth', () => ({
   useAuth: () => (userCambiante ? { ...SESION, user: { id: 'p1' } } : SESION),
 }));
 const mockUnirse = vi.fn();
+const mockExplorar = vi.fn().mockResolvedValue([]);
 
 const orden = [];
 const mockPedir = vi.fn(async () => orden.push('plaza'));
@@ -50,12 +51,13 @@ const COMPETICION = {
   enrolledCount: 2,
   maxPlayers: 12,
   countries: [],
+  visibility: 'PUBLIC',
 };
 vi.mock('../composition', () => ({
   browseJoinableCompetitionsUseCase: {
     execute: (...a) => mockUnirse(...a),
   },
-  browseExploreCompetitionsUseCase: { execute: vi.fn().mockResolvedValue([]) },
+  browseExploreCompetitionsUseCase: { execute: (...a) => mockExplorar(...a) },
   requestEnrollmentUseCase: { execute: (...a) => mockPedir(...a) },
 }));
 
@@ -127,6 +129,25 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     pintar();
 
     expect(await screen.findByText('1 jun 2030 - 2 jun 2030')).toBeInTheDocument();
+  });
+
+  it('X8: una privada (la ve un admin) no ofrece pedir plaza, que el servidor rechaza (FE #734)', async () => {
+    mockUnirse.mockResolvedValue([{ ...COMPETICION, visibility: 'PRIVATE' }]);
+    pintar();
+
+    expect(await screen.findByText('browse.card.view-details')).toBeInTheDocument();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('X9: una pública en juego, en la otra lista, se ve y no se pide (FE #734)', async () => {
+    mockUnirse.mockResolvedValue([]);
+    mockExplorar.mockResolvedValueOnce([
+      { ...COMPETICION, id: 'c2', name: 'En juego', status: 'IN_PROGRESS' },
+    ]);
+    pintar();
+
+    expect(await screen.findByText('browse.card.view-details')).toBeInTheDocument();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
   });
 
   it('X5: una llena se ve «LLENO» y no deja pedir plaza (#710)', async () => {

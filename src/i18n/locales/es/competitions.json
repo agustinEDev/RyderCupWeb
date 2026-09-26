@@ -188,6 +188,9 @@
       "unknownOthers": "Se borrará para siempre, con sus inscripciones, su calendario y sus equipos. No se ha podido comprobar quién más está inscrito.",
       "othersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador más perderá su plaza.",
       "othersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores más perderán su plaza.",
+      "nobodyEnrolled": "Se borrará para siempre, con su calendario y sus equipos. No hay nadie inscrito.",
+      "playersLosePlace_one": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugador perderá su plaza.",
+      "playersLosePlace_other": "Se borrará para siempre, con su calendario y sus equipos, y {{count}} jugadores perderán su plaza.",
       "confirm": "Eliminar",
       "keep": "No, mantenerla"
     },
@@ -456,7 +459,7 @@
     "available": "Por elegir",
     "pick": "Elegir",
     "pickedByTheApp": "Lo eligió la aplicación al agotarse el minuto",
-    "lastRemaining": "Último",
+    "lastIncluded": "{{name}} se incluyó en tu equipo al ser la última elección.",
     "finished": "Los equipos ya están hechos",
     "turnLost": "Se te acabó el minuto y la aplicación eligió por ti. Ahora le toca al otro capitán.",
     "turnLostDraftOver": "Se te acabó el minuto y la aplicación eligió por ti. Con eso el draft ha terminado.",

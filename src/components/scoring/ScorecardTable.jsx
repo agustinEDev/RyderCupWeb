@@ -168,7 +168,9 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             const borderClass = getTeamBorderClass(row.team);
             return (
               <tr key={row.id} className={row.isCurrentUser ? 'bg-blue-50' : ''}>
-                <td className={`px-2 py-1.5 text-left font-medium text-gray-700 truncate ${matchFormat === 'FOURSOMES' ? 'max-w-[120px]' : 'max-w-[80px]'} ${borderClass}`}>
+                {/* El nombre se parte en líneas y no se corta: con « / » la
+                    pareja se leía «Nacho Noche / …», sin saber con quién (#727) */}
+                <td className={`px-2 py-1.5 text-left font-medium text-gray-700 whitespace-normal break-words leading-tight ${matchFormat === 'FOURSOMES' ? 'min-w-[96px] max-w-[120px]' : 'min-w-[80px] max-w-[96px]'} ${borderClass}`}>
                   {isTeamFormat && (
                     <span className="block text-[10px] text-gray-400 leading-tight">
                       {row.team === 'A' ? teamAName : teamBName}

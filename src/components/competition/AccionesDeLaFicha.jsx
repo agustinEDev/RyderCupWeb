@@ -119,7 +119,10 @@ const AccionesDeLaFicha = ({ principal, acciones = [], destructivas = [], t }) =
             <div
               id={idDelMenu}
               role="menu"
-              className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
+              // Sin principal el «···» queda en el borde izquierdo: abrirse
+              // hacia la izquierda lo sacaba de la pantalla (FE #729). Con ella,
+              // desde `sm` la principal ya no ocupa todo el ancho y pasa lo mismo
+              className={`absolute ${principal ? 'right-0 sm:right-auto sm:left-0' : 'left-0'} z-20 mt-1 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg`}
             >
               {acciones.map((accion) => filaDelMenu(accion, false))}
               {destructivas.length > 0 && acciones.length > 0 && (

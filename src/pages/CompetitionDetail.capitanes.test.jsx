@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
@@ -339,8 +339,6 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
   it('K8e: al volver a cerrar una reabierta, también decide el modo configurado', async () => {
     // El botón de cerrar solo sale reabierta y con equipos: justo el caso en
     // que el reparto real puede ser MANUAL en una competición automática
-    const confirmacion = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    onTestFinished(() => confirmacion.mockRestore());
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({ teamAssignment: 'AUTOMATIC', actualTeamAssignment: 'MANUAL', teamsAssigned: true })
     );
@@ -348,6 +346,8 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'detail.actions.close-enrollments' }));
+    // Se confirma en el modal de la app (FE #730)
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' }));
   });

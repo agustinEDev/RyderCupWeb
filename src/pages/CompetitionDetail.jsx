@@ -75,6 +75,9 @@ const CompetitionDetail = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   // Borrar pide confirmación en un modal que dice quién pierde su plaza (FE #667)
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  // Lo que espera un «sí» en el modal de la app, en lugar de `window.confirm`,
+  // el diálogo nativo del navegador (FE #730)
+  const [pregunta, setPregunta] = useState(null);
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
   // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
@@ -196,6 +199,14 @@ const CompetitionDetail = () => {
     [enrollments]
   );
 
+  // Abre el modal y espera la respuesta: el flujo de cada acción no cambia
+  const preguntar = (mensaje, { destructiva = false } = {}) =>
+    new Promise((responder) => setPregunta({ mensaje, destructiva, responder }));
+  const contestar = (si) => {
+    pregunta?.responder(si);
+    setPregunta(null);
+  };
+
   const handleStatusChange = async (action) => {
     // Validate golf courses approval status before activation
     if (action === 'activate') {
@@ -229,7 +240,7 @@ const CompetitionDetail = () => {
     }
 
     const confirmationKey = `detail.confirmations.${action}`;
-    if (!window.confirm(t(confirmationKey))) {
+    if (!(await preguntar(t(confirmationKey), { destructiva: action === 'cancel' }))) {
       return;
     }
 
@@ -443,7 +454,7 @@ const CompetitionDetail = () => {
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (!window.confirm(t('detail.confirmations.reject-enrollment'))) {
+    if (!(await preguntar(t('detail.confirmations.reject-enrollment'), { destructiva: true }))) {
       return;
     }
     try {
@@ -550,6 +561,7 @@ const CompetitionDetail = () => {
   // Los que perderían su plaza, sin contar a quien borra: el creador está
   // inscrito desde que la crea, y contarlo inflaría el aviso
   const otrosInscritos = approvedEnrollments.filter((e) => e.userId !== user.id).length;
+  const estoyInscrito = approvedEnrollments.some((e) => e.userId === user.id);
   // Las acciones de la ficha: UNA principal —la que toca ahora— y el resto en
   // un menú. Antes eran hasta siete botones del mismo peso en seis colores y
   // el que de verdad tocaba se perdía entre los demás (FE #705)
@@ -761,14 +773,30 @@ const CompetitionDetail = () => {
         <HeaderAuth user={user} title={competition.name} backTo={backLink} />
 
         <ConfirmModal
+          isOpen={Boolean(pregunta)}
+          title={tComun('confirm')}
+          message={pregunta?.mensaje}
+          confirmText={tComun('confirm')}
+          cancelText={tComun('cancel')}
+          onConfirm={() => contestar(true)}
+          onCancel={() => contestar(false)}
+          isDestructive={pregunta?.destructiva}
+        />
+
+        <ConfirmModal
           isOpen={confirmandoBorrado}
           title={t('detail.deleteModal.title')}
           message={
             inscripcionesSinCargar
               ? t('detail.deleteModal.unknownOthers')
-              : otrosInscritos === 0
-                ? t('detail.deleteModal.nobodyElse')
-                : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
+              : estoyInscrito
+                ? otrosInscritos === 0
+                  ? t('detail.deleteModal.nobodyElse')
+                  : t('detail.deleteModal.othersLosePlace', { count: otrosInscritos })
+                // Quien borra no está dentro (un admin): «más» no encaja (FE #728)
+                : otrosInscritos === 0
+                  ? t('detail.deleteModal.nobodyEnrolled')
+                  : t('detail.deleteModal.playersLosePlace', { count: otrosInscritos })
           }
           confirmText={t('detail.deleteModal.confirm')}
           cancelText={t('detail.deleteModal.keep')}
@@ -1016,8 +1044,14 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
-            {/* Enrollment Button - Show if competition is ACTIVE, user is not enrolled, not the creator, and not full */}
-            {!isCreator && competition.status === 'ACTIVE' && !hasEnrollment && !isFull && (
+            {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
+                creó, y con sitio. En una privada se entra por invitación, y el
+                servidor lo rechaza (FE #734) */}
+            {!isCreator &&
+              competition.status === 'ACTIVE' &&
+              competition.visibility === 'PUBLIC' &&
+              !hasEnrollment &&
+              !isFull && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

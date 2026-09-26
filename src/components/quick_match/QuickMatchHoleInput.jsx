@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ScoreInputPanel from '../scoring/ScoreInputPanel';
 import GolfFigure from '../scoring/GolfFigure';
+import { HuecoParaAnotar } from '../scoring/HuecoParaAnotar';
+import { clasesDelHueco } from '../scoring/clasesDelHueco';
 
 /**
  * Hole score entry for quick matches: one score button per participant the
@@ -73,6 +75,9 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
   // que no cae aquí — es un hoyo cerrado y se dibuja como tal.
   const isEmpty = (entry) => !entry.isPickedUp && entry.score == null;
 
+  // El siguiente por anotar: el primero de la lista sin golpe (FE #725)
+  const primerVacio = entries.find(isEmpty)?.participantId ?? null;
+
   const handleSelect = (participantId, value) => {
     setOpenParticipantId(null);
     if (onScoreChange) onScoreChange(participantId, value);
@@ -116,14 +121,18 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
                 type="button"
                 data-testid={`quick-match-score-button-${entry.participantId}`}
                 onClick={() => setOpenParticipantId(entry.participantId)}
-                className="w-full h-14 mt-auto flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                className={`w-full h-14 mt-auto flex items-center justify-center rounded-xl transition-colors ${
+                  isEmpty(entry)
+                    ? clasesDelHueco(entry.participantId === primerVacio)
+                    : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
+                }`}
               >
                 {/* Sin anotar, la casilla lleva la palabra en vez de un hueco:
-                    en la tarjeta el vacío se lee bien, pero un botón en blanco
-                    no dice qué hace ni invita a pulsarlo. Y una palabra no se
-                    confunde con la raya, que es lo que pasaba con el guion. */}
+                    un botón en blanco no dice qué hace ni invita a pulsarlo, y
+                    una palabra no se confunde con la raya. En verde, y el
+                    primero sin golpe, lleno (FE #725) */}
                 {isEmpty(entry) ? (
-                  <span className="text-sm font-medium text-gray-400">{t('input.tapToScore')}</span>
+                  <HuecoParaAnotar siguiente={entry.participantId === primerVacio} />
                 ) : (
                   <GolfFigure score={entry.score} par={parOf(entry)} pickedUp={entry.isPickedUp} />
                 )}
