@@ -285,9 +285,9 @@
         "PENDING": "Not split yet"
       }
     },
-    "approvedPlayers": "Approved Players ({{count}})",
+    "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
-    "pendingRequests": "Pending Requests ({{count}})",
+    "pendingRequests": "Pending requests",
     "rejectedRequests": "Rejected requests",
     "approve": "Approve",
     "reject": "Reject",
@@ -331,7 +331,7 @@
     "failedToEnroll": "Failed to enroll",
     "failedToLoadCompetitions": "Failed to load competitions",
     "golfCourses": {
-      "title": "Golf Courses ({{count}})",
+      "title": "Golf courses",
       "addCourse": "Add Course",
       "selectCourse": "Select Golf Course",
       "noCourses": "No golf courses associated with this competition",

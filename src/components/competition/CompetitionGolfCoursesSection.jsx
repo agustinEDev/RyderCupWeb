@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import NumeroDeLaSeccion from '../ui/NumeroDeLaSeccion';
 import {
   DndContext,
   closestCenter,
@@ -437,15 +438,16 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
   return (
     <div className="p-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-gray-900 font-bold text-lg flex items-center gap-2">
-            <Flag className="w-5 h-5 text-green-600" />
-            {t('detail.golfCourses.title', { count: golfCourses.length })}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="min-w-0 text-gray-900 font-bold text-lg flex items-center gap-2">
+            <Flag className="w-5 h-5 flex-none text-green-600" />
+            <span className="min-w-0">{t('detail.golfCourses.title')}</span>
+            <NumeroDeLaSeccion numero={golfCourses.length} />
           </h3>
           {canAdd && !showAddForm && (
             <button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="flex flex-none items-center gap-2 whitespace-nowrap px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('detail.golfCourses.addCourse')}

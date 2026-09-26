@@ -285,9 +285,9 @@
         "PENDING": "Sin repartir todavía"
       }
     },
-    "approvedPlayers": "Jugadores Aprobados ({{count}})",
+    "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
-    "pendingRequests": "Solicitudes Pendientes ({{count}})",
+    "pendingRequests": "Solicitudes pendientes",
     "rejectedRequests": "Solicitudes rechazadas",
     "approve": "Aprobar",
     "reject": "Rechazar",
@@ -331,7 +331,7 @@
     "failedToEnroll": "Error al solicitar inscripción",
     "failedToLoadCompetitions": "Error al cargar las competiciones",
     "golfCourses": {
-      "title": "Campos de Golf ({{count}})",
+      "title": "Campos de golf",
       "addCourse": "Añadir Campo",
       "selectCourse": "Seleccionar Campo de Golf",
       "noCourses": "No hay campos de golf asociados a esta competición",

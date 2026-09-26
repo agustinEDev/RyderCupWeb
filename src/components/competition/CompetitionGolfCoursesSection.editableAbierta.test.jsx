@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 /**
  * El caso que motivó todo esto: invitas a un amigo antes de haber puesto el
@@ -82,6 +82,19 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
       screen.queryAllByRole('button', { name: /detail\.golfCourses\.remove/ })
     ).toHaveLength(0);
     expect(screen.queryByText('detail.golfCourses.dragToReorder')).not.toBeInTheDocument();
+  });
+
+  // Ronda 2 de pruebas · el número aparte, y «Añadir Campo» sin partirse a
+  // 360 px (salía en dos líneas y el título también)
+  it('N3: el número en su pastilla y el botón de añadir en una línea', async () => {
+    mockCampos.mockResolvedValue([
+      { golf_course_id: 'g-1', display_order: 1, golf_course: { id: 'g-1', name: 'Altea' } },
+    ]);
+    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+
+    const titulo = (await screen.findByText('detail.golfCourses.title')).closest('h3');
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(screen.getByText('detail.golfCourses.addCourse').closest('button')).toHaveClass('whitespace-nowrap');
   });
 
   it('y quien no gestiona no añade nada', async () => {
