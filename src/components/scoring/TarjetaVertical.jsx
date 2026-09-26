@@ -21,8 +21,19 @@ const CABECERA_DEL_EQUIPO = {
  * @param {Array} hoyos - `{ holeNumber, par, strokeIndex, casilla, resultado?, mejorBola? }`
  * @param {{ ida?: number, vuelta?: number, total: number }} sumas
  * @param {boolean} conResultado - Si hay columna de quién se llevó el hoyo
+ * @param {string} [columnaExtra] - Título de una columna más tras los golpes
+ *   (los puntos Stableford, el neto en Medal); cada hoyo trae su `extra`
  */
-const TarjetaVertical = ({ clave, testId, cabecera, equipo, hoyos, sumas, conResultado = false }) => {
+const TarjetaVertical = ({
+  clave,
+  testId,
+  cabecera,
+  equipo,
+  hoyos,
+  sumas,
+  conResultado = false,
+  columnaExtra,
+}) => {
   const { t } = useTranslation('scoring');
 
   const filaDeSuma = (nombre, etiqueta, valor) => (
@@ -33,6 +44,7 @@ const TarjetaVertical = ({ clave, testId, cabecera, equipo, hoyos, sumas, conRes
       <td data-testid={`suma-${nombre}`} className="py-1.5 text-center font-bold text-gray-800">
         {valor || '-'}
       </td>
+      {columnaExtra && <td />}
       {conResultado && <td />}
     </tr>
   );
@@ -49,6 +61,7 @@ const TarjetaVertical = ({ clave, testId, cabecera, equipo, hoyos, sumas, conRes
             <th className="py-1.5 font-semibold">{t('scorecard.par')}</th>
             <th className="py-1.5 font-semibold">{t('scorecard.si')}</th>
             <th className="py-1.5 font-semibold">{t('scorecard.strokes')}</th>
+            {columnaExtra && <th className="py-1.5 font-semibold">{columnaExtra}</th>}
             {conResultado && <th className="py-1.5 font-semibold">{t('scorecard.result')}</th>}
           </tr>
         </thead>
@@ -64,6 +77,11 @@ const TarjetaVertical = ({ clave, testId, cabecera, equipo, hoyos, sumas, conRes
                 <td data-testid="par" className="w-10 py-0.5 text-center text-gray-400">{h.par}</td>
                 <td data-testid="hcp" className="w-10 py-0.5 text-center text-gray-400">{h.strokeIndex}</td>
                 <td className="py-0.5 text-center">{h.casilla}</td>
+                {columnaExtra && (
+                  <td data-testid="extra" className="w-12 py-0.5 text-center">
+                    {h.extra}
+                  </td>
+                )}
                 {conResultado && (
                   <td className="w-16 py-0.5 pr-2 text-center">
                     <span

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
+import TituloConNumero from '../components/ui/TituloConNumero';
 import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
 import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -1259,9 +1260,9 @@ const CompetitionDetail = () => {
               className="p-4"
             >
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-green-600" />
-                  {t('detail.approvedPlayers', { count: approvedEnrollments.length })}
+                <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 flex-none text-green-600" />
+                  <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
                 </h3>
 
                 {approvedEnrollments.length === 0 ? (
@@ -1403,9 +1404,12 @@ const CompetitionDetail = () => {
                 {/* Pending Requests Section */}
                 {enrollments.filter(e => e.status === 'REQUESTED').length > 0 && (
                   <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
-                    <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-orange-600" />
-                      {t('detail.pendingRequests', { count: enrollments.filter(e => e.status === 'REQUESTED').length })}
+                    <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 flex-none text-orange-600" />
+                      <TituloConNumero
+                        texto={t('detail.pendingRequests')}
+                        numero={enrollments.filter(e => e.status === 'REQUESTED').length}
+                      />
                     </h3>
 
                     <div className="space-y-3">
@@ -1469,10 +1473,11 @@ const CompetitionDetail = () => {
                       <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-gray-100 text-gray-500">
                         <UserX className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <span className="min-w-0 flex-1 font-semibold text-gray-700">{t('detail.rejectedRequests')}</span>
-                      <span data-testid="numero-de-rechazadas" className="flex-none rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-                        {enrollments.filter(e => e.status === 'REJECTED').length}
-                      </span>
+                      <TituloConNumero
+                        texto={t('detail.rejectedRequests')}
+                        numero={enrollments.filter(e => e.status === 'REJECTED').length}
+                        claseDelTexto="font-semibold text-gray-700"
+                      />
                       <ChevronRight className="h-4 w-4 flex-none text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
                     </summary>
                     <div className="space-y-2 border-t border-gray-100 px-4 pb-4 pt-3">

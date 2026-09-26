@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Flag, Plus, Trash2, GripVertical, MapPin, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import TituloConNumero from '../ui/TituloConNumero';
 import {
   DndContext,
   closestCenter,
@@ -437,15 +438,19 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
   return (
     <div className="p-4">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-gray-900 font-bold text-lg flex items-center gap-2">
-            <Flag className="w-5 h-5 text-green-600" />
-            {t('detail.golfCourses.title', { count: golfCourses.length })}
+        {/* A 360 px, con el botón al lado, el título se estrujaba en tres líneas
+            (CodeRabbit en la #749). En el móvil el título ocupa la fila, con su
+            número al borde derecho, y el botón va debajo, de lado a lado; desde
+            tablet, al lado del título */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 className="w-full sm:w-auto sm:flex-1 text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
+            <Flag className="w-5 h-5 flex-none text-green-600" />
+            <TituloConNumero texto={t('detail.golfCourses.title')} numero={golfCourses.length} />
           </h3>
           {canAdd && !showAddForm && (
             <button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="flex w-full sm:w-auto flex-none items-center justify-center gap-2 whitespace-nowrap px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('detail.golfCourses.addCourse')}

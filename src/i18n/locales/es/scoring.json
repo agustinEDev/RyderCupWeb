@@ -107,6 +107,7 @@
   },
   "submit": {
     "matchOver": "Partido terminado",
+    "keepPlaying": "Podéis seguir jugando; entregadla cuando acabéis.",
     "title": "Enviar Tarjeta",
     "confirm": "¿Estás seguro de que quieres enviar tu tarjeta? Esta acción no se puede deshacer.",
     "button": "Enviar Tarjeta",
@@ -143,6 +144,7 @@
     "title": "Partido Decidido",
     "message": "El partido ha sido decidido: {{score}} para {{team}}.",
     "confirm": "Continuar para Enviar",
+    "review": "Revisar la tarjeta",
     "description": "Los hoyos restantes no necesitan jugarse."
   },
   "concede": {
