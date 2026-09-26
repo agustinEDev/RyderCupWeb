@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, Link } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -10,6 +10,7 @@ vi.mock('react-i18next', () => ({
       if (params?.count !== undefined) return `${key}_${params.count}`;
       if (params?.handicap !== undefined) return `${key}_${params.handicap}`;
       if (params?.fecha !== undefined) return `${key}_${params.fecha}`;
+      if (params?.name !== undefined) return `${key}_${params.name}`;
       return key;
     },
   }),
@@ -323,7 +324,9 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     renderPage();
     await pedirReabrir();
 
-    expect(await screen.findByText('detail.confirmations.revert-to-in-progress')).toBeInTheDocument();
+    expect(
+      await screen.findByText('detail.confirmDialogs.revert-to-in-progress.title')
+    ).toBeInTheDocument();
     expect(nativo).not.toHaveBeenCalled();
     nativo.mockRestore();
   });
@@ -331,10 +334,14 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
   it('W2: «No» no hace nada', async () => {
     renderPage();
     await pedirReabrir();
-    fireEvent.click(await screen.findByRole('button', { name: /cancel/i }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.keep' })
+    );
 
     await waitFor(() =>
-      expect(screen.queryByText('detail.confirmations.revert-to-in-progress')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('detail.confirmDialogs.revert-to-in-progress.title')
+      ).not.toBeInTheDocument()
     );
     expect(mockRevertToInProgress).not.toHaveBeenCalled();
   });
@@ -346,6 +353,23 @@ describe('CompetitionDetail · confirmar con el modal de la app (FE #730)', () =
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(mockRevertToInProgress).toHaveBeenCalledWith('comp-1'));
+  });
+
+  // FE #742 · cada acción con sus palabras. «¿Cancelar la competición?» con los
+  // botones «Cancelar» y «Confirmar» hacía pulsar «Cancelar» a quien quería
+  // cancelarla, y eso cerraba el modal sin hacer nada
+  it('V1: título, consecuencia y botones propios de la acción; nada genérico', async () => {
+    renderPage();
+    await pedirReabrir();
+
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.title')).toBeInTheDocument();
+    expect(within(dialogo).getByText('detail.confirmDialogs.revert-to-in-progress.body')).toBeInTheDocument();
+    expect(
+      within(dialogo).getByRole('button', { name: 'detail.confirmDialogs.revert-to-in-progress.confirm' })
+    ).toBeInTheDocument();
+    expect(within(dialogo).queryByText('confirm')).not.toBeInTheDocument();
+    expect(within(dialogo).queryByText('cancel')).not.toBeInTheDocument();
   });
 });
 
@@ -370,7 +394,13 @@ describe('CompetitionDetail · rechazar una solicitud se confirma en el modal (F
     renderPage();
     fireEvent.click(await screen.findByText(/detail\.reject$/));
 
-    expect(await screen.findByText('detail.confirmations.reject-enrollment')).toBeInTheDocument();
+    // FE #742 · dice a quién se rechaza, con sus propios botones
+    expect(
+      await screen.findByText('detail.confirmDialogs.reject-enrollment.title_Nuevo Nadal')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'detail.confirmDialogs.reject-enrollment.keep' })
+    ).toBeInTheDocument();
     expect(mockRejectEnrollment).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('confirm-modal-confirm'));
 

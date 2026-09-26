@@ -124,11 +124,16 @@ describe('CompetitionGolfCoursesSection · avisa a la ficha (FE #715)', () => {
     pintar(vi.fn());
 
     fireEvent.click((await screen.findAllByTitle('detail.golfCourses.remove'))[0]);
-    expect(await screen.findByText('detail.golfCourses.confirmRemove')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    // FE #742 · con sus propias palabras, no «Confirmar» / «Cancelar»
+    expect(await screen.findByText('detail.golfCourses.removeDialog.title')).toBeInTheDocument();
+    expect(screen.getByText('detail.golfCourses.removeDialog.body')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'detail.golfCourses.removeDialog.confirm' })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'detail.golfCourses.removeDialog.keep' }));
 
     await waitFor(() =>
-      expect(screen.queryByText('detail.golfCourses.confirmRemove')).not.toBeInTheDocument()
+      expect(screen.queryByText('detail.golfCourses.removeDialog.title')).not.toBeInTheDocument()
     );
     expect(mockQuitar).not.toHaveBeenCalled();
     expect(nativo).not.toHaveBeenCalled();

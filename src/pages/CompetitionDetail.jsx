@@ -199,9 +199,12 @@ const CompetitionDetail = () => {
     [enrollments]
   );
 
-  // Abre el modal y espera la respuesta: el flujo de cada acción no cambia
-  const preguntar = (mensaje, { destructiva = false } = {}) =>
-    new Promise((responder) => setPregunta({ mensaje, destructiva, responder }));
+  // Abre el modal y espera la respuesta: el flujo de cada acción no cambia.
+  // Cada acción trae sus palabras —título, consecuencia y dos verbos—: con
+  // «Cancelar» y «Confirmar» genéricos, quien quería cancelar la competición
+  // pulsaba «Cancelar» y cerraba el modal sin hacer nada (FE #742)
+  const preguntar = (accion, { destructiva = false, datos } = {}) =>
+    new Promise((responder) => setPregunta({ accion, datos, destructiva, responder }));
   const contestar = (si) => {
     pregunta?.responder(si);
     setPregunta(null);
@@ -239,8 +242,7 @@ const CompetitionDetail = () => {
       }
     }
 
-    const confirmationKey = `detail.confirmations.${action}`;
-    if (!(await preguntar(t(confirmationKey), { destructiva: action === 'cancel' }))) {
+    if (!(await preguntar(action, { destructiva: action === 'cancel' }))) {
       return;
     }
 
@@ -454,7 +456,9 @@ const CompetitionDetail = () => {
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (!(await preguntar(t('detail.confirmations.reject-enrollment'), { destructiva: true }))) {
+    const solicitud = enrollments.find((e) => e.id === enrollmentId);
+    const nombre = solicitud?.userName || t('detail.unknownUser');
+    if (!(await preguntar('reject-enrollment', { destructiva: true, datos: { name: nombre } }))) {
       return;
     }
     try {
@@ -774,10 +778,10 @@ const CompetitionDetail = () => {
 
         <ConfirmModal
           isOpen={Boolean(pregunta)}
-          title={tComun('confirm')}
-          message={pregunta?.mensaje}
-          confirmText={tComun('confirm')}
-          cancelText={tComun('cancel')}
+          title={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.title`, pregunta.datos) : ''}
+          message={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.body`, pregunta.datos) : ''}
+          confirmText={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.confirm`) : ''}
+          cancelText={pregunta ? t(`detail.confirmDialogs.${pregunta.accion}.keep`) : ''}
           onConfirm={() => contestar(true)}
           onCancel={() => contestar(false)}
           isDestructive={pregunta?.destructiva}

@@ -271,7 +271,6 @@ const SortableGolfCourseItem = ({ course, onRemove, canEdit, i18n, t, paises }) 
  */
 const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiados }) => {
   const { t, i18n } = useTranslation('competitions');
-  const { t: tComun } = useTranslation('common');
   const [golfCourses, setGolfCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -378,6 +377,8 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
 
   // Quitar se confirma en el modal de la app, no con `window.confirm` (FE #730)
   const handleRemoveCourse = (courseId) => setQuitando(courseId);
+  const campoQueSeQuita = golfCourses.find((c) => c.id === quitando);
+  const nombreDelQueSeQuita = campoQueSeQuita?.name || t('detail.golfCourses.unnamed');
 
   const quitarCampo = async () => {
     const courseId = quitando;
@@ -537,10 +538,11 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
 
       <ConfirmModal
         isOpen={quitando !== null}
-        title={tComun('confirm')}
-        message={t('detail.golfCourses.confirmRemove')}
-        confirmText={tComun('confirm')}
-        cancelText={tComun('cancel')}
+        // Con sus palabras, no «Confirmar» / «Cancelar» (FE #742)
+        title={t('detail.golfCourses.removeDialog.title', { name: nombreDelQueSeQuita })}
+        message={t('detail.golfCourses.removeDialog.body')}
+        confirmText={t('detail.golfCourses.removeDialog.confirm')}
+        cancelText={t('detail.golfCourses.removeDialog.keep')}
         onConfirm={quitarCampo}
         onCancel={() => setQuitando(null)}
         isDestructive
