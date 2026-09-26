@@ -666,6 +666,7 @@ const ScoringPage = () => {
 
       <EarlyEndModal
         isOpen={showEarlyEnd}
+        listaParaEnviar={canSubmitScorecard}
         decidedResult={scoringView?.decidedResult ? {
           ...scoringView.decidedResult,
           winner: scoringView.decidedResult.winner === 'A'

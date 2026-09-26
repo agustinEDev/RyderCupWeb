@@ -33,4 +33,25 @@ describe('EarlyEndModal', () => {
     fireEvent.click(screen.getByTestId('early-end-confirm'));
     expect(onConfirm).toHaveBeenCalled();
   });
+
+  // Ronda 2 de pruebas · con un hoyo sin validar ofrecía «Continuar para Enviar»
+  // y no se podía enviar: el botón lleva a la tarjeta, que es donde se ve qué falta
+  it('R1: con la tarjeta lista, «Continuar para Enviar»', () => {
+    render(<EarlyEndModal isOpen decidedResult={{ winner: 'A', score: '5&4' }} onConfirm={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'earlyEnd.confirm' })).toBeInTheDocument();
+  });
+
+  it('R2: con algún hoyo sin validar, «Revisar la tarjeta»', () => {
+    render(
+      <EarlyEndModal
+        isOpen
+        decidedResult={{ winner: 'A', score: '5&4' }}
+        onConfirm={vi.fn()}
+        onClose={vi.fn()}
+        listaParaEnviar={false}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'earlyEnd.review' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'earlyEnd.confirm' })).toBeNull();
+  });
 });

@@ -128,8 +128,8 @@ vi.mock('../../components/scoring/SessionBlockedModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="session-blocked-modal">SessionBlocked</div> : null,
 }));
 vi.mock('../../components/scoring/EarlyEndModal', () => ({
-  default: ({ isOpen, onConfirm }) => isOpen ? (
-    <div data-testid="early-end-modal">
+  default: ({ isOpen, onConfirm, listaParaEnviar }) => isOpen ? (
+    <div data-testid="early-end-modal" data-lista={String(listaParaEnviar)}>
       EarlyEnd
       <button data-testid="early-end-confirm" onClick={onConfirm}>continue</button>
     </div>
@@ -465,6 +465,17 @@ describe('ScoringPage', () => {
       fireEvent.click(screen.getByTestId('early-end-confirm'));
 
       expect(screen.getByText('submit.button')).toBeInTheDocument();
+    });
+
+    it('R3: le dice al aviso si la tarjeta se puede enviar ya', () => {
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.canSubmitScorecard = false;
+      const { rerender } = render(<ScoringPage />);
+      expect(screen.getByTestId('early-end-modal').dataset.lista).toBe('false');
+
+      mockUseScoring.canSubmitScorecard = true;
+      rerender(<ScoringPage />);
+      expect(screen.getByTestId('early-end-modal').dataset.lista).toBe('true');
     });
 
     it('says why the card is not ready instead of showing nothing', () => {

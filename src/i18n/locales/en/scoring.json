@@ -144,6 +144,7 @@
     "title": "Match Decided",
     "message": "The match has been decided: {{score}} to {{team}}.",
     "confirm": "Continue to Submit",
+    "review": "Review the scorecard",
     "description": "The remaining holes do not need to be played."
   },
   "concede": {
