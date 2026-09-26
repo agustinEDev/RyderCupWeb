@@ -108,6 +108,10 @@ const EnvelopePage = () => {
   // con el equipo impar a media corrección, el formulario ya no se pinta
   // (FE #741) y, sin esto, tampoco el sobre entregado: solo quedaba el aviso
   const reordenando = cambiando && !equipoImpar;
+  // «Tu sobre» solo para quien capitanea: el organizador o un jugador que solo
+  // mira no tienen sobre. Mientras carga se deja el de siempre, para que el
+  // título del capitán no cambie al llegar la vista
+  const titulo = t(vista && !capitanea ? 'envelope.titleOthers' : 'envelope.title');
   const entregado = Boolean(vista?.mine?.submitted) && !reordenando;
 
   // Con el sobre entregado y aún cerrados, se pregunta sola (#710): con los dos
@@ -253,7 +257,7 @@ const EnvelopePage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Al calendario, que es de donde se entra al sobre: devolver a la
           ficha obliga a volver a entrar para la sesión siguiente */}
-      <HeaderAuth user={user} title={t('envelope.title')} backTo={`/competitions/${id}/schedule`} />
+      <HeaderAuth user={user} title={titulo} backTo={`/competitions/${id}/schedule`} />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <button
           type="button"
@@ -267,7 +271,7 @@ const EnvelopePage = () => {
 
         {/* `hidden md:block`: en móvil el título lo pinta la cabecera contextual */}
         <h1 className="hidden md:block mb-4 text-2xl font-bold text-gray-900">
-          {t('envelope.title')}
+          {titulo}
         </h1>
 
         {vista?.revealed && (
@@ -331,7 +335,8 @@ const EnvelopePage = () => {
           </p>
         )}
 
-        {!fallo && !capitanea && !vista?.revealed && (
+        {/* Con el equipo impar no se va a abrir nada: no se promete verlo */}
+        {!fallo && !capitanea && !vista?.revealed && !equipoImpar && (
           <p
             data-testid="solo-mirando"
             className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600"

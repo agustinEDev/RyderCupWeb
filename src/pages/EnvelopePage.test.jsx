@@ -693,6 +693,39 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
     expect(await screen.findByTestId('equipo-impar')).toBeInTheDocument();
   });
 
+  // Ronda 2 de pruebas · lo que ve quien no capitanea (el organizador, o un
+  // jugador que solo mira): no es «su» sobre, y con el equipo impar no se va a
+  // abrir nada, así que no se le promete verlo
+  it('O1: quien no capitanea ve «Los sobres», no «Tu sobre»', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [] }));
+    pintar();
+
+    expect(await screen.findByRole('heading', { name: 'envelope.titleOthers' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'envelope.title' })).toBeNull();
+  });
+
+  it('O2: con el equipo impar, a quien no capitanea solo le queda el aviso', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [], teamsFitFormat: false }));
+    pintar();
+
+    await screen.findByTestId('equipo-impar');
+    expect(screen.queryByText('envelope.onlyCaptains')).toBeNull();
+  });
+
+  it('O3: con los equipos bien, sigue diciéndole que los entregan los capitanes', async () => {
+    mockVer.mockResolvedValue(vista({ myPlayers: [] }));
+    pintar();
+
+    expect(await screen.findByText('envelope.onlyCaptains')).toBeInTheDocument();
+  });
+
+  it('O4: el capitán sigue viendo «Tu sobre»', async () => {
+    mockVer.mockResolvedValue(vista());
+    pintar();
+
+    expect(await screen.findByRole('heading', { name: 'envelope.title' })).toBeInTheDocument();
+  });
+
   it('P7: y también después de entregar, si el equipo se queda impar', async () => {
     mockVer.mockResolvedValue(
       enParejas({

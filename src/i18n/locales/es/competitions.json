@@ -462,6 +462,7 @@
   },
   "envelope": {
     "title": "Tu sobre",
+    "titleOthers": "Los sobres",
     "back": "Volver al calendario",
     "tapInOrder": "Toca a tus jugadores en el orden en que quieres que jueguen: el primero se enfrentará al primero del rival.",
     "oddTeam": "Esta sesión es de parejas y hay un equipo impar: alguien se quedaría fuera, así que no se pueden entregar los sobres ni se abrirán solos. El organizador tiene que cambiar el formato de la sesión o rehacer los equipos.",

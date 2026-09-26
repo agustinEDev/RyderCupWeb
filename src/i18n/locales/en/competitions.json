@@ -462,6 +462,7 @@
   },
   "envelope": {
     "title": "Your envelope",
+    "titleOthers": "The envelopes",
     "back": "Back to the schedule",
     "tapInOrder": "Tap your players in the order you want them to play: the first one faces the rival's first.",
     "oddTeam": "This session is pairs and one team has an odd number of players: somebody would be left out, so the envelopes cannot be handed in and will not open on their own. The organiser has to change the session format or redo the teams.",
