@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   # ========================================
@@ -231,124 +230,23 @@ jobs:
           path: licenses.json
           retention-days: 30
 
-  snyk-security:
-    name: 🐍 Snyk Dependency Scan
+  # Sustituye a Snyk (cuota agotada desde hace meses): bloquea la PR que AÑADE
+  # o sube una dependencia con una vulnerabilidad conocida de gravedad moderada
+  # o más. Lo que ya está en develop lo vigilan las alertas de Dependabot y npm audit.
+  dependency-review:
+    name: 🔎 Dependency Review
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Upgrade npm
-        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
-        # optional peer dependency mismatches (e.g. typescript vs i18next's
-        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
-        # Pinned explicitly so CI stays reproducible across Node bumps.
-        run: npm install -g npm@11.17.0
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@v1.0.0
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --sarif-file-output=snyk-security.sarif
-
-      - name: Check if SARIF file exists
-        id: check_sarif
-        run: |
-          if [ -f "snyk-security.sarif" ]; then
-            echo "sarif_exists=true" >> $GITHUB_OUTPUT
-            echo "✅ SARIF file generated successfully"
-          else
-            echo "sarif_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
-          fi
-
-      - name: Upload Snyk report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: steps.check_sarif.outputs.sarif_exists == 'true'
-        with:
-          sarif_file: snyk-security.sarif
-
-      - name: Upload Snyk SARIF report artifact
-        if: steps.check_sarif.outputs.sarif_exists == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: snyk-security-report
-          path: snyk-security.sarif
-          retention-days: 30
-
-  snyk-code:
-    name: 🔍 Snyk Code Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Upgrade npm
-        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
-        # optional peer dependency mismatches (e.g. typescript vs i18next's
-        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
-        # Pinned explicitly so CI stays reproducible across Node bumps.
-        run: npm install -g npm@11.17.0
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Snyk Code to check for code vulnerabilities
-        uses: snyk/actions/node@v1.0.0
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: code test
-          args: --severity-threshold=high --sarif-file-output=snyk-code.sarif
-
-      - name: Check if SARIF file exists
-        id: check_sarif_code
-        run: |
-          if [ -f "snyk-code.sarif" ]; then
-            echo "sarif_exists=true" >> $GITHUB_OUTPUT
-            echo "✅ SARIF file generated successfully"
-          else
-            echo "sarif_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
-          fi
-
-      - name: Upload Snyk Code report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
-        with:
-          sarif_file: snyk-code.sarif
-
-      - name: Upload Snyk Code report artifact
-        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: snyk-code-report
-          path: snyk-code.sarif
-          retention-days: 30
+          fail-on-severity: moderate
+          comment-summary-in-pr: never
 
   outdated-dependencies:
     name: 📦 Outdated Dependencies Check
@@ -780,7 +678,7 @@ jobs:
   pipeline-summary:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check, snyk-security, snyk-code, outdated-dependencies, lint, test, type-check, code-quality, build]
+    needs: [dependency-audit, secret-scanning, license-check, dependency-review, outdated-dependencies, lint, test, type-check, code-quality, build]
     if: always()
     steps:
       - name: Generate Pipeline Summary
@@ -828,22 +726,13 @@ jobs:
             echo "| 📜 License Compliance | ❌ Failed | Forbidden licenses detected |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Snyk Security
-          if [ "${{ needs.snyk-security.result }}" == "success" ]; then
-            echo "| 🐍 Snyk Dependencies | ✅ Passed | No vulnerabilities |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.snyk-security.result }}" == "skipped" ]; then
-            echo "| 🐍 Snyk Dependencies | ⏭️ Skipped | Token not configured |" >> $GITHUB_STEP_SUMMARY
+          # Dependency Review (solo corre en PRs)
+          if [ "${{ needs.dependency-review.result }}" == "success" ]; then
+            echo "| 🔎 Dependency Review | ✅ Passed | No vulnerable dependency added |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.dependency-review.result }}" == "skipped" ]; then
+            echo "| 🔎 Dependency Review | ⏭️ Skipped | Only runs on pull requests |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🐍 Snyk Dependencies | ⚠️ Warning | Check details |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Snyk Code
-          if [ "${{ needs.snyk-code.result }}" == "success" ]; then
-            echo "| 🔍 Snyk Code Analysis | ✅ Passed | No code vulnerabilities |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.snyk-code.result }}" == "skipped" ]; then
-            echo "| 🔍 Snyk Code Analysis | ⏭️ Skipped | Token not configured |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🔍 Snyk Code Analysis | ⚠️ Warning | Check details |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔎 Dependency Review | ❌ Failed | A vulnerable dependency is being added |" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Outdated Dependencies

@@ -20,7 +20,7 @@ CI/CD and security pipelines for Ryder Cup Amateur Manager.
 │  ✓ Dependency Audit             │
 │  ✓ Secret Scanning (TruffleHog) │
 │  ✓ License Compliance            │
-│  ℹ Optional: Snyk checks         │
+│  ✓ Dependency Review (PRs only)  │
 └─────────────────────────────────┘
               ↓
 ┌─────────────────────────────────┐
@@ -64,8 +64,10 @@ CI/CD and security pipelines for Ryder Cup Amateur Manager.
 ### Optional Jobs (Non-blocking)
 
 - `outdated-dependencies` - Info only
-- `snyk-security` - Requires `SNYK_TOKEN`
-- `snyk-code` - Requires `SNYK_TOKEN`
+
+### Pull requests only
+
+- `dependency-review` - Fails if the PR adds or bumps a dependency with a known vulnerability of moderate severity or higher (`actions/dependency-review-action`). Source-code analysis is CodeQL (GitHub default setup), outside this workflow.
 
 ### Artifacts (Retention)
 
@@ -74,15 +76,12 @@ CI/CD and security pipelines for Ryder Cup Amateur Manager.
 | npm-audit-report | 30 days |
 | license-report | 30 days |
 | outdated-dependencies | 30 days |
-| snyk reports | 30 days |
 | coverage-report | 30 days |
 | build-output | 7 days |
 
 ### Required Secrets
 
-```bash
-SNYK_TOKEN=your-snyk-token  # Optional, for Snyk jobs
-```
+None beyond the default `GITHUB_TOKEN`.
 
 ## 📝 PR Checks (`pr-checks.yml`)
 
@@ -106,7 +105,7 @@ SNYK_TOKEN=your-snyk-token  # Optional, for Snyk jobs
 
 1. **Keep PRs small**: <400 lines for faster review
 2. **Use conventional commits**: `feat:`, `fix:`, `docs:`, etc.
-3. **Monitor Snyk**: Add `SNYK_TOKEN` for security scanning
+3. **Watch the Security tab**: Dependabot alerts and CodeQL findings land there
 4. **Check artifacts**: Download reports for local analysis
 5. **Fix blockers**: All required jobs must pass
 
@@ -114,4 +113,4 @@ SNYK_TOKEN=your-snyk-token  # Optional, for Snyk jobs
 
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [GitHub Actions](https://docs.github.com/en/actions)
-- [Snyk Integration](https://snyk.io/docs/github-actions/)
+- [Dependency Review](https://github.com/actions/dependency-review-action)
