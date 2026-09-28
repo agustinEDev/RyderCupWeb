@@ -5,6 +5,11 @@ on:
     branches: [develop, main]
     types: [opened, synchronize, reopened]
 
+# Mínimos: los dos jobs solo leen la PR (CodeQL actions/missing-workflow-permissions)
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   pr-size:
     name: 📏 PR Size Check
