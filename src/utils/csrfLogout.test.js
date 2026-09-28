@@ -15,11 +15,11 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
 
   beforeEach(() => {
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
-    };
+    });
     olvidaTodo();
     href = '';
     delete window.location;

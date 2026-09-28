@@ -115,12 +115,12 @@ const sigueLaCortina = () => Boolean(document.getElementById('arranque'));
 // lee al montar. Mismo apaño que el resto de la suite
 const almacenLimpio = () => {
   const guardado = {};
-  globalThis.localStorage = {
+  vi.stubGlobal('localStorage', {
     getItem: (clave) => guardado[clave] ?? null,
     setItem: (clave, valor) => { guardado[clave] = String(valor); },
     removeItem: (clave) => { delete guardado[clave]; },
     clear: () => { for (const clave of Object.keys(guardado)) delete guardado[clave]; },
-  };
+  });
 };
 
 const estaEsperando = () => Boolean(document.querySelector('[data-testid="espera"]'));
