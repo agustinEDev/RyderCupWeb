@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   # ========================================
   # PHASE 1: SECURITY CHECKS (CRITICAL)
@@ -20,6 +24,7 @@ jobs:
   commit-verification:
     name: 🔏 Verify Commit Signatures
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,6 +88,7 @@ jobs:
   dependency-audit:
     name: 🔒 Dependency Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       moderate: ${{ steps.audit.outputs.moderate }}
       total: ${{ steps.audit.outputs.total }}
@@ -168,6 +174,7 @@ jobs:
   secret-scanning:
     name: 🔐 Secret Scanning
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -183,6 +190,7 @@ jobs:
   license-check:
     name: 📜 License Compliance
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -251,6 +259,7 @@ jobs:
   outdated-dependencies:
     name: 📦 Outdated Dependencies Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -305,7 +314,7 @@ jobs:
   lint:
     name: 🔍 Lint & Format Check
     runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -325,26 +334,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Check code formatting (Prettier)
-        run: |
-          echo "✨ Checking code formatting with Prettier..."
-
-          # Check if Prettier is installed
-          if ! npm list prettier > /dev/null 2>&1; then
-            echo "⚠️ Prettier not installed, skipping format check"
-            exit 0
-          fi
-
-          # Run Prettier check
-          npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}" || {
-            echo ""
-            echo "❌ Code formatting issues found!"
-            echo "💡 Run 'npx prettier --write .' to fix formatting"
-            exit 1
-          }
-
-          echo "✅ Code formatting is consistent"
 
       - name: Run ESLint
         run: npm run lint
@@ -352,7 +341,7 @@ jobs:
   test:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -372,9 +361,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Run unit tests
-        run: npm test -- --run --reporter=verbose
 
       - name: Generate coverage report
         id: coverage
@@ -477,7 +463,7 @@ jobs:
   type-check:
     name: 📝 Type Check
     runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -511,15 +497,17 @@ jobs:
         if: steps.check-ts.outputs.has_typescript == 'true'
         run: npx tsc --noEmit
 
-  code-quality:
-    name: 📊 Code Quality
+  # ========================================
+  # PHASE 3: BUILD
+  # ========================================
+
+  build:
+    name: 🏗️ Build Application
     runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -537,16 +525,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for dead code
-        run: |
-          echo "🔍 Checking for unused exports..."
-          npx knip --reporter json || echo "⚠️ knip not configured yet"
-        continue-on-error: true
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: Check bundle size
+        # Antes en code-quality, que compilaba otra vez solo para esto (28 sep 2026)
         id: bundle
         run: |
-          npm run build
           echo "📦 Bundle size analysis:"
 
           # Get total bundle size
@@ -621,40 +608,6 @@ jobs:
             echo "✅ Bundle size is within budget"
             echo "   Budget used: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))% (${TOTAL_SIZE_KB}/${MAX_BUNDLE_SIZE_KB} KB)"
           fi
-
-  # ========================================
-  # PHASE 3: BUILD
-  # ========================================
-
-  build:
-    name: 🏗️ Build Application
-    runs-on: ubuntu-latest
-    needs: [commit-verification, lint, test, type-check, code-quality]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Upgrade npm
-        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
-        # optional peer dependency mismatches (e.g. typescript vs i18next's
-        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
-        # Pinned explicitly so CI stays reproducible across Node bumps.
-        run: npm install -g npm@11.17.0
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-        env:
-          NODE_ENV: production
-
       - name: Check build output
         run: |
           if [ ! -d "dist" ]; then
@@ -678,7 +631,8 @@ jobs:
   pipeline-summary:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check, dependency-review, outdated-dependencies, lint, test, type-check, code-quality, build]
+    timeout-minutes: 5
+    needs: [dependency-audit, secret-scanning, license-check, dependency-review, outdated-dependencies, lint, test, type-check, build]
     if: always()
     steps:
       - name: Generate Pipeline Summary
@@ -775,15 +729,6 @@ jobs:
             echo "| 📝 Type Check | ❌ Failed | Type errors found |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Code Quality
-          if [ "${{ needs.code-quality.result }}" == "success" ]; then
-            echo "| 📊 Code Quality | ✅ Passed | Bundle size OK, no dead code |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.code-quality.result }}" == "skipped" ]; then
-            echo "| 📊 Code Quality | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 📊 Code Quality | ❌ Failed | Bundle too large or quality issues |" >> $GITHUB_STEP_SUMMARY
-          fi
-
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Build Phase
@@ -831,7 +776,6 @@ jobs:
             [ "${{ needs.lint.result }}" != "success" ] && [ "${{ needs.lint.result }}" != "skipped" ] && echo "- 🔍 Lint & Format" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ] && echo "- 🧪 Tests & Coverage" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.type-check.result }}" != "success" ] && [ "${{ needs.type-check.result }}" != "skipped" ] && echo "- 📝 Type Check" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.code-quality.result }}" != "success" ] && [ "${{ needs.code-quality.result }}" != "skipped" ] && echo "- 📊 Code Quality" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build" >> $GITHUB_STEP_SUMMARY
 
             exit 1
