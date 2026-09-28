@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 /**
  * El caso que motivó todo esto: invitas a un amigo antes de haber puesto el
@@ -82,6 +82,36 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
       screen.queryAllByRole('button', { name: /detail\.golfCourses\.remove/ })
     ).toHaveLength(0);
     expect(screen.queryByText('detail.golfCourses.dragToReorder')).not.toBeInTheDocument();
+  });
+
+  // Ronda 2 de pruebas · el número aparte, y «Añadir Campo» sin partirse a
+  // 360 px (salía en dos líneas y el título también)
+  it('N3: el número en su pastilla y el botón de añadir en una línea', async () => {
+    mockCampos.mockResolvedValue([
+      { golf_course_id: 'g-1', display_order: 1, golf_course: { id: 'g-1', name: 'Altea' } },
+    ]);
+    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+
+    const titulo = (await screen.findByText('detail.golfCourses.title')).closest('h3');
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(screen.getByText('detail.golfCourses.addCourse').closest('button')).toHaveClass('whitespace-nowrap');
+  });
+
+  // CodeRabbit en la #749, visto a 360 px: con el botón al lado, el título se
+  // estrujaba en tres líneas («Campos / de / golf») y «Campos» no cabía en su
+  // caja. El título no se parte; si no cabe, el botón baja a su fila
+  it('N3b: el título entero en una línea; el botón baja si no cabe', async () => {
+    render(<CompetitionGolfCoursesSection competition={competicion('ACTIVE')} canManage={true} />);
+
+    const texto = await screen.findByText('detail.golfCourses.title');
+    // El título ocupa la fila en el móvil y su número va al borde derecho
+    expect(texto.closest('h3')).toHaveClass('w-full');
+    expect(texto).toHaveClass('flex-1');
+    expect(texto.closest('h3').parentElement).toHaveClass('flex-wrap');
+    // En el móvil, de lado a lado y con el texto centrado (Agustín, ronda 2):
+    // alineado a la derecha no quedaba bien. Desde tablet, a su tamaño
+    const boton = screen.getByText('detail.golfCourses.addCourse').closest('button');
+    expect(boton).toHaveClass('w-full', 'justify-center', 'sm:w-auto');
   });
 
   it('y quien no gestiona no añade nada', async () => {

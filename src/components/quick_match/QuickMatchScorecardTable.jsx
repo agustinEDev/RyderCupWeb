@@ -291,7 +291,9 @@ const QuickMatchScorecardTable = ({
   // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
   // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
   // y la vertical del móvil (FE #739)
-  const casilla = (h, card) => {
+  // Lo que se sabe de un hoyo de una tarjeta: su golpe (o la raya) y lo que
+  // recibe. Lo leen la casilla y la columna de puntos o neto
+  const datosDelHoyo = (h, card) => {
     const entry = getEntry(h.holeNumber, card.members);
     const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
     // La raya es un hoyo anotado sin número: se pinta como raya y
@@ -305,29 +307,46 @@ const QuickMatchScorecardTable = ({
       ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
       : (entry?.score ?? null);
     const dotCount = Math.min(Math.abs(strokesReceived), MAX_STROKE_DOTS);
+    return { isPickedUp, score, strokesReceived, dotCount };
+  };
+
+  // Los puntos Stableford o el neto en Medal. En la tarjeta del móvil van en
+  // su propia columna; en la horizontal, bajo la figura
+  const extraDelHoyo = (h, card) => {
+    const { score, strokesReceived } = datosDelHoyo(h, card);
+    if (score == null) return null;
+    if (isStableford) {
+      const puntos = StablefordCalculator.holePoints(score, h.par, strokesReceived);
+      return (
+        <span
+          data-testid="hole-points"
+          className="text-[10px] font-semibold text-primary"
+          title={t('scoring.scorecard.holePoints', { count: puntos })}
+        >
+          {puntos}
+        </span>
+      );
+    }
+    if (isMedal) {
+      return (
+        <span
+          data-testid="hole-net-strokes"
+          className="text-[10px] font-semibold text-primary"
+          title={t('scoring.scorecard.holeNetStrokes', { count: score - strokesReceived })}
+        >
+          {score - strokesReceived}
+        </span>
+      );
+    }
+    return null;
+  };
+
+  const casilla = (h, card, { conExtra = true } = {}) => {
+    const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(h, card);
     return (
       <div className="flex flex-col items-center gap-0.5">
         <GolfFigure score={isPickedUp ? null : score} par={h.par} pickedUp={isPickedUp} />
-        {score != null && isStableford && (
-          <span
-            data-testid="hole-points"
-            className="text-[10px] font-semibold text-primary"
-            title={t('scoring.scorecard.holePoints', {
-              count: StablefordCalculator.holePoints(score, h.par, strokesReceived),
-            })}
-          >
-            {StablefordCalculator.holePoints(score, h.par, strokesReceived)}
-          </span>
-        )}
-        {score != null && isMedal && (
-          <span
-            data-testid="hole-net-strokes"
-            className="text-[10px] font-semibold text-primary"
-            title={t('scoring.scorecard.holeNetStrokes', { count: score - strokesReceived })}
-          >
-            {score - strokesReceived}
-          </span>
-        )}
+        {conExtra && extraDelHoyo(h, card)}
         {dotCount > 0 && (
           <div
             className="flex gap-0.5"
@@ -443,11 +462,21 @@ const QuickMatchScorecardTable = ({
       testId={`quick-match-player-card-${card.key}`}
       equipo={card.members[0]?.team === 'A' || card.members[0]?.team === 'B' ? card.members[0].team : null}
       cabecera={cabeceraDe(card)}
+      // Los puntos o el neto en su columna, no apilados bajo la figura: hay
+      // sitio y la fila queda más baja (ronda 2 de pruebas)
+      columnaExtra={
+        isStableford
+          ? t('scoring.scorecard.pointsShort')
+          : isMedal
+            ? t('scoring.scorecard.netShort')
+            : undefined
+      }
       hoyos={card.holes.map((h) => ({
         holeNumber: h.holeNumber,
         par: h.par,
         strokeIndex: h.strokeIndex,
-        casilla: casilla(h, card),
+        casilla: casilla(h, card, { conExtra: false }),
+        extra: extraDelHoyo(h, card),
       }))}
       sumas={{
         ida: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card.members) : undefined,

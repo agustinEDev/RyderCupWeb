@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import ModalShell from '../ui/ModalShell';
 
-const EarlyEndModalContent = ({ decidedResult, onConfirm }) => {
+const EarlyEndModalContent = ({ decidedResult, onConfirm, listaParaEnviar }) => {
   const { t } = useTranslation('scoring');
 
   return (
@@ -19,7 +19,9 @@ const EarlyEndModalContent = ({ decidedResult, onConfirm }) => {
           onClick={onConfirm}
           className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90"
         >
-          {t('earlyEnd.confirm')}
+          {/* Con algún hoyo sin validar no se puede enviar todavía: la tarjeta es
+              donde se ve qué falta (ronda 2 de pruebas) */}
+          {t(listaParaEnviar ? 'earlyEnd.confirm' : 'earlyEnd.review')}
         </button>
       </div>
     </>
@@ -32,7 +34,7 @@ const EarlyEndModalContent = ({ decidedResult, onConfirm }) => {
  * quedarse mirando los hoyos: el aviso vuelve a salir en la siguiente visita
  * mientras la tarjeta siga sin entregar.
  */
-const EarlyEndModal = ({ isOpen, decidedResult, onConfirm, onClose }) => (
+const EarlyEndModal = ({ isOpen, decidedResult, onConfirm, onClose, listaParaEnviar = true }) => (
   <ModalShell
     isOpen={isOpen}
     onClose={onClose}
@@ -40,7 +42,11 @@ const EarlyEndModal = ({ isOpen, decidedResult, onConfirm, onClose }) => (
     labelledBy="early-end-title"
     describedBy="early-end-message"
   >
-    <EarlyEndModalContent decidedResult={decidedResult} onConfirm={onConfirm} />
+    <EarlyEndModalContent
+      decidedResult={decidedResult}
+      onConfirm={onConfirm}
+      listaParaEnviar={listaParaEnviar}
+    />
   </ModalShell>
 );
 

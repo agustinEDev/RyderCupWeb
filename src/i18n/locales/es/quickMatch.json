@@ -204,6 +204,8 @@
       "strokeGiven": "Cede {{count}} golpe(s) en este hoyo",
       "holePoints": "{{count}} punto(s) Stableford en este hoyo",
       "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo",
+      "pointsShort": "Pts",
+      "netShort": "Neto",
       "scratchMatch": "Partida scratch · sin hándicap",
       "playingHandicap": "Hcp de juego {{value}}",
       "receivesStrokes_one": "recibe {{count}} golpe",

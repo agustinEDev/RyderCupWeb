@@ -68,7 +68,38 @@ describe('QuickMatchScorecardTable · en el móvil, tarjetas verticales deslizab
       />
     );
 
-    expect(within(fila('p-1', 1)).getByTestId('hole-points')).toHaveTextContent('2');
+    // Ronda 2 de pruebas · los puntos en su columna, no apilados bajo la figura:
+    // hay sitio, y la fila queda más baja
+    const celda = within(fila('p-1', 1)).getByTestId('extra');
+    expect(within(celda).getByTestId('hole-points')).toHaveTextContent('2');
+    expect(within(celda).queryByTestId('golf-figure')).toBeNull();
+    // Y solo ahí: no repetidos bajo la figura
+    expect(within(fila('p-1', 1)).getAllByTestId('hole-points')).toHaveLength(1);
+    expect(screen.getAllByText('scoring.scorecard.pointsShort').length).toBeGreaterThan(0);
+  });
+
+  it('X2: en Medal, el neto en su columna', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 5 }];
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants}
+        currentParticipantId="p-1"
+        scoringFormat="MEDAL"
+      />
+    );
+
+    const celda = within(fila('p-1', 1)).getByTestId('extra');
+    expect(within(celda).getByTestId('hole-net-strokes')).toHaveTextContent('5');
+    expect(screen.getAllByText('scoring.scorecard.netShort').length).toBeGreaterThan(0);
+  });
+
+  it('X3: en match play no hay columna extra', () => {
+    const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+    render(<QuickMatchScorecardTable holes={holes} holeScores={holeScores} participants={participants} currentParticipantId="p-1" />);
+
+    expect(within(fila('p-1', 1)).queryByTestId('extra')).toBeNull();
   });
 
   it('Q4: Ida, Vuelta y Total de cada tarjeta', () => {

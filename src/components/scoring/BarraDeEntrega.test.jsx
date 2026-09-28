@@ -58,4 +58,18 @@ describe('BarraDeEntrega', () => {
     expect(screen.getByText('submit.matchCompleted')).toBeInTheDocument();
     expect(screen.queryByText(/submit\.waitingFor/)).not.toBeInTheDocument();
   });
+
+  // Ronda 2 de pruebas · decidido no es acabado: se puede seguir jugando, y
+  // quien entrega a mitad deja fuera de su tarjeta los hoyos que anote después
+  it('B7: decidido con hoyos por jugar, dice que se puede seguir', () => {
+    render(<BarraDeEntrega estado="entregar" marcador="10&8 Europa" onEntregar={vi.fn()} sePuedeSeguir />);
+
+    expect(screen.getByText('submit.keepPlaying')).toBeInTheDocument();
+  });
+
+  it('B8: sin hoyos por jugar, no', () => {
+    render(<BarraDeEntrega estado="entregar" marcador="2UP Europa" onEntregar={vi.fn()} />);
+
+    expect(screen.queryByText('submit.keepPlaying')).toBeNull();
+  });
 });

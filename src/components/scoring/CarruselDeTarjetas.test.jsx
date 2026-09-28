@@ -83,4 +83,14 @@ describe('CarruselDeTarjetas', () => {
 
     expect(marcado()).toBe(1);
   });
+
+  it('K7: el carril contiene lo posicionado de dentro, para que no se salga de la pantalla', () => {
+    // Visto en el Kind a 360 px: los textos para lectores de pantalla de una
+    // figura (position: absolute) de la segunda tarjeta escapaban al recorte
+    // del carril y el móvil alejaba la vista a 522 px. Un elemento absoluto se
+    // recorta con su antepasado posicionado: el carril tiene que serlo
+    render(<CarruselDeTarjetas tarjetas={TARJETAS} />);
+
+    expect(screen.getByTestId('carril-de-tarjetas')).toHaveClass('relative');
+  });
 });
