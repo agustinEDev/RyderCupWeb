@@ -1,0 +1,7 @@
+[
+  {
+    "rule": "javascript/HardcodedNonCryptoSecret",
+    "path": "src/utils/googleOAuth.js",
+    "reason": "OAUTH_STATE_KEY es el NOMBRE de la clave en sessionStorage; el secreto es el nonce aleatorio que genera crypto en cada login (revisado el 28 sep 2026)"
+  }
+]
