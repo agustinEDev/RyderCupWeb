@@ -89,12 +89,12 @@ describe('el próximo partido del panel sin cobertura', () => {
   beforeEach(() => {
     window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
       clear: () => guardado.clear(),
-    };
+    });
     olvidaTodo();
     olvidaLasPrecargas();
     olvidaQueElPanelSePinto();

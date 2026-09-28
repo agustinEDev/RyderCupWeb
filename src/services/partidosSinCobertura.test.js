@@ -62,11 +62,11 @@ const asienta = () => new Promise((r) => setTimeout(r, 0));
 describe('partidosSinCobertura', () => {
   beforeEach(() => {
     almacen.clear();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
       setItem: (k, v) => almacen.set(k, String(v)),
       removeItem: (k) => almacen.delete(k),
-    };
+    });
     olvidaTodo();
     olvidaLasPrecargas();
     vi.spyOn(console, 'error').mockImplementation(() => {});

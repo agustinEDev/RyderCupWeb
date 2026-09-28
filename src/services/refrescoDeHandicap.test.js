@@ -20,7 +20,7 @@ vi.mock('./sesionCompartida', () => ({
 }));
 
 const guardado = {};
-globalThis.localStorage = {
+vi.stubGlobal('localStorage', {
   getItem: (clave) => guardado[clave] ?? null,
   setItem: (clave, valor) => {
     guardado[clave] = String(valor);
@@ -31,7 +31,7 @@ globalThis.localStorage = {
   clear: () => {
     for (const clave of Object.keys(guardado)) delete guardado[clave];
   },
-};
+});
 
 const {
   lanzaElRefrescoDeHandicap,

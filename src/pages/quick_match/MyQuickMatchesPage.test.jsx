@@ -812,11 +812,11 @@ describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabl
 
   beforeEach(() => {
     const almacen = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
       setItem: (k, v) => almacen.set(k, String(v)),
       removeItem: (k) => almacen.delete(k),
-    };
+    });
     vi.clearAllMocks();
   });
 

@@ -33,19 +33,19 @@ globalThis.window = { location: { href: '' } };
 globalThis.location = { href: '' };
 
 // Mock localStorage and sessionStorage
-globalThis.localStorage = {
+vi.stubGlobal('localStorage', {
   getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
-};
+});
 
-globalThis.sessionStorage = {
+vi.stubGlobal('sessionStorage', {
   getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
-};
+});
 
 // Helper to create mock response with clone() method
 const createMockResponse = (config) => {

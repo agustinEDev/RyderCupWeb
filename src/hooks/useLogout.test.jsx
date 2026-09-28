@@ -32,7 +32,7 @@ const almacen = (() => {
     clear: () => { store = {}; },
   };
 })();
-globalThis.localStorage = almacen;
+vi.stubGlobal('localStorage', almacen);
 
 const navigate = vi.fn();
 vi.mock('react-router', async () => {

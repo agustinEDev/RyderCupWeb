@@ -15,11 +15,11 @@ import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLis
 describe('loUltimoConocido', () => {
   beforeEach(() => {
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
-    };
+    });
     olvidaTodo();
   });
 
@@ -181,11 +181,11 @@ describe('loUltimoConocido', () => {
 describe('loUltimoConocido, lo precargado', () => {
   beforeEach(() => {
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
-    };
+    });
     olvidaTodo();
   });
 

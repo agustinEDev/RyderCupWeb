@@ -62,11 +62,11 @@ describe('Mis próximos partidos sin cobertura', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 8, 17, 8, 0));
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
-    };
+    });
     olvidaTodo();
     olvidaLasPrecargas();
     mockLee.mockReset();
