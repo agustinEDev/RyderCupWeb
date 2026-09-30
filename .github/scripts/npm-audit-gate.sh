@@ -4,7 +4,9 @@
 # Bloquea con vulnerabilidades altas o críticas; las moderadas solo avisan.
 # Hasta el 30 sep 2026, si el registro fallaba el informe no traía números, la
 # comparación con `null` fallaba sin cortar el script y salía «sin críticas ni
-# altas» sin haber auditado nada. Un informe sin números no es un aprobado.
+# altas» sin haber auditado nada. Un informe sin números no es un aprobado, y
+# tampoco uno con recuentos que no son enteros no negativos: bash no compara un
+# 0.5 o un número enorme, el `if` lo toma por falso y aprobaba (CodeRabbit).
 #
 # Uso: npm-audit-gate.sh audit-report.json
 # Salidas: 0 aprobado · 1 altas o críticas · 2 no se pudo comprobar
@@ -15,7 +17,8 @@ informe="${1:-audit-report.json}"
 
 if ! numeros=$(jq -er '.metadata.vulnerabilities
     | [.critical, .high, .moderate, .total]
-    | if all(type == "number") then @tsv else error("sin números") end' "$informe" 2>/dev/null); then
+    | if all(type == "number" and . >= 0 and . == floor and . < 1000000000) then @tsv
+      else error("sin recuentos válidos") end' "$informe" 2>/dev/null); then
   echo "::error::El informe de npm audit no trae el recuento ($informe): no se ha auditado nada"
   jq -r '.error.summary // empty' "$informe" 2>/dev/null || true
   exit 2

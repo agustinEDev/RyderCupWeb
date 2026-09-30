@@ -289,7 +289,7 @@ src/
 | Gate | Threshold | Current |
 |------|-----------|---------|
 | Tests | 100% pass | 4,873/4,873 |
-| Coverage (all of `src/`) | lines/statements >= 78%, functions/branches >= 74% | 78.5 / 78.1 / 74.1 / 74.8 |
+| Coverage (all of `src/`) | lines >= 78%, statements >= 77.5%, functions >= 73.5%, branches >= 74% | 78.5 / 78.1 / 74.1 / 74.8 |
 | Bundle size | <= 2,200 KB | 2,050 KB |
 | ESLint errors | 0 | 0 |
 
