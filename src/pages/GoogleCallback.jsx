@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
 import { verifyOAuthState } from '../utils/googleOAuth';
+import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 
@@ -15,6 +16,13 @@ const GoogleCallback = () => {
   const hasProcessed = useRef(false);
   const [error, setError] = useState(null);
   const [flow, setFlow] = useState('login');
+
+  // El code y el state, ya leidos por el router: fuera de la barra, antes de
+  // que Replay grabe el href de la pagina y de que acabe en el Referer
+  // (utils/stripSecretsFromAddressBar.js)
+  useEffect(() => {
+    stripSecretsFromAddressBar();
+  }, []);
 
   useEffect(() => {
     // Prevent double execution in StrictMode

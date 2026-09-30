@@ -30,8 +30,7 @@
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
-import { scrubUrl } from '../utils/sentryHelpers';
-import { scrubSpan } from '../utils/scrubSpan';
+import { sentryScrubbing } from '../utils/sentryScrubbing';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -107,6 +106,11 @@ if (!SENTRY_CONFIG.dsn) {
       // los correos y las listas de amigos enteros dentro de la grabacion.
       // Para depurar ya estan los eventos de error con su breadcrumb.
       networkDetailAllowUrls: [],
+
+      // La grabacion guarda sus propias URLs (el href inicial, las migas de
+      // clic, las navegaciones) sin pasar por beforeSend: el token del enlace
+      // de restablecimiento y el code de Google salian por aqui
+      beforeAddRecordingEvent: sentryScrubbing.beforeAddRecordingEvent,
 
       // Sample rates (ya configurados en init)
     }),
@@ -209,13 +213,10 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
-      // 3. Sanitizar datos sensibles
+      // 3. Sanitizar datos sensibles: los secretos de las URLs, en todo el
+      // evento (tambien el Referer), y lo que no es URL
+      sentryScrubbing.beforeSend(event);
       if (event.request) {
-        // La URL del evento tambien viaja con su query string (FE #385)
-        if (event.request.url) {
-          event.request.url = scrubUrl(event.request.url);
-        }
-
         // Remover headers sensibles
         delete event.request.headers?.Authorization;
         delete event.request.headers?.Cookie;
@@ -248,11 +249,7 @@ if (!SENTRY_CONFIG.dsn) {
 
       // Los spans HTTP llevan la URL completa en su descripción y en sus datos,
       // asi que la query string entra por aqui igual que por los breadcrumbs
-      if (transaction.request?.url) {
-        transaction.request.url = scrubUrl(transaction.request.url);
-      }
-
-      transaction.spans?.forEach(scrubSpan);
+      sentryScrubbing.beforeSendTransaction(transaction);
 
       return transaction;
     },
@@ -261,7 +258,7 @@ if (!SENTRY_CONFIG.dsn) {
     // ejecuta, pero se conserva por si se retira el init de `main.jsx`: si
     // llegara ese dia, sin esto volveria el mismo agujero que cierra la FE #385.
     beforeSendSpan(span) {
-      scrubSpan(span); // redacta en su sitio las dos formas de span (utils/scrubSpan.js)
+      sentryScrubbing.beforeSendSpan(span);
       return span;
     },
 
@@ -280,10 +277,9 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
-      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385)
-      if (breadcrumb.data?.url) {
-        breadcrumb.data.url = scrubUrl(breadcrumb.data.url);
-      }
+      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385),
+      // tambien el from/to de las navegaciones
+      sentryScrubbing.beforeBreadcrumb(breadcrumb);
 
       return breadcrumb;
     },
