@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 import { scrubUrl } from './utils/scrubUrl';
+import { scrubSpan } from './utils/scrubSpan';
 // Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
 // antes de que React navegue a ningún sitio
 import './utils/appStartup';
@@ -34,7 +35,6 @@ if (sentryDsn) {
     integrations: [],
     // Configure sample rates from env (these cannot be changed after init)
     tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-    profilesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_PROFILES_SAMPLE_RATE || '1.0'),
     replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
     replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
     attachStacktrace: true,
@@ -64,16 +64,7 @@ if (sentryDsn) {
         transaction.request.url = scrubUrl(transaction.request.url);
       }
 
-      transaction.spans?.forEach((span) => {
-        if (span.description) {
-          span.description = scrubUrl(span.description);
-        }
-        for (const key of ['url', 'http.url']) {
-          if (typeof span.data?.[key] === 'string') {
-            span.data[key] = scrubUrl(span.data[key]);
-          }
-        }
-      });
+      transaction.spans?.forEach(scrubSpan);
 
       return transaction;
     },
@@ -81,16 +72,10 @@ if (sentryDsn) {
     // Un span puede viajar solo, en su propio envelope, sin transaccion que lo
     // envuelva: por ahi `beforeSendTransaction` no pasa nunca y la URL entera
     // -con su query string- saldria sin sanear.
+    // Con Sentry 11 el span llega con otra forma (name/attributes, url.full):
+    // scrubSpan cubre las dos (ver utils/scrubSpan.js).
     beforeSendSpan(span) {
-      if (span.description) {
-        span.description = scrubUrl(span.description);
-      }
-      for (const key of ['url', 'http.url']) {
-        if (typeof span.data?.[key] === 'string') {
-          span.data[key] = scrubUrl(span.data[key]);
-        }
-      }
-
+      scrubSpan(span);
       return span;
     },
   });
