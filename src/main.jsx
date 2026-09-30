@@ -4,8 +4,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
-import { scrubUrl } from './utils/scrubUrl';
-import { scrubSpan } from './utils/scrubSpan';
+import { sentryScrubbing } from './utils/sentryScrubbing';
 // Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
 // antes de que React navegue a ningún sitio
 import './utils/appStartup';
@@ -44,41 +43,18 @@ if (sentryDsn) {
     // cliente, asi que solo ejecuta su rama de `addIntegration`: sus ganchos
     // `beforeSend`/`beforeBreadcrumb` nunca llegan a registrarse. Lo que se
     // configura despues de esta llamada no filtra nada.
-    beforeBreadcrumb(breadcrumb) {
-      if (breadcrumb.data?.url) {
-        breadcrumb.data.url = scrubUrl(breadcrumb.data.url);
-      }
-      return breadcrumb;
-    },
-
-    beforeSend(event) {
-      if (event.request?.url) {
-        event.request.url = scrubUrl(event.request.url);
-      }
-      return event;
-    },
-
-    // Los spans HTTP llevan la URL completa en su descripcion y en sus datos
-    beforeSendTransaction(transaction) {
-      if (transaction.request?.url) {
-        transaction.request.url = scrubUrl(transaction.request.url);
-      }
-
-      transaction.spans?.forEach(scrubSpan);
-
-      return transaction;
-    },
-
-    // Un span puede viajar solo, en su propio envelope, sin transaccion que lo
-    // envuelva: por ahi `beforeSendTransaction` no pasa nunca y la URL entera
-    // -con su query string- saldria sin sanear.
-    // Con Sentry 11 el span llega con otra forma (name/attributes, url.full):
-    // scrubSpan cubre las dos (ver utils/scrubSpan.js).
-    beforeSendSpan(span) {
-      scrubSpan(span);
-      return span;
-    },
+    //
+    // Todos pasan `scrubUrl` por todo el texto de lo que sale (utils/
+    // sentryScrubbing.js): las migas (tambien el from/to de las navegaciones)
+    // y los spans sueltos, que con Sentry 11 viajan solos, sin transaccion.
+    beforeBreadcrumb: sentryScrubbing.beforeBreadcrumb,
+    beforeSendSpan: sentryScrubbing.beforeSendSpan,
   });
+
+  // Los eventos -errores (con su Referer), transacciones y el de Replay con
+  // su lista de URLs, que no pasa por `beforeSend`- pasan todos por los
+  // procesadores de eventos: uno solo los cubre sin recorrerlos dos veces
+  Sentry.addEventProcessor(sentryScrubbing.eventProcessor);
 }
 
 // ============================================

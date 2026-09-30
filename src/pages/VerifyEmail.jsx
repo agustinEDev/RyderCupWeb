@@ -2,12 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { verifyEmailUseCase } from '../composition';
 import BlockLoader from '../components/ui/BlockLoader';
+import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+
+  // Leido: fuera de la barra, antes de que Replay grabe el href de la pagina
+  // y de que acabe en el Referer (utils/stripSecretsFromAddressBar.js)
+  useEffect(() => {
+    stripSecretsFromAddressBar();
+  }, []);
 
   const [status, setStatus] = useState('verifying'); // verifying | success | error | invalid
   const [message, setMessage] = useState('');

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { scrubSpan } from './scrubSpan';
+import { sentryScrubbing } from './sentryScrubbing';
+
+const scrubSpan = sentryScrubbing.beforeSendSpan;
 
 /**
  * Sentry 11 cambió la forma de los spans que llegan a `beforeSendSpan`: el texto

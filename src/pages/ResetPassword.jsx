@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams, useParams } from 'react-router';
 import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
+import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import { useTranslation } from 'react-i18next';
 import { validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
@@ -44,6 +45,12 @@ const ResetPassword = () => {
 
   // Soportar ambos formatos: /reset-password/:token y /reset-password?token=xxx
   const token = params.token || searchParams.get('token');
+
+  // Leido: fuera de la barra, antes de que Replay grabe el href de la pagina
+  // y de que acabe en el Referer (utils/stripSecretsFromAddressBar.js)
+  useEffect(() => {
+    stripSecretsFromAddressBar();
+  }, []);
 
   // Estados del token
   const [tokenState, setTokenState] = useState('validating'); // 'validating' | 'valid' | 'invalid'
