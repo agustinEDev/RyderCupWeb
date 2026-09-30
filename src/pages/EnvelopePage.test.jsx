@@ -969,9 +969,13 @@ describe('EnvelopePage · se entera sola de que se abrieron (#710)', () => {
     vi.useRealTimers();
   });
 
+  // Async: deja resolverse las promesas entre temporizador y temporizador. Con
+  // el síncrono, el intervalo que programa el efecto a mitad del avance y la
+  // petición que lanza no llegaban dentro, y el primer test del bloque fallaba
+  // siempre al lanzarlo solo; en el CI, el que tocase (S6)
   const pasan = async (ms) => {
     await act(async () => {
-      vi.advanceTimersByTime(ms);
+      await vi.advanceTimersByTimeAsync(ms);
     });
   };
 
