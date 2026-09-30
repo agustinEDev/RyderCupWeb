@@ -14,7 +14,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:integration": "playwright test tests/integration.spec.js",
     "test:integration:ci": "playwright test tests/integration.spec.js --project=chromium --workers=1",
-    "test:security": "playwright test tests/security.spec.js"
+    "test:security": "playwright test tests/security.spec.js",
+    "lint:architecture": "depcruise src --config .dependency-cruiser.cjs --output-type err"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -45,6 +46,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^5.0.2",
     "autoprefixer": "^10.6.1",
+    "dependency-cruiser": "^18.4.0",
     "dotenv": "^18.0.3",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.33.2",

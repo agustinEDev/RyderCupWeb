@@ -91,4 +91,34 @@ export default [
       'react/prop-types': 'off',
     },
   },
+
+  // Toda llamada a la API pasa por apiRequest() (src/services/api.js): lleva el
+  // interceptor que refresca el token ante un 401 y reintenta. Un fetch directo
+  // se lo salta y provoca deslogueos aparentes (CLAUDE.md). Excepciones, cada una
+  // con su motivo en el propio fichero:
+  // - tokenRefreshInterceptor.js: ES el interceptor
+  // - useRedirectIfAuthenticated.js: sondea la sesión con timeout y SIN
+  //   interceptor, para no entrar en un bucle de refresco en la pantalla de acceso
+  // - ApiSupportRepository.js: el formulario de contacto es un endpoint público
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: [
+      'src/**/*.test.{js,jsx}',
+      'src/setupTests.js',
+      'src/utils/tokenRefreshInterceptor.js',
+      'src/hooks/useRedirectIfAuthenticated.js',
+      'src/infrastructure/repositories/ApiSupportRepository.js',
+    ],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'fetch', message: 'Usa apiRequest() de src/services/api.js: lleva el refresco del token.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'fetch', message: 'Usa apiRequest() de src/services/api.js.' },
+        { object: 'globalThis', property: 'fetch', message: 'Usa apiRequest() de src/services/api.js.' },
+      ],
+    },
+  },
 ];

@@ -361,6 +361,19 @@ export default defineConfig(() => ({
     // es que monta mucho; 15 s le dejan margen sin ocultar un cuelgue de verdad.
     testTimeout: 15000,
     setupFiles: './src/setupTests.js', // Se podría crear más tarde si es necesario.
+    // Umbral de cobertura (FE #553). Hasta el 28 sep 2026 no se aplicaba nunca: el
+    // CI lo buscaba en coverage-summary.json y Vitest no lo generaba. Ahora lo
+    // aplica Vitest: `--coverage` falla si baja de aquí, en el CI y en local. Ese
+    // día la cobertura era 82,7 / 82,0 / 76,8 / 78,2, por encima de los cuatro.
+    coverage: {
+      reporter: ['text', 'html', 'clover', 'json', 'json-summary'],
+      thresholds: {
+        lines: 80,
+        statements: 80,
+        functions: 75,
+        branches: 70,
+      },
+    },
     css: {
       modules: {
         classNameStrategy: 'non-scoped',
