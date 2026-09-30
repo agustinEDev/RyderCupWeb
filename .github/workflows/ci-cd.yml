@@ -22,7 +22,7 @@ jobs:
   # ========================================
 
   commit-verification:
-    name: 🔏 Verify Commit Signatures
+    name: 🔏 Signed commits
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -86,7 +86,7 @@ jobs:
           fi
 
   dependency-audit:
-    name: 🔒 Dependency Vulnerability Scan
+    name: 🔒 npm audit
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -257,7 +257,7 @@ jobs:
           comment-summary-in-pr: never
 
   outdated-dependencies:
-    name: 📦 Outdated Dependencies Check
+    name: 📦 Outdated deps
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -312,7 +312,7 @@ jobs:
   # cualquier aviso (el 28 sep 2026 el código estaba limpio) y sube el SARIF a la
   # pestaña Security. Complementa a CodeQL.
   owasp-semgrep:
-    name: 🛡️ OWASP Top 10 (Semgrep)
+    name: 🛡️ OWASP (Semgrep)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -352,7 +352,7 @@ jobs:
   # ========================================
 
   lint:
-    name: 🔍 Lint & Format Check
+    name: 🔍 Lint
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -379,8 +379,15 @@ jobs:
         run: npm run lint
 
   test:
-    name: 🧪 Run Tests
+    name: 🧪 Tests + coverage
     runs-on: ubuntu-24.04
+    # Columna 2 del gráfico: espera a la de análisis estático y seguridad (30 sep
+    # 2026). Si algo de la columna 1 FALLA, esta se salta: todo lo de la columna 1
+    # es check obligatorio, así que ese fallo ya bloquea el merge, y no se gastan
+    # minutos de tests en una PR que no se puede mergear. Lo que solo se salta
+    # (Dependency Review en un push) no cuenta como fallo.
+    needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     timeout-minutes: 20
     steps:
       - name: Checkout code
@@ -456,7 +463,7 @@ jobs:
   # puro, casos de uso que solo dependen del dominio, infraestructura que no sube de
   # capa, interfaz que pasa por src/composition y sin dependencias circulares.
   architecture:
-    name: 🏛️ Architecture Contracts
+    name: 🏛️ Architecture
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -484,8 +491,15 @@ jobs:
   # ========================================
 
   build:
-    name: 🏗️ Build Application
+    name: 🏗️ Build
     runs-on: ubuntu-24.04
+    # Columna 2 del gráfico: espera a la de análisis estático y seguridad (30 sep
+    # 2026). Si algo de la columna 1 FALLA, esta se salta: todo lo de la columna 1
+    # es check obligatorio, así que ese fallo ya bloquea el merge, y no se gastan
+    # minutos de tests en una PR que no se puede mergear. Lo que solo se salta
+    # (Dependency Review en un push) no cuenta como fallo.
+    needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     timeout-minutes: 15
     steps:
       - name: Checkout code
