@@ -13,7 +13,7 @@ permissions:
 jobs:
   pr-size:
     name: 📏 PR Size Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check PR size
         run: |
@@ -23,7 +23,7 @@ jobs:
 
   pr-conventional-commits:
     name: 📝 Conventional Commits Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
     steps:
       # Wait for auto-fix to complete for Dependabot PRs
@@ -37,7 +37,7 @@ jobs:
             console.log('✅ Proceeding with validation');
 
       - name: Check PR title
-        uses: amannn/action-semantic-pull-request@v5
+        uses: amannn/action-semantic-pull-request@v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
