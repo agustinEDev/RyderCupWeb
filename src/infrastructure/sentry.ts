@@ -4,7 +4,7 @@
  * Este archivo inicializa Sentry con configuración avanzada por entorno.
  *
  * Configuración por entorno:
- * - Development: Sample rates altos (1.0), debug habilitado, profiling completo
+ * - Development: Sample rates altos (1.0), debug habilitado
  * - Production: Sample rates optimizados (0.1-0.2), debug deshabilitado
  *
  * Integraciones:
@@ -31,6 +31,7 @@ import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedba
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 import { scrubUrl } from '../utils/sentryHelpers';
+import { scrubSpan } from '../utils/scrubSpan';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -41,7 +42,6 @@ const SENTRY_CONFIG = {
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
   tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-  profilesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_PROFILES_SAMPLE_RATE || '1.0'),
   replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
   replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
   autoSessionTracking: import.meta.env.VITE_SENTRY_AUTO_SESSION_TRACKING === 'true',
@@ -169,7 +169,6 @@ if (!SENTRY_CONFIG.dsn) {
 
     // ===== PERFORMANCE MONITORING =====
     tracesSampleRate: SENTRY_CONFIG.tracesSampleRate,
-    profilesSampleRate: SENTRY_CONFIG.profilesSampleRate,
 
     // ===== SESSION REPLAY =====
     replaysSessionSampleRate: SENTRY_CONFIG.replaysSessionSampleRate,
@@ -253,18 +252,7 @@ if (!SENTRY_CONFIG.dsn) {
         transaction.request.url = scrubUrl(transaction.request.url);
       }
 
-      transaction.spans?.forEach((span) => {
-        if (span.description) {
-          span.description = scrubUrl(span.description);
-        }
-        if (span.data) {
-          for (const key of ['url', 'http.url']) {
-            if (typeof span.data[key] === 'string') {
-              span.data[key] = scrubUrl(span.data[key]);
-            }
-          }
-        }
-      });
+      transaction.spans?.forEach(scrubSpan);
 
       return transaction;
     },
@@ -273,17 +261,7 @@ if (!SENTRY_CONFIG.dsn) {
     // ejecuta, pero se conserva por si se retira el init de `main.jsx`: si
     // llegara ese dia, sin esto volveria el mismo agujero que cierra la FE #385.
     beforeSendSpan(span) {
-      if (span.description) {
-        span.description = scrubUrl(span.description);
-      }
-      if (span.data) {
-        for (const key of ['url', 'http.url']) {
-          if (typeof span.data[key] === 'string') {
-            span.data[key] = scrubUrl(span.data[key]);
-          }
-        }
-      }
-
+      scrubSpan(span); // redacta en su sitio las dos formas de span (utils/scrubSpan.js)
       return span;
     },
 
@@ -324,7 +302,6 @@ if (!SENTRY_CONFIG.dsn) {
 │ Release:           ${RELEASE.padEnd(32)}│
 │ Debug:             ${String(SENTRY_CONFIG.debug).padEnd(32)}│
 │ Traces Sample:     ${(SENTRY_CONFIG.tracesSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
-│ Profiles Sample:   ${(SENTRY_CONFIG.profilesSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays Session:   ${(SENTRY_CONFIG.replaysSessionSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays On Error:  ${(SENTRY_CONFIG.replaysOnErrorSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Feedback Widget:   ${String(SENTRY_CONFIG.enableFeedback).padEnd(32)}│
