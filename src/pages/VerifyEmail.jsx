@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { verifyEmailUseCase } from '../composition';
 import BlockLoader from '../components/ui/BlockLoader';
-import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
+import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
 
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  // Tras quitarlo de la barra, una recarga lo recupera del historial
+  const token = searchParams.get('token') || readStrippedSecret('token');
 
   // Leido: fuera de la barra, antes de que Replay grabe el href de la pagina
   // y de que acabe en el Referer (utils/stripSecretsFromAddressBar.js)

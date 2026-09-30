@@ -22,18 +22,36 @@ import { scrubUrl } from './scrubUrl';
 const RECORDING_CUSTOM = 5;
 
 /**
+ * Claves en las que no se entra:
+ * - `sdkProcessingMetadata`: el estado interno del SDK (las Scope, y con ellas
+ *   el cliente, Replay y todas las migas). Recorrerlo en cada transaccion era
+ *   medio SDK en el hilo principal, y no sale en el evento;
+ * - `arguments`: los objetos que la app paso a `console.*`, los suyos, no una
+ *   copia. `beforeBreadcrumb` los sustituye por una copia tapada.
+ */
+const SKIP_KEYS = new Set(['sdkProcessingMetadata', 'arguments']);
+
+/** Solo objetos simples y listas: lo que Sentry manda. Una clase es de alguien. */
+const isPlain = (value) => {
+  if (Array.isArray(value)) return true;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+};
+
+/**
  * Tapa, en su sitio, los secretos de todo el texto de un valor.
  *
- * @param {unknown} value Texto, objeto o lista; lo demas pasa tal cual
+ * @param {unknown} value Texto, objeto simple o lista; lo demas pasa tal cual
  * @param {WeakSet<object>} [visto] Para no dar vueltas en un objeto circular
  * @returns {unknown} El texto tapado, o el mismo objeto tapado en su sitio
  */
 export const scrubDeep = (value, visto = new WeakSet()) => {
   if (typeof value === 'string') return scrubUrl(value);
-  if (!value || typeof value !== 'object' || visto.has(value)) return value;
+  if (!value || typeof value !== 'object' || visto.has(value) || !isPlain(value)) return value;
   visto.add(value);
 
   for (const key of Object.keys(value)) {
+    if (SKIP_KEYS.has(key)) continue;
     try {
       const actual = value[key];
       const tapado = scrubDeep(actual, visto);
@@ -48,8 +66,21 @@ export const scrubDeep = (value, visto = new WeakSet()) => {
 
 const scrubAll = (item) => scrubDeep(item);
 
+/**
+ * Una miga de consola guarda en `data.arguments` los objetos que se pasaron a
+ * `console.*`, sin copiar: se sustituyen por una copia con el texto tapado, y
+ * los de la app no se tocan.
+ */
+const scrubBreadcrumb = (breadcrumb) => {
+  const argumentos = breadcrumb?.data?.arguments;
+  if (Array.isArray(argumentos)) {
+    breadcrumb.data.arguments = argumentos.map((arg) => (typeof arg === 'string' ? scrubUrl(arg) : arg));
+  }
+  return scrubDeep(breadcrumb);
+};
+
 export const sentryScrubbing = {
-  beforeBreadcrumb: scrubAll,
+  beforeBreadcrumb: scrubBreadcrumb,
   beforeSend: scrubAll,
   beforeSendTransaction: scrubAll,
   beforeSendSpan: scrubAll,

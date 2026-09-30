@@ -17,6 +17,10 @@ import { scrubDeep, sentryScrubbing } from './sentryScrubbing';
  *   H4  span suelto: url.path y el referer en lista   | tapados
  *   D3  un getter que lanza                         | se sigue con lo demás
  *   H5  grabación de Replay: migas y navegaciones     | tapadas (el meta no llega)
+ *   D4  un objeto que no es simple (clase, Error)    | ni se entra: puede ser del SDK o de la app
+ *   D5  sdkProcessingMetadata (el estado del SDK)     | ni se entra
+ *   D6  una cadena de objetos muy profunda            | no revienta la pila
+ *   H8  miga de consola: sus argumentos               | se tapan en una copia; los de la app, intactos
  *   H6  grabación de Replay: la foto del DOM           | ni se recorre
  *   H7  transacción: su URL y la de sus spans         | tapadas
  */
@@ -99,6 +103,32 @@ describe('sentryScrubbing', () => {
     }
   });
 
+  it('D4: no entra en un objeto que no es simple', () => {
+    class Caja {
+      constructor() {
+        this.url = RESET;
+      }
+    }
+    const caja = new Caja();
+    const error = new Error(RESET);
+    scrubDeep({ caja, error });
+    expect(caja.url).toBe(RESET);
+    expect(error.message).toBe(RESET);
+  });
+
+  it('D5: no entra en el estado interno del SDK', () => {
+    const evento = { request: { url: RESET }, sdkProcessingMetadata: { cosa: { url: RESET } } };
+    scrubDeep(evento);
+    expect(evento.request.url).not.toContain(TOKEN);
+    expect(evento.sdkProcessingMetadata.cosa.url).toBe(RESET);
+  });
+
+  it('D6: aguanta una cadena de objetos muy profunda', () => {
+    let hondo = { url: RESET };
+    for (let i = 0; i < 10000; i += 1) hondo = { hijo: hondo };
+    expect(() => scrubDeep(hondo)).not.toThrow();
+  });
+
   it('D3: un getter que lanza no tumba el resto', () => {
     const datos = { url: RESET };
     Object.defineProperty(datos, 'roto', {
@@ -116,6 +146,20 @@ describe('sentryScrubbing', () => {
     const foto = { type: 2, data: { node: { attributes: { href: RESET } } } };
     expect(sentryScrubbing.beforeAddRecordingEvent(foto)).toBe(foto);
     expect(foto.data.node.attributes.href).toBe(RESET);
+  });
+
+  it('H8: la miga de consola tapa sus argumentos sin tocar los de la app', () => {
+    const deLaApp = { url: RESET };
+    const argumentos = [`fallo en ${RESET}`, deLaApp];
+    const miga = { category: 'console', message: `fallo en ${RESET}`, data: { arguments: argumentos } };
+
+    sentryScrubbing.beforeBreadcrumb(miga);
+
+    expect(miga.message).not.toContain(TOKEN);
+    expect(miga.data.arguments[0]).not.toContain(TOKEN);
+    expect(miga.data.arguments).not.toBe(argumentos);
+    expect(argumentos[0]).toBe(`fallo en ${RESET}`);
+    expect(deLaApp.url).toBe(RESET);
   });
 
   it('H7: la transacción, con su URL y la de sus spans', () => {

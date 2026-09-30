@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams, useParams } from 'react-router';
 import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
-import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
+import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
 import { useTranslation } from 'react-i18next';
 import { validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
@@ -43,8 +43,9 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const params = useParams();
 
-  // Soportar ambos formatos: /reset-password/:token y /reset-password?token=xxx
-  const token = params.token || searchParams.get('token');
+  // Soportar ambos formatos: /reset-password/:token y /reset-password?token=xxx.
+  // Tras quitarlo de la barra, una recarga lo recupera del historial
+  const token = params.token || searchParams.get('token') || readStrippedSecret('token');
 
   // Leido: fuera de la barra, antes de que Replay grabe el href de la pagina
   // y de que acabe en el Referer (utils/stripSecretsFromAddressBar.js)

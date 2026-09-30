@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 import { sentryScrubbing } from './utils/sentryScrubbing';
+import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
 // Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
 // antes de que React navegue a ningún sitio
 import './utils/appStartup';
@@ -68,8 +69,12 @@ const loadSentryIntegrations = () => {
   if (sentryIntegrationsLoaded) return;
   sentryIntegrationsLoaded = true;
 
-  import('./infrastructure/sentry').catch((error) => {
-    console.warn('⚠️ Failed to load Sentry integrations:', error);
+  // Replay graba el href de la pagina al empezar, sin pasar por ningun gancho:
+  // con un token en la barra se espera a que la pagina lo quite
+  whenAddressBarIsClean(() => {
+    import('./infrastructure/sentry').catch((error) => {
+      console.warn('⚠️ Failed to load Sentry integrations:', error);
+    });
   });
 };
 
