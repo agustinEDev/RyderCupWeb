@@ -9,10 +9,10 @@
 [![Vite](https://img.shields.io/badge/Vite-7.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)](.)  
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](.)  
 
-[![Tests](https://img.shields.io/badge/tests-1550%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
-[![Coverage](https://img.shields.io/badge/coverage-85%25+-success?style=for-the-badge&logo=codecov)](.)
+[![Tests](https://img.shields.io/badge/tests-4873%20passing-00C853?style=for-the-badge&logo=vitest&logoColor=white)](.)
+[![Coverage](https://img.shields.io/badge/coverage-78%25%20(all%20of%20src)-success?style=for-the-badge&logo=codecov)](.)
 [![OWASP](https://img.shields.io/badge/OWASP-9.2%2F10-4CAF50?style=for-the-badge&logo=owasp)](https://owasp.org/www-project-top-ten/)
-[![Bundle](https://img.shields.io/badge/bundle-1487%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
+[![Bundle](https://img.shields.io/badge/bundle-2050%20KB-blueviolet?style=for-the-badge&logo=webpack)](.)
 
 [![Clean Architecture](https://img.shields.io/badge/architecture-Clean%20Architecture-blueviolet?style=for-the-badge)](.)
 [![DDD](https://img.shields.io/badge/design-Domain%20Driven-orange?style=for-the-badge)](.)
@@ -36,8 +36,8 @@
 - ✅ **22 Value Objects** enforcing domain invariants
 - ✅ **79 Use Cases** covering all business operations
 - ✅ **Bilingual** (English + Spanish) with 14 i18n namespaces
-- ✅ **Bundle: 1,487 KB** (within 1,500 KB CI budget)
-- ✅ **3 CI/CD workflows** - GitHub Actions pipeline
+- ✅ **Bundle: 2,050 KB** (within 2,200 KB CI budget)
+- ✅ **4 CI/CD workflows** - GitHub Actions pipeline
 
 ---
 
@@ -288,9 +288,9 @@ src/
 
 | Gate | Threshold | Current |
 |------|-----------|---------|
-| Tests | 100% pass | 1,550/1,550 |
-| Branch coverage | >= 70% | Achieved |
-| Bundle size | <= 1,500 KB | 1,487 KB |
+| Tests | 100% pass | 4,873/4,873 |
+| Coverage (all of `src/`) | lines >= 78%, statements >= 77.5%, functions >= 73.5%, branches >= 74% | 78.5 / 78.1 / 74.1 / 74.8 |
+| Bundle size | <= 2,200 KB | 2,050 KB |
 | ESLint errors | 0 | 0 |
 
 **Test Types**:
@@ -332,13 +332,12 @@ src/
 
 ### GitHub Actions Workflows
 
-3 workflows executed on every push:
-
 | Workflow | Description |
 |----------|-------------|
-| **`ci-cd.yml`** | Main pipeline: lint, tests, coverage, build, bundle budget |
-| **`security.yml`** | npm audit, TruffleHog, license compliance |
-| **`pr-checks.yml`** | PR size validation, conventional commits |
+| **`ci-cd.yml`** | Main pipeline, two columns. First (all required): lint, types, architecture, OWASP (Semgrep), npm audit, secret scanning, licenses, dependency review, signed commits (every commit, verified by GitHub), outdated deps. Second, only if the first passes: tests + coverage, build + bundle budget |
+| **`pr-checks.yml`** | Conventional Commits on the PR title |
+| **`auto-fix-pr-title.yml`** | Fixes Dependabot PR titles to the convention |
+| **`snyk-review.yml`** | Snyk review: weekly and on every PR to `main` (release/hotfix) |
 
 **Branch Protection**:
 - All CI checks must pass before merge

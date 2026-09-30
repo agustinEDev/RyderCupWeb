@@ -367,11 +367,21 @@ export default defineConfig(() => ({
     // día la cobertura era 82,7 / 82,0 / 76,8 / 78,2, por encima de los cuatro.
     coverage: {
       reporter: ['text', 'html', 'clover', 'json', 'json-summary'],
+      // Todos los ficheros de src, tengan test o no. Sin `include`, Vitest solo
+      // cuenta los que algún test importa: una página nueva sin tests no bajaba
+      // el porcentaje (revisión del 30 sep 2026)
+      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      // El arranque y la configuración: no son lógica de tests unitarios
+      exclude: ['src/main.jsx', 'src/infrastructure/sentry.ts', 'src/i18n/**', 'src/vite-env.d.ts'],
+      // La cifra real al empezar a contar todos los ficheros (30 sep 2026:
+      // 78,53 / 78,07 / 74,13 / 74,82), con medio punto de margen como mucho:
+      // el v8 del CI puede medir unas décimas distinto. El 80% de antes no era
+      // real: no contaba las páginas sin tests. Se sube al añadir tests
       thresholds: {
-        lines: 80,
-        statements: 80,
-        functions: 75,
-        branches: 70,
+        lines: 78,
+        statements: 77.5,
+        functions: 73.5,
+        branches: 74,
       },
     },
     css: {
