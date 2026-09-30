@@ -25,65 +25,34 @@ jobs:
     name: 🔏 Signed commits
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read  # la lista de commits de la PR
     steps:
-      - name: Checkout code
+      - name: Checkout the script
         uses: actions/checkout@v7
         with:
-          fetch-depth: 2
+          sparse-checkout: .github/scripts
 
-      - name: Import GPG public keys
+      # Todos los commits de la PR (o del push), verificados por GitHub. Antes se
+      # miraba HEAD, que en una PR es el merge que firma GitHub: un commit sin
+      # firmar en la rama pasaba (la PR #80 tiene uno), y sin el secreto de las
+      # claves salía en verde sin mirar nada (ver el script)
+      - name: Verify every commit is signed
         env:
-          GPG_KEYS: ${{ secrets.GPG_PUBLIC_KEYS }}
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
-          # Import GitHub's web-flow key (signs commits made via GitHub UI: merges, squash, rebase)
-          echo "🔑 Downloading GitHub web-flow GPG key..."
-          GPG_TMP=$(mktemp)
-          if ! curl -sSL --fail -o "$GPG_TMP" https://github.com/web-flow.gpg; then
-            echo "❌ Failed to download GitHub web-flow GPG key"
-            rm -f "$GPG_TMP"
-            exit 1
-          fi
-
-          if [ ! -s "$GPG_TMP" ]; then
-            echo "❌ Downloaded GPG key file is empty"
-            rm -f "$GPG_TMP"
-            exit 1
-          fi
-
-          echo "🔑 Importing GitHub web-flow GPG key..."
-          if ! gpg --import "$GPG_TMP"; then
-            echo "❌ Failed to import GitHub web-flow GPG key"
-            rm -f "$GPG_TMP"
-            exit 1
-          fi
-
-          rm -f "$GPG_TMP"
-          echo "✅ GitHub web-flow GPG key imported successfully"
-
-          # Import team GPG keys from repository secret
-          if [ -n "$GPG_KEYS" ]; then
-            echo "🔑 Importing team GPG keys..."
-            echo "$GPG_KEYS" | gpg --import
-          else
-            echo "⚠️ GPG_PUBLIC_KEYS secret not found. Only GitHub web-flow key imported."
-          fi
-
-      - name: Verify commit signature
-        run: |
-          COMMIT=$(git rev-parse HEAD)
-
-          # Soft-fail check: Skip if team keys are not configured yet
-          if [ -z "${{ secrets.GPG_PUBLIC_KEYS }}" ]; then
-             echo "⚠️ GPG_PUBLIC_KEYS secret not configured. Skipping verification."
-             exit 0
-          fi
-
-          if git verify-commit $COMMIT 2>&1 | grep -q "Good signature"; then
-            echo "✅ Commit $COMMIT signature verified"
-          else
-            echo "❌ Commit $COMMIT is NOT signed or signature is invalid"
-            exit 1
-          fi
+          case "$EVENT" in
+            pull_request) bash .github/scripts/verify-signed-commits.sh pr "$PR_NUMBER" ;;
+            push) bash .github/scripts/verify-signed-commits.sh range "$BEFORE" "$AFTER" ;;
+            schedule) echo "El escaneo semanal no trae commits nuevos: nada que verificar" ;;
+            # Un disparador nuevo (merge_group, workflow_dispatch...) no pasa sin mirar
+            *) echo "::error::Evento '$EVENT' sin verificación de firmas definida"; exit 2 ;;
+          esac
 
   dependency-audit:
     name: 🔒 npm audit
@@ -127,41 +96,19 @@ jobs:
       - name: Run npm audit
         id: audit
         run: |
-          echo "🔍 Running npm audit..."
-          npm audit --audit-level=moderate --json > audit-report.json || true
-
-          # Parse results
-          VULNERABILITIES=$(cat audit-report.json | jq '.metadata.vulnerabilities.total')
-          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical')
-          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high')
-          MODERATE=$(cat audit-report.json | jq '.metadata.vulnerabilities.moderate')
-
-          echo "📊 Vulnerability Summary:"
-          echo "  Critical: $CRITICAL"
-          echo "  High: $HIGH"
-          echo "  Moderate: $MODERATE"
-          echo "  Total: $VULNERABILITIES"
-
-          # Export to outputs
-          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
-          echo "total=$VULNERABILITIES" >> $GITHUB_OUTPUT
-
-          # Fail if critical or high vulnerabilities found
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "❌ Critical or High vulnerabilities found!"
-            npm audit --audit-level=high
-            exit 1
+          # npm audit sale con 1 si encuentra algo: decide la puerta, que también
+          # falla si el informe no trae el recuento (un registro caído no es un
+          # aprobado). Ver .github/scripts/npm-audit-gate.sh
+          npm audit --json > audit-report.json || true
+          set +e
+          bash .github/scripts/npm-audit-gate.sh audit-report.json
+          PUERTA=$?
+          set -e
+          if [ "$PUERTA" -ne 0 ]; then
+            # 1: altas o críticas · 2: no se pudo auditar (registro caído)
+            [ "$PUERTA" -eq 1 ] && { npm audit --audit-level=moderate || true; }  # el detalle
+            exit "$PUERTA"
           fi
-
-          # Warn if moderate vulnerabilities found
-          if [ "$MODERATE" -gt 0 ]; then
-            echo "⚠️ Moderate vulnerabilities found (allowed to pass)"
-            npm audit --audit-level=moderate || true
-          fi
-
-          echo "✅ No critical or high vulnerabilities found"
 
       - name: Upload audit report
         if: always()
@@ -535,9 +482,11 @@ jobs:
           # Get total bundle size
           TOTAL_SIZE=$(du -sb dist/assets/*.js 2>/dev/null | awk '{s+=$1} END {print s}')
 
+          # Sin JS que medir no hay nada que dar por bueno: la salida de Vite ha
+          # cambiado de sitio o el build no la ha escrito (antes salía en verde)
           if [ -z "$TOTAL_SIZE" ]; then
-            echo "⚠️ No JS bundles found"
-            exit 0
+            echo "::error::No JS bundles found in dist/assets: nothing was measured"
+            exit 1
           fi
 
           # Convert to KB

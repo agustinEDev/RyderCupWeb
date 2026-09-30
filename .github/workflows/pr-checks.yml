@@ -11,16 +11,9 @@ permissions:
   pull-requests: read
 
 jobs:
-  pr-size:
-    name: 📏 PR Size Check
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check PR size
-        run: |
-          echo "📊 PR Statistics (from GitHub API):"
-          echo "This job requires GitHub API access which is better done via GitHub Actions script"
-          echo "For now, this is a placeholder that can be enhanced with actual PR size checking"
-
+  # El «📏 PR Size Check» que había aquí era un echo que siempre pasaba y main lo
+  # exigía. Se quitó el 30 sep 2026: las PRs grandes a propósito (formateos,
+  # releases) son normales aquí, y un límite bloqueante solo estorbaría
   pr-conventional-commits:
     name: 📝 Conventional Commits Check
     runs-on: ubuntu-24.04
