@@ -67,14 +67,37 @@ export const scrubDeep = (value, visto = new WeakSet()) => {
 const scrubAll = (item) => scrubDeep(item);
 
 /**
+ * Copia tapada de un valor: el texto, tapado; los objetos simples y las listas,
+ * copiados; lo demas (una funcion, un nodo del DOM, un Error) tal cual, que
+ * Sentry lo reduce luego a su nombre. `structuredClone` no vale: lanza con una
+ * funcion o un nodo, y el objeto se quedaria sin tapar.
+ */
+const scrubbedCopy = (value, visto = new WeakSet()) => {
+  if (typeof value === 'string') return scrubUrl(value);
+  if (!value || typeof value !== 'object' || !isPlain(value)) return value;
+  if (visto.has(value)) return '[Circular]';
+  visto.add(value);
+  if (Array.isArray(value)) return value.map((item) => scrubbedCopy(item, visto));
+  const copia = {};
+  for (const key of Object.keys(value)) {
+    try {
+      copia[key] = scrubbedCopy(value[key], visto);
+    } catch {
+      // Un getter que lanza: esa clave no sale
+    }
+  }
+  return copia;
+};
+
+/**
  * Una miga de consola guarda en `data.arguments` los objetos que se pasaron a
- * `console.*`, sin copiar: se sustituyen por una copia con el texto tapado, y
- * los de la app no se tocan.
+ * `console.*`, sin copiar: se sustituyen por una copia tapada, y los de la app
+ * no se tocan. `console.log({ url })` con el token salia tal cual (CodeRabbit).
  */
 const scrubBreadcrumb = (breadcrumb) => {
   const argumentos = breadcrumb?.data?.arguments;
   if (Array.isArray(argumentos)) {
-    breadcrumb.data.arguments = argumentos.map((arg) => (typeof arg === 'string' ? scrubUrl(arg) : arg));
+    breadcrumb.data.arguments = argumentos.map((arg) => scrubbedCopy(arg));
   }
   return scrubDeep(breadcrumb);
 };

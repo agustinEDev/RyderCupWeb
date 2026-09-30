@@ -21,6 +21,7 @@ import { scrubDeep, sentryScrubbing } from './sentryScrubbing';
  *   D5  sdkProcessingMetadata (el estado del SDK)     | ni se entra
  *   D6  una cadena de objetos muy profunda            | no revienta la pila
  *   H8  miga de consola: sus argumentos               | se tapan en una copia; los de la app, intactos
+ *   H9  miga de consola: un objeto con el token       | copia tapada, el de la app intacto (CodeRabbit)
  *   H6  grabación de Replay: la foto del DOM           | ni se recorre
  *   H7  transacción: su URL y la de sus spans         | tapadas
  */
@@ -160,6 +161,18 @@ describe('sentryScrubbing', () => {
     expect(miga.data.arguments).not.toBe(argumentos);
     expect(argumentos[0]).toBe(`fallo en ${RESET}`);
     expect(deLaApp.url).toBe(RESET);
+  });
+
+  it('H9: un objeto pasado a la consola sale tapado sin tocar el de la app', () => {
+    const deLaApp = { url: RESET, lista: [GOOGLE] };
+    const miga = { category: 'console', data: { arguments: ['enlace', deLaApp] } };
+
+    sentryScrubbing.beforeBreadcrumb(miga);
+
+    sinToken(miga);
+    expect(miga.data.arguments[1]).not.toBe(deLaApp);
+    expect(deLaApp.url).toBe(RESET);
+    expect(deLaApp.lista[0]).toBe(GOOGLE);
   });
 
   it('H7: la transacción, con su URL y la de sus spans', () => {

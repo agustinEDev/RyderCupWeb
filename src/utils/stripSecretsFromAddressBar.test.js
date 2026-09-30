@@ -24,6 +24,9 @@ import {
  *   W1  Replay con la barra limpia                        | se carga ya
  *   W2  Replay con un secreto en la barra                 | espera a que la página lo quite
  *   W3  lat/lon en la barra                               | no son secretos de la barra: no espera
+ *   N1  una query que el navegador reescribiría (%20, ?flag) | no es un secreto: ni se toca ni espera
+ *   N2  un secreto junto a esa query                      | se quita solo el secreto
+ *   (CodeRabbit, #772: comparar la URL reconstruida daba secretos donde no los había)
  */
 const ir = (url, estado = null) => window.history.replaceState(estado, '', url);
 const barra = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -110,6 +113,25 @@ describe('stripSecretsFromAddressBar', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('N1: una query sin secretos que se escribe de otra forma no es un secreto', () => {
+    ir('/buscar?q=a%20b&flag&x=1&');
+    const espia = vi.spyOn(window.history, 'replaceState');
+    const cargar = vi.fn();
+    whenAddressBarIsClean(cargar);
+    stripSecretsFromAddressBar();
+    expect(cargar).toHaveBeenCalledTimes(1);
+    expect(espia).not.toHaveBeenCalled();
+    expect(barra()).toBe('/buscar?q=a%20b&flag&x=1&');
+  });
+
+  it('N2: con un secreto, se quita el secreto y queda lo demás', () => {
+    ir('/verify-email?q=a%20b&token=abc123&lang=es');
+    stripSecretsFromAddressBar();
+    expect(barra()).not.toContain('abc123');
+    expect(new URLSearchParams(window.location.search).get('q')).toBe('a b');
+    expect(new URLSearchParams(window.location.search).get('lang')).toBe('es');
   });
 
   it('W3: lat/lon no hacen esperar a Replay', () => {

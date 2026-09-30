@@ -31,24 +31,32 @@ const WAIT_INTERVAL_MS = 250;
 const cleanAddressBar = () => {
   const { pathname, search, hash } = window.location;
 
+  // Solo cambia si se quita un secreto: comparar la URL reconstruida con la
+  // original no vale, porque URLSearchParams reescribe la query (`%20` -> `+`,
+  // `?flag` -> `flag=`) y daba secretos donde no los habia (CodeRabbit, #772)
   const params = new URLSearchParams(search);
   const quitados = {};
+  let quitaQuery = false;
   for (const param of ADDRESS_BAR_PARAMS) {
-    if (params.has(param)) quitados[param] = params.get(param);
+    if (!params.has(param)) continue;
+    quitados[param] = params.get(param);
     params.delete(param);
+    quitaQuery = true;
   }
-  const query = params.toString();
+  const restante = params.toString();
+  const query = quitaQuery ? (restante ? `?${restante}` : '') : search;
 
   let ruta = pathname;
+  let quitaRuta = false;
   const prefijo = SENSITIVE_PATH_PREFIXES.find((p) => pathname.startsWith(p));
-  if (prefijo) {
-    const [enLaRuta] = pathname.slice(prefijo.length).split('/');
-    if (enLaRuta) quitados.token = decodeURIComponent(enLaRuta);
+  const [enLaRuta] = prefijo ? pathname.slice(prefijo.length).split('/') : [];
+  if (enLaRuta) {
+    quitados.token = decodeURIComponent(enLaRuta);
     ruta = prefijo.replace(/\/$/, '');
+    quitaRuta = true;
   }
 
-  const limpia = `${ruta}${query ? `?${query}` : ''}${hash}`;
-  return { limpia, cambia: limpia !== `${pathname}${search}${hash}`, quitados };
+  return { limpia: `${ruta}${query}${hash}`, cambia: quitaQuery || quitaRuta, quitados };
 };
 
 export const addressBarHasSecrets = () => cleanAddressBar().cambia;
