@@ -447,7 +447,7 @@ jobs:
           - build: ci
             nombre: 🏗️ Build
           - build: render
-            nombre: 🏗️ Build like Render
+            nombre: 🚀 Deploy like Render
     runs-on: ubuntu-24.04
     # Columna 2 del gráfico: espera a la de análisis estático y seguridad (30 sep
     # 2026). Si algo de la columna 1 FALLA, esta se salta: todo lo de la columna 1
@@ -461,7 +461,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # ===== Entrada «Build like Render» de la matriz =====
+      # ===== Entrada «Deploy like Render» de la matriz =====
       # En su propia máquina: Render usa el npm que trae su Node, y en la otra
       # entrada se sube a la 11.17.
       # Render no usa el entorno de arriba: el Node de .nvmrc con su npm de serie,
@@ -809,7 +809,7 @@ jobs:
             [ "${{ needs.type-check.result }}" != "success" ] && [ "${{ needs.type-check.result }}" != "skipped" ] && echo "- 📝 Type Check" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.owasp-semgrep.result }}" != "success" ] && echo "- 🛡️ OWASP Top 10 (Semgrep)" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.architecture.result }}" != "success" ] && echo "- 🏛️ Architecture Contracts" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build or Build like Render (see which in the checks)" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build or 🚀 Deploy like Render (see which in the checks)" >> $GITHUB_STEP_SUMMARY
 
             exit 1
           fi
