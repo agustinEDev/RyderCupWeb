@@ -100,7 +100,8 @@ const ResetPassword = () => {
           setTokenMessage(result.message);
         } else {
           setTokenState('invalid');
-          setTokenMessage(result.message);
+          // Texto propio y traducido: el del backend viene siempre en español
+          setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         }
       } catch (error) {
         console.error('Token validation error:', error);

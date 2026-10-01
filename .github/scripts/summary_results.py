@@ -44,6 +44,13 @@ def _entero(valor: str | None) -> int | None:
     return int(valor) if valor and valor.strip().isdigit() else None
 
 
+def _json_texto(texto: str | None):
+    try:
+        return json.loads(texto or "null")
+    except ValueError:
+        return None
+
+
 def _plural(n: int, singular: str, plural: str | None = None) -> str:
     return f"{n} {singular if n == 1 else (plural or singular + 's')}"
 
@@ -100,27 +107,18 @@ def secrets(p: dict) -> str:
 
 
 def licenses(p: dict) -> str:
+    """Lo que escribe license_gate.py: checked=N y rejected=«paquete (licencia), ...»."""
     if aviso := _no_corrio(p):
         return aviso
-    informe = _json(p.get("report"))
-    prohibida = p.get("forbidden") or ""
-    if not isinstance(informe, dict):
-        return f"license-checker produced no report — {VER_LOG}."
-    licencias = set()
-    culpables = []
-    for paquete, datos in informe.items():
-        valor = datos.get("licenses", "") if isinstance(datos, dict) else ""
-        nombres = valor if isinstance(valor, list) else [valor]
-        licencias.update(str(n) for n in nombres)
-        if prohibida and any(prohibida in str(n) for n in nombres):
-            culpables.append(paquete)
-    revisados = f"{_plural(len(informe), 'package')} checked ({len(licencias)} distinct licences)"
-    if prohibida:
-        quienes = ", ".join(culpables[:5]) + (" and more" if len(culpables) > 5 else "")
-        return f"Forbidden licence {prohibida} found in {quienes or 'a package'}. {revisados}."
-    if p.get("outcome") == "failure":
-        return f"{revisados}, but the check did not finish — {VER_LOG}."
-    return f"{revisados}: none is GPL-3.0, AGPL-3.0 or LGPL-3.0."
+    revisados = _entero(p.get("checked"))
+    if revisados is None:
+        return f"The licence check did not finish — {VER_LOG}."
+    fuera = [f for f in re.split(r"(?<=\)), ", p.get("rejected") or "") if f]
+    if not fuera:
+        return f"{_plural(revisados, 'package')} checked: all under a licence in the allow-list."
+    quienes = ", ".join(fuera[:5]) + (f" and {len(fuera) - 5} more" if len(fuera) > 5 else "")
+    return (f"{_plural(len(fuera), 'package')} outside the allow-list: {quienes}. "
+            f"{_plural(revisados, 'package')} checked.")
 
 
 def dependency_review(p: dict) -> str:
@@ -131,13 +129,30 @@ def dependency_review(p: dict) -> str:
         vulnerables = json.loads(p.get("vulnerable") or "null")
     except ValueError:
         cambios = vulnerables = None
+    # invalid-license-changes es un objeto {forbidden, unresolved, unlicensed}
+    licencias = _json_texto(p.get("licenses"))
+    if isinstance(licencias, dict):
+        # La acción solo falla con forbidden y unresolved (SPDX inválido);
+        # unlicensed (NOASSERTION) solo lo informa
+        def _cuantas(clave: str) -> int:
+            valor = licencias.get(clave)
+            return len(valor) if isinstance(valor, list) else 0
+        fuera = _cuantas("forbidden") + _cuantas("unresolved")
+        de_licencia = f"{fuera} with a licence outside the allow-list"
+        if sin := _cuantas("unlicensed"):
+            de_licencia += f" ({sin} with no licence reported, which does not fail)"
+    else:
+        de_licencia = "licences: not reported"
     if isinstance(cambios, list) and isinstance(vulnerables, list):
         avisos = sum(len(c.get("vulnerabilities") or []) for c in vulnerables if isinstance(c, dict))
         return (f"{_plural(len(cambios), 'dependency change')} in this PR; "
-                f"{len(vulnerables)} with a known vulnerability ({_plural(avisos, 'advisory', 'advisories')}).")
+                f"{len(vulnerables)} with a known vulnerability ({_plural(avisos, 'advisory', 'advisories')}); "
+                f"{de_licencia}.")
     if p.get("outcome") == "success":
-        return "No added or updated dependency has a known vulnerability of moderate severity or worse."
-    return f"A dependency with a known vulnerability is being added, or the review errored — {VER_LOG}."
+        return ("No added or updated dependency has a known vulnerability of moderate severity or worse, "
+                "or a licence outside the allow-list.")
+    return (f"A dependency with a known vulnerability or a licence outside the allow-list is being added, "
+            f"or the review errored — {VER_LOG}.")
 
 
 def outdated(p: dict) -> str:

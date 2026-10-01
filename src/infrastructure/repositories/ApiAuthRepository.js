@@ -99,15 +99,16 @@ class ApiAuthRepository extends IAuthRepository {
    * Validate password reset token
    * @override
    * @param {string} token - Reset token from email
-   * @returns {Promise<{valid: boolean, message: string}>} Token validation result
-   * @throws {Error} If token is invalid or expired (400 Bad Request)
+   * @returns {Promise<{valid: boolean, message: string}>} Token validation result.
+   *   An invalid or expired token is a 200 with valid:false, not an error (FE #775)
+   * @throws {Error} On network or HTTP errors (e.g. 429 from the rate limit)
    */
   async validateResetToken(token) {
     const data = await apiRequest(`/api/v1/auth/validate-reset-token/${token}`, {
       method: 'GET',
     });
 
-    // If request succeeds (200 OK), token is valid
+    // 200 always: `valid` says whether the token is usable
     return {
       valid: data.valid,
       message: data.message,
