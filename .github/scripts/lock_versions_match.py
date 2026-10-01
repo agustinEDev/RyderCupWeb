@@ -8,9 +8,12 @@ rojo siempre; lo que importa es si algún paquete acaba en otra versión.
 
 Uso: python lock_versions_match.py <lock del repo> <lock tras npm install>
 Salidas: 0 mismas versiones · 1 alguna distinta (la dice) · 2 no se pudo leer
+Para la tarjeta del resumen escribe en $GITHUB_OUTPUT, si existe,
+lock_packages=N (los paquetes comparados) y lock_differences=N.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -33,6 +36,18 @@ def diferencias(antes: dict, despues: dict) -> list[str]:
     return cambios
 
 
+def _para_la_tarjeta(**valores: int) -> None:
+    """Los recuentos para la tarjeta; si no se pueden escribir, no cambia nada."""
+    destino = os.environ.get("GITHUB_OUTPUT")
+    if not destino:
+        return
+    try:
+        with open(destino, "a", encoding="utf-8") as fichero:
+            fichero.writelines(f"{clave}={valor}\n" for clave, valor in valores.items())
+    except OSError:
+        pass
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print("Uso: lock_versions_match.py <lock del repo> <lock tras npm install>")
@@ -46,6 +61,7 @@ def main(argv: list[str]) -> int:
         print("::error::El lockfile del repo no tiene paquetes: no hay nada que comparar")
         return 2
     cambios = diferencias(antes, despues)
+    _para_la_tarjeta(lock_packages=len(versiones(antes)), lock_differences=len(cambios))
     for cambio in cambios[:50]:
         print(f"::error::npm install (el de Render) instala otra versión: {cambio}")
     if cambios:

@@ -39,6 +39,7 @@ jobs:
       # firmar en la rama pasaba (la PR #80 tiene uno), y sin el secreto de las
       # claves salía en verde sin mirar nada (ver el script)
       - name: Verify every commit is signed
+        id: firmas
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
@@ -53,6 +54,28 @@ jobs:
             # Un disparador nuevo (merge_group, workflow_dispatch...) no pasa sin mirar
             *) echo "::error::Evento '$EVENT' sin verificación de firmas definida"; exit 2 ;;
           esac
+
+      # Al final de cada job, su tarjeta en el resumen de la ejecución: qué
+      # comprueba y qué ha salido, con los números de la propia herramienta
+      # (.github/scripts/summary_results.py los lee; summary_card.py la escribe)
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.firmas.outcome }}
+          EVENT: ${{ github.event_name }}
+          VERIFIED: ${{ steps.firmas.outputs.verified }}
+          UNSIGNED: ${{ steps.firmas.outputs.unsigned }}
+          TOTAL: ${{ steps.firmas.outputs.total }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py commits outcome="$OUTCOME" event="$EVENT" \
+            verified="$VERIFIED" unsigned="$UNSIGNED" total="$TOTAL")
+          python3 .github/scripts/summary_card.py \
+            --title "🔏 Signed commits" \
+            --what "Every commit of the PR (or push) must carry a signature that GitHub has verified, so nobody can push code under someone else's name." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Sign the commits with 'git commit -S' (or rebase with --exec 'git commit --amend --no-edit -S') and push again."
 
   dependency-audit:
     name: 🔒 npm audit
@@ -118,6 +141,25 @@ jobs:
           path: audit-report.json
           retention-days: 30
 
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.audit.outcome }}
+          CRITICAL: ${{ steps.audit.outputs.critical }}
+          HIGH: ${{ steps.audit.outputs.high }}
+          MODERATE: ${{ steps.audit.outputs.moderate }}
+          TOTAL: ${{ steps.audit.outputs.total }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py audit outcome="$OUTCOME" \
+            critical="$CRITICAL" high="$HIGH" moderate="$MODERATE" total="$TOTAL")
+          python3 .github/scripts/summary_card.py \
+            --title "🔒 npm audit" \
+            --what "Checks every installed npm package against the known-vulnerability database, after confirming npm ci left package-lock.json untouched. Critical and high block; moderate only warns." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Run 'npm audit' locally, then 'npm audit fix' or add an override in package.json. If the lockfile changed, run 'npm install' and commit it."
+
   secret-scanning:
     name: 🔐 Secret Scanning
     runs-on: ubuntu-24.04
@@ -129,10 +171,28 @@ jobs:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
+        id: trufflehog
         uses: trufflesecurity/trufflehog@v3.97.9
         with:
           path: ./
           extra_args: --debug --only-verified
+
+      # La acción no deja su salida a los pasos siguientes: la tarjeta dice el
+      # resultado y qué se ha escaneado, y el recuento queda en el log
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.trufflehog.outcome }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py secrets outcome="$OUTCOME" event="$EVENT")
+          python3 .github/scripts/summary_card.py \
+            --title "🔐 Secret Scanning" \
+            --what "TruffleHog looks for credentials (API keys, tokens, passwords) in the new commits and only reports the ones it can verify are live, so a leaked secret is caught before it reaches main." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Revoke the secret at its provider first (it is already in git history), then remove it from the code and load it from the environment."
 
   license-check:
     name: 📜 License Compliance
@@ -159,6 +219,7 @@ jobs:
         run: npm ci
 
       - name: Check licenses
+        id: licenses
         run: |
           echo "📜 Checking dependency licenses..."
           npx license-checker --json --out licenses.json
@@ -168,6 +229,7 @@ jobs:
 
           for license in $FORBIDDEN_LICENSES; do
             if npx license-checker --summary | grep -q "$license"; then
+              echo "forbidden=$license" >> "$GITHUB_OUTPUT"  # para la tarjeta
               echo "❌ Forbidden license found: $license"
               npx license-checker --summary
               exit 1
@@ -185,6 +247,22 @@ jobs:
           path: licenses.json
           retention-days: 30
 
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.licenses.outcome }}
+          FORBIDDEN: ${{ steps.licenses.outputs.forbidden }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py licenses outcome="$OUTCOME" \
+            report=licenses.json forbidden="$FORBIDDEN")
+          python3 .github/scripts/summary_card.py \
+            --title "📜 License Compliance" \
+            --what "Reads the licence of every installed npm package and fails on GPL-3.0, AGPL-3.0 or LGPL-3.0, whose copyleft terms the project cannot accept." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Replace the package with one under a permissive licence (MIT, Apache-2.0, BSD, ISC); the full list is in the license-report artifact."
+
   # Sustituye a Snyk (cuota agotada desde hace meses): bloquea la PR que AÑADE
   # o sube una dependencia con una vulnerabilidad conocida de gravedad moderada
   # o más. Lo que ya está en develop lo vigilan las alertas de Dependabot y npm audit.
@@ -198,10 +276,30 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Review dependency changes
+        id: review
         uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: moderate
           comment-summary-in-pr: never
+
+      # En un push el job entero se salta y no hay tarjeta: el índice del
+      # Pipeline Summary lo marca como saltado
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.review.outcome }}
+          CHANGES: ${{ steps.review.outputs.dependency-changes }}
+          VULNERABLE: ${{ steps.review.outputs.vulnerable-changes }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py dependency-review outcome="$OUTCOME" \
+            changes="$CHANGES" vulnerable="$VULNERABLE")
+          python3 .github/scripts/summary_card.py \
+            --title "🔎 Dependency Review" \
+            --what "On pull requests only: compares the dependencies before and after the PR and fails if it adds or upgrades to a version with a known vulnerability of moderate severity or worse." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Pick a patched version of the dependency (the action's own summary above lists the advisory), or drop the change."
 
   outdated-dependencies:
     name: 📦 Outdated deps
@@ -254,6 +352,20 @@ jobs:
           path: outdated.json
           retention-days: 30
 
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.outdated.outcome }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py outdated outcome="$OUTCOME" report=outdated.json)
+          python3 .github/scripts/summary_card.py \
+            --title "📦 Outdated deps" \
+            --what "Lists the npm packages that have a newer release than the installed one. Informational only: it keeps upgrades visible but never blocks." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Only fails if npm itself breaks (install or a malformed report); see the step log."
+
   # OWASP Top 10 con Semgrep (p/owasp-top-ten, p/react, p/javascript): eval con
   # datos externos, redirecciones abiertas, dangerouslySetInnerHTML... Bloquea con
   # cualquier aviso (el 28 sep 2026 el código estaba limpio) y sube el SARIF a la
@@ -280,12 +392,15 @@ jobs:
         run: pip install "semgrep==${SEMGREP_VERSION}"
 
       - name: Scan (OWASP Top 10, React, JavaScript)
+        id: semgrep
         run: |
+          # pipefail: sin él, el `| tee` daría el código de tee y no el de Semgrep
+          set -o pipefail
           semgrep scan \
             --config p/owasp-top-ten --config p/react --config p/javascript \
             --metrics off --error \
             --sarif-output=semgrep.sarif \
-            src
+            src 2>&1 | tee "$RUNNER_TEMP/semgrep.log"
 
       - name: Upload results to the Security tab
         if: always() && hashFiles('semgrep.sarif') != ''
@@ -293,6 +408,21 @@ jobs:
         with:
           sarif_file: semgrep.sarif
           category: semgrep
+
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.semgrep.outcome }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py semgrep outcome="$OUTCOME" \
+            log="$RUNNER_TEMP/semgrep.log" sarif=semgrep.sarif)
+          python3 .github/scripts/summary_card.py \
+            --title "🛡️ OWASP (Semgrep)" \
+            --what "Static analysis of src with Semgrep's OWASP Top 10, React and JavaScript rules (XSS through dangerouslySetInnerHTML, eval of external data, open redirects...). Any finding blocks." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Fix the code the finding points to (the Security tab has the rule and the line). For a confirmed false positive, add a 'nosemgrep: <rule-id>' comment explaining why."
 
   # ========================================
   # PHASE 2: CODE QUALITY & TESTING
@@ -323,7 +453,37 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
-        run: npm run lint
+        id: eslint
+        run: |
+          # Una sola pasada: el informe JSON para la tarjeta y, a partir de él, el
+          # de siempre (stylish) en el log. El código de salida es el de ESLint
+          set +e
+          npm run lint -- --format json --output-file "$RUNNER_TEMP/eslint.json"
+          ESTADO=$?
+          set -e
+          node -e '
+            const { ESLint } = require("eslint");
+            (async () => {
+              const informe = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+              const salida = await (await new ESLint().loadFormatter("stylish")).format(informe);
+              if (salida) console.log(salida);
+            })().catch(() => {});
+          ' "$RUNNER_TEMP/eslint.json" || true
+          exit "$ESTADO"
+
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.eslint.outcome }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py lint outcome="$OUTCOME" report="$RUNNER_TEMP/eslint.json")
+          python3 .github/scripts/summary_card.py \
+            --title "🔍 Lint" \
+            --what "ESLint over the whole repo (React hooks rules, unused code, undefined globals...). Zero warnings allowed (--max-warnings 0), so it also keeps the code consistent." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Run 'npm run lint' locally; many problems are fixed with 'npx eslint . --fix'."
 
   test:
     name: 🧪 Tests + coverage
@@ -359,7 +519,11 @@ jobs:
       - name: Run tests with coverage
         # Falla si falla un test o si la cobertura baja de los umbrales, que viven en
         # vite.config.js (coverage.thresholds) y los aplica Vitest (FE #553).
-        run: npm test -- --run --coverage
+        id: vitest
+        run: |
+          # pipefail: sin él, el `| tee` daría el código de tee y no el de Vitest
+          set -o pipefail
+          npm test -- --run --coverage 2>&1 | tee "$RUNNER_TEMP/vitest.log"
 
       - name: Upload coverage to artifacts
         if: always()
@@ -368,6 +532,22 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 30
+
+      # Los umbrales los lee de vite.config.js, que es donde viven
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.vitest.outcome }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py tests outcome="$OUTCOME" \
+            log="$RUNNER_TEMP/vitest.log" coverage=coverage/coverage-summary.json config=vite.config.js)
+          python3 .github/scripts/summary_card.py \
+            --title "🧪 Tests + coverage" \
+            --what "Runs the whole Vitest suite with coverage over every file in src. Fails if a test fails, if there is an unhandled error, or if any of the four coverage figures drops below its threshold in vite.config.js." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Run 'npm test -- --run --coverage' locally. For coverage, add tests for the new code; the coverage-report artifact has the per-file HTML report."
 
   type-check:
     name: 📝 Type Check
@@ -404,7 +584,27 @@ jobs:
 
       - name: Run type check
         if: steps.check-ts.outputs.has_typescript == 'true'
-        run: npx tsc --noEmit
+        id: tsc
+        run: |
+          # pipefail: sin él, el `| tee` daría el código de tee y no el de tsc
+          set -o pipefail
+          npx tsc --noEmit 2>&1 | tee "$RUNNER_TEMP/tsc.log"
+
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.tsc.outcome }}
+          HAS_TS: ${{ steps.check-ts.outputs.has_typescript }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py typecheck outcome="$OUTCOME" \
+            has_ts="$HAS_TS" log="$RUNNER_TEMP/tsc.log")
+          python3 .github/scripts/summary_card.py \
+            --title "📝 Type Check" \
+            --what "Runs the TypeScript compiler without emitting (tsc --noEmit) over the project's .ts files, so a type error never reaches the build." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Run 'npx tsc --noEmit' locally and fix the reported types."
 
   # Contratos de arquitectura (dependency-cruiser, .dependency-cruiser.cjs): dominio
   # puro, casos de uso que solo dependen del dominio, infraestructura que no sube de
@@ -431,7 +631,26 @@ jobs:
         run: npm ci
 
       - name: Check architecture contracts
-        run: npm run lint:architecture
+        id: depcruise
+        run: |
+          # pipefail: sin él, el `| tee` daría el código de tee y no el de depcruise
+          set -o pipefail
+          npm run lint:architecture 2>&1 | tee "$RUNNER_TEMP/depcruise.log"
+
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.depcruise.outcome }}
+        run: |
+          RESULT=$(python3 .github/scripts/summary_results.py architecture outcome="$OUTCOME" \
+            log="$RUNNER_TEMP/depcruise.log")
+          python3 .github/scripts/summary_card.py \
+            --title "🏛️ Architecture" \
+            --what "dependency-cruiser checks the Clean Architecture contracts in .dependency-cruiser.cjs: a pure domain, use cases that only depend on the domain, infrastructure that never imports upwards, UI wired through src/composition, and no circular imports." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Move the import so it respects the layer (usually: depend on a domain interface and wire the implementation in src/composition). 'npm run lint:architecture' reproduces it."
 
   # ========================================
   # PHASE 3: BUILD
@@ -481,6 +700,7 @@ jobs:
 
       - name: Build like Render
         if: matrix.build == 'render'
+        id: render
         env:
           # Los nombres que tiene el Static Site en Render; valores de prueba
           VITE_API_BASE_URL: https://api.rydercupfriends.com
@@ -501,6 +721,7 @@ jobs:
           VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: '1.0'
         run: |
           echo "Node $(node --version) · npm $(npm --version)"
+          { echo "node=$(node --version)"; echo "npm=$(npm --version)"; } >> "$GITHUB_OUTPUT"  # para la tarjeta
           cp package-lock.json "$RUNNER_TEMP/lock-del-repo.json"
           rm -rf node_modules dist
           npm install
@@ -512,6 +733,7 @@ jobs:
 
       - name: Serve the Render build like a static site
         if: matrix.build == 'render'
+        id: smoke
         run: python3 .github/scripts/smoke_static_site.py dist "$(node -p "require('./package.json').version")"
 
       # ===== Entrada «Build» de la matriz: el del CI (presupuesto y artefacto) =====
@@ -536,6 +758,7 @@ jobs:
 
       - name: Build application
         if: matrix.build == 'ci'
+        id: vite
         run: npm run build
         env:
           NODE_ENV: production
@@ -600,6 +823,7 @@ jobs:
           # trimming it is still tracked separately.
           MAX_BUNDLE_SIZE_KB=2200
           WARNING_THRESHOLD_KB=2100
+          { echo "budget_kb=$MAX_BUNDLE_SIZE_KB"; echo "warning_kb=$WARNING_THRESHOLD_KB"; } >> "$GITHUB_OUTPUT"
 
           # List all bundles with sizes
           echo ""
@@ -623,6 +847,7 @@ jobs:
           fi
       - name: Check build output
         if: matrix.build == 'ci'
+        id: dist
         run: |
           if [ ! -d "dist" ]; then
             echo "❌ Build failed: dist directory not found"
@@ -639,6 +864,52 @@ jobs:
           path: dist/
           retention-days: 7
 
+      # Una tarjeta por entrada de la matriz, con su nombre
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          ENTRY: ${{ matrix.build }}
+          TITLE: ${{ matrix.nombre }}
+          # Entrada «Build»
+          VITE_OUTCOME: ${{ steps.vite.outcome }}
+          SIZE_KB: ${{ steps.bundle.outputs.size_kb }}
+          BUDGET_KB: ${{ steps.bundle.outputs.budget_kb }}
+          WARNING_KB: ${{ steps.bundle.outputs.warning_kb }}
+          DIST_OUTCOME: ${{ steps.dist.outcome }}
+          # Entrada «Deploy like Render»
+          RENDER_OUTCOME: ${{ steps.render.outcome }}
+          NODE_VERSION: ${{ steps.render.outputs.node }}
+          NPM_VERSION: ${{ steps.render.outputs.npm }}
+          LOCK_PACKAGES: ${{ steps.render.outputs.lock_packages }}
+          LOCK_DIFFERENCES: ${{ steps.render.outputs.lock_differences }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          SMOKE_RESOURCES: ${{ steps.smoke.outputs.smoke_resources }}
+          SMOKE_INTEGRITY: ${{ steps.smoke.outputs.smoke_integrity }}
+          SMOKE_CHUNKS: ${{ steps.smoke.outputs.smoke_chunks }}
+          SMOKE_FAILURES: ${{ steps.smoke.outputs.smoke_failures }}
+          SMOKE_VERSION: ${{ steps.smoke.outputs.smoke_version }}
+        run: |
+          if [ "$ENTRY" = render ]; then
+            RESULT=$(python3 .github/scripts/summary_results.py build-render build_outcome="$RENDER_OUTCOME" \
+              node="$NODE_VERSION" npm="$NPM_VERSION" \
+              lock_packages="$LOCK_PACKAGES" lock_differences="$LOCK_DIFFERENCES" \
+              smoke_outcome="$SMOKE_OUTCOME" smoke_resources="$SMOKE_RESOURCES" \
+              smoke_integrity="$SMOKE_INTEGRITY" smoke_chunks="$SMOKE_CHUNKS" \
+              smoke_failures="$SMOKE_FAILURES" smoke_version="$SMOKE_VERSION")
+            WHAT="Repeats Render's build on a clean machine: the Node from .nvmrc with its bundled npm, 'npm install' and 'npm run build' with Render's variable names. Then checks that npm installed the lockfile's exact versions and serves dist/ as a static site to prove the app loads."
+            IF_FAILS="Render would ship a broken site or a different build from the one tested. A version difference: update package-lock.json with that npm. A smoke failure: a missing chunk, an integrity hash or version.json in dist/."
+          else
+            RESULT=$(python3 .github/scripts/summary_results.py build-ci build_outcome="$VITE_OUTCOME" \
+              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" output_outcome="$DIST_OUTCOME")
+            WHAT="Builds the production bundle with Vite and checks the total size of dist/assets/*.js against the budget in this workflow. The build is kept as the build-output artifact."
+            IF_FAILS="If the build broke, run 'npm run build' locally. If the budget was exceeded, trim the code or raise MAX_BUNDLE_SIZE_KB with its reason, as the history in ci-cd.yml does."
+          fi
+          python3 .github/scripts/summary_card.py \
+            --title "$TITLE" --what "$WHAT" \
+            --status "$STATUS" --result "$RESULT" --if-fails "$IF_FAILS"
+
   # ========================================
   # PHASE 4: PIPELINE SUMMARY
   # ========================================
@@ -647,173 +918,84 @@ jobs:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    needs: [dependency-audit, secret-scanning, license-check, dependency-review, owasp-semgrep, outdated-dependencies, lint, test, type-check, architecture, build]
+    # commit-verification solo pinta su fila: no entra en la decisión de abajo
+    needs: [commit-verification, dependency-audit, secret-scanning, license-check, dependency-review, owasp-semgrep, outdated-dependencies, lint, test, type-check, architecture, build]
     if: always()
     steps:
+      # El índice: el veredicto y una fila por job. El detalle de cada uno está
+      # en su tarjeta (el paso «Summary card» al final de cada job)
       - name: Generate Pipeline Summary
+        env:
+          COMMITS: ${{ needs.commit-verification.result }}
+          AUDIT: ${{ needs.dependency-audit.result }}
+          SECRETS: ${{ needs.secret-scanning.result }}
+          LICENSES: ${{ needs.license-check.result }}
+          REVIEW: ${{ needs.dependency-review.result }}
+          OUTDATED: ${{ needs.outdated-dependencies.result }}
+          SEMGREP: ${{ needs.owasp-semgrep.result }}
+          LINT: ${{ needs.lint.result }}
+          TYPES: ${{ needs.type-check.result }}
+          ARCHITECTURE: ${{ needs.architecture.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
         run: |
-          echo "# 🏆 CI/CD & Security Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** \`${{ github.workflow }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          # Falla con los mismos ocho de siempre, y solo con success pasan (un
+          # skipped tampoco). Los otros no lo tumban aquí, pero si fallan, tests y
+          # build se saltan, y eso sí. Entre comillas: uno vacío no se pierde
+          FALLA=0
+          for r in "$AUDIT" "$SECRETS" "$LICENSES" "$LINT" "$TEST" "$SEMGREP" "$ARCHITECTURE" "$BUILD"; do
+            [ "$r" = success ] || FALLA=1
+          done
 
-          # Security Phase
-          echo "## 🔒 Phase 1: Security Checks" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          estado() {
+            case "$1" in
+              success) echo "✅ Passed" ;;
+              failure) echo "❌ Failed" ;;
+              cancelled) echo "⏹️ Cancelled" ;;
+              skipped) echo "⏭️ Skipped" ;;
+              *) echo "❔ ${1:-Unknown}" ;;
+            esac
+          }
 
-          # Dependency Audit
-          MODERATE_COUNT="${{ needs.dependency-audit.outputs.moderate }}"
-          TOTAL_COUNT="${{ needs.dependency-audit.outputs.total }}"
-          MODERATE_COUNT="${MODERATE_COUNT:-0}"
-          TOTAL_COUNT="${TOTAL_COUNT:-0}"
-          if [ "${{ needs.dependency-audit.result }}" == "success" ]; then
-            if [ "$MODERATE_COUNT" -gt 0 ]; then
-              echo "| 🔒 Dependency Audit | ⚠️ Passed | $MODERATE_COUNT moderate vulnerabilities ($TOTAL_COUNT total) |" >> $GITHUB_STEP_SUMMARY
+          FILAS=(
+            "$COMMITS|🔏 Signed commits|Every commit is signed and verified by GitHub"
+            "$AUDIT|🔒 npm audit|No critical or high vulnerability in the installed packages"
+            "$SECRETS|🔐 Secret Scanning|TruffleHog finds no live credential in the new commits"
+            "$LICENSES|📜 License Compliance|No GPL-3.0, AGPL-3.0 or LGPL-3.0 dependency"
+            "$REVIEW|🔎 Dependency Review|The PR adds no dependency with a known vulnerability (PRs only)"
+            "$OUTDATED|📦 Outdated deps|Lists packages with newer releases (informational)"
+            "$SEMGREP|🛡️ OWASP (Semgrep)|OWASP Top 10, React and JavaScript rules over src"
+            "$LINT|🔍 Lint|ESLint with zero warnings allowed"
+            "$TYPES|📝 Type Check|tsc --noEmit over the TypeScript files"
+            "$ARCHITECTURE|🏛️ Architecture|Layer contracts and no circular imports (dependency-cruiser)"
+            "$TEST|🧪 Tests + coverage|Vitest suite and the four coverage thresholds"
+            "$BUILD|🏗️ Build · 🚀 Deploy like Render|Production build within budget, and Render's own build served as a static site"
+          )
+
+          NO_PASAN=0
+          for fila in "${FILAS[@]}"; do
+            case "${fila%%|*}" in failure|cancelled) NO_PASAN=$((NO_PASAN + 1)) ;; esac
+          done
+
+          {
+            if [ "$FALLA" -eq 0 ]; then
+              echo "## ✅ Pipeline passed"
+            elif [ "$NO_PASAN" -eq 1 ]; then
+              echo "## ❌ Pipeline failed — 1 check did not pass"
+            elif [ "$NO_PASAN" -gt 1 ]; then
+              echo "## ❌ Pipeline failed — $NO_PASAN checks did not pass"
             else
-              echo "| 🔒 Dependency Audit | ✅ Passed | No critical/high vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+              echo "## ❌ Pipeline failed — required checks did not run"
             fi
-          else
-            echo "| 🔒 Dependency Audit | ❌ Failed | Critical/high vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
-          fi
+            echo ""
+            echo "| Check | What it does | Status |"
+            echo "|-------|--------------|--------|"
+            for fila in "${FILAS[@]}"; do
+              IFS='|' read -r resultado nombre que <<< "$fila"
+              echo "| $nombre | $que | $(estado "$resultado") |"
+            done
+            echo ""
+            echo "Details for each check are in its card."
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          # Secret Scanning
-          if [ "${{ needs.secret-scanning.result }}" == "success" ]; then
-            echo "| 🔐 Secret Scanning | ✅ Passed | No secrets detected |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🔐 Secret Scanning | ❌ Failed | Secrets found in code |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # License Check
-          if [ "${{ needs.license-check.result }}" == "success" ]; then
-            echo "| 📜 License Compliance | ✅ Passed | All licenses compliant |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 📜 License Compliance | ❌ Failed | Forbidden licenses detected |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Dependency Review (solo corre en PRs)
-          if [ "${{ needs.dependency-review.result }}" == "success" ]; then
-            echo "| 🔎 Dependency Review | ✅ Passed | No vulnerable dependency added |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.dependency-review.result }}" == "skipped" ]; then
-            echo "| 🔎 Dependency Review | ⏭️ Skipped | Only runs on pull requests |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🔎 Dependency Review | ❌ Failed | A vulnerable dependency is being added |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # OWASP Top 10 (Semgrep)
-          if [ "${{ needs.owasp-semgrep.result }}" == "success" ]; then
-            echo "| 🛡️ OWASP Top 10 (Semgrep) | ✅ Passed | No findings (owasp-top-ten, react, javascript) |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🛡️ OWASP Top 10 (Semgrep) | ❌ Failed | See the Security tab |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Outdated Dependencies
-          if [ "${{ needs.outdated-dependencies.result }}" == "success" ]; then
-            echo "| 📦 Outdated Deps | ℹ️ Info | Check artifacts for details |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Quality Phase
-          echo "## 🎯 Phase 2: Code Quality & Testing" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-
-          # Architecture
-          if [ "${{ needs.architecture.result }}" == "success" ]; then
-            echo "| 🏛️ Architecture Contracts | ✅ Passed | Layers, composition root, no cycles |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🏛️ Architecture Contracts | ❌ Failed | A dependency breaks a layer rule |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Lint
-          if [ "${{ needs.lint.result }}" == "success" ]; then
-            echo "| 🔍 Lint & Format | ✅ Passed | Code style is consistent |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.lint.result }}" == "skipped" ]; then
-            echo "| 🔍 Lint & Format | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🔍 Lint & Format | ❌ Failed | Linting errors found |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Test
-          if [ "${{ needs.test.result }}" == "success" ]; then
-            echo "| 🧪 Tests & Coverage | ✅ Passed | All tests passed, coverage OK |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.test.result }}" == "skipped" ]; then
-            echo "| 🧪 Tests & Coverage | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🧪 Tests & Coverage | ❌ Failed | Tests failed or coverage low |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Type Check
-          if [ "${{ needs.type-check.result }}" == "success" ]; then
-            echo "| 📝 Type Check | ✅ Passed | TypeScript types are valid |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.type-check.result }}" == "skipped" ]; then
-            echo "| 📝 Type Check | ⏭️ Skipped | No TypeScript or security failed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 📝 Type Check | ❌ Failed | Type errors found |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Build Phase
-          echo "## 🏗️ Phase 3: Build" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-
-          # Build
-          if [ "${{ needs.build.result }}" == "success" ]; then
-            echo "| 🏗️ Build Application | ✅ Passed | Production build successful |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.build.result }}" == "skipped" ]; then
-            echo "| 🏗️ Build Application | ⏭️ Skipped | Previous checks failed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 🏗️ Build Application | ❌ Failed | Build errors detected |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Final Status
-          echo "## 🎯 Final Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Check if all critical jobs passed
-          if [ "${{ needs.dependency-audit.result }}" == "success" ] && \
-             [ "${{ needs.secret-scanning.result }}" == "success" ] && \
-             [ "${{ needs.license-check.result }}" == "success" ] && \
-             [ "${{ needs.lint.result }}" == "success" ] && \
-             [ "${{ needs.test.result }}" == "success" ] && \
-             [ "${{ needs.owasp-semgrep.result }}" == "success" ] && \
-             [ "${{ needs.architecture.result }}" == "success" ] && \
-             [ "${{ needs.build.result }}" == "success" ]; then
-            echo "### ✅ Pipeline Passed Successfully!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "All critical checks have passed. Your code is ready for deployment! 🚀" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### ❌ Pipeline Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "One or more critical checks failed. Please review the errors above and fix them before proceeding." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Failed Jobs:**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            [ "${{ needs.dependency-audit.result }}" != "success" ] && echo "- 🔒 Dependency Audit" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.secret-scanning.result }}" != "success" ] && echo "- 🔐 Secret Scanning" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.license-check.result }}" != "success" ] && echo "- 📜 License Compliance" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.lint.result }}" != "success" ] && [ "${{ needs.lint.result }}" != "skipped" ] && echo "- 🔍 Lint & Format" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ] && echo "- 🧪 Tests & Coverage" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.type-check.result }}" != "success" ] && [ "${{ needs.type-check.result }}" != "skipped" ] && echo "- 📝 Type Check" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.owasp-semgrep.result }}" != "success" ] && echo "- 🛡️ OWASP Top 10 (Semgrep)" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.architecture.result }}" != "success" ] && echo "- 🏛️ Architecture Contracts" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build or 🚀 Deploy like Render (see which in the checks)" >> $GITHUB_STEP_SUMMARY
-
-            exit 1
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "*Generated on $(date -u '+%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
+          exit "$FALLA"

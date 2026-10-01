@@ -19,6 +19,12 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
     steps:
+      # Solo los scripts: la tarjeta del resumen (.github/scripts/summary_card.py)
+      - name: Checkout the summary scripts
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+
       # Wait for auto-fix to complete for Dependabot PRs
       - name: Wait for auto-fix workflow
         if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
@@ -30,6 +36,7 @@ jobs:
             console.log('✅ Proceeding with validation');
 
       - name: Check PR title
+        id: title
         uses: amannn/action-semantic-pull-request@v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,3 +60,25 @@ jobs:
             didn't match the configured pattern. Please ensure that the subject
             starts with an uppercase character (e.g., "Add feature" or "Fix bug").
             Note: Dependabot PRs are automatically fixed by the auto-fix-pr-title workflow.
+
+      - name: Summary card
+        if: always()
+        continue-on-error: true  # la tarjeta nunca tumba el job
+        env:
+          STATUS: ${{ job.status }}
+          OUTCOME: ${{ steps.title.outcome }}
+          TITLE: ${{ github.event.pull_request.title }}
+          ERROR: ${{ steps.title.outputs.error_message }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # El título de AHORA, el que ha comprobado la acción: el del evento es el
+          # del momento en que se lanzó (un re-run tras editarlo mostraría el viejo)
+          TITLE=$(gh pr view "$PR_NUMBER" -R "$GITHUB_REPOSITORY" --json title --jq .title 2>/dev/null || printf '%s' "$TITLE")
+          RESULT=$(python3 .github/scripts/summary_results.py pr-title outcome="$OUTCOME" \
+            title="$TITLE" error="$ERROR")
+          python3 .github/scripts/summary_card.py \
+            --title "📝 Conventional Commits Check" \
+            --what "The PR title must follow Conventional Commits (type(scope): Subject, with a lowercase type from the allowed list and a subject that starts with a capital letter), so the history and the release notes read the same way." \
+            --status "$STATUS" --result "$RESULT" \
+            --if-fails "Edit the PR title, e.g. 'feat(scoring): Add offline sync'. This check does not re-run on a title edit: push a commit or re-run the job."
