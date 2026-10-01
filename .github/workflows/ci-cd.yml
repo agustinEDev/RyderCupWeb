@@ -438,7 +438,16 @@ jobs:
   # ========================================
 
   build:
-    name: 🏗️ Build
+    name: ${{ matrix.nombre }}
+    strategy:
+      # Las dos a la vez y hasta el final: un fallo de una no esconde la otra
+      fail-fast: false
+      matrix:
+        include:
+          - build: ci
+            nombre: 🏗️ Build
+          - build: render
+            nombre: 🚀 Deploy like Render
     runs-on: ubuntu-24.04
     # Columna 2 del gráfico: espera a la de análisis estático y seguridad (30 sep
     # 2026). Si algo de la columna 1 FALLA, esta se salta: todo lo de la columna 1
@@ -447,15 +456,14 @@ jobs:
     # (Dependency Review en un push) no cuenta como fallo.
     needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
-    # 20 y no 15: hace dos builds, el de Render y el del CI
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # ===== Como lo construye Render (va PRIMERO) =====
-      # Antes de subir npm a la 11.17 (abajo): Render usa el npm que trae su
-      # Node, y un segundo setup-node con la misma versión no lo devuelve.
+      # ===== Entrada «Deploy like Render» de la matriz =====
+      # En su propia máquina: Render usa el npm que trae su Node, y en la otra
+      # entrada se sube a la 11.17.
       # Render no usa el entorno de arriba: el Node de .nvmrc con su npm de serie,
       # sin subirlo, y `npm install; npm run build` con sus variables. La v2.23.0
       # del backend cayó en Render con todo el CI en verde por una diferencia
@@ -465,12 +473,14 @@ jobs:
       # .nvmrc dice «22»: Render iba con su 22.16.0 por defecto, por debajo de lo
       # que pide react-router (>=22.22), y ahora usa la 22 actual, como el CI.
       - name: Setup Node like Render
+        if: matrix.build == 'render'
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: 'npm'
 
       - name: Build like Render
+        if: matrix.build == 'render'
         env:
           # Los nombres que tiene el Static Site en Render; valores de prueba
           VITE_API_BASE_URL: https://api.rydercupfriends.com
@@ -498,21 +508,22 @@ jobs:
           # versiones; lo que no puede pasar es que instale OTRAS versiones que
           # las que han pasado los tests
           python3 .github/scripts/lock_versions_match.py "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
-          # El build del CI (abajo) va con el lockfile del repo, no con el reescrito
-          cp "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
           npm run build
 
       - name: Serve the Render build like a static site
+        if: matrix.build == 'render'
         run: python3 .github/scripts/smoke_static_site.py dist "$(node -p "require('./package.json').version")"
 
-      # ===== El build del CI (presupuesto y artefacto) =====
+      # ===== Entrada «Build» de la matriz: el del CI (presupuesto y artefacto) =====
       - name: Setup Node.js
+        if: matrix.build == 'ci'
         uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
 
       - name: Upgrade npm
+        if: matrix.build == 'ci'
         # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
         # optional peer dependency mismatches (e.g. typescript vs i18next's
         # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
@@ -520,14 +531,17 @@ jobs:
         run: npm install -g npm@11.17.0
 
       - name: Install dependencies
+        if: matrix.build == 'ci'
         run: npm ci
 
       - name: Build application
+        if: matrix.build == 'ci'
         run: npm run build
         env:
           NODE_ENV: production
 
       - name: Check bundle size
+        if: matrix.build == 'ci'
         # Antes en code-quality, que compilaba otra vez solo para esto (28 sep 2026)
         id: bundle
         run: |
@@ -608,6 +622,7 @@ jobs:
             echo "   Budget used: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))% (${TOTAL_SIZE_KB}/${MAX_BUNDLE_SIZE_KB} KB)"
           fi
       - name: Check build output
+        if: matrix.build == 'ci'
         run: |
           if [ ! -d "dist" ]; then
             echo "❌ Build failed: dist directory not found"
@@ -617,6 +632,7 @@ jobs:
           ls -lah dist/
 
       - name: Upload build artifacts
+        if: matrix.build == 'ci'
         uses: actions/upload-artifact@v7
         with:
           name: build-output
@@ -793,7 +809,7 @@ jobs:
             [ "${{ needs.type-check.result }}" != "success" ] && [ "${{ needs.type-check.result }}" != "skipped" ] && echo "- 📝 Type Check" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.owasp-semgrep.result }}" != "success" ] && echo "- 🛡️ OWASP Top 10 (Semgrep)" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.architecture.result }}" != "success" ] && echo "- 🏛️ Architecture Contracts" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build or 🚀 Deploy like Render (see which in the checks)" >> $GITHUB_STEP_SUMMARY
 
             exit 1
           fi
