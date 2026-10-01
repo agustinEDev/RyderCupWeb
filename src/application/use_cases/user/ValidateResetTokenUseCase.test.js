@@ -56,11 +56,56 @@ describe('ValidateResetTokenUseCase', () => {
     });
   });
 
-  describe('Invalid token scenarios', () => {
-    it('should return valid:false when token is invalid', async () => {
+  // FE #775: la API responde a un token inválido o caducado con 200 y
+  // { valid: false }, no con un error. Los tests de abajo lo modelaban como un
+  // rechazo, y el caso de uso daba por válido cualquier 200: un enlace caducado
+  // enseñaba el formulario.
+  //
+  //   #   el repositorio devuelve          | el caso de uso
+  //   ----|-------------------------------|---------------------------------
+  //   V1  { valid: false, message }       | valid: false con ese mensaje
+  //   V2  { valid: false } sin mensaje    | valid: false con el mensaje por defecto
+  //   V3  sin el campo valid              | valid: false: solo vale un true explícito
+  describe('Invalid token answered with 200 (FE #775)', () => {
+    it('V1: valid:false from the API is invalid, with its message', async () => {
+      authRepository.validateResetToken.mockResolvedValue({
+        valid: false,
+        message: 'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
+      });
+
+      const result = await validateResetTokenUseCase.execute('a'.repeat(48));
+
+      expect(result).toEqual({
+        valid: false,
+        message: 'Token de reseteo inválido o expirado. Solicita un nuevo enlace.',
+      });
+    });
+
+    it('V2: valid:false without a message gets the default invalid message', async () => {
+      authRepository.validateResetToken.mockResolvedValue({ valid: false });
+
+      const result = await validateResetTokenUseCase.execute('a'.repeat(48));
+
+      expect(result).toEqual({ valid: false, message: 'The token is invalid or has expired' });
+    });
+
+    it('V3: an answer without valid is not a valid token', async () => {
+      authRepository.validateResetToken.mockResolvedValue({ message: 'algo' });
+
+      const result = await validateResetTokenUseCase.execute('a'.repeat(48));
+
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  // El catch: la API no responde a un token inválido con un error (eso va como
+  // valid:false, arriba). Aquí llegan la red caída y los errores HTTP, como el
+  // 429 del límite de peticiones o un 5xx
+  describe('Network and HTTP errors (catch)', () => {
+    it('should return valid:false with the error message when rate limited (429)', async () => {
       // Arrange
-      const token = 'invalid_token';
-      const mockError = new Error('Invalid reset token');
+      const token = 'a'.repeat(48);
+      const mockError = new Error('Too many requests');
 
       authRepository.validateResetToken.mockRejectedValue(mockError);
 
@@ -69,14 +114,14 @@ describe('ValidateResetTokenUseCase', () => {
 
       // Assert
       expect(result.valid).toBe(false);
-      expect(result.message).toContain('Invalid reset token');
+      expect(result.message).toBe('Too many requests');
       expect(authRepository.validateResetToken).toHaveBeenCalledWith(token);
     });
 
-    it('should return valid:false when token is expired', async () => {
+    it('should return valid:false with the error message on a server error', async () => {
       // Arrange
-      const token = 'expired_token';
-      const mockError = new Error('Reset token has expired');
+      const token = 'a'.repeat(48);
+      const mockError = new Error('Error interno del servidor');
 
       authRepository.validateResetToken.mockRejectedValue(mockError);
 
@@ -85,23 +130,7 @@ describe('ValidateResetTokenUseCase', () => {
 
       // Assert
       expect(result.valid).toBe(false);
-      expect(result.message).toContain('expired');
-      expect(authRepository.validateResetToken).toHaveBeenCalledWith(token);
-    });
-
-    it('should return valid:false when token has already been used', async () => {
-      // Arrange
-      const token = 'already_used_token';
-      const mockError = new Error('Reset token has already been used');
-
-      authRepository.validateResetToken.mockRejectedValue(mockError);
-
-      // Act
-      const result = await validateResetTokenUseCase.execute(token);
-
-      // Assert
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('already been used');
+      expect(result.message).toBe('Error interno del servidor');
     });
 
     it('should return generic error message when repository throws unknown error', async () => {
