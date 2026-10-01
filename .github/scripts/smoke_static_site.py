@@ -16,12 +16,16 @@ rompe la web entera sin que ningún test lo vea:
 
 Uso: python smoke_static_site.py <dist> <versión esperada>
 Salidas: 0 bien · 1 algo falla (lo dice) · 2 uso incorrecto
+Para la tarjeta del resumen escribe en $GITHUB_OUTPUT, si existe, lo que ha
+mirado: smoke_resources, smoke_integrity, smoke_chunks, smoke_failures y
+smoke_version.
 """
 
 import base64
 import hashlib
 import http.server
 import json
+import os
 import re
 import sys
 import threading
@@ -101,8 +105,9 @@ def _diferidos_que_faltan(dist: Path) -> list[str]:
     return sorted(faltan)
 
 
-def comprobar(dist: Path, esperada: str) -> list[str]:
-    """Los fallos encontrados; vacío si todo está bien."""
+def comprobar(dist: Path, esperada: str, cuentas: dict | None = None) -> list[str]:
+    """Los fallos encontrados; vacío si todo está bien. En `cuentas`, lo mirado."""
+    cuentas = {} if cuentas is None else cuentas
     fallos: list[str] = []
     servidor, base = _servir(dist)
     try:
@@ -125,12 +130,17 @@ def comprobar(dist: Path, esperada: str) -> list[str]:
                 fallos.append(f"{ruta} responde {estado}")
                 continue
             integrity = atributos.get("integrity", "").strip()
+            if integrity:
+                cuentas["integrity"] = cuentas.get("integrity", 0) + 1
             if integrity and (fallo := _fallo_de_integridad(ruta, integrity, contenido)):
                 fallos.append(fallo)
+        cuentas["resources"] = recursos
+        cuentas.setdefault("integrity", 0)
         if recursos == 0:
             fallos.append("index.html no referencia ningún recurso del build")
 
         fallos.extend(_diferidos_que_faltan(dist))
+        cuentas["chunks"] = len([*dist.glob("assets/*.js"), *dist.glob("assets/*.css")])
 
         estado, cuerpo = _pedir(base, "/version.json")
         if estado != 200:
@@ -142,6 +152,7 @@ def comprobar(dist: Path, esperada: str) -> list[str]:
                 version = None
             if version != esperada:
                 fallos.append(f"/version.json dice {version!r} y se esperaba {esperada!r}")
+            cuentas["version"] = version
 
         for ruta in ("/sw.js", "/manifest.webmanifest"):
             estado, _ = _pedir(base, ruta)
@@ -152,6 +163,21 @@ def comprobar(dist: Path, esperada: str) -> list[str]:
     return fallos
 
 
+def _para_la_tarjeta(cuentas: dict) -> None:
+    """Lo mirado, para la tarjeta; si no se puede escribir, no cambia nada."""
+    destino = os.environ.get("GITHUB_OUTPUT")
+    if not destino:
+        return
+    try:
+        with open(destino, "a", encoding="utf-8") as fichero:
+            # Un salto de línea en la versión colaría otra salida
+            fichero.writelines(
+                f"smoke_{clave}={' '.join(str(valor).split())}\n" for clave, valor in cuentas.items()
+            )
+    except OSError:
+        pass
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print("Uso: smoke_static_site.py <dist> <versión esperada>")
@@ -160,7 +186,10 @@ def main(argv: list[str]) -> int:
     if not (dist / "index.html").is_file():
         print(f"::error::{dist} no tiene index.html: no hay build que comprobar")
         return 1
-    fallos = comprobar(dist, esperada)
+    cuentas: dict = {}
+    fallos = comprobar(dist, esperada, cuentas)
+    cuentas["failures"] = len(fallos)
+    _para_la_tarjeta(cuentas)
     for fallo in fallos:
         print(f"::error::{fallo}")
     if fallos:

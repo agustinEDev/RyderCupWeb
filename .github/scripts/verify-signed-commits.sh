@@ -18,11 +18,21 @@
 #   verify-signed-commits.sh range <antes> <después>   (un push; <antes> vacío o
 #       ceros = rama nueva: se compara con la rama por defecto)
 # Salidas: 0 todos verificados · 1 alguno sin verificar · 2 no se pudo comprobar
+# Para la tarjeta del resumen escribe en $GITHUB_OUTPUT, si existe, verified=N
+# (todos bien) o unsigned=N y total=N (alguno sin verificar).
 set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:?Falta GITHUB_REPOSITORY}"
 CEROS="0000000000000000000000000000000000000000"
 FORMATO='[.sha, (.commit.verification.verified | tostring), .commit.verification.reason] | @tsv'
+
+# Con `if` y no con `&&`: con set -e, un `&&` falso al final de la función la
+# haría devolver 1 y cortaría el script
+para_la_tarjeta() {
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    printf '%s\n' "$@" >> "$GITHUB_OUTPUT" || true
+  fi
+}
 
 no_se_pudo() {
   echo "::error::$1"
@@ -80,6 +90,7 @@ vistos=$(printf '%s\n' "$commits" | wc -l | tr -d ' ')
 sin_firmar=$(printf '%s\n' "$commits" | awk -F'\t' '$2 != "true"')
 
 if [ -n "$sin_firmar" ]; then
+  para_la_tarjeta "unsigned=$(printf '%s\n' "$sin_firmar" | wc -l | tr -d ' ')" "total=$vistos"
   while IFS=$'\t' read -r sha _ motivo; do
     echo "::error::Commit ${sha:0:9} sin firma verificada ($motivo)"
   done <<< "$sin_firmar"
@@ -87,4 +98,5 @@ if [ -n "$sin_firmar" ]; then
   exit 1
 fi
 
+para_la_tarjeta "verified=$vistos"
 echo "✅ $vistos commit(s) con firma verificada por GitHub"
