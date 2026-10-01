@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.38.1] - 2026-10-01
+
+Sin cambios en la aplicación: es el CI que nace de la 2.23.0 del backend, que
+no arrancó en Render con todas las comprobaciones en verde. Va con el backend
+**2.23.2**, sin cambios de contrato.
+
+**Notas de despliegue.** **Render pasa a construir con la Node 22 actual**: el
+repo trae ahora un `.nvmrc` con `22`, que Render respeta. Hasta hoy usaba su
+22.16.0 por defecto, por debajo de lo que pide `react-router` (22.22 o más).
+En el log del despliegue, la línea «Using Node.js version» tiene que decir una
+22.x reciente.
+
+### Changed
+
+- **El CI construye y sirve el frontend como Render** (#779): su Node y su npm
+  de serie, `npm install` y sus variables `VITE_*`. Comprueba que se instalan
+  las mismas versiones que dice el lockfile y sirve el `dist` como un sitio
+  estático: la portada, cada recurso con su hash de integridad, los chunks que
+  se cargan en diferido, `version.json`, el service worker y el manifiesto.
+- **Dos cajas en el gráfico** (#780): «🏗️ Build», con el presupuesto del
+  bundle, y «🚀 Deploy like Render», las dos obligatorias.
+- **Cada comprobación explica qué hace y qué ha encontrado** en la página de
+  resumen de la ejecución (#781), con cifras reales (tests y los cuatro
+  porcentajes de cobertura frente a sus umbrales, avisos de ESLint, hallazgos de
+  Semgrep, licencias, vulnerabilidades, tamaño del bundle, versiones de Node y
+  npm de Render). El «📊 Pipeline Summary» es un índice de una fila por
+  comprobación, con el mismo criterio de aprobado que antes.
+
 ## [2.38.0] - 2026-10-01
 
 Sin funciones nuevas: una corrección de seguridad para que ningún secreto de una URL
