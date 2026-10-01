@@ -447,12 +447,63 @@ jobs:
     # (Dependency Review en un push) no cuenta como fallo.
     needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
-    # 20 y no 15: tras el build del CI repite el de Render (abajo)
+    # 20 y no 15: hace dos builds, el de Render y el del CI
     timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      # ===== Como lo construye Render (va PRIMERO) =====
+      # Antes de subir npm a la 11.17 (abajo): Render usa el npm que trae su
+      # Node, y un segundo setup-node con la misma versión no lo devuelve.
+      # Render no usa el entorno de arriba: el Node de .nvmrc con su npm de serie,
+      # sin subirlo, y `npm install; npm run build` con sus variables. La v2.23.0
+      # del backend cayó en Render con todo el CI en verde por una diferencia
+      # así; aquí se repite su build y se sirve el resultado como sitio estático.
+      # Lo que NO se reproduce: la reescritura de rutas (/* → /index.html) y las
+      # cabeceras, que viven en el panel de Render y no en el repo.
+      # .nvmrc dice «22»: Render iba con su 22.16.0 por defecto, por debajo de lo
+      # que pide react-router (>=22.22), y ahora usa la 22 actual, como el CI.
+      - name: Setup Node like Render
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+
+      - name: Build like Render
+        env:
+          # Los nombres que tiene el Static Site en Render; valores de prueba
+          VITE_API_BASE_URL: https://api.rydercupfriends.com
+          VITE_API_TIMEOUT: '30000'
+          VITE_APP_NAME: RyderCupFriends
+          VITE_APP_VERSION: ci
+          VITE_GOOGLE_CLIENT_ID: ci-google-client-id.apps.googleusercontent.com
+          VITE_GOOGLE_REDIRECT_URI: https://www.rydercupfriends.com/auth/google/callback
+          VITE_SENTRY_DSN: https://public@o0.ingest.sentry.io/0
+          VITE_SENTRY_ENVIRONMENT: production
+          VITE_SENTRY_DEBUG: 'false'
+          VITE_SENTRY_ATTACH_STACKTRACE: 'true'
+          VITE_SENTRY_AUTO_SESSION_TRACKING: 'true'
+          VITE_SENTRY_ENABLE_FEEDBACK: 'false'
+          VITE_SENTRY_TRACES_SAMPLE_RATE: '0.1'
+          VITE_SENTRY_PROFILES_SAMPLE_RATE: '0.1'
+          VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: '0.1'
+          VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: '1.0'
+        run: |
+          echo "Node $(node --version) · npm $(npm --version)"
+          cp package-lock.json "$RUNNER_TEMP/lock-del-repo.json"
+          rm -rf node_modules dist
+          npm install
+          # El npm de Render reescribe el lockfile (metadatos) sin cambiar
+          # versiones; lo que no puede pasar es que instale OTRAS versiones que
+          # las que han pasado los tests
+          python3 .github/scripts/lock_versions_match.py "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
+          npm run build
+
+      - name: Serve the Render build like a static site
+        run: python3 .github/scripts/smoke_static_site.py dist "$(node -p "require('./package.json').version")"
+
+      # ===== El build del CI (presupuesto y artefacto) =====
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -569,53 +620,6 @@ jobs:
           name: build-output
           path: dist/
           retention-days: 7
-
-      # ===== Como lo construye Render =====
-      # Render no usa el entorno de arriba: el Node de .nvmrc con su npm de serie,
-      # sin subirlo, y `npm install; npm run build` con sus variables. La v2.23.0
-      # del backend cayó en Render con todo el CI en verde por una diferencia
-      # así; aquí se repite su build y se sirve el resultado como sitio estático.
-      # Lo que NO se reproduce: la reescritura de rutas (/* → /index.html) y las
-      # cabeceras, que viven en el panel de Render y no en el repo.
-      # .nvmrc dice «22»: Render iba con su 22.16.0 por defecto, por debajo de lo
-      # que pide react-router (>=22.22), y ahora usa la 22 actual, como el CI.
-      - name: Setup Node like Render
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-
-      - name: Build like Render
-        env:
-          # Los nombres que tiene el Static Site en Render; valores de prueba
-          VITE_API_BASE_URL: https://api.rydercupfriends.com
-          VITE_API_TIMEOUT: '30000'
-          VITE_APP_NAME: RyderCupFriends
-          VITE_APP_VERSION: ci
-          VITE_GOOGLE_CLIENT_ID: ci-google-client-id.apps.googleusercontent.com
-          VITE_GOOGLE_REDIRECT_URI: https://www.rydercupfriends.com/auth/google/callback
-          VITE_SENTRY_DSN: https://public@o0.ingest.sentry.io/0
-          VITE_SENTRY_ENVIRONMENT: production
-          VITE_SENTRY_DEBUG: 'false'
-          VITE_SENTRY_ATTACH_STACKTRACE: 'true'
-          VITE_SENTRY_AUTO_SESSION_TRACKING: 'true'
-          VITE_SENTRY_ENABLE_FEEDBACK: 'false'
-          VITE_SENTRY_TRACES_SAMPLE_RATE: '0.1'
-          VITE_SENTRY_PROFILES_SAMPLE_RATE: '0.1'
-          VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: '0.1'
-          VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: '1.0'
-        run: |
-          echo "Node $(node --version) · npm $(npm --version)"
-          cp package-lock.json "$RUNNER_TEMP/lock-del-repo.json"
-          rm -rf node_modules dist
-          npm install
-          # El npm de Render reescribe el lockfile (metadatos) sin cambiar
-          # versiones; lo que no puede pasar es que instale OTRAS versiones que
-          # las que han pasado los tests
-          python3 .github/scripts/lock_versions_match.py "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
-          npm run build
-
-      - name: Serve the Render build like a static site
-        run: python3 .github/scripts/smoke_static_site.py dist "$(node -p "require('./package.json').version")"
 
   # ========================================
   # PHASE 4: PIPELINE SUMMARY
