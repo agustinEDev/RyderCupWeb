@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.38.2] - 2026-10-01
+
+Tres correcciones en las pantallas de los enlaces que llegan por correo y la
+comprobación de licencias por lista de permitidas. Va con el backend **2.23.3**,
+sin cambios de contrato.
+
+**Notas de despliegue.** Sin cambios de contrato; el orden de siempre: backend
+2.23.3 primero y después este.
+
+### Fixed
+
+- **Un enlace de restablecer la contraseña caducado o desconocido avisa al
+  abrirlo** (#775, #784). La API responde siempre 200 con `valid`, y la app daba
+  por bueno cualquier 200: enseñaba el formulario de la nueva contraseña y el
+  usuario solo se enteraba al enviarla. Ahora solo `valid: true` abre el
+  formulario, y el aviso de enlace inválido sale traducido (el mensaje de la API
+  viene siempre en español).
+- **La página de verificar el correo está traducida** (#776, #786). Tenía 14
+  textos fijos en inglés y, si fallaba, enseñaba el mensaje de la API. Ahora
+  cada estado (verificando, verificado, error, enlace inválido) usa sus textos
+  en español e inglés.
+- **El error del inicio de sesión con Google sale una vez** (#776, #786). La
+  misma frase hacía de título y de párrafo; ahora hay un título corto propio
+  (distinto si se estaba vinculando la cuenta desde el perfil) y el error debajo.
+
+### Changed
+
+- **Licencias por lista de permitidas** (#777, #787). License Compliance solo
+  buscaba GPL-3.0, AGPL-3.0 y LGPL-3.0 por su nombre, así que cualquier otra
+  licencia, o una expresión compuesta, pasaba; Dependency Review no miraba
+  licencias. Los dos leen ahora una sola lista, `.github/dependency-review-config.yml`,
+  que entiende `OR`, `AND` y paréntesis.
+
 ## [2.38.1] - 2026-10-01
 
 Sin cambios en la aplicación: es el CI que nace de la 2.23.0 del backend, que
