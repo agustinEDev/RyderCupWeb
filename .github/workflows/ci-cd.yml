@@ -220,24 +220,12 @@ jobs:
 
       - name: Check licenses
         id: licenses
+        # Lista de PERMITIDAS (#777), la misma que usa Dependency Review en las PRs:
+        # .github/dependency-review-config.yml. Primero los tests de la puerta.
         run: |
-          echo "📜 Checking dependency licenses..."
+          python3 -m unittest discover -s .github/scripts -p "test_*.py"
           npx license-checker --json --out licenses.json
-
-          # Check for problematic licenses
-          FORBIDDEN_LICENSES="GPL-3.0 AGPL-3.0 LGPL-3.0"
-
-          for license in $FORBIDDEN_LICENSES; do
-            if npx license-checker --summary | grep -q "$license"; then
-              echo "forbidden=$license" >> "$GITHUB_OUTPUT"  # para la tarjeta
-              echo "❌ Forbidden license found: $license"
-              npx license-checker --summary
-              exit 1
-            fi
-          done
-
-          echo "✅ All licenses are compliant"
-          npx license-checker --summary
+          python3 .github/scripts/license_gate.py licenses.json .github/dependency-review-config.yml
 
       - name: Upload license report
         if: always()
@@ -253,19 +241,21 @@ jobs:
         env:
           STATUS: ${{ job.status }}
           OUTCOME: ${{ steps.licenses.outcome }}
-          FORBIDDEN: ${{ steps.licenses.outputs.forbidden }}
+          CHECKED: ${{ steps.licenses.outputs.checked }}
+          REJECTED: ${{ steps.licenses.outputs.rejected }}
         run: |
           RESULT=$(python3 .github/scripts/summary_results.py licenses outcome="$OUTCOME" \
-            report=licenses.json forbidden="$FORBIDDEN")
+            checked="$CHECKED" rejected="$REJECTED")
           python3 .github/scripts/summary_card.py \
             --title "📜 License Compliance" \
-            --what "Reads the licence of every installed npm package and fails on GPL-3.0, AGPL-3.0 or LGPL-3.0, whose copyleft terms the project cannot accept." \
+            --what "Reads the licence of every installed npm package and fails if any is outside the allow-list in .github/dependency-review-config.yml (permissive licences only: no GPL, AGPL or LGPL-3.0, since this code ships to the browser)." \
             --status "$STATUS" --result "$RESULT" \
-            --if-fails "Replace the package with one under a permissive licence (MIT, Apache-2.0, BSD, ISC); the full list is in the license-report artifact."
+            --if-fails "Replace the package with one under an allowed licence. If its licence is acceptable, add it to the allow-list, or add the package as an exception with its reason; the full list is in the license-report artifact."
 
   # Sustituye a Snyk (cuota agotada desde hace meses): bloquea la PR que AÑADE
   # o sube una dependencia con una vulnerabilidad conocida de gravedad moderada
-  # o más. Lo que ya está en develop lo vigilan las alertas de Dependabot y npm audit.
+  # o más, o con una licencia fuera de la lista de permitidas (#777). Lo que ya
+  # está en develop lo vigilan las alertas de Dependabot, npm audit y License Compliance.
   dependency-review:
     name: 🔎 Dependency Review
     runs-on: ubuntu-24.04
@@ -281,6 +271,12 @@ jobs:
         with:
           fail-on-severity: moderate
           comment-summary-in-pr: never
+          # allow-licenses y sus excepciones: la misma lista que License Compliance.
+          # Solo mira las dependencias de runtime (las de desarrollo, no), y una
+          # licencia sin declarar (NOASSERTION) se informa pero no falla; una cadena
+          # que no es SPDX válido sí falla. Lo que se escapa aquí lo caza License
+          # Compliance, que mira todo lo instalado.
+          config-file: ./.github/dependency-review-config.yml
 
       # En un push el job entero se salta y no hay tarjeta: el índice del
       # Pipeline Summary lo marca como saltado
@@ -292,14 +288,15 @@ jobs:
           OUTCOME: ${{ steps.review.outcome }}
           CHANGES: ${{ steps.review.outputs.dependency-changes }}
           VULNERABLE: ${{ steps.review.outputs.vulnerable-changes }}
+          LICENSES: ${{ steps.review.outputs.invalid-license-changes }}
         run: |
           RESULT=$(python3 .github/scripts/summary_results.py dependency-review outcome="$OUTCOME" \
-            changes="$CHANGES" vulnerable="$VULNERABLE")
+            changes="$CHANGES" vulnerable="$VULNERABLE" licenses="$LICENSES")
           python3 .github/scripts/summary_card.py \
             --title "🔎 Dependency Review" \
-            --what "On pull requests only: compares the dependencies before and after the PR and fails if it adds or upgrades to a version with a known vulnerability of moderate severity or worse." \
+            --what "On pull requests only: compares the dependencies before and after the PR and fails if it adds or upgrades to a version with a known vulnerability of moderate severity or worse, or with a licence outside the allow-list in .github/dependency-review-config.yml." \
             --status "$STATUS" --result "$RESULT" \
-            --if-fails "Pick a patched version of the dependency (the action's own summary above lists the advisory), or drop the change."
+            --if-fails "Pick a patched version of the dependency (the action's own summary above lists the advisory) or one under an allowed licence, or drop the change."
 
   outdated-dependencies:
     name: 📦 Outdated deps
