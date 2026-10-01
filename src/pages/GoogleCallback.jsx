@@ -87,7 +87,8 @@ const GoogleCallback = () => {
         } else if (err.status === 409) {
           setError(t('google.alreadyLinked'));
         } else {
-          setError(err.message || t('google.genericError'));
+          // Texto propio y traducido: el del backend no sigue el idioma de la app
+          setError(parsedFlow === 'link' ? t('google.linkError') : t('google.genericError'));
         }
       }
     };
@@ -105,7 +106,7 @@ const GoogleCallback = () => {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            {t('google.callbackError')}
+            {flow === 'link' ? t('google.linkErrorTitle') : t('google.errorTitle')}
           </h2>
           <p className="text-gray-600 text-sm mb-6">{error}</p>
           <Link
