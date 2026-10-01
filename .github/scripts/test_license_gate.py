@@ -26,6 +26,7 @@ job de licencias antes de usar la puerta:
 | L18  | (MIT OR GPL-3.0) AND (ISC OR X)    | 0    |
 """
 
+import io
 import json
 import os
 import tempfile
@@ -57,6 +58,10 @@ class PuertaDeLicencias(unittest.TestCase):
         entorno = mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.salida)})
         entorno.start()
         self.addCleanup(entorno.stop)
+        # Sin esto, los «::error::» de los casos rojos salen como anotaciones en el CI
+        salida = mock.patch("sys.stdout", new_callable=io.StringIO)
+        salida.start()
+        self.addCleanup(salida.stop)
 
     def correr(self, paquetes: dict, config: Path | None = None) -> int:
         informe = self.dir / "licenses.json"
