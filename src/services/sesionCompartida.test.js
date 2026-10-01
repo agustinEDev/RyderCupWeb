@@ -311,11 +311,11 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
   // haber almacenamiento en vez de por lo que dicen comprobar
   beforeEach(() => {
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
-    };
+    });
     localStorage.removeItem(RECUERDO);
     reiniciaLaSesionCompartida();
     peticiones.length = 0;

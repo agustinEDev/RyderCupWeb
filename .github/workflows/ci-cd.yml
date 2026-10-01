@@ -11,7 +11,10 @@ on:
 
 permissions:
   contents: read
-  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   # ========================================
@@ -19,77 +22,48 @@ jobs:
   # ========================================
 
   commit-verification:
-    name: 🔏 Verify Commit Signatures
-    runs-on: ubuntu-latest
+    name: 🔏 Signed commits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read  # la lista de commits de la PR
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout the script
+        uses: actions/checkout@v7
         with:
-          fetch-depth: 2
+          sparse-checkout: .github/scripts
 
-      - name: Import GPG public keys
+      # Todos los commits de la PR (o del push), verificados por GitHub. Antes se
+      # miraba HEAD, que en una PR es el merge que firma GitHub: un commit sin
+      # firmar en la rama pasaba (la PR #80 tiene uno), y sin el secreto de las
+      # claves salía en verde sin mirar nada (ver el script)
+      - name: Verify every commit is signed
         env:
-          GPG_KEYS: ${{ secrets.GPG_PUBLIC_KEYS }}
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
-          # Import GitHub's web-flow key (signs commits made via GitHub UI: merges, squash, rebase)
-          echo "🔑 Downloading GitHub web-flow GPG key..."
-          GPG_TMP=$(mktemp)
-          if ! curl -sSL --fail -o "$GPG_TMP" https://github.com/web-flow.gpg; then
-            echo "❌ Failed to download GitHub web-flow GPG key"
-            rm -f "$GPG_TMP"
-            exit 1
-          fi
-
-          if [ ! -s "$GPG_TMP" ]; then
-            echo "❌ Downloaded GPG key file is empty"
-            rm -f "$GPG_TMP"
-            exit 1
-          fi
-
-          echo "🔑 Importing GitHub web-flow GPG key..."
-          if ! gpg --import "$GPG_TMP"; then
-            echo "❌ Failed to import GitHub web-flow GPG key"
-            rm -f "$GPG_TMP"
-            exit 1
-          fi
-
-          rm -f "$GPG_TMP"
-          echo "✅ GitHub web-flow GPG key imported successfully"
-
-          # Import team GPG keys from repository secret
-          if [ -n "$GPG_KEYS" ]; then
-            echo "🔑 Importing team GPG keys..."
-            echo "$GPG_KEYS" | gpg --import
-          else
-            echo "⚠️ GPG_PUBLIC_KEYS secret not found. Only GitHub web-flow key imported."
-          fi
-
-      - name: Verify commit signature
-        run: |
-          COMMIT=$(git rev-parse HEAD)
-
-          # Soft-fail check: Skip if team keys are not configured yet
-          if [ -z "${{ secrets.GPG_PUBLIC_KEYS }}" ]; then
-             echo "⚠️ GPG_PUBLIC_KEYS secret not configured. Skipping verification."
-             exit 0
-          fi
-
-          if git verify-commit $COMMIT 2>&1 | grep -q "Good signature"; then
-            echo "✅ Commit $COMMIT signature verified"
-          else
-            echo "❌ Commit $COMMIT is NOT signed or signature is invalid"
-            exit 1
-          fi
+          case "$EVENT" in
+            pull_request) bash .github/scripts/verify-signed-commits.sh pr "$PR_NUMBER" ;;
+            push) bash .github/scripts/verify-signed-commits.sh range "$BEFORE" "$AFTER" ;;
+            schedule) echo "El escaneo semanal no trae commits nuevos: nada que verificar" ;;
+            # Un disparador nuevo (merge_group, workflow_dispatch...) no pasa sin mirar
+            *) echo "::error::Evento '$EVENT' sin verificación de firmas definida"; exit 2 ;;
+          esac
 
   dependency-audit:
-    name: 🔒 Dependency Vulnerability Scan
-    runs-on: ubuntu-latest
+    name: 🔒 npm audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       moderate: ${{ steps.audit.outputs.moderate }}
       total: ${{ steps.audit.outputs.total }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -122,41 +96,19 @@ jobs:
       - name: Run npm audit
         id: audit
         run: |
-          echo "🔍 Running npm audit..."
-          npm audit --audit-level=moderate --json > audit-report.json || true
-
-          # Parse results
-          VULNERABILITIES=$(cat audit-report.json | jq '.metadata.vulnerabilities.total')
-          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical')
-          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high')
-          MODERATE=$(cat audit-report.json | jq '.metadata.vulnerabilities.moderate')
-
-          echo "📊 Vulnerability Summary:"
-          echo "  Critical: $CRITICAL"
-          echo "  High: $HIGH"
-          echo "  Moderate: $MODERATE"
-          echo "  Total: $VULNERABILITIES"
-
-          # Export to outputs
-          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
-          echo "total=$VULNERABILITIES" >> $GITHUB_OUTPUT
-
-          # Fail if critical or high vulnerabilities found
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "❌ Critical or High vulnerabilities found!"
-            npm audit --audit-level=high
-            exit 1
+          # npm audit sale con 1 si encuentra algo: decide la puerta, que también
+          # falla si el informe no trae el recuento (un registro caído no es un
+          # aprobado). Ver .github/scripts/npm-audit-gate.sh
+          npm audit --json > audit-report.json || true
+          set +e
+          bash .github/scripts/npm-audit-gate.sh audit-report.json
+          PUERTA=$?
+          set -e
+          if [ "$PUERTA" -ne 0 ]; then
+            # 1: altas o críticas · 2: no se pudo auditar (registro caído)
+            [ "$PUERTA" -eq 1 ] && { npm audit --audit-level=moderate || true; }  # el detalle
+            exit "$PUERTA"
           fi
-
-          # Warn if moderate vulnerabilities found
-          if [ "$MODERATE" -gt 0 ]; then
-            echo "⚠️ Moderate vulnerabilities found (allowed to pass)"
-            npm audit --audit-level=moderate || true
-          fi
-
-          echo "✅ No critical or high vulnerabilities found"
 
       - name: Upload audit report
         if: always()
@@ -168,25 +120,27 @@ jobs:
 
   secret-scanning:
     name: 🔐 Secret Scanning
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: TruffleHog OSS (Filesystem Scan)
-        uses: trufflesecurity/trufflehog@v3.97.4
+        uses: trufflesecurity/trufflehog@v3.97.9
         with:
           path: ./
           extra_args: --debug --only-verified
 
   license-check:
     name: 📜 License Compliance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -231,131 +185,31 @@ jobs:
           path: licenses.json
           retention-days: 30
 
-  snyk-security:
-    name: 🐍 Snyk Dependency Scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
+  # Sustituye a Snyk (cuota agotada desde hace meses): bloquea la PR que AÑADE
+  # o sube una dependencia con una vulnerabilidad conocida de gravedad moderada
+  # o más. Lo que ya está en develop lo vigilan las alertas de Dependabot y npm audit.
+  dependency-review:
+    name: 🔎 Dependency Review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Upgrade npm
-        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
-        # optional peer dependency mismatches (e.g. typescript vs i18next's
-        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
-        # Pinned explicitly so CI stays reproducible across Node bumps.
-        run: npm install -g npm@11.17.0
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@v1.0.0
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --sarif-file-output=snyk-security.sarif
-
-      - name: Check if SARIF file exists
-        id: check_sarif
-        run: |
-          if [ -f "snyk-security.sarif" ]; then
-            echo "sarif_exists=true" >> $GITHUB_OUTPUT
-            echo "✅ SARIF file generated successfully"
-          else
-            echo "sarif_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
-          fi
-
-      - name: Upload Snyk report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: steps.check_sarif.outputs.sarif_exists == 'true'
-        with:
-          sarif_file: snyk-security.sarif
-
-      - name: Upload Snyk SARIF report artifact
-        if: steps.check_sarif.outputs.sarif_exists == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: snyk-security-report
-          path: snyk-security.sarif
-          retention-days: 30
-
-  snyk-code:
-    name: 🔍 Snyk Code Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Upgrade npm
-        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
-        # optional peer dependency mismatches (e.g. typescript vs i18next's
-        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
-        # Pinned explicitly so CI stays reproducible across Node bumps.
-        run: npm install -g npm@11.17.0
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Snyk Code to check for code vulnerabilities
-        uses: snyk/actions/node@v1.0.0
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: code test
-          args: --severity-threshold=high --sarif-file-output=snyk-code.sarif
-
-      - name: Check if SARIF file exists
-        id: check_sarif_code
-        run: |
-          if [ -f "snyk-code.sarif" ]; then
-            echo "sarif_exists=true" >> $GITHUB_OUTPUT
-            echo "✅ SARIF file generated successfully"
-          else
-            echo "sarif_exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ SARIF file not generated (no vulnerabilities or Snyk error)"
-          fi
-
-      - name: Upload Snyk Code report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
-        with:
-          sarif_file: snyk-code.sarif
-
-      - name: Upload Snyk Code report artifact
-        if: steps.check_sarif_code.outputs.sarif_exists == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: snyk-code-report
-          path: snyk-code.sarif
-          retention-days: 30
+          fail-on-severity: moderate
+          comment-summary-in-pr: never
 
   outdated-dependencies:
-    name: 📦 Outdated Dependencies Check
-    runs-on: ubuntu-latest
+    name: 📦 Outdated deps
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -400,17 +254,57 @@ jobs:
           path: outdated.json
           retention-days: 30
 
+  # OWASP Top 10 con Semgrep (p/owasp-top-ten, p/react, p/javascript): eval con
+  # datos externos, redirecciones abiertas, dangerouslySetInnerHTML... Bloquea con
+  # cualquier aviso (el 28 sep 2026 el código estaba limpio) y sube el SARIF a la
+  # pestaña Security. Complementa a CodeQL.
+  owasp-semgrep:
+    name: 🛡️ OWASP (Semgrep)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write  # Subida del SARIF a la pestaña Security
+    env:
+      SEMGREP_VERSION: '1.178.0'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: pip install "semgrep==${SEMGREP_VERSION}"
+
+      - name: Scan (OWASP Top 10, React, JavaScript)
+        run: |
+          semgrep scan \
+            --config p/owasp-top-ten --config p/react --config p/javascript \
+            --metrics off --error \
+            --sarif-output=semgrep.sarif \
+            src
+
+      - name: Upload results to the Security tab
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
   # ========================================
   # PHASE 2: CODE QUALITY & TESTING
   # ========================================
 
   lint:
-    name: 🔍 Lint & Format Check
-    runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    name: 🔍 Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -427,37 +321,24 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Check code formatting (Prettier)
-        run: |
-          echo "✨ Checking code formatting with Prettier..."
-
-          # Check if Prettier is installed
-          if ! npm list prettier > /dev/null 2>&1; then
-            echo "⚠️ Prettier not installed, skipping format check"
-            exit 0
-          fi
-
-          # Run Prettier check
-          npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}" || {
-            echo ""
-            echo "❌ Code formatting issues found!"
-            echo "💡 Run 'npx prettier --write .' to fix formatting"
-            exit 1
-          }
-
-          echo "✅ Code formatting is consistent"
 
       - name: Run ESLint
         run: npm run lint
 
   test:
-    name: 🧪 Run Tests
-    runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    name: 🧪 Tests + coverage
+    runs-on: ubuntu-24.04
+    # Columna 2 del gráfico: espera a la de análisis estático y seguridad (30 sep
+    # 2026). Si algo de la columna 1 FALLA, esta se salta: todo lo de la columna 1
+    # es check obligatorio, así que ese fallo ya bloquea el merge, y no se gastan
+    # minutos de tests en una PR que no se puede mergear. Lo que solo se salta
+    # (Dependency Review en un push) no cuenta como fallo.
+    needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -475,98 +356,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm test -- --run --reporter=verbose
-
-      - name: Generate coverage report
-        id: coverage
-        run: |
-          npm test -- --run --coverage
-
-          # Extract coverage percentages from coverage summary
-          COVERAGE_FILE="coverage/coverage-summary.json"
-
-          if [ ! -f "$COVERAGE_FILE" ]; then
-            echo "⚠️ Coverage file not found, skipping threshold check"
-            exit 0
-          fi
-
-          # Get global coverage percentages
-          LINES=$(cat $COVERAGE_FILE | jq '.total.lines.pct')
-          STATEMENTS=$(cat $COVERAGE_FILE | jq '.total.statements.pct')
-          FUNCTIONS=$(cat $COVERAGE_FILE | jq '.total.functions.pct')
-          BRANCHES=$(cat $COVERAGE_FILE | jq '.total.branches.pct')
-
-          echo "lines=$LINES" >> $GITHUB_OUTPUT
-          echo "statements=$STATEMENTS" >> $GITHUB_OUTPUT
-          echo "functions=$FUNCTIONS" >> $GITHUB_OUTPUT
-          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
-
-          echo "📊 Coverage Report:"
-          echo "  Lines: ${LINES}%"
-          echo "  Statements: ${STATEMENTS}%"
-          echo "  Functions: ${FUNCTIONS}%"
-          echo "  Branches: ${BRANCHES}%"
-
-      - name: Enforce coverage threshold
-        run: |
-          echo "📊 Checking coverage thresholds..."
-
-          # Extract coverage percentages from coverage summary
-          COVERAGE_FILE="coverage/coverage-summary.json"
-
-          if [ ! -f "$COVERAGE_FILE" ]; then
-            echo "⚠️ Coverage file not found, skipping threshold check"
-            exit 0
-          fi
-
-          # Get global coverage percentages
-          LINES=$(cat $COVERAGE_FILE | jq '.total.lines.pct')
-          STATEMENTS=$(cat $COVERAGE_FILE | jq '.total.statements.pct')
-          FUNCTIONS=$(cat $COVERAGE_FILE | jq '.total.functions.pct')
-          BRANCHES=$(cat $COVERAGE_FILE | jq '.total.branches.pct')
-
-          echo "  Lines: ${LINES}%"
-          echo "  Statements: ${STATEMENTS}%"
-          echo "  Functions: ${FUNCTIONS}%"
-          echo "  Branches: ${BRANCHES}%"
-
-          # Define minimum thresholds
-          MIN_LINES=80
-          MIN_STATEMENTS=80
-          MIN_FUNCTIONS=75
-          MIN_BRANCHES=70
-
-          # Check thresholds
-          FAIL=0
-
-          if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
-            echo "❌ Lines coverage ($LINES%) is below threshold ($MIN_LINES%)"
-            FAIL=1
-          fi
-
-          if (( $(echo "$STATEMENTS < $MIN_STATEMENTS" | bc -l) )); then
-            echo "❌ Statements coverage ($STATEMENTS%) is below threshold ($MIN_STATEMENTS%)"
-            FAIL=1
-          fi
-
-          if (( $(echo "$FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
-            echo "❌ Functions coverage ($FUNCTIONS%) is below threshold ($MIN_FUNCTIONS%)"
-            FAIL=1
-          fi
-
-          if (( $(echo "$BRANCHES < $MIN_BRANCHES" | bc -l) )); then
-            echo "❌ Branches coverage ($BRANCHES%) is below threshold ($MIN_BRANCHES%)"
-            FAIL=1
-          fi
-
-          if [ $FAIL -eq 1 ]; then
-            echo ""
-            echo "💡 Tip: Add more tests to increase coverage"
-            exit 1
-          fi
-
-          echo "✅ All coverage thresholds met!"
+      - name: Run tests with coverage
+        # Falla si falla un test o si la cobertura baja de los umbrales, que viven en
+        # vite.config.js (coverage.thresholds) y los aplica Vitest (FE #553).
+        run: npm test -- --run --coverage
 
       - name: Upload coverage to artifacts
         if: always()
@@ -578,11 +371,11 @@ jobs:
 
   type-check:
     name: 📝 Type Check
-    runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -613,15 +406,51 @@ jobs:
         if: steps.check-ts.outputs.has_typescript == 'true'
         run: npx tsc --noEmit
 
-  code-quality:
-    name: 📊 Code Quality
-    runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check]
+  # Contratos de arquitectura (dependency-cruiser, .dependency-cruiser.cjs): dominio
+  # puro, casos de uso que solo dependen del dominio, infraestructura que no sube de
+  # capa, interfaz que pasa por src/composition y sin dependencias circulares.
+  architecture:
+    name: 🏛️ Architecture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
         with:
-          fetch-depth: 0
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Upgrade npm
+        # npm 10 falla npm ci con ERESOLVE en peers opcionales (ver el job de tests)
+        run: npm install -g npm@11.17.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check architecture contracts
+        run: npm run lint:architecture
+
+  # ========================================
+  # PHASE 3: BUILD
+  # ========================================
+
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-24.04
+    # Columna 2 del gráfico: espera a la de análisis estático y seguridad (30 sep
+    # 2026). Si algo de la columna 1 FALLA, esta se salta: todo lo de la columna 1
+    # es check obligatorio, así que ese fallo ya bloquea el merge, y no se gastan
+    # minutos de tests en una PR que no se puede mergear. Lo que solo se salta
+    # (Dependency Review en un push) no cuenta como fallo.
+    needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -639,24 +468,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for dead code
-        run: |
-          echo "🔍 Checking for unused exports..."
-          npx knip --reporter json || echo "⚠️ knip not configured yet"
-        continue-on-error: true
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: Check bundle size
+        # Antes en code-quality, que compilaba otra vez solo para esto (28 sep 2026)
         id: bundle
         run: |
-          npm run build
           echo "📦 Bundle size analysis:"
 
           # Get total bundle size
           TOTAL_SIZE=$(du -sb dist/assets/*.js 2>/dev/null | awk '{s+=$1} END {print s}')
 
+          # Sin JS que medir no hay nada que dar por bueno: la salida de Vite ha
+          # cambiado de sitio o el build no la ha escrito (antes salía en verde)
           if [ -z "$TOTAL_SIZE" ]; then
-            echo "⚠️ No JS bundles found"
-            exit 0
+            echo "::error::No JS bundles found in dist/assets: nothing was measured"
+            exit 1
           fi
 
           # Convert to KB
@@ -723,40 +553,6 @@ jobs:
             echo "✅ Bundle size is within budget"
             echo "   Budget used: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))% (${TOTAL_SIZE_KB}/${MAX_BUNDLE_SIZE_KB} KB)"
           fi
-
-  # ========================================
-  # PHASE 3: BUILD
-  # ========================================
-
-  build:
-    name: 🏗️ Build Application
-    runs-on: ubuntu-latest
-    needs: [commit-verification, lint, test, type-check, code-quality]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Upgrade npm
-        # npm 10.8.2 (bundled with Node 20) fails npm ci with ERESOLVE on
-        # optional peer dependency mismatches (e.g. typescript vs i18next's
-        # "^5 || ^6" peerOptional range) that npm 11 treats as non-fatal.
-        # Pinned explicitly so CI stays reproducible across Node bumps.
-        run: npm install -g npm@11.17.0
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-        env:
-          NODE_ENV: production
-
       - name: Check build output
         run: |
           if [ ! -d "dist" ]; then
@@ -779,8 +575,9 @@ jobs:
 
   pipeline-summary:
     name: 📊 Pipeline Summary
-    runs-on: ubuntu-latest
-    needs: [dependency-audit, secret-scanning, license-check, snyk-security, snyk-code, outdated-dependencies, lint, test, type-check, code-quality, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [dependency-audit, secret-scanning, license-check, dependency-review, owasp-semgrep, outdated-dependencies, lint, test, type-check, architecture, build]
     if: always()
     steps:
       - name: Generate Pipeline Summary
@@ -828,22 +625,20 @@ jobs:
             echo "| 📜 License Compliance | ❌ Failed | Forbidden licenses detected |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Snyk Security
-          if [ "${{ needs.snyk-security.result }}" == "success" ]; then
-            echo "| 🐍 Snyk Dependencies | ✅ Passed | No vulnerabilities |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.snyk-security.result }}" == "skipped" ]; then
-            echo "| 🐍 Snyk Dependencies | ⏭️ Skipped | Token not configured |" >> $GITHUB_STEP_SUMMARY
+          # Dependency Review (solo corre en PRs)
+          if [ "${{ needs.dependency-review.result }}" == "success" ]; then
+            echo "| 🔎 Dependency Review | ✅ Passed | No vulnerable dependency added |" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.dependency-review.result }}" == "skipped" ]; then
+            echo "| 🔎 Dependency Review | ⏭️ Skipped | Only runs on pull requests |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🐍 Snyk Dependencies | ⚠️ Warning | Check details |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔎 Dependency Review | ❌ Failed | A vulnerable dependency is being added |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Snyk Code
-          if [ "${{ needs.snyk-code.result }}" == "success" ]; then
-            echo "| 🔍 Snyk Code Analysis | ✅ Passed | No code vulnerabilities |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.snyk-code.result }}" == "skipped" ]; then
-            echo "| 🔍 Snyk Code Analysis | ⏭️ Skipped | Token not configured |" >> $GITHUB_STEP_SUMMARY
+          # OWASP Top 10 (Semgrep)
+          if [ "${{ needs.owasp-semgrep.result }}" == "success" ]; then
+            echo "| 🛡️ OWASP Top 10 (Semgrep) | ✅ Passed | No findings (owasp-top-ten, react, javascript) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🔍 Snyk Code Analysis | ⚠️ Warning | Check details |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🛡️ OWASP Top 10 (Semgrep) | ❌ Failed | See the Security tab |" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Outdated Dependencies
@@ -858,6 +653,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          # Architecture
+          if [ "${{ needs.architecture.result }}" == "success" ]; then
+            echo "| 🏛️ Architecture Contracts | ✅ Passed | Layers, composition root, no cycles |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🏛️ Architecture Contracts | ❌ Failed | A dependency breaks a layer rule |" >> $GITHUB_STEP_SUMMARY
+          fi
 
           # Lint
           if [ "${{ needs.lint.result }}" == "success" ]; then
@@ -884,15 +686,6 @@ jobs:
             echo "| 📝 Type Check | ⏭️ Skipped | No TypeScript or security failed |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 📝 Type Check | ❌ Failed | Type errors found |" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Code Quality
-          if [ "${{ needs.code-quality.result }}" == "success" ]; then
-            echo "| 📊 Code Quality | ✅ Passed | Bundle size OK, no dead code |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.code-quality.result }}" == "skipped" ]; then
-            echo "| 📊 Code Quality | ⏭️ Skipped | Security checks failed |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 📊 Code Quality | ❌ Failed | Bundle too large or quality issues |" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -924,6 +717,8 @@ jobs:
              [ "${{ needs.license-check.result }}" == "success" ] && \
              [ "${{ needs.lint.result }}" == "success" ] && \
              [ "${{ needs.test.result }}" == "success" ] && \
+             [ "${{ needs.owasp-semgrep.result }}" == "success" ] && \
+             [ "${{ needs.architecture.result }}" == "success" ] && \
              [ "${{ needs.build.result }}" == "success" ]; then
             echo "### ✅ Pipeline Passed Successfully!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -942,7 +737,8 @@ jobs:
             [ "${{ needs.lint.result }}" != "success" ] && [ "${{ needs.lint.result }}" != "skipped" ] && echo "- 🔍 Lint & Format" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ] && echo "- 🧪 Tests & Coverage" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.type-check.result }}" != "success" ] && [ "${{ needs.type-check.result }}" != "skipped" ] && echo "- 📝 Type Check" >> $GITHUB_STEP_SUMMARY
-            [ "${{ needs.code-quality.result }}" != "success" ] && [ "${{ needs.code-quality.result }}" != "skipped" ] && echo "- 📊 Code Quality" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.owasp-semgrep.result }}" != "success" ] && echo "- 🛡️ OWASP Top 10 (Semgrep)" >> $GITHUB_STEP_SUMMARY
+            [ "${{ needs.architecture.result }}" != "success" ] && echo "- 🏛️ Architecture Contracts" >> $GITHUB_STEP_SUMMARY
             [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ] && echo "- 🏗️ Build" >> $GITHUB_STEP_SUMMARY
 
             exit 1

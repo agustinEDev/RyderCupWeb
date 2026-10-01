@@ -46,6 +46,52 @@ describe('scrubUrl', () => {
     expect(scrubUrl(url)).toBe(url);
   });
 
+  // Lo que quedaba fuera (revisión del 30 sep 2026):
+  //
+  //   #   caso                                          | esperado
+  //   ----|---------------------------------------------|------------------------------
+  //   R1  el token del correo va en la RUTA             | /reset-password/[REDACTED]
+  //   R1b y en la llamada a la API que lo valida        | .../validate-reset-token/[REDACTED]
+  //   R2  la ruta sin token, o una que solo se parece   | intacta
+  //   R3  la vuelta de Google: code y state             | tapados; error y country_code no
+  //   R4  la query suelta, sin ? delante (url.query)    | tapada igual
+  //   R5  el token en el fragmento (#access_token=)     | tapado
+  it('R1: tapa el token que va en la ruta del restablecimiento', () => {
+    expect(scrubUrl('/reset-password/abc123')).toBe('/reset-password/[REDACTED]');
+    expect(scrubUrl('https://www.rydercupfriends.com/reset-password/abc123?lang=es#x')).toBe(
+      'https://www.rydercupfriends.com/reset-password/[REDACTED]?lang=es#x'
+    );
+  });
+
+  it('R1b: tapa el token en la llamada que lo valida', () => {
+    expect(scrubUrl('https://api.rydercupfriends.com/api/v1/auth/validate-reset-token/abc123')).toBe(
+      'https://api.rydercupfriends.com/api/v1/auth/validate-reset-token/[REDACTED]'
+    );
+  });
+
+  it('R2: no toca la ruta sin token ni una que solo se le parece', () => {
+    expect(scrubUrl('/reset-password')).toBe('/reset-password');
+    expect(scrubUrl('/reset-password?sent=1')).toBe('/reset-password?sent=1');
+    expect(scrubUrl('/forgot-password/help')).toBe('/forgot-password/help');
+  });
+
+  it('R3: tapa el code y el state de la vuelta de Google, y deja el resto', () => {
+    expect(scrubUrl('/auth/google/callback?code=4/0Ab-x_y&state=nonce123&error=access_denied')).toBe(
+      '/auth/google/callback?code=[REDACTED]&state=[REDACTED]&error=access_denied'
+    );
+    const url = '/api/v1/players?country_code=ES&status=ACTIVE';
+    expect(scrubUrl(url)).toBe(url);
+  });
+
+  it('R4: tapa una query suelta, sin ? delante', () => {
+    expect(scrubUrl('token=abc&page=2')).toBe('token=[REDACTED]&page=2');
+    expect(scrubUrl('code=abc')).toBe('code=[REDACTED]');
+  });
+
+  it('R5: tapa un token en el fragmento', () => {
+    expect(scrubUrl('/cb#access_token=abc&x=1')).toBe('/cb#access_token=[REDACTED]&x=1');
+  });
+
   it('aguanta lo que no es una URL', () => {
     expect(scrubUrl(undefined)).toBeUndefined();
     expect(scrubUrl(null)).toBeNull();

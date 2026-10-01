@@ -214,9 +214,9 @@ describe('apiRequest - CSRF Protection', () => {
       window.location = { href: '' };
 
       // Mock localStorage
-      global.localStorage = {
+      vi.stubGlobal('localStorage', {
         removeItem: vi.fn(),
-      };
+      });
     });
 
     it('should handle CSRF validation failure (403 with error_code)', async () => {

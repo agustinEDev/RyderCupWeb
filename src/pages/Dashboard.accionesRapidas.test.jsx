@@ -63,12 +63,12 @@ for (const ruta of [
   vi.doMock(ruta, () => ({ default: () => null }));
 }
 
-globalThis.localStorage = {
+vi.stubGlobal('localStorage', {
   getItem: () => null,
   setItem: () => {},
   removeItem: () => {},
   clear: () => {},
-};
+});
 
 const Dashboard = (await import('./Dashboard')).default;
 

@@ -4,7 +4,7 @@
  * Este archivo inicializa Sentry con configuración avanzada por entorno.
  *
  * Configuración por entorno:
- * - Development: Sample rates altos (1.0), debug habilitado, profiling completo
+ * - Development: Sample rates altos (1.0), debug habilitado
  * - Production: Sample rates optimizados (0.1-0.2), debug deshabilitado
  *
  * Integraciones:
@@ -30,7 +30,7 @@
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
-import { scrubUrl } from '../utils/sentryHelpers';
+import { sentryScrubbing } from '../utils/sentryScrubbing';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -41,7 +41,6 @@ const SENTRY_CONFIG = {
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
   tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-  profilesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_PROFILES_SAMPLE_RATE || '1.0'),
   replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
   replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
   autoSessionTracking: import.meta.env.VITE_SENTRY_AUTO_SESSION_TRACKING === 'true',
@@ -108,6 +107,11 @@ if (!SENTRY_CONFIG.dsn) {
       // Para depurar ya estan los eventos de error con su breadcrumb.
       networkDetailAllowUrls: [],
 
+      // La grabacion guarda sus propias URLs (el href inicial, las migas de
+      // clic, las navegaciones) sin pasar por beforeSend: el token del enlace
+      // de restablecimiento y el code de Google salian por aqui
+      beforeAddRecordingEvent: sentryScrubbing.beforeAddRecordingEvent,
+
       // Sample rates (ya configurados en init)
     }),
   ];
@@ -169,7 +173,6 @@ if (!SENTRY_CONFIG.dsn) {
 
     // ===== PERFORMANCE MONITORING =====
     tracesSampleRate: SENTRY_CONFIG.tracesSampleRate,
-    profilesSampleRate: SENTRY_CONFIG.profilesSampleRate,
 
     // ===== SESSION REPLAY =====
     replaysSessionSampleRate: SENTRY_CONFIG.replaysSessionSampleRate,
@@ -210,13 +213,10 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
-      // 3. Sanitizar datos sensibles
+      // 3. Sanitizar datos sensibles: los secretos de las URLs, en todo el
+      // evento (tambien el Referer), y lo que no es URL
+      sentryScrubbing.beforeSend(event);
       if (event.request) {
-        // La URL del evento tambien viaja con su query string (FE #385)
-        if (event.request.url) {
-          event.request.url = scrubUrl(event.request.url);
-        }
-
         // Remover headers sensibles
         delete event.request.headers?.Authorization;
         delete event.request.headers?.Cookie;
@@ -249,22 +249,7 @@ if (!SENTRY_CONFIG.dsn) {
 
       // Los spans HTTP llevan la URL completa en su descripción y en sus datos,
       // asi que la query string entra por aqui igual que por los breadcrumbs
-      if (transaction.request?.url) {
-        transaction.request.url = scrubUrl(transaction.request.url);
-      }
-
-      transaction.spans?.forEach((span) => {
-        if (span.description) {
-          span.description = scrubUrl(span.description);
-        }
-        if (span.data) {
-          for (const key of ['url', 'http.url']) {
-            if (typeof span.data[key] === 'string') {
-              span.data[key] = scrubUrl(span.data[key]);
-            }
-          }
-        }
-      });
+      sentryScrubbing.beforeSendTransaction(transaction);
 
       return transaction;
     },
@@ -273,17 +258,7 @@ if (!SENTRY_CONFIG.dsn) {
     // ejecuta, pero se conserva por si se retira el init de `main.jsx`: si
     // llegara ese dia, sin esto volveria el mismo agujero que cierra la FE #385.
     beforeSendSpan(span) {
-      if (span.description) {
-        span.description = scrubUrl(span.description);
-      }
-      if (span.data) {
-        for (const key of ['url', 'http.url']) {
-          if (typeof span.data[key] === 'string') {
-            span.data[key] = scrubUrl(span.data[key]);
-          }
-        }
-      }
-
+      sentryScrubbing.beforeSendSpan(span);
       return span;
     },
 
@@ -302,10 +277,9 @@ if (!SENTRY_CONFIG.dsn) {
         return null;
       }
 
-      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385)
-      if (breadcrumb.data?.url) {
-        breadcrumb.data.url = scrubUrl(breadcrumb.data.url);
-      }
+      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385),
+      // tambien el from/to de las navegaciones
+      sentryScrubbing.beforeBreadcrumb(breadcrumb);
 
       return breadcrumb;
     },
@@ -324,7 +298,6 @@ if (!SENTRY_CONFIG.dsn) {
 │ Release:           ${RELEASE.padEnd(32)}│
 │ Debug:             ${String(SENTRY_CONFIG.debug).padEnd(32)}│
 │ Traces Sample:     ${(SENTRY_CONFIG.tracesSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
-│ Profiles Sample:   ${(SENTRY_CONFIG.profilesSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays Session:   ${(SENTRY_CONFIG.replaysSessionSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays On Error:  ${(SENTRY_CONFIG.replaysOnErrorSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Feedback Widget:   ${String(SENTRY_CONFIG.enableFeedback).padEnd(32)}│

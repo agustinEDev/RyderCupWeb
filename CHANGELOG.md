@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.38.0] - 2026-10-01
+
+Sin funciones nuevas: una corrección de seguridad para que ningún secreto de una URL
+llegue a Sentry, el paso a Sentry 11 sin perder ese filtro y un CI mucho más estricto,
+con comprobaciones obligatorias que ahora comprueban de verdad lo que dicen. Va con el
+backend **2.23.0**, sin cambios de contrato.
+
+**Notas de despliegue.** Sin cambios de contrato; el orden de siempre: backend 2.23.0
+primero y después este. Tras desplegar, comprobar en Sentry que la carga de
+restablecer la contraseña y un login con Google muestran `[REDACTED]`, y que Replay
+sigue grabando las páginas normales. Desde el 28 de septiembre Render despliega el
+frontend solo al mover `main`: verificarlo en esta primera release.
+
+### Changed
+
+- **Tras abrir el enlace de restablecer la contraseña o de verificar el correo, el
+  token desaparece de la barra de direcciones** (#772). La página sigue funcionando
+  igual, también al recargar. Es lo que evita que el token acabe en Sentry, en el
+  `Referer` o en el historial del navegador.
+- **Sentry 11, sin perder el filtro de URLs** (#769). Sentry 11 cambió la forma de los
+  spans (`name`, `attributes`, `url.full`), y `main.jsx`, el arranque que de verdad se
+  usa, es JavaScript sin tipos: nada lo habría avisado y los tokens habrían vuelto a
+  llegar a Sentry en silencio.
+- **Dependencias al día**: Vitest 5 junto con su cobertura (#754), el grupo de
+  actualizaciones menores (framer-motion, react-router, vite, jsdom y otras; #753,
+  #755), dotenv 18 en desarrollo (#757) y tres avisos de seguridad de herramientas de
+  desarrollo transitivas (`undici`, `brace-expansion`, `fast-uri`) parcheados (#767):
+  ninguna llega al navegador.
+- **Un CI que bloquea de verdad** (#752, #758–#763, #766, #768, #770, #773):
+  - Snyk, sin cuota, sale del pipeline: lo sustituyen Dependency
+    Review en cada PR, CodeQL y una revisión semanal de Snyk que también corre en cada
+    PR de release o hotfix y abre una issue cuando algo pide acción o el token caduca.
+  - Nuevas comprobaciones de arquitectura (dependency-cruiser: capas y ciclos) y de
+    OWASP Top 10 (Semgrep, cero hallazgos de partida), y `fetch` solo a través de
+    `apiRequest()`.
+  - El pipeline, en dos columnas y con los tests una sola vez: si falla el análisis
+    estático no se gastan minutos en tests. Todos los checks, CodeQL incluido, son
+    obligatorios.
+  - Comprobaciones que podían salir en verde sin mirar nada: la firma se verifica con
+    GitHub en **todos** los commits de la PR o del push, no solo en el último; `npm
+    audit` falla cuando no puede auditar; el presupuesto del bundle falla si no hay JS;
+    la cobertura cuenta **todo** `src/`, con umbrales en las cifras reales (líneas 78,
+    sentencias 77,5, funciones 73,5, ramas 74); y se va el PR Size Check, que no
+    comprobaba nada.
+  - Los tests del refresco automático del sobre dejan de fallar a ratos (#771).
+
+### Security
+
+- **Ningún secreto de una URL llega ya a Sentry** (#772), que es un tercero. Se colaban
+  el token de restablecer la contraseña en la ruta (`/reset-password/:token` y
+  `/api/v1/auth/validate-reset-token/:token`), el `code` y el `state` del login con
+  Google, los `from`/`to` de las migas de navegación, el `Referer`, `url.path` y la
+  lista de URLs de Replay. Ahora un solo módulo limpia cada cadena de lo que sale, en
+  vez de una lista de campos que se quedaba atrás con cada cambio de Sentry. Las tres
+  páginas que reciben un secreto (restablecer la contraseña, verificar el correo y la
+  vuelta de Google) lo quitan de la barra de direcciones en cuanto lo leen; el token
+  se guarda en el `state` de esa entrada del historial, así que recargar (también la
+  recarga automática al llegar una versión nueva), reintentar tras un fallo de red o
+  volver atrás siguen funcionando. El `code` y el `state` de Google, de un solo uso,
+  no se guardan. Replay no se carga mientras la barra lleve un secreto, porque su
+  evento meta graba la dirección sin pasar por ningún filtro. Los argumentos de la
+  consola se limpian sobre una copia, nunca sobre los objetos de la app.
+
 ## [2.37.0] - 2026-09-26
 
 El resto del rediseño de las competiciones (#409) y su pulido (#710): la sala de draft,

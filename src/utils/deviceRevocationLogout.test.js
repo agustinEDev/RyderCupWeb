@@ -39,11 +39,11 @@ describe('deviceRevocationLogout utilities', () => {
     delete window.location;
     window.location = { href: '', pathname: '' };
     // Mock localStorage
-    global.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: vi.fn(),
       setItem: vi.fn(),
       removeItem: vi.fn(),
-    };
+    });
     // Mock Sentry
     window.Sentry = { setUser: vi.fn() };
   });

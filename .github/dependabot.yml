@@ -33,6 +33,7 @@ updates:
       testing:
         patterns:
           - "vitest*"
+          - "@vitest/*"  # vitest y @vitest/coverage-v8 van a la par: por separado, npm no resuelve
           - "@testing-library/*"
           - "@playwright/*"
           - "jsdom"

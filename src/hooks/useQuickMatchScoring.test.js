@@ -1520,11 +1520,11 @@ describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N
     // Este fichero corre sin almacenamiento, y el módulo lo envuelve en
     // try/catch: sin esto los tests pasarían por no haber dónde guardar
     const guardado = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => guardado.set(k, String(v)),
       removeItem: (k) => guardado.delete(k),
-    };
+    });
     vi.clearAllMocks();
     olvidaTodo();
     offlineQueue.getByMatch.mockReturnValue([]);
@@ -1645,11 +1645,11 @@ describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N
 describe('useQuickMatchScoring · lo guardado no pisa la pantalla (FE #524, tabla P)', () => {
   beforeEach(() => {
     const almacen = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
       setItem: (k, v) => almacen.set(k, String(v)),
       removeItem: (k) => almacen.delete(k),
-    };
+    });
     vi.clearAllMocks();
     olvidaTodo();
     offlineQueue.getByMatch.mockReturnValue([]);
@@ -1742,11 +1742,11 @@ describe('useQuickMatchScoring · lo guardado no pisa la pantalla (FE #524, tabl
 describe('useQuickMatchScoring · cuándo se pregunta (FE #524, tabla Q)', () => {
   beforeEach(() => {
     const almacen = new Map();
-    globalThis.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
       setItem: (k, v) => almacen.set(k, String(v)),
       removeItem: (k) => almacen.delete(k),
-    };
+    });
     vi.clearAllMocks();
     olvidaTodo();
     offlineQueue.getByMatch.mockReturnValue([]);
