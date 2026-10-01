@@ -59,3 +59,6 @@ docs/SCORING_API_CONTRACT.md
 
 # Herramienta local para medir en móvil (va en su propia rama)
 scripts/movil/
+
+# Python de los scripts del CI
+__pycache__/
