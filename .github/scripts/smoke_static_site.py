@@ -33,8 +33,10 @@ from pathlib import Path
 _RECURSO = re.compile(r"<(?:script|link)\b[^>]*>", re.IGNORECASE)
 # Con comillas dobles, simples o sin comillas: uno que no se leyera se saltaría
 _ATRIBUTO = re.compile(r"""(\w[\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))""")
-# Lo que el JS y el CSS piden más tarde: assets/<nombre>.js|css
+# Lo que el JS y el CSS piden más tarde: assets/<nombre>.js|css desde la raíz, y
+# ./<nombre>.js|css entre chunks, relativo al que lo pide (40 de 166, 1 oct 2026)
 _ASSET_DIFERIDO = re.compile(r"assets/[\w.-]+\.(?:js|css)")
+_ASSET_RELATIVO = re.compile(r"\./([\w.-]+\.(?:js|css))")
 # El navegador se queda con el algoritmo más fuerte y acepta si cuadra uno de él
 _FUERZA = {"sha256": 1, "sha384": 2, "sha512": 3}
 
@@ -57,6 +59,10 @@ def _pedir(base: str, ruta: str) -> tuple[int, bytes]:
             return respuesta.status, respuesta.read()
     except urllib.error.HTTPError as error:
         return error.code, b""
+    except (urllib.error.URLError, TimeoutError) as error:
+        # Sin respuesta: 0 se informa como fallo, con el resto de comprobaciones
+        print(f"::warning::{ruta}: sin respuesta ({error})")
+        return 0, b""
 
 
 def _hash_sri(algoritmo: str, contenido: bytes) -> str:
@@ -86,9 +92,12 @@ def _diferidos_que_faltan(dist: Path) -> list[str]:
     faltan = set()
     for fichero in [*dist.glob("assets/*.js"), *dist.glob("assets/*.css")]:
         texto = fichero.read_text("utf-8", "replace")
-        for pedido in set(_ASSET_DIFERIDO.findall(texto)):
-            if not (dist / pedido).is_file():
-                faltan.add(f"{fichero.name} pide {pedido}, que no está en el build")
+        pedidos = {dist / p for p in _ASSET_DIFERIDO.findall(texto)}
+        pedidos |= {fichero.parent / p for p in _ASSET_RELATIVO.findall(texto)}
+        for pedido in pedidos:
+            if not pedido.is_file():
+                relativo = pedido.relative_to(dist)
+                faltan.add(f"{fichero.name} pide {relativo}, que no está en el build")
     return sorted(faltan)
 
 

@@ -498,6 +498,8 @@ jobs:
           # versiones; lo que no puede pasar es que instale OTRAS versiones que
           # las que han pasado los tests
           python3 .github/scripts/lock_versions_match.py "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
+          # El build del CI (abajo) va con el lockfile del repo, no con el reescrito
+          cp "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
           npm run build
 
       - name: Serve the Render build like a static site
