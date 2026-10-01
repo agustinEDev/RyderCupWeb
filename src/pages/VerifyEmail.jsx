@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { verifyEmailUseCase } from '../composition';
 import BlockLoader from '../components/ui/BlockLoader';
 import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
 
 
+// Lo que se espera antes de llevar al panel; el texto lo dice con el mismo número
+const SEGUNDOS_HASTA_EL_PANEL = 3;
+
 const VerifyEmail = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   // Tras quitarlo de la barra, una recarga lo recupera del historial
   const token = searchParams.get('token') || readStrippedSecret('token');
@@ -18,7 +23,6 @@ const VerifyEmail = () => {
   }, []);
 
   const [status, setStatus] = useState('verifying'); // verifying | success | error | invalid
-  const [message, setMessage] = useState('');
   const redirectTimeoutRef = useRef(null);
   const hasVerifiedRef = useRef(false); // Usar ref para prevenir doble ejecución
 
@@ -39,7 +43,6 @@ const VerifyEmail = () => {
     const verifyEmail = async () => {
       if (!token || token.trim() === '') {
         setStatus('invalid');
-        setMessage('Verification token is missing or invalid.');
         return;
       }
 
@@ -51,17 +54,15 @@ const VerifyEmail = () => {
 
         await new Promise(resolve => setTimeout(resolve, 1500));
         setStatus('success');
-        setMessage('Your email has been verified successfully!');
         redirectTimeoutRef.current = setTimeout(() => {
           // Forzar recarga completa para garantizar que la cookie httpOnly esté disponible
           window.location.href = '/dashboard';
-        }, 3000);
+        }, SEGUNDOS_HASTA_EL_PANEL * 1000);
 
       } catch (error) {
         console.error('❌ Verification error:', error);
         await new Promise(resolve => setTimeout(resolve, 1500));
         setStatus('error');
-        setMessage(error.message || 'Failed to verify email. The token may be invalid or expired.');
       }
     };
 
@@ -90,10 +91,10 @@ const VerifyEmail = () => {
                     <BlockLoader sinRelleno />
                   </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
-                    Verifying your email...
+                    {t('verifyEmail.verifyingTitle')}
                   </h1>
                   <p className="text-gray-600 text-center">
-                    Please wait while we verify your email address.
+                    {t('verifyEmail.verifyingBody')}
                   </p>
                 </>
               )}
@@ -107,19 +108,19 @@ const VerifyEmail = () => {
                     </svg>
                   </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
-                    Email Verified!
+                    {t('verifyEmail.successTitle')}
                   </h1>
                   <p className="text-gray-600 text-center mb-6">
-                    {message}
+                    {t('verifyEmail.successMessage')}
                   </p>
                   <p className="text-gray-500 text-sm text-center">
-                    Redirecting to dashboard in 3 seconds...
+                    {t('verifyEmail.redirecting', { seconds: SEGUNDOS_HASTA_EL_PANEL })}
                   </p>
                   <Link
                     to="/dashboard"
                     className="mt-6 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
                   >
-                    Go to Dashboard Now
+                    {t('verifyEmail.goToDashboard')}
                   </Link>
                 </>
               )}
@@ -133,23 +134,23 @@ const VerifyEmail = () => {
                     </svg>
                   </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
-                    Verification Failed
+                    {t('verifyEmail.errorTitle')}
                   </h1>
                   <p className="text-gray-600 text-center mb-6">
-                    {message}
+                    {t('verifyEmail.errorMessage')}
                   </p>
                   <div className="flex flex-col gap-3 items-center">
                     <Link
                       to="/login"
                       className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
                     >
-                      Go to Login
+                      {t('verifyEmail.goToLogin')}
                     </Link>
                     <Link
                       to="/"
                       className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-all"
                     >
-                      Go to Home
+                      {t('verifyEmail.goToHome')}
                     </Link>
                   </div>
                 </>
@@ -164,16 +165,16 @@ const VerifyEmail = () => {
                     </svg>
                   </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
-                    Invalid Link
+                    {t('verifyEmail.invalidTitle')}
                   </h1>
                   <p className="text-gray-600 text-center mb-6">
-                    {message}
+                    {t('verifyEmail.invalidMessage')}
                   </p>
                   <Link
                     to="/"
                     className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
                   >
-                    Go to Home
+                    {t('verifyEmail.goToHome')}
                   </Link>
                 </>
               )}
@@ -182,7 +183,7 @@ const VerifyEmail = () => {
             {/* Back to Home */}
             <Link to="/" className="text-center mt-8">
               <p className="text-gray-500 text-sm font-normal hover:text-primary transition-colors">
-                ← Back to Home
+                ← {t('verifyEmail.backToHome')}
               </p>
             </Link>
           </div>
