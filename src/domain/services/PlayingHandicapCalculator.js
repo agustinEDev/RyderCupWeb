@@ -3,16 +3,15 @@
  *
  * Computes the WHS Playing Handicap (a.k.a. Course Handicap once allowance
  * is applied) for a quick match participant, mirroring the backend's
- * `PlayingHandicapCalculator` (competition.domain.services) formula:
+ * `PlayingHandicapCalculator` (shared.domain.services) formula:
  *
  *   Playing Handicap = (HI x (SR / 113) + (CR - Par)) x Allowance%
  *
- * Unlike the backend version (used for match-play strokes-given between two
- * players, where the result is clamped to >= 0), this one is used for
- * individual stroke-play/Stableford scoring against the course itself, so a
- * plus-handicap player's result is allowed to stay negative — they give
- * strokes back to the course (WHS Rule 8.2), handled downstream by
- * StablefordCalculator.allocateStrokes.
+ * A plus-handicap player's result stays negative, here and in the backend:
+ * against the course they give strokes back, and in match play the difference
+ * with the opponent counts it as negative, as in WHS Appendix C
+ * (RyderCupAm#165, decided on 2 Oct 2026; until then the backend clipped it
+ * at 0 for match play).
  */
 const NEUTRAL_SLOPE = 113;
 
