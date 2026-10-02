@@ -24,13 +24,13 @@
  * - VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE
  * - VITE_SENTRY_AUTO_SESSION_TRACKING
  * - VITE_SENTRY_ATTACH_STACKTRACE
- * - VITE_SENTRY_ENABLE_FEEDBACK
  */
 
-import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, feedbackIntegration, getClient } from '@sentry/react';
+import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 import { sentryScrubbing } from '../utils/sentryScrubbing';
+import { sentrySampleRates } from './sentrySampleRates';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
@@ -40,12 +40,10 @@ const SENTRY_CONFIG = {
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
-  tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-  replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
-  replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
+  // Los mismos que aplica el arranque de main.jsx, de un solo sitio (FE #792)
+  ...sentrySampleRates(import.meta.env),
   autoSessionTracking: import.meta.env.VITE_SENTRY_AUTO_SESSION_TRACKING === 'true',
   attachStacktrace: import.meta.env.VITE_SENTRY_ATTACH_STACKTRACE === 'true',
-  enableFeedback: import.meta.env.VITE_SENTRY_ENABLE_FEEDBACK === 'true',
 };
 
 // Obtener release desde package.json
@@ -116,23 +114,9 @@ if (!SENTRY_CONFIG.dsn) {
     }),
   ];
 
-  // Feedback Integration (opcional) - Widget para que usuarios reporten problemas
-  if (SENTRY_CONFIG.enableFeedback) {
-    integrations.push(
-      // @ts-ignore - Feedback integration types are not fully compatible with Integration type
-      feedbackIntegration({
-        // Configuración del widget
-        colorScheme: 'system', // 'light', 'dark', 'system'
-        showBranding: true,
-        autoInject: true, // Inyectar automáticamente el botón
-        // Personalización de textos (opcional)
-        formTitle: 'Report a Problem',
-        submitButtonLabel: 'Send Feedback',
-        messagePlaceholder: 'Describe what happened...',
-        successMessageText: 'Thank you for your feedback!',
-      })
-    );
-  }
+  // Sin widget de feedback de Sentry (FE #792, 2 oct 2026): era un boton
+  // flotante en ingles en todas las pantallas, y la app tiene su propio canal
+  // para reportar problemas. Su codigo se empaquetaba aunque estuviera apagado
 
   // ============================================
   // INICIALIZACIÓN DE SENTRY
@@ -300,7 +284,6 @@ if (!SENTRY_CONFIG.dsn) {
 │ Traces Sample:     ${(SENTRY_CONFIG.tracesSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays Session:   ${(SENTRY_CONFIG.replaysSessionSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
 │ Replays On Error:  ${(SENTRY_CONFIG.replaysOnErrorSampleRate * 100).toFixed(0)}%${' '.repeat(30)}│
-│ Feedback Widget:   ${String(SENTRY_CONFIG.enableFeedback).padEnd(32)}│
 └─────────────────────────────────────────────────────────┘
   `);
 }

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.38.3] - 2026-10-02
+
+Sentry deja de grabar sesiones al azar y pierde el botón de feedback. Va con el
+backend **2.24.0**, sin cambios de contrato.
+
+**Notas de despliegue.** Backend 2.24.0 primero (ya en producción) y después
+este. En Render se borraron a mano el 2 oct `VITE_SENTRY_ENABLE_FEEDBACK` y
+`VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE`: el código ya no lee la primera y la
+segunda, sin valor, vale 0.
+
+### Changed
+
+- **Sentry solo graba las sesiones con error** (#792, #793). Se grababa además
+  el 10 % de las sesiones al azar; ahora ninguna, y las que tienen un error se
+  siguen grabando todas para saber qué hizo el usuario antes. Los porcentajes
+  se leían en dos sitios, `main.jsx` y `infrastructure/sentry.ts`, cada uno con
+  sus valores por defecto; ahora los dos usan `sentrySampleRates`.
+
+### Removed
+
+- **El botón flotante de feedback de Sentry** (#792, #793). Ponía «Report a
+  Problem» en inglés en todas las pantallas, y la app tendrá su propio canal
+  para reportar problemas (#794). Su código se empaquetaba aunque la variable
+  estuviera a `false`; ahora no se empaqueta.
+
 ## [2.38.2] - 2026-10-01
 
 Tres correcciones en las pantallas de los enlaces que llegan por correo y la
