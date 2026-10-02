@@ -122,7 +122,7 @@
 - Added advanced integrations:
   - `browserTracingIntegration` with Web Vitals
   - `replayIntegration` with configured privacy
-  - `feedbackIntegration` (optional)
+  - ~~`feedbackIntegration` (optional)~~: removed on 2 Oct 2026 (FE #792), the app has its own channel to report problems
 - Added configuration validation (doesn't initialize without DSN)
 - Added `beforeSend` and `beforeSendTransaction` hooks for filtering
 - Added `beforeBreadcrumb` hook for sanitization
@@ -261,7 +261,7 @@ export default Sentry.withProfiler(App);
 ### 3. Intelligent Session Replay
 
 **Before:**
-- 10% of normal sessions recorded
+- No random sessions recorded (since 2 Oct 2026, FE #792)
 - 100% of error sessions recorded
 - No privacy configuration
 
@@ -353,7 +353,7 @@ VITE_SENTRY_ENVIRONMENT=development
 VITE_SENTRY_DEBUG=true
 VITE_SENTRY_TRACES_SAMPLE_RATE=1.0          # 100%
 VITE_SENTRY_PROFILES_SAMPLE_RATE=1.0        # 100%
-VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0.1 # 10%
+VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0   # no random sessions (FE #792)
 VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 ```
 
@@ -361,7 +361,7 @@ VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 - All errors captured
 - All transactions monitored
 - Debug logs in console
-- 10% of normal sessions recorded
+- No random sessions recorded (since 2 Oct 2026, FE #792)
 - 100% of error sessions recorded
 
 ### Production (Render)
@@ -373,7 +373,7 @@ VITE_SENTRY_ENVIRONMENT=production
 VITE_SENTRY_DEBUG=false
 VITE_SENTRY_TRACES_SAMPLE_RATE=0.1          # 10%
 VITE_SENTRY_PROFILES_SAMPLE_RATE=0.1        # 10%
-VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0.05 # 5%
+# VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE not set -> 0 (FE #792)
 VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 ```
 
@@ -381,7 +381,7 @@ VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 - All errors captured
 - 10% of transactions monitored (enough for analysis)
 - No debug logs in console
-- 5% of normal sessions recorded (reduces costs)
+- No random sessions recorded (since 2 Oct 2026, FE #792)
 - 100% of error sessions recorded (critical)
 
 ---
@@ -574,15 +574,10 @@ const loadCompetitions = async () => {
 
 **Estimated time:** 4-6 hours
 
-#### 5. Implement Feedback Widget
+#### 5. ~~Implement Feedback Widget~~ (discarded)
 
-**Steps:**
-1. Change `VITE_SENTRY_ENABLE_FEEDBACK=true` in .env
-2. Customize widget texts (optional)
-3. Test in development
-4. Deploy to production
-
-**Estimated time:** 1 hour
+Removed on 2 Oct 2026 (FE #792): it put an English floating button on every
+screen, and problems are reported through the app's own channel (FE #320).
 
 #### 6. Create Custom Dashboards in Sentry
 

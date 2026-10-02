@@ -20,11 +20,10 @@ VITE_SENTRY_ENVIRONMENT=production
 VITE_SENTRY_DEBUG=false
 VITE_SENTRY_TRACES_SAMPLE_RATE=0.1              # 10% transactions
 VITE_SENTRY_PROFILES_SAMPLE_RATE=0.1            # 10% profiles
-VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0.05    # 5% normal sessions
+# VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: not set -> 0, only error sessions are recorded (FE #792)
 VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0    # 100% error sessions
 VITE_SENTRY_AUTO_SESSION_TRACKING=true
 VITE_SENTRY_ATTACH_STACKTRACE=true
-VITE_SENTRY_ENABLE_FEEDBACK=false                # Optional feedback widget
 ```
 
 4. Click **Manual Deploy** → **Deploy latest commit**
