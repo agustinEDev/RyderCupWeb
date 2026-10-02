@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 import { sentryScrubbing } from './utils/sentryScrubbing';
+import { sentrySampleRates } from './infrastructure/sentrySampleRates';
 import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
 // Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
 // antes de que React navegue a ningún sitio
@@ -33,10 +34,9 @@ if (sentryDsn) {
     release: `rydercup-web@${import.meta.env.VITE_APP_VERSION || '1.6.0'}`,
     // No integrations yet - will be added by lazy-loaded infrastructure/sentry
     integrations: [],
-    // Configure sample rates from env (these cannot be changed after init)
-    tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '1.0'),
-    replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
-    replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
+    // Sample rates: no se pueden cambiar despues de init. Salen de un solo
+    // sitio (FE #792): sin grabacion de sesiones al azar, todas las de error
+    ...sentrySampleRates(import.meta.env),
     attachStacktrace: true,
 
     // El saneado de URLs va AQUI y no en infrastructure/sentry.ts (FE #385).
