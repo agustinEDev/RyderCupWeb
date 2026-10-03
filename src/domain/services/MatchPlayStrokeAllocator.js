@@ -191,18 +191,18 @@ class MatchPlayStrokeAllocator {
   /**
    * Course Handicap (sin allowance), base de los repartos por equipos.
    *
-   * @returns {number} Entero >= 0
+   * @returns {number} Entero; negativo para un jugador plus (BE #165)
    */
   static courseHandicap(participant, holes, tees) {
     const hi = participant?.handicap;
     if (hi == null) return 0;
 
     const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
-    if (!rated) return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(hi));
+    if (!rated) return PlayingHandicapCalculator.roundHalfAwayFromZero(hi);
 
     const { tee, par } = rated;
     const raw = hi * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - par);
-    return Math.max(0, PlayingHandicapCalculator.roundHalfAwayFromZero(raw));
+    return PlayingHandicapCalculator.roundHalfAwayFromZero(raw);
   }
 
   /**
@@ -222,12 +222,10 @@ class MatchPlayStrokeAllocator {
    * FOURBALL, y sigue siendo preferible a enseñar el número de un jugador.
    *
    * @param {Array<Object>} members - Jugadores del bando
-   * @returns {number} Entero >= 0
+   * @returns {number} Entero; negativo si el bando lo es (un plus baja la media)
    */
   static sidePlayingHandicap(members = [], holes = [], tees = [], allowancePercentage = 100) {
     if (members.length === 0) return 0;
-    // Sin clamp: `courseHandicap` ya deja a cada jugador en 0 o más, así que el
-    // promedio no puede salir negativo.
     const average = MatchPlayStrokeAllocator.#averageCourseHandicap(members, holes, tees);
     return PlayingHandicapCalculator.roundHalfAwayFromZero((average * allowancePercentage) / 100);
   }
@@ -246,27 +244,23 @@ class MatchPlayStrokeAllocator {
    * se usa el propio Handicap Index: es una aproximación, pero deja la partida
    * utilizable en vez de tratar al jugador como scratch.
    *
-   * `allowNegative` deja pasar el hándicap plus, que cede golpes al campo
-   * (Regla WHS 8.2). En match play no se usa: la diferencia entre los dos
-   * Playing Handicaps ya recoge la ventaja, y el WHS acota cada uno a cero
-   * antes de restarlos.
+   * El de un jugador plus es negativo, también en match play: la diferencia
+   * con el rival lo cuenta así, como el WHS (BE #165, decidido el 2 oct 2026).
+   * Hasta entonces se recortaba a 0 en match play y un +2 contra un 10 daba 10
+   * golpes en vez de 12.
    *
-   * @returns {number} Entero; negativo solo si allowNegative
+   * @returns {number} Entero; negativo para un jugador plus
    */
-  static playingHandicap(participant, holes, tees, allowancePercentage, allowNegative = false) {
+  static playingHandicap(participant, holes, tees, allowancePercentage) {
     const hi = participant?.handicap;
     if (hi == null) return 0;
-
-    const clamp = (value) => (allowNegative ? value : Math.max(0, value));
 
     const rated = MatchPlayStrokeAllocator.ratableTeeFor(participant, holes, tees);
     if (!rated) {
       // El allowance se aplica igual: sin él, quien no tiene barra valorable
       // jugaría al 100% de su hándicap mientras el resto de la partida juega al
       // 95%, y saldría ganando por no tener datos.
-      return clamp(
-        PlayingHandicapCalculator.roundHalfAwayFromZero((hi * allowancePercentage) / 100)
-      );
+      return PlayingHandicapCalculator.roundHalfAwayFromZero((hi * allowancePercentage) / 100);
     }
 
     const ph = PlayingHandicapCalculator.calculate(
@@ -278,7 +272,7 @@ class MatchPlayStrokeAllocator {
       },
       allowancePercentage
     );
-    return clamp(ph ?? 0);
+    return ph ?? 0;
   }
 
   /**
@@ -374,9 +368,8 @@ class MatchPlayStrokeAllocator {
   static #byIndividualHandicap(participants, holes, tees, allowance) {
     const result = {};
     for (const p of participants) {
-      // Sin acotar a cero: un hándicap plus cede golpes al campo, y acotarlo
-      // dejaba la tarjeta contando una cosa y la clasificación otra
-      const ph = MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance, true);
+      // Un hándicap plus es negativo y cede golpes al campo
+      const ph = MatchPlayStrokeAllocator.playingHandicap(p, holes, tees, allowance);
       result[p.participantId] = MatchPlayStrokeAllocator.#build(
         ph,
         MatchPlayStrokeAllocator.holesByDifficultyFor(p, holes, tees)
