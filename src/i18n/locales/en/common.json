@@ -19,7 +19,6 @@
   "installModal": {
     "title": "Install RyderCupFriends",
     "close": "Close install instructions",
-  "removeSelected": "Remove {{name}}",
     "gotIt": "Got it",
     "howTo": "How to install",
     "steps": {
@@ -46,6 +45,7 @@
   "delete": "Delete",
   "edit": "Edit",
   "close": "Close",
+  "removeSelected": "Remove {{name}}",
   "modal": {
     "confirm": "Confirm",
     "ok": "OK",
