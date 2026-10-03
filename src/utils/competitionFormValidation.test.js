@@ -15,6 +15,22 @@ const validFormData = {
 };
 
 describe('validateCompetitionForm', () => {
+  it('V3: al editar no se exigen campos de golf: se gestionan en la ficha', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, golfCourses: [] }, { exigirCampos: false })
+    ).toBeNull();
+  });
+
+  it('V4: al crear, sí (en todos los tipos)', () => {
+    expect(validateCompetitionForm({ ...validFormData, golfCourses: [] })).toEqual({
+      key: 'golfCoursesRequired',
+      missingCourseCountryCodes: ['ES'],
+    });
+    expect(
+      validateCompetitionForm({ ...validFormData, tournamentType: 'STABLEFORD', golfCourses: [] })
+    ).toEqual({ key: 'golfCoursesRequired', missingCourseCountryCodes: ['ES'] });
+  });
+
   it('V1: un torneo sin equipos no pide nombres de equipo (FE #791)', () => {
     expect(
       validateCompetitionForm({
