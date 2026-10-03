@@ -279,6 +279,9 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
   // consulta y se apunta en el mismo suspiro, antes de que React vuelva a pintar
   const enVuelo = useRef(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
+  // En qué país se buscan campos: sin elegir, el principal. Con adyacentes, el
+  // organizador cambia de uno a otro desde el selector (Agustín, 4 oct 2026)
+  const [paisElegido, setPaisElegido] = useState(null);
   // El campo que espera un «sí» para quitarse
   const [quitando, setQuitando] = useState(null);
 
@@ -311,6 +314,9 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
     mainCountryCode,
     ...(competition.countries?.slice(1).map(c => c.code) || [])
   ].filter(Boolean);
+  const paisDelBuscador = compatibleCountries.includes(paisElegido)
+    ? paisElegido
+    : compatibleCountries[0] || null;
 
   // Load golf courses
   useEffect(() => {
@@ -473,8 +479,32 @@ const CompetitionGolfCoursesSection = ({ competition, canManage, onCamposCambiad
                 ✕
               </button>
             </div>
+            {compatibleCountries.length > 1 && (
+              <div
+                role="group"
+                aria-label={t('detail.golfCourses.searchIn')}
+                className="flex flex-wrap gap-2 mb-3"
+              >
+                {competition.countries.filter((pais) => pais?.code).map((pais) => (
+                  <button
+                    key={pais.code}
+                    type="button"
+                    onClick={() => setPaisElegido(pais.code)}
+                    aria-pressed={paisDelBuscador === pais.code}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                      paisDelBuscador === pais.code
+                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <CountryFlag countryCode={pais.code} style={{ width: '18px', height: 'auto' }} />
+                    {formatCountryName(pais, i18n.language)}
+                  </button>
+                ))}
+              </div>
+            )}
             <GolfCourseSearchBox
-              countryCode={compatibleCountries[0] || null}
+              countryCode={paisDelBuscador}
               selectedCourse={null}
               // Los que ya tiene la competición, para no ofrecerlos otra vez: el
               // backend los rechaza, y sin esto el organizador se comía un error
