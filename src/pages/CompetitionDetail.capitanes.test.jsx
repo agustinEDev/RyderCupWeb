@@ -97,6 +97,7 @@ const INSCRITOS = [
 ];
 
 const competicion = (extra = {}) => ({
+  hasTeams: true,
   id: 'comp-1',
   name: 'Ryder de los amigos',
   status: 'ACTIVE',

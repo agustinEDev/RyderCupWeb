@@ -48,8 +48,11 @@ class CompetitionAssembler {
     return {
       id: competition.id.toString(),
       name: competition.name.toString(),
-      team1Name: competition.team1Name,
-      team2Name: competition.team2Name,
+      // Si tiene la pieza de la Ryder (equipos, reparto, modo y capitanes). Las
+      // pantallas preguntan esto, no el tipo (FE #791)
+      hasTeams: competition.hasTeams,
+      team1Name: competition.ryderCup?.team1Name ?? null,
+      team2Name: competition.ryderCup?.team2Name ?? null,
       startDate: competition.dates.startDate.toISOString().split('T')[0],
       endDate: competition.dates.endDate.toISOString().split('T')[0],
       location: apiData?.location || competition.location.toString(),
@@ -99,7 +102,7 @@ class CompetitionAssembler {
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
       // El modo con el que se CONFIGURÓ: decide si se reparte solo al cerrar
-      teamAssignment: competition.teamAssignment?.value() ?? null,
+      teamAssignment: competition.ryderCup?.teamAssignment?.value() ?? null,
       // Cómo se repartieron DE VERDAD, si ya se repartieron: del tipo Ryder
       // sale MANUAL, así que unos equipos elegidos uno a uno en la sala de
       // draft se contaban como hechos a mano. Va aparte para no pisar el

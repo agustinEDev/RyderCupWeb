@@ -328,7 +328,7 @@ const CreateCompetition = () => {
           tournamentType: competition.tournamentType || 'RYDER_CUP',
           // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
           setupMode:
-            competition.setupMode || (tieneEquipos(competition.tournamentType) ? 'RYDER_CUP' : null),
+            competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 

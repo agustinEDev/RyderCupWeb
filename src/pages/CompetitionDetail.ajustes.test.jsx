@@ -78,6 +78,7 @@ const pintar = () =>
 const ficha = (extra = {}) =>
   mockDetalle.mockResolvedValue({
     id: 'comp-1',
+    hasTeams: true,
     name: 'Prueba',
     status: 'CLOSED',
     creatorId: 'creator-1',
@@ -164,6 +165,7 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
   it('C15: un Stableford no enseña equipos ni reparto que no tiene (FE #791)', async () => {
     ficha({
       tournamentType: 'STABLEFORD',
+      hasTeams: false,
       modality: 'STROKE_PLAY',
       team1Name: null,
       team2Name: null,
@@ -179,7 +181,7 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
   });
 
   it('C14: un tipo que no conozcamos sale tal cual, no como clave', async () => {
-    ficha({ tournamentType: 'SCRAMBLE', modality: 'STROKE_PLAY' });
+    ficha({ tournamentType: 'SCRAMBLE', modality: 'STROKE_PLAY', hasTeams: false });
     pintar();
 
     const etiqueta = await screen.findByText('Tipo:');
@@ -228,6 +230,23 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     expect(await screen.findByTestId('accion-principal')).toHaveTextContent(
       'detail.actions.nameCaptains'
     );
+  });
+
+  it('C16: a un Stableford no se le ofrece nombrar capitanes (FE #791)', async () => {
+    ficha({
+      status: 'ACTIVE',
+      tournamentType: 'STABLEFORD',
+      hasTeams: false,
+      setupMode: null,
+      teamsAssigned: false,
+      captains: { teamA: null, teamB: null, viceTeamA: null, viceTeamB: null },
+    });
+    pintar();
+
+    for (const boton of await screen.findAllByTestId('menu-acciones')) {
+      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+    }
+    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
   });
 
   it('C9: y con los dos puestos, cambiarlos', async () => {

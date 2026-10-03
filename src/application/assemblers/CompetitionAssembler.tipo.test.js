@@ -34,6 +34,7 @@ describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {
 
     expect(dto.tournamentType).toBe('RYDER_CUP');
     expect(dto.modality).toBe('MATCH_PLAY');
+    expect(dto.hasTeams).toBe(true);
   });
 
   it('A2: una respuesta de antes del tipo es una Ryder Cup de match play', () => {
@@ -69,6 +70,7 @@ describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {
     expect(dto.team1Name).toBeNull();
     expect(dto.team2Name).toBeNull();
     expect(dto.teamAssignment).toBeNull();
+    expect(dto.hasTeams).toBe(false);
   });
 
   it('A5: una Ryder de antes sin nombres sigue con «Team 1» y «Team 2»', () => {

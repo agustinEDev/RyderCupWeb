@@ -105,6 +105,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
       visibility: 'PRIVATE',
       setupMode: 'MANUAL',
       teamAssignment: 'MANUAL',
+      hasTeams: true,
       creatorId: 'u-1',
     });
   });
@@ -226,6 +227,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
       status: 'ACTIVE',
       visibility: 'PRIVATE',
       tournamentType: 'STABLEFORD',
+      hasTeams: false,
       modality: 'STROKE_PLAY',
       team1Name: null,
       team2Name: null,

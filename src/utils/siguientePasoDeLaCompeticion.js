@@ -23,7 +23,10 @@ export const siguientePasoDeLaCompeticion = (
 ) => {
   if (!competition) return null;
 
-  const { status, setupMode, teamsAssigned, captains, maxPlayers } = competition;
+  const { status, setupMode, teamsAssigned, captains, maxPlayers, hasTeams } = competition;
+  // Capitanes, draft y equipos son de la Ryder: a un torneo sin su pieza no se
+  // le ofrecen (FE #791)
+  const conEquipos = hasTeams;
   const hayCapitanes = Boolean(captains?.teamA && captains?.teamB);
 
   // Con el torneo en marcha o terminado, lo que todo el mundo quiere ver es
@@ -46,7 +49,10 @@ export const siguientePasoDeLaCompeticion = (
     // Sin saber cuántos hay o sin cupo, la comparación con `undefined` es
     // falsa: se sugiere como antes
     const quedanPlazas = inscritos < maxPlayers;
-    return quedanPlazas ? 'manageInvitations' : 'nameCaptains';
+    if (quedanPlazas) return 'manageInvitations';
+    // Sin equipos no hay capitanes que nombrar. Cerrar sus inscripciones llega
+    // con las rondas de stroke play (RyderCupAm#251): hasta entonces, nada
+    return conEquipos ? 'nameCaptains' : null;
   }
 
   if (status === 'CLOSED') {

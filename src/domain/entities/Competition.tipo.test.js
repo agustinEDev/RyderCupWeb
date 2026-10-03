@@ -9,7 +9,7 @@ import { HandicapSettings, HandicapType } from '../value_objects/HandicapSetting
 import { TeamAssignment } from '../value_objects/TeamAssignment';
 
 /**
- * Solo una Ryder Cup tiene equipos (FE #791, RyderCupAm#251).
+ * Solo una Ryder Cup tiene equipos, en su pieza (FE #791), como en el backend.
  *
  * La entidad exigía nombres de equipo a toda competición, y el mapper se los
  * inventaba («Team 1»/«Team 2») a un Stableford: la ficha enseñaba equipos que
@@ -25,14 +25,18 @@ const props = (extra = {}) => ({
   ...extra,
 });
 
+const ryder = (extra = {}) =>
+  new Competition(
+    props({ team1Name: 'Europa', team2Name: 'USA', teamAssignment: TeamAssignment.MANUAL, ...extra })
+  );
+
 describe('Competition · el tipo de torneo (FE #791)', () => {
-  it('D1: un Stableford se crea sin equipos ni reparto', () => {
+  it('D1: un Stableford no tiene pieza de Ryder', () => {
     const competicion = new Competition(props({ tournamentType: 'STABLEFORD' }));
 
     expect(competicion.tournamentType).toBe('STABLEFORD');
+    expect(competicion.ryderCup).toBeNull();
     expect(competicion.hasTeams).toBe(false);
-    expect(competicion.team1Name).toBeNull();
-    expect(competicion.teamAssignment).toBeNull();
   });
 
   it('D2: una Ryder sin nombres de equipo sigue sin poder crearse', () => {
@@ -41,12 +45,30 @@ describe('Competition · el tipo de torneo (FE #791)', () => {
     );
   });
 
-  it('D3: sin tipo es una Ryder Cup, como todas las de antes', () => {
-    const competicion = new Competition(
-      props({ team1Name: 'Europa', team2Name: 'USA', teamAssignment: TeamAssignment.MANUAL })
-    );
+  it('D3: sin tipo es una Ryder Cup, con su pieza', () => {
+    const competicion = ryder();
 
     expect(competicion.tournamentType).toBe('RYDER_CUP');
     expect(competicion.hasTeams).toBe(true);
+    expect(competicion.ryderCup.team1Name).toBe('Europa');
+  });
+
+  it('D4: cambiar de estado conserva el tipo y la pieza', () => {
+    const stableford = new Competition(props({ tournamentType: 'STABLEFORD' })).activate();
+    const activada = ryder().activate();
+
+    expect(stableford.tournamentType).toBe('STABLEFORD');
+    expect(stableford.ryderCup).toBeNull();
+    expect(activada.ryderCup.team2Name).toBe('USA');
+  });
+
+  it('D5: a un Stableford no se le ponen equipos al editarlo', () => {
+    const stableford = new Competition(props({ tournamentType: 'STABLEFORD' }));
+
+    expect(() => stableford.updateInfo({ team1Name: 'Europa' })).toThrow('no tiene equipos');
+  });
+
+  it('D6: una Ryder sí cambia sus equipos', () => {
+    expect(ryder().updateInfo({ team1Name: 'Asia' }).ryderCup.team1Name).toBe('Asia');
   });
 });

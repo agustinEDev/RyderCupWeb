@@ -65,6 +65,7 @@ import customToast from '../../utils/toast';
 const SchedulePage = (await import('./SchedulePage')).default;
 
 const COMPETICION = {
+  hasTeams: true,
   id: 'comp-1',
   name: 'Ryder de los amigos',
   status: 'CLOSED',
@@ -121,6 +122,30 @@ const pintar = () =>
       </Routes>
     </MemoryRouter>
   );
+
+describe('SchedulePage · un torneo sin equipos (FE #791)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDetalle.mockResolvedValue({
+      ...COMPETICION,
+      tournamentType: 'STABLEFORD',
+      hasTeams: false,
+      team1Name: null,
+      team2Name: null,
+      captains: { teamA: null, teamB: null, viceTeamA: null, viceTeamB: null },
+    });
+    mockAgenda.mockResolvedValue({ ...AGENDA, teamAssignment: null });
+    mockInscripciones.mockResolvedValue(INSCRITOS);
+  });
+
+  it('G1: no enseña la tarjeta de equipos ni «Asignar equipos»', async () => {
+    pintar();
+
+    await screen.findByText('Ryder de los amigos');
+    expect(screen.queryByText('teams.title')).not.toBeInTheDocument();
+    expect(screen.queryByText('teams.assign')).not.toBeInTheDocument();
+  });
+});
 
 describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
   beforeEach(() => {
