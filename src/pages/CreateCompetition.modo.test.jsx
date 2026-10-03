@@ -248,6 +248,16 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     expect(payload).not.toHaveProperty('team_2_name');
   });
 
+  it('S11: la sección de configuración no lleva el nombre de la Ryder (CodeRabbit, #799)', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+
+    // Modo de juego, hándicap y cupo valen para cualquier tipo de torneo
+    expect(screen.getByText('detail.settings.title')).toBeInTheDocument();
+    expect(screen.queryByText('create.ryderCupSettings')).not.toBeInTheDocument();
+  });
+
   it('S8: volver a elegir el tipo vuelve a preguntar el modo', async () => {
     // Cambiar de tipo puede cambiar lo que tiene sentido automatizar, así que
     // el modo se vuelve a preguntar. Lo escrito se queda, como con el tipo

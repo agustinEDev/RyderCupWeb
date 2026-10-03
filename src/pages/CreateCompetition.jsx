@@ -1313,7 +1313,7 @@ const CreateCompetition = () => {
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Settings className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-base">{t('create.ryderCupSettings')}</h3>
+                  <h3 className="text-gray-900 font-bold text-base">{t('detail.settings.title')}</h3>
                 </div>
 
                 <div className="space-y-4">
