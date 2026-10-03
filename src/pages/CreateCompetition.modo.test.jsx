@@ -269,6 +269,18 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), { exigirCampos: false });
   });
 
+  it('E4: si la ubicación nueva deja campos fuera, se ve el motivo del servidor (BE #481)', async () => {
+    const motivo =
+      'Quita antes desde la ficha los campos de ES: quedarían fuera de los países de la competición';
+    updateCompetitionUseCase.execute.mockRejectedValueOnce(new Error(motivo));
+    pintaEdicion();
+    await screen.findByDisplayValue('Ryder de los amigos');
+
+    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+
+    expect(await screen.findByText(motivo)).toBeInTheDocument();
+  });
+
   it('E3: al crear, sí los exige', async () => {
     pinta();
     await elegirTipoYModo('MANUAL');
