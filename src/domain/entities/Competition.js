@@ -52,6 +52,7 @@ export default class Competition {
     // (al copiarse a sí misma) o se construye con sus campos
     this.#tournamentType = tournamentType;
     if (ryderCup !== undefined) {
+      Competition.#comprobarLaPieza(tournamentType, ryderCup);
       this.#ryderCup = ryderCup;
     } else {
       this.#ryderCup = tieneEquipos(tournamentType)
@@ -85,6 +86,7 @@ export default class Competition {
     handicapSettings,
     maxPlayers = 24,
     teamAssignment,
+    tournamentType = 'RYDER_CUP',
   }) {
     return new Competition({
       id,
@@ -97,6 +99,7 @@ export default class Competition {
       handicapSettings,
       maxPlayers,
       teamAssignment,
+      tournamentType,
       status: CompetitionStatus.DRAFT,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -106,6 +109,23 @@ export default class Competition {
   /** Qué torneo es: RYDER_CUP, STABLEFORD o MEDAL (RyderCupAm#251). */
   get tournamentType() {
     return this.#tournamentType;
+  }
+
+  /**
+   * El tipo y la pieza tienen que cuadrar: una Ryder tiene la suya y los
+   * demás no tienen ninguna. Un tipo que todavía no conocemos se admite, sin
+   * equipos: la ficha tiene que poder enseñar uno que el backend añada mañana.
+   */
+  static #comprobarLaPieza(tournamentType, ryderCup) {
+    if (ryderCup !== null && !(ryderCup instanceof RyderCupSetup)) {
+      throw new Error('ryderCup tiene que ser una RyderCupSetup o null');
+    }
+    if (tieneEquipos(tournamentType) && ryderCup === null) {
+      throw new Error('Una Ryder Cup tiene equipos');
+    }
+    if (!tieneEquipos(tournamentType) && ryderCup !== null) {
+      throw new Error(`Un ${tournamentType} no tiene equipos`);
+    }
   }
 
   /** Los equipos y su reparto, o null si el torneo no los tiene. */
@@ -202,6 +222,10 @@ export default class Competition {
     // Los equipos y el reparto son de la pieza de la Ryder: un torneo sin ella
     // no los recibe, y la pieza valida sus nombres al cambiar (FE #791)
     const { team1Name, team2Name, teamAssignment, ...resto } = updates;
+    // El tipo de una competición que ya existe no cambia: tampoco aquí
+    if (resto.tournamentType !== undefined && resto.tournamentType !== this.#tournamentType) {
+      throw new Error('El tipo de una competición no se cambia');
+    }
     const cambiosDeLaRyder = Object.fromEntries(
       Object.entries({ team1Name, team2Name, teamAssignment }).filter(([, v]) => v !== undefined)
     );

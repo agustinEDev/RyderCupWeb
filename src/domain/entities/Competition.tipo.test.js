@@ -7,6 +7,7 @@ import { Location } from '../value_objects/Location';
 import { CountryCode } from '../value_objects/CountryCode';
 import { HandicapSettings, HandicapType } from '../value_objects/HandicapSettings';
 import { TeamAssignment } from '../value_objects/TeamAssignment';
+import { RyderCupSetup } from '../value_objects/RyderCupSetup';
 
 /**
  * Solo una Ryder Cup tiene equipos, en su pieza (FE #791), como en el backend.
@@ -71,4 +72,49 @@ describe('Competition · el tipo de torneo (FE #791)', () => {
   it('D6: una Ryder sí cambia sus equipos', () => {
     expect(ryder().updateInfo({ team1Name: 'Asia' }).ryderCup.team1Name).toBe('Asia');
   });
+
+  describe('el tipo y la pieza cuadran (revisión local)', () => {
+    const pieza = () =>
+      new RyderCupSetup({ team1Name: 'Europa', team2Name: 'USA', teamAssignment: TeamAssignment.MANUAL });
+
+    it('D7: una Ryder sin pieza no se crea', () => {
+      expect(() => new Competition(props({ tournamentType: 'RYDER_CUP', ryderCup: null }))).toThrow(
+        'Una Ryder Cup tiene equipos'
+      );
+    });
+
+    it('D8: un Stableford con pieza tampoco', () => {
+      expect(
+        () => new Competition(props({ tournamentType: 'STABLEFORD', ryderCup: pieza() }))
+      ).toThrow('Un STABLEFORD no tiene equipos');
+    });
+
+    it('D9: la pieza es una pieza, no un objeto cualquiera', () => {
+      expect(
+        () => new Competition(props({ ryderCup: { team1Name: 'Europa', team2Name: 'USA' } }))
+      ).toThrow('RyderCupSetup');
+    });
+
+    it('D10: un tipo que todavía no conocemos se admite, sin equipos', () => {
+      const competicion = new Competition(props({ tournamentType: 'SCRAMBLE' }));
+
+      expect(competicion.hasTeams).toBe(false);
+    });
+  });
+
+  describe('el tipo de una competición no cambia', () => {
+    it('D11: editar no cambia el tipo', () => {
+      expect(() => ryder().updateInfo({ tournamentType: 'STABLEFORD' })).toThrow(
+        'El tipo de una competición no se cambia'
+      );
+    });
+
+    it('D12: el factory crea el tipo que se le pide', () => {
+      const stableford = Competition.create(props({ tournamentType: 'STABLEFORD' }));
+
+      expect(stableford.tournamentType).toBe('STABLEFORD');
+      expect(stableford.ryderCup).toBeNull();
+    });
+  });
 });
+
