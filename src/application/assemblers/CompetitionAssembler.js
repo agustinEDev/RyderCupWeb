@@ -66,14 +66,12 @@ class CompetitionAssembler {
       canDelete: apiData?.can_delete === true,
       // Qué torneo es y su modalidad (FE #791, RyderCupAm#251). Una respuesta
       // de antes del tipo es una Ryder Cup: es lo que eran todas
-      tournamentType: apiData?.tournament_type || 'RYDER_CUP',
+      tournamentType: competition.tournamentType,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
       // Solo una Ryder lo tiene: a un Stableford no se le inventa
-      setupMode:
-        apiData?.setup_mode ||
-        ((apiData?.tournament_type || 'RYDER_CUP') === 'RYDER_CUP' ? 'RYDER_CUP' : null),
+      setupMode: apiData?.setup_mode || (competition.hasTeams ? 'RYDER_CUP' : null),
       // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
@@ -101,7 +99,7 @@ class CompetitionAssembler {
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
       // El modo con el que se CONFIGURÓ: decide si se reparte solo al cerrar
-      teamAssignment: competition.teamAssignment.value(),
+      teamAssignment: competition.teamAssignment?.value() ?? null,
       // Cómo se repartieron DE VERDAD, si ya se repartieron: del tipo Ryder
       // sale MANUAL, así que unos equipos elegidos uno a uno en la sala de
       // draft se contaban como hechos a mano. Va aparte para no pisar el

@@ -15,6 +15,23 @@ const validFormData = {
 };
 
 describe('validateCompetitionForm', () => {
+  it('V1: un torneo sin equipos no pide nombres de equipo (FE #791)', () => {
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        tournamentType: 'STABLEFORD',
+        teamOneName: '',
+        teamTwoName: '',
+      })
+    ).toBeNull();
+  });
+
+  it('V2: una Ryder los sigue pidiendo', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, tournamentType: 'RYDER_CUP', teamOneName: '' })
+    ).toEqual({ key: 'teamNamesRequired' });
+  });
+
   it('returns null for valid form data', () => {
     expect(validateCompetitionForm(validFormData)).toBeNull();
   });

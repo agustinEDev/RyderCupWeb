@@ -215,6 +215,37 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     );
   });
 
+  it('E1: editar un Stableford no pregunta el modo ni manda equipos (FE #791)', async () => {
+    getCompetitionDetailUseCase.execute.mockResolvedValue({
+      id: 'c-1',
+      name: 'Stableford del club',
+      startDate: '2030-06-01',
+      endDate: '2030-06-03',
+      countries: [{ code: 'ES', isMain: true }],
+      maxPlayers: 12,
+      status: 'ACTIVE',
+      visibility: 'PRIVATE',
+      tournamentType: 'STABLEFORD',
+      modality: 'STROKE_PLAY',
+      team1Name: null,
+      team2Name: null,
+      setupMode: null,
+      teamAssignment: null,
+      creatorId: 'u-1',
+    });
+    pintaEdicion();
+    await screen.findByDisplayValue('Stableford del club');
+
+    expect(screen.queryByTestId('modo-RYDER_CUP')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+
+    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
+    const [, payload] = updateCompetitionUseCase.execute.mock.calls[0];
+    expect(payload).not.toHaveProperty('setup_mode');
+    expect(payload).not.toHaveProperty('team_1_name');
+    expect(payload).not.toHaveProperty('team_2_name');
+  });
+
   it('S8: volver a elegir el tipo vuelve a preguntar el modo', async () => {
     // Cambiar de tipo puede cambiar lo que tiene sentido automatizar, así que
     // el modo se vuelve a preguntar. Lo escrito se queda, como con el tipo

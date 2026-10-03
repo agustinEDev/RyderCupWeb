@@ -1,6 +1,7 @@
 // src/domain/entities/Competition.js
 
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
+import { tieneEquipos } from '../value_objects/TournamentType';
 
 /**
  * Custom error for invalid state transitions in a Competition.
@@ -24,6 +25,7 @@ export default class Competition {
   #maxPlayers;
   #visibility;
   #teamAssignment;
+  #tournamentType;
   #status;
   #createdAt;
   #updatedAt;
@@ -43,21 +45,26 @@ export default class Competition {
     status = CompetitionStatus.DRAFT,
     createdAt = new Date(),
     updatedAt = new Date(),
+    tournamentType = 'RYDER_CUP',
   }) {
-    // Validate team names invariant
-    Competition._validateTeamNames(team1Name, team2Name);
+    // Solo una Ryder Cup tiene equipos (FE #791, RyderCupAm#251): a un
+    // Stableford no se le exigen ni se le inventan
+    this.#tournamentType = tournamentType;
+    if (this.hasTeams) {
+      Competition._validateTeamNames(team1Name, team2Name);
+    }
 
     this.#id = id;
     this.#creatorId = creatorId;
     this.#name = name;
     this.#dates = dates;
     this.#location = location;
-    this.#team1Name = team1Name;
-    this.#team2Name = team2Name;
+    this.#team1Name = this.hasTeams ? team1Name : null;
+    this.#team2Name = this.hasTeams ? team2Name : null;
     this.#handicapSettings = handicapSettings;
     this.#maxPlayers = maxPlayers;
     this.#visibility = visibility;
-    this.#teamAssignment = teamAssignment;
+    this.#teamAssignment = this.hasTeams ? teamAssignment : null;
     this.#status = status;
     this.#createdAt = createdAt;
     this.#updatedAt = updatedAt;
@@ -92,6 +99,16 @@ export default class Competition {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  /** Qué torneo es: RYDER_CUP, STABLEFORD o MEDAL (RyderCupAm#251). */
+  get tournamentType() {
+    return this.#tournamentType;
+  }
+
+  /** Si se juega entre dos equipos, con lo que cuelga de ellos. */
+  get hasTeams() {
+    return tieneEquipos(this.#tournamentType);
   }
 
   // --- PRIVATE VALIDATORS ---

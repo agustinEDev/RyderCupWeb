@@ -161,6 +161,23 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     expect(etiqueta.parentElement).toHaveTextContent('Ryder Cup · Match play');
   });
 
+  it('C15: un Stableford no enseña equipos ni reparto que no tiene (FE #791)', async () => {
+    ficha({
+      tournamentType: 'STABLEFORD',
+      modality: 'STROKE_PLAY',
+      team1Name: null,
+      team2Name: null,
+      teamAssignment: null,
+      setupMode: null,
+    });
+    pintar();
+
+    await screen.findByText('Tipo:');
+    expect(screen.queryByText('Equipo 1:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Equipo 2:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Asignación de Equipos:')).not.toBeInTheDocument();
+  });
+
   it('C14: un tipo que no conozcamos sale tal cual, no como clave', async () => {
     ficha({ tournamentType: 'SCRAMBLE', modality: 'STROKE_PLAY' });
     pintar();

@@ -53,4 +53,28 @@ describe('CompetitionAssembler · el tipo de torneo (FE #791)', () => {
     expect(dto.modality).toBe('STROKE_PLAY');
     expect(dto.setupMode).toBeNull();
   });
+
+  it('A4: un Stableford llega sin equipos ni reparto inventados', () => {
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({
+        tournament_type: 'STABLEFORD',
+        modality: 'STROKE_PLAY',
+        team_1_name: null,
+        team_2_name: null,
+        team_assignment: null,
+        setup_mode: null,
+      })
+    );
+
+    expect(dto.team1Name).toBeNull();
+    expect(dto.team2Name).toBeNull();
+    expect(dto.teamAssignment).toBeNull();
+  });
+
+  it('A5: una Ryder de antes sin nombres sigue con «Team 1» y «Team 2»', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi());
+
+    expect([dto.team1Name, dto.team2Name]).toEqual(['Team 1', 'Team 2']);
+    expect(dto.teamAssignment).toBe('MANUAL');
+  });
 });

@@ -138,7 +138,8 @@
     "modality": {
       "MATCH_PLAY": "Match play",
       "STROKE_PLAY": "Stroke play"
-    }
+    },
+    "moreOptionsSummaryNoTeams": "{{handicap}}"
   },
   "edit": {
     "title": "Editar Competición",
