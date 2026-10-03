@@ -339,6 +339,7 @@
       "title": "Golf courses",
       "addCourse": "Add Course",
       "selectCourse": "Select Golf Course",
+      "searchIn": "Search courses in",
       "noCourses": "No golf courses associated with this competition",
       "errorLoading": "Failed to load golf courses",
       "courseAdded": "Golf course added successfully",

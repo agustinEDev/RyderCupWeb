@@ -339,6 +339,7 @@
       "title": "Campos de golf",
       "addCourse": "Añadir Campo",
       "selectCourse": "Seleccionar Campo de Golf",
+      "searchIn": "Buscar campos en",
       "noCourses": "No hay campos de golf asociados a esta competición",
       "errorLoading": "Error al cargar los campos de golf",
       "courseAdded": "Campo de golf añadido exitosamente",
