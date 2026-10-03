@@ -105,6 +105,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
       visibility: 'PRIVATE',
       setupMode: 'MANUAL',
       teamAssignment: 'MANUAL',
+      hasTeams: true,
       creatorId: 'u-1',
     });
   });
@@ -142,6 +143,22 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await vi.waitFor(() =>
       expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ setup_mode: 'MANUAL' }),
+        expect.anything()
+      )
+    );
+  });
+
+  it('S10: el tipo elegido viaja al crear (FE #791)', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+    rellenarMinimo();
+
+    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+
+    await vi.waitFor(() =>
+      expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ tournament_type: 'RYDER_CUP' }),
         expect.anything()
       )
     );
@@ -197,6 +214,48 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
         expect.objectContaining({ setup_mode: 'RYDER_CUP' })
       )
     );
+  });
+
+  it('E1: editar un Stableford no pregunta el modo ni manda equipos (FE #791)', async () => {
+    getCompetitionDetailUseCase.execute.mockResolvedValue({
+      id: 'c-1',
+      name: 'Stableford del club',
+      startDate: '2030-06-01',
+      endDate: '2030-06-03',
+      countries: [{ code: 'ES', isMain: true }],
+      maxPlayers: 12,
+      status: 'ACTIVE',
+      visibility: 'PRIVATE',
+      tournamentType: 'STABLEFORD',
+      hasTeams: false,
+      modality: 'STROKE_PLAY',
+      team1Name: null,
+      team2Name: null,
+      setupMode: null,
+      teamAssignment: null,
+      creatorId: 'u-1',
+    });
+    pintaEdicion();
+    await screen.findByDisplayValue('Stableford del club');
+
+    expect(screen.queryByTestId('modo-RYDER_CUP')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+
+    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
+    const [, payload] = updateCompetitionUseCase.execute.mock.calls[0];
+    expect(payload).not.toHaveProperty('setup_mode');
+    expect(payload).not.toHaveProperty('team_1_name');
+    expect(payload).not.toHaveProperty('team_2_name');
+  });
+
+  it('S11: la sección de configuración no lleva el nombre de la Ryder (CodeRabbit, #799)', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+
+    // Modo de juego, hándicap y cupo valen para cualquier tipo de torneo
+    expect(screen.getByText('detail.settings.title')).toBeInTheDocument();
+    expect(screen.queryByText('create.ryderCupSettings')).not.toBeInTheDocument();
   });
 
   it('S8: volver a elegir el tipo vuelve a preguntar el modo', async () => {

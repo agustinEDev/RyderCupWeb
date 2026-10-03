@@ -22,6 +22,9 @@ const CLAVES = {
   'detail.settings.setupMode': 'Modo:',
   'create.setupMode.RYDER_CUP.title': 'Estilo Ryder Cup',
   'create.setupMode.AUTOMATIC.title': 'Todo automático',
+  'detail.settings.tournamentType': 'Tipo:',
+  'create.type.RYDER_CUP.title': 'Ryder Cup',
+  'create.modality.MATCH_PLAY': 'Match play',
 };
 // Como el de i18next: si no encuentra la clave devuelve el `defaultValue`, y
 // si ese tampoco vale, LA CLAVE. Un doble más benévolo escondía justo el
@@ -75,6 +78,7 @@ const pintar = () =>
 const ficha = (extra = {}) =>
   mockDetalle.mockResolvedValue({
     id: 'comp-1',
+    hasTeams: true,
     name: 'Prueba',
     status: 'CLOSED',
     creatorId: 'creator-1',
@@ -150,6 +154,41 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     expect(screen.queryByText(/assignment\.undefined/)).not.toBeInTheDocument();
   });
 
+  it('C13: se ve el tipo de torneo y su modalidad (FE #791)', async () => {
+    ficha({ tournamentType: 'RYDER_CUP', modality: 'MATCH_PLAY' });
+    pintar();
+
+    const etiqueta = await screen.findByText('Tipo:');
+    expect(etiqueta.parentElement).toHaveTextContent('Ryder Cup · Match play');
+  });
+
+  it('C15: un Stableford no enseña equipos ni reparto que no tiene (FE #791)', async () => {
+    ficha({
+      tournamentType: 'STABLEFORD',
+      hasTeams: false,
+      modality: 'STROKE_PLAY',
+      team1Name: null,
+      team2Name: null,
+      teamAssignment: null,
+      setupMode: null,
+    });
+    pintar();
+
+    await screen.findByText('Tipo:');
+    expect(screen.queryByText('Equipo 1:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Equipo 2:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Asignación de Equipos:')).not.toBeInTheDocument();
+  });
+
+  it('C14: un tipo que no conozcamos sale tal cual, no como clave', async () => {
+    ficha({ tournamentType: 'SCRAMBLE', modality: 'STROKE_PLAY', hasTeams: false });
+    pintar();
+
+    const etiqueta = await screen.findByText('Tipo:');
+    expect(etiqueta.parentElement).toHaveTextContent('SCRAMBLE · STROKE_PLAY');
+    expect(etiqueta.parentElement).not.toHaveTextContent('create.type');
+  });
+
   it.each([
     ['RYDER_CUP', 'Estilo Ryder Cup'],
     ['AUTOMATIC', 'Todo automático'],
@@ -191,6 +230,23 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     expect(await screen.findByTestId('accion-principal')).toHaveTextContent(
       'detail.actions.nameCaptains'
     );
+  });
+
+  it('C16: a un Stableford no se le ofrece nombrar capitanes (FE #791)', async () => {
+    ficha({
+      status: 'ACTIVE',
+      tournamentType: 'STABLEFORD',
+      hasTeams: false,
+      setupMode: null,
+      teamsAssigned: false,
+      captains: { teamA: null, teamB: null, viceTeamA: null, viceTeamB: null },
+    });
+    pintar();
+
+    for (const boton of await screen.findAllByTestId('menu-acciones')) {
+      if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
+    }
+    expect(screen.queryByText('detail.actions.nameCaptains')).not.toBeInTheDocument();
   });
 
   it('C9: y con los dos puestos, cambiarlos', async () => {

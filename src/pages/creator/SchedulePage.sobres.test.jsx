@@ -77,6 +77,7 @@ const SchedulePage = (await import('./SchedulePage')).default;
 const customToast = (await import('../../utils/toast')).default;
 
 const COMPETICION = {
+  hasTeams: true,
   id: 'comp-1',
   name: 'Ryder de los amigos',
   status: 'CLOSED',

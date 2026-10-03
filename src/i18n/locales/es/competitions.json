@@ -78,7 +78,6 @@
     "coursesSelected": "campos seleccionados",
     "courseAlreadyAdded": "Ese campo ya está añadido",
     "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
-    "ryderCupSettings": "Configuración RyderCup",
     "playMode": "Modo de Juego",
     "scratch": "Scratch",
     "handicap": "Hándicap",
@@ -134,7 +133,12 @@
         "title": "Estilo Ryder Cup",
         "blurb": "Draft de jugadores en directo (o equipos a mano), capitanes que eliges tú, rondas configurables y enfrentamientos por sobres."
       }
-    }
+    },
+    "modality": {
+      "MATCH_PLAY": "Match play",
+      "STROKE_PLAY": "Stroke play"
+    },
+    "moreOptionsSummaryNoTeams": "{{handicap}}"
   },
   "edit": {
     "title": "Editar Competición",
@@ -283,7 +287,8 @@
         "AUTOMATIC": "Automática",
         "DRAFT": "Draft de capitanes",
         "PENDING": "Sin repartir todavía"
-      }
+      },
+      "tournamentType": "Tipo:"
     },
     "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",

@@ -78,7 +78,6 @@
     "coursesSelected": "courses selected",
     "courseAlreadyAdded": "That course is already added",
     "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
-    "ryderCupSettings": "RyderCup Settings",
     "playMode": "Play Mode",
     "scratch": "Scratch",
     "handicap": "Handicap",
@@ -134,7 +133,12 @@
         "title": "Ryder Cup style",
         "blurb": "A live player draft (or teams by hand), captains you name, configurable rounds and matchups from envelopes."
       }
-    }
+    },
+    "modality": {
+      "MATCH_PLAY": "Match play",
+      "STROKE_PLAY": "Stroke play"
+    },
+    "moreOptionsSummaryNoTeams": "{{handicap}}"
   },
   "edit": {
     "title": "Edit Competition",
@@ -283,7 +287,8 @@
         "AUTOMATIC": "Automatic",
         "DRAFT": "Captains' draft",
         "PENDING": "Not split yet"
-      }
+      },
+      "tournamentType": "Type:"
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",

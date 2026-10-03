@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { useNavigate, useParams } from 'react-router';
 import { Trophy, Settings, Plus, X, ChevronDown, Flag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -99,6 +100,9 @@ const CreateCompetition = () => {
   // campo de todos
   const eligeElTipo = (tipo) => {
     setTipoElegido(tipo);
+    // En el formulario también: la validación, los pasos y la petición lo leen
+    // de ahí, igual al crear que al editar (FE #791)
+    setFormData(prev => ({ ...prev, tournamentType: tipo }));
     globalThis.scrollTo?.(0, 0);
   };
 
@@ -160,8 +164,12 @@ const CreateCompetition = () => {
     // Cuánto monta la app por su cuenta (FE #695). Al crear se elige en su paso;
     // el reparto de equipos sale de él, así que ya no se pregunta aparte
     setupMode: null,
+    tournamentType: null,
     maxPlayingHandicap: undefined
   });
+  // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
+  // la de siempre: así se cargaba y se creaba todo antes del tipo
+  const conEquipos = tieneEquipos(formData.tournamentType);
 
   // El resumen del plegable no puede prometer un equipo que ya no está escrito
   // Vaciar el campo en edición no puede recortar el cupo de una competición con
@@ -317,7 +325,10 @@ const CreateCompetition = () => {
           playMode: competition.playMode || 'HANDICAP',
           visibility: competition.visibility || 'PRIVATE',
           numberOfPlayers: competition.maxPlayers || CUPO_POR_DEFECTO,
-          setupMode: competition.setupMode || 'RYDER_CUP',
+          tournamentType: competition.tournamentType || 'RYDER_CUP',
+          // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
+          setupMode:
+            competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
         };
 
@@ -659,8 +670,6 @@ const CreateCompetition = () => {
 
       const payload = {
         name: formData.competitionName.trim(),
-        team_1_name: formData.teamOneName.trim(),
-        team_2_name: formData.teamTwoName.trim(),
         start_date: formData.startDate,
         end_date: formData.endDate,
         main_country: formData.country?.code,
@@ -668,8 +677,19 @@ const CreateCompetition = () => {
         play_mode: formData.playMode.toUpperCase(),
         visibility: formData.visibility,
         number_of_players: numPlayers,
-        // El reparto no se manda: lo deriva el servidor del modo (RyderCupAm#351)
-        setup_mode: formData.setupMode,
+        // Equipos y modo, solo en una Ryder: a un Stableford el servidor se los
+        // rechaza con un 400 (FE #791). El reparto no se manda: lo deriva el
+        // servidor del modo (RyderCupAm#351)
+        ...(conEquipos
+          ? {
+              team_1_name: formData.teamOneName.trim(),
+              team_2_name: formData.teamTwoName.trim(),
+              setup_mode: formData.setupMode,
+            }
+          : {}),
+        // El tipo, solo al crear: el de una competición que ya existe no se
+        // cambia (FE #791, RyderCupAm#251)
+        ...(!isEditMode && tipoElegido ? { tournament_type: tipoElegido } : {}),
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
           : null,
@@ -807,13 +827,13 @@ const CreateCompetition = () => {
             {/* Y detrás del tipo, cuánto hace la app por su cuenta (FE #695).
                 Editando no es un paso: la competición ya existe y el modo se
                 cambia dentro del formulario, como el resto de su configuración */}
-            {!isEditMode && tipoElegido && !formData.setupMode && (
+            {!isEditMode && tipoElegido && conEquipos && !formData.setupMode && (
               <div className="px-4">
                 <SetupModeChooser onSelect={eligeElModo} />
               </div>
             )}
 
-            {(isEditMode || (tipoElegido && formData.setupMode)) && (
+            {(isEditMode || (tipoElegido && (formData.setupMode || !conEquipos))) && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4">
               {/* Volver a elegir el tipo. Lo escrito se queda: `formData` no se
                   toca al cambiar de paso, que perder el formulario por mirar
@@ -839,9 +859,11 @@ const CreateCompetition = () => {
                   pasos existen después, así que esconderlo sería esconder el
                   resto del camino (FE #695). Al crear ya viene elegido del paso
                   anterior; aquí se cambia */}
-              <div className="border border-gray-200 rounded-xl p-4">
-                <SetupModeChooser value={formData.setupMode} onSelect={eligeElModo} />
-              </div>
+              {conEquipos && (
+                <div className="border border-gray-200 rounded-xl p-4">
+                  <SetupModeChooser value={formData.setupMode} onSelect={eligeElModo} />
+                </div>
+              )}
 
               {/* El organizador juega: su género, solo si le falta (#710) */}
               {pideGenero && (
@@ -1291,7 +1313,7 @@ const CreateCompetition = () => {
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Settings className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-gray-900 font-bold text-base">{t('create.ryderCupSettings')}</h3>
+                  <h3 className="text-gray-900 font-bold text-base">{t('detail.settings.title')}</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -1366,7 +1388,7 @@ const CreateCompetition = () => {
                       ? t('create.moreOptionsIncomplete')
                       // Sin el reparto de equipos: ya no se decide aquí, lo
                       // decide el modo, que está a la vista arriba (FE #695)
-                      : t('create.moreOptionsSummary', {
+                      : t(conEquipos ? 'create.moreOptionsSummary' : 'create.moreOptionsSummaryNoTeams', {
                         equipo1: formData.teamOneName,
                         equipo2: formData.teamTwoName,
                         handicap: formData.maxPlayingHandicap
@@ -1378,6 +1400,7 @@ const CreateCompetition = () => {
 
                 {masOpciones && (
                   <div className="space-y-4 border-t border-gray-200 p-4">
+                  {conEquipos && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="teamOneName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1411,6 +1434,7 @@ const CreateCompetition = () => {
                       />
                     </div>
                   </div>
+                  )}
                   {/* Max Playing Handicap */}
                   <div>
                     <label htmlFor="maxPlayingHandicap" className="block text-sm font-medium text-gray-700 mb-1">

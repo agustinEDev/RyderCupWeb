@@ -542,6 +542,9 @@ const CompetitionDetail = () => {
   // Cómo se repartieron los equipos DE VERDAD; sin reparto, el configurado
   // En estilo Ryder el configurado no dice nada —será draft o a mano, al
   // nombrar capitanes—, y salía «Manual» (#710): hasta que se hace, pendiente
+  // Solo una Ryder tiene equipos y reparto, en su pieza: a un Stableford no se
+  // le enseñan filas de lo que no tiene (FE #791)
+  const conEquipos = competition.hasTeams;
   const repartoAMostrar =
     competition.actualTeamAssignment ??
     (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
@@ -599,7 +602,10 @@ const CompetitionDetail = () => {
       disabled: isProcessing,
       // Nombrarlos es lo que cierra las inscripciones. Con equipos ya no se
       // tocan: el servidor lo rechaza, así que no se ofrece
-      cuando: ['ACTIVE', 'CLOSED'].includes(competition.status) && !competition.teamsAssigned,
+      cuando:
+        conEquipos &&
+        ['ACTIVE', 'CLOSED'].includes(competition.status) &&
+        !competition.teamsAssigned,
     },
     'close-enrollments': {
       id: 'close-enrollments',
@@ -1160,14 +1166,18 @@ const CompetitionDetail = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.teamOne')}</span>
-                    <p className="text-gray-900 font-medium">{competition.team1Name}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.teamTwo')}</span>
-                    <p className="text-gray-900 font-medium">{competition.team2Name}</p>
-                  </div>
+                  {conEquipos && (
+                    <>
+                      <div>
+                        <span className="text-gray-500 text-sm">{t('detail.settings.teamOne')}</span>
+                        <p className="text-gray-900 font-medium">{competition.team1Name}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-sm">{t('detail.settings.teamTwo')}</span>
+                        <p className="text-gray-900 font-medium">{competition.team2Name}</p>
+                      </div>
+                    </>
+                  )}
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.playMode')}</span>
                     {/* Salía «HANDICAP»: el valor del backend tal cual, en
@@ -1180,6 +1190,22 @@ const CompetitionDetail = () => {
                         : ''}
                     </p>
                   </div>
+                  {/* Qué torneo es y su modalidad (FE #791). Con respaldo: un
+                      tipo que el backend añada mañana sale con su nombre */}
+                  {competition.tournamentType && (
+                    <div>
+                      <span className="text-gray-500 text-sm">{t('detail.settings.tournamentType')}</span>
+                      <p className="text-gray-900 font-medium">
+                        {t(`create.type.${competition.tournamentType}.title`, {
+                          defaultValue: competition.tournamentType,
+                        })}
+                        {competition.modality &&
+                          ` · ${t(`create.modality.${competition.modality}`, {
+                            defaultValue: competition.modality,
+                          })}`}
+                      </p>
+                    </div>
+                  )}
                   {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
                   {competition.setupMode && (
                     <div>
@@ -1191,18 +1217,20 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   )}
-                  <div>
-                    <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
-                    {/* Idem, y con respaldo: un modo que el backend añada
-                        mañana sale con su nombre, no con la clave */}
-                    <p className="text-gray-900 font-medium">
-                      {repartoAMostrar
-                        ? t(`detail.settings.assignment.${repartoAMostrar}`, {
-                            defaultValue: repartoAMostrar,
-                          })
-                        : ''}
-                    </p>
-                  </div>
+                  {conEquipos && (
+                    <div>
+                      <span className="text-gray-500 text-sm">{t('detail.settings.teamAssignment')}</span>
+                      {/* Idem, y con respaldo: un modo que el backend añada
+                          mañana sale con su nombre, no con la clave */}
+                      <p className="text-gray-900 font-medium">
+                        {repartoAMostrar
+                          ? t(`detail.settings.assignment.${repartoAMostrar}`, {
+                              defaultValue: repartoAMostrar,
+                            })
+                          : ''}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <span className="text-gray-500 text-sm">{t('detail.settings.maxPlayingHandicap')}</span>
                     {competition.maxPlayingHandicap != null ? (

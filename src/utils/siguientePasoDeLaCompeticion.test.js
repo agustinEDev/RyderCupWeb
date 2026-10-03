@@ -10,6 +10,7 @@ import { siguientePasoDeLaCompeticion } from './siguientePasoDeLaCompeticion';
  */
 
 const competicion = (extra = {}) => ({
+  hasTeams: true,
   status: 'ACTIVE',
   setupMode: 'RYDER_CUP',
   teamsAssigned: false,
@@ -17,6 +18,27 @@ const competicion = (extra = {}) => ({
 });
 
 describe('siguientePasoDeLaCompeticion', () => {
+  describe('un torneo sin equipos no nombra capitanes (FE #791)', () => {
+    const stableford = (extra = {}) =>
+      competicion({ tournamentType: 'STABLEFORD', hasTeams: false, setupMode: null, ...extra });
+
+    it('N1: abierto y con plazas, invitar', () => {
+      expect(siguientePasoDeLaCompeticion(stableford({ maxPlayers: 12 }), { inscritos: 4 })).toBe(
+        'manageInvitations'
+      );
+    });
+
+    it('N2: abierto y lleno, nada de capitanes', () => {
+      expect(
+        siguientePasoDeLaCompeticion(stableford({ maxPlayers: 12 }), { inscritos: 12 })
+      ).not.toBe('nameCaptains');
+    });
+
+    it('N3: cerrado, la agenda', () => {
+      expect(siguientePasoDeLaCompeticion(stableford({ status: 'CLOSED' }))).toBe('manageSchedule');
+    });
+  });
+
   it('S1: recién creada, activarla', () => {
     expect(siguientePasoDeLaCompeticion(competicion({ status: 'DRAFT' }))).toBe('activate');
   });

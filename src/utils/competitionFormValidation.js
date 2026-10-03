@@ -1,3 +1,4 @@
+import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { numeroEntero } from './numeroEntero';
 
 const MIN_PLAYERS = 2;
@@ -28,7 +29,8 @@ export const validateCompetitionForm = (formData) => {
   // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo
   // mismo: la guarda de vacío usaba `?.trim()` y la de longitud `.trim()`, y esa
   // asimetría convertía un valor no textual en un TypeError (`/code-review`)
-  const equipos = [formData.teamOneName, formData.teamTwoName].map(
+  // Solo una Ryder Cup tiene equipos (FE #791): sin ellos no hay qué validar
+  const equipos = (tieneEquipos(formData.tournamentType) ? [formData.teamOneName, formData.teamTwoName] : []).map(
     (nombre) => (typeof nombre === 'string' ? nombre.trim() : '')
   );
   if (equipos.some((nombre) => !nombre)) {

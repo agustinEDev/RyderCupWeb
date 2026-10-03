@@ -61,11 +61,11 @@ describe('Competition', () => {
       expect(competition.name.equals(props.name)).toBe(true);
       expect(competition.dates.equals(props.dates)).toBe(true);
       expect(competition.location.equals(props.location)).toBe(true);
-      expect(competition.team1Name).toBe(props.team1Name);
-      expect(competition.team2Name).toBe(props.team2Name);
+      expect(competition.ryderCup.team1Name).toBe(props.team1Name);
+      expect(competition.ryderCup.team2Name).toBe(props.team2Name);
       expect(competition.handicapSettings.equals(props.handicapSettings)).toBe(true);
       expect(competition.maxPlayers).toBe(props.maxPlayers);
-      expect(competition.teamAssignment.equals(props.teamAssignment)).toBe(true);
+      expect(competition.ryderCup.teamAssignment.equals(props.teamAssignment)).toBe(true);
       expect(competition.status.equals(CompetitionStatus.DRAFT)).toBe(true);
       expect(competition.createdAt).toBeInstanceOf(Date);
       expect(competition.updatedAt).toBeInstanceOf(Date);
@@ -129,13 +129,13 @@ describe('Competition', () => {
     it('should return the correct team1Name', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.team1Name).toBe(props.team1Name)
+      expect(competition.ryderCup.team1Name).toBe(props.team1Name)
     });
 
     it('should return the correct team2Name', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.team2Name).toBe(props.team2Name)
+      expect(competition.ryderCup.team2Name).toBe(props.team2Name)
     });
 
     it('should return the correct handicapSettings', () => {
@@ -153,7 +153,7 @@ describe('Competition', () => {
     it('should return the correct teamAssignment', () => {
       const props = createValidCompetitionProps();
       const competition = new Competition(props);
-      expect(competition.teamAssignment.equals(props.teamAssignment)).toBe(true)
+      expect(competition.ryderCup.teamAssignment.equals(props.teamAssignment)).toBe(true)
     });
 
     it('should return the correct status', () => {
