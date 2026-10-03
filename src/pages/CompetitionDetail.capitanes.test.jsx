@@ -502,8 +502,10 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
 
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
-    // Iniciar la competición sí se ofrece; cambiar capitanes ya no
-    expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
+    // Iniciar la competición sí se ofrece; cambiar capitanes ya no. Se espera:
+    // iniciar sale cuando llegan las sesiones, que es otra petición, y en la CI
+    // con cobertura el menú se abría antes (falló en la #799)
+    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
     expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
   });
 
@@ -519,8 +521,10 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('detail.success.teamsAutoAssigned'));
     await screen.findByTestId('menu-acciones');
     abrirMenuDeAcciones();
-    // Iniciar la competición sí se ofrece; cambiar capitanes ya no
-    expect(screen.getByText('detail.actions.start-competition')).toBeInTheDocument();
+    // Iniciar la competición sí se ofrece; cambiar capitanes ya no. Se espera:
+    // iniciar sale cuando llegan las sesiones, que es otra petición, y en la CI
+    // con cobertura el menú se abría antes (falló en la #799)
+    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
     expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
   });
 
