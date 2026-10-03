@@ -609,7 +609,8 @@ const CreateCompetition = () => {
     setMessage({ type: '', text: '' });
 
     // UI Validation
-    const validationError = validateCompetitionForm(formData);
+    // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
+    const validationError = validateCompetitionForm(formData, { exigirCampos: !isEditMode });
     if (validationError) {
       if (validationError.key === 'golfCoursesRequired') {
         const countryNames = validationError.missingCourseCountryCodes.map(code => {
