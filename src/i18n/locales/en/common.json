@@ -19,6 +19,7 @@
   "installModal": {
     "title": "Install RyderCupFriends",
     "close": "Close install instructions",
+  "removeSelected": "Remove {{name}}",
     "gotIt": "Got it",
     "howTo": "How to install",
     "steps": {

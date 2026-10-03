@@ -86,6 +86,7 @@ const GolfCourseRequestModal = ({
           {!isSubmitting && !showSuccess && (
             <button
               onClick={handleClose}
+              aria-label={t('common:close')}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
