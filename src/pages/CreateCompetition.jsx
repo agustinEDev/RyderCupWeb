@@ -670,6 +670,9 @@ const CreateCompetition = () => {
         number_of_players: numPlayers,
         // El reparto no se manda: lo deriva el servidor del modo (RyderCupAm#351)
         setup_mode: formData.setupMode,
+        // El tipo, solo al crear: el de una competición que ya existe no se
+        // cambia (FE #791, RyderCupAm#251)
+        ...(!isEditMode && tipoElegido ? { tournament_type: tipoElegido } : {}),
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
           : null,

@@ -22,6 +22,9 @@ const CLAVES = {
   'detail.settings.setupMode': 'Modo:',
   'create.setupMode.RYDER_CUP.title': 'Estilo Ryder Cup',
   'create.setupMode.AUTOMATIC.title': 'Todo automático',
+  'detail.settings.tournamentType': 'Tipo:',
+  'create.type.RYDER_CUP.title': 'Ryder Cup',
+  'create.modality.MATCH_PLAY': 'Match play',
 };
 // Como el de i18next: si no encuentra la clave devuelve el `defaultValue`, y
 // si ese tampoco vale, LA CLAVE. Un doble más benévolo escondía justo el
@@ -148,6 +151,23 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
 
     await screen.findByText('Asignación de Equipos:');
     expect(screen.queryByText(/assignment\.undefined/)).not.toBeInTheDocument();
+  });
+
+  it('C13: se ve el tipo de torneo y su modalidad (FE #791)', async () => {
+    ficha({ tournamentType: 'RYDER_CUP', modality: 'MATCH_PLAY' });
+    pintar();
+
+    const etiqueta = await screen.findByText('Tipo:');
+    expect(etiqueta.parentElement).toHaveTextContent('Ryder Cup · Match play');
+  });
+
+  it('C14: un tipo que no conozcamos sale tal cual, no como clave', async () => {
+    ficha({ tournamentType: 'SCRAMBLE', modality: 'STROKE_PLAY' });
+    pintar();
+
+    const etiqueta = await screen.findByText('Tipo:');
+    expect(etiqueta.parentElement).toHaveTextContent('SCRAMBLE · STROKE_PLAY');
+    expect(etiqueta.parentElement).not.toHaveTextContent('create.type');
   });
 
   it.each([

@@ -134,6 +134,10 @@
         "title": "Ryder Cup style",
         "blurb": "A live player draft (or teams by hand), captains you name, configurable rounds and matchups from envelopes."
       }
+    },
+    "modality": {
+      "MATCH_PLAY": "Match play",
+      "STROKE_PLAY": "Stroke play"
     }
   },
   "edit": {
@@ -283,7 +287,8 @@
         "AUTOMATIC": "Automatic",
         "DRAFT": "Captains' draft",
         "PENDING": "Not split yet"
-      }
+      },
+      "tournamentType": "Type:"
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",

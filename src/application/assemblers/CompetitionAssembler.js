@@ -64,9 +64,16 @@ class CompetitionAssembler {
       // misma regla que el borrado —estado, nada jugado y quién— y solo lo manda la
       // ficha (RyderCupAM#347); sin el campo, no se ofrece
       canDelete: apiData?.can_delete === true,
+      // Qué torneo es y su modalidad (FE #791, RyderCupAm#251). Una respuesta
+      // de antes del tipo es una Ryder Cup: es lo que eran todas
+      tournamentType: apiData?.tournament_type || 'RYDER_CUP',
+      modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
-      // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351)
-      setupMode: apiData?.setup_mode || 'RYDER_CUP',
+      // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
+      // Solo una Ryder lo tiene: a un Stableford no se le inventa
+      setupMode:
+        apiData?.setup_mode ||
+        ((apiData?.tournament_type || 'RYDER_CUP') === 'RYDER_CUP' ? 'RYDER_CUP' : null),
       // Si ya hay equipos repartidos: con ellos los capitanes no se cambian, y una
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho

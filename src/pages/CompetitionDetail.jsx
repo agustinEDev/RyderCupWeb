@@ -1180,6 +1180,22 @@ const CompetitionDetail = () => {
                         : ''}
                     </p>
                   </div>
+                  {/* Qué torneo es y su modalidad (FE #791). Con respaldo: un
+                      tipo que el backend añada mañana sale con su nombre */}
+                  {competition.tournamentType && (
+                    <div>
+                      <span className="text-gray-500 text-sm">{t('detail.settings.tournamentType')}</span>
+                      <p className="text-gray-900 font-medium">
+                        {t(`create.type.${competition.tournamentType}.title`, {
+                          defaultValue: competition.tournamentType,
+                        })}
+                        {competition.modality &&
+                          ` · ${t(`create.modality.${competition.modality}`, {
+                            defaultValue: competition.modality,
+                          })}`}
+                      </p>
+                    </div>
+                  )}
                   {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
                   {competition.setupMode && (
                     <div>

@@ -147,6 +147,22 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     );
   });
 
+  it('S10: el tipo elegido viaja al crear (FE #791)', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+    rellenarMinimo();
+
+    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+
+    await vi.waitFor(() =>
+      expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ tournament_type: 'RYDER_CUP' }),
+        expect.anything()
+      )
+    );
+  });
+
   it('S4: el reparto de equipos ya no se pregunta: lo decide el modo', async () => {
     pinta();
     await elegirTipoYModo();
