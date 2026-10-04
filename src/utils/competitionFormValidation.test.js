@@ -233,3 +233,41 @@ describe('validateCompetitionForm', () => {
     expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '12' })).toBeNull();
   });
 });
+
+// FE #662: el cupo no puede bajar de quien ya está dentro. El servidor lo
+// rechaza (BE #324) y el formulario lo aceptaba, perdiendo el resto de cambios
+describe('validateCompetitionForm · el cupo y los inscritos (FE #662)', () => {
+  it('C1: por debajo de los inscritos, no', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '10' }, { inscritos: 14 })
+    ).toEqual({ key: 'capBelowEnrolled', count: 14 });
+  });
+
+  it('C2: justo en los inscritos, sí', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '14' }, { inscritos: 14 })
+    ).toBeNull();
+  });
+
+  it('C3: sin inscritos (crear, o nadie dentro), nada que comprobar', () => {
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '2' })).toBeNull();
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '2' }, { inscritos: 0 })
+    ).toBeNull();
+  });
+
+  it('C4: en blanco se queda el cupo que tenía, que ya era válido', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '' }, { inscritos: 14 })
+    ).toBeNull();
+  });
+});
+
+describe('validateCompetitionForm · el mínimo general manda (FE #662, revisión)', () => {
+  it('C5: con 14 dentro y un 1, lo que se dice es el mínimo de siempre', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' }, { inscritos: 14 })
+    ).toEqual({ key: 'playersMinimum' });
+  });
+});
+
