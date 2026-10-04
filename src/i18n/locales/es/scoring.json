@@ -1,4 +1,7 @@
 {
+  "holeSelector": {
+    "noGuardado": "no guardado"
+  },
   "title": "Anotación en Vivo",
   "loading": "Cargando datos de anotación...",
   "retry": "Reintentar",
@@ -158,6 +161,10 @@
     "success": "Partido concedido"
   },
   "offline": {
+    "noGuardados_one": "No se pudo guardar en el móvil el hoyo {{holes}}: el almacenamiento está lleno o el navegador no deja guardar datos. Libera espacio o permite guardar datos, y vuelve a anotarlo.",
+    "noGuardados_other": "No se pudieron guardar en el móvil los hoyos {{holes}}: el almacenamiento está lleno o el navegador no deja guardar datos. Libera espacio o permite guardar datos, y vuelve a anotarlos.",
+    "noGuardadosSinAnotar_one": "No llegó a guardarse el hoyo {{holes}} y ya no se puede anotar desde aquí. Habla con quien organiza la competición.",
+    "noGuardadosSinAnotar_other": "No llegaron a guardarse los hoyos {{holes}} y ya no se pueden anotar desde aquí. Habla con quien organiza la competición.",
     "banner": "Estás sin conexión. Las anotaciones se guardarán localmente y se sincronizarán al reconectar.",
     "syncing": "Sincronizando anotaciones...",
     "syncComplete": "Todas las anotaciones sincronizadas",

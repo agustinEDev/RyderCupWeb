@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   getScoringViewUseCase,
   submitHoleScoreUseCase,
@@ -13,7 +13,6 @@ import {
   SE_ARREGLA_ESPERANDO,
   vaciaAnotaciones,
 } from '../services/vaciaAnotaciones';
-import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 // Lo último que se supo del partido, para poder anotar sin cobertura al reabrir
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
@@ -28,6 +27,16 @@ const SESSION_REFRESH_INTERVAL = 30000; // 30 seconds
 // El golpe de competición es un objeto —propio, marcado y a quién—, no un
 // número como en partida rápida: se compara entero
 const mismoGolpe = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Ningún hoyo sin guardar. Uno solo y congelado, para no dar un objeto nuevo en
+// cada render a quien lo use de dependencia
+const SIN_HOYOS = Object.freeze({});
+
+// Los golpes de un hoyo que se pueden perder, y cuáles trae una anotación: el
+// que no está (`undefined`) no se anotó; una raya (`null`) sí es un golpe. La
+// misma regla que la cola usa para decidir qué queda sustituido (#609)
+const GOLPES_DEL_HOYO = ['ownScore', 'markedScore'];
+const golpesQueTrae = (scoreData) => GOLPES_DEL_HOYO.filter((g) => scoreData?.[g] !== undefined);
 
 // Un fallo y de dónde salió (FE #626). La pantalla cuenta distinto que no
 // cargara la vista que no se pudiera anotar, entregar o conceder: lo primero se
@@ -92,6 +101,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSessionBlocked, setIsSessionBlocked] = useState(false);
   const [pendingQueueSize, setPendingQueueSize] = useState(0);
+  // Los hoyos que no se pudieron guardar (FE #622): por partido, y en cada hoyo
+  // el turno del último fallo y qué golpes se perdieron, cada uno con el turno
+  // en que se perdió. Vivía en el mismo estado que los fallos de carga, y cada
+  // vista buena lo retiraba: con cobertura, el jugador muchas veces no llegaba a
+  // verlo. Un golpe se retira SOLO cuando el jugador lo vuelve a anotar y queda
+  // a salvo. Por partido, porque la ruta no lleva `key`: el hook se reutiliza al
+  // ir de uno a otro, y al volver los golpes perdidos siguen perdidos
+  const [noGuardados, setNoGuardados] = useState(SIN_HOYOS);
   // Por qué se paró el último vaciado, si fue por el almacenamiento del móvil
   // (ver `PARO`). Estado PROPIO y no `error`: el sondeo pone `error` a null
   // cada diez segundos al cargar bien la vista, así que un aviso puesto ahí
@@ -454,15 +471,19 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // porque el sondeo solo vacía si hay algo en la cola y el servidor contesta
   // (FE #625): sin esa pasada, lo aplazado esperaba al siguiente sondeo
   const ocupadoRef = useRef(null);
-  // Qué anotación no se pudo guardar, y en qué turno (FE #605). Un envío que
-  // salió ANTES y acaba sin llegar no puede retirar ese aviso: es de una
-  // corrección posterior del mismo hoyo, y lo guardado de antes ya salió de la
-  // cola, así que sin aviso el hoyo se quedaba vacío sin que nadie lo dijera.
-  // Si llega, no hace falta: la vista que se pide después retira cualquier
-  // aviso, como siempre. Un contador y no la hora: la de la cola y la de aquí
-  // no son el mismo reloj
+  // El turno de cada anotación (FE #605). Un envío que salió ANTES y acaba —con
+  // o sin llegar— no puede retirar el aviso de una corrección posterior del
+  // mismo hoyo que no se pudo guardar: esa corrección no está en ningún sitio
+  // (FE #622). Un contador y no la hora: la de la cola y la de aquí no son el
+  // mismo reloj
   const anotacionRef = useRef(0);
-  const noSeGuardoRef = useRef(null);
+  // Lo mismo que `noGuardados`, leído sin esperar al render: se consulta al
+  // terminar un envío
+  const noGuardadosRef = useRef(SIN_HOYOS);
+  // Y el último turno en que cada golpe quedó a salvo, por partido y hoyo: un
+  // envío ANTERIOR que falla tarde no puede dar por perdido un golpe que una
+  // anotación posterior ya guardó
+  const aSalvoRef = useRef({});
   const aplazadoRef = useRef(false);
   // La cola tal como la dejó el último vaciado que no se cortó por la red, el
   // servidor o la sesión: lo que quedó ahí lo dejó A PROPÓSITO —el móvil que no
@@ -585,26 +606,60 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
   // --- Submit hole score ---
   // Allow submission if own scores OR marker scores are still editable
-  const submitScore = useCallback(async (holeNumber, scoreData) => {
+  // `tocado` dice qué golpe acaba de elegir el jugador: el envío lleva los dos,
+  // y solo ese cuenta como vuelto a anotar (FE #622). Sin él, los que trae
+  const submitScore = useCallback(async (holeNumber, scoreData, { tocado } = {}) => {
     if (!matchId || !canScore) return;
     if (isOwnScoreLocked && isMarkerScoreLocked) return;
     const estaAnotacion = ++anotacionRef.current;
-    // Solo en este partido: lo llaman también después del envío, que tarda, y en
-    // ese rato se puede haber pasado a otro
+    const golpesTocados = tocado ? [tocado] : golpesQueTrae(scoreData);
+    // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
+    // otro: la lista va por partido, así que lo apuntado o retirado se queda en
+    // el suyo y la pantalla del otro no lo ve. Al volver, sigue siendo verdad
+    const hoyosNoGuardados = () => noGuardadosRef.current[matchId] ?? SIN_HOYOS;
+    const ponNoGuardados = (hoyos) => {
+      noGuardadosRef.current = { ...noGuardadosRef.current, [matchId]: hoyos };
+      setNoGuardados(noGuardadosRef.current);
+    };
+    const aSalvoDesde = (golpe) => aSalvoRef.current[matchId]?.[holeNumber]?.[golpe] ?? 0;
+    // Los golpes tocados se dan por perdidos, salvo los que una anotación
+    // posterior ya dejó a salvo
     const avisaQueNoSeGuardo = () => {
-      if (esDeOtraPartida(matchId)) return;
-      noSeGuardoRef.current = { holeNumber, anotacion: estaAnotacion };
-      setFallo(delGolpe(errorDeGuardado(holeNumber), matchId));
+      const perdidos = golpesTocados.filter((g) => aSalvoDesde(g) < estaAnotacion);
+      if (perdidos.length === 0) return;
+      const golpes = { ...hoyosNoGuardados()[holeNumber]?.golpes };
+      for (const g of perdidos) golpes[g] = Math.max(golpes[g] ?? 0, estaAnotacion);
+      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes } });
     };
     const hayUnFalloPosterior = () =>
-      noSeGuardoRef.current?.holeNumber === holeNumber && noSeGuardoRef.current.anotacion > estaAnotacion;
+      Object.values(hoyosNoGuardados()[holeNumber]?.golpes ?? {}).some((turno) => turno > estaAnotacion);
 
     // El aviso de «no se pudo guardar» de este hoyo se retira, pero SOLO
     // cuando el reemplazo está a salvo: enviado, o guardado en la cola. Se
     // hacía aquí arriba y era un error — si el reemplazo lo rechazan también,
     // o el móvil no tiene sitio para encolarlo, el jugador se quedaba sin
-    // golpe Y sin aviso, que es justo lo que esta issue existe para impedir
-    const yaNoSePierde = () => golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
+    // golpe Y sin aviso, que es justo lo que esta issue existe para impedir.
+    // Y de los golpes no guardados, solo los que el jugador volvió a anotar en
+    // ESTA anotación, y si se perdieron antes: una corrección posterior que no
+    // se guardó sigue sin estar en ningún sitio (FE #622)
+    const yaNoSePierde = () => {
+      golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
+      const delHoyo = { ...aSalvoRef.current[matchId]?.[holeNumber] };
+      for (const g of golpesTocados) delHoyo[g] = Math.max(delHoyo[g] ?? 0, estaAnotacion);
+      aSalvoRef.current = {
+        ...aSalvoRef.current,
+        [matchId]: { ...aSalvoRef.current[matchId], [holeNumber]: delHoyo },
+      };
+      const pendiente = hoyosNoGuardados()[holeNumber];
+      if (!pendiente) return;
+      const quedan = Object.entries(pendiente.golpes)
+        .filter(([g, turno]) => !(golpesTocados.includes(g) && turno < estaAnotacion));
+      if (quedan.length === Object.keys(pendiente.golpes).length) return;
+      const resto = { ...hoyosNoGuardados() };
+      if (quedan.length > 0) resto[holeNumber] = { ...pendiente, golpes: Object.fromEntries(quedan) };
+      else delete resto[holeNumber];
+      ponNoGuardados(resto);
+    };
 
     // Sin cobertura, o con otro escritor dentro, solo se guarda. Lo segundo
     // queda apuntado para la pasada que dé quien lo tiene al terminar
@@ -624,11 +679,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // ninguna parte, y eso hay que decirlo
         avisaQueNoSeGuardo();
       } else {
-        // Y se retira el aviso anterior si lo había: sin esto, un hoyo que no
-        // se pudo guardar dejaba el cartel puesto el RESTO de la vuelta,
-        // mientras los siguientes se guardaban bien. Sin cobertura no hay
-        // ninguna otra ocasión de limpiarlo —el sondeo no corre—, así que el
-        // jugador reanotaba hoyos creyendo que no se estaban guardando
+        // Y se retira el aviso anterior si lo había: sin cobertura no hay otra
+        // ocasión de limpiarlo —el sondeo no corre—. El de un hoyo que no se
+        // pudo guardar no va aquí: ese solo se va al guardar su hoyo (FE #622)
         setFallo(null);
         yaNoSePierde();
       }
@@ -899,6 +952,18 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setPendingQueueSize(pendientesPropias());
   }, [matchId, pendientesPropias]);
 
+  // Hacia fuera, los de este partido: cada hoyo con el turno de su último fallo
+  // —la pantalla lo usa para volver a montar su casilla— y qué golpes faltan,
+  // para saber si todavía se pueden anotar (FE #622)
+  const turnosNoGuardados = useMemo(() => {
+    const hoyos = noGuardados[matchId];
+    if (!hoyos) return SIN_HOYOS;
+    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
+      hoyo,
+      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined) },
+    ]));
+  }, [noGuardados, matchId]);
+
   return {
     // State
     scoringView,
@@ -909,6 +974,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // Solo el de este partido: al cambiar de uno a otro, el del anterior no se
     // hereda, sin tener que limpiarlo en un efecto (como `pintadoDeMemoria`)
     error: fallo?.matchId === matchId ? fallo.err : null,
+    noGuardados: turnosNoGuardados,
     origenDelError: fallo?.matchId === matchId ? fallo.origen : null,
     isSubmitting,
     matchSummary,

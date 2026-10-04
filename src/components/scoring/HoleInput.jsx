@@ -71,14 +71,16 @@ const HoleInput = ({
     if (isReadOnly || isOwnScoreLocked) return;
     setOwnValue(val);
     setOpenPanel(null);
-    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: markedValue });
+    // Con el golpe que se ha tocado: el envío lleva los dos, y quien lo recibe
+    // necesita saber cuál volvió a anotar el jugador (FE #622)
+    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: markedValue }, 'ownScore');
   };
 
   const handleMarkedSelect = (val) => {
     if (isReadOnly || isMarkerScoreLocked) return;
     setMarkedValue(val);
     setOpenPanel(null);
-    if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val });
+    if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
   };
 
   // La raya (`null`, bola recogida) se pinta distinta del hoyo sin anotar
