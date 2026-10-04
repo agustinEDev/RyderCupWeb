@@ -43,7 +43,9 @@ export const getApiBaseUrl = () => API_URL;
  * @param {object} options - Fetch options. Con `topeMs`, la petición se corta
  *   a ese tiempo y se trata como falta de cobertura (FE #624). Cubre la petición
  *   ENTERA: un refresco del token y su reintento, y el cuerpo, que puede
- *   colgarse después de las cabeceras. No se le pasa a `fetch`
+ *   colgarse después de las cabeceras. No se le pasa a `fetch`, y no se combina
+ *   con una `signal` propia: si llegan las dos, manda la del tope. Hoy nadie
+ *   pasa `signal` a `apiRequest`; quien la necesite tendrá que combinarlas
  * @returns {Promise<any>} - Response data
  *
  * SECURITY:
