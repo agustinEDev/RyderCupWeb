@@ -2930,3 +2930,318 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
     expect(result.current.error?.status).toBe(503);
   });
 });
+
+describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #625)', () => {
+  // Con cobertura y el servidor caído, `online` no salta nunca: cuando el
+  // servidor vuelve, lo único que se entera es el sondeo. Antes solo pedía la
+  // vista, y el golpe guardado esperaba a que el jugador recargase
+  let enCola;
+  let sondeo;
+
+  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
+  const guardadaDe = (holeNumber, scoreData) =>
+    ({ matchId: 'm-1', holeNumber, participantId: null, scoreData, timestamp: 1, userId: 'u1' });
+  const esLaMisma = (e, matchId, holeNumber, participantId, userId) =>
+    e.matchId === matchId
+    && e.holeNumber === holeNumber
+    && (e.participantId ?? null) === (participantId ?? null)
+    && (e.userId ?? null) === (userId ?? null);
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    return { promesa, suelta, falla };
+  };
+  const esperaUnPoco = () => act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  // El sondeo, a mano: el último intervalo de 10 s que se programó
+  const sondea = () => act(async () => { await sondeo(); });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+    vi.clearAllMocks();
+    return result;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    enCola = [];
+    sondeo = null;
+    const intervaloReal = globalThis.setInterval;
+    vi.spyOn(globalThis, 'setInterval').mockImplementation((fn, ms, ...resto) => {
+      if (ms === 10000) { sondeo = fn; return 0; }
+      return intervaloReal(fn, ms, ...resto);
+    });
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.enqueue.mockImplementation((matchId, holeNumber, scoreData, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      enCola.push({ matchId, holeNumber, participantId, scoreData, timestamp: 2, userId });
+      return true;
+    });
+    offlineQueue.getByMatch.mockImplementation((matchId) =>
+      enCola.filter((e) => e.matchId === matchId).map((e) => ({ ...e }))
+    );
+    offlineQueue.remove.mockImplementation((matchId, holeNumber, participantId = null, userId = null) => {
+      enCola = enCola.filter((e) => !esLaMisma(e, matchId, holeNumber, participantId, userId));
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    // El espía del intervalo y el del aviso perdido, de una vez
+    vi.restoreAllMocks();
+    offlineQueue.enqueue.mockReset();
+    offlineQueue.getByMatch.mockReset().mockReturnValue([]);
+    offlineQueue.remove.mockReset().mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockReset();
+    getScoringViewUseCase.execute.mockReset();
+  });
+
+  it('H1 · un golpe en la cola sale tras el primer sondeo que el servidor contesta', async () => {
+    const result = await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+
+    await sondea();
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 13, golpe(5)));
+    await waitFor(() => expect(enCola).toEqual([]));
+    await waitFor(() => expect(result.current.pendingQueueSize).toBe(0));
+  });
+
+  it('H2 · con la cola vacía, el sondeo no manda ni da pasadas ni pide la vista dos veces', async () => {
+    await monta();
+
+    await sondea();
+    await esperaUnPoco();
+
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(motor.vaciaAnotaciones).not.toHaveBeenCalled();
+    expect(getScoringViewUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('H2b · tras un vaciado cortado por la red y la cola ya vacía, el sondeo no da otra pasada', async () => {
+    await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await sondea();
+    await waitFor(() => expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1));
+    await esperaUnPoco();
+    enCola = [];
+
+    await sondea();
+    await esperaUnPoco();
+
+    expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
+  });
+
+  it('H3 · con un envío en vuelo no hay segundo escritor: lo guardado sale cuando llega', async () => {
+    const result = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let envio;
+    act(() => { envio = result.current.submitScore(5, golpe(5)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    enCola.unshift(guardadaDe(3, golpe(4)));
+
+    await sondea();
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+
+    await act(async () => { vuelo.suelta(mockScoringView); await envio; });
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, golpe(4)));
+    expect(submitHoleScoreUseCase.execute.mock.calls.filter((c) => c[1] === 5)).toHaveLength(1);
+    await waitFor(() => expect(enCola).toEqual([]));
+  });
+
+  it('H4 · si el sondeo falla, no se intenta vaciar', async () => {
+    await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+    getScoringViewUseCase.execute.mockRejectedValue(Object.assign(new Error('HTTP 503'), { status: 503 }));
+
+    await sondea();
+    await esperaUnPoco();
+
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(motor.vaciaAnotaciones).not.toHaveBeenCalled();
+    expect(enCola).toHaveLength(1);
+  });
+
+  it('H5 · un sondeo con un vaciado en marcha no apila otra pasada', async () => {
+    await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+
+    await sondea();
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await sondea();
+    await act(async () => { vuelo.suelta(mockScoringView); });
+    await esperaUnPoco();
+
+    expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(enCola).toEqual([]);
+  });
+
+  it('H6 · si el vaciado se corta por la red, el golpe espera al siguiente sondeo bueno', async () => {
+    await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await sondea();
+    await esperaUnPoco();
+    expect(enCola).toHaveLength(1);
+
+    await sondea();
+
+    await waitFor(() => expect(enCola).toEqual([]));
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
+  });
+
+  // Lo que esperar no arregla no se reintenta cada 10 s (revisión de la PR):
+  // el vaciado deja esas anotaciones en la cola A PROPÓSITO, y el sondeo las
+  // volvía a mandar —el mismo POST y una vista más— el resto de la vuelta
+  describe('lo que el vaciado deja a propósito no lo reintenta el sondeo', () => {
+    it('H7 · llegó pero el móvil no pudo borrarlo: el siguiente sondeo no lo reenvía', async () => {
+      await monta();
+      enCola.push(guardadaDe(13, golpe(5)));
+      offlineQueue.remove.mockReturnValue(false);
+
+      await sondea();
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await esperaUnPoco();
+      await sondea();
+      await esperaUnPoco();
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+      expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
+    });
+
+    it('H8 · rechazado y sin sitio para el aviso: el siguiente sondeo no lo reenvía', async () => {
+      await monta();
+      enCola.push(guardadaDe(13, golpe(5)));
+      submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('HTTP 422'), { status: 422 }));
+      vi.spyOn(golpesPerdidos, 'apunta').mockReturnValue(false);
+
+      await sondea();
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await esperaUnPoco();
+      await sondea();
+      await esperaUnPoco();
+
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+      expect(enCola).toHaveLength(1);
+    });
+
+    it('H9 · una anotación que el móvil no puede mandar no provoca un vaciado por sondeo', async () => {
+      await monta();
+      enCola.push(guardadaDe(13, golpe(5)));
+      submitHoleScoreUseCase.execute.mockRejectedValue(new Error('Invalid score'));
+
+      await sondea();
+      await waitFor(() => expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1));
+      await esperaUnPoco();
+      const vistasTrasElPrimero = getScoringViewUseCase.execute.mock.calls.length;
+      await sondea();
+      await esperaUnPoco();
+
+      expect(motor.vaciaAnotaciones).toHaveBeenCalledTimes(1);
+      expect(getScoringViewUseCase.execute.mock.calls.length).toBe(vistasTrasElPrimero + 1);
+    });
+
+    it('H10 · si la cola cambia después, el sondeo vuelve a intentarlo', async () => {
+      await monta();
+      enCola.push(guardadaDe(13, golpe(5)));
+      offlineQueue.remove.mockReturnValueOnce(false);
+
+      await sondea();
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await esperaUnPoco();
+      enCola.push({ ...guardadaDe(14, golpe(4)), timestamp: 3 });
+      await sondea();
+
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 14, golpe(4)));
+    });
+  });
+
+  it('H10b · corregir el mismo hoyo también cuenta como cambio', async () => {
+    await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+    offlineQueue.remove.mockReturnValueOnce(false);
+
+    await sondea();
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await esperaUnPoco();
+    enCola = [{ ...guardadaDe(13, golpe(6)), timestamp: 3 }];
+    await sondea();
+
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 13, golpe(6)));
+  });
+
+  describe('lo que espera a la hora de apertura (segunda revisión)', () => {
+    const noAbre = () => Object.assign(new Error('HTTP 409'), { status: 409, errorCode: 'SCORING_NOT_OPEN_YET' });
+    const sinAbrir = { ...mockScoringView, matchStatus: 'SCHEDULED', scoringOpensAt: '2999-01-01T12:00:00+01:00' };
+
+    it('H12 · no se reintenta mientras la vista diga que no abre, y sale en cuanto abre', async () => {
+      await monta();
+      enCola.push(guardadaDe(13, golpe(5)));
+      getScoringViewUseCase.execute.mockResolvedValue(sinAbrir);
+      submitHoleScoreUseCase.execute.mockRejectedValueOnce(noAbre());
+
+      await sondea();
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+      await esperaUnPoco();
+      await sondea();
+      await esperaUnPoco();
+      expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1);
+
+      getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+      await sondea();
+
+      await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(enCola).toEqual([]));
+    });
+  });
+
+  it('H13 · un corte de red después no le quita el freno al disco que no borra', async () => {
+    await monta();
+    enCola.push(guardadaDe(13, golpe(5)));
+    offlineQueue.remove.mockReturnValue(false);
+    await sondea();
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    await esperaUnPoco();
+
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await act(async () => { window.dispatchEvent(new globalThis.Event('online')); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    await esperaUnPoco();
+
+    await sondea();
+    await esperaUnPoco();
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it('H11 · si la pantalla se cierra con el sondeo en vuelo, no vacía al volver la respuesta', async () => {
+    const { result, unmount } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await esperaUnPoco();
+    vi.clearAllMocks();
+    enCola.push(guardadaDe(13, golpe(5)));
+    const vuelo = enVuelo();
+    getScoringViewUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+
+    let enCurso;
+    act(() => { enCurso = sondeo(); });
+    unmount();
+    await act(async () => { vuelo.suelta(mockScoringView); await enCurso; });
+    await esperaUnPoco();
+
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+});

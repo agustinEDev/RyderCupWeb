@@ -45,7 +45,7 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
 
     const r = await vaciaAnotaciones({ entradas, manda: vi.fn() });
 
-    expect(r).toEqual({ enviadas: 2, llegaron: 2, descartadas: 0, cambiadas: 0, paroPor: null });
+    expect(r).toEqual({ enviadas: 2, llegaron: 2, descartadas: 0, cambiadas: 0, esperan: 0, paroPor: null });
     expect(cola.deQuien(YO)).toHaveLength(0);
   });
 
@@ -104,8 +104,23 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
       const r = await vaciaAnotaciones({ entradas, manda });
 
       expect(manda).toHaveBeenCalledTimes(2);
-      expect(r).toEqual({ enviadas: 1, llegaron: 1, descartadas: 0, cambiadas: 0, paroPor: null });
+      expect(r).toEqual({ enviadas: 1, llegaron: 1, descartadas: 0, cambiadas: 0, esperan: 0, paroPor: null });
       // La mala se queda: no se pierde
+      expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-1']);
+    });
+
+    // La que el servidor rechaza porque su partido aún no abre se queda igual,
+    // pero se cuenta aparte: esa sí entrará con solo esperar a la hora, y quien
+    // vacía en el sondeo necesita saberlo para no darla por imposible (FE #625)
+    it('la que aún no abre se queda, sigue con las demás y se cuenta como que espera', async () => {
+      const entradas = [guarda('m-1', 1, 4), guarda('m-2', 2, 5)];
+      const noAbre = Object.assign(new Error('HTTP 409'), { status: 409, errorCode: 'SCORING_NOT_OPEN_YET' });
+      const manda = vi.fn().mockRejectedValueOnce(noAbre).mockResolvedValue();
+
+      const r = await vaciaAnotaciones({ entradas, manda });
+
+      expect(manda).toHaveBeenCalledTimes(2);
+      expect(r).toEqual({ enviadas: 1, llegaron: 1, descartadas: 0, cambiadas: 0, esperan: 1, paroPor: null });
       expect(cola.deQuien(YO).map((e) => e.matchId)).toEqual(['m-1']);
     });
   });

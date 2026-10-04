@@ -66,6 +66,14 @@ export const seGuardaParaDespues = (error) => {
 export const esRechazoDefinitivo = (error) => !seGuardaParaDespues(error);
 
 /**
+ * Si el servidor la rechazó solo porque su partido aún no abre (BE #305): esa
+ * entrará con esperar a la hora, al contrario que una que el propio móvil no
+ * puede mandar. Quien vacía en el sondeo lo necesita para no darla por
+ * imposible (FE #625).
+ */
+export const esperaASuHora = (error) => CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error));
+
+/**
  * Si el fallo no es de ESTA anotación, sino de la sesión o del servidor
  * entero: mientras siga así, cualquier otra fallaría igual.
  *
