@@ -39,7 +39,8 @@ export const guardaLaCorreccion = (
   scoreData,
   participantId = null,
   userId = null,
-  laPartida = {}
+  laPartida = {},
+  tocados = null
 ) => {
   const laDeEseHoyo = () => offlineQueue
     .getByMatch(matchId, userId)
@@ -49,7 +50,11 @@ export const guardaLaCorreccion = (
       && (e.userId ?? null) === (userId ?? null));
 
   const anterior = laDeEseHoyo();
-  const guardado = offlineQueue.enqueue(matchId, holeNumber, scoreData, participantId, userId, laPartida);
+  // Los golpes tocados solo si los hay: partida rápida no los usa —cada aviso ya
+  // es de un participante— y su llamada sigue siendo la de siempre (FE #813)
+  const guardado = offlineQueue.enqueue(
+    matchId, holeNumber, scoreData, participantId, userId, laPartida, ...(tocados ? [tocados] : [])
+  );
   if (guardado !== false || !anterior) return guardado;
 
   // Como se guarda: una clave sin valor es un golpe que no se ha anotado, no
