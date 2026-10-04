@@ -6,6 +6,8 @@ const STATUS_COLORS = {
   DECLINED: 'bg-red-100 text-red-800',
   EXPIRED: 'bg-gray-100 text-gray-600',
   NO_ROOM: 'bg-orange-100 text-orange-800',
+  // La retiró quien invita (FE #724): distinta de la caducada
+  CANCELLED: 'bg-slate-100 text-slate-700',
 };
 
 const InvitationBadge = ({ status }) => {

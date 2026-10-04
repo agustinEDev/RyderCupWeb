@@ -135,13 +135,14 @@ describe('InvitationStatus', () => {
       expect(InvitationStatus.isValid('INVALID')).toBe(false);
     });
 
-    it('getAllValues returns all 5 values', () => {
+    it('getAllValues returns all 6 values', () => {
       expect(InvitationStatus.getAllValues()).toEqual([
         'PENDING',
         'ACCEPTED',
         'DECLINED',
         'EXPIRED',
         'NO_ROOM',
+        'CANCELLED',
       ]);
     });
   });
@@ -160,5 +161,21 @@ describe('InvitationStatus', () => {
         InvitationStatus.pending().canTransitionTo(InvitationStatus.fromString('NO_ROOM'))
       ).toBe(true);
     });
+  });
+});
+
+// La retira quien invita (FE #724, BE #359)
+describe('InvitationStatus · CANCELLED', () => {
+  it('existe, se reconoce y no pasa a nada más', () => {
+    const retirada = InvitationStatus.fromString('CANCELLED');
+    expect(InvitationStatus.getAllValues()).toContain('CANCELLED');
+    expect(retirada.toString()).toBe('CANCELLED');
+    expect(retirada.canTransitionTo(InvitationStatus.accepted())).toBe(false);
+  });
+
+  it('se llega a ella solo desde pendiente', () => {
+    const retirada = InvitationStatus.fromString('CANCELLED');
+    expect(InvitationStatus.pending().canTransitionTo(retirada)).toBe(true);
+    expect(InvitationStatus.accepted().canTransitionTo(retirada)).toBe(false);
   });
 });

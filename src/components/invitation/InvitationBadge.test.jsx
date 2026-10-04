@@ -50,3 +50,28 @@ describe('InvitationBadge', () => {
     }
   });
 });
+
+describe('InvitationBadge · retirada (FE #724)', () => {
+  it('tiene su texto y su color', () => {
+    render(<InvitationBadge status="CANCELLED" />);
+    const etiqueta = screen.getByTestId('invitation-badge');
+    expect(etiqueta).toHaveTextContent('status.CANCELLED');
+    expect(etiqueta.className).toContain('bg-slate-100');
+  });
+
+  it('las dos traducciones existen', async () => {
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      expect(textos.status.CANCELLED, idioma).toBeTruthy();
+      expect(textos.actions.withdraw, idioma).toBeTruthy();
+      expect(textos.creator.withdrawDialog.title, idioma).toBeTruthy();
+      expect(textos.creator.withdrawDialog.body, idioma).toBeTruthy();
+      expect(textos.creator.withdrawDialog.confirm, idioma).toBeTruthy();
+      expect(textos.creator.withdrawDialog.keep, idioma).toBeTruthy();
+      expect(textos.creator.competitionFull_other, idioma).toBeTruthy();
+      expect(textos.success.withdrawn, idioma).toBeTruthy();
+      expect(textos.errors.notPendingAnymore, idioma).toBeTruthy();
+      expect(textos.errors.competitionFull, idioma).toBeTruthy();
+    }
+  });
+});

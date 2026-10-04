@@ -12,8 +12,9 @@
  * - NO_ROOM: Enrolment closed while it was pending (RyderCupWeb#710)
  *
  * Transitions:
- * - PENDING -> ACCEPTED | DECLINED | EXPIRED | NO_ROOM
- * - ACCEPTED, DECLINED, EXPIRED, NO_ROOM -> (terminal states)
+ * - CANCELLED: Withdrawn by whoever invites (RyderCupWeb#724, BE #359)
+ * - PENDING -> ACCEPTED | DECLINED | EXPIRED | NO_ROOM | CANCELLED
+ * - ACCEPTED, DECLINED, EXPIRED, NO_ROOM, CANCELLED -> (terminal states)
  */
 class InvitationStatus {
   static PENDING = 'PENDING';
@@ -22,6 +23,8 @@ class InvitationStatus {
   static EXPIRED = 'EXPIRED';
   // Al cerrar la inscripción, las pendientes se quedan sin plaza (#710)
   static NO_ROOM = 'NO_ROOM';
+  // La retiró quien invita (FE #724): distinto de que el invitado diga que no
+  static CANCELLED = 'CANCELLED';
 
   static VALID_TRANSITIONS = {
     [InvitationStatus.PENDING]: [
@@ -29,11 +32,13 @@ class InvitationStatus {
       InvitationStatus.DECLINED,
       InvitationStatus.EXPIRED,
       InvitationStatus.NO_ROOM,
+      InvitationStatus.CANCELLED,
     ],
     [InvitationStatus.ACCEPTED]: [],
     [InvitationStatus.DECLINED]: [],
     [InvitationStatus.EXPIRED]: [],
     [InvitationStatus.NO_ROOM]: [],
+    [InvitationStatus.CANCELLED]: [],
   };
 
   #value;
@@ -79,6 +84,7 @@ class InvitationStatus {
       InvitationStatus.DECLINED,
       InvitationStatus.EXPIRED,
       InvitationStatus.NO_ROOM,
+      InvitationStatus.CANCELLED,
     ];
   }
 
@@ -121,7 +127,8 @@ class InvitationStatus {
       this.#value === InvitationStatus.ACCEPTED ||
       this.#value === InvitationStatus.DECLINED ||
       this.#value === InvitationStatus.EXPIRED ||
-      this.#value === InvitationStatus.NO_ROOM
+      this.#value === InvitationStatus.NO_ROOM ||
+      this.#value === InvitationStatus.CANCELLED
     );
   }
 
