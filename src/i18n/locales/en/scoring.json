@@ -1,4 +1,7 @@
 {
+  "holeSelector": {
+    "noGuardado": "not saved"
+  },
   "title": "Live Scoring",
   "loading": "Loading scoring data...",
   "retry": "Retry",
@@ -158,6 +161,10 @@
     "success": "Match conceded"
   },
   "offline": {
+    "noGuardados_one": "Hole {{holes}} could not be saved on this device: storage is full or the browser does not allow saving data. Free up space or allow saving data, and enter it again.",
+    "noGuardados_other": "Holes {{holes}} could not be saved on this device: storage is full or the browser does not allow saving data. Free up space or allow saving data, and enter them again.",
+    "noGuardadosSinAnotar_one": "Hole {{holes}} was never saved and can no longer be entered here. Talk to the competition organiser.",
+    "noGuardadosSinAnotar_other": "Holes {{holes}} were never saved and can no longer be entered here. Talk to the competition organiser.",
     "banner": "You are offline. Scores will be saved locally and synced when reconnected.",
     "syncing": "Syncing scores...",
     "syncComplete": "All scores synced",

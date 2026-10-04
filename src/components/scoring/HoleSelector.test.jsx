@@ -53,3 +53,30 @@ describe('HoleSelector', () => {
     expect(screen.queryByTestId('hole-btn-10')).toBeNull();
   });
 });
+
+// Un hoyo que no se pudo guardar se marca aparte (FE #622): el rojo de fondo
+// ya dice «desacuerdo con el marcador», así que va un punto en la esquina
+describe('HoleSelector · los hoyos que no se pudieron guardar (FE #622)', () => {
+  it('llevan un punto, y se anuncian', () => {
+    render(<HoleSelector currentHole={1} onSelect={vi.fn()} noGuardados={[5, 7]} />);
+
+    expect(screen.getByTestId('no-guardado-5')).toBeInTheDocument();
+    expect(screen.getByTestId('no-guardado-7')).toBeInTheDocument();
+    // El número y el aviso: el punto solo no le dice nada a un lector de pantalla
+    expect(screen.getByTestId('hole-btn-5')).toHaveAccessibleName('5, holeSelector.noGuardado');
+    expect(screen.getByTestId('hole-btn-6')).toHaveAccessibleName('6');
+  });
+
+  it('los demás no', () => {
+    render(<HoleSelector currentHole={1} onSelect={vi.fn()} noGuardados={[5]} />);
+
+    expect(screen.queryByTestId('no-guardado-6')).not.toBeInTheDocument();
+  });
+
+  it('sin la lista, ninguno', () => {
+    render(<HoleSelector currentHole={1} onSelect={vi.fn()} />);
+
+    expect(screen.queryByTestId(/^no-guardado-/)).not.toBeInTheDocument();
+  });
+});
+

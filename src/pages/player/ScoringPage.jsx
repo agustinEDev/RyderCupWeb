@@ -69,6 +69,7 @@ const ScoringPage = () => {
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
+    noGuardados,
     avisoDelVaciado,
     pintadoDeMemoria,
     isMatchPlayer,
@@ -89,6 +90,15 @@ const ScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
+
+  // Los hoyos que no se pudieron guardar, en orden (FE #622). Los que ya no se
+  // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
+  // piden volver a anotarlos, que sería pedir algo imposible: van en otra frase
+  const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
+  const golpeBloqueado = { ownScore: isOwnScoreLocked, markedScore: isMarkerScoreLocked };
+  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every((g) => golpeBloqueado[g]);
+  const porAnotar = hoyosNoGuardados.filter((h) => !yaNoSeAnota(h));
+  const sinAnotar = hoyosNoGuardados.filter(yaNoSeAnota);
 
   // Un error del hook puede traer la CLAVE de su texto: la pantalla pintaba
   // `error.message` tal cual, y así salía castellano fijo en la app en inglés
@@ -281,13 +291,13 @@ const ScoringPage = () => {
     (ps) => ps.userId === markerAssignment?.marksUserId
   );
 
-  const handleScoreChange = (scoreData) => {
+  const handleScoreChange = (scoreData, tocado) => {
     if (!markerAssignment) return;
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
       markedPlayerId: markerAssignment.marksUserId,
       markedScore: scoreData.markedScore,
-    });
+    }, { tocado });
   };
 
   const handleTabChange = (tab) => {
@@ -441,6 +451,26 @@ const ScoringPage = () => {
           al responder el servidor, y prometerlo sería falso */}
       {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
 
+      {/* Los hoyos que no se pudieron guardar (FE #622). Aparte del recuadro de
+          errores, que lo limpia cada sondeo: este solo se va al guardar su
+          hoyo, y dice cuáles, porque hay que volver a anotarlos */}
+      {hoyosNoGuardados.length > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div
+            role="alert"
+            data-testid="no-guardados"
+            className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm space-y-1"
+          >
+            {porAnotar.length > 0 && (
+              <p>{t('offline.noGuardados', { count: porAnotar.length, holes: porAnotar.join(', ') })}</p>
+            )}
+            {sinAnotar.length > 0 && (
+              <p>{t('offline.noGuardadosSinAnotar', { count: sinAnotar.length, holes: sinAnotar.join(', ') })}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* El vaciado se paró porque el móvil no admite escrituras. Aparte del
           error general: ese lo limpia cada sondeo, y esto tiene que durar
           hasta que un vaciado termine bien (FE #551) */}
@@ -555,6 +585,7 @@ const ScoringPage = () => {
               onSelect={handleHoleSelect}
               scores={scoresVisibles}
               totalHoles={totalHoles}
+              noGuardados={hoyosNoGuardados}
             />
 
             {aunNoAbre && (
@@ -578,7 +609,11 @@ const ScoringPage = () => {
 
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <HoleInput
-                key={currentHole}
+                // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
+                // la casilla guarda su propia selección y solo adopta la vista
+                // cuando esta cambia, así que enseñaba un golpe que no estaba en
+                // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
+                key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
                 matchFormat={scoringView?.matchFormat}
                 holeNumber={currentHole}
                 par={currentHoleData.par}

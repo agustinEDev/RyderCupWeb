@@ -1,4 +1,14 @@
-const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18 }) => {
+import { useTranslation } from 'react-i18next';
+
+/**
+ * @param {number[]} [props.noGuardados] Hoyos que no se pudieron guardar
+ *   (FE #622): llevan un punto rojo para encontrarlos después de seguir
+ *   adelante. Punto y no fondo: el fondo rojo ya dice «desacuerdo». Dentro del
+ *   botón y no asomando: el último de cada fila llega al borde a 360 px, y en
+ *   el móvil no puede haber scroll lateral
+ */
+const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18, noGuardados = [] }) => {
+  const { t } = useTranslation('scoring');
 
   const getHoleStatus = (holeNumber) => {
     const holeScore = scores.find(s => s.holeNumber === holeNumber);
@@ -27,12 +37,22 @@ const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18 }) =
           key={hole}
           data-testid={`hole-btn-${hole}`}
           onClick={() => onSelect(hole)}
-          className={`w-8 h-8 rounded text-sm font-medium transition-colors
+          className={`relative w-8 h-8 rounded text-sm font-medium transition-colors
             ${hole === currentHole ? 'ring-2 ring-primary ring-offset-1' : ''}
             ${statusColors[getHoleStatus(hole)] || statusColors.empty}
           `}
         >
           {hole}
+          {noGuardados.includes(hole) && (
+            <>
+              <span
+                data-testid={`no-guardado-${hole}`}
+                aria-hidden="true"
+                className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-600 ring-1 ring-white"
+              />
+              <span className="sr-only">{`, ${t('holeSelector.noGuardado')}`}</span>
+            </>
+          )}
         </button>
       ))}
     </div>

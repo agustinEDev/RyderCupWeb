@@ -796,7 +796,7 @@ describe('useScoring', () => {
       });
 
       expect(golpesPerdidos.pendientes('u1')).toHaveLength(1);
-      expect(result.current.error).toBeTruthy();
+      expect(Object.keys(result.current.noGuardados)).toEqual(['7']);
     });
 
     it('ni cuando el servidor rechaza el reemplazo para siempre', async () => {
@@ -1061,8 +1061,7 @@ describe('useScoring · lo que no se puede perder en silencio (FE #521)', () => 
 
     const result = await anotaCon(new TypeError('Failed to fetch'));
 
-    expect(result.current.error).toBeTruthy();
-    expect(result.current.error.noSeGuardo).toBe(true);
+    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
   });
 });
 
@@ -1097,7 +1096,7 @@ describe('useScoring · el aviso dice la verdad (FE #521)', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('el aviso de «no se pudo guardar» se retira en cuanto uno sí se guarda', async () => {
+  it('guardar otro hoyo retira el recuadro de error, pero no el aviso del hoyo que no se guardó', async () => {
     // Sin cobertura no hay sondeo que limpie nada, así que sin esto el cartel
     // del hoyo 1 se quedaba puesto el resto de la vuelta mientras los demás
     // hoyos se guardaban perfectamente
@@ -1107,12 +1106,15 @@ describe('useScoring · el aviso dice la verdad (FE #521)', () => {
 
     offlineQueue.enqueue.mockReturnValueOnce(false);
     await anota(result, 1);
-    expect(result.current.error?.noSeGuardo).toBe(true);
+    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
 
     offlineQueue.enqueue.mockReturnValue(true);
     await anota(result, 2);
 
+    // El del hoyo 1 se queda: pide repetir ESE hoyo, y guardar otro no lo
+    // arregla (FE #622). Lo que se retira es el recuadro general de error
     expect(result.current.error).toBeNull();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
   });
 });
 
@@ -2513,7 +2515,7 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     await act(async () => { await result.current.submitScore(5, golpe(5)); });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
 
   it('1b · si lo nuevo solo añade el golpe del marcado, lo guardado se queda entero', async () => {
@@ -2530,7 +2532,7 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
 
     // Entero, hora incluida: reescribirlo lo haría pasar por una corrección nueva
     expect(enCola).toEqual([guardadaDe(5, propio)]);
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
 
   it('1c · un golpe que la corrección no trae no está sustituido: se queda', async () => {
@@ -2559,14 +2561,16 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     await act(async () => { await result.current.submitScore(5, golpe(5)); });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
     await act(async () => { vuelo.suelta(mockScoringView); await primero; });
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalledWith('m-1', 5, golpe(4));
   });
 
-  // Si llega no hace falta: la vista que se pide después retira cualquier aviso,
-  // como con cada sondeo. Partida rápida no sondea el aviso y prueba los dos
+  // Llegue o no: lo que llega es el 4, y el 5 sigue sin estar en ningún sitio.
+  // Antes la fila «llega» no estaba porque la vista que se pide después lo
+  // retiraba todo; desde la FE #622 el aviso de un hoyo no lo retira ninguna vista
   it.each([
+    ['llega', (vuelo) => vuelo.suelta(mockScoringView)],
     ['no llega', (vuelo) => vuelo.falla(new TypeError('Failed to fetch'))],
   ])('2b · el envío del 4 que %s no retira el aviso del 5 que no se pudo guardar', async (_, acaba) => {
     const result = await monta();
@@ -2580,7 +2584,7 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     await act(async () => { await result.current.submitScore(5, golpe(5)); });
     await act(async () => { acaba(vuelo); await primero; });
 
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
 
   it('3 · envío directo que no llega: el 4 sale de la cola y se avisa', async () => {
@@ -2592,7 +2596,7 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     await act(async () => { await result.current.submitScore(5, golpe(5)); });
 
     expect(delHoyo(5)).toEqual([soloElMarcado]);
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
 
   it('9 · si quitarlo también falla, no cambia nada y el aviso sigue', async () => {
@@ -2605,7 +2609,7 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     await act(async () => { await result.current.submitScore(5, golpe(5)); });
 
     expect(enCola).toEqual([guardadaDe(5, golpe(4))]);
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
 
   it('9b · y si el golpe entero está sustituido y quitarlo falla, igual', async () => {
@@ -2618,7 +2622,7 @@ describe('useScoring · un guardado que falla no deja salir lo sustituido (FE #6
     await act(async () => { await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }); });
 
     expect(enCola).toEqual([guardadaDe(5, propio)]);
-    expect(result.current.error).toBeTruthy();
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
   });
 
   it('10 · una corrección que entra entre leer el 4 y quitarlo se queda', async () => {
@@ -2692,15 +2696,16 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
     expect(result.current.origenDelError).toBe('carga');
   });
 
-  it('1/2 · si el móvil no puede guardar el golpe, el fallo es del golpe', async () => {
+  it('1/2 · si el móvil no puede guardar el golpe, va a su propio aviso', async () => {
     const { result } = await monta();
     offlineQueue.enqueue.mockReturnValue(false);
     submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
 
     await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
 
-    expect(result.current.error?.noSeGuardo).toBe(true);
-    expect(result.current.origenDelError).toBe('golpe');
+    // Ya no es un fallo del recuadro general: tiene su propio aviso (FE #622)
+    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
+    expect(result.current.error).toBeNull();
   });
 
   it('1 · también sin cobertura, que no llega a enviar', async () => {
@@ -2710,8 +2715,8 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
 
     await act(async () => { await result.current.submitScore(1, { ownScore: 5, markedPlayerId: 'u2' }); });
 
-    expect(result.current.error?.noSeGuardo).toBe(true);
-    expect(result.current.origenDelError).toBe('golpe');
+    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
+    expect(result.current.error).toBeNull();
   });
 
   it.each([409, 400, 422])('3/4 · un golpe que el servidor rechaza con %s es un fallo del golpe', async (estado) => {
@@ -2779,8 +2784,7 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
 
     await act(async () => { await result.current.refetch(); });
 
-    expect(result.current.error?.noSeGuardo).toBe(true);
-    expect(result.current.origenDelError).toBe('golpe');
+    expect(Object.keys(result.current.noGuardados)).toEqual(['1']);
   });
 
   it.each([401, 403, 404])('11b · pero un %s al cargar sí: el partido ya no se puede anotar', async (estado) => {
@@ -3243,5 +3247,351 @@ describe('useScoring · el sondeo vacía la cola cuando el servidor vuelve (FE #
     await esperaUnPoco();
 
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
+  // El aviso vivía en el mismo estado que los fallos de carga, y cada vista
+  // buena lo borraba: con cobertura, el jugador muchas veces no llegaba a
+  // verlo. Ahora es una lista por hoyo que solo se retira al guardar ESE hoyo
+  const golpe = (ownScore) => ({ ownScore, markedPlayerId: 'u2', markedScore: 4 });
+  const enVuelo = () => {
+    let suelta;
+    let falla;
+    const promesa = new Promise((resolve, reject) => { suelta = resolve; falla = reject; });
+    return { promesa, suelta, falla };
+  };
+
+  const monta = async (matchId = 'm-1') => {
+    const hook = renderHook(({ id }) => useScoring(id, 'u1'), { initialProps: { id: matchId } });
+    await waitFor(() => expect(hook.result.current.isLoading).toBe(false));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    return hook;
+  };
+  const anota = (result, hoyo, valor) =>
+    act(async () => { await result.current.submitScore(hoyo, golpe(valor)); });
+  const sinSitio = () => offlineQueue.enqueue.mockReturnValue(false);
+  const conSitio = () => offlineQueue.enqueue.mockReturnValue(true);
+  const sinCobertura = () => Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    conSitio();
+  });
+
+  afterEach(() => {
+    offlineQueue.enqueue.mockReset();
+    submitHoleScoreUseCase.execute.mockReset();
+  });
+
+  it('N1 · sin cobertura y sin sitio: el hoyo queda apuntado, y no en el recuadro de errores', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+
+    await anota(result, 5, 4);
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+    expect(result.current.error).toBeNull();
+  });
+
+  it('N1b · enviando: la petición no llega y el móvil no tiene sitio', async () => {
+    const { result } = await monta();
+    sinSitio();
+    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await anota(result, 5, 4);
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it('N2 · un sondeo bueno no lo retira', async () => {
+    const { result } = await monta();
+    sinSitio();
+    submitHoleScoreUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    await anota(result, 5, 4);
+
+    await act(async () => { await result.current.refetch(); });
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it('N3 · se retira al guardar ese hoyo en la cola', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await anota(result, 5, 4);
+
+    conSitio();
+    await anota(result, 5, 4);
+
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N3b · y al enviarlo', async () => {
+    const { result } = await monta();
+    sinSitio();
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await anota(result, 5, 4);
+
+    await anota(result, 5, 4);
+
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N4 · guardar otro hoyo no lo retira', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await anota(result, 5, 4);
+
+    conSitio();
+    await anota(result, 6, 4);
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it('N5 · con varios, cada uno se va al guardar el suyo', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await anota(result, 5, 4);
+    await anota(result, 7, 4);
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5', '7']);
+
+    conSitio();
+    await anota(result, 7, 4);
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it.each([
+    ['llega', (vuelo) => vuelo.suelta(mockScoringView)],
+    ['se queda sin red', (vuelo) => vuelo.falla(new TypeError('Failed to fetch'))],
+  ])('N6 · el 4 que iba en camino %s después de fallar la corrección: el hoyo sigue apuntado', async (_, acaba) => {
+    const { result } = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let primero;
+    act(() => { primero = result.current.submitScore(5, golpe(4)); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    // La corrección llega con el envío en vuelo, así que solo se guarda… y no cabe
+    sinSitio();
+    await anota(result, 5, 5);
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+
+    await act(async () => { acaba(vuelo); await primero; });
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it('N7 · lo de un partido no se arrastra a otro', async () => {
+    sinCobertura();
+    const { result, rerender } = await monta('m-1');
+    sinSitio();
+    await anota(result, 5, 4);
+
+    rerender({ id: 'm-2' });
+
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  // Revisión: un guardado posterior del hoyo no basta si no trae lo que se
+  // perdió. La casilla vuelve a lo guardado, así que el golpe perdido ya no va
+  // en los envíos siguientes; si el del marcado retiraba el aviso, el propio
+  // quedaba perdido sin que nada lo dijera. Misma regla que la cola: lo que la
+  // anotación no trae no queda sustituido (#609)
+  it('N8 · se perdió el propio: guardar solo el del marcado no lo retira; guardar el propio, sí', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+
+    conSitio();
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 5 });
+    });
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 });
+    });
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N9 · se perdieron los dos: hace falta guardar los dos, en una vez o en dos', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await anota(result, 5, 4);
+
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 4 });
+    });
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N9b · una raya también es un golpe: recoger la bola cuenta como guardarlo', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: null, markedPlayerId: 'u2' }); });
+
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N9d · dos fallos del mismo hoyo con golpes distintos: faltan los dos', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 5 });
+    });
+
+    conSitio();
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: undefined, markedPlayerId: 'u2', markedScore: 5 });
+    });
+
+    // El del marcado ya está; el propio, no
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it('N9c · si el guardado que lo retira a medias es posterior, la casilla no se vuelve a montar', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await anota(result, 5, 4);
+    const marca = result.current.noGuardados[5].turno;
+
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }); });
+
+    expect(result.current.noGuardados[5].turno).toBe(marca);
+  });
+
+  // Segunda revisión. Cada envío de la casilla lleva LOS DOS golpes, así que
+  // «qué trae» no dice qué volvió a anotar el jugador: lo dice la casilla
+  it('N10 · el envío del marcado lleva el propio guardado, pero no lo reanota', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    // El 4 propio está guardado; la corrección a 5 no cabe
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2' }, { tocado: 'ownScore' }); });
+    sinSitio();
+    await act(async () => { await result.current.submitScore(5, { ownScore: 5, markedPlayerId: 'u2' }, { tocado: 'ownScore' }); });
+
+    conSitio();
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'markedScore' });
+    });
+    expect(result.current.noGuardados[5]?.golpes).toEqual(['ownScore']);
+
+    // Si el jugador vuelve a elegir el propio —aunque sea el mismo 4—, es su decisión
+    await act(async () => {
+      await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'ownScore' });
+    });
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N11 · un fallo antiguo que llega tarde no marca lo que una anotación posterior ya guardó', async () => {
+    const { result } = await monta();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    // La del turno anterior no cabe en el móvil y sale en vuelo
+    sinSitio();
+    let primero;
+    act(() => { primero = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+
+    // La posterior, con el envío dentro, solo se guarda… y esta sí cabe
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, golpe(6), { tocado: 'ownScore' }); });
+
+    // Y la anterior se queda sin red
+    await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await primero; });
+
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N12 · ir a otro partido y volver no se lleva los avisos del primero', async () => {
+    sinCobertura();
+    const { result, rerender } = await monta('m-1');
+    sinSitio();
+    await anota(result, 5, 4);
+
+    rerender({ id: 'm-2' });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await anota(result, 3, 4);
+    rerender({ id: 'm-1' });
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  // Tercera revisión: un envío que termina con el jugador ya en otro partido
+  // sigue siendo de SU partido. La lista va por partido, así que se apunta o se
+  // retira allí, y la pantalla del otro no lo ve
+  it('N13 · si el guardado llega con el jugador en otro partido, al volver el aviso ya no está', async () => {
+    const { result, rerender } = await monta('m-1');
+    sinSitio();
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await act(async () => { await result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+
+    conSitio();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let envio;
+    act(() => { envio = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
+    rerender({ id: 'm-2' });
+    expect(result.current.noGuardados).toEqual({});
+
+    await act(async () => { vuelo.suelta(mockScoringView); await envio; });
+    rerender({ id: 'm-1' });
+
+    expect(result.current.noGuardados).toEqual({});
+  });
+
+  it('N14 · si el fallo llega con el jugador en otro partido, al volver el aviso está', async () => {
+    const { result, rerender } = await monta('m-1');
+    sinSitio();
+    const vuelo = enVuelo();
+    submitHoleScoreUseCase.execute.mockReturnValueOnce(vuelo.promesa);
+    let envio;
+    act(() => { envio = result.current.submitScore(5, golpe(4), { tocado: 'ownScore' }); });
+    await waitFor(() => expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(1));
+    rerender({ id: 'm-2' });
+
+    await act(async () => { vuelo.falla(new TypeError('Failed to fetch')); await envio; });
+    // En el partido de ahora no se pinta
+    expect(result.current.noGuardados).toEqual({});
+    rerender({ id: 'm-1' });
+
+    expect(Object.keys(result.current.noGuardados)).toEqual(['5']);
+  });
+
+  it('cada fallo deja su marca: dos fallos del mismo hoyo no dejan la misma', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await anota(result, 5, 4);
+    const primera = result.current.noGuardados[5].turno;
+
+    await anota(result, 5, 6);
+
+    expect(result.current.noGuardados[5].turno).not.toBe(primera);
   });
 });
