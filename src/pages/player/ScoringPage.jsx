@@ -27,6 +27,24 @@ const TABS = ['input', 'scorecard', 'leaderboard'];
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
+// Los golpes que siguen en el móvil CON cobertura: lo caído es el servidor, así
+// que el banner de sin conexión diría algo falso (FE #617). En las dos pantallas,
+// la de nada pintado y la del partido en pantalla (FE #625)
+const PendientesASalvo = ({ count }) => {
+  const { t } = useTranslation('scoring');
+  if (count <= 0) return null;
+  return (
+    <div className="max-w-4xl mx-auto px-4 pt-4">
+      <p
+        data-testid="pendientes-a-salvo"
+        className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+      >
+        {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count })}
+      </p>
+    </div>
+  );
+};
+
 const ScoringPage = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
@@ -51,6 +69,7 @@ const ScoringPage = () => {
     isOffline,
     isSessionBlocked,
     pendingQueueSize,
+    noGuardados,
     avisoDelVaciado,
     pintadoDeMemoria,
     isMatchPlayer,
@@ -71,6 +90,15 @@ const ScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
+
+  // Los hoyos que no se pudieron guardar, en orden (FE #622). Los que ya no se
+  // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
+  // piden volver a anotarlos, que sería pedir algo imposible: van en otra frase
+  const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
+  const golpeBloqueado = { ownScore: isOwnScoreLocked, markedScore: isMarkerScoreLocked };
+  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every((g) => golpeBloqueado[g]);
+  const porAnotar = hoyosNoGuardados.filter((h) => !yaNoSeAnota(h));
+  const sinAnotar = hoyosNoGuardados.filter(yaNoSeAnota);
 
   // Un error del hook puede traer la CLAVE de su texto: la pantalla pintaba
   // `error.message` tal cual, y así salía castellano fijo en la app en inglés
@@ -263,13 +291,13 @@ const ScoringPage = () => {
     (ps) => ps.userId === markerAssignment?.marksUserId
   );
 
-  const handleScoreChange = (scoreData) => {
+  const handleScoreChange = (scoreData, tocado) => {
     if (!markerAssignment) return;
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
       markedPlayerId: markerAssignment.marksUserId,
       markedScore: scoreData.markedScore,
-    });
+    }, { tocado });
   };
 
   const handleTabChange = (tab) => {
@@ -357,16 +385,7 @@ const ScoringPage = () => {
         {/* Y con cobertura, los golpes pendientes se cuentan aparte: el banner de
             arriba afirma «estás sin conexión», y aquí sí la hay —lo caído es el
             servidor—, así que usarlo para esto sería decirle algo falso */}
-        {!isOffline && pendingQueueSize > 0 && (
-          <div className="max-w-4xl mx-auto px-4 pt-4">
-            <p
-              data-testid="pendientes-a-salvo"
-              className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-            >
-              {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count: pendingQueueSize })}
-            </p>
-          </div>
-        )}
+        {!isOffline && <PendientesASalvo count={pendingQueueSize} />}
 
         <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
           <p className="text-gray-700">
@@ -423,6 +442,34 @@ const ScoringPage = () => {
       <HeaderAuth user={user} />
 
       {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+
+      {/* El gemelo de la pantalla sin nada pintado (FE #625): con cobertura y el
+          servidor caído, la casilla enseña el golpe y nada decía que el otro
+          jugador no lo ve. Sale solo mientras el servidor no contesta: con
+          respuesta, el sondeo vacía la cola */}
+      {/* Salvo con el aviso del almacenamiento: esos golpes no se van a enviar
+          al responder el servidor, y prometerlo sería falso */}
+      {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
+
+      {/* Los hoyos que no se pudieron guardar (FE #622). Aparte del recuadro de
+          errores, que lo limpia cada sondeo: este solo se va al guardar su
+          hoyo, y dice cuáles, porque hay que volver a anotarlos */}
+      {hoyosNoGuardados.length > 0 && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div
+            role="alert"
+            data-testid="no-guardados"
+            className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm space-y-1"
+          >
+            {porAnotar.length > 0 && (
+              <p>{t('offline.noGuardados', { count: porAnotar.length, holes: porAnotar.join(', ') })}</p>
+            )}
+            {sinAnotar.length > 0 && (
+              <p>{t('offline.noGuardadosSinAnotar', { count: sinAnotar.length, holes: sinAnotar.join(', ') })}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* El vaciado se paró porque el móvil no admite escrituras. Aparte del
           error general: ese lo limpia cada sondeo, y esto tiene que durar
@@ -538,6 +585,7 @@ const ScoringPage = () => {
               onSelect={handleHoleSelect}
               scores={scoresVisibles}
               totalHoles={totalHoles}
+              noGuardados={hoyosNoGuardados}
             />
 
             {aunNoAbre && (
@@ -561,7 +609,11 @@ const ScoringPage = () => {
 
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <HoleInput
-                key={currentHole}
+                // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
+                // la casilla guarda su propia selección y solo adopta la vista
+                // cuando esta cambia, así que enseñaba un golpe que no estaba en
+                // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
+                key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
                 matchFormat={scoringView?.matchFormat}
                 holeNumber={currentHole}
                 par={currentHoleData.par}

@@ -47,6 +47,17 @@ export const getAll = () => {
   }
 };
 
+// Qué golpes eligió el jugador (FE #813): si el servidor rechaza la anotación,
+// se apuntan como perdidos esos y no los dos del hoyo. Al sustituir la del mismo
+// hoyo se suman —los dos siguen sin enviarse—; si la anterior no lo sabía, no se
+// sabe; y quien reencola sin decirlo —al resolver un desacuerdo— conserva lo que
+// había
+const tocadosTras = (anterior, tocados) => {
+  if (!tocados) return anterior?.tocados ? { tocados: anterior.tocados } : {};
+  if (anterior && !anterior.tocados) return {};
+  return { tocados: [...new Set([...(anterior?.tocados ?? []), ...tocados])] };
+};
+
 /**
  * Add a score to the offline queue.
  * If a score for the same match+hole+participant already exists, it is replaced.
@@ -80,7 +91,8 @@ export const enqueue = (
   scoreData,
   participantId = null,
   userId = null,
-  laPartida = {}
+  laPartida = {},
+  tocados = null
 ) => {
   const { matchName = null, matchNumber = null } = laPartida;
   const queue = getAll();
@@ -112,6 +124,7 @@ export const enqueue = (
     // guarda crudo y lo redacta la traducción, para que quien tenga la
     // aplicación en inglés no lea un rótulo congelado en español
     matchNumber: matchNumber ?? anterior?.matchNumber ?? null,
+    ...tocadosTras(anterior, tocados),
   });
   return guarda(filtered);
 };

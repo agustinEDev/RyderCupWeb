@@ -11,6 +11,7 @@ import {
   getStatusColor,
   formatDateRange
 } from '../services/competitions';
+import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
 import BlockLoader from '../components/ui/BlockLoader';
@@ -219,7 +220,7 @@ const Competitions = () => {
                       {competition.enrollment_status === 'APPROVED' && '✓ '}
                       {competition.enrollment_status === 'PENDING' && '⏳ '}
                       {competition.enrollment_status === 'REJECTED' && '✗ '}
-                      {t('myCompetitions.enrollmentStatus', { status: t(`enrollmentStatus.${competition.enrollment_status}`) })}
+                      {t('myCompetitions.enrollmentStatus', { status: etiquetaDeInscripcion(t, competition.enrollment_status, user?.gender) })}
                     </span>
                   </div>
                 )}

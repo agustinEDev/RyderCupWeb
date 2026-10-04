@@ -701,7 +701,6 @@ jobs:
         env:
           # Los nombres que tiene el Static Site en Render; valores de prueba
           VITE_API_BASE_URL: https://api.rydercupfriends.com
-          VITE_API_TIMEOUT: '30000'
           VITE_APP_NAME: RyderCupFriends
           VITE_APP_VERSION: ci
           VITE_GOOGLE_CLIENT_ID: ci-google-client-id.apps.googleusercontent.com

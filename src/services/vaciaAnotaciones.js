@@ -17,10 +17,12 @@
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import {
   esFalloDeTodaLaSesion,
+  esperaASuHora,
   esRechazoDefinitivo,
   noLlegoAlServidor,
 } from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
+import { golpesQueTrae } from '../utils/golpesDelHoyo';
 
 /**
  * Por qué se sale del bucle antes de tiempo. **Todos los valores están aquí**:
@@ -116,6 +118,16 @@ const laMismaEnLaCola = (entrada) => {
  */
 const LATIDO_EN_VUELO_MS = 30_000;
 
+// Qué golpes del hoyo se pierden con una anotación de competición (FE #813):
+// los que tocó el jugador, si la anotación lo dice y siguen en ella; si no, los
+// que trae. Las de partida rápida llevan `score`, que no es ninguno de los dos:
+// su aviso ya es del participante y queda sin golpes, como antes
+const golpesPerdidosDe = (entrada) => {
+  const trae = golpesQueTrae(entrada.scoreData);
+  const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(g)) : trae;
+  return golpes.length > 0 ? { golpes } : {};
+};
+
 /**
  * Saca de la cola una anotación que el servidor ha rechazado, dejando aviso.
  *
@@ -137,6 +149,7 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     // del móvil, y el primero que pulse «Entendido» se lo lleva antes de que
     // lo vea el suyo
     userId: entrada.userId ?? dueñoSiNoLoTiene ?? null,
+    ...golpesPerdidosDe(entrada),
   });
   if (!apuntado) return false;
 
@@ -169,15 +182,18 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
  *   bucle tarda, y en ese rato el usuario puede entrar en una partida que se
  *   está enviando
  * @returns {Promise<{enviadas: number, llegaron: number, descartadas: number,
- *   cambiadas: number, paroPor: string|null}>} `enviadas` son las que llegaron
+ *   cambiadas: number, esperan: number, paroPor: string|null}>} `enviadas` son las que llegaron
  *   Y salieron de la cola; `llegaron` cuenta también las que el servidor
  *   aceptó pero no se pudieron borrar o cambiaron en vuelo: quien pinta una
  *   tarjeta necesita saber que el servidor tiene algo nuevo aunque la cola no
  *   lo refleje. `cambiadas` son las que el jugador corrigió mientras el bucle
  *   iba: siguen en la cola con el valor nuevo y este bucle no las ha mandado;
  *   quien llama decide si dar otra pasada ya o esperar a su siguiente
- *   disparador. `paroPor` dice POR QUÉ se salió antes de tiempo, y no es
- *   decorativo: quien llama decide con él si reintentar (ver `PARO`)
+ *   disparador. `esperan` son las que se quedan porque su partido aún no
+ *   abre: entrarán con esperar a la hora, al contrario que las que el móvil
+ *   no puede mandar (FE #625). `paroPor` dice POR QUÉ se salió antes de
+ *   tiempo, y no es decorativo: quien llama decide con él si reintentar (ver
+ *   `PARO`)
  */
 export const vaciaAnotaciones = async ({
   entradas,
@@ -191,6 +207,7 @@ export const vaciaAnotaciones = async ({
   let llegaron = 0;
   let descartadas = 0;
   let cambiadas = 0;
+  let esperan = 0;
   let paroPor = null;
 
   for (const entrada of entradas) {
@@ -260,7 +277,9 @@ export const vaciaAnotaciones = async ({
       // que trae dentro —el caso de uso valida antes de enviar—. Se deja donde
       // está, no se pierde, y se sigue con las demás: si parara aquí, una sola
       // entrada mala a la cabeza dejaría sin enviar los golpes de todas las
-      // demás partidas, en cada reconexión, para siempre
+      // demás partidas, en cada reconexión, para siempre. La que aún no abre
+      // también acaba aquí, y se cuenta: esa entra con solo esperar
+      if (esperaASuHora(err)) esperan += 1;
       continue;
     } finally {
       globalThis.clearInterval(latido);
@@ -295,5 +314,5 @@ export const vaciaAnotaciones = async ({
     enviadas += 1;
   }
 
-  return { enviadas, llegaron, descartadas, cambiadas, paroPor };
+  return { enviadas, llegaron, descartadas, cambiadas, esperan, paroPor };
 };

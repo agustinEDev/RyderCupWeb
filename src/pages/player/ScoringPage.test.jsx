@@ -52,6 +52,7 @@ const mockUseScoring = {
   isOffline: false,
   isSessionBlocked: false,
   pendingQueueSize: 0,
+  noGuardados: {},
   scoresVisibles: [],
   isMatchPlayer: true,
   canScore: true,
@@ -85,15 +86,20 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 
 // Lo último que recibió la casilla, para mirar qué le llega (FE #606)
-const casilla = vi.hoisted(() => ({ props: null }));
+// Y cuántas veces se montó: al no poder guardarse su hoyo, la casilla se vuelve
+// a montar para enseñar lo que de verdad está guardado (FE #622)
+const casilla = vi.hoisted(() => ({ props: null, montajes: 0 }));
 
 // Mock all scoring components to simple stubs
-vi.mock('../../components/scoring/HoleInput', () => ({
-  default: (props) => {
+vi.mock('../../components/scoring/HoleInput', async () => {
+  const { useState } = await vi.importActual('react');
+  const CasillaDePrueba = (props) => {
     casilla.props = props;
+    useState(() => { casilla.montajes += 1; });
     return <div data-testid="hole-input">HoleInput {props.holeNumber}</div>;
-  },
-}));
+  };
+  return { default: CasillaDePrueba };
+});
 // Y lo último que recibieron el selector y la tarjeta, por lo mismo
 const selector = vi.hoisted(() => ({ props: null }));
 const tarjeta = vi.hoisted(() => ({ props: null }));
@@ -229,11 +235,17 @@ describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve 
     mockUseScoring.scoresVisibles = delHook;
     const { rerender } = render(<ScoringPage />);
 
-    casilla.props.onScoreChange({ ownScore: 6, markedScore: undefined });
+    // Con el golpe que tocó el jugador: el hook lo necesita para saber qué
+    // golpe se ha vuelto a anotar (FE #622)
+    casilla.props.onScoreChange({ ownScore: 6, markedScore: undefined }, 'ownScore');
     rerender(<ScoringPage />);
 
     expect(casilla.props.playerScore).toEqual(delHook[0].playerScores[0]);
-    expect(mockUseScoring.submitScore).toHaveBeenCalledWith(1, { ownScore: 6, markedPlayerId: 'u2', markedScore: undefined });
+    expect(mockUseScoring.submitScore).toHaveBeenCalledWith(
+      1,
+      { ownScore: 6, markedPlayerId: 'u2', markedScore: undefined },
+      { tocado: 'ownScore' }
+    );
   });
 });
 
@@ -1255,5 +1267,173 @@ describe('ScoringPage · la barra de entregar la tarjeta (FE #745)', () => {
     render(<ScoringPage />);
 
     expect(within(screen.getByTestId('barra-de-entrega')).queryByText('submit.keepPlaying')).toBeNull();
+  });
+});
+
+describe('ScoringPage · los pendientes con cobertura, también con el partido en pantalla (FE #625)', () => {
+  // Con el servidor caído y cobertura, el golpe se queda en la cola y la casilla
+  // lo enseña: sin aviso, nada hace sospechar que el otro jugador no lo ve
+  afterEach(() => {
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 0;
+  });
+
+  it('P1 · con cobertura y golpes pendientes se cuentan, sin decir que no hay conexión', () => {
+    mockUseScoring.pendingQueueSize = 1;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
+    expect(screen.getByText(/offline\.pendingScores/)).toBeInTheDocument();
+    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+  });
+
+  it('P2 · sin cobertura sigue el banner de siempre, y no los dos a la vez', () => {
+    mockUseScoring.isOffline = true;
+    mockUseScoring.pendingQueueSize = 2;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+    expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
+  });
+
+  // Si el vaciado se paró por el almacenamiento, «se enviarán en cuanto el
+  // servidor responda» es falso: no se van a enviar, y su aviso ya lo explica
+  it('P4 · con el aviso del almacenamiento en pantalla, no se promete el envío', () => {
+    mockUseScoring.pendingQueueSize = 1;
+    mockUseScoring.avisoDelVaciado = 'no-se-pudo-borrar';
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
+    mockUseScoring.avisoDelVaciado = null;
+  });
+
+  it('P3 · con cobertura y la cola vacía, ningún aviso', () => {
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+  });
+});
+
+describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => {
+  afterEach(() => {
+    mockUseScoring.noGuardados = {};
+  });
+
+  it('P1 · un aviso propio con la lista de hoyos', () => {
+    mockUseScoring.noGuardados = { 7: { turno: 3, golpes: ['ownScore'] }, 5: { turno: 1, golpes: ['ownScore'] } };
+
+    render(<ScoringPage />);
+
+    const aviso = screen.getByTestId('no-guardados');
+    expect(aviso).toHaveAttribute('role', 'alert');
+    expect(aviso.textContent).toContain('offline.noGuardados');
+    expect(aviso.textContent).toContain('"count":2');
+    expect(aviso.textContent).toContain('"holes":"5, 7"');
+  });
+
+  it('P1b · sin hoyos pendientes, sin aviso', () => {
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('no-guardados')).not.toBeInTheDocument();
+  });
+
+  // Revisión: si ya no se puede anotar, «vuelve a anotarlo» pide algo
+  // imposible. Se sigue diciendo que no se guardaron, con otro texto
+  describe('P5 · cuando ya no se puede anotar', () => {
+    afterEach(() => {
+      mockUseScoring.canScore = true;
+      mockUseScoring.isOwnScoreLocked = false;
+      mockUseScoring.isMarkerScoreLocked = false;
+    });
+
+    it.each([
+      ['sin permiso para anotar', () => { mockUseScoring.canScore = false; }],
+      ['con los dos golpes bloqueados', () => {
+        mockUseScoring.isOwnScoreLocked = true;
+        mockUseScoring.isMarkerScoreLocked = true;
+      }],
+    ])('%s, el aviso no pide volver a anotar', (_, prepara) => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['ownScore', 'markedScore'] } };
+      prepara();
+
+      render(<ScoringPage />);
+
+      const aviso = screen.getByTestId('no-guardados');
+      expect(aviso.textContent).toContain('offline.noGuardadosSinAnotar');
+      expect(aviso.textContent).not.toContain('offline.noGuardados ');
+    });
+
+    it('se perdió el del marcado y solo está bloqueado el propio: todavía se puede', () => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'] } };
+      mockUseScoring.isOwnScoreLocked = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('offline.noGuardados ');
+      expect(screen.getByTestId('no-guardados').textContent).not.toContain('noGuardadosSinAnotar');
+    });
+
+    // Segunda revisión: mira qué golpe se perdió, no si están bloqueados los dos
+    it('se perdió el propio y está bloqueado el propio: ya no se puede', () => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['ownScore'] } };
+      mockUseScoring.isOwnScoreLocked = true;
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('offline.noGuardadosSinAnotar');
+    });
+
+    it('con hoyos de los dos tipos, una frase para cada uno', () => {
+      mockUseScoring.noGuardados = {
+        5: { turno: 1, golpes: ['markedScore'] },
+        7: { turno: 2, golpes: ['ownScore'] },
+      };
+      mockUseScoring.isOwnScoreLocked = true;
+
+      render(<ScoringPage />);
+
+      const texto = screen.getByTestId('no-guardados').textContent;
+      expect(texto).toContain('offline.noGuardados {"count":1,"holes":"5"}');
+      expect(texto).toContain('offline.noGuardadosSinAnotar {"count":1,"holes":"7"}');
+    });
+  });
+
+  it('P2 · el selector recibe los hoyos para marcarlos', () => {
+    mockUseScoring.noGuardados = { 7: { turno: 3, golpes: ['ownScore'] }, 5: { turno: 1, golpes: ['ownScore'] } };
+
+    render(<ScoringPage />);
+
+    expect(selector.props.noGuardados).toEqual([5, 7]);
+  });
+
+  // La casilla guarda su propia selección y solo adopta la vista cuando esta
+  // CAMBIA. Si falla guardar el 5 mientras el 4 va en camino, la vista sigue
+  // diciendo 4 y la casilla enseñaba un 5 que no estaba en ningún sitio
+  it('P3 · al no poder guardar el hoyo en pantalla, la casilla vuelve a lo guardado', () => {
+    const { rerender } = render(<ScoringPage />);
+    const antes = casilla.montajes;
+
+    mockUseScoring.noGuardados = { 1: { turno: 2, golpes: ['ownScore'] } };
+    rerender(<ScoringPage />);
+    expect(casilla.montajes).toBe(antes + 1);
+
+    // Y otra vez si vuelve a fallar
+    mockUseScoring.noGuardados = { 1: { turno: 4, golpes: ['ownScore'] } };
+    rerender(<ScoringPage />);
+    expect(casilla.montajes).toBe(antes + 2);
+  });
+
+  it('P4 · el fallo de otro hoyo no toca la casilla en pantalla', () => {
+    const { rerender } = render(<ScoringPage />);
+    const antes = casilla.montajes;
+
+    mockUseScoring.noGuardados = { 5: { turno: 2, golpes: ['ownScore'] } };
+    rerender(<ScoringPage />);
+
+    expect(casilla.montajes).toBe(antes);
   });
 });

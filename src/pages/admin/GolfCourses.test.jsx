@@ -11,12 +11,14 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true },
-    loading: false,
-  }),
-}));
+// El usuario, UNO para toda la prueba: la página carga la lista en un efecto
+// que depende de `user`, y un objeto nuevo en cada render la recargaba sin fin.
+// Mientras recarga, el modal se desmonta y se vuelve a montar, y con carga un
+// Escape caía en ese hueco y se perdía (FE #624)
+vi.mock('../../hooks/useAuth', () => {
+  const user = { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true };
+  return { useAuth: () => ({ user, loading: false }) };
+});
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <div data-testid="header-auth">Header</div>,
