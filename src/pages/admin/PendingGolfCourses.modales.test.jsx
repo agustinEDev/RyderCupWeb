@@ -17,9 +17,14 @@ vi.mock('framer-motion', () => ({
     },
   },
 }));
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 'a-1', is_admin: true }, loading: false }),
-}));
+// El usuario, UNO para toda la prueba: la página carga la lista en un efecto
+// que depende de `user`, y un objeto nuevo en cada render la recargaba sin fin.
+// Mientras recarga, el modal se desmonta y se vuelve a montar, y con carga un
+// Escape caía en ese hueco y se perdía (FE #624)
+vi.mock('../../hooks/useAuth', () => {
+  const user = { id: 'a-1', is_admin: true };
+  return { useAuth: () => ({ user, loading: false }) };
+});
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('../../utils/countryUtils', () => ({ CountryFlag: () => null }));

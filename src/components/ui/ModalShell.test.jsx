@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { createRoot } from 'react-dom/client';
 import ModalShell, { CAJA_PROPIA } from './ModalShell';
 
 const abrir = (props = {}) =>
@@ -272,3 +273,96 @@ describe('ModalShell', () => {
   });
 });
 
+
+// Con carga, los tests de los modales de admin fallaban de vez en cuando: la
+// página se volvía a pintar, la escucha del teclado se soltaba y se volvía a
+// poner —`onClose` es una función nueva en cada render— y un Escape que caía
+// en medio se perdía. En un navegador ese hueco es de milisegundos, pero existe
+describe('ModalShell · la escucha del teclado no se suelta al volver a pintar', () => {
+  const caja = (onClose, extra = {}) => (
+    <ModalShell isOpen onClose={onClose} labelledBy="t" {...extra}>
+      <h2 id="t">Título</h2>
+      <button type="button">Aceptar</button>
+    </ModalShell>
+  );
+
+  it('K1 · un render con otro onClose no quita ni vuelve a poner la escucha', () => {
+    const { rerender } = render(caja(() => {}));
+    const quita = vi.spyOn(document, 'removeEventListener');
+    const pone = vi.spyOn(document, 'addEventListener');
+
+    rerender(caja(() => {}));
+
+    expect(quita.mock.calls.filter(([tipo]) => tipo === 'keydown')).toHaveLength(0);
+    expect(pone.mock.calls.filter(([tipo]) => tipo === 'keydown')).toHaveLength(0);
+    quita.mockRestore();
+    pone.mockRestore();
+  });
+
+  it('K2 · Escape llama al onClose más reciente', () => {
+    const viejo = vi.fn();
+    const nuevo = vi.fn();
+    const { rerender } = render(caja(viejo));
+    rerender(caja(nuevo));
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(nuevo).toHaveBeenCalledTimes(1);
+    expect(viejo).not.toHaveBeenCalled();
+  });
+
+  it('K3 · y respeta el closeOnEscape más reciente', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(caja(onClose));
+    rerender(caja(onClose, { closeOnEscape: false }));
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+
+    rerender(caja(onClose, { closeOnEscape: true }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('K4 · al cerrarse, la escucha se va', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(caja(onClose));
+    rerender(caja(onClose, { isOpen: false }));
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  // Y desde el primer instante. Un modal que se abre tras una espera —editar
+  // pide antes el campo entero— se pinta fuera de cualquier gesto, y una
+  // escucha puesta en un `useEffect` llega DESPUÉS de pintar: un Escape en ese
+  // hueco se perdía. Aquí se monta sin `act` y se pulsa en cuanto el diálogo
+  // aparece en la página
+  it('K5 · Escape funciona en cuanto el diálogo está en la página', async () => {
+    const anterior = globalThis.IS_REACT_ACT_ENVIRONMENT;
+    globalThis.IS_REACT_ACT_ENVIRONMENT = false;
+    const onClose = vi.fn();
+    const sitio = document.createElement('div');
+    document.body.appendChild(sitio);
+    const raiz = createRoot(sitio);
+    try {
+      await new Promise((resolve) => {
+        const vigia = new globalThis.MutationObserver(() => {
+          if (!sitio.querySelector('[role="dialog"]')) return;
+          vigia.disconnect();
+          document.dispatchEvent(new globalThis.KeyboardEvent('keydown', { key: 'Escape' }));
+          resolve();
+        });
+        vigia.observe(sitio, { childList: true, subtree: true });
+        raiz.render(caja(onClose));
+      });
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    } finally {
+      raiz.unmount();
+      sitio.remove();
+      globalThis.IS_REACT_ACT_ENVIRONMENT = anterior;
+    }
+  });
+});

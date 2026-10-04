@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
 
 /**
  * El armazón común de los diálogos: el fondo oscuro, la caja y todo lo que
@@ -127,14 +127,26 @@ const ModalShell = ({
     };
   }, [isOpen]);
 
+  // Lo que hace Escape, leído en el momento de pulsar. Por `useEffectEvent` y no
+  // como dependencia del efecto de abajo: `onClose` suele ser una función nueva
+  // en cada render, y con ella la escucha se soltaba y se volvía a poner cada
+  // vez que la página de debajo se pintaba. Un Escape que caía en ese hueco se
+  // perdía —con carga, los tests de los modales de admin fallaban así—
+  const alPulsarEscape = useEffectEvent(() => {
+    if (closeOnEscape) onClose?.();
+  });
+
   // Escape cierra, y el tabulador da la vuelta dentro de la caja en vez de
-  // salirse a lo que hay debajo (RyderCupWeb#389).
-  useEffect(() => {
+  // salirse a lo que hay debajo (RyderCupWeb#389). En `useLayoutEffect`: corre
+  // en el mismo paso que pone el diálogo en la página, mientras que un
+  // `useEffect` llega después de pintarlo, y un Escape en ese hueco se perdía
+  // —un modal que se abre tras una espera, como editar, lo tenía siempre—
+  useLayoutEffect(() => {
     if (!isOpen) return undefined;
 
     const alPulsar = (e) => {
-      if (e.key === 'Escape' && closeOnEscape) {
-        onClose?.();
+      if (e.key === 'Escape') {
+        alPulsarEscape();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -166,7 +178,7 @@ const ModalShell = ({
 
     document.addEventListener('keydown', alPulsar);
     return () => document.removeEventListener('keydown', alPulsar);
-  }, [isOpen, closeOnEscape, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
