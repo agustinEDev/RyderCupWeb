@@ -45,6 +45,7 @@
   "delete": "Eliminar",
   "edit": "Editar",
   "close": "Cerrar",
+  "removeSelected": "Quitar a {{name}}",
   "modal": {
     "confirm": "Confirmar",
     "ok": "Aceptar",

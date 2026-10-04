@@ -1059,6 +1059,7 @@ const CreateCompetition = () => {
                       <button
                         type="button"
                         onClick={handleRemoveAdjacentCountry1}
+                        aria-label={t('create.removeCountryField', { field: t('create.adjacentCountry') })}
                         className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
                       >
                         <X className="w-5 h-5" />
@@ -1115,6 +1116,7 @@ const CreateCompetition = () => {
                       <button
                         type="button"
                         onClick={handleRemoveAdjacentCountry2}
+                        aria-label={t('create.removeCountryField', { field: t('create.thirdCountry') })}
                         className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
                       >
                         <X className="w-5 h-5" />
@@ -1170,6 +1172,7 @@ const CreateCompetition = () => {
                             <button
                               type="button"
                               onClick={() => handleRemoveGolfCourse(globalIndex)}
+                              aria-label={t('detail.golfCourses.remove', { name: gc.course.name })}
                               className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1226,6 +1229,7 @@ const CreateCompetition = () => {
                             <button
                               type="button"
                               onClick={() => handleRemoveGolfCourse(globalIndex)}
+                              aria-label={t('detail.golfCourses.remove', { name: gc.course.name })}
                               className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1282,6 +1286,7 @@ const CreateCompetition = () => {
                             <button
                               type="button"
                               onClick={() => handleRemoveGolfCourse(globalIndex)}
+                              aria-label={t('detail.golfCourses.remove', { name: gc.course.name })}
                               className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />

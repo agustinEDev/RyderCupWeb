@@ -69,6 +69,7 @@
     "adjacentCountry": "País Adyacente",
     "selectAdjacentCountry": "Selecciona país adyacente",
     "thirdCountry": "Tercer País",
+    "removeCountryField": "Quitar {{field}}",
     "selectThirdCountry": "Selecciona tercer país",
     "golfCourses": "Campos de Golf",
     "golfCoursesSubtitle": "Añade campos de golf para cada país (al menos uno por país)",

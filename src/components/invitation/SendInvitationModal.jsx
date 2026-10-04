@@ -345,6 +345,7 @@ const SendInvitationModalContent = ({
           <h2 className="text-lg font-semibold text-gray-900">{t('send.title')}</h2>
           <button
             onClick={onClose}
+            aria-label={t('common:close')}
             disabled={isProcessing}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
@@ -490,6 +491,7 @@ const SendInvitationModalContent = ({
                   <button
                     type="button"
                     onClick={handleClearUser}
+                    aria-label={t('common:removeSelected', { name: nombreVisible(selectedUser) })}
                     disabled={isProcessing}
                     className="text-gray-400 hover:text-gray-600 flex-shrink-0"
                     data-testid="clear-selected-user"

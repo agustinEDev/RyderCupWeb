@@ -195,6 +195,7 @@ const GenerateMatchesModalContent = ({
           </div>
           <button
             onClick={onClose}
+            aria-label={t('common:close')}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />

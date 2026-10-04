@@ -490,6 +490,7 @@ const GolfCourseForm = ({ initialData = null, onSubmit, onCancel }) => {
                   <button
                     type="button"
                     onClick={() => handleRemoveTee(index)}
+                    aria-label={t('form.removeTee', { number: index + 1 })}
                     className="text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="w-4 h-4" />
