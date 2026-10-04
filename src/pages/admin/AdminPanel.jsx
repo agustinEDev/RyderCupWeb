@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search, Trophy, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -538,7 +539,15 @@ const AdminPanel = () => {
       )}
 
       {cancelingCompetition && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <ModalShell
+          isOpen
+          onClose={() => setCancelingCompetition(null)}
+          labelledBy="cancelar-competicion-titulo"
+          closeOnBackdrop={false}
+          closeOnEscape={!isTransitioning}
+          busy={isTransitioning}
+          boxClassName={CAJA_PROPIA}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -548,7 +557,7 @@ const AdminPanel = () => {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{t('competitions.confirmCancelTitle')}</h2>
+                  <h2 id="cancelar-competicion-titulo" className="text-xl font-bold text-gray-900">{t('competitions.confirmCancelTitle')}</h2>
                   <p className="text-sm text-gray-500 mt-1">{t('competitions.confirmCancelBody')}</p>
                 </div>
               </div>
@@ -580,7 +589,7 @@ const AdminPanel = () => {
               </button>
             </div>
           </motion.div>
-        </div>
+        </ModalShell>
       )}
     </div>
   );

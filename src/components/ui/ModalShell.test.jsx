@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import ModalShell from './ModalShell';
+import ModalShell, { CAJA_PROPIA } from './ModalShell';
 
 const abrir = (props = {}) =>
   render(
@@ -238,4 +238,37 @@ describe('ModalShell', () => {
     expect(document.activeElement).not.toBe(disparador);
     disparador.remove();
   });
+
+  // Los 17 modales que pasan a este armazón (4 oct 2026) traen su caja: con
+  // cabecera de borde, animada o sin relleno. Con `boxClassName` la conservan
+  it('M1: sin `boxClassName`, la caja de siempre', () => {
+    abrir();
+
+    const caja = screen.getByText('Título').parentElement;
+    expect(caja).toHaveClass('bg-white', 'rounded-lg', 'shadow-xl', 'max-w-md', 'p-6');
+  });
+
+  it('M2: con `boxClassName`, esa caja y no la de siempre', () => {
+    abrir({ boxClassName: 'w-full max-w-2xl mx-4' });
+
+    const caja = screen.getByText('Título').parentElement;
+    expect(caja).toHaveClass('w-full', 'max-w-2xl', 'mx-4');
+    expect(caja).not.toHaveClass('p-6');
+    expect(caja).not.toHaveClass('bg-white');
+  });
+
+  it('M3: con caja propia sigue reteniendo el foco y anunciándose', () => {
+    abrir({ boxClassName: 'w-full max-w-2xl mx-4' });
+
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+    expect(screen.getByText('Primero')).toHaveFocus();
+  });
+
+  // Los modales migrados traen su caja dentro: si la de fuera pusiera fondo,
+  // relleno o sombra, se verían con dos cajas, una dentro de otra
+  it('M4: `CAJA_PROPIA` solo coloca, sin fondo, relleno, sombra ni borde', () => {
+    expect(CAJA_PROPIA).toContain('w-full');
+    expect(CAJA_PROPIA).not.toMatch(/\bbg-|\bp[xy]?-\d|shadow|rounded|border/);
+  });
 });
+

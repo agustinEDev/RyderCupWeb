@@ -43,8 +43,16 @@ import { useEffect, useRef } from 'react';
  *   valor por defecto es el de siempre, así que ningún diálogo cambia; lo pasa
  *   quien enseña algo que no cabe en una columna estrecha, como la tarjeta de
  *   18 hoyos del detalle de un campo
+ * @param {string} [props.boxClassName] La caja entera, en vez de la de siempre.
+ *   Para los modales que traen la suya —con cabecera de borde, animada o sin
+ *   relleno— y pasaron a este armazón sin cambiar de aspecto (4 oct 2026). Si se
+ *   pasa, `maxWidthClass` no se usa
  * @param {React.ReactNode} props.children
  */
+
+// La caja para un modal que trae la suya dentro: solo la coloca, sin fondo,
+// borde ni relleno, para que se vea como antes de pasar a este armazón
+export const CAJA_PROPIA = 'w-full mx-4 flex justify-center';
 
 const ENFOCABLES =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -69,6 +77,7 @@ const ModalShell = ({
   busy = false,
   maxWidthClass = 'max-w-md',
   scrollableBackdrop = false,
+  boxClassName,
   children,
 }) => {
   const cajaRef = useRef(null);
@@ -192,7 +201,7 @@ const ModalShell = ({
       <div
         ref={cajaRef}
         tabIndex={-1}
-        className={`bg-white rounded-lg shadow-xl ${maxWidthClass} w-full mx-4 p-6`}
+        className={boxClassName ?? `bg-white rounded-lg shadow-xl ${maxWidthClass} w-full mx-4 p-6`}
       >
         {children}
       </div>

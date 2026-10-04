@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +41,15 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onCancel}
+      labelledBy="admin-editar-competicion-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isSaving}
+      busy={isSaving}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -48,7 +57,7 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
       >
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{t('competitions.editModal.title')}</h2>
+            <h2 id="admin-editar-competicion-titulo" className="text-xl font-bold text-gray-900">{t('competitions.editModal.title')}</h2>
             <p className="text-sm text-gray-500 mt-1">{t('competitions.editModal.subtitle')}</p>
           </div>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-600" aria-label={t('competitions.editModal.cancel')}>
@@ -132,7 +141,7 @@ const AdminEditCompetitionModal = ({ competition, onSubmit, onCancel }) => {
           </div>
         </form>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

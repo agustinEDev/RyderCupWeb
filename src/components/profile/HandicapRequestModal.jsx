@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, TrendingUp, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +68,15 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={handleDismiss}
+      labelledBy="pedir-handicap-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isSubmitting}
+      busy={isSubmitting}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -77,7 +86,7 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-amber-500" />
-            <h2 className="text-xl font-bold text-gray-900">{t('handicapModal.title')}</h2>
+            <h2 id="pedir-handicap-titulo" className="text-xl font-bold text-gray-900">{t('handicapModal.title')}</h2>
           </div>
           <button
             onClick={handleDismiss}
@@ -180,7 +189,7 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
           </button>
         </div>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

@@ -304,4 +304,28 @@ describe('AdminPanel', () => {
 
     await waitFor(() => expect(mockCancelCompetition).toHaveBeenCalledWith('c1'));
   });
+
+  // Pasó a ModalShell el 4 oct 2026: se anuncia con su título, y Escape la
+  // descarta como su botón de no cancelar
+  it('la confirmación de cancelar se anuncia y se descarta con Escape', async () => {
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    await screen.findByText('Ryder Cup Local');
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
+
+    const dialogo = await screen.findByRole('dialog');
+    expect(dialogo).toHaveAccessibleName('competitions.confirmCancelTitle');
+    // Pulsar fuera no la descarta, como antes
+    const fondo = screen.getByRole('dialog');
+    fireEvent.mouseDown(fondo);
+    fireEvent.click(fondo);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(mockCancelCompetition).not.toHaveBeenCalled();
+  });
 });
+

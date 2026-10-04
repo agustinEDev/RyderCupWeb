@@ -953,4 +953,41 @@ describe('SendInvitationModal', () => {
       expect(panel).toHaveAttribute('aria-labelledby', amigos.id);
     });
   });
+
+  // Revisión de la PR de los modales (4 oct 2026): con el modal sobre
+  // ModalShell, el Escape que cerraba la lista de resultados cerraba también
+  // el modal entero, y se perdía la búsqueda y el mensaje
+  describe('Escape con la lista de resultados abierta', () => {
+    const abrirLista = async () => {
+      onSearchUsers.mockResolvedValue([
+        { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      ]);
+      renderModal();
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+    };
+
+    it('E1: el primer Escape cierra la lista y no el modal', async () => {
+      await abrirLista();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(screen.queryByTestId('search-results-dropdown')).toBeNull();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByTestId('user-search-input')).toHaveValue('Jo');
+    });
+
+    it('E2: el siguiente, ya sin lista, cierra el modal', async () => {
+      await abrirLista();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
 });
+
