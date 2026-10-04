@@ -449,7 +449,11 @@
     "REQUESTED": "SOLICITADA",
     "PENDING": "PENDIENTE",
     "APPROVED": "APROBADA",
-    "REJECTED": "RECHAZADA"
+    "REJECTED": "RECHAZADA",
+    "INVITED": "INVITADO",
+    "INVITED_female": "INVITADA",
+    "CANCELLED": "CANCELADA",
+    "WITHDRAWN": "RETIRADA"
   },
   "apertura": {
     "titulo": "¿Cuándo se abren las inscripciones?",

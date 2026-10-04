@@ -12,6 +12,7 @@ import CaptainBadge from '../components/competition/CaptainBadge';
 import { mensajeDeError } from '../utils/sinCobertura';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
+import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
@@ -1101,7 +1102,7 @@ const CompetitionDetail = () => {
                       )}`}
                     >
                       {(userEnrollment?.status || competition.enrollment_status) &&
-                        t(`enrollmentStatus.${userEnrollment?.status || competition.enrollment_status}`)}
+                        etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, user?.gender)}
                     </span>
                   </div>
 
