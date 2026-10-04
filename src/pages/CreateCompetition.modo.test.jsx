@@ -266,7 +266,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
 
     await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
-    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), { exigirCampos: false });
+    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ exigirCampos: false }));
   });
 
   it('E4: si la ubicación nueva deja campos fuera, se ve el motivo del servidor (BE #481)', async () => {
@@ -290,7 +290,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
 
     await vi.waitFor(() => expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalled());
-    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), { exigirCampos: true });
+    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ exigirCampos: true }));
   });
 
   it('S8: volver a elegir el tipo vuelve a preguntar el modo', async () => {

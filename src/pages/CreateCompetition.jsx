@@ -175,6 +175,11 @@ const CreateCompetition = () => {
   // Vaciar el campo en edición no puede recortar el cupo de una competición con
   // gente ya aprobada: se conserva el que se cargó (`/code-review`)
   const cupoCargado = useRef(CUPO_POR_DEFECTO);
+  // Cuántos hay ya dentro, al editar: el cupo no puede bajar de ahí (FE #662).
+  // Con la competición de la que son: crear y editar montan este componente en
+  // el mismo sitio, y al ir de editar una a crear otra se arrastraba el mínimo
+  const [inscritosDe, setInscritosDe] = useState({ de: null, cuantos: 0 });
+  const inscritos = competitionId && inscritosDe.de === competitionId ? inscritosDe.cuantos : 0;
 
   // El aviso se pinta arriba del todo y el botón vive abajo: en un teléfono se
   // pulsa «Crear» y no pasa nada visible. Hay que llevarlo a los ojos
@@ -335,6 +340,7 @@ const CreateCompetition = () => {
         if (!vigente) return;
         // Lo que había guardado: vaciar el campo no puede recortarlo
         cupoCargado.current = formDataToSet.numberOfPlayers;
+        setInscritosDe({ de: competitionId, cuantos: competition.enrolledCount || 0 });
         setFormData(formDataToSet);
 
       } catch (error) {
@@ -610,7 +616,7 @@ const CreateCompetition = () => {
 
     // UI Validation
     // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
-    const validationError = validateCompetitionForm(formData, { exigirCampos: !isEditMode });
+    const validationError = validateCompetitionForm(formData, { exigirCampos: !isEditMode, inscritos });
     if (validationError) {
       if (validationError.key === 'golfCoursesRequired') {
         const countryNames = validationError.missingCourseCountryCodes.map(code => {
@@ -624,7 +630,7 @@ const CreateCompetition = () => {
           text: t(`create.errors.${validationError.key}`, { countries: countryNames })
         });
       } else {
-        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`) });
+        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`, { count: validationError.count }) });
       }
       // Si lo que falla vive dentro de «Más opciones», el aviso hablaba de un
       // campo que no estaba en pantalla (`/code-review`)
@@ -1365,11 +1371,19 @@ const CreateCompetition = () => {
                         // callárselo es enterarse con el jugador 13 fuera
                         numberOfPlayers: cupoDeJugadores(prev.numberOfPlayers, cupoCargado.current),
                       }))}
-                      min="2"
+                      min={Math.max(2, inscritos)}
                       max="100"
+                      aria-describedby={inscritos > 0 ? 'cupo-minimo' : undefined}
                       placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                    {/* Por qué no baja de ahí (FE #662): sin decirlo, el número
+                        se rechazaba sin motivo */}
+                    {inscritos > 0 && (
+                      <p id="cupo-minimo" data-testid="cupo-minimo" className="mt-1 text-xs text-gray-500">
+                        {t('create.capFloor', { count: inscritos })}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 
 /**
  * LA TABLA de la edición (FE #710).
@@ -260,3 +260,100 @@ describe('CreateCompetition · editar (FE #710)', () => {
     globalThis.Element.prototype.scrollIntoView = original;
   });
 });
+
+describe('CreateCompetition · el cupo no baja de los inscritos (FE #662)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // `clearAllMocks` no quita implementaciones: una validación que falla de
+    // un test anterior deja el botón de guardar deshabilitado
+    mockValidar.mockReset();
+    mockValidar.mockImplementation(() => null);
+    mockDetalle.mockReset();
+    mockCampos.mockReset();
+    mockCampos.mockResolvedValue([]);
+  });
+
+  it('K1: con 14 dentro, el mínimo del campo es 14 y se dice por qué', async () => {
+    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    pintaEdicion();
+
+    const campo = await screen.findByTestId('campo-jugadores');
+    await waitFor(() => expect(campo).toHaveAttribute('min', '14'));
+    expect(screen.getByTestId('cupo-minimo')).toHaveTextContent('create.capFloor 14');
+  });
+
+  it('K2: la validación sabe cuántos hay dentro', async () => {
+    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    pintaEdicion();
+    // Con la competición ya cargada, como cuando la tiene delante quien edita
+    await waitFor(() => expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '14'));
+    fireEvent.click(screen.getByText('edit.updateCompetition'));
+
+    // La del envío: la pantalla también valida en cada render, sin opciones
+    await waitFor(() =>
+      expect(mockValidar.mock.calls.some(([, opciones]) => opciones?.inscritos === 14)).toBe(true)
+    );
+  });
+
+  it('K3: sin nadie dentro, el mínimo de siempre y sin aviso', async () => {
+    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), enrolledCount: 0 });
+    pintaEdicion();
+
+    const campo = await screen.findByTestId('campo-jugadores');
+    await screen.findByText('edit.updateCompetition');
+    expect(campo).toHaveAttribute('min', '2');
+    expect(screen.queryByTestId('cupo-minimo')).not.toBeInTheDocument();
+  });
+
+  it('K4: el error lleva el número para decirlo', async () => {
+    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    mockValidar.mockImplementation((_, opciones) =>
+      opciones ? { key: 'capBelowEnrolled', count: 14 } : null
+    );
+    pintaEdicion();
+    fireEvent.click(await screen.findByText('edit.updateCompetition'));
+
+    expect(await screen.findByText('create.errors.capBelowEnrolled 14')).toBeInTheDocument();
+    expect(mockActualizar).not.toHaveBeenCalled();
+  });
+});
+
+describe('CreateCompetition · los inscritos son de SU competición (FE #662, revisión)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDetalle.mockReset();
+    mockCampos.mockReset();
+    mockCampos.mockResolvedValue([]);
+    mockValidar.mockReset();
+    mockValidar.mockImplementation(() => null);
+  });
+
+  it('K5: de editar una con 14 dentro a crear otra, el mínimo no se arrastra', async () => {
+    // Crear y editar montan el mismo componente en el mismo sitio: no se
+    // desmonta al ir de uno a otro
+    const IrACrear = () => {
+      const navegar = useNavigate();
+      return <button onClick={() => navegar('/competitions/create')}>ir a crear</button>;
+    };
+    mockDetalle.mockResolvedValueOnce({ ...competicion('ACTIVE'), maxPlayers: 24, enrolledCount: 14 });
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/edit']}>
+        <IrACrear />
+        <Routes>
+          <Route path="/competitions/:id/edit" element={<CreateCompetition />} />
+          <Route path="/competitions/create" element={<CreateCompetition />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '14'));
+
+    fireEvent.click(screen.getByText('ir a crear'));
+    // Al crear se elige antes el tipo y el modo (FE #799, #695)
+    fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
+
+    await waitFor(() => expect(screen.getByTestId('campo-jugadores')).toHaveAttribute('min', '2'));
+    expect(screen.queryByTestId('cupo-minimo')).not.toBeInTheDocument();
+  });
+});
+
