@@ -52,7 +52,7 @@ const ForgotPassword = () => {
       console.error('Forgot password error:', error);
 
       // Manejo de rate limiting (429)
-      if (error.message.includes('Rate limit') || error.message.includes('Too many')) {
+      if (error.status === 429) {
         customToast.error(t('forgotPassword.rateLimitError'), {
           duration: 6000,
         });

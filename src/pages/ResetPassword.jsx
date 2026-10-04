@@ -183,7 +183,7 @@ const ResetPassword = () => {
       console.error('Reset password error:', error);
 
       // Manejo de errores específicos
-      if (error.message.includes('Rate limit') || error.message.includes('Too many')) {
+      if (error.status === 429) {
         customToast.error(t('resetPassword.rateLimitError'), {
           duration: 6000,
         });

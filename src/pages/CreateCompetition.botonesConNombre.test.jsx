@@ -53,6 +53,9 @@ vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: ()
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
 
+import competicionesEs from '../i18n/locales/es/competitions.json';
+import competicionesEn from '../i18n/locales/en/competitions.json';
+
 const CreateCompetition = (await import('./CreateCompetition')).default;
 const { getCompetitionDetailUseCase } = await import('../composition');
 
@@ -136,5 +139,28 @@ describe('CreateCompetition · los botones de icono se nombran', () => {
       ).toBeInTheDocument();
     }
     expect(sinNombre()).toEqual([]);
+    // El contador de cada bloque, también los de los adyacentes, lleva su número
+    expect(screen.getAllByText('(create.coursesSelected 1)')).toHaveLength(3);
+  });
+
+  // «(1 campos seleccionados)»: el número iba suelto delante del texto y el
+  // plural no se elegía. Visto en la prueba en bloque del 4 oct 2026
+  it('P1: el número de campos de cada país elige singular o plural', async () => {
+    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-MANUAL'));
+    fireEvent.click(await screen.findByRole('button', { name: 'elegir España' }));
+
+    expect(await screen.findByText('(create.coursesSelected 0)')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'elegir campo ES' }));
+    expect(await screen.findByText('(create.coursesSelected 1)')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['es', competicionesEs, '{{count}} campo seleccionado', '{{count}} campos seleccionados'],
+    ['en', competicionesEn, '{{count}} course selected', '{{count}} courses selected'],
+  ])('P2: en %s hay singular y plural', (_, textos, uno, varios) => {
+    expect(textos.create.coursesSelected_one).toBe(uno);
+    expect(textos.create.coursesSelected_other).toBe(varios);
   });
 });

@@ -1149,7 +1149,7 @@ const CreateCompetition = () => {
                           {formatCountryName(formData.country, i18n.language)}
                         </h4>
                         <span className="text-xs text-gray-500">
-                          ({getCoursesForCountry(formData.country.code).length} {t('create.coursesSelected')})
+                          ({t('create.coursesSelected', { count: getCoursesForCountry(formData.country.code).length })})
                         </span>
                       </div>
 
@@ -1206,7 +1206,7 @@ const CreateCompetition = () => {
                           )}
                         </h4>
                         <span className="text-xs text-gray-500">
-                          ({getCoursesForCountry(formData.adjacentCountry1).length} {t('create.coursesSelected')})
+                          ({t('create.coursesSelected', { count: getCoursesForCountry(formData.adjacentCountry1).length })})
                         </span>
                       </div>
 
@@ -1263,7 +1263,7 @@ const CreateCompetition = () => {
                           )}
                         </h4>
                         <span className="text-xs text-gray-500">
-                          ({getCoursesForCountry(formData.adjacentCountry2).length} {t('create.coursesSelected')})
+                          ({t('create.coursesSelected', { count: getCoursesForCountry(formData.adjacentCountry2).length })})
                         </span>
                       </div>
 
