@@ -25,11 +25,13 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 const mockList = vi.fn();
 const mockGetById = vi.fn();
 
+const mockCreate = vi.fn();
+const mockUpdate = vi.fn();
 vi.mock('../../composition', () => ({
   listGolfCoursesUseCase: { execute: (...args) => mockList(...args) },
   getGolfCourseUseCase: { execute: (...args) => mockGetById(...args) },
-  createGolfCourseAdminUseCase: { execute: vi.fn() },
-  updateGolfCourseUseCase: { execute: vi.fn() },
+  createGolfCourseAdminUseCase: { execute: (...args) => mockCreate(...args) },
+  updateGolfCourseUseCase: { execute: (...args) => mockUpdate(...args) },
 }));
 
 // La tabla real necesita demasiado contexto; aquí solo hace falta poder pulsar
@@ -57,9 +59,10 @@ vi.mock('../../components/golf_course/GolfCourseDetailModal', () => ({
 }));
 
 vi.mock('../../components/golf_course/GolfCourseForm', () => ({
-  default: ({ initialData }) => (
+  default: ({ initialData, onSubmit }) => (
     <div data-testid="edit-form">
       hoyos: {(initialData?.holes || []).length}
+      <button onClick={() => onSubmit({}).catch(() => {})}>guardar campo</button>
     </div>
   ),
 }));
@@ -161,4 +164,78 @@ describe('GolfCourses (admin)', () => {
       await waitFor(() => expect(screen.queryByTestId('detalle')).toBeNull());
     });
   });
+
+  // Pasaron a ModalShell el 4 oct 2026: se anuncian con su título, y Escape
+  // cierra, que antes no lo hacía
+  describe('los modales de crear y editar', () => {
+    it('editar se anuncia con su título y se cierra con Escape', async () => {
+      render(<GolfCourses embedded />);
+      fireEvent.click(await screen.findByText('editar Real Club de Golf'));
+
+      const dialogo = await screen.findByRole('dialog');
+      expect(dialogo).toHaveAccessibleName('pages.admin.editCourseTitle');
+      // Pulsar fuera no lo cierra, como antes
+      const fondo = screen.getByRole('dialog');
+      fireEvent.mouseDown(fondo);
+      fireEvent.click(fondo);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('crear se anuncia con su título y se cierra con Escape', async () => {
+      render(<GolfCourses embedded />);
+      fireEvent.click(await screen.findByText('pages.admin.createCourse'));
+
+      const dialogo = await screen.findByRole('dialog');
+      expect(dialogo).toHaveAccessibleName('pages.admin.createCourseTitle');
+      // Pulsar fuera no lo cierra, como antes
+      const fondo = screen.getByRole('dialog');
+      fireEvent.mouseDown(fondo);
+      fireEvent.click(fondo);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+  });
+
+  // Revisión de la PR de los modales: Escape cerraba el modal con el guardado
+  // en vuelo; si fallaba, el error no salía en ningún sitio
+  describe('Escape mientras se guarda', () => {
+    it.each([
+      ['crear', () => fireEvent.click(screen.getByText('pages.admin.createCourse')), mockCreate],
+      ['editar', () => fireEvent.click(screen.getByText('editar Real Club de Golf')), mockUpdate],
+    ])('%s no se cierra con el guardado en vuelo', async (_, abrir, guardar) => {
+      guardar.mockReturnValue(new Promise(() => {}));
+      render(<GolfCourses embedded />);
+      await screen.findByText('editar Real Club de Golf');
+      abrir();
+      fireEvent.click(await screen.findByText('guardar campo'));
+
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveAttribute('aria-busy', 'true'));
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it.each([
+      ['crear', () => fireEvent.click(screen.getByText('pages.admin.createCourse')), mockCreate],
+      ['editar', () => fireEvent.click(screen.getByText('editar Real Club de Golf')), mockUpdate],
+    ])('%s se puede cerrar otra vez si el guardado falla', async (_, abrir, guardar) => {
+      guardar.mockRejectedValue(new Error('El servidor no quiso'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(<GolfCourses embedded />);
+      await screen.findByText('editar Real Club de Golf');
+      abrir();
+      fireEvent.click(await screen.findByText('guardar campo'));
+
+      await waitFor(() => expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-busy'));
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+  });
 });
+

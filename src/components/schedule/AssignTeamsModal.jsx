@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
 
@@ -100,7 +101,15 @@ const AssignTeamsModalContent = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onClose}
+      labelledBy="repartir-equipos-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isProcessing}
+      busy={isProcessing}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -110,12 +119,13 @@ const AssignTeamsModalContent = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 id="repartir-equipos-titulo" className="text-xl font-bold text-gray-900">
               {t('teams.assign')}
             </h2>
           </div>
           <button
             onClick={onClose}
+            aria-label={t('common:close')}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
@@ -281,7 +291,7 @@ const AssignTeamsModalContent = ({
           </div>
         </form>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

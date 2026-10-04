@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,9 @@ const GolfCourses = ({ embedded = false }) => {
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+  // Un alta o una edición en vuelo: mientras dura, Escape no cierra su modal.
+  // Si fallara, el error lo enseña el formulario, y cerrado no lo vería nadie
+  const [isSavingCourse, setIsSavingCourse] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -68,6 +72,7 @@ const GolfCourses = ({ embedded = false }) => {
 
   // Handle create
   const handleCreate = async (formData) => {
+    setIsSavingCourse(true);
     try {
       await createGolfCourseAdminUseCase.execute(formData);
       customToast.success(t('pages.admin.createSuccess'));
@@ -76,6 +81,8 @@ const GolfCourses = ({ embedded = false }) => {
     } catch (error) {
       console.error('Error creating golf course:', error);
       throw error; // Let form handle the error
+    } finally {
+      setIsSavingCourse(false);
     }
   };
 
@@ -83,6 +90,7 @@ const GolfCourses = ({ embedded = false }) => {
   const handleEdit = async (formData) => {
     if (!selectedCourse) return;
 
+    setIsSavingCourse(true);
     try {
       await updateGolfCourseUseCase.execute(selectedCourse.id, formData);
 
@@ -94,6 +102,8 @@ const GolfCourses = ({ embedded = false }) => {
     } catch (error) {
       console.error('Error updating golf course:', error);
       throw error; // Let form handle the error
+    } finally {
+      setIsSavingCourse(false);
     }
   };
 
@@ -242,14 +252,22 @@ const GolfCourses = ({ embedded = false }) => {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <ModalShell
+          isOpen
+          onClose={() => setShowCreateModal(false)}
+          labelledBy="crear-campo-titulo"
+          closeOnBackdrop={false}
+          closeOnEscape={!isSavingCourse}
+          busy={isSavingCourse}
+          boxClassName={CAJA_PROPIA}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">{t('pages.admin.createCourseTitle')}</h2>
+              <h2 id="crear-campo-titulo" className="text-2xl font-bold text-gray-900">{t('pages.admin.createCourseTitle')}</h2>
             </div>
             <div className="p-6">
               <GolfCourseForm
@@ -259,7 +277,7 @@ const GolfCourses = ({ embedded = false }) => {
               />
             </div>
           </motion.div>
-        </div>
+        </ModalShell>
       )}
 
       {/* Detail Modal */}
@@ -275,14 +293,25 @@ const GolfCourses = ({ embedded = false }) => {
 
       {/* Edit Modal */}
       {showEditModal && selectedCourse && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <ModalShell
+          isOpen
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedCourse(null);
+          }}
+          labelledBy="editar-campo-titulo"
+          closeOnBackdrop={false}
+          closeOnEscape={!isSavingCourse}
+          busy={isSavingCourse}
+          boxClassName={CAJA_PROPIA}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">{t('pages.admin.editCourseTitle')}</h2>
+              <h2 id="editar-campo-titulo" className="text-2xl font-bold text-gray-900">{t('pages.admin.editCourseTitle')}</h2>
             </div>
             <div className="p-6">
               <GolfCourseForm
@@ -296,7 +325,7 @@ const GolfCourses = ({ embedded = false }) => {
               />
             </div>
           </motion.div>
-        </div>
+        </ModalShell>
       )}
     </>
   );

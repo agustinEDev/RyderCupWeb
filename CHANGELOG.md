@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.39.0] - 2026-10-04
+
+El tipo de torneo al crear y en la ficha, el hándicap plus en match play, los
+campos de golf que se gestionan solo desde la ficha (también los de los países
+adyacentes) y una pasada de accesibilidad: todos los modales se anuncian como
+diálogo y todos los botones de icono tienen nombre. Va con el backend **2.25.0**.
+
+**Notas de despliegue.** Backend 2.25.0 primero: este frontend manda y lee
+`tournament_type`. Sin variables nuevas en Render. Probado en bloque en el Kind
+el 3 y el 4 oct, con sesiones de jugador y de admin, con teclado y a 360, 390 y
+430 px.
+
+### Added
+
+- **El tipo de torneo** (#799). Al crear se elige primero el tipo: Ryder Cup, y
+  Stableford y Medal como «Próximamente». La ficha enseña «Tipo: Ryder Cup ·
+  Match play». Lo de la Ryder (equipos, modo, capitanes) vive en su propia pieza
+  y una competición sin equipos no lo pide ni lo manda. En la partida rápida, los
+  textos pasan a «Modalidad» (Match play / Stroke play) y «Formato».
+- **La ficha busca campos en todos los países de la competición** (#801): un
+  selector encima del buscador, que arranca en el país principal. Antes solo
+  buscaba en el principal y no había forma de añadir campos de un país adyacente.
+
+### Changed
+
+- **Editar una competición ya no exige campos de golf** (#800): se gestionan
+  solo desde la ficha, en cualquier tipo de torneo. Si la ubicación nueva deja
+  campos fuera, se enseña el motivo que da el servidor.
+- **Un 429 se dice en español**: «Demasiados intentos seguidos. Espera un minuto
+  y vuelve a intentarlo.» (#803). Antes llegaba el texto técnico del servidor, en
+  inglés. Recuperar y restablecer contraseña lo reconocen por el código y siguen
+  con su aviso propio.
+
+### Fixed
+
+- **El hándicap plus cuenta como negativo en match play** (#798), igual que en el
+  backend 2.25.0, también en la partida rápida.
+- **Todos los modales se anuncian como diálogo** (#805): 17 modales pasan al
+  armazón común (`ModalShell`). Se nombran con su título, retienen el foco, lo
+  devuelven al cerrar y se cierran con Escape (salvo mientras guardan; en invitar,
+  el primer Escape cierra la lista de resultados). Pulsar fuera sigue sin
+  cerrarlos. Se ven igual que antes.
+- **Todos los botones de icono tienen nombre** (#802): 17 botones (quitar país,
+  quitar campo, cerrar modales, quitar invitado, quitar tee…) se anunciaban como
+  «botón» sin más. Un test recorre todas las pantallas para que no vuelva a pasar.
+- **El número de campos elige singular o plural**: «1 campo seleccionado» (#803).
+
 ## [2.38.3] - 2026-10-02
 
 Sentry deja de grabar sesiones al azar y pierde el botón de feedback. Va con el

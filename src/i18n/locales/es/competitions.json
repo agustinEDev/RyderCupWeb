@@ -69,16 +69,17 @@
     "adjacentCountry": "País Adyacente",
     "selectAdjacentCountry": "Selecciona país adyacente",
     "thirdCountry": "Tercer País",
+    "removeCountryField": "Quitar {{field}}",
     "selectThirdCountry": "Selecciona tercer país",
     "golfCourses": "Campos de Golf",
     "golfCoursesSubtitle": "Añade campos de golf para cada país (al menos uno por país)",
     "golfCourse": "Campo de Golf",
     "selectGolfCourse": "Selecciona Campo de Golf *",
     "selectedCourse": "Seleccionado",
-    "coursesSelected": "campos seleccionados",
+    "coursesSelected_one": "{{count}} campo seleccionado",
+    "coursesSelected_other": "{{count}} campos seleccionados",
     "courseAlreadyAdded": "Ese campo ya está añadido",
     "coursePendingApproval": "Este campo está pendiente de aprobación. No podrás activar la competición hasta que sea aprobado.",
-    "ryderCupSettings": "Configuración RyderCup",
     "playMode": "Modo de Juego",
     "scratch": "Scratch",
     "handicap": "Hándicap",
@@ -134,7 +135,12 @@
         "title": "Estilo Ryder Cup",
         "blurb": "Draft de jugadores en directo (o equipos a mano), capitanes que eliges tú, rondas configurables y enfrentamientos por sobres."
       }
-    }
+    },
+    "modality": {
+      "MATCH_PLAY": "Match play",
+      "STROKE_PLAY": "Stroke play"
+    },
+    "moreOptionsSummaryNoTeams": "{{handicap}}"
   },
   "edit": {
     "title": "Editar Competición",
@@ -283,7 +289,8 @@
         "AUTOMATIC": "Automática",
         "DRAFT": "Draft de capitanes",
         "PENDING": "Sin repartir todavía"
-      }
+      },
+      "tournamentType": "Tipo:"
     },
     "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
@@ -334,6 +341,7 @@
       "title": "Campos de golf",
       "addCourse": "Añadir Campo",
       "selectCourse": "Seleccionar Campo de Golf",
+      "searchIn": "Buscar campos en",
       "noCourses": "No hay campos de golf asociados a esta competición",
       "errorLoading": "Error al cargar los campos de golf",
       "courseAdded": "Campo de golf añadido exitosamente",

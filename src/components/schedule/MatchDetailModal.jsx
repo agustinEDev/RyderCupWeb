@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { X, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
@@ -73,7 +74,13 @@ const MatchDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onClose}
+      labelledBy="detalle-partido-titulo"
+      closeOnBackdrop={false}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -81,11 +88,12 @@ const MatchDetailModal = ({
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 id="detalle-partido-titulo" className="text-xl font-bold text-gray-900">
             {t('matches.viewDetail')}
           </h2>
           <button
             onClick={onClose}
+            aria-label={t('common:close')}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
@@ -222,7 +230,7 @@ const MatchDetailModal = ({
           </button>
         </div>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

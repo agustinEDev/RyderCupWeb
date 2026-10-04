@@ -42,6 +42,23 @@ describe('CompetitionGolfCoursesSection · poner el campo después de invitar', 
     expect(await screen.findByText('detail.golfCourses.addCourse')).toBeInTheDocument();
   });
 
+  // Los campos se editan desde la ficha en CUALQUIER tipo de torneo, no solo en
+  // la Ryder (Agustín, 3 oct 2026, FE #791): la sección no mira el tipo
+  it.each([
+    ['RYDER_CUP', true],
+    ['STABLEFORD', false],
+    ['MEDAL', false],
+  ])('un %s abierto también deja añadir campo', async (tournamentType, hasTeams) => {
+    render(
+      <CompetitionGolfCoursesSection
+        competition={{ ...competicion('ACTIVE'), tournamentType, hasTeams }}
+        canManage={true}
+      />
+    );
+
+    expect(await screen.findByText('detail.golfCourses.addCourse')).toBeInTheDocument();
+  });
+
   it('en borrador, como siempre', async () => {
     render(<CompetitionGolfCoursesSection competition={competicion('DRAFT')} canManage={true} />);
 

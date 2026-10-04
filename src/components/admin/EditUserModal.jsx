@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +42,15 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onCancel}
+      labelledBy="admin-editar-usuario-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isSaving}
+      busy={isSaving}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -49,7 +58,7 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
       >
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{t('editModal.title')}</h2>
+            <h2 id="admin-editar-usuario-titulo" className="text-xl font-bold text-gray-900">{t('editModal.title')}</h2>
             <p className="text-sm text-gray-500 mt-1">{t('editModal.subtitle')}</p>
           </div>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-600" aria-label={t('editModal.cancel')}>
@@ -146,7 +155,7 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
           </div>
         </form>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

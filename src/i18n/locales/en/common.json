@@ -45,6 +45,7 @@
   "delete": "Delete",
   "edit": "Edit",
   "close": "Close",
+  "removeSelected": "Remove {{name}}",
   "modal": {
     "confirm": "Confirm",
     "ok": "OK",
@@ -128,6 +129,7 @@
     "moreResults_other": "{{count}} more countries — keep typing to narrow it down"
   },
   "brandMarkAlt": "RyderCupFriends logo",
+  "demasiadasPeticiones": "Too many attempts in a row. Wait a minute and try again.",
   "sinConexion": {
     "aviso": "No connection. What you see may be out of date.",
     "mensaje": "No connection. Try again when you have coverage."

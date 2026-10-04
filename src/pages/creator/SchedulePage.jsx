@@ -419,7 +419,8 @@ const SchedulePage = () => {
               </div>
             </motion.div>
 
-            {/* Team Assignment Section */}
+            {/* Team Assignment Section: solo una Ryder tiene equipos (FE #791) */}
+            {competition.hasTeams && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -440,6 +441,7 @@ const SchedulePage = () => {
                 t={t}
               />
             </motion.div>
+            )}
 
             {/* Rounds List */}
             <motion.div

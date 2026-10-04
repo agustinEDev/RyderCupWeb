@@ -119,7 +119,12 @@ export const apiRequest = async (endpoint, options = {}) => {
       // Extract error message with proper fallback chain
       let errorMessage = '';
 
-      if (errorData.detail) {
+      if (response.status === 429) {
+        // El del backend es técnico y en inglés («Rate limit exceeded: 10 per
+        // 1 minute»): se dice el de la app. El `status` sigue en el error, que
+        // es por lo que lo reconocen la cola y las pantallas (4 oct 2026)
+        errorMessage = i18next.t('common:demasiadasPeticiones');
+      } else if (errorData.detail) {
         // FastAPI returns errors in 'detail' field. On 422s it's a list of
         // Pydantic error objects ({ type, loc, msg, input, ctx }) rather than
         // a string — extract `msg` from each so the user sees readable text

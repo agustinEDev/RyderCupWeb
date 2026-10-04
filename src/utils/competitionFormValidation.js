@@ -1,3 +1,4 @@
+import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { numeroEntero } from './numeroEntero';
 
 const MIN_PLAYERS = 2;
@@ -20,7 +21,7 @@ const MAX_PLAYERS = 100;
  *
  * Returns `null` when the form is valid.
  */
-export const validateCompetitionForm = (formData) => {
+export const validateCompetitionForm = (formData, { exigirCampos = true } = {}) => {
   if (!formData.competitionName?.trim()) {
     return { key: 'nameRequired' };
   }
@@ -28,7 +29,8 @@ export const validateCompetitionForm = (formData) => {
   // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo
   // mismo: la guarda de vacío usaba `?.trim()` y la de longitud `.trim()`, y esa
   // asimetría convertía un valor no textual en un TypeError (`/code-review`)
-  const equipos = [formData.teamOneName, formData.teamTwoName].map(
+  // Solo una Ryder Cup tiene equipos (FE #791): sin ellos no hay qué validar
+  const equipos = (tieneEquipos(formData.tournamentType) ? [formData.teamOneName, formData.teamTwoName] : []).map(
     (nombre) => (typeof nombre === 'string' ? nombre.trim() : '')
   );
   if (equipos.some((nombre) => !nombre)) {
@@ -72,9 +74,13 @@ export const validateCompetitionForm = (formData) => {
   if (formData.adjacentCountry1) selectedCountryCodes.push(formData.adjacentCountry1);
   if (formData.adjacentCountry2) selectedCountryCodes.push(formData.adjacentCountry2);
 
-  const missingCourseCountryCodes = selectedCountryCodes.filter(
-    (code) => !formData.golfCourses.some((gc) => gc.countryCode === code)
-  );
+  // Al editar los campos no se piden: se gestionan desde la ficha, en
+  // cualquier tipo de torneo. El formulario no los enseña, y exigirlos dejaba
+  // sin poder guardar nada a una competición que se quedaba sin campo
+  // (Agustín, 3 oct 2026)
+  const missingCourseCountryCodes = exigirCampos
+    ? selectedCountryCodes.filter((code) => !formData.golfCourses.some((gc) => gc.countryCode === code))
+    : [];
   if (missingCourseCountryCodes.length > 0) {
     return { key: 'golfCoursesRequired', missingCourseCountryCodes };
   }

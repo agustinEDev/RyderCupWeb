@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { X, AlertCircle, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +68,15 @@ const GolfCourseRequestModal = ({
   const initialData = countryCode ? { countryCode } : null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={handleClose}
+      labelledBy="pedir-campo-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isSubmitting}
+      busy={isSubmitting}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -76,7 +85,7 @@ const GolfCourseRequestModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 id="pedir-campo-titulo" className="text-2xl font-bold text-gray-900">
               {t('requestModal.title', 'Request New Golf Course')}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -86,6 +95,7 @@ const GolfCourseRequestModal = ({
           {!isSubmitting && !showSuccess && (
             <button
               onClick={handleClose}
+              aria-label={t('common:close')}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
@@ -153,7 +163,7 @@ const GolfCourseRequestModal = ({
           )}
         </div>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

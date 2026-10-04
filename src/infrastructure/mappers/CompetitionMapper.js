@@ -46,7 +46,8 @@ class CompetitionMapper {
         apiData.play_mode || apiData.handicap_type || 'SCRATCH'
       );
 
-    // Map team assignment
+    // Map team assignment. Si el torneo no tiene equipos, la entidad lo
+    // descarta: la regla vive en ella (FE #791)
     const teamAssignment = new TeamAssignment(apiData.team_assignment || 'MANUAL');
 
     // Bidirectional mapping for maxPlayers/number_of_players
@@ -62,6 +63,8 @@ class CompetitionMapper {
       location,
       team1Name: apiData.team_1_name || apiData.team_one_name || apiData.team1_Name || 'Team 1',
       team2Name: apiData.team_2_name || apiData.team_two_name || apiData.team2_name || 'Team 2',
+      // Una respuesta de antes del tipo es una Ryder Cup
+      tournamentType: apiData.tournament_type || 'RYDER_CUP',
       handicapSettings,
       maxPlayers,
       teamAssignment,
@@ -86,15 +89,15 @@ class CompetitionMapper {
     return {
       id: competition.id.toString(),
       name: competition.name.toString(),
-      team_one_name: competition.team1Name,
-      team_two_name: competition.team2Name,
+      team_one_name: competition.ryderCup?.team1Name ?? null,
+      team_two_name: competition.ryderCup?.team2Name ?? null,
       start_date: competition.dates.startDate.toISOString().split('T')[0],
       end_date: competition.dates.endDate.toISOString().split('T')[0],
       main_country: competition.location.mainCountry().value(),
       countries: competition.location.getAllCountries().slice(1).map(c => c.value()),
       play_mode: competition.handicapSettings.type(),
       number_of_players: competition.maxPlayers, // Use API contract field name
-      team_assignment: competition.teamAssignment.value(),
+      team_assignment: competition.ryderCup?.teamAssignment?.value() ?? null,
       status: competition.status.value,
       creator_id: competition.creatorId
     };
@@ -137,8 +140,8 @@ class CompetitionMapper {
     return {
       id: competition.id.toString(),
       name: competition.name.toString(),
-      team1Name: competition.team1Name,
-      team2Name: competition.team2Name,
+      team1Name: competition.ryderCup?.team1Name ?? null,
+      team2Name: competition.ryderCup?.team2Name ?? null,
       startDate: competition.dates.startDate.toISOString().split('T')[0],
       endDate: competition.dates.endDate.toISOString().split('T')[0],
       location: apiData?.location || competition.location.toString(),
@@ -161,7 +164,7 @@ class CompetitionMapper {
       enrollment_status: apiData?.user_enrollment_status || null,
       pending_enrollments_count: apiData?.pending_enrollments_count || 0,
       playMode: competition.handicapSettings.type(),
-      teamAssignment: competition.teamAssignment.value()
+      teamAssignment: competition.ryderCup?.teamAssignment?.value() ?? null
     };
   }
 }

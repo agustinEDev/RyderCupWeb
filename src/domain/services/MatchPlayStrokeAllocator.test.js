@@ -270,7 +270,10 @@ describe('MatchPlayStrokeAllocator', () => {
       expect(totalStrokes(result.plus)).toBe(-2);
     });
 
-    it('en match play juega off scratch y el rival recibe la diferencia entera', () => {
+    // Hasta el 3 oct 2026 el plus jugaba a 0 en match play y el rival recibía
+    // 20. Decidido: cuenta como negativo, como en el Apéndice C del WHS
+    // (BE #165), y el rival recibe la diferencia con él: 22.
+    it('en match play cuenta como negativo y el rival recibe la diferencia con él', () => {
       const result = MatchPlayStrokeAllocator.allocate({
         participants: [player('plus', -2.0), player('high', 20.0)],
         holes: par72Holes(),
@@ -280,10 +283,10 @@ describe('MatchPlayStrokeAllocator', () => {
         playMode: 'HANDICAP',
       });
 
-      expect(result.plus.playingHandicap).toBe(0);
+      expect(result.plus.playingHandicap).toBe(-2);
       expect(result.high.playingHandicap).toBe(20);
       expect(totalStrokes(result.plus)).toBe(0);
-      expect(totalStrokes(result.high)).toBe(20);
+      expect(totalStrokes(result.high)).toBe(22);
     });
   });
 

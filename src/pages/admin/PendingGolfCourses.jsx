@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Flag, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -296,7 +297,14 @@ const PendingGolfCourses = ({ embedded = false }) => {
 
       {/* Details Modal */}
       {showDetailsModal && courseToView && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <ModalShell
+          isOpen
+          onClose={() => setShowDetailsModal(false)}
+          labelledBy="detalle-campo-pendiente-titulo"
+          closeOnBackdrop={false}
+          scrollableBackdrop
+          boxClassName={CAJA_PROPIA}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -305,7 +313,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
             {/* Header */}
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{courseToView.name}</h2>
+                <h2 id="detalle-campo-pendiente-titulo" className="text-2xl font-bold text-gray-900">{courseToView.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <CountryFlag countryCode={courseToView.countryCode} style={{ width: '20px', height: 'auto' }} />
                   <span className="text-sm text-gray-600">
@@ -318,6 +326,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
               </div>
               <button
                 onClick={() => setShowDetailsModal(false)}
+                aria-label={t('common:close')}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -417,19 +426,29 @@ const PendingGolfCourses = ({ embedded = false }) => {
               </button>
             </div>
           </motion.div>
-        </div>
+        </ModalShell>
       )}
 
       {/* Reject Modal */}
       {showRejectModal && courseToReject && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <ModalShell
+          isOpen
+          onClose={() => {
+            setShowRejectModal(false);
+            setCourseToReject(null);
+            setRejectReason('');
+          }}
+          labelledBy="rechazar-campo-titulo"
+          closeOnBackdrop={false}
+          boxClassName={CAJA_PROPIA}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl shadow-2xl max-w-lg w-full"
           >
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">{t('pages.pending.rejectModalTitle')}</h2>
+              <h2 id="rechazar-campo-titulo" className="text-xl font-bold text-gray-900">{t('pages.pending.rejectModalTitle')}</h2>
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
@@ -471,7 +490,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
               </button>
             </div>
           </motion.div>
-        </div>
+        </ModalShell>
       )}
     </>
   );

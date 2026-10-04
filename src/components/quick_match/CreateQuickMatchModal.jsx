@@ -399,6 +399,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
           <button
             type="button"
             onClick={handleClose}
+            aria-label={tComun('close')}
             disabled={isProcessing}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >

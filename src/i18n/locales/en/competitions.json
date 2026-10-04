@@ -69,16 +69,17 @@
     "adjacentCountry": "Adjacent Country",
     "selectAdjacentCountry": "Select adjacent country",
     "thirdCountry": "Third Country",
+    "removeCountryField": "Remove {{field}}",
     "selectThirdCountry": "Select third country",
     "golfCourses": "Golf Courses",
     "golfCoursesSubtitle": "Add golf courses for each country (at least one per country)",
     "golfCourse": "Golf Course",
     "selectGolfCourse": "Select Golf Course *",
     "selectedCourse": "Selected",
-    "coursesSelected": "courses selected",
+    "coursesSelected_one": "{{count}} course selected",
+    "coursesSelected_other": "{{count}} courses selected",
     "courseAlreadyAdded": "That course is already added",
     "coursePendingApproval": "This course is pending approval. You won't be able to activate the competition until it's approved.",
-    "ryderCupSettings": "RyderCup Settings",
     "playMode": "Play Mode",
     "scratch": "Scratch",
     "handicap": "Handicap",
@@ -134,7 +135,12 @@
         "title": "Ryder Cup style",
         "blurb": "A live player draft (or teams by hand), captains you name, configurable rounds and matchups from envelopes."
       }
-    }
+    },
+    "modality": {
+      "MATCH_PLAY": "Match play",
+      "STROKE_PLAY": "Stroke play"
+    },
+    "moreOptionsSummaryNoTeams": "{{handicap}}"
   },
   "edit": {
     "title": "Edit Competition",
@@ -283,7 +289,8 @@
         "AUTOMATIC": "Automatic",
         "DRAFT": "Captains' draft",
         "PENDING": "Not split yet"
-      }
+      },
+      "tournamentType": "Type:"
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
@@ -334,6 +341,7 @@
       "title": "Golf courses",
       "addCourse": "Add Course",
       "selectCourse": "Select Golf Course",
+      "searchIn": "Search courses in",
       "noCourses": "No golf courses associated with this competition",
       "errorLoading": "Failed to load golf courses",
       "courseAdded": "Golf course added successfully",

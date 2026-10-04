@@ -15,6 +15,39 @@ const validFormData = {
 };
 
 describe('validateCompetitionForm', () => {
+  it('V3: al editar no se exigen campos de golf: se gestionan en la ficha', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, golfCourses: [] }, { exigirCampos: false })
+    ).toBeNull();
+  });
+
+  it('V4: al crear, sí (en todos los tipos)', () => {
+    expect(validateCompetitionForm({ ...validFormData, golfCourses: [] })).toEqual({
+      key: 'golfCoursesRequired',
+      missingCourseCountryCodes: ['ES'],
+    });
+    expect(
+      validateCompetitionForm({ ...validFormData, tournamentType: 'STABLEFORD', golfCourses: [] })
+    ).toEqual({ key: 'golfCoursesRequired', missingCourseCountryCodes: ['ES'] });
+  });
+
+  it('V1: un torneo sin equipos no pide nombres de equipo (FE #791)', () => {
+    expect(
+      validateCompetitionForm({
+        ...validFormData,
+        tournamentType: 'STABLEFORD',
+        teamOneName: '',
+        teamTwoName: '',
+      })
+    ).toBeNull();
+  });
+
+  it('V2: una Ryder los sigue pidiendo', () => {
+    expect(
+      validateCompetitionForm({ ...validFormData, tournamentType: 'RYDER_CUP', teamOneName: '' })
+    ).toEqual({ key: 'teamNamesRequired' });
+  });
+
   it('returns null for valid form data', () => {
     expect(validateCompetitionForm(validFormData)).toBeNull();
   });

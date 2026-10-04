@@ -21,8 +21,8 @@ class UpdateCompetitionUseCase {
    * @param {string} competitionId - The ID of the competition to update.
    * @param {Object} competitionData - The updated competition data.
    * @param {string} competitionData.name - The competition name.
-   * @param {string} competitionData.team_1_name - Team 1 name.
-   * @param {string} competitionData.team_2_name - Team 2 name.
+   * @param {string} [competitionData.team_1_name] - Team 1 name (only a Ryder Cup).
+   * @param {string} [competitionData.team_2_name] - Team 2 name (only a Ryder Cup).
    * @param {string} competitionData.start_date - Start date (YYYY-MM-DD).
    * @param {string} competitionData.end_date - End date (YYYY-MM-DD).
    * @param {string} competitionData.main_country - Main country ISO code.
@@ -48,13 +48,9 @@ class UpdateCompetitionUseCase {
       throw new Error('Competition name must be at least 3 characters');
     }
 
-    if (!competitionData.team_1_name || competitionData.team_1_name.trim().length === 0) {
-      throw new Error('Team 1 name is required');
-    }
-
-    if (!competitionData.team_2_name || competitionData.team_2_name.trim().length === 0) {
-      throw new Error('Team 2 name is required');
-    }
+    // Los nombres de equipo no se exigen aquí: solo una Ryder los tiene, los
+    // de una Ryder los valida el formulario y el servidor los valida todos
+    // (FE #791). Exigirlos paraba la edición de un Stableford
 
     if (!competitionData.start_date) {
       throw new Error('Start date is required');

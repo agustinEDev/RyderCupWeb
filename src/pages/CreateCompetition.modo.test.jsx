@@ -40,7 +40,7 @@ vi.mock('../composition', () => ({
 // Lo que se prueba aquí es el modo, no el formulario: sin esto haría falta
 // elegir país y campos para poder enviar, como en los demás tests de esta pantalla
 vi.mock('../utils/competitionFormValidation', () => ({
-  validateCompetitionForm: () => null,
+  validateCompetitionForm: vi.fn(() => null),
 }));
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
@@ -61,6 +61,7 @@ const pintaEdicion = () => render(
 
 const { createCompetitionWithGolfCoursesUseCase, updateCompetitionUseCase, getCompetitionDetailUseCase } =
   await import('../composition');
+const { validateCompetitionForm } = await import('../utils/competitionFormValidation');
 
 const elegirTipoYModo = async (modo = 'RYDER_CUP') => {
   fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
@@ -105,6 +106,7 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
       visibility: 'PRIVATE',
       setupMode: 'MANUAL',
       teamAssignment: 'MANUAL',
+      hasTeams: true,
       creatorId: 'u-1',
     });
   });
@@ -142,6 +144,22 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await vi.waitFor(() =>
       expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
         expect.objectContaining({ setup_mode: 'MANUAL' }),
+        expect.anything()
+      )
+    );
+  });
+
+  it('S10: el tipo elegido viaja al crear (FE #791)', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+    rellenarMinimo();
+
+    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+
+    await vi.waitFor(() =>
+      expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ tournament_type: 'RYDER_CUP' }),
         expect.anything()
       )
     );
@@ -197,6 +215,82 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
         expect.objectContaining({ setup_mode: 'RYDER_CUP' })
       )
     );
+  });
+
+  it('E1: editar un Stableford no pregunta el modo ni manda equipos (FE #791)', async () => {
+    getCompetitionDetailUseCase.execute.mockResolvedValue({
+      id: 'c-1',
+      name: 'Stableford del club',
+      startDate: '2030-06-01',
+      endDate: '2030-06-03',
+      countries: [{ code: 'ES', isMain: true }],
+      maxPlayers: 12,
+      status: 'ACTIVE',
+      visibility: 'PRIVATE',
+      tournamentType: 'STABLEFORD',
+      hasTeams: false,
+      modality: 'STROKE_PLAY',
+      team1Name: null,
+      team2Name: null,
+      setupMode: null,
+      teamAssignment: null,
+      creatorId: 'u-1',
+    });
+    pintaEdicion();
+    await screen.findByDisplayValue('Stableford del club');
+
+    expect(screen.queryByTestId('modo-RYDER_CUP')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+
+    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
+    const [, payload] = updateCompetitionUseCase.execute.mock.calls[0];
+    expect(payload).not.toHaveProperty('setup_mode');
+    expect(payload).not.toHaveProperty('team_1_name');
+    expect(payload).not.toHaveProperty('team_2_name');
+  });
+
+  it('S11: la sección de configuración no lleva el nombre de la Ryder (CodeRabbit, #799)', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+
+    // Modo de juego, hándicap y cupo valen para cualquier tipo de torneo
+    expect(screen.getByText('detail.settings.title')).toBeInTheDocument();
+    expect(screen.queryByText('create.ryderCupSettings')).not.toBeInTheDocument();
+  });
+
+  it('E2: al editar, la pantalla no exige campos de golf: los gestiona la ficha', async () => {
+    pintaEdicion();
+    await screen.findByDisplayValue('Ryder de los amigos');
+
+    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+
+    await vi.waitFor(() => expect(updateCompetitionUseCase.execute).toHaveBeenCalled());
+    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), { exigirCampos: false });
+  });
+
+  it('E4: si la ubicación nueva deja campos fuera, se ve el motivo del servidor (BE #481)', async () => {
+    const motivo =
+      'Quita antes desde la ficha los campos de ES: quedarían fuera de los países de la competición';
+    updateCompetitionUseCase.execute.mockRejectedValueOnce(new Error(motivo));
+    pintaEdicion();
+    await screen.findByDisplayValue('Ryder de los amigos');
+
+    fireEvent.click(screen.getByRole('button', { name: 'edit.updateCompetition' }));
+
+    expect(await screen.findByText(motivo)).toBeInTheDocument();
+  });
+
+  it('E3: al crear, sí los exige', async () => {
+    pinta();
+    await elegirTipoYModo('MANUAL');
+    await screen.findByText('create.competitionDetails');
+    rellenarMinimo();
+
+    fireEvent.click(screen.getByRole('button', { name: 'create.createCompetition' }));
+
+    await vi.waitFor(() => expect(createCompetitionWithGolfCoursesUseCase.execute).toHaveBeenCalled());
+    expect(validateCompetitionForm).toHaveBeenCalledWith(expect.anything(), { exigirCampos: true });
   });
 
   it('S8: volver a elegir el tipo vuelve a preguntar el modo', async () => {

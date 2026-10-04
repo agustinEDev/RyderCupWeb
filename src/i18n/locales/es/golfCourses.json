@@ -15,6 +15,7 @@
     "tees": "Tees",
     "tee": "Tee",
     "addTee": "Agregar Tee",
+    "removeTee": "Quitar el tee {{number}}",
     "color": "Color",
     "identifier": "Identificador",
     "identifierPlaceholder": "Amarillo, Blanco, etc.",

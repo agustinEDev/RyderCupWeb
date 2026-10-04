@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { useTranslation } from 'react-i18next';
 import SelectorDeGenero from './SelectorDeGenero';
 
@@ -22,7 +23,15 @@ const Contenido = ({ onClose, onConfirm, isProcessing }) => {
   const [genero, setGenero] = useState('');
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onClose}
+      labelledBy="genero-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isProcessing}
+      busy={isProcessing}
+      boxClassName={CAJA_PROPIA}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -30,7 +39,7 @@ const Contenido = ({ onClose, onConfirm, isProcessing }) => {
         }}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4"
       >
-        <h2 className="text-lg font-bold text-gray-900">{t('genderModal.title')}</h2>
+        <h2 id="genero-titulo" className="text-lg font-bold text-gray-900">{t('genderModal.title')}</h2>
         <SelectorDeGenero value={genero} onChange={setGenero} />
         <div className="flex justify-end gap-3 pt-2">
           <button
@@ -50,7 +59,7 @@ const Contenido = ({ onClose, onConfirm, isProcessing }) => {
           </button>
         </div>
       </form>
-    </div>
+    </ModalShell>
   );
 };
 
