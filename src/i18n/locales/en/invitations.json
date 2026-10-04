@@ -30,13 +30,15 @@
     "ACCEPTED": "Accepted",
     "DECLINED": "Declined",
     "EXPIRED": "Expired",
-    "NO_ROOM": "No room left"
+    "NO_ROOM": "No room left",
+    "CANCELLED": "Withdrawn"
   },
   "actions": {
     "accept": "Accept",
     "decline": "Decline",
     "accepting": "Accepting...",
-    "declining": "Declining..."
+    "declining": "Declining...",
+    "withdraw": "Withdraw"
   },
   "filter": {
     "allStatuses": "All Statuses",
@@ -50,12 +52,15 @@
     "expiresIn": "Expires in {{days}} days",
     "expiresInHours": "Expires in {{hours}} hours",
     "respondedAt": "Responded",
-    "message": "Message"
+    "message": "Message",
+    "withdrawnAt": "Withdrawn on {{date}}",
+    "noRoomSince": "No place since {{date}}"
   },
   "success": {
     "sent": "Invitation sent successfully",
     "accepted": "Invitation accepted",
-    "declined": "Invitation declined"
+    "declined": "Invitation declined",
+    "withdrawn": "Invitation withdrawn"
   },
   "errors": {
     "failedToLoad": "Failed to load invitations",
@@ -65,7 +70,10 @@
     "duplicateInvitation": "An invitation has already been sent to this email",
     "invalidEmail": "Please enter a valid email address",
     "rolesCheckFailed": "Could not check whether you can manage this competition",
-    "retry": "Try again"
+    "retry": "Try again",
+    "notPendingAnymore": "That invitation was no longer pending: the list has been refreshed.",
+    "competitionFull": "The competition is full: there are no places left to invite anyone.",
+    "failedToWithdraw": "The invitation could not be withdrawn."
   },
   "creator": {
     "title": "Invitations",
@@ -74,7 +82,15 @@
     "sentCount_one": "{{count}} invitation sent",
     "sentCount_other": "{{count}} invitations sent",
     "nearCapacity": "Already {{accepted}} accepted invitations out of {{max}} spots. The tournament is nearly full.",
-    "enrollmentClosed": "Enrolment is closed: nobody can be invited any more."
+    "enrollmentClosed": "Enrolment is closed: nobody can be invited any more.",
+    "withdrawDialog": {
+      "title": "Withdraw the invitation to {{name}}?",
+      "body": "They will no longer be able to accept it. They are not notified: it will show as withdrawn in their invitations.",
+      "confirm": "Withdraw",
+      "keep": "Keep it"
+    },
+    "competitionFull_one": "The competition is full ({{count}} place taken): you cannot invite anyone else.",
+    "competitionFull_other": "The competition is full ({{count}} places taken): you cannot invite anyone else."
   },
   "player": {
     "title": "My Invitations",

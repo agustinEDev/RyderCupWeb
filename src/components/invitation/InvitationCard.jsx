@@ -18,8 +18,18 @@ const getExpirationText = (expiresAt, t) => {
   return t('card.expiresInHours', { hours: diffHours });
 };
 
-const InvitationCard = ({ invitation, mode, onAccept, onDecline, isProcessing, t }) => {
+// La fecha dice qué pasó (FE #724): retirarla y quedarse sin plaza también la
+// apuntan en el servidor, y «Respondida» decía que el invitado contestó
+const CLAVE_DE_LA_FECHA = {
+  CANCELLED: 'card.withdrawnAt',
+  NO_ROOM: 'card.noRoomSince',
+};
+
+const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isProcessing, t }) => {
   const showActions = mode === 'player' && invitation.isPending;
+  // Quien invita puede retirar una pendiente (FE #724). El jugador no: él la
+  // rechaza, y las ya respondidas no estorban en su lista
+  const sePuedeRetirar = mode === 'creator' && invitation.isPending && Boolean(onWithdraw);
   const expirationText = invitation.isPending ? getExpirationText(invitation.expiresAt, t) : null;
   // Aceptada, la tarjeta lleva a su competicion (FE #682). Pendiente no: si un
   // invitado puede abrir una privada antes de aceptar lo decide RyderCupAM#329.
@@ -82,7 +92,13 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, isProcessing, t
           {invitation.respondedAt && !invitation.isPending && (
             <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1.5">
               <Clock className="h-3.5 w-3.5" />
-              <span>{t('card.respondedAt')}: {new Date(invitation.respondedAt).toLocaleDateString()}</span>
+              <span data-testid="fecha-de-la-invitacion">
+                {CLAVE_DE_LA_FECHA[invitation.status]
+                  ? t(CLAVE_DE_LA_FECHA[invitation.status], {
+                    date: new Date(invitation.respondedAt).toLocaleDateString(),
+                  })
+                  : `${t('card.respondedAt')}: ${new Date(invitation.respondedAt).toLocaleDateString()}`}
+              </span>
             </div>
           )}
         </div>
@@ -106,6 +122,18 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, isProcessing, t
               {isProcessing ? t('actions.declining') : t('actions.decline')}
             </button>
           </div>
+        )}
+
+        {sePuedeRetirar && (
+          <button
+            type="button"
+            data-testid="withdraw-button"
+            onClick={() => onWithdraw(invitation)}
+            disabled={isProcessing}
+            className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {t('actions.withdraw')}
+          </button>
         )}
 
         {enlazaACompeticion && (

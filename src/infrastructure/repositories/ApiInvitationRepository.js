@@ -10,6 +10,7 @@ import apiRequest from '../../services/api.js';
  * - POST   /api/v1/competitions/{id}/invitations/by-email
  * - GET    /api/v1/invitations/me
  * - POST   /api/v1/invitations/{id}/respond
+ * - POST   /api/v1/invitations/{id}/cancel
  * - GET    /api/v1/competitions/{id}/invitations
  */
 class ApiInvitationRepository extends IInvitationRepository {
@@ -92,6 +93,13 @@ class ApiInvitationRepository extends IInvitationRepository {
       invitations,
       totalCount: response.total_count || 0,
     };
+  }
+
+  /**
+   * Retira una invitación pendiente (FE #724). El servidor contesta 204.
+   */
+  async cancelInvitation(invitationId) {
+    await apiRequest(`/api/v1/invitations/${invitationId}/cancel`, { method: 'POST' });
   }
 
   async respondToInvitation(invitationId, action) {

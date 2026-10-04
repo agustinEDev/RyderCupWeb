@@ -123,6 +123,8 @@ describe('MyInvitationsPage', () => {
     renderPage();
     const filtro = await screen.findByTestId('status-filter');
     expect(within(filtro).getByRole('option', { name: 'status.NO_ROOM' })).toBeInTheDocument();
+    // Y las que retiró quien invitaba (FE #724)
+    expect(within(filtro).getByRole('option', { name: 'status.CANCELLED' })).toBeInTheDocument();
   });
 
   describe('aceptar sin género (#710)', () => {

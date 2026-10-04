@@ -117,6 +117,7 @@ import SendInvitationUseCase from '../application/use_cases/invitation/SendInvit
 import SendInvitationByEmailUseCase from '../application/use_cases/invitation/SendInvitationByEmailUseCase';
 import ListMyInvitationsUseCase from '../application/use_cases/invitation/ListMyInvitationsUseCase';
 import RespondToInvitationUseCase from '../application/use_cases/invitation/RespondToInvitationUseCase';
+import CancelInvitationUseCase from '../application/use_cases/invitation/CancelInvitationUseCase';
 import ListCompetitionInvitationsUseCase from '../application/use_cases/invitation/ListCompetitionInvitationsUseCase';
 
 // Avatar Use Cases
@@ -292,6 +293,7 @@ const sendInvitationUseCase = new SendInvitationUseCase({ invitationRepository: 
 const sendInvitationByEmailUseCase = new SendInvitationByEmailUseCase({ invitationRepository: apiInvitationRepository });
 const listMyInvitationsUseCase = new ListMyInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 const respondToInvitationUseCase = new RespondToInvitationUseCase({ invitationRepository: apiInvitationRepository });
+const cancelInvitationUseCase = new CancelInvitationUseCase({ invitationRepository: apiInvitationRepository });
 const listCompetitionInvitationsUseCase = new ListCompetitionInvitationsUseCase({ invitationRepository: apiInvitationRepository });
 
 // Avatar Use Cases
@@ -498,6 +500,7 @@ export {
   sendInvitationByEmailUseCase,
   listMyInvitationsUseCase,
   respondToInvitationUseCase,
+  cancelInvitationUseCase,
   listCompetitionInvitationsUseCase,
   // Avatar Use Cases
   listAvatarPresetsUseCase,

@@ -63,6 +63,17 @@ class IInvitationRepository {
   }
 
   /**
+   * Withdraw a pending invitation (creator, whoever sent it or admin)
+   *
+   * @param {string} invitationId - UUID of the invitation
+   * @returns {Promise<void>}
+   * @throws {Error} If operation fails
+   */
+  async cancelInvitation(invitationId) {
+    throw new Error('Method cancelInvitation() must be implemented');
+  }
+
+  /**
    * Get invitations sent for a competition (creator view)
    *
    * @param {string} competitionId - UUID of the competition
