@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 /**
  * Los dos modales de los campos pendientes (detalle y rechazo) pasaron a
@@ -62,6 +62,16 @@ vi.mock('../../composition', () => ({
 }));
 
 const { default: PendingGolfCourses } = await import('./PendingGolfCourses');
+const { fetchCountriesUseCase } = await import('../../composition');
+
+// La página carga la lista y los países por su cuenta. Si la carga de los
+// países llega en mitad de la prueba, su render cae fuera del `act` y se cruza
+// con el cierre: se espera a que la página haya terminado de cargar
+const abrirPagina = async () => {
+  render(<PendingGolfCourses embedded />);
+  await waitFor(() => expect(fetchCountriesUseCase.execute).toHaveBeenCalled());
+  await act(async () => {});
+};
 
 const pulsarFuera = () => {
   const fondo = screen.getByRole('dialog');
@@ -72,11 +82,12 @@ const pulsarFuera = () => {
 describe('PendingGolfCourses · sus modales', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchCountriesUseCase.execute.mockResolvedValue([]);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   it('el detalle se anuncia con el nombre del campo y se cierra con Escape', async () => {
-    render(<PendingGolfCourses embedded />);
+    await abrirPagina();
     fireEvent.click(await screen.findByText('ver Campo Pendiente'));
 
     expect(await screen.findByRole('dialog')).toHaveAccessibleName('Campo Pendiente');
@@ -88,7 +99,7 @@ describe('PendingGolfCourses · sus modales', () => {
   });
 
   it('el rechazo se anuncia con su título y Escape lo descarta sin rechazar', async () => {
-    render(<PendingGolfCourses embedded />);
+    await abrirPagina();
     fireEvent.click(await screen.findByText('rechazar Campo Pendiente'));
 
     expect(await screen.findByRole('dialog')).toHaveAccessibleName('pages.pending.rejectModalTitle');
