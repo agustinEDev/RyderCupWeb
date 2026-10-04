@@ -183,6 +183,8 @@ describe('useScoring', () => {
       null,
       'u1',
       { matchName: null, matchNumber: 1 },
+      // Sin decir qué golpe se tocó, los que trae (FE #813)
+      ['ownScore', 'markedScore'],
     );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
@@ -213,6 +215,8 @@ describe('useScoring', () => {
       // El número TAMBIÉN: una jornada juega varios partidos en el mismo campo,
       // y solo con el campo el panel enseña dos avisos idénticos
       { matchName: 'La Herrería', matchNumber: 3 },
+      // Sin decir qué golpe se tocó, los que trae (FE #813)
+      ['ownScore', 'markedScore'],
     );
   });
 
@@ -3593,5 +3597,152 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     await anota(result, 5, 6);
 
     expect(result.current.noGuardados[5].turno).not.toBe(primera);
+  });
+});
+
+describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)', () => {
+  // El rechazo definitivo se apunta en `golpesPerdidos`, que sale también en el
+  // panel. No decía qué golpe del hoyo se perdió, y guardar el otro lo retiraba
+  const golpe = (ownScore, markedScore) => ({ ownScore, markedPlayerId: 'u2', markedScore });
+  const rechazo = () => Object.assign(new Error('HTTP 409'), { status: 409 });
+
+  const monta = async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    return result;
+  };
+  const anota = (result, datos, tocado) =>
+    act(async () => { await result.current.submitScore(5, datos, { tocado }); });
+  const delHoyo5 = () => golpesPerdidos.pendientes('u1').filter((a) => a.holeNumber === 5);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    submitHoleScoreUseCase.execute.mockResolvedValue(mockScoringView);
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+    offlineQueue.getByMatch.mockReturnValue([]);
+    offlineQueue.enqueue.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    submitHoleScoreUseCase.execute.mockReset();
+    offlineQueue.enqueue.mockReset();
+  });
+
+  it('R1 · el rechazo del envío directo apunta el golpe que tocó el jugador', async () => {
+    const result = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo());
+
+    await anota(result, golpe(4, 5), 'ownScore');
+
+    expect(delHoyo5()).toEqual([expect.objectContaining({ golpes: ['ownScore'] })]);
+  });
+
+  it('R2 · guardar el del marcado no lo retira; reanotar el propio, sí', async () => {
+    const result = await monta();
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo());
+    await anota(result, golpe(4, 5), 'ownScore');
+
+    await anota(result, golpe(undefined, 5), 'markedScore');
+    expect(delHoyo5()).toHaveLength(1);
+
+    await anota(result, golpe(4, 5), 'ownScore');
+    expect(delHoyo5()).toEqual([]);
+  });
+
+  it('R3 · lo que va a la cola lleva el golpe tocado', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    const result = await monta();
+
+    await anota(result, golpe(4, 5), 'markedScore');
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['markedScore']);
+  });
+
+  it('R3b · también lo que se guarda antes de enviar', async () => {
+    const result = await monta();
+
+    await anota(result, golpe(4, 5), 'ownScore');
+
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['ownScore']);
+  });
+
+  // Revisión: el rechazo directo saca de la cola la entrada del hoyo ENTERA, y
+  // puede llevar sumada una corrección anterior del otro golpe, sin enviar. El
+  // aviso tiene que nombrar los dos, o ese golpe se pierde sin decirlo
+  it('R5 · el rechazo nombra también lo que la entrada de la cola llevaba de antes', async () => {
+    const result = await monta();
+    // En la cola: el propio, corregido sin cobertura, y ahora el del marcado
+    const enCola = {
+      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
+      scoreData: golpe(4, 5), tocados: ['ownScore', 'markedScore'],
+    };
+    offlineQueue.getByMatch.mockReturnValue([enCola]);
+    offlineQueue.remove.mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo());
+
+    await anota(result, golpe(4, 5), 'markedScore');
+
+    expect(delHoyo5()).toHaveLength(1);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+  });
+
+  it('R5b · y si la corrección no cupo, lo que había de antes en la cola también', async () => {
+    const result = await monta();
+    const enCola = {
+      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
+      scoreData: golpe(4, undefined), tocados: ['ownScore'],
+    };
+    offlineQueue.getByMatch.mockReturnValue([enCola]);
+    offlineQueue.enqueue.mockReturnValue(false);
+    offlineQueue.remove.mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo());
+
+    await anota(result, golpe(4, 5), 'markedScore');
+
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+  });
+
+  it('R5c · aunque el envío no traiga el golpe que la cola tenía', async () => {
+    const result = await monta();
+    const enCola = {
+      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
+      scoreData: golpe(4, undefined), tocados: ['ownScore'],
+    };
+    offlineQueue.getByMatch.mockReturnValue([enCola]);
+    offlineQueue.enqueue.mockReturnValue(false);
+    offlineQueue.remove.mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo());
+
+    await anota(result, golpe(undefined, 5), 'markedScore');
+
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+  });
+
+  it('R5d · una entrada de antes, sin golpes tocados, cuenta con los que trae', async () => {
+    const result = await monta();
+    const enCola = {
+      matchId: 'm-1', holeNumber: 5, participantId: null, userId: 'u1', timestamp: 1000,
+      scoreData: golpe(4, undefined),
+    };
+    offlineQueue.getByMatch.mockReturnValue([enCola]);
+    offlineQueue.enqueue.mockReturnValue(false);
+    offlineQueue.remove.mockReturnValue(true);
+    submitHoleScoreUseCase.execute.mockRejectedValueOnce(rechazo());
+
+    await anota(result, golpe(undefined, 5), 'markedScore');
+
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+  });
+
+  it('R4 · un aviso de antes, sin golpes, se retira con cualquier guardado como siempre', async () => {
+    golpesPerdidos.apunta({ matchId: 'm-1', matchName: 'Meis', holeNumber: 5, userId: 'u1' });
+    const result = await monta();
+
+    await anota(result, golpe(undefined, 5), 'markedScore');
+
+    expect(delHoyo5()).toEqual([]);
   });
 });

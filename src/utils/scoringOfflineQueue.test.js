@@ -514,3 +514,47 @@ describe('la partida que ya no existe (FE #557)', () => {
     expect(getAll().map((e) => [e.matchId, e.holeNumber])).toEqual([['qm-1', 8], ['m-2', 3]]);
   });
 });
+
+// FE #813: qué golpe tocó el jugador viaja con la anotación, para que si el
+// servidor la rechaza se apunte como perdido solo ese
+describe('scoringOfflineQueue · los golpes tocados (FE #813)', () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+  });
+
+  const golpe = { ownScore: 5, markedPlayerId: 'u2', markedScore: 4 };
+
+  it('T1 · se guardan', () => {
+    enqueue('m-1', 3, golpe, null, 'u1', {}, ['ownScore']);
+
+    expect(getAll()[0].tocados).toEqual(['ownScore']);
+  });
+
+  it('T2 · al sustituir la del mismo hoyo se suman: los dos siguen sin enviar', () => {
+    enqueue('m-1', 3, golpe, null, 'u1', {}, ['ownScore']);
+    enqueue('m-1', 3, golpe, null, 'u1', {}, ['markedScore']);
+
+    expect(getAll()[0].tocados).toEqual(['ownScore', 'markedScore']);
+  });
+
+  it('T3 · reencolar sin decirlos conserva los que había', () => {
+    enqueue('m-1', 3, golpe, null, 'u1', {}, ['ownScore']);
+    enqueue('m-1', 3, golpe, null, 'u1', {});
+
+    expect(getAll()[0].tocados).toEqual(['ownScore']);
+  });
+
+  it('T4 · si la anterior no los tenía, no se sabe: quedan sin dato', () => {
+    enqueue('m-1', 3, golpe, null, 'u1', {});
+    enqueue('m-1', 3, golpe, null, 'u1', {}, ['markedScore']);
+
+    expect(getAll()[0].tocados).toBeUndefined();
+  });
+
+  it('T5 · y sin decirlos nunca, sin dato', () => {
+    enqueue('m-1', 3, golpe, null, 'u1', {});
+
+    expect(getAll()[0].tocados).toBeUndefined();
+  });
+});
+

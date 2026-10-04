@@ -169,3 +169,74 @@ describe('golpesPerdidos (FE #521)', () => {
     });
   });
 });
+
+// FE #813. En competición un hoyo tiene dos golpes, el propio y el del
+// marcado, y el aviso no decía cuál se perdió: guardar el otro lo retiraba
+describe('golpesPerdidos · qué golpe del hoyo se perdió (FE #813)', () => {
+  beforeEach(() => {
+    almacen.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('G1 · el aviso guarda los golpes', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore'] });
+
+    expect(pendientes('usuario-A')[0].golpes).toEqual(['ownScore']);
+  });
+
+  it('G2 · un segundo rechazo del mismo hoyo suma sus golpes', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore'] });
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['markedScore'] });
+
+    expect(pendientes('usuario-A')).toHaveLength(1);
+    expect(pendientes('usuario-A')[0].golpes).toEqual(['ownScore', 'markedScore']);
+  });
+
+  it('G3 · si uno de los dos no dice golpes, el aviso es del hoyo entero', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore'] });
+    apunta(aviso(5, 'usuario-A'));
+
+    expect(pendientes('usuario-A')[0].golpes).toBeUndefined();
+  });
+
+  it('G4 · olvidar un golpe deja el otro', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore', 'markedScore'] });
+
+    olvidaEl('m-1', 5, 'usuario-A', undefined, ['markedScore']);
+
+    expect(pendientes('usuario-A')[0].golpes).toEqual(['ownScore']);
+  });
+
+  it('G5 · olvidar el que falta retira el aviso', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore'] });
+
+    olvidaEl('m-1', 5, 'usuario-A', undefined, ['ownScore']);
+
+    expect(pendientes('usuario-A')).toEqual([]);
+  });
+
+  it('G5b · olvidar el otro golpe no lo retira', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore'] });
+
+    olvidaEl('m-1', 5, 'usuario-A', undefined, ['markedScore']);
+
+    expect(pendientes('usuario-A')).toHaveLength(1);
+  });
+
+  it('G6 · un aviso de antes, sin golpes, se retira entero como siempre', () => {
+    apunta(aviso(5, 'usuario-A'));
+
+    olvidaEl('m-1', 5, 'usuario-A', undefined, ['markedScore']);
+
+    expect(pendientes('usuario-A')).toEqual([]);
+  });
+
+  it('G7 · sin decir golpes, se olvida el hoyo entero como siempre', () => {
+    apunta({ ...aviso(5, 'usuario-A'), golpes: ['ownScore'] });
+
+    olvidaEl('m-1', 5, 'usuario-A');
+
+    expect(pendientes('usuario-A')).toEqual([]);
+  });
+});
+

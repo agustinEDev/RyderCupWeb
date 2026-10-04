@@ -75,12 +75,20 @@ export const apunta = (aviso) => {
   // El duplicado se mira TAMBIÉN por dueño: sin eso, el aviso de una persona
   // se tragaba el de otra sobre el mismo hoyo de la misma partida, y a la
   // segunda se le decía que había quedado registrado cuando no
-  const yaEstaba = avisos.some((a) =>
+  const elQueHabia = avisos.find((a) =>
     esDelMismo(a, aviso.matchId, aviso.holeNumber, aviso.userId, aviso.participantId)
   );
-  if (yaEstaba) return true;
+  if (!elQueHabia) return guarda([...avisos, { ...aviso, cuando: Date.now() }]);
 
-  return guarda([...avisos, { ...aviso, cuando: Date.now() }]);
+  // Del mismo hoyo: se suman los golpes perdidos (FE #813). Si alguno de los
+  // dos no dice cuáles, no se sabe, y el aviso pasa a ser del hoyo entero
+  const golpes = elQueHabia.golpes && aviso.golpes
+    ? [...new Set([...elQueHabia.golpes, ...aviso.golpes])]
+    : undefined;
+  if (JSON.stringify(golpes) === JSON.stringify(elQueHabia.golpes)) return true;
+  const actualizado = { ...elQueHabia, golpes };
+  if (!golpes) delete actualizado.golpes;
+  return guarda(avisos.map((a) => (a === elQueHabia ? actualizado : a)));
 };
 
 /**
@@ -112,18 +120,27 @@ export const olvidaLosDe = (matchId, userId = null) =>
  * Retira el aviso de UN hoyo: su dueño acaba de volver a anotarlo, así que ya
  * no hay nada perdido que contarle.
  */
-export const olvidaEl = (matchId, holeNumber, userId = null, participantId = undefined) =>
-  guarda(
-    leeTodo().filter((a) => {
-      if (a.matchId !== matchId || a.holeNumber !== holeNumber) return true;
-      if (!esVisiblePara(a, userId)) return true;
-      // Sin participante se van todos los de ese hoyo: es lo que quiere una
-      // competición, donde no hay más que uno. Con participante, solo el suyo,
-      // o reanotar a un jugador borraría el aviso de los otros tres
-      if (participantId === undefined) return false;
-      return (a.participantId ?? null) !== (participantId ?? null);
+export const olvidaEl = (matchId, holeNumber, userId = null, participantId = undefined, golpes = undefined) => {
+  const delHoyo = (a) => {
+    if (a.matchId !== matchId || a.holeNumber !== holeNumber) return false;
+    if (!esVisiblePara(a, userId)) return false;
+    // Sin participante se van todos los de ese hoyo: es lo que quiere una
+    // competición, donde no hay más que uno. Con participante, solo el suyo,
+    // o reanotar a un jugador borraría el aviso de los otros tres
+    if (participantId === undefined) return true;
+    return (a.participantId ?? null) === (participantId ?? null);
+  };
+  // Con `golpes`, solo esos (FE #813): guardar el del marcado no salva el
+  // propio. Un aviso que no dice sus golpes —de antes de esto— se va entero
+  return guarda(
+    leeTodo().flatMap((a) => {
+      if (!delHoyo(a)) return [a];
+      if (!golpes || !a.golpes) return [];
+      const quedan = a.golpes.filter((g) => !golpes.includes(g));
+      return quedan.length > 0 ? [{ ...a, golpes: quedan }] : [];
     })
   );
+};
 
 /**
  * Pone nombre a los avisos de una partida que se apuntaron sin él.

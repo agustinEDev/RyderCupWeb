@@ -17,6 +17,7 @@ import {
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
+import { GOLPES_DEL_HOYO, golpesQueTrae } from '../utils/golpesDelHoyo';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -32,11 +33,6 @@ const mismoGolpe = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // cada render a quien lo use de dependencia
 const SIN_HOYOS = Object.freeze({});
 
-// Los golpes de un hoyo que se pueden perder, y cuáles trae una anotación: el
-// que no está (`undefined`) no se anotó; una raya (`null`) sí es un golpe. La
-// misma regla que la cola usa para decidir qué queda sustituido (#609)
-const GOLPES_DEL_HOYO = ['ownScore', 'markedScore'];
-const golpesQueTrae = (scoreData) => GOLPES_DEL_HOYO.filter((g) => scoreData?.[g] !== undefined);
 
 // Un fallo y de dónde salió (FE #626). La pantalla cuenta distinto que no
 // cargara la vista que no se pudiera anotar, entregar o conceder: lo primero se
@@ -643,7 +639,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // ESTA anotación, y si se perdieron antes: una corrección posterior que no
     // se guardó sigue sin estar en ningún sitio (FE #622)
     const yaNoSePierde = () => {
-      golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId);
+      // Del aviso de rechazados, solo los golpes que se han vuelto a anotar (FE #813)
+      golpesPerdidos.olvidaEl(matchId, holeNumber, currentUserId, undefined, golpesTocados);
       const delHoyo = { ...aSalvoRef.current[matchId]?.[holeNumber] };
       for (const g of golpesTocados) delHoyo[g] = Math.max(delHoyo[g] ?? 0, estaAnotacion);
       aSalvoRef.current = {
@@ -671,7 +668,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         scoreData,
         null,
         currentUserId,
-        laPartidaRef.current
+        laPartidaRef.current,
+        golpesTocados
       );
       setPendingQueueSize(pendientesPropias());
       if (guardado === false) {
@@ -700,7 +698,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       scoreData,
       null,
       currentUserId,
-      laPartidaRef.current
+      laPartidaRef.current,
+      golpesTocados
     );
     // Cuándo quedó guardado, para distinguir después lo que este envío deja
     // superado de una corrección hecha con él en vuelo. Si el móvil NO pudo
@@ -753,8 +752,22 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         const esLaRechazada = !loGuardado
           || estaSuperada(loGuardado, { cuando: cuandoSeGuardo, scoreData });
         if (esLaRechazada) {
+          // Lo que sale de la cola es la entrada del hoyo ENTERA, y puede llevar
+          // una corrección anterior del otro golpe, sin enviar: el aviso nombra
+          // los golpes de las dos, o ese se pierde sin decirlo (FE #813). De una
+          // entrada de antes, sin ese dato, los golpes que trae
+          const deLaCola = loGuardado ? (loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
+          const loMandado = Object.fromEntries(Object.entries(scoreData ?? {}).filter(([, v]) => v !== undefined));
           apartaLaRechazada(
-            { matchId, holeNumber, participantId: null, userId: currentUserId ?? null, ...laPartidaRef.current },
+            {
+              matchId,
+              holeNumber,
+              participantId: null,
+              userId: currentUserId ?? null,
+              scoreData: { ...loGuardado?.scoreData, ...loMandado },
+              tocados: [...new Set([...golpesTocados, ...deLaCola])],
+              ...laPartidaRef.current,
+            },
             currentUserId ?? null
           );
         }

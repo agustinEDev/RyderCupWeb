@@ -22,6 +22,7 @@ import {
   noLlegoAlServidor,
 } from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
+import { golpesQueTrae } from '../utils/golpesDelHoyo';
 
 /**
  * Por qué se sale del bucle antes de tiempo. **Todos los valores están aquí**:
@@ -117,6 +118,16 @@ const laMismaEnLaCola = (entrada) => {
  */
 const LATIDO_EN_VUELO_MS = 30_000;
 
+// Qué golpes del hoyo se pierden con una anotación de competición (FE #813):
+// los que tocó el jugador, si la anotación lo dice y siguen en ella; si no, los
+// que trae. Las de partida rápida llevan `score`, que no es ninguno de los dos:
+// su aviso ya es del participante y queda sin golpes, como antes
+const golpesPerdidosDe = (entrada) => {
+  const trae = golpesQueTrae(entrada.scoreData);
+  const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(g)) : trae;
+  return golpes.length > 0 ? { golpes } : {};
+};
+
 /**
  * Saca de la cola una anotación que el servidor ha rechazado, dejando aviso.
  *
@@ -138,6 +149,7 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     // del móvil, y el primero que pulse «Entendido» se lo lleva antes de que
     // lo vea el suyo
     userId: entrada.userId ?? dueñoSiNoLoTiene ?? null,
+    ...golpesPerdidosDe(entrada),
   });
   if (!apuntado) return false;
 

@@ -315,6 +315,56 @@ describe('vaciaAnotaciones · la política, en un solo sitio (FE #551)', () => {
   });
 });
 
+// FE #813: el aviso de un rechazo dice qué golpe del hoyo se perdió. Con el
+// que tocó el jugador, que viaja en la anotación; si es de antes y no lo
+// lleva, los que trae
+describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () => {
+  beforeEach(() => {
+    elDisco.clear();
+    vi.restoreAllMocks();
+  });
+
+  const rechaza = () => vi.fn().mockRejectedValue(errorCon(409));
+  const conTocados = (scoreData, tocados, participantId = null) => {
+    cola.enqueue('m-1', 5, scoreData, participantId, YO, {}, tocados);
+    return cola.deQuien(YO).find((e) => e.holeNumber === 5);
+  };
+
+  it('A1 · el golpe que tocó el jugador', async () => {
+    const entrada = conTocados({ ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, ['markedScore']);
+
+    await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+  });
+
+  it('A2 · una anotación de antes, sin ese dato: los golpes que trae', async () => {
+    const entrada = conTocados({ ownScore: 4, markedPlayerId: 'u2' });
+
+    await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['ownScore']);
+  });
+
+  it('A3 · solo los tocados que siguen en la anotación', async () => {
+    // Al no caber una corrección, se reescribe la anterior sin lo sustituido,
+    // y conserva sus tocados aunque alguno ya no esté
+    const entrada = conTocados({ markedPlayerId: 'u2', markedScore: 5 }, ['ownScore', 'markedScore']);
+
+    await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+  });
+
+  it('A4 · en partida rápida no hay golpes que distinguir: el aviso es del participante', async () => {
+    const entrada = conTocados({ score: 4 }, undefined, 'p-1');
+
+    await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toBeUndefined();
+  });
+});
+
 describe('avisoTrasElVaciado (FE #551)', () => {
   it('un paro del almacenamiento lo pone, aunque hubiera otro', () => {
     expect(avisoTrasElVaciado(null, PARO.NO_SE_PUDO_BORRAR)).toBe(PARO.NO_SE_PUDO_BORRAR);
