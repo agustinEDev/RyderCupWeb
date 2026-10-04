@@ -449,7 +449,11 @@
     "REQUESTED": "REQUESTED",
     "PENDING": "PENDING",
     "APPROVED": "APPROVED",
-    "REJECTED": "REJECTED"
+    "REJECTED": "REJECTED",
+    "INVITED": "INVITED",
+    "INVITED_female": "INVITED",
+    "CANCELLED": "CANCELLED",
+    "WITHDRAWN": "WITHDRAWN"
   },
   "apertura": {
     "titulo": "When does enrolment open?",
