@@ -167,7 +167,7 @@
     "nothingCachedHint": "Open it once with coverage and you will be able to score offline.",
     "noSeActualiza": "This match could not be refreshed from the server. What you see may not be up to date.",
     "noSePudoCargar": "This match could not be loaded. Try again in a moment.",
-    "pendientesASalvo": "Your strokes are saved on this device and will be sent when the match loads again."
+    "pendientesASalvo": "Your strokes are saved on this device and will be sent as soon as the server responds."
   },
   "session": {
     "blocked": "Active Session Detected",

@@ -167,7 +167,7 @@
     "nothingCachedHint": "Ábrelo una vez con cobertura y después podrás anotar sin conexión.",
     "noSeActualiza": "No se ha podido actualizar el partido desde el servidor: lo que ves puede no estar al día.",
     "noSePudoCargar": "No se ha podido cargar el partido. Vuelve a intentarlo en un momento.",
-    "pendientesASalvo": "Tus golpes están guardados en este dispositivo y se enviarán cuando el partido vuelva a cargarse."
+    "pendientesASalvo": "Tus golpes están guardados en este dispositivo y se enviarán en cuanto el servidor responda."
   },
   "session": {
     "blocked": "Sesión Activa Detectada",

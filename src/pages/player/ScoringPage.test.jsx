@@ -1257,3 +1257,51 @@ describe('ScoringPage · la barra de entregar la tarjeta (FE #745)', () => {
     expect(within(screen.getByTestId('barra-de-entrega')).queryByText('submit.keepPlaying')).toBeNull();
   });
 });
+
+describe('ScoringPage · los pendientes con cobertura, también con el partido en pantalla (FE #625)', () => {
+  // Con el servidor caído y cobertura, el golpe se queda en la cola y la casilla
+  // lo enseña: sin aviso, nada hace sospechar que el otro jugador no lo ve
+  afterEach(() => {
+    mockUseScoring.isOffline = false;
+    mockUseScoring.pendingQueueSize = 0;
+  });
+
+  it('P1 · con cobertura y golpes pendientes se cuentan, sin decir que no hay conexión', () => {
+    mockUseScoring.pendingQueueSize = 1;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
+    expect(screen.getByText(/offline\.pendingScores/)).toBeInTheDocument();
+    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+  });
+
+  it('P2 · sin cobertura sigue el banner de siempre, y no los dos a la vez', () => {
+    mockUseScoring.isOffline = true;
+    mockUseScoring.pendingQueueSize = 2;
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+    expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
+  });
+
+  // Si el vaciado se paró por el almacenamiento, «se enviarán en cuanto el
+  // servidor responda» es falso: no se van a enviar, y su aviso ya lo explica
+  it('P4 · con el aviso del almacenamiento en pantalla, no se promete el envío', () => {
+    mockUseScoring.pendingQueueSize = 1;
+    mockUseScoring.avisoDelVaciado = 'no-se-pudo-borrar';
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
+    mockUseScoring.avisoDelVaciado = null;
+  });
+
+  it('P3 · con cobertura y la cola vacía, ningún aviso', () => {
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+  });
+});

@@ -27,6 +27,24 @@ const TABS = ['input', 'scorecard', 'leaderboard'];
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
+// Los golpes que siguen en el móvil CON cobertura: lo caído es el servidor, así
+// que el banner de sin conexión diría algo falso (FE #617). En las dos pantallas,
+// la de nada pintado y la del partido en pantalla (FE #625)
+const PendientesASalvo = ({ count }) => {
+  const { t } = useTranslation('scoring');
+  if (count <= 0) return null;
+  return (
+    <div className="max-w-4xl mx-auto px-4 pt-4">
+      <p
+        data-testid="pendientes-a-salvo"
+        className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
+      >
+        {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count })}
+      </p>
+    </div>
+  );
+};
+
 const ScoringPage = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
@@ -357,16 +375,7 @@ const ScoringPage = () => {
         {/* Y con cobertura, los golpes pendientes se cuentan aparte: el banner de
             arriba afirma «estás sin conexión», y aquí sí la hay —lo caído es el
             servidor—, así que usarlo para esto sería decirle algo falso */}
-        {!isOffline && pendingQueueSize > 0 && (
-          <div className="max-w-4xl mx-auto px-4 pt-4">
-            <p
-              data-testid="pendientes-a-salvo"
-              className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-            >
-              {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count: pendingQueueSize })}
-            </p>
-          </div>
-        )}
+        {!isOffline && <PendientesASalvo count={pendingQueueSize} />}
 
         <div className="max-w-4xl mx-auto px-4 py-6 text-center" data-testid="sin-nada-guardado">
           <p className="text-gray-700">
@@ -423,6 +432,14 @@ const ScoringPage = () => {
       <HeaderAuth user={user} />
 
       {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+
+      {/* El gemelo de la pantalla sin nada pintado (FE #625): con cobertura y el
+          servidor caído, la casilla enseña el golpe y nada decía que el otro
+          jugador no lo ve. Sale solo mientras el servidor no contesta: con
+          respuesta, el sondeo vacía la cola */}
+      {/* Salvo con el aviso del almacenamiento: esos golpes no se van a enviar
+          al responder el servidor, y prometerlo sería falso */}
+      {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
 
       {/* El vaciado se paró porque el móvil no admite escrituras. Aparte del
           error general: ese lo limpia cada sondeo, y esto tiene que durar

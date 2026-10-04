@@ -6,7 +6,13 @@ import {
   concedeMatchUseCase,
 } from '../composition';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
-import { apartaLaRechazada, avisoTrasElVaciado, vaciaAnotaciones } from '../services/vaciaAnotaciones';
+import { abreMasTarde } from '../services/partidosSinCobertura';
+import {
+  apartaLaRechazada,
+  avisoTrasElVaciado,
+  SE_ARREGLA_ESPERANDO,
+  vaciaAnotaciones,
+} from '../services/vaciaAnotaciones';
 import { errorDeGuardado } from '../utils/erroresDeAnotacion';
 // Lo último que se supo del partido, para poder anotar sin cobertura al reabrir
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
@@ -225,6 +231,18 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     [matchId, currentUserId]
   );
 
+  // Qué hay en la cola, en una cadena: cada hoyo con su hora de guardado, que
+  // cambia también al corregirlo. Sirve para saber si la cola es la misma que
+  // dejó el último vaciado (FE #625)
+  const firmaDeLaCola = useCallback(
+    () => offlineQueue.getByMatch(matchId, currentUserId)
+      .filter((e) => e.participantId == null)
+      .map((e) => `${e.holeNumber}:${e.timestamp}`)
+      .sort()
+      .join('|'),
+    [matchId, currentUserId]
+  );
+
   /**
    * Lo que se ve de cada hoyo: lo del servidor con lo guardado en la cola encima
    * (FE #606), como `holeScoresVisibles` en partida rápida.
@@ -355,13 +373,16 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // pregunta «¿hay vista de ESTE partido?» se responde comparando
   const vistaDeRef = useRef(null);
 
+  // Devuelve la vista si el servidor contestó con la de ESTE partido y se pintó,
+  // y `null` si no: el sondeo la necesita para saber si merece la pena vaciar
+  // la cola, y si el partido ya abre (FE #625)
   const fetchScoringView = useCallback(async () => {
-    if (!matchId) return;
+    if (!matchId) return null;
     const salio = ++relojRef.current;
     const esVieja = () => esDeOtraPartida(matchId) || salio < ultimaAplicadaRef.current;
     try {
       const data = await getScoringViewUseCase.execute(matchId);
-      if (esVieja()) return;
+      if (esVieja()) return null;
       ultimaAplicadaRef.current = salio;
       setScoringView(data);
       setFallo(null);
@@ -382,6 +403,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       // en la primera carga todavía va vacío
       const laJuego = data.players?.some((p) => p.userId === currentUserId);
       if (laJuego) recuerda(matchId, { partida: data, campo: null });
+      return data;
     } catch (err) {
       const estado = err?.status ?? err?.response?.status;
       // Una respuesta CON estado es una respuesta: si el servidor dice que ese
@@ -412,6 +434,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // Sin pisar lo que falló al anotar, entregar o conceder (FE #626)
         setFallo(trasFallarLaCarga(err, desmentido, matchId));
       }
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -428,8 +451,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   // mismo hoyo y quedar pisado por ello. Quien llega con el otro dentro no
   // manda: el envío solo guarda y el vaciado no arranca, y lo dejan apuntado en
   // `aplazadoRef` para que quien lo tiene dé una pasada al terminar. Hace falta
-  // porque competición no vacía en el sondeo, como partida rápida: sin esa
-  // pasada, lo aplazado esperaba a que el jugador saliera y volviera
+  // porque el sondeo solo vacía si hay algo en la cola y el servidor contesta
+  // (FE #625): sin esa pasada, lo aplazado esperaba al siguiente sondeo
   const ocupadoRef = useRef(null);
   // Qué anotación no se pudo guardar, y en qué turno (FE #605). Un envío que
   // salió ANTES y acaba sin llegar no puede retirar ese aviso: es de una
@@ -441,6 +464,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
   const anotacionRef = useRef(0);
   const noSeGuardoRef = useRef(null);
   const aplazadoRef = useRef(false);
+  // La cola tal como la dejó el último vaciado que no se cortó por la red, el
+  // servidor o la sesión: lo que quedó ahí lo dejó A PROPÓSITO —el móvil que no
+  // escribe, una anotación que no se puede mandar— y el sondeo lo reenviaba
+  // cada 10 s el resto de la vuelta (FE #625). Con `esperanASuHora`, si algo de
+  // eso solo espera a que el partido abra: eso sí sale en cuanto abre. `null`
+  // mientras ningún vaciado haya dejado nada a propósito
+  const loQueDejoRef = useRef(null);
 
   // --- Process offline queue ---
   const vaciaLaDeEstaPartida = useCallback(async () => {
@@ -488,10 +518,10 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setAvisoDelVaciado((antes) => avisoTrasElVaciado(antes, resultado.paroPor));
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
-    return resultado.paroPor;
+    return resultado;
   }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura, esDeOtraPartida]);
 
-  // Un solo vaciado a la vez. Ahora hay tres disparadores —montar, `online` y
+  // Un solo vaciado a la vez. Hay cuatro disparadores —montar, `online`, el sondeo y
   // volver a la aplicación— y llegan juntos: al entrar desde el aviso del
   // panel, el de montar y el de visibilidad caen en el mismo instante. Sin
   // esto, el segundo lee la cola todavía sin vaciar y reenvía los mismos hoyos
@@ -505,17 +535,25 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     ocupadoRef.current = 'vaciado';
     try {
       let paroPor;
+      let esperan;
       do {
         aplazadoRef.current = false;
-        paroPor = await vaciaLaDeEstaPartida();
+        ({ paroPor, esperan } = await vaciaLaDeEstaPartida());
         // Lo anotado mientras iba esta pasada solo se guardó, y puede ser un
         // hoyo que la pasada no llegó a leer. Otra más, salvo que se parara
         // por la red o por el disco: eso no se arregla insistiendo
       } while (aplazadoRef.current && paroPor === null && pendientesPropias() > 0);
+      // Un paro de red, servidor o sesión no dice nada de lo que quedó: no
+      // llegó a intentarlo todo. Así que no toca lo que se sabía, igual que
+      // `avisoTrasElVaciado`; si lo borrara, un corte de cobertura le quitaba
+      // el freno al disco que no borra, y el sondeo reenviaba lo ya llegado
+      if (!SE_ARREGLA_ESPERANDO.has(paroPor)) {
+        loQueDejoRef.current = { firma: firmaDeLaCola(), esperanASuHora: esperan > 0 };
+      }
     } finally {
       ocupadoRef.current = null;
     }
-  }, [vaciaLaDeEstaPartida, pendientesPropias]);
+  }, [vaciaLaDeEstaPartida, pendientesPropias, firmaDeLaCola]);
 
   // Lo guardado de este jugador para ese hoyo. Sin participante: las que lo
   // llevan son de partida rápida
@@ -825,14 +863,35 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     fetchScoringView();
 
-    pollIntervalRef.current = setInterval(() => {
-      if (!isOffline) fetchScoringView();
+    // Y si el servidor contesta y hay golpes guardados, se vacían (FE #625). Con
+    // cobertura y el servidor caído, `online` no salta nunca: el sondeo es lo
+    // único que se entera de que ha vuelto. Por `processQueue`, que no deja dos
+    // escritores ni apila pasadas, y solo con algo en la cola: el vaciado pide
+    // la vista al terminar, y cada 10 s sería una petición de más para nada. Ni
+    // si la cola es la que dejó a propósito el último vaciado: reintentarla no
+    // cambia nada, y era reenviar el mismo golpe toda la vuelta
+    let sigue = true;
+    pollIntervalRef.current = setInterval(async () => {
+      if (isOffline) return;
+      const vista = await fetchScoringView();
+      // La pantalla puede haberse cerrado con la petición en camino: entonces
+      // la cola es del vaciado de fondo, y mandarla desde aquí la duplicaría
+      if (!sigue || !vista || pendientesPropias() === 0) return;
+      const dejo = loQueDejoRef.current;
+      if (dejo && dejo.firma === firmaDeLaCola()) {
+        // Lo que espera a que el partido abra sale en cuanto abre; antes, cada
+        // intento sería un rechazo seguro. La hora la dice el servidor
+        const yaAbre = !abreMasTarde({ status: vista.matchStatus, scoringOpensAt: vista.scoringOpensAt });
+        if (!dejo.esperanASuHora || !yaAbre) return;
+      }
+      processQueue();
     }, POLL_INTERVAL);
 
     return () => {
+      sigue = false;
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [fetchScoringView, isOffline]);
+  }, [fetchScoringView, isOffline, pendientesPropias, firmaDeLaCola, processQueue]);
 
   // --- Update pending queue size on mount ---
   useEffect(() => {
