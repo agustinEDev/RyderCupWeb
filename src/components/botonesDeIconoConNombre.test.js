@@ -48,9 +48,17 @@ const botones = (codigo) => {
   return encontrados;
 };
 
+// Fuera los comentarios antes de buscar: un «<button>» escrito en uno no es un
+// botón. El `/* */` cubre también los de JSX (`{/* */}`), y el `//` de una
+// dirección (`https://`) va detrás de `:` y se respeta
+const sinComentarios = (codigo) =>
+  codigo
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:\w"'`])\/\/.*$/gm, '$1');
+
 const botonesSinNombre = (codigo) => {
   const encontrados = [];
-  for (const [entero, atributos, contenido] of botones(codigo)) {
+  for (const [entero, atributos, contenido] of botones(sinComentarios(codigo))) {
     if (/aria-label|aria-labelledby|title=/.test(atributos)) continue;
     const tieneIcono = ICONO.test(contenido);
     ICONO.lastIndex = 0;
@@ -77,6 +85,27 @@ describe('Botones de solo icono', () => {
     expect(
       botonesSinNombre('<button onClick={() => quitar(i)} aria-label={t("quitar")}><Trash2 /></button>')
     ).toEqual([]);
+  });
+
+  // Segunda revisión de la PR: un «<button>» escrito en un comentario se tomaba
+  // por un botón y se comía el de verdad que venía detrás, y un `>` en un
+  // comentario `//` entre los atributos cortaba la etiqueta
+  it('los comentarios no esconden botones', () => {
+    expect(
+      botonesSinNombre('{/* aquí iba un <button> viejo */}\n<button onClick={cerrar}>\n  <X />\n</button>')
+    ).toHaveLength(1);
+    expect(
+      botonesSinNombre('// el <button> de cerrar\n<button onClick={cerrar}><X /></button>')
+    ).toHaveLength(1);
+    expect(
+      botonesSinNombre('<button\n  // el <select> reportaba mal\n  aria-label={t("cerrar")}\n>\n  <X />\n</button>')
+    ).toEqual([]);
+  });
+
+  it('el `//` de una dirección no se toma por comentario', () => {
+    expect(
+      botonesSinNombre('<a href="https://x.es">x</a> <button onClick={cerrar}><X /></button>')
+    ).toHaveLength(1);
   });
 
   // Los nombres de `common` se leen de verdad: con `t` simulado, una clave mal
