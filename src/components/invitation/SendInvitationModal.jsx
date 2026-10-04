@@ -345,7 +345,9 @@ const SendInvitationModalContent = ({
       onClose={onClose}
       labelledBy="enviar-invitacion-titulo"
       closeOnBackdrop={false}
-      closeOnEscape={!isProcessing}
+      // Con la lista de resultados abierta, Escape es de la lista: la cierra
+      // su manejador (más arriba), y el siguiente Escape ya cierra el modal
+      closeOnEscape={!isProcessing && !showDropdown}
       busy={isProcessing}
       boxClassName={CAJA_PROPIA}
     >

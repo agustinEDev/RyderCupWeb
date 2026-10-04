@@ -34,6 +34,9 @@ const GolfCourses = ({ embedded = false }) => {
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+  // Un alta o una edición en vuelo: mientras dura, Escape no cierra su modal.
+  // Si fallara, el error lo enseña el formulario, y cerrado no lo vería nadie
+  const [isSavingCourse, setIsSavingCourse] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -69,6 +72,7 @@ const GolfCourses = ({ embedded = false }) => {
 
   // Handle create
   const handleCreate = async (formData) => {
+    setIsSavingCourse(true);
     try {
       await createGolfCourseAdminUseCase.execute(formData);
       customToast.success(t('pages.admin.createSuccess'));
@@ -77,6 +81,8 @@ const GolfCourses = ({ embedded = false }) => {
     } catch (error) {
       console.error('Error creating golf course:', error);
       throw error; // Let form handle the error
+    } finally {
+      setIsSavingCourse(false);
     }
   };
 
@@ -84,6 +90,7 @@ const GolfCourses = ({ embedded = false }) => {
   const handleEdit = async (formData) => {
     if (!selectedCourse) return;
 
+    setIsSavingCourse(true);
     try {
       await updateGolfCourseUseCase.execute(selectedCourse.id, formData);
 
@@ -95,6 +102,8 @@ const GolfCourses = ({ embedded = false }) => {
     } catch (error) {
       console.error('Error updating golf course:', error);
       throw error; // Let form handle the error
+    } finally {
+      setIsSavingCourse(false);
     }
   };
 
@@ -248,6 +257,8 @@ const GolfCourses = ({ embedded = false }) => {
           onClose={() => setShowCreateModal(false)}
           labelledBy="crear-campo-titulo"
           closeOnBackdrop={false}
+          closeOnEscape={!isSavingCourse}
+          busy={isSavingCourse}
           boxClassName={CAJA_PROPIA}
         >
           <motion.div
@@ -290,6 +301,8 @@ const GolfCourses = ({ embedded = false }) => {
           }}
           labelledBy="editar-campo-titulo"
           closeOnBackdrop={false}
+          closeOnEscape={!isSavingCourse}
+          busy={isSavingCourse}
           boxClassName={CAJA_PROPIA}
         >
           <motion.div
