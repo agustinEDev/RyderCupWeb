@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiQuickMatchRepository from './ApiQuickMatchRepository';
+import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import QuickMatch from '../../domain/entities/QuickMatch';
 
 vi.mock('../../domain/repositories/IQuickMatchRepository.js', () => ({
@@ -269,6 +270,7 @@ describe('ApiQuickMatchRepository', () => {
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/holes/1/score', {
         method: 'POST',
         body: JSON.stringify({ score: 4 }),
+        topeMs: TOPE_DE_ANOTAR_MS,
       });
       expect(result).toEqual(scoreResponse);
     });
@@ -282,7 +284,7 @@ describe('ApiQuickMatchRepository', () => {
 
       expect(apiRequest).toHaveBeenCalledWith(
         '/api/v1/quick-matches/qm-1/participants/p-2/holes/1/score',
-        { method: 'POST', body: JSON.stringify({ score: 5 }) }
+        { method: 'POST', body: JSON.stringify({ score: 5 }), topeMs: TOPE_DE_ANOTAR_MS }
       );
     });
   });
@@ -293,7 +295,7 @@ describe('ApiQuickMatchRepository', () => {
 
       const result = await repo.get('qm-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1');
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1', { topeMs: TOPE_DE_ANOTAR_MS });
       expect(result).toBeInstanceOf(QuickMatch);
     });
   });
@@ -321,5 +323,34 @@ describe('ApiQuickMatchRepository', () => {
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/me');
     });
+  });
+});
+
+// Las llamadas de anotar llevan tope de tiempo; el resto no (FE #624). Un envío
+// colgado retenía la cola entera, porque en anotación se escribe de uno en uno
+describe('ApiQuickMatchRepository · el tope de tiempo de anotar (FE #624)', () => {
+  const repo = new ApiQuickMatchRepository();
+  const topeDe = () => apiRequest.mock.calls[0][1]?.topeMs;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiRequest.mockResolvedValue(mockQuickMatchApi);
+  });
+
+  it.each([
+    ['la partida', (r) => r.get('qm-1')],
+    ['anotar un hoyo', (r) => r.submitHoleScore('qm-1', 1, 4)],
+    ['anotar por otro', (r) => r.submitProxyHoleScore('qm-1', 'p-2', 1, 4)],
+    ['entregar la tarjeta', (r) => r.complete('qm-1')],
+  ])('%s lo lleva', async (_, llamada) => {
+    await llamada(repo).catch(() => {});
+
+    expect(topeDe()).toBe(TOPE_DE_ANOTAR_MS);
+  });
+
+  it('empezarla no: no retiene ninguna cola', async () => {
+    await repo.start('qm-1', ['u-1']).catch(() => {});
+
+    expect(topeDe()).toBeUndefined();
   });
 });
