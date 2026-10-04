@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiScoringRepository from './ApiScoringRepository';
+import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 
 // Mock domain interface
 vi.mock('../../domain/repositories/IScoringRepository.js', () => ({
@@ -32,7 +33,9 @@ describe('ApiScoringRepository', () => {
 
       const result = await repo.getScoringView('match-1');
 
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scoring-view');
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scoring-view', {
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
       expect(result.matchId).toBe('match-1');
       expect(result.matchFormat).toBe('SINGLES');
       expect(result.matchStatus).toBe('IN_PROGRESS');
@@ -57,6 +60,7 @@ describe('ApiScoringRepository', () => {
       const result = await repo.submitHoleScore('match-1', 3, scoreData);
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scores/holes/3', {
+        topeMs: TOPE_DE_ANOTAR_MS,
         method: 'POST',
         body: JSON.stringify({
           own_score: 5,
@@ -117,6 +121,7 @@ describe('ApiScoringRepository', () => {
       await repo.submitHoleScore('match-1', 5, scoreData);
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scores/holes/5', {
+        topeMs: TOPE_DE_ANOTAR_MS,
         method: 'POST',
         body: JSON.stringify({
           own_score: null,
@@ -151,6 +156,7 @@ describe('ApiScoringRepository', () => {
       const result = await repo.submitScorecard('match-1');
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/scorecard/submit', {
+        topeMs: TOPE_DE_ANOTAR_MS,
         method: 'POST',
         body: JSON.stringify({}),
       });
@@ -190,6 +196,7 @@ describe('ApiScoringRepository', () => {
       await repo.concedeMatch('match-1', 'A', 'Player injury');
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
+        topeMs: TOPE_DE_ANOTAR_MS,
         method: 'PUT',
         body: JSON.stringify({
           conceding_team: 'A',
@@ -204,6 +211,7 @@ describe('ApiScoringRepository', () => {
       await repo.concedeMatch('match-1', 'B', null);
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
+        topeMs: TOPE_DE_ANOTAR_MS,
         method: 'PUT',
         body: JSON.stringify({
           conceding_team: 'B',
@@ -217,11 +225,41 @@ describe('ApiScoringRepository', () => {
       await repo.concedeMatch('match-1', 'A');
 
       expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/matches/match-1/concede', {
+        topeMs: TOPE_DE_ANOTAR_MS,
         method: 'PUT',
         body: JSON.stringify({
           conceding_team: 'A',
         }),
       });
     });
+  });
+});
+
+// Las llamadas de anotar llevan tope de tiempo; el resto no (FE #624). Un envío
+// colgado retenía la cola entera, porque en anotación se escribe de uno en uno
+describe('ApiScoringRepository · el tope de tiempo de anotar (FE #624)', () => {
+  const repo = new ApiScoringRepository();
+  const topeDe = () => apiRequest.mock.calls[0][1]?.topeMs;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiRequest.mockResolvedValue({});
+  });
+
+  it.each([
+    ['la vista del partido', (r) => r.getScoringView('m-1')],
+    ['anotar un hoyo', (r) => r.submitHoleScore('m-1', 3, { ownScore: 4 })],
+    ['entregar la tarjeta', (r) => r.submitScorecard('m-1')],
+    ['conceder', (r) => r.concedeMatch('m-1', 'A')],
+  ])('%s lo lleva', async (_, llamada) => {
+    await llamada(repo).catch(() => {});
+
+    expect(topeDe()).toBe(TOPE_DE_ANOTAR_MS);
+  });
+
+  it('la clasificación no: no retiene ninguna cola', async () => {
+    await repo.getLeaderboard('c-1').catch(() => {});
+
+    expect(topeDe()).toBeUndefined();
   });
 });

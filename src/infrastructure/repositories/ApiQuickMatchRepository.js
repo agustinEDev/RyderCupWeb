@@ -1,6 +1,7 @@
 import IQuickMatchRepository from '../../domain/repositories/IQuickMatchRepository';
 import QuickMatchMapper from '../mappers/QuickMatchMapper';
 import apiRequest from '../../services/api.js';
+import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 
 /**
  * ApiQuickMatchRepository - REST API implementation
@@ -125,6 +126,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   async complete(quickMatchId) {
     const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/complete`, {
       method: 'POST',
+      topeMs: TOPE_DE_ANOTAR_MS,
     });
 
     return QuickMatchMapper.toDomain(apiData);
@@ -169,6 +171,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return await apiRequest(`/api/v1/quick-matches/${quickMatchId}/holes/${holeNumber}/score`, {
       method: 'POST',
       body: JSON.stringify({ score }),
+      topeMs: TOPE_DE_ANOTAR_MS,
     });
   }
 
@@ -178,12 +181,13 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
       {
         method: 'POST',
         body: JSON.stringify({ score }),
+        topeMs: TOPE_DE_ANOTAR_MS,
       }
     );
   }
 
   async get(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}`);
+    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}`, { topeMs: TOPE_DE_ANOTAR_MS });
     return QuickMatchMapper.toDomain(apiData);
   }
 

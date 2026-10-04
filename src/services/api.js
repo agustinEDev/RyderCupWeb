@@ -40,7 +40,12 @@ export const getApiBaseUrl = () => API_URL;
 /**
  * Make authenticated API request with httpOnly cookies and automatic token refresh
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/competitions')
- * @param {object} options - Fetch options
+ * @param {object} options - Fetch options. Con `topeMs`, la petición se corta
+ *   a ese tiempo y se trata como falta de cobertura (FE #624). Cubre la petición
+ *   ENTERA: un refresco del token y su reintento, y el cuerpo, que puede
+ *   colgarse después de las cabeceras. No se le pasa a `fetch`, y no se combina
+ *   con una `signal` propia: si llegan las dos, manda la del tope. Hoy nadie
+ *   pasa `signal` a `apiRequest`; quien la necesite tendrá que combinarlas
  * @returns {Promise<any>} - Response data
  *
  * SECURITY:
@@ -55,7 +60,7 @@ export const getApiBaseUrl = () => API_URL;
  * - Only redirects to login if refresh token also expired
  * - Shares one refresh promise so multiple 401s do not each ask for a refresh
  */
-export const apiRequest = async (endpoint, options = {}) => {
+export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
   // FormData (file uploads): the browser must set its own Content-Type header
   // with the multipart boundary — setting it manually here would break parsing.
   const isFormData = options.body instanceof FormData;
@@ -76,8 +81,25 @@ export const apiRequest = async (endpoint, options = {}) => {
     }
   }
 
+  // Solo quien lo pide: las demás llamadas esperan a servicios externos lentos
+  // —la RFEG, el correo— y cortarlas las daría por fallidas cuando el servidor
+  // sí las termina
+  const corte = topeMs ? new AbortController() : null;
+  const temporizador = corte && setTimeout(() => corte.abort(), topeMs);
+  // Lo que se espera compite con el tope, en vez de fiarlo todo a la señal: el
+  // interceptor espera al refresco compartido del token sin mirarla, y hay
+  // motores —WebKit— que al abortar rechazan con otro error y no con su motivo.
+  // Así, al vencer, se rechaza con el motivo pase lo que pase dentro
+  const vence = corte && new Promise((_, rechaza) => {
+    corte.signal.addEventListener('abort', () => rechaza(corte.signal.reason), { once: true });
+  });
+  // Si vence mientras se lee el cuerpo de un error, nadie la está esperando
+  vence?.catch(() => {});
+  const aTiempo = (promesa) => (vence ? Promise.race([promesa, vence]) : promesa);
+
   const config = {
     ...options,
+    ...(corte && { signal: corte.signal }),
     // CRITICAL: credentials: 'include' tells the browser to send httpOnly cookies
     credentials: 'include',
     headers: {
@@ -90,7 +112,7 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   try {
     // Use interceptor that handles automatic token refresh on 401
-    const response = await llamaAlBackend(url, config);
+    const response = await aTiempo(llamaAlBackend(url, config));
 
     if (!response.ok) {
       // Try to parse error response from backend
@@ -166,10 +188,20 @@ export const apiRequest = async (endpoint, options = {}) => {
     }
 
     // Return parsed JSON
-    return await response.json();
+    return await aTiempo(response.json());
   } catch (error) {
     console.error('API Request Error:', error);
+    // Se venció el tope: para quien juega, un servidor que no contesta y la
+    // falta de cobertura son lo mismo, y así lo trata todo lo que ya la
+    // reconoce —la cola guarda el golpe y suelta el cerrojo—. Solo el del
+    // propio tope: un error que llegó antes —una sesión caducada en el refresco
+    // que se esperaba, o un 409 cuyo cuerpo tardaba— es la respuesta
+    if (corte && error === corte.signal.reason) {
+      throw new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: error });
+    }
     throw error;
+  } finally {
+    clearTimeout(temporizador);
   }
 };
 

@@ -1,6 +1,7 @@
 // src/infrastructure/repositories/ApiScoringRepository.js
 
 import apiRequest from '../../services/api.js';
+import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IScoringRepository from '../../domain/repositories/IScoringRepository.js';
 import ScoringMapper from '../mappers/ScoringMapper';
 
@@ -14,7 +15,9 @@ class ApiScoringRepository extends IScoringRepository {
    * GET /api/v1/competitions/matches/{matchId}/scoring-view
    */
   async getScoringView(matchId) {
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scoring-view`);
+    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scoring-view`, {
+      topeMs: TOPE_DE_ANOTAR_MS,
+    });
     return ScoringMapper.toScoringViewDTO(data);
   }
 
@@ -28,6 +31,7 @@ class ApiScoringRepository extends IScoringRepository {
     // las claves con valor `undefined`; es un mecanismo invisible al leer, asi
     // que queda dicho. Quien decide que se manda es el caso de uso
     const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scores/holes/${holeNumber}`, {
+      topeMs: TOPE_DE_ANOTAR_MS,
       method: 'POST',
       body: JSON.stringify({
         own_score: scoreData.ownScore,
@@ -43,6 +47,7 @@ class ApiScoringRepository extends IScoringRepository {
    */
   async submitScorecard(matchId) {
     const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scorecard/submit`, {
+      topeMs: TOPE_DE_ANOTAR_MS,
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -68,6 +73,7 @@ class ApiScoringRepository extends IScoringRepository {
       body.reason = reason;
     }
     const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/concede`, {
+      topeMs: TOPE_DE_ANOTAR_MS,
       method: 'PUT',
       body: JSON.stringify(body),
     });
