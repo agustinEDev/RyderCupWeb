@@ -129,6 +129,7 @@
     "moreResults_other": "{{count}} more countries — keep typing to narrow it down"
   },
   "brandMarkAlt": "RyderCupFriends logo",
+  "demasiadasPeticiones": "You've made a lot of changes in a row. Wait a minute and try again.",
   "sinConexion": {
     "aviso": "No connection. What you see may be out of date.",
     "mensaje": "No connection. Try again when you have coverage."
