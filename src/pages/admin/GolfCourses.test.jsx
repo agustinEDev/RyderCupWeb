@@ -161,4 +161,41 @@ describe('GolfCourses (admin)', () => {
       await waitFor(() => expect(screen.queryByTestId('detalle')).toBeNull());
     });
   });
+
+  // Pasaron a ModalShell el 4 oct 2026: se anuncian con su título, y Escape
+  // cierra, que antes no lo hacía
+  describe('los modales de crear y editar', () => {
+    it('editar se anuncia con su título y se cierra con Escape', async () => {
+      render(<GolfCourses embedded />);
+      fireEvent.click(await screen.findByText('editar Real Club de Golf'));
+
+      const dialogo = await screen.findByRole('dialog');
+      expect(dialogo).toHaveAccessibleName('pages.admin.editCourseTitle');
+      // Pulsar fuera no lo cierra, como antes
+      const fondo = screen.getByRole('dialog');
+      fireEvent.mouseDown(fondo);
+      fireEvent.click(fondo);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('crear se anuncia con su título y se cierra con Escape', async () => {
+      render(<GolfCourses embedded />);
+      fireEvent.click(await screen.findByText('pages.admin.createCourse'));
+
+      const dialogo = await screen.findByRole('dialog');
+      expect(dialogo).toHaveAccessibleName('pages.admin.createCourseTitle');
+      // Pulsar fuera no lo cierra, como antes
+      const fondo = screen.getByRole('dialog');
+      fireEvent.mouseDown(fondo);
+      fireEvent.click(fondo);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+  });
 });
+

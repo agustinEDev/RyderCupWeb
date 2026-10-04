@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Loader, UserX, UserCheck, Trash2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +48,15 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
   const canConfirmDelete = option !== 'delete' || confirmText === deleteWord;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onCancel}
+      labelledBy="gestionar-cuenta-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isProcessing}
+      busy={isProcessing}
+      boxClassName={CAJA_PROPIA}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -55,7 +64,7 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
       >
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{t('manageModal.title', { name: fullName })}</h2>
+            <h2 id="gestionar-cuenta-titulo" className="text-xl font-bold text-gray-900">{t('manageModal.title', { name: fullName })}</h2>
             <p className="text-sm text-gray-500 mt-1">{t('manageModal.subtitle')}</p>
           </div>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-600" aria-label={t('manageModal.cancel')}>
@@ -193,7 +202,7 @@ const ManageAccountModal = ({ user, onToggleActive, onDelete, onCancel }) => {
           </div>
         </div>
       </motion.div>
-    </div>
+    </ModalShell>
   );
 };
 

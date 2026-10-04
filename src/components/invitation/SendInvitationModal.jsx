@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
@@ -339,10 +340,18 @@ const SendInvitationModalContent = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <ModalShell
+      isOpen
+      onClose={onClose}
+      labelledBy="enviar-invitacion-titulo"
+      closeOnBackdrop={false}
+      closeOnEscape={!isProcessing}
+      busy={isProcessing}
+      boxClassName={CAJA_PROPIA}
+    >
       <div ref={modalRef} className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{t('send.title')}</h2>
+          <h2 id="enviar-invitacion-titulo" className="text-lg font-semibold text-gray-900">{t('send.title')}</h2>
           <button
             onClick={onClose}
             aria-label={t('common:close')}
@@ -692,7 +701,7 @@ const SendInvitationModalContent = ({
           </form>
         )}
       </div>
-    </div>
+    </ModalShell>
   );
 };
 
