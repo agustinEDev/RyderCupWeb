@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.39.1] - 2026-10-04
+
+Anotar con mala cobertura: el golpe guardado en el móvil sale solo en cuanto
+el servidor vuelve, un envío colgado ya no retiene los golpes de después, y los
+avisos de lo que no se pudo guardar o se rechazó dicen de qué hoyo y de qué
+golpe son. Además, las etiquetas de inscripción y una corrección de los
+modales. Solo frontend: va con el backend **2.25.0**, que ya está en producción.
+
+**Notas de despliegue.** Sin cambios en el backend ni variables nuevas. La
+variable `VITE_API_TIMEOUT` de Render ya no la lee nada (se quitó de
+`.env.example` y del CI) y se puede borrar. Probado en bloque en el Kind el 4
+oct (servidor caído, petición colgada y móvil lleno, simulados en el navegador;
+a 360 px) y en un iPhone por Tailscale (API caída y congelada de verdad).
+
+### Fixed
+
+- **El golpe guardado en el móvil sale solo cuando el servidor vuelve** (#810,
+  cierra #625). En competición, con cobertura y el servidor caído, el golpe se
+  quedaba en el móvil hasta recargar: ahora lo envía el primer sondeo que el
+  servidor contesta. Mientras tanto, la pantalla del partido dice «Tus golpes
+  están guardados en este dispositivo y se enviarán en cuanto el servidor
+  responda» (antes solo lo decía sin nada pintado). El sondeo no reintenta lo
+  que esperar no arregla —el móvil que no escribe— y lo que espera a la hora de
+  apertura sale en cuanto el partido abre.
+- **Un envío colgado ya no retiene los golpes de después** (#811, cierra #624).
+  Las peticiones de anotar —el golpe, entregar la tarjeta, conceder y la vista
+  del partido, en competición y en partida rápida— se cortan a los 15 s y se
+  tratan como falta de cobertura: el golpe queda en el móvil y sale después. El
+  resto de peticiones (registro, hándicap, correos) siguen sin tope, porque
+  esperan a la RFEG o al correo.
+- **El aviso de un hoyo que no se pudo guardar se queda hasta volver a
+  anotarlo** (#812, cierra #622). Antes lo borraba el siguiente sondeo. Ahora es
+  un recuadro propio con la lista de hoyos, el hoyo lleva un punto rojo en el
+  selector, y la casilla enseña lo que de verdad está guardado en vez de un
+  golpe que no está en ningún sitio. Solo se retira al guardar ese golpe, y si
+  ya no se puede anotar lo dice sin pedirlo.
+- **El aviso de un golpe rechazado es de ese golpe** (#814, cierra #813).
+  Guardar el golpe del marcado ya no retira el aviso de un golpe propio que el
+  servidor rechazó.
+- **Todas las etiquetas de inscripción** (#809): INVITADO o INVITADA según el
+  género (sin género, INVITADO), CANCELADA y RETIRADA, que salían con la clave
+  sin traducir.
+- **Escape cierra siempre los modales** (#811). La escucha del teclado se
+  enganchaba después de pintar el diálogo y se soltaba en cada render: un
+  Escape justo al abrirse —editar un campo, que pide antes los datos— o al
+  terminar un guardado fallido se perdía. Dos tests de admin que fallaban de vez
+  en cuando por eso quedan estables.
+
 ## [2.39.0] - 2026-10-04
 
 El tipo de torneo al crear y en la ficha, el hándicap plus en match play, los
