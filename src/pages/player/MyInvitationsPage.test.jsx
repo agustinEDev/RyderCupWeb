@@ -226,26 +226,52 @@ describe('MyInvitationsPage', () => {
       expect(customToast.success).not.toHaveBeenCalled();
     });
 
+    // Un 409 sin código ya no es «otro error»: es que dejó de estar pendiente
+    // (I6). Lo de «otro error» se prueba con uno que sí lo es
     it('I5b: rechazar con otro error sí lo dice, con el mensaje del servidor', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Invitation has expired'), { status: 409 })
+        Object.assign(new Error('Internal error'), { status: 500 })
       );
       renderPage();
 
       fireEvent.click(await screen.findByTestId('decline-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Invitation has expired'));
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Internal error'));
     });
 
     it('I5: otro error, el mensaje del servidor', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Invitation has expired'), { status: 409 })
+        Object.assign(new Error('Internal error'), { status: 500 })
       );
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Invitation has expired'));
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Internal error'));
+    });
+
+    // Probado en el Kind (5 oct): el organizador la retira con la pantalla del
+    // jugador abierta, y al aceptar salía el texto del servidor en inglés y la
+    // tarjeta seguía «Pendiente». Un 409 sin código al responder es que ya no
+    // estaba pendiente —retirada, caducada o ya contestada—: se dice y se relee
+    //   I6   aceptar, 409 sin código  → «ya no estaba pendiente» y relee
+    //   I6b  rechazar, 409 sin código → igual
+    it.each([
+      ['I6', 'accept-button'],
+      ['I6b', 'decline-button'],
+    ])('%s: si ya no estaba pendiente, lo dice en su idioma y relee la lista', async (_, boton) => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Invitation is in status CANCELLED.'), { status: 409, errorCode: null })
+      );
+      renderPage();
+      await screen.findByTestId(boton);
+      const lecturas = mockListMyInvitations.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId(boton));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.notPendingAnymore'));
+      expect(customToast.error).not.toHaveBeenCalledWith('Invitation is in status CANCELLED.');
+      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
     });
 
     it('I3: si no se pudo guardar el género, no se acepta', async () => {

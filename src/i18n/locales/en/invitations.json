@@ -66,14 +66,16 @@
     "failedToLoad": "Failed to load invitations",
     "failedToSend": "Failed to send invitation",
     "failedToRespond": "Failed to respond to invitation",
-    "noRoom": "This invitation ran out of room when enrolment closed.",
+    "noRoom": "This invitation ran out of room.",
     "duplicateInvitation": "An invitation has already been sent to this email",
     "invalidEmail": "Please enter a valid email address",
     "rolesCheckFailed": "Could not check whether you can manage this competition",
     "retry": "Try again",
     "notPendingAnymore": "That invitation was no longer pending: the list has been refreshed.",
     "competitionFull": "The competition is full: there are no places left to invite anyone.",
-    "failedToWithdraw": "The invitation could not be withdrawn."
+    "failedToWithdraw": "The invitation could not be withdrawn.",
+    "rateLimited_one": "You have already sent {{count}} invitation in the last hour for this competition. You can send more in a while.",
+    "rateLimited_other": "You have already sent {{count}} invitations in the last hour for this competition. You can send more in a while."
   },
   "creator": {
     "title": "Invitations",

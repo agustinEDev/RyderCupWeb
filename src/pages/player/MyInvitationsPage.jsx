@@ -100,6 +100,14 @@ const MyInvitationsPage = () => {
       loadData();
       return;
     }
+    // Sin código, un 409 al responder es que ya no estaba pendiente: retirada
+    // por el organizador, caducada o contestada en otra pestaña. Lo mismo que
+    // al retirar desde el otro lado: se dice y se relee (probado en el Kind)
+    if (error?.status === 409) {
+      customToast.error(t('errors.notPendingAnymore'));
+      loadData();
+      return;
+    }
     customToast.error(error.message || t('errors.failedToRespond'));
   };
 
