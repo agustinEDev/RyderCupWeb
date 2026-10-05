@@ -197,3 +197,100 @@ describe('InvitationsPage · con el torneo lleno no se invita (FE #724)', () => 
     expect(customToast.error).not.toHaveBeenCalledWith('errors.duplicateInvitation');
   });
 });
+
+/**
+ * Lo encontrado al probar en bloque en el Kind antes de la release (5 oct).
+ *
+ *   #   caso                                                   | qué pasa
+ *   ----|------------------------------------------------------|-------------------------------------------
+ *   H1  invitar y el servidor dice INVITATION_RATE_LIMIT (id)  | cuántas por hora, no «espera un minuto»
+ *   H2  lo mismo por correo                                    | igual
+ *   H3  un 429 sin código (el límite general)                  | el mensaje de siempre
+ *   H4  el aviso de lleno, en el móvil                         | debajo, a todo el ancho; no al lado
+ *   H5  el aviso de inscripción cerrada (el punto gemelo)      | igual
+ */
+describe('InvitationsPage · lo que se dice tras probar en el Kind', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLista.mockResolvedValue({ invitations: [], totalCount: 0 });
+    mockDetalle.mockResolvedValue(competicion({ maxPlayers: 12, enrolledCount: 3 }));
+  });
+
+  const freno = () =>
+    Object.assign(new Error('Demasiados intentos seguidos'), {
+      status: 429,
+      errorCode: 'INVITATION_RATE_LIMIT',
+      data: { error_code: 'INVITATION_RATE_LIMIT', limit: 12 },
+    });
+
+  it('H1: con el freno por hora agotado dice cuántas por hora', async () => {
+    mockEnviar.mockRejectedValueOnce(freno());
+    pinta();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    fireEvent.click(await screen.findByText('enviar a u-9'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.rateLimited {"count":12}')
+    );
+  });
+
+  it('H2: igual al invitar por correo', async () => {
+    mockEnviarPorCorreo.mockRejectedValueOnce(freno());
+    pinta();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    fireEvent.click(await screen.findByText('enviar por correo'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.rateLimited {"count":12}')
+    );
+  });
+
+  // CodeRabbit en la #821: sin número no se dice «has enviado  invitaciones»
+  it('H1b: si el freno llega sin número, el aviso genérico de envío', async () => {
+    mockEnviar.mockRejectedValueOnce(
+      Object.assign(new Error('Demasiados intentos seguidos'), {
+        status: 429,
+        errorCode: 'INVITATION_RATE_LIMIT',
+        data: { error_code: 'INVITATION_RATE_LIMIT' },
+      })
+    );
+    pinta();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    fireEvent.click(await screen.findByText('enviar a u-9'));
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.failedToSend'));
+  });
+
+  it('H3: un 429 sin código sigue con el mensaje de siempre', async () => {
+    mockEnviar.mockRejectedValueOnce(
+      Object.assign(new Error('Demasiados intentos seguidos'), { status: 429, errorCode: null })
+    );
+    pinta();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    fireEvent.click(await screen.findByText('enviar a u-9'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('Demasiados intentos seguidos')
+    );
+  });
+
+  // En el móvil el aviso se metía al lado del subtítulo y los dos quedaban en
+  // columnas estrechas. Debajo y a todo el ancho; en pantalla ancha, a la derecha
+  it('H4: el aviso de lleno va debajo, a todo el ancho, en el móvil', async () => {
+    mockDetalle.mockResolvedValue(competicion({ maxPlayers: 12, enrolledCount: 12 }));
+    pinta();
+
+    const aviso = await screen.findByTestId('invitar-lleno');
+    expect(aviso).toHaveClass('w-full', 'sm:w-auto');
+    expect(aviso.parentElement).toHaveClass('flex-wrap');
+  });
+
+  it('H5: y el de inscripción cerrada, igual', async () => {
+    mockDetalle.mockResolvedValue(competicion({ status: 'CLOSED', maxPlayers: 12, enrolledCount: 3 }));
+    pinta();
+
+    const aviso = await screen.findByTestId('invitar-cerrada');
+    expect(aviso).toHaveClass('w-full', 'sm:w-auto');
+    expect(aviso.parentElement).toHaveClass('flex-wrap');
+  });
+});
