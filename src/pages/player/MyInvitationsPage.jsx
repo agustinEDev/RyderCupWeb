@@ -137,7 +137,9 @@ const MyInvitationsPage = () => {
     } catch (error) {
       // Rechazar una que se quedó sin plaza no es un fallo: no iba a jugarla y ya
       // no la juega. Sin aviso; la lista releída la enseña «Sin plaza» (FE #737)
-      if (error?.errorCode === 'INVITATION_NO_ROOM') {
+      // Lo mismo si ya no estaba pendiente (409 sin código: retirada, caducada
+      // o contestada en otra pestaña). Agustín, 5 oct: silencio, como sin plaza
+      if (error?.errorCode === 'INVITATION_NO_ROOM' || (error?.status === 409 && !error?.errorCode)) {
         await loadData();
         return;
       }

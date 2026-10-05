@@ -253,11 +253,40 @@ describe('MyInvitationsPage', () => {
     // Probado en el Kind (5 oct): el organizador la retira con la pantalla del
     // jugador abierta, y al aceptar salía el texto del servidor en inglés y la
     // tarjeta seguía «Pendiente». Un 409 sin código al responder es que ya no
-    // estaba pendiente —retirada, caducada o ya contestada—: se dice y se relee
+    // estaba pendiente —retirada, caducada o ya contestada—
     //   I6   aceptar, 409 sin código  → «ya no estaba pendiente» y relee
-    //   I6b  rechazar, 409 sin código → igual
-    // CodeRabbit en la #821: un 409 CON otro código no es «ya no estaba
-    // pendiente»; sigue su camino (el mensaje del servidor)
+    //   I6b  rechazar, 409 sin código → sin aviso, solo relee: no iba a jugarla
+    //        y ya no la juega, igual que con «sin plaza» (I4b; Agustín, 5 oct)
+    //   I7   409 CON otro código      → su camino, el mensaje del servidor (CodeRabbit en la #821)
+    const yaNoPendiente = () =>
+      Object.assign(new Error('Invitation is in status CANCELLED.'), { status: 409, errorCode: null });
+
+    it('I6: aceptar una que ya no estaba pendiente lo dice en su idioma y relee la lista', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(yaNoPendiente());
+      renderPage();
+      await screen.findByTestId('accept-button');
+      const lecturas = mockListMyInvitations.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId('accept-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.notPendingAnymore'));
+      expect(customToast.error).not.toHaveBeenCalledWith('Invitation is in status CANCELLED.');
+      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+    });
+
+    it('I6b: rechazar una que ya no estaba pendiente no da error: solo relee la lista', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(yaNoPendiente());
+      renderPage();
+      await screen.findByTestId('decline-button');
+      const lecturas = mockListMyInvitations.mock.calls.length;
+
+      fireEvent.click(screen.getByTestId('decline-button'));
+
+      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      expect(customToast.error).not.toHaveBeenCalled();
+      expect(customToast.success).not.toHaveBeenCalled();
+    });
+
     it('I7: un 409 con otro código no se da por «ya no estaba pendiente»', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
         Object.assign(new Error('Some other conflict'), { status: 409, errorCode: 'OTHER_CODE' })
@@ -270,22 +299,15 @@ describe('MyInvitationsPage', () => {
       expect(customToast.error).not.toHaveBeenCalledWith('errors.notPendingAnymore');
     });
 
-    it.each([
-      ['I6', 'accept-button'],
-      ['I6b', 'decline-button'],
-    ])('%s: si ya no estaba pendiente, lo dice en su idioma y relee la lista', async (_, boton) => {
+    it('I7b: rechazar con un 409 de otro código sí lo dice', async () => {
       mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Invitation is in status CANCELLED.'), { status: 409, errorCode: null })
+        Object.assign(new Error('Some other conflict'), { status: 409, errorCode: 'OTHER_CODE' })
       );
       renderPage();
-      await screen.findByTestId(boton);
-      const lecturas = mockListMyInvitations.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId(boton));
+      fireEvent.click(await screen.findByTestId('decline-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.notPendingAnymore'));
-      expect(customToast.error).not.toHaveBeenCalledWith('Invitation is in status CANCELLED.');
-      await waitFor(() => expect(mockListMyInvitations.mock.calls.length).toBeGreaterThan(lecturas));
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Some other conflict'));
     });
 
     it('I3: si no se pudo guardar el género, no se acepta', async () => {
