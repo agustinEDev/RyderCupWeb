@@ -245,6 +245,22 @@ describe('InvitationsPage · lo que se dice tras probar en el Kind', () => {
     );
   });
 
+  // CodeRabbit en la #821: sin número no se dice «has enviado  invitaciones»
+  it('H1b: si el freno llega sin número, el aviso genérico de envío', async () => {
+    mockEnviar.mockRejectedValueOnce(
+      Object.assign(new Error('Demasiados intentos seguidos'), {
+        status: 429,
+        errorCode: 'INVITATION_RATE_LIMIT',
+        data: { error_code: 'INVITATION_RATE_LIMIT' },
+      })
+    );
+    pinta();
+    fireEvent.click(await screen.findByText('creator.sendNew'));
+    fireEvent.click(await screen.findByText('enviar a u-9'));
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.failedToSend'));
+  });
+
   it('H3: un 429 sin código sigue con el mensaje de siempre', async () => {
     mockEnviar.mockRejectedValueOnce(
       Object.assign(new Error('Demasiados intentos seguidos'), { status: 429, errorCode: null })

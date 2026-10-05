@@ -256,6 +256,20 @@ describe('MyInvitationsPage', () => {
     // estaba pendiente —retirada, caducada o ya contestada—: se dice y se relee
     //   I6   aceptar, 409 sin código  → «ya no estaba pendiente» y relee
     //   I6b  rechazar, 409 sin código → igual
+    // CodeRabbit en la #821: un 409 CON otro código no es «ya no estaba
+    // pendiente»; sigue su camino (el mensaje del servidor)
+    it('I7: un 409 con otro código no se da por «ya no estaba pendiente»', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(
+        Object.assign(new Error('Some other conflict'), { status: 409, errorCode: 'OTHER_CODE' })
+      );
+      renderPage();
+
+      fireEvent.click(await screen.findByTestId('accept-button'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Some other conflict'));
+      expect(customToast.error).not.toHaveBeenCalledWith('errors.notPendingAnymore');
+    });
+
     it.each([
       ['I6', 'accept-button'],
       ['I6b', 'decline-button'],

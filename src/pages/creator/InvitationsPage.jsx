@@ -209,7 +209,11 @@ const InvitationsPage = () => {
     // El freno por hora de la competición: con cuántas admite, y no el «espera
     // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (error?.errorCode === 'INVITATION_RATE_LIMIT') {
-      customToast.error(t('errors.rateLimited', { count: error.data?.limit }));
+      // Sin el número no hay frase que decir: el aviso genérico (CodeRabbit)
+      const limite = error.data?.limit;
+      customToast.error(
+        Number.isFinite(limite) ? t('errors.rateLimited', { count: limite }) : t('errors.failedToSend')
+      );
     // Por el estado: el texto del servidor no lleva «409» (revisión local)
     } else if (error?.status === 409) {
       customToast.error(t('errors.duplicateInvitation'));
