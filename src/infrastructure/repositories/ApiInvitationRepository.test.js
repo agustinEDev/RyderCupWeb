@@ -130,3 +130,15 @@ describe('ApiInvitationRepository', () => {
     });
   });
 });
+
+describe('ApiInvitationRepository · retirar (FE #724)', () => {
+  it('hace POST a /invitations/{id}/cancel y no devuelve nada', async () => {
+    apiRequest.mockResolvedValue(null);
+    const repo = new ApiInvitationRepository();
+
+    const resultado = await repo.cancelInvitation('inv-1');
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/invitations/inv-1/cancel', { method: 'POST' });
+    expect(resultado).toBeUndefined();
+  });
+});

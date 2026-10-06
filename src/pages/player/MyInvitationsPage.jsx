@@ -100,6 +100,14 @@ const MyInvitationsPage = () => {
       loadData();
       return;
     }
+    // Sin código, un 409 al responder es que ya no estaba pendiente: retirada
+    // por el organizador, caducada o contestada en otra pestaña. Lo mismo que
+    // al retirar desde el otro lado: se dice y se relee (probado en el Kind)
+    if (error?.status === 409 && !error?.errorCode) {
+      customToast.error(t('errors.notPendingAnymore'));
+      loadData();
+      return;
+    }
     customToast.error(error.message || t('errors.failedToRespond'));
   };
 
@@ -129,7 +137,9 @@ const MyInvitationsPage = () => {
     } catch (error) {
       // Rechazar una que se quedó sin plaza no es un fallo: no iba a jugarla y ya
       // no la juega. Sin aviso; la lista releída la enseña «Sin plaza» (FE #737)
-      if (error?.errorCode === 'INVITATION_NO_ROOM') {
+      // Lo mismo si ya no estaba pendiente (409 sin código: retirada, caducada
+      // o contestada en otra pestaña). Agustín, 5 oct: silencio, como sin plaza
+      if (error?.errorCode === 'INVITATION_NO_ROOM' || (error?.status === 409 && !error?.errorCode)) {
         await loadData();
         return;
       }
@@ -187,6 +197,7 @@ const MyInvitationsPage = () => {
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
             <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
+            <option value="CANCELLED">{t('status.CANCELLED')}</option>
           </select>
         </div>
 

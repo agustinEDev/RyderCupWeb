@@ -30,13 +30,15 @@
     "ACCEPTED": "Aceptada",
     "DECLINED": "Rechazada",
     "EXPIRED": "Expirada",
-    "NO_ROOM": "Sin plaza"
+    "NO_ROOM": "Sin plaza",
+    "CANCELLED": "Retirada"
   },
   "actions": {
     "accept": "Aceptar",
     "decline": "Rechazar",
     "accepting": "Aceptando...",
-    "declining": "Rechazando..."
+    "declining": "Rechazando...",
+    "withdraw": "Retirar"
   },
   "filter": {
     "allStatuses": "Todos los estados",
@@ -50,22 +52,30 @@
     "expiresIn": "Expira en {{days}} días",
     "expiresInHours": "Expira en {{hours}} horas",
     "respondedAt": "Respondida",
-    "message": "Mensaje"
+    "message": "Mensaje",
+    "withdrawnAt": "Retirada el {{date}}",
+    "noRoomSince": "Sin plaza desde el {{date}}"
   },
   "success": {
     "sent": "Invitación enviada correctamente",
     "accepted": "Invitación aceptada",
-    "declined": "Invitación rechazada"
+    "declined": "Invitación rechazada",
+    "withdrawn": "Invitación retirada"
   },
   "errors": {
     "failedToLoad": "Error al cargar las invitaciones",
     "failedToSend": "Error al enviar la invitación",
     "failedToRespond": "Error al responder a la invitación",
-    "noRoom": "Esta invitación se quedó sin plaza al cerrarse la inscripción.",
+    "noRoom": "Esta invitación se quedó sin plaza.",
     "duplicateInvitation": "Ya se ha enviado una invitación a este email",
     "invalidEmail": "Por favor, introduce un email válido",
     "rolesCheckFailed": "No se ha podido comprobar si puedes gestionar esta competición",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "notPendingAnymore": "Esa invitación ya no estaba pendiente: la lista se ha actualizado.",
+    "competitionFull": "La competición está completa: ya no quedan plazas para invitar.",
+    "failedToWithdraw": "No se pudo retirar la invitación.",
+    "rateLimited_one": "Ya has enviado {{count}} invitación en la última hora en esta competición. Podrás enviar más en un rato.",
+    "rateLimited_other": "Ya has enviado {{count}} invitaciones en la última hora en esta competición. Podrás enviar más en un rato."
   },
   "creator": {
     "title": "Invitaciones",
@@ -74,7 +84,15 @@
     "sentCount_one": "{{count}} invitación enviada",
     "sentCount_other": "{{count}} invitaciones enviadas",
     "nearCapacity": "Ya hay {{accepted}} invitaciones aceptadas de {{max}} plazas. El torneo está casi lleno.",
-    "enrollmentClosed": "La inscripción está cerrada: ya no se puede invitar."
+    "enrollmentClosed": "La inscripción está cerrada: ya no se puede invitar.",
+    "withdrawDialog": {
+      "title": "¿Retirar la invitación a {{name}}?",
+      "body": "Ya no podrá aceptarla. No se le avisa: en sus invitaciones aparecerá como retirada.",
+      "confirm": "Retirar",
+      "keep": "Mantener"
+    },
+    "competitionFull_one": "La competición está completa ({{count}} plaza ocupada): no se puede invitar a nadie más.",
+    "competitionFull_other": "La competición está completa ({{count}} plazas ocupadas): no se puede invitar a nadie más."
   },
   "player": {
     "title": "Mis invitaciones",

@@ -85,6 +85,8 @@
     "handicap": "Hándicap",
     "numberOfPlayers": "Número de Jugadores",
     "numberOfPlayersPlaceholder": "Ingresa el número total de jugadores",
+    "capFloor_one": "Ya hay {{count}} jugador inscrito: el cupo no puede bajar de {{count}}.",
+    "capFloor_other": "Ya hay {{count}} jugadores inscritos: el cupo no puede bajar de {{count}}.",
     "maxPlayingHandicap": "Límite de Hándicap de Juego",
     "maxPlayingHandicapPlaceholder": "Sin límite (ej: 28)",
     "maxPlayingHandicapHint": "Máximo 1–54. Deja vacío para no aplicar límite.",
@@ -92,6 +94,8 @@
     "creating": "Creando...",
     "createCompetition": "Crear Competición",
     "errors": {
+      "capBelowEnrolled_one": "Ya hay {{count}} jugador inscrito: el cupo no puede ser menor de {{count}}.",
+      "capBelowEnrolled_other": "Ya hay {{count}} jugadores inscritos: el cupo no puede ser menor de {{count}}.",
       "nameRequired": "Se requiere el nombre de la competición",
       "teamNamesRequired": "Se requieren ambos nombres de equipos",
       "datesRequired": "Se requieren las fechas de inicio y fin",

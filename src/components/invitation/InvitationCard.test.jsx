@@ -183,3 +183,49 @@ describe('InvitationCard', () => {
     });
   });
 });
+
+// FE #724: quien invita puede retirar una pendiente
+describe('InvitationCard · retirar (FE #724)', () => {
+  it('al organizador, en una pendiente, le ofrece retirarla', () => {
+    const onWithdraw = vi.fn();
+    render(<InvitationCard invitation={pendingInvitation} mode="creator" onWithdraw={onWithdraw} t={mockT} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'actions.withdraw' }));
+
+    expect(onWithdraw).toHaveBeenCalledWith(pendingInvitation);
+  });
+
+  it('en una ya respondida, no', () => {
+    render(<InvitationCard invitation={acceptedInvitation} mode="creator" onWithdraw={vi.fn()} t={mockT} />);
+
+    expect(screen.queryByRole('button', { name: 'actions.withdraw' })).not.toBeInTheDocument();
+  });
+
+  it('al jugador, no: él la rechaza', () => {
+    render(<InvitationCard invitation={pendingInvitation} mode="player" onWithdraw={vi.fn()} t={mockT} />);
+
+    expect(screen.queryByRole('button', { name: 'actions.withdraw' })).not.toBeInTheDocument();
+  });
+});
+
+// Revisión de la FE #724: retirarla o quedarse sin plaza también apunta la
+// fecha en el servidor, y la tarjeta decía «Respondida» sin que nadie respondiera
+describe('InvitationCard · la fecha dice qué pasó (FE #724)', () => {
+  const conEstado = (status) => ({
+    ...pendingInvitation,
+    status,
+    isPending: false,
+    respondedAt: '2026-10-04T19:00:00Z',
+  });
+
+  it.each([
+    ['CANCELLED', 'card.withdrawnAt'],
+    ['NO_ROOM', 'card.noRoomSince'],
+    ['ACCEPTED', 'card.respondedAt'],
+    ['DECLINED', 'card.respondedAt'],
+  ])('%s → %s', (status, clave) => {
+    render(<InvitationCard invitation={conEstado(status)} mode="creator" t={mockT} />);
+
+    expect(screen.getByTestId('fecha-de-la-invitacion')).toHaveTextContent(clave);
+  });
+});

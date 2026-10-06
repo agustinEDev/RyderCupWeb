@@ -21,7 +21,7 @@ const MAX_PLAYERS = 100;
  *
  * Returns `null` when the form is valid.
  */
-export const validateCompetitionForm = (formData, { exigirCampos = true } = {}) => {
+export const validateCompetitionForm = (formData, { exigirCampos = true, inscritos = 0 } = {}) => {
   if (!formData.competitionName?.trim()) {
     return { key: 'nameRequired' };
   }
@@ -102,6 +102,13 @@ export const validateCompetitionForm = (formData, { exigirCampos = true } = {}) 
 
   if (numPlayers > MAX_PLAYERS) {
     return { key: 'playersMaximum' };
+  }
+
+  // Y no por debajo de quien ya está dentro (FE #662). El servidor lo rechaza
+  // (BE #324), y aceptarlo aquí perdía el resto de cambios del formulario al
+  // guardar. Tras las de rango: con un «1» lo que hay que decir es el mínimo
+  if (inscritos > 0 && numPlayers < inscritos) {
+    return { key: 'capBelowEnrolled', count: inscritos };
   }
 
   return null;

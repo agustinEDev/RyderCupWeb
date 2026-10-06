@@ -85,6 +85,8 @@
     "handicap": "Handicap",
     "numberOfPlayers": "Number of Players",
     "numberOfPlayersPlaceholder": "Enter total number of players",
+    "capFloor_one": "{{count}} player is already enrolled: the cap cannot go below {{count}}.",
+    "capFloor_other": "{{count}} players are already enrolled: the cap cannot go below {{count}}.",
     "maxPlayingHandicap": "Playing Handicap Limit",
     "maxPlayingHandicapPlaceholder": "No limit (e.g. 28)",
     "maxPlayingHandicapHint": "Max 1–54. Leave empty for no limit.",
@@ -92,6 +94,8 @@
     "creating": "Creating...",
     "createCompetition": "Create Competition",
     "errors": {
+      "capBelowEnrolled_one": "{{count}} player is already enrolled: the cap cannot be lower than {{count}}.",
+      "capBelowEnrolled_other": "{{count}} players are already enrolled: the cap cannot be lower than {{count}}.",
       "nameRequired": "Competition name is required",
       "teamNamesRequired": "Both team names are required",
       "datesRequired": "Start and end dates are required",

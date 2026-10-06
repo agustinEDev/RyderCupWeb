@@ -8,7 +8,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import InvitationCard from '../../components/invitation/InvitationCard';
 import SendInvitationModal from '../../components/invitation/SendInvitationModal';
+import ConfirmModal from '../../components/modals/ConfirmModal';
 import {
+  cancelInvitationUseCase,
   getCompetitionDetailUseCase,
   listCompetitionInvitationsUseCase,
   listEnrollmentsUseCase,
@@ -71,6 +73,9 @@ const InvitationsPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
+  // La invitación que se va a retirar, a la espera de confirmarlo (FE #724)
+  const [retirando, setRetirando] = useState(null);
+  const [retirandoEnCurso, setRetirandoEnCurso] = useState(false);
   // Para la pestaña de amigos del modal (FE #409)
   const [friends, setFriends] = useState([]);
   const [idsInscritos, setIdsInscritos] = useState([]);
@@ -193,6 +198,30 @@ const InvitationsPage = () => {
     }
   }, [user, loadData]);
 
+  // Lo que se dice si no se pudo invitar, por id o por correo
+  const avisarDelEnvioFallido = (error) => {
+    // Sin plazas (FE #724): se dice así y se recarga, que la pantalla ya no
+    // ofrezca invitar. Antes del 409 genérico, que lo daba por duplicada
+    if (error?.errorCode === 'COMPETITION_FULL') {
+      customToast.error(t('errors.competitionFull'));
+      setShowSendModal(false);
+      loadData({ silencioso: true });
+    // El freno por hora de la competición: con cuántas admite, y no el «espera
+    // un minuto» del 429 general, que es de otro límite (probado en el Kind)
+    } else if (error?.errorCode === 'INVITATION_RATE_LIMIT') {
+      // Sin el número no hay frase que decir: el aviso genérico (CodeRabbit)
+      const limite = error.data?.limit;
+      customToast.error(
+        Number.isFinite(limite) ? t('errors.rateLimited', { count: limite }) : t('errors.failedToSend')
+      );
+    // Por el estado: el texto del servidor no lleva «409» (revisión local)
+    } else if (error?.status === 409) {
+      customToast.error(t('errors.duplicateInvitation'));
+    } else {
+      customToast.error(error.message || t('errors.failedToSend'));
+    }
+  };
+
   const handleSendInvitation = async (email, personalMessage) => {
     setIsProcessing(true);
     try {
@@ -203,12 +232,7 @@ const InvitationsPage = () => {
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      // Por el estado: el texto del servidor no lleva «409» (revisión local)
-      if (error?.status === 409) {
-        customToast.error(t('errors.duplicateInvitation'));
-      } else {
-        customToast.error(error.message || t('errors.failedToSend'));
-      }
+      avisarDelEnvioFallido(error);
       return false;
     } finally {
       setIsProcessing(false);
@@ -226,15 +250,30 @@ const InvitationsPage = () => {
       return true;
     } catch (error) {
       console.error('Error sending invitation:', error);
-      // Por el estado: el texto del servidor no lleva «409» (revisión local)
-      if (error?.status === 409) {
-        customToast.error(t('errors.duplicateInvitation'));
-      } else {
-        customToast.error(error.message || t('errors.failedToSend'));
-      }
+      avisarDelEnvioFallido(error);
       return false;
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Retirar una pendiente (FE #724). Si ya no lo estaba —la aceptaron o
+  // rechazaron entre medias— se dice y se recarga: la lista ya no es la de ahora
+  const handleWithdraw = async () => {
+    if (!retirando) return;
+    setRetirandoEnCurso(true);
+    try {
+      await cancelInvitationUseCase.execute(retirando.id);
+      customToast.success(t('success.withdrawn'));
+    } catch (error) {
+      console.error('Error withdrawing invitation:', error);
+      customToast.error(
+        error?.status === 409 ? t('errors.notPendingAnymore') : error.message || t('errors.failedToWithdraw')
+      );
+    } finally {
+      setRetirandoEnCurso(false);
+      setRetirando(null);
+      loadData({ silencioso: true });
     }
   };
 
@@ -251,6 +290,10 @@ const InvitationsPage = () => {
   // Si la competición deja de admitir invitaciones con el modal abierto, se
   // cierra: si no, se mandaba una que el servidor rechaza (CodeRabbit, #720)
   const sePuedeInvitar = !competition || SE_PUEDE_INVITAR.has(competition.status);
+  // Sin plazas no se invita (FE #724, BE #359): el servidor lo rechaza, y
+  // ofrecerlo era enterarse al enviar
+  const inscritos = competition?.enrolledCount ?? 0;
+  const lleno = Boolean(competition?.maxPlayers) && inscritos >= competition.maxPlayers;
 
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
@@ -318,7 +361,9 @@ const InvitationsPage = () => {
             {competition?.name || 'Back'}
           </button>
 
-          <div className="flex items-center justify-between">
+          {/* Con salto: en el móvil el aviso de lleno o cerrado baja a su propia
+              línea; al lado del subtítulo los dos quedaban en columnas estrechas */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="hidden md:block text-2xl font-bold text-gray-900">{t('creator.title')}</h1>
               <p className="text-sm text-gray-500 mt-1">{t('creator.subtitle')}</p>
@@ -333,8 +378,12 @@ const InvitationsPage = () => {
                 invitar (#710). La lista sigue, que es donde se ve quién se
                 quedó sin plaza */}
             {!sePuedeInvitar ? (
-              <p data-testid="invitar-cerrada" className="text-sm text-gray-500 max-w-xs">
+              <p data-testid="invitar-cerrada" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
                 {t('creator.enrollmentClosed')}
+              </p>
+            ) : lleno ? (
+              <p data-testid="invitar-lleno" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
+                {t('creator.competitionFull', { count: inscritos })}
               </p>
             ) : (
               <button
@@ -368,6 +417,7 @@ const InvitationsPage = () => {
             <option value="DECLINED">{t('status.DECLINED')}</option>
             <option value="EXPIRED">{t('status.EXPIRED')}</option>
             <option value="NO_ROOM">{t('status.NO_ROOM')}</option>
+            <option value="CANCELLED">{t('status.CANCELLED')}</option>
           </select>
         </div>
 
@@ -384,6 +434,8 @@ const InvitationsPage = () => {
                 key={invitation.id}
                 invitation={invitation}
                 mode="creator"
+                onWithdraw={setRetirando}
+                isProcessing={retirandoEnCurso}
                 t={t}
               />
             ))}
@@ -391,9 +443,24 @@ const InvitationsPage = () => {
         )}
       </div>
 
+      {/* Retirar, con sus palabras y no «Confirmar» / «Cancelar» (FE #742) */}
+      <ConfirmModal
+        isOpen={retirando !== null}
+        title={t('creator.withdrawDialog.title', {
+          name: retirando?.inviteeName || retirando?.inviteeEmail || '',
+        })}
+        message={t('creator.withdrawDialog.body')}
+        confirmText={t('creator.withdrawDialog.confirm')}
+        cancelText={t('creator.withdrawDialog.keep')}
+        onConfirm={handleWithdraw}
+        onCancel={() => setRetirando(null)}
+        isLoading={retirandoEnCurso}
+        isDestructive
+      />
+
       {/* Send Modal */}
       <SendInvitationModal
-        isOpen={showSendModal && sePuedeInvitar}
+        isOpen={showSendModal && sePuedeInvitar && !lleno}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
         onSendByUserId={handleSendByUserId}
