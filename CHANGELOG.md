@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.40.0] - 2026-10-06
+
+El organizador puede retirar una invitación y la pantalla deja de ofrecer
+invitar con el torneo lleno; el cupo no se puede bajar por debajo de los
+inscritos al editar. Va con el backend **2.26.0**.
+
+**Notas de despliegue.** Necesita el backend **2.26.0** desplegado antes: retirar
+llama a un endpoint nuevo y el aviso del freno por hora lee su código nuevo. Con
+el backend viejo, retirar fallaría y el freno diría el aviso genérico. Sin
+variables nuevas en Render. Probado en bloque en el Kind el 5 y el 6 oct, con
+sesión de organizador y de jugador, en español y en inglés, a 360 y 390 px y en
+escritorio.
+
+### Added
+
+- **Retirar una invitación pendiente** (#818, cierra #724). Cada invitación
+  pendiente de la pantalla del organizador lleva «Retirar», que pide
+  confirmación («Ya no podrá aceptarla. No se le avisa»). Si mientras tanto la
+  aceptaron o rechazaron, lo dice y relee la lista. Las retiradas salen como
+  «Retirada el…» en las dos pantallas y en el filtro de estados.
+
+### Changed
+
+- **Con el torneo lleno no se ofrece invitar** (#818). En lugar del botón, «La
+  competición está completa (N plazas ocupadas): no se puede invitar a nadie
+  más»; si se llena con el modal abierto, el envío lo dice así y no como «ya
+  invitado». En el móvil ese aviso, y el de inscripción cerrada, van debajo del
+  subtítulo a todo el ancho, y el botón «Enviar invitación» también baja a su
+  línea (#821).
+- **El freno de invitaciones por hora dice qué es** (#821): «Ya has enviado N
+  invitaciones en la última hora en esta competición. Podrás enviar más en un
+  rato», en vez del «espera un minuto» del límite general.
+- **«Sin plaza» ya no dice «al cerrarse la inscripción»** (#821): también se
+  queda sin plaza una invitación cuando se ocupa la última.
+
+### Fixed
+
+- **El cupo no baja por debajo de los inscritos al editar** (#817, cierra
+  #662). El formulario lo aceptaba y el servidor lo rechazaba al guardar,
+  perdiendo el resto de cambios. Ahora el mínimo del campo son los inscritos,
+  con un aviso que dice por qué.
+- **Responder a una invitación que ya no estaba pendiente** (#821). Si el
+  organizador la retiró con la pantalla abierta, aceptar enseñaba el texto del
+  servidor en inglés y la tarjeta seguía «Pendiente». Aceptar dice ahora «Esa
+  invitación ya no estaba pendiente» y relee la lista; rechazar solo la relee,
+  sin aviso, como al rechazar una sin plaza.
+
 ## [2.39.1] - 2026-10-04
 
 Anotar con mala cobertura: el golpe guardado en el móvil sale solo en cuanto
