@@ -63,6 +63,10 @@ describe('Password Value Object', () => {
     );
   });
 
+  it('aplica la misma regla que validatePassword: la eñe es mayúscula', () => {
+    expect(new Password('Ñandúcorre12!').getValue()).toBe('Ñandúcorre12!');
+  });
+
   it('no valida la fortaleza si se le pide que no lo haga', () => {
     expect(new Password('debil', { validateStrength: false }).getValue()).toBe('debil');
   });

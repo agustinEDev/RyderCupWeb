@@ -24,5 +24,6 @@ describe('ResetPassword · requisitos', () => {
     );
 
     expect(await screen.findByText('resetPassword.requirement4')).toBeTruthy();
+    expect(screen.getByText('resetPassword.requirement5')).toBeTruthy();
   });
 });

@@ -86,7 +86,7 @@
       "currentEmail": "Actual: {{email}}",
       "newPassword": "Nueva Contraseña (opcional)",
       "newPasswordPlaceholder": "Dejar vacío para mantener contraseña actual",
-      "newPasswordHelp": "Debe tener al menos 12 caracteres si se cambia",
+      "newPasswordHelp": "Si la cambias: 12 caracteres o más, con mayúscula, minúscula, número y símbolo",
       "confirmPassword": "Confirmar Nueva Contraseña",
       "confirmPasswordPlaceholder": "Confirma tu nueva contraseña",
       "updating": "Actualizando...",

@@ -23,6 +23,18 @@ describe('PasswordRequirements', () => {
     expect(cumplido('register.requirementSymbol')).toBe(true);
   });
 
+  it('avisa de los espacios al principio o al final', () => {
+    const { rerender } = render(<PasswordRequirements password=" Abcdefghi1!" />);
+    expect(cumplido('register.requirementNoEdgeSpaces')).toBe(false);
+    rerender(<PasswordRequirements password="Abcdefghi1!x" />);
+    expect(cumplido('register.requirementNoEdgeSpaces')).toBe(true);
+  });
+
+  it('da la mayúscula por cumplida con una eñe, como el backend', () => {
+    render(<PasswordRequirements password="Ñandúcorre12!" />);
+    expect(cumplido('register.requirementUppercase')).toBe(true);
+  });
+
   it('cuenta los caracteres como el backend: un emoji es uno', () => {
     // 11 caracteres para el backend aunque `length` diga 12
     render(<PasswordRequirements password="Abcdefgh1!😀" />);

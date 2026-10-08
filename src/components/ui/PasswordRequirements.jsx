@@ -1,7 +1,13 @@
 import { Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { PASSWORD_SPECIAL_CHARS, passwordLength } from '../../utils/validation';
+import {
+  PASSWORD_DIGIT,
+  PASSWORD_LOWERCASE,
+  PASSWORD_SPECIAL_CHARS,
+  PASSWORD_UPPERCASE,
+  passwordLength,
+} from '../../utils/validation';
 
 /**
  * Componente que muestra los requisitos de contraseña de forma dinámica
@@ -21,17 +27,17 @@ const PasswordRequirements = ({ password }) => {
     {
       id: 'uppercase',
       label: t('register.requirementUppercase'),
-      test: (pwd) => /[A-Z]/.test(pwd),
+      test: (pwd) => PASSWORD_UPPERCASE.test(pwd),
     },
     {
       id: 'lowercase',
       label: t('register.requirementLowercase'),
-      test: (pwd) => /[a-z]/.test(pwd),
+      test: (pwd) => PASSWORD_LOWERCASE.test(pwd),
     },
     {
       id: 'number',
       label: t('register.requirementNumber'),
-      test: (pwd) => /\d/.test(pwd),
+      test: (pwd) => PASSWORD_DIGIT.test(pwd),
     },
     {
       // El backend lo exige: sin esta línea la lista salía entera en verde y al
@@ -39,6 +45,11 @@ const PasswordRequirements = ({ password }) => {
       id: 'symbol',
       label: t('register.requirementSymbol'),
       test: (pwd) => PASSWORD_SPECIAL_CHARS.test(pwd),
+    },
+    {
+      id: 'edgeSpaces',
+      label: t('register.requirementNoEdgeSpaces'),
+      test: (pwd) => pwd.trim() === pwd,
     },
   ];
 

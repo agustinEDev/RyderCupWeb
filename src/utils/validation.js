@@ -17,6 +17,15 @@ export const PASSWORD_SPECIAL_CHARS = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/;
 export const passwordLength = (password) => [...password].length;
 
 /**
+ * Mayúscula, minúscula y dígito en Unicode, como `isupper()`, `islower()` e
+ * `isdigit()` del backend: con /[A-Z]/ una «Ñ» no contaba y el formulario
+ * rechazaba «Ñandúcorre12!», que el backend acepta.
+ */
+export const PASSWORD_UPPERCASE = /\p{Lu}/u;
+export const PASSWORD_LOWERCASE = /\p{Ll}/u;
+export const PASSWORD_DIGIT = /\p{Nd}/u;
+
+/**
  * Validates password strength
  * @param {string} password - Password to validate
  * @returns {Object} - { isValid: boolean, message: string, strength: number }
@@ -33,15 +42,15 @@ export const validatePassword = (password) => {
 
   const minLength = 12; // OWASP ASVS V2.1.1 requirement
   const maxLength = 128; // Prevent DoS attacks via excessive hashing
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
+  const hasUpperCase = PASSWORD_UPPERCASE.test(password);
+  const hasLowerCase = PASSWORD_LOWERCASE.test(password);
+  const hasNumbers = PASSWORD_DIGIT.test(password);
   const hasSpecialChar = PASSWORD_SPECIAL_CHARS.test(password);
 
   // Calculate strength (0-5)
   let strength = 0;
-  if (password.length >= 8) strength++;
-  if (password.length >= 12) strength++;
+  if (passwordLength(password) >= 8) strength++;
+  if (passwordLength(password) >= 12) strength++;
   if (hasUpperCase && hasLowerCase) strength++;
   if (hasNumbers) strength++;
   if (hasSpecialChar) strength++;
@@ -52,7 +61,7 @@ export const validatePassword = (password) => {
     return {
       isValid: false,
       messageKey: 'validation.passwordSpaces',
-      message: 'Password must not start or end with whitespace',
+      message: 'Password must not start or end with whitespace.',
       strength
     };
   }
@@ -63,7 +72,7 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordTooShort',
       messageOptions: { min: minLength },
-      message: `Password must be at least ${minLength} characters`,
+      message: `Password must be at least ${minLength} characters long.`,
       strength
     };
   }
@@ -74,17 +83,24 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordTooLong',
       messageOptions: { max: maxLength },
-      message: `Password must not exceed ${maxLength} characters`,
+      message: `Password must not exceed ${maxLength} characters.`,
       strength
     };
   }
 
-  // Validation: Check complexity (uppercase + lowercase + numbers required)
-  if (!(hasUpperCase && hasLowerCase && hasNumbers)) {
+  // Validation: Check complexity (uppercase + lowercase + numbers required).
+  // Una sola clave para la interfaz; el texto dice qué falta, que es lo que
+  // lanza el value object `Password`
+  const missing = [
+    [hasUpperCase, 'an uppercase letter'],
+    [hasLowerCase, 'a lowercase letter'],
+    [hasNumbers, 'a number'],
+  ].find(([ok]) => !ok);
+  if (missing) {
     return {
       isValid: false,
       messageKey: 'validation.passwordWeak',
-      message: 'Password must contain uppercase, lowercase, and numbers',
+      message: `Password must contain at least ${missing[1].replace(/^an? /, 'one ')}.`,
       strength
     };
   }
@@ -96,7 +112,7 @@ export const validatePassword = (password) => {
     return {
       isValid: false,
       messageKey: 'validation.passwordNoSymbol',
-      message: 'Password must contain at least one special character',
+      message: 'Password must contain at least one special character.',
       strength
     };
   }
@@ -144,9 +160,10 @@ export const validatePasswordStrength = (password) => {
     return { score: 0, feedback: '' };
   }
 
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
+  const hasUpperCase = PASSWORD_UPPERCASE.test(password);
+  const hasLowerCase = PASSWORD_LOWERCASE.test(password);
+  const hasNumbers = PASSWORD_DIGIT.test(password);
+  const length = passwordLength(password);
   const hasSpecialChar = PASSWORD_SPECIAL_CHARS.test(password);
 
   let score = 0;
@@ -154,11 +171,11 @@ export const validatePasswordStrength = (password) => {
 
   // CRITICAL: Passwords <12 chars are INVALID (OWASP ASVS V2.1.1)
   // Don't show green/blue for invalid passwords
-  if (password.length < 12) {
+  if (length < 12) {
     // Score capped at 2 (yellow) for passwords <12 chars
-    if (password.length >= 8) score = 1;
-    if (password.length >= 10) score = 2; // Slightly better if approaching 12
-    feedback = `Need ${12 - password.length} more character${12 - password.length !== 1 ? 's' : ''}`;
+    if (length >= 8) score = 1;
+    if (length >= 10) score = 2; // Slightly better if approaching 12
+    feedback = `Need ${12 - length} more character${12 - length !== 1 ? 's' : ''}`;
     return { score, feedback };
   }
 
@@ -170,8 +187,9 @@ export const validatePasswordStrength = (password) => {
   if (hasNumbers) score++;
   if (hasSpecialChar) score++;
 
-  // Cap at 4
-  score = Math.min(score, 4);
+  // Cap at 4. La máxima solo para lo que el formulario va a aceptar: sin
+  // símbolo el indicador salía «Excellent!» en verde y al enviar se rechazaba
+  score = Math.min(score, validatePassword(password).isValid ? 4 : 3);
 
   // Generate feedback for valid passwords (>= 12 chars)
   if (score === 2) {
