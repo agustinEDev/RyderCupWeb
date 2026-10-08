@@ -62,6 +62,8 @@ describe('EditProfile · la fecha del hándicap (FE #710)', () => {
     usuario = { handicap: null, handicap_updated_at: null, email: largo };
     pintar();
 
-    expect(screen.getByText(new RegExp(largo.replace(/\./g, '\\.'))).className).toContain('wrap-anywhere');
+    // Por contenido, sin construir una regex con el correo
+    const linea = screen.getByText((texto) => texto.includes(largo));
+    expect(linea.className).toContain('wrap-anywhere');
   });
 });
