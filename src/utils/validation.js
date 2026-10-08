@@ -5,6 +5,8 @@
 import {
   PASSWORD_DIGIT,
   PASSWORD_LOWERCASE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
   passwordLength,
@@ -16,6 +18,8 @@ import {
 export {
   PASSWORD_DIGIT,
   PASSWORD_LOWERCASE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
   passwordLength,
@@ -28,8 +32,8 @@ export {
 const PASSWORD_ERROR_KEYS = {
   PASSWORD_EMPTY: { key: 'validation.passwordRequired' },
   PASSWORD_EDGE_SPACES: { key: 'validation.passwordSpaces' },
-  PASSWORD_TOO_SHORT: { key: 'validation.passwordTooShort', options: { min: 12 } },
-  PASSWORD_TOO_LONG: { key: 'validation.passwordTooLong', options: { max: 128 } },
+  PASSWORD_TOO_SHORT: { key: 'validation.passwordTooShort', options: { min: PASSWORD_MIN_LENGTH } },
+  PASSWORD_TOO_LONG: { key: 'validation.passwordTooLong', options: { max: PASSWORD_MAX_LENGTH } },
   PASSWORD_NO_UPPERCASE: { key: 'validation.passwordWeak' },
   PASSWORD_NO_LOWERCASE: { key: 'validation.passwordWeak' },
   PASSWORD_NO_DIGIT: { key: 'validation.passwordWeak' },
@@ -42,7 +46,9 @@ const PASSWORD_ERROR_KEYS = {
  * @param {?string} errorCode - `error.errorCode` del error de la API
  * @returns {?{key: string, options?: Object}} null si no es un error de contraseña
  */
-export const passwordErrorTranslation = (errorCode) => PASSWORD_ERROR_KEYS[errorCode] ?? null;
+export const passwordErrorTranslation = (errorCode) =>
+  // `hasOwn`: un código como «constructor» no puede traer lo que hereda el objeto
+  Object.hasOwn(PASSWORD_ERROR_KEYS, errorCode ?? '') ? PASSWORD_ERROR_KEYS[errorCode] : null;
 
 /**
  * Get password strength level name

@@ -187,6 +187,12 @@ const ResetPassword = () => {
       if (contrasena) {
         // El backend la rechaza con un código (BE #519): en el idioma de la app
         customToast.error(t(contrasena.key, contrasena.options), { duration: 6000 });
+      } else if (error.errorCode === 'RESET_TOKEN_INVALID') {
+        // Por su código (BE #519): el texto va en español («inválido») y buscar
+        // «invalid» en él no lo encontraba nunca
+        customToast.error(t('resetPassword.tokenInvalidMessage'), { duration: 6000 });
+        setTokenState('invalid');
+        setTokenMessage(t('resetPassword.tokenInvalidMessage'));
       } else if (error.status === 429) {
         customToast.error(t('resetPassword.rateLimitError'), {
           duration: 6000,

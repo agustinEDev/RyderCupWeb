@@ -8,8 +8,11 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  */
 const restablecer = vi.fn();
 const toastError = vi.fn();
+// `t` estable, como la de verdad: una nueva en cada render volvía a lanzar la
+// validación del token (depende de `t`) y deshacía el paso a «enlace inválido»
+const { tEstable } = vi.hoisted(() => ({ tEstable: (clave) => clave }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
+  useTranslation: () => ({ t: tEstable, i18n: { language: 'es' } }),
 }));
 vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../composition', () => ({
@@ -69,6 +72,25 @@ describe('ResetPassword · demasiados intentos', () => {
 
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith('validation.passwordCommon', expect.anything())
+    );
+  });
+
+  it('BE #519: un token inválido se reconoce por su código, no por el texto en inglés', async () => {
+    restablecer.mockRejectedValue(
+      Object.assign(new Error('Token de reseteo inválido o expirado'), {
+        status: 400,
+        errorCode: 'RESET_TOKEN_INVALID',
+      })
+    );
+
+    await enviarContrasena();
+
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('resetPassword.tokenInvalidMessage', expect.anything())
+    );
+    // Y la pantalla pasa a la de enlace inválido, en vez de dejar el formulario
+    await waitFor(() =>
+      expect(document.body.textContent).toContain('resetPassword.invalidTokenTitle')
     );
   });
 });

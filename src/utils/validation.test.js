@@ -360,7 +360,7 @@ describe('validation utilities', () => {
       expect(passwordErrorTranslation('PASSWORD_TOO_LONG').options).toEqual({ max: 128 });
     });
 
-    it.each([null, undefined, 'CSRF_VALIDATION_FAILED', 'OTRO'])(
+    it.each([null, undefined, 'CSRF_VALIDATION_FAILED', 'OTRO', 'constructor', 'toString'])(
       'un código que no es de la contraseña (%s) no se traduce',
       (codigo) => {
         expect(passwordErrorTranslation(codigo)).toBeNull();
