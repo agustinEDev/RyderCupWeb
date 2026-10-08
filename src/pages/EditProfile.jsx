@@ -327,7 +327,7 @@ const EditProfile = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     {/* El correo no tiene dónde partirse: sin esto desborda a 360 (FE #826) */}
-                    <p className="text-xs text-gray-500 mt-1 [overflow-wrap:anywhere]">
+                    <p className="text-xs text-gray-500 mt-1 wrap-anywhere">
                       {t('edit.security.currentEmail', { email: user.email })}
                     </p>
                   </div>

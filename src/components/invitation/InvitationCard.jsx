@@ -70,8 +70,12 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
 
           {mode === 'creator' && (
             <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-              <Mail className="h-3.5 w-3.5" />
-              <span>{invitation.inviteeName || invitation.inviteeEmail}</span>
+              {/* El correo no tiene dónde partirse: sin min-w-0 ni wrap-anywhere
+                  desbordaba la tarjeta a 360 (FE #826) */}
+              <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="min-w-0 wrap-anywhere">
+                {invitation.inviteeName || invitation.inviteeEmail}
+              </span>
             </div>
           )}
 

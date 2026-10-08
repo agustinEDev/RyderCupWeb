@@ -57,6 +57,6 @@ describe('ForgotPassword · demasiados intentos', () => {
     fireEvent.submit(screen.getByRole('textbox').closest('form'));
 
     const correo = await screen.findByText(largo);
-    expect(correo.className).toContain('[overflow-wrap:anywhere]');
+    expect(correo.className).toContain('wrap-anywhere');
   });
 });

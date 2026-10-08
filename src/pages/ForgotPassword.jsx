@@ -160,7 +160,7 @@ const ForgotPassword = () => {
                     {t('forgotPassword.emailSentTitle')}
                   </h2>
                   <p className="text-gray-600 leading-relaxed">
-                    {t('forgotPassword.emailSentMessage')} <strong className="text-gray-900 [overflow-wrap:anywhere]">{email}</strong>,
+                    {t('forgotPassword.emailSentMessage')} <strong className="text-gray-900 wrap-anywhere">{email}</strong>,
                     {' '}{t('forgotPassword.emailSentSuffix')}
                   </p>
                 </div>

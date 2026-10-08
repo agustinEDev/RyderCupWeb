@@ -60,7 +60,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
                 t={t}
                 i18nKey="emailVerification.description"
                 values={{ email: userEmail }}
-                components={{ correo: <strong className="[overflow-wrap:anywhere]" /> }}
+                components={{ correo: <strong className="wrap-anywhere" /> }}
               />
             </p>
           </div>

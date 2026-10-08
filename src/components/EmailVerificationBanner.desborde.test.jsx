@@ -32,6 +32,6 @@ describe('EmailVerificationBanner · no desborda en el móvil', () => {
   it('el correo se parte donde haga falta', () => {
     render(<EmailVerificationBanner userEmail={CORREO} />);
 
-    expect(screen.getByText(CORREO).className).toContain('[overflow-wrap:anywhere]');
+    expect(screen.getByText(CORREO).className).toContain('wrap-anywhere');
   });
 });
