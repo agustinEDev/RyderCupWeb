@@ -49,6 +49,32 @@ describe('UpdateUserSecurityUseCase', () => {
     expect(updatedUser).toEqual(mockUpdatedUserEntity);
   });
 
+  it('no exige a la contraseña ACTUAL la política de las nuevas', async () => {
+    // Quien tiene una contraseña de antes de la política no podía cambiarla:
+    // el caso de uso la rechazaba antes de llegar al backend, que solo
+    // comprueba que coincide
+    userRepository.updateSecurity.mockResolvedValue({});
+
+    await updateUserSecurityUseCase.execute({
+      userId: 'user-123',
+      securityData: { current_password: 'vieja', new_password: 'NuevaSegura123!' },
+    });
+
+    const [, enviado] = userRepository.updateSecurity.mock.calls[0];
+    expect(enviado.current_password.getValue()).toBe('vieja');
+    expect(enviado.new_password.getValue()).toBe('NuevaSegura123!');
+  });
+
+  it('la contraseña NUEVA sí tiene que cumplir la política', async () => {
+    await expect(
+      updateUserSecurityUseCase.execute({
+        userId: 'user-123',
+        securityData: { current_password: 'vieja', new_password: 'SinSimbolo1234' },
+      })
+    ).rejects.toThrow('special character');
+    expect(userRepository.updateSecurity).not.toHaveBeenCalled();
+  });
+
   it('should throw an error if userId is not provided', async () => {
     // Act & Assert
     await expect(updateUserSecurityUseCase.execute({ userId: '', securityData: {} }))

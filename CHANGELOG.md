@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.40.1] - 2026-10-08
+
+Hotfix: los formularios piden la misma contraseña que el backend. Va con el
+backend **2.26.1**.
+
+**Notas de despliegue.** Sin variables nuevas en Render. Funciona también con el
+backend 2.26.0, pero el arreglo de los puntos del panel está en el backend: el
+orden de siempre, backend primero. Probado en local a 360 px con la API de la
+rama: registro, reset (con token real) y perfil, sin ninguna llamada a la API
+al rechazar, y sin scroll lateral en esas tres pantallas.
+
+### Fixed
+
+- **El formulario dejaba enviar contraseñas que el backend rechaza**, y el
+  usuario leía «Error interno del servidor». Registro, reset y perfil aplican
+  ahora la política del backend:
+  - un **símbolo** obligatorio, del mismo conjunto (`!@#$%^&*()_+-=[]{}|;:,.<>?`);
+  - nada de espacios al principio ni al final;
+  - mayúsculas, minúsculas y dígitos en Unicode, así que «Ñ» cuenta;
+  - la longitud contada en caracteres, no en unidades UTF-16 (un emoji es uno).
+  El perfil solo miraba la longitud. Las listas de requisitos del registro y del
+  reset muestran el símbolo y los espacios, el medidor de fuerza ya no da
+  «Excellent!» a una contraseña inválida, y el value object `Password` usa la
+  misma regla en vez de una copia.
+- **Cambiar la contraseña desde el perfil exigía la política también a la
+  contraseña ACTUAL**: quien la tenía de antes de la política no podía
+  cambiarla. Ahora se valida solo la nueva, como en el login.
+
 ## [2.40.0] - 2026-10-06
 
 El organizador puede retirar una invitación y la pantalla deja de ofrecer
