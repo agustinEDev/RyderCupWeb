@@ -47,4 +47,16 @@ describe('ForgotPassword · demasiados intentos', () => {
 
     await waitFor(() => expect(toastError).toHaveBeenCalledWith('Algo falló', expect.anything()));
   });
+
+  it('FE #826: el correo de «enviado» se parte en el móvil, como en el aviso del panel', async () => {
+    enviar.mockResolvedValue({});
+    const largo = 'un.correo.muy.largo.sin.espacios.para.partir@ejemplo-de-dominio.com';
+    render(<MemoryRouter><ForgotPassword /></MemoryRouter>);
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: largo } });
+    fireEvent.submit(screen.getByRole('textbox').closest('form'));
+
+    const correo = await screen.findByText(largo);
+    expect(correo.className).toContain('[overflow-wrap:anywhere]');
+  });
 });
