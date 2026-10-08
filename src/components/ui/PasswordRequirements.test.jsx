@@ -30,6 +30,13 @@ describe('PasswordRequirements', () => {
     expect(cumplido('register.requirementNoEdgeSpaces')).toBe(true);
   });
 
+  it('los bordes se miran como el backend: U+0085 cuenta como espacio y U+FEFF no', () => {
+    const { rerender } = render(<PasswordRequirements password={'Abcdefghi1!\u0085'} />);
+    expect(cumplido('register.requirementNoEdgeSpaces')).toBe(false);
+    rerender(<PasswordRequirements password={'Abcdefghi1!\ufeff'} />);
+    expect(cumplido('register.requirementNoEdgeSpaces')).toBe(true);
+  });
+
   it('da la mayúscula por cumplida con una eñe, como el backend', () => {
     render(<PasswordRequirements password="Ñandúcorre12!" />);
     expect(cumplido('register.requirementUppercase')).toBe(true);

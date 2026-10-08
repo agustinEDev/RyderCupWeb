@@ -17,7 +17,9 @@ export {
   PASSWORD_DIGIT,
   PASSWORD_LOWERCASE,
   PASSWORD_SPECIAL_CHARS,
+  PASSWORD_MAX_INPUT_UNITS,
   PASSWORD_UPPERCASE,
+  hasEdgeWhitespace,
   passwordLength,
   validatePassword,
 } from '../domain/services/PasswordPolicy';

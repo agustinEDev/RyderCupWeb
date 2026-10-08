@@ -139,6 +139,20 @@ describe('validation utilities', () => {
         expect(validatePassword('ÁRBOLÉS1234ñ!').isValid).toBe(true);
       });
 
+      // FE #827: «espacio» es lo que quita `str.strip()` de Python, no `trim()`
+      it.each([['NEL (U+0085)', '\u0085'], ['separador (U+001F)', '\u001f']])(
+        'rechaza un %s al final, como el backend',
+        (_nombre, caracter) => {
+          const result = validatePassword(`Abcdefghi1!${caracter}`);
+          expect(result.isValid).toBe(false);
+          expect(result.messageKey).toBe('validation.passwordSpaces');
+        }
+      );
+
+      it('admite una marca de orden de bytes (U+FEFF) al final, como el backend', () => {
+        expect(validatePassword('Abcdefghi1!\ufeff').isValid).toBe(true);
+      });
+
       it('admite un espacio en medio, como el backend', () => {
         expect(validatePassword('Abcde fghi1!').isValid).toBe(true);
       });

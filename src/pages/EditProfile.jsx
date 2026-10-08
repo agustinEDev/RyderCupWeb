@@ -9,6 +9,7 @@ import { canUseRFEG } from '../utils/countryUtils';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
+import { PASSWORD_MAX_INPUT_UNITS } from '../utils/validation';
 
 const EditProfile = () => {
   const { t, i18n } = useTranslation('profile');
@@ -342,7 +343,7 @@ const EditProfile = () => {
                       value={formData.newPassword}
                       onChange={handleInputChange}
                       placeholder={t('edit.security.newPasswordPlaceholder')}
-                      maxLength={128}
+                      maxLength={PASSWORD_MAX_INPUT_UNITS}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <p className="text-xs text-gray-500 mt-1">

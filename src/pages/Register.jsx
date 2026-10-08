@@ -3,7 +3,12 @@ import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
-import { validateEmail, validateName, validatePassword } from '../utils/validation';
+import {
+  PASSWORD_MAX_INPUT_UNITS,
+  validateEmail,
+  validateName,
+  validatePassword,
+} from '../utils/validation';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordRequirements from '../components/ui/PasswordRequirements';
 import PasswordStrengthMeter from '../components/ui/PasswordStrengthMeter';
@@ -479,7 +484,7 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder={t('register.passwordPlaceholder')}
-                    maxLength={128}
+                    maxLength={PASSWORD_MAX_INPUT_UNITS}
                     error={!!errors.password}
                     disabled={isLoading}
                     label=""
@@ -518,7 +523,7 @@ const Register = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder={t('register.confirmPasswordPlaceholder')}
-                    maxLength={128}
+                    maxLength={PASSWORD_MAX_INPUT_UNITS}
                     error={!!errors.confirmPassword}
                     disabled={isLoading}
                     label=""

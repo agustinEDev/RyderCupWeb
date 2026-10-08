@@ -6,6 +6,7 @@ import {
   PASSWORD_LOWERCASE,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
+  hasEdgeWhitespace,
   passwordLength,
 } from '../../utils/validation';
 
@@ -49,7 +50,7 @@ const PasswordRequirements = ({ password }) => {
     {
       id: 'edgeSpaces',
       label: t('register.requirementNoEdgeSpaces'),
-      test: (pwd) => pwd.trim() === pwd,
+      test: (pwd) => !hasEdgeWhitespace(pwd),
     },
   ];
 
