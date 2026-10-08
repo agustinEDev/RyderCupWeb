@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
+import { validatePassword } from '../utils/validation';
 
 import {
   updateUserProfileUseCase,
@@ -19,7 +20,7 @@ import { useAuth } from './useAuth';
 const CONFLICTO = 409;
 
 export const useEditProfile = () => {
-  const { t } = useTranslation('profile');
+  const { t } = useTranslation(['profile', 'auth']);
   const { user: authUser, refetch: refetchUser } = useAuth();
 
   const [user, setUser] = useState(null);
@@ -325,8 +326,13 @@ export const useEditProfile = () => {
     }
 
     if (isPasswordChanged) {
-      if (formData.newPassword.length < 12) {
-        customToast.error(t('toasts.passwordTooShort'));
+      // La misma política que el registro, el reset y el backend: aquí solo se
+      // miraba la longitud, y una contraseña sin símbolo acababa en un 500
+      const passwordValidation = validatePassword(formData.newPassword);
+      if (!passwordValidation.isValid) {
+        customToast.error(
+          t(`auth:${passwordValidation.messageKey}`, passwordValidation.messageOptions)
+        );
         return;
       }
 

@@ -2,74 +2,25 @@
  * Input Validation and Sanitization Utilities
  */
 
-/**
- * Validates password strength
- * @param {string} password - Password to validate
- * @returns {Object} - { isValid: boolean, message: string, strength: number }
- */
-export const validatePassword = (password) => {
-  if (!password) {
-    return {
-      isValid: false,
-      messageKey: 'validation.passwordRequired',
-      message: 'Password is required',
-      strength: 0
-    };
-  }
+import {
+  PASSWORD_DIGIT,
+  PASSWORD_LOWERCASE,
+  PASSWORD_SPECIAL_CHARS,
+  PASSWORD_UPPERCASE,
+  passwordLength,
+  validatePassword,
+} from '../domain/services/PasswordPolicy';
 
-  const minLength = 12; // OWASP ASVS V2.1.1 requirement
-  const maxLength = 128; // Prevent DoS attacks via excessive hashing
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-  // Calculate strength (0-5)
-  let strength = 0;
-  if (password.length >= 8) strength++;
-  if (password.length >= 12) strength++;
-  if (hasUpperCase && hasLowerCase) strength++;
-  if (hasNumbers) strength++;
-  if (hasSpecialChar) strength++;
-
-  // Validation: Check minimum length (12 characters required)
-  if (password.length < minLength) {
-    return {
-      isValid: false,
-      messageKey: 'validation.passwordTooShort',
-      messageOptions: { min: minLength },
-      message: `Password must be at least ${minLength} characters`,
-      strength
-    };
-  }
-
-  // Validation: Check maximum length (128 characters)
-  if (password.length > maxLength) {
-    return {
-      isValid: false,
-      messageKey: 'validation.passwordTooLong',
-      messageOptions: { max: maxLength },
-      message: `Password must not exceed ${maxLength} characters`,
-      strength
-    };
-  }
-
-  // Validation: Check complexity (uppercase + lowercase + numbers required)
-  if (!(hasUpperCase && hasLowerCase && hasNumbers)) {
-    return {
-      isValid: false,
-      messageKey: 'validation.passwordWeak',
-      message: 'Password must contain uppercase, lowercase, and numbers',
-      strength
-    };
-  }
-
-  return {
-    isValid: true,
-    message: 'Strong password',
-    strength
-  };
-};
+// La política de contraseñas vive en el dominio; aquí solo se reexporta para
+// las pantallas, que la usaban desde este módulo
+export {
+  PASSWORD_DIGIT,
+  PASSWORD_LOWERCASE,
+  PASSWORD_SPECIAL_CHARS,
+  PASSWORD_UPPERCASE,
+  passwordLength,
+  validatePassword,
+} from '../domain/services/PasswordPolicy';
 
 /**
  * Get password strength level name
@@ -107,21 +58,22 @@ export const validatePasswordStrength = (password) => {
     return { score: 0, feedback: '' };
   }
 
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasUpperCase = PASSWORD_UPPERCASE.test(password);
+  const hasLowerCase = PASSWORD_LOWERCASE.test(password);
+  const hasNumbers = PASSWORD_DIGIT.test(password);
+  const length = passwordLength(password);
+  const hasSpecialChar = PASSWORD_SPECIAL_CHARS.test(password);
 
   let score = 0;
   let feedback = '';
 
   // CRITICAL: Passwords <12 chars are INVALID (OWASP ASVS V2.1.1)
   // Don't show green/blue for invalid passwords
-  if (password.length < 12) {
+  if (length < 12) {
     // Score capped at 2 (yellow) for passwords <12 chars
-    if (password.length >= 8) score = 1;
-    if (password.length >= 10) score = 2; // Slightly better if approaching 12
-    feedback = `Need ${12 - password.length} more character${12 - password.length !== 1 ? 's' : ''}`;
+    if (length >= 8) score = 1;
+    if (length >= 10) score = 2; // Slightly better if approaching 12
+    feedback = `Need ${12 - length} more character${12 - length !== 1 ? 's' : ''}`;
     return { score, feedback };
   }
 
@@ -133,8 +85,9 @@ export const validatePasswordStrength = (password) => {
   if (hasNumbers) score++;
   if (hasSpecialChar) score++;
 
-  // Cap at 4
-  score = Math.min(score, 4);
+  // Cap at 4. La máxima solo para lo que el formulario va a aceptar: sin
+  // símbolo el indicador salía «Excellent!» en verde y al enviar se rechazaba
+  score = Math.min(score, validatePassword(password).isValid ? 4 : 3);
 
   // Generate feedback for valid passwords (>= 12 chars)
   if (score === 2) {

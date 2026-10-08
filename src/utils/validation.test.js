@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePassword, validateEmail, validateName } from './validation';
+import { validatePassword, validatePasswordStrength, validateEmail, validateName } from './validation';
 
 describe('validation utilities', () => {
   // ========================================
@@ -14,7 +14,7 @@ describe('validation utilities', () => {
     });
 
     it('should accept password with exactly 12 characters and complexity', () => {
-      const result = validatePassword('ValidPass123');
+      const result = validatePassword('ValidPass12!');
       expect(result.isValid).toBe(true);
       expect(result.message).toBe('Strong password');
     });
@@ -28,7 +28,7 @@ describe('validation utilities', () => {
     });
 
     it('should accept password with exactly 128 characters and complexity', () => {
-      const maxPassword = 'A1' + 'a'.repeat(126); // 128 characters
+      const maxPassword = 'A1!' + 'a'.repeat(125); // 128 characters
       const result = validatePassword(maxPassword);
       expect(result.isValid).toBe(true);
     });
@@ -37,23 +37,23 @@ describe('validation utilities', () => {
     it('should reject password without uppercase letters', () => {
       const result = validatePassword('alllowercase123');
       expect(result.isValid).toBe(false);
-      expect(result.message).toContain('uppercase, lowercase, and numbers');
+      expect(result.messageKey).toBe('validation.passwordWeak');
     });
 
     it('should reject password without lowercase letters', () => {
       const result = validatePassword('ALLUPPERCASE123');
       expect(result.isValid).toBe(false);
-      expect(result.message).toContain('uppercase, lowercase, and numbers');
+      expect(result.messageKey).toBe('validation.passwordWeak');
     });
 
     it('should reject password without numbers', () => {
       const result = validatePassword('NoNumbersHere');
       expect(result.isValid).toBe(false);
-      expect(result.message).toContain('uppercase, lowercase, and numbers');
+      expect(result.messageKey).toBe('validation.passwordWeak');
     });
 
     it('should accept password with uppercase, lowercase, and numbers', () => {
-      const result = validatePassword('ValidPassword123');
+      const result = validatePassword('ValidPassword123!');
       expect(result.isValid).toBe(true);
       expect(result.message).toBe('Strong password');
     });
@@ -87,6 +87,61 @@ describe('validation utilities', () => {
     it('should calculate correct strength score for strong password', () => {
       const result = validatePassword('StrongP@ssw0rd!'); // 15 chars, all types
       expect(result.strength).toBeGreaterThanOrEqual(4);
+    });
+
+    // La misma política que el backend (`Password._validate_password_strength`).
+    // El front no pedía símbolo ni miraba los espacios, dejaba enviar una
+    // contraseña que el backend rechazaba, y el usuario veía «Error interno del
+    // servidor» (hotfix 2.40.1, BE 2.26.1)
+    describe('la misma política que el backend', () => {
+      it('rechaza una contraseña sin símbolo', () => {
+        const result = validatePassword('Abcdefghijk1');
+        expect(result.isValid).toBe(false);
+        expect(result.messageKey).toBe('validation.passwordNoSymbol');
+      });
+
+      it.each(['~', '`', '€', "'", '"', '/', '\\', ' '])(
+        'no cuenta «%s» como símbolo, igual que el backend',
+        (caracter) => {
+          const result = validatePassword(`Abcdefghi1${caracter}x`);
+          expect(result.isValid).toBe(false);
+          expect(result.messageKey).toBe('validation.passwordNoSymbol');
+        }
+      );
+
+      it.each('!@#$%^&*()_+-=[]{}|;:,.<>?'.split(''))(
+        'acepta «%s» como símbolo',
+        (simbolo) => {
+          expect(validatePassword(`Abcdefghi1${simbolo}x`).isValid).toBe(true);
+        }
+      );
+
+      it.each([
+        ['un espacio al principio', ' Abcdefghi1!'],
+        ['un espacio al final', 'Abcdefghi1! '],
+        ['un tabulador al final', 'Abcdefghi1!\t'],
+      ])('rechaza %s', (_caso, password) => {
+        const result = validatePassword(password);
+        expect(result.isValid).toBe(false);
+        expect(result.messageKey).toBe('validation.passwordSpaces');
+      });
+
+      it('cuenta los caracteres como el backend: un emoji es uno', () => {
+        // `length` dice 12 (el emoji son dos unidades UTF-16); Python, 11
+        const result = validatePassword('Abcdefgh1!😀');
+        expect(result.isValid).toBe(false);
+        expect(result.messageKey).toBe('validation.passwordTooShort');
+      });
+
+      it('acepta mayúsculas y minúsculas con tilde o eñe, como el backend', () => {
+        // `isupper()` de Python sabe que «Ñ» es mayúscula; /[A-Z]/ no
+        expect(validatePassword('Ñandúcorre12!').isValid).toBe(true);
+        expect(validatePassword('ÁRBOLÉS1234ñ!').isValid).toBe(true);
+      });
+
+      it('admite un espacio en medio, como el backend', () => {
+        expect(validatePassword('Abcde fghi1!').isValid).toBe(true);
+      });
     });
   });
 
@@ -257,6 +312,22 @@ describe('validation utilities', () => {
     it('should use custom field name in error messages', () => {
       const result = validateName('', 'Custom Field');
       expect(result.message).toContain('Custom Field');
+    });
+  });
+
+  // El gemelo de validatePassword: el indicador de fuerza no puede ponerse en
+  // verde con algo que el formulario va a rechazar (hotfix 2.40.1)
+  describe('validatePasswordStrength con la política del backend', () => {
+    it('no da la máxima a una contraseña sin símbolo', () => {
+      expect(validatePasswordStrength('Abcdefghijk1').score).toBeLessThan(4);
+    });
+
+    it('cuenta los caracteres como el backend: un emoji es uno', () => {
+      expect(validatePasswordStrength('Abcdefgh1!😀').score).toBeLessThan(3);
+    });
+
+    it('da la máxima a una que cumple la política', () => {
+      expect(validatePasswordStrength('Abcdefghij1!').score).toBe(4);
     });
   });
 });
