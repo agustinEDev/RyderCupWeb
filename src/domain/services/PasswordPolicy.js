@@ -31,15 +31,15 @@ export const PASSWORD_UPPERCASE = /\p{Lu}/u;
 export const PASSWORD_LOWERCASE = /\p{Ll}/u;
 export const PASSWORD_DIGIT = /\p{Nd}/u;
 
+/** Límites de la política, los del backend: 12 (OWASP ASVS V2.1.1) y 128 (coste del hash). */
+export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MAX_LENGTH = 128;
+
 /**
  * Validates password strength
  * @param {string} password - Password to validate
  * @returns {Object} - { isValid: boolean, message: string, strength: number }
  */
-/** Límites de la política, los del backend: 12 (OWASP ASVS V2.1.1) y 128 (coste del hash). */
-export const PASSWORD_MIN_LENGTH = 12;
-export const PASSWORD_MAX_LENGTH = 128;
-
 export const validatePassword = (password) => {
   if (!password) {
     return {

@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
+  passwordErrorMessage,
   passwordErrorTranslation,
   validatePassword,
   validatePasswordStrength,
@@ -353,6 +354,16 @@ describe('validation utilities', () => {
       ['PASSWORD_TOO_COMMON', 'validation.passwordCommon'],
     ])('%s se dice con %s', (codigo, clave) => {
       expect(passwordErrorTranslation(codigo).key).toBe(clave);
+    });
+
+    it('passwordErrorMessage traduce con el espacio de nombres auth, sea cual sea el de la pantalla', () => {
+      const t = vi.fn((clave, opciones) => `${opciones?.ns}:${clave}`);
+
+      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_COMMON' }, t)).toBe('auth:validation.passwordCommon');
+      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_SHORT' }, t)).toBe('auth:validation.passwordTooShort');
+      expect(t).toHaveBeenLastCalledWith('validation.passwordTooShort', { ns: 'auth', min: 12 });
+      expect(passwordErrorMessage({ errorCode: 'OTRO' }, t)).toBeNull();
+      expect(passwordErrorMessage(new Error('sin código'), t)).toBeNull();
     });
 
     it('las de longitud llevan su límite', () => {

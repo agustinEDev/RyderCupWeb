@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
 import { useTranslation } from 'react-i18next';
-import { passwordErrorTranslation, validatePassword } from '../utils/validation';
+import { passwordErrorMessage, validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
@@ -106,9 +106,8 @@ const ResetPassword = () => {
       } catch (error) {
         console.error('Token validation error:', error);
         setTokenState('invalid');
-        setTokenMessage(
-          error.message || t('resetPassword.tokenInvalidMessage')
-        );
+        // El texto del backend va en español: se dice el de la app (BE #519)
+        setTokenMessage(t('resetPassword.tokenInvalidMessage'));
       }
     };
 
@@ -183,10 +182,10 @@ const ResetPassword = () => {
       console.error('Reset password error:', error);
 
       // Manejo de errores específicos
-      const contrasena = passwordErrorTranslation(error.errorCode);
+      const contrasena = passwordErrorMessage(error, t);
       if (contrasena) {
         // El backend la rechaza con un código (BE #519): en el idioma de la app
-        customToast.error(t(contrasena.key, contrasena.options), { duration: 6000 });
+        customToast.error(contrasena, { duration: 6000 });
       } else if (error.errorCode === 'RESET_TOKEN_INVALID') {
         // Por su código (BE #519): el texto va en español («inválido») y buscar
         // «invalid» en él no lo encontraba nunca
@@ -197,13 +196,6 @@ const ResetPassword = () => {
         customToast.error(t('resetPassword.rateLimitError'), {
           duration: 6000,
         });
-      } else if (error.message.includes('invalid') || error.message.includes('expired')) {
-        customToast.error(t('resetPassword.tokenInvalidMessage'), {
-          duration: 6000,
-        });
-        // Marcar token como inválido para mostrar UI de error
-        setTokenState('invalid');
-        setTokenMessage(error.message);
       } else {
         customToast.error(error.message || t('resetPassword.error'), {
           duration: 5000,

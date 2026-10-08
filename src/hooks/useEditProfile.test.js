@@ -310,7 +310,7 @@ describe('useEditProfile Hook', () => {
       await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
     });
 
-    expect(customToast.error).toHaveBeenCalledWith('auth:validation.passwordCommon');
+    expect(customToast.error).toHaveBeenCalledWith('validation.passwordCommon');
   });
 
   it('debería llamar a updateManualHandicapUseCase y actualizar el estado al llamar a handleUpdateHandicapManually', async () => {

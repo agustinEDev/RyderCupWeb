@@ -50,6 +50,24 @@ export const passwordErrorTranslation = (errorCode) =>
   // `hasOwn`: un código como «constructor» no puede traer lo que hereda el objeto
   Object.hasOwn(PASSWORD_ERROR_KEYS, errorCode ?? '') ? PASSWORD_ERROR_KEYS[errorCode] : null;
 
+/** Los códigos que se traducen, para que los tests los recorran todos. */
+export const PASSWORD_ERROR_CODES = Object.keys(PASSWORD_ERROR_KEYS);
+
+/**
+ * El rechazo de contraseña del backend, ya traducido; null si el error no es eso.
+ *
+ * Con el espacio de nombres `auth` puesto aquí: cada pantalla tiene el suyo por
+ * defecto (el perfil, `profile`) y repetirlo en cada una era una forma segura
+ * de que alguna enseñase la clave en crudo.
+ * @param {Error} error - El error de la API (lleva `errorCode`)
+ * @param {Function} t - El `t` de la pantalla
+ * @returns {?string}
+ */
+export const passwordErrorMessage = (error, t) => {
+  const traduccion = passwordErrorTranslation(error?.errorCode);
+  return traduccion ? t(traduccion.key, { ns: 'auth', ...traduccion.options }) : null;
+};
+
 /**
  * Get password strength level name
  * @param {number} strength - Strength score (0-4)
