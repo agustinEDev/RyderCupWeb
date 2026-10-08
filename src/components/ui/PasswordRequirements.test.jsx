@@ -42,6 +42,14 @@ describe('PasswordRequirements', () => {
     expect(cumplido('register.requirementUppercase')).toBe(true);
   });
 
+  it('la longitud tiene máximo: 129 caracteres no salen en verde', () => {
+    // «Abc1!» son 5: con 123 más, 128; con 124, 129
+    const { rerender } = render(<PasswordRequirements password={`Abc1!${'a'.repeat(123)}`} />);
+    expect(cumplido('register.requirementLength')).toBe(true);
+    rerender(<PasswordRequirements password={`Abc1!${'a'.repeat(124)}`} />);
+    expect(cumplido('register.requirementLength')).toBe(false);
+  });
+
   it('cuenta los caracteres como el backend: un emoji es uno', () => {
     // 11 caracteres para el backend aunque `length` diga 12
     render(<PasswordRequirements password="Abcdefgh1!😀" />);

@@ -37,19 +37,14 @@ export const PASSWORD_DIGIT = /\p{Nd}/u;
  * quita U+FEFF, que Python deja, y deja U+0085 y U+001C-U+001F, que Python
  * quita (FE #827). Sin igualarlos, front y back no estaban de acuerdo.
  */
-const PYTHON_WHITESPACE =
-  '\\t\\n\\v\\f\\r\\u001c-\\u001f \\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000';
-const EDGE_WHITESPACE = new RegExp(`^[${PYTHON_WHITESPACE}]|[${PYTHON_WHITESPACE}]$`);
+// U+001C-U+001F son de control y son justo los que hay que detectar: Python los
+// cuenta como espacio
+const EDGE_WHITESPACE =
+  // eslint-disable-next-line no-control-regex
+  /^[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]|[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]$/;
 
 /** Si la contraseña empieza o acaba en un espacio, contado como el backend. */
 export const hasEdgeWhitespace = (password) => EDGE_WHITESPACE.test(password);
-
-/**
- * El `maxLength` del campo: lo más que ocupan en UTF-16 128 caracteres (dos
- * unidades cada uno). Con 128 el navegador cortaba sin avisar una contraseña
- * válida con emojis (FE #827); el límite de verdad lo dice `validatePassword`.
- */
-export const PASSWORD_MAX_INPUT_UNITS = 256;
 
 /**
  * Validates password strength

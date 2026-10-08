@@ -139,6 +139,25 @@ describe('validation utilities', () => {
         expect(validatePassword('ÁRBOLÉS1234ñ!').isValid).toBe(true);
       });
 
+      // FE #827: los 29 de `str.isspace()` de Python, por delante y por detrás
+      const ESPACIOS_DE_PYTHON = [
+        ...[0x9, 0xa, 0xb, 0xc, 0xd, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x85, 0xa0, 0x1680],
+        ...Array.from({ length: 11 }, (_v, i) => 0x2000 + i),
+        0x2028, 0x2029, 0x202f, 0x205f, 0x3000,
+      ].map((codigo) => String.fromCodePoint(codigo));
+
+      it('son 29, como en Python', () => {
+        expect(ESPACIOS_DE_PYTHON).toHaveLength(29);
+      });
+
+      it.each(ESPACIOS_DE_PYTHON.map((c) => [`U+${c.codePointAt(0).toString(16).padStart(4, '0')}`, c]))(
+        '%s se rechaza al principio y al final',
+        (_codigo, caracter) => {
+          expect(validatePassword(`${caracter}Abcdefghi1!`).messageKey).toBe('validation.passwordSpaces');
+          expect(validatePassword(`Abcdefghi1!${caracter}`).messageKey).toBe('validation.passwordSpaces');
+        }
+      );
+
       // FE #827: «espacio» es lo que quita `str.strip()` de Python, no `trim()`
       it.each([['NEL (U+0085)', '\u0085'], ['separador (U+001F)', '\u001f']])(
         'rechaza un %s al final, como el backend',

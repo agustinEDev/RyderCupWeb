@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import {
-  PASSWORD_MAX_INPUT_UNITS,
   validateEmail,
   validateName,
   validatePassword,
@@ -484,7 +483,6 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder={t('register.passwordPlaceholder')}
-                    maxLength={PASSWORD_MAX_INPUT_UNITS}
                     error={!!errors.password}
                     disabled={isLoading}
                     label=""
@@ -523,7 +521,6 @@ const Register = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder={t('register.confirmPasswordPlaceholder')}
-                    maxLength={PASSWORD_MAX_INPUT_UNITS}
                     error={!!errors.confirmPassword}
                     disabled={isLoading}
                     label=""

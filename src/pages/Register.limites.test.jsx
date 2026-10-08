@@ -14,18 +14,20 @@ vi.mock('../composition', () => ({
 const { default: Register } = await import('./Register');
 
 /**
- * FE #827: `maxLength` del HTML cuenta unidades UTF-16 y la política cuenta
- * caracteres. Con 128 el navegador cortaba sin avisar una contraseña válida con
- * emojis; 256 es lo más que ocupan 128 caracteres, y el límite lo dice la validación.
+ * FE #827: un `maxLength` en un campo de contraseña corta EN SILENCIO lo que se
+ * pega (y cuenta unidades UTF-16, no caracteres): con 128 se perdían emojis de
+ * una contraseña válida, y con cualquier otro número se acaba guardando una que
+ * el usuario no eligió. Sin límite en el campo, el único lo dice la validación,
+ * como en el login y el reset.
  */
 describe('Register · el campo no corta una contraseña válida', () => {
-  it.each(['password', 'confirmPassword'])('%s admite 128 caracteres de dos unidades', (nombre) => {
+  it.each(['password', 'confirmPassword'])('%s no corta lo que se pega', (nombre) => {
     const { container } = render(
       <MemoryRouter>
         <Register />
       </MemoryRouter>
     );
 
-    expect(Number(container.querySelector(`[name="${nombre}"]`).getAttribute('maxlength'))).toBe(256);
+    expect(container.querySelector(`[name="${nombre}"]`).hasAttribute('maxlength')).toBe(false);
   });
 });
