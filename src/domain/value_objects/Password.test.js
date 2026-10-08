@@ -3,9 +3,9 @@ import Password, { PasswordValidationError } from './Password';
 
 describe('Password Value Object', () => {
   it('should create a valid password object for a strong password', () => {
-    const password = new Password('StrongPassword123');
+    const password = new Password('StrongPassword123!');
     expect(password).toBeInstanceOf(Password);
-    expect(password.getValue()).toBe('StrongPassword123');
+    expect(password.getValue()).toBe('StrongPassword123!');
   });
 
   it('should throw PasswordValidationError for an empty password string', () => {
@@ -39,8 +39,30 @@ describe('Password Value Object', () => {
     expect(() => new Password('StrongPasswordABC')).toThrow('Password must contain at least one number.');
   });
 
+  // La misma política que el backend: sin esto el front dejaba enviar lo que
+  // el backend rechazaba (hotfix 2.40.1)
+  it('rechaza una contraseña sin símbolo', () => {
+    expect(() => new Password('StrongPassword123')).toThrow(PasswordValidationError);
+    expect(() => new Password('StrongPassword123')).toThrow(
+      'Password must contain at least one special character.'
+    );
+  });
+
+  it('rechaza espacios al principio o al final', () => {
+    expect(() => new Password(' StrongPass123!')).toThrow(
+      'Password must not start or end with whitespace.'
+    );
+    expect(() => new Password('StrongPass123! ')).toThrow(
+      'Password must not start or end with whitespace.'
+    );
+  });
+
+  it('no valida la fortaleza si se le pide que no lo haga', () => {
+    expect(new Password('debil', { validateStrength: false }).getValue()).toBe('debil');
+  });
+
   it('should return the correct password value using getValue()', () => {
-    const value = 'TestPassword456';
+    const value = 'TestPassword456!';
     const password = new Password(value);
     expect(password.getValue()).toBe(value);
   });

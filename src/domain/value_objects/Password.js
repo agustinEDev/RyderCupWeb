@@ -1,3 +1,5 @@
+import { PASSWORD_SPECIAL_CHARS } from '../../utils/validation';
+
 export class PasswordValidationError extends Error {
   constructor(message) {
     super(message);
@@ -22,6 +24,10 @@ class Password {
   }
 
   validateStrength() { // 3. Renombrar validate a validateStrength
+    // La misma política que el backend y que `validatePassword` (hotfix 2.40.1)
+    if (this._value.trim() !== this._value) {
+      throw new PasswordValidationError('Password must not start or end with whitespace.');
+    }
     if (this._value.length < 12) {
       throw new PasswordValidationError('Password must be at least 12 characters long.');
     }
@@ -36,6 +42,9 @@ class Password {
     }
     if (!/[0-9]/.test(this._value)) {
       throw new PasswordValidationError('Password must contain at least one number.');
+    }
+    if (!PASSWORD_SPECIAL_CHARS.test(this._value)) {
+      throw new PasswordValidationError('Password must contain at least one special character.');
     }
   }
 }

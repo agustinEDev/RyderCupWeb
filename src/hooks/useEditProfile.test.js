@@ -191,7 +191,7 @@ describe('useEditProfile Hook', () => {
     // 1. Arrange: Preparar el escenario del test
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'old@example.com', handicap: 10 };
     const newEmail = 'new@example.com';
-    const newPassword = 'NewSecurePassword123';
+    const newPassword = 'NewSecurePassword123!';
     const currentPassword = 'CurrentPassword123';
 
     // Importar dinámicamente el módulo User REAL
@@ -252,6 +252,37 @@ describe('useEditProfile Hook', () => {
     expect(result.current.formData.currentPassword).toBe('');
     expect(result.current.formData.newPassword).toBe('');
     expect(result.current.formData.confirmPassword).toBe('');
+  });
+
+  // La misma política que el registro y el reset (y que el backend): aquí solo
+  // se miraba la longitud, y una contraseña sin símbolo llegaba al backend, que
+  // devolvía un 500 (hotfix 2.40.1)
+  it.each([
+    ['sin símbolo', 'SinSimbolo1234', 'auth:validation.passwordNoSymbol'],
+    ['con un espacio al final', 'ConEspacio123! ', 'auth:validation.passwordSpaces'],
+    ['corta', 'Corta1!', 'auth:validation.passwordTooShort'],
+    ['sin mayúscula', 'sinmayuscula123!', 'auth:validation.passwordWeak'],
+  ])('una contraseña nueva %s se avisa y no se envía', async (_caso, newPassword, aviso) => {
+    useAuth.mockReturnValue({
+      user: { id: '1', first_name: 'John', last_name: 'Doe', email: 'old@example.com', handicap: 10 },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() => useEditProfile());
+    await act(async () => {});
+
+    act(() => {
+      result.current.handleInputChange({ target: { name: 'currentPassword', value: 'vieja' } });
+      result.current.handleInputChange({ target: { name: 'newPassword', value: newPassword } });
+      result.current.handleInputChange({ target: { name: 'confirmPassword', value: newPassword } });
+    });
+    await act(async () => {
+      await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
+    });
+
+    expect(customToast.error).toHaveBeenCalledWith(aviso);
+    expect(composition.updateUserSecurityUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('debería llamar a updateManualHandicapUseCase y actualizar el estado al llamar a handleUpdateHandicapManually', async () => {

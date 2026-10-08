@@ -3,6 +3,13 @@
  */
 
 /**
+ * Símbolos que cuentan, los MISMOS que el backend (`Password._validate_password_strength`):
+ * `!@#$%^&*()_+-=[]{}|;:,.<>?`. Contar aquí uno que allí no cuenta —`~`, `/`,
+ * comillas— dejaba enviar una contraseña que el backend rechazaba.
+ */
+export const PASSWORD_SPECIAL_CHARS = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/;
+
+/**
  * Validates password strength
  * @param {string} password - Password to validate
  * @returns {Object} - { isValid: boolean, message: string, strength: number }
@@ -22,7 +29,7 @@ export const validatePassword = (password) => {
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasSpecialChar = PASSWORD_SPECIAL_CHARS.test(password);
 
   // Calculate strength (0-5)
   let strength = 0;
@@ -31,6 +38,17 @@ export const validatePassword = (password) => {
   if (hasUpperCase && hasLowerCase) strength++;
   if (hasNumbers) strength++;
   if (hasSpecialChar) strength++;
+
+  // Los espacios al principio o al final los rechaza el backend (suelen venir
+  // de copiar y pegar); en medio sí valen
+  if (password.trim() !== password) {
+    return {
+      isValid: false,
+      messageKey: 'validation.passwordSpaces',
+      message: 'Password must not start or end with whitespace',
+      strength
+    };
+  }
 
   // Validation: Check minimum length (12 characters required)
   if (password.length < minLength) {
@@ -60,6 +78,18 @@ export const validatePassword = (password) => {
       isValid: false,
       messageKey: 'validation.passwordWeak',
       message: 'Password must contain uppercase, lowercase, and numbers',
+      strength
+    };
+  }
+
+  // El backend exige un símbolo. Sin esta regla el formulario dejaba pasar
+  // una contraseña que el backend rechazaba, y el usuario leía «Error interno
+  // del servidor» (hotfix 2.40.1)
+  if (!hasSpecialChar) {
+    return {
+      isValid: false,
+      messageKey: 'validation.passwordNoSymbol',
+      message: 'Password must contain at least one special character',
       strength
     };
   }
@@ -110,7 +140,7 @@ export const validatePasswordStrength = (password) => {
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasSpecialChar = PASSWORD_SPECIAL_CHARS.test(password);
 
   let score = 0;
   let feedback = '';
