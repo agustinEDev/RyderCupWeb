@@ -126,6 +126,13 @@ describe('validation utilities', () => {
         expect(result.messageKey).toBe('validation.passwordSpaces');
       });
 
+      it('cuenta los caracteres como el backend: un emoji es uno', () => {
+        // `length` dice 12 (el emoji son dos unidades UTF-16); Python, 11
+        const result = validatePassword('Abcdefgh1!😀');
+        expect(result.isValid).toBe(false);
+        expect(result.messageKey).toBe('validation.passwordTooShort');
+      });
+
       it('admite un espacio en medio, como el backend', () => {
         expect(validatePassword('Abcde fghi1!').isValid).toBe(true);
       });

@@ -10,6 +10,13 @@
 export const PASSWORD_SPECIAL_CHARS = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/;
 
 /**
+ * Longitud en caracteres, como `len()` en el backend. `length` cuenta unidades
+ * UTF-16 y un emoji vale dos: «Abcdefgh1!😀» pasaba aquí con 12 y el backend lo
+ * rechazaba con 11.
+ */
+export const passwordLength = (password) => [...password].length;
+
+/**
  * Validates password strength
  * @param {string} password - Password to validate
  * @returns {Object} - { isValid: boolean, message: string, strength: number }
@@ -51,7 +58,7 @@ export const validatePassword = (password) => {
   }
 
   // Validation: Check minimum length (12 characters required)
-  if (password.length < minLength) {
+  if (passwordLength(password) < minLength) {
     return {
       isValid: false,
       messageKey: 'validation.passwordTooShort',
@@ -62,7 +69,7 @@ export const validatePassword = (password) => {
   }
 
   // Validation: Check maximum length (128 characters)
-  if (password.length > maxLength) {
+  if (passwordLength(password) > maxLength) {
     return {
       isValid: false,
       messageKey: 'validation.passwordTooLong',

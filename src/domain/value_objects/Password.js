@@ -1,4 +1,4 @@
-import { PASSWORD_SPECIAL_CHARS } from '../../utils/validation';
+import { PASSWORD_SPECIAL_CHARS, passwordLength } from '../../utils/validation';
 
 export class PasswordValidationError extends Error {
   constructor(message) {
@@ -28,10 +28,10 @@ class Password {
     if (this._value.trim() !== this._value) {
       throw new PasswordValidationError('Password must not start or end with whitespace.');
     }
-    if (this._value.length < 12) {
+    if (passwordLength(this._value) < 12) {
       throw new PasswordValidationError('Password must be at least 12 characters long.');
     }
-    if (this._value.length > 128) {
+    if (passwordLength(this._value) > 128) {
       throw new PasswordValidationError('Password must not exceed 128 characters.');
     }
     if (!/[A-Z]/.test(this._value)) {

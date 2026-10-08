@@ -57,6 +57,12 @@ describe('Password Value Object', () => {
     );
   });
 
+  it('cuenta los caracteres como el backend: un emoji es uno', () => {
+    expect(() => new Password('Abcdefgh1!😀')).toThrow(
+      'Password must be at least 12 characters long.'
+    );
+  });
+
   it('no valida la fortaleza si se le pide que no lo haga', () => {
     expect(new Password('debil', { validateStrength: false }).getValue()).toBe('debil');
   });

@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { PASSWORD_SPECIAL_CHARS, passwordLength } from '../../utils/validation';
 
 /**
  * Componente que muestra los requisitos de contraseña de forma dinámica
@@ -15,7 +16,7 @@ const PasswordRequirements = ({ password }) => {
     {
       id: 'length',
       label: t('register.requirementLength'),
-      test: (pwd) => pwd.length >= 12,
+      test: (pwd) => passwordLength(pwd) >= 12,
     },
     {
       id: 'uppercase',
@@ -31,6 +32,13 @@ const PasswordRequirements = ({ password }) => {
       id: 'number',
       label: t('register.requirementNumber'),
       test: (pwd) => /\d/.test(pwd),
+    },
+    {
+      // El backend lo exige: sin esta línea la lista salía entera en verde y al
+      // enviar saltaba el error (hotfix 2.40.1)
+      id: 'symbol',
+      label: t('register.requirementSymbol'),
+      test: (pwd) => PASSWORD_SPECIAL_CHARS.test(pwd),
     },
   ];
 
