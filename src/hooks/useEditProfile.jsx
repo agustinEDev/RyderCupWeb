@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
-import { validatePassword } from '../utils/validation';
+import { passwordErrorTranslation, validatePassword } from '../utils/validation';
 
 import {
   updateUserProfileUseCase,
@@ -377,8 +377,12 @@ export const useEditProfile = () => {
     } catch (error) {
       console.error('Error updating security:', error);
 
-      // v1.13.0: Handle Password History error
-      if (error.message && error.message.includes('last 5 passwords')) {
+      const contrasena = passwordErrorTranslation(error.errorCode);
+      if (contrasena) {
+        // El backend la rechaza con un código (BE #519): en el idioma de la app
+        customToast.error(t(`auth:${contrasena.key}`, contrasena.options));
+      } else if (error.message && error.message.includes('last 5 passwords')) {
+        // v1.13.0: Handle Password History error
         customToast.error(
           t('toasts.passwordReused'),
           {

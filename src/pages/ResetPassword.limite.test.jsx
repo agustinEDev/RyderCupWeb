@@ -56,4 +56,19 @@ describe('ResetPassword · demasiados intentos', () => {
       expect(toastError).toHaveBeenCalledWith('resetPassword.rateLimitError', expect.anything())
     );
   });
+
+  it('BE #519: una contraseña común se dice con su clave, no con el texto en español', async () => {
+    restablecer.mockRejectedValue(
+      Object.assign(new Error('Esta contraseña es demasiado común…'), {
+        status: 400,
+        errorCode: 'PASSWORD_TOO_COMMON',
+      })
+    );
+
+    await enviarContrasena();
+
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('validation.passwordCommon', expect.anything())
+    );
+  });
 });

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
 import { useTranslation } from 'react-i18next';
-import { validatePassword } from '../utils/validation';
+import { passwordErrorTranslation, validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
@@ -183,7 +183,11 @@ const ResetPassword = () => {
       console.error('Reset password error:', error);
 
       // Manejo de errores específicos
-      if (error.status === 429) {
+      const contrasena = passwordErrorTranslation(error.errorCode);
+      if (contrasena) {
+        // El backend la rechaza con un código (BE #519): en el idioma de la app
+        customToast.error(t(contrasena.key, contrasena.options), { duration: 6000 });
+      } else if (error.status === 429) {
         customToast.error(t('resetPassword.rateLimitError'), {
           duration: 6000,
         });

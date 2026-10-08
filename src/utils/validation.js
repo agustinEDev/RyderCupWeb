@@ -22,6 +22,28 @@ export {
   validatePassword,
 } from '../domain/services/PasswordPolicy';
 
+// Los códigos con los que el backend rechaza una contraseña (BE #519), cada uno
+// con la clave que la pantalla usaría si lo hubiera detectado ella. Su texto va
+// en español; así el usuario lo lee en el idioma de la app
+const PASSWORD_ERROR_KEYS = {
+  PASSWORD_EMPTY: { key: 'validation.passwordRequired' },
+  PASSWORD_EDGE_SPACES: { key: 'validation.passwordSpaces' },
+  PASSWORD_TOO_SHORT: { key: 'validation.passwordTooShort', options: { min: 12 } },
+  PASSWORD_TOO_LONG: { key: 'validation.passwordTooLong', options: { max: 128 } },
+  PASSWORD_NO_UPPERCASE: { key: 'validation.passwordWeak' },
+  PASSWORD_NO_LOWERCASE: { key: 'validation.passwordWeak' },
+  PASSWORD_NO_DIGIT: { key: 'validation.passwordWeak' },
+  PASSWORD_NO_SYMBOL: { key: 'validation.passwordNoSymbol' },
+  PASSWORD_TOO_COMMON: { key: 'validation.passwordCommon' },
+};
+
+/**
+ * La clave (del espacio `auth`) con la que decir un rechazo de contraseña del backend.
+ * @param {?string} errorCode - `error.errorCode` del error de la API
+ * @returns {?{key: string, options?: Object}} null si no es un error de contraseña
+ */
+export const passwordErrorTranslation = (errorCode) => PASSWORD_ERROR_KEYS[errorCode] ?? null;
+
 /**
  * Get password strength level name
  * @param {number} strength - Strength score (0-4)
