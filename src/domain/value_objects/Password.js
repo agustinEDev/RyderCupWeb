@@ -1,4 +1,4 @@
-import { validatePassword } from '../../utils/validation';
+import { validatePassword } from '../services/PasswordPolicy';
 
 export class PasswordValidationError extends Error {
   constructor(message) {
