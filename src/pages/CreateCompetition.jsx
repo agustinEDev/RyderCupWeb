@@ -33,7 +33,7 @@ import CompetitionTypeChooser from '../components/competition/CompetitionTypeCho
 import SetupModeChooser from '../components/competition/SetupModeChooser';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
-import { MAX_PLAYERS } from '../domain/entities/Competition';
+import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 
@@ -1372,7 +1372,7 @@ const CreateCompetition = () => {
                         // callárselo es enterarse con el jugador 13 fuera
                         numberOfPlayers: cupoDeJugadores(prev.numberOfPlayers, cupoCargado.current),
                       }))}
-                      min={Math.max(2, inscritos)}
+                      min={Math.max(MIN_PLAYERS, inscritos)}
                       max={MAX_PLAYERS}
                       aria-describedby={inscritos > 0 ? 'cupo-minimo' : undefined}
                       placeholder={t('create.numberOfPlayersPlaceholder')}

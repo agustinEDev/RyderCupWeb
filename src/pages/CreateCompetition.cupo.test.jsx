@@ -40,7 +40,22 @@ vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: ()
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
 
+// Pasarse del tope sin rellenar lo demás: la validación de verdad se para en el
+// nombre. Que devuelva `max: 200` lo prueba su propio test; aquí, que se pinte
+const mockValidar = vi.fn(() => null);
+vi.mock('../utils/competitionFormValidation', () => ({
+  validateCompetitionForm: (...a) => mockValidar(...a),
+}));
+
 const CreateCompetition = (await import('./CreateCompetition')).default;
+
+const alFormulario = async () => {
+  render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+  fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+  fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
+  fireEvent.click(await screen.findByTestId('mas-opciones'));
+  return screen.findByTestId('campo-jugadores');
+};
 
 describe('CreateCompetition · cupo de inscritos (BE #314)', () => {
   beforeEach(() => {
@@ -48,11 +63,14 @@ describe('CreateCompetition · cupo de inscritos (BE #314)', () => {
   });
 
   it('el campo deja llegar a 200', async () => {
-    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
-    fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
-    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
-    fireEvent.click(await screen.findByTestId('mas-opciones'));
+    expect(await alFormulario()).toHaveAttribute('max', '200');
+  });
 
-    expect(await screen.findByLabelText(/create\.numberOfPlayers/)).toHaveAttribute('max', '200');
+  it('pasarse lo dice con el tope, no con «{{max}}»', async () => {
+    mockValidar.mockReturnValue({ key: 'playersMaximum', max: 200 });
+    const campo = await alFormulario();
+    fireEvent.submit(campo.closest('form'));
+
+    expect(await screen.findByText(/create\.errors\.playersMaximum.*200/)).toBeInTheDocument();
   });
 });

@@ -1,8 +1,7 @@
-import { MAX_PLAYERS } from '../domain/entities/Competition';
+import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { numeroEntero } from './numeroEntero';
 
-const MIN_PLAYERS = 2;
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
 const MIN_HANDICAP = 1;

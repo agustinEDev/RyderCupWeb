@@ -1,7 +1,7 @@
 // src/domain/entities/Competition.test.js
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import Competition, { CompetitionStateError, MAX_PLAYERS } from './Competition';
+import Competition, { CompetitionStateError } from './Competition';
 import { CompetitionId } from '../value_objects/CompetitionId';
 import { CompetitionName } from '../value_objects/CompetitionName';
 import { DateRange } from '../value_objects/DateRange';
@@ -320,7 +320,18 @@ describe('Competition', () => {
     it('accepts up to 200 players, the API limit since BE #314', () => {
       const competition = Competition.create(createValidCompetitionProps());
       expect(competition.updateInfo({ maxPlayers: 200 }).maxPlayers).toBe(200);
-      expect(MAX_PLAYERS).toBe(200);
+      expect(competition.updateInfo({ maxPlayers: 2 }).maxPlayers).toBe(2);
+    });
+
+    it('creating checks the same range as updating', () => {
+      // Solo lo miraba `updateInfo`: crear con 500 daba una competición imposible
+      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: 201 })).toThrow(
+        'maxPlayers must be a number between 2 and 200.'
+      );
+      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: 1 })).toThrow(
+        'maxPlayers must be a number between 2 and 200.'
+      );
+      expect(Competition.create({ ...createValidCompetitionProps(), maxPlayers: 200 }).maxPlayers).toBe(200);
     });
   });
 
