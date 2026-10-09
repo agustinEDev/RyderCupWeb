@@ -228,4 +228,19 @@ describe('InvitationCard · la fecha dice qué pasó (FE #724)', () => {
 
     expect(screen.getByTestId('fecha-de-la-invitacion')).toHaveTextContent(clave);
   });
+
+  it('FE #826: el correo del invitado se parte y el icono no se aplasta', () => {
+    const largo = 'un.correo.muy.largo.sin.espacios.para.partir@ejemplo-de-dominio.com';
+    render(
+      <InvitationCard
+        invitation={{ ...pendingInvitation, inviteeName: null, inviteeEmail: largo }}
+        mode="creator"
+        t={mockT}
+      />
+    );
+
+    const correo = screen.getByText(largo);
+    expect(correo).toHaveClass('wrap-anywhere', 'min-w-0');
+    expect(correo.previousElementSibling).toHaveClass('flex-shrink-0');
+  });
 });
