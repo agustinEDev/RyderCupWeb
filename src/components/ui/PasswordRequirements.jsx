@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import {
   PASSWORD_DIGIT,
   PASSWORD_LOWERCASE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
   hasEdgeWhitespace,
@@ -24,7 +26,8 @@ const PasswordRequirements = ({ password }) => {
       id: 'length',
       label: t('register.requirementLength'),
       // Con máximo: sin él una de 200 salía toda en verde y se rechazaba al enviar
-      test: (pwd) => passwordLength(pwd) >= 12 && passwordLength(pwd) <= 128,
+      test: (pwd) =>
+        passwordLength(pwd) >= PASSWORD_MIN_LENGTH && passwordLength(pwd) <= PASSWORD_MAX_LENGTH,
     },
     {
       id: 'uppercase',
