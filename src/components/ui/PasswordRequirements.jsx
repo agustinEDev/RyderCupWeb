@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next';
 import {
   PASSWORD_DIGIT,
   PASSWORD_LOWERCASE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
+  hasEdgeWhitespace,
   passwordLength,
 } from '../../utils/validation';
 
@@ -22,7 +25,9 @@ const PasswordRequirements = ({ password }) => {
     {
       id: 'length',
       label: t('register.requirementLength'),
-      test: (pwd) => passwordLength(pwd) >= 12,
+      // Con máximo: sin él una de 200 salía toda en verde y se rechazaba al enviar
+      test: (pwd) =>
+        passwordLength(pwd) >= PASSWORD_MIN_LENGTH && passwordLength(pwd) <= PASSWORD_MAX_LENGTH,
     },
     {
       id: 'uppercase',
@@ -49,7 +54,7 @@ const PasswordRequirements = ({ password }) => {
     {
       id: 'edgeSpaces',
       label: t('register.requirementNoEdgeSpaces'),
-      test: (pwd) => pwd.trim() === pwd,
+      test: (pwd) => !hasEdgeWhitespace(pwd),
     },
   ];
 

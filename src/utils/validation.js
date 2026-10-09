@@ -22,6 +22,7 @@ export {
   PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_CHARS,
   PASSWORD_UPPERCASE,
+  hasEdgeWhitespace,
   passwordLength,
   validatePassword,
 } from '../domain/services/PasswordPolicy';

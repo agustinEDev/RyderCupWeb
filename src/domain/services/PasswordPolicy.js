@@ -36,6 +36,21 @@ export const PASSWORD_MIN_LENGTH = 12;
 export const PASSWORD_MAX_LENGTH = 128;
 
 /**
+ * Lo que el backend considera espacio en los bordes: los 29 caracteres de
+ * `str.isspace()`, que son los que quita `str.strip()`. `trim()` no es lo mismo:
+ * quita U+FEFF, que Python deja, y deja U+0085 y U+001C-U+001F, que Python
+ * quita (FE #827). Sin igualarlos, front y back no estaban de acuerdo.
+ */
+// U+001C-U+001F son de control y son justo los que hay que detectar: Python los
+// cuenta como espacio
+const EDGE_WHITESPACE =
+  // eslint-disable-next-line no-control-regex
+  /^[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]|[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]$/;
+
+/** Si la contraseña empieza o acaba en un espacio, contado como el backend. */
+export const hasEdgeWhitespace = (password) => EDGE_WHITESPACE.test(password);
+
+/**
  * Validates password strength
  * @param {string} password - Password to validate
  * @returns {Object} - { isValid: boolean, message: string, strength: number }
@@ -67,7 +82,7 @@ export const validatePassword = (password) => {
 
   // Los espacios al principio o al final los rechaza el backend (suelen venir
   // de copiar y pegar); en medio sí valen
-  if (password.trim() !== password) {
+  if (hasEdgeWhitespace(password)) {
     return {
       isValid: false,
       messageKey: 'validation.passwordSpaces',
