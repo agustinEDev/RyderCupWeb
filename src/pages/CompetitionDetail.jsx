@@ -1456,7 +1456,7 @@ const CompetitionDetail = () => {
                               <p className="text-gray-900 font-semibold break-words">
                                 {enrollment.userName || t('detail.unknownUser')}
                               </p>
-                              <p className="text-gray-600 text-sm [overflow-wrap:anywhere]">
+                              <p className="text-gray-600 text-sm wrap-anywhere">
                                 {enrollment.userEmail || t('detail.noEmail')}
                               </p>
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
@@ -1522,7 +1522,7 @@ const CompetitionDetail = () => {
                               <p className="font-medium text-gray-700 break-words">
                                 {enrollment.userName || t('detail.unknownUser')}
                               </p>
-                              <p className="text-xs text-gray-500 [overflow-wrap:anywhere]">
+                              <p className="text-xs text-gray-500 wrap-anywhere">
                                 {enrollment.userEmail || t('detail.noEmail')}
                               </p>
                             </div>

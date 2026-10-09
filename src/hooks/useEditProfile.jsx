@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
-import { validatePassword } from '../utils/validation';
+import { passwordErrorMessage, validatePassword } from '../utils/validation';
 
 import {
   updateUserProfileUseCase,
@@ -377,8 +377,10 @@ export const useEditProfile = () => {
     } catch (error) {
       console.error('Error updating security:', error);
 
-      // v1.13.0: Handle Password History error
-      if (error.message && error.message.includes('last 5 passwords')) {
+      const contrasena = passwordErrorMessage(error, t);
+      if (error.errorCode === 'PASSWORD_REUSED') {
+        // v1.13.0, por su código desde la BE #519: antes se buscaba el texto en
+        // inglés del backend, que se rompía en cuanto cambiara una palabra
         customToast.error(
           t('toasts.passwordReused'),
           {
@@ -386,6 +388,9 @@ export const useEditProfile = () => {
             icon: '🔑',
           }
         );
+      } else if (contrasena) {
+        // El backend la rechaza con un código (BE #519): en el idioma de la app
+        customToast.error(contrasena);
       } else {
         customToast.error(
           error.message || t('toasts.failedToUpdateSecurity'),

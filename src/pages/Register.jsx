@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import customToast from '../utils/toast';
 import { useTranslation } from 'react-i18next';
 import {
+  passwordErrorMessage,
   validateEmail,
   validateName,
   validatePassword,
@@ -161,7 +162,9 @@ const Register = () => {
       }, 1000);
 
     } catch (error) {
-      customToast.error(error.message || t('register.error'));
+      // El backend dice por qué rechaza la contraseña con un código (BE #519):
+      // su texto va en español, así que se dice con la clave del idioma de la app
+      customToast.error(passwordErrorMessage(error, t) || error.message || t('register.error'));
     } finally {
       setIsLoading(false);
     }
