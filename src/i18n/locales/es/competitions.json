@@ -104,7 +104,7 @@
       "golfCourseRequired": "Por favor selecciona un campo de golf",
       "golfCoursesRequired": "Por favor selecciona campos de golf para: {{countries}}",
       "playersMinimum": "El número de jugadores debe ser al menos 2",
-      "playersMaximum": "El número de jugadores no puede exceder 100",
+      "playersMaximum": "El número de jugadores no puede exceder {{max}}",
       "teamNamesTooShort": "Los nombres de los equipos necesitan al menos 3 letras",
       "teamNamesTooLong": "Los nombres de los equipos no pueden pasar de 50 letras",
       "handicapLimitRange": "El límite de hándicap tiene que estar entre 1 y 54",

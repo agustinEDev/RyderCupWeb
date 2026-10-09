@@ -138,14 +138,15 @@ describe('validateCompetitionForm', () => {
     expect(result).toBeNull();
   });
 
-  it('returns playersMaximum when numberOfPlayers is above 100', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '101' });
-    expect(result).toEqual({ key: 'playersMaximum' });
+  it('returns playersMaximum when numberOfPlayers is above 200', () => {
+    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '201' });
+    expect(result).toEqual({ key: 'playersMaximum', max: 200 });
   });
 
-  it('accepts numberOfPlayers at the maximum boundary (100)', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '100' });
-    expect(result).toBeNull();
+  it('accepts numberOfPlayers at the maximum boundary (200)', () => {
+    // La API sube a 200 con la BE #314: 150 ya no es un error
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '200' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toBeNull();
   });
 
   it('short-circuits on the first failing rule (name before team names)', () => {
@@ -165,7 +166,7 @@ describe('validateCompetitionForm', () => {
    *   #    caso                                   | qué pasa
    *   -----|-----------------------------------------|---------------------
    *   5    nº de jugadores vacío                     | vale: son 12
-   *   6    nº de jugadores 150                       | error: el tope es 100
+   *   6    nº de jugadores 250                       | error: el tope es 200 (BE #314)
    *   7    un nombre de equipo en blanco             | error, como hasta ahora
    */
   it('5: sin número de jugadores es válido — serán 12', () => {
@@ -177,9 +178,9 @@ describe('validateCompetitionForm', () => {
   });
 
   it('6: pero un número imposible sigue siendo un error', () => {
-    // El tope de 100 no es del formulario: lo pone la API (`le=100`), así que
+    // El tope de 200 no es del formulario: lo pone la API (`le=200`), así que
     // saltárselo aquí solo cambia un aviso claro por un 422 del servidor
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toEqual({ key: 'playersMaximum' });
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '250' })).toEqual({ key: 'playersMaximum', max: 200 });
     expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' })).toEqual({ key: 'playersMinimum' });
     // «doce» no es un número pequeño: no es un número. Decir «mínimo 2» era
     // contestar a otra cosa

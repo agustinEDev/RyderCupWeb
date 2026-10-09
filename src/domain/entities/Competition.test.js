@@ -1,7 +1,7 @@
 // src/domain/entities/Competition.test.js
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import Competition, { CompetitionStateError } from './Competition';
+import Competition, { CompetitionStateError, MAX_PLAYERS } from './Competition';
 import { CompetitionId } from '../value_objects/CompetitionId';
 import { CompetitionName } from '../value_objects/CompetitionName';
 import { DateRange } from '../value_objects/DateRange';
@@ -312,9 +312,15 @@ describe('Competition', () => {
 
     it('should throw error for invalid maxPlayers during update', () => {
       const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow('maxPlayers must be a number between 2 and 100.');
-      expect(() => competition.updateInfo({ maxPlayers: 101 })).toThrow('maxPlayers must be a number between 2 and 100.');
-      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow('maxPlayers must be a number between 2 and 100.');
+      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => competition.updateInfo({ maxPlayers: 201 })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow('maxPlayers must be a number between 2 and 200.');
+    });
+
+    it('accepts up to 200 players, the API limit since BE #314', () => {
+      const competition = Competition.create(createValidCompetitionProps());
+      expect(competition.updateInfo({ maxPlayers: 200 }).maxPlayers).toBe(200);
+      expect(MAX_PLAYERS).toBe(200);
     });
   });
 

@@ -33,6 +33,7 @@ import CompetitionTypeChooser from '../components/competition/CompetitionTypeCho
 import SetupModeChooser from '../components/competition/SetupModeChooser';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { MAX_PLAYERS } from '../domain/entities/Competition';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 
@@ -630,7 +631,7 @@ const CreateCompetition = () => {
           text: t(`create.errors.${validationError.key}`, { countries: countryNames })
         });
       } else {
-        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`, { count: validationError.count }) });
+        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`, { count: validationError.count, max: validationError.max }) });
       }
       // Si lo que falla vive dentro de «Más opciones», el aviso hablaba de un
       // campo que no estaba en pantalla (`/code-review`)
@@ -1372,7 +1373,7 @@ const CreateCompetition = () => {
                         numberOfPlayers: cupoDeJugadores(prev.numberOfPlayers, cupoCargado.current),
                       }))}
                       min={Math.max(2, inscritos)}
-                      max="100"
+                      max={MAX_PLAYERS}
                       aria-describedby={inscritos > 0 ? 'cupo-minimo' : undefined}
                       placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"

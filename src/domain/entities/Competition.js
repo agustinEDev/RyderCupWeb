@@ -4,6 +4,10 @@ import { CompetitionStatus } from '../value_objects/CompetitionStatus';
 import { tieneEquipos } from '../value_objects/TournamentType';
 import { RyderCupSetup } from '../value_objects/RyderCupSetup';
 
+// Cuántos inscritos admite como mucho, el mismo tope que la API (`le=200`
+// desde la BE #314: antes eran 100 por un límite oculto al leer inscripciones)
+export const MAX_PLAYERS = 200;
+
 /**
  * Custom error for invalid state transitions in a Competition.
  */
@@ -250,8 +254,8 @@ export default class Competition {
     
     // Validate maxPlayers range if updated
     if (updates.maxPlayers !== undefined) {
-      if (typeof updates.maxPlayers !== 'number' || updates.maxPlayers < 2 || updates.maxPlayers > 100) {
-        throw new Error("maxPlayers must be a number between 2 and 100.");
+      if (typeof updates.maxPlayers !== 'number' || updates.maxPlayers < 2 || updates.maxPlayers > MAX_PLAYERS) {
+        throw new Error(`maxPlayers must be a number between 2 and ${MAX_PLAYERS}.`);
       }
     }
 
