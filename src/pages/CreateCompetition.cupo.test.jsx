@@ -15,7 +15,10 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1', gender: 'MALE' }, loading: false }) }));
+// El mismo `user` en cada render: uno nuevo cada vez relanza los efectos que
+// dependen de él y vuelve el test intermitente
+const USUARIO = { user: { id: 'u-1', gender: 'MALE' }, loading: false };
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => USUARIO }));
 vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
 vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../services/countries', () => ({
