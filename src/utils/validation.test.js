@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { validatePassword, validatePasswordStrength, validateEmail, validateName } from './validation';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  passwordErrorMessage,
+  passwordErrorTranslation,
+  validatePassword,
+  validatePasswordStrength,
+  validateEmail,
+  validateName,
+} from './validation';
 
 describe('validation utilities', () => {
   // ========================================
@@ -329,5 +336,46 @@ describe('validation utilities', () => {
     it('da la máxima a una que cumple la política', () => {
       expect(validatePasswordStrength('Abcdefghij1!').score).toBe(4);
     });
+  });
+
+  // BE #519: el 400 de la política trae `error_code`; el texto del backend va
+  // en español, así que la pantalla lo traduce con la misma clave que usaría
+  // si lo hubiera detectado ella
+  describe('passwordErrorTranslation', () => {
+    it.each([
+      ['PASSWORD_EMPTY', 'validation.passwordRequired'],
+      ['PASSWORD_EDGE_SPACES', 'validation.passwordSpaces'],
+      ['PASSWORD_TOO_SHORT', 'validation.passwordTooShort'],
+      ['PASSWORD_TOO_LONG', 'validation.passwordTooLong'],
+      ['PASSWORD_NO_UPPERCASE', 'validation.passwordWeak'],
+      ['PASSWORD_NO_LOWERCASE', 'validation.passwordWeak'],
+      ['PASSWORD_NO_DIGIT', 'validation.passwordWeak'],
+      ['PASSWORD_NO_SYMBOL', 'validation.passwordNoSymbol'],
+      ['PASSWORD_TOO_COMMON', 'validation.passwordCommon'],
+    ])('%s se dice con %s', (codigo, clave) => {
+      expect(passwordErrorTranslation(codigo).key).toBe(clave);
+    });
+
+    it('passwordErrorMessage traduce con el espacio de nombres auth, sea cual sea el de la pantalla', () => {
+      const t = vi.fn((clave, opciones) => `${opciones?.ns}:${clave}`);
+
+      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_COMMON' }, t)).toBe('auth:validation.passwordCommon');
+      expect(passwordErrorMessage({ errorCode: 'PASSWORD_TOO_SHORT' }, t)).toBe('auth:validation.passwordTooShort');
+      expect(t).toHaveBeenLastCalledWith('validation.passwordTooShort', { ns: 'auth', min: 12 });
+      expect(passwordErrorMessage({ errorCode: 'OTRO' }, t)).toBeNull();
+      expect(passwordErrorMessage(new Error('sin código'), t)).toBeNull();
+    });
+
+    it('las de longitud llevan su límite', () => {
+      expect(passwordErrorTranslation('PASSWORD_TOO_SHORT').options).toEqual({ min: 12 });
+      expect(passwordErrorTranslation('PASSWORD_TOO_LONG').options).toEqual({ max: 128 });
+    });
+
+    it.each([null, undefined, 'CSRF_VALIDATION_FAILED', 'OTRO', 'constructor', 'toString'])(
+      'un código que no es de la contraseña (%s) no se traduce',
+      (codigo) => {
+        expect(passwordErrorTranslation(codigo)).toBeNull();
+      }
+    );
   });
 });

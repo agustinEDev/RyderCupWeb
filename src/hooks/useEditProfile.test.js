@@ -285,6 +285,34 @@ describe('useEditProfile Hook', () => {
     expect(composition.updateUserSecurityUseCase.execute).not.toHaveBeenCalled();
   });
 
+  it('BE #519: el rechazo de la contraseña del backend se dice con su clave', async () => {
+    useAuth.mockReturnValue({
+      user: { id: '1', first_name: 'John', last_name: 'Doe', email: 'old@example.com', handicap: 10 },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    composition.updateUserSecurityUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Esta contraseña es demasiado común…'), {
+        status: 400,
+        errorCode: 'PASSWORD_TOO_COMMON',
+      })
+    );
+    const { result } = renderHook(() => useEditProfile());
+    await act(async () => {});
+
+    act(() => {
+      result.current.handleInputChange({ target: { name: 'currentPassword', value: 'vieja' } });
+      result.current.handleInputChange({ target: { name: 'newPassword', value: 'Valida-Prueba123!' } });
+      result.current.handleInputChange({ target: { name: 'confirmPassword', value: 'Valida-Prueba123!' } });
+    });
+    await act(async () => {
+      await result.current.handleUpdateSecurity({ preventDefault: vi.fn() });
+    });
+
+    expect(customToast.error).toHaveBeenCalledWith('validation.passwordCommon');
+  });
+
   it('debería llamar a updateManualHandicapUseCase y actualizar el estado al llamar a handleUpdateHandicapManually', async () => {
     // Arrange
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };
