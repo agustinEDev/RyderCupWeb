@@ -14,6 +14,7 @@ import {
   createCompetitionWithGolfCoursesUseCase,
   configureScheduleUseCase,
   updateCompetitionUseCase,
+  updateStrokePlaySettingsUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
   fetchCountriesUseCase,
@@ -31,6 +32,14 @@ import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
 import SetupModeChooser from '../components/competition/SetupModeChooser';
+import StrokePlaySettings from '../components/competition/StrokePlaySettings';
+import {
+  formularioDeAjustes,
+  diasDelTorneo,
+  ajustesParaCrear,
+  cambiosDeAjustes,
+  primeroLosAjustes,
+} from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
@@ -166,7 +175,10 @@ const CreateCompetition = () => {
     // el reparto de equipos sale de él, así que ya no se pregunta aparte
     setupMode: null,
     tournamentType: null,
-    maxPlayingHandicap: undefined
+    maxPlayingHandicap: undefined,
+    // Categorías, jornadas por jugador y general de un Stableford o un Medal
+    // (FE #824); una Ryder no los usa ni los manda
+    strokePlay: formularioDeAjustes(null)
   });
   // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
   // la de siempre: así se cargaba y se creaba todo antes del tipo
@@ -176,6 +188,10 @@ const CreateCompetition = () => {
   // Vaciar el campo en edición no puede recortar el cupo de una competición con
   // gente ya aprobada: se conserva el que se cargó (`/code-review`)
   const cupoCargado = useRef(CUPO_POR_DEFECTO);
+  // Al editar un stroke play: los ajustes y los días guardados. De ellos sale qué
+  // ha cambiado (el PATCH lleva solo eso) y qué petición va primero (FE #824)
+  const ajustesCargados = useRef(null);
+  const diasCargados = useRef(null);
   // Cuántos hay ya dentro, al editar: el cupo no puede bajar de ahí (FE #662).
   // Con la competición de la que son: crear y editar montan este componente en
   // el mismo sitio, y al ir de editar una a crear otra se arrastraba el mínimo
@@ -335,12 +351,19 @@ const CreateCompetition = () => {
           // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
           setupMode:
             competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
-          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
+          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
+          // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
+          strokePlay: formularioDeAjustes(
+            competition.strokePlay ?? null,
+            (1.5).toLocaleString(i18n.language).charAt(1)
+          )
         };
 
         if (!vigente) return;
         // Lo que había guardado: vaciar el campo no puede recortarlo
         cupoCargado.current = formDataToSet.numberOfPlayers;
+        ajustesCargados.current = competition.strokePlay ?? null;
+        diasCargados.current = diasDelTorneo(competition.startDate, competition.endDate);
         setInscritosDe({ de: competitionId, cuantos: competition.enrolledCount || 0 });
         setFormData(formDataToSet);
 
@@ -698,6 +721,9 @@ const CreateCompetition = () => {
         // El tipo, solo al crear: el de una competición que ya existe no se
         // cambia (FE #791, RyderCupAm#251)
         ...(!isEditMode && tipoElegido ? { tournament_type: tipoElegido } : {}),
+        // Los ajustes de un Stableford o un Medal van en el alta; al editar,
+        // por su propio PATCH y solo si cambian (FE #824)
+        ...(!isEditMode && !conEquipos ? { stroke_play: ajustesParaCrear(formData.strokePlay) } : {}),
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
           : null,
@@ -710,8 +736,32 @@ const CreateCompetition = () => {
       };
 
       if (isEditMode) {
-        // EDIT MODE: Update existing competition
-        await updateCompetitionUseCase.execute(competitionId, payload);
+        // EDIT MODE: lo general y, en un stroke play, los ajustes que cambien.
+        // Son dos peticiones: si la segunda falla, la primera ya está guardada
+        // y hay que decir qué se guardó y qué no, sin salir (FE #824)
+        const cambios =
+          !conEquipos && ajustesCargados.current
+            ? cambiosDeAjustes(ajustesCargados.current, formData.strokePlay)
+            : null;
+        const guardaLoGeneral = () => updateCompetitionUseCase.execute(competitionId, payload);
+        const guardaLosAjustes = async () => {
+          // Lo guardado pasa a ser la referencia: reintentar no los reenvía
+          ajustesCargados.current = await updateStrokePlaySettingsUseCase.execute(competitionId, cambios);
+        };
+        const ajustesPrimero = cambios && primeroLosAjustes(cambios, diasCargados.current);
+        await (ajustesPrimero ? guardaLosAjustes : guardaLoGeneral)();
+        if (cambios) {
+          try {
+            await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
+          } catch (error) {
+            const texto = t(ajustesPrimero ? 'edit.generalNotSaved' : 'edit.strokePlayNotSaved', {
+              motivo: error.message || t('edit.error'),
+            });
+            customToast.error(texto);
+            setMessage({ type: 'error', text: texto });
+            return;
+          }
+        }
 
         customToast.success(t('edit.success'));
 
@@ -1388,6 +1438,27 @@ const CreateCompetition = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Los ajustes de un Stableford o un Medal, a la vista: las
+                  categorías y las jornadas sí se deciden al crear (FE #824) */}
+              {!conEquipos && (
+                <div data-testid="ajustes-stroke-play" className="border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Settings className="w-4 h-4 text-primary" />
+                    </div>
+                    <h3 className="text-gray-900 font-bold text-base">
+                      {t('create.strokePlay.title', { tipo: t(`create.type.${formData.tournamentType}.title`) })}
+                    </h3>
+                  </div>
+                  <StrokePlaySettings
+                    valor={formData.strokePlay}
+                    onCambio={(strokePlay) => setFormData((prev) => ({ ...prev, strokePlay }))}
+                    tipo={formData.tournamentType}
+                    dias={diasDelTorneo(formData.startDate, formData.endDate)}
+                  />
+                </div>
+              )}
 
               {/* Lo que no hay que decidir para crear: se pliega, pero se dice
                   qué se acepta si nadie lo toca (FE #637) */}

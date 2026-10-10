@@ -70,6 +70,16 @@ class CompetitionAssembler {
       // Qué torneo es y su modalidad (FE #791, RyderCupAm#251). Una respuesta
       // de antes del tipo es una Ryder Cup: es lo que eran todas
       tournamentType: competition.tournamentType,
+      // Categorías, jornadas por jugador y general de un Stableford o un Medal
+      // (FE #824); null en una Ryder
+      strokePlay: competition.strokePlay
+        ? {
+            categoryLimits: [...competition.strokePlay.categoryLimits],
+            categoryCount: competition.strokePlay.categoryCount,
+            maxMatchdaysPerPlayer: competition.strokePlay.maxMatchdaysPerPlayer,
+            overallStanding: competition.strokePlay.overallStanding,
+          }
+        : null,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).

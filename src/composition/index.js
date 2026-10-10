@@ -60,6 +60,7 @@ import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetit
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
 import CreateCompetitionWithGolfCoursesUseCase from '../application/use_cases/competition/CreateCompetitionWithGolfCoursesUseCase';
 import UpdateCompetitionUseCase from '../application/use_cases/competition/UpdateCompetitionUseCase';
+import UpdateStrokePlaySettingsUseCase from '../application/use_cases/competition/UpdateStrokePlaySettingsUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
 import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
 import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
@@ -236,6 +237,7 @@ const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ auth
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
 const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -417,6 +419,7 @@ export {
   createCompetitionUseCase,
   createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
+  updateStrokePlaySettingsUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
   activateCompetitionUseCase,

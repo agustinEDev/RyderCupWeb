@@ -272,3 +272,47 @@ describe('validateCompetitionForm · el mínimo general manda (FE #662, revisió
   });
 });
 
+
+describe('validateCompetitionForm · los ajustes del stroke play (FE #824)', () => {
+  const stableford = (strokePlay) => ({
+    ...validFormData,
+    tournamentType: 'STABLEFORD',
+    strokePlay: {
+      modo: 'LIMITES',
+      limites: [],
+      categoriasIguales: '3',
+      jornadas: '1',
+      general: 'ACCUMULATED',
+      ...strokePlay,
+    },
+  });
+
+  it('SP1: con los de por defecto, nada que decir', () => {
+    expect(validateCompetitionForm(stableford({}))).toBeNull();
+  });
+
+  it('SP2: unos límites desordenados no se envían', () => {
+    expect(validateCompetitionForm(stableford({ limites: ['26,0', '12,0'] }))).toEqual({
+      key: 'categoryLimitsOrder',
+    });
+  });
+
+  it('SP3 (caso 12): más jornadas que días del torneo (3)', () => {
+    expect(validateCompetitionForm(stableford({ jornadas: '4' }))).toEqual({
+      key: 'matchdaysMoreThanDays',
+      max: 3,
+    });
+  });
+
+  it('SP4: una Ryder no mira los ajustes del stroke play', () => {
+    expect(
+      validateCompetitionForm({ ...stableford({ jornadas: '9' }), tournamentType: 'RYDER_CUP' })
+    ).toBeNull();
+  });
+
+  it('SP5: sin fechas manda el error de las fechas', () => {
+    expect(validateCompetitionForm({ ...stableford({ jornadas: '9' }), endDate: '' })).toEqual({
+      key: 'datesRequired',
+    });
+  });
+});

@@ -108,7 +108,14 @@
       "teamNamesTooShort": "Team names need at least 3 characters",
       "teamNamesTooLong": "Team names cannot exceed 50 characters",
       "handicapLimitRange": "The handicap limit must be between 1 and 54",
-      "playersInvalid": "The number of players must be a whole number"
+      "playersInvalid": "The number of players must be a whole number",
+      "categoryLimitsTooMany": "At most 4 limits: 5 categories.",
+      "categoryLimitRange": "Each limit is a handicap between -10.0 and 54.0.",
+      "categoryLimitOneDecimal": "Limits have one decimal at most.",
+      "categoryLimitsOrder": "Limits go from lowest to highest, with no repeats.",
+      "categoryCountRange": "Equal categories are between 2 and 5.",
+      "matchdaysRange": "Each player must be able to play at least one day.",
+      "matchdaysMoreThanDays": "The tournament lasts {{max}} days: no more days per player fit."
     },
     "success": "Competition created successfully!",
     "partialSuccess": "Competition created, but {{failed}} course(s) could not be added: {{courses}}. {{success}} course(s) were added successfully.",
@@ -144,7 +151,42 @@
       "MATCH_PLAY": "Match play",
       "STROKE_PLAY": "Stroke play"
     },
-    "moreOptionsSummaryNoTeams": "{{handicap}}"
+    "moreOptionsSummaryNoTeams": "{{handicap}}",
+    "strokePlay": {
+      "title": "{{tipo}} settings",
+      "categories": "Categories",
+      "mode": {
+        "LIMITES": "Set the limits",
+        "IGUALES": "Equal categories"
+      },
+      "limitsHint": "Each limit is the highest handicap in its category: \"up to 12.0\" includes 12.0. With no limits, there is one category.",
+      "limitLabel": "Limit {{numero}}",
+      "addLimit": "Add a limit",
+      "removeLimit": "Remove limit {{numero}}",
+      "preview": {
+        "single": "One category for everyone",
+        "upTo": "Category {{numero}}: up to {{hasta}}",
+        "between": "Category {{numero}}: {{desde}} to {{hasta}}",
+        "above": "Category {{numero}}: over {{desde}}"
+      },
+      "equalCount": "How many categories",
+      "equalHint": "They are split when enrollments close, using the fixed handicaps, into groups as even as possible. Players tied on a boundary stay together.",
+      "sixRule": "A category needs at least 6 players: with fewer, it joins the one with lower handicaps.",
+      "matchdays": "Days per player",
+      "matchdaysHint": "On how many days each player can play, one slot per day.",
+      "overall": {
+        "title": "Overall standings",
+        "ACCUMULATED": {
+          "label": "Accumulated",
+          "STABLEFORD": "Adds up the points of all their rounds.",
+          "MEDAL": "Adds up the net strokes of all their rounds."
+        },
+        "BEST_CARD": {
+          "label": "Best card",
+          "hint": "Only their best round counts."
+        }
+      }
+    }
   },
   "edit": {
     "title": "Edit Competition",
@@ -155,7 +197,9 @@
     "error": "Failed to update competition",
     "errorLoading": "Failed to load competition",
     "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
-    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates."
+    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates.",
+    "strokePlayNotSaved": "The general details were saved, but not the tournament settings: {{motivo}}",
+    "generalNotSaved": "The tournament settings were saved, but not the general details: {{motivo}}"
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
