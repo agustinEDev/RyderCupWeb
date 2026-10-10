@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { situacionEnLasFranjas, COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from './PlazasEnFranjas';
+import { situacionEnLasFranjas, destinosParaMover, COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from './PlazasEnFranjas';
 
 /**
  * Qué puede hacer un jugador en cada franja (FE #824, PR 4). Las reglas del
@@ -110,5 +110,21 @@ describe('PlazasEnFranjas (FE #824)', () => {
 
     expect(s.jornadas.maximo).toBe(1);
     expect(accion(s, 't')).toEqual({ tipo: CAMBIAR, dejar: ['m'] });
+  });
+});
+
+describe('adónde puede mover el organizador a un jugador (/code-review: la regla en el dominio)', () => {
+
+  it('a otra con sitio del mismo día o de un día en que no juega; no a las llenas ni a la suya', () => {
+    const franjas = [
+      mia('m', '2030-10-12'),
+      { ...franja('t', '2030-10-12'), sessionType: 'AFTERNOON' },
+      mia('d', '2030-10-13'),
+      { ...franja('e', '2030-10-13'), sessionType: 'AFTERNOON' },
+      franja('f', '2030-10-14'),
+      llena('g', '2030-10-14'),
+    ];
+
+    expect(destinosParaMover(franjas, YO, 'm').map((f) => f.id)).toEqual(['t', 'f']);
   });
 });

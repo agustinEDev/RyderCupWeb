@@ -58,3 +58,23 @@ export const situacionEnLasFranjas = (franjas, userId, maxJornadas) => {
     porFranja: Object.fromEntries(franjas.map((f) => [f.id, accionEn(f)])),
   };
 };
+
+/**
+ * Adónde puede mover el organizador a un jugador desde una de sus franjas: a
+ * otra con sitio del mismo día (es cambiarse) o de un día en que no juega. Las
+ * demás el servidor las rechaza (una franja por jornada). Aquí, junto a las
+ * reglas del jugador, para que no se separen (/code-review).
+ */
+export const destinosParaMover = (franjas, userId, desdeId) => {
+  const desde = franjas.find((f) => f.id === desdeId);
+  const diasQueJuega = new Set(
+    franjas.filter((f) => f.teeSheet?.playerIds.includes(userId)).map((f) => f.roundDate)
+  );
+  return franjas.filter(
+    (f) =>
+      f.id !== desdeId &&
+      f.teeSheet &&
+      f.teeSheet.placesTaken < f.teeSheet.capacity &&
+      (f.roundDate === desde?.roundDate || !diasQueJuega.has(f.roundDate))
+  );
+};

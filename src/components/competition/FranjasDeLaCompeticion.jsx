@@ -12,7 +12,7 @@ import {
   joinWaitingListUseCase,
   leaveWaitingListUseCase,
 } from '../../composition';
-import { situacionEnLasFranjas } from '../../domain/services/PlazasEnFranjas';
+import { situacionEnLasFranjas, destinosParaMover } from '../../domain/services/PlazasEnFranjas';
 import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFranja';
 import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
@@ -302,14 +302,18 @@ const FranjasDeLaCompeticion = ({
     [estoyInscrito, userId, franjas, maxMatchdaysPerPlayer]
   );
   const franjasPorId = useMemo(() => Object.fromEntries(franjas.map((f) => [f.id, f])), [franjas]);
-  const conSitio = franjas.filter((f) => f.teeSheet && f.teeSheet.placesTaken < f.teeSheet.capacity);
-  const nombreDe = (id) => inscritos.find((i) => i.userId === id)?.userName || t('franjas.unknownPlayer');
+  // Una vez por lectura, no en cada pintada: con 200 jugadores se nota (/code-review)
+  const conSitio = useMemo(
+    () => franjas.filter((f) => f.teeSheet && f.teeSheet.placesTaken < f.teeSheet.capacity),
+    [franjas]
+  );
+  const nombres = useMemo(() => new Map(inscritos.map((i) => [i.userId, i.userName])), [inscritos]);
+  const nombreDe = (id) => nombres.get(id) || t('franjas.unknownPlayer');
   const etiqueta = (f) => ({ franja: t(`sessions.${f.sessionType}`), dia: fecha(f.roundDate) });
-  const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
-  // Los días en que juega cada uno, para no ofrecer moverle a otro de esos días
-  const diasDe = (id) =>
-    new Set(franjas.filter((f) => f.teeSheet?.playerIds.includes(id)).map((f) => f.roundDate));
-  const sinFranja = inscritos.filter((i) => !conPlaza.has(i.userId));
+  const sinFranja = useMemo(() => {
+    const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
+    return inscritos.filter((i) => !conPlaza.has(i.userId));
+  }, [franjas, inscritos]);
   const casos = {
     coger: takeTeeWindowPlaceUseCase,
     soltar: releaseTeeWindowPlaceUseCase,
@@ -495,9 +499,11 @@ const FranjasDeLaCompeticion = ({
         </p>
       )}
 
-      {situacion && (
+      {/* Si no se pudo releer, su situación es vieja: mejor no decirla (/code-review) */}
+      {situacion && !sinCargar && (
         <p data-testid="franjas-mis-jornadas" className="mb-3 text-sm text-gray-700">
-          {t('franjas.myDays', { count: situacion.jornadas.juega, maximo: situacion.jornadas.maximo })}
+          {/* El plural lo decide el máximo: «de tu 1 jornada», «de tus 2 jornadas» */}
+          {t('franjas.myDays', { count: situacion.jornadas.maximo, juega: situacion.jornadas.juega })}
         </p>
       )}
 
@@ -572,7 +578,7 @@ const FranjasDeLaCompeticion = ({
                         <p className="text-gray-500">
                           {t('franjas.taken', { count: hoja.placesTaken, espera: hoja.waitingIds.length })}
                         </p>
-                        {situacion && (
+                        {situacion && !sinCargar && (
                           <AccionDelJugador
                             franja={f}
                             accion={situacion.porFranja[f.id]}
@@ -592,9 +598,8 @@ const FranjasDeLaCompeticion = ({
                         {(estoyInscrito || canManage) && (
                           <JugadoresDeLaFranja
                             franja={f}
-                            diasDe={diasDe}
+                            destinosDe={(id) => destinosParaMover(franjas, id, f.id)}
                             nombreDe={nombreDe}
-                            conSitio={conSitio}
                             etiqueta={etiqueta}
                             puedeColocar={puedeColocar && !sinCargar}
                             puedeQuitar={puedeQuitar}

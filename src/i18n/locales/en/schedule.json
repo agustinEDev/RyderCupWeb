@@ -240,11 +240,11 @@
     "saved": "Window saved.",
     "changed": "Window changed.",
     "removed": "Window deleted.",
-    "myDays_one": "You play {{count}} of your {{maximo}} days.",
-    "myDays_other": "You play {{count}} of your {{maximo}} days.",
+    "myDays_one": "You play {{juega}} of your {{count}} day.",
+    "myDays_other": "You play {{juega}} of your {{count}} days.",
     "mine": "You have a place",
-    "waitingPosition_one": "You are {{count}} on the waiting list",
-    "waitingPosition_other": "You are {{count}} on the waiting list",
+    "waitingPosition_one": "You are #{{count}} on the waiting list",
+    "waitingPosition_other": "You are #{{count}} on the waiting list",
     "take": "Take a place",
     "switchHere": "Switch here",
     "switchFor": "Switch for this one",
@@ -273,6 +273,8 @@
     "waitingLeft": "You left the waiting list.",
     "moved": "Player moved.",
     "playerRemoved": "Player removed from the window.",
-    "placed": "Player placed in the window."
+    "placed": "Player placed in the window.",
+    "removePlayerConfirm": "Remove {{jugador}}? Their place goes to the first on the waiting list.",
+    "removePlayerYes": "Yes, remove"
   }
 }

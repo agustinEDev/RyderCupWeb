@@ -257,7 +257,7 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
     mockGetCompetitionDetail.mockResolvedValue(stableford({ creatorId: 'otra' }));
     renderPage();
 
-    expect(await screen.findByTestId('franjas-mis-jornadas')).toHaveTextContent('franjas.myDays_0');
+    expect(await screen.findByTestId('franjas-mis-jornadas')).toHaveTextContent('franjas.myDays_2');
   });
 
   const conFranjas = async (rounds) => {
@@ -347,5 +347,32 @@ describe('CompetitionDetail · cerrar sin los nombres de quien falta (FE #824)',
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindowUnnamed'));
+  });
+
+  it('la cuenta es la de todos los que faltan, aunque alguno venga sin nombre (/code-review)', async () => {
+    vi.clearAllMocks();
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ hasTeams: false, tournamentType: 'STABLEFORD', team1Name: null, team2Name: null, teamAssignment: null })
+    );
+    mockCloseEnrollments.mockRejectedValue(
+      Object.assign(new Error('Faltan'), {
+        errorCode: 'PLAYERS_WITHOUT_TEE_WINDOW',
+        data: { players: [{ user_id: 'a', name: 'Ana' }, { user_id: 'x' }, { user_id: 'b', name: 'Bea' }] },
+      })
+    );
+    const { getScheduleUseCase } = await import('../composition');
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    const lecturas = getScheduleUseCase.execute.mock.calls.length;
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindow_3'));
+    // Y las franjas se releen: lo pintado puede estar viejo
+    await waitFor(() => expect(getScheduleUseCase.execute.mock.calls.length).toBeGreaterThan(lecturas));
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, UserMinus } from 'lucide-react';
 import { COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from '../../domain/services/PlazasEnFranjas';
@@ -35,6 +35,14 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
   const { t } = useTranslation('schedule');
   const [confirmandoSoltar, setConfirmandoSoltar] = useState(false);
   const [eligiendoCual, setEligiendoCual] = useState(false);
+  // Si cambia lo que se puede hacer, lo abierto se cierra: si no, al volver a
+  // ser suya la confirmación de soltar se reabría sola (/code-review)
+  const tipo = accion?.tipo;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- cerrar lo abierto cuando la acción cambia es justo el objetivo
+    setConfirmandoSoltar(false);
+    setEligiendoCual(false);
+  }, [tipo]);
   if (!accion) return null;
 
   const estado =
@@ -133,9 +141,8 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
  */
 export const JugadoresDeLaFranja = ({
   franja,
-  diasDe,
+  destinosDe,
   nombreDe,
-  conSitio,
   etiqueta,
   puedeColocar,
   puedeQuitar,
@@ -145,13 +152,10 @@ export const JugadoresDeLaFranja = ({
 }) => {
   const { t } = useTranslation('schedule');
   const [abierta, setAbierta] = useState(false);
+  // A quién se va a quitar: la plaza la coge al momento el primero de la
+  // espera, así que se confirma, como al soltar la propia (/code-review)
+  const [quitando, setQuitando] = useState(null);
   const { playerIds, waitingIds } = franja.teeSheet;
-  // Adónde se le puede mover: otra con sitio del mismo día (cambiarse), o de un
-  // día en que no juega. Las demás el servidor las rechaza (revisor)
-  const destinosDe = (id) =>
-    conSitio.filter(
-      (f) => f.id !== franja.id && (f.roundDate === franja.roundDate || !diasDe(id).has(f.roundDate))
-    );
 
   return (
     <div>
@@ -165,6 +169,7 @@ export const JugadoresDeLaFranja = ({
           <ul data-testid={`jugadores-${franja.id}`} className="space-y-1">
             {playerIds.map((id) => (
               <li key={id} className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-800">
+                {/* Adónde se le puede mover: lo decide el dominio */}
                 <span className="min-w-0 flex-1 truncate">{nombreDe(id)}</span>
                 {puedeColocar && destinosDe(id).length > 0 && (
                   <select aria-label={t('franjas.moveTo', { jugador: nombreDe(id) })} value="" disabled={ocupado}
@@ -184,10 +189,25 @@ export const JugadoresDeLaFranja = ({
                 )}
                 {puedeColocar && puedeQuitar && (
                   <button type="button" disabled={ocupado} aria-label={t('franjas.removePlayer', { jugador: nombreDe(id) })}
-                    onClick={() => hacer(() => casos.soltar.execute(franja.id, id), 'franjas.playerRemoved')}
+                    onClick={() => setQuitando(id)}
                     className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600">
                     <UserMinus className="h-4 w-4" />
                   </button>
+                )}
+                {quitando === id && (
+                  <div className="flex w-full flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+                    <span className="min-w-0 flex-1">{t('franjas.removePlayerConfirm', { jugador: nombreDe(id) })}</span>
+                    <button type="button" disabled={ocupado} className="min-h-11 rounded-md bg-amber-600 px-3 py-1 font-semibold text-white"
+                      onClick={() => {
+                        setQuitando(null);
+                        hacer(() => casos.soltar.execute(franja.id, id), 'franjas.playerRemoved');
+                      }}>
+                      {t('franjas.removePlayerYes')}
+                    </button>
+                    <button type="button" className="min-h-11 rounded-md px-3 py-1" onClick={() => setQuitando(null)}>
+                      {t('agenda.no')}
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

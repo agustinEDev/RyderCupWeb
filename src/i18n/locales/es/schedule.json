@@ -240,8 +240,8 @@
     "saved": "Franja guardada.",
     "changed": "Franja cambiada.",
     "removed": "Franja borrada.",
-    "myDays_one": "Juegas {{count}} de tus {{maximo}} jornadas.",
-    "myDays_other": "Juegas {{count}} de tus {{maximo}} jornadas.",
+    "myDays_one": "Juegas {{juega}} de tu {{count}} jornada.",
+    "myDays_other": "Juegas {{juega}} de tus {{count}} jornadas.",
     "mine": "Tienes plaza",
     "waitingPosition_one": "Eres el {{count}}.º en espera",
     "waitingPosition_other": "Eres el {{count}}.º en espera",
@@ -273,6 +273,8 @@
     "waitingLeft": "Has salido de la lista de espera.",
     "moved": "Jugador cambiado de franja.",
     "playerRemoved": "Jugador quitado de la franja.",
-    "placed": "Jugador colocado en la franja."
+    "placed": "Jugador colocado en la franja.",
+    "removePlayerConfirm": "¿Quitar a {{jugador}}? Su plaza pasa al primero de la espera.",
+    "removePlayerYes": "Sí, quitarlo"
   }
 }

@@ -118,7 +118,7 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 })] });
       pinta({ maxMatchdaysPerPlayer: 2 });
 
-      expect(await screen.findByTestId('franjas-mis-jornadas')).toHaveTextContent('franjas.myDays {"count":1,"maximo":2}');
+      expect(await screen.findByTestId('franjas-mis-jornadas')).toHaveTextContent('franjas.myDays {"count":2,"juega":1}');
     });
 
     it('2: con sitio coge plaza', async () => {
@@ -244,6 +244,18 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       expect(screen.queryByTestId('franjas-mis-jornadas')).toBeNull();
     });
 
+    it('10b: si tras una acción no se puede releer, no se enseña su situación vieja (/code-review)', async () => {
+      mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING')] });
+      pinta();
+      const fila = await en('m');
+      mockLeer.mockRejectedValue(new Error('429'));
+
+      fireEvent.click(fila.getByRole('button', { name: 'franjas.take' }));
+
+      expect(await screen.findByRole('button', { name: 'franjas.retry' })).toBeInTheDocument();
+      expect(screen.queryByTestId('franjas-mis-jornadas')).toBeNull();
+    });
+
     it('10: si el servidor lo rechaza, su motivo', async () => {
       mockCoger.mockRejectedValue(new Error('La franja está llena.'));
       mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING')] });
@@ -312,6 +324,19 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
 
       fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayer {"jugador":"Ana Alba"}' }));
+      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayerYes' }));
+
+      await waitFor(() => expect(mockSoltar).toHaveBeenCalledWith('m', 'ana'));
+    });
+
+    it('13c: quitar pide confirmación: la plaza la coge al momento el primero de la espera (/code-review)', async () => {
+      organizador();
+      const fila = await en('m');
+      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+
+      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayer {"jugador":"Ana Alba"}' }));
+      expect(mockSoltar).not.toHaveBeenCalled();
+      fireEvent.click(fila.getByRole('button', { name: 'franjas.removePlayerYes' }));
 
       await waitFor(() => expect(mockSoltar).toHaveBeenCalledWith('m', 'ana'));
     });

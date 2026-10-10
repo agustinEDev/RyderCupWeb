@@ -44,6 +44,15 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   // lectura lanzada antes no las devuelve a la lista (revisor)
   const [enviandoVista, setEnviandoVista] = useState(() => new Set());
   const vistas = useRef(new Set());
+  // Si se desmonta (o se cierra sesión) antes de que acabe un «Entendido», ya
+  // no se escribe la memoria: sería de la cuenta anterior (/code-review)
+  const montada = useRef(true);
+  useEffect(() => {
+    montada.current = true;
+    return () => {
+      montada.current = false;
+    };
+  }, []);
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -182,6 +191,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     try {
       await acknowledgeAssignedPlaceUseCase.execute(plaza.roundId);
       vistas.current.add(plaza.roundId);
+      if (!montada.current) return;
       const quedan = (lista) => lista.filter((p) => p.roundId !== plaza.roundId);
       ultimoAplicado.current = {
         ...ultimoAplicado.current,
@@ -192,7 +202,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     } catch (error) {
       customToast.error(error.message || t('pendingActions.placeAssignedOkFailed'));
     } finally {
-      setEnviandoVista((s) => {
+      if (montada.current) setEnviandoVista((s) => {
         const sin = new Set(s);
         sin.delete(plaza.roundId);
         return sin;

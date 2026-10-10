@@ -174,6 +174,22 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     expect((await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' })).className).toContain('min-h-11');
   });
 
+  it('17e: un «Entendido» que acaba con la tarjeta ya desmontada no escribe la memoria (/code-review)', async () => {
+    const memoria = await import('../../services/accionesPendientes');
+    mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
+    let acaba;
+    mockAcknowledge.mockReturnValue(new Promise((r) => { acaba = r; }));
+    const { unmount } = renderCard();
+    fireEvent.click(await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' }));
+
+    unmount();
+    memoria.olvidaLasAccionesPendientes();
+    acaba();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(memoria.loQueSeEnseñoAntes()).toBeNull();
+  });
+
   it('18: si la lectura falla, lo demás se enseña igual', async () => {
     mockListMyAssignedPlaces.mockRejectedValue(new Error('sin red'));
     mockListMyInvitations.mockResolvedValue({ invitations: [{ id: 'i1' }] });

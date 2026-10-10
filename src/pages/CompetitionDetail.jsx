@@ -103,6 +103,8 @@ const CompetitionDetail = () => {
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
   // La agenda que leyó su sección: sesiones y reparto. null mientras no se sabe
   const [agendaLeida, setAgendaLeida] = useState(null);
+  // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
+  const [versionFranjas, setVersionFranjas] = useState(0);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
@@ -311,13 +313,17 @@ const CompetitionDetail = () => {
       // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
-        const jugadores = (error.data?.players || []).map((p) => p.name).filter(Boolean);
-        // Sin nombres, que no quede «Faltan 0 jugadores: .» (revisor)
+        const faltan = error.data?.players || [];
+        const jugadores = faltan.map((p) => p.name).filter(Boolean);
+        // La cuenta, la de todos los que faltan, aunque alguno venga sin nombre
+        // (/code-review). Sin ningún nombre, que no quede «Faltan 0: .»
         customToast.error(
           jugadores.length > 0
-            ? t('detail.errors.playersWithoutTeeWindow', { count: jugadores.length, jugadores: jugadores.join(', ') })
+            ? t('detail.errors.playersWithoutTeeWindow', { count: faltan.length, jugadores: jugadores.join(', ') })
             : t('detail.errors.playersWithoutTeeWindowUnnamed')
         );
+        // Lo pintado puede estar viejo: se releen las franjas
+        setVersionFranjas((v) => v + 1);
         document.getElementById('sin-franja')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
@@ -1298,7 +1304,7 @@ const CompetitionDetail = () => {
                   }))}
                   puedeColocar={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
                   puedeQuitar={canManage && competition.status === 'ACTIVE'}
-                  version={`${competition.updatedAt}|${competition.status}`}
+                  version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
                   versionCampos={versionCampos}
                   onAgenda={setAgendaLeida}
                 />

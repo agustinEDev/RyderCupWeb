@@ -57,3 +57,16 @@ describe('AccionDelJugador (FE #824)', () => {
     expect(screen.getByRole('button', { name: 'franjas.take' }).className).toContain('min-h-11');
   });
 });
+
+describe('AccionDelJugador · lo abierto no vuelve solo (/code-review)', () => {
+  it('si la acción cambia y luego vuelve, la confirmación de soltar no se reabre sola', () => {
+    const a = franjasPorId.a;
+    const { rerender } = render(<AccionDelJugador {...props({ tipo: SOLTAR }, a)} />);
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.release' }));
+
+    rerender(<AccionDelJugador {...props({ tipo: COGER }, a)} />);
+    rerender(<AccionDelJugador {...props({ tipo: SOLTAR }, a)} />);
+
+    expect(screen.queryByText('franjas.releaseConfirm')).toBeNull();
+  });
+});
