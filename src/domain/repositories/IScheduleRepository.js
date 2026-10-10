@@ -143,6 +143,31 @@ class IScheduleRepository {
   async reassignPlayers(matchId, teamAIds, teamBIds) {
     throw new Error('Method not implemented');
   }
+
+  // Plazas y esperas en las franjas de stroke play (FE #824)
+  async takePlace(roundId, opciones) {
+    throw new Error('IScheduleRepository.takePlace must be implemented');
+  }
+
+  async releasePlace(roundId, userId) {
+    throw new Error('IScheduleRepository.releasePlace must be implemented');
+  }
+
+  async joinWaitingList(roundId) {
+    throw new Error('IScheduleRepository.joinWaitingList must be implemented');
+  }
+
+  async leaveWaitingList(roundId, userId) {
+    throw new Error('IScheduleRepository.leaveWaitingList must be implemented');
+  }
+
+  async getMyAssignedPlaces() {
+    throw new Error('IScheduleRepository.getMyAssignedPlaces must be implemented');
+  }
+
+  async acknowledgeAssignedPlace(roundId) {
+    throw new Error('IScheduleRepository.acknowledgeAssignedPlace must be implemented');
+  }
 }
 
 export default IScheduleRepository;

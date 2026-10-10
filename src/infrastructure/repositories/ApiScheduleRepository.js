@@ -71,6 +71,56 @@ class ApiScheduleRepository extends IScheduleRepository {
   }
 
   /**
+   * Plaza en una franja de stroke play (FE #824, RyderCupAm#511). Sin
+   * `userId`, para uno mismo; con él, el organizador coloca a otro. Con
+   * `insteadOfRoundId`, se cambia desde esa en un solo paso.
+   * POST /api/v1/competitions/rounds/{roundId}/places
+   */
+  async takePlace(roundId, { userId, insteadOfRoundId } = {}) {
+    return apiRequest(`/api/v1/competitions/rounds/${roundId}/places`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(userId ? { user_id: userId } : {}),
+        ...(insteadOfRoundId ? { instead_of_round_id: insteadOfRoundId } : {}),
+      }),
+    });
+  }
+
+  /** DELETE /api/v1/competitions/rounds/{roundId}/places/{userId} */
+  async releasePlace(roundId, userId) {
+    await apiRequest(`/api/v1/competitions/rounds/${roundId}/places/${userId}`, { method: 'DELETE' });
+  }
+
+  /** Esperar en una franja llena, uno mismo (RyderCupAm#512). */
+  async joinWaitingList(roundId) {
+    return apiRequest(`/api/v1/competitions/rounds/${roundId}/waiting-list`, { method: 'POST' });
+  }
+
+  /** DELETE /api/v1/competitions/rounds/{roundId}/waiting-list/{userId} */
+  async leaveWaitingList(roundId, userId) {
+    await apiRequest(`/api/v1/competitions/rounds/${roundId}/waiting-list/${userId}`, { method: 'DELETE' });
+  }
+
+  /** Las plazas que me asignaron desde la espera y aún no he visto. */
+  async getMyAssignedPlaces() {
+    const data = await apiRequest('/api/v1/competitions/me/assigned-places');
+    return (data || []).map((p) => ({
+      competitionId: p.competition_id,
+      competitionName: p.competition_name,
+      roundId: p.round_id,
+      roundDate: p.round_date,
+      sessionType: p.session_type,
+      firstTeeTime: typeof p.first_tee_time === 'string' ? p.first_tee_time.slice(0, 5) : p.first_tee_time,
+      assignedAt: p.assigned_at,
+    }));
+  }
+
+  /** «Entendido»: ya la he visto. */
+  async acknowledgeAssignedPlace(roundId) {
+    await apiRequest(`/api/v1/competitions/me/assigned-places/${roundId}/acknowledge`, { method: 'POST' });
+  }
+
+  /**
    * POST /api/v1/competitions/rounds/{roundId}/matches/generate
    */
   async generateMatches(roundId, pairings) {
