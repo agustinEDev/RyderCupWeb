@@ -210,8 +210,8 @@
     "hours": "{{primera}} → {{ultima}} · every {{intervalo}} min",
     "capacity": "{{salidas}} tee times of {{tamano}} · {{cupo}} places",
     "taken": "{{apuntados}} signed up · {{espera}} waiting",
-    "change": "Change the window",
-    "remove": "Delete the window",
+    "change": "Change the {{franja}} window on {{dia}}",
+    "remove": "Delete the {{franja}} window on {{dia}}",
     "confirmRemove": "Delete this window?",
     "yes": "Yes, delete it",
     "add": "Add a window",
@@ -229,6 +229,8 @@
       "lastBeforeFirst": "The last tee time cannot be before the first.",
       "intervalRange": "Between tee times, 5 to 20 minutes.",
       "groupSize": "Groups are of 3 or 4 players."
-    }
+    },
+    "noCourses": "Add a course to the competition to create windows.",
+    "allFull": "Every day already has its three windows."
   }
 }

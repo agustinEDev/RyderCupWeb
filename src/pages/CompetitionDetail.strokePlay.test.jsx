@@ -200,7 +200,31 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
     renderPage();
 
-    await screen.findByTestId('franjas');
+    // Con la agenda ya leída: antes de leerla tampoco se ofrece nada (revisor)
+    await screen.findByTestId('franja-r1');
     expect(screen.queryByRole('button', { name: 'franjas.add' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^franjas\.change/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^franjas\.remove/ })).toBeNull();
+  });
+
+  it('cerrada, el paso principal es iniciar, y no se ofrece la agenda de la Ryder', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'CLOSED' }));
+    renderPage();
+
+    await screen.findByTestId('franja-r1');
+    expect(await screen.findByRole('button', { name: 'detail.actions.start-competition' })).toBeInTheDocument();
+    abrirMenuDeAcciones();
+    expect(screen.queryByText('detail.actions.manageSchedule')).toBeNull();
+  });
+
+  it('un jugador apuntado no tiene «Ver agenda» (la de la Ryder)', async () => {
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(
+      stableford({ status: 'CLOSED', creatorId: 'otro', enrollment_status: 'APPROVED' })
+    );
+    renderPage();
+
+    await screen.findByTestId('franja-r1');
+    expect(screen.queryByText('detail.actions.viewSchedule')).toBeNull();
   });
 });

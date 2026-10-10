@@ -29,6 +29,16 @@ const aTeeSheet = (hoja) => ({
   group_size: hoja.tamano,
 });
 
+/**
+ * La franja nueva con las horas propuestas de `franja`, si el organizador no
+ * las ha tocado; el intervalo y el tamaño que eligió se quedan.
+ */
+const conHorasDe = (franja, nueva) => {
+  if (nueva.tocada) return nueva;
+  const { primera, ultima } = hojaPropuesta(franja);
+  return { ...nueva, hoja: { ...nueva.hoja, primera, ultima } };
+};
+
 /** La hoja guardada de una franja, como la usa el formulario. */
 const deTeeSheet = (teeSheet) => ({
   primera: teeSheet.firstTeeTime,
@@ -41,9 +51,21 @@ const deTeeSheet = (teeSheet) => ({
  * Los campos de una hoja de salidas, con su resumen en vivo y su error.
  * Controlado: recibe la hoja y devuelve la nueva.
  */
+// Qué campo marcar con cada error de la hoja
+const CAMPOS_DEL_ERROR = {
+  teeTimeFormat: ['primera', 'ultima'],
+  lastBeforeFirst: ['ultima'],
+  intervalRange: ['intervalo'],
+  groupSize: ['tamano'],
+};
+
 const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
   const { t } = useTranslation('schedule');
   const error = errorDeHoja(hoja);
+  const errorId = `${resumenId}-error`;
+  // El campo que falla se marca y apunta a su error (revisor)
+  const marca = (campo) =>
+    CAMPOS_DEL_ERROR[error]?.includes(campo) ? { 'aria-invalid': true, 'aria-describedby': errorId } : {};
   const cambia = (cambios) => onCambio({ ...hoja, ...cambios });
   const campo = 'rounded-lg border border-gray-200 px-2 py-1 text-sm';
   return (
@@ -54,6 +76,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
           <input
             type="time"
             aria-label={t('franjas.firstTee')}
+            {...marca('primera')}
             value={hoja.primera}
             onChange={(e) => cambia({ primera: e.target.value })}
             className={`mt-0.5 block w-full ${campo}`}
@@ -64,6 +87,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
           <input
             type="time"
             aria-label={t('franjas.lastTee')}
+            {...marca('ultima')}
             value={hoja.ultima}
             onChange={(e) => cambia({ ultima: e.target.value })}
             className={`mt-0.5 block w-full ${campo}`}
@@ -74,6 +98,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
           <input
             type="number"
             aria-label={t('franjas.interval')}
+            {...marca('intervalo')}
             min={INTERVALO_MINIMO}
             max={INTERVALO_MAXIMO}
             value={Number.isNaN(hoja.intervalo) ? '' : hoja.intervalo}
@@ -85,6 +110,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
           {t('franjas.groupSize')}
           <select
             aria-label={t('franjas.groupSize')}
+            {...marca('tamano')}
             value={String(hoja.tamano)}
             onChange={(e) => cambia({ tamano: Number(e.target.value) })}
             className={`mt-0.5 block w-full ${campo}`}
@@ -99,7 +125,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
       </div>
       <p className="text-xs text-gray-500">{t('franjas.lastTeeHint')}</p>
       {error ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p id={errorId} role="alert" className="text-sm text-red-600">
           {t(`franjas.errors.${error}`)}
         </p>
       ) : (
@@ -200,7 +226,27 @@ const FranjasDeLaCompeticion = ({
 
   const franjas = useMemo(() => agenda?.rounds || [], [agenda]);
   const dias = useMemo(() => diasDelTorneo(startDate, endDate), [startDate, endDate]);
-  const diasConHueco = dias.filter((dia) => franjasLibres(franjas, dia).length > 0);
+  const diasConHueco = useMemo(
+    () => dias.filter((dia) => franjasLibres(franjas, dia).length > 0),
+    [dias, franjas]
+  );
+
+  // Si al releer el día o la franja elegidos ya no están libres (otro
+  // organizador, o un cambio de la competición), se propone lo siguiente libre
+  // en vez de enviar algo que el selector ya no enseña (revisor)
+  useEffect(() => {
+    if (!nueva) return;
+    const dia = diasConHueco.includes(nueva.dia) ? nueva.dia : diasConHueco[0];
+    const libres = dia ? franjasLibres(franjas, dia) : [];
+    const franja = libres.includes(nueva.franja) ? nueva.franja : libres[0];
+    if (dia === nueva.dia && franja === nueva.franja) return;
+    if (!dia) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sin hueco ya no hay franja que añadir
+      setNueva(null);
+      return;
+    }
+    setNueva((n) => conHorasDe(franja, { ...n, dia, franja }));
+  }, [diasConHueco, franjas, nueva]);
 
   const porDia = useMemo(() => {
     const orden = (f) => FRANJAS.indexOf(f.sessionType);
@@ -263,11 +309,19 @@ const FranjasDeLaCompeticion = ({
 
   const elegirDia = (dia) => {
     const franja = franjasLibres(franjas, dia)[0];
-    setNueva((n) => ({ ...n, dia, franja, hoja: n.tocada ? n.hoja : hojaPropuesta(franja) }));
+    setNueva((n) => conHorasDe(franja, { ...n, dia, franja }));
   };
 
-  const elegirFranja = (franja) =>
-    setNueva((n) => ({ ...n, franja, hoja: n.tocada ? n.hoja : hojaPropuesta(franja) }));
+  const elegirFranja = (franja) => setNueva((n) => conHorasDe(franja, { ...n, franja }));
+
+  // Solo las horas cuentan como «tocadas»: el intervalo o el tamaño elegidos se
+  // conservan, y las horas siguen a la franja (revisor)
+  const cambiaLaHojaNueva = (hoja) =>
+    setNueva((n) => ({
+      ...n,
+      hoja,
+      tocada: n.tocada || hoja.primera !== n.hoja.primera || hoja.ultima !== n.hoja.ultima,
+    }));
 
   const guardarNueva = () =>
     cambiar(
@@ -286,15 +340,19 @@ const FranjasDeLaCompeticion = ({
   const empezarACambiar = (f) => {
     setNueva(null);
     setBorrando(null);
-    setEditando({ id: f.id, campo: f.golfCourseId, campoOriginal: f.golfCourseId, hoja: deTeeSheet(f.teeSheet) });
+    const hoja = deTeeSheet(f.teeSheet);
+    setEditando({ id: f.id, campo: f.golfCourseId, campoOriginal: f.golfCourseId, hoja, hojaOriginal: hoja });
   };
 
   const guardarCambio = () =>
     cambiar(
       () =>
         updateRoundUseCase.execute(editando.id, {
-          tee_sheet: aTeeSheet(editando.hoja),
-          // El campo solo si cambia: cambiarlo recalcula las partidas (RyderCupAm#534)
+          // Solo lo que cambia: cada cosa dispara sus comprobaciones en el
+          // servidor, y cambiar el campo recalcula las partidas (RyderCupAm#534)
+          ...(JSON.stringify(editando.hoja) !== JSON.stringify(editando.hojaOriginal)
+            ? { tee_sheet: aTeeSheet(editando.hoja) }
+            : {}),
           ...(editando.campo !== editando.campoOriginal ? { golf_course_id: editando.campo } : {}),
         }),
       () => setEditando(null)
@@ -336,7 +394,11 @@ const FranjasDeLaCompeticion = ({
   );
 
   const cupoTotal = agenda?.teeSheetCapacity ?? null;
-  const cupoCorto = franjas.length > 0 && cupoTotal !== null && maxPlayers && cupoTotal < maxPlayers;
+  // Booleano: con `maxPlayers` a 0, un `&&` pintaba un «0» suelto (revisor)
+  const cupoCorto = franjas.length > 0 && cupoTotal !== null && maxPlayers > 0 && cupoTotal < maxPlayers;
+  // Por qué no se puede añadir, si no se puede
+  const porQueNoSeAnade =
+    campos.length === 0 ? 'franjas.noCourses' : diasConHueco.length === 0 ? 'franjas.allFull' : null;
 
   return (
     <section data-testid="franjas" className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -376,21 +438,24 @@ const FranjasDeLaCompeticion = ({
                       )}
                       {canManage && editando?.id !== f.id && (
                         <span className="ml-auto flex gap-1">
+                          {/* Sin hoja (una de antes) no hay nada que cambiar */}
+                          {hoja && (
+                            <button
+                              type="button"
+                              aria-label={t('franjas.change', { franja: t(`sessions.${f.sessionType}`), dia: fecha(dia) })}
+                              disabled={ocupado}
+                              onClick={() => empezarACambiar(f)}
+                              className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             type="button"
-                            aria-label={t('franjas.change')}
-                            disabled={ocupado}
-                            onClick={() => empezarACambiar(f)}
-                            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={t('franjas.remove')}
+                            aria-label={t('franjas.remove', { franja: t(`sessions.${f.sessionType}`), dia: fecha(dia) })}
                             disabled={ocupado}
                             onClick={() => setBorrando(f.id)}
-                            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -408,7 +473,8 @@ const FranjasDeLaCompeticion = ({
                         </p>
                         <p className="text-gray-700">
                           {t('franjas.capacity', {
-                            salidas: numeroDeSalidas(deTeeSheet(hoja)),
+                            // Las del servidor; las cuentas propias, si no las manda
+                            salidas: hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja)),
                             tamano: hoja.groupSize,
                             cupo: hoja.capacity,
                           })}
@@ -436,6 +502,8 @@ const FranjasDeLaCompeticion = ({
                         <span className="min-w-0 flex-1">{t('franjas.confirmRemove')}</span>
                         <button
                           type="button"
+                          // Un doble toque mandaba dos DELETE (revisor)
+                          disabled={ocupado}
                           onClick={() => cambiar(() => deleteRoundUseCase.execute(f.id), () => setBorrando(null))}
                           className="rounded-md bg-amber-600 px-2 py-1 font-semibold text-white"
                         >
@@ -466,7 +534,9 @@ const FranjasDeLaCompeticion = ({
               <Plus className="h-4 w-4" />
               {t('franjas.add')}
             </button>
-          ) : (
+          ) : null}
+          {!nueva && porQueNoSeAnade && <p className="mt-1 text-xs text-gray-500">{t(porQueNoSeAnade)}</p>}
+          {nueva && (
             <div className="space-y-2 rounded-lg border border-gray-200 p-3">
               <div className="grid grid-cols-2 gap-2">
                 <label className="text-xs text-gray-600">
@@ -503,7 +573,7 @@ const FranjasDeLaCompeticion = ({
               {selectorDeCampo(nueva.campo, (campo) => setNueva((n) => ({ ...n, campo })))}
               <CamposDeLaHoja
                 hoja={nueva.hoja}
-                onCambio={(hoja) => setNueva((n) => ({ ...n, hoja, tocada: true }))}
+                onCambio={cambiaLaHojaNueva}
                 resumenId="franjas-resumen-nueva"
               />
               {botonesDeGuardar(nueva.hoja, guardarNueva, () => setNueva(null))}

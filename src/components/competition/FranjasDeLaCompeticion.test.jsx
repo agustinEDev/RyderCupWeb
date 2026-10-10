@@ -131,8 +131,8 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
     await screen.findByTestId('franja-r-1');
     expect(screen.queryByRole('button', { name: 'franjas.add' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'franjas.change' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'franjas.remove' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^franjas\.change/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^franjas\.remove/ })).toBeNull();
   });
 
   it('4: al añadir propone un día con hueco, una franja libre y su hoja', async () => {
@@ -169,6 +169,56 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     fireEvent.change(screen.getByLabelText('franjas.slot'), { target: { value: 'EVENING' } });
 
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('13:00');
+  });
+
+  it('4e: cambiar el intervalo o el tamaño no impide reponer las horas (revisor)', async () => {
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    fireEvent.change(screen.getByLabelText('franjas.groupSize'), { target: { value: '3' } });
+
+    fireEvent.change(screen.getByLabelText('franjas.slot'), { target: { value: 'EVENING' } });
+
+    expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00');
+    expect(screen.getByLabelText('franjas.lastTee')).toHaveValue('23:50');
+    // Y lo que sí eligió se queda
+    expect(screen.getByLabelText('franjas.groupSize')).toHaveValue('3');
+  });
+
+  it('4f: si al releer la franja elegida ya no está libre, se propone la siguiente (revisor)', async () => {
+    const { rerender } = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    expect(screen.getByLabelText('franjas.slot')).toHaveValue('AFTERNOON');
+    mockLeer.mockResolvedValue({
+      rounds: [franja(), franja({ id: 'r-2', sessionType: 'AFTERNOON' })],
+      teeSheetCapacity: 192,
+    });
+
+    rerender(
+      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} version="2" />
+    );
+
+    await waitFor(() => expect(screen.getByLabelText('franjas.slot')).toHaveValue('EVENING'));
+    expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00');
+  });
+
+  it('4g: sin campos, «Añadir» dice por qué no se puede', async () => {
+    mockCampos.mockResolvedValue([]);
+    pinta();
+
+    expect(await screen.findByText('franjas.noCourses')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'franjas.add' })).toBeDisabled();
+  });
+
+  it('4h: con todas las jornadas llenas, también', async () => {
+    mockLeer.mockResolvedValue({
+      rounds: ['2030-10-12', '2030-10-13'].flatMap((dia) =>
+        ['MORNING', 'AFTERNOON', 'EVENING'].map((s) => franja({ id: `${dia}-${s}`, roundDate: dia, sessionType: s }))
+      ),
+      teeSheetCapacity: 576,
+    });
+    pinta();
+
+    expect(await screen.findByText('franjas.allFull')).toBeInTheDocument();
   });
 
   it('4d: el día que ya tiene las tres no se ofrece', async () => {
@@ -228,7 +278,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('8: cambiar abre la franja con sus valores y manda la hoja nueva', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'franjas.change' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
 
     expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('08:00');
     fireEvent.change(screen.getByLabelText('franjas.lastTee'), { target: { value: '10:50' } });
@@ -242,21 +292,36 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
   });
 
-  it('8b: y el campo, solo si cambia', async () => {
+  it('8b: solo el campo, si solo cambia el campo (revisor)', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'franjas.change' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
 
     fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() => expect(mockCambiar).toHaveBeenCalled());
-    expect(mockCambiar.mock.calls[0][1]).toMatchObject({ golf_course_id: 'g-2' });
+    expect(mockCambiar.mock.calls[0][1]).toEqual({ golf_course_id: 'g-2' });
+  });
+
+  it('8d: los botones dicen de qué franja son (revisor)', async () => {
+    pinta();
+
+    await screen.findByTestId('franja-r-1');
+    expect(screen.getByRole('button', { name: /^franjas\.change.*"franja":"sessions\.MORNING"/ })).toBeInTheDocument();
+  });
+
+  it('8e: una franja sin hoja (de antes) no se ofrece a cambiar', async () => {
+    mockLeer.mockResolvedValue({ rounds: [franja({ teeSheet: null })], teeSheetCapacity: 0 });
+    pinta();
+
+    await screen.findByTestId('franja-r-1');
+    expect(screen.queryByRole('button', { name: /^franjas\.change/ })).toBeNull();
   });
 
   it('8c: si el servidor no deja (alguien perdería su plaza), su motivo', async () => {
     mockCambiar.mockRejectedValue(new Error('La franja quedaría con 40 plazas y tiene 48 jugadores dentro'));
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'franjas.change' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
     fireEvent.change(screen.getByLabelText('franjas.lastTee'), { target: { value: '09:30' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
@@ -269,7 +334,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
 
   it('9: borrar pide confirmación en línea', async () => {
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'franjas.remove' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
 
     expect(mockBorrar).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
@@ -277,10 +342,21 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     await waitFor(() => expect(mockBorrar).toHaveBeenCalledWith('r-1'));
   });
 
+  it('9c: un doble toque en «Sí» no borra dos veces (revisor)', async () => {
+    mockBorrar.mockReturnValue(new Promise(() => {}));
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
+
+    expect(mockBorrar).toHaveBeenCalledTimes(1);
+  });
+
   it('9b: con gente dentro, el motivo del servidor', async () => {
     mockBorrar.mockRejectedValue(new Error('La franja tiene 12 jugadores con plaza'));
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'franjas.remove' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
     fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('La franja tiene 12 jugadores con plaza'));
@@ -292,6 +368,35 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     expect(await screen.findByTestId('franjas-cupo-corto')).toHaveTextContent(
       'franjas.capacityShort {"caben":96,"maximo":100}'
     );
+  });
+
+  it('1c: las salidas son las que dice el servidor', async () => {
+    mockLeer.mockResolvedValue({
+      rounds: [franja({ teeSheet: hoja({ teeTimes: ['08:00', '08:10', '08:20'], capacity: 12 }) })],
+      teeSheetCapacity: 12,
+    });
+    pinta();
+
+    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent('franjas.capacity {"salidas":3,"tamano":4,"cupo":12}');
+  });
+
+  it('5b: el campo que falla se marca', async () => {
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+
+    fireEvent.change(screen.getByLabelText('franjas.interval'), { target: { value: '25' } });
+
+    expect(screen.getByLabelText('franjas.interval')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('franjas.firstTee')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('11c: sin máximo de jugadores no pinta un «0» suelto', async () => {
+    pinta({ maxPlayers: 0 });
+
+    await screen.findByTestId('franja-r-1');
+    const sueltos = [...screen.getByTestId('franjas').childNodes].filter((n) => n.nodeType === 3);
+    expect(sueltos.map((n) => n.textContent)).not.toContain('0');
+    expect(screen.queryByTestId('franjas-cupo-corto')).toBeNull();
   });
 
   it('11b: si caben, nada', async () => {

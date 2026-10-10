@@ -210,8 +210,8 @@
     "hours": "{{primera}} → {{ultima}} · cada {{intervalo}} min",
     "capacity": "{{salidas}} salidas de {{tamano}} · cupo {{cupo}}",
     "taken": "{{apuntados}} apuntados · {{espera}} en espera",
-    "change": "Cambiar la franja",
-    "remove": "Borrar la franja",
+    "change": "Cambiar la franja de {{franja}} del {{dia}}",
+    "remove": "Borrar la franja de {{franja}} del {{dia}}",
     "confirmRemove": "¿Borrar esta franja?",
     "yes": "Sí, borrarla",
     "add": "Añadir franja",
@@ -229,6 +229,8 @@
       "lastBeforeFirst": "La última salida no puede ser antes que la primera.",
       "intervalRange": "Entre salidas, de 5 a 20 minutos.",
       "groupSize": "Las partidas son de 3 o 4 jugadores."
-    }
+    },
+    "noCourses": "Añade un campo a la competición para poder crear franjas.",
+    "allFull": "Todas las jornadas tienen ya sus tres franjas."
   }
 }

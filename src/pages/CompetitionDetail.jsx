@@ -683,7 +683,9 @@ const CompetitionDetail = () => {
       label: t('detail.actions.manageSchedule'),
       icon: Calendar,
       onClick: () => navigate(`/creator/competitions/${id}/schedule`),
-      cuando: competition.status !== 'DRAFT' && competition.status !== 'CANCELLED',
+      // Esa pantalla es de la Ryder (formatos, partidos): un stroke play tiene
+      // sus franjas en la ficha, y sus partidas llegan con la PR 6 (FE #824)
+      cuando: !esStrokePlay && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED',
     },
     manageInvitations: {
       id: 'manageInvitations',
@@ -1045,7 +1047,7 @@ const CompetitionDetail = () => {
             )}
 
             {/* View Schedule Button - For enrolled players (not creators/admins) */}
-            {!canManage && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' &&
+            {!canManage && !esStrokePlay && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' &&
               (userEnrollment?.status === 'APPROVED' || competition.enrollment_status === 'APPROVED') && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
