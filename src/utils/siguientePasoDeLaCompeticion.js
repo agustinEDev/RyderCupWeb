@@ -50,12 +50,15 @@ export const siguientePasoDeLaCompeticion = (
     // falsa: se sugiere como antes
     const quedanPlazas = inscritos < maxPlayers;
     if (quedanPlazas) return 'manageInvitations';
-    // Sin equipos no hay capitanes que nombrar. Cerrar sus inscripciones llega
-    // con las rondas de stroke play (RyderCupAm#251): hasta entonces, nada
-    return conEquipos ? 'nameCaptains' : null;
+    // Sin equipos no hay capitanes que nombrar: un Stableford o un Medal se
+    // cierra con su botón (FE #824)
+    return conEquipos ? 'nameCaptains' : 'close-enrollments';
   }
 
   if (status === 'CLOSED') {
+    // Un Stableford o un Medal tiene sus franjas a la vista en la ficha: lo
+    // que toca es iniciar (FE #824). Sus partidas llegan con la PR 6
+    if (hasTeams === false) return 'start-competition';
     if (!teamsAssigned) {
       // La sala de draft es del tipo Ryder, y no tiene quién elija hasta que
       // hay capitanes: sin esto la ficha se quedaba sin acción principal
