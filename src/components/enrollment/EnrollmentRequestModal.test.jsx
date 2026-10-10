@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import EnrollmentRequestModal from './EnrollmentRequestModal';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (clave) => clave }) }));
@@ -51,5 +52,33 @@ describe('EnrollmentRequestModal · el género', () => {
     );
 
     expect(screen.getByTestId('apuntarse-error')).toHaveTextContent('completa');
+  });
+});
+
+/**
+ * Sin hándicap no se entra en un Stableford o un Medal (RyderCupAM#506): el
+ * modal lo dice con un enlace al perfil y no deja enviar (FE #824, PR 5;
+ * Agustín, 11 oct 2026).
+ */
+describe('EnrollmentRequestModal · el hándicap (FE #824)', () => {
+  const pinta = (props) =>
+    render(
+      <MemoryRouter>
+        <EnrollmentRequestModal isOpen onClose={() => {}} onConfirm={vi.fn()} {...props} />
+      </MemoryRouter>
+    );
+
+  it('H1: sin hándicap, el aviso con el enlace al perfil y sin poder enviar', () => {
+    pinta({ faltaHandicap: true });
+
+    expect(screen.getByTestId('falta-handicap')).toHaveTextContent('competitions:enrollment.needsHandicap');
+    expect(screen.getByRole('link', { name: 'competitions:enrollment.addHandicap' })).toHaveAttribute('href', '/profile/edit');
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeDisabled();
+  });
+
+  it('H2: con hándicap, nada', () => {
+    pinta({});
+
+    expect(screen.queryByTestId('falta-handicap')).toBeNull();
   });
 });

@@ -456,6 +456,11 @@ const BrowseCompetitions = () => {
         onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
+        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
+        faltaHandicap={
+          [...exploreCompetitions, ...joinableCompetitions].find((c) => c.id === enrollTargetId)?.hasTeams === false &&
+          (user?.handicap === null || user?.handicap === undefined)
+        }
         error={errorAlApuntarse}
       />
     </div>

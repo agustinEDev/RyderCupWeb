@@ -1297,6 +1297,38 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   )}
+                  {/* Los ajustes de un Stableford o un Medal: solo se veían al
+                      editarla (FE #824, PR 5) */}
+                  {esStrokePlay && competition.strokePlay && (
+                    <div data-testid="ajustes-del-torneo" className="contents">
+                      <div data-testid="ajuste-categorias">
+                        <span className="text-gray-500 text-sm">{t('detail.settings.categories')}</span>
+                        <p className="text-gray-900 font-medium">
+                          {competition.strokePlay.categoryCount != null
+                            ? t('detail.settings.equalCategories', { count: competition.strokePlay.categoryCount })
+                            : competition.strokePlay.categoryLimits.length > 0
+                              ? t('detail.settings.categoryLimits', {
+                                  limites: competition.strokePlay.categoryLimits
+                                    .map((l) => l.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))
+                                    .join(' · '),
+                                })
+                              : t('detail.settings.noCategories')}
+                        </p>
+                      </div>
+                      <div data-testid="ajuste-jornadas">
+                        <span className="text-gray-500 text-sm">{t('detail.settings.matchdaysLabel')}</span>
+                        <p className="text-gray-900 font-medium">
+                          {t('detail.settings.matchdays', { count: competition.strokePlay.maxMatchdaysPerPlayer })}
+                        </p>
+                      </div>
+                      <div data-testid="ajuste-general">
+                        <span className="text-gray-500 text-sm">{t('detail.settings.overallLabel')}</span>
+                        <p className="text-gray-900 font-medium">
+                          {t(`detail.settings.overall.${competition.strokePlay.overallStanding}`)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
                   {competition.setupMode && (
                     <div>
@@ -1703,6 +1735,8 @@ const CompetitionDetail = () => {
         onConfirm={handleEnroll}
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}
+        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
+        faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
       />
     </div>
   );

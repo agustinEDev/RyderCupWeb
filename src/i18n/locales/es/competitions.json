@@ -346,7 +346,20 @@
         "DRAFT": "Draft de capitanes",
         "PENDING": "Sin repartir todavía"
       },
-      "tournamentType": "Tipo:"
+      "tournamentType": "Tipo:",
+      "categories": "Categorías",
+      "equalCategories_one": "{{count}} categoría igual",
+      "equalCategories_other": "{{count}} categorías iguales (se reparten al cerrar)",
+      "categoryLimits": "Límites: {{limites}}",
+      "noCategories": "Una sola categoría",
+      "matchdaysLabel": "Jornadas por jugador",
+      "matchdays_one": "{{count}} jornada",
+      "matchdays_other": "{{count}} jornadas",
+      "overallLabel": "Clasificación general",
+      "overall": {
+        "ACCUMULATED": "Acumulada",
+        "BEST_CARD": "Mejor tarjeta"
+      }
     },
     "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
@@ -501,7 +514,9 @@
     "colorHint": "Se usará para asignarte el tee adecuado en los partidos",
     "noPreference": "Sin preferencia",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "needsHandicap": "Para apuntarte a un Stableford o un Medal necesitas tu hándicap en el perfil.",
+    "addHandicap": "Añadirlo"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",

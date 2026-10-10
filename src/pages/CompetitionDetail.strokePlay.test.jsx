@@ -551,3 +551,53 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
     expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent('handicaps.inProgress_1');
   });
 });
+
+describe('CompetitionDetail · los ajustes de un Stableford o un Medal (FE #824, PR 5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+  });
+
+  const medal = (strokePlay) =>
+    competicion({ hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null, strokePlay });
+
+  it('categorías con límites, jornadas por jugador y la general', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(
+      medal({ categoryLimits: [12, 26], categoryCount: null, maxMatchdaysPerPlayer: 2, overallStanding: 'BEST_CARD' })
+    );
+    renderPage();
+
+    const ajustes = await screen.findByTestId('ajustes-del-torneo');
+    expect(within(ajustes).getByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.categoryLimits');
+    expect(within(ajustes).getByTestId('ajuste-jornadas')).toHaveTextContent('detail.settings.matchdays_2');
+    expect(within(ajustes).getByTestId('ajuste-general')).toHaveTextContent('detail.settings.overall.BEST_CARD');
+  });
+
+  it('categorías iguales', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(
+      medal({ categoryLimits: [], categoryCount: 3, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' })
+    );
+    renderPage();
+
+    expect(await screen.findByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.equalCategories_3');
+  });
+
+  it('sin categorías', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(
+      medal({ categoryLimits: [], categoryCount: null, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' })
+    );
+    renderPage();
+
+    expect(await screen.findByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.noCategories');
+  });
+
+  it('una Ryder no los enseña', async () => {
+    // Como la trae la ficha: sin la pieza, `strokePlay: null`
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ strokePlay: null }));
+    renderPage();
+
+    await screen.findByTestId('aprobado-ana');
+    expect(screen.queryByTestId('ajustes-del-torneo')).toBeNull();
+  });
+});

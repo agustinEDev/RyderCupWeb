@@ -346,7 +346,20 @@
         "DRAFT": "Captains' draft",
         "PENDING": "Not split yet"
       },
-      "tournamentType": "Type:"
+      "tournamentType": "Type:",
+      "categories": "Categories",
+      "equalCategories_one": "{{count}} equal category",
+      "equalCategories_other": "{{count}} equal categories (split when enrollments close)",
+      "categoryLimits": "Limits: {{limites}}",
+      "noCategories": "One category",
+      "matchdaysLabel": "Days per player",
+      "matchdays_one": "{{count}} day",
+      "matchdays_other": "{{count}} days",
+      "overallLabel": "Overall standings",
+      "overall": {
+        "ACCUMULATED": "Accumulated",
+        "BEST_CARD": "Best card"
+      }
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
@@ -501,7 +514,9 @@
     "colorHint": "Used to assign the right tees in matches",
     "noPreference": "No preference",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "needsHandicap": "To join a Stableford or a Medal you need your handicap in your profile.",
+    "addHandicap": "Add it"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",
