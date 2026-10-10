@@ -2,13 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { Plus, X } from 'lucide-react';
 import {
   categoriasDeLosLimites,
+  errorDeLimites,
   MAX_LIMITES,
   MIN_CATEGORIAS_IGUALES,
   MAX_CATEGORIAS_IGUALES,
   ACUMULADO,
   MEJOR_TARJETA,
 } from '../../domain/value_objects/StrokePlaySetup';
-import { IGUALES, LIMITES, errorDeAjustes, limiteEscrito } from '../../utils/ajustesDeStrokePlay';
+import { IGUALES, LIMITES, errorDeAjustes, limiteEscrito, limiteVacio } from '../../utils/ajustesDeStrokePlay';
 
 const CUANTAS_IGUALES = Array.from(
   { length: MAX_CATEGORIAS_IGUALES - MIN_CATEGORIAS_IGUALES + 1 },
@@ -34,17 +35,29 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
     new Intl.NumberFormat(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(numero);
 
   const error = errorDeAjustes(valor, dias);
-  const errorDeCategorias = error && error.startsWith('category') ? error : null;
+  // Un límite recién añadido, aún sin escribir, no es un error que anunciar: se
+  // anunciaba al pulsar «Añadir» (revisor). Al enviar sí se para, arriba
+  const errorDeCategorias =
+    error && error.startsWith('category') && error !== 'categoryLimitEmpty' ? error : null;
   const errorDeJornadas = error && error.startsWith('matchdays') ? error : null;
-  const limites = valor.limites.map(limiteEscrito);
+  // La vista previa, con los escritos: los huecos aún vacíos no cuentan
+  const escritos = valor.limites.filter((v) => !limiteVacio(v)).map(limiteEscrito);
+  const vistaPrevia = valor.modo === LIMITES && !errorDeLimites(escritos) ? categoriasDeLosLimites(escritos) : null;
+  // Qué campo falla, para marcarlo: el suyo propio, o estar desordenado
+  const fallaElLimite = (i) => {
+    if (!errorDeCategorias || limiteVacio(valor.limites[i])) return false;
+    const limite = limiteEscrito(valor.limites[i]);
+    const anterior = i > 0 ? limiteEscrito(valor.limites[i - 1]) : null;
+    return errorDeLimites([limite]) !== null || (anterior !== null && limite <= anterior);
+  };
 
   const ponLimite = (i, escrito) => cambia({ limites: valor.limites.map((v, j) => (j === i ? escrito : v)) });
   const quitaLimite = (i) => cambia({ limites: valor.limites.filter((_, j) => j !== i) });
 
-  const textoDeCategoria = ({ numero, desde, hasta }) => {
-    if (desde === null && hasta === null) return t('create.strokePlay.preview.single');
+  const textoDeCategoria = ({ numero, desde, hasta, masDe }) => {
+    if (masDe !== null) return t('create.strokePlay.preview.above', { numero, masDe: conUnDecimal(masDe) });
+    if (hasta === null) return t('create.strokePlay.preview.single');
     if (desde === null) return t('create.strokePlay.preview.upTo', { numero, hasta: conUnDecimal(hasta) });
-    if (hasta === null) return t('create.strokePlay.preview.above', { numero, desde: conUnDecimal(desde) });
     return t('create.strokePlay.preview.between', { numero, desde: conUnDecimal(desde), hasta: conUnDecimal(hasta) });
   };
 
@@ -86,6 +99,8 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
                   inputMode="decimal"
                   value={escrito}
                   onChange={(e) => ponLimite(i, e.target.value)}
+                  aria-invalid={fallaElLimite(i) || undefined}
+                  aria-describedby={fallaElLimite(i) ? 'error-de-categorias' : undefined}
                   className="w-24 min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 />
                 <button
@@ -109,9 +124,9 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
               </button>
             )}
             {/* Solo con límites válidos: unos desordenados darían rangos absurdos */}
-            {!errorDeCategorias && (
+            {vistaPrevia && (
               <ul data-testid="vista-previa" className="space-y-0.5 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                {categoriasDeLosLimites(limites).map((categoria) => (
+                {vistaPrevia.map((categoria) => (
                   <li key={categoria.numero}>{textoDeCategoria(categoria)}</li>
                 ))}
               </ul>
@@ -140,7 +155,7 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
 
         <p className="text-xs text-gray-500">{t('create.strokePlay.sixRule')}</p>
         {errorDeCategorias && (
-          <p role="alert" className="text-sm text-red-600">
+          <p id="error-de-categorias" role="alert" className="text-sm text-red-600">
             {t(`create.errors.${errorDeCategorias}`)}
           </p>
         )}
@@ -163,7 +178,7 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
         <p className="text-xs text-gray-500">{t('create.strokePlay.matchdaysHint')}</p>
         {errorDeJornadas && (
           <p role="alert" className="text-sm text-red-600">
-            {t(`create.errors.${errorDeJornadas}`, errorDeJornadas === 'matchdaysMoreThanDays' ? { max: dias } : undefined)}
+            {t(`create.errors.${errorDeJornadas}`, errorDeJornadas === 'matchdaysMoreThanDays' ? { count: dias } : undefined)}
           </p>
         )}
       </div>

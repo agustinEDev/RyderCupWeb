@@ -72,7 +72,8 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
     const dias = diasDelTorneo(formData.startDate, formData.endDate);
     const error = errorDeAjustes(formData.strokePlay, dias);
     if (error) {
-      return error === 'matchdaysMoreThanDays' ? { key: error, max: dias } : { key: error };
+      // Con `count`: «1 día» o «3 días» (i18next pone el plural)
+      return error === 'matchdaysMoreThanDays' ? { key: error, count: dias } : { key: error };
     }
   }
 

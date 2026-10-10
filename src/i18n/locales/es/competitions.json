@@ -115,7 +115,9 @@
       "categoryLimitsOrder": "Los límites van de menor a mayor y sin repetirse.",
       "categoryCountRange": "Las categorías iguales son entre 2 y 5.",
       "matchdaysRange": "Cada jugador tiene que poder jugar al menos una jornada.",
-      "matchdaysMoreThanDays": "El torneo dura {{max}} días: no caben más jornadas por jugador."
+      "matchdaysMoreThanDays_one": "El torneo dura {{count}} día: no caben más jornadas por jugador.",
+      "matchdaysMoreThanDays_other": "El torneo dura {{count}} días: no caben más jornadas por jugador.",
+      "categoryLimitEmpty": "Escribe el límite o quítalo."
     },
     "success": "¡Competición creada exitosamente!",
     "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",
@@ -167,7 +169,7 @@
         "single": "Una sola categoría para todos",
         "upTo": "{{numero}}.ª: hasta {{hasta}}",
         "between": "{{numero}}.ª: de {{desde}} a {{hasta}}",
-        "above": "{{numero}}.ª: más de {{desde}}"
+        "above": "{{numero}}.ª: más de {{masDe}}"
       },
       "equalCount": "Cuántas categorías",
       "equalHint": "Se reparten al cerrar las inscripciones con los hándicaps fijados, en grupos lo más parecidos posible. Los empatados en una frontera van juntos.",

@@ -96,20 +96,20 @@ describe('StrokePlaySetup (FE #824)', () => {
   });
 
   describe('vista previa de las categorías', () => {
-    it('V1: con 12,0 y 26,0 salen tres', () => {
+    it('V1: con 12,0 y 26,0 salen tres, y la última es «más de 26,0» (revisor)', () => {
       expect(categoriasDeLosLimites([12, 26])).toEqual([
-        { numero: 1, desde: null, hasta: 12 },
-        { numero: 2, desde: 12.1, hasta: 26 },
-        { numero: 3, desde: 26.1, hasta: null },
+        { numero: 1, desde: null, hasta: 12, masDe: null },
+        { numero: 2, desde: 12.1, hasta: 26, masDe: null },
+        { numero: 3, desde: null, hasta: null, masDe: 26 },
       ]);
     });
 
     it('V2: sin límites, una sola sin rango', () => {
-      expect(categoriasDeLosLimites([])).toEqual([{ numero: 1, desde: null, hasta: null }]);
+      expect(categoriasDeLosLimites([])).toEqual([{ numero: 1, desde: null, hasta: null, masDe: null }]);
     });
 
     it('V3: el «desde» es un decimal limpio, también con plus', () => {
-      expect(categoriasDeLosLimites([-0.5, 9.9]).map((c) => c.desde)).toEqual([null, -0.4, 10]);
+      expect(categoriasDeLosLimites([-0.5, 9.9, 20]).map((c) => c.desde)).toEqual([null, -0.4, 10, null]);
     });
   });
 });

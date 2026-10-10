@@ -300,7 +300,7 @@ describe('validateCompetitionForm · los ajustes del stroke play (FE #824)', () 
   it('SP3 (caso 12): más jornadas que días del torneo (3)', () => {
     expect(validateCompetitionForm(stableford({ jornadas: '4' }))).toEqual({
       key: 'matchdaysMoreThanDays',
-      max: 3,
+      count: 3,
     });
   });
 

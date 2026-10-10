@@ -51,11 +51,18 @@ export const diasDelTorneo = (inicio, fin) => {
   return Number.isFinite(dias) ? dias : null;
 };
 
+// Un número escrito como tal: signo, cifras y, si acaso, decimales con coma o
+// punto. `Number` sola admitiría «1e1», «0x10» o «12.» (revisor)
+const NUMERO_ESCRITO = /^[+-]?\d+([.,]\d+)?$/;
+
 /** Un límite tal como se escribe, con coma o con punto; NaN si no es un número. */
 export const limiteEscrito = (escrito) => {
-  const limpio = String(escrito).trim().replace(',', '.');
-  return limpio === '' ? NaN : Number(limpio);
+  const limpio = String(escrito).trim();
+  return NUMERO_ESCRITO.test(limpio) ? Number(limpio.replace(',', '.')) : NaN;
 };
+
+/** Si un límite está sin escribir: se acaba de añadir, no es un error de rango. */
+export const limiteVacio = (escrito) => String(escrito).trim() === '';
 
 const limitesDe = (formulario) => formulario.limites.map(limiteEscrito);
 
@@ -65,8 +72,10 @@ const limitesDe = (formulario) => formulario.limites.map(limiteEscrito);
  * @param {number|null} dias - Los días del torneo; sin fechas no se comparan
  */
 export const errorDeAjustes = (formulario, dias) => {
-  const deLasCategorias =
-    formulario.modo === IGUALES
+  const vacio = formulario.modo === LIMITES && formulario.limites.some(limiteVacio);
+  const deLasCategorias = vacio
+    ? 'categoryLimitEmpty'
+    : formulario.modo === IGUALES
       ? errorDeCategoriasIguales(numeroEntero(formulario.categoriasIguales))
       : errorDeLimites(limitesDe(formulario));
   if (deLasCategorias) return deLasCategorias;

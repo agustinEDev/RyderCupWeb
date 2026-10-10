@@ -115,7 +115,9 @@
       "categoryLimitsOrder": "Limits go from lowest to highest, with no repeats.",
       "categoryCountRange": "Equal categories are between 2 and 5.",
       "matchdaysRange": "Each player must be able to play at least one day.",
-      "matchdaysMoreThanDays": "The tournament lasts {{max}} days: no more days per player fit."
+      "matchdaysMoreThanDays_one": "The tournament lasts {{count}} day: no more days per player fit.",
+      "matchdaysMoreThanDays_other": "The tournament lasts {{count}} days: no more days per player fit.",
+      "categoryLimitEmpty": "Type the limit or remove it."
     },
     "success": "Competition created successfully!",
     "partialSuccess": "Competition created, but {{failed}} course(s) could not be added: {{courses}}. {{success}} course(s) were added successfully.",
@@ -167,7 +169,7 @@
         "single": "One category for everyone",
         "upTo": "Category {{numero}}: up to {{hasta}}",
         "between": "Category {{numero}}: {{desde}} to {{hasta}}",
-        "above": "Category {{numero}}: over {{desde}}"
+        "above": "Category {{numero}}: over {{masDe}}"
       },
       "equalCount": "How many categories",
       "equalHint": "They are split when enrollments close, using the fixed handicaps, into groups as even as possible. Players tied on a boundary stay together.",

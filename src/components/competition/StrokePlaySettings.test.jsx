@@ -81,7 +81,7 @@ describe('StrokePlaySettings (FE #824)', () => {
     const vista = within(screen.getByTestId('vista-previa'));
     expect(vista.getByText('create.strokePlay.preview.upTo {"numero":1,"hasta":"12,0"}')).toBeInTheDocument();
     expect(vista.getByText('create.strokePlay.preview.between {"numero":2,"desde":"12,1","hasta":"26,0"}')).toBeInTheDocument();
-    expect(vista.getByText('create.strokePlay.preview.above {"numero":3,"desde":"26,1"}')).toBeInTheDocument();
+    expect(vista.getByText('create.strokePlay.preview.above {"numero":3,"masDe":"26,0"}')).toBeInTheDocument();
   });
 
   it('7: unos límites desordenados dicen por qué y no enseñan una vista previa engañosa', () => {
@@ -89,6 +89,23 @@ describe('StrokePlaySettings (FE #824)', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('create.errors.categoryLimitsOrder');
     expect(screen.queryByTestId('vista-previa')).toBeNull();
+  });
+
+  it('7c: un límite recién añadido, aún vacío, no es un error que anunciar (revisor)', () => {
+    render(<Con />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'create.strokePlay.addLimit' }));
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('7d: el campo que falla se marca y apunta a su error', () => {
+    render(<Con inicial={{ ...formularioDeAjustes(null), limites: ['12,0', '60'] }} />);
+
+    const [bueno, malo] = screen.getAllByLabelText(/create.strokePlay.limitLabel/);
+    expect(malo).toHaveAttribute('aria-invalid', 'true');
+    expect(malo).toHaveAttribute('aria-describedby', screen.getByRole('alert').id);
+    expect(bueno).not.toHaveAttribute('aria-invalid', 'true');
   });
 
   it('7b: lo que se escribe en un límite llega tal cual', () => {
@@ -146,7 +163,8 @@ describe('StrokePlaySettings (FE #824)', () => {
   it('11b: más jornadas que días dice cuántas caben', () => {
     render(<Con dias={2} inicial={{ ...formularioDeAjustes(null), jornadas: '3' }} />);
 
-    expect(screen.getByRole('alert')).toHaveTextContent('create.errors.matchdaysMoreThanDays {"max":2}');
+    // Con `count`: i18next pone el plural («1 día», «2 días») (revisor)
+    expect(screen.getByRole('alert')).toHaveTextContent('create.errors.matchdaysMoreThanDays {"count":2}');
   });
 
   it.each([

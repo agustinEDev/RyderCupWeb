@@ -238,6 +238,22 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
     expect(mockToast.success).not.toHaveBeenCalled();
   });
 
+  it('18d: si lo general deja sesiones fuera, se dicen cuáles, como siempre (revisor)', async () => {
+    const error = Object.assign(new Error('mensaje en bruto'), {
+      errorCode: 'DATES_LEAVE_SESSIONS_OUT',
+      data: { sessions_outside: [{ round_date: '2030-10-12', session_type: 'MORNING' }] },
+    });
+    composicion.updateCompetitionUseCase.execute.mockRejectedValue(error);
+    const jornadas = await alEditar();
+    fireEvent.change(jornadas, { target: { value: '2' } });
+
+    enviar();
+
+    const aviso = await screen.findByText(/^edit\.generalNotSaved/);
+    expect(aviso.textContent).toContain('edit.datesLeaveSessionsOut');
+    expect(aviso.textContent).not.toContain('mensaje en bruto');
+  });
+
   it('18c: y al reintentar no vuelve a mandar los ajustes que ya se guardaron', async () => {
     composicion.updateCompetitionUseCase.execute.mockRejectedValueOnce(new Error('nombre repetido'));
     const jornadas = await alEditar();
@@ -272,5 +288,16 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
 
     expect(screen.getByTestId('modo-IGUALES')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('create.strokePlay.equalCount')).toHaveValue('4');
+  });
+
+  it('20b: y los límites del último cierre no aparecen como suyos (revisor)', async () => {
+    await alEditar({
+      ...MEDAL_GUARDADO,
+      strokePlay: { categoryLimits: [10, 20], categoryCount: 3, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' },
+    });
+
+    fireEvent.click(screen.getByTestId('modo-LIMITES'));
+
+    expect(screen.queryAllByLabelText(/create.strokePlay.limitLabel/)).toHaveLength(0);
   });
 });

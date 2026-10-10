@@ -68,18 +68,23 @@ export const errorDeJornadas = (jornadas, dias) => {
 };
 
 /**
- * Cómo quedan las categorías con unos límites: cada una con su «desde» y su
- * «hasta» (null donde no hay tope). «Hasta 12,0» incluye el 12,0, así que la
- * siguiente empieza en 12,1.
+ * Cómo quedan las categorías con unos límites. «Hasta 12,0» incluye el 12,0,
+ * así que la siguiente va «de 12,1 a…»; la última es «más de» el último límite
+ * tal cual («más de 26,0»: con 26,1 ya se está dentro). Sin límites, una sola
+ * sin rango.
  * @param {number[]} limites
- * @returns {{numero: number, desde: number|null, hasta: number|null}[]}
+ * @returns {{numero: number, desde: number|null, hasta: number|null, masDe: number|null}[]}
  */
 export const categoriasDeLosLimites = (limites) =>
-  [...limites, null].map((hasta, i) => ({
-    numero: i + 1,
-    desde: i === 0 ? null : (enDecimas(limites[i - 1]) + 1) / 10,
-    hasta,
-  }));
+  [...limites, null].map((hasta, i) => {
+    const ultima = hasta === null && i > 0;
+    return {
+      numero: i + 1,
+      desde: i === 0 || ultima ? null : (enDecimas(limites[i - 1]) + 1) / 10,
+      hasta,
+      masDe: ultima ? limites[i - 1] : null,
+    };
+  });
 
 export class StrokePlaySetup {
   #categoryLimits;

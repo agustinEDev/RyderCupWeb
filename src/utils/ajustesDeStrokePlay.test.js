@@ -63,6 +63,11 @@ describe('ajustesDeStrokePlay (FE #824)', () => {
       [' -2,0 ', -2],
       ['', NaN],
       ['12a', NaN],
+      // Solo números escritos como números (revisor)
+      ['1e1', NaN],
+      ['0x10', NaN],
+      ['12.', NaN],
+      ['+12', 12],
     ])('E: «%s» es %s', (escrito, numero) => {
       expect(limiteEscrito(escrito)).toBe(numero);
     });
@@ -75,7 +80,8 @@ describe('ajustesDeStrokePlay (FE #824)', () => {
       [formulario({ limites: ['26,0', '12,0'] }), 3, 'categoryLimitsOrder'],
       [formulario({ limites: ['12,35'] }), 3, 'categoryLimitOneDecimal'],
       [formulario({ limites: ['60'] }), 3, 'categoryLimitRange'],
-      [formulario({ limites: [''] }), 3, 'categoryLimitRange'],
+      [formulario({ limites: [''] }), 3, 'categoryLimitEmpty'],
+      [formulario({ limites: ['12,0', '  '] }), 3, 'categoryLimitEmpty'],
       [formulario({ modo: IGUALES, categoriasIguales: '6' }), 3, 'categoryCountRange'],
       // En categorías iguales, unos límites a medio escribir del otro modo no cuentan
       [formulario({ modo: IGUALES, limites: ['60'] }), 3, null],

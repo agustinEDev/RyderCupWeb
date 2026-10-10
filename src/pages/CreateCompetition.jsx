@@ -754,8 +754,11 @@ const CreateCompetition = () => {
           try {
             await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
           } catch (error) {
+            console.error('Error updating competition (second request):', error);
+            // El motivo como en cualquier otro fallo: las sesiones que se quedan
+            // fuera, con sus días, antes que el texto en bruto (revisor)
             const texto = t(ajustesPrimero ? 'edit.generalNotSaved' : 'edit.strokePlayNotSaved', {
-              motivo: error.message || t('edit.error'),
+              motivo: sesionesQueQuedanFuera(error) || error.message || t('edit.error'),
             });
             customToast.error(texto);
             setMessage({ type: 'error', text: texto });
