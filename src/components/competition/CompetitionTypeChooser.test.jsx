@@ -32,6 +32,14 @@ describe('CompetitionTypeChooser', () => {
   });
 
   const pinta = () => render(<CompetitionTypeChooser onSelect={alElegir} />);
+  // Desde la FE #824 los tres tipos se pueden elegir. El «próximamente» sigue
+  // existiendo para los que vengan (parejas, scramble): se prueba con uno así
+  const PROXIMO = [
+    { id: 'RYDER_CUP', icono: () => null, disponible: true },
+    { id: 'STABLEFORD', icono: () => null, disponible: false },
+    { id: 'MEDAL', icono: () => null, disponible: false },
+  ];
+  const pintaConProximos = () => render(<CompetitionTypeChooser onSelect={alElegir} tipos={PROXIMO} />);
 
   it('1: enseña los tres tipos, no solo el que funciona', () => {
     pinta();
@@ -49,8 +57,18 @@ describe('CompetitionTypeChooser', () => {
     expect(alElegir).toHaveBeenCalledWith('RYDER_CUP');
   });
 
-  it('3: los que aún no están no hacen nada al pulsarlos', () => {
+  it('2b: Stableford y Medal se eligen (FE #824)', () => {
     pinta();
+
+    fireEvent.click(screen.getByTestId('tipo-STABLEFORD'));
+    fireEvent.click(screen.getByTestId('tipo-MEDAL'));
+
+    expect(alElegir.mock.calls).toEqual([['STABLEFORD'], ['MEDAL']]);
+    expect(screen.queryByText('create.type.comingSoon')).toBeNull();
+  });
+
+  it('3: los que aún no están no hacen nada al pulsarlos', () => {
+    pintaConProximos();
 
     fireEvent.click(screen.getByTestId('tipo-STABLEFORD'));
     fireEvent.click(screen.getByTestId('tipo-MEDAL'));
@@ -59,7 +77,7 @@ describe('CompetitionTypeChooser', () => {
   });
 
   it('4: y tampoco con el teclado, que es por donde se cuelan', () => {
-    pinta();
+    pintaConProximos();
 
     const stableford = screen.getByTestId('tipo-STABLEFORD');
     // Fuera del recorrido del tabulador y anunciado como deshabilitado
@@ -79,7 +97,7 @@ describe('CompetitionTypeChooser', () => {
     // Se mira la CLASE, no `toBeVisible()`: jsdom no aplica el CSS de Tailwind,
     // así que esconder la etiqueta tras un `group-hover` pasaba el test tan
     // campante. Lo comprobé mutándolo, y por eso este test dice lo que dice
-    pinta();
+    pintaConProximos();
 
     const avisos = screen.getAllByText('create.type.comingSoon');
     expect(avisos).toHaveLength(2);
@@ -94,7 +112,7 @@ describe('CompetitionTypeChooser', () => {
     // `opacity-50` sobre la tarjeta entera apaga también el texto y la propia
     // etiqueta. Tienen que verse como no disponibles y leerse igual: al sol, en
     // un teléfono, un gris sobre gris no se lee
-    pinta();
+    pintaConProximos();
 
     const stableford = screen.getByTestId('tipo-STABLEFORD');
     expect(stableford.className).not.toMatch(/opacity-/);

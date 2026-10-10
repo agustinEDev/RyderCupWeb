@@ -152,6 +152,16 @@ class ICompetitionRepository {
   }
 
   /**
+   * Cambia los ajustes de un Stableford o un Medal (FE #824). Solo lo que llega.
+   * @param {string} competitionId
+   * @param {{categoryLimits?: number[], categoryCount?: number, maxMatchdaysPerPlayer?: number, overallStanding?: string}} cambios
+   * @returns {Promise<import('../value_objects/StrokePlaySetup').StrokePlaySetup>} Los ajustes como quedan
+   */
+  async updateStrokePlay(competitionId, cambios) {
+    throw new Error('ICompetitionRepository.updateStrokePlay must be implemented');
+  }
+
+  /**
    * Activates a competition (DRAFT → ACTIVE).
    * @param {string} competitionId
    * @returns {Promise<Object>} Updated competition data

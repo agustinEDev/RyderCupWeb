@@ -1,6 +1,7 @@
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { numeroEntero } from './numeroEntero';
+import { diasDelTorneo, errorDeAjustes } from './ajustesDeStrokePlay';
 
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
@@ -63,6 +64,17 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
 
   if (new Date(formData.startDate) > new Date(formData.endDate)) {
     return { key: 'endDateAfterStart' };
+  }
+
+  // Los ajustes de un Stableford o un Medal (FE #824), ya con las fechas: las
+  // jornadas de cada jugador no pueden pasar de los días del torneo
+  if (!tieneEquipos(formData.tournamentType) && formData.strokePlay) {
+    const dias = diasDelTorneo(formData.startDate, formData.endDate);
+    const error = errorDeAjustes(formData.strokePlay, dias);
+    if (error) {
+      // Con `count`: «1 día» o «3 días» (i18next pone el plural)
+      return error === 'matchdaysMoreThanDays' ? { key: error, count: dias } : { key: error };
+    }
   }
 
   if (!formData.country) {

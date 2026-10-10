@@ -218,6 +218,30 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     return competition;
   }
   /**
+   * Cambia los ajustes del stroke play (FE #824, RyderCupAm#536). Un PATCH con
+   * SOLO lo que llega: mandar los límites, aunque vacíos, cambia de modo.
+   * @override
+   */
+  async updateStrokePlay(competitionId, cambios) {
+    const nombres = {
+      categoryLimits: 'category_limits',
+      categoryCount: 'category_count',
+      maxMatchdaysPerPlayer: 'max_matchdays_per_player',
+      overallStanding: 'overall_standing',
+    };
+    const cuerpo = Object.fromEntries(
+      Object.entries(cambios)
+        .filter(([campo, valor]) => nombres[campo] && valor !== undefined)
+        .map(([campo, valor]) => [nombres[campo], valor])
+    );
+    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}/stroke-play`, {
+      method: 'PATCH',
+      body: JSON.stringify(cuerpo),
+    });
+    return CompetitionMapper.ajustesDeStrokePlay({ stroke_play: apiData });
+  }
+
+  /**
    * Activates a competition (DRAFT → ACTIVE).
    * @override
    * @param {string} competitionId

@@ -7,6 +7,7 @@ import { CountryCode } from '../../domain/value_objects/CountryCode';
 import { HandicapSettings } from '../../domain/value_objects/HandicapSettings';
 import { TeamAssignment } from '../../domain/value_objects/TeamAssignment';
 import { CompetitionStatus } from '../../domain/value_objects/CompetitionStatus';
+import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 import { getCountryFlag } from '../../utils/countryUtils';
 import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 
@@ -65,6 +66,7 @@ class CompetitionMapper {
       team2Name: apiData.team_2_name || apiData.team_two_name || apiData.team2_name || 'Team 2',
       // Una respuesta de antes del tipo es una Ryder Cup
       tournamentType: apiData.tournament_type || 'RYDER_CUP',
+      strokePlay: CompetitionMapper.ajustesDeStrokePlay(apiData),
       handicapSettings,
       maxPlayers,
       teamAssignment,
@@ -78,6 +80,24 @@ class CompetitionMapper {
     } catch (error) {
       throw new Error(`Failed to map competition data: ${error.message}`);
     }
+  }
+
+  /**
+   * Los ajustes del stroke play de la respuesta (FE #824, RyderCupAm#536), o
+   * undefined si no vienen: un listado no los trae, y entonces la entidad pone
+   * los de por defecto a un stroke play y ninguno a una Ryder. Los límites
+   * llegan como texto («12.0»), como todo `Decimal` de la API.
+   */
+  static ajustesDeStrokePlay(apiData) {
+    const ajustes = apiData.stroke_play;
+    if (!ajustes) return undefined;
+    return new StrokePlaySetup({
+      categoryLimits: (ajustes.category_limits ?? []).map(Number),
+      // Una respuesta de antes del contador es de límites a mano
+      categoryCount: ajustes.category_count ?? null,
+      maxMatchdaysPerPlayer: ajustes.max_matchdays_per_player ?? 1,
+      overallStanding: ajustes.overall_standing ?? undefined,
+    });
   }
 
   /**

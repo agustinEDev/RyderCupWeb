@@ -108,7 +108,16 @@
       "teamNamesTooShort": "Los nombres de los equipos necesitan al menos 3 letras",
       "teamNamesTooLong": "Los nombres de los equipos no pueden pasar de 50 letras",
       "handicapLimitRange": "El límite de hándicap tiene que estar entre 1 y 54",
-      "playersInvalid": "El número de jugadores tiene que ser un número entero"
+      "playersInvalid": "El número de jugadores tiene que ser un número entero",
+      "categoryLimitsTooMany": "Como mucho 4 límites: 5 categorías.",
+      "categoryLimitRange": "Cada límite es un hándicap entre -10,0 y 54,0.",
+      "categoryLimitOneDecimal": "Los límites llevan un decimal como mucho.",
+      "categoryLimitsOrder": "Los límites van de menor a mayor y sin repetirse.",
+      "categoryCountRange": "Las categorías iguales son entre 2 y 5.",
+      "matchdaysRange": "Cada jugador tiene que poder jugar al menos una jornada.",
+      "matchdaysMoreThanDays_one": "El torneo dura {{count}} día: no caben más jornadas por jugador.",
+      "matchdaysMoreThanDays_other": "El torneo dura {{count}} días: no caben más jornadas por jugador.",
+      "categoryLimitEmpty": "Escribe el límite o quítalo."
     },
     "success": "¡Competición creada exitosamente!",
     "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",
@@ -144,7 +153,42 @@
       "MATCH_PLAY": "Match play",
       "STROKE_PLAY": "Stroke play"
     },
-    "moreOptionsSummaryNoTeams": "{{handicap}}"
+    "moreOptionsSummaryNoTeams": "{{handicap}}",
+    "strokePlay": {
+      "title": "Ajustes del {{tipo}}",
+      "categories": "Categorías",
+      "mode": {
+        "LIMITES": "Límites a mano",
+        "IGUALES": "Categorías iguales"
+      },
+      "limitsHint": "Cada límite es el hándicap más alto de su categoría: «hasta 12,0» incluye el 12,0. Sin límites, una sola categoría.",
+      "limitLabel": "Límite {{numero}}",
+      "addLimit": "Añadir límite",
+      "removeLimit": "Quitar el límite {{numero}}",
+      "preview": {
+        "single": "Una sola categoría para todos",
+        "upTo": "{{numero}}.ª: hasta {{hasta}}",
+        "between": "{{numero}}.ª: de {{desde}} a {{hasta}}",
+        "above": "{{numero}}.ª: más de {{masDe}}"
+      },
+      "equalCount": "Cuántas categorías",
+      "equalHint": "Se reparten al cerrar las inscripciones con los hándicaps fijados, en grupos lo más parecidos posible. Los empatados en una frontera van juntos.",
+      "sixRule": "Una categoría necesita al menos 6 jugadores: con menos, se une a la de hándicap más bajo.",
+      "matchdays": "Jornadas por jugador",
+      "matchdaysHint": "En cuántos días puede jugar cada uno, una franja por día.",
+      "overall": {
+        "title": "Clasificación general",
+        "ACCUMULATED": {
+          "label": "Acumulada",
+          "STABLEFORD": "Suma los puntos de todas sus vueltas.",
+          "MEDAL": "Suma los golpes netos de todas sus vueltas."
+        },
+        "BEST_CARD": {
+          "label": "Mejor tarjeta",
+          "hint": "Cuenta solo su mejor vuelta."
+        }
+      }
+    }
   },
   "edit": {
     "title": "Editar Competición",
@@ -155,7 +199,9 @@
     "error": "Error al actualizar la competición",
     "errorLoading": "Error al cargar la competición",
     "notEditable": "Esta competición ya no se puede editar: solo se edita mientras las inscripciones están abiertas.",
-    "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas."
+    "datesLeaveSessionsOut": "Con esas fechas se quedan fuera estas sesiones: {{sesiones}}. Muévelas o bórralas antes de cambiar las fechas.",
+    "strokePlayNotSaved": "Se guardaron los datos generales, pero no los ajustes del torneo: {{motivo}}",
+    "generalNotSaved": "Se guardaron los ajustes del torneo, pero no los datos generales: {{motivo}}"
   },
   "detail": {
     "loadingCompetition": "Cargando competición...",
