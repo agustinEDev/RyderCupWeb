@@ -201,5 +201,34 @@
     "yes": "Sí",
     "no": "No",
     "courseRemoved": "Campo ya retirado"
+  },
+  "franjas": {
+    "title": "Franjas de salida",
+    "empty": "Aún no hay franjas.",
+    "emptyManage": "Aún no hay franjas: añade al menos una para que los jugadores puedan apuntarse.",
+    "capacityShort": "Con estas franjas caben {{caben}} de los {{maximo}} jugadores.",
+    "hours": "{{primera}} → {{ultima}} · cada {{intervalo}} min",
+    "capacity": "{{salidas}} salidas de {{tamano}} · cupo {{cupo}}",
+    "taken": "{{apuntados}} apuntados · {{espera}} en espera",
+    "change": "Cambiar la franja",
+    "remove": "Borrar la franja",
+    "confirmRemove": "¿Borrar esta franja?",
+    "yes": "Sí, borrarla",
+    "add": "Añadir franja",
+    "day": "Día",
+    "slot": "Franja",
+    "course": "Campo",
+    "firstTee": "Primera salida",
+    "lastTee": "Última salida",
+    "interval": "Minutos entre salidas",
+    "groupSize": "Jugadores por partida",
+    "lastTeeHint": "La última salida es la hora de la última partida, no la hora de acabar.",
+    "save": "Guardar franja",
+    "errors": {
+      "teeTimeFormat": "Escribe las dos horas de salida.",
+      "lastBeforeFirst": "La última salida no puede ser antes que la primera.",
+      "intervalRange": "Entre salidas, de 5 a 20 minutos.",
+      "groupSize": "Las partidas son de 3 o 4 jugadores."
+    }
   }
 }

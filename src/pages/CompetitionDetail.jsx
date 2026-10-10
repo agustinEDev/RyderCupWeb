@@ -18,6 +18,7 @@ import { useUserRoles } from '../hooks/useUserRoles';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
+import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -546,6 +547,9 @@ const CompetitionDetail = () => {
   // Solo una Ryder tiene equipos y reparto, en su pieza: a un Stableford no se
   // le enseñan filas de lo que no tiene (FE #791)
   const conEquipos = competition.hasTeams;
+  // Un Stableford o un Medal (FE #824). Sin el dato, una Ryder: es lo que eran
+  // todas, igual que una competición sin tipo
+  const esStrokePlay = competition.hasTeams === false;
   const repartoAMostrar =
     competition.actualTeamAssignment ??
     (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
@@ -614,7 +618,10 @@ const CompetitionDetail = () => {
       icon: Pause,
       onClick: () => handleStatusChange('close-enrollments'),
       disabled: isProcessing,
-      cuando: competition.status === 'ACTIVE' && competition.teamsAssigned,
+      // Una Ryder abierta se cierra nombrando a los capitanes, y este botón
+      // solo vuelve con los equipos ya hechos (una reabierta). Un Stableford o
+      // un Medal no tiene capitanes: se cierra aquí (FE #824)
+      cuando: competition.status === 'ACTIVE' && (competition.teamsAssigned || esStrokePlay),
     },
     draft: {
       id: 'draft',
@@ -1253,6 +1260,21 @@ const CompetitionDetail = () => {
             {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
                 organizador la cambia aquí mismo (FE #654) */}
             <div className="p-4" data-testid="seccion-agenda">
+              {/* Un Stableford o un Medal tiene franjas con su hoja de salidas, no
+                  sesiones con formato (FE #824). Se tocan hasta iniciar: después
+                  el servidor lo rechaza */}
+              {esStrokePlay ? (
+                <FranjasDeLaCompeticion
+                  competitionId={competition.id}
+                  startDate={competition.startDate}
+                  endDate={competition.endDate}
+                  canManage={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
+                  maxPlayers={competition.maxPlayers}
+                  version={`${competition.updatedAt}|${competition.status}`}
+                  versionCampos={versionCampos}
+                  onAgenda={setAgendaLeida}
+                />
+              ) : (
               <AgendaDeLaCompeticion
                 competitionId={competition.id}
                 startDate={competition.startDate}
@@ -1266,6 +1288,7 @@ const CompetitionDetail = () => {
                 versionCampos={versionCampos}
                 onAgenda={setAgendaLeida}
               />
+              )}
             </div>
 
             {/* Golf Courses Section */}

@@ -19,8 +19,14 @@ class CreateRoundUseCase {
     if (!roundData.session_type) {
       throw new Error('Session type is required');
     }
-    if (!roundData.match_format) {
-      throw new Error('Match format is required');
+    // Una sesión de la Ryder lleva su formato y una franja de stroke play su
+    // hoja de salidas (FE #824): una de las dos, nunca las dos (el backend da
+    // un 400 si una franja trae formato)
+    if (!roundData.match_format && !roundData.tee_sheet) {
+      throw new Error('Match format or tee sheet is required');
+    }
+    if (roundData.match_format && roundData.tee_sheet) {
+      throw new Error('A round has either a match format or a tee sheet, not both');
     }
     return await this.scheduleRepository.createRound(competitionId, roundData);
   }

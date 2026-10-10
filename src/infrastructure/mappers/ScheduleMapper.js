@@ -28,6 +28,29 @@ class ScheduleMapper {
         teamBPlayerIds: apiData.team_assignment.team_b_player_ids || [],
       } : null,
       rounds: allRounds,
+      // La suma de los cupos de las franjas de un stroke play (FE #824); null
+      // en una Ryder
+      teeSheetCapacity: apiData.tee_sheet_capacity ?? null,
+    };
+  }
+
+  /**
+   * La hoja de salidas de una franja (FE #824, RyderCupAm#508), o null en una
+   * sesión de la Ryder. Las horas en «HH:MM»: el backend puede mandar segundos.
+   */
+  static toTeeSheetDTO(apiTeeSheet) {
+    if (!apiTeeSheet) return null;
+    const hhmm = (hora) => (typeof hora === 'string' ? hora.slice(0, 5) : hora);
+    return {
+      firstTeeTime: hhmm(apiTeeSheet.first_tee_time),
+      lastTeeTime: hhmm(apiTeeSheet.last_tee_time),
+      intervalMinutes: apiTeeSheet.interval_minutes,
+      groupSize: apiTeeSheet.group_size,
+      teeTimes: (apiTeeSheet.tee_times || []).map(hhmm),
+      capacity: apiTeeSheet.capacity,
+      placesTaken: apiTeeSheet.places_taken ?? 0,
+      playerIds: apiTeeSheet.player_ids || [],
+      waitingIds: apiTeeSheet.waiting_ids || [],
     };
   }
 
@@ -58,6 +81,7 @@ class ScheduleMapper {
       restingPlayerIds: apiRound.resting_player_ids || [],
       sessionType: apiRound.session_type,
       matchFormat: apiRound.match_format,
+      teeSheet: ScheduleMapper.toTeeSheetDTO(apiRound.tee_sheet),
       handicapMode: apiRound.handicap_mode || null,
       allowancePercentage: apiRound.allowance_percentage ?? null,
       effectiveAllowance: apiRound.effective_allowance ?? null,
