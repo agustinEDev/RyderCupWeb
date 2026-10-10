@@ -8,7 +8,7 @@ import { numeroEntero } from './numeroEntero';
  * Ryder con sus amigos no tiene ninguna opinión sobre eso: ahora vive plegado
  * con el resto de valores por defecto y, si nadie lo toca, son doce.
  *
- * El tope de 100 no se comprueba aquí: lo pone la API (`max_players`, `le=100`)
+ * El tope (`MAX_PLAYERS`, 200) no se comprueba aquí: lo pone la API (`le=200`)
  * y lo avisa la validación del formulario, para que el organizador lo lea como
  * un aviso y no como un 422.
  */

@@ -1,12 +1,11 @@
+import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { numeroEntero } from './numeroEntero';
 
-const MIN_PLAYERS = 2;
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
 const MIN_HANDICAP = 1;
 const MAX_HANDICAP = 54;
-const MAX_PLAYERS = 100;
 
 /**
  * Validates the CreateCompetition/EditCompetition form data.
@@ -101,7 +100,7 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
   }
 
   if (numPlayers > MAX_PLAYERS) {
-    return { key: 'playersMaximum' };
+    return { key: 'playersMaximum', max: MAX_PLAYERS };
   }
 
   // Y no por debajo de quien ya está dentro (FE #662). El servidor lo rechaza
