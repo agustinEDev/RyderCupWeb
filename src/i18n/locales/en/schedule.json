@@ -236,6 +236,9 @@
     "capacityShort_one": "With these windows, {{count}} of the {{maximo}} players fits.",
     "capacityShort_other": "With these windows, {{count}} of the {{maximo}} players fit.",
     "coursesNotLoaded": "The competition courses could not be loaded.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "saved": "Window saved.",
+    "changed": "Window changed.",
+    "removed": "Window deleted."
   }
 }

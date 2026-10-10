@@ -291,11 +291,14 @@ const FranjasDeLaCompeticion = ({
    * Manda un cambio y vuelve a leer. Si sale bien, `alAcabar` cierra lo que
    * estaba abierto; si no, se enseña el motivo y lo escrito se queda.
    */
-  const cambiar = async (accion, alAcabar) => {
+  const cambiar = async (accion, alAcabar, aviso) => {
     setOcupado(true);
     try {
       await accion();
       alAcabar();
+      // Dicho al momento: si luego falla releer, que no quede la duda de si se
+      // guardó (CodeRabbit en la #835)
+      customToast.success(t(aviso));
     } catch (error) {
       customToast.error(error.message || t('agenda.error'));
     } finally {
@@ -347,7 +350,8 @@ const FranjasDeLaCompeticion = ({
           session_type: nueva.franja,
           tee_sheet: aTeeSheet(nueva.hoja),
         }),
-      () => setNueva(null)
+      () => setNueva(null),
+      'franjas.saved'
     );
 
   // --- Cambiar ---
@@ -370,7 +374,8 @@ const FranjasDeLaCompeticion = ({
             : {}),
           ...(editando.campo !== editando.campoOriginal ? { golf_course_id: editando.campo } : {}),
         }),
-      () => setEditando(null)
+      () => setEditando(null),
+      'franjas.changed'
     );
 
   const selectorDeCampo = (valor, onChange) =>
@@ -544,7 +549,7 @@ const FranjasDeLaCompeticion = ({
                           type="button"
                           // Un doble toque mandaba dos DELETE (revisor)
                           disabled={ocupado}
-                          onClick={() => cambiar(() => deleteRoundUseCase.execute(f.id), () => setBorrando(null))}
+                          onClick={() => cambiar(() => deleteRoundUseCase.execute(f.id), () => setBorrando(null), 'franjas.removed')}
                           className="rounded-md bg-amber-600 px-2 py-1 font-semibold text-white"
                         >
                           {t('franjas.yes')}

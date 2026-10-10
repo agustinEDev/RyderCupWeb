@@ -462,6 +462,42 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     expect(await screen.findByTestId('franja-r-1')).toBeInTheDocument();
   });
 
+  it.each([
+    ['guardar una nueva', 'franjas.saved'],
+    ['cambiar una', 'franjas.changed'],
+    ['borrar una', 'franjas.removed'],
+  ])('13: al %s se dice que salió bien, aunque luego falle releer (CodeRabbit)', async (accion, aviso) => {
+    pinta();
+    await screen.findByTestId('franja-r-1');
+    mockLeer.mockRejectedValue(new Error('sin red'));
+
+    if (accion === 'guardar una nueva') {
+      fireEvent.click(screen.getByRole('button', { name: 'franjas.add' }));
+      fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+    } else if (accion === 'cambiar una') {
+      fireEvent.click(screen.getByRole('button', { name: /^franjas\.change/ }));
+      fireEvent.change(screen.getByLabelText('franjas.lastTee'), { target: { value: '10:50' } });
+      fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+    } else {
+      fireEvent.click(screen.getByRole('button', { name: /^franjas\.remove/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'franjas.yes' }));
+    }
+
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(aviso));
+    expect(await screen.findByRole('button', { name: 'franjas.retry' })).toBeInTheDocument();
+  });
+
+  it('13b: si falla la acción, no se dice que salió bien', async () => {
+    mockCrear.mockRejectedValue(new Error('Se solapa'));
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Se solapa'));
+    expect(mockToast.success).not.toHaveBeenCalled();
+  });
+
   it('11b: si caben, nada', async () => {
     pinta({ maxPlayers: 80 });
 

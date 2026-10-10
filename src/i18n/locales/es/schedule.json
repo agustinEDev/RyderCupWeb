@@ -236,6 +236,9 @@
     "capacityShort_one": "Con estas franjas cabe {{count}} de los {{maximo}} jugadores.",
     "capacityShort_other": "Con estas franjas caben {{count}} de los {{maximo}} jugadores.",
     "coursesNotLoaded": "No se han podido leer los campos de la competición.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "saved": "Franja guardada.",
+    "changed": "Franja cambiada.",
+    "removed": "Franja borrada."
   }
 }
