@@ -317,7 +317,10 @@
       "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually.",
       "playersWithoutTeeWindow_one": "{{jugadores}} still needs a tee time window.",
       "playersWithoutTeeWindow_other": "{{count}} players still need a tee time window: {{jugadores}}.",
-      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window»."
+      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window».",
+      "playersWithoutHandicap_one": "{{jugadores}} has no handicap: set a custom one and close again.",
+      "playersWithoutHandicap_other": "{{count}} players have no handicap ({{jugadores}}): set a custom one and close again.",
+      "playersWithoutHandicapUnnamed": "Some players have no handicap: set a custom one and close again."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
@@ -439,7 +442,9 @@
       "captainOf": "{{team}} captain",
       "viceCaptainOf": "{{team}} vice-captain",
       "playersUnavailable": "The list of enrolled players could not be loaded. Open the competition again to retry."
-    }
+    },
+    "fixedHandicap": "{{handicap}} · category {{categoria}}",
+    "fixedHandicapNoCategory": "{{handicap}}"
   },
   "browse": {
     "title": "Browse Competitions",

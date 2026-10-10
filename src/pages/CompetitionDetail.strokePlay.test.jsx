@@ -377,3 +377,112 @@ describe('CompetitionDetail · cerrar sin los nombres de quien falta (FE #824)',
     await waitFor(() => expect(getScheduleUseCase.execute.mock.calls.length).toBeGreaterThan(lecturas));
   });
 });
+
+describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', () => {
+  const medal = (extra = {}) =>
+    competicion({ hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null, ...extra });
+  const conFijado = (userId, nombre, fixedHandicap, category) => ({
+    ...inscrito(userId, nombre),
+    fixedHandicap,
+    category,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+  });
+
+  it('1: con las inscripciones abiertas, el hándicap de siempre y el lápiz', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'ACTIVE' }));
+    renderPage();
+
+    const ana = await screen.findByTestId('aprobado-ana');
+    expect(within(ana).getByTitle('detail.editHandicap')).toBeInTheDocument();
+    expect(within(ana).queryByTestId('fijado-ana')).toBeNull();
+  });
+
+  it('2: cerradas, el fijado y la categoría, por categoría y hándicap, sin lápiz', async () => {
+    mockListEnrollments.mockResolvedValue([
+      conFijado('org', 'Olga Organiza', 20.1, 2),
+      conFijado('ana', 'Ana Alba', 5.2, 1),
+      conFijado('bea', 'Bea Blanco', 14.0, 2),
+      conFijado('carla', 'Carla Cruz', 3.1, 1),
+    ]);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED' }));
+    renderPage();
+
+    await screen.findByTestId('aprobado-ana');
+    expect(screen.getByTestId('fijado-ana')).toHaveTextContent('detail.fixedHandicap');
+    expect(screen.queryByTitle('detail.editHandicap')).toBeNull();
+    const orden = screen.getAllByTestId(/^aprobado-/).map((e) => e.dataset.testid.replace('aprobado-', ''));
+    expect(orden).toEqual(['carla', 'ana', 'bea', 'org']);
+  });
+
+  it('2c: con el fijado pero sin categoría, solo el hándicap', async () => {
+    mockListEnrollments.mockResolvedValue([conFijado('ana', 'Ana Alba', 5.2, null)]);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED' }));
+    renderPage();
+
+    expect(await screen.findByTestId('fijado-ana')).toHaveTextContent('detail.fixedHandicapNoCategory');
+  });
+
+  it('2b: una Ryder cerrada sigue dejando cambiar el personalizado', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED' }));
+    renderPage();
+
+    const ana = await screen.findByTestId('aprobado-ana');
+    expect(within(ana).getByTitle('detail.editHandicap')).toBeInTheDocument();
+  });
+
+  it('3: al cerrar, se vuelven a leer las inscripciones (traen el fijado)', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'ACTIVE' }));
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+    await screen.findByTestId('menu-acciones');
+    const lecturas = mockListEnrollments.mock.calls.length;
+
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(lecturas));
+  });
+
+  const cerrarConFaltas = async (players) => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'ACTIVE' }));
+    mockCloseEnrollments.mockRejectedValue(
+      Object.assign(new Error('Faltan'), { errorCode: 'PLAYERS_WITHOUT_HANDICAP', data: { players } })
+    );
+    globalThis.Element.prototype.scrollIntoView = vi.fn();
+    renderPage();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+  };
+
+  it('4: sin hándicap, los nombra, los marca y abre el personalizado del primero', async () => {
+    await cerrarConFaltas([
+      { user_id: 'ana', name: 'Ana Alba', missing: 'HANDICAP' },
+      { user_id: 'bea', name: 'Bea Blanco', missing: 'HANDICAP' },
+      // Uno sin nombre también cuenta
+      { user_id: 'zzz', missing: 'HANDICAP' },
+    ]);
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutHandicap_3'));
+    expect(screen.getByTestId('aprobado-ana')).toHaveAttribute('data-sin-handicap', 'true');
+    expect(screen.getByTestId('aprobado-bea')).toHaveAttribute('data-sin-handicap', 'true');
+    expect(screen.getByTestId('aprobado-carla')).not.toHaveAttribute('data-sin-handicap');
+    expect(within(screen.getByTestId('aprobado-ana')).getByRole('textbox')).toBeInTheDocument();
+  });
+
+  it('5: sin nombres, un aviso que se lee', async () => {
+    await cerrarConFaltas([{ user_id: 'zzz' }]);
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutHandicapUnnamed'));
+  });
+});

@@ -317,7 +317,10 @@
       "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente.",
       "playersWithoutTeeWindow_one": "Falta colocar en una franja a {{jugadores}}.",
       "playersWithoutTeeWindow_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}.",
-      "playersWithoutTeeWindowUnnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja»."
+      "playersWithoutTeeWindowUnnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja».",
+      "playersWithoutHandicap_one": "A {{jugadores}} le falta el hándicap: ponle uno personalizado y vuelve a cerrar.",
+      "playersWithoutHandicap_other": "A {{count}} jugadores les falta el hándicap ({{jugadores}}): ponles uno personalizado y vuelve a cerrar.",
+      "playersWithoutHandicapUnnamed": "A algunos jugadores les falta el hándicap: ponles uno personalizado y vuelve a cerrar."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
@@ -439,7 +442,9 @@
       "captainOf": "Capitán de {{team}}",
       "viceCaptainOf": "Subcapitán de {{team}}",
       "playersUnavailable": "No se ha podido cargar la lista de inscritos. Vuelve a abrir la competición para intentarlo de nuevo."
-    }
+    },
+    "fixedHandicap": "{{handicap}} · {{categoria}}.ª",
+    "fixedHandicapNoCategory": "{{handicap}}"
   },
   "browse": {
     "title": "Explorar Competiciones",
