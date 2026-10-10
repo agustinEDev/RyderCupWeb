@@ -314,7 +314,9 @@
       "golfCoursesRejected": "No se puede activar: Estos campos fueron rechazados: {{courses}}",
       "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf",
       "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo.",
-      "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente."
+      "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente.",
+      "playersWithoutTeeWindow_one": "Falta colocar en una franja a {{jugadores}}.",
+      "playersWithoutTeeWindow_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {

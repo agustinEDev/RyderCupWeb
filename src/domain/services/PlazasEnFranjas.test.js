@@ -45,6 +45,16 @@ describe('PlazasEnFranjas (FE #824)', () => {
     expect(accion(s, 't')).toEqual({ tipo: CAMBIAR, dejar: ['m'] });
   });
 
+  it('3b: ya juega ese día aunque le queden jornadas: cambiarse, no coger otra ese día', () => {
+    const s = situacionEnLasFranjas(
+      [mia('m', '2030-10-12'), { ...franja('t', '2030-10-12'), sessionType: 'AFTERNOON' }],
+      YO,
+      2
+    );
+
+    expect(accion(s, 't')).toEqual({ tipo: CAMBIAR, dejar: ['m'] });
+  });
+
   it('4: con sitio, otro día y las jornadas llenas: cambiar por esta, eligiendo cuál deja', () => {
     const s = situacionEnLasFranjas(
       [mia('a', '2030-10-12'), mia('b', '2030-10-13'), franja('c', '2030-10-14')],

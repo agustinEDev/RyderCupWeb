@@ -48,6 +48,11 @@ vi.mock('../utils/toast', () => ({
 
 const mockDetalle = vi.fn();
 vi.mock('../composition', () => ({
+  // Las plazas y esperas de las franjas (FE #824, PR 4)
+  takeTeeWindowPlaceUseCase: { execute: vi.fn() },
+  releaseTeeWindowPlaceUseCase: { execute: vi.fn() },
+  joinWaitingListUseCase: { execute: vi.fn() },
+  leaveWaitingListUseCase: { execute: vi.fn() },
   getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
   listEnrollmentsUseCase: { execute: vi.fn().mockResolvedValue([]) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },

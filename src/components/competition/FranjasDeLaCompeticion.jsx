@@ -7,7 +7,13 @@ import {
   createRoundUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,
+  takeTeeWindowPlaceUseCase,
+  releaseTeeWindowPlaceUseCase,
+  joinWaitingListUseCase,
+  leaveWaitingListUseCase,
 } from '../../composition';
+import { situacionEnLasFranjas } from '../../domain/services/PlazasEnFranjas';
+import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFranja';
 import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
@@ -164,6 +170,13 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {string} [props.version] - Cambia cuando cambia la competición: se relee
  * @param {number} [props.versionCampos] - Cambia cuando cambian los campos
  * @param {(agenda: Object|null) => void} [props.onAgenda] - Lo leído, para la ficha
+ * @param {string} [props.userId] - Quién mira
+ * @param {boolean} [props.estoyInscrito] - Si quien mira es un inscrito aprobado
+ * @param {boolean} [props.puedeElegir] - Si el jugador elige ya (inscripciones abiertas)
+ * @param {number} [props.maxMatchdaysPerPlayer] - Jornadas por jugador
+ * @param {Array<{userId: string, userName: string}>} [props.inscritos] - Aprobados, para los nombres
+ * @param {boolean} [props.puedeColocar] - El organizador coloca y mueve (hasta iniciar)
+ * @param {boolean} [props.puedeQuitar] - Y quita (solo con las inscripciones abiertas)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -174,6 +187,13 @@ const FranjasDeLaCompeticion = ({
   version,
   versionCampos,
   onAgenda,
+  userId,
+  estoyInscrito = false,
+  puedeElegir = false,
+  maxMatchdaysPerPlayer,
+  inscritos = [],
+  puedeColocar = false,
+  puedeQuitar = false,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -273,6 +293,26 @@ const FranjasDeLaCompeticion = ({
   }, [franjas]);
 
   const nombreDelCampo = (id) => campos.find((c) => c.id === id)?.name || '';
+
+  // --- Plazas y esperas (PR 4) ---
+
+  // Qué puede hacer quien mira en cada franja (la agenda no dice «la mía»)
+  const situacion = useMemo(
+    () => (estoyInscrito && userId ? situacionEnLasFranjas(franjas, userId, maxMatchdaysPerPlayer) : null),
+    [estoyInscrito, userId, franjas, maxMatchdaysPerPlayer]
+  );
+  const franjasPorId = useMemo(() => Object.fromEntries(franjas.map((f) => [f.id, f])), [franjas]);
+  const conSitio = franjas.filter((f) => f.teeSheet && f.teeSheet.placesTaken < f.teeSheet.capacity);
+  const nombreDe = (id) => inscritos.find((i) => i.userId === id)?.userName || t('franjas.unknownPlayer');
+  const etiqueta = (f) => ({ franja: t(`sessions.${f.sessionType}`), dia: fecha(f.roundDate) });
+  const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
+  const sinFranja = inscritos.filter((i) => !conPlaza.has(i.userId));
+  const casos = {
+    coger: takeTeeWindowPlaceUseCase,
+    soltar: releaseTeeWindowPlaceUseCase,
+    esperar: joinWaitingListUseCase,
+    dejarDeEsperar: leaveWaitingListUseCase,
+  };
   const variosCampos = campos.length > 1;
 
   const fecha = (dia) => {
@@ -306,6 +346,9 @@ const FranjasDeLaCompeticion = ({
       setOcupado(false);
     }
   };
+
+  // Una acción de plaza o espera: sin nada abierto que cerrar al acabar
+  const hacer = (accion, aviso) => cambiar(accion, () => {}, aviso);
 
   // --- Añadir ---
 
@@ -449,6 +492,12 @@ const FranjasDeLaCompeticion = ({
         </p>
       )}
 
+      {situacion && (
+        <p data-testid="franjas-mis-jornadas" className="mb-3 text-sm text-gray-700">
+          {t('franjas.myDays', { count: situacion.jornadas.juega, maximo: situacion.jornadas.maximo })}
+        </p>
+      )}
+
       {cupoCorto && (
         <p data-testid="franjas-cupo-corto" className="mb-3 text-sm text-amber-800">
           {t('franjas.capacityShort', { count: cupoTotal, maximo: maxPlayers })}
@@ -520,6 +569,33 @@ const FranjasDeLaCompeticion = ({
                         <p className="text-gray-500">
                           {t('franjas.taken', { count: hoja.placesTaken, espera: hoja.waitingIds.length })}
                         </p>
+                        {situacion && (
+                          <AccionDelJugador
+                            franja={f}
+                            accion={situacion.porFranja[f.id]}
+                            puedeElegir={puedeElegir}
+                            userId={userId}
+                            etiqueta={etiqueta}
+                            franjasPorId={franjasPorId}
+                            ocupado={ocupado}
+                            hacer={hacer}
+                            casos={casos}
+                          />
+                        )}
+                        {/* Los nombres, para los inscritos y el organizador */}
+                        {(estoyInscrito || canManage) && (
+                          <JugadoresDeLaFranja
+                            franja={f}
+                            nombreDe={nombreDe}
+                            conSitio={conSitio}
+                            etiqueta={etiqueta}
+                            puedeColocar={puedeColocar}
+                            puedeQuitar={puedeQuitar}
+                            ocupado={ocupado}
+                            hacer={hacer}
+                            casos={casos}
+                          />
+                        )}
                       </>
                     )}
 
@@ -566,6 +642,10 @@ const FranjasDeLaCompeticion = ({
           </div>
         ))}
       </div>
+
+      {puedeColocar && !sinCargar && agenda && (
+        <SinFranja jugadores={sinFranja} conSitio={conSitio} etiqueta={etiqueta} ocupado={ocupado} hacer={hacer} casos={casos} />
+      )}
 
       {canManage && !sinCargar && agenda && (
         <div className="mt-4">

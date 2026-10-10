@@ -40,6 +40,11 @@ vi.mock('../../composition', () => ({
   createRoundUseCase: { execute: (...a) => mockCrear(...a) },
   updateRoundUseCase: { execute: (...a) => mockCambiar(...a) },
   deleteRoundUseCase: { execute: (...a) => mockBorrar(...a) },
+  // Las plazas y esperas (PR 4) tienen sus propios tests
+  takeTeeWindowPlaceUseCase: { execute: vi.fn() },
+  releaseTeeWindowPlaceUseCase: { execute: vi.fn() },
+  joinWaitingListUseCase: { execute: vi.fn() },
+  leaveWaitingListUseCase: { execute: vi.fn() },
 }));
 
 const FranjasDeLaCompeticion = (await import('./FranjasDeLaCompeticion')).default;

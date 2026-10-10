@@ -308,6 +308,16 @@ const CompetitionDetail = () => {
     } catch (error) {
       console.error(`Error ${action}:`, error);
       console.error('Error details:', error.stack || error.message || String(error));
+      // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
+      // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
+      if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
+        const jugadores = (error.data?.players || []).map((p) => p.name).filter(Boolean);
+        customToast.error(
+          t('detail.errors.playersWithoutTeeWindow', { count: jugadores.length, jugadores: jugadores.join(', ') })
+        );
+        document.getElementById('sin-franja')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);
@@ -1272,6 +1282,19 @@ const CompetitionDetail = () => {
                   endDate={competition.endDate}
                   canManage={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
                   maxPlayers={competition.maxPlayers}
+                  // Las plazas (PR 4): el jugador elige con las inscripciones
+                  // abiertas; el organizador coloca y mueve hasta iniciar, y
+                  // quita solo con ellas abiertas
+                  userId={user.id}
+                  estoyInscrito={estoyInscrito}
+                  puedeElegir={competition.status === 'ACTIVE'}
+                  maxMatchdaysPerPlayer={competition.strokePlay?.maxMatchdaysPerPlayer}
+                  inscritos={approvedEnrollments.map((e) => ({
+                    userId: e.userId,
+                    userName: e.userName || t('detail.unknownUser'),
+                  }))}
+                  puedeColocar={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
+                  puedeQuitar={canManage && competition.status === 'ACTIVE'}
                   version={`${competition.updatedAt}|${competition.status}`}
                   versionCampos={versionCampos}
                   onAgenda={setAgendaLeida}

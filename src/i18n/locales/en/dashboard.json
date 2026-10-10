@@ -52,7 +52,10 @@
       "STABLEFORD": "Stableford"
     },
     "envelopePending": "You have an envelope to hand in",
-    "sessionWithoutMatches": "A session was left without matches"
+    "sessionWithoutMatches": "A session was left without matches",
+    "placeAssigned": "You got a place from the waiting list",
+    "placeAssignedOk": "Got it",
+    "placeAssignedOkFailed": "Could not mark it as seen. Try again."
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",
