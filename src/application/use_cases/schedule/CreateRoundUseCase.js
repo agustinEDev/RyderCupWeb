@@ -1,3 +1,5 @@
+import { errorDeHoja } from '../../../domain/value_objects/HojaDeSalidas';
+
 class CreateRoundUseCase {
   constructor({ scheduleRepository }) {
     this.scheduleRepository = scheduleRepository;
@@ -27,6 +29,17 @@ class CreateRoundUseCase {
     }
     if (roundData.match_format && roundData.tee_sheet) {
       throw new Error('A round has either a match format or a tee sheet, not both');
+    }
+    // La hoja, con las reglas del dominio: no solo las comprueba la pantalla
+    if (roundData.tee_sheet) {
+      const hoja = roundData.tee_sheet;
+      const error = errorDeHoja({
+        primera: hoja.first_tee_time,
+        ultima: hoja.last_tee_time,
+        intervalo: hoja.interval_minutes,
+        tamano: hoja.group_size,
+      });
+      if (error) throw new Error(`Invalid tee sheet: ${error}`);
     }
     return await this.scheduleRepository.createRound(competitionId, roundData);
   }

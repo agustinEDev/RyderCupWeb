@@ -206,10 +206,7 @@
     "title": "Tee time windows",
     "empty": "No tee time windows yet.",
     "emptyManage": "No tee time windows yet: add at least one so players can sign up.",
-    "capacityShort": "With these windows, {{caben}} of the {{maximo}} players fit.",
     "hours": "{{primera}} → {{ultima}} · every {{intervalo}} min",
-    "capacity": "{{salidas}} tee times of {{tamano}} · {{cupo}} places",
-    "taken": "{{apuntados}} signed up · {{espera}} waiting",
     "change": "Change the {{franja}} window on {{dia}}",
     "remove": "Delete the {{franja}} window on {{dia}}",
     "confirmRemove": "Delete this window?",
@@ -231,6 +228,14 @@
       "groupSize": "Groups are of 3 or 4 players."
     },
     "noCourses": "Add a course to the competition to create windows.",
-    "allFull": "Every day already has its three windows."
+    "allFull": "Every day already has its three windows.",
+    "capacity_one": "{{count}} tee time of {{tamano}} · {{cupo}} places",
+    "capacity_other": "{{count}} tee times of {{tamano}} · {{cupo}} places",
+    "taken_one": "{{count}} signed up · {{espera}} waiting",
+    "taken_other": "{{count}} signed up · {{espera}} waiting",
+    "capacityShort_one": "With these windows, {{count}} of the {{maximo}} players fits.",
+    "capacityShort_other": "With these windows, {{count}} of the {{maximo}} players fit.",
+    "coursesNotLoaded": "The competition courses could not be loaded.",
+    "retry": "Try again"
   }
 }

@@ -101,8 +101,8 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     const fila = await screen.findByTestId('franja-r-1');
     expect(within(fila).getByText('sessions.MORNING')).toBeInTheDocument();
     expect(fila).toHaveTextContent('franjas.hours {"primera":"08:00","ultima":"11:50","intervalo":10}');
-    expect(fila).toHaveTextContent('franjas.capacity {"salidas":24,"tamano":4,"cupo":96}');
-    expect(fila).toHaveTextContent('franjas.taken {"apuntados":12,"espera":3}');
+    expect(fila).toHaveTextContent('franjas.capacity {"count":24,"tamano":4,"cupo":96}');
+    expect(fila).toHaveTextContent('franjas.taken {"count":12,"espera":3}');
     // Con más de un campo, el suyo
     expect(await within(fila).findByText('La Resina')).toBeInTheDocument();
   });
@@ -147,7 +147,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     expect(screen.getByLabelText('franjas.interval')).toHaveValue(10);
     expect(screen.getByLabelText('franjas.groupSize')).toHaveValue('4');
     expect(screen.getByTestId('franjas-resumen-nueva')).toHaveTextContent(
-      'franjas.capacity {"salidas":36,"tamano":4,"cupo":144}'
+      'franjas.capacity {"count":36,"tamano":4,"cupo":144}'
     );
   });
 
@@ -197,8 +197,10 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
       <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} version="2" />
     );
 
-    await waitFor(() => expect(screen.getByLabelText('franjas.slot')).toHaveValue('EVENING'));
-    expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00');
+    // Las dos con espera: el selector ya enseña «Noche» en cuanto «Tarde» deja
+    // de estar entre sus opciones, antes de que el estado cambie
+    await waitFor(() => expect(screen.getByLabelText('franjas.firstTee')).toHaveValue('18:00'));
+    expect(screen.getByLabelText('franjas.slot')).toHaveValue('EVENING');
   });
 
   it('4g: sin campos, «Añadir» dice por qué no se puede', async () => {
@@ -366,7 +368,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     pinta({ maxPlayers: 100 });
 
     expect(await screen.findByTestId('franjas-cupo-corto')).toHaveTextContent(
-      'franjas.capacityShort {"caben":96,"maximo":100}'
+      'franjas.capacityShort {"count":96,"maximo":100}'
     );
   });
 
@@ -377,7 +379,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     });
     pinta();
 
-    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent('franjas.capacity {"salidas":3,"tamano":4,"cupo":12}');
+    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent('franjas.capacity {"count":3,"tamano":4,"cupo":12}');
   });
 
   it('5b: el campo que falla se marca', async () => {
@@ -397,6 +399,67 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     const sueltos = [...screen.getByTestId('franjas').childNodes].filter((n) => n.nodeType === 3);
     expect(sueltos.map((n) => n.textContent)).not.toContain('0');
     expect(screen.queryByTestId('franjas-cupo-corto')).toBeNull();
+  });
+
+  it('1d: sin el cupo del servidor, el que sale de la hoja (/code-review)', async () => {
+    mockLeer.mockResolvedValue({
+      rounds: [franja({ teeSheet: hoja({ teeTimes: [], capacity: undefined }) })],
+      teeSheetCapacity: 96,
+    });
+    pinta();
+
+    expect(await screen.findByTestId('franja-r-1')).toHaveTextContent('franjas.capacity {"count":24,"tamano":4,"cupo":96}');
+  });
+
+  it('8f: sin cambiar nada no se guarda (/code-review)', async () => {
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+
+    expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
+  });
+
+  it('4i: si los campos no se pudieron leer, no se dice que no hay (/code-review)', async () => {
+    mockCampos.mockRejectedValue(new Error('sin red'));
+    pinta();
+
+    expect(await screen.findByText('franjas.coursesNotLoaded')).toBeInTheDocument();
+    expect(screen.queryByText('franjas.noCourses')).toBeNull();
+  });
+
+  it('4j: si el campo elegido desaparece al releer los campos, se propone otro (/code-review)', async () => {
+    const { rerender } = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    mockCampos.mockResolvedValue([CAMPOS[0]]);
+
+    rerender(
+      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
+    );
+    await waitFor(() => expect(screen.getByLabelText('franjas.course')).toHaveValue('g-1'));
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+
+    await waitFor(() => expect(mockCrear).toHaveBeenCalled());
+    expect(mockCrear.mock.calls[0][1].golf_course_id).toBe('g-1');
+  });
+
+  it('9d: abrir una cosa cierra las demás (/code-review)', async () => {
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.remove/ }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.add' }));
+    expect(screen.queryByRole('button', { name: 'franjas.yes' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /^franjas\.remove/ }));
+    expect(screen.queryByLabelText('franjas.day')).toBeNull();
+  });
+
+  it('12b: si la agenda no se pudo leer, se puede reintentar (/code-review)', async () => {
+    mockLeer.mockRejectedValueOnce(new Error('sin red'));
+    pinta();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'franjas.retry' }));
+
+    expect(await screen.findByTestId('franja-r-1')).toBeInTheDocument();
   });
 
   it('11b: si caben, nada', async () => {

@@ -86,3 +86,19 @@ describe('CreateRoundUseCase · una franja (FE #824)', () => {
     );
   });
 });
+
+describe('CreateRoundUseCase · la hoja se valida con las reglas del dominio (/code-review)', () => {
+  it('D2d: una hoja imposible no se manda', async () => {
+    const scheduleRepository = { createRound: vi.fn() };
+
+    await expect(
+      new CreateRoundUseCase({ scheduleRepository }).execute('comp-1', {
+        golf_course_id: 'gc-1',
+        round_date: '2030-10-12',
+        session_type: 'MORNING',
+        tee_sheet: { first_tee_time: '08:00', last_tee_time: '11:50', interval_minutes: 3, group_size: 4 },
+      })
+    ).rejects.toThrow('intervalRange');
+    expect(scheduleRepository.createRound).not.toHaveBeenCalled();
+  });
+});

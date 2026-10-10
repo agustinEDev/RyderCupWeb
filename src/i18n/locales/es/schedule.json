@@ -206,10 +206,7 @@
     "title": "Franjas de salida",
     "empty": "Aún no hay franjas.",
     "emptyManage": "Aún no hay franjas: añade al menos una para que los jugadores puedan apuntarse.",
-    "capacityShort": "Con estas franjas caben {{caben}} de los {{maximo}} jugadores.",
     "hours": "{{primera}} → {{ultima}} · cada {{intervalo}} min",
-    "capacity": "{{salidas}} salidas de {{tamano}} · cupo {{cupo}}",
-    "taken": "{{apuntados}} apuntados · {{espera}} en espera",
     "change": "Cambiar la franja de {{franja}} del {{dia}}",
     "remove": "Borrar la franja de {{franja}} del {{dia}}",
     "confirmRemove": "¿Borrar esta franja?",
@@ -231,6 +228,14 @@
       "groupSize": "Las partidas son de 3 o 4 jugadores."
     },
     "noCourses": "Añade un campo a la competición para poder crear franjas.",
-    "allFull": "Todas las jornadas tienen ya sus tres franjas."
+    "allFull": "Todas las jornadas tienen ya sus tres franjas.",
+    "capacity_one": "{{count}} salida de {{tamano}} · cupo {{cupo}}",
+    "capacity_other": "{{count}} salidas de {{tamano}} · cupo {{cupo}}",
+    "taken_one": "{{count}} apuntado · {{espera}} en espera",
+    "taken_other": "{{count}} apuntados · {{espera}} en espera",
+    "capacityShort_one": "Con estas franjas cabe {{count}} de los {{maximo}} jugadores.",
+    "capacityShort_other": "Con estas franjas caben {{count}} de los {{maximo}} jugadores.",
+    "coursesNotLoaded": "No se han podido leer los campos de la competición.",
+    "retry": "Reintentar"
   }
 }

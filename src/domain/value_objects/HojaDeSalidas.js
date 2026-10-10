@@ -32,7 +32,7 @@ const minutos = (hora) => {
 };
 
 /**
- * El primer problema de una hoja, como clave de `agenda.errors`, o null.
+ * El primer problema de una hoja, como clave de `franjas.errors`, o null.
  * @param {{primera: string, ultima: string, intervalo: number, tamano: number}} hoja
  */
 export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
@@ -51,8 +51,8 @@ export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
 export const numeroDeSalidas = (hoja) =>
   errorDeHoja(hoja) ? 0 : Math.floor((minutos(hoja.ultima) - minutos(hoja.primera)) / hoja.intervalo) + 1;
 
-/** Cuántos jugadores caben: salidas por jugadores por partida. */
-export const cupoDeLaHoja = (hoja) => numeroDeSalidas(hoja) * (errorDeHoja(hoja) ? 0 : hoja.tamano);
+/** Cuántos jugadores caben: salidas por jugadores por partida (0 si no es posible). */
+export const cupoDeLaHoja = (hoja) => numeroDeSalidas(hoja) * hoja.tamano;
 
 /** La hoja que se propone al añadir una franja de ese tipo. */
 export const hojaPropuesta = (franja) => {
