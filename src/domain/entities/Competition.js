@@ -10,7 +10,8 @@ export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 200;
 
 const comprobarCupo = (maxPlayers) => {
-  if (typeof maxPlayers !== 'number' || maxPlayers < MIN_PLAYERS || maxPlayers > MAX_PLAYERS) {
+  // Entero: `typeof NaN` también es 'number', y 2,5 jugadores no es un cupo
+  if (!Number.isInteger(maxPlayers) || maxPlayers < MIN_PLAYERS || maxPlayers > MAX_PLAYERS) {
     throw new Error(`maxPlayers must be a number between ${MIN_PLAYERS} and ${MAX_PLAYERS}.`);
   }
 };

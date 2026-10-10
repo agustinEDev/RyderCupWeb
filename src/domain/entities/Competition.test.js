@@ -333,6 +333,15 @@ describe('Competition', () => {
       );
       expect(Competition.create({ ...createValidCompetitionProps(), maxPlayers: 200 }).maxPlayers).toBe(200);
     });
+
+    it.each([2.5, Number.NaN, Infinity])('a non-whole count (%s) is not a count either', (cupo) => {
+      // `typeof NaN` es 'number' y no es ni < 2 ni > 200: pasaba (CodeRabbit en la #833)
+      const competition = Competition.create(createValidCompetitionProps());
+      expect(() => competition.updateInfo({ maxPlayers: cupo })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: cupo })).toThrow(
+        'maxPlayers must be a number between 2 and 200.'
+      );
+    });
   });
 
   describe('equals', () => {
