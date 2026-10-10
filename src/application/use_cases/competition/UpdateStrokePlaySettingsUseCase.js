@@ -1,3 +1,5 @@
+import CompetitionAssembler from '../../assemblers/CompetitionAssembler';
+
 /**
  * Use Case: cambiar los ajustes de un Stableford o un Medal (FE #824).
  *
@@ -34,12 +36,7 @@ class UpdateStrokePlaySettingsUseCase {
     }
 
     const ajustes = await this.competitionRepository.updateStrokePlay(competitionId, cambios);
-    return {
-      categoryLimits: [...ajustes.categoryLimits],
-      categoryCount: ajustes.categoryCount,
-      maxMatchdaysPerPlayer: ajustes.maxMatchdaysPerPlayer,
-      overallStanding: ajustes.overallStanding,
-    };
+    return CompetitionAssembler.toStrokePlayDTO(ajustes);
   }
 }
 

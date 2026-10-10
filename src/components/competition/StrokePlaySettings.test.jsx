@@ -108,6 +108,21 @@ describe('StrokePlaySettings (FE #824)', () => {
     expect(bueno).not.toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('7e: un límite vacío no tapa el error de las jornadas (/code-review)', () => {
+    render(<Con dias={2} inicial={{ ...formularioDeAjustes(null), limites: [''], jornadas: '5' }} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('create.errors.matchdaysMoreThanDays {"count":2}');
+  });
+
+  it('7f: y un error de las categorías tampoco', () => {
+    render(<Con dias={2} inicial={{ ...formularioDeAjustes(null), limites: ['60'], jornadas: '5' }} />);
+
+    expect(screen.getAllByRole('alert').map((a) => a.textContent)).toEqual([
+      'create.errors.categoryLimitRange',
+      'create.errors.matchdaysMoreThanDays {"count":2}',
+    ]);
+  });
+
   it('7b: lo que se escribe en un límite llega tal cual', () => {
     const espia = vi.fn();
     render(<Con espia={espia} />);

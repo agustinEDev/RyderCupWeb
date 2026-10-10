@@ -48,8 +48,26 @@ export const formularioDeAjustes = (ajustes, separador = ',') => {
 export const diasDelTorneo = (inicio, fin) => {
   if (!inicio || !fin) return null;
   const dias = (Date.parse(fin) - Date.parse(inicio)) / UN_DIA_MS + 1;
-  return Number.isFinite(dias) ? dias : null;
+  // Con el fin antes del inicio (a medio escribir) no hay torneo que medir: ese
+  // error lo da la validación de las fechas, no «dura -1 días» (/code-review)
+  return Number.isFinite(dias) && dias >= 1 ? dias : null;
 };
+
+/**
+ * Cómo escribe los decimales un idioma: «,» o «.». Un idioma que Intl no
+ * acepta (una etiqueta guardada con guion bajo) no rompe nada: coma.
+ */
+export const separadorDecimal = (idioma) => {
+  try {
+    // Sin idioma, el de la casa (español): no el del sistema de quien lo mira
+    return (1.5).toLocaleString(idioma || 'es').charAt(1) === '.' ? '.' : ',';
+  } catch {
+    return ',';
+  }
+};
+
+/** «12,0» o «12.0», con un decimal, según el idioma. */
+export const formatoUnDecimal = (numero, idioma) => numero.toFixed(1).replace('.', separadorDecimal(idioma));
 
 // Un número escrito como tal: signo, cifras y, si acaso, decimales con coma o
 // punto. `Number` sola admitiría «1e1», «0x10» o «12.» (revisor)
@@ -67,21 +85,27 @@ export const limiteVacio = (escrito) => String(escrito).trim() === '';
 const limitesDe = (formulario) => formulario.limites.map(limiteEscrito);
 
 /**
- * El primer problema de los ajustes, como clave de `create.errors`, o null.
- * Del modo elegido: lo escrito en el otro no se manda, así que no estorba.
+ * El problema de las categorías, como clave de `create.errors`, o null. Del
+ * modo elegido: lo escrito en el otro no se manda, así que no estorba.
+ */
+export const errorDeLasCategorias = (formulario) => {
+  if (formulario.modo === IGUALES) {
+    return errorDeCategoriasIguales(numeroEntero(formulario.categoriasIguales));
+  }
+  if (formulario.limites.some(limiteVacio)) return 'categoryLimitEmpty';
+  return errorDeLimites(limitesDe(formulario));
+};
+
+/**
+ * El problema de las jornadas por jugador, o null.
  * @param {number|null} dias - Los días del torneo; sin fechas no se comparan
  */
-export const errorDeAjustes = (formulario, dias) => {
-  const vacio = formulario.modo === LIMITES && formulario.limites.some(limiteVacio);
-  const deLasCategorias = vacio
-    ? 'categoryLimitEmpty'
-    : formulario.modo === IGUALES
-      ? errorDeCategoriasIguales(numeroEntero(formulario.categoriasIguales))
-      : errorDeLimites(limitesDe(formulario));
-  if (deLasCategorias) return deLasCategorias;
-  const jornadas = numeroEntero(formulario.jornadas);
-  return errorDeJornadas(jornadas ?? NaN, dias ?? Infinity);
-};
+export const errorDeLasJornadas = (formulario, dias) =>
+  errorDeJornadas(numeroEntero(formulario.jornadas) ?? NaN, dias ?? Infinity);
+
+/** El primer problema de los ajustes (el que para el envío), o null. */
+export const errorDeAjustes = (formulario, dias) =>
+  errorDeLasCategorias(formulario) ?? errorDeLasJornadas(formulario, dias);
 
 /** El `stroke_play` del POST de crear: solo el modo elegido. */
 export const ajustesParaCrear = (formulario) => ({

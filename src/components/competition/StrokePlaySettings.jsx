@@ -9,7 +9,15 @@ import {
   ACUMULADO,
   MEJOR_TARJETA,
 } from '../../domain/value_objects/StrokePlaySetup';
-import { IGUALES, LIMITES, errorDeAjustes, limiteEscrito, limiteVacio } from '../../utils/ajustesDeStrokePlay';
+import {
+  IGUALES,
+  LIMITES,
+  errorDeLasCategorias,
+  errorDeLasJornadas,
+  limiteEscrito,
+  limiteVacio,
+  formatoUnDecimal,
+} from '../../utils/ajustesDeStrokePlay';
 
 const CUANTAS_IGUALES = Array.from(
   { length: MAX_CATEGORIAS_IGUALES - MIN_CATEGORIAS_IGUALES + 1 },
@@ -31,25 +39,26 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
   const { t, i18n } = useTranslation('competitions');
   const cambia = (cambios) => onCambio({ ...valor, ...cambios });
 
-  const conUnDecimal = (numero) =>
-    new Intl.NumberFormat(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(numero);
+  const conUnDecimal = (numero) => formatoUnDecimal(numero, i18n.language);
 
-  const error = errorDeAjustes(valor, dias);
-  // Un límite recién añadido, aún sin escribir, no es un error que anunciar: se
-  // anunciaba al pulsar «Añadir» (revisor). Al enviar sí se para, arriba
-  const errorDeCategorias =
-    error && error.startsWith('category') && error !== 'categoryLimitEmpty' ? error : null;
-  const errorDeJornadas = error && error.startsWith('matchdays') ? error : null;
+  // Cada error por su lado: uno de las categorías no tapa el de las jornadas
+  // (/code-review). Un límite recién añadido, aún sin escribir, no es un error
+  // que anunciar: se anunciaba al pulsar «Añadir» (revisor). Al enviar sí se
+  // para, arriba
+  const delModo = errorDeLasCategorias(valor);
+  const errorDeCategorias = delModo === 'categoryLimitEmpty' ? null : delModo;
+  const errorDeJornadas = errorDeLasJornadas(valor, dias);
   // La vista previa, con los escritos: los huecos aún vacíos no cuentan
   const escritos = valor.limites.filter((v) => !limiteVacio(v)).map(limiteEscrito);
   const vistaPrevia = valor.modo === LIMITES && !errorDeLimites(escritos) ? categoriasDeLosLimites(escritos) : null;
-  // Qué campo falla, para marcarlo: el suyo propio, o estar desordenado
-  const fallaElLimite = (i) => {
-    if (!errorDeCategorias || limiteVacio(valor.limites[i])) return false;
-    const limite = limiteEscrito(valor.limites[i]);
-    const anterior = i > 0 ? limiteEscrito(valor.limites[i - 1]) : null;
-    return errorDeLimites([limite]) !== null || (anterior !== null && limite <= anterior);
-  };
+  // Qué campos fallan, para marcarlos: el suyo propio, o estar desordenado
+  const leidos = valor.limites.map(limiteEscrito);
+  const fallan = valor.limites.map(
+    (escrito, i) =>
+      Boolean(errorDeCategorias) &&
+      !limiteVacio(escrito) &&
+      (errorDeLimites([leidos[i]]) !== null || (i > 0 && leidos[i] <= leidos[i - 1]))
+  );
 
   const ponLimite = (i, escrito) => cambia({ limites: valor.limites.map((v, j) => (j === i ? escrito : v)) });
   const quitaLimite = (i) => cambia({ limites: valor.limites.filter((_, j) => j !== i) });
@@ -99,8 +108,8 @@ const StrokePlaySettings = ({ valor, onCambio, tipo, dias }) => {
                   inputMode="decimal"
                   value={escrito}
                   onChange={(e) => ponLimite(i, e.target.value)}
-                  aria-invalid={fallaElLimite(i) || undefined}
-                  aria-describedby={fallaElLimite(i) ? 'error-de-categorias' : undefined}
+                  aria-invalid={fallan[i] || undefined}
+                  aria-describedby={fallan[i] ? 'error-de-categorias' : undefined}
                   className="w-24 min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 />
                 <button

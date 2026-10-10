@@ -36,6 +36,7 @@ import StrokePlaySettings from '../components/competition/StrokePlaySettings';
 import {
   formularioDeAjustes,
   diasDelTorneo,
+  separadorDecimal,
   ajustesParaCrear,
   cambiosDeAjustes,
   primeroLosAjustes,
@@ -353,10 +354,7 @@ const CreateCompetition = () => {
             competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
           maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
           // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
-          strokePlay: formularioDeAjustes(
-            competition.strokePlay ?? null,
-            (1.5).toLocaleString(i18n.language).charAt(1)
-          )
+          strokePlay: formularioDeAjustes(competition.strokePlay ?? null, separadorDecimal(i18n.language))
         };
 
         if (!vigente) return;

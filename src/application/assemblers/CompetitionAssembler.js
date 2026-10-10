@@ -9,6 +9,21 @@ import { getCountryFlag } from '../../utils/countryUtils';
  */
 class CompetitionAssembler {
   /**
+   * Los ajustes de un Stableford o un Medal, en plano (FE #824). Una sola
+   * conversión: la ficha y el PATCH devuelven la misma forma, y el formulario
+   * compara una con otra para saber qué cambió (/code-review).
+   * @param {import('../../domain/value_objects/StrokePlaySetup').StrokePlaySetup} ajustes
+   */
+  static toStrokePlayDTO(ajustes) {
+    return {
+      categoryLimits: [...ajustes.categoryLimits],
+      categoryCount: ajustes.categoryCount,
+      maxMatchdaysPerPlayer: ajustes.maxMatchdaysPerPlayer,
+      overallStanding: ajustes.overallStanding,
+    };
+  }
+
+  /**
    * Maps Competition entity to a simple DTO for UI presentation.
    *
    * @param {Competition} competition - Domain entity
@@ -72,14 +87,7 @@ class CompetitionAssembler {
       tournamentType: competition.tournamentType,
       // Categorías, jornadas por jugador y general de un Stableford o un Medal
       // (FE #824); null en una Ryder
-      strokePlay: competition.strokePlay
-        ? {
-            categoryLimits: [...competition.strokePlay.categoryLimits],
-            categoryCount: competition.strokePlay.categoryCount,
-            maxMatchdaysPerPlayer: competition.strokePlay.maxMatchdaysPerPlayer,
-            overallStanding: competition.strokePlay.overallStanding,
-          }
-        : null,
+      strokePlay: competition.strokePlay ? CompetitionAssembler.toStrokePlayDTO(competition.strokePlay) : null,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).

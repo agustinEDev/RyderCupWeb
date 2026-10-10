@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  separadorDecimal,
   IGUALES,
   LIMITES,
   formularioDeAjustes,
@@ -52,6 +53,9 @@ describe('ajustesDeStrokePlay (FE #824)', () => {
       // Con un cambio de hora en medio también son días enteros
       ['2030-03-29', '2030-03-31', 3],
       ['', '2030-06-01', null],
+      // A medio escribir, con el fin antes del inicio: no hay torneo que medir
+      ['2030-06-03', '2030-06-01', null],
+      ['2030-06-03', '2030-06-02', null],
     ])('D: del %s al %s son %s días', (inicio, fin, dias) => {
       expect(diasDelTorneo(inicio, fin)).toBe(dias);
     });
@@ -175,5 +179,17 @@ describe('ajustesDeStrokePlay (FE #824)', () => {
     ])('O: %o con %s días guardados → ajustes primero: %s', (cambios, diasGuardados, primero) => {
       expect(primeroLosAjustes(cambios, diasGuardados)).toBe(primero);
     });
+  });
+});
+
+describe('el separador decimal del idioma (/code-review)', () => {
+  it.each([
+    ['es', ','],
+    ['en', '.'],
+    // Un idioma que Intl no acepta no rompe la carga: coma, la de la casa
+    ['es_ES', ','],
+    ['', ','],
+  ])('«%s» → «%s»', (idioma, separador) => {
+    expect(separadorDecimal(idioma)).toBe(separador);
   });
 });

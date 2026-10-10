@@ -31,7 +31,7 @@ export const MIN_JUGADORES_POR_CATEGORIA = 6;
 
 // En décimas y con enteros: 12,3 × 10 da 123,00000000000001 en coma flotante
 const enDecimas = (valor) => Math.round(valor * 10);
-const conUnDecimal = (valor) => Math.abs(valor * 10 - enDecimas(valor)) < 1e-9;
+const tieneUnDecimalComoMucho = (valor) => Math.abs(valor * 10 - enDecimas(valor)) < 1e-9;
 
 /**
  * El primer problema de unos límites, como clave de `create.errors`, o null.
@@ -43,7 +43,7 @@ export const errorDeLimites = (limites) => {
     if (!Number.isFinite(limite) || limite < MIN_LIMITE || limite > MAX_LIMITE) {
       return 'categoryLimitRange';
     }
-    if (!conUnDecimal(limite)) return 'categoryLimitOneDecimal';
+    if (!tieneUnDecimalComoMucho(limite)) return 'categoryLimitOneDecimal';
   }
   if (limites.some((limite, i) => i > 0 && limite <= limites[i - 1])) {
     return 'categoryLimitsOrder';
