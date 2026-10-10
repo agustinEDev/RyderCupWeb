@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, UserPlus } from 'lucide-react';
@@ -21,6 +22,7 @@ const EnrollmentRequestModal = ({
   onConfirm,
   isProcessing,
   pideGenero = false,
+  faltaHandicap = false,
   error = null,
 }) => {
   if (!isOpen) return null;
@@ -30,19 +32,20 @@ const EnrollmentRequestModal = ({
       onConfirm={onConfirm}
       isProcessing={isProcessing}
       pideGenero={pideGenero}
+      faltaHandicap={faltaHandicap}
       error={error}
     />
   );
 };
 
-const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero, error }) => {
+const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero, faltaHandicap, error }) => {
   const { t } = useTranslation(['competitions', 'golfCourses']);
   const [selectedTee, setSelectedTee] = useState('');
   const [genero, setGenero] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (pideGenero && !genero) return;
+    if (faltaHandicap || (pideGenero && !genero)) return;
     onConfirm(selectedTee || null, pideGenero ? genero : null);
   };
 
@@ -84,6 +87,17 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
               {error}
             </p>
           )}
+          {/* Sin hándicap no se entra en un Stableford o un Medal: se dice y se
+              lleva al perfil, en vez de esperar al rechazo del servidor
+              (FE #824, PR 5) */}
+          {faltaHandicap && (
+            <p data-testid="falta-handicap" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+              {t('competitions:enrollment.needsHandicap')}{' '}
+              <Link to="/profile/edit" className="font-semibold underline">
+                {t('competitions:enrollment.addHandicap')}
+              </Link>
+            </p>
+          )}
           {pideGenero && <SelectorDeGenero value={genero} onChange={setGenero} />}
 
           {/* Tee Category Select */}
@@ -123,7 +137,7 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
             </button>
             <button
               type="submit"
-              disabled={isProcessing || (pideGenero && !genero)}
+              disabled={isProcessing || faltaHandicap || (pideGenero && !genero)}
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {isProcessing ? '...' : t('competitions:enrollment.confirm')}

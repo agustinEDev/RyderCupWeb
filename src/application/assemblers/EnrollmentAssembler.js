@@ -43,6 +43,11 @@ class EnrollmentAssembler {
       hasCustomHandicap: enrollment.hasCustomHandicap(),
     };
 
+    // El hándicap fijado y la categoría de un stroke play, desde el cierre
+    // (FE #824, RyderCupAM#506). El fijado llega como texto, como todo Decimal
+    simpleDTO.fixedHandicap = apiData?.fixed_handicap != null ? Number(apiData.fixed_handicap) : null;
+    simpleDTO.category = apiData?.category ?? null;
+
     // If API data available, include extra fields (joins)
     // Nested apiData.user takes precedence over flat fields
     if (apiData) {

@@ -14,12 +14,12 @@ describe('aCamposDeLaCompeticion', () => {
       aCamposDeLaCompeticion([
         { golf_course: { id: 'g1', name: 'Altea', approval_status: 'APPROVED', country_code: 'ES' } },
       ])
-    ).toEqual([{ id: 'g1', name: 'Altea', approvalStatus: 'APPROVED', countryCode: 'ES' }]);
+    ).toEqual([{ id: 'g1', name: 'Altea', approvalStatus: 'APPROVED', countryCode: 'ES', timezone: null }]);
   });
 
   it('K2: también envuelta en `golf_courses`, y con el id suelto', () => {
     expect(aCamposDeLaCompeticion({ golf_courses: [{ golf_course_id: 'g2', name: 'Meis' }] })).toEqual([
-      { id: 'g2', name: 'Meis', approvalStatus: 'APPROVED', countryCode: null },
+      { id: 'g2', name: 'Meis', approvalStatus: 'APPROVED', countryCode: null, timezone: null },
     ]);
   });
 
@@ -30,5 +30,19 @@ describe('aCamposDeLaCompeticion', () => {
   it('K4: lo que no es una lista es ninguno', () => {
     expect(aCamposDeLaCompeticion(undefined)).toEqual([]);
     expect(aCamposDeLaCompeticion(null)).toEqual([]);
+  });
+});
+
+describe('aCamposDeLaCompeticion · el huso del campo (FE #824, PR 5)', () => {
+  it('trae la zona horaria del campo, o null', async () => {
+    const { aCamposDeLaCompeticion } = await import('./camposDeLaCompeticion');
+
+    const [conZona, sinZona] = aCamposDeLaCompeticion([
+      { golf_course: { id: 'g-1', name: 'La Resina', timezone: 'Europe/Madrid' } },
+      { golf_course: { id: 'g-2', name: 'Otro' } },
+    ]);
+
+    expect(conZona.timezone).toBe('Europe/Madrid');
+    expect(sinZona.timezone).toBeNull();
   });
 });

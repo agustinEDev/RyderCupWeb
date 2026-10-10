@@ -88,6 +88,28 @@ class CompetitionAssembler {
       // Categorías, jornadas por jugador y general de un Stableford o un Medal
       // (FE #824); null en una Ryder
       strokePlay: competition.strokePlay ? CompetitionAssembler.toStrokePlayDTO(competition.strokePlay) : null,
+      // La última actualización de hándicaps y la ventana del botón (FE #824).
+      // Solo le llegan al organizador: a los demás, null
+      handicapUpdate: apiData?.handicap_update
+        ? {
+            status: apiData.handicap_update.status,
+            origin: apiData.handicap_update.origin,
+            startedAt: apiData.handicap_update.started_at,
+            finishedAt: apiData.handicap_update.finished_at ?? null,
+            pendingPlayers: (apiData.handicap_update.pending_players || []).map((p) => ({
+              userId: p.user_id,
+              name: p.name,
+            })),
+          }
+        : null,
+      handicapUpdateWindow: apiData?.handicap_update_window
+        ? {
+            open: apiData.handicap_update_window.open,
+            closesAt: apiData.handicap_update_window.closes_at ?? null,
+            reason: apiData.handicap_update_window.reason ?? null,
+            scheduledAt: apiData.handicap_update_window.scheduled_at ?? null,
+          }
+        : null,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).

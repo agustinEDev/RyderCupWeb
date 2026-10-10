@@ -317,7 +317,10 @@
       "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente.",
       "playersWithoutTeeWindow_one": "Falta colocar en una franja a {{jugadores}}.",
       "playersWithoutTeeWindow_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}.",
-      "playersWithoutTeeWindowUnnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja»."
+      "playersWithoutTeeWindowUnnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja».",
+      "playersWithoutHandicap_one": "A {{jugadores}} le falta el hándicap: ponle uno personalizado y vuelve a cerrar.",
+      "playersWithoutHandicap_other": "A {{count}} jugadores les falta el hándicap ({{jugadores}}): ponles uno personalizado y vuelve a cerrar.",
+      "playersWithoutHandicapUnnamed": "A algunos jugadores les falta el hándicap: ponles uno personalizado y vuelve a cerrar."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
@@ -343,7 +346,22 @@
         "DRAFT": "Draft de capitanes",
         "PENDING": "Sin repartir todavía"
       },
-      "tournamentType": "Tipo:"
+      "tournamentType": "Tipo:",
+      "categories": "Categorías",
+      "equalCategories_one": "{{count}} categoría igual",
+      "equalCategories_other": "{{count}} categorías iguales (se reparten al cerrar)",
+      "categoryLimits": "Límites: {{limites}}",
+      "noCategories": "Una sola categoría",
+      "matchdaysLabel": "Jornadas por jugador",
+      "matchdays_one": "{{count}} jornada",
+      "matchdays_other": "{{count}} jornadas",
+      "overallLabel": "Clasificación general",
+      "overall": {
+        "ACCUMULATED": "Acumulada",
+        "BEST_CARD": "Mejor tarjeta"
+      },
+      "equalCategoriesSplit_one": "{{count}} categoría igual: {{limites}}",
+      "equalCategoriesSplit_other": "{{count}} categorías iguales, repartidas: {{limites}}"
     },
     "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
@@ -439,7 +457,10 @@
       "captainOf": "Capitán de {{team}}",
       "viceCaptainOf": "Subcapitán de {{team}}",
       "playersUnavailable": "No se ha podido cargar la lista de inscritos. Vuelve a abrir la competición para intentarlo de nuevo."
-    }
+    },
+    "fixedHandicap": "{{handicap}} · {{categoria}}.ª",
+    "fixedHandicapNoCategory": "{{handicap}}",
+    "missingHandicapBadge": "Sin hándicap"
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -496,7 +517,9 @@
     "colorHint": "Se usará para asignarte el tee adecuado en los partidos",
     "noPreference": "Sin preferencia",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "needsHandicap": "Para apuntarte a un Stableford o un Medal necesitas tu hándicap en el perfil.",
+    "addHandicap": "Añadirlo"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",
@@ -581,5 +604,30 @@
     "turnLost": "Se te acabó el minuto y la aplicación eligió por ti. Ahora le toca al otro capitán.",
     "turnLostDraftOver": "Se te acabó el minuto y la aplicación eligió por ti. Con eso el draft ha terminado.",
     "open": "Ir a la sala de draft"
+  },
+  "handicaps": {
+    "title": "Hándicaps",
+    "update": "Actualizar hándicaps",
+    "launched": "Se están actualizando los hándicaps con la RFEG.",
+    "resumed": "Se termina la actualización que quedó a medias.",
+    "inProgress_one": "Actualizando con la RFEG: falta {{count}} jugador.",
+    "inProgress_other": "Actualizando con la RFEG: faltan {{count}} jugadores.",
+    "completed": "Actualizados con la RFEG el {{cuando}}.",
+    "incomplete": "La última actualización ({{cuando}}) quedó a medias.",
+    "pending": "Sin actualizar: {{jugadores}}.",
+    "stopped": "La última actualización se cortó: la competición empezó o se cerró la ventana.",
+    "openUntil": "Se puede hasta el {{cuando}} (hora del campo).",
+    "openUntilStart": "Se puede hasta iniciar la competición.",
+    "scheduled": "Programada: {{cuando}}, hora del campo ({{zona}}).",
+    "cancelSchedule": "Anular",
+    "schedule": "Programar…",
+    "scheduleAt": "Fecha y hora, en la hora del campo ({{zona}})",
+    "scheduleSave": "Programar",
+    "cancel": "Cancelar",
+    "error": "No se ha podido hacer. Inténtalo otra vez.",
+    "scheduledDevice": "Programada: {{cuando}}, hora de este dispositivo (el campo no tiene zona horaria).",
+    "scheduleAtDevice": "Fecha y hora, en la hora de este dispositivo (el campo no tiene zona horaria)",
+    "openUntilDevice": "Se puede hasta el {{cuando}} (hora de este dispositivo).",
+    "timeDoesNotExist": "Esa hora no existe en el campo por el cambio de hora: elige otra."
   }
 }

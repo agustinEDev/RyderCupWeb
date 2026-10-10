@@ -61,6 +61,9 @@ import CreateCompetitionUseCase from '../application/use_cases/competition/Creat
 import CreateCompetitionWithGolfCoursesUseCase from '../application/use_cases/competition/CreateCompetitionWithGolfCoursesUseCase';
 import UpdateCompetitionUseCase from '../application/use_cases/competition/UpdateCompetitionUseCase';
 import UpdateStrokePlaySettingsUseCase from '../application/use_cases/competition/UpdateStrokePlaySettingsUseCase';
+import LaunchHandicapUpdateUseCase from '../application/use_cases/competition/LaunchHandicapUpdateUseCase';
+import ScheduleHandicapUpdateUseCase from '../application/use_cases/competition/ScheduleHandicapUpdateUseCase';
+import CancelScheduledHandicapUpdateUseCase from '../application/use_cases/competition/CancelScheduledHandicapUpdateUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
 import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
 import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
@@ -244,6 +247,9 @@ const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepos
 const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({ competitionRepository: apiCompetitionRepository });
+const launchHandicapUpdateUseCase = new LaunchHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
+const scheduleHandicapUpdateUseCase = new ScheduleHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
+const cancelScheduledHandicapUpdateUseCase = new CancelScheduledHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
 const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -432,6 +438,9 @@ export {
   createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
   updateStrokePlaySettingsUseCase,
+  launchHandicapUpdateUseCase,
+  scheduleHandicapUpdateUseCase,
+  cancelScheduledHandicapUpdateUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
   activateCompetitionUseCase,
