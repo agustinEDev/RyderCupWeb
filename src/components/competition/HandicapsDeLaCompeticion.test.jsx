@@ -220,11 +220,10 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
   });
 
-  it('15d: con la ventana cerrada tampoco se programa', async () => {
-    pinta({ handicapUpdateWindow: { open: false, closesAt: null, reason: 'Ya no quedan jornadas por jugar.', scheduledAt: null } });
-    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+  it('15d: con la ventana cerrada ahora se puede programar para cuando se abra: lo decide el servidor (/code-review)', async () => {
+    pinta({ handicapUpdateWindow: { open: false, closesAt: null, reason: 'Queda muy poco para la siguiente salida.', scheduledAt: null } });
 
-    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeEnabled());
   });
 
   it('15e: una hora que no existe en el campo (cambio de hora) no se puede guardar', async () => {

@@ -220,8 +220,8 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   /** POST /competitions/{id}/handicap-updates → 202 (RyderCupAM#509). */
   async launchHandicapUpdate(competitionId) {
     const data = await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates`, { method: 'POST' });
-    // El backend devuelve {id, origin, started_at, resumed}: sin `status`
-    return { resumed: data?.resumed === true };
+    // HandicapUpdateLaunchedDTO: {id, status: IN_PROGRESS, origin, started_at, resumed}
+    return { status: data?.status, resumed: data?.resumed === true };
   }
 
   /** PUT /competitions/{id}/handicap-updates/schedule (RyderCupAM#510). */

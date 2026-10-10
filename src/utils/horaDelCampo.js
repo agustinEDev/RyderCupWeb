@@ -9,6 +9,19 @@
  */
 
 const ENTRADA = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
+
+/** Si lo escrito tiene forma de fecha y hora («2030-07-12T03:00»). */
+export const esEntradaDeFecha = (entrada) => ENTRADA.test(entrada ?? '');
+
+// La zona del dispositivo, para cuando el campo no tiene: con el mismo cálculo,
+// así el hueco del cambio de hora se detecta igual (/code-review)
+const zonaDelDispositivo = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+};
 const dos = (n) => String(n).padStart(2, '0');
 
 /** Si `Intl` conoce la zona: si no, no se le puede llamar «la del campo». */
@@ -63,7 +76,7 @@ export const aIsoConHuso = (entrada, zonaDelCampo) => {
   const partes = ENTRADA.exec(entrada ?? '');
   if (!partes) return null;
   const [, y, mo, d, h, mi] = partes.map(Number);
-  const zona = zonaValida(zonaDelCampo);
+  const zona = zonaValida(zonaDelCampo) ?? zonaValida(zonaDelDispositivo());
   const pared = Date.UTC(y, mo - 1, d, h, mi);
   if (!zona) {
     const local = new Date(y, mo - 1, d, h, mi);

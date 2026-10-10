@@ -318,13 +318,19 @@ const CompetitionDetail = () => {
         updatedAt: result.updatedAt
       }));
       refrescarCanDelete();
-      // Al cerrar un stroke play se fija el hándicap de cada uno y su categoría:
-      // la lista de antes no lo trae (FE #824, PR 5). En silencio
+      // Con otro estado, el personalizado puede dejar de poderse cambiar: el
+      // editor abierto se cierra (/code-review)
+      setEditingHandicapId(null);
       setSinHandicap(new Set());
-      listEnrollmentsUseCase
-        .execute(id)
-        .then(setEnrollments)
-        .catch((e) => console.error('Error reloading enrollments after status change:', e));
+      // Al cerrar (o reabrir) un stroke play se fija (o se suelta) el hándicap
+      // de cada uno y su categoría: la lista de antes no lo trae (FE #824,
+      // PR 5). Solo en stroke play: en una Ryder nada de eso cambia
+      if (esStrokePlay) {
+        listEnrollmentsUseCase
+          .execute(id)
+          .then(setEnrollments)
+          .catch((e) => console.error('Error reloading enrollments after status change:', e));
+      }
     } catch (error) {
       console.error(`Error ${action}:`, error);
       console.error('Error details:', error.stack || error.message || String(error));
@@ -341,10 +347,22 @@ const CompetitionDetail = () => {
             : t('detail.errors.playersWithoutHandicapUnnamed')
         );
         setSinHandicap(new Set(faltan.map((p) => p.user_id)));
-        const primero = approvedEnrollments.find((e) => faltan.some((p) => p.user_id === e.userId));
-        if (primero) {
-          handleStartEditHandicap(primero);
-          document.querySelector(`[data-testid="aprobado-${primero.userId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Con la lista releída: el que falta puede no estar en la de aquí
+        // (otra pestaña, una aprobación reciente) (/code-review)
+        try {
+          const lista = await listEnrollmentsUseCase.execute(id);
+          setEnrollments(lista);
+          const primero = lista.find(
+            (e) => e.status === 'APPROVED' && faltan.some((p) => p.user_id === e.userId)
+          );
+          if (primero) {
+            handleStartEditHandicap(primero);
+            document
+              .querySelector(`[data-testid="aprobado-${primero.userId}"]`)
+              ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (e) {
+          console.error('Error reloading enrollments after missing handicaps:', e);
         }
         return;
       }
@@ -847,6 +865,9 @@ const CompetitionDetail = () => {
     (esStrokePlay ? ['DRAFT', 'ACTIVE'] : ['DRAFT', 'ACTIVE', 'CLOSED']).includes(competition.status);
   // Con el hándicap ya fijado (stroke play cerrado), es ese el que se enseña
   const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
+  // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
+  const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
 
   // Una programada es un borrador con días de antelación (RyderCupAM#332). En
   // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
@@ -1341,17 +1362,11 @@ const CompetitionDetail = () => {
                                   : 'detail.settings.equalCategories',
                                 {
                                   count: competition.strokePlay.categoryCount,
-                                  limites: competition.strokePlay.categoryLimits
-                                    .map((l) => l.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))
-                                    .join(' · '),
+                                  limites: limitesEnTexto(competition.strokePlay),
                                 }
                               )
                             : competition.strokePlay.categoryLimits.length > 0
-                              ? t('detail.settings.categoryLimits', {
-                                  limites: competition.strokePlay.categoryLimits
-                                    .map((l) => l.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))
-                                    .join(' · '),
-                                })
+                              ? t('detail.settings.categoryLimits', { limites: limitesEnTexto(competition.strokePlay) })
                               : t('detail.settings.noCategories')}
                         </p>
                       </div>
@@ -1509,11 +1524,15 @@ const CompetitionDetail = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {approvedEnrollments
+                    {[...approvedEnrollments]
                       .sort((a, b) => {
                         // Un stroke play cerrado: por hándicap fijado, que es también
-                        // el orden de las categorías (salen de él) (FE #824, PR 5)
-                        if (conFijado(a) && conFijado(b)) {
+                        // el orden de las categorías (salen de él) (FE #824, PR 5).
+                        // Los que no lo tienen, detrás: una sola regla, para que el
+                        // orden no dependa de con quién se compara (/code-review)
+                        if (conFijado(a) || conFijado(b)) {
+                          if (!conFijado(b)) return -1;
+                          if (!conFijado(a)) return 1;
                           return a.fixedHandicap - b.fixedHandicap;
                         }
                         // Sort by team first, then by handicap
@@ -1604,7 +1623,7 @@ const CompetitionDetail = () => {
                                   {conFijado(enrollment) ? (
                                     <span data-testid={`fijado-${enrollment.userId}`} className="text-green-700 text-sm font-medium">
                                       {t(enrollment.category != null ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
-                                        handicap: enrollment.fixedHandicap.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+                                        handicap: unDecimal(enrollment.fixedHandicap),
                                         categoria: enrollment.category,
                                       })}
                                     </span>

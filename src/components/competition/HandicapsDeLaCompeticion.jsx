@@ -9,7 +9,8 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
-import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo, esZonaValida } from '../../utils/horaDelCampo';
+import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo, esZonaValida, esEntradaDeFecha } from '../../utils/horaDelCampo';
+import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 
 // Mientras hay una en marcha, cada cuánto se mira cómo va
 const CADA = 15000;
@@ -56,13 +57,8 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   }, [competitionId]);
 
   const enMarcha = handicapUpdate?.status === 'IN_PROGRESS';
-  // `onReleer` es estable (la ficha lo hace con `useCallback`): el reloj no se
-  // rearma en cada pintada
-  useEffect(() => {
-    if (!enMarcha) return undefined;
-    const reloj = setInterval(() => onReleer?.(), CADA);
-    return () => clearInterval(reloj);
-  }, [enMarcha, onReleer]);
+  // En un hook propio, como el resto de sondeos del proyecto (CLAUDE.md)
+  useSondeoMientras(enMarcha, onReleer, CADA);
 
   const cuando = (iso) => horaEnElCampo(iso, zona, i18n.language);
 
@@ -108,7 +104,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   // «hora del campo (Madrid)», o la del dispositivo si el campo no la tiene
   const delCampo = esZonaValida(zona);
   const escrita = programando ? aIsoConHuso(programando, zona) : null;
-  const noExiste = Boolean(programando) && escrita === null && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(programando);
+  const noExiste = escrita === null && esEntradaDeFecha(programando);
   const boton = 'min-h-11 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50';
 
   return (
@@ -165,7 +161,9 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
         <button
           type="button"
           onClick={() => setProgramando(ventana?.scheduledAt ? aEntradaDelCampo(ventana.scheduledAt, zona) : '')}
-          disabled={ocupado || !zonaSabida || !ventana?.open}
+          // Con la ventana cerrada también: se puede programar para cuando se
+          // abra, y si no, el servidor dice por qué (/code-review)
+          disabled={ocupado || !zonaSabida}
           className={`${boton} border border-gray-300 text-gray-700`}
         >
           {t('handicaps.schedule')}

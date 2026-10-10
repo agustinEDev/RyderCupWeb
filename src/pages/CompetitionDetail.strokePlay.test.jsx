@@ -430,6 +430,21 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     expect(await screen.findByTestId('fijado-ana')).toHaveTextContent('detail.fixedHandicapNoCategory');
   });
 
+  it('2d: con alguno sin fijado, el orden sigue siendo el mismo: primero los fijados (/code-review)', async () => {
+    mockListEnrollments.mockResolvedValue([
+      conFijado('org', 'Olga Organiza', 20.1, 2),
+      { ...inscrito('ana', 'Ana Alba'), fixedHandicap: null, category: null, userHandicap: 1 },
+      conFijado('bea', 'Bea Blanco', 3.0, 1),
+      conFijado('carla', 'Carla Cruz', 9.0, 1),
+    ]);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED' }));
+    renderPage();
+
+    await screen.findByTestId('aprobado-ana');
+    const orden = screen.getAllByTestId(/^aprobado-/).map((e) => e.dataset.testid.replace('aprobado-', ''));
+    expect(orden).toEqual(['bea', 'carla', 'org', 'ana']);
+  });
+
   it('2b: una Ryder cerrada sigue dejando cambiar el personalizado', async () => {
     mockListEnrollments.mockResolvedValue(INSCRITOS);
     mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED' }));
@@ -495,6 +510,59 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     fireEvent.click(within(screen.getByTestId('aprobado-ana')).getByTitle('detail.saveHandicap'));
 
     await waitFor(() => expect(within(screen.getByTestId('aprobado-ana')).queryByText('detail.missingHandicapBadge')).toBeNull());
+  });
+
+  it('4c: si cerrar sale bien con el editor abierto, el editor se cierra (/code-review)', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'ACTIVE' }));
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+    fireEvent.click(within(await screen.findByTestId('aprobado-ana')).getByTitle('detail.editHandicap'));
+    expect(within(screen.getByTestId('aprobado-ana')).getByRole('textbox')).toBeInTheDocument();
+
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(within(screen.getByTestId('aprobado-ana')).queryByRole('textbox')).toBeNull());
+  });
+
+  it('4d: si el que falta no estaba en la lista de aquí, se relee y se abre igual (/code-review)', async () => {
+    const nuevo = inscrito('dani', 'Dani Díaz');
+    mockListEnrollments.mockResolvedValueOnce(INSCRITOS).mockResolvedValue([...INSCRITOS, nuevo]);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'ACTIVE' }));
+    mockCloseEnrollments.mockRejectedValue(
+      Object.assign(new Error('Faltan'), {
+        errorCode: 'PLAYERS_WITHOUT_HANDICAP',
+        data: { players: [{ user_id: 'dani', name: 'Dani Díaz', missing: 'HANDICAP' }] },
+      })
+    );
+    globalThis.Element.prototype.scrollIntoView = vi.fn();
+    renderPage();
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    expect(await within(await screen.findByTestId('aprobado-dani')).findByRole('textbox')).toBeInTheDocument();
+  });
+
+  it('3b: en una Ryder, cancelar no relee las inscripciones (/code-review)', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'ACTIVE' }));
+    const { cancelCompetitionUseCase } = await import('../composition');
+    cancelCompetitionUseCase.execute.mockResolvedValue({ id: 'comp-1', status: 'CANCELLED' });
+    renderPage();
+    await screen.findByTestId('menu-acciones');
+    const lecturas = mockListEnrollments.mock.calls.length;
+
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.cancel'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(cancelCompetitionUseCase.execute).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockListEnrollments.mock.calls.length).toBe(lecturas);
   });
 
   it('5: sin nombres, un aviso que se lee', async () => {
