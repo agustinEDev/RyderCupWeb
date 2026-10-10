@@ -316,7 +316,8 @@
       "golfCoursesFetchFailed": "Failed to verify golf courses. Please try again.",
       "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually.",
       "playersWithoutTeeWindow_one": "{{jugadores}} still needs a tee time window.",
-      "playersWithoutTeeWindow_other": "{{count}} players still need a tee time window: {{jugadores}}."
+      "playersWithoutTeeWindow_other": "{{count}} players still need a tee time window: {{jugadores}}.",
+      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window»."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {

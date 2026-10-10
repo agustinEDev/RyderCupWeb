@@ -316,7 +316,8 @@
       "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo.",
       "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente.",
       "playersWithoutTeeWindow_one": "Falta colocar en una franja a {{jugadores}}.",
-      "playersWithoutTeeWindow_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}."
+      "playersWithoutTeeWindow_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}.",
+      "playersWithoutTeeWindowUnnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja»."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {

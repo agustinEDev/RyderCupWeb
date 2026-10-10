@@ -327,3 +327,25 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
     expect(traerALaVista).toHaveBeenCalled();
   });
 });
+
+describe('CompetitionDetail · cerrar sin los nombres de quien falta (FE #824)', () => {
+  it('si el servidor no manda nombres, el aviso no queda vacío', async () => {
+    vi.clearAllMocks();
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ hasTeams: false, tournamentType: 'STABLEFORD', team1Name: null, team2Name: null, teamAssignment: null })
+    );
+    mockCloseEnrollments.mockRejectedValue(
+      Object.assign(new Error('Faltan'), { errorCode: 'PLAYERS_WITHOUT_TEE_WINDOW', data: { players: [{ user_id: 'x' }] } })
+    );
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindowUnnamed'));
+  });
+});

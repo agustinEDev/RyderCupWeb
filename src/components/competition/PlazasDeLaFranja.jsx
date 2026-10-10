@@ -13,7 +13,8 @@ import { COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from '../../domain/
  * si salió bien o el motivo del servidor, y vuelve a leer la agenda.
  */
 
-const boton = 'rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-50';
+// 44 px de alto: se tocan con el dedo (revisor)
+const boton = 'min-h-11 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:opacity-50';
 const principal = `${boton} border-primary bg-primary text-white`;
 const secundario = `${boton} border-gray-300 bg-white text-gray-700 hover:bg-gray-50`;
 
@@ -83,25 +84,28 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
         </button>
       )}
 
-      {/* Soltar es perder la plaza: puede cogerla otro al momento */}
-      {confirmandoSoltar && (
+      {/* Soltar es perder la plaza: puede cogerla otro al momento. Solo si sigue
+          siendo suya: tras releer pudo dejar de serlo (revisor) */}
+      {confirmandoSoltar && accion.tipo === SOLTAR && (
         <div className="flex w-full flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
           <span className="min-w-0 flex-1">{t('franjas.releaseConfirm')}</span>
-          <button type="button" disabled={ocupado} className="rounded-md bg-amber-600 px-2 py-1 font-semibold text-white"
+          <button type="button" disabled={ocupado} className="min-h-11 rounded-md bg-amber-600 px-3 py-1 font-semibold text-white"
             onClick={() => {
               setConfirmandoSoltar(false);
               hacer(() => casos.soltar.execute(franja.id, userId), 'franjas.released');
             }}>
             {t('franjas.releaseYes')}
           </button>
-          <button type="button" className="rounded-md px-2 py-1" onClick={() => setConfirmandoSoltar(false)}>
+          <button type="button" className="min-h-11 rounded-md px-3 py-1" onClick={() => setConfirmandoSoltar(false)}>
             {t('agenda.no')}
           </button>
         </div>
       )}
 
-      {/* Con varias suyas, cuál deja: el cambio es un solo paso */}
-      {eligiendoCual && (
+      {/* Con varias suyas, cuál deja: el cambio es un solo paso. Solo mientras
+          siga siendo un cambio: tras releer pudo pasar a otra cosa, y entonces
+          no hay `dejar` (revisor) */}
+      {eligiendoCual && accion.tipo === CAMBIAR && (
         <div className="w-full space-y-1 rounded-lg bg-gray-50 p-2 text-sm">
           <p className="text-gray-700">{t('franjas.whichToLeave')}</p>
           {accion.dejar.map((id) => (
@@ -129,6 +133,7 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
  */
 export const JugadoresDeLaFranja = ({
   franja,
+  diasDe,
   nombreDe,
   conSitio,
   etiqueta,
@@ -141,12 +146,17 @@ export const JugadoresDeLaFranja = ({
   const { t } = useTranslation('schedule');
   const [abierta, setAbierta] = useState(false);
   const { playerIds, waitingIds } = franja.teeSheet;
-  const destinos = conSitio.filter((f) => f.id !== franja.id);
+  // Adónde se le puede mover: otra con sitio del mismo día (cambiarse), o de un
+  // día en que no juega. Las demás el servidor las rechaza (revisor)
+  const destinosDe = (id) =>
+    conSitio.filter(
+      (f) => f.id !== franja.id && (f.roundDate === franja.roundDate || !diasDe(id).has(f.roundDate))
+    );
 
   return (
     <div>
       <button type="button" aria-expanded={abierta} onClick={() => setAbierta((a) => !a)}
-        className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900">
+        className="flex min-h-11 items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900">
         {abierta ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         {t('franjas.showPlayers', { count: playerIds.length })}
       </button>
@@ -156,7 +166,7 @@ export const JugadoresDeLaFranja = ({
             {playerIds.map((id) => (
               <li key={id} className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-800">
                 <span className="min-w-0 flex-1 truncate">{nombreDe(id)}</span>
-                {puedeColocar && destinos.length > 0 && (
+                {puedeColocar && destinosDe(id).length > 0 && (
                   <select aria-label={t('franjas.moveTo', { jugador: nombreDe(id) })} value="" disabled={ocupado}
                     onChange={(e) =>
                       e.target.value &&
@@ -165,9 +175,9 @@ export const JugadoresDeLaFranja = ({
                         'franjas.moved'
                       )
                     }
-                    className="max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs">
+                    className="min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs">
                     <option value="">{t('franjas.moveToPlaceholder')}</option>
-                    {destinos.map((f) => (
+                    {destinosDe(id).map((f) => (
                       <option key={f.id} value={f.id}>{`${etiqueta(f).franja} · ${etiqueta(f).dia}`}</option>
                     ))}
                   </select>
@@ -214,7 +224,7 @@ export const SinFranja = ({ jugadores, conSitio, etiqueta, ocupado, hacer, casos
                 onChange={(e) =>
                   e.target.value && hacer(() => casos.coger.execute(e.target.value, { userId }), 'franjas.placed')
                 }
-                className="max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs">
+                className="min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs">
                 <option value="">{t('franjas.placeInPlaceholder')}</option>
                 {conSitio.map((f) => (
                   <option key={f.id} value={f.id}>{`${etiqueta(f).franja} · ${etiqueta(f).dia}`}</option>

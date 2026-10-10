@@ -155,6 +155,25 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     expect(screen.getByTestId('plaza-asignada-r1')).toBeInTheDocument();
   });
 
+  it('17c: un doble toque en «Entendido» manda uno solo (revisor)', async () => {
+    mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
+    mockAcknowledge.mockReturnValue(new Promise(() => {}));
+    renderCard();
+
+    const ok = await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' });
+    fireEvent.click(ok);
+    fireEvent.click(ok);
+
+    expect(mockAcknowledge).toHaveBeenCalledTimes(1);
+  });
+
+  it('17d: el botón se toca con el dedo: 44 px', async () => {
+    mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
+    renderCard();
+
+    expect((await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' })).className).toContain('min-h-11');
+  });
+
   it('18: si la lectura falla, lo demás se enseña igual', async () => {
     mockListMyAssignedPlaces.mockRejectedValue(new Error('sin red'));
     mockListMyInvitations.mockResolvedValue({ invitations: [{ id: 'i1' }] });

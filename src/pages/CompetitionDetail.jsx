@@ -312,8 +312,11 @@ const CompetitionDetail = () => {
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
         const jugadores = (error.data?.players || []).map((p) => p.name).filter(Boolean);
+        // Sin nombres, que no quede «Faltan 0 jugadores: .» (revisor)
         customToast.error(
-          t('detail.errors.playersWithoutTeeWindow', { count: jugadores.length, jugadores: jugadores.join(', ') })
+          jugadores.length > 0
+            ? t('detail.errors.playersWithoutTeeWindow', { count: jugadores.length, jugadores: jugadores.join(', ') })
+            : t('detail.errors.playersWithoutTeeWindowUnnamed')
         );
         document.getElementById('sin-franja')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;

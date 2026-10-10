@@ -339,6 +339,40 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('t', { userId: 'sin' }));
     });
 
+    it('12b: «Mover a…» no ofrece franjas de un día en que el jugador ya juega en otra', async () => {
+      mockLeer.mockResolvedValue({
+        rounds: [
+          franja('m', '2030-10-12', 'MORNING', { playerIds: ['ana'], placesTaken: 1 }),
+          franja('t', '2030-10-12', 'AFTERNOON'),
+          franja('d', '2030-10-13', 'MORNING', { playerIds: ['ana'], placesTaken: 1 }),
+          franja('e', '2030-10-13', 'AFTERNOON'),
+        ],
+      });
+      organizador({ maxMatchdaysPerPlayer: 2 });
+      const fila = await en('m');
+      fireEvent.click(fila.getByRole('button', { name: /^franjas\.showPlayers/ }));
+
+      const mover = fila.getByLabelText('franjas.moveTo {"jugador":"Ana Alba"}');
+      // Del mismo día sí (es cambiarse); del 13, donde ya juega, no
+      expect([...mover.options].map((o) => o.value).filter(Boolean)).toEqual(['t']);
+    });
+
+    it('si tras una acción no se puede releer, no quedan acciones sobre datos viejos', async () => {
+      organizador();
+      await en('m');
+      mockLeer.mockRejectedValue(new Error('429'));
+
+      fireEvent.change(within(await screen.findByTestId('sin-franja')).getByLabelText('franjas.placeIn {"jugador":"Sin Franja"}'), {
+        target: { value: 't' },
+      });
+
+      expect(await screen.findByRole('button', { name: 'franjas.retry' })).toBeInTheDocument();
+      expect(screen.queryByTestId('sin-franja')).toBeNull();
+      expect(screen.getByTestId('franja-m')).toBeInTheDocument();
+      fireEvent.click(within(screen.getByTestId('franja-m')).getByRole('button', { name: /^franjas\.showPlayers/ }));
+      expect(screen.queryByLabelText(/^franjas\.moveTo/)).toBeNull();
+    });
+
     it('14b: con todos colocados, no hay bloque', async () => {
       organizador({ inscritos: INSCRITOS.filter((i) => ['ana', 'bea'].includes(i.userId)) });
 

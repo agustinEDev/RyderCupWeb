@@ -40,6 +40,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   // Las plazas que le asignaron desde una lista de espera (FE #824): sin
   // correo, se entera aquí hasta que pulsa «Entendido»
   const [plazasAsignadas, setPlazasAsignadas] = useState(recordado?.plazasAsignadas ?? []);
+  // Las que ya se mandaron como vistas: un doble toque no repite el envío, y una
+  // lectura lanzada antes no las devuelve a la lista (revisor)
+  const [enviandoVista, setEnviandoVista] = useState(() => new Set());
+  const vistas = useRef(new Set());
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -130,7 +134,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           setSesionesSinPartidos(aplicado.sesionesSinPartidos);
         }
         if (results[6].status === 'fulfilled') {
-          aplicado.plazasAsignadas = results[6].value || [];
+          aplicado.plazasAsignadas = (results[6].value || []).filter((p) => !vistas.current.has(p.roundId));
           setPlazasAsignadas(aplicado.plazasAsignadas);
         }
 
@@ -174,8 +178,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   // «Entendido»: fuera de la lista en cuanto el servidor lo acepta, también de
   // la memoria (si no, volvería al volver a Inicio). Si falla, se queda y se dice
   const entendido = async (plaza) => {
+    setEnviandoVista((s) => new Set(s).add(plaza.roundId));
     try {
       await acknowledgeAssignedPlaceUseCase.execute(plaza.roundId);
+      vistas.current.add(plaza.roundId);
       const quedan = (lista) => lista.filter((p) => p.roundId !== plaza.roundId);
       ultimoAplicado.current = {
         ...ultimoAplicado.current,
@@ -185,6 +191,12 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
       setPlazasAsignadas(quedan);
     } catch (error) {
       customToast.error(error.message || t('pendingActions.placeAssignedOkFailed'));
+    } finally {
+      setEnviandoVista((s) => {
+        const sin = new Set(s);
+        sin.delete(plaza.roundId);
+        return sin;
+      });
     }
   };
 
@@ -365,7 +377,8 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
               <button
                 type="button"
                 onClick={() => entendido(plaza)}
-                className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                disabled={enviandoVista.has(plaza.roundId)}
+                className="min-h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 {t('pendingActions.placeAssignedOk')}
               </button>

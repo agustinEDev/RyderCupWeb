@@ -306,6 +306,9 @@ const FranjasDeLaCompeticion = ({
   const nombreDe = (id) => inscritos.find((i) => i.userId === id)?.userName || t('franjas.unknownPlayer');
   const etiqueta = (f) => ({ franja: t(`sessions.${f.sessionType}`), dia: fecha(f.roundDate) });
   const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
+  // Los días en que juega cada uno, para no ofrecer moverle a otro de esos días
+  const diasDe = (id) =>
+    new Set(franjas.filter((f) => f.teeSheet?.playerIds.includes(id)).map((f) => f.roundDate));
   const sinFranja = inscritos.filter((i) => !conPlaza.has(i.userId));
   const casos = {
     coger: takeTeeWindowPlaceUseCase,
@@ -573,7 +576,10 @@ const FranjasDeLaCompeticion = ({
                           <AccionDelJugador
                             franja={f}
                             accion={situacion.porFranja[f.id]}
-                            puedeElegir={puedeElegir}
+                            // Si no se pudo releer, lo pintado es viejo: nada de
+                            // acciones sobre ello (revisor; la agenda tiene 20
+                            // lecturas por minuto)
+                            puedeElegir={puedeElegir && !sinCargar}
                             userId={userId}
                             etiqueta={etiqueta}
                             franjasPorId={franjasPorId}
@@ -586,10 +592,11 @@ const FranjasDeLaCompeticion = ({
                         {(estoyInscrito || canManage) && (
                           <JugadoresDeLaFranja
                             franja={f}
+                            diasDe={diasDe}
                             nombreDe={nombreDe}
                             conSitio={conSitio}
                             etiqueta={etiqueta}
-                            puedeColocar={puedeColocar}
+                            puedeColocar={puedeColocar && !sinCargar}
                             puedeQuitar={puedeQuitar}
                             ocupado={ocupado}
                             hacer={hacer}
