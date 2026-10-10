@@ -586,5 +586,26 @@
     "turnLost": "Se te acabó el minuto y la aplicación eligió por ti. Ahora le toca al otro capitán.",
     "turnLostDraftOver": "Se te acabó el minuto y la aplicación eligió por ti. Con eso el draft ha terminado.",
     "open": "Ir a la sala de draft"
+  },
+  "handicaps": {
+    "title": "Hándicaps",
+    "update": "Actualizar hándicaps",
+    "launched": "Se están actualizando los hándicaps con la RFEG.",
+    "resumed": "Se termina la actualización que quedó a medias.",
+    "inProgress_one": "Actualizando con la RFEG: falta {{count}} jugador.",
+    "inProgress_other": "Actualizando con la RFEG: faltan {{count}} jugadores.",
+    "completed": "Actualizados con la RFEG el {{cuando}}.",
+    "incomplete": "La última actualización ({{cuando}}) quedó a medias.",
+    "pending": "Sin actualizar: {{jugadores}}.",
+    "stopped": "La última actualización se cortó: la competición empezó o se cerró la ventana.",
+    "openUntil": "Se puede hasta el {{cuando}} (hora del campo).",
+    "openUntilStart": "Se puede hasta iniciar la competición.",
+    "scheduled": "Programada: {{cuando}}, hora del campo ({{zona}}).",
+    "cancelSchedule": "Anular",
+    "schedule": "Programar…",
+    "scheduleAt": "Fecha y hora, en la hora del campo ({{zona}})",
+    "scheduleSave": "Programar",
+    "cancel": "Cancelar",
+    "error": "No se ha podido hacer. Inténtalo otra vez."
   }
 }

@@ -41,6 +41,9 @@ const mockAssignTeams = vi.fn();
 const mockCloseEnrollments = vi.fn();
 
 vi.mock('../composition', () => ({
+  launchHandicapUpdateUseCase: { execute: vi.fn() },
+  scheduleHandicapUpdateUseCase: { execute: vi.fn() },
+  cancelScheduledHandicapUpdateUseCase: { execute: vi.fn() },
   // Las plazas y esperas de las franjas (FE #824, PR 4)
   takeTeeWindowPlaceUseCase: { execute: vi.fn() },
   releaseTeeWindowPlaceUseCase: { execute: vi.fn() },
@@ -484,5 +487,67 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     await cerrarConFaltas([{ user_id: 'zzz' }]);
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutHandicapUnnamed'));
+  });
+});
+
+describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () => {
+  const VENTANA = { open: true, closesAt: null, reason: null, scheduledAt: null };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+  });
+
+  it.each([
+    ['un Medal cerrado', { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null, status: 'CLOSED' }],
+    ['un Medal en juego', { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null, status: 'IN_PROGRESS' }],
+    ['una Ryder cerrada', { status: 'CLOSED' }],
+  ])('el organizador la ve en %s', async (_caso, extra) => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ ...extra, handicapUpdateWindow: VENTANA }));
+    renderPage();
+
+    expect(await screen.findByTestId('handicaps')).toBeInTheDocument();
+  });
+
+  it('con las inscripciones abiertas, todavía no', async () => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'ACTIVE', handicapUpdateWindow: VENTANA }));
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    expect(screen.queryByTestId('handicaps')).toBeNull();
+  });
+
+  it('quien no organiza no la ve (no le llega la ventana)', async () => {
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED', creatorId: 'otra', handicapUpdateWindow: null }));
+    renderPage();
+
+    await screen.findByTestId('aprobado-ana');
+    expect(screen.queryByTestId('handicaps')).toBeNull();
+  });
+
+  it('releer desde la tarjeta trae lo nuevo de la ficha', async () => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED', handicapUpdateWindow: VENTANA }));
+    const { launchHandicapUpdateUseCase } = await import('../composition');
+    launchHandicapUpdateUseCase.execute.mockResolvedValue({ status: 'IN_PROGRESS', resumed: false });
+    renderPage();
+    const lecturas = mockGetCompetitionDetail.mock.calls.length;
+
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({
+        status: 'CLOSED',
+        handicapUpdateWindow: VENTANA,
+        handicapUpdate: { status: 'IN_PROGRESS', origin: 'ORGANIZER', startedAt: 'x', finishedAt: null, pendingPlayers: [{ userId: 'ana', name: 'Ana' }] },
+      })
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'handicaps.update' }));
+
+    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(lecturas));
+    // Y la tarjeta enseña lo releído
+    expect(await screen.findByTestId('handicaps-estado')).toHaveTextContent('handicaps.inProgress_1');
   });
 });

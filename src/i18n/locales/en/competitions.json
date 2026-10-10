@@ -586,5 +586,26 @@
     "turnLost": "Your minute ran out and the app picked for you. It is the other captain's turn now.",
     "turnLostDraftOver": "Your minute ran out and the app picked for you. That finished the draft.",
     "open": "Go to the draft room"
+  },
+  "handicaps": {
+    "title": "Handicaps",
+    "update": "Update handicaps",
+    "launched": "Handicaps are being updated with the RFEG.",
+    "resumed": "Finishing the update that was left halfway.",
+    "inProgress_one": "Updating with the RFEG: {{count}} player left.",
+    "inProgress_other": "Updating with the RFEG: {{count}} players left.",
+    "completed": "Updated with the RFEG on {{cuando}}.",
+    "incomplete": "The last update ({{cuando}}) was left halfway.",
+    "pending": "Not updated: {{jugadores}}.",
+    "stopped": "The last update was stopped: the competition started or the window closed.",
+    "openUntil": "Available until {{cuando}} (course time).",
+    "openUntilStart": "Available until the competition starts.",
+    "scheduled": "Scheduled: {{cuando}}, course time ({{zona}}).",
+    "cancelSchedule": "Cancel it",
+    "schedule": "Schedule…",
+    "scheduleAt": "Date and time, in course time ({{zona}})",
+    "scheduleSave": "Schedule",
+    "cancel": "Cancel",
+    "error": "It could not be done. Try again."
   }
 }

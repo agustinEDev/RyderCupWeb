@@ -19,6 +19,7 @@ import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
+import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -385,6 +386,26 @@ const CompetitionDetail = () => {
         )
       )
       .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+
+  // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
+  // completa: la tarjeta lo pide al lanzar o programar, y cada 15 s mientras
+  // hay una en marcha (FE #824, PR 5)
+  const releerHandicaps = useCallback(() => {
+    getCompetitionDetailUseCase
+      .execute(id)
+      .then((data) =>
+        setCompetition((prev) => ({
+          ...prev,
+          handicapUpdate: data.handicapUpdate,
+          handicapUpdateWindow: data.handicapUpdateWindow,
+        }))
+      )
+      .catch((e) => console.error('Error reloading handicap updates:', e));
+    listEnrollmentsUseCase
+      .execute(id)
+      .then(setEnrollments)
+      .catch((e) => console.error('Error reloading enrollments:', e));
+  }, [id]);
 
   const confirmarCapitanes = async (capitanes) => {
     const cerraba = competition.status === 'ACTIVE';
@@ -1318,6 +1339,22 @@ const CompetitionDetail = () => {
                 </div>
               </div>
             </motion.div>
+
+            {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
+                cómo fue la última actualización con la RFEG, el botón y la
+                programada. La ventana solo le llega al organizador */}
+            {canManage &&
+              competition.handicapUpdateWindow &&
+              ['CLOSED', 'IN_PROGRESS'].includes(competition.status) && (
+                <div className="p-4">
+                  <HandicapsDeLaCompeticion
+                    competitionId={competition.id}
+                    handicapUpdate={competition.handicapUpdate}
+                    handicapUpdateWindow={competition.handicapUpdateWindow}
+                    onReleer={releerHandicaps}
+                  />
+                </div>
+              )}
 
             {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
                 organizador la cambia aquí mismo (FE #654) */}
