@@ -190,6 +190,32 @@ describe('PendingActionsCard · plaza asignada desde la espera (FE #824)', () =>
     expect(memoria.loQueSeEnseñoAntes()).toBeNull();
   });
 
+  it('17f: si falla «Entendido», el aviso es el nuestro, traducido (CodeRabbit)', async () => {
+    mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
+    mockAcknowledge.mockRejectedValue(new Error('Internal Server Error'));
+    renderCard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'pendingActions.placeAssignedOk' }));
+
+    await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('pendingActions.placeAssignedOkFailed'));
+  });
+
+  it('19: al cambiar de cuenta no se ven, ni un momento, las plazas de la anterior (CodeRabbit)', async () => {
+    mockListMyAssignedPlaces.mockResolvedValue([PLAZA]);
+    const { rerender } = renderCard();
+    await screen.findByTestId('plaza-asignada-r1');
+    // La de la cuenta nueva no ha contestado todavía
+    mockListMyAssignedPlaces.mockReturnValue(new Promise(() => {}));
+
+    rerender(
+      <MemoryRouter>
+        <PendingActionsCard user={{ ...baseUser, id: 'otra-cuenta' }} competitions={[]} upcomingMatches={0} />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId('plaza-asignada-r1')).toBeNull();
+  });
+
   it('18: si la lectura falla, lo demás se enseña igual', async () => {
     mockListMyAssignedPlaces.mockRejectedValue(new Error('sin red'));
     mockListMyInvitations.mockResolvedValue({ invitations: [{ id: 'i1' }] });

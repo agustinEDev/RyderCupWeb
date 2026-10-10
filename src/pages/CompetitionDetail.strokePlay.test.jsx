@@ -324,7 +324,8 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
     await waitFor(() =>
       expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindow_2')
     );
-    expect(traerALaVista).toHaveBeenCalled();
+    // El salto llega con lo releído, no al momento (CodeRabbit en la #836)
+    await waitFor(() => expect(traerALaVista).toHaveBeenCalled(), { timeout: 3000 });
   });
 });
 

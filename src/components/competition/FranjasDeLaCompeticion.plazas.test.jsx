@@ -398,6 +398,28 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       expect(screen.queryByLabelText(/^franjas\.moveTo/)).toBeNull();
     });
 
+    it('15b: al pedirle ir a «Sin franja», espera a que el bloque aparezca tras releer (CodeRabbit)', async () => {
+      const traerALaVista = vi.fn();
+      globalThis.Element.prototype.scrollIntoView = traerALaVista;
+      // Lo leído al principio: todos colocados, sin bloque
+      const todos = INSCRITOS.filter((i) => ['ana', 'bea'].includes(i.userId));
+      const { rerender } = organizador({ inscritos: todos });
+      await en('m');
+      expect(screen.queryByTestId('sin-franja')).toBeNull();
+      // El servidor dice que falta Ana: al releer, ya no tiene franja
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING'), franja('t', '2030-10-12', 'AFTERNOON')],
+      });
+
+      rerender(
+        <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage
+          maxPlayers={100} userId="yo" puedeColocar puedeQuitar inscritos={todos} version="2" irASinFranja={1} />
+      );
+
+      await screen.findByTestId('sin-franja');
+      await waitFor(() => expect(traerALaVista).toHaveBeenCalledTimes(1));
+    });
+
     it('14b: con todos colocados, no hay bloque', async () => {
       organizador({ inscritos: INSCRITOS.filter((i) => ['ana', 'bea'].includes(i.userId)) });
 

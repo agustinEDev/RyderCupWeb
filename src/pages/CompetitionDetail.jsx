@@ -105,6 +105,7 @@ const CompetitionDetail = () => {
   const [agendaLeida, setAgendaLeida] = useState(null);
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
+  const [irASinFranja, setIrASinFranja] = useState(0);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
@@ -322,9 +323,10 @@ const CompetitionDetail = () => {
             ? t('detail.errors.playersWithoutTeeWindow', { count: faltan.length, jugadores: jugadores.join(', ') })
             : t('detail.errors.playersWithoutTeeWindowUnnamed')
         );
-        // Lo pintado puede estar viejo: se releen las franjas
+        // Lo pintado puede estar viejo: se releen las franjas, y con lo releído
+        // se lleva a «Sin franja» (allí se espera a que aparezca)
         setVersionFranjas((v) => v + 1);
-        document.getElementById('sin-franja')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setIrASinFranja((v) => v + 1);
         return;
       }
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
@@ -1307,6 +1309,7 @@ const CompetitionDetail = () => {
                   version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
                   versionCampos={versionCampos}
                   onAgenda={setAgendaLeida}
+                  irASinFranja={irASinFranja}
                 />
               ) : (
               <AgendaDeLaCompeticion

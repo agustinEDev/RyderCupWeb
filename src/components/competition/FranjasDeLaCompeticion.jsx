@@ -177,6 +177,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {Array<{userId: string, userName: string}>} [props.inscritos] - Aprobados, para los nombres
  * @param {boolean} [props.puedeColocar] - El organizador coloca y mueve (hasta iniciar)
  * @param {boolean} [props.puedeQuitar] - Y quita (solo con las inscripciones abiertas)
+ * @param {number} [props.irASinFranja] - Sube cuando la ficha pide llevar a «Sin franja»
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -194,6 +195,7 @@ const FranjasDeLaCompeticion = ({
   inscritos = [],
   puedeColocar = false,
   puedeQuitar = false,
+  irASinFranja = 0,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -201,6 +203,8 @@ const FranjasDeLaCompeticion = ({
   // Si los campos no se pudieron leer: no es lo mismo que no tener ninguno
   const [camposSinCargar, setCamposSinCargar] = useState(false);
   const [sinCargar, setSinCargar] = useState(false);
+  // Cuántas lecturas buenas lleva: para hacer algo «con lo releído»
+  const [lecturas, setLecturas] = useState(0);
   const [ocupado, setOcupado] = useState(false);
   // Lo que está abierto: una franja nueva, una que se cambia o una que se borra
   const [nueva, setNueva] = useState(null);
@@ -217,6 +221,7 @@ const FranjasDeLaCompeticion = ({
       if (esta !== ultimaLectura.current) return;
       setAgenda(leida);
       setSinCargar(false);
+      setLecturas((n) => n + 1);
     } catch {
       if (esta !== ultimaLectura.current) return;
       setSinCargar(true);
@@ -314,6 +319,24 @@ const FranjasDeLaCompeticion = ({
     const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
     return inscritos.filter((i) => !conPlaza.has(i.userId));
   }, [franjas, inscritos]);
+  // Llevar a «Sin franja» cuando lo pide la ficha, pero con lo releído: con lo
+  // de antes el bloque puede no estar todavía (CodeRabbit en la #836)
+  // Se cuenta en lecturas, no comparando agendas: dos lecturas iguales también
+  // son una lectura nueva
+  const irAtendido = useRef(0);
+  const lecturasAlPedir = useRef(null);
+  useEffect(() => {
+    if (irASinFranja <= irAtendido.current) return;
+    // La primera vez solo se apunta: el efecto vuelve a correr cuando llega
+    // la lectura siguiente (cambia `lecturas`), y entonces se salta
+    if (lecturasAlPedir.current === null) {
+      lecturasAlPedir.current = lecturas;
+      return;
+    }
+    irAtendido.current = irASinFranja;
+    lecturasAlPedir.current = null;
+    document.getElementById('sin-franja')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [irASinFranja, lecturas]);
   const casos = {
     coger: takeTeeWindowPlaceUseCase,
     soltar: releaseTeeWindowPlaceUseCase,

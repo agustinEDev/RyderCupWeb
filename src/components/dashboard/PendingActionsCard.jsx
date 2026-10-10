@@ -53,6 +53,20 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
       montada.current = false;
     };
   }, []);
+  // Otra cuenta en la misma tarjeta montada: lo de la anterior no se enseña ni
+  // un momento mientras llega lo nuevo (CodeRabbit en la #836). Se reinicia al
+  // pintar, no en un efecto, para que no llegue a verse
+  const [cuentaDe, setCuentaDe] = useState(user?.id);
+  if (user?.id !== cuentaDe) {
+    setCuentaDe(user?.id);
+    setPendingInvitations(0);
+    setPendingEnrollments([]);
+    setPendingFriendRequests(0);
+    setActiveQuickMatches([]);
+    setSobresPendientes([]);
+    setSesionesSinPartidos([]);
+    setPlazasAsignadas([]);
+  }
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -200,7 +214,9 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
       recuerdaLasAccionesPendientes({ ...ultimoAplicado.current });
       setPlazasAsignadas(quedan);
     } catch (error) {
-      customToast.error(error.message || t('pendingActions.placeAssignedOkFailed'));
+      // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
+      console.error('No se ha podido marcar la plaza como vista:', error);
+      customToast.error(t('pendingActions.placeAssignedOkFailed'));
     } finally {
       if (montada.current) setEnviandoVista((s) => {
         const sin = new Set(s);
