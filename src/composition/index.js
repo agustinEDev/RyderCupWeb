@@ -100,6 +100,12 @@ import ResetEnvelopesUseCase from '../application/use_cases/envelope/ResetEnvelo
 import ListMyPendingEnvelopesUseCase from '../application/use_cases/envelope/ListMyPendingEnvelopesUseCase';
 import ListMySessionsWithoutMatchesUseCase from '../application/use_cases/envelope/ListMySessionsWithoutMatchesUseCase';
 import CreateRoundUseCase from '../application/use_cases/schedule/CreateRoundUseCase';
+import TakeTeeWindowPlaceUseCase from '../application/use_cases/schedule/TakeTeeWindowPlaceUseCase';
+import ReleaseTeeWindowPlaceUseCase from '../application/use_cases/schedule/ReleaseTeeWindowPlaceUseCase';
+import JoinWaitingListUseCase from '../application/use_cases/schedule/JoinWaitingListUseCase';
+import LeaveWaitingListUseCase from '../application/use_cases/schedule/LeaveWaitingListUseCase';
+import ListMyAssignedPlacesUseCase from '../application/use_cases/schedule/ListMyAssignedPlacesUseCase';
+import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/AcknowledgeAssignedPlaceUseCase';
 import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
 import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
 import GenerateMatchesUseCase from '../application/use_cases/schedule/GenerateMatchesUseCase';
@@ -267,6 +273,12 @@ const getScheduleUseCase = new GetScheduleUseCase({ scheduleRepository: apiSched
 const configureScheduleUseCase = new ConfigureScheduleUseCase({ scheduleRepository: apiScheduleRepository });
 const assignTeamsUseCase = new AssignTeamsUseCase({ scheduleRepository: apiScheduleRepository });
 const createRoundUseCase = new CreateRoundUseCase({ scheduleRepository: apiScheduleRepository });
+const takeTeeWindowPlaceUseCase = new TakeTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
+const releaseTeeWindowPlaceUseCase = new ReleaseTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
+const joinWaitingListUseCase = new JoinWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
+const leaveWaitingListUseCase = new LeaveWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
+const listMyAssignedPlacesUseCase = new ListMyAssignedPlacesUseCase({ scheduleRepository: apiScheduleRepository });
+const acknowledgeAssignedPlaceUseCase = new AcknowledgeAssignedPlaceUseCase({ scheduleRepository: apiScheduleRepository });
 const updateRoundUseCase = new UpdateRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const deleteRoundUseCase = new DeleteRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const generateMatchesUseCase = new GenerateMatchesUseCase({ scheduleRepository: apiScheduleRepository });
@@ -491,6 +503,12 @@ export {
   listMyPendingEnvelopesUseCase,
   listMySessionsWithoutMatchesUseCase,
   createRoundUseCase,
+  takeTeeWindowPlaceUseCase,
+  releaseTeeWindowPlaceUseCase,
+  joinWaitingListUseCase,
+  leaveWaitingListUseCase,
+  listMyAssignedPlacesUseCase,
+  acknowledgeAssignedPlaceUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,
   generateMatchesUseCase,

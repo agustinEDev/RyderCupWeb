@@ -52,7 +52,10 @@
       "STABLEFORD": "Stableford"
     },
     "envelopePending": "Tienes un sobre sin entregar",
-    "sessionWithoutMatches": "Una sesión se ha quedado sin partidos"
+    "sessionWithoutMatches": "Una sesión se ha quedado sin partidos",
+    "placeAssigned": "Tienes plaza: te tocó desde la lista de espera",
+    "placeAssignedOk": "Entendido",
+    "placeAssignedOkFailed": "No se ha podido marcar como vista. Inténtalo otra vez."
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",

@@ -103,6 +103,9 @@ const CompetitionDetail = () => {
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
   // La agenda que leyó su sección: sesiones y reparto. null mientras no se sabe
   const [agendaLeida, setAgendaLeida] = useState(null);
+  // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
+  const [versionFranjas, setVersionFranjas] = useState(0);
+  const [irASinFranja, setIrASinFranja] = useState(0);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
@@ -308,6 +311,24 @@ const CompetitionDetail = () => {
     } catch (error) {
       console.error(`Error ${action}:`, error);
       console.error('Error details:', error.stack || error.message || String(error));
+      // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
+      // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
+      if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
+        const faltan = error.data?.players || [];
+        const jugadores = faltan.map((p) => p.name).filter(Boolean);
+        // La cuenta, la de todos los que faltan, aunque alguno venga sin nombre
+        // (/code-review). Sin ningún nombre, que no quede «Faltan 0: .»
+        customToast.error(
+          jugadores.length > 0
+            ? t('detail.errors.playersWithoutTeeWindow', { count: faltan.length, jugadores: jugadores.join(', ') })
+            : t('detail.errors.playersWithoutTeeWindowUnnamed')
+        );
+        // Lo pintado puede estar viejo: se releen las franjas, y con lo releído
+        // se lleva a «Sin franja» (allí se espera a que aparezca)
+        setVersionFranjas((v) => v + 1);
+        setIrASinFranja((v) => v + 1);
+        return;
+      }
       customToast.error(error.message || t('detail.failedToUpdateCompetition'));
     } finally {
       setIsProcessing(false);
@@ -1272,9 +1293,23 @@ const CompetitionDetail = () => {
                   endDate={competition.endDate}
                   canManage={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
                   maxPlayers={competition.maxPlayers}
-                  version={`${competition.updatedAt}|${competition.status}`}
+                  // Las plazas (PR 4): el jugador elige con las inscripciones
+                  // abiertas; el organizador coloca y mueve hasta iniciar, y
+                  // quita solo con ellas abiertas
+                  userId={user.id}
+                  estoyInscrito={estoyInscrito}
+                  puedeElegir={competition.status === 'ACTIVE'}
+                  maxMatchdaysPerPlayer={competition.strokePlay?.maxMatchdaysPerPlayer}
+                  inscritos={approvedEnrollments.map((e) => ({
+                    userId: e.userId,
+                    userName: e.userName || t('detail.unknownUser'),
+                  }))}
+                  puedeColocar={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
+                  puedeQuitar={canManage && competition.status === 'ACTIVE'}
+                  version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
                   versionCampos={versionCampos}
                   onAgenda={setAgendaLeida}
+                  irASinFranja={irASinFranja}
                 />
               ) : (
               <AgendaDeLaCompeticion

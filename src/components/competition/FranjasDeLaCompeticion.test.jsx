@@ -40,6 +40,11 @@ vi.mock('../../composition', () => ({
   createRoundUseCase: { execute: (...a) => mockCrear(...a) },
   updateRoundUseCase: { execute: (...a) => mockCambiar(...a) },
   deleteRoundUseCase: { execute: (...a) => mockBorrar(...a) },
+  // Las plazas y esperas (PR 4) tienen sus propios tests
+  takeTeeWindowPlaceUseCase: { execute: vi.fn() },
+  releaseTeeWindowPlaceUseCase: { execute: vi.fn() },
+  joinWaitingListUseCase: { execute: vi.fn() },
+  leaveWaitingListUseCase: { execute: vi.fn() },
 }));
 
 const FranjasDeLaCompeticion = (await import('./FranjasDeLaCompeticion')).default;
@@ -435,6 +440,10 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     rerender(
       <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
     );
+    // Se espera a que cambie la LISTA de campos, no el valor: el selector ya
+    // enseña «g-1» en cuanto «g-2» deja de ser una opción, antes de que el
+    // estado cambie, y pulsar ahí era una carrera (fallaba bajo carga)
+    await waitFor(() => expect(screen.getByLabelText('franjas.course').options).toHaveLength(1));
     await waitFor(() => expect(screen.getByLabelText('franjas.course')).toHaveValue('g-1'));
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
