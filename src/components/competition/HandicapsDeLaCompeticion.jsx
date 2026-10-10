@@ -9,7 +9,7 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
-import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo } from '../../utils/horaDelCampo';
+import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo, esZonaValida } from '../../utils/horaDelCampo';
 
 // Mientras hay una en marcha, cada cuánto se mira cómo va
 const CADA = 15000;
@@ -36,6 +36,9 @@ const CADA = 15000;
 const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdateWindow, onReleer }) => {
   const { t, i18n } = useTranslation('competitions');
   const [zona, setZona] = useState(null);
+  // Hasta saber la zona no se programa: una hora escrita antes se leería en
+  // otra (revisor). Si no se pudo saber, se programa en la del dispositivo
+  const [zonaSabida, setZonaSabida] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [programando, setProgramando] = useState(null);
 
@@ -43,8 +46,10 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   useEffect(() => {
     let vigente = true;
     (async () => getCompetitionGolfCoursesUseCase.execute(competitionId))()
+      // La del primer campo que la tenga: casi todos los torneos son de un huso
       .then((r) => vigente && setZona(aCamposDeLaCompeticion(r).find((c) => c.timezone)?.timezone ?? null))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => vigente && setZonaSabida(true));
     return () => {
       vigente = false;
     };
@@ -66,10 +71,12 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
     try {
       await accion();
       alAcabar?.();
-      onReleer?.();
     } catch (error) {
       customToast.error(error.message || t('handicaps.error'));
     } finally {
+      // También si falló: un 409 es que ya hay otra en marcha, y la tarjeta
+      // tiene que enterarse (revisor)
+      onReleer?.();
       setOcupado(false);
     }
   };
@@ -98,6 +105,10 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   };
 
   const ventana = handicapUpdateWindow;
+  // «hora del campo (Madrid)», o la del dispositivo si el campo no la tiene
+  const delCampo = esZonaValida(zona);
+  const escrita = programando ? aIsoConHuso(programando, zona) : null;
+  const noExiste = Boolean(programando) && escrita === null && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(programando);
   const boton = 'min-h-11 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50';
 
   return (
@@ -109,7 +120,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
 
       {handicapUpdate && (
         <div>
-          <p data-testid="handicaps-estado" className="text-sm text-gray-800">{estado()}</p>
+          <p data-testid="handicaps-estado" aria-live="polite" className="text-sm text-gray-800">{estado()}</p>
           {handicapUpdate.status === 'INCOMPLETE' && handicapUpdate.pendingPlayers.length > 0 && (
             <p data-testid="handicaps-pendientes" className="text-sm text-amber-800">
               {t('handicaps.pending', { jugadores: handicapUpdate.pendingPlayers.map((p) => p.name).join(', ') })}
@@ -130,7 +141,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
         <p data-testid="handicaps-ventana" className="text-xs text-gray-500">
           {ventana?.open
             ? ventana.closesAt
-              ? t('handicaps.openUntil', { cuando: cuando(ventana.closesAt), zona: zona ?? '' })
+              ? t(delCampo ? 'handicaps.openUntil' : 'handicaps.openUntilDevice', { cuando: cuando(ventana.closesAt) })
               : t('handicaps.openUntilStart')
             : ventana?.reason}
         </p>
@@ -140,7 +151,9 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
         <div className="flex flex-wrap items-center gap-2">
           <p data-testid="handicaps-programada" className="flex items-center gap-1 text-sm text-gray-800">
             <Clock className="h-4 w-4 text-gray-500" />
-            {t('handicaps.scheduled', { cuando: cuando(ventana.scheduledAt), zona: zona ?? '' })}
+            {delCampo
+              ? t('handicaps.scheduled', { cuando: cuando(ventana.scheduledAt), zona })
+              : t('handicaps.scheduledDevice', { cuando: cuando(ventana.scheduledAt) })}
           </p>
           <button type="button" onClick={anular} disabled={ocupado} className={`${boton} border border-gray-300 text-gray-700`}>
             {t('handicaps.cancelSchedule')}
@@ -152,7 +165,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
         <button
           type="button"
           onClick={() => setProgramando(ventana?.scheduledAt ? aEntradaDelCampo(ventana.scheduledAt, zona) : '')}
-          disabled={ocupado}
+          disabled={ocupado || !zonaSabida || !ventana?.open}
           className={`${boton} border border-gray-300 text-gray-700`}
         >
           {t('handicaps.schedule')}
@@ -160,20 +173,25 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
       ) : (
         <div className="space-y-2 rounded-lg bg-gray-50 p-3">
           <label className="block text-xs text-gray-600">
-            {t('handicaps.scheduleAt', { zona: zona ?? '' })}
+            {delCampo ? t('handicaps.scheduleAt', { zona }) : t('handicaps.scheduleAtDevice')}
             <input
               type="datetime-local"
-              aria-label={t('handicaps.scheduleAt', { zona: zona ?? '' })}
+              aria-label={delCampo ? t('handicaps.scheduleAt', { zona }) : t('handicaps.scheduleAtDevice')}
               value={programando}
               onChange={(e) => setProgramando(e.target.value)}
               className="mt-0.5 block w-full rounded-lg border border-gray-200 px-2 py-1 text-sm"
             />
           </label>
+          {noExiste && (
+            <p role="alert" className="text-sm text-red-600">
+              {t('handicaps.timeDoesNotExist')}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={programar}
-              disabled={ocupado || !aIsoConHuso(programando, zona)}
+              disabled={ocupado || !escrita}
               className={`${boton} bg-primary text-white`}
             >
               {t('handicaps.scheduleSave')}

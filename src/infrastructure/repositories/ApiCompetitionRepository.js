@@ -217,15 +217,11 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     return competition;
   }
-  /**
-   * Cambia los ajustes del stroke play (FE #824, RyderCupAm#536). Un PATCH con
-   * SOLO lo que llega: mandar los límites, aunque vacíos, cambia de modo.
-   * @override
-   */
   /** POST /competitions/{id}/handicap-updates → 202 (RyderCupAM#509). */
   async launchHandicapUpdate(competitionId) {
     const data = await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates`, { method: 'POST' });
-    return { status: data?.status, resumed: data?.resumed === true };
+    // El backend devuelve {id, origin, started_at, resumed}: sin `status`
+    return { resumed: data?.resumed === true };
   }
 
   /** PUT /competitions/{id}/handicap-updates/schedule (RyderCupAM#510). */
@@ -242,6 +238,11 @@ class ApiCompetitionRepository extends ICompetitionRepository {
     await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates/schedule`, { method: 'DELETE' });
   }
 
+  /**
+   * Cambia los ajustes del stroke play (FE #824, RyderCupAm#536). Un PATCH con
+   * SOLO lo que llega: mandar los límites, aunque vacíos, cambia de modo.
+   * @override
+   */
   async updateStrokePlay(competitionId, cambios) {
     const nombres = {
       categoryLimits: 'category_limits',

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -481,6 +481,20 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     expect(screen.getByTestId('aprobado-bea')).toHaveAttribute('data-sin-handicap', 'true');
     expect(screen.getByTestId('aprobado-carla')).not.toHaveAttribute('data-sin-handicap');
     expect(within(screen.getByTestId('aprobado-ana')).getByRole('textbox')).toBeInTheDocument();
+    // Y se ve, no solo está en un atributo (revisor)
+    expect(within(screen.getByTestId('aprobado-bea')).getByText('detail.missingHandicapBadge')).toBeInTheDocument();
+  });
+
+  it('4b: al ponerle el personalizado, deja de estar marcado', async () => {
+    const { setCustomHandicapUseCase } = await import('../composition');
+    setCustomHandicapUseCase.execute.mockResolvedValue({});
+    await cerrarConFaltas([{ user_id: 'ana', name: 'Ana Alba', missing: 'HANDICAP' }]);
+    const editor = await within(screen.getByTestId('aprobado-ana')).findByRole('textbox');
+
+    fireEvent.change(editor, { target: { value: '18' } });
+    fireEvent.click(within(screen.getByTestId('aprobado-ana')).getByTitle('detail.saveHandicap'));
+
+    await waitFor(() => expect(within(screen.getByTestId('aprobado-ana')).queryByText('detail.missingHandicapBadge')).toBeNull());
   });
 
   it('5: sin nombres, un aviso que se lee', async () => {
@@ -526,6 +540,28 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
 
     await screen.findByTestId('aprobado-ana');
     expect(screen.queryByTestId('handicaps')).toBeNull();
+  });
+
+  it('mientras hay una en marcha, el sondeo no relee las inscripciones cada vez; al acabar, sí (revisor)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    const enMarcha = { status: 'IN_PROGRESS', origin: 'ORGANIZER', startedAt: 'x', finishedAt: null, pendingPlayers: [] };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED', handicapUpdateWindow: VENTANA, handicapUpdate: enMarcha }));
+    renderPage();
+    await screen.findByTestId('handicaps-estado');
+    const fichas = mockGetCompetitionDetail.mock.calls.length;
+    const inscripciones = mockListEnrollments.mock.calls.length;
+
+    await act(async () => vi.advanceTimersByTime(15000));
+    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(fichas));
+    expect(mockListEnrollments.mock.calls.length).toBe(inscripciones);
+
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ status: 'CLOSED', handicapUpdateWindow: VENTANA, handicapUpdate: { ...enMarcha, status: 'COMPLETED', finishedAt: 'y' } })
+    );
+    await act(async () => vi.advanceTimersByTime(15000));
+    await waitFor(() => expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(inscripciones));
+    vi.useRealTimers();
   });
 
   it('releer desde la tarjeta trae lo nuevo de la ficha', async () => {
@@ -581,6 +617,16 @@ describe('CompetitionDetail · los ajustes de un Stableford o un Medal (FE #824,
     renderPage();
 
     expect(await screen.findByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.equalCategories_3');
+  });
+
+  it('categorías iguales ya repartidas (cerrada): sin «se reparten al cerrar» y con sus límites (revisor)', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [10.2, 20.5], categoryCount: 3, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      status: 'CLOSED',
+    });
+    renderPage();
+
+    expect(await screen.findByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.equalCategoriesSplit_3');
   });
 
   it('sin categorías', async () => {

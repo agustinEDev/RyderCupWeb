@@ -21,3 +21,32 @@ describe('los textos de la tarjeta «Hándicaps» (FE #824)', () => {
   it.each(claves)('handicaps.%s existe en español', (clave) => expect(existe(es, clave)).toBe(true));
   it.each(claves)('handicaps.%s existe en inglés', (clave) => expect(existe(en, clave)).toBe(true));
 });
+
+describe('los demás textos nuevos de la PR 5 (revisor)', () => {
+  const lee = (textos, ruta) => ruta.split('.').reduce((o, k) => o?.[k], textos);
+  const existeRuta = (textos, ruta) =>
+    typeof lee(textos, ruta) === 'string' ||
+    (typeof lee(textos, `${ruta}_one`) === 'string' && typeof lee(textos, `${ruta}_other`) === 'string');
+  const RUTAS = [
+    'detail.fixedHandicap',
+    'detail.fixedHandicapNoCategory',
+    'detail.missingHandicapBadge',
+    'detail.errors.playersWithoutHandicap',
+    'detail.errors.playersWithoutHandicapUnnamed',
+    'detail.settings.categories',
+    'detail.settings.equalCategories',
+    'detail.settings.equalCategoriesSplit',
+    'detail.settings.categoryLimits',
+    'detail.settings.noCategories',
+    'detail.settings.matchdaysLabel',
+    'detail.settings.matchdays',
+    'detail.settings.overallLabel',
+    'detail.settings.overall.ACCUMULATED',
+    'detail.settings.overall.BEST_CARD',
+    'enrollment.needsHandicap',
+    'enrollment.addHandicap',
+  ];
+
+  it.each(RUTAS)('%s existe en español', (ruta) => expect(existeRuta(es, ruta)).toBe(true));
+  it.each(RUTAS)('%s existe en inglés', (ruta) => expect(existeRuta(en, ruta)).toBe(true));
+});

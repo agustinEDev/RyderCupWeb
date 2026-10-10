@@ -17,9 +17,10 @@ describe('ApiCompetitionRepository · actualizar hándicaps (FE #824)', () => {
   });
 
   it('lanzar', async () => {
-    api.mockResolvedValue({ id: 'u-1', status: 'IN_PROGRESS', origin: 'ORGANIZER', started_at: 'x', resumed: true });
+    // Lo que manda de verdad el backend (HandicapUpdateLaunchedDTO): sin `status`
+    api.mockResolvedValue({ id: 'u-1', origin: 'ORGANIZER', started_at: 'x', resumed: true });
 
-    expect(await repo.launchHandicapUpdate('c-1')).toEqual({ status: 'IN_PROGRESS', resumed: true });
+    expect(await repo.launchHandicapUpdate('c-1')).toEqual({ resumed: true });
     expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/handicap-updates', { method: 'POST' });
   });
 

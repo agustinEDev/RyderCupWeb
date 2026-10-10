@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo } from './horaDelCampo';
+import { aIsoConHuso, aEntradaDelCampo, horaEnElCampo, esZonaValida } from './horaDelCampo';
 
 /**
  * D4 (FE #824, PR 5): la actualización se programa en la HORA DEL CAMPO
@@ -19,6 +19,28 @@ describe('horaDelCampo (FE #824)', () => {
     ['2030-10-12T03:00', 'UTC', '2030-10-12T03:00:00.000Z'],
   ])('%s en %s es %s', (local, zona, utc) => {
     expect(new Date(aIsoConHuso(local, zona)).toISOString()).toBe(utc);
+  });
+
+  it.each([
+    // Hueco de primavera: esa hora no existe en el campo
+    ['2030-03-31T02:30', 'Europe/Madrid'],
+    ['2030-03-10T02:30', 'America/New_York'],
+  ])('%s en %s no existe: no es una fecha (revisor)', (local, zona) => {
+    expect(aIsoConHuso(local, zona)).toBeNull();
+  });
+
+  it.each([
+    // Hora repetida de otoño: siempre la primera vez que pasa
+    ['2030-10-27T02:30', 'Europe/Madrid', '2030-10-27T02:30:00+02:00'],
+    ['2030-11-03T01:30', 'America/New_York', '2030-11-03T01:30:00-04:00'],
+  ])('%s en %s se repite: la primera (revisor)', (local, zona, iso) => {
+    expect(aIsoConHuso(local, zona)).toBe(iso);
+  });
+
+  it('una zona válida se reconoce y una inventada no (para no llamarla «del campo»)', () => {
+    expect(esZonaValida('Europe/Madrid')).toBe(true);
+    expect(esZonaValida('Marte/Olympus')).toBe(false);
+    expect(esZonaValida(null)).toBe(false);
   });
 
   it('el ISO lleva el desfase del campo, no Z', () => {

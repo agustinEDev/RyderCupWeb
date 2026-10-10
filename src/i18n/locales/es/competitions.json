@@ -359,7 +359,9 @@
       "overall": {
         "ACCUMULATED": "Acumulada",
         "BEST_CARD": "Mejor tarjeta"
-      }
+      },
+      "equalCategoriesSplit_one": "{{count}} categoría igual: {{limites}}",
+      "equalCategoriesSplit_other": "{{count}} categorías iguales, repartidas: {{limites}}"
     },
     "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
@@ -457,7 +459,8 @@
       "playersUnavailable": "No se ha podido cargar la lista de inscritos. Vuelve a abrir la competición para intentarlo de nuevo."
     },
     "fixedHandicap": "{{handicap}} · {{categoria}}.ª",
-    "fixedHandicapNoCategory": "{{handicap}}"
+    "fixedHandicapNoCategory": "{{handicap}}",
+    "missingHandicapBadge": "Sin hándicap"
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -621,6 +624,10 @@
     "scheduleAt": "Fecha y hora, en la hora del campo ({{zona}})",
     "scheduleSave": "Programar",
     "cancel": "Cancelar",
-    "error": "No se ha podido hacer. Inténtalo otra vez."
+    "error": "No se ha podido hacer. Inténtalo otra vez.",
+    "scheduledDevice": "Programada: {{cuando}}, hora de este dispositivo (el campo no tiene zona horaria).",
+    "scheduleAtDevice": "Fecha y hora, en la hora de este dispositivo (el campo no tiene zona horaria)",
+    "openUntilDevice": "Se puede hasta el {{cuando}} (hora de este dispositivo).",
+    "timeDoesNotExist": "Esa hora no existe en el campo por el cambio de hora: elige otra."
   }
 }

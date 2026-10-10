@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
@@ -109,6 +109,13 @@ const CompetitionDetail = () => {
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
   const [irASinFranja, setIrASinFranja] = useState(0);
+  // Para releer los hándicaps sin pisar otra competición, y saber cuándo acaba
+  // una actualización (FE #824, PR 5)
+  const idActual = useRef(id);
+  const estadoDeLaActualizacion = useRef(null);
+  useEffect(() => {
+    idActual.current = id;
+  }, [id]);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
@@ -390,22 +397,37 @@ const CompetitionDetail = () => {
   // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
   // completa: la tarjeta lo pide al lanzar o programar, y cada 15 s mientras
   // hay una en marcha (FE #824, PR 5)
+  // Las inscripciones (hándicap fijado y categoría) solo cambian al acabar una
+  // actualización: releerlas cada 15 s mientras dura eran peticiones de más
+  // (revisor). Y una respuesta de otra competición (se cambió de ruta) no pisa
   const releerHandicaps = useCallback(() => {
+    const deEsta = id;
     getCompetitionDetailUseCase
-      .execute(id)
-      .then((data) =>
+      .execute(deEsta)
+      .then((data) => {
+        if (deEsta !== idActual.current) return;
+        const estaba = estadoDeLaActualizacion.current;
+        estadoDeLaActualizacion.current = data.handicapUpdate?.status ?? null;
         setCompetition((prev) => ({
           ...prev,
           handicapUpdate: data.handicapUpdate,
           handicapUpdateWindow: data.handicapUpdateWindow,
-        }))
-      )
+        }));
+        if (estadoDeLaActualizacion.current !== 'IN_PROGRESS' || estaba !== 'IN_PROGRESS') {
+          return listEnrollmentsUseCase
+            .execute(deEsta)
+            .then((lista) => deEsta === idActual.current && setEnrollments(lista));
+        }
+        return undefined;
+      })
       .catch((e) => console.error('Error reloading handicap updates:', e));
-    listEnrollmentsUseCase
-      .execute(id)
-      .then(setEnrollments)
-      .catch((e) => console.error('Error reloading enrollments:', e));
   }, [id]);
+
+  // Lo último que se sabe de la actualización, para notar cuándo acaba
+  const estadoCargado = competition?.handicapUpdate?.status ?? null;
+  useEffect(() => {
+    estadoDeLaActualizacion.current = estadoCargado;
+  }, [estadoCargado]);
 
   const confirmarCapitanes = async (capitanes) => {
     const cerraba = competition.status === 'ACTIVE';
@@ -577,6 +599,13 @@ const CompetitionDetail = () => {
     try {
       await setCustomHandicapUseCase.execute(competition.id, enrollmentId, value);
       customToast.success(t('detail.handicapUpdated'));
+      // Con su personalizado ya no le falta: deja de estar marcado (revisor)
+      const suyo = enrollments.find((e) => e.id === enrollmentId)?.userId;
+      setSinHandicap((s) => {
+        const sin = new Set(s);
+        sin.delete(suyo);
+        return sin;
+      });
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
       setEditingHandicapId(null);
@@ -1305,7 +1334,18 @@ const CompetitionDetail = () => {
                         <span className="text-gray-500 text-sm">{t('detail.settings.categories')}</span>
                         <p className="text-gray-900 font-medium">
                           {competition.strokePlay.categoryCount != null
-                            ? t('detail.settings.equalCategories', { count: competition.strokePlay.categoryCount })
+                            ? t(
+                                // Ya repartidas (desde el cierre), no «se reparten al cerrar» (revisor)
+                                competition.strokePlay.categoryLimits.length > 0
+                                  ? 'detail.settings.equalCategoriesSplit'
+                                  : 'detail.settings.equalCategories',
+                                {
+                                  count: competition.strokePlay.categoryCount,
+                                  limites: competition.strokePlay.categoryLimits
+                                    .map((l) => l.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))
+                                    .join(' · '),
+                                }
+                              )
                             : competition.strokePlay.categoryLimits.length > 0
                               ? t('detail.settings.categoryLimits', {
                                   limites: competition.strokePlay.categoryLimits
@@ -1510,6 +1550,12 @@ const CompetitionDetail = () => {
                                 className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-medium max-w-full"
                               >
                                 <span className="truncate min-w-0">{equipoDe(enrollment.userId)}</span>
+                              </span>
+                            )}
+                            {/* Que se vea a quién le falta, no solo en un atributo (revisor) */}
+                            {sinHandicap.has(enrollment.userId) && (
+                              <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
+                                {t('detail.missingHandicapBadge')}
                               </span>
                             )}
                             <div className="flex items-center gap-2 mt-1">

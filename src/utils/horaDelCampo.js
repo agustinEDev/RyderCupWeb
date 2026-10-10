@@ -11,6 +11,9 @@
 const ENTRADA = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 const dos = (n) => String(n).padStart(2, '0');
 
+/** Si `Intl` conoce la zona: si no, no se le puede llamar «la del campo». */
+export const esZonaValida = (zona) => Boolean(zona) && zonaValida(zona) === zona;
+
 const zonaValida = (zona) => {
   if (!zona) return undefined;
   try {
@@ -52,7 +55,9 @@ const conSigno = (minutos) => {
 
 /**
  * «2030-07-12T03:00» en la hora del campo → «2030-07-12T03:00:00+02:00».
- * Null si lo escrito no es una fecha y hora.
+ * Null si lo escrito no es una fecha y hora, o si esa hora no existe en el
+ * campo (el hueco del cambio de hora de primavera). Si se repite (otoño), la
+ * primera vez que pasa (revisor de la PR 5).
  */
 export const aIsoConHuso = (entrada, zonaDelCampo) => {
   const partes = ENTRADA.exec(entrada ?? '');
@@ -64,11 +69,15 @@ export const aIsoConHuso = (entrada, zonaDelCampo) => {
     const local = new Date(y, mo - 1, d, h, mi);
     return `${entrada}:00${conSigno(-local.getTimezoneOffset())}`;
   }
-  // Dos pasadas: el desfase en la hora aproximada y, con él, el de la de verdad
-  // (por si en medio hay un cambio de hora)
-  const primero = desfase(pared, zona);
-  const segundo = desfase(pared - primero * 60000, zona);
-  return `${entrada}:00${conSigno(segundo)}`;
+  // Los desfases que la zona tiene alrededor de esa hora (antes y después de un
+  // posible cambio): vale el que, aplicado, da justo esa hora de pared
+  const candidatos = [...new Set([desfase(pared - 86400000, zona), desfase(pared + 86400000, zona)])];
+  const validos = candidatos
+    .map((d) => ({ d, instante: pared - d * 60000 }))
+    .filter(({ d, instante }) => desfase(instante, zona) === d)
+    .sort((a, b) => a.instante - b.instante);
+  if (validos.length === 0) return null;
+  return `${entrada}:00${conSigno(validos[0].d)}`;
 };
 
 /** Un instante, escrito en la hora del campo para un `<input type="datetime-local">`. */

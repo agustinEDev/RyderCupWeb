@@ -359,7 +359,9 @@
       "overall": {
         "ACCUMULATED": "Accumulated",
         "BEST_CARD": "Best card"
-      }
+      },
+      "equalCategoriesSplit_one": "{{count}} equal category: {{limites}}",
+      "equalCategoriesSplit_other": "{{count}} equal categories, split: {{limites}}"
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
@@ -457,7 +459,8 @@
       "playersUnavailable": "The list of enrolled players could not be loaded. Open the competition again to retry."
     },
     "fixedHandicap": "{{handicap}} · category {{categoria}}",
-    "fixedHandicapNoCategory": "{{handicap}}"
+    "fixedHandicapNoCategory": "{{handicap}}",
+    "missingHandicapBadge": "No handicap"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -621,6 +624,10 @@
     "scheduleAt": "Date and time, in course time ({{zona}})",
     "scheduleSave": "Schedule",
     "cancel": "Cancel",
-    "error": "It could not be done. Try again."
+    "error": "It could not be done. Try again.",
+    "scheduledDevice": "Scheduled: {{cuando}}, this device's time (the course has no time zone).",
+    "scheduleAtDevice": "Date and time, in this device's time (the course has no time zone)",
+    "openUntilDevice": "Available until {{cuando}} (this device's time).",
+    "timeDoesNotExist": "That time does not exist at the course because of the clock change: pick another."
   }
 }

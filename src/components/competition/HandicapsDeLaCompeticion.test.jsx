@@ -172,7 +172,7 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
 
   it('14: programar, en la hora del campo y con su huso', async () => {
     const releer = pinta();
-    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeEnabled());
 
     fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
     fireEvent.change(await screen.findByLabelText(/^handicaps\.scheduleAt/), { target: { value: '2030-10-12T03:00' } });
@@ -185,7 +185,7 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
   it('14b: si el servidor no lo acepta, su motivo y el formulario sigue', async () => {
     mockProgramar.mockRejectedValue(new Error('Demasiado justo: prográmala con al menos 2 minutos de margen.'));
     pinta();
-    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeEnabled());
 
     fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
     fireEvent.change(await screen.findByLabelText(/^handicaps\.scheduleAt/), { target: { value: '2030-10-12T03:00' } });
@@ -195,8 +195,67 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(screen.getByLabelText(/^handicaps\.scheduleAt/)).toHaveValue('2030-10-12T03:00');
   });
 
+  it('15: sin zona del campo, se dice que es la hora del dispositivo (revisor)', async () => {
+    mockCampos.mockResolvedValue([{ golf_course: { id: 'g-1', name: 'Sin coordenadas', timezone: null } }]);
+    pinta({ handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } });
+
+    expect(await screen.findByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledDevice/);
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
+    expect(screen.getByLabelText(/^handicaps\.scheduleAtDevice/)).toBeInTheDocument();
+  });
+
+  it('15b: si los campos no se pudieron leer, también', async () => {
+    mockCampos.mockRejectedValue(new Error('sin red'));
+    pinta();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'handicaps.schedule' }));
+
+    expect(await screen.findByLabelText(/^handicaps\.scheduleAtDevice/)).toBeInTheDocument();
+  });
+
+  it('15c: hasta saber la zona no se puede abrir el programador (revisor)', async () => {
+    mockCampos.mockReturnValue(new Promise(() => {}));
+    pinta();
+
+    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+  });
+
+  it('15d: con la ventana cerrada tampoco se programa', async () => {
+    pinta({ handicapUpdateWindow: { open: false, closesAt: null, reason: 'Ya no quedan jornadas por jugar.', scheduledAt: null } });
+    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+
+    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+  });
+
+  it('15e: una hora que no existe en el campo (cambio de hora) no se puede guardar', async () => {
+    pinta();
+    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole('button', { name: 'handicaps.schedule' }));
+
+    fireEvent.change(await screen.findByLabelText(/^handicaps\.scheduleAt/), { target: { value: '2030-03-31T02:30' } });
+
+    expect(screen.getByRole('button', { name: 'handicaps.scheduleSave' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('handicaps.timeDoesNotExist');
+  });
+
+  it('12d: si lanzar falla (otra en marcha), se relee igual', async () => {
+    mockLanzar.mockRejectedValue(new Error('Ya se están actualizando los hándicaps.'));
+    const releer = pinta();
+
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.update' }));
+
+    await waitFor(() => expect(releer).toHaveBeenCalled());
+  });
+
+  it('el estado se anuncia al cambiar (lectores de pantalla)', async () => {
+    pinta({ handicapUpdate: { status: 'STOPPED', origin: 'x', startedAt: 'x', finishedAt: null, pendingPlayers: [] } });
+
+    expect(await screen.findByTestId('handicaps-estado')).toHaveAttribute('aria-live', 'polite');
+  });
+
   it('14c: sin fecha no se puede guardar', async () => {
     pinta();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeEnabled());
 
     fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
 
