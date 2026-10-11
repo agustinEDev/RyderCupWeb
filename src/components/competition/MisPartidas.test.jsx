@@ -38,7 +38,7 @@ describe('MisPartidas (FE #824, PR 6)', () => {
       mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('ana', 'bea'), jugador('bea', 'cris'), jugador('cris', 'ana')]),
       mia('r2', '2030-10-13', 'AFTERNOON', 1, '12:00', [jugador('ana', null)]),
     ]);
-    render(<MisPartidas competitionId="c-1" userId="ana" version="v" />);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="v" />);
 
     const lineas = await screen.findAllByTestId(/^mi-partida-/);
     expect(mockMias).toHaveBeenCalledWith('c-1');
@@ -53,12 +53,12 @@ describe('MisPartidas (FE #824, PR 6)', () => {
 
   it('sin partidas, o si no se pudieron leer, no se pinta nada', async () => {
     mockMias.mockResolvedValueOnce([]);
-    const { container, rerender } = render(<MisPartidas competitionId="c-1" userId="ana" version="1" />);
+    const { container, rerender } = render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="1" />);
     await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(1));
     expect(container).toBeEmptyDOMElement();
 
     mockMias.mockRejectedValueOnce(new Error('sin cobertura'));
-    rerender(<MisPartidas competitionId="c-1" userId="ana" version="2" />);
+    rerender(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="2" />);
     await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(2));
     expect(container).toBeEmptyDOMElement();
   });
@@ -67,8 +67,8 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     let soltarLaVieja;
     mockMias.mockReturnValueOnce(new Promise((r) => (soltarLaVieja = r)));
     mockMias.mockResolvedValueOnce([mia('r2', '2030-10-13', 'AFTERNOON', 1, '12:00', [jugador('ana', 'bea'), jugador('bea', 'ana')])]);
-    const { rerender } = render(<MisPartidas competitionId="c-1" userId="ana" version="1" />);
-    rerender(<MisPartidas competitionId="c-1" userId="ana" version="2" />);
+    const { rerender } = render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="1" />);
+    rerender(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="2" />);
     expect(await screen.findByTestId('mi-partida-r2')).toBeInTheDocument();
 
     await act(async () => soltarLaVieja([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('ana', 'bea'), jugador('bea', 'ana')])]));
@@ -79,10 +79,10 @@ describe('MisPartidas (FE #824, PR 6)', () => {
 
   it('se relee cuando cambia la versión (plazas, partidas)', async () => {
     mockMias.mockResolvedValue([]);
-    const { rerender } = render(<MisPartidas competitionId="c-1" userId="ana" version="1" />);
+    const { rerender } = render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="1" />);
     await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(1));
 
-    rerender(<MisPartidas competitionId="c-1" userId="ana" version="2" />);
+    rerender(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="2" />);
 
     await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(2));
   });

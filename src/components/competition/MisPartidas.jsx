@@ -13,9 +13,10 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
  * @param {string} props.competitionId
  * @param {string} props.userId - Quién mira
  * @param {string|number} props.version - Cambia cuando cambian plazas o partidas
+ * @param {(dia: string) => string} props.fecha - «sáb 12 oct», la de las franjas
  */
-const MisPartidas = ({ competitionId, userId, version }) => {
-  const { t, i18n } = useTranslation('schedule');
+const MisPartidas = ({ competitionId, userId, version, fecha }) => {
+  const { t } = useTranslation('schedule');
   const [mias, setMias] = useState([]);
   const lecturas = useLaMasNueva();
 
@@ -27,14 +28,6 @@ const MisPartidas = ({ competitionId, userId, version }) => {
   }, [competitionId, version, lecturas]);
 
   if (mias.length === 0) return null;
-
-  const fecha = (dia) => {
-    try {
-      return new Date(`${dia}T00:00:00`).toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' });
-    } catch {
-      return dia;
-    }
-  };
 
   return (
     <ul className="mb-3 space-y-1 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">

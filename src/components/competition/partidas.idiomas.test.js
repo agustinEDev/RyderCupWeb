@@ -37,6 +37,10 @@ describe('los textos de las partidas (FE #824, PR 6)', () => {
     const faltan = [
       ...sueltas.filter((c) => !existe(textos.partidas, c)).map((c) => `partidas.${c}`),
       ...errores.filter((c) => !existe(textos.partidas?.errors, c)).map((c) => `partidas.errors.${c}`),
+      // Sin los nombres de quién falta, su versión sin hueco
+      ...lista('CON_NOMBRES')
+        .filter((c) => !existe(textos.partidas?.errors, `${c}_unnamed`))
+        .map((c) => `partidas.errors.${c}_unnamed`),
       ...deMarcadores.filter((c) => !existe(textos.partidas?.markersErrors, c)).map((c) => `partidas.markersErrors.${c}`),
     ];
     expect(faltan).toEqual([]);

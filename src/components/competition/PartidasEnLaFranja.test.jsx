@@ -81,7 +81,7 @@ const vista = (extra = {}) => ({ roundId: 'r1', editable: true, unassignedPlayer
 const FRANJA = { id: 'r1', sessionType: 'MORNING', roundDate: '2030-10-12', teeSheet: { groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'] } };
 
 const pintar = (props = {}) =>
-  render(<PartidasEnLaFranja franja={FRANJA} nombre="Mañana · sáb 12 oct" userId={YO} organiza={false} version={0} {...props} />);
+  render(<PartidasEnLaFranja salidas={4} franja={FRANJA} nombre="Mañana · sáb 12 oct" userId={YO} organiza={false} version={0} {...props} />);
 const desplegar = async () => {
   fireEvent.click(screen.getByRole('button', { name: /partidas.showFor/ }));
   await waitFor(() => expect(mockLeer).toHaveBeenCalled());
@@ -223,7 +223,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith(texto));
   });
 
-  it('9c: sin los nombres de quién falta, el texto del servidor (no un hueco vacío)', async () => {
+  it('9c: sin los nombres de quién falta, un texto propio sin el hueco (el del servidor no está traducido)', async () => {
     mockLeer.mockResolvedValue(vista({ groups: [] }));
     mockGenerar.mockRejectedValue(Object.assign(new Error('server text'), { errorCode: 'PLAYERS_WITHOUT_TEE', data: { players: [] } }));
     pintar({ organiza: true });
@@ -231,7 +231,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'partidas.generate' }));
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('server text'));
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partidas.errors.PLAYERS_WITHOUT_TEE_unnamed'));
   });
 
   it('9b: un error sin código conocido, el texto del servidor', async () => {
@@ -365,6 +365,31 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     expect(mockToast.success).toHaveBeenCalledWith('partidas.markersSaved');
   });
 
+  it('si volver a generar falla, la confirmación se cierra (lo pintado se ha releído)', async () => {
+    mockGenerar.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_ALREADY_STARTED' }));
+    pintar({ organiza: true });
+    await desplegar();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'partidas.regenerate' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partidas.regenerateYes' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText(/partidas.regenerateConfirm/)).toBeNull());
+  });
+
+  it('si guardar los marcadores falla, el editor se cierra', async () => {
+    mockMarcadores.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'INVALID_MARKERS' }));
+    pintar({ organiza: true });
+    await desplegar();
+
+    const g1 = await screen.findByTestId('partida-g1');
+    fireEvent.click(within(g1).getByRole('button', { name: 'partidas.markers {"numero":1}' }));
+    fireEvent.click(within(g1).getByRole('button', { name: 'partidas.markersSave' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partidas.errors.INVALID_MARKERS'));
+    await waitFor(() => expect(within(g1).queryByRole('button', { name: 'partidas.markersSave' })).toBeNull());
+  });
+
   it('14b: una incompleta no tiene «Marcadores»', async () => {
     pintar({ organiza: true });
     await desplegar();
@@ -441,7 +466,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     mockReordenar.mockReturnValueOnce(new Promise((r) => (soltarElCambio = r)));
     fireEvent.click(within(screen.getByTestId('partida-g2')).getByRole('button', { name: 'partidas.up {"numero":2}' }));
     // Cambian las plazas mientras tanto: esa lectura sale después y llega antes
-    rerender(<PartidasEnLaFranja franja={FRANJA} userId={YO} organiza version={1} />);
+    rerender(<PartidasEnLaFranja salidas={4} franja={FRANJA} userId={YO} organiza version={1} />);
     await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
     await act(async () => {});
 
@@ -452,12 +477,12 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
 
   it('17: si cambian las plazas, desplegadas se releen; plegadas, no', async () => {
     const { rerender } = pintar();
-    rerender(<PartidasEnLaFranja franja={FRANJA} userId={YO} organiza={false} version={1} />);
+    rerender(<PartidasEnLaFranja salidas={4} franja={FRANJA} userId={YO} organiza={false} version={1} />);
     expect(mockLeer).not.toHaveBeenCalled();
 
     await desplegar();
     const lecturas = mockLeer.mock.calls.length;
-    rerender(<PartidasEnLaFranja franja={FRANJA} userId={YO} organiza={false} version={2} />);
+    rerender(<PartidasEnLaFranja salidas={4} franja={FRANJA} userId={YO} organiza={false} version={2} />);
 
     await waitFor(() => expect(mockLeer.mock.calls.length).toBe(lecturas + 1));
   });

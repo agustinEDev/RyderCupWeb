@@ -352,7 +352,9 @@
       "ALREADY_IN_GROUP": "Ya está en esa partida.",
       "GROUP_NOT_IN_WINDOW": "Esa partida no es de esta franja.",
       "PLAYER_NOT_IN_WINDOW": "Ese jugador no tiene plaza en esta franja.",
-      "INVALID_GROUP_ORDER": "El orden no cuadra con las partidas: se vuelven a leer."
+      "INVALID_GROUP_ORDER": "El orden no cuadra con las partidas: se vuelven a leer.",
+      "PLAYERS_WITHOUT_TEE_unnamed": "No se pueden generar: hay jugadores sin barras de salida en este campo.",
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "No se pueden generar: hay jugadores sin hándicap."
     },
     "showFor": "Partidas de {{franja}}"
   }

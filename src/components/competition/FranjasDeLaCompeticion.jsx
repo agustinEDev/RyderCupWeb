@@ -540,7 +540,7 @@ const FranjasDeLaCompeticion = ({
 
       {/* Las partidas (PR 6): la mía de cada jornada, releída con cada lectura de
           la agenda. Tras la primera: antes se pedía dos veces al abrir la ficha */}
-      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} version={`${lecturas}|${cambiosEnPartidas}`} />}
+      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} fecha={fecha} version={`${lecturas}|${cambiosEnPartidas}`} />}
 
       {cupoCorto && (
         <p data-testid="franjas-cupo-corto" className="mb-3 text-sm text-amber-800">
@@ -555,6 +555,8 @@ const FranjasDeLaCompeticion = ({
             <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
               {delDia.map((f) => {
                 const hoja = f.teeSheet;
+                // Las del servidor; las cuentas propias, si no las manda
+                const salidas = hoja ? hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja)) : 0;
                 return (
                   <li key={f.id} data-testid={`franja-${f.id}`} className="space-y-1 p-3 text-sm">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -604,8 +606,7 @@ const FranjasDeLaCompeticion = ({
                         </p>
                         <p className="text-gray-700">
                           {t('franjas.capacity', {
-                            // Las del servidor; las cuentas propias, si no las manda
-                            count: hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja)),
+                            count: salidas,
                             tamano: hoja.groupSize,
                             cupo: hoja.capacity ?? cupoDeLaHoja(deTeeSheet(hoja)),
                           })}
@@ -649,7 +650,7 @@ const FranjasDeLaCompeticion = ({
                           <PartidasEnLaFranja
                             franja={f}
                             nombre={`${etiqueta(f).franja} · ${etiqueta(f).dia}`}
-                            salidas={hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja))}
+                            salidas={salidas}
                             userId={userId}
                             organiza={organizaPartidas}
                             version={lecturas}

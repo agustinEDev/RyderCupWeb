@@ -10,6 +10,7 @@ import {
   deleteTeeGroupsUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
+import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
 import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 
@@ -31,7 +32,7 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
  * @param {Object} props.franja - La franja (Round) con su `teeSheet`
  * @param {string} [props.nombre] - «Mañana · sáb 12 oct»: cada desplegable dice de qué franja es
  * @param {() => void} [props.onCambio] - Tras un cambio que sale bien (para releer «Tu partida»)
- * @param {number} [props.salidas] - Cuántas salidas tiene la hoja
+ * @param {number} props.salidas - Cuántas salidas tiene la hoja
  * @param {string} [props.userId] - Quién mira
  * @param {boolean} props.organiza - Si quien mira la organiza
  * @param {number} props.version - Sube cuando cambian las plazas: se relee
@@ -98,7 +99,6 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
   }, [abierta, version, leer]);
 
   const tamano = franja.teeSheet?.groupSize ?? 4;
-  const huecos = salidas ?? franja.teeSheet?.teeTimes?.length ?? 0;
   const grupos = useMemo(() => vista?.groups ?? [], [vista]);
   const nombres = useMemo(
     () => new Map(grupos.flatMap((g) => g.players.map((p) => [p.userId, p.name]))),
@@ -106,14 +106,14 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
   );
   const editable = organiza && !sinCargar && vista?.editable === true;
 
-  const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
   const mensaje = (error) => {
     const codigo = error?.errorCode;
-    const nombres = (error?.data?.players || []).map((p) => p.name).filter(Boolean);
-    // Sin nombres, el texto del servidor: el nuestro dejaría un hueco
-    if (CON_NOMBRES.includes(codigo) && nombres.length > 0) {
-      return t(`partidas.errors.${codigo}`, { count: error.data.players.length, jugadores: nombres.join(', ') });
+    if (CON_NOMBRES.includes(codigo)) {
+      const nombres = (error.data?.players || []).map((p) => p.name).filter(Boolean);
+      // Sin nombres, uno propio sin el hueco: el del servidor no está traducido
+      return nombres.length > 0
+        ? t(`partidas.errors.${codigo}`, { count: error.data.players.length, jugadores: nombres.join(', ') })
+        : t(`partidas.errors.${codigo}_unnamed`);
     }
     if (CON_TEXTO.includes(codigo)) return t(`partidas.errors.${codigo}`);
     return error?.message || t('partidas.error');
@@ -151,6 +151,9 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
       if (!aplicada) await leer();
     } catch (error) {
       customToast.error(mensaje(error));
+      // Lo abierto se cierra: se relee, y lo que confirmaba o editaba ya no vale
+      setConfirmando(null);
+      setMarcando(null);
       await leer();
     } finally {
       setOcupado(false);
@@ -165,12 +168,8 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
     if (!destino) return;
     const [groupId, swapWithUserId] = destino === NUEVA ? [] : destino.split('|');
     cambiar(
-      () =>
-        moveTeeGroupPlayerUseCase.execute(franja.id, {
-          userId: jugador,
-          ...(groupId ? { groupId } : {}),
-          ...(swapWithUserId ? { swapWithUserId } : {}),
-        }),
+      // Lo que no viene lo quita el caso de uso
+      () => moveTeeGroupPlayerUseCase.execute(franja.id, { userId: jugador, groupId, swapWithUserId }),
       'partidas.moved',
       null,
       { avisarSiSeAdelantan: true }
@@ -199,7 +198,7 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
     });
 
   const opcionesDeDestino = (jugador, { conIntercambios }) => {
-    const d = destinosDelJugador(vista, jugador, { tamano, salidas: huecos });
+    const d = destinosDelJugador(vista, jugador, { tamano, salidas });
     return [
       ...d.conSitio.map((g) => ({ valor: g.id, texto: t('partidas.toGroup', { numero: g.number, hora: g.teeTime }) })),
       ...(conIntercambios
@@ -397,7 +396,7 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
                         className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-gray-700"
                       >
                         <span className="font-medium text-gray-900">{p.name}</span>
-                        <span>{unDecimal(p.handicap)}</span>
+                        <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
                         <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
                         {p.marksUserId && (
                           <span className="text-gray-500">
