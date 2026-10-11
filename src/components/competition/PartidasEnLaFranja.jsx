@@ -29,6 +29,8 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
  *
  * @param {Object} props
  * @param {Object} props.franja - La franja (Round) con su `teeSheet`
+ * @param {string} [props.nombre] - «Mañana · sáb 12 oct»: cada desplegable dice de qué franja es
+ * @param {() => void} [props.onCambio] - Tras un cambio que sale bien (para releer «Tu partida»)
  * @param {number} [props.salidas] - Cuántas salidas tiene la hoja
  * @param {string} [props.userId] - Quién mira
  * @param {boolean} props.organiza - Si quien mira la organiza
@@ -63,7 +65,7 @@ const secundario = `${boton} border-gray-300 bg-white text-gray-700 hover:bg-gra
 const icono = 'flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-50';
 const selector = 'min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs';
 
-const PartidasEnLaFranja = ({ franja, salidas, userId, organiza, version }) => {
+const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version, onCambio }) => {
   const { t, i18n } = useTranslation('schedule');
   const [abierta, setAbierta] = useState(false);
   const [vista, setVista] = useState(null);
@@ -120,8 +122,10 @@ const PartidasEnLaFranja = ({ franja, salidas, userId, organiza, version }) => {
   /**
    * Manda un cambio y pinta la vista que contesta. Si falla, el motivo y se
    * relee: lo pintado estaba viejo (otro organizador, o ya salió la primera).
+   * Lo de «salen antes» es solo al mover: cambiar el orden adelanta una a
+   * propósito (revisor).
    */
-  const cambiar = async (accion, aviso, alAcabar) => {
+  const cambiar = async (accion, aviso, alAcabar, { avisarSiSeAdelantan = false } = {}) => {
     // Un doble toque no manda dos: React pinta los botones desactivados antes
     // del segundo
     setOcupado(true);
@@ -129,18 +133,22 @@ const PartidasEnLaFranja = ({ franja, salidas, userId, organiza, version }) => {
     const turno = lecturas.turno();
     try {
       const nueva = await accion();
-      if (nueva && lecturas.aplicar(turno)) {
+      const aplicada = nueva && lecturas.aplicar(turno);
+      if (aplicada) {
         setVista(nueva);
         setSinCargar(false);
       }
       alAcabar?.();
       customToast.success(t(aviso));
-      const adelantadas = nueva ? partidasQueSeAdelantan(antes, nueva.groups) : null;
+      onCambio?.();
+      const adelantadas = aplicada && avisarSiSeAdelantan ? partidasQueSeAdelantan(antes, nueva.groups) : null;
       if (adelantadas) {
         customToast.info(t('partidas.earlier', { ...adelantadas, count: adelantadas.hasta - adelantadas.desde + 1 }));
       }
-      // Borrar no contesta con la vista
-      if (!nueva) await leer();
+      // Borrar no contesta con la vista; y si mientras tanto se aplicó una
+      // lectura que salió antes de acabar, lo pintado puede ser de antes del
+      // cambio (revisor)
+      if (!aplicada) await leer();
     } catch (error) {
       customToast.error(mensaje(error));
       await leer();
@@ -163,7 +171,9 @@ const PartidasEnLaFranja = ({ franja, salidas, userId, organiza, version }) => {
           ...(groupId ? { groupId } : {}),
           ...(swapWithUserId ? { swapWithUserId } : {}),
         }),
-      'partidas.moved'
+      'partidas.moved',
+      null,
+      { avisarSiSeAdelantan: true }
     );
   };
   const reordenar = (de, a) => {
@@ -319,6 +329,7 @@ const PartidasEnLaFranja = ({ franja, salidas, userId, organiza, version }) => {
       <button
         type="button"
         aria-expanded={abierta}
+        aria-label={t('partidas.showFor', { franja: nombre })}
         onClick={() => setAbierta((a) => !a)}
         className="flex min-h-11 items-center gap-1 text-sm font-medium text-primary"
       >

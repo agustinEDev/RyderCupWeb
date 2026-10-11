@@ -22,6 +22,7 @@ const mockEsperar = vi.fn();
 const mockDejarDeEsperar = vi.fn();
 const mockPartidas = vi.fn();
 const mockMias = vi.fn();
+const mockGenerar = vi.fn();
 vi.mock('../../composition', () => ({
   getScheduleUseCase: { execute: (...a) => mockLeer(...a) },
   getCompetitionGolfCoursesUseCase: {
@@ -38,7 +39,7 @@ vi.mock('../../composition', () => ({
   leaveWaitingListUseCase: { execute: (...a) => mockDejarDeEsperar(...a) },
   getTeeGroupsUseCase: { execute: (...a) => mockPartidas(...a) },
   getMyTeeGroupsUseCase: { execute: (...a) => mockMias(...a) },
-  generateTeeGroupsUseCase: { execute: vi.fn() },
+  generateTeeGroupsUseCase: { execute: (...a) => mockGenerar(...a) },
   moveTeeGroupPlayerUseCase: { execute: vi.fn() },
   reorderTeeGroupsUseCase: { execute: vi.fn() },
   setTeeGroupMarkersUseCase: { execute: vi.fn() },
@@ -100,7 +101,7 @@ const MIA = {
   roundId: 'm',
   roundDate: '2030-10-12',
   sessionType: 'MORNING',
-  group: { id: 'g1', number: 1, teeTime: '08:00', incomplete: false, players: [{ userId: YO, name: 'Yo', marksUserId: 'ana' }, { userId: 'ana', name: 'Ana', marksUserId: YO }] },
+  group: { id: 'g1', number: 1, teeTime: '08:00', incomplete: false, players: [{ userId: YO, name: 'Yo', handicap: 10, playingHandicap: 9, marksUserId: 'ana' }, { userId: 'ana', name: 'Ana', handicap: 12, playingHandicap: 11, marksUserId: YO }] },
 };
 
 describe('FranjasDeLaCompeticion · partidas (FE #824, PR 6)', () => {
@@ -109,6 +110,7 @@ describe('FranjasDeLaCompeticion · partidas (FE #824, PR 6)', () => {
     mockPartidas.mockReset();
     mockMias.mockReset();
     mockPartidas.mockResolvedValue(VACIA);
+    mockGenerar.mockResolvedValue({ ...VACIA, groups: [MIA.group] });
     mockMias.mockResolvedValue([MIA]);
     mockCoger.mockResolvedValue({});
     mockLeer.mockResolvedValue({
@@ -156,6 +158,17 @@ describe('FranjasDeLaCompeticion · partidas (FE #824, PR 6)', () => {
 
     expect(await screen.findByText('partidas.empty')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'partidas.generate' })).toBeNull();
+  });
+
+  it('tras un cambio en las partidas, «Tu partida» se relee (el organizador también juega)', async () => {
+    pinta({ verPartidas: true, organizaPartidas: true, puedeElegir: false });
+    fireEvent.click((await en('m')).getByRole('button', { name: /partidas.show/ }));
+    await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'partidas.generate' }));
+
+    await waitFor(() => expect(mockGenerar).toHaveBeenCalled());
+    await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(2));
   });
 
   it('17: si el organizador mueve plazas, las partidas desplegadas y las mías se releen', async () => {

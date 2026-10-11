@@ -249,7 +249,7 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     renderPage();
 
     await screen.findByTestId('franja-r1');
-    expect(screen.queryByRole('button', { name: 'partidas.show' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /partidas.show/ })).toBeNull();
   });
 
   it.each(['CLOSED', 'IN_PROGRESS'])('2 (PR 6): %s, cada franja tiene sus partidas y el organizador las arma', async (status) => {
@@ -260,7 +260,7 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     renderPage();
 
     const franja = within(await screen.findByTestId('franja-r1'));
-    fireEvent.click(franja.getByRole('button', { name: 'partidas.show' }));
+    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
 
     expect(await franja.findByRole('button', { name: 'partidas.generate' })).toBeInTheDocument();
   });
@@ -273,7 +273,7 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     renderPage();
 
     await screen.findByTestId('franja-r1');
-    expect(screen.queryByRole('button', { name: 'partidas.show' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /partidas.show/ })).toBeNull();
   });
 
   it('un jugador apuntado no tiene «Ver agenda» (la de la Ryder)', async () => {

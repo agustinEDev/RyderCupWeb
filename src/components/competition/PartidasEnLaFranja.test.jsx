@@ -81,9 +81,9 @@ const vista = (extra = {}) => ({ roundId: 'r1', editable: true, unassignedPlayer
 const FRANJA = { id: 'r1', sessionType: 'MORNING', roundDate: '2030-10-12', teeSheet: { groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'] } };
 
 const pintar = (props = {}) =>
-  render(<PartidasEnLaFranja franja={FRANJA} userId={YO} organiza={false} version={0} {...props} />);
+  render(<PartidasEnLaFranja franja={FRANJA} nombre="Mañana · sáb 12 oct" userId={YO} organiza={false} version={0} {...props} />);
 const desplegar = async () => {
-  fireEvent.click(screen.getByRole('button', { name: /partidas.show/ }));
+  fireEvent.click(screen.getByRole('button', { name: /partidas.showFor/ }));
   await waitFor(() => expect(mockLeer).toHaveBeenCalled());
 };
 
@@ -97,6 +97,8 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
   it('2: plegadas no se piden; al desplegar, cada partida con su hora, jugadores y a quién marca', async () => {
     pintar();
     expect(mockLeer).not.toHaveBeenCalled();
+    // Cada franja tiene el suyo: el nombre dice de cuál es (revisor)
+    expect(screen.getByRole('button', { name: 'partidas.showFor {"franja":"Mañana · sáb 12 oct"}' })).toHaveAttribute('aria-expanded', 'false');
 
     await desplegar();
 
@@ -321,10 +323,14 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     expect(within(g1).queryByRole('button', { name: /partidas.up/ })).toBeNull();
     expect(within(screen.getByTestId('partida-g3')).queryByRole('button', { name: /partidas.down/ })).toBeNull();
 
+    mockReordenar.mockResolvedValueOnce(vista({ groups: [{ ...G2, number: 1, teeTime: '08:00' }, { ...G1, number: 2, teeTime: '08:10' }, G3] }));
     fireEvent.click(within(screen.getByTestId('partida-g2')).getByRole('button', { name: 'partidas.up {"numero":2}' }));
     await waitFor(() => expect(mockReordenar).toHaveBeenCalledWith('r1', ['g2', 'g1', 'g3']));
-    fireEvent.click(within(g1).getByRole('button', { name: 'partidas.down {"numero":1}' }));
-    await waitFor(() => expect(mockReordenar).toHaveBeenLastCalledWith('r1', ['g2', 'g1', 'g3']));
+    // Cambiar el orden adelanta una a propósito: el aviso es solo al mover (revisor)
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('partidas.reordered'));
+    expect(mockToast.info).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByTestId('partida-g1')).getByRole('button', { name: 'partidas.down {"numero":2}' }));
+    await waitFor(() => expect(mockReordenar).toHaveBeenLastCalledWith('r1', ['g2', 'g3', 'g1']));
   });
 
   it('14: «Marcadores»: un selector por jugador; avisa antes de enviar y manda la partida entera', async () => {
@@ -410,6 +416,38 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await act(async () => soltar(vista()));
 
     expect(mockReordenar).toHaveBeenCalledTimes(1);
+  });
+
+  it('avisa al padre de cada cambio que sale bien (para releer «Tu partida»), no de los que fallan', async () => {
+    const onCambio = vi.fn();
+    mockReordenar.mockResolvedValueOnce(vista()).mockRejectedValueOnce(new Error('x'));
+    pintar({ organiza: true, onCambio });
+    await desplegar();
+    const subir = () => within(screen.getByTestId('partida-g2')).getByRole('button', { name: 'partidas.up {"numero":2}' });
+    await screen.findByTestId('partida-g2');
+
+    fireEvent.click(subir());
+    await waitFor(() => expect(onCambio).toHaveBeenCalledTimes(1));
+    fireEvent.click(subir());
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+    expect(onCambio).toHaveBeenCalledTimes(1);
+  });
+
+  it('si mientras se escribe llega una lectura más nueva, se vuelve a leer al acabar', async () => {
+    let soltarElCambio;
+    const { rerender } = pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g2');
+    mockReordenar.mockReturnValueOnce(new Promise((r) => (soltarElCambio = r)));
+    fireEvent.click(within(screen.getByTestId('partida-g2')).getByRole('button', { name: 'partidas.up {"numero":2}' }));
+    // Cambian las plazas mientras tanto: esa lectura sale después y llega antes
+    rerender(<PartidasEnLaFranja franja={FRANJA} userId={YO} organiza version={1} />);
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+
+    await act(async () => soltarElCambio(vista()));
+
+    await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(3));
   });
 
   it('17: si cambian las plazas, desplegadas se releen; plegadas, no', async () => {

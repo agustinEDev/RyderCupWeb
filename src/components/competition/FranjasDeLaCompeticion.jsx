@@ -211,6 +211,8 @@ const FranjasDeLaCompeticion = ({
   const [sinCargar, setSinCargar] = useState(false);
   // Cuántas lecturas buenas lleva: para hacer algo «con lo releído»
   const [lecturas, setLecturas] = useState(0);
+  // Sube con cada cambio en las partidas: «Tu partida» se relee (PR 6, revisor)
+  const [cambiosEnPartidas, setCambiosEnPartidas] = useState(0);
   const [ocupado, setOcupado] = useState(false);
   // Lo que está abierto: una franja nueva, una que se cambia o una que se borra
   const [nueva, setNueva] = useState(null);
@@ -538,7 +540,7 @@ const FranjasDeLaCompeticion = ({
 
       {/* Las partidas (PR 6): la mía de cada jornada, releída con cada lectura de
           la agenda. Tras la primera: antes se pedía dos veces al abrir la ficha */}
-      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} version={lecturas} />}
+      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} version={`${lecturas}|${cambiosEnPartidas}`} />}
 
       {cupoCorto && (
         <p data-testid="franjas-cupo-corto" className="mb-3 text-sm text-amber-800">
@@ -646,10 +648,12 @@ const FranjasDeLaCompeticion = ({
                         {verPartidas && (estoyInscrito || organizaPartidas) && (
                           <PartidasEnLaFranja
                             franja={f}
+                            nombre={`${etiqueta(f).franja} · ${etiqueta(f).dia}`}
                             salidas={hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja))}
                             userId={userId}
                             organiza={organizaPartidas}
                             version={lecturas}
+                            onCambio={() => setCambiosEnPartidas((n) => n + 1)}
                           />
                         )}
                       </>

@@ -282,9 +282,9 @@
     "notLoaded": "The groups could not be loaded.",
     "retry": "Retry",
     "empty": "No groups yet.",
-    "number": "{{numero}} · {{hora}}",
+    "number": "Group {{numero}} · {{hora}}",
     "incomplete": "Incomplete · no marker",
-    "playing": "playing {{juego}}",
+    "playing": "playing hcp {{juego}}",
     "marks": "marks {{jugador}}",
     "unknownPlayer": "Player",
     "order": "Tee-off order",
@@ -339,7 +339,7 @@
       "PLAYERS_WITHOUT_HANDICAP_one": "Groups can't be generated: {{jugadores}} has no handicap.",
       "PLAYERS_WITHOUT_HANDICAP_other": "Groups can't be generated: {{count}} players have no handicap ({{jugadores}}).",
       "GROUPS_WINDOW_CLOSED": "This window's groups can no longer be changed.",
-      "GROUP_ALREADY_STARTED": "That group has already started.",
+      "GROUP_ALREADY_STARTED": "A group in this window has already teed off: its groups can no longer be changed.",
       "COURSE_WITHOUT_TIMEZONE": "This window's course has no time zone: ask the administrator before generating.",
       "NOT_ENOUGH_PLAYERS": "There are not enough players in this window to make groups.",
       "NOT_A_TEE_WINDOW": "This window has no tee sheet.",
@@ -347,12 +347,13 @@
       "GROUP_FULL": "That group is already full.",
       "ORIGIN_WOULD_BE_ALONE": "Their group would be left with one player: swap them with someone instead.",
       "NO_FREE_TEE_TIME": "There are no free tee times left for a new group.",
-      "SWAP_NEEDS_GROUP": "To swap, choose the group.",
+      "SWAP_NEEDS_GROUP": "You can only swap with someone in another group.",
       "SWAP_PLAYER_NOT_IN_GROUP": "That player is no longer in that group.",
       "ALREADY_IN_GROUP": "Already in that group.",
       "GROUP_NOT_IN_WINDOW": "That group is not in this window.",
       "PLAYER_NOT_IN_WINDOW": "That player has no place in this window.",
       "INVALID_GROUP_ORDER": "The order does not match the groups: reloading them."
-    }
+    },
+    "showFor": "Groups of {{franja}}"
   }
 }
