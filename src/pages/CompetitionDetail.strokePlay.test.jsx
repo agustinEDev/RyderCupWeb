@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
@@ -580,6 +580,11 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
     mockListEnrollments.mockResolvedValue(INSCRITOS);
   });
 
+  // Aunque un test con temporizadores falsos falle a medias (CodeRabbit)
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it.each([
     ['un Medal cerrado', { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null, status: 'CLOSED' }],
     ['un Medal en juego', { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null, status: 'IN_PROGRESS' }],
@@ -617,6 +622,9 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
     mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED', handicapUpdateWindow: VENTANA, handicapUpdate: enMarcha }));
     renderPage();
     await screen.findByTestId('handicaps-estado');
+    // Con los temporizadores falsos, React deja los efectos (el reloj del
+    // sondeo) para luego: se vacían antes de avanzar, o el test depende del orden
+    await act(async () => {});
     const fichas = mockGetCompetitionDetail.mock.calls.length;
     const inscripciones = mockListEnrollments.mock.calls.length;
 
@@ -629,7 +637,42 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
     );
     await act(async () => vi.advanceTimersByTime(15000));
     await waitFor(() => expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(inscripciones));
-    vi.useRealTimers();
+  });
+
+  it('si dos lecturas se cruzan, la vieja no pisa a la nueva (CodeRabbit)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    const enMarcha = { status: 'IN_PROGRESS', origin: 'ORGANIZER', startedAt: 'x', finishedAt: null, pendingPlayers: [] };
+    const programada = { ...VENTANA, scheduledAt: '2030-10-12T08:00:00Z' };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED', handicapUpdateWindow: programada, handicapUpdate: enMarcha }));
+    const { cancelScheduledHandicapUpdateUseCase } = await import('../composition');
+    cancelScheduledHandicapUpdateUseCase.execute.mockResolvedValue(undefined);
+    renderPage();
+    await screen.findByTestId('handicaps-estado');
+    // Con los temporizadores falsos, React deja los efectos (el reloj del
+    // sondeo) para luego: se vacían antes de avanzar, o el test depende del orden
+    await act(async () => {});
+    const fichas = mockGetCompetitionDetail.mock.calls.length;
+
+    // La del sondeo sale primero y tarda: trae lo de entonces, aún en marcha
+    let soltarLaVieja;
+    mockGetCompetitionDetail.mockReturnValueOnce(
+      new Promise((resolve) => {
+        soltarLaVieja = () => resolve(competicion({ status: 'CLOSED', handicapUpdateWindow: programada, handicapUpdate: enMarcha }));
+      })
+    );
+    await act(async () => vi.advanceTimersByTime(15000));
+    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBe(fichas + 1));
+
+    // La de anular sale después y llega antes: ya acabó
+    mockGetCompetitionDetail.mockResolvedValue(
+      competicion({ status: 'CLOSED', handicapUpdateWindow: VENTANA, handicapUpdate: { ...enMarcha, status: 'COMPLETED', finishedAt: 'y' } })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.cancelSchedule' }));
+    await waitFor(() => expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed'));
+
+    await act(async () => soltarLaVieja());
+    expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed');
   });
 
   it('releer desde la tarjeta trae lo nuevo de la ficha', async () => {

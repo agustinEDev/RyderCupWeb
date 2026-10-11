@@ -417,13 +417,16 @@ const CompetitionDetail = () => {
   // hay una en marcha (FE #824, PR 5)
   // Las inscripciones (hándicap fijado y categoría) solo cambian al acabar una
   // actualización: releerlas cada 15 s mientras dura eran peticiones de más
-  // (revisor). Y una respuesta de otra competición (se cambió de ruta) no pisa
+  // (revisor). Y una respuesta de otra competición (se cambió de ruta) no pisa,
+  // ni una vieja a otra más nueva si se cruzan (el sondeo y un botón; CodeRabbit)
+  const ultimaLectura = useRef(0);
   const releerHandicaps = useCallback(() => {
     const deEsta = id;
+    const lectura = ++ultimaLectura.current;
     getCompetitionDetailUseCase
       .execute(deEsta)
       .then((data) => {
-        if (deEsta !== idActual.current) return;
+        if (deEsta !== idActual.current || lectura !== ultimaLectura.current) return;
         const estaba = estadoDeLaActualizacion.current;
         estadoDeLaActualizacion.current = data.handicapUpdate?.status ?? null;
         setCompetition((prev) => ({
