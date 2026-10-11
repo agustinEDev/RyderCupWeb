@@ -159,6 +159,7 @@
     "partidaSinNombre": "an earlier match",
     "partidaConNumero": "Match {{numero}} · {{campo}}",
     "soloNumero": "Match {{numero}}",
+    "partidaDeFranja": "Group {{numero}}",
     "perdidos_one": "One hole from {{partida}} could not be saved:",
     "perdidos_other": "{{count}} holes from {{partida}} could not be saved:",
     "perdido": "Hole {{hoyo}} — the server did not accept it",

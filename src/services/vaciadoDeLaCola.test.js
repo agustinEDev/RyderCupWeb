@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../composition', () => ({
   submitHoleScoreUseCase: { execute: vi.fn() },
+  submitTeeGroupHoleScoreUseCase: { execute: vi.fn() },
 }));
 
 // El entorno de este fichero no trae `localStorage`, y la cola vive ahí. Se
@@ -18,7 +19,7 @@ const almacen = (() => {
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: true });
 
-import { submitHoleScoreUseCase } from '../composition';
+import { submitHoleScoreUseCase, submitTeeGroupHoleScoreUseCase } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as cola from '../utils/scoringOfflineQueue';
 import { vaciaLaColaEntera } from './vaciadoDeLaCola';
@@ -542,5 +543,56 @@ describe('vaciaLaColaEntera · qué cuenta como caída de red (FE #521)', () => 
     await vaciaLaColaEntera({ userId: YO });
 
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('vaciaLaColaEntera · partidas de stroke play (FE #824, PR 7)', () => {
+  beforeEach(() => {
+    almacen.clear();
+    vi.clearAllMocks();
+    submitHoleScoreUseCase.execute.mockResolvedValue({});
+    submitTeeGroupHoleScoreUseCase.execute.mockResolvedValue({});
+  });
+
+  it('un golpe de partida va a SU endpoint, nunca al de la Ryder', async () => {
+    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, { tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+
+    const resultado = await vaciaLaColaEntera({ userId: YO });
+
+    expect(submitTeeGroupHoleScoreUseCase.execute).toHaveBeenCalledWith('g-1', 3, { ownScore: 4, markedPlayerId: 'b' });
+    expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
+    expect(resultado.enviadas).toBe(1);
+  });
+
+  it('y uno de la Ryder sigue yendo al suyo, nunca al de partidas', async () => {
+    cola.enqueue('m-1', 3, { ownScore: 4 }, null, YO);
+
+    await vaciaLaColaEntera({ userId: YO });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalledWith('m-1', 3, { ownScore: 4 });
+    expect(submitTeeGroupHoleScoreUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('con la misma política: «aún no abre» se queda en la cola', async () => {
+    submitTeeGroupHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'SCORING_NOT_OPEN_YET' })
+    );
+    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, { tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+
+    await vaciaLaColaEntera({ userId: YO });
+
+    expect(cola.deQuien(YO)).toHaveLength(1);
+  });
+
+  it('un rechazo definitivo se aparta como perdido, con su tipo (el aviso lleva a su pantalla)', async () => {
+    submitTeeGroupHoleScoreUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 403, errorCode: 'NOT_YOUR_MARKED_PLAYER' })
+    );
+    cola.enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, YO, { tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+
+    await vaciaLaColaEntera({ userId: YO });
+
+    expect(cola.deQuien(YO)).toHaveLength(0);
+    expect(golpesPerdidos.pendientes(YO)).toEqual([expect.objectContaining({ matchId: 'g-1', tipo: cola.TIPO_PARTIDA_DE_FRANJA })]);
   });
 });

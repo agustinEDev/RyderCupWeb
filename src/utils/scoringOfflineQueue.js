@@ -16,6 +16,14 @@
 const STORAGE_KEY = 'rydercup-scoring-queue';
 
 /**
+ * Una anotación de una partida de stroke play (FE #824, PR 7). Va por otro
+ * endpoint con el mismo cuerpo: sin esta marca el vaciado la mandaba al de la
+ * Ryder, que la rechazaba con un 404, y se daba por perdida. `matchId` es
+ * entonces el de la partida. Las de la Ryder no llevan tipo, como siempre.
+ */
+export const TIPO_PARTIDA_DE_FRANJA = 'TEE_GROUP';
+
+/**
  * Si una entrada guardada es la misma anotación que la que se busca.
  *
  * El participante se compara normalizando lo que falta: las entradas escritas
@@ -94,7 +102,7 @@ export const enqueue = (
   laPartida = {},
   tocados = null
 ) => {
-  const { matchName = null, matchNumber = null } = laPartida;
+  const { matchName = null, matchNumber = null, tipo = null } = laPartida;
   const queue = getAll();
   const anterior = queue.find(
     entry => mismaAnotacion(entry, matchId, holeNumber, participantId, userId)
@@ -124,6 +132,9 @@ export const enqueue = (
     // guarda crudo y lo redacta la traducción, para que quien tenga la
     // aplicación en inglés no lea un rótulo congelado en español
     matchNumber: matchNumber ?? anterior?.matchNumber ?? null,
+    // De qué es (una partida de stroke play), con el mismo criterio: quien
+    // reencola sin decirlo no se lo quita
+    ...((tipo ?? anterior?.tipo) ? { tipo: tipo ?? anterior.tipo } : {}),
     ...tocadosTras(anterior, tocados),
   });
   return guarda(filtered);
@@ -249,6 +260,8 @@ export const resumenPorPartida = (userId = null) => {
       // Una anotación con participante es de una partida rápida: allí cada
       // participante se envía por separado
       esPartidaRapida: false,
+      // Una partida de stroke play: su aviso lleva a su pantalla (PR 7)
+      esPartidaDeFranja: false,
       // El servidor dijo que esa partida ya no existe. No se borra nada por
       // eso: se le ofrece al jugador, que es quien sabe si la borró él o si
       // ese 404 lo devolvió el portal cautivo de un club
@@ -257,6 +270,7 @@ export const resumenPorPartida = (userId = null) => {
     actual.cuantas += 1;
     if (entrada.partidaDesaparecida) actual.desaparecida = true;
     if (entrada.participantId != null) actual.esPartidaRapida = true;
+    if (entrada.tipo === TIPO_PARTIDA_DE_FRANJA) actual.esPartidaDeFranja = true;
     if (!actual.matchName && entrada.matchName) actual.matchName = entrada.matchName;
     if (actual.matchNumber == null && entrada.matchNumber != null) {
       actual.matchNumber = entrada.matchNumber;
