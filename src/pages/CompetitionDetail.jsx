@@ -21,6 +21,7 @@ import CompetitionGolfCoursesSection from '../components/competition/Competition
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
+import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -1460,6 +1461,18 @@ const CompetitionDetail = () => {
                   />
                 </div>
               )}
+
+            {/* Las clasificaciones de un Stableford o un Medal, desde que se
+                juega (FE #824, PR 8): para cualquiera con sesión */}
+            {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
+              <div className="p-4">
+                <ClasificacionesDeLaCompeticion
+                  competitionId={competition.id}
+                  userId={user.id}
+                  enJuego={competition.status === 'IN_PROGRESS'}
+                />
+              </div>
+            )}
 
             {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
                 organizador la cambia aquí mismo (FE #654) */}

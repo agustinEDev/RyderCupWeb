@@ -42,6 +42,9 @@ const mockCloseEnrollments = vi.fn();
 
 vi.mock('../composition', () => ({
   launchHandicapUpdateUseCase: { execute: vi.fn() },
+  // Las clasificaciones (FE #824, PR 8)
+  getCompetitionStandingsUseCase: { execute: vi.fn().mockResolvedValue({ tournamentType: 'STABLEFORD', scale: 'NETA', rule: 'ACCUMULATED', category: null, rows: [], me: null }) },
+  getScratchStandingsUseCase: { execute: vi.fn().mockResolvedValue({ tournamentType: 'STABLEFORD', scale: 'SCRATCH', rule: 'ACCUMULATED', category: null, rows: [], me: null }) },
   // Las partidas de las franjas (FE #824, PR 6)
   getTeeGroupsUseCase: { execute: vi.fn().mockResolvedValue({ roundId: 'r1', editable: true, unassignedPlayers: [], groups: [] }) },
   getMyTeeGroupsUseCase: { execute: vi.fn().mockResolvedValue([]) },
@@ -192,7 +195,10 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
   const stableford = (extra = {}) =>
     competicion({ hasTeams: false, tournamentType: 'STABLEFORD', team1Name: null, team2Name: null, teamAssignment: null, ...extra });
 
-  afterEach(restaurarLaAgenda);
+  afterEach(async () => {
+    vi.useRealTimers();
+    await restaurarLaAgenda();
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -305,6 +311,46 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
 
     await screen.findByTestId('franja-r1');
     expect(screen.queryByRole('button', { name: /partidas.show/ })).toBeNull();
+  });
+
+  it.each(['IN_PROGRESS', 'COMPLETED'])('1 (PR 8): %s, la ficha tiene su clasificación', async (status) => {
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
+    renderPage();
+
+    expect(await screen.findByTestId('clasificaciones')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['IN_PROGRESS', 2],
+    ['COMPLETED', 1],
+  ])('6 (PR 8): %s, la general se relee cada 60 s solo en juego', async (status, lecturas) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { getCompetitionStandingsUseCase } = await import('../composition');
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
+    renderPage();
+    await screen.findByTestId('clasificaciones');
+    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+
+    await act(async () => vi.advanceTimersByTime(60000));
+
+    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(lecturas));
+  });
+
+  it.each(['ACTIVE', 'CLOSED'])('1 (PR 8): %s, todavía no hay clasificación', async (status) => {
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
+    renderPage();
+
+    await screen.findByTestId('franja-r1');
+    expect(screen.queryByTestId('clasificaciones')).toBeNull();
+  });
+
+  it('1 (PR 8): una Ryder en juego no tiene esta clasificación', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'IN_PROGRESS' }));
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    expect(screen.queryByTestId('clasificaciones')).toBeNull();
   });
 
   it('un jugador apuntado no tiene «Ver agenda» (la de la Ryder)', async () => {

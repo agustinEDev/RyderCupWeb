@@ -290,6 +290,18 @@
       "SCORECARD_NOT_READY_holes_other": "Holes {{hoyos}} still need validating before the card can be submitted.",
       "NOT_ORGANIZER": "Only the organiser can do this.",
       "generic": "It could not be done."
-    }
+    },
+    "categoryShort": "Cat. {{numero}}",
+    "cards_one": "{{count}} card",
+    "cards_other": "{{count}} cards",
+    "rule": {
+      "ACCUMULATED": "Overall: all cards added up",
+      "BEST_CARD": "Overall: each player's best card"
+    },
+    "yourPosition": "Your position",
+    "noResultsYet": "No results yet.",
+    "standingsTitle": "Standings",
+    "overall": "Overall",
+    "scratch": "Scratch"
   }
 }

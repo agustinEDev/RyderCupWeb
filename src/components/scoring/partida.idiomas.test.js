@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import pagina from '../../pages/player/GroupScoringPage.jsx?raw';
 import clasificacion from './Clasificacion.jsx?raw';
 import tarjetas from './TarjetasDeLaPartida.jsx?raw';
+import seccion from './ClasificacionesDeLaCompeticion.jsx?raw';
 import errores from '../../utils/erroresDePartida.js?raw';
 import es from '../../i18n/locales/es/scoring.json';
 import en from '../../i18n/locales/en/scoring.json';
@@ -12,13 +13,15 @@ import en from '../../i18n/locales/en/scoring.json';
  * tests de los componentes sustituyen `t` por la clave: una que falta pasaría
  * desapercibida. Un plural vale con `_one` y `_other`.
  */
-const codigo = [pagina, clasificacion, tarjetas, errores].join('\n');
+const codigo = [pagina, clasificacion, tarjetas, seccion, errores].join('\n');
 const sueltas = [...new Set([...codigo.matchAll(/'(partida\.[a-zA-Z.]+[a-zA-Z])'/g)].map((m) => m[1]))];
 const lista = (nombre) => [...codigo.match(new RegExp(`const ${nombre} = \\[([^\\]]*)\\]`))[1].matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
 const armadas = [
   ...['STABLEFORD', 'MEDAL'].map((c) => `partida.type.${c}`),
   ...['input', 'standings', 'cards'].map((c) => `partida.tabs.${c}`),
   ...['CLASIFICADO', 'SIN_EMPEZAR', 'NR', 'NP'].map((c) => `partida.status.${c}`),
+  ...['ACCUMULATED', 'BEST_CARD'].map((c) => `partida.rule.${c}`),
+  ...['overall', 'scratch'].map((c) => `partida.${c}`),
   ...['JUGANDO', 'ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'].map((c) => `partida.cardStatus.${c}`),
   ...lista('CODIGOS_DE_PARTIDA').map((c) => `partida.errors.${c}`),
   'partida.errors.SCORECARD_NOT_READY_holes',
