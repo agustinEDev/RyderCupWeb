@@ -355,7 +355,10 @@ const CompetitionDetail = () => {
           // Y el aviso de la ficha espera también: con una lectura sí y la
           // otra no, saldría con los límites de antes (/code-review)
           setReleyendoTrasCerrar(true);
-          Promise.all([fichaReleida, listaReleida])
+          // Esperadas: hasta que llegan, los botones siguen desactivados; si no,
+          // «Iniciar» deprisa sacaba el toast con la competición ya en juego
+          // (CodeRabbit)
+          await Promise.all([fichaReleida, listaReleida])
             .then(([ficha, lista]) => {
               if (!ficha?.strokePlay || !lista) return;
               const aprobados = lista.filter((e) => e.status === 'APPROVED');

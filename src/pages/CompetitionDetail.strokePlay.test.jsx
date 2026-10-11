@@ -569,6 +569,25 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     expect(customToast.warning).toHaveBeenCalledWith(expect.stringContaining('detail.fewerCategories.REPETIDOS'));
   });
 
+  it('9 (PR 8): hasta que terminan las relecturas del cierre no se puede iniciar (CodeRabbit)', async () => {
+    mockListEnrollments.mockResolvedValue(repartidos);
+    mockGetCompetitionDetail.mockResolvedValueOnce(medal({ status: 'ACTIVE', strokePlay: { ...tresIguales, categoryLimits: [] } }));
+    let soltarLaFicha;
+    mockGetCompetitionDetail.mockReturnValueOnce(new Promise((r) => (soltarLaFicha = r)));
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: tresIguales }));
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    expect(await screen.findByRole('button', { name: 'detail.actions.start-competition' })).toBeDisabled();
+    await act(async () => soltarLaFicha(medal({ status: 'CLOSED', strokePlay: tresIguales })));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'detail.actions.start-competition' })).toBeEnabled());
+  });
+
   it('9 (PR 8): si al cerrar salen todas, no hay toast, ni uno tardío después (revisor)', async () => {
     const doce = Array.from({ length: 12 }, (_, i) => conFijado(`j${i}`, `Jugador ${i}`, i, i < 6 ? 1 : 2));
     mockListEnrollments.mockResolvedValueOnce(INSCRITOS).mockResolvedValue(doce);
