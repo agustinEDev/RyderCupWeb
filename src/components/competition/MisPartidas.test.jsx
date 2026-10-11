@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 
 /**
  * Caso 5 de la PR 6 (FE #824): arriba de las franjas, «Tu partida» de cada
@@ -74,6 +74,26 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     const lineas = await screen.findAllByTestId(/^mi-partida-/);
     expect(lineas[0]).toHaveTextContent('"companeros":"BEA"');
     expect(lineas[1]).toHaveTextContent('partidas.mineAlone');
+  });
+
+  it('revisor (12 oct 2026): si yo soy el no presentado, «No presentado» sin compañeros ni anotar', async () => {
+    const yo = { ...jugador('yo', 'bea'), cardStatus: 'NO_PRESENTADO' };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [yo, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    const linea = await screen.findByTestId('mi-partida-r1');
+    expect(linea).toHaveTextContent('partidas.youAreNoShow');
+    expect(linea).not.toHaveTextContent('companeros');
+    expect(linea).not.toHaveTextContent('partidas.youMark');
+    expect(within(linea).queryByRole('link')).toBeNull();
+  });
+
+  it('revisor: a quien marco, solo entre los que juegan', async () => {
+    const np = { ...jugador('bea', null), cardStatus: 'NO_PRESENTADO' };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('yo', 'bea'), np, jugador('cris', 'yo')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    expect(await screen.findByTestId('mi-partida-r1')).not.toHaveTextContent('partidas.youMark');
   });
 
   it('21 (QA del 11 oct 2026): con varias categorías, la suya', async () => {

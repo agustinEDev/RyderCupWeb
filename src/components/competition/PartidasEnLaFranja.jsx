@@ -248,10 +248,14 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       () => setMarcando(null)
     );
 
+  const enJuegoIds = (partida) => new Set(juegan(partida).map((p) => p.userId));
   const abrirMarcadores = (partida) =>
     setMarcando({
       groupId: partida.id,
-      valores: Object.fromEntries(juegan(partida).map((p) => [p.userId, p.marksUserId ?? ''])),
+      // A un no presentado no se le marca: como si faltara (revisor)
+      valores: Object.fromEntries(
+        juegan(partida).map((p) => [p.userId, enJuegoIds(partida).has(p.marksUserId) ? p.marksUserId : ''])
+      ),
     });
 
   const opcionesDeDestino = (jugador, { conIntercambios }) => {

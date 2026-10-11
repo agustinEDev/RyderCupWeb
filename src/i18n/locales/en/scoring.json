@@ -230,7 +230,7 @@
     "walkover": "{{team}} wins by walkover: the opponent did not show up. There is nothing to score."
   },
   "partida": {
-    "theOrganiser": "the organiser",
+    "anotherMarker": "another marker",
     "header": "Group {{numero}} · {{hora}}",
     "backToCompetition": "Back to the competition",
     "type": {

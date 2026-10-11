@@ -101,6 +101,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       markerScore: 5,
       markerSubmitted: true,
       markerBy: null,
+      markerByName: null,
       validationStatus: 'match',
       netScore: null,
       strokesReceivedThisHole: 1,

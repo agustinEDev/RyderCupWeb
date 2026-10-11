@@ -90,6 +90,24 @@ describe('AvisoSinConexion', () => {
     expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
   });
 
+  it('revisor: con dos pantallas de anotar, al irse una sigue la otra', () => {
+    fingeConexion(false);
+    const { rerender } = render(<><AvisoSinConexion /><AnotarSinConexion key="a" pendingCount={1} /><AnotarSinConexion key="b" pendingCount={3} /></>);
+
+    rerender(<><AvisoSinConexion /><AnotarSinConexion key="b" pendingCount={3} /></>);
+
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+  });
+
+  it('revisor: el contador va fuera de la región que se lee al cambiar', () => {
+    fingeConexion(false);
+    render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={2} /></>);
+
+    expect(screen.getByRole('status')).toHaveTextContent('sinConexion.anotando');
+    expect(screen.getByRole('status')).not.toHaveTextContent('sinConexion.pendientes');
+    expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.pendientes');
+  });
+
   it('al salir de anotar vuelve a ser el aviso general', () => {
     fingeConexion(false);
     const { rerender } = render(<><AvisoSinConexion /><AnotarSinConexion pendingCount={1} /></>);

@@ -155,9 +155,14 @@ const GroupScoringPage = () => {
   // organizador): con su nombre y sin tocarlo (2.ª pasada del QA)
   const loPusoOtro =
     suGolpe?.markerSubmitted && suGolpe.markerBy && suGolpe.markerBy !== userId
-      ? nombreDe(suGolpe.markerBy) ?? t('partida.theOrganiser')
+      ? suGolpe.markerByName ?? nombreDe(suGolpe.markerBy) ?? t('partida.anotherMarker')
       : null;
   const meMarca = miTarjeta?.markedByUserId;
+  // Quién me anotó ESTE hoyo: tras cambiar el círculo puede no ser mi marcador
+  // de ahora (revisor)
+  const meAnoto = miGolpe?.markerSubmitted && miGolpe.markerBy
+    ? miGolpe.markerByName ?? nombreDe(miGolpe.markerBy)
+    : nombreDe(meMarca);
   const sinMarcador = isMatchPlayer && sinMarcadorEnJuego(strokePlay.cards, userId);
 
   const anotar = (golpes, tocado) =>
@@ -310,9 +315,9 @@ const GroupScoringPage = () => {
                 par={parDe(userId)}
                 markedPar={parDe(marcoA)}
                 markedName={nombreDe(marcoA)}
-                markerName={nombreDe(meMarca)}
+                markerName={meAnoto}
                 marksSomeone={Boolean(marcoA)}
-                hasMarker={Boolean(meMarca)}
+                hasMarker={Boolean(meMarca) || Boolean(miGolpe?.markerSubmitted)}
                 markedScoredBy={loPusoOtro}
                 strokeIndex={null}
                 playerScore={miGolpe}

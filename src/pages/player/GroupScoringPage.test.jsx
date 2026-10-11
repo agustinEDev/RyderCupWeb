@@ -326,16 +326,40 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
       expect(llamadas.casilla.markedScoredBy).toBe('ULISES');
     });
 
-    it('QA 2: si lo puse yo, nada; si fue el organizador, «el organizador»', () => {
-      const conHoyo = (marker_by) => ({ holes: [{ ...hoyo(1), marker_score: 6, marker_submitted: true, marker_by }, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] });
-      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('ana'))]) });
+    it('QA 2: si lo puse yo, nada; si fue otro que ya no está, su nombre desde la API', async () => {
+      const conHoyo = (marker_by, marker_by_name) => ({ holes: [{ ...hoyo(1), marker_score: 6, marker_submitted: true, marker_by, marker_by_name }, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] });
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('ana', 'Ana'))]) });
       const { unmount } = render(<GroupScoringPage />);
       expect(llamadas.casilla.markedScoredBy).toBeNull();
       unmount();
 
-      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('org'))]) });
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('org', 'Paco Organizador'))]) });
       render(<GroupScoringPage />);
-      expect(llamadas.casilla.markedScoredBy).toBe('partida.theOrganiser');
+      expect(llamadas.casilla.markedScoredBy).toBe('Paco Organizador');
+    });
+
+    it('revisor: en solo lectura, «Te anotó» quien puso ese hoyo, no mi marcador de ahora', () => {
+      const miHoyo = { holes: [{ ...hoyo(1), own_score: 5, own_submitted: true, marker_score: 5, marker_submitted: true, marker_by: 'ulises', marker_by_name: 'Ulises' }, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] };
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { marked_by_user_id: 'bea', ...miHoyo }), jugador('bea', 'ana')]) });
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.markerName).toBe('Ulises');
+    });
+
+    it('revisor: sin marcador ya, pero con números que me anotaron, la columna sigue', () => {
+      const miHoyo = { holes: [{ ...hoyo(1), marker_score: 5, marker_submitted: true, marker_by: 'ulises', marker_by_name: 'Ulises' }, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] };
+      mockHook = hook({ scoringView: vista({ i_mark_user_id: null }, [jugador('ana', null, { marked_by_user_id: null, ...miHoyo })]) });
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.hasMarker).toBe(true);
+    });
+
+    it('revisor: sin red, se lo dice al aviso de arriba', async () => {
+      const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+      mockHook = hook({ isOffline: true, pendingQueueSize: 2 });
+      render(<><AvisoSinConexion /><GroupScoringPage /></>);
+
+      expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
     });
 
     it('26: sin conexión, un solo aviso (no también el de «no se actualiza»)', () => {

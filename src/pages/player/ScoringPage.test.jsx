@@ -128,7 +128,7 @@ vi.mock('../../components/scoring/MatchSummaryCard', () => ({
   ),
 }));
 vi.mock('../../components/scoring/AnotarSinConexion', () => ({
-  default: () => <div data-testid="offline-banner">AnotarSinConexion</div>,
+  default: () => <div data-testid="anotar-sin-conexion">AnotarSinConexion</div>,
 }));
 vi.mock('../../components/scoring/SessionBlockedModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="session-blocked-modal">SessionBlocked</div> : null,
@@ -298,7 +298,7 @@ describe('ScoringPage', () => {
 
   it('should not show offline banner when online', () => {
     render(<ScoringPage />);
-    expect(screen.queryByTestId('offline-banner')).toBeNull();
+    expect(screen.queryByTestId('anotar-sin-conexion')).toBeNull();
   });
 
   it('should not show session blocked modal when not blocked', () => {
@@ -678,7 +678,7 @@ describe('ScoringPage · cuando lo que se ve sale de la foto del móvil (FE #614
     render(<ScoringPage />);
 
     expect(screen.getByTestId('sin-nada-guardado')).toBeInTheDocument();
-    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('anotar-sin-conexion')).toBeInTheDocument();
   });
 });
 
@@ -771,7 +771,7 @@ describe('ScoringPage · servidor caido CON cobertura y sin foto (FE #617)', () 
 
     render(<ScoringPage />);
 
-    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('anotar-sin-conexion')).toBeInTheDocument();
   });
 
   // Fila 3: con cobertura, ese banner afirma «Estas sin conexion», que es falso.
@@ -785,7 +785,7 @@ describe('ScoringPage · servidor caido CON cobertura y sin foto (FE #617)', () 
     render(<ScoringPage />);
 
     expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
-    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('anotar-sin-conexion')).not.toBeInTheDocument();
   });
 
   // Fila 4: la pista se escondia por «hay error», y un portal cautivo da error
@@ -1295,7 +1295,7 @@ describe('ScoringPage · los pendientes con cobertura, también con el partido e
 
     expect(screen.getByTestId('pendientes-a-salvo')).toBeInTheDocument();
     expect(screen.getByText(/offline\.pendingScores/)).toBeInTheDocument();
-    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('anotar-sin-conexion')).not.toBeInTheDocument();
   });
 
   it('P2 · sin cobertura sigue el banner de siempre, y no los dos a la vez', () => {
@@ -1304,7 +1304,7 @@ describe('ScoringPage · los pendientes con cobertura, también con el partido e
 
     render(<ScoringPage />);
 
-    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('anotar-sin-conexion')).toBeInTheDocument();
     expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
   });
 
@@ -1324,7 +1324,7 @@ describe('ScoringPage · los pendientes con cobertura, también con el partido e
     render(<ScoringPage />);
 
     expect(screen.queryByTestId('pendientes-a-salvo')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('anotar-sin-conexion')).not.toBeInTheDocument();
   });
 });
 

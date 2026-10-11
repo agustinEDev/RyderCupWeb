@@ -66,7 +66,6 @@ vi.mock('../composition', () => ({
   removeCustomHandicapUseCase: { execute: vi.fn() },
   handleEnrollmentUseCase: { execute: vi.fn() },
   requestEnrollmentUseCase: { execute: vi.fn() },
-  withdrawEnrollmentUseCase: { execute: vi.fn() },
 }));
 
 const CompetitionDetail = (await import('./CompetitionDetail')).default;

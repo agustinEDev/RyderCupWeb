@@ -27,19 +27,14 @@ const AvisoSinConexion = () => {
 
   return (
     <div
-      role="status"
       data-testid="aviso-sin-conexion"
-      className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-900 border-b border-amber-200"
+      className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-2 bg-amber-50 px-4 py-2 text-sm text-amber-900 border-b border-amber-200"
     >
       <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-      {anotando ? (
-        <span>
-          {t('sinConexion.anotando')}
-          {anotando.pendientes > 0 && ` · ${t('sinConexion.pendientes', { count: anotando.pendientes })}`}
-        </span>
-      ) : (
-        <span>{t('sinConexion.aviso')}</span>
-      )}
+      <span role="status">{t(anotando ? 'sinConexion.anotando' : 'sinConexion.aviso')}</span>
+      {/* Fuera de la región que se lee: si no, cada anotación sin red la
+          repetía entera al lector de pantalla (revisor) */}
+      {anotando?.pendientes > 0 && <span>· {t('sinConexion.pendientes', { count: anotando.pendientes })}</span>}
     </div>
   );
 };

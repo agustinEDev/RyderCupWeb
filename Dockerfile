@@ -28,8 +28,8 @@ COPY . .
 ARG VITE_SENTRY_DSN=""
 ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 
-# Build para producción
-# NOTA: Variables de entorno se inyectarán en runtime, no en build time
+# Build: Vite mete en el bundle las VITE_* del .env (el .env.local queda
+# fuera, ver .dockerignore) y del entorno, que manda
 RUN npm run build
 
 # ==========================================

@@ -592,8 +592,22 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
       const raquel = await screen.findByTestId('partida-jugador-raquel');
       expect(raquel).toHaveTextContent('partidas.noShow');
       expect(screen.queryByRole('button', { name: 'partidas.movePlayer {"jugador":"RAQUEL"}' })).toBeNull();
-      expect(within(await screen.findByTestId('partida-jugador-ana'))).toBeTruthy();
+      // Contraprueba: a quien juega sí se le puede mover
+      expect(screen.getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' })).toBeInTheDocument();
       expect(screen.getByTestId('partida-jugador-ana')).not.toHaveTextContent('partidas.noShow');
+    });
+
+    it('revisor: quien marcaba al NP abre el editor sin marcado, y dice que falta', async () => {
+      mockLeer.mockResolvedValue(vista({
+        groups: [partida('g1', 1, '08:00', [jugador('ana', 'raquel'), jugador('bea', 'cris'), jugador('cris', 'ana'), jugador('raquel', null, { cardStatus: 'NO_PRESENTADO' })]), G2],
+      }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      const g1 = await screen.findByTestId('partida-g1');
+      fireEvent.click(within(g1).getByRole('button', { name: 'partidas.markers {"numero":1}' }));
+      expect(within(g1).getByRole('combobox', { name: 'partidas.whoMarks {"jugador":"ANA"}' })).toHaveValue('');
+      expect(within(g1).getByRole('alert')).toHaveTextContent('partidas.markersErrors.MISSING');
     });
 
     it('no entra en el editor de marcadores ni se manda', async () => {
