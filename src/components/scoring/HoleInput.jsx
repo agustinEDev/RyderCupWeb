@@ -13,6 +13,10 @@ const HoleInput = ({
   // el de quien anota. Sin él, marcar a alguien de otra barra le ponía las
   // etiquetas del par propio. Ver RyderCupWeb#417.
   markedPar = null,
+  // Nombres de a quién anotas y de quién te anota (QA del 11 oct 2026):
+  // «Anotación marcador» se leía como lo que tu marcador te apuntó a ti
+  markedName = null,
+  markerName = null,
   strokeIndex,
   playerScore,
   markedPlayerScore,
@@ -42,7 +46,11 @@ const HoleInput = ({
   // marcador» hablaban como si cada uno jugara la suya
   const enParejas = matchFormat === 'FOURSOMES';
   const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
-  const etiquetaMarcado = t(enParejas ? 'input.rivalBall' : 'input.markerScore');
+  const etiquetaMarcado = enParejas
+    ? t('input.rivalBall')
+    : markedName
+      ? t('input.youMark', { nombre: markedName })
+      : t('input.markerScore');
   const etiquetaDelMarcador = t(enParejas ? 'input.rivalCount' : 'input.markerScore');
   // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
   const ownDeLaVista = playerScore?.ownSubmitted ? playerScore.ownScore : undefined;
@@ -102,6 +110,18 @@ const HoleInput = ({
       : val;
   };
 
+  const golpesEnTexto = (golpes) => (golpes === null ? t('input.pickedUp') : golpes);
+  const loQuePuso = {
+    own:
+      validationStatus === 'mismatch' && playerScore?.markerSubmitted
+        ? t('input.otherPut', { nombre: markerName || t('input.yourMarker'), golpes: golpesEnTexto(playerScore.markerScore) })
+        : null,
+    marked:
+      markedValidationStatus === 'mismatch' && markedPlayerScore?.ownSubmitted
+        ? t('input.otherPut', { nombre: markedName || t('input.theMarkedPlayer'), golpes: golpesEnTexto(markedPlayerScore.ownScore) })
+        : null,
+  };
+
   // El siguiente hueco por anotar: el tuyo antes que el del rival (FE #725).
   // La raya ya es un golpe anotado; solo cuenta lo que se puede tocar
   const siguienteHueco =
@@ -119,9 +139,16 @@ const HoleInput = ({
           <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
           {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
           {strokeIndex != null && <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>}
+          {/* Cuántos: con 2 golpes decía lo mismo que con 1, y el plus que da
+              golpe no veía nada (QA del 11 oct 2026) */}
           {strokesReceived > 0 && (
             <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
-              {t('input.strokeReceived')}
+              {t('input.strokesReceived', { count: strokesReceived })}
+            </span>
+          )}
+          {strokesReceived < 0 && (
+            <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+              {t('input.strokesGiven', { count: -strokesReceived })}
             </span>
           )}
         </div>
@@ -198,6 +225,19 @@ const HoleInput = ({
             <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
               {displayScore(markedValue, t('input.pickedUp'))}
             </p>
+          )}
+
+          {/* En un desacuerdo, lo que puso el otro: con solo la ✗ no se sabía
+              qué discutir (QA del 11 oct 2026) */}
+          {(validationStatus === 'mismatch' || markedValidationStatus === 'mismatch') && (
+            <>
+              <p data-testid={loQuePuso.own ? 'lo-que-puso-el-otro-own' : undefined} className="text-xs text-red-700">
+                {loQuePuso.own}
+              </p>
+              <p data-testid={loQuePuso.marked ? 'lo-que-puso-el-otro-marked' : undefined} className="text-xs text-red-700">
+                {loQuePuso.marked}
+              </p>
+            </>
           )}
         </div>
       )}

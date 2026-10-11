@@ -148,6 +148,10 @@ const GroupScoringPage = () => {
   const golpesDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
+  // Con nombre: «Anotas a Bruno» y, en un desacuerdo, qué puso (QA del 11 oct 2026)
+  const nombreDe = (jugador) => scoringView.players.find((p) => p.userId === jugador)?.userName ?? null;
+  const meMarca = strokePlay.cards.find((c) => c.userId === userId)?.markedByUserId;
+  const sinMarcadorEnJuego = isMatchPlayer && seJuega(userId) && (!meMarca || !seJuega(meMarca));
 
   const anotar = (golpes, tocado) =>
     submitScore(
@@ -214,7 +218,9 @@ const GroupScoringPage = () => {
         )}
         {/* Lo que se ve es la foto del móvil, no el servidor (FE #614): con
             un 5xx o sin cobertura se leería como lo de ahora mismo */}
-        {pintadoDeMemoria && (
+        {/* Sin conexión ya lo dice el aviso de arriba: dos casi iguales a la
+            vez sobraban (QA del 11 oct 2026) */}
+        {pintadoDeMemoria && !isOffline && (
           <p data-testid="pintado-de-memoria" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             {t('offline.noSeActualiza')}
           </p>
@@ -263,6 +269,13 @@ const GroupScoringPage = () => {
 
         {activa === 'input' && (
           <div id="panel-input" role="tabpanel" aria-labelledby="tab-input" className="space-y-4">
+            {/* Sin nadie en juego que le marque (se fue o ya entregó): sus hoyos
+                los valida el organizador (QA del 11 oct 2026, BE #539) */}
+            {sinMarcadorEnJuego && (
+              <p data-testid="sin-marcador" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                {t('partida.organiserValidates')}
+              </p>
+            )}
             {marcoA && (
               <p className="text-sm text-gray-700">
                 {t('partida.youMark', { jugador: scoringView.players.find((p) => p.userId === marcoA)?.userName ?? '' })}
@@ -277,7 +290,7 @@ const GroupScoringPage = () => {
             />
             {aunNoAbre && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                <p className="font-medium text-amber-900">{t('notOpenYet.title')}</p>
+                <p className="font-medium text-amber-900">{t('partida.notOpenYet')}</p>
                 <p className="mt-1 text-amber-800">
                   {t('notOpenYet.opensAt', { hora: horaDelCampo(scoringView.scoringOpensAt, i18n.language) })}
                 </p>
@@ -289,6 +302,8 @@ const GroupScoringPage = () => {
                 holeNumber={currentHole}
                 par={parDe(userId)}
                 markedPar={parDe(marcoA)}
+                markedName={nombreDe(marcoA)}
+                markerName={nombreDe(meMarca)}
                 strokeIndex={null}
                 playerScore={miGolpe}
                 markedPlayerScore={suGolpe}
@@ -369,6 +384,7 @@ const GroupScoringPage = () => {
               pendientes={[]}
               completado={scoringView.matchStatus === 'COMPLETED'}
               sePuedeSeguir={false}
+              dePartida
             />
           </div>
         )}

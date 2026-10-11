@@ -60,7 +60,15 @@
     "tapToScore": "Add score",
     "pairBall": "Your ball",
     "rivalBall": "Rival ball",
-    "rivalCount": "Per the rivals"
+    "rivalCount": "Per the rivals",
+    "youMark": "You score {{nombre}}",
+    "otherPut": "{{nombre}} put {{golpes}}",
+    "yourMarker": "Your marker",
+    "theMarkedPlayer": "Your player",
+    "strokesReceived_one": "{{count}} stroke received",
+    "strokesReceived_other": "{{count}} strokes received",
+    "strokesGiven_one": "Gives {{count}} stroke",
+    "strokesGiven_other": "Gives {{count}} strokes"
   },
   "scorecard": {
     "title": "Scorecard",
@@ -125,7 +133,9 @@
     "waitingForPlayers_other": "Waiting for {{count}} players to submit their scorecards: {{names}}",
     "waitingForPair": "Waiting for {{names}} to submit their pair's scorecard",
     "allValidated": "{{count}}/{{total}} holes validated",
-    "notReady": "Not all holes are validated yet"
+    "notReady": "Not all holes are validated yet",
+    "groupOver": "Group finished",
+    "groupCompleted": "Group completed"
   },
   "summary": {
     "title": "Match Summary",
@@ -312,6 +322,17 @@
       "NP": "NS"
     },
     "standingsTable": "Standings",
-    "none": "–"
+    "none": "–",
+    "noMarkerInPlay": "Nobody playing marks this player: you validate their holes.",
+    "validateScored": "Validate what {{jugador}} scored",
+    "validateScoredShort": "Validate scored holes",
+    "validateScoredConfirm_one": "{{count}} hole that {{jugador}} scored with nobody marking will be validated. Mismatched holes are corrected one by one.",
+    "validateScoredConfirm_other": "{{count}} holes that {{jugador}} scored with nobody marking will be validated. Mismatched holes are corrected one by one.",
+    "scoredValidated_one": "{{count}} hole validated",
+    "scoredValidated_other": "{{count}} holes validated",
+    "broughtInToast": "{{viene}} joins this group to keep {{jugador}} company",
+    "cannotClear": "A scored stroke cannot be cleared: pick another number.",
+    "notOpenYet": "Scoring for this group has not opened yet",
+    "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes."
   }
 }

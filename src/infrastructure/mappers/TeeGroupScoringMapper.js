@@ -95,6 +95,8 @@ class TeeGroupScoringMapper {
           cardStatus: p.card_status,
           marksUserId: p.marks_user_id ?? null,
           markedByUserId: p.marked_by_user_id ?? null,
+          // Vino de otra partida a acompañar al que se quedó solo (BE #539)
+          broughtIn: p.brought_in ?? false,
           totals: totalesDe(p.totals || {}),
         })),
       },

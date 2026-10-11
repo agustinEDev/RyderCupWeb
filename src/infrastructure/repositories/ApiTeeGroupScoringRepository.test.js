@@ -51,7 +51,7 @@ const VISTA = {
         ...Array.from({ length: 16 }, (_, i) => hoyo(i + 3)),
       ],
     }),
-    jugador('bea', 'Bea Blanco', 'ana', 'ana', { card_status: 'ENTREGADA', tee_color: 'RED' }),
+    jugador('bea', 'Bea Blanco', 'ana', 'ana', { card_status: 'ENTREGADA', brought_in: true, tee_color: 'RED' }),
   ],
 };
 
@@ -124,6 +124,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           cardStatus: 'JUGANDO',
           marksUserId: 'bea',
           markedByUserId: 'bea',
+          broughtIn: false,
           totals: { thru: 1, points: 3, grossPoints: 2, gross: 4, net: 3, toParNet: -1, toParGross: 0, complete: false },
         },
         {
@@ -132,6 +133,8 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           cardStatus: 'ENTREGADA',
           marksUserId: 'ana',
           markedByUserId: 'ana',
+          // Vino de otra partida (BE #539)
+          broughtIn: true,
           totals: { thru: 1, points: 3, grossPoints: 2, gross: 4, net: 3, toParNet: -1, toParGross: 0, complete: false },
         },
       ],
@@ -161,6 +164,8 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     ['retirarse', (r) => r.retire('g-1'), '/api/v1/competitions/groups/g-1/scorecard/retire'],
     ['reabrir', (r) => r.reopenCard('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/reopen'],
     ['no presentado', (r) => r.markNoShow('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/no-show'],
+    // QA del 11 oct 2026: quien juega sin marcador (BE #539)
+    ['validar lo anotado', (r) => r.validateScored('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/validate-scored'],
   ])('%s: POST y devuelve la vista', async (_caso, hacer, url) => {
     const v = await hacer(repo);
 

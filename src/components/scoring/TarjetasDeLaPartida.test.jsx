@@ -13,16 +13,18 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockToast = { error: vi.fn(), success: vi.fn() };
+const mockToast = { error: vi.fn(), success: vi.fn(), info: vi.fn() };
 vi.mock('../../utils/toast', () => ({ default: mockToast }));
 
 const mockCorregir = vi.fn();
 const mockReabrir = vi.fn();
 const mockNoPresentado = vi.fn();
+const mockValidar = vi.fn();
 vi.mock('../../composition', () => ({
   correctTeeGroupHoleUseCase: { execute: (...a) => mockCorregir(...a) },
   reopenTeeGroupCardUseCase: { execute: (...a) => mockReabrir(...a) },
   markTeeGroupNoShowUseCase: { execute: (...a) => mockNoPresentado(...a) },
+  validateTeeGroupScoredHolesUseCase: { execute: (...a) => mockValidar(...a) },
 }));
 
 const TarjetasDeLaPartida = (await import('./TarjetasDeLaPartida')).default;
@@ -61,6 +63,122 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     mockCorregir.mockResolvedValue({});
     mockReabrir.mockResolvedValue({});
     mockNoPresentado.mockResolvedValue({});
+    mockValidar.mockResolvedValue({});
+  });
+
+  // QA del 11 oct 2026 (casos 11, 13, 17, 24 y 4)
+  describe('el marcador que se va', () => {
+    const conMarcador = (marcador, estadoDelMarcador = 'JUGANDO') => [
+      jugador('ana', 'JUGANDO', hoyosDeAna, { marked_by_user_id: marcador }),
+      jugador('bea', estadoDelMarcador, Array.from({ length: 18 }, (_, i) => hoyo(i + 1)), { marks_user_id: 'ana' }),
+    ];
+
+    it('11: sin nadie que le marque, el organizador ve el aviso y «Validar lo anotado»', () => {
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador(null)) });
+
+      expect(within(screen.getByTestId('tarjeta-ana')).getByText('partida.noMarkerInPlay')).toBeInTheDocument();
+      expect(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' })).toBeInTheDocument();
+    });
+
+    it('11: también si su marcador ya entregó', () => {
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea', 'ENTREGADA')) });
+
+      expect(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: /partida.validateScored/ })).toBeInTheDocument();
+    });
+
+    it('11: con un marcador que juega, nada', () => {
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea')) });
+
+      const ana = within(screen.getByTestId('tarjeta-ana'));
+      expect(ana.queryByRole('button', { name: /partida.validateScored/ })).toBeNull();
+      expect(ana.queryByText('partida.noMarkerInPlay')).toBeNull();
+    });
+
+    it('11: quien no organiza no lo ve', () => {
+      pintar({ scoringView: vista('STABLEFORD', conMarcador(null)) });
+
+      expect(screen.queryByRole('button', { name: /partida.validateScored/ })).toBeNull();
+    });
+
+    it('11: con confirmación, y después cuántos hoyos se validaron', async () => {
+      const onCambio = vi.fn();
+      // Ana: el 1 y el 3 tienen los dos lados; ninguno solo con el suyo
+      const hoyos = [hoyo(1, { own_score: 4, own_submitted: true }), hoyo(2, { own_score: 5, own_submitted: true }), ...hoyosDeAna.slice(2)];
+      pintar({ organiza: true, onCambio, scoringView: vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos)]) });
+
+      fireEvent.click(screen.getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' }));
+      expect(mockValidar).not.toHaveBeenCalled();
+      expect(screen.getByText('partida.validateScoredConfirm {"jugador":"ANA","count":2}')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockValidar).toHaveBeenCalledWith('g-1', 'ana'));
+      expect(mockToast.success).toHaveBeenCalledWith('partida.scoredValidated {"count":2}');
+      expect(onCambio).toHaveBeenCalled();
+    });
+
+    it('13: si al marcar un no presentado viene alguien a acompañar, se dice', async () => {
+      mockNoPresentado.mockResolvedValue(
+        vista('STABLEFORD', [
+          jugador('ana', 'NO_PRESENTADO', hoyosDeAna),
+          jugador('bea', 'JUGANDO', hoyosDeAna, { marks_user_id: 'cris', marked_by_user_id: 'cris' }),
+          jugador('cris', 'JUGANDO', hoyosDeAna, { marks_user_id: 'bea', marked_by_user_id: 'bea', brought_in: true }),
+        ])
+      );
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea')) });
+
+      fireEvent.click(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockToast.info).toHaveBeenCalledWith('partida.broughtInToast {"viene":"CRIS","jugador":"BEA"}'));
+    });
+
+    it('13: sin nadie que venga, solo el aviso de siempre', async () => {
+      mockNoPresentado.mockResolvedValue(vista('STABLEFORD', conMarcador('bea')));
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea')) });
+
+      fireEvent.click(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('partida.markedNoShow'));
+      expect(mockToast.info).not.toHaveBeenCalled();
+    });
+
+    it('24: la tarjeta de un no presentado no enseña golpes', () => {
+      pintar({ scoringView: vista('STABLEFORD', [jugador('ana', 'NO_PRESENTADO', hoyosDeAna)]) });
+
+      expect(screen.queryByTestId('hoyo-ana-1')).toBeNull();
+      expect(screen.getByTestId('tarjeta-ana')).toHaveTextContent('partida.cardStatus.NO_PRESENTADO');
+    });
+
+    it('17: dejar un lado «sin golpe» no borra: se explica por qué no se guarda', () => {
+      pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'partida.ownSide' }), { target: { value: '' } });
+
+      expect(screen.getByRole('button', { name: 'partida.save' })).toBeDisabled();
+      expect(screen.getByText('partida.cannotClear')).toBeInTheDocument();
+    });
+
+    it('17: sin tocar nada, sin la explicación', () => {
+      pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+
+      expect(screen.queryByText('partida.cannotClear')).toBeNull();
+    });
+
+    it('4: el organizador corrige en filas de seis: cada hoyo se puede tocar (44 px a 360)', () => {
+      pintar({ organiza: true });
+
+      expect(screen.getByTestId('hoyo-ana-1').parentElement).toHaveClass('grid-cols-6');
+      expect(screen.getAllByTestId(/^hoyo-ana-/)).toHaveLength(18);
+    });
+
+    it('4: quien solo mira, en las dos filas de nueve de siempre', () => {
+      pintar();
+
+      expect(screen.getByTestId('hoyo-ana-1').parentElement).toHaveClass('grid-cols-9');
+    });
   });
 
   it('12: una tarjeta por jugador, con su estado y su total (Stableford: puntos)', () => {

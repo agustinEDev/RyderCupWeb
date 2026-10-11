@@ -472,7 +472,8 @@ const ScoringPage = () => {
           que decirlo, y en ámbar y no en rojo: con un 5xx esto pasa CON cobertura,
           y sin avisar se lee como si fuera lo de ahora mismo —con su resultado, su
           tarjeta y su botón de entregar— cuando puede ser de hace rato */}
-      {pintadoDeMemoria && scoringView && (
+      {/* Sin conexión ya lo dice su aviso: dos casi iguales sobraban (QA del 11 oct 2026) */}
+      {pintadoDeMemoria && scoringView && !isOffline && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <p
             data-testid="pintado-de-memoria"
@@ -601,6 +602,8 @@ const ScoringPage = () => {
                 holeNumber={currentHole}
                 par={currentHoleData.par}
                 markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
+                markedName={markerAssignment?.marksName ?? null}
+                markerName={markerAssignment?.markedByName ?? null}
                 strokeIndex={currentHoleData.strokeIndex}
                 playerScore={currentPlayerScore}
                 markedPlayerScore={markedPlayerScore}

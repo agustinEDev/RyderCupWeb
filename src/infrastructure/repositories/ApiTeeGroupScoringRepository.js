@@ -63,6 +63,12 @@ class ApiTeeGroupScoringRepository extends ITeeGroupScoringRepository {
     return TeeGroupScoringMapper.toScoringViewDTO(data);
   }
 
+  /** Valida de una vez lo anotado por quien juega sin marcador (BE #539). */
+  async validateScored(groupId, userId) {
+    const data = await apiRequest(`${BASE}/groups/${groupId}/players/${userId}/validate-scored`, { method: 'POST' });
+    return TeeGroupScoringMapper.toScoringViewDTO(data);
+  }
+
   /** Cierra las partidas sin acabar de la franja: contesta con sus partidas. */
   async closeWindow(roundId) {
     return ScheduleMapper.toTeeGroupsDTO(await apiRequest(`${BASE}/rounds/${roundId}/groups/close`, { method: 'POST' }));

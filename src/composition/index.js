@@ -184,6 +184,7 @@ import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFr
 import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
 import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTeeGroupCardUseCase';
 import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
+import ValidateTeeGroupScoredHolesUseCase from '../application/use_cases/scoring/ValidateTeeGroupScoredHolesUseCase';
 import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
 import GetCompetitionStandingsUseCase from '../application/use_cases/scoring/GetCompetitionStandingsUseCase';
@@ -390,6 +391,9 @@ const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScorin
 const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const validateTeeGroupScoredHolesUseCase = new ValidateTeeGroupScoredHolesUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
 const closeTeeWindowUseCase = new CloseTeeWindowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const getTeeWindowStandingsUseCase = new GetTeeWindowStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const getCompetitionStandingsUseCase = new GetCompetitionStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
@@ -616,6 +620,7 @@ export {
   correctTeeGroupHoleUseCase,
   reopenTeeGroupCardUseCase,
   markTeeGroupNoShowUseCase,
+  validateTeeGroupScoredHolesUseCase,
   closeTeeWindowUseCase,
   getTeeWindowStandingsUseCase,
   getCompetitionStandingsUseCase,

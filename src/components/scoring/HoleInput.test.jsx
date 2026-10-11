@@ -212,9 +212,87 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('input.allSquare');
   });
 
-  it('should show strokes received badge', () => {
-    render(<HoleInput {...defaultProps} strokesReceived={1} />);
-    expect(screen.getByTestId('hole-input')).toHaveTextContent('input.strokeReceived');
+  // QA del 11 oct 2026 (casos 5 y 6): cuántos, y también el plus que da golpe
+  it.each([
+    [1, 'input.strokesReceived {"count":1}'],
+    [2, 'input.strokesReceived {"count":2}'],
+    [-1, 'input.strokesGiven {"count":1}'],
+  ])('con %i golpes en el hoyo dice %s', (golpes, texto) => {
+    render(<HoleInput {...defaultProps} strokesReceived={golpes} />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent(texto);
+  });
+
+  it('sin golpes en el hoyo no dice nada', () => {
+    render(<HoleInput {...defaultProps} strokesReceived={0} />);
+    expect(screen.getByTestId('hole-input')).not.toHaveTextContent('input.strokes');
+  });
+
+  // QA del 11 oct 2026 (casos 15 y 16)
+  describe('con nombres: a quién anotas y qué puso el otro', () => {
+    it('15: la casilla del marcado dice a quién anotas', () => {
+      render(<HoleInput {...defaultProps} markedName="Bruno" />);
+
+      expect(screen.getByRole('button', { name: 'input.youMark {"nombre":"Bruno"}' })).toBe(screen.getByTestId('marked-score-button'));
+      expect(screen.queryByText('input.markerScore')).not.toBeInTheDocument();
+    });
+
+    it('15: en foursomes sigue siendo la bola rival', () => {
+      render(<HoleInput {...defaultProps} markedName="Bruno" matchFormat="FOURSOMES" />);
+
+      expect(screen.queryByText(/input.youMark/)).not.toBeInTheDocument();
+    });
+
+    it('16: en un desacuerdo de mi golpe, lo que puso quien me marca', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          validationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 6, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toHaveTextContent('input.otherPut {"nombre":"Diego","golpes":6}');
+    });
+
+    it('16: en un desacuerdo del marcado, lo que se puso él', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markedName="Bruno"
+          markedValidationStatus="mismatch"
+          markedPlayerScore={{ ownScore: 4, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-marked')).toHaveTextContent('input.otherPut {"nombre":"Bruno","golpes":4}');
+    });
+
+    it('16: una raya del otro se dice raya', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          validationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: null, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toHaveTextContent('input.otherPut {"nombre":"Diego","golpes":"input.pickedUp"}');
+    });
+
+    it('16: sin desacuerdo, nada', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          validationStatus="match"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.queryByTestId('lo-que-puso-el-otro-own')).toBeNull();
+    });
   });
 
   it('should show team A name for hole winner A', () => {

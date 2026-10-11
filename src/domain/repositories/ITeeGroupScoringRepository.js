@@ -39,6 +39,10 @@ class ITeeGroupScoringRepository {
     throw new Error('ITeeGroupScoringRepository.markNoShow must be implemented');
   }
 
+  async validateScored(groupId, userId) {
+    throw new Error('ITeeGroupScoringRepository.validateScored must be implemented');
+  }
+
   async closeWindow(roundId) {
     throw new Error('ITeeGroupScoringRepository.closeWindow must be implemented');
   }
