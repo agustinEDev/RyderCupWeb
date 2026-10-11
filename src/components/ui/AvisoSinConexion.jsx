@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { WifiOff } from 'lucide-react';
 import { useSinConexion } from '../../hooks/useSinConexion';
+import { useAnotacionSinConexion } from '../../hooks/useAnotacionSinConexion';
 
 /**
  * Dice que no hay red, en toda la aplicación y mientras dure.
@@ -18,8 +19,11 @@ import { useSinConexion } from '../../hooks/useSinConexion';
 const AvisoSinConexion = () => {
   const { t } = useTranslation('common');
   const sinConexion = useSinConexion();
+  // En la pantalla de anotar, uno solo con lo suyo (2.ª pasada del QA). Ella
+  // sabe que no llega nada aunque el navegador diga que hay red
+  const anotando = useAnotacionSinConexion();
 
-  if (!sinConexion) return null;
+  if (!sinConexion && !anotando) return null;
 
   return (
     <div
@@ -28,7 +32,14 @@ const AvisoSinConexion = () => {
       className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-900 border-b border-amber-200"
     >
       <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-      <span>{t('sinConexion.aviso')}</span>
+      {anotando ? (
+        <span>
+          {t('sinConexion.anotando')}
+          {anotando.pendientes > 0 && ` · ${t('sinConexion.pendientes', { count: anotando.pendientes })}`}
+        </span>
+      ) : (
+        <span>{t('sinConexion.aviso')}</span>
+      )}
     </div>
   );
 };

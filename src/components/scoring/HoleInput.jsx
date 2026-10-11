@@ -17,6 +17,13 @@ const HoleInput = ({
   // «Anotación marcador» se leía como lo que tu marcador te apuntó a ti
   markedName = null,
   markerName = null,
+  // 2.ª pasada del QA (12 oct 2026): sin nadie a quien marcar (retirado, solo,
+  // reabierta), sin la segunda casilla; sin marcador, en solo lectura igual
+  marksSomeone = true,
+  hasMarker = true,
+  // Quién puso el número del marcado, si no fuiste tú: tras cambiar el círculo
+  // salía bajo «Anotas a X» un número del marcador anterior como si fuera tuyo
+  markedScoredBy = null,
   strokeIndex,
   playerScore,
   markedPlayerScore,
@@ -51,7 +58,15 @@ const HoleInput = ({
     : markedName
       ? t('input.youMark', { nombre: markedName })
       : t('input.markerScore');
-  const etiquetaDelMarcador = t(enParejas ? 'input.rivalCount' : 'input.markerScore');
+  const etiquetaDelMarcador = enParejas
+    ? t('input.rivalCount')
+    : markerName
+      ? t('input.scoredForYou', { nombre: markerName })
+      : t('input.markerScore');
+  const conMarcado = enParejas || marksSomeone;
+  const conMarcador = enParejas || hasMarker;
+  // Lo que puso otro marcador no se toca desde aquí
+  const marcadoBloqueado = isMarkerScoreLocked || !conMarcado || Boolean(markedScoredBy);
   // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
   const ownDeLaVista = playerScore?.ownSubmitted ? playerScore.ownScore : undefined;
   const markedDeLaVista = markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined;
@@ -87,7 +102,7 @@ const HoleInput = ({
   };
 
   const handleMarkedSelect = (val) => {
-    if (isReadOnly || isMarkerScoreLocked) return;
+    if (isReadOnly || marcadoBloqueado) return;
     setMarkedValue(val);
     setOpenPanel(null);
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
@@ -129,7 +144,7 @@ const HoleInput = ({
   const siguienteHueco =
     !isOwnScoreLocked && ownValue === undefined
       ? 'own'
-      : !isMarkerScoreLocked && markedValue === undefined
+      : !marcadoBloqueado && markedValue === undefined
         ? 'marked'
         : null;
 
@@ -161,13 +176,14 @@ const HoleInput = ({
         // Etiquetas en una fila de la rejilla y huecos en la siguiente (FE #736):
         // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
         // una columna por jugador su hueco quedaba más abajo. Así comparten fila
-        <div data-testid="huecos-del-hoyo" className="grid grid-cols-2 gap-x-4 gap-y-1 items-end">
+        <div data-testid="huecos-del-hoyo" className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}>
           <label htmlFor={idPropio} className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
           {/* La marca del jugador al que anotas va aquí y no en la cabecera:
               la de arriba es la de TU resultado, y son dos acuerdos distintos.
               Sin esta, un anotador veía su tick verde mientras la tira de
               hoyos se ponía roja por el otro, sin forma de saber por quién.
               La tarjeta ya no la lleva, así que este es el único sitio. */}
+          {conMarcado && (
           <div className="flex items-center justify-between gap-2">
             <label htmlFor={idMarcado} className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
             {markedValidationStatus && (
@@ -176,6 +192,7 @@ const HoleInput = ({
               </span>
             )}
           </div>
+          )}
 
           {/* Own score */}
           {!isOwnScoreLocked ? (
@@ -204,7 +221,7 @@ const HoleInput = ({
           )}
 
           {/* Marker score */}
-          {!isMarkerScoreLocked ? (
+          {!conMarcado ? null : !marcadoBloqueado ? (
             <button
               id={idMarcado}
               data-testid="marked-score-button"
@@ -223,6 +240,15 @@ const HoleInput = ({
                 </span>
               )}
             </button>
+          ) : markedScoredBy ? (
+            <div className="flex h-12 flex-col items-center justify-center">
+              <p data-testid="marked-score-value" className="text-2xl font-bold text-gray-400">
+                {displayScore(markedValue, t('input.pickedUp'))}
+              </p>
+              <p data-testid="anotado-por-otro" className="text-xs text-gray-500">
+                {t('input.scoredBy', { nombre: markedScoredBy })}
+              </p>
+            </div>
           ) : (
             <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
               {displayScore(markedValue, t('input.pickedUp'))}
@@ -237,24 +263,28 @@ const HoleInput = ({
               <p className="text-xs text-red-700">
                 {loQuePuso.own && <span data-testid="lo-que-puso-el-otro-own">{loQuePuso.own}</span>}
               </p>
-              <p className="text-xs text-red-700">
-                {loQuePuso.marked && <span data-testid="lo-que-puso-el-otro-marked">{loQuePuso.marked}</span>}
-              </p>
+              {conMarcado && (
+                <p className="text-xs text-red-700">
+                  {loQuePuso.marked && <span data-testid="lo-que-puso-el-otro-marked">{loQuePuso.marked}</span>}
+                </p>
+              )}
             </>
           )}
         </div>
       )}
 
       {isReadOnly && playerScore && (
-        <div className="grid grid-cols-2 gap-4 text-center">
+        <div className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}>
           <div>
             <p className="text-xs text-gray-500">{etiquetaPropia}</p>
             <p className="text-xl font-bold">{displayScore(playerScore.ownScore)}</p>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
-            <p className="text-xl font-bold">{displayScore(playerScore.markerScore)}</p>
-          </div>
+          {conMarcador && (
+            <div>
+              <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
+              <p className="text-xl font-bold">{displayScore(playerScore.markerScore)}</p>
+            </div>
+          )}
         </div>
       )}
 

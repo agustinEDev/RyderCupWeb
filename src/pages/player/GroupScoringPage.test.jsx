@@ -186,6 +186,8 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     render(<GroupScoringPage />);
 
     fireEvent.click(within(screen.getByTestId('barra-de-entrega')).getByRole('button'));
+    // En una partida el organizador la puede reabrir (2.ª pasada del QA)
+    expect(await screen.findByText('submit.confirmReopenable')).toBeInTheDocument();
     fireEvent.click(await screen.findByTestId('submit-confirm'));
 
     await waitFor(() => expect(mockHook.submitScorecard).toHaveBeenCalled());
@@ -299,6 +301,41 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
 
       expect(llamadas.casilla.markedName).toBe('BEA');
       expect(llamadas.casilla.markerName).toBe('CRIS');
+    });
+
+    it('QA 2: sin nadie a quien marcar ni quien me marque, la casilla lo sabe', () => {
+      mockHook = hook({ scoringView: vista({ i_mark_user_id: null }, [jugador('ana', null, { marked_by_user_id: null })]) });
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.marksSomeone).toBe(false);
+      expect(llamadas.casilla.hasMarker).toBe(false);
+    });
+
+    it('QA 2: con los dos, la casilla tiene las dos', () => {
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.marksSomeone).toBe(true);
+      expect(llamadas.casilla.hasMarker).toBe(true);
+    });
+
+    it('QA 2: el número del marcado lo puso otro (el marcador de antes): su nombre', () => {
+      const conHoyo = (marker_by) => ({ holes: [{ ...hoyo(1), marker_score: 6, marker_submitted: true, marker_by }, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] });
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('ulises')), jugador('ulises', null, { card_status: 'RETIRADO' })]) });
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.markedScoredBy).toBe('ULISES');
+    });
+
+    it('QA 2: si lo puse yo, nada; si fue el organizador, «el organizador»', () => {
+      const conHoyo = (marker_by) => ({ holes: [{ ...hoyo(1), marker_score: 6, marker_submitted: true, marker_by }, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] });
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('ana'))]) });
+      const { unmount } = render(<GroupScoringPage />);
+      expect(llamadas.casilla.markedScoredBy).toBeNull();
+      unmount();
+
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', conHoyo('org'))]) });
+      render(<GroupScoringPage />);
+      expect(llamadas.casilla.markedScoredBy).toBe('partida.theOrganiser');
     });
 
     it('26: sin conexión, un solo aviso (no también el de «no se actualiza»)', () => {

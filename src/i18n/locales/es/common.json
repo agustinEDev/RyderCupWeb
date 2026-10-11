@@ -131,6 +131,9 @@
   "brandMarkAlt": "Logo de RyderCupFriends",
   "demasiadasPeticiones": "Demasiados intentos seguidos. Espera un minuto y vuelve a intentarlo.",
   "sinConexion": {
+    "anotando": "Sin conexión. Lo que anotes se guarda en el móvil y se envía al volver la cobertura.",
+    "pendientes_one": "{{count}} pendiente",
+    "pendientes_other": "{{count}} pendientes",
     "aviso": "Sin conexión. Lo que ves puede no estar al día.",
     "mensaje": "Sin conexión. Vuelve a intentarlo cuando tengas cobertura."
   },

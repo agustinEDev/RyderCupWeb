@@ -226,7 +226,8 @@
       "lastBeforeFirst": "The last tee time cannot be before the first.",
       "intervalRange": "Between tee times, 5 to 20 minutes.",
       "groupSize": "Groups are of 3 or 4 players.",
-      "firstTeePassed": "That first tee time has already passed: pick a later time."
+      "firstTeePassed": "That first tee time has already passed: pick a later time.",
+      "teeTimeSkipped": "A tee time falls in the hour skipped that day by the clock change: move it."
     },
     "noCourses": "Add a course to the competition to create windows.",
     "allFull": "Every day already has its three windows.",
@@ -288,6 +289,7 @@
     "number": "Group {{numero}} · {{hora}}",
     "incomplete": "Incomplete · no marker",
     "playing": "playing hcp {{juego}}",
+    "noShow": "No-show",
     "marks": "marks {{jugador}}",
     "unknownPlayer": "Player",
     "order": "Tee-off order",

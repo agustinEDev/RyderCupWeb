@@ -109,8 +109,9 @@ const Clasificacion = ({
       <tr key={testId} data-testid={testId} data-yo={String(yo)} className={yo ? 'bg-green-50 font-semibold' : ''}>
         {/* «T22» no cabía en w-10 y se pegaba al nombre (QA del 11 oct 2026) */}
         <td className="w-12 py-2 pr-2 pl-3 text-gray-500 tabular-nums">{puesto(fila)}</td>
-        {/* Con el nombre entero al pasar por encima: a 360 px se corta (revisor) */}
-        <td title={fila.name} className="max-w-0 truncate py-2 pr-2 text-gray-900">{fila.name}</td>
+        {/* El nombre entero, en dos líneas si no cabe: cortado a 360 px se leía
+            «Helena Pru…» (2.ª pasada del QA, 12 oct 2026) */}
+        <td title={fila.name} className="break-words py-2 pr-2 text-gray-900">{fila.name}</td>
         <td className="w-14 py-2 text-right font-bold text-gray-900 tabular-nums">{valor(fila)}</td>
         <td data-columna="thru" className="w-14 py-2 pr-3 text-right text-xs text-gray-500 tabular-nums">
           {/* NR, NP: abreviatura con su nombre entero, que los lectores de pantalla sí dicen (revisor) */}

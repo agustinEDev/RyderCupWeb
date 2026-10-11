@@ -51,8 +51,9 @@ export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
  * El primer problema de una franja: el de su hoja o, si su primera salida (o
  * la nueva, al cambiarla) ya llegó, `firstTeePassed`. Una franja pasada no
  * admite partidas y sus jugadores se quedaban sin ella (QA del 11 oct 2026).
- * Con el reloj del móvil, que casi siempre está en la hora del campo: quien
- * manda es el servidor, que la rechaza con la zona del campo.
+ * Y `teeTimeSkipped` si alguna salida cae en la hora que se salta por el
+ * cambio de hora. Con el reloj del móvil, que casi siempre está en la hora del
+ * campo: quien manda es el servidor, que la rechaza con la zona del campo.
  *
  * @param {{dia: string|null, hoja: Object, primeraAntes?: string}} franja - `primeraAntes`, al cambiar una
  * @param {Date} [ahora]
@@ -60,10 +61,18 @@ export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
  */
 export const errorDeLaFranja = ({ dia, hoja, primeraAntes }, ahora = new Date()) => {
   const deLaHoja = errorDeHoja(hoja);
-  if (deLaHoja || !dia || hoja.primera === primeraAntes) return deLaHoja;
+  if (deLaHoja || !dia) return deLaHoja;
   const [anio, mes, diaDelMes] = dia.split('-').map(Number);
-  const sale = new Date(anio, mes - 1, diaDelMes, 0, minutos(hoja.primera));
-  return ahora >= sale ? 'firstTeePassed' : null;
+  const aLas = (hora) => new Date(anio, mes - 1, diaDelMes, 0, hora);
+  // El día del cambio de hora de primavera, una salida en el hueco no existe:
+  // el reloj la corre una hora (2.ª pasada del QA, 12 oct 2026)
+  const desde = minutos(hoja.primera);
+  for (let hora = desde; hora <= minutos(hoja.ultima); hora += hoja.intervalo) {
+    const sale = aLas(hora);
+    if (sale.getHours() * 60 + sale.getMinutes() !== hora) return 'teeTimeSkipped';
+  }
+  if (hoja.primera === primeraAntes) return null;
+  return ahora >= aLas(desde) ? 'firstTeePassed' : null;
 };
 
 /** Cuántas salidas tiene: de la primera a la última que cabe. 0 si no es posible. */

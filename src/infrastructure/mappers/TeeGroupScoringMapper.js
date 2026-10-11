@@ -73,6 +73,8 @@ class TeeGroupScoringMapper {
             ownSubmitted: h.own_submitted ?? false,
             markerScore: h.marker_score ?? null,
             markerSubmitted: h.marker_submitted ?? false,
+            // Quién puso el lado del marcador: tras cambiar el círculo, el de antes
+            markerBy: h.marker_by ?? null,
             validationStatus: (h.status || 'PENDING').toLowerCase(),
             netScore: null,
             strokesReceivedThisHole: h.strokes_received ?? 0,

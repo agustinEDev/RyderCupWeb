@@ -87,6 +87,15 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(r).toHaveAttribute('title', 'partida.status.RETIRADO');
   });
 
+  it('QA 2 (12 oct 2026): el nombre entero, en dos líneas si no cabe; no «Helena Pru…»', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    const nombre = (await screen.findByTestId('fila-ana')).querySelectorAll('td')[1];
+    expect(nombre).not.toHaveClass('truncate');
+    expect(nombre).toHaveClass('break-words');
+  });
+
   it('3 (QA del 11 oct 2026): POS cabe «T22» sin pegarse al nombre', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 22, tied: true })]));
     render(<Clasificacion pedir={pedir} userId="x" activa />);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan, todasLasFranjasCerradas, sinMarcadorEnJuego } from './PartidasDeLaFranja';
+import { companerosDe, destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan, todasLasFranjasCerradas, sinMarcadorEnJuego } from './PartidasDeLaFranja';
 
 /**
  * Las reglas de las partidas que el organizador ve antes de pedir nada (FE
@@ -154,5 +154,60 @@ describe('sinMarcadorEnJuego (BE #539)', () => {
     ['no está en la partida', [t('bea', 'JUGANDO')], false],
   ])('%s', (_caso, tarjetas, sin) => {
     expect(sinMarcadorEnJuego(tarjetas, 'ana')).toBe(sin);
+  });
+});
+
+/**
+ * 2.ª pasada del QA (12 oct 2026, RyderCupAm#543): un no presentado sigue en
+ * su partida, pero no ocupa sitio, no se mueve y no es compañero de nadie.
+ *
+ *   caso                                         | resultado
+ *   ---------------------------------------------|-------------------------------
+ *   una de 4 filas con un NP                     | tiene sitio
+ *   una llena con un NP                          | no se intercambia con el NP
+ *   mover a C de [NP, B, C]                      | B se quedaría solo: solo intercambiar
+ *   mover al último que juega de [NP, NP, C]     | se puede: la partida queda con sus NP
+ *   el NP mismo                                  | ningún destino
+ *   compañeros                                   | sin el NP
+ */
+describe('PartidasDeLaFranja · los no presentados (QA 2, 12 oct 2026)', () => {
+  const np = (userId) => ({ ...jugador(userId), cardStatus: 'NO_PRESENTADO' });
+  const conNP = (id, number, nps, ids) => ({ id, number, teeTime: '08:00', players: [...nps.map(np), ...ids.map(jugador)] });
+
+  it('una partida de 4 filas con un NP tiene sitio', () => {
+    const v = vista([partida('g1', 1, ['a', 'b', 'c']), conNP('g2', 2, ['x'], ['d', 'e', 'f'])]);
+
+    expect(destinosDelJugador(v, 'a', HOJA).conSitio.map((g) => g.id)).toEqual(['g2']);
+  });
+
+  it('en una llena no se intercambia con el NP', () => {
+    const v = vista([partida('g1', 1, ['a', 'b', 'c']), conNP('g2', 2, ['x'], ['d', 'e', 'f', 'g'])]);
+
+    const con = destinosDelJugador(v, 'a', HOJA).intercambios.map(({ con: c }) => c.userId);
+    expect(con).toEqual(['d', 'e', 'f', 'g']);
+  });
+
+  it('mover a C de [NP, B, C] dejaría a B solo: solo intercambiar', () => {
+    const v = vista([conNP('g1', 1, ['x'], ['b', 'c']), partida('g2', 2, ['d', 'e'])]);
+
+    const d = destinosDelJugador(v, 'c', HOJA);
+    expect(d.conSitio).toEqual([]);
+    expect(d.nueva).toBe(false);
+  });
+
+  it('el último que juega de [NP, NP, C] se puede mover', () => {
+    const v = vista([conNP('g1', 1, ['x', 'y'], ['c']), partida('g2', 2, ['d', 'e'])]);
+
+    expect(destinosDelJugador(v, 'c', HOJA).conSitio.map((g) => g.id)).toEqual(['g2']);
+  });
+
+  it('al NP no se le ofrece nada', () => {
+    const v = vista([conNP('g1', 1, ['x'], ['b', 'c']), partida('g2', 2, ['d', 'e'])]);
+
+    expect(destinosDelJugador(v, 'x', HOJA)).toEqual({ conSitio: [], intercambios: [], nueva: false });
+  });
+
+  it('los compañeros, sin el NP ni uno mismo', () => {
+    expect(companerosDe(conNP('g1', 1, ['x'], ['a', 'b']), 'a').map((p) => p.userId)).toEqual(['b']);
   });
 });

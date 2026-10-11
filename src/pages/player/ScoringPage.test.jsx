@@ -127,8 +127,8 @@ vi.mock('../../components/scoring/MatchSummaryCard', () => ({
     <div data-testid="match-summary-card">MatchSummaryCard {winnerName}</div>
   ),
 }));
-vi.mock('../../components/scoring/OfflineBanner', () => ({
-  default: () => <div data-testid="offline-banner">OfflineBanner</div>,
+vi.mock('../../components/scoring/AnotarSinConexion', () => ({
+  default: () => <div data-testid="offline-banner">AnotarSinConexion</div>,
 }));
 vi.mock('../../components/scoring/SessionBlockedModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="session-blocked-modal">SessionBlocked</div> : null,

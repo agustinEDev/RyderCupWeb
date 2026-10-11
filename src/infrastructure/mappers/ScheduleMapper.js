@@ -161,6 +161,8 @@ class ScheduleMapper {
         strokesByHole: p.strokes_by_hole || [],
         marksUserId: p.marks_user_id ?? null,
         broughtIn: p.brought_in ?? false,
+        // Un no presentado sigue en su partida pero no ocupa sitio (RyderCupAm#543)
+        cardStatus: p.card_status ?? 'JUGANDO',
       })),
     };
   }

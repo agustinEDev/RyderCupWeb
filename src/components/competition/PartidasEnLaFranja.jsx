@@ -13,7 +13,7 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
-import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
+import { destinosDelJugador, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 
 /**
@@ -242,7 +242,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       () =>
         setTeeGroupMarkersUseCase.execute(
           partida.id,
-          partida.players.map((p) => ({ userId: p.userId, marksUserId: marcando.valores[p.userId] }))
+          juegan(partida).map((p) => ({ userId: p.userId, marksUserId: marcando.valores[p.userId] }))
         ),
       'partidas.markersSaved',
       () => setMarcando(null)
@@ -251,7 +251,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   const abrirMarcadores = (partida) =>
     setMarcando({
       groupId: partida.id,
-      valores: Object.fromEntries(partida.players.map((p) => [p.userId, p.marksUserId ?? ''])),
+      valores: Object.fromEntries(juegan(partida).map((p) => [p.userId, p.marksUserId ?? ''])),
     });
 
   const opcionesDeDestino = (jugador, { conIntercambios }) => {
@@ -294,11 +294,13 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   };
 
   const editorDeMarcadores = (partida) => {
-    const ids = partida.players.map((p) => p.userId);
+    // Solo los que juegan: el no presentado ni marca ni es marcado (QA 2)
+    const enJuego = juegan(partida);
+    const ids = enJuego.map((p) => p.userId);
     const error = errorDeMarcadores(ids, marcando.valores);
     return (
       <div className="mt-2 space-y-2 rounded-lg bg-gray-50 p-2">
-        {partida.players.map((p) => (
+        {enJuego.map((p) => (
           <label key={p.userId} className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-gray-700">
             {/* El nombre entero en su línea: cortado a «Pa…» no se sabía quién
                 marca a quién (QA del 11 oct 2026) */}
@@ -312,7 +314,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
               className={selector}
             >
               <option value="">{t('partidas.whoMarksPlaceholder')}</option>
-              {partida.players
+              {enJuego
                 .filter((otro) => otro.userId !== p.userId)
                 .map((otro) => (
                   <option key={otro.userId} value={otro.userId}>
@@ -467,6 +469,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           <span className="font-medium break-words text-gray-900">{p.name}</span>
                           <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
                           <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
+                          {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
+                          {p.cardStatus === 'NO_PRESENTADO' && (
+                            <span className="font-semibold text-red-700">{t('partidas.noShow')}</span>
+                          )}
                           {p.marksUserId && (
                             <span className="text-gray-500">
                               {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}

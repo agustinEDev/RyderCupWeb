@@ -66,6 +66,7 @@ const CAMPOS_DEL_ERROR = {
   intervalRange: ['intervalo'],
   groupSize: ['tamano'],
   firstTeePassed: ['primera'],
+  teeTimeSkipped: ['primera', 'ultima'],
 };
 
 const CamposDeLaHoja = ({ hoja, dia, primeraAntes, onCambio, resumenId }) => {

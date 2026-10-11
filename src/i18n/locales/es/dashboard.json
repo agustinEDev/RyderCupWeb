@@ -97,7 +97,7 @@
     "desdeMemoria": "No se ha podido actualizar: puede no estar al día.",
     "teeGroup": "Partida {{numero}}.ª",
     "labelTeeGroup": "Tu próxima partida",
-    "broughtIn": "Te han pasado a la partida {{numero}}"
+    "broughtIn": "Te han pasado a la {{numero}}.ª partida"
   },
   "recentMatches": {
     "title": "Últimas partidas",

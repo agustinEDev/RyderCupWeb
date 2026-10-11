@@ -59,6 +59,7 @@ const VISTA_LEIDA = {
           marksUserId: 'u-2',
           // Vino de otra partida a acompañar al que se quedó solo (BE #539)
           broughtIn: true,
+          cardStatus: 'JUGANDO',
         },
       ],
     },

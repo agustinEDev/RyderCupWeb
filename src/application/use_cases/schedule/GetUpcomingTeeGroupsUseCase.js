@@ -1,4 +1,5 @@
 import { fechaLocal } from '../../../utils/fechaLocal';
+import { companerosDe } from '../../../domain/services/PartidasDeLaFranja';
 
 const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
 const COMPETICIONES_CON_PARTIDAS = ['CLOSED', 'IN_PROGRESS'];
@@ -67,7 +68,8 @@ class GetUpcomingTeeGroupsUseCase {
         sessionType,
         teeTime: group.teeTime,
         matchNumber: group.number,
-        partnerNames: group.players.filter((p) => p.userId !== userId).map((p) => p.name),
+        // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
+        partnerNames: companerosDe(group, userId).map((p) => p.name),
         // Le pasaron de otra para acompañar al que se quedó solo (BE #539)
         broughtIn: Boolean(group.players.find((p) => p.userId === userId)?.broughtIn),
       }));

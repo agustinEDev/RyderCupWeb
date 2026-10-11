@@ -226,7 +226,8 @@
       "lastBeforeFirst": "La última salida no puede ser antes que la primera.",
       "intervalRange": "Entre salidas, de 5 a 20 minutos.",
       "groupSize": "Las partidas son de 3 o 4 jugadores.",
-      "firstTeePassed": "Esa primera salida ya ha pasado: elige una hora futura."
+      "firstTeePassed": "Esa primera salida ya ha pasado: elige una hora futura.",
+      "teeTimeSkipped": "Alguna salida cae en la hora que se salta ese día por el cambio de hora: muévela."
     },
     "noCourses": "Añade un campo a la competición para poder crear franjas.",
     "allFull": "Todas las jornadas tienen ya sus tres franjas.",
@@ -288,6 +289,7 @@
     "number": "{{numero}}.ª · {{hora}}",
     "incomplete": "Incompleta · sin marcador",
     "playing": "de juego {{juego}}",
+    "noShow": "No presentado",
     "marks": "marca a {{jugador}}",
     "unknownPlayer": "Jugador",
     "order": "Orden de salida",
@@ -369,7 +371,7 @@
     "closeWindowYes": "Sí, cerrarla",
     "windowClosed": "Franja cerrada.",
     "movePlayer": "Mover a {{jugador}}",
-    "broughtIn": "Te han pasado a la partida {{numero}} · sale a las {{hora}}",
+    "broughtIn": "Te han pasado a la {{numero}}.ª partida · sale a las {{hora}}",
     "yourCategory": "Tu categoría: {{categoria}}.ª"
   }
 }

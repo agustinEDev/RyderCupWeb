@@ -234,6 +234,54 @@ describe('HoleInput', () => {
     expect(screen.getByRole('button', { name: 'input.close' })).toHaveClass('min-h-11', 'min-w-11');
   });
 
+  // 2.ª pasada del QA (12 oct 2026)
+  describe('quien no marca a nadie y el número que puso otro marcador', () => {
+    it('sin nadie a quien marcar, solo tu casilla: ni «Anotación Marcador» ni la segunda', () => {
+      render(<HoleInput {...defaultProps} marksSomeone={false} />);
+
+      expect(screen.getByTestId('own-score-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('marked-score-button')).toBeNull();
+      expect(screen.queryByTestId('marked-score-value')).toBeNull();
+      expect(screen.queryByText('input.markerScore')).toBeNull();
+    });
+
+    it('en solo lectura, sin marcador, solo tu número', () => {
+      render(<HoleInput {...defaultProps} isReadOnly hasMarker={false} playerScore={{ ownScore: 5, markerScore: null }} />);
+
+      expect(screen.getByText('input.yourScore')).toBeInTheDocument();
+      expect(screen.queryByText('input.markerScore')).toBeNull();
+    });
+
+    it('en solo lectura, con marcador, dice quién te anotó', () => {
+      render(<HoleInput {...defaultProps} isReadOnly markerName="Zaira" playerScore={{ ownScore: 5, markerScore: 5 }} />);
+
+      expect(screen.getByText('input.scoredForYou {"nombre":"Zaira"}')).toBeInTheDocument();
+      expect(screen.queryByText('input.markerScore')).toBeNull();
+    });
+
+    it('el número que puso el marcador anterior, con su nombre y sin poder tocarlo', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markedName="Vanesa"
+          markedScoredBy="Ulises"
+          markedPlayerScore={{ markerScore: 6, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.queryByTestId('marked-score-button')).toBeNull();
+      expect(screen.getByTestId('marked-score-value')).toHaveTextContent('6');
+      expect(screen.getByTestId('anotado-por-otro')).toHaveTextContent('input.scoredBy {"nombre":"Ulises"}');
+    });
+
+    it('sin otro que lo pusiera, la casilla es tuya como siempre', () => {
+      render(<HoleInput {...defaultProps} markedName="Vanesa" markedPlayerScore={{ markerScore: 6, markerSubmitted: true }} />);
+
+      expect(screen.getByTestId('marked-score-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('anotado-por-otro')).toBeNull();
+    });
+  });
+
   // QA del 11 oct 2026 (casos 15 y 16)
   describe('con nombres: a quién anotas y qué puso el otro', () => {
     it('15: la casilla del marcado dice a quién anotas', () => {

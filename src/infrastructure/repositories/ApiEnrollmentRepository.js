@@ -22,7 +22,6 @@ import apiRequest from '../../services/api.js';
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/approve
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/reject
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/cancel
- * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/withdraw
  * - PUT    /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/handicap
  * - PUT    /api/v1/enrollments/{enrollmentId}/name-preference
  * - POST   /api/v1/competitions/{competitionId}/enrollments/direct
@@ -286,24 +285,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   async cancel(competitionId, enrollmentId) {
     const apiData = await this.#request(
       `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/cancel`,
-      {
-        method: 'POST',
-      }
-    );
-
-    return EnrollmentMapper.toDomain(apiData);
-  }
-
-  /**
-   * Retirar enrollment (por el usuario después de estar aprobado)
-   *
-   * @param {string} competitionId
-   * @param {string} enrollmentId
-   * @returns {Promise<Enrollment>}
-   */
-  async withdraw(competitionId, enrollmentId) {
-    const apiData = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/withdraw`,
       {
         method: 'POST',
       }

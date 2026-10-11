@@ -13,7 +13,7 @@ import ScorecardTable from '../../components/scoring/ScorecardTable';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
 import PreMatchInfo from '../../components/scoring/PreMatchInfo';
 import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
-import OfflineBanner from '../../components/scoring/OfflineBanner';
+import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import EarlyEndModal from '../../components/scoring/EarlyEndModal';
 import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
@@ -363,7 +363,7 @@ const ScoringPage = () => {
 
         {/* Sin conexión, su aviso: se perdía cuando la cola estaba vacía, que es
             el caso más común al llegar al campo con un partido nunca abierto aquí */}
-        {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+        {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
 
         {/* Y con cobertura, los golpes pendientes se cuentan aparte: el banner de
             arriba afirma «estás sin conexión», y aquí sí la hay —lo caído es el
@@ -424,7 +424,7 @@ const ScoringPage = () => {
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
 
-      {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+      {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
 
       {/* El gemelo de la pantalla sin nada pintado (FE #625): con cobertura y el
           servidor caído, la casilla enseña el golpe y nada decía que el otro

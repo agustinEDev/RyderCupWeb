@@ -63,6 +63,19 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(await screen.findByTestId('traido-r1')).toHaveTextContent('partidas.broughtIn {"numero":2,"hora":"09:10"}');
   });
 
+  it('QA 2 (12 oct 2026): los no presentados no son compañeros; solo con ellos, «sin compañeros»', async () => {
+    const np = (userId) => ({ ...jugador(userId, null), cardStatus: 'NO_PRESENTADO' });
+    mockMias.mockResolvedValue([
+      mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [np('julia'), jugador('yo', 'bea'), jugador('bea', 'yo')]),
+      mia('r2', '2030-10-13', 'MORNING', 1, '08:00', [np('kevin'), jugador('yo', null)]),
+    ]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    const lineas = await screen.findAllByTestId(/^mi-partida-/);
+    expect(lineas[0]).toHaveTextContent('"companeros":"BEA"');
+    expect(lineas[1]).toHaveTextContent('partidas.mineAlone');
+  });
+
   it('21 (QA del 11 oct 2026): con varias categorías, la suya', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), jugador('yo', 'ana')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" categoria={2} />);

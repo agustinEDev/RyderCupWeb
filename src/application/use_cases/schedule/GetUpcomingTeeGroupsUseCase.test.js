@@ -70,6 +70,16 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
     expect(matches[0].broughtIn).toBe(true);
   });
 
+  it('QA 2 (12 oct 2026): los no presentados no son compañeros', async () => {
+    const conNP = partida('g2', 2, '12:10');
+    conNP.players = conNP.players.map((p) => (p.userId === 'ana' ? { ...p, cardStatus: 'NO_PRESENTADO' } : p));
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', conNP)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches[0].partnerNames).toEqual(['Bea']);
+  });
+
   it('12: que viniera otro de la partida no es que viniera yo', async () => {
     const traida = partida('g2', 2, '12:10');
     traida.players = traida.players.map((p) => (p.userId === 'ana' ? { ...p, broughtIn: true } : p));

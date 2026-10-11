@@ -9,6 +9,16 @@
 
 const enLaPartida = (partida, userId) => partida.players.some((p) => p.userId === userId);
 
+// Un no presentado sigue en su partida (su NP sale en la clasificación), pero
+// no ocupa sitio, no se mueve y no es compañero de nadie (RyderCupAm#543)
+const esNoPresentado = (jugador) => jugador.cardStatus === 'NO_PRESENTADO';
+
+/** Los de la partida que juegan: sin los no presentados. */
+export const juegan = (partida) => partida.players.filter((p) => !esNoPresentado(p));
+
+/** Con quién juega: sin él ni los no presentados. */
+export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p.userId !== userId);
+
 /**
  * Adónde puede mover el organizador a un jugador.
  *
@@ -27,16 +37,21 @@ const enLaPartida = (partida, userId) => partida.players.some((p) => p.userId ==
  */
 export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   const origen = vista.groups.find((g) => enLaPartida(g, userId)) ?? null;
+  if (origen && esNoPresentado(origen.players.find((p) => p.userId === userId))) {
+    return { conSitio: [], intercambios: [], nueva: false };
+  }
   const otras = vista.groups.filter((g) => g !== origen);
-  const quedaria = origen ? origen.players.length - 1 : null;
-  const sinQuedarSolo = quedaria !== 1;
+  // Solo cuentan los que juegan: dejar a uno solo junto a no presentados
+  // tampoco vale, y dejar solo no presentados sí (12 oct 2026)
+  const sinQuedarSolo = !origen || juegan(origen).length - 1 !== 1;
+  const unoDeVarios = origen ? origen.players.length > 1 : true;
 
   return {
-    conSitio: sinQuedarSolo ? otras.filter((g) => g.players.length < tamano) : [],
+    conSitio: sinQuedarSolo ? otras.filter((g) => juegan(g).length < tamano) : [],
     intercambios: origen
-      ? otras.filter((g) => g.players.length >= tamano).flatMap((g) => g.players.map((con) => ({ partida: g, con })))
+      ? otras.filter((g) => juegan(g).length >= tamano).flatMap((g) => juegan(g).map((con) => ({ partida: g, con })))
       : [],
-    nueva: sinQuedarSolo && quedaria !== 0 && vista.groups.length < salidas,
+    nueva: sinQuedarSolo && unoDeVarios && vista.groups.length < salidas,
   };
 };
 
