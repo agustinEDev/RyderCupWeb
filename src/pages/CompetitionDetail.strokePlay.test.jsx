@@ -777,6 +777,42 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
     expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed');
   });
 
+  // Un Medal: cerrado, su paso es iniciar
+  const MEDAL = { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null };
+  const iniciar = async () => {
+    const { startCompetitionUseCase } = await import('../composition');
+    startCompetitionUseCase.execute.mockResolvedValueOnce({ status: 'IN_PROGRESS', updatedAt: 'z' });
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.actions.start-competition' }));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+    await waitFor(() => expect(startCompetitionUseCase.execute).toHaveBeenCalled());
+  };
+
+  it('lo de los hándicaps de la ficha releída se pinta aunque su estado ya no sea el de la pantalla (revisor)', async () => {
+    await abrirConUnaEnMarcha(MEDAL);
+    // Otro cambio (otra pestaña) la dejó en otro estado: canDelete no vale, los hándicaps sí
+    mockGetCompetitionDetail.mockResolvedValueOnce(ficha(acabada, { ...MEDAL, status: 'COMPLETED' }));
+    await iniciar();
+
+    await waitFor(() => expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed'));
+  });
+
+  it('las inscripciones releídas tras un cambio de estado no las pisa una lectura vieja de la tarjeta (revisor)', async () => {
+    await abrirConUnaEnMarcha(MEDAL);
+    const deLaTarjeta = pendiente();
+    mockGetCompetitionDetail.mockResolvedValueOnce(ficha(acabada, MEDAL));
+    mockListEnrollments.mockReturnValueOnce(deLaTarjeta.promesa);
+    await sondear();
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+
+    mockGetCompetitionDetail.mockResolvedValueOnce(ficha(acabada, { ...MEDAL, status: 'IN_PROGRESS' }));
+    mockListEnrollments.mockResolvedValueOnce([inscrito('dani', 'Dani Duro')]);
+    await iniciar();
+    expect(await screen.findByTestId('aprobado-dani')).toBeInTheDocument();
+
+    await act(async () => deLaTarjeta.soltar(INSCRITOS));
+    expect(screen.getByTestId('aprobado-dani')).toBeInTheDocument();
+  });
+
   it('las inscripciones de una lectura vieja no pisan las de otra más nueva (/code-review)', async () => {
     await abrirConUnaEnMarcha();
     const { cancelScheduledHandicapUpdateUseCase } = await import('../composition');

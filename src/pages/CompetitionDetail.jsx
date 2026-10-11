@@ -330,10 +330,12 @@ const CompetitionDetail = () => {
       // Al cerrar (o reabrir) un stroke play se fija (o se suelta) el hándicap
       // de cada uno y su categoría: la lista de antes no lo trae (FE #824,
       // PR 5). Solo en stroke play: en una Ryder nada de eso cambia
+      // Con su turno: una lectura vieja de la tarjeta no la pisa (revisor)
       if (esStrokePlay) {
+        const deLaLista = lecturasDeInscripciones.turno();
         listEnrollmentsUseCase
           .execute(id)
-          .then(setEnrollments)
+          .then((lista) => lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista))
           .catch((e) => console.error('Error reloading enrollments after status change:', e));
       }
     } catch (error) {
@@ -403,16 +405,21 @@ const CompetitionDetail = () => {
       // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
       // del primero puede llegar tarde y decidiría el botón del segundo
       .then((data) => {
-        // Lo de los hándicaps cambia al cerrar (FE #824, PR 5), pero no pisa lo
-        // de una lectura más nueva de la tarjeta (/code-review)
-        const deLosHandicaps = lecturasDeLaFicha.aplicar(turno)
-          ? { handicapUpdate: data.handicapUpdate, handicapUpdateWindow: data.handicapUpdateWindow }
-          : {};
         setCompetition(prev =>
           prev.status === data.status
-            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned, ...deLosHandicaps }
+            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned }
             : prev
         );
+        // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
+        // sea el estado, pero no pisa lo de una lectura más nueva de la tarjeta
+        // (/code-review). Aparte: si gasta el turno, se pinta (revisor)
+        if (lecturasDeLaFicha.aplicar(turno)) {
+          setCompetition(prev => ({
+            ...prev,
+            handicapUpdate: data.handicapUpdate,
+            handicapUpdateWindow: data.handicapUpdateWindow,
+          }));
+        }
       })
       .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
   };
