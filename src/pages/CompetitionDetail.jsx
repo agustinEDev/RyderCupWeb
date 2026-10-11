@@ -1491,6 +1491,10 @@ const CompetitionDetail = () => {
                   versionCampos={versionCampos}
                   onAgenda={setAgendaLeida}
                   irASinFranja={irASinFranja}
+                  // Las partidas (PR 6): existen desde el cierre; hasta cuándo
+                  // se cambian lo dice el servidor (la primera salida)
+                  verPartidas={['CLOSED', 'IN_PROGRESS'].includes(competition.status)}
+                  organizaPartidas={canManage}
                 />
               ) : (
               <AgendaDeLaCompeticion

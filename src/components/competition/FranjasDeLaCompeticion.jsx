@@ -14,6 +14,8 @@ import {
 } from '../../composition';
 import { situacionEnLasFranjas, destinosParaMover } from '../../domain/services/PlazasEnFranjas';
 import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFranja';
+import PartidasEnLaFranja from './PartidasEnLaFranja';
+import MisPartidas from './MisPartidas';
 import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
@@ -178,6 +180,8 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {boolean} [props.puedeColocar] - El organizador coloca y mueve (hasta iniciar)
  * @param {boolean} [props.puedeQuitar] - Y quita (solo con las inscripciones abiertas)
  * @param {number} [props.irASinFranja] - Sube cuando la ficha pide llevar a «Sin franja»
+ * @param {boolean} [props.verPartidas] - Ya hay partidas que ver (cerrada o en juego; PR 6)
+ * @param {boolean} [props.organizaPartidas] - Quien mira las organiza (el servidor dice hasta cuándo)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -196,6 +200,8 @@ const FranjasDeLaCompeticion = ({
   puedeColocar = false,
   puedeQuitar = false,
   irASinFranja = 0,
+  verPartidas = false,
+  organizaPartidas = false,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -530,6 +536,10 @@ const FranjasDeLaCompeticion = ({
         </p>
       )}
 
+      {/* Las partidas (PR 6): la mía de cada jornada, releída con cada lectura de
+          la agenda. Tras la primera: antes se pedía dos veces al abrir la ficha */}
+      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} version={lecturas} />}
+
       {cupoCorto && (
         <p data-testid="franjas-cupo-corto" className="mb-3 text-sm text-amber-800">
           {t('franjas.capacityShort', { count: cupoTotal, maximo: maxPlayers })}
@@ -629,6 +639,17 @@ const FranjasDeLaCompeticion = ({
                             ocupado={ocupado}
                             hacer={hacer}
                             casos={casos}
+                          />
+                        )}
+                        {/* Las partidas, para los inscritos y quien organiza;
+                            se releen con cada lectura de la agenda (PR 6) */}
+                        {verPartidas && (estoyInscrito || organizaPartidas) && (
+                          <PartidasEnLaFranja
+                            franja={f}
+                            salidas={hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja))}
+                            userId={userId}
+                            organiza={organizaPartidas}
+                            version={lecturas}
                           />
                         )}
                       </>
