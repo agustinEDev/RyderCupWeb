@@ -140,6 +140,39 @@ class ScheduleMapper {
     };
   }
 
+  /**
+   * Una partida de stroke play (FE #824, PR 6; RyderCupAm#534). El hándicap
+   * llega en texto (Decimal): se pasa a número.
+   */
+  static toTeeGroupDTO(apiGroup) {
+    return {
+      id: apiGroup.id,
+      number: apiGroup.number,
+      teeTime: typeof apiGroup.tee_time === 'string' ? apiGroup.tee_time.slice(0, 5) : apiGroup.tee_time,
+      status: apiGroup.status,
+      incomplete: apiGroup.incomplete,
+      players: (apiGroup.players || []).map((p) => ({
+        userId: p.user_id,
+        name: p.name,
+        handicap: Number(p.handicap),
+        playingHandicap: p.playing_handicap,
+        teeColor: p.tee_color,
+        teeGender: p.tee_gender ?? null,
+        strokesByHole: p.strokes_by_hole || [],
+        marksUserId: p.marks_user_id ?? null,
+      })),
+    };
+  }
+
+  /** Las partidas de una franja: lo que contesta cada lectura y escritura. */
+  static toTeeGroupsDTO(apiView) {
+    return {
+      roundId: apiView.round_id,
+      editable: apiView.editable,
+      unassignedPlayers: (apiView.unassigned_players || []).map((p) => ({ userId: p.user_id, name: p.name })),
+      groups: (apiView.groups || []).map((g) => ScheduleMapper.toTeeGroupDTO(g)),
+    };
+  }
 }
 
 export default ScheduleMapper;
