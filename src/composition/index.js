@@ -186,6 +186,8 @@ import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTe
 import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
 import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
+import GetCompetitionStandingsUseCase from '../application/use_cases/scoring/GetCompetitionStandingsUseCase';
+import GetScratchStandingsUseCase from '../application/use_cases/scoring/GetScratchStandingsUseCase';
 
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
@@ -390,6 +392,8 @@ const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScorin
 const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const closeTeeWindowUseCase = new CloseTeeWindowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const getTeeWindowStandingsUseCase = new GetTeeWindowStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const getCompetitionStandingsUseCase = new GetCompetitionStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const getScratchStandingsUseCase = new GetScratchStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -614,6 +618,8 @@ export {
   markTeeGroupNoShowUseCase,
   closeTeeWindowUseCase,
   getTeeWindowStandingsUseCase,
+  getCompetitionStandingsUseCase,
+  getScratchStandingsUseCase,
   // Quick Match Use Cases (FE #236)
   createQuickMatchUseCase,
   addFriendParticipantUseCase,

@@ -5,6 +5,8 @@ import ReopenTeeGroupCardUseCase from './ReopenTeeGroupCardUseCase';
 import MarkTeeGroupNoShowUseCase from './MarkTeeGroupNoShowUseCase';
 import CloseTeeWindowUseCase from './CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from './GetTeeWindowStandingsUseCase';
+import GetCompetitionStandingsUseCase from './GetCompetitionStandingsUseCase';
+import GetScratchStandingsUseCase from './GetScratchStandingsUseCase';
 
 /** Anotar partidas (FE #824, PR 7): cada caso pasa al repositorio y no llama sin lo que necesita. */
 const repo = () => ({
@@ -14,6 +16,8 @@ const repo = () => ({
   markNoShow: vi.fn().mockResolvedValue({}),
   closeWindow: vi.fn().mockResolvedValue({}),
   getWindowStandings: vi.fn().mockResolvedValue({}),
+  getCompetitionStandings: vi.fn().mockResolvedValue({}),
+  getScratchStandings: vi.fn().mockResolvedValue({}),
 });
 const con = (Clase, r) => new Clase({ teeGroupScoringRepository: r });
 
@@ -27,6 +31,8 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     await con(MarkTeeGroupNoShowUseCase, r).execute('g-1', 'ana');
     await con(CloseTeeWindowUseCase, r).execute('r-1');
     await con(GetTeeWindowStandingsUseCase, r).execute('r-1', 2);
+    await con(GetCompetitionStandingsUseCase, r).execute('c-1', 3);
+    await con(GetScratchStandingsUseCase, r).execute('c-1');
 
     expect(r.retire).toHaveBeenCalledWith('g-1');
     expect(r.correctHole).toHaveBeenCalledWith('g-1', 'ana', 7, { ownScore: 5 });
@@ -34,6 +40,8 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     expect(r.markNoShow).toHaveBeenCalledWith('g-1', 'ana');
     expect(r.closeWindow).toHaveBeenCalledWith('r-1');
     expect(r.getWindowStandings).toHaveBeenCalledWith('r-1', 2);
+    expect(r.getCompetitionStandings).toHaveBeenCalledWith('c-1', 3);
+    expect(r.getScratchStandings).toHaveBeenCalledWith('c-1');
   });
 
   it('corregir: solo los lados que vienen; nulo es recogida y se manda', async () => {
@@ -55,6 +63,8 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     ['no presentado sin partida', (r) => con(MarkTeeGroupNoShowUseCase, r).execute('', 'ana'), 'markNoShow'],
     ['cerrar sin franja', (r) => con(CloseTeeWindowUseCase, r).execute(''), 'closeWindow'],
     ['clasificación sin franja', (r) => con(GetTeeWindowStandingsUseCase, r).execute(''), 'getWindowStandings'],
+    ['general sin competición', (r) => con(GetCompetitionStandingsUseCase, r).execute(''), 'getCompetitionStandings'],
+    ['scratch sin competición', (r) => con(GetScratchStandingsUseCase, r).execute(''), 'getScratchStandings'],
   ])('%s: no llama', async (_caso, ejecutar, metodo) => {
     const r = repo();
 

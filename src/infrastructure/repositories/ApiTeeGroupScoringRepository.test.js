@@ -211,6 +211,26 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     expect(api).toHaveBeenLastCalledWith('/api/v1/competitions/rounds/r-1/standings');
   });
 
+  it('la general de la competición, con o sin categoría (PR 8)', async () => {
+    api.mockResolvedValue({ tournament_type: 'STABLEFORD', scale: 'NETA', rule: 'BEST_CARD', category: 1, rows: [], me: null });
+
+    const c = await repo.getCompetitionStandings('c-1', 1);
+
+    expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/standings?category=1');
+    expect(c).toEqual({ tournamentType: 'STABLEFORD', scale: 'NETA', rule: 'BEST_CARD', category: 1, rows: [], me: null });
+    await repo.getCompetitionStandings('c-1');
+    expect(api).toHaveBeenLastCalledWith('/api/v1/competitions/c-1/standings');
+  });
+
+  it('la scratch de la competición (PR 8)', async () => {
+    api.mockResolvedValue({ tournament_type: 'MEDAL', scale: 'SCRATCH', rule: 'ACCUMULATED', category: null, rows: [], me: null });
+
+    const c = await repo.getScratchStandings('c-1');
+
+    expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/standings/scratch');
+    expect(c.scale).toBe('SCRATCH');
+  });
+
   it('la fila de quien mira cuando queda fuera del corte (`me`), con la misma forma', async () => {
     const fila = { position: null, tied: false, user_id: 'yo', name: 'Yo', category: null, handicap: '-1.2', value: null, cards: 0, thru: 0, status: 'NP' };
     api.mockResolvedValue({ tournament_type: 'STABLEFORD', scale: 'SCRATCH', rule: 'BEST_CARD', category: null, rows: [], me: fila });

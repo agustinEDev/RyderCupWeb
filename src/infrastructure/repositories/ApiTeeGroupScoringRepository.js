@@ -72,6 +72,17 @@ class ApiTeeGroupScoringRepository extends ITeeGroupScoringRepository {
     const filtro = category != null ? `?category=${encodeURIComponent(category)}` : '';
     return TeeGroupScoringMapper.toStandingsDTO(await apiRequest(`${BASE}/rounds/${roundId}/standings${filtro}`));
   }
+
+  /** La general de la competición, con su regla (PR 8). */
+  async getCompetitionStandings(competitionId, category) {
+    const filtro = category != null ? `?category=${encodeURIComponent(category)}` : '';
+    return TeeGroupScoringMapper.toStandingsDTO(await apiRequest(`${BASE}/${competitionId}/standings${filtro}`));
+  }
+
+  /** La scratch: sin categorías, hasta el 25.º y empatados; `me` si quien mira queda fuera (PR 8). */
+  async getScratchStandings(competitionId) {
+    return TeeGroupScoringMapper.toStandingsDTO(await apiRequest(`${BASE}/${competitionId}/standings/scratch`));
+  }
 }
 
 export default ApiTeeGroupScoringRepository;
