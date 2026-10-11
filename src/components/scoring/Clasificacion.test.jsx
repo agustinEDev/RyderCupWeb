@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 
 /**
  * Lo que la general y la scratch añaden a la tabla de la franja (FE #824, PR 8,
@@ -87,6 +87,36 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     render(<Clasificacion pedir={pedir} userId="yo" activa />);
 
     expect(await screen.findByText('partida.yourPosition')).toBeInTheDocument();
+  });
+
+  it('7: si una lectura posterior falla, se dice, con lo de antes debajo (/code-review)', async () => {
+    const pedir = vi.fn()
+      .mockResolvedValueOnce(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]))
+      .mockRejectedValueOnce(new Error('x'));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+    await screen.findByTestId('fila-ana');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'partida.category' }), { target: { value: '2' } });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('partida.standingsNotLoaded');
+    expect(screen.getByRole('button', { name: 'partida.retry' })).toBeInTheDocument();
+  });
+
+  it('3: al cambiar de categoría, no se enseñan las filas de antes mientras llega la nueva (/code-review)', async () => {
+    let soltar;
+    const pedir = vi.fn()
+      .mockResolvedValueOnce(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]))
+      .mockReturnValueOnce(new Promise((r) => (soltar = r)));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+    await screen.findByTestId('fila-ana');
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'partida.category' }), { target: { value: '2' } });
+
+    expect(await screen.findByText('partida.loadingStandings')).toBeInTheDocument();
+    expect(screen.queryByTestId('fila-ana')).toBeNull();
+    await act(async () => soltar(clasificacion([fila('bea', { category: 2 })], { category: 2 })));
+    expect(screen.getByTestId('fila-bea')).toBeInTheDocument();
+    expect(screen.queryByText('partida.loadingStandings')).toBeNull();
   });
 
   it('6: con `cada`, se relee; sin él, una lectura', async () => {

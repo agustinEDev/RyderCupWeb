@@ -462,8 +462,10 @@
     "fixedHandicapNoCategory": "{{handicap}}",
     "missingHandicapBadge": "Sin hándicap",
     "fewerCategories": {
-      "REPETIDOS": "Se pidieron {{pedidas}} categorías y salen {{salen}}: hay hándicaps repetidos en las fronteras y esas categorías se juntaron.",
-      "MENOS_DE_SEIS": "Se pidieron {{pedidas}} categorías y salen {{salen}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado."
+      "REPETIDOS_one": "Se pidieron {{pedidas}} categorías y sale {{count}}: hay hándicaps repetidos en las fronteras y esas categorías se juntaron.",
+      "REPETIDOS_other": "Se pidieron {{pedidas}} categorías y salen {{count}}: hay hándicaps repetidos en las fronteras y esas categorías se juntaron.",
+      "MENOS_DE_SEIS_one": "Se pidieron {{pedidas}} categorías y sale {{count}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado.",
+      "MENOS_DE_SEIS_other": "Se pidieron {{pedidas}} categorías y salen {{count}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado."
     }
   },
   "browse": {

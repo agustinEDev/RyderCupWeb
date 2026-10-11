@@ -116,6 +116,8 @@ const CompetitionDetail = () => {
   // una actualización (FE #824, PR 5)
   const idActual = useRef(id);
   const estadoDeLaActualizacion = useRef(null);
+  // Mientras se releen la ficha y las inscripciones tras cerrar (PR 8)
+  const [releyendoTrasCerrar, setReleyendoTrasCerrar] = useState(false);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -350,12 +352,17 @@ const CompetitionDetail = () => {
         // categoría de cada uno—. Con lo que fuera llegando, el orden decidía
         // el motivo (revisor)
         if (action === 'close-enrollments') {
-          Promise.all([fichaReleida, listaReleida]).then(([ficha, lista]) => {
-            if (!ficha?.strokePlay || !lista) return;
-            const aprobados = lista.filter((e) => e.status === 'APPROVED');
-            const aviso = categoriasQueSalen(ficha.strokePlay, aprobados.map((e) => e.category ?? null), aprobados.length);
-            if (aviso) customToast.warning(t(`detail.fewerCategories.${aviso.motivo}`, aviso));
-          });
+          // Y el aviso de la ficha espera también: con una lectura sí y la
+          // otra no, saldría con los límites de antes (/code-review)
+          setReleyendoTrasCerrar(true);
+          Promise.all([fichaReleida, listaReleida])
+            .then(([ficha, lista]) => {
+              if (!ficha?.strokePlay || !lista) return;
+              const aprobados = lista.filter((e) => e.status === 'APPROVED');
+              const aviso = categoriasQueSalen(ficha.strokePlay, aprobados.map((e) => e.category ?? null));
+              if (aviso) customToast.warning(t(`detail.fewerCategories.${aviso.motivo}`, { ...aviso, count: aviso.salen }));
+            })
+            .finally(() => setReleyendoTrasCerrar(false));
         }
       }
     } catch (error) {
@@ -699,14 +706,10 @@ const CompetitionDetail = () => {
   // lee el organizador, en la ficha mientras no empiece y en un aviso al cerrar
   const avisoDeCategorias =
     competition?.strokePlay && competition.hasTeams === false
-      ? categoriasQueSalen(
-        competition.strokePlay,
-        approvedEnrollments.map((e) => e.category ?? null),
-        approvedEnrollments.length
-      )
+      ? categoriasQueSalen(competition.strokePlay, approvedEnrollments.map((e) => e.category ?? null))
       : null;
   const textoDelAvisoDeCategorias = avisoDeCategorias
-    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, avisoDeCategorias)
+    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
     : null;
 
   if (isLoading) {
@@ -1502,7 +1505,7 @@ const CompetitionDetail = () => {
               )}
 
             {/* Salieron menos categorías: al organizador, hasta que empiece (PR 8) */}
-            {canManage && competition.status === 'CLOSED' && textoDelAvisoDeCategorias && (
+            {canManage && competition.status === 'CLOSED' && !releyendoTrasCerrar && textoDelAvisoDeCategorias && (
               <div className="px-4 pt-4">
                 <p data-testid="aviso-categorias" role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                   {textoDelAvisoDeCategorias}

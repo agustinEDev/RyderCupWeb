@@ -20,6 +20,34 @@ describe('useSondeoMientras (FE #824)', () => {
     visible.mockRestore();
   });
 
+  it('al volver a la pestaña, pide en el momento (/code-review)', () => {
+    const pedir = vi.fn();
+    const visible = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const { unmount } = renderHook(() => useSondeoMientras(true, pedir, 60000));
+
+    document.dispatchEvent(new globalThis.Event('visibilitychange'));
+    expect(pedir).toHaveBeenCalledTimes(1);
+
+    visible.mockReturnValue('hidden');
+    document.dispatchEvent(new globalThis.Event('visibilitychange'));
+    expect(pedir).toHaveBeenCalledTimes(1);
+
+    unmount();
+    visible.mockReturnValue('visible');
+    document.dispatchEvent(new globalThis.Event('visibilitychange'));
+    expect(pedir).toHaveBeenCalledTimes(1);
+    visible.mockRestore();
+  });
+
+  it('inactivo, volver a la pestaña no pide', () => {
+    const pedir = vi.fn();
+    renderHook(() => useSondeoMientras(false, pedir, 60000));
+
+    document.dispatchEvent(new globalThis.Event('visibilitychange'));
+
+    expect(pedir).not.toHaveBeenCalled();
+  });
+
   it('pide cada vez mientras está activo, y para al dejar de estarlo y al desmontar', () => {
     vi.useFakeTimers();
     const pedir = vi.fn();

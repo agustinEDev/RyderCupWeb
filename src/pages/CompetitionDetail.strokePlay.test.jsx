@@ -539,9 +539,8 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: tresIguales }));
     renderPage();
 
-    expect(await screen.findByTestId('aviso-categorias')).toHaveTextContent(
-      'detail.fewerCategories.MENOS_DE_SEIS'
-    );
+    // Con cuántas salen, que decide el plural («sale 1» / «salen 2»)
+    expect(await screen.findByTestId('aviso-categorias')).toHaveTextContent(/^detail\.fewerCategories\.MENOS_DE_SEIS_2$/);
   });
 
   it('9 (PR 8): el toast espera a las dos lecturas: si las inscripciones llegan antes que la ficha, el motivo sigue siendo el bueno (revisor)', async () => {
@@ -561,6 +560,8 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
     await act(async () => {});
     expect(customToast.warning).not.toHaveBeenCalled();
+    // Ni el aviso de la ficha, que saldría con los límites de antes (/code-review)
+    expect(screen.queryByTestId('aviso-categorias')).toBeNull();
 
     await act(async () => soltarLaFicha(medal({ status: 'CLOSED', strokePlay: { ...tresIguales, categoryLimits: [10] } })));
 

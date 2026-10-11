@@ -16,7 +16,16 @@ export const useSondeoMientras = (activo, pedir, cada) => {
       if (globalThis.document?.visibilityState === 'hidden') return;
       pedir();
     }, cada);
-    return () => clearInterval(reloj);
+    // Y al volver a ella, en el momento: si no, lo de antes seguía hasta el
+    // siguiente golpe de reloj (/code-review)
+    const alVolver = () => {
+      if (globalThis.document?.visibilityState === 'visible') pedir();
+    };
+    globalThis.document?.addEventListener('visibilitychange', alVolver);
+    return () => {
+      clearInterval(reloj);
+      globalThis.document?.removeEventListener('visibilitychange', alVolver);
+    };
   }, [activo, pedir, cada]);
 };
 

@@ -302,6 +302,7 @@
     "noResultsYet": "Todavía no hay resultados.",
     "standingsTitle": "Clasificación",
     "overall": "General",
-    "scratch": "Scratch"
+    "scratch": "Scratch",
+    "loadingStandings": "Cargando la clasificación…"
   }
 }

@@ -302,6 +302,7 @@
     "noResultsYet": "No results yet.",
     "standingsTitle": "Standings",
     "overall": "Overall",
-    "scratch": "Scratch"
+    "scratch": "Scratch",
+    "loadingStandings": "Loading the standings…"
   }
 }

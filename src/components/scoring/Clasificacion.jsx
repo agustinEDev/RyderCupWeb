@@ -43,6 +43,9 @@ const Clasificacion = ({
   const [categoria, setCategoria] = useState(null);
   // Las que hay, de la lectura sin filtro: al filtrar no desaparecen
   const [categorias, setCategorias] = useState([]);
+  // Cambió el filtro y aún no ha llegado lo suyo: no se enseña lo de antes
+  // bajo la categoría nueva (/code-review)
+  const [cambiandoDeFiltro, setCambiandoDeFiltro] = useState(false);
   const lecturas = useLaMasNueva();
 
   const leer = useCallback(async () => {
@@ -52,6 +55,7 @@ const Clasificacion = ({
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
       setSinCargar(false);
+      setCambiandoDeFiltro(false);
       if (categoria == null) {
         setCategorias([...new Set(leida.rows.map((r) => r.category).filter((c) => c != null))].sort((a, b) => a - b));
       }
@@ -132,7 +136,10 @@ const Clasificacion = ({
           <select
             aria-label={t('partida.category')}
             value={categoria ?? ''}
-            onChange={(e) => setCategoria(e.target.value === '' ? null : Number(e.target.value))}
+            onChange={(e) => {
+              setCambiandoDeFiltro(true);
+              setCategoria(e.target.value === '' ? null : Number(e.target.value));
+            }}
             className="mt-0.5 block min-h-11 w-full rounded-lg border border-gray-200 px-2 text-sm"
           >
             <option value="">{t('partida.allCategories')}</option>
@@ -145,7 +152,19 @@ const Clasificacion = ({
         </label>
       )}
 
-      {clasificacion.rows.length === 0 ? (
+      {/* Falló una lectura con algo ya pintado: se dice (/code-review) */}
+      {sinCargar && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-xs text-amber-800">
+          <span>{t('partida.standingsNotLoaded')}</span>
+          <button type="button" onClick={leer} className="min-h-11 rounded-lg border border-gray-300 px-3 text-gray-700">
+            {t('partida.retry')}
+          </button>
+        </div>
+      )}
+
+      {cambiandoDeFiltro && !sinCargar ? (
+        <p aria-busy="true" className="text-sm text-gray-500">{t('partida.loadingStandings')}</p>
+      ) : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
         <ol className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">

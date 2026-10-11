@@ -20,10 +20,9 @@ const POR_CATEGORIA = 6;
 /**
  * @param {{categoryCount: number|null, categoryLimits: number[]}} ajustes - Los del torneo
  * @param {Array<number|null>} categoriasDeLosInscritos - La de cada aprobado
- * @param {number} jugadores - Cuántos aprobados
  * @returns {{pedidas: number, salen: number, motivo: string}|null}
  */
-export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categoriasDeLosInscritos, jugadores) => {
+export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categoriasDeLosInscritos) => {
   const limites = categoryLimits?.length ?? 0;
   const pedidas = categoryCount ?? (limites > 0 ? limites + 1 : 0);
   const asignadas = categoriasDeLosInscritos.filter((c) => c != null);
@@ -35,7 +34,9 @@ export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categorias
   // En «iguales», los límites que se guardaron al repartir: si son menos de
   // los que daban los jugadores, es que se fundieron por hándicaps repetidos
   const porLimites = limites + 1;
-  const cabian = categoryCount != null ? Math.min(categoryCount, Math.floor(jugadores / POR_CATEGORIA)) : pedidas;
+  // n son los que se repartieron: los que tienen categoría (el backend solo
+  // reparte a quien tiene hándicap; /code-review)
+  const cabian = categoryCount != null ? Math.min(categoryCount, Math.floor(asignadas.length / POR_CATEGORIA)) : pedidas;
   // Si además la regla de los seis fundió más, lo último que pasó es eso
   const motivo = porLimites < cabian && salen === porLimites ? REPETIDOS : MENOS_DE_SEIS;
   return { pedidas, salen, motivo };
