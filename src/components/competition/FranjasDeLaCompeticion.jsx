@@ -181,7 +181,8 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {boolean} [props.puedeQuitar] - Y quita (solo con las inscripciones abiertas)
  * @param {number} [props.irASinFranja] - Sube cuando la ficha pide llevar a «Sin franja»
  * @param {boolean} [props.verPartidas] - Ya hay partidas que ver (cerrada o en juego; PR 6)
- * @param {boolean} [props.organizaPartidas] - Quien mira las organiza (el servidor dice hasta cuándo)
+ * @param {boolean} [props.puedeVerPartidas] - Quien organiza las ve aunque no juegue
+ * @param {boolean} [props.organizaPartidas] - Y las cambia (el servidor dice hasta cuándo)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -201,6 +202,7 @@ const FranjasDeLaCompeticion = ({
   puedeQuitar = false,
   irASinFranja = 0,
   verPartidas = false,
+  puedeVerPartidas = false,
   organizaPartidas = false,
 }) => {
   const { t, i18n } = useTranslation('schedule');
@@ -646,7 +648,7 @@ const FranjasDeLaCompeticion = ({
                         )}
                         {/* Las partidas, para los inscritos y quien organiza;
                             se releen con cada lectura de la agenda (PR 6) */}
-                        {verPartidas && (estoyInscrito || organizaPartidas) && (
+                        {verPartidas && (estoyInscrito || puedeVerPartidas) && (
                           <PartidasEnLaFranja
                             franja={f}
                             nombre={`${etiqueta(f).franja} · ${etiqueta(f).dia}`}

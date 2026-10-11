@@ -143,12 +143,21 @@ describe('FranjasDeLaCompeticion · partidas (FE #824, PR 6)', () => {
   });
 
   it('el organizador, aunque no juegue, las ve y las organiza', async () => {
-    pinta({ verPartidas: true, organizaPartidas: true, puedeElegir: false, estoyInscrito: false });
+    pinta({ verPartidas: true, puedeVerPartidas: true, organizaPartidas: true, puedeElegir: false, estoyInscrito: false });
 
     fireEvent.click((await en('m')).getByRole('button', { name: /partidas.show/ }));
 
     expect(await screen.findByRole('button', { name: 'partidas.generate' })).toBeInTheDocument();
     expect(mockMias).not.toHaveBeenCalled();
+  });
+
+  it('acabada, el organizador que no juega las ve sin organizarlas (CodeRabbit)', async () => {
+    pinta({ verPartidas: true, puedeVerPartidas: true, organizaPartidas: false, puedeElegir: false, estoyInscrito: false });
+
+    fireEvent.click((await en('m')).getByRole('button', { name: /partidas.show/ }));
+
+    expect(await screen.findByText('partidas.empty')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'partidas.generate' })).toBeNull();
   });
 
   it('el jugador no las organiza', async () => {

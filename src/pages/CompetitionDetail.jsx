@@ -1495,6 +1495,9 @@ const CompetitionDetail = () => {
                   // viendo acabada, sin nada que cambiar (Agustín, 11 oct);
                   // hasta cuándo se cambian lo dice el servidor (la 1.ª salida)
                   verPartidas={['CLOSED', 'IN_PROGRESS', 'COMPLETED'].includes(competition.status)}
+                  // Verlas y cambiarlas son dos cosas: acabada, quien organiza
+                  // y no juega las sigue viendo (CodeRabbit)
+                  puedeVerPartidas={canManage}
                   organizaPartidas={canManage && competition.status !== 'COMPLETED'}
                 />
               ) : (

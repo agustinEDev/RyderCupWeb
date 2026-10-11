@@ -265,6 +265,21 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     expect(await franja.findByRole('button', { name: 'partidas.generate' })).toBeInTheDocument();
   });
 
+  it('acabada, el organizador que no juega sigue viéndolas (CodeRabbit)', async () => {
+    const { getScheduleUseCase, getTeeGroupsUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    getTeeGroupsUseCase.execute.mockResolvedValueOnce({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [] });
+    mockListEnrollments.mockResolvedValue(INSCRITOS.filter((e) => e.userId !== 'org'));
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'COMPLETED' }));
+    renderPage();
+
+    const franja = within(await screen.findByTestId('franja-r1'));
+    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
+
+    expect(await franja.findByText('partidas.empty')).toBeInTheDocument();
+  });
+
   it('acabada, las partidas se siguen viendo, sin nada que cambiar (Agustín, 11 oct)', async () => {
     const { getScheduleUseCase, getTeeGroupsUseCase } = await import('../composition');
     const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
