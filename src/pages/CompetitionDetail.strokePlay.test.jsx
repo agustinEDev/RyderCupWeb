@@ -577,6 +577,10 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Las respuestas encoladas (`…Once`) que un test no llegó a usar no pasan
+    // al siguiente: vi.clearAllMocks no las quita
+    mockGetCompetitionDetail.mockReset();
+    mockListEnrollments.mockReset();
     mockListEnrollments.mockResolvedValue(INSCRITOS);
   });
 
@@ -646,7 +650,8 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
     const programada = { ...VENTANA, scheduledAt: '2030-10-12T08:00:00Z' };
     mockGetCompetitionDetail.mockResolvedValue(competicion({ status: 'CLOSED', handicapUpdateWindow: programada, handicapUpdate: enMarcha }));
     const { cancelScheduledHandicapUpdateUseCase } = await import('../composition');
-    cancelScheduledHandicapUpdateUseCase.execute.mockResolvedValue(undefined);
+    // Una vez: vi.clearAllMocks no quita implementaciones, y se filtraría (/code-review)
+    cancelScheduledHandicapUpdateUseCase.execute.mockResolvedValueOnce(undefined);
     renderPage();
     await screen.findByTestId('handicaps-estado');
     // Con los temporizadores falsos, React deja los efectos (el reloj del
@@ -673,6 +678,122 @@ describe('CompetitionDetail · la tarjeta «Hándicaps» (FE #824, PR 5)', () =>
 
     await act(async () => soltarLaVieja());
     expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed');
+  });
+
+  // Lo que deja la ficha lista con una en marcha y el reloj del sondeo armado
+  const enMarcha = { status: 'IN_PROGRESS', origin: 'ORGANIZER', startedAt: 'x', finishedAt: null, pendingPlayers: [] };
+  const acabada = { ...enMarcha, status: 'COMPLETED', finishedAt: 'y' };
+  const programada = { ...VENTANA, scheduledAt: '2030-10-12T08:00:00Z' };
+  const ficha = (handicapUpdate, extra = {}) =>
+    competicion({ status: 'CLOSED', handicapUpdateWindow: programada, handicapUpdate, ...extra });
+  const pendiente = () => {
+    let soltar;
+    let fallar;
+    const promesa = new Promise((resolve, reject) => {
+      soltar = resolve;
+      fallar = reject;
+    });
+    return { promesa, soltar: (v) => soltar(v), fallar: (e) => fallar(e) };
+  };
+  const abrirConUnaEnMarcha = async (extra = {}) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(ficha(enMarcha, extra));
+    renderPage();
+    await screen.findByTestId('handicaps-estado');
+    await act(async () => {});
+  };
+  const sondear = async () => {
+    const antes = mockGetCompetitionDetail.mock.calls.length;
+    await act(async () => vi.advanceTimersByTime(15000));
+    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBe(antes + 1));
+  };
+
+  it('al cerrar, la tarjeta sale con lo que trae la ficha releída (la ventana)', async () => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    const medal = { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null };
+    mockGetCompetitionDetail.mockResolvedValueOnce(competicion({ ...medal, handicapUpdateWindow: null }));
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ ...medal, status: 'CLOSED', handicapUpdateWindow: VENTANA }));
+    mockCloseEnrollments.mockResolvedValueOnce({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    expect(await screen.findByTestId('handicaps')).toBeInTheDocument();
+  });
+
+  it('si la nueva falla, la vieja que llega después sí se aplica (/code-review)', async () => {
+    await abrirConUnaEnMarcha();
+    const vieja = pendiente();
+    mockGetCompetitionDetail.mockReturnValueOnce(vieja.promesa);
+    await sondear();
+
+    const nueva = pendiente();
+    mockGetCompetitionDetail.mockReturnValueOnce(nueva.promesa);
+    const { cancelScheduledHandicapUpdateUseCase } = await import('../composition');
+    cancelScheduledHandicapUpdateUseCase.execute.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.cancelSchedule' }));
+    await waitFor(() => expect(cancelScheduledHandicapUpdateUseCase.execute).toHaveBeenCalled());
+    await act(async () => nueva.fallar(new Error('sin cobertura')));
+
+    await act(async () => vieja.soltar(ficha(acabada)));
+    await waitFor(() => expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed'));
+  });
+
+  it('con lecturas más lentas que el sondeo, cada una se aplica al llegar (/code-review)', async () => {
+    await abrirConUnaEnMarcha();
+    const primera = pendiente();
+    mockGetCompetitionDetail.mockReturnValueOnce(primera.promesa);
+    await sondear();
+    const segunda = pendiente();
+    mockGetCompetitionDetail.mockReturnValueOnce(segunda.promesa);
+    await sondear();
+
+    await act(async () => primera.soltar(ficha({ ...enMarcha, pendingPlayers: [{ userId: 'ana', name: 'Ana' }] })));
+    await waitFor(() => expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.inProgress_1'));
+  });
+
+  it('la ficha que se relee tras un cambio de estado no pisa una lectura más nueva de los hándicaps (/code-review)', async () => {
+    // Un Medal: cerrado, su paso es iniciar
+    const medal = { hasTeams: false, tournamentType: 'MEDAL', team1Name: null, team2Name: null, teamAssignment: null };
+    await abrirConUnaEnMarcha(medal);
+    const { startCompetitionUseCase, cancelScheduledHandicapUpdateUseCase } = await import('../composition');
+    startCompetitionUseCase.execute.mockResolvedValueOnce({ status: 'IN_PROGRESS', updatedAt: 'z' });
+    const tardia = pendiente();
+    mockGetCompetitionDetail.mockReturnValueOnce(tardia.promesa);
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.actions.start-competition' }));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+    await waitFor(() => expect(startCompetitionUseCase.execute).toHaveBeenCalled());
+
+    mockGetCompetitionDetail.mockResolvedValueOnce(ficha(acabada, { ...medal, status: 'IN_PROGRESS' }));
+    cancelScheduledHandicapUpdateUseCase.execute.mockResolvedValueOnce(undefined);
+    fireEvent.click(await screen.findByRole('button', { name: 'handicaps.cancelSchedule' }));
+    await waitFor(() => expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed'));
+
+    await act(async () => tardia.soltar(ficha(enMarcha, { ...medal, status: 'IN_PROGRESS' })));
+    expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed');
+  });
+
+  it('las inscripciones de una lectura vieja no pisan las de otra más nueva (/code-review)', async () => {
+    await abrirConUnaEnMarcha();
+    const { cancelScheduledHandicapUpdateUseCase } = await import('../composition');
+    const inscripcionesViejas = pendiente();
+    mockGetCompetitionDetail.mockResolvedValueOnce(ficha(acabada));
+    mockListEnrollments.mockReturnValueOnce(inscripcionesViejas.promesa);
+    await sondear();
+    await waitFor(() => expect(screen.getByTestId('handicaps-estado')).toHaveTextContent('handicaps.completed'));
+
+    mockGetCompetitionDetail.mockResolvedValueOnce(ficha(acabada));
+    mockListEnrollments.mockResolvedValueOnce([{ ...inscrito('dani', 'Dani Duro') }]);
+    cancelScheduledHandicapUpdateUseCase.execute.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.cancelSchedule' }));
+    expect(await screen.findByTestId('aprobado-dani')).toBeInTheDocument();
+
+    await act(async () => inscripcionesViejas.soltar(INSCRITOS));
+    expect(screen.getByTestId('aprobado-dani')).toBeInTheDocument();
   });
 
   it('releer desde la tarjeta trae lo nuevo de la ficha', async () => {

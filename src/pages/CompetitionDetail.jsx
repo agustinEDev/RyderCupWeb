@@ -15,6 +15,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
+import { useLaMasNueva } from '../hooks/useLaMasNueva';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
@@ -113,6 +114,10 @@ const CompetitionDetail = () => {
   // una actualización (FE #824, PR 5)
   const idActual = useRef(id);
   const estadoDeLaActualizacion = useRef(null);
+  // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
+  // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
+  const lecturasDeLaFicha = useLaMasNueva();
+  const lecturasDeInscripciones = useLaMasNueva();
   useEffect(() => {
     idActual.current = id;
   }, [id]);
@@ -391,26 +396,26 @@ const CompetitionDetail = () => {
   // Si ahora se puede borrar: la respuesta de un cambio de estado no lo trae, y
   // el de antes ya no vale —cancelar la vuelve borrable— (FE #667). En silencio,
   // sin la espera de pantalla completa; si falla, no se ofrece lo que no se sabe
-  const refrescarCanDelete = () =>
-    getCompetitionDetailUseCase
+  const refrescarCanDelete = () => {
+    const turno = lecturasDeLaFicha.turno();
+    return getCompetitionDetailUseCase
       .execute(id)
       // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
       // del primero puede llegar tarde y decidiría el botón del segundo
-      .then((data) =>
+      .then((data) => {
+        // Lo de los hándicaps cambia al cerrar (FE #824, PR 5), pero no pisa lo
+        // de una lectura más nueva de la tarjeta (/code-review)
+        const deLosHandicaps = lecturasDeLaFicha.aplicar(turno)
+          ? { handicapUpdate: data.handicapUpdate, handicapUpdateWindow: data.handicapUpdateWindow }
+          : {};
         setCompetition(prev =>
           prev.status === data.status
-            ? {
-                ...prev,
-                canDelete: data.canDelete,
-                teamsAssigned: data.teamsAssigned,
-                // Lo de los hándicaps cambia al cerrar (FE #824, PR 5)
-                handicapUpdate: data.handicapUpdate,
-                handicapUpdateWindow: data.handicapUpdateWindow,
-              }
+            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned, ...deLosHandicaps }
             : prev
-        )
-      )
+        );
+      })
       .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+  };
 
   // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
   // completa: la tarjeta lo pide al lanzar o programar, y cada 15 s mientras
@@ -419,14 +424,13 @@ const CompetitionDetail = () => {
   // actualización: releerlas cada 15 s mientras dura eran peticiones de más
   // (revisor). Y una respuesta de otra competición (se cambió de ruta) no pisa,
   // ni una vieja a otra más nueva si se cruzan (el sondeo y un botón; CodeRabbit)
-  const ultimaLectura = useRef(0);
   const releerHandicaps = useCallback(() => {
     const deEsta = id;
-    const lectura = ++ultimaLectura.current;
+    const turno = lecturasDeLaFicha.turno();
     getCompetitionDetailUseCase
       .execute(deEsta)
       .then((data) => {
-        if (deEsta !== idActual.current || lectura !== ultimaLectura.current) return;
+        if (deEsta !== idActual.current || !lecturasDeLaFicha.aplicar(turno)) return;
         const estaba = estadoDeLaActualizacion.current;
         estadoDeLaActualizacion.current = data.handicapUpdate?.status ?? null;
         setCompetition((prev) => ({
@@ -435,14 +439,18 @@ const CompetitionDetail = () => {
           handicapUpdateWindow: data.handicapUpdateWindow,
         }));
         if (estadoDeLaActualizacion.current !== 'IN_PROGRESS' || estaba !== 'IN_PROGRESS') {
+          const deLaLista = lecturasDeInscripciones.turno();
           return listEnrollmentsUseCase
             .execute(deEsta)
-            .then((lista) => deEsta === idActual.current && setEnrollments(lista));
+            .then(
+              (lista) =>
+                deEsta === idActual.current && lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista)
+            );
         }
         return undefined;
       })
       .catch((e) => console.error('Error reloading handicap updates:', e));
-  }, [id]);
+  }, [id, lecturasDeLaFicha, lecturasDeInscripciones]);
 
   // Lo último que se sabe de la actualización, para notar cuándo acaba
   const estadoCargado = competition?.handicapUpdate?.status ?? null;
