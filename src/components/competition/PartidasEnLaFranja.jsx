@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import {
   getTeeGroupsUseCase,
@@ -8,6 +9,7 @@ import {
   reorderTeeGroupsUseCase,
   setTeeGroupMarkersUseCase,
   deleteTeeGroupsUseCase,
+  closeTeeWindowUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
@@ -32,6 +34,7 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
  * @param {Object} props.franja - La franja (Round) con su `teeSheet`
  * @param {string} [props.nombre] - «Mañana · sáb 12 oct»: cada desplegable dice de qué franja es
  * @param {() => void} [props.onCambio] - Tras un cambio que sale bien (para releer «Tu partida»)
+ * @param {string} props.competitionId - Para volver a la ficha desde la tarjeta (PR 7)
  * @param {number} props.salidas - Cuántas salidas tiene la hoja
  * @param {string} [props.userId] - Quién mira
  * @param {boolean} props.organiza - Si quien mira la organiza
@@ -57,6 +60,9 @@ const CON_TEXTO = [
   'GROUP_NOT_IN_WINDOW',
   'PLAYER_NOT_IN_WINDOW',
   'INVALID_GROUP_ORDER',
+  // Al cerrar la franja (PR 7)
+  'SCORING_NOT_OPEN_YET',
+  'GROUP_NOT_SCORING',
 ];
 
 // 44 px de alto: se tocan con el dedo
@@ -66,7 +72,7 @@ const secundario = `${boton} border-gray-300 bg-white text-gray-700 hover:bg-gra
 const icono = 'flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-50';
 const selector = 'min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs';
 
-const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version, onCambio }) => {
+const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, organiza, version, onCambio }) => {
   const { t, i18n } = useTranslation('schedule');
   const [abierta, setAbierta] = useState(false);
   const [vista, setVista] = useState(null);
@@ -162,6 +168,9 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
 
   const generar = () =>
     cambiar(() => generateTeeGroupsUseCase.execute(franja.id, orden), 'partidas.generated', () => setConfirmando(null));
+  // Cerrar la franja (PR 7): lo sin acabar se da por terminado
+  const cerrarLaFranja = () =>
+    cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null));
   const borrar = () =>
     cambiar(() => deleteTeeGroupsUseCase.execute(franja.id), 'partidas.removed', () => setConfirmando(null));
   const mover = (jugador, destino) => {
@@ -413,6 +422,13 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
                     ))}
                   </ul>
                   {editable && marcando?.groupId === g.id && editorDeMarcadores(g)}
+                  {/* A su tarjeta (PR 7): anotar la mía, ver las demás */}
+                  <Link
+                    to={`/player/groups/${g.id}/scoring?competition=${competitionId}`}
+                    className="mt-1 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline"
+                  >
+                    {t(mia ? 'partidas.score' : 'partidas.viewCard')}
+                  </Link>
                 </li>
               );
             })}
@@ -440,6 +456,17 @@ const PartidasEnLaFranja = ({ franja, nombre, salidas, userId, organiza, version
           )}
 
           {editable && generacion()}
+          {/* Ya salió la primera y queda alguna sin acabar: el organizador la
+              cierra como red, con lo que haya (PR 7, P3). Antes de abrirse la
+              anotación lo rechaza el servidor, y se dice por qué */}
+          {organiza && !vista.editable && grupos.some((g) => g.status !== 'COMPLETED') &&
+            (confirmando === 'cerrar' ? (
+              confirmacion(t('partidas.closeWindowConfirm'), 'partidas.closeWindowYes', cerrarLaFranja)
+            ) : (
+              <button type="button" disabled={ocupado} onClick={() => setConfirmando('cerrar')} className={secundario}>
+                {t('partidas.closeWindow')}
+              </button>
+            ))}
           {organiza && !vista.editable && <p className="text-xs text-gray-500">{t('partidas.notEditable')}</p>}
         </div>
       )}

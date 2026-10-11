@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 
@@ -47,6 +48,13 @@ const MisPartidas = ({ competitionId, userId, version, fecha }) => {
               ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
               : t('partidas.mineAlone', datos)}
             {marcado && <span> · {t('partidas.youMark', { jugador: marcado.name })}</span>}
+            {/* A anotarla (PR 7): antes de su hora, la pantalla dice cuándo abre */}
+            <Link
+              to={`/player/groups/${group.id}/scoring?competition=${competitionId}`}
+              className="ml-2 inline-flex min-h-11 items-center font-semibold text-primary underline"
+            >
+              {t('partidas.score')}
+            </Link>
           </li>
         );
       })}

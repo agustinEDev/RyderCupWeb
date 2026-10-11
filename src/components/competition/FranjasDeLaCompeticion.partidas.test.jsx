@@ -12,6 +12,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('react-router', () => ({
+  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+}));
+
 const mockToast = { error: vi.fn(), success: vi.fn() };
 vi.mock('../../utils/toast', () => ({ default: mockToast }));
 
@@ -158,6 +162,16 @@ describe('FranjasDeLaCompeticion · partidas (FE #824, PR 6)', () => {
 
     expect(await screen.findByText('partidas.empty')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'partidas.generate' })).toBeNull();
+  });
+
+  it('el enlace a cada tarjeta lleva la competición (para volver y para el organizador; PR 7)', async () => {
+    mockPartidas.mockResolvedValue({ ...VACIA, groups: [MIA.group] });
+    pinta({ verPartidas: true, puedeElegir: false });
+
+    fireEvent.click((await en('m')).getByRole('button', { name: /partidas.show/ }));
+
+    const enlace = within(await screen.findByTestId('partida-g1')).getByRole('link');
+    expect(enlace).toHaveAttribute('href', '/player/groups/g1/scoring?competition=c-1');
   });
 
   it('el jugador no las organiza', async () => {
