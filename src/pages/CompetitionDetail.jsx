@@ -22,6 +22,7 @@ import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompetici
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
 import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
+import { categoriasQueSalen } from '../domain/services/CategoriasQueSalen';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -115,6 +116,8 @@ const CompetitionDetail = () => {
   // una actualización (FE #824, PR 5)
   const idActual = useRef(id);
   const estadoDeLaActualizacion = useRef(null);
+  // Si se acaba de cerrar aquí: el aviso de menos categorías sale entonces (PR 8)
+  const [acabaDeCerrar, setAcabaDeCerrar] = useState(false);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -278,6 +281,8 @@ const CompetitionDetail = () => {
           break;
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
+          // Para avisar al organizador si salen menos categorías (PR 8)
+          setAcabaDeCerrar(true);
           customToast.success(t('detail.success.enrollmentsClosed'));
           if (competition.teamAssignment === 'AUTOMATIC') {
             try {
@@ -408,7 +413,9 @@ const CompetitionDetail = () => {
       .then((data) => {
         setCompetition(prev =>
           prev.status === data.status
-            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned }
+            // Y los ajustes de stroke play: al cerrar, «categorías iguales»
+            // guarda los límites que repartió (PR 8)
+            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned, strokePlay: data.strokePlay }
             : prev
         );
         // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
@@ -669,6 +676,27 @@ const CompetitionDetail = () => {
       setRevertingHandicapId(null);
     }
   };
+
+  // Salieron menos categorías de las pedidas (FE #824, PR 8, caso 9): solo lo
+  // lee el organizador, en la ficha mientras no empiece y en un aviso al cerrar
+  const avisoDeCategorias =
+    competition?.strokePlay && competition.hasTeams === false
+      ? categoriasQueSalen(
+        competition.strokePlay,
+        approvedEnrollments.map((e) => e.category ?? null),
+        approvedEnrollments.length
+      )
+      : null;
+  const textoDelAvisoDeCategorias = avisoDeCategorias
+    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, avisoDeCategorias)
+    : null;
+  // Cuando, tras cerrar, llegan los límites y las categorías releídos
+  useEffect(() => {
+    if (!acabaDeCerrar || !textoDelAvisoDeCategorias) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- el aviso sale una vez por cierre
+    setAcabaDeCerrar(false);
+    customToast.warning(textoDelAvisoDeCategorias);
+  }, [acabaDeCerrar, textoDelAvisoDeCategorias]);
 
   if (isLoading) {
     return (
@@ -1461,6 +1489,15 @@ const CompetitionDetail = () => {
                   />
                 </div>
               )}
+
+            {/* Salieron menos categorías: al organizador, hasta que empiece (PR 8) */}
+            {canManage && competition.status === 'CLOSED' && textoDelAvisoDeCategorias && (
+              <div className="px-4 pt-4">
+                <p data-testid="aviso-categorias" role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  {textoDelAvisoDeCategorias}
+                </p>
+              </div>
+            )}
 
             {/* Las clasificaciones de un Stableford o un Medal, desde que se
                 juega (FE #824, PR 8): para cualquiera con sesión */}

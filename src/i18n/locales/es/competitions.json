@@ -460,7 +460,11 @@
     },
     "fixedHandicap": "{{handicap}} · {{categoria}}.ª",
     "fixedHandicapNoCategory": "{{handicap}}",
-    "missingHandicapBadge": "Sin hándicap"
+    "missingHandicapBadge": "Sin hándicap",
+    "fewerCategories": {
+      "REPETIDOS": "Se pidieron {{pedidas}} categorías y salen {{salen}}: hay hándicaps repetidos en las fronteras y esas categorías se juntaron.",
+      "MENOS_DE_SEIS": "Se pidieron {{pedidas}} categorías y salen {{salen}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado."
+    }
   },
   "browse": {
     "title": "Explorar Competiciones",

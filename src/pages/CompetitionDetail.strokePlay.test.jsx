@@ -524,6 +524,55 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
   });
 
+  // Caso 9 de la PR 8: salieron menos categorías de las pedidas
+  const tresIguales = { categoryCount: 3, categoryLimits: [15], maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' };
+  const repartidos = [conFijado('org', 'Olga Organiza', 10, 1), conFijado('ana', 'Ana Alba', 20, 2), conFijado('bea', 'Bea Blanco', 12, 1)];
+
+  it('9 (PR 8): cerrada, el organizador lee que salieron menos categorías y por qué', async () => {
+    mockListEnrollments.mockResolvedValue(repartidos);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: tresIguales }));
+    renderPage();
+
+    expect(await screen.findByTestId('aviso-categorias')).toHaveTextContent(
+      'detail.fewerCategories.MENOS_DE_SEIS'
+    );
+  });
+
+  it.each([
+    ['a un jugador', { isAdmin: false, isCreator: false, isLoading: false }, 'CLOSED'],
+    ['una vez empezada', { isAdmin: false, isCreator: true, isLoading: false }, 'IN_PROGRESS'],
+  ])('9 (PR 8): no se avisa %s', async (_caso, roles, status) => {
+    mockRoles = roles;
+    mockListEnrollments.mockResolvedValue(repartidos);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status, strokePlay: tresIguales, creatorId: roles.isCreator ? 'org' : 'otra' }));
+    renderPage();
+
+    await screen.findByTestId('aprobado-ana');
+    expect(screen.queryByTestId('aviso-categorias')).toBeNull();
+  });
+
+  it('9 (PR 8): al cerrar, un toast lo dice, con los límites que se guardaron al cerrar', async () => {
+    // 18 jugadores dan para 3 categorías; los límites que se guardaron al
+    // cerrar (uno) dicen que se fundieron por hándicaps repetidos. Sin
+    // releerlos, sería «menos de seis»
+    const dieciocho = Array.from({ length: 18 }, (_, i) => conFijado(`j${i}`, `Jugador ${i}`, i < 9 ? 10 : 12, i < 9 ? 1 : 2));
+    mockListEnrollments.mockResolvedValueOnce(INSCRITOS).mockResolvedValue(dieciocho);
+    mockGetCompetitionDetail.mockResolvedValueOnce(medal({ status: 'ACTIVE', strokePlay: { ...tresIguales, categoryLimits: [] } }));
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: { ...tresIguales, categoryLimits: [10] } }));
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() =>
+      expect(customToast.warning).toHaveBeenCalledWith(expect.stringContaining('detail.fewerCategories.REPETIDOS'))
+    );
+    expect(await screen.findByTestId('aviso-categorias')).toBeInTheDocument();
+  });
+
   it('1: con las inscripciones abiertas, el hándicap de siempre y el lápiz', async () => {
     mockListEnrollments.mockResolvedValue(INSCRITOS);
     mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'ACTIVE' }));
