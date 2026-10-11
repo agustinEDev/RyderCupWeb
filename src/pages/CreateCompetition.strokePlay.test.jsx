@@ -128,7 +128,7 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
   it.each(['STABLEFORD', 'MEDAL'])('pasada: el ejemplo del nombre es el de un %s, no «Ryder Cup de amigos»', async (tipo) => {
     await alTipo(tipo);
 
-    expect(await screen.findByTestId('campo-nombre')).toHaveAttribute('placeholder', 'create.competitionNamePlaceholderStrokePlay');
+    expect(await screen.findByTestId('campo-nombre')).toHaveAttribute('placeholder', `create.competitionNamePlaceholderFor.${tipo}`);
   });
 
   it('3: una Ryder no tiene sección de stroke play', async () => {

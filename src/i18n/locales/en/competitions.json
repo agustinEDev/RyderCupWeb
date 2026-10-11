@@ -189,7 +189,10 @@
         }
       }
     },
-    "competitionNamePlaceholderStrokePlay": "E.g. Sunday Stableford"
+    "competitionNamePlaceholderFor": {
+      "STABLEFORD": "E.g. Sunday Stableford",
+      "MEDAL": "E.g. Spring Medal"
+    }
   },
   "edit": {
     "title": "Edit Competition",

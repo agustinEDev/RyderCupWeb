@@ -85,6 +85,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   // A quién se está moviendo: su lista solo se abre al pulsar su icono (pasada:
   // a todo lo ancho, una línea por jugador)
   const [moviendo, setMoviendo] = useState(null);
+  // Al cerrar la lista sin mover, el foco vuelve al icono de ese jugador (revisor)
+  const [volverAlIcono, setVolverAlIcono] = useState(null);
   // Lecturas y escrituras se cruzan: una vieja no pisa a otra más nueva
   const lecturas = useLaMasNueva();
 
@@ -160,9 +162,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       if (!aplicada) await leer();
     } catch (error) {
       customToast.error(mensaje(error));
-      // Lo abierto se cierra: se relee, y lo que confirmaba o editaba ya no vale
+      // Lo abierto se cierra: se relee, y lo que confirmaba, editaba o movía ya no vale
       setConfirmando(null);
       setMarcando(null);
+      setMoviendo(null);
       await leer();
     } finally {
       setOcupado(false);
@@ -223,7 +226,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     ];
   };
 
-  const selectorDeDestino = (jugador, nombre, { etiqueta, placeholder, conIntercambios }) => {
+  const selectorDeDestino = (jugador, nombre, { etiqueta, placeholder, conIntercambios, enfocar = false }) => {
     const opciones = opcionesDeDestino(jugador, { conIntercambios });
     if (opciones.length === 0) return null;
     return (
@@ -231,6 +234,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
         aria-label={t(etiqueta, { jugador: nombre })}
         value=""
         disabled={ocupado}
+        // Se abre desde su icono: el foco va a ella, no se queda en <body> (revisor)
+        autoFocus={enfocar}
         onChange={(e) => mover(jugador, e.target.value)}
         className={selector}
       >
@@ -420,6 +425,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             type="button"
                             disabled={ocupado}
                             aria-label={t('partidas.movePlayer', { jugador: p.name })}
+                            ref={(boton) => {
+                              if (boton && volverAlIcono === p.userId) boton.focus();
+                            }}
+                            onFocus={() => volverAlIcono === p.userId && setVolverAlIcono(null)}
                             onClick={() => setMoviendo(p.userId)}
                             className={`${icono} ml-auto`}
                           >
@@ -432,8 +441,16 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                               etiqueta: 'partidas.moveTo',
                               placeholder: 'partidas.moveToPlaceholder',
                               conIntercambios: true,
+                              enfocar: true,
                             })}
-                            <button type="button" onClick={() => setMoviendo(null)} className="min-h-11 px-2 text-xs text-gray-600">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMoviendo(null);
+                                setVolverAlIcono(p.userId);
+                              }}
+                              className="min-h-11 px-2 text-xs text-gray-600"
+                            >
                               {t('partidas.cancel')}
                             </button>
                           </span>

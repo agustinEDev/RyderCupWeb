@@ -35,12 +35,12 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
     mockScratch.mockResolvedValue(clasificacion([fila('bea', { category: 2 }), fila('cris', { category: 1, position: 2 })], { scale: 'SCRATCH' }));
   });
 
-  it('2: abre en la general, con categoría, tarjetas y la regla; la scratch no se pide hasta abrirla', async () => {
+  it('2: abre en la general, en columnas y con la regla; la scratch no se pide hasta abrirla', async () => {
     render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="ana" enJuego={false} />);
 
-    const ana = await screen.findByTestId('fila-ana');
+    await screen.findByTestId('fila-ana');
     expect(mockGeneral).toHaveBeenCalledWith('c-1', undefined);
-    expect(ana).toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader')[2]).toHaveTextContent('partida.colPoints');
     expect(screen.getByText('partida.rule.ACCUMULATED')).toBeInTheDocument();
     expect(mockScratch).not.toHaveBeenCalled();
   });
@@ -53,7 +53,7 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
 
     expect(await screen.findByTestId('fila-bea')).toBeInTheDocument();
     expect(mockScratch).toHaveBeenCalledWith('c-1');
-    // Sin filtro ni tarjetas: la scratch no tiene categorías
+    // Sin filtro: la scratch no tiene categorías
     expect(screen.queryAllByRole('combobox').filter((c) => !c.closest('[hidden]'))).toHaveLength(0);
     expect(screen.getByRole('tab', { name: 'partida.scratch' })).toHaveAttribute('aria-selected', 'true');
   });

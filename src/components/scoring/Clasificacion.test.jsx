@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 
 /**
- * Lo que la general y la scratch añaden a la tabla de la franja (FE #824, PR 8,
- * casos 2, 4 y 6): categoría y tarjetas jugadas, la regla del torneo, la fila
- * de quien mira fijada debajo si queda fuera del corte, y releer cada `cada`.
+ * La tabla de clasificación (FE #824, PR 8 y pasada): columnas estilo
+ * leaderboard (POS · JUGADOR · PTS/PAR · HOYO), la regla del torneo, la fila
+ * de quien mira fijada debajo si queda fuera del corte, releer cada `cada` y
+ * al cambiar la versión.
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -46,6 +47,32 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     await screen.findByTestId('fila-ana');
     expect(screen.getAllByRole('columnheader')[2]).toHaveTextContent('partida.colToPar');
     expect(screen.getByTestId('fila-ana')).toHaveTextContent('-4');
+  });
+
+  it('accesible (revisor): la tabla tiene nombre, los códigos su nombre entero y los nombres cortados su texto completo', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NR', thru: 9 })], { me: fila('yo', { position: 31 }) }));
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+
+    await screen.findByTestId('fila-ana');
+    expect(screen.getByRole('table', { name: 'partida.standingsTable' })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'partida.yourPosition' })).toBeInTheDocument();
+    const codigo = screen.getByTestId('fila-ana').querySelector('abbr');
+    expect(codigo).toHaveAttribute('title', 'partida.status.NR');
+    expect(codigo).toHaveTextContent('partida.statusShort.NR');
+    expect(screen.getByTestId('fila-ana').querySelectorAll('td')[1]).toHaveAttribute('title', 'ANA');
+  });
+
+  it('Medal en cero: PAR; un Stableford con 0 puntos, 0', async () => {
+    const medal = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: 0 })], { tournamentType: 'MEDAL' }));
+    const { unmount } = render(<Clasificacion pedir={medal} userId="x" activa />);
+    expect((await screen.findByTestId('fila-ana')).querySelectorAll('td')[2]).toHaveTextContent('PAR');
+    unmount();
+
+    const stb = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: 0, thru: 0 })]));
+    render(<Clasificacion pedir={stb} userId="x" activa />);
+    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll('td');
+    expect(celdas[2]).toHaveTextContent(/^0$/);
+    expect(celdas[3]).toHaveTextContent(/^0$/);
   });
 
   it('sin valor (sin empezar, NR, NP), un guion en su columna', async () => {

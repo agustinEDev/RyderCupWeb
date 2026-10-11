@@ -287,6 +287,30 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await waitFor(() => expect(screen.queryByRole('combobox', { name: /partidas.moveTo/ })).toBeNull());
   });
 
+  it('10d (revisor): al abrir la lista el foco va a ella; al cancelar, vuelve al icono', async () => {
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    const lista = await abrirMover('ANA');
+    expect(lista).toHaveFocus();
+    fireEvent.click(within(screen.getByTestId('partida-jugador-ana')).getByRole('button', { name: 'partidas.cancel' }));
+
+    expect(screen.getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' })).toHaveFocus();
+  });
+
+  it('10e (revisor): si mover falla, la lista se cierra (lo pintado se relee)', async () => {
+    mockMover.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_FULL' }));
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    fireEvent.change(await abrirMover('ANA'), { target: { value: 'g3' } });
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole('combobox', { name: /partidas.moveTo/ })).toBeNull());
+  });
+
   it('10b: elegir un destino lo manda en un paso: con sitio, intercambio o nueva', async () => {
     mockMover.mockResolvedValue(vista());
     pintar({ organiza: true });

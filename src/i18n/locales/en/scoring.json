@@ -243,7 +243,6 @@
     "categoryN": "Category {{numero}}",
     "standingsEmpty": "Nobody in the standings yet.",
     "standingsNotLoaded": "The standings could not be loaded.",
-    "finished": "F",
     "thru_one": "thru {{count}}",
     "thru_other": "thru {{count}}",
     "status": {
@@ -291,9 +290,6 @@
       "NOT_ORGANIZER": "Only the organiser can do this.",
       "generic": "It could not be done."
     },
-    "categoryShort": "Cat. {{numero}}",
-    "cards_one": "{{count}} card",
-    "cards_other": "{{count}} cards",
     "rule": {
       "ACCUMULATED": "Rule: all cards added up",
       "BEST_CARD": "Rule: each player's best card"
@@ -311,10 +307,10 @@
     "colThru": "Thru",
     "thruFinished": "F",
     "statusShort": {
-      "CLASIFICADO": "",
       "SIN_EMPEZAR": "–",
       "NR": "NR",
       "NP": "NS"
-    }
+    },
+    "standingsTable": "Standings"
   }
 }

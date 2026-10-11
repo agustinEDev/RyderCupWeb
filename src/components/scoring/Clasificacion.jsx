@@ -104,17 +104,19 @@ const Clasificacion = ({
     return (
       <tr key={testId} data-testid={testId} data-yo={String(yo)} className={yo ? 'bg-green-50 font-semibold' : ''}>
         <td className="w-10 py-2 pl-3 text-gray-500">{puesto(fila)}</td>
-        <td className="max-w-0 truncate py-2 pr-2 text-gray-900">{fila.name}</td>
+        {/* Con el nombre entero al pasar por encima: a 360 px se corta (revisor) */}
+        <td title={fila.name} className="max-w-0 truncate py-2 pr-2 text-gray-900">{fila.name}</td>
         <td className="w-14 py-2 text-right font-bold text-gray-900 tabular-nums">{valor(fila)}</td>
-        <td data-columna="thru" title={titulo} className="w-14 py-2 pr-3 text-right text-xs text-gray-500 tabular-nums">
-          {texto}
+        <td data-columna="thru" className="w-14 py-2 pr-3 text-right text-xs text-gray-500 tabular-nums">
+          {/* NR, NP: abreviatura con su nombre entero, que los lectores de pantalla sí dicen (revisor) */}
+          {titulo ? <abbr title={titulo} className="no-underline">{texto}</abbr> : texto}
         </td>
       </tr>
     );
   };
 
-  const tabla = (filas, conCabecera) => (
-    <table className="w-full table-fixed border-collapse text-sm">
+  const tabla = (filas, conCabecera, nombre) => (
+    <table aria-label={nombre} className="w-full table-fixed border-collapse text-sm">
       {conCabecera && (
         <thead className="border-b border-gray-200 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
           <tr>
@@ -172,7 +174,11 @@ const Clasificacion = ({
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          {tabla(clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)), true)}
+          {tabla(
+            clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)),
+            true,
+            t('partida.standingsTable')
+          )}
         </div>
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
@@ -180,7 +186,8 @@ const Clasificacion = ({
         <div>
           <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
           <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">
-            {tabla(pintaFila(clasificacion.me, 'fila-fuera-del-corte'), false)}
+            {/* Con su cabecera también: sin ella sus celdas no dicen de qué columna son (revisor) */}
+            {tabla(pintaFila(clasificacion.me, 'fila-fuera-del-corte'), true, t('partida.yourPosition'))}
           </div>
         </div>
       )}

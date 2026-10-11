@@ -81,7 +81,7 @@ describe('ClasificacionDeLaFranja (FE #824, PR 7)', () => {
     expect(thru('cris')).toHaveTextContent('partida.statusShort.NP');
     expect(thru('dani')).toHaveTextContent('partida.statusShort.SIN_EMPEZAR');
     // Y su nombre completo, para quien no conozca los códigos
-    expect(thru('bea')).toHaveAttribute('title', 'partida.status.NR');
+    expect(thru('bea').querySelector('abbr')).toHaveAttribute('title', 'partida.status.NR');
   });
 
   it('con varias categorías, se filtra por una (se pide al servidor)', async () => {

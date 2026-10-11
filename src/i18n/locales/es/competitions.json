@@ -189,7 +189,10 @@
         }
       }
     },
-    "competitionNamePlaceholderStrokePlay": "Ej: Stableford de los domingos"
+    "competitionNamePlaceholderFor": {
+      "STABLEFORD": "Ej: Stableford de los domingos",
+      "MEDAL": "Ej: Medal de primavera"
+    }
   },
   "edit": {
     "title": "Editar Competición",
