@@ -19,7 +19,8 @@ import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
-import { leeLosProximosPartidos } from '../services/partidosSinCobertura';
+import { leeLosProximosPartidos, precargaElProximoDia } from '../services/partidosSinCobertura';
+import { elMasCercano } from '../utils/elMasCercano';
 import {
   elPanelYaSePinto,
   anotaQueElPanelSePinto,
@@ -31,6 +32,8 @@ import {
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
   getScoringViewUseCase,
+  getUpcomingTeeGroupsUseCase,
+  getTeeGroupScoringViewUseCase,
   updateUserProfileUseCase,
 } from '../composition';
 import {
@@ -63,6 +66,9 @@ const Dashboard = () => {
   const [recentMatches, setRecentMatches] = useState([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
+  // Las próximas partidas de stroke play (FE #824, PR 7): el banner enseña la
+  // más cercana entre estas y los partidos de la Ryder
+  const [proximasPartidas, setProximasPartidas] = useState([]);
   const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
@@ -331,14 +337,32 @@ const Dashboard = () => {
       // Sin cobertura, lo guardado; y si no hay nada, que no se pudo preguntar
       // (FE #615). Con las competiciones caídas el caso de uso recibiría `[]` y
       // contestaría «ninguno» sin error, así que ese fallo se le pasa tal cual
-      const leido = await leeLosProximosPartidos({
-        lee: () => (competitionsError
-          ? Promise.reject(competitionsError)
-          : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
-        userId: user.id,
-        pideLaVista: (id) => getScoringViewUseCase.execute(id),
-      });
+      // A la vez que las partidas de stroke play, que van por otro camino: sin
+      // cobertura no hay de dónde sacarlas y el banner se queda con lo de la
+      // Ryder. La del próximo día se guarda para anotarla sin cobertura, como
+      // los partidos, pero con SU vista
+      const leeLasPartidas = async () => {
+        if (competitionsError) return [];
+        try {
+          const { matches } = await getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, competitions);
+          precargaElProximoDia({ partidos: matches, userId: user.id, pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id) });
+          return matches;
+        } catch {
+          return [];
+        }
+      };
+      const [leido, partidas] = await Promise.all([
+        leeLosProximosPartidos({
+          lee: () => (competitionsError
+            ? Promise.reject(competitionsError)
+            : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
+          userId: user.id,
+          pideLaVista: (id) => getScoringViewUseCase.execute(id),
+        }),
+        leeLasPartidas(),
+      ]);
       if (!cancelled) {
+        setProximasPartidas(partidas);
         setUpcomingMatches(leido.partidos);
         setUpcomingSinRespuesta(leido.sinRespuesta);
         setUpcomingDesdeMemoria(leido.desdeMemoria);
@@ -624,7 +648,7 @@ const Dashboard = () => {
                 </span>
               )}
               <NextMatchBanner
-                match={upcomingMatches[0] ?? null}
+                match={elMasCercano(upcomingMatches[0] ?? null, proximasPartidas[0] ?? null)}
                 sinRespuesta={upcomingSinRespuesta}
                 desdeMemoria={upcomingDesdeMemoria}
                 isLoading={isLoadingUpcoming}

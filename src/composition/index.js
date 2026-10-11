@@ -112,6 +112,7 @@ import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/A
 // Partidas de las franjas (FE #824, PR 6)
 import GetTeeGroupsUseCase from '../application/use_cases/schedule/GetTeeGroupsUseCase';
 import GetMyTeeGroupsUseCase from '../application/use_cases/schedule/GetMyTeeGroupsUseCase';
+import GetUpcomingTeeGroupsUseCase from '../application/use_cases/schedule/GetUpcomingTeeGroupsUseCase';
 import GenerateTeeGroupsUseCase from '../application/use_cases/schedule/GenerateTeeGroupsUseCase';
 import MoveTeeGroupPlayerUseCase from '../application/use_cases/schedule/MoveTeeGroupPlayerUseCase';
 import ReorderTeeGroupsUseCase from '../application/use_cases/schedule/ReorderTeeGroupsUseCase';
@@ -401,6 +402,9 @@ const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
   getScheduleUseCase,
   listEnrollmentsUseCase,
 });
+// Y las partidas de stroke play, aparte: el banner del panel enseña la más
+// cercana de las dos (FE #824, PR 7)
+const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCompetitionsUseCase, getMyTeeGroupsUseCase });
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
 const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
@@ -592,6 +596,7 @@ export {
   getScoringBreakdownUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
+  getUpcomingTeeGroupsUseCase,
   getPlayerStatsByGolfCourseUseCase,
   listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)

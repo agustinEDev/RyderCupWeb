@@ -14,6 +14,7 @@ import { render, act, screen } from '@testing-library/react';
 
 const respuestas = {};
 const mockLee = vi.fn();
+const mockPartidas = vi.fn();
 
 vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: () => respuestas.competiciones() },
@@ -21,6 +22,8 @@ vi.mock('../composition', () => ({
   getRecentMatchesUseCase: { execute: () => Promise.resolve([]) },
   getUpcomingMatchesUseCase: { executeWithCompleteness: (...a) => mockLee(...a) },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
+  getUpcomingTeeGroupsUseCase: { executeWithCompleteness: (...a) => mockPartidas(...a) },
+  getTeeGroupScoringViewUseCase: { execute: () => new Promise(() => {}) },
 }));
 
 const usuario = { id: 'u-1', first_name: 'Agustin', email: 'a@b.c' };
@@ -100,6 +103,8 @@ describe('el próximo partido del panel sin cobertura', () => {
     olvidaQueElPanelSePinto();
     reiniciaLaCortina();
     mockLee.mockReset();
+    mockPartidas.mockReset();
+    mockPartidas.mockResolvedValue({ matches: [], complete: true });
     respuestas.competiciones = () => Promise.resolve([{ id: 'c-1', status: 'IN_PROGRESS' }]);
     vi.spyOn(console, 'error').mockImplementation(() => {});
     document.body.innerHTML = '';
@@ -115,6 +120,27 @@ describe('el próximo partido del panel sin cobertura', () => {
     expect(banner()).toHaveAttribute('data-sin-respuesta', 'false');
     expect(banner()).toHaveAttribute('data-desde-memoria', 'false');
     expect(losUltimosPartidos()).toHaveLength(1);
+  });
+
+  it('una partida de stroke play antes que el partido: el banner enseña la partida (FE #824, PR 7)', async () => {
+    mockLee.mockResolvedValue({ matches: [{ ...partido, sessionType: 'AFTERNOON' }], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }], complete: true });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(mockPartidas).toHaveBeenCalledWith('u-1', [{ id: 'c-1', status: 'IN_PROGRESS' }]);
+    expect(banner()).toHaveAttribute('data-partido', 'g-1');
+  });
+
+  it('si las partidas no se pueden leer, el banner sigue con el partido', async () => {
+    mockLee.mockResolvedValue({ matches: [partido], complete: true });
+    mockPartidas.mockRejectedValue(new Error('x'));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', 'm-1');
   });
 
   it('sin red y con lista guardada: el banner recibe el partido guardado, y sabe que es de memoria', async () => {
