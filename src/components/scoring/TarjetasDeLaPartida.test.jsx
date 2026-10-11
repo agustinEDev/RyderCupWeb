@@ -68,8 +68,10 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
   // QA del 11 oct 2026 (casos 11, 13, 17, 24 y 4)
   describe('el marcador que se va', () => {
+    // El 4, con su golpe y sin el del marcador: algo que validar de una vez
+    const deAna = [...hoyosDeAna.slice(0, 3), hoyo(4, { own_score: 4, own_submitted: true }), ...hoyosDeAna.slice(4)];
     const conMarcador = (marcador, estadoDelMarcador = 'JUGANDO') => [
-      jugador('ana', 'JUGANDO', hoyosDeAna, { marked_by_user_id: marcador }),
+      jugador('ana', 'JUGANDO', deAna, { marked_by_user_id: marcador }),
       jugador('bea', estadoDelMarcador, Array.from({ length: 18 }, (_, i) => hoyo(i + 1)), { marks_user_id: 'ana' }),
     ];
 
@@ -84,6 +86,14 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea', 'ENTREGADA')) });
 
       expect(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: /partida.validateScored/ })).toBeInTheDocument();
+    });
+
+    it('11: sin ningún hoyo solo suyo, no hay nada que validar de una vez (revisor)', () => {
+      const hoyos = Array.from({ length: 18 }, (_, i) => hoyo(i + 1));
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos)]) });
+
+      expect(screen.queryByRole('button', { name: /partida.validateScored/ })).toBeNull();
+      expect(screen.getByText('partida.noMarkerInPlay')).toBeInTheDocument();
     });
 
     it('11: con un marcador que juega, nada', () => {

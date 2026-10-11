@@ -276,7 +276,9 @@
     "playerRemoved": "Player removed from the window.",
     "placed": "Player placed in the window.",
     "removePlayerConfirm": "Remove {{jugador}}? Their place goes to the first on the waiting list.",
-    "removePlayerYes": "Yes, remove"
+    "removePlayerYes": "Yes, remove",
+    "waitingPosition_female_one": "You are #{{count}} on the waiting list",
+    "waitingPosition_female_other": "You are #{{count}} on the waiting list"
   },
   "partidas": {
     "show": "Groups",

@@ -97,7 +97,7 @@
     "desdeMemoria": "Could not refresh: it may be out of date.",
     "teeGroup": "Group {{numero}}",
     "labelTeeGroup": "Your next group",
-    "broughtIn": "You were moved to group {{numero}} · tees off at {{hora}}"
+    "broughtIn": "You were moved to group {{numero}}"
   },
   "recentMatches": {
     "title": "Recent matches",

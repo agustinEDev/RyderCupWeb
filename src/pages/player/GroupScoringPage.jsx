@@ -17,6 +17,7 @@ import OfflineBanner from '../../components/scoring/OfflineBanner';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
+import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import ClasificacionDeLaFranja from '../../components/scoring/ClasificacionDeLaFranja';
 import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
@@ -151,7 +152,7 @@ const GroupScoringPage = () => {
   // Con nombre: «Anotas a Bruno» y, en un desacuerdo, qué puso (QA del 11 oct 2026)
   const nombreDe = (jugador) => scoringView.players.find((p) => p.userId === jugador)?.userName ?? null;
   const meMarca = strokePlay.cards.find((c) => c.userId === userId)?.markedByUserId;
-  const sinMarcadorEnJuego = isMatchPlayer && seJuega(userId) && (!meMarca || !seJuega(meMarca));
+  const sinMarcador = isMatchPlayer && sinMarcadorEnJuego(strokePlay.cards, userId);
 
   const anotar = (golpes, tocado) =>
     submitScore(
@@ -271,7 +272,7 @@ const GroupScoringPage = () => {
           <div id="panel-input" role="tabpanel" aria-labelledby="tab-input" className="space-y-4">
             {/* Sin nadie en juego que le marque (se fue o ya entregó): sus hoyos
                 los valida el organizador (QA del 11 oct 2026, BE #539) */}
-            {sinMarcadorEnJuego && (
+            {sinMarcador && (
               <p data-testid="sin-marcador" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                 {t('partida.organiserValidates')}
               </p>

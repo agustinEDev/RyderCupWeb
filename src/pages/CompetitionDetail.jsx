@@ -280,12 +280,15 @@ const CompetitionDetail = () => {
       const conHoja = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet);
       const faltan = conHoja.length > 0 ? sinFranja(conHoja, approvedEnrollments) : [];
       if (faltan.length > 0) {
-        const datos = { count: faltan.length, jugadores: faltan.map((e) => e.userName).filter(Boolean).join(', ') };
-        if (await preguntar('closeWithoutTeeWindow', { datos })) {
-          // Como con el error del servidor: se releen y con lo releído se lleva allí
-          setVersionFranjas((v) => v + 1);
-          setIrASinFranja((v) => v + 1);
-        }
+        const datos = {
+          count: faltan.length,
+          jugadores: faltan.map((e) => e.userName || t('detail.unknownUser')).join(', '),
+        };
+        const ir = await preguntar('closeWithoutTeeWindow', { datos });
+        // Se releen siempre: lo pintado puede ser viejo (alguien cogió plaza
+        // en su móvil) y el siguiente intento lo miraría con lo de antes (revisor)
+        setVersionFranjas((v) => v + 1);
+        if (ir) setIrASinFranja((v) => v + 1);
         return;
       }
     }
@@ -526,8 +529,10 @@ const CompetitionDetail = () => {
     competition?.hasTeams === false &&
     competition?.status === 'IN_PROGRESS' &&
     (hasCreatorRole || isAdmin || competition?.creatorId === user?.id);
-  const franjasConHoja = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet).map((r) => r.id);
-  const claveDeFranjas = franjasConHoja.join('|');
+  // Solo las que tienen a alguien: una franja vacía no se juega (revisor). Se
+  // mira con cada lectura de la agenda: también acaban partidas al entregar
+  const franjasJugadas = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet?.placesTaken > 0).map((r) => r.id);
+  const claveDeFranjas = franjasJugadas.join('|');
   useEffect(() => {
     if (!leeSiTerminar || !claveDeFranjas) return undefined;
     let vigente = true;
@@ -537,7 +542,7 @@ const CompetitionDetail = () => {
     return () => {
       vigente = false;
     };
-  }, [leeSiTerminar, claveDeFranjas, versionClasificaciones]);
+  }, [leeSiTerminar, claveDeFranjas, versionClasificaciones, agendaLeida]);
 
   // Lo último que se sabe de la actualización, para notar cuándo acaba
   const estadoCargado = competition?.handicapUpdate?.status ?? null;

@@ -132,7 +132,8 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
         {/* Le pasaron de otra partida: su hora puede ser otra (QA del 11 oct 2026) */}
         {esPartida && match.broughtIn && (
           <span className="block text-xs font-semibold text-amber-800">
-            {t('nextMatch.broughtIn', { numero: match.matchNumber, hora: match.teeTime })}
+            {/* La hora ya va en la línea de abajo (revisor) */}
+            {t('nextMatch.broughtIn', { numero: match.matchNumber })}
           </span>
         )}
         {(when || session) && (

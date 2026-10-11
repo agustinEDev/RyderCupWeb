@@ -231,11 +231,12 @@ const HoleInput = ({
               qué discutir (QA del 11 oct 2026) */}
           {(validationStatus === 'mismatch' || markedValidationStatus === 'mismatch') && (
             <>
-              <p data-testid={loQuePuso.own ? 'lo-que-puso-el-otro-own' : undefined} className="text-xs text-red-700">
-                {loQuePuso.own}
+              {/* Cada uno en su columna; vacío, un hueco sin texto (revisor) */}
+              <p className="text-xs text-red-700">
+                {loQuePuso.own && <span data-testid="lo-que-puso-el-otro-own">{loQuePuso.own}</span>}
               </p>
-              <p data-testid={loQuePuso.marked ? 'lo-que-puso-el-otro-marked' : undefined} className="text-xs text-red-700">
-                {loQuePuso.marked}
+              <p className="text-xs text-red-700">
+                {loQuePuso.marked && <span data-testid="lo-que-puso-el-otro-marked">{loQuePuso.marked}</span>}
               </p>
             </>
           )}

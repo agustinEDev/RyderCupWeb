@@ -493,9 +493,16 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
   });
 
   describe('28 (QA del 11 oct 2026): con todas las franjas cerradas, «Terminar competición» a la vista', () => {
+    // Las partidas leídas no se cuelan en los tests de después (revisor)
+    afterEach(async () => {
+      const { getTeeGroupsUseCase } = await import('../composition');
+      getTeeGroupsUseCase.execute.mockReset();
+      getTeeGroupsUseCase.execute.mockResolvedValue({ roundId: 'r1', editable: true, unassignedPlayers: [], groups: [] });
+    });
+
     const enJuego = async (estados) => {
       const { getTeeGroupsUseCase } = await import('../composition');
-      await conFranjas([{ id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja() }]);
+      await conFranjas([{ id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja({ placesTaken: 2, playerIds: ['org', 'ana'] }) }]);
       getTeeGroupsUseCase.execute.mockResolvedValue({
         roundId: 'm', editable: false, unassignedPlayers: [], groups: estados.map((status, i) => ({ id: `g${i}`, number: i + 1, teeTime: '08:00', status, incomplete: false, players: [] })),
       });
@@ -524,7 +531,28 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
       renderPage();
 
       await waitFor(() => expect(getTeeGroupsUseCase.execute).toHaveBeenCalledWith('m'));
+      // Con la lectura ya contestada: si no, el aviso no estaría pasara lo que pasara (revisor)
+      await act(async () => {
+        await getTeeGroupsUseCase.execute.mock.results.at(-1).value;
+      });
       expect(screen.queryByTestId('terminar-competicion')).toBeNull();
+    });
+
+    it('una franja sin nadie apuntado no impide terminar (no se juega)', async () => {
+      mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+      const { getTeeGroupsUseCase } = await import('../composition');
+      await conFranjas([
+        { id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja({ placesTaken: 2, playerIds: ['org', 'ana'] }) },
+        { id: 't', roundDate: '2026-10-03', sessionType: 'AFTERNOON', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja({ placesTaken: 0 }) },
+      ]);
+      getTeeGroupsUseCase.execute.mockImplementation((roundId) =>
+        Promise.resolve({ roundId, editable: false, unassignedPlayers: [], groups: roundId === 'm' ? [{ id: 'g1', number: 1, teeTime: '08:00', status: 'COMPLETED', incomplete: false, players: [] }] : [] })
+      );
+      mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'IN_PROGRESS' }));
+      renderPage();
+
+      expect(await screen.findByTestId('terminar-competicion')).toBeInTheDocument();
+      expect(getTeeGroupsUseCase.execute).not.toHaveBeenCalledWith('t');
     });
 
     it('quien no organiza, no', async () => {

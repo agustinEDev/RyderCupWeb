@@ -92,3 +92,17 @@ export const partidasQueSeAdelantan = (antes, despues) => {
 export const todasLasFranjasCerradas = (vistas) =>
   vistas.length > 0 && vistas.every((v) => v.groups.length > 0 && v.groups.every((g) => g.status === 'COMPLETED'));
 
+/**
+ * Si quien juega no tiene a nadie en juego que le marque: nadie, o su marcador
+ * ya entregó. Sus hoyos los valida entonces el organizador, de una vez (BE
+ * #539; la regla, aquí una vez: la usan su pantalla y las tarjetas).
+ *
+ * @param {Array<{userId: string, cardStatus: string, markedByUserId: string|null}>} tarjetas
+ * @param {string} jugador
+ */
+export const sinMarcadorEnJuego = (tarjetas, jugador) => {
+  const estadoDe = (id) => tarjetas.find((c) => c.userId === id)?.cardStatus;
+  const suya = tarjetas.find((c) => c.userId === jugador);
+  return suya?.cardStatus === 'JUGANDO' && (!suya.markedByUserId || estadoDe(suya.markedByUserId) !== 'JUGANDO');
+};
+

@@ -10,6 +10,7 @@ import {
 import customToast from '../../utils/toast';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
+import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
@@ -110,9 +111,6 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
 
   // Sin nadie en juego que le marque (se fue, o ya entregó): valida el
   // organizador, de una vez, lo que anotó (BE #539)
-  const estadoDe = (jugador) => strokePlay.cards.find((c) => c.userId === jugador)?.cardStatus;
-  const sinMarcadorEnJuego = (tarjeta) =>
-    tarjeta.cardStatus === 'JUGANDO' && (!tarjeta.markedByUserId || estadoDe(tarjeta.markedByUserId) !== 'JUGANDO');
   const porValidar = (jugador) =>
     scoringView.scores.filter((s) => {
       const golpe = s.playerScores.find((p) => p.userId === jugador);
@@ -158,7 +156,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
         const seJuega = cardStatus === 'JUGANDO';
         const confirmaEsta = confirmando?.jugador === jugador ? confirmando : null;
         const tramos = organiza && seJuega ? TRAMOS_DE_SEIS : TRAMOS_DE_NUEVE;
-        const sinMarcador = organiza && sinMarcadorEnJuego(tarjeta);
+        const sinMarcador = organiza && sinMarcadorEnJuego(strokePlay.cards, jugador);
+        // Sin ningún hoyo solo suyo no hay nada que validar de una vez (revisor)
+        const cuantosPorValidar = sinMarcador ? porValidar(jugador) : 0;
         return (
           <section
             key={jugador}
@@ -246,12 +246,12 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
             {sinMarcador && <p className="mt-2 text-xs text-amber-800">{t('partida.noMarkerInPlay')}</p>}
             {organiza && (
               <div className="mt-2 flex flex-wrap gap-2">
-                {sinMarcador && (
+                {cuantosPorValidar > 0 && (
                   <button
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.validateScored', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'validar', cuantos: porValidar(jugador) })}
+                    onClick={() => setConfirmando({ jugador, accion: 'validar', cuantos: cuantosPorValidar })}
                     className="min-h-11 rounded-lg border border-primary px-3 text-sm font-semibold text-primary"
                   >
                     {t('partida.validateScoredShort')}
