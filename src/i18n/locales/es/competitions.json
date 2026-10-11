@@ -188,7 +188,8 @@
           "hint": "Cuenta solo su mejor vuelta."
         }
       }
-    }
+    },
+    "competitionNamePlaceholderStrokePlay": "Ej: Stableford de los domingos"
   },
   "edit": {
     "title": "Editar Competición",

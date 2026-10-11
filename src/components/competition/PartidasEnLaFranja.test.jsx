@@ -88,6 +88,12 @@ const FRANJA = { id: 'r1', sessionType: 'MORNING', roundDate: '2030-10-12', teeS
 
 const pintar = (props = {}) =>
   render(<PartidasEnLaFranja competitionId="c-1" salidas={4} franja={FRANJA} nombre="Mañana · sáb 12 oct" userId={YO} organiza={false} version={0} {...props} />);
+// «Mover a…» es un icono por jugador que abre su lista (pasada: a todo lo ancho
+// ocupaba una línea por jugador)
+const abrirMover = async (jugador) => {
+  fireEvent.click(await screen.findByRole('button', { name: `partidas.movePlayer {"jugador":"${jugador}"}` }));
+  return screen.getByRole('combobox', { name: `partidas.moveTo {"jugador":"${jugador}"}` });
+};
 const desplegar = async () => {
   fireEvent.click(screen.getByRole('button', { name: /partidas.showFor/ }));
   await waitFor(() => expect(mockLeer).toHaveBeenCalled());
@@ -255,7 +261,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     pintar({ organiza: true });
     await desplegar();
 
-    const mover = await screen.findByRole('combobox', { name: 'partidas.moveTo {"jugador":"ANA"}' });
+    const mover = await abrirMover('ANA');
     const opciones = within(mover).getAllByRole('option').map((o) => o.textContent);
     expect(opciones).toEqual([
       'partidas.moveToPlaceholder',
@@ -268,18 +274,31 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     ]);
   });
 
+  it('10c (pasada): la lista no ocupa sitio hasta pulsar el icono; al mover, se cierra', async () => {
+    mockMover.mockResolvedValue(vista());
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    expect(screen.queryByRole('combobox', { name: /partidas.moveTo/ })).toBeNull();
+    fireEvent.change(await abrirMover('ANA'), { target: { value: 'g3' } });
+
+    await waitFor(() => expect(mockMover).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole('combobox', { name: /partidas.moveTo/ })).toBeNull());
+  });
+
   it('10b: elegir un destino lo manda en un paso: con sitio, intercambio o nueva', async () => {
     mockMover.mockResolvedValue(vista());
     pintar({ organiza: true });
     await desplegar();
-    const mover = () => screen.getByRole('combobox', { name: 'partidas.moveTo {"jugador":"ANA"}' });
+    const mover = () => abrirMover('ANA');
     await screen.findByTestId('partida-g1');
 
-    fireEvent.change(mover(), { target: { value: 'g3' } });
+    fireEvent.change(await mover(), { target: { value: 'g3' } });
     await waitFor(() => expect(mockMover).toHaveBeenLastCalledWith('r1', { userId: 'ana', groupId: 'g3' }));
-    fireEvent.change(mover(), { target: { value: 'g2|eva' } });
+    fireEvent.change(await mover(), { target: { value: 'g2|eva' } });
     await waitFor(() => expect(mockMover).toHaveBeenLastCalledWith('r1', { userId: 'ana', groupId: 'g2', swapWithUserId: 'eva' }));
-    fireEvent.change(mover(), { target: { value: 'NUEVA' } });
+    fireEvent.change(await mover(), { target: { value: 'NUEVA' } });
     await waitFor(() => expect(mockMover).toHaveBeenLastCalledWith('r1', { userId: 'ana' }));
     expect(mockToast.success).toHaveBeenCalledWith('partidas.moved');
   });
@@ -290,7 +309,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     pintar({ organiza: true });
     await desplegar();
 
-    fireEvent.change(await screen.findByRole('combobox', { name: 'partidas.moveTo {"jugador":"DANI"}' }), { target: { value: 'g3' } });
+    fireEvent.change(await abrirMover('DANI'), { target: { value: 'g3' } });
 
     await waitFor(() => expect(mockToast.info).toHaveBeenCalledWith('partidas.earlier {"desde":2,"hasta":2,"minutos":10,"count":1}'));
   });
@@ -318,6 +337,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await screen.findByTestId('partida-g1');
     expect(screen.queryByTestId('partidas-sin-partida')).toBeNull();
     expect(screen.queryByRole('combobox', { name: /partidas.moveTo/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /partidas.movePlayer/ })).toBeNull();
   });
 
   it('13: ↑ ↓ cambian el orden; la primera sin ↑ y la última sin ↓', async () => {

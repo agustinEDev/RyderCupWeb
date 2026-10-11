@@ -117,7 +117,8 @@ const HoleInput = ({
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
           <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
-          <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>
+          {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
+          {strokeIndex != null && <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>}
           {strokesReceived > 0 && (
             <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
               {t('input.strokeReceived')}

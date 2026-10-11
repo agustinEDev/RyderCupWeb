@@ -20,8 +20,9 @@ const PESTANAS = ['overall', 'scratch'];
  * @param {string} props.competitionId
  * @param {string} [props.userId] - Quién mira, destacado
  * @param {boolean} props.enJuego - Si la competición está en juego
+ * @param {number} [props.version] - Sube cuando cambian las partidas: se relee
  */
-const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
+const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, version }) => {
   const { t } = useTranslation('scoring');
   const [pestana, setPestana] = useState('overall');
   const pedirGeneral = useCallback(
@@ -62,8 +63,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
           userId={userId}
           activa={pestana === 'overall'}
           cada={cada}
-          conCategoria
-          conTarjetas
+          version={version}
           conRegla
           vacia="partida.noResultsYet"
         />
@@ -74,6 +74,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
           userId={userId}
           activa={pestana === 'scratch'}
           cada={cada}
+          version={version}
           filtrable={false}
           conRegla
           vacia="partida.noResultsYet"

@@ -21,6 +21,7 @@ const armadas = [
   ...['input', 'standings', 'cards'].map((c) => `partida.tabs.${c}`),
   ...['CLASIFICADO', 'SIN_EMPEZAR', 'NR', 'NP'].map((c) => `partida.status.${c}`),
   ...['ACCUMULATED', 'BEST_CARD'].map((c) => `partida.rule.${c}`),
+  ...['SIN_EMPEZAR', 'NR', 'NP'].map((c) => `partida.statusShort.${c}`),
   ...['overall', 'scratch'].map((c) => `partida.${c}`),
   ...['JUGANDO', 'ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'].map((c) => `partida.cardStatus.${c}`),
   ...lista('CODIGOS_DE_PARTIDA').map((c) => `partida.errors.${c}`),

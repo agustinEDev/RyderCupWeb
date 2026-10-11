@@ -23,17 +23,40 @@ const clasificacion = (rows, extra = {}) => ({ tournamentType: 'STABLEFORD', sca
 describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('2: con las columnas de la general, la categoría y las tarjetas jugadas; y la regla arriba', async () => {
-    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { rule: 'BEST_CARD' }));
-    render(<Clasificacion pedir={pedir} userId="x" activa conCategoria conTarjetas conRegla />);
+  it('2 (pasada): columnas como en los circuitos, POS · JUGADOR · PTS · THRU, en una línea; y la regla arriba', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 3, tied: true, thru: 14 })], { rule: 'BEST_CARD' }));
+    render(<Clasificacion pedir={pedir} userId="x" activa conRegla />);
 
     const ana = await screen.findByTestId('fila-ana');
-    expect(ana).toHaveTextContent('partida.categoryShort {"numero":2}');
-    expect(ana).toHaveTextContent('partida.cards {"count":2}');
+    expect(screen.getAllByRole('columnheader').map((c) => c.textContent)).toEqual([
+      'partida.colPos',
+      'partida.colPlayer',
+      'partida.colPoints',
+      'partida.colThru',
+    ]);
+    const celdas = [...ana.querySelectorAll('td')].map((c) => c.textContent);
+    expect(celdas).toEqual(['T3', 'ANA', '36', '14']);
     expect(screen.getByText('partida.rule.BEST_CARD')).toBeInTheDocument();
   });
 
-  it('la de la franja no las enseña', async () => {
+  it('Medal: la columna es al par', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: -4 })], { tournamentType: 'MEDAL' }));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    await screen.findByTestId('fila-ana');
+    expect(screen.getAllByRole('columnheader')[2]).toHaveTextContent('partida.colToPar');
+    expect(screen.getByTestId('fila-ana')).toHaveTextContent('-4');
+  });
+
+  it('sin valor (sin empezar, NR, NP), un guion en su columna', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NP', thru: 0 })]));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    const ana = await screen.findByTestId('fila-ana');
+    expect([...ana.querySelectorAll('td')].map((c) => c.textContent)).toEqual(['–', 'ANA', '–', 'partida.statusShort.NP']);
+  });
+
+  it('ni la categoría ni las tarjetas debajo del nombre (pasada: estilo leaderboard)', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
@@ -61,15 +84,14 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(screen.queryByRole('combobox')).toBeNull();
   });
 
-  it('a 360 px: categoría, tarjetas y estado van debajo del nombre, no en la misma línea (revisor)', async () => {
+  it('se relee cuando cambia la versión (se cerró la franja: lo sin acabar pasa a NR/NP; pasada)', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
-    render(<Clasificacion pedir={pedir} userId="x" activa conCategoria conTarjetas />);
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa version={0} />);
+    await screen.findByTestId('fila-ana');
 
-    const ana = await screen.findByTestId('fila-ana');
-    const debajo = ana.querySelector('[data-detalle]');
-    expect(debajo).toHaveTextContent('partida.categoryShort');
-    expect(debajo).toHaveTextContent('partida.cards');
-    expect(debajo).toHaveTextContent('partida.finished');
+    rerender(<Clasificacion pedir={pedir} userId="x" activa version={1} />);
+
+    await waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
   });
 
   it('al dejar de releerse (acaba la competición), una última lectura (revisor)', async () => {

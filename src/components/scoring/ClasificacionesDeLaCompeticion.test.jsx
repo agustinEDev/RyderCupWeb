@@ -40,7 +40,7 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
 
     const ana = await screen.findByTestId('fila-ana');
     expect(mockGeneral).toHaveBeenCalledWith('c-1', undefined);
-    expect(ana).toHaveTextContent('partida.categoryShort');
+    expect(ana).toBeInTheDocument();
     expect(screen.getByText('partida.rule.ACCUMULATED')).toBeInTheDocument();
     expect(mockScratch).not.toHaveBeenCalled();
   });
@@ -54,7 +54,6 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
     expect(await screen.findByTestId('fila-bea')).toBeInTheDocument();
     expect(mockScratch).toHaveBeenCalledWith('c-1');
     // Sin filtro ni tarjetas: la scratch no tiene categorías
-    expect(screen.getByRole('tabpanel', { name: 'partida.scratch' })).not.toHaveTextContent('partida.cards');
     expect(screen.queryAllByRole('combobox').filter((c) => !c.closest('[hidden]'))).toHaveLength(0);
     expect(screen.getByRole('tab', { name: 'partida.scratch' })).toHaveAttribute('aria-selected', 'true');
   });

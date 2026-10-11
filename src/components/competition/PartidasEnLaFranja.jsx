@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { ArrowDown, ArrowRightLeft, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import {
   getTeeGroupsUseCase,
   generateTeeGroupsUseCase,
@@ -82,6 +82,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   // Lo abierto: la confirmación de volver a generar o borrar, y los marcadores
   const [confirmando, setConfirmando] = useState(null);
   const [marcando, setMarcando] = useState(null);
+  // A quién se está moviendo: su lista solo se abre al pulsar su icono (pasada:
+  // a todo lo ancho, una línea por jugador)
+  const [moviendo, setMoviendo] = useState(null);
   // Lecturas y escrituras se cruzan: una vieja no pisa a otra más nueva
   const lecturas = useLaMasNueva();
 
@@ -180,7 +183,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       // Lo que no viene lo quita el caso de uso
       () => moveTeeGroupPlayerUseCase.execute(franja.id, { userId: jugador, groupId, swapWithUserId }),
       'partidas.moved',
-      null,
+      () => setMoviendo(null),
       { avisarSiSeAdelantan: true }
     );
   };
@@ -412,12 +415,29 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
                           </span>
                         )}
-                        {editable &&
-                          selectorDeDestino(p.userId, p.name, {
-                            etiqueta: 'partidas.moveTo',
-                            placeholder: 'partidas.moveToPlaceholder',
-                            conIntercambios: true,
-                          })}
+                        {editable && moviendo !== p.userId && opcionesDeDestino(p.userId, { conIntercambios: true }).length > 0 && (
+                          <button
+                            type="button"
+                            disabled={ocupado}
+                            aria-label={t('partidas.movePlayer', { jugador: p.name })}
+                            onClick={() => setMoviendo(p.userId)}
+                            className={`${icono} ml-auto`}
+                          >
+                            <ArrowRightLeft className="h-4 w-4" />
+                          </button>
+                        )}
+                        {editable && moviendo === p.userId && (
+                          <span className="flex w-full items-center gap-1">
+                            {selectorDeDestino(p.userId, p.name, {
+                              etiqueta: 'partidas.moveTo',
+                              placeholder: 'partidas.moveToPlaceholder',
+                              conIntercambios: true,
+                            })}
+                            <button type="button" onClick={() => setMoviendo(null)} className="min-h-11 px-2 text-xs text-gray-600">
+                              {t('partidas.cancel')}
+                            </button>
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>

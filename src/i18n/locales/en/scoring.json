@@ -303,6 +303,18 @@
     "standingsTitle": "Standings",
     "overall": "Overall",
     "scratch": "Scratch",
-    "loadingStandings": "Loading the standings…"
+    "loadingStandings": "Loading the standings…",
+    "colPos": "Pos",
+    "colPlayer": "Player",
+    "colPoints": "Pts",
+    "colToPar": "To par",
+    "colThru": "Thru",
+    "thruFinished": "F",
+    "statusShort": {
+      "CLASIFICADO": "",
+      "SIN_EMPEZAR": "–",
+      "NR": "NR",
+      "NP": "NS"
+    }
   }
 }

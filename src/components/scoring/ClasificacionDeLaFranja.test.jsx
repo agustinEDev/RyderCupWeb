@@ -49,10 +49,11 @@ describe('ClasificacionDeLaFranja (FE #824, PR 7)', () => {
     expect(bea).toHaveTextContent('T2');
     expect(bea).toHaveTextContent('BEA');
     expect(bea).toHaveTextContent('35');
-    expect(bea).toHaveTextContent('partida.thru {"count":12}');
+    // THRU, como en los circuitos: los hoyos jugados, o F acabado (pasada)
+    expect(bea.querySelector('[data-columna="thru"]')).toHaveTextContent(/^12$/);
     expect(bea).toHaveAttribute('data-yo', 'true');
     expect(screen.getByTestId('fila-ana')).toHaveTextContent('1');
-    expect(screen.getByTestId('fila-ana')).toHaveTextContent('partida.finished');
+    expect(screen.getByTestId('fila-ana').querySelector('[data-columna="thru"]')).toHaveTextContent('partida.thruFinished');
     expect(screen.getByTestId('fila-ana')).toHaveAttribute('data-yo', 'false');
   });
 
@@ -74,10 +75,13 @@ describe('ClasificacionDeLaFranja (FE #824, PR 7)', () => {
     ]));
     render(<ClasificacionDeLaFranja roundId="r-1" userId="x" activa />);
 
-    expect(await screen.findByTestId('fila-bea')).toHaveTextContent('partida.status.NR');
-    expect(screen.getByTestId('fila-cris')).toHaveTextContent('partida.status.NP');
-    expect(screen.getByTestId('fila-dani')).toHaveTextContent('partida.status.SIN_EMPEZAR');
-    expect(screen.getByTestId('fila-bea')).not.toHaveTextContent('partida.thru');
+    const thru = (id) => screen.getByTestId(`fila-${id}`).querySelector('[data-columna="thru"]');
+    await screen.findByTestId('fila-bea');
+    expect(thru('bea')).toHaveTextContent('partida.statusShort.NR');
+    expect(thru('cris')).toHaveTextContent('partida.statusShort.NP');
+    expect(thru('dani')).toHaveTextContent('partida.statusShort.SIN_EMPEZAR');
+    // Y su nombre completo, para quien no conozca los códigos
+    expect(thru('bea')).toHaveAttribute('title', 'partida.status.NR');
   });
 
   it('con varias categorías, se filtra por una (se pide al servidor)', async () => {

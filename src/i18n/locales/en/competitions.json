@@ -188,7 +188,8 @@
           "hint": "Only their best round counts."
         }
       }
-    }
+    },
+    "competitionNamePlaceholderStrokePlay": "E.g. Sunday Stableford"
   },
   "edit": {
     "title": "Edit Competition",

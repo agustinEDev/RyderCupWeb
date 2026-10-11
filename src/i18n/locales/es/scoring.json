@@ -303,6 +303,18 @@
     "standingsTitle": "Clasificación",
     "overall": "General",
     "scratch": "Scratch",
-    "loadingStandings": "Cargando la clasificación…"
+    "loadingStandings": "Cargando la clasificación…",
+    "colPos": "Pos",
+    "colPlayer": "Jugador",
+    "colPoints": "Pts",
+    "colToPar": "Par",
+    "colThru": "Hoyo",
+    "thruFinished": "F",
+    "statusShort": {
+      "CLASIFICADO": "",
+      "SIN_EMPEZAR": "–",
+      "NR": "NR",
+      "NP": "NP"
+    }
   }
 }

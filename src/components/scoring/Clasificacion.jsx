@@ -20,8 +20,7 @@ const HOYOS = 18;
  * @param {string} [props.userId] - Quién mira, destacado
  * @param {boolean} props.activa - Si está a la vista
  * @param {number|null} [props.cada] - Cada cuánto se relee; null, nunca
- * @param {boolean} [props.conCategoria] - La categoría de cada uno (la general)
- * @param {boolean} [props.conTarjetas] - Cuántas tarjetas lleva (la general)
+ * @param {number|string} [props.version] - Al cambiar, se relee (se cerró la franja)
  * @param {boolean} [props.conRegla] - La regla del torneo arriba (la general)
  * @param {string} [props.vacia] - Qué decir sin nadie todavía
  * @param {boolean} [props.filtrable] - Con filtro de categoría (la scratch no lo tiene)
@@ -31,8 +30,7 @@ const Clasificacion = ({
   userId,
   activa,
   cada = null,
-  conCategoria = false,
-  conTarjetas = false,
+  version,
   conRegla = false,
   vacia = 'partida.standingsEmpty',
   filtrable = true,
@@ -70,7 +68,7 @@ const Clasificacion = ({
     if (!activa) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
     leer();
-  }, [activa, leer, cada]);
+  }, [activa, leer, cada, version]);
   useSondeoMientras(activa && cada != null, leer, cada ?? 0);
 
   if (!activa) return null;
@@ -88,42 +86,48 @@ const Clasificacion = ({
   if (!clasificacion) return null;
 
   const esMedal = clasificacion.tournamentType === 'MEDAL';
-  const valor = (fila) => (esMedal ? StablefordCalculator.formatToPar(fila.value) : fila.value);
-  const puesto = (fila) => (fila.position == null ? '—' : fila.tied ? `T${fila.position}` : `${fila.position}`);
-  const comoVa = (fila) =>
+  const SIN = '–';
+  const valor = (fila) => (fila.value == null ? SIN : esMedal ? StablefordCalculator.formatToPar(fila.value) : fila.value);
+  const puesto = (fila) => (fila.position == null ? SIN : fila.tied ? `T${fila.position}` : `${fila.position}`);
+  // THRU, como en los circuitos: los hoyos jugados, F acabado, o el código
+  // (NR, NP) con su nombre entero al pasar por encima (pasada, FE #824)
+  const thru = (fila) =>
     fila.status !== 'CLASIFICADO'
-      ? t(`partida.status.${fila.status}`)
-      : fila.thru >= HOYOS
-        ? t('partida.finished')
-        : t('partida.thru', { count: fila.thru });
+      ? { texto: t(`partida.statusShort.${fila.status}`), titulo: t(`partida.status.${fila.status}`) }
+      : { texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru), titulo: undefined };
 
+  // Una línea por jugador, en columnas: POS · JUGADOR · PTS/PAR · THRU, como
+  // los leaderboards de los circuitos (decidido con Agustín tras la pasada)
   const pintaFila = (fila, testId) => {
     const yo = fila.userId === userId;
+    const { texto, titulo } = thru(fila);
     return (
-      <li
-        key={testId}
-        data-testid={testId}
-        data-yo={String(yo)}
-        className={`flex min-w-0 items-center gap-3 px-3 py-2 text-sm ${yo ? 'bg-green-50 font-semibold' : ''}`}
-      >
-        <span className="w-8 shrink-0 text-gray-500">{puesto(fila)}</span>
-        {/* El nombre arriba y lo demás debajo: en una línea no cabía a 360 px (revisor) */}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-gray-900">{fila.name}</span>
-          <span data-detalle className="block truncate text-xs font-normal text-gray-500">
-            {[
-              conCategoria && fila.category != null ? t('partida.categoryShort', { numero: fila.category }) : null,
-              conTarjetas ? t('partida.cards', { count: fila.cards }) : null,
-              comoVa(fila),
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </span>
-        </span>
-        {fila.value != null && <span className="shrink-0 font-bold text-gray-900">{valor(fila)}</span>}
-      </li>
+      <tr key={testId} data-testid={testId} data-yo={String(yo)} className={yo ? 'bg-green-50 font-semibold' : ''}>
+        <td className="w-10 py-2 pl-3 text-gray-500">{puesto(fila)}</td>
+        <td className="max-w-0 truncate py-2 pr-2 text-gray-900">{fila.name}</td>
+        <td className="w-14 py-2 text-right font-bold text-gray-900 tabular-nums">{valor(fila)}</td>
+        <td data-columna="thru" title={titulo} className="w-14 py-2 pr-3 text-right text-xs text-gray-500 tabular-nums">
+          {texto}
+        </td>
+      </tr>
     );
   };
+
+  const tabla = (filas, conCabecera) => (
+    <table className="w-full table-fixed border-collapse text-sm">
+      {conCabecera && (
+        <thead className="border-b border-gray-200 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          <tr>
+            <th scope="col" className="w-10 py-2 pl-3 font-semibold">{t('partida.colPos')}</th>
+            <th scope="col" className="py-2 pr-2 font-semibold">{t('partida.colPlayer')}</th>
+            <th scope="col" className="w-14 py-2 text-right font-semibold">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
+            <th scope="col" className="w-14 py-2 pr-3 text-right font-semibold">{t('partida.colThru')}</th>
+          </tr>
+        </thead>
+      )}
+      <tbody className="divide-y divide-gray-100">{filas}</tbody>
+    </table>
+  );
 
   return (
     <div className="space-y-3">
@@ -167,17 +171,17 @@ const Clasificacion = ({
       ) : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
-        <ol className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-          {clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`))}
-        </ol>
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          {tabla(clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)), true)}
+        </div>
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
       {clasificacion.me && (
         <div>
           <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
-          <ol className="rounded-lg border border-dashed border-gray-300 bg-white">
-            {pintaFila(clasificacion.me, 'fila-fuera-del-corte')}
-          </ol>
+          <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">
+            {tabla(pintaFila(clasificacion.me, 'fila-fuera-del-corte'), false)}
+          </div>
         </div>
       )}
     </div>

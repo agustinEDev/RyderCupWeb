@@ -183,6 +183,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {boolean} [props.verPartidas] - Ya hay partidas que ver (cerrada o en juego; PR 6)
  * @param {boolean} [props.puedeVerPartidas] - Quien organiza las ve aunque no juegue
  * @param {boolean} [props.organizaPartidas] - Y las cambia (el servidor dice hasta cuándo)
+ * @param {() => void} [props.onCambioEnPartidas] - Tras un cambio en las partidas (la ficha relee su clasificación)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -204,6 +205,7 @@ const FranjasDeLaCompeticion = ({
   verPartidas = false,
   puedeVerPartidas = false,
   organizaPartidas = false,
+  onCambioEnPartidas,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -657,7 +659,10 @@ const FranjasDeLaCompeticion = ({
                             userId={userId}
                             organiza={organizaPartidas}
                             version={lecturas}
-                            onCambio={() => setCambiosEnPartidas((n) => n + 1)}
+                            onCambio={() => {
+                              setCambiosEnPartidas((n) => n + 1);
+                              onCambioEnPartidas?.();
+                            }}
                           />
                         )}
                       </>

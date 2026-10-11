@@ -80,6 +80,12 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
   });
 
+  it('sin índice del hoyo (partidas de stroke play), no se enseña la etiqueta vacía (pasada)', () => {
+    render(<HoleInput {...defaultProps} strokeIndex={null} />);
+
+    expect(screen.queryByText(/input\.strokeIndex/)).toBeNull();
+  });
+
   it('should render hole info', () => {
     render(<HoleInput {...defaultProps} />);
     expect(screen.getByTestId('hole-input')).toHaveTextContent('5');
