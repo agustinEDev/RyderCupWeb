@@ -1,28 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getTeeWindowStandingsUseCase } from '../../composition';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 
-// Mientras la pestaña está abierta, cada cuánto se relee
-const CADA = 30000;
 const HOYOS = 18;
 
 /**
- * La clasificación de la franja, en la pestaña de la partida (FE #824, PR 7;
- * caso 11). El orden, los puestos compartidos («T3»), NR y NP los decide el
- * servidor (RyderCupAm#535): aquí solo se pintan. Con varias categorías, se
- * filtra por una pidiéndosela al servidor, que recalcula sus puestos.
+ * Una clasificación de stroke play (FE #824, PR 7 y 8): la de una franja, la
+ * general o la scratch. El orden, los puestos compartidos («T3»), NR y NP los
+ * decide el servidor (RyderCupAm#535): aquí solo se pintan. Con varias
+ * categorías, se filtra por una pidiéndosela al servidor, que recalcula sus
+ * puestos.
  *
- * Se pide al abrir la pestaña y se relee cada 30 s mientras sigue abierta.
+ * Se pide al abrirla y se relee cada `cada` ms mientras sigue abierta.
  *
  * @param {Object} props
- * @param {string} props.roundId - La franja
+ * @param {(categoria?: number) => Promise<Object>} props.pedir - Estable (`useCallback`)
  * @param {string} [props.userId] - Quién mira, destacado
- * @param {boolean} props.activa - Si la pestaña está abierta
+ * @param {boolean} props.activa - Si está a la vista
+ * @param {number|null} [props.cada] - Cada cuánto se relee; null, nunca
  */
-const ClasificacionDeLaFranja = ({ roundId, userId, activa }) => {
+const Clasificacion = ({ pedir, userId, activa, cada = null }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
@@ -34,7 +33,7 @@ const ClasificacionDeLaFranja = ({ roundId, userId, activa }) => {
   const leer = useCallback(async () => {
     const turno = lecturas.turno();
     try {
-      const leida = await getTeeWindowStandingsUseCase.execute(roundId, categoria ?? undefined);
+      const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
       setSinCargar(false);
@@ -44,14 +43,14 @@ const ClasificacionDeLaFranja = ({ roundId, userId, activa }) => {
     } catch {
       if (lecturas.aplicar(turno)) setSinCargar(true);
     }
-  }, [roundId, categoria, lecturas]);
+  }, [pedir, categoria, lecturas]);
 
   useEffect(() => {
     if (!activa) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
     leer();
   }, [activa, leer]);
-  useSondeoMientras(activa, leer, CADA);
+  useSondeoMientras(activa && cada != null, leer, cada ?? 0);
 
   if (!activa) return null;
 
@@ -124,4 +123,4 @@ const ClasificacionDeLaFranja = ({ roundId, userId, activa }) => {
   );
 };
 
-export default ClasificacionDeLaFranja;
+export default Clasificacion;

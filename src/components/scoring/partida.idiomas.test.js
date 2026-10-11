@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import pagina from '../../pages/player/GroupScoringPage.jsx?raw';
-import clasificacion from './ClasificacionDeLaFranja.jsx?raw';
+import clasificacion from './Clasificacion.jsx?raw';
 import tarjetas from './TarjetasDeLaPartida.jsx?raw';
 import errores from '../../utils/erroresDePartida.js?raw';
 import es from '../../i18n/locales/es/scoring.json';
