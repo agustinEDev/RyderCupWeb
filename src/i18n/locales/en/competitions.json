@@ -460,7 +460,13 @@
     },
     "fixedHandicap": "{{handicap}} · category {{categoria}}",
     "fixedHandicapNoCategory": "{{handicap}}",
-    "missingHandicapBadge": "No handicap"
+    "missingHandicapBadge": "No handicap",
+    "fewerCategories": {
+      "REPETIDOS_one": "{{pedidas}} categories were set and {{count}} comes out: repeated handicaps at the boundaries merged those categories.",
+      "REPETIDOS_other": "{{pedidas}} categories were set and {{count}} come out: repeated handicaps at the boundaries merged those categories.",
+      "MENOS_DE_SEIS_one": "{{pedidas}} categories were set and {{count}} comes out: some had fewer than 6 players and were merged with the next one.",
+      "MENOS_DE_SEIS_other": "{{pedidas}} categories were set and {{count}} come out: some had fewer than 6 players and were merged with the next one."
+    }
   },
   "browse": {
     "title": "Browse Competitions",

@@ -46,6 +46,14 @@ class ITeeGroupScoringRepository {
   async getWindowStandings(roundId, category) {
     throw new Error('ITeeGroupScoringRepository.getWindowStandings must be implemented');
   }
+
+  async getCompetitionStandings(competitionId, category) {
+    throw new Error('ITeeGroupScoringRepository.getCompetitionStandings must be implemented');
+  }
+
+  async getScratchStandings(competitionId) {
+    throw new Error('ITeeGroupScoringRepository.getScratchStandings must be implemented');
+  }
 }
 
 export default ITeeGroupScoringRepository;

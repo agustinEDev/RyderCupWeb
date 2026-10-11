@@ -290,6 +290,19 @@
       "SCORECARD_NOT_READY_holes_other": "Faltan por validar los hoyos {{hoyos}} para entregar la tarjeta.",
       "NOT_ORGANIZER": "Solo el organizador puede hacer esto.",
       "generic": "No se pudo hacer."
-    }
+    },
+    "categoryShort": "{{numero}}.ª cat.",
+    "cards_one": "{{count}} tarjeta",
+    "cards_other": "{{count}} tarjetas",
+    "rule": {
+      "ACCUMULATED": "Regla: suma de todas las tarjetas",
+      "BEST_CARD": "Regla: la mejor tarjeta de cada uno"
+    },
+    "yourPosition": "Tu posición",
+    "noResultsYet": "Todavía no hay resultados.",
+    "standingsTitle": "Clasificación",
+    "overall": "General",
+    "scratch": "Scratch",
+    "loadingStandings": "Cargando la clasificación…"
   }
 }

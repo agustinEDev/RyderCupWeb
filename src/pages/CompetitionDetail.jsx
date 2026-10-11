@@ -21,6 +21,8 @@ import CompetitionGolfCoursesSection from '../components/competition/Competition
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
+import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
+import { categoriasQueSalen } from '../domain/services/CategoriasQueSalen';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -114,6 +116,8 @@ const CompetitionDetail = () => {
   // una actualización (FE #824, PR 5)
   const idActual = useRef(id);
   const estadoDeLaActualizacion = useRef(null);
+  // Mientras se releen la ficha y las inscripciones tras cerrar (PR 8)
+  const [releyendoTrasCerrar, setReleyendoTrasCerrar] = useState(false);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -322,7 +326,7 @@ const CompetitionDetail = () => {
         status: result.status,
         updatedAt: result.updatedAt
       }));
-      refrescarCanDelete();
+      const fichaReleida = refrescarCanDelete();
       // Con otro estado, el personalizado puede dejar de poderse cambiar: el
       // editor abierto se cierra (/code-review)
       setEditingHandicapId(null);
@@ -333,10 +337,36 @@ const CompetitionDetail = () => {
       // Con su turno: una lectura vieja de la tarjeta no la pisa (revisor)
       if (esStrokePlay) {
         const deLaLista = lecturasDeInscripciones.turno();
-        listEnrollmentsUseCase
+        const listaReleida = listEnrollmentsUseCase
           .execute(id)
-          .then((lista) => lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista))
-          .catch((e) => console.error('Error reloading enrollments after status change:', e));
+          .then((lista) => {
+            if (lecturasDeInscripciones.aplicar(deLaLista)) setEnrollments(lista);
+            return lista;
+          })
+          .catch((e) => {
+            console.error('Error reloading enrollments after status change:', e);
+            return null;
+          });
+        // Al cerrar, si salen menos categorías se le dice al organizador (PR 8):
+        // con las DOS lecturas ya hechas —los límites que se guardaron y la
+        // categoría de cada uno—. Con lo que fuera llegando, el orden decidía
+        // el motivo (revisor)
+        if (action === 'close-enrollments') {
+          // Y el aviso de la ficha espera también: con una lectura sí y la
+          // otra no, saldría con los límites de antes (/code-review)
+          setReleyendoTrasCerrar(true);
+          // Esperadas: hasta que llegan, los botones siguen desactivados; si no,
+          // «Iniciar» deprisa sacaba el toast con la competición ya en juego
+          // (CodeRabbit)
+          await Promise.all([fichaReleida, listaReleida])
+            .then(([ficha, lista]) => {
+              if (!ficha?.strokePlay || !lista) return;
+              const aprobados = lista.filter((e) => e.status === 'APPROVED');
+              const aviso = categoriasQueSalen(ficha.strokePlay, aprobados.map((e) => e.category ?? null));
+              if (aviso) customToast.warning(t(`detail.fewerCategories.${aviso.motivo}`, { ...aviso, count: aviso.salen }));
+            })
+            .finally(() => setReleyendoTrasCerrar(false));
+        }
       }
     } catch (error) {
       console.error(`Error ${action}:`, error);
@@ -407,7 +437,9 @@ const CompetitionDetail = () => {
       .then((data) => {
         setCompetition(prev =>
           prev.status === data.status
-            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned }
+            // Y los ajustes de stroke play: al cerrar, «categorías iguales»
+            // guarda los límites que repartió (PR 8)
+            ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned, strokePlay: data.strokePlay }
             : prev
         );
         // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
@@ -420,8 +452,12 @@ const CompetitionDetail = () => {
             handicapUpdateWindow: data.handicapUpdateWindow,
           }));
         }
+        return data;
       })
-      .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+      .catch(() => {
+        setCompetition(prev => ({ ...prev, canDelete: false }));
+        return null;
+      });
   };
 
   // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
@@ -668,6 +704,16 @@ const CompetitionDetail = () => {
       setRevertingHandicapId(null);
     }
   };
+
+  // Salieron menos categorías de las pedidas (FE #824, PR 8, caso 9): solo lo
+  // lee el organizador, en la ficha mientras no empiece y en un aviso al cerrar
+  const avisoDeCategorias =
+    competition?.strokePlay && competition.hasTeams === false
+      ? categoriasQueSalen(competition.strokePlay, approvedEnrollments.map((e) => e.category ?? null))
+      : null;
+  const textoDelAvisoDeCategorias = avisoDeCategorias
+    ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
+    : null;
 
   if (isLoading) {
     return (
@@ -1460,6 +1506,29 @@ const CompetitionDetail = () => {
                   />
                 </div>
               )}
+
+            {/* Salieron menos categorías: al organizador, hasta que empiece (PR 8) */}
+            {canManage && competition.status === 'CLOSED' && !releyendoTrasCerrar && textoDelAvisoDeCategorias && (
+              <div className="px-4 pt-4">
+                <p data-testid="aviso-categorias" role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  {textoDelAvisoDeCategorias}
+                </p>
+              </div>
+            )}
+
+            {/* Las clasificaciones de un Stableford o un Medal, desde que se
+                juega (FE #824, PR 8): para cualquiera con sesión */}
+            {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
+              <div className="p-4">
+                <ClasificacionesDeLaCompeticion
+                  // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
+                  key={competition.id}
+                  competitionId={competition.id}
+                  userId={user.id}
+                  enJuego={competition.status === 'IN_PROGRESS'}
+                />
+              </div>
+            )}
 
             {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
                 organizador la cambia aquí mismo (FE #654) */}
