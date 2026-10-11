@@ -151,6 +151,14 @@ describe('useVaciadoDeLaCola (FE #521)', () => {
     expect(loQuePidio()).toEqual({ saltaPartida: 'qm-3', userId: 'u1' });
   });
 
+  it('y en una partida de stroke play: su pantalla y el fondo mandarían lo mismo dos veces (FE #824, PR 7)', async () => {
+    rutaActual = '/player/groups/g-4/scoring';
+
+    await monta();
+
+    expect(loQuePidio()).toEqual({ saltaPartida: 'g-4', userId: 'u1' });
+  });
+
   it('no se relanza en cada cambio de pantalla', async () => {
     // Colgado de la ruta, el efecto se rearmaba en cada navegación y disparaba
     // un vaciado entero cada vez

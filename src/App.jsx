@@ -63,6 +63,8 @@ const FriendsPage = lazyWithRetry(() => import('./pages/player/FriendsPage'));
 const FeedPage = lazyWithRetry(() => import('./pages/player/FeedPage'));
 const PlayerProfilePage = lazyWithRetry(() => import('./pages/player/PlayerProfilePage'));
 const ScoringPage = lazyWithRetry(() => import('./pages/player/ScoringPage'));
+// Anotar una partida de stroke play (FE #824, PR 7)
+const GroupScoringPage = lazyWithRetry(() => import('./pages/player/GroupScoringPage'));
 const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingMatchesPage'));
 
 // Quick Match pages (FE #236)
@@ -345,6 +347,11 @@ function AppContent() {
         <Route path="/player/matches/:matchId/scoring" element={
           <ProtectedRoute>
             <ScoringPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/player/groups/:groupId/scoring" element={
+          <ProtectedRoute>
+            <GroupScoringPage />
           </ProtectedRoute>
         } />
 

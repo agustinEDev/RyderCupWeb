@@ -24,6 +24,8 @@ const read = (relativePath) => readFileSync(resolve(process.cwd(), relativePath)
 /** Rutas inmersivas o publicas: la cabecera contextual no aparece en ellas. */
 const SIN_CABECERA_CONTEXTUAL = [
   'player/ScoringPage.jsx',
+  // La de anotar una partida de stroke play: también acaba en /scoring (FE #824, PR 7)
+  'player/GroupScoringPage.jsx',
   'quick_match/QuickMatchScoringPage.jsx',
   'public/LeaderboardPage.jsx',
 ];

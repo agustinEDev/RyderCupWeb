@@ -215,5 +215,81 @@
     "generic": "This match was closed before the end. There is nothing left to score.",
     "conceded": "Match conceded: {{team}} wins. There is nothing left to score.",
     "walkover": "{{team}} wins by walkover: the opponent did not show up. There is nothing to score."
+  },
+  "partida": {
+    "header": "Group {{numero}} · {{hora}}",
+    "backToCompetition": "Back to the competition",
+    "type": {
+      "STABLEFORD": "Stableford",
+      "MEDAL": "Medal"
+    },
+    "tabs": {
+      "input": "Score",
+      "standings": "Standings",
+      "cards": "Cards"
+    },
+    "youMark": "You mark {{jugador}}",
+    "retire": "Retire",
+    "retireConfirm": "Retire from the group? Your card is closed with the holes played.",
+    "retireYes": "Yes, retire",
+    "retired": "You have retired from the group.",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "save": "Save",
+    "retry": "Retry",
+    "category": "Category",
+    "allCategories": "All",
+    "categoryN": "Category {{numero}}",
+    "standingsEmpty": "Nobody in the standings yet.",
+    "standingsNotLoaded": "The standings could not be loaded.",
+    "finished": "F",
+    "thru_one": "thru {{count}}",
+    "thru_other": "thru {{count}}",
+    "status": {
+      "CLASIFICADO": "Ranked",
+      "SIN_EMPEZAR": "Not started",
+      "NR": "NR (no return)",
+      "NP": "NS (no show)"
+    },
+    "cardStatus": {
+      "JUGANDO": "Playing",
+      "ENTREGADA": "Submitted",
+      "RETIRADO": "Retired",
+      "NO_PRESENTADO": "No show"
+    },
+    "points_one": "{{count}} point",
+    "points_other": "{{count}} points",
+    "correct": "Correct hole {{hoyo}} for {{jugador}}",
+    "correctingHole": "Hole {{hoyo}}",
+    "ownSide": "What the player entered",
+    "markerSide": "What their marker entered",
+    "noScore": "No score",
+    "pickedUp": "Picked up",
+    "corrected": "Hole corrected.",
+    "reopen": "Reopen {{jugador}}'s card",
+    "reopenShort": "Reopen card",
+    "reopenConfirm": "Reopen {{jugador}}'s card? It can be scored and corrected again.",
+    "reopened": "Card reopened.",
+    "noShow": "Mark {{jugador}} as no show",
+    "noShowShort": "No show",
+    "noShowConfirm": "Mark {{jugador}} as no show? Their card is closed with no holes.",
+    "markedNoShow": "Marked as no show.",
+    "errors": {
+      "NOT_GROUP_PLAYER": "You are not playing this group.",
+      "NOT_YOUR_MARKED_PLAYER": "That is not the player you mark.",
+      "GROUP_WITHOUT_MARKER": "A one-player group has nobody to mark: the organiser validates your scores.",
+      "GROUP_NOT_SCORING": "The competition is not in play: scoring is not open now.",
+      "GROUP_NOT_STARTED": "The group has not started yet.",
+      "SCORECARD_ALREADY_SUBMITTED": "The card is already closed: reopen it first.",
+      "SCORING_NOT_OPEN_YET": "Scoring for this window has not opened yet.",
+      "PICKED_UP_NOT_ALLOWED": "You can't pick up in a Medal: enter your strokes.",
+      "INVALID_HOLE": "That hole does not exist.",
+      "SCORECARD_NOT_READY": "Some holes still need validating before the card can be submitted.",
+      "SCORECARD_NOT_READY_holes_one": "Hole {{hoyos}} still needs validating before the card can be submitted.",
+      "SCORECARD_NOT_READY_holes_other": "Holes {{hoyos}} still need validating before the card can be submitted.",
+      "NOT_ORGANIZER": "Only the organiser can do this.",
+      "generic": "It could not be done."
+    }
   }
 }

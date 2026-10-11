@@ -1,0 +1,273 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+
+/**
+ * La pantalla de anotar una partida de stroke play (FE #824, PR 7). La tabla
+ * aprobada el 11 oct 2026 (los casos de la cola y del vaciado están en sus
+ * tests; los de las pestañas, en las suyas):
+ *
+ *   1   abrir                                 | cabecera: partida, hora y tipo
+ *   2   antes de que abra la anotación        | «se abre a las …», sin casilla
+ *   3   Anotar                                | mi golpe y el de quien marco; Medal sin recogida
+ *   6   guardar un hoyo                       | con quien marco; solo, con su propio id
+ *   9   entregar                              | la barra: entregar / faltan / entregada
+ *   10  retirarse                             | con confirmación
+ *   11  Clasificación de la franja            | solo con su pestaña abierta
+ *   12  Tarjetas                              | las de la partida
+ *   13  quien no juega                        | sin Anotar: Tarjetas y Clasificación
+ *   15  el organizador                        | herramientas en Tarjetas
+ *   18  errores                               | traducidos
+ */
+const mockParams = { groupId: 'g-1' };
+let mockBusqueda = new URLSearchParams('competition=c-1');
+vi.mock('react-router', () => ({
+  useParams: () => mockParams,
+  useSearchParams: () => [mockBusqueda],
+  useNavigate: () => vi.fn(),
+  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key, opts) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
+    i18n: { language: 'es' },
+  }),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'ana', is_admin: false }, loading: false }),
+}));
+
+let mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: (id) => (id ? mockRoles : { isAdmin: false, isCreator: false, isLoading: false }) }));
+
+const mockToast = { error: vi.fn(), success: vi.fn() };
+vi.mock('../../utils/toast', () => ({ default: mockToast }));
+
+const mockRetirarse = vi.fn();
+vi.mock('../../composition', () => ({
+  retireFromTeeGroupUseCase: { execute: (...a) => mockRetirarse(...a) },
+}));
+
+const llamadas = vi.hoisted(() => ({ useScoring: null, casilla: null, clasificacion: null, tarjetas: null }));
+let mockHook;
+vi.mock('../../hooks/useScoring', () => ({
+  useScoring: (...args) => {
+    llamadas.useScoring = args;
+    return mockHook;
+  },
+}));
+vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
+vi.mock('../../components/scoring/HoleInput', () => ({
+  default: (props) => {
+    llamadas.casilla = props;
+    return <div data-testid="hole-input" />;
+  },
+}));
+vi.mock('../../components/scoring/HoleSelector', () => ({ default: () => <div data-testid="hole-selector" /> }));
+vi.mock('../../components/scoring/ClasificacionDeLaFranja', () => ({
+  default: (props) => {
+    llamadas.clasificacion = props;
+    return <div data-testid="clasificacion" data-activa={String(props.activa)} />;
+  },
+}));
+vi.mock('../../components/scoring/TarjetasDeLaPartida', () => ({
+  default: (props) => {
+    llamadas.tarjetas = props;
+    return <div data-testid="tarjetas" />;
+  },
+}));
+
+const GroupScoringPage = (await import('./GroupScoringPage')).default;
+const { ORIGEN_PARTIDA_DE_FRANJA } = await import('../../hooks/origenesDeAnotacion');
+const { default: TeeGroupScoringMapper } = await import('../../infrastructure/mappers/TeeGroupScoringMapper');
+
+const hoyo = (hole) => ({ hole, par: 4, strokes_received: 0, own_score: null, own_submitted: false, marker_score: null, marker_submitted: false, status: 'PENDING' });
+const jugador = (userId, marks, extra = {}) => ({
+  user_id: userId, name: userId.toUpperCase(), playing_handicap: 10, tee_color: 'YELLOW', card_status: 'JUGANDO',
+  marks_user_id: marks, marked_by_user_id: marks, holes: Array.from({ length: 18 }, (_, i) => hoyo(i + 1)),
+  totals: { thru: 0, points: 0, gross_points: 0, gross: 0, net: 0, to_par_net: 0, to_par_gross: 0, complete: false }, ...extra,
+});
+const vista = (extra = {}, players) =>
+  TeeGroupScoringMapper.toScoringViewDTO({
+    group_id: 'g-1', round_id: 'r-1', number: 2, tee_time: '08:10', status: 'IN_PROGRESS', scoring_opens_at: '2020-01-01T06:00:00Z',
+    tournament_type: 'STABLEFORD', picked_up_allowed: true, i_mark_user_id: 'bea',
+    players: players ?? [jugador('ana', 'bea'), jugador('bea', 'ana')], ...extra,
+  });
+const hook = (extra = {}) => {
+  const scoringView = extra.scoringView ?? vista();
+  return {
+    scoringView, scoresVisibles: scoringView.scores, currentHole: 1, isLoading: false, error: null, origenDelError: null,
+    isSubmitting: false, matchSummary: null, isOffline: false, isSessionBlocked: false, pendingQueueSize: 0, noGuardados: {},
+    avisoDelVaciado: null, pintadoDeMemoria: false, isMatchPlayer: true, canScore: true, hasSubmitted: false,
+    isOwnScoreLocked: false, isMarkerScoreLocked: false, isFullyLocked: false, validatedHoles: 0, totalHoles: 18,
+    holesToSubmit: 18, canSubmitScorecard: false, partidoAcabado: false, setCurrentHole: vi.fn(), submitScore: vi.fn(),
+    submitScorecard: vi.fn().mockResolvedValue(), takeOverSession: vi.fn(), refetch: vi.fn(), ...extra,
+  };
+};
+
+describe('GroupScoringPage (FE #824, PR 7)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook();
+    mockRetirarse.mockResolvedValue({});
+  });
+
+  it('1: anota con el origen de las partidas; cabecera con número, hora y tipo', () => {
+    render(<GroupScoringPage />);
+
+    expect(llamadas.useScoring).toEqual(['g-1', 'ana', false, ORIGEN_PARTIDA_DE_FRANJA]);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('partida.header {"numero":2,"hora":"08:10"}');
+    expect(screen.getByText('partida.type.STABLEFORD')).toBeInTheDocument();
+  });
+
+  it('vuelve a la ficha de la competición si se sabe cuál es', () => {
+    render(<GroupScoringPage />);
+
+    expect(screen.getByRole('link', { name: /partida.backToCompetition/ })).toHaveAttribute('href', '/competitions/c-1');
+  });
+
+  it('2: antes de que abra, la hora y sin casilla', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByText(/notOpenYet.opensAt/)).toBeInTheDocument();
+    expect(screen.queryByTestId('hole-input')).toBeNull();
+  });
+
+  it('3: la casilla, con recogida en Stableford y sin ella en Medal', () => {
+    const { unmount } = render(<GroupScoringPage />);
+    expect(llamadas.casilla.allowPickedUp).toBe(true);
+    unmount();
+
+    mockHook = hook({ scoringView: vista({ tournament_type: 'MEDAL', picked_up_allowed: false }) });
+    render(<GroupScoringPage />);
+    expect(llamadas.casilla.allowPickedUp).toBe(false);
+  });
+
+  it('6: guardar un hoyo, con quien marco', () => {
+    render(<GroupScoringPage />);
+
+    llamadas.casilla.onScoreChange({ ownScore: 5, markedScore: 4 }, 'ownScore');
+
+    expect(mockHook.submitScore).toHaveBeenCalledWith(1, { ownScore: 5, markedPlayerId: 'bea', markedScore: 4 }, { tocado: 'ownScore' });
+  });
+
+  it('6b: solo en su partida (sin marcado): su golpe, con su propio id y sin el del marcado', () => {
+    mockHook = hook({ scoringView: vista({ i_mark_user_id: null }, [jugador('ana', null)]) });
+    render(<GroupScoringPage />);
+
+    llamadas.casilla.onScoreChange({ ownScore: 5, markedScore: undefined }, 'ownScore');
+
+    expect(mockHook.submitScore).toHaveBeenCalledWith(1, { ownScore: 5, markedPlayerId: 'ana', markedScore: undefined }, { tocado: 'ownScore' });
+    expect(llamadas.casilla.isMarkerScoreLocked).toBe(true);
+  });
+
+  it.each([
+    [{ canSubmitScorecard: true }, 'entregar'],
+    [{ partidoAcabado: true }, 'faltaValidar'],
+    [{ hasSubmitted: true }, 'entregada'],
+  ])('9: la barra de entrega (%o → %s)', (extra, estado) => {
+    mockHook = hook(extra);
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('estado-de-entrega')).toHaveAttribute('data-estado', estado);
+  });
+
+  it('9b: entregar pide confirmar y entrega', async () => {
+    mockHook = hook({ canSubmitScorecard: true, validatedHoles: 18 });
+    render(<GroupScoringPage />);
+
+    fireEvent.click(within(screen.getByTestId('barra-de-entrega')).getByRole('button'));
+    fireEvent.click(await screen.findByTestId('submit-confirm'));
+
+    await waitFor(() => expect(mockHook.submitScorecard).toHaveBeenCalled());
+  });
+
+  it('10: retirarse, con confirmación; «No» no hace nada', async () => {
+    render(<GroupScoringPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retire' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partida.no' }));
+    expect(mockRetirarse).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retire' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
+    await waitFor(() => expect(mockRetirarse).toHaveBeenCalledWith('g-1'));
+    expect(mockHook.refetch).toHaveBeenCalled();
+  });
+
+  it('10b: con la tarjeta ya cerrada no hay «Retirarme»', () => {
+    mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByRole('button', { name: 'partida.retire' })).toBeNull();
+  });
+
+  it('11-12: las pestañas; la clasificación solo está activa con la suya abierta', () => {
+    render(<GroupScoringPage />);
+    expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'false');
+
+    fireEvent.click(screen.getByTestId('tab-standings'));
+    expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'true');
+    expect(llamadas.clasificacion).toMatchObject({ roundId: 'r-1', userId: 'ana' });
+
+    fireEvent.click(screen.getByTestId('tab-cards'));
+    expect(screen.getByTestId('tarjetas')).toBeInTheDocument();
+    expect(llamadas.tarjetas).toMatchObject({ userId: 'ana', organiza: false, onCambio: mockHook.refetch });
+  });
+
+  it('13: quien no juega no tiene Anotar, y abre en Tarjetas', () => {
+    mockHook = hook({ isMatchPlayer: false, canScore: false });
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('tab-input')).toBeNull();
+    expect(screen.getByTestId('tarjetas')).toBeInTheDocument();
+    expect(screen.queryByTestId('barra-de-entrega')).toBeNull();
+  });
+
+  it('15: el organizador de la competición tiene sus herramientas en Tarjetas', () => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    render(<GroupScoringPage />);
+    fireEvent.click(screen.getByTestId('tab-cards'));
+
+    expect(llamadas.tarjetas.organiza).toBe(true);
+  });
+
+  it('15c: un administrador también', () => {
+    mockRoles = { isAdmin: true, isCreator: false, isLoading: false };
+    render(<GroupScoringPage />);
+    fireEvent.click(screen.getByTestId('tab-cards'));
+
+    expect(llamadas.tarjetas.organiza).toBe(true);
+  });
+
+  it('15b: sin saber la competición (desde el aviso del panel), sin herramientas', () => {
+    mockBusqueda = new URLSearchParams('');
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    render(<GroupScoringPage />);
+    fireEvent.click(screen.getByTestId('tab-cards'));
+
+    expect(llamadas.tarjetas.organiza).toBe(false);
+    expect(screen.queryByRole('link', { name: /partida.backToCompetition/ })).toBeNull();
+  });
+
+  it('18: un fallo al anotar, traducido por su código', () => {
+    mockHook = hook({ error: Object.assign(new Error('detail'), { errorCode: 'NOT_YOUR_MARKED_PLAYER' }), origenDelError: 'golpe' });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('partida.errors.NOT_YOUR_MARKED_PLAYER');
+  });
+
+  it('18b: retirarse falla: el motivo, traducido', async () => {
+    mockRetirarse.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_NOT_SCORING' }));
+    render(<GroupScoringPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retire' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_NOT_SCORING'));
+  });
+});

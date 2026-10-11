@@ -29,6 +29,8 @@ const HoleInput = ({
   teamAName,
   teamBName,
   matchFormat,
+  // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
+  allowPickedUp = true,
 }) => {
   const { t } = useTranslation('scoring');
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
@@ -239,6 +241,7 @@ const HoleInput = ({
           onClose={() => setOpenPanel(null)}
           label={etiquetaPropia}
           par={par}
+          allowPickedUp={allowPickedUp}
         />
       )}
       {openPanel === 'marked' && (
@@ -248,6 +251,7 @@ const HoleInput = ({
           onClose={() => setOpenPanel(null)}
           label={etiquetaMarcado}
           par={markedPar ?? par}
+          allowPickedUp={allowPickedUp}
         />
       )}
     </div>

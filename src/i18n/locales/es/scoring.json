@@ -215,5 +215,81 @@
     "generic": "Este partido se cerró antes de terminar. Ya no queda nada que anotar.",
     "conceded": "Partido concedido: gana {{team}}. Ya no queda nada que anotar.",
     "walkover": "{{team}} gana por walkover: el rival no se presentó. No hay nada que anotar."
+  },
+  "partida": {
+    "header": "Partida {{numero}}.ª · {{hora}}",
+    "backToCompetition": "Volver a la competición",
+    "type": {
+      "STABLEFORD": "Stableford",
+      "MEDAL": "Medal"
+    },
+    "tabs": {
+      "input": "Anotar",
+      "standings": "Clasificación",
+      "cards": "Tarjetas"
+    },
+    "youMark": "Marcas a {{jugador}}",
+    "retire": "Retirarme",
+    "retireConfirm": "¿Retirarte de la partida? Tu tarjeta queda cerrada con lo jugado.",
+    "retireYes": "Sí, retirarme",
+    "retired": "Te has retirado de la partida.",
+    "yes": "Sí",
+    "no": "No",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "retry": "Reintentar",
+    "category": "Categoría",
+    "allCategories": "Todas",
+    "categoryN": "{{numero}}.ª categoría",
+    "standingsEmpty": "Todavía no hay nadie en la clasificación.",
+    "standingsNotLoaded": "No se pudo leer la clasificación.",
+    "finished": "Acabó",
+    "thru_one": "tras {{count}} hoyo",
+    "thru_other": "tras {{count}} hoyos",
+    "status": {
+      "CLASIFICADO": "Clasificado",
+      "SIN_EMPEZAR": "Sin empezar",
+      "NR": "NR (no termina)",
+      "NP": "NP (no presentado)"
+    },
+    "cardStatus": {
+      "JUGANDO": "Jugando",
+      "ENTREGADA": "Entregada",
+      "RETIRADO": "Retirado",
+      "NO_PRESENTADO": "No presentado"
+    },
+    "points_one": "{{count}} punto",
+    "points_other": "{{count}} puntos",
+    "correct": "Corregir el hoyo {{hoyo}} de {{jugador}}",
+    "correctingHole": "Hoyo {{hoyo}}",
+    "ownSide": "Lo que anotó el jugador",
+    "markerSide": "Lo que anotó su marcador",
+    "noScore": "Sin golpe",
+    "pickedUp": "Recogida",
+    "corrected": "Hoyo corregido.",
+    "reopen": "Reabrir la tarjeta de {{jugador}}",
+    "reopenShort": "Reabrir tarjeta",
+    "reopenConfirm": "¿Reabrir la tarjeta de {{jugador}}? Podrá volver a anotarse y corregirse.",
+    "reopened": "Tarjeta reabierta.",
+    "noShow": "Marcar a {{jugador}} como no presentado",
+    "noShowShort": "No presentado",
+    "noShowConfirm": "¿Marcar a {{jugador}} como no presentado? Su tarjeta queda cerrada sin hoyos.",
+    "markedNoShow": "Marcado como no presentado.",
+    "errors": {
+      "NOT_GROUP_PLAYER": "No juegas esta partida.",
+      "NOT_YOUR_MARKED_PLAYER": "Ese no es el jugador al que marcas.",
+      "GROUP_WITHOUT_MARKER": "En una partida de uno no hay a quién marcar: el organizador valida tus golpes.",
+      "GROUP_NOT_SCORING": "La competición no está en juego: ahora no se anota.",
+      "GROUP_NOT_STARTED": "La partida todavía no ha empezado.",
+      "SCORECARD_ALREADY_SUBMITTED": "La tarjeta ya está cerrada: hay que reabrirla primero.",
+      "SCORING_NOT_OPEN_YET": "La anotación de esta franja todavía no se ha abierto.",
+      "PICKED_UP_NOT_ALLOWED": "En Medal no se puede recoger: hay que anotar los golpes.",
+      "INVALID_HOLE": "Ese hoyo no existe.",
+      "SCORECARD_NOT_READY": "Faltan hoyos por validar para entregar la tarjeta.",
+      "SCORECARD_NOT_READY_holes_one": "Falta por validar el hoyo {{hoyos}} para entregar la tarjeta.",
+      "SCORECARD_NOT_READY_holes_other": "Faltan por validar los hoyos {{hoyos}} para entregar la tarjeta.",
+      "NOT_ORGANIZER": "Solo el organizador puede hacer esto.",
+      "generic": "No se pudo hacer."
+    }
   }
 }
