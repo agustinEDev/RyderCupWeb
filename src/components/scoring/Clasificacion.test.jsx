@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 
 /**
  * Lo que la general y la scratch añaden a la tabla de la franja (FE #824, PR 8,
@@ -51,6 +51,42 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(mia).toHaveTextContent('31');
     expect(mia).toHaveTextContent('YO');
     expect(mia).toHaveAttribute('data-yo', 'true');
+  });
+
+  it('sin filtro (scratch), aunque las filas traigan su categoría (revisor)', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { category: 1 }), fila('bea', { category: 2, position: 2 })]));
+    render(<Clasificacion pedir={pedir} userId="x" activa filtrable={false} />);
+
+    await screen.findByTestId('fila-ana');
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('a 360 px: categoría, tarjetas y estado van debajo del nombre, no en la misma línea (revisor)', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
+    render(<Clasificacion pedir={pedir} userId="x" activa conCategoria conTarjetas />);
+
+    const ana = await screen.findByTestId('fila-ana');
+    const debajo = ana.querySelector('[data-detalle]');
+    expect(debajo).toHaveTextContent('partida.categoryShort');
+    expect(debajo).toHaveTextContent('partida.cards');
+    expect(debajo).toHaveTextContent('partida.finished');
+  });
+
+  it('al dejar de releerse (acaba la competición), una última lectura (revisor)', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')]));
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
+    await screen.findByTestId('fila-ana');
+
+    rerender(<Clasificacion pedir={pedir} userId="x" activa cada={null} />);
+
+    await waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
+  });
+
+  it('la fila fijada debajo tiene su rótulo visible (revisor)', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { me: fila('yo', { position: 31 }) }));
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+
+    expect(await screen.findByText('partida.yourPosition')).toBeInTheDocument();
   });
 
   it('6: con `cada`, se relee; sin él, una lectura', async () => {

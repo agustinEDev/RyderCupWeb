@@ -31,7 +31,8 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGeneral.mockResolvedValue(clasificacion([fila('ana')]));
-    mockScratch.mockResolvedValue(clasificacion([fila('bea', { category: null })], { scale: 'SCRATCH' }));
+    // Como el backend: las filas de la scratch también traen su categoría
+    mockScratch.mockResolvedValue(clasificacion([fila('bea', { category: 2 }), fila('cris', { category: 1, position: 2 })], { scale: 'SCRATCH' }));
   });
 
   it('2: abre en la general, con categoría, tarjetas y la regla; la scratch no se pide hasta abrirla', async () => {
@@ -52,7 +53,17 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
 
     expect(await screen.findByTestId('fila-bea')).toBeInTheDocument();
     expect(mockScratch).toHaveBeenCalledWith('c-1');
+    // Sin filtro ni tarjetas: la scratch no tiene categorías
+    expect(screen.getByRole('tabpanel', { name: 'partida.scratch' })).not.toHaveTextContent('partida.cards');
+    expect(screen.queryAllByRole('combobox').filter((c) => !c.closest('[hidden]'))).toHaveLength(0);
     expect(screen.getByRole('tab', { name: 'partida.scratch' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('las pestañas tienen nombre de grupo (revisor)', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="ana" enJuego={false} />);
+
+    expect(screen.getByRole('tablist', { name: 'partida.standingsTitle' })).toBeInTheDocument();
+    await screen.findByTestId('fila-ana');
   });
 
   it('8: sin resultados todavía', async () => {

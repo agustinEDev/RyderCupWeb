@@ -295,8 +295,8 @@
     "cards_one": "{{count}} card",
     "cards_other": "{{count}} cards",
     "rule": {
-      "ACCUMULATED": "Overall: all cards added up",
-      "BEST_CARD": "Overall: each player's best card"
+      "ACCUMULATED": "Rule: all cards added up",
+      "BEST_CARD": "Rule: each player's best card"
     },
     "yourPosition": "Your position",
     "noResultsYet": "No results yet.",

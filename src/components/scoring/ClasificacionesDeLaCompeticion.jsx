@@ -37,7 +37,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
         <Trophy className="h-5 w-5 text-green-600" />
         {t('partida.standingsTitle')}
       </h3>
-      <div role="tablist" className="flex border-b border-gray-200">
+      <div role="tablist" aria-label={t('partida.standingsTitle')} className="flex border-b border-gray-200">
         {PESTANAS.map((p) => (
           <button
             key={p}
@@ -74,7 +74,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
           userId={userId}
           activa={pestana === 'scratch'}
           cada={cada}
-          conTarjetas
+          filtrable={false}
           conRegla
           vacia="partida.noResultsYet"
         />

@@ -10,7 +10,12 @@ import { useEffect } from 'react';
 export const useSondeoMientras = (activo, pedir, cada) => {
   useEffect(() => {
     if (!activo || !pedir) return undefined;
-    const reloj = setInterval(() => pedir(), cada);
+    // Con la pestaña del navegador oculta (el móvil en el bolsillo) no se
+    // pide: como los demás sondeos del proyecto (revisor, PR 8)
+    const reloj = setInterval(() => {
+      if (globalThis.document?.visibilityState === 'hidden') return;
+      pedir();
+    }, cada);
     return () => clearInterval(reloj);
   }, [activo, pedir, cada]);
 };

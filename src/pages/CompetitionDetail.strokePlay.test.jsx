@@ -526,7 +526,13 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
 
   // Caso 9 de la PR 8: salieron menos categorías de las pedidas
   const tresIguales = { categoryCount: 3, categoryLimits: [15], maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' };
-  const repartidos = [conFijado('org', 'Olga Organiza', 10, 1), conFijado('ana', 'Ana Alba', 20, 2), conFijado('bea', 'Bea Blanco', 12, 1)];
+  // 12 inscritos dan para 2 categorías de las 3 pedidas: menos de seis
+  const repartidos = [
+    conFijado('org', 'Olga Organiza', 10, 1),
+    conFijado('ana', 'Ana Alba', 20, 2),
+    conFijado('bea', 'Bea Blanco', 12, 1),
+    ...Array.from({ length: 9 }, (_, i) => conFijado(`j${i}`, `Jugador ${i}`, 14 + i, i < 4 ? 1 : 2)),
+  ];
 
   it('9 (PR 8): cerrada, el organizador lee que salieron menos categorías y por qué', async () => {
     mockListEnrollments.mockResolvedValue(repartidos);
@@ -536,6 +542,64 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     expect(await screen.findByTestId('aviso-categorias')).toHaveTextContent(
       'detail.fewerCategories.MENOS_DE_SEIS'
     );
+  });
+
+  it('9 (PR 8): el toast espera a las dos lecturas: si las inscripciones llegan antes que la ficha, el motivo sigue siendo el bueno (revisor)', async () => {
+    const dieciocho = Array.from({ length: 18 }, (_, i) => conFijado(`j${i}`, `Jugador ${i}`, i < 9 ? 10 : 12, i < 9 ? 1 : 2));
+    mockListEnrollments.mockResolvedValueOnce(INSCRITOS).mockResolvedValue(dieciocho);
+    mockGetCompetitionDetail.mockResolvedValueOnce(medal({ status: 'ACTIVE', strokePlay: { ...tresIguales, categoryLimits: [] } }));
+    let soltarLaFicha;
+    mockGetCompetitionDetail.mockReturnValueOnce(new Promise((r) => (soltarLaFicha = r)));
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: { ...tresIguales, categoryLimits: [10] } }));
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+    expect(customToast.warning).not.toHaveBeenCalled();
+
+    await act(async () => soltarLaFicha(medal({ status: 'CLOSED', strokePlay: { ...tresIguales, categoryLimits: [10] } })));
+
+    await waitFor(() => expect(customToast.warning).toHaveBeenCalledTimes(1));
+    expect(customToast.warning).toHaveBeenCalledWith(expect.stringContaining('detail.fewerCategories.REPETIDOS'));
+  });
+
+  it('9 (PR 8): si al cerrar salen todas, no hay toast, ni uno tardío después (revisor)', async () => {
+    const doce = Array.from({ length: 12 }, (_, i) => conFijado(`j${i}`, `Jugador ${i}`, i, i < 6 ? 1 : 2));
+    mockListEnrollments.mockResolvedValueOnce(INSCRITOS).mockResolvedValue(doce);
+    mockGetCompetitionDetail.mockResolvedValueOnce(medal({ status: 'ACTIVE', strokePlay: { ...tresIguales, categoryCount: 2, categoryLimits: [] } }));
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: { ...tresIguales, categoryCount: 2, categoryLimits: [5] } }));
+    mockCloseEnrollments.mockResolvedValue({ id: 'comp-1', status: 'CLOSED' });
+    renderPage();
+
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+
+    expect(customToast.warning).not.toHaveBeenCalled();
+  });
+
+  it('9 (PR 8): iniciar no repite el aviso como toast (es de al cerrar)', async () => {
+    mockListEnrollments.mockResolvedValue(repartidos);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED', strokePlay: tresIguales }));
+    const { startCompetitionUseCase } = await import('../composition');
+    startCompetitionUseCase.execute.mockResolvedValueOnce({ status: 'IN_PROGRESS', updatedAt: 'z' });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'detail.actions.start-competition' }));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+    await waitFor(() => expect(startCompetitionUseCase.execute).toHaveBeenCalled());
+    await waitFor(() => expect(mockListEnrollments).toHaveBeenCalledTimes(2));
+    await act(async () => {});
+
+    expect(customToast.warning).not.toHaveBeenCalled();
   });
 
   it.each([

@@ -41,6 +41,27 @@ describe('categoriasQueSalen (FE #824, PR 8)', () => {
     expect(categoriasQueSalen(ajustes({ categoryCount: 3, categoryLimits: [10, 20] }), [1, 2], 18)).toEqual({ pedidas: 3, salen: 2, motivo: MENOS_DE_SEIS });
   });
 
+  it.each([
+    ['una categoría pedida', ajustes({ categoryCount: 1 }), [1], 12],
+    ['cero', ajustes({ categoryCount: 0 }), [1], 12],
+  ])('%s: no hay nada que avisar', (_caso, a, cats, n) => {
+    expect(categoriasQueSalen(a, cats, n)).toBeNull();
+  });
+
+  it.each([
+    [5, 1],
+    [11, 1],
+    [17, 2],
+  ])('iguales con %i jugadores: salen %i, por menos de seis', (n, salen) => {
+    const limites = Array.from({ length: salen - 1 }, (_, i) => 10 + i);
+    const cats = Array.from({ length: salen }, (_, i) => i + 1);
+    expect(categoriasQueSalen(ajustes({ categoryCount: 3, categoryLimits: limites }), cats, n)).toEqual({ pedidas: 3, salen, motivo: MENOS_DE_SEIS });
+  });
+
+  it('iguales con 18 jugadores salen las 3: frontera exacta', () => {
+    expect(categoriasQueSalen(ajustes({ categoryCount: 3, categoryLimits: [10, 20] }), [1, 2, 3], 18)).toBeNull();
+  });
+
   it('antes de repartir (inscritos sin categoría) no se avisa de nada', () => {
     expect(categoriasQueSalen(ajustes({ categoryCount: 3 }), [null, null], 18)).toBeNull();
   });

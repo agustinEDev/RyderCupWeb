@@ -5,6 +5,21 @@ import { useSondeoMientras } from './useSondeoMientras';
 describe('useSondeoMientras (FE #824)', () => {
   afterEach(() => vi.useRealTimers());
 
+  it('con la pestaña del navegador oculta no pide, como los demás sondeos (revisor, PR 8)', () => {
+    vi.useFakeTimers();
+    const pedir = vi.fn();
+    const visible = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    renderHook(() => useSondeoMientras(true, pedir, 1000));
+
+    vi.advanceTimersByTime(2500);
+    expect(pedir).not.toHaveBeenCalled();
+
+    visible.mockReturnValue('visible');
+    vi.advanceTimersByTime(1000);
+    expect(pedir).toHaveBeenCalledTimes(1);
+    visible.mockRestore();
+  });
+
   it('pide cada vez mientras está activo, y para al dejar de estarlo y al desmontar', () => {
     vi.useFakeTimers();
     const pedir = vi.fn();

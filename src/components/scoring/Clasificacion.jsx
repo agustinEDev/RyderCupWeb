@@ -24,6 +24,7 @@ const HOYOS = 18;
  * @param {boolean} [props.conTarjetas] - Cuántas tarjetas lleva (la general)
  * @param {boolean} [props.conRegla] - La regla del torneo arriba (la general)
  * @param {string} [props.vacia] - Qué decir sin nadie todavía
+ * @param {boolean} [props.filtrable] - Con filtro de categoría (la scratch no lo tiene)
  */
 const Clasificacion = ({
   pedir,
@@ -34,6 +35,7 @@ const Clasificacion = ({
   conTarjetas = false,
   conRegla = false,
   vacia = 'partida.standingsEmpty',
+  filtrable = true,
 }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
@@ -58,11 +60,13 @@ const Clasificacion = ({
     }
   }, [pedir, categoria, lecturas]);
 
+  // Al abrirla, y otra vez si deja de releerse (la competición acaba: lo sin
+  // terminar pasa a NR/NP y lo pintado era de hasta un minuto antes; revisor)
   useEffect(() => {
     if (!activa) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
     leer();
-  }, [activa, leer]);
+  }, [activa, leer, cada]);
   useSondeoMientras(activa && cada != null, leer, cada ?? 0);
 
   if (!activa) return null;
@@ -99,13 +103,20 @@ const Clasificacion = ({
         className={`flex min-w-0 items-center gap-3 px-3 py-2 text-sm ${yo ? 'bg-green-50 font-semibold' : ''}`}
       >
         <span className="w-8 shrink-0 text-gray-500">{puesto(fila)}</span>
-        <span className="min-w-0 flex-1 truncate text-gray-900">{fila.name}</span>
-        {conCategoria && fila.category != null && (
-          <span className="shrink-0 text-xs text-gray-500">{t('partida.categoryShort', { numero: fila.category })}</span>
-        )}
-        {fila.value != null && <span className="font-bold text-gray-900">{valor(fila)}</span>}
-        {conTarjetas && <span className="shrink-0 text-xs text-gray-500">{t('partida.cards', { count: fila.cards })}</span>}
-        <span className="shrink-0 text-xs text-gray-500">{comoVa(fila)}</span>
+        {/* El nombre arriba y lo demás debajo: en una línea no cabía a 360 px (revisor) */}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-gray-900">{fila.name}</span>
+          <span data-detalle className="block truncate text-xs font-normal text-gray-500">
+            {[
+              conCategoria && fila.category != null ? t('partida.categoryShort', { numero: fila.category }) : null,
+              conTarjetas ? t('partida.cards', { count: fila.cards }) : null,
+              comoVa(fila),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </span>
+        {fila.value != null && <span className="shrink-0 font-bold text-gray-900">{valor(fila)}</span>}
       </li>
     );
   };
@@ -113,7 +124,9 @@ const Clasificacion = ({
   return (
     <div className="space-y-3">
       {conRegla && <p className="text-xs text-gray-500">{t(`partida.rule.${clasificacion.rule}`)}</p>}
-      {categorias.length > 1 && (
+      {/* Solo donde hay categorías: las filas de la scratch traen la suya,
+          pero la scratch no se filtra (revisor) */}
+      {filtrable && categorias.length > 1 && (
         <label className="block text-xs text-gray-600">
           {t('partida.category')}
           <select
@@ -141,9 +154,12 @@ const Clasificacion = ({
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
       {clasificacion.me && (
-        <ol aria-label={t('partida.yourPosition')} className="rounded-lg border border-dashed border-gray-300 bg-white">
-          {pintaFila(clasificacion.me, 'fila-fuera-del-corte')}
-        </ol>
+        <div>
+          <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
+          <ol className="rounded-lg border border-dashed border-gray-300 bg-white">
+            {pintaFila(clasificacion.me, 'fila-fuera-del-corte')}
+          </ol>
+        </div>
       )}
     </div>
   );

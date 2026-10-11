@@ -116,8 +116,6 @@ const CompetitionDetail = () => {
   // una actualización (FE #824, PR 5)
   const idActual = useRef(id);
   const estadoDeLaActualizacion = useRef(null);
-  // Si se acaba de cerrar aquí: el aviso de menos categorías sale entonces (PR 8)
-  const [acabaDeCerrar, setAcabaDeCerrar] = useState(false);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -281,8 +279,6 @@ const CompetitionDetail = () => {
           break;
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
-          // Para avisar al organizador si salen menos categorías (PR 8)
-          setAcabaDeCerrar(true);
           customToast.success(t('detail.success.enrollmentsClosed'));
           if (competition.teamAssignment === 'AUTOMATIC') {
             try {
@@ -328,7 +324,7 @@ const CompetitionDetail = () => {
         status: result.status,
         updatedAt: result.updatedAt
       }));
-      refrescarCanDelete();
+      const fichaReleida = refrescarCanDelete();
       // Con otro estado, el personalizado puede dejar de poderse cambiar: el
       // editor abierto se cierra (/code-review)
       setEditingHandicapId(null);
@@ -339,10 +335,28 @@ const CompetitionDetail = () => {
       // Con su turno: una lectura vieja de la tarjeta no la pisa (revisor)
       if (esStrokePlay) {
         const deLaLista = lecturasDeInscripciones.turno();
-        listEnrollmentsUseCase
+        const listaReleida = listEnrollmentsUseCase
           .execute(id)
-          .then((lista) => lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista))
-          .catch((e) => console.error('Error reloading enrollments after status change:', e));
+          .then((lista) => {
+            if (lecturasDeInscripciones.aplicar(deLaLista)) setEnrollments(lista);
+            return lista;
+          })
+          .catch((e) => {
+            console.error('Error reloading enrollments after status change:', e);
+            return null;
+          });
+        // Al cerrar, si salen menos categorías se le dice al organizador (PR 8):
+        // con las DOS lecturas ya hechas —los límites que se guardaron y la
+        // categoría de cada uno—. Con lo que fuera llegando, el orden decidía
+        // el motivo (revisor)
+        if (action === 'close-enrollments') {
+          Promise.all([fichaReleida, listaReleida]).then(([ficha, lista]) => {
+            if (!ficha?.strokePlay || !lista) return;
+            const aprobados = lista.filter((e) => e.status === 'APPROVED');
+            const aviso = categoriasQueSalen(ficha.strokePlay, aprobados.map((e) => e.category ?? null), aprobados.length);
+            if (aviso) customToast.warning(t(`detail.fewerCategories.${aviso.motivo}`, aviso));
+          });
+        }
       }
     } catch (error) {
       console.error(`Error ${action}:`, error);
@@ -428,8 +442,12 @@ const CompetitionDetail = () => {
             handicapUpdateWindow: data.handicapUpdateWindow,
           }));
         }
+        return data;
       })
-      .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+      .catch(() => {
+        setCompetition(prev => ({ ...prev, canDelete: false }));
+        return null;
+      });
   };
 
   // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
@@ -690,13 +708,6 @@ const CompetitionDetail = () => {
   const textoDelAvisoDeCategorias = avisoDeCategorias
     ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, avisoDeCategorias)
     : null;
-  // Cuando, tras cerrar, llegan los límites y las categorías releídos
-  useEffect(() => {
-    if (!acabaDeCerrar || !textoDelAvisoDeCategorias) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- el aviso sale una vez por cierre
-    setAcabaDeCerrar(false);
-    customToast.warning(textoDelAvisoDeCategorias);
-  }, [acabaDeCerrar, textoDelAvisoDeCategorias]);
 
   if (isLoading) {
     return (
@@ -1504,6 +1515,8 @@ const CompetitionDetail = () => {
             {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
               <div className="p-4">
                 <ClasificacionesDeLaCompeticion
+                  // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
+                  key={competition.id}
                   competitionId={competition.id}
                   userId={user.id}
                   enJuego={competition.status === 'IN_PROGRESS'}

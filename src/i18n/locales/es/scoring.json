@@ -295,8 +295,8 @@
     "cards_one": "{{count}} tarjeta",
     "cards_other": "{{count}} tarjetas",
     "rule": {
-      "ACCUMULATED": "General: suma de todas las tarjetas",
-      "BEST_CARD": "General: la mejor tarjeta de cada uno"
+      "ACCUMULATED": "Regla: suma de todas las tarjetas",
+      "BEST_CARD": "Regla: la mejor tarjeta de cada uno"
     },
     "yourPosition": "Tu posición",
     "noResultsYet": "Todavía no hay resultados.",
