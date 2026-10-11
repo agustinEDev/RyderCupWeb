@@ -42,6 +42,14 @@ const mockCloseEnrollments = vi.fn();
 
 vi.mock('../composition', () => ({
   launchHandicapUpdateUseCase: { execute: vi.fn() },
+  // Las partidas de las franjas (FE #824, PR 6)
+  getTeeGroupsUseCase: { execute: vi.fn().mockResolvedValue({ roundId: 'r1', editable: true, unassignedPlayers: [], groups: [] }) },
+  getMyTeeGroupsUseCase: { execute: vi.fn().mockResolvedValue([]) },
+  generateTeeGroupsUseCase: { execute: vi.fn() },
+  moveTeeGroupPlayerUseCase: { execute: vi.fn() },
+  reorderTeeGroupsUseCase: { execute: vi.fn() },
+  setTeeGroupMarkersUseCase: { execute: vi.fn() },
+  deleteTeeGroupsUseCase: { execute: vi.fn() },
   scheduleHandicapUpdateUseCase: { execute: vi.fn() },
   cancelScheduledHandicapUpdateUseCase: { execute: vi.fn() },
   // Las plazas y esperas de las franjas (FE #824, PR 4)
@@ -52,12 +60,7 @@ vi.mock('../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockGetCompetitionDetail(...a) },
   getCompetitionGolfCoursesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   // Una sesión: sin ninguna, iniciar no se ofrece (FE #710)
-  getScheduleUseCase: {
-    execute: vi.fn().mockResolvedValue({
-      teamAssignment: null,
-      rounds: [{ id: 'r1', roundDate: '2026-10-03', sessionType: 'MORNING', matchFormat: 'SINGLES', status: 'PENDING_TEAMS', matches: [] }],
-    }),
-  },
+  getScheduleUseCase: { execute: vi.fn().mockResolvedValue(agendaPorDefecto()) },
   activateCompetitionUseCase: { execute: vi.fn() },
   closeEnrollmentsUseCase: { execute: (...a) => mockCloseEnrollments(...a) },
   nameCaptainsUseCase: { execute: (...a) => mockNameCaptains(...a) },
@@ -82,6 +85,19 @@ vi.mock('../utils/toast', () => ({
   default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 import customToast from '../utils/toast';
+
+// Una función (se eleva con el mock): los bloques que cambian la agenda la
+// restauran después, o el siguiente bloque ya no encuentra su franja
+function agendaPorDefecto() {
+  return {
+    teamAssignment: null,
+    rounds: [{ id: 'r1', roundDate: '2026-10-03', sessionType: 'MORNING', matchFormat: 'SINGLES', status: 'PENDING_TEAMS', matches: [] }],
+  };
+}
+const restaurarLaAgenda = async () => {
+  const { getScheduleUseCase } = await import('../composition');
+  getScheduleUseCase.execute.mockResolvedValue(agendaPorDefecto());
+};
 
 const inscrito = (userId, userName) => ({
   id: `enr-${userId}`,
@@ -176,6 +192,8 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
   const stableford = (extra = {}) =>
     competicion({ hasTeams: false, tournamentType: 'STABLEFORD', team1Name: null, team2Name: null, teamAssignment: null, ...extra });
 
+  afterEach(restaurarLaAgenda);
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
@@ -226,6 +244,69 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     expect(screen.queryByText('detail.actions.manageSchedule')).toBeNull();
   });
 
+  it('1 (PR 6): con las inscripciones abiertas, las franjas no tienen partidas', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'ACTIVE' }));
+    renderPage();
+
+    await screen.findByTestId('franja-r1');
+    expect(screen.queryByRole('button', { name: /partidas.show/ })).toBeNull();
+  });
+
+  it.each(['CLOSED', 'IN_PROGRESS'])('2 (PR 6): %s, cada franja tiene sus partidas y el organizador las arma', async (status) => {
+    const { getScheduleUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
+    renderPage();
+
+    const franja = within(await screen.findByTestId('franja-r1'));
+    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
+
+    expect(await franja.findByRole('button', { name: 'partidas.generate' })).toBeInTheDocument();
+  });
+
+  it('acabada, el organizador que no juega sigue viéndolas (CodeRabbit)', async () => {
+    const { getScheduleUseCase, getTeeGroupsUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    getTeeGroupsUseCase.execute.mockResolvedValueOnce({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [] });
+    mockListEnrollments.mockResolvedValue(INSCRITOS.filter((e) => e.userId !== 'org'));
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'COMPLETED' }));
+    renderPage();
+
+    const franja = within(await screen.findByTestId('franja-r1'));
+    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
+
+    expect(await franja.findByText('partidas.empty')).toBeInTheDocument();
+  });
+
+  it('acabada, las partidas se siguen viendo, sin nada que cambiar (Agustín, 11 oct)', async () => {
+    const { getScheduleUseCase, getTeeGroupsUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    getTeeGroupsUseCase.execute.mockResolvedValueOnce({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [] });
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'COMPLETED' }));
+    renderPage();
+
+    const franja = within(await screen.findByTestId('franja-r1'));
+    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
+
+    expect(await franja.findByText('partidas.empty')).toBeInTheDocument();
+    expect(franja.queryByText('partidas.notEditable')).toBeNull();
+    expect(franja.queryByRole('button', { name: 'partidas.generate' })).toBeNull();
+  });
+
+  it.each(['CANCELLED'])('%s ya no enseña partidas (con hoja, para que fuera posible)', async (status) => {
+    const { getScheduleUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
+    renderPage();
+
+    await screen.findByTestId('franja-r1');
+    expect(screen.queryByRole('button', { name: /partidas.show/ })).toBeNull();
+  });
+
   it('un jugador apuntado no tiene «Ver agenda» (la de la Ryder)', async () => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(
@@ -239,6 +320,8 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
 });
 
 describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
+  afterEach(restaurarLaAgenda);
+
   const stableford = (extra = {}) =>
     competicion({
       hasTeams: false,

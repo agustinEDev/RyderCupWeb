@@ -109,6 +109,14 @@ import JoinWaitingListUseCase from '../application/use_cases/schedule/JoinWaitin
 import LeaveWaitingListUseCase from '../application/use_cases/schedule/LeaveWaitingListUseCase';
 import ListMyAssignedPlacesUseCase from '../application/use_cases/schedule/ListMyAssignedPlacesUseCase';
 import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/AcknowledgeAssignedPlaceUseCase';
+// Partidas de las franjas (FE #824, PR 6)
+import GetTeeGroupsUseCase from '../application/use_cases/schedule/GetTeeGroupsUseCase';
+import GetMyTeeGroupsUseCase from '../application/use_cases/schedule/GetMyTeeGroupsUseCase';
+import GenerateTeeGroupsUseCase from '../application/use_cases/schedule/GenerateTeeGroupsUseCase';
+import MoveTeeGroupPlayerUseCase from '../application/use_cases/schedule/MoveTeeGroupPlayerUseCase';
+import ReorderTeeGroupsUseCase from '../application/use_cases/schedule/ReorderTeeGroupsUseCase';
+import SetTeeGroupMarkersUseCase from '../application/use_cases/schedule/SetTeeGroupMarkersUseCase';
+import DeleteTeeGroupsUseCase from '../application/use_cases/schedule/DeleteTeeGroupsUseCase';
 import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
 import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
 import GenerateMatchesUseCase from '../application/use_cases/schedule/GenerateMatchesUseCase';
@@ -285,6 +293,13 @@ const joinWaitingListUseCase = new JoinWaitingListUseCase({ scheduleRepository: 
 const leaveWaitingListUseCase = new LeaveWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
 const listMyAssignedPlacesUseCase = new ListMyAssignedPlacesUseCase({ scheduleRepository: apiScheduleRepository });
 const acknowledgeAssignedPlaceUseCase = new AcknowledgeAssignedPlaceUseCase({ scheduleRepository: apiScheduleRepository });
+const getTeeGroupsUseCase = new GetTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const getMyTeeGroupsUseCase = new GetMyTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const generateTeeGroupsUseCase = new GenerateTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const moveTeeGroupPlayerUseCase = new MoveTeeGroupPlayerUseCase({ scheduleRepository: apiScheduleRepository });
+const reorderTeeGroupsUseCase = new ReorderTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const setTeeGroupMarkersUseCase = new SetTeeGroupMarkersUseCase({ scheduleRepository: apiScheduleRepository });
+const deleteTeeGroupsUseCase = new DeleteTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
 const updateRoundUseCase = new UpdateRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const deleteRoundUseCase = new DeleteRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const generateMatchesUseCase = new GenerateMatchesUseCase({ scheduleRepository: apiScheduleRepository });
@@ -518,6 +533,13 @@ export {
   leaveWaitingListUseCase,
   listMyAssignedPlacesUseCase,
   acknowledgeAssignedPlaceUseCase,
+  getTeeGroupsUseCase,
+  getMyTeeGroupsUseCase,
+  generateTeeGroupsUseCase,
+  moveTeeGroupPlayerUseCase,
+  reorderTeeGroupsUseCase,
+  setTeeGroupMarkersUseCase,
+  deleteTeeGroupsUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,
   generateMatchesUseCase,

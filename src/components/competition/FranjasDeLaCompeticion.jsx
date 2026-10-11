@@ -14,6 +14,8 @@ import {
 } from '../../composition';
 import { situacionEnLasFranjas, destinosParaMover } from '../../domain/services/PlazasEnFranjas';
 import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFranja';
+import PartidasEnLaFranja from './PartidasEnLaFranja';
+import MisPartidas from './MisPartidas';
 import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
@@ -178,6 +180,9 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {boolean} [props.puedeColocar] - El organizador coloca y mueve (hasta iniciar)
  * @param {boolean} [props.puedeQuitar] - Y quita (solo con las inscripciones abiertas)
  * @param {number} [props.irASinFranja] - Sube cuando la ficha pide llevar a «Sin franja»
+ * @param {boolean} [props.verPartidas] - Ya hay partidas que ver (cerrada o en juego; PR 6)
+ * @param {boolean} [props.puedeVerPartidas] - Quien organiza las ve aunque no juegue
+ * @param {boolean} [props.organizaPartidas] - Y las cambia (el servidor dice hasta cuándo)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -196,6 +201,9 @@ const FranjasDeLaCompeticion = ({
   puedeColocar = false,
   puedeQuitar = false,
   irASinFranja = 0,
+  verPartidas = false,
+  puedeVerPartidas = false,
+  organizaPartidas = false,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -205,6 +213,8 @@ const FranjasDeLaCompeticion = ({
   const [sinCargar, setSinCargar] = useState(false);
   // Cuántas lecturas buenas lleva: para hacer algo «con lo releído»
   const [lecturas, setLecturas] = useState(0);
+  // Sube con cada cambio en las partidas: «Tu partida» se relee (PR 6, revisor)
+  const [cambiosEnPartidas, setCambiosEnPartidas] = useState(0);
   const [ocupado, setOcupado] = useState(false);
   // Lo que está abierto: una franja nueva, una que se cambia o una que se borra
   const [nueva, setNueva] = useState(null);
@@ -270,22 +280,17 @@ const FranjasDeLaCompeticion = ({
     const dia = diasConHueco.includes(nueva.dia) ? nueva.dia : diasConHueco[0];
     const libres = dia ? franjasLibres(franjas, dia) : [];
     const franja = libres.includes(nueva.franja) ? nueva.franja : libres[0];
-    // Y el campo, si el elegido ya no es de la competición (/code-review)
-    const campo = campos.some((c) => c.id === nueva.campo) ? nueva.campo : campos[0]?.id;
-    if (dia === nueva.dia && franja === nueva.franja && campo === nueva.campo) return;
+    // El campo no se corrige aquí: lo resuelve `campoVigente` al pintar y al
+    // guardar (corregirlo en un efecto dejaba un hueco; CI de la #838)
+    if (dia === nueva.dia && franja === nueva.franja) return;
     if (!dia) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- sin hueco ya no hay franja que añadir
       setNueva(null);
       return;
     }
-    setNueva((n) => conHorasDe(franja, { ...n, dia, franja, campo }));
-  }, [diasConHueco, franjas, nueva, campos]);
+    setNueva((n) => conHorasDe(franja, { ...n, dia, franja }));
+  }, [diasConHueco, franjas, nueva]);
 
-  useEffect(() => {
-    if (!editando || campos.length === 0 || campos.some((c) => c.id === editando.campo)) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- el campo elegido ya no es de la competición
-    setEditando((e) => ({ ...e, campo: campos[0].id }));
-  }, [campos, editando]);
 
   const porDia = useMemo(() => {
     const orden = (f) => FRANJAS.indexOf(f.sessionType);
@@ -298,6 +303,11 @@ const FranjasDeLaCompeticion = ({
   }, [franjas]);
 
   const nombreDelCampo = (id) => campos.find((c) => c.id === id)?.name || '';
+  // El elegido, si sigue siendo de la competición; si no, el primero, el que
+  // ya enseña el selector. Al guardar se usa este: el efecto que corrige el
+  // estado llega un instante después, y pulsar en ese hueco mandaba el viejo
+  // (falló en el CI de la #838)
+  const campoVigente = (id) => (campos.some((c) => c.id === id) ? id : campos[0]?.id);
 
   // --- Plazas y esperas (PR 4) ---
 
@@ -418,7 +428,7 @@ const FranjasDeLaCompeticion = ({
     cambiar(
       () =>
         createRoundUseCase.execute(competitionId, {
-          golf_course_id: nueva.campo,
+          golf_course_id: campoVigente(nueva.campo),
           round_date: nueva.dia,
           session_type: nueva.franja,
           tee_sheet: aTeeSheet(nueva.hoja),
@@ -445,7 +455,7 @@ const FranjasDeLaCompeticion = ({
           ...(JSON.stringify(editando.hoja) !== JSON.stringify(editando.hojaOriginal)
             ? { tee_sheet: aTeeSheet(editando.hoja) }
             : {}),
-          ...(editando.campo !== editando.campoOriginal ? { golf_course_id: editando.campo } : {}),
+          ...(campoVigente(editando.campo) !== editando.campoOriginal ? { golf_course_id: campoVigente(editando.campo) } : {}),
         }),
       () => setEditando(null),
       'franjas.changed'
@@ -530,6 +540,10 @@ const FranjasDeLaCompeticion = ({
         </p>
       )}
 
+      {/* Las partidas (PR 6): la mía de cada jornada, releída con cada lectura de
+          la agenda. Tras la primera: antes se pedía dos veces al abrir la ficha */}
+      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} fecha={fecha} version={`${lecturas}|${cambiosEnPartidas}`} />}
+
       {cupoCorto && (
         <p data-testid="franjas-cupo-corto" className="mb-3 text-sm text-amber-800">
           {t('franjas.capacityShort', { count: cupoTotal, maximo: maxPlayers })}
@@ -543,6 +557,8 @@ const FranjasDeLaCompeticion = ({
             <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
               {delDia.map((f) => {
                 const hoja = f.teeSheet;
+                // Las del servidor; las cuentas propias, si no las manda
+                const salidas = hoja ? hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja)) : 0;
                 return (
                   <li key={f.id} data-testid={`franja-${f.id}`} className="space-y-1 p-3 text-sm">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -592,8 +608,7 @@ const FranjasDeLaCompeticion = ({
                         </p>
                         <p className="text-gray-700">
                           {t('franjas.capacity', {
-                            // Las del servidor; las cuentas propias, si no las manda
-                            count: hoja.teeTimes.length || numeroDeSalidas(deTeeSheet(hoja)),
+                            count: salidas,
                             tamano: hoja.groupSize,
                             cupo: hoja.capacity ?? cupoDeLaHoja(deTeeSheet(hoja)),
                           })}
@@ -631,6 +646,19 @@ const FranjasDeLaCompeticion = ({
                             casos={casos}
                           />
                         )}
+                        {/* Las partidas, para los inscritos y quien organiza;
+                            se releen con cada lectura de la agenda (PR 6) */}
+                        {verPartidas && (estoyInscrito || puedeVerPartidas) && (
+                          <PartidasEnLaFranja
+                            franja={f}
+                            nombre={`${etiqueta(f).franja} · ${etiqueta(f).dia}`}
+                            salidas={salidas}
+                            userId={userId}
+                            organiza={organizaPartidas}
+                            version={lecturas}
+                            onCambio={() => setCambiosEnPartidas((n) => n + 1)}
+                          />
+                        )}
                       </>
                     )}
 
@@ -648,7 +676,7 @@ const FranjasDeLaCompeticion = ({
                           () => setEditando(null),
                           // Sin cambios no hay nada que mandar (/code-review)
                           JSON.stringify(editando.hoja) === JSON.stringify(editando.hojaOriginal) &&
-                            editando.campo === editando.campoOriginal
+                            campoVigente(editando.campo) === editando.campoOriginal
                         )}
                       </div>
                     )}
