@@ -440,15 +440,46 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     rerender(
       <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
     );
-    // Se espera a que cambie la LISTA de campos, no el valor: el selector ya
-    // enseña «g-1» en cuanto «g-2» deja de ser una opción, antes de que el
-    // estado cambie, y pulsar ahí era una carrera (fallaba bajo carga)
+    // Se pulsa en cuanto cambia la LISTA de campos, sin esperar al estado: el
+    // selector ya enseña «g-1» y guardar tiene que mandar ese (falló en el CI
+    // de la #838 con la espera al valor)
     await waitFor(() => expect(screen.getByLabelText('franjas.course').options).toHaveLength(1));
-    await waitFor(() => expect(screen.getByLabelText('franjas.course')).toHaveValue('g-1'));
+    expect(screen.getByLabelText('franjas.course')).toHaveValue('g-1');
     fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
 
     await waitFor(() => expect(mockCrear).toHaveBeenCalled());
     expect(mockCrear.mock.calls[0][1].golf_course_id).toBe('g-1');
+  });
+
+  it('4k: al cambiar una franja, si el campo elegido desaparece, se manda el que enseña el selector', async () => {
+    const { rerender } = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    mockCampos.mockResolvedValue([CAMPOS[0]]);
+
+    rerender(
+      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
+    );
+    // Con un solo campo el selector ya no sale: la franja vuelve al suyo, sin
+    // nada que mandar
+    await waitFor(() => expect(screen.queryByLabelText('franjas.course')).toBeNull());
+    expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
+  });
+
+  it('4l: si el campo de la propia franja deja de ser de la competición, guardar la pasa al que queda', async () => {
+    mockLeer.mockResolvedValue({ rounds: [franja({ golfCourseId: 'g-2' })], teeSheetCapacity: 96 });
+    const { rerender } = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    mockCampos.mockResolvedValue([CAMPOS[0]]);
+
+    rerender(
+      <FranjasDeLaCompeticion competitionId="c-1" startDate="2030-10-12" endDate="2030-10-13" canManage maxPlayers={100} versionCampos={2} />
+    );
+    await waitFor(() => expect(screen.queryByLabelText('franjas.course')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+
+    await waitFor(() => expect(mockCambiar).toHaveBeenCalled());
+    expect(mockCambiar.mock.calls[0][1]).toEqual({ golf_course_id: 'g-1' });
   });
 
   it('9d: abrir una cosa cierra las demás (/code-review)', async () => {
