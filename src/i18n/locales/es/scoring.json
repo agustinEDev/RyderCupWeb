@@ -260,7 +260,7 @@
     },
     "points_one": "{{count}} punto",
     "points_other": "{{count}} puntos",
-    "correct": "Corregir el hoyo {{hoyo}} de {{jugador}}",
+    "correct": "Corregir el hoyo {{hoyo}} de {{jugador}} (anotado: {{golpe}})",
     "correctingHole": "Hoyo {{hoyo}}",
     "ownSide": "Lo que anotó el jugador",
     "markerSide": "Lo que anotó su marcador",

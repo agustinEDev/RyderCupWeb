@@ -206,6 +206,51 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(screen.queryByRole('button', { name: 'partida.retire' })).toBeNull();
   });
 
+  it('retirado (o no presentado), ya no anota ni se le pide entregar: el servidor lo tiraría sin avisar (revisor)', () => {
+    mockHook = hook({ partidoAcabado: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'RETIRADO' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.isOwnScoreLocked).toBe(true);
+    expect(screen.queryByTestId('estado-de-entrega')).toBeNull();
+  });
+
+  it('entregada, la barra lo dice (la tarjeta entregada no cuenta como retirada)', () => {
+    mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('estado-de-entrega')).toHaveAttribute('data-estado', 'entregada');
+  });
+
+  it('si al que marco se retira, su casilla se bloquea; la mía no (revisor)', () => {
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', { card_status: 'NO_PRESENTADO' })]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.isMarkerScoreLocked).toBe(true);
+    expect(llamadas.casilla.isOwnScoreLocked).toBe(false);
+  });
+
+  it('lo pintado sale de la memoria del móvil: se dice (FE #614, revisor)', () => {
+    mockHook = hook({ pintadoDeMemoria: true });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('pintado-de-memoria')).toHaveTextContent('offline.noSeActualiza');
+  });
+
+  it('antes de que abra no se ofrece retirarse (revisor)', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByRole('button', { name: 'partida.retire' })).toBeNull();
+  });
+
+  it('las pestañas controlan su panel (revisor)', () => {
+    render(<GroupScoringPage />);
+
+    const pestana = screen.getByTestId('tab-input');
+    expect(pestana).toHaveAttribute('aria-controls', 'panel-input');
+    expect(document.getElementById('panel-input')).toHaveAttribute('role', 'tabpanel');
+  });
+
   it('11-12: las pestañas; la clasificación solo está activa con la suya abierta', () => {
     render(<GroupScoringPage />);
     expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'false');

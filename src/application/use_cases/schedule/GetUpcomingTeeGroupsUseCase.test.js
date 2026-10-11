@@ -59,6 +59,14 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
     });
   });
 
+  it('las de días pasados no salen aunque nadie cerrara la franja (revisor)', async () => {
+    const c = casos({ a: [mia('r0', '2030-10-11', 'MORNING', partida('g0', 1, '08:00')), mia('r1', '2030-10-12', 'MORNING', partida('g1', 1, '08:00'))] });
+
+    const { matches } = await new GetUpcomingTeeGroupsUseCase(c).executeWithCompleteness('yo', [competicion('a')], new Date(2030, 9, 12, 20, 0));
+
+    expect(matches.map((m) => m.id)).toEqual(['g1']);
+  });
+
   it('las acabadas no salen', async () => {
     const c = casos({ a: [mia('r1', '2030-10-12', 'MORNING', partida('g1', 1, '08:00', 'COMPLETED'))] });
 

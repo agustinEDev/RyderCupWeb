@@ -806,7 +806,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
 
   // --- Concede match ---
   const concedeMatch = useCallback(async (concedingTeam, reason) => {
-    if (!matchId) return;
+    // En stroke play no se concede: su origen no lo trae
+    if (!matchId || !origen.concede) return;
 
     setIsSubmitting(true);
     try {

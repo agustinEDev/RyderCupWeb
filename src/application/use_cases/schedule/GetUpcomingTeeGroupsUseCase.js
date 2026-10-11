@@ -24,15 +24,22 @@ class GetUpcomingTeeGroupsUseCase {
   /**
    * @param {string} userId
    * @param {Array} [competitions] - Las ya cargadas, para no pedirlas otra vez
+   * @param {Date} [ahora]
    * @returns {Promise<{matches: Array, complete: boolean}>}
    */
-  async executeWithCompleteness(userId, competitions = null) {
+  async executeWithCompleteness(userId, competitions = null, ahora = new Date()) {
     if (!userId) throw new Error('GetUpcomingTeeGroupsUseCase requires a userId');
     const todas = competitions ?? (await this.#listUserCompetitionsUseCase.execute(userId));
     const deStrokePlay = (todas || []).filter(
       (c) => c.hasTeams === false && COMPETICIONES_CON_PARTIDAS.includes(c.status)
     );
-    const leidas = await Promise.allSettled(deStrokePlay.map((c) => this.#partidasDe(c, userId)));
+    // De hoy en adelante: una franja que nadie cerró sigue «en juego» días
+    // después, y en el banner taparía lo de hoy (revisor)
+    const pad = (n) => String(n).padStart(2, '0');
+    const hoy = `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`;
+    const leidas = await Promise.allSettled(
+      deStrokePlay.map(async (c) => (await this.#partidasDe(c, userId)).filter((p) => p.roundDate >= hoy))
+    );
     return {
       matches: leidas
         .filter((r) => r.status === 'fulfilled')

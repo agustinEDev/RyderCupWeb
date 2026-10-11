@@ -260,7 +260,7 @@
     },
     "points_one": "{{count}} point",
     "points_other": "{{count}} points",
-    "correct": "Correct hole {{hoyo}} for {{jugador}}",
+    "correct": "Correct hole {{hoyo}} for {{jugador}} (entered: {{golpe}})",
     "correctingHole": "Hole {{hoyo}}",
     "ownSide": "What the player entered",
     "markerSide": "What their marker entered",

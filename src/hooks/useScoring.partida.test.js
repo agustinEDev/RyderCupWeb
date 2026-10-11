@@ -102,6 +102,15 @@ describe('useScoring con una partida de stroke play (FE #824, PR 7)', () => {
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
 
+  it('conceder no existe en stroke play: no hace nada ni rompe (revisor)', async () => {
+    const { result } = renderHook(() => useScoring('g-1', 'ana', false, ORIGEN_PARTIDA_DE_FRANJA));
+    await waitFor(() => expect(result.current.scoringView?.matchId).toBe('g-1'));
+
+    await act(async () => result.current.concedeMatch('A', 'x'));
+
+    expect(result.current.error).toBeNull();
+  });
+
   it('entregar la tarjeta va por el suyo', async () => {
     const llena = Array.from({ length: 18 }, (_, i) => hoyo(i + 1, { own_score: 4, own_submitted: true, marker_score: 4, marker_submitted: true, status: 'MATCH' }));
     getTeeGroupScoringViewUseCase.execute.mockResolvedValue(vista(llena));

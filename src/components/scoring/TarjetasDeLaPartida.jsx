@@ -148,7 +148,10 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     <>
                       <span className="block text-[10px] text-gray-400">{hoyo}</span>
                       <span className="block text-[10px] text-gray-400">{parDe(jugador, hoyo) ?? ''}</span>
-                      <span className="block font-semibold">{textoDe(golpe)}</span>
+                      {/* Dos golpes («12/11») no caben a 360 px con la letra de uno */}
+                      <span className={`block font-semibold ${estado === 'mismatch' ? 'text-[9px] tracking-tighter' : ''}`}>
+                        {textoDe(golpe)}
+                      </span>
                     </>
                   );
                   return organiza && seJuega ? (
@@ -158,7 +161,8 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                       data-testid={`hoyo-${jugador}-${hoyo}`}
                       data-estado={estado}
                       disabled={ocupado}
-                      aria-label={t('partida.correct', { jugador: name, hoyo })}
+                      // Con lo anotado: la etiqueta sustituye al contenido de la celda
+                      aria-label={t('partida.correct', { jugador: name, hoyo, golpe: textoDe(golpe) })}
                       onClick={() => abrirCorreccion(jugador, hoyo)}
                       className={`min-h-11 rounded ${color} hover:bg-gray-100`}
                     >

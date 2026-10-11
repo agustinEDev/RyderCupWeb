@@ -69,6 +69,7 @@ const GroupScoringPage = () => {
     pendingQueueSize,
     noGuardados,
     avisoDelVaciado,
+    pintadoDeMemoria,
     isMatchPlayer,
     canScore,
     hasSubmitted,
@@ -136,6 +137,11 @@ const GroupScoringPage = () => {
   const miTarjeta = strokePlay.cards.find((c) => c.userId === userId);
   // Solo en su partida (bajas): no marca a nadie, su golpe lo valida el organizador
   const marcoA = strokePlay.iMarkUserId;
+  // Una tarjeta retirada o de no presentado ya no se anota: el servidor tira
+  // ese lado con un 200 y el golpe desaparecería sin aviso (revisor). La
+  // entregada ya la bloquea `useScoring`
+  const seJuega = (jugador) => strokePlay.cards.find((c) => c.userId === jugador)?.cardStatus === 'JUGANDO';
+  const cerradaSinEntregar = Boolean(miTarjeta) && !seJuega(userId) && miTarjeta.cardStatus !== 'ENTREGADA';
 
   const parDe = (jugador) =>
     scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole)?.par ?? null;
@@ -151,7 +157,7 @@ const GroupScoringPage = () => {
       { tocado }
     );
 
-  const estadoDeEntrega = !isMatchPlayer
+  const estadoDeEntrega = !isMatchPlayer || cerradaSinEntregar
     ? null
     : hasSubmitted
       ? 'entregada'
@@ -199,6 +205,13 @@ const GroupScoringPage = () => {
             {t(claveDelAvisoDelVaciado(avisoDelVaciado))}
           </p>
         )}
+        {/* Lo que se ve es la foto del móvil, no el servidor (FE #614): con
+            un 5xx o sin cobertura se leería como lo de ahora mismo */}
+        {pintadoDeMemoria && (
+          <p data-testid="pintado-de-memoria" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            {t('offline.noSeActualiza')}
+          </p>
+        )}
         {error && (
           <div role="alert" className="flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
             <p className="text-sm text-red-600">{textoDelFallo(error)}</p>
@@ -228,6 +241,8 @@ const GroupScoringPage = () => {
               type="button"
               role="tab"
               aria-selected={activa === p}
+              id={`tab-${p}`}
+              aria-controls={`panel-${p}`}
               data-testid={`tab-${p}`}
               onClick={() => setPestana(p)}
               className={`min-h-11 flex-1 border-b-2 text-sm font-medium ${
@@ -240,7 +255,7 @@ const GroupScoringPage = () => {
         </div>
 
         {activa === 'input' && (
-          <div className="space-y-4">
+          <div id="panel-input" role="tabpanel" aria-labelledby="tab-input" className="space-y-4">
             {marcoA && (
               <p className="text-sm text-gray-700">
                 {t('partida.youMark', { jugador: scoringView.players.find((p) => p.userId === marcoA)?.userName ?? '' })}
@@ -274,9 +289,9 @@ const GroupScoringPage = () => {
                 markedValidationStatus={suGolpe?.validationStatus}
                 strokesReceived={miGolpe?.strokesReceivedThisHole}
                 isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
-                isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
-                // Sin a quién marcar, su casilla no se toca
-                isMarkerScoreLocked={!marcoA || isMarkerScoreLocked || !canScore || isSessionBlocked}
+                isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
+                // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
+                isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
                 onScoreChange={anotar}
                 allowPickedUp={strokePlay.pickedUpAllowed}
               />
@@ -300,7 +315,8 @@ const GroupScoringPage = () => {
               </button>
             </div>
 
-            {miTarjeta?.cardStatus === 'JUGANDO' &&
+            {/* Antes de abrir no hay de qué retirarse: el servidor lo rechaza */}
+            {miTarjeta?.cardStatus === 'JUGANDO' && !aunNoAbre &&
               (retirandose ? (
                 <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
                   <span className="min-w-0 flex-1">{t('partida.retireConfirm')}</span>
@@ -324,12 +340,14 @@ const GroupScoringPage = () => {
         )}
 
         {/* Montada siempre: se pide al abrir su pestaña y deja de releerse al cerrarla */}
-        <div hidden={activa !== 'standings'}>
+        <div id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" hidden={activa !== 'standings'}>
           <ClasificacionDeLaFranja roundId={strokePlay.roundId} userId={userId} activa={activa === 'standings'} />
         </div>
 
         {activa === 'cards' && (
-          <TarjetasDeLaPartida scoringView={scoringView} userId={userId} organiza={organiza} onCambio={refetch} />
+          <div id="panel-cards" role="tabpanel" aria-labelledby="tab-cards">
+            <TarjetasDeLaPartida scoringView={scoringView} userId={userId} organiza={organiza} onCambio={refetch} />
+          </div>
         )}
 
         {estadoDeEntrega && (

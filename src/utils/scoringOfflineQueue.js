@@ -260,7 +260,7 @@ export const resumenPorPartida = (userId = null) => {
       // Una anotación con participante es de una partida rápida: allí cada
       // participante se envía por separado
       esPartidaRapida: false,
-      // Una partida de stroke play: su aviso lleva a su pantalla (PR 7)
+      // Una partida de stroke play: su aviso lleva a su pantalla y la nombra como partida (PR 7)
       esPartidaDeFranja: false,
       // El servidor dijo que esa partida ya no existe. No se borra nada por
       // eso: se le ofrece al jugador, que es quien sabe si la borró él o si

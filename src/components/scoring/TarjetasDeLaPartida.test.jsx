@@ -104,7 +104,7 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     const onCambio = vi.fn();
     pintar({ organiza: true, onCambio });
 
-    fireEvent.click(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":2}' }));
+    fireEvent.click(screen.getByRole('button', { name: /partida\.correct \{"jugador":"ANA","hoyo":2,/ }));
     const editor = screen.getByTestId('corregir-ana-2');
     expect(within(editor).getByRole('combobox', { name: 'partida.ownSide' })).toHaveValue('4');
     expect(within(editor).getByRole('combobox', { name: 'partida.markerSide' })).toHaveValue('5');
@@ -119,7 +119,7 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
   it('15b: recogida se ofrece en Stableford (y se manda nula); en Medal no', () => {
     pintar({ organiza: true });
-    fireEvent.click(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":4}' }));
+    fireEvent.click(screen.getByRole('button', { name: /partida\.correct \{"jugador":"ANA","hoyo":4,/ }));
     const opciones = within(screen.getByRole('combobox', { name: 'partida.ownSide' })).getAllByRole('option').map((o) => o.value);
     expect(opciones).toContain('RECOGIDA');
     expect(opciones).toContain('15');
@@ -128,14 +128,14 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
   it('15c: en Medal no hay recogida', () => {
     pintar({ organiza: true, scoringView: vista('MEDAL') });
-    fireEvent.click(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":4}' }));
+    fireEvent.click(screen.getByRole('button', { name: /partida\.correct \{"jugador":"ANA","hoyo":4,/ }));
 
     expect(within(screen.getByRole('combobox', { name: 'partida.ownSide' })).getAllByRole('option').map((o) => o.value)).not.toContain('RECOGIDA');
   });
 
   it('15d: recogida se manda nula', async () => {
     pintar({ organiza: true });
-    fireEvent.click(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":4}' }));
+    fireEvent.click(screen.getByRole('button', { name: /partida\.correct \{"jugador":"ANA","hoyo":4,/ }));
     fireEvent.change(screen.getByRole('combobox', { name: 'partida.markerSide' }), { target: { value: 'RECOGIDA' } });
     fireEvent.click(screen.getByRole('button', { name: 'partida.save' }));
 
@@ -144,16 +144,22 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
   it('15d2: si solo cambia el lado del marcador, el del jugador no se manda', async () => {
     pintar({ organiza: true });
-    fireEvent.click(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":2}' }));
+    fireEvent.click(screen.getByRole('button', { name: /partida\.correct \{"jugador":"ANA","hoyo":2,/ }));
     fireEvent.change(screen.getByRole('combobox', { name: 'partida.markerSide' }), { target: { value: '4' } });
     fireEvent.click(screen.getByRole('button', { name: 'partida.save' }));
 
     await waitFor(() => expect(mockCorregir).toHaveBeenCalledWith('g-1', 'ana', 2, { markerScore: 4 }));
   });
 
+  it('la celda que se corrige dice también qué hay anotado (revisor)', () => {
+    pintar({ organiza: true });
+
+    expect(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":2,"golpe":"4/5"}' })).toBeInTheDocument();
+  });
+
   it('15e: sin cambios no se manda nada', () => {
     pintar({ organiza: true });
-    fireEvent.click(screen.getByRole('button', { name: 'partida.correct {"jugador":"ANA","hoyo":2}' }));
+    fireEvent.click(screen.getByRole('button', { name: /partida\.correct \{"jugador":"ANA","hoyo":2,/ }));
 
     expect(screen.getByRole('button', { name: 'partida.save' })).toBeDisabled();
   });

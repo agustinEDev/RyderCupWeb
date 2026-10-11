@@ -133,6 +133,16 @@ describe('el próximo partido del panel sin cobertura', () => {
     expect(banner()).toHaveAttribute('data-partido', 'g-1');
   });
 
+  it('el banner no espera a las partidas: si tardan, enseña ya el partido (revisor)', async () => {
+    mockLee.mockResolvedValue({ matches: [partido], complete: true });
+    mockPartidas.mockReturnValue(new Promise(() => {}));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', 'm-1');
+  });
+
   it('si las partidas no se pueden leer, el banner sigue con el partido', async () => {
     mockLee.mockResolvedValue({ matches: [partido], complete: true });
     mockPartidas.mockRejectedValue(new Error('x'));

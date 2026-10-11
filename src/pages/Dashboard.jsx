@@ -351,18 +351,20 @@ const Dashboard = () => {
           return [];
         }
       };
-      const [leido, partidas] = await Promise.all([
-        leeLosProximosPartidos({
-          lee: () => (competitionsError
-            ? Promise.reject(competitionsError)
-            : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
-          userId: user.id,
-          pideLaVista: (id) => getScoringViewUseCase.execute(id),
-        }),
-        leeLasPartidas(),
-      ]);
+      // Sin esperarlas: el banner no aguarda a una competición de stroke play
+      // lenta para enseñar el partido de la Ryder (revisor). Cuando llegan, se
+      // vuelve a elegir el más cercano
+      leeLasPartidas().then((partidas) => {
+        if (!cancelled) setProximasPartidas(partidas);
+      });
+      const leido = await leeLosProximosPartidos({
+        lee: () => (competitionsError
+          ? Promise.reject(competitionsError)
+          : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
+        userId: user.id,
+        pideLaVista: (id) => getScoringViewUseCase.execute(id),
+      });
       if (!cancelled) {
-        setProximasPartidas(partidas);
         setUpcomingMatches(leido.partidos);
         setUpcomingSinRespuesta(leido.sinRespuesta);
         setUpcomingDesdeMemoria(leido.desdeMemoria);
