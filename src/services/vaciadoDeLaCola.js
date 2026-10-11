@@ -12,7 +12,8 @@
  * escribiría en la tarjeta de quien resulte estar dentro. El porqué completo
  * está en `deQuien`. Entre las suyas se distingue:
  *
- * - **Competición** (sin `participantId`): se envía. No hay negociación
+ * - **Competición** (sin `participantId`): se envía, a su endpoint según el
+ *   tipo: la Ryder sin tipo, las partidas de stroke play con el suyo. No hay negociación
  *   posible; la anotación lleva dentro el golpe propio y el del marcado, y el
  *   servidor concilia con el marcador antes de aceptar la tarjeta.
  * - **Partida rápida** (con `participantId`): NO se envía desde aquí. Su
@@ -23,7 +24,7 @@
  *   partida.
  */
 
-import { submitHoleScoreUseCase } from '../composition';
+import { submitHoleScoreUseCase, submitTeeGroupHoleScoreUseCase } from '../composition';
 import * as cola from '../utils/scoringOfflineQueue';
 import * as cerrojo from '../utils/scoringSessionLock';
 import { PARO, vaciaAnotaciones } from './vaciaAnotaciones';
@@ -110,8 +111,11 @@ export const vaciaLaColaEntera = async ({ saltaPartida = null, userId = null } =
         cerrojo.refresh(miTurno, userId, AMBITO);
         return true;
       },
+      // Cada tipo a su endpoint, con el mismo cuerpo: una de stroke play que
+      // fuera al de la Ryder se perdía con un 404 (FE #824, PR 7)
       manda: (entrada) =>
-        submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
+        (entrada.tipo === cola.TIPO_PARTIDA_DE_FRANJA ? submitTeeGroupHoleScoreUseCase : submitHoleScoreUseCase)
+          .execute(entrada.matchId, entrada.holeNumber, entrada.scoreData),
       // La partida abierta la vacía su propia pantalla; y una anotación con
       // participante que no sea de partida rápida en solitario se deja para
       // ella, que sabe preguntar cuando otro anotador puso otra cosa

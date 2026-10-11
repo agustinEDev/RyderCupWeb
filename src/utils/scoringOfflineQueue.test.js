@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe} from './scoringOfflineQueue';
+import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe, TIPO_PARTIDA_DE_FRANJA } from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -558,3 +558,32 @@ describe('scoringOfflineQueue · los golpes tocados (FE #813)', () => {
   });
 });
 
+
+describe('las partidas de stroke play en la cola (FE #824, PR 7)', () => {
+  beforeEach(() => {
+    clear();
+  });
+
+  it('el tipo se guarda con la anotación y se conserva al sustituirla', () => {
+    enqueue('g-1', 3, { ownScore: 4, markedPlayerId: 'b' }, null, 'u1', { tipo: TIPO_PARTIDA_DE_FRANJA });
+    // Quien reencola sin decirlo (resolver un desacuerdo) no se lo quita
+    enqueue('g-1', 3, { ownScore: 5, markedPlayerId: 'b' }, null, 'u1');
+
+    expect(getByMatch('g-1', 'u1')).toEqual([expect.objectContaining({ tipo: TIPO_PARTIDA_DE_FRANJA, scoreData: { ownScore: 5, markedPlayerId: 'b' } })]);
+  });
+
+  it('las de la Ryder no llevan tipo, como antes', () => {
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
+
+    expect(getByMatch('m-1', 'u1')[0]).not.toHaveProperty('tipo');
+  });
+
+  it('el panel sabe que es una partida de stroke play (para llevar a su pantalla)', () => {
+    enqueue('g-1', 3, { ownScore: 4 }, null, 'u1', { tipo: TIPO_PARTIDA_DE_FRANJA, matchNumber: 2 });
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'u1');
+
+    const resumen = resumenPorPartida('u1');
+    expect(resumen.find((p) => p.matchId === 'g-1')).toMatchObject({ esPartidaDeFranja: true, esPartidaRapida: false, matchNumber: 2 });
+    expect(resumen.find((p) => p.matchId === 'm-1')).toMatchObject({ esPartidaDeFranja: false });
+  });
+});

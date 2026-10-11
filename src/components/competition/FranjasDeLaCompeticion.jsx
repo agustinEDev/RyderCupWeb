@@ -650,6 +650,7 @@ const FranjasDeLaCompeticion = ({
                             se releen con cada lectura de la agenda (PR 6) */}
                         {verPartidas && (estoyInscrito || puedeVerPartidas) && (
                           <PartidasEnLaFranja
+                            competitionId={competitionId}
                             franja={f}
                             nombre={`${etiqueta(f).franja} · ${etiqueta(f).dia}`}
                             salidas={salidas}

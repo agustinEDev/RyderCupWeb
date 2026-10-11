@@ -112,6 +112,7 @@ import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/A
 // Partidas de las franjas (FE #824, PR 6)
 import GetTeeGroupsUseCase from '../application/use_cases/schedule/GetTeeGroupsUseCase';
 import GetMyTeeGroupsUseCase from '../application/use_cases/schedule/GetMyTeeGroupsUseCase';
+import GetUpcomingTeeGroupsUseCase from '../application/use_cases/schedule/GetUpcomingTeeGroupsUseCase';
 import GenerateTeeGroupsUseCase from '../application/use_cases/schedule/GenerateTeeGroupsUseCase';
 import MoveTeeGroupPlayerUseCase from '../application/use_cases/schedule/MoveTeeGroupPlayerUseCase';
 import ReorderTeeGroupsUseCase from '../application/use_cases/schedule/ReorderTeeGroupsUseCase';
@@ -172,11 +173,19 @@ import GetScoringBreakdownUseCase from '../application/use_cases/player_stats/Ge
 
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
+import ApiTeeGroupScoringRepository from '../infrastructure/repositories/ApiTeeGroupScoringRepository';
 import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
 import SubmitHoleScoreUseCase from '../application/use_cases/scoring/SubmitHoleScoreUseCase';
 import SubmitScorecardUseCase from '../application/use_cases/scoring/SubmitScorecardUseCase';
 import GetLeaderboardUseCase from '../application/use_cases/scoring/GetLeaderboardUseCase';
 import ConcedeMatchUseCase from '../application/use_cases/scoring/ConcedeMatchUseCase';
+// Anotar las partidas de stroke play (FE #824, PR 7)
+import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFromTeeGroupUseCase';
+import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
+import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTeeGroupCardUseCase';
+import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
+import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
+import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
 
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
@@ -227,6 +236,7 @@ const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
 const apiScoringRepository = new ApiScoringRepository();
+const apiTeeGroupScoringRepository = new ApiTeeGroupScoringRepository();
 const apiQuickMatchRepository = new ApiQuickMatchRepository();
 
 // --- Casos de Uso ---
@@ -368,6 +378,18 @@ const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: a
 const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });
 const getLeaderboardUseCase = new GetLeaderboardUseCase({ scoringRepository: apiScoringRepository });
 const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScoringRepository });
+// Las partidas de stroke play se anotan con los MISMOS casos de uso que el
+// partido de la Ryder, sobre su repositorio: misma validación de lo que se manda
+// (omitir no es raya) y mismo `useScoring` con su cola (FE #824, PR 7)
+const getTeeGroupScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiTeeGroupScoringRepository });
+const submitTeeGroupHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiTeeGroupScoringRepository });
+const submitTeeGroupScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiTeeGroupScoringRepository });
+const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const closeTeeWindowUseCase = new CloseTeeWindowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const getTeeWindowStandingsUseCase = new GetTeeWindowStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -380,6 +402,9 @@ const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
   getScheduleUseCase,
   listEnrollmentsUseCase,
 });
+// Y las partidas de stroke play, aparte: el banner del panel enseña la más
+// cercana de las dos (FE #824, PR 7)
+const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCompetitionsUseCase, getMyTeeGroupsUseCase });
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
 const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
@@ -571,6 +596,7 @@ export {
   getScoringBreakdownUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
+  getUpcomingTeeGroupsUseCase,
   getPlayerStatsByGolfCourseUseCase,
   listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)
@@ -579,6 +605,15 @@ export {
   submitScorecardUseCase,
   getLeaderboardUseCase,
   concedeMatchUseCase,
+  getTeeGroupScoringViewUseCase,
+  submitTeeGroupHoleScoreUseCase,
+  submitTeeGroupScorecardUseCase,
+  retireFromTeeGroupUseCase,
+  correctTeeGroupHoleUseCase,
+  reopenTeeGroupCardUseCase,
+  markTeeGroupNoShowUseCase,
+  closeTeeWindowUseCase,
+  getTeeWindowStandingsUseCase,
   // Quick Match Use Cases (FE #236)
   createQuickMatchUseCase,
   addFriendParticipantUseCase,

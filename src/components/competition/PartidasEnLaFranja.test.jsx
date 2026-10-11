@@ -41,7 +41,13 @@ const mockMover = vi.fn();
 const mockReordenar = vi.fn();
 const mockMarcadores = vi.fn();
 const mockBorrar = vi.fn();
+vi.mock('react-router', () => ({
+  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+}));
+
+const mockCerrar = vi.fn();
 vi.mock('../../composition', () => ({
+  closeTeeWindowUseCase: { execute: (...a) => mockCerrar(...a) },
   getTeeGroupsUseCase: { execute: (...a) => mockLeer(...a) },
   generateTeeGroupsUseCase: { execute: (...a) => mockGenerar(...a) },
   moveTeeGroupPlayerUseCase: { execute: (...a) => mockMover(...a) },
@@ -81,7 +87,7 @@ const vista = (extra = {}) => ({ roundId: 'r1', editable: true, unassignedPlayer
 const FRANJA = { id: 'r1', sessionType: 'MORNING', roundDate: '2030-10-12', teeSheet: { groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'] } };
 
 const pintar = (props = {}) =>
-  render(<PartidasEnLaFranja salidas={4} franja={FRANJA} nombre="Mañana · sáb 12 oct" userId={YO} organiza={false} version={0} {...props} />);
+  render(<PartidasEnLaFranja competitionId="c-1" salidas={4} franja={FRANJA} nombre="Mañana · sáb 12 oct" userId={YO} organiza={false} version={0} {...props} />);
 const desplegar = async () => {
   fireEvent.click(screen.getByRole('button', { name: /partidas.showFor/ }));
   await waitFor(() => expect(mockLeer).toHaveBeenCalled());
@@ -473,6 +479,59 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await act(async () => soltarElCambio(vista()));
 
     await waitFor(() => expect(mockLeer).toHaveBeenCalledTimes(3));
+  });
+
+  it('PR 7: cada partida lleva a su tarjeta: «Anotar» la mía, «Ver tarjeta» las demás', async () => {
+    pintar();
+    await desplegar();
+
+    const mia = within(await screen.findByTestId('partida-g1')).getByRole('link');
+    expect(mia).toHaveTextContent('partidas.score');
+    expect(mia).toHaveAttribute('href', '/player/groups/g1/scoring?competition=c-1');
+    expect(within(screen.getByTestId('partida-g2')).getByRole('link')).toHaveTextContent('partidas.viewCard');
+  });
+
+  it('PR 7: «Cerrar franja», al organizador cuando ya salió la primera y queda alguna sin acabar, con confirmación', async () => {
+    mockLeer.mockResolvedValue(vista({ editable: false }));
+    mockCerrar.mockResolvedValue(vista({ editable: false, groups: [{ ...G1, status: 'COMPLETED' }, { ...G2, status: 'COMPLETED' }, { ...G3, status: 'COMPLETED' }] }));
+    const onCambio = vi.fn();
+    pintar({ organiza: true, onCambio });
+    await desplegar();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'partidas.closeWindow' }));
+    expect(screen.getByText('partidas.closeWindowConfirm')).toBeInTheDocument();
+    expect(mockCerrar).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'partidas.closeWindowYes' }));
+
+    await waitFor(() => expect(mockCerrar).toHaveBeenCalledWith('r1'));
+    expect(mockToast.success).toHaveBeenCalledWith('partidas.windowClosed');
+    expect(onCambio).toHaveBeenCalled();
+    // Todas acabadas: ya no hay nada que cerrar
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'partidas.closeWindow' })).toBeNull());
+  });
+
+  it.each([
+    ['con las partidas aún editables (no ha salido la primera)', { editable: true }, true],
+    ['al jugador', { editable: false }, false],
+  ])('PR 7: sin «Cerrar franja» %s', async (_caso, extra, organiza) => {
+    mockLeer.mockResolvedValue(vista(extra));
+    pintar({ organiza });
+    await desplegar();
+
+    await screen.findByTestId('partida-g1');
+    expect(screen.queryByRole('button', { name: 'partidas.closeWindow' })).toBeNull();
+  });
+
+  it('PR 7: si aún no abre la anotación, el servidor lo dice y se traduce', async () => {
+    mockLeer.mockResolvedValue(vista({ editable: false }));
+    mockCerrar.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'SCORING_NOT_OPEN_YET' }));
+    pintar({ organiza: true });
+    await desplegar();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'partidas.closeWindow' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partidas.closeWindowYes' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partidas.errors.SCORING_NOT_OPEN_YET'));
   });
 
   it('17: si cambian las plazas, desplegadas se releen; plegadas, no', async () => {

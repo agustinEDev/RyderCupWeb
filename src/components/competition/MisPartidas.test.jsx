@@ -13,6 +13,10 @@ vi.mock('react-i18next', () => ({
 }));
 
 const mockMias = vi.fn();
+vi.mock('react-router', () => ({
+  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+}));
+
 vi.mock('../../composition', () => ({
   getMyTeeGroupsUseCase: { execute: (...a) => mockMias(...a) },
 }));
@@ -49,6 +53,14 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     // Sola (por bajas): sin compañeros ni marcador
     expect(lineas[1]).toHaveTextContent('partidas.mineAlone');
     expect(lineas[1]).not.toHaveTextContent('partidas.youMark');
+  });
+
+  it('cada línea lleva a anotar su partida, con la competición (PR 7)', async () => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('ana', 'bea'), jugador('bea', 'ana')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="v" />);
+
+    const enlace = await screen.findByRole('link', { name: /partidas.score/ });
+    expect(enlace).toHaveAttribute('href', '/player/groups/g-r1/scoring?competition=c-1');
   });
 
   it('sin partidas, o si no se pudieron leer, no se pinta nada', async () => {

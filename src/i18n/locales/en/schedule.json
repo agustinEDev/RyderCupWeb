@@ -354,8 +354,16 @@
       "PLAYER_NOT_IN_WINDOW": "That player has no place in this window.",
       "INVALID_GROUP_ORDER": "The order does not match the groups: reloading them.",
       "PLAYERS_WITHOUT_TEE_unnamed": "Groups can't be generated: some players have no tees on this course.",
-      "PLAYERS_WITHOUT_HANDICAP_unnamed": "Groups can't be generated: some players have no handicap."
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "Groups can't be generated: some players have no handicap.",
+      "SCORING_NOT_OPEN_YET": "Scoring for this window has not opened yet: it can be closed after the first tee time.",
+      "GROUP_NOT_SCORING": "The competition is not in play."
     },
-    "showFor": "Groups of {{franja}}"
+    "showFor": "Groups of {{franja}}",
+    "score": "Score",
+    "viewCard": "View card",
+    "closeWindow": "Close the window",
+    "closeWindowConfirm": "Unfinished groups are closed: complete cards are submitted, partial ones count as retired and those with no holes as no shows.",
+    "closeWindowYes": "Yes, close it",
+    "windowClosed": "Window closed."
   }
 }

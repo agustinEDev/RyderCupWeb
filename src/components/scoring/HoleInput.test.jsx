@@ -69,6 +69,17 @@ describe('HoleInput', () => {
     expect(screen.queryByTestId('marked-validation')).not.toBeInTheDocument();
   });
 
+  it('sin recogida (Medal), el teclado no ofrece la raya; por defecto sí (FE #824, PR 7)', () => {
+    const { unmount } = render(<HoleInput {...defaultProps} allowPickedUp={false} />);
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(screen.queryByTestId('picked-up-button')).toBeNull();
+    unmount();
+
+    render(<HoleInput {...defaultProps} />);
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+  });
+
   it('should render hole info', () => {
     render(<HoleInput {...defaultProps} />);
     expect(screen.getByTestId('hole-input')).toHaveTextContent('5');

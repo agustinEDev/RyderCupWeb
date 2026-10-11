@@ -354,8 +354,16 @@
       "PLAYER_NOT_IN_WINDOW": "Ese jugador no tiene plaza en esta franja.",
       "INVALID_GROUP_ORDER": "El orden no cuadra con las partidas: se vuelven a leer.",
       "PLAYERS_WITHOUT_TEE_unnamed": "No se pueden generar: hay jugadores sin barras de salida en este campo.",
-      "PLAYERS_WITHOUT_HANDICAP_unnamed": "No se pueden generar: hay jugadores sin hándicap."
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "No se pueden generar: hay jugadores sin hándicap.",
+      "SCORING_NOT_OPEN_YET": "La anotación de esta franja todavía no se ha abierto: se cierra después de la primera salida.",
+      "GROUP_NOT_SCORING": "La competición no está en juego."
     },
-    "showFor": "Partidas de {{franja}}"
+    "showFor": "Partidas de {{franja}}",
+    "score": "Anotar",
+    "viewCard": "Ver tarjeta",
+    "closeWindow": "Cerrar la franja",
+    "closeWindowConfirm": "Se cierran las partidas sin acabar: las tarjetas completas quedan entregadas, las que van a medias como retirados y las que no tienen ningún hoyo como no presentados.",
+    "closeWindowYes": "Sí, cerrarla",
+    "windowClosed": "Franja cerrada."
   }
 }

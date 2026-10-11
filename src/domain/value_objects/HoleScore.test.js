@@ -3,8 +3,10 @@ import HoleScore from './HoleScore';
 
 describe('HoleScore', () => {
   describe('constructor', () => {
-    it('should accept valid scores 1-9', () => {
-      for (let i = 1; i <= 9; i++) {
+    // Hasta 15, como el backend y el teclado de anotar: en un Medal no se
+    // levanta bola y un 10 es posible (FE #824, PR 7)
+    it('should accept valid scores 1-15', () => {
+      for (let i = 1; i <= 15; i++) {
         const score = new HoleScore(i);
         expect(score.getValue()).toBe(i);
       }
@@ -35,8 +37,8 @@ describe('HoleScore', () => {
       expect(() => new HoleScore(-1)).toThrow('Invalid HoleScore: -1');
     });
 
-    it('should reject score greater than 9', () => {
-      expect(() => new HoleScore(10)).toThrow('Invalid HoleScore: 10');
+    it('should reject score greater than 15', () => {
+      expect(() => new HoleScore(16)).toThrow('Invalid HoleScore: 16');
     });
 
     it('should reject non-integer numbers', () => {
@@ -108,8 +110,8 @@ describe('HoleScore', () => {
       expect(HoleScore.MIN).toBe(1);
     });
 
-    it('should have MAX of 9', () => {
-      expect(HoleScore.MAX).toBe(9);
+    it('should have MAX of 15', () => {
+      expect(HoleScore.MAX).toBe(15);
     });
   });
 });

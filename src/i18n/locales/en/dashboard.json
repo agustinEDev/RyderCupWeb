@@ -94,7 +94,8 @@
     },
     "sinRespuestaTitle": "Your next match could not be checked",
     "sinRespuestaDesc": "Try again in a while.",
-    "desdeMemoria": "Could not refresh: it may be out of date."
+    "desdeMemoria": "Could not refresh: it may be out of date.",
+    "teeGroup": "Group {{numero}}"
   },
   "recentMatches": {
     "title": "Recent matches",
@@ -159,6 +160,7 @@
     "partidaSinNombre": "an earlier match",
     "partidaConNumero": "Match {{numero}} · {{campo}}",
     "soloNumero": "Match {{numero}}",
+    "partidaDeFranja": "Group {{numero}}",
     "perdidos_one": "One hole from {{partida}} could not be saved:",
     "perdidos_other": "{{count}} holes from {{partida}} could not be saved:",
     "perdido": "Hole {{hoyo}} — the server did not accept it",

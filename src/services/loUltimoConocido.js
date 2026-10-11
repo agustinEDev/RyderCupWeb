@@ -214,6 +214,18 @@ export const recuerdaLosPartidos = (partidos) => guardaLista(CLAVE_PARTIDOS, par
 export const losUltimosPartidos = () => leeLista(CLAVE_PARTIDOS);
 
 /**
+ * Y las próximas partidas de stroke play, la puerta del banner a su pantalla
+ * sin cobertura (FE #824, PR 7). Clave propia, por lo mismo: con otra forma,
+ * mezcladas con los partidos las leería mal «Mis próximos partidos».
+ */
+const CLAVE_PARTIDAS = 'rydercup-ultimas-partidas-de-franja';
+
+export const recuerdaLasPartidas = (partidas) => guardaLista(CLAVE_PARTIDAS, partidas);
+
+/** @returns {Array|null} */
+export const lasUltimasPartidas = () => leeLista(CLAVE_PARTIDAS);
+
+/**
  * Al cerrar sesión: son datos de ESTA cuenta. En un móvil compartido, sin esto
  * la siguiente persona que entrara y se quedara sin señal vería la lista de
  * partidas de la anterior, con sus nombres y sus resultados.
@@ -222,6 +234,7 @@ const borra = () => {
   try {
     localStorage.removeItem(CLAVE_LISTA);
     localStorage.removeItem(CLAVE_PARTIDOS);
+    localStorage.removeItem(CLAVE_PARTIDAS);
     localStorage.removeItem(CLAVE);
   } catch {
     // Nada que hacer
