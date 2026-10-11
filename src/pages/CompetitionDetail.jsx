@@ -22,7 +22,7 @@ import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompetici
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
 import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
-import { categoriasQueSalen } from '../domain/services/CategoriasQueSalen';
+import { categoriasQueSalen, salenDeLosInscritos } from '../domain/services/CategoriasQueSalen';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -935,7 +935,7 @@ const CompetitionDetail = () => {
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
   const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
-  const hayVariasCategorias = new Set(approvedEnrollments.map((e) => e.category).filter((c) => c != null)).size > 1;
+  const hayVariasCategorias = salenDeLosInscritos(approvedEnrollments.map((e) => e.category ?? null)) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
 
   // Una programada es un borrador con días de antelación (RyderCupAM#332). En

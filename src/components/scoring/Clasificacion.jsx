@@ -86,7 +86,7 @@ const Clasificacion = ({
   if (!clasificacion) return null;
 
   const esMedal = clasificacion.tournamentType === 'MEDAL';
-  const SIN = '–';
+  const SIN = t('partida.none');
   const valor = (fila) => (fila.value == null ? SIN : esMedal ? StablefordCalculator.formatToPar(fila.value) : fila.value);
   const puesto = (fila) => (fila.position == null ? SIN : fila.tied ? `T${fila.position}` : `${fila.position}`);
   // THRU, como en los circuitos: los hoyos jugados, F acabado, o el código

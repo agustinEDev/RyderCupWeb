@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ArrowDown, ArrowRightLeft, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
@@ -85,8 +85,19 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   // A quién se está moviendo: su lista solo se abre al pulsar su icono (pasada:
   // a todo lo ancho, una línea por jugador)
   const [moviendo, setMoviendo] = useState(null);
-  // Al cerrar la lista sin mover, el foco vuelve al icono de ese jugador (revisor)
-  const [volverAlIcono, setVolverAlIcono] = useState(null);
+  // Al cerrar su lista (cancelando o tras mover), el foco vuelve al icono de
+  // ese jugador, en cuanto se pueda pulsar; si ya no está, se olvida (revisor,
+  // /code-review)
+  const [volverAlIcono, setVolver] = useState(null);
+  const setVolverAlIcono = (userId) => setVolver((antes) => ({ userId, vez: (antes?.vez ?? 0) + 1 }));
+  const atendida = useRef(0);
+  const iconos = useRef(new Map());
+  // Tras cada pintado: con su icono ya pulsable, el foco va a él
+  useEffect(() => {
+    if (!volverAlIcono || ocupado || atendida.current === volverAlIcono.vez) return;
+    atendida.current = volverAlIcono.vez;
+    iconos.current.get(volverAlIcono.userId)?.focus();
+  }, [volverAlIcono, ocupado]);
   // Lecturas y escrituras se cruzan: una vieja no pisa a otra más nueva
   const lecturas = useLaMasNueva();
 
@@ -136,7 +147,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
    * Lo de «salen antes» es solo al mover: cambiar el orden adelanta una a
    * propósito (revisor).
    */
-  const cambiar = async (accion, aviso, alAcabar, { avisarSiSeAdelantan = false } = {}) => {
+  const cambiar = async (accion, aviso, alAcabar, { avisarSiSeAdelantan = false, cierra = false } = {}) => {
     // Un doble toque no manda dos: React pinta los botones desactivados antes
     // del segundo
     setOcupado(true);
@@ -151,7 +162,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       }
       alAcabar?.();
       customToast.success(t(aviso));
-      onCambio?.();
+      // La clasificación solo cambia al cerrar la franja: lo demás no la relee
+      onCambio?.({ cerrada: cierra });
       const adelantadas = aplicada && avisarSiSeAdelantan ? partidasQueSeAdelantan(antes, nueva.groups) : null;
       if (adelantadas) {
         customToast.info(t('partidas.earlier', { ...adelantadas, count: adelantadas.hasta - adelantadas.desde + 1 }));
@@ -165,6 +177,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       // Lo abierto se cierra: se relee, y lo que confirmaba, editaba o movía ya no vale
       setConfirmando(null);
       setMarcando(null);
+      if (moviendo) setVolverAlIcono(moviendo);
       setMoviendo(null);
       await leer();
     } finally {
@@ -176,7 +189,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     cambiar(() => generateTeeGroupsUseCase.execute(franja.id, orden), 'partidas.generated', () => setConfirmando(null));
   // Cerrar la franja (PR 7): lo sin acabar se da por terminado
   const cerrarLaFranja = () =>
-    cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null));
+    cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null), {
+      cierra: true,
+    });
   const borrar = () =>
     cambiar(() => deleteTeeGroupsUseCase.execute(franja.id), 'partidas.removed', () => setConfirmando(null));
   const mover = (jugador, destino) => {
@@ -186,7 +201,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       // Lo que no viene lo quita el caso de uso
       () => moveTeeGroupPlayerUseCase.execute(franja.id, { userId: jugador, groupId, swapWithUserId }),
       'partidas.moved',
-      () => setMoviendo(null),
+      () => {
+        setVolverAlIcono(jugador);
+        setMoviendo(null);
+      },
       { avisarSiSeAdelantan: true }
     );
   };
@@ -426,9 +444,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             disabled={ocupado}
                             aria-label={t('partidas.movePlayer', { jugador: p.name })}
                             ref={(boton) => {
-                              if (boton && volverAlIcono === p.userId) boton.focus();
+                              if (boton) iconos.current.set(p.userId, boton);
+                              else iconos.current.delete(p.userId);
                             }}
-                            onFocus={() => volverAlIcono === p.userId && setVolverAlIcono(null)}
                             onClick={() => setMoviendo(p.userId)}
                             className={`${icono} ml-auto`}
                           >
@@ -445,9 +463,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             })}
                             <button
                               type="button"
+                              disabled={ocupado}
                               onClick={() => {
-                                setMoviendo(null);
                                 setVolverAlIcono(p.userId);
+                                setMoviendo(null);
                               }}
                               className="min-h-11 px-2 text-xs text-gray-600"
                             >

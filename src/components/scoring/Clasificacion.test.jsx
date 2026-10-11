@@ -75,12 +75,21 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(celdas[3]).toHaveTextContent(/^0$/);
   });
 
+  it('/code-review: el guion de puesto y valor también pasa por t()', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NP', thru: 0 })]));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll('td');
+    expect(celdas[0]).toHaveTextContent('partida.none');
+    expect(celdas[2]).toHaveTextContent('partida.none');
+  });
+
   it('sin valor (sin empezar, NR, NP), un guion en su columna', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NP', thru: 0 })]));
     render(<Clasificacion pedir={pedir} userId="x" activa />);
 
     const ana = await screen.findByTestId('fila-ana');
-    expect([...ana.querySelectorAll('td')].map((c) => c.textContent)).toEqual(['–', 'ANA', '–', 'partida.statusShort.NP']);
+    expect([...ana.querySelectorAll('td')].map((c) => c.textContent)).toEqual(['partida.none', 'ANA', 'partida.none', 'partida.statusShort.NP']);
   });
 
   it('ni la categoría ni las tarjetas debajo del nombre (pasada: estilo leaderboard)', async () => {

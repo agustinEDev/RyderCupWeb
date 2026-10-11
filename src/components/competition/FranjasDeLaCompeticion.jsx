@@ -183,7 +183,7 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {boolean} [props.verPartidas] - Ya hay partidas que ver (cerrada o en juego; PR 6)
  * @param {boolean} [props.puedeVerPartidas] - Quien organiza las ve aunque no juegue
  * @param {boolean} [props.organizaPartidas] - Y las cambia (el servidor dice hasta cuándo)
- * @param {() => void} [props.onCambioEnPartidas] - Tras un cambio en las partidas (la ficha relee su clasificación)
+ * @param {() => void} [props.onCambioEnPartidas] - Tras cerrar una franja (la ficha relee su clasificación)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -659,9 +659,10 @@ const FranjasDeLaCompeticion = ({
                             userId={userId}
                             organiza={organizaPartidas}
                             version={lecturas}
-                            onCambio={() => {
+                            onCambio={({ cerrada } = {}) => {
                               setCambiosEnPartidas((n) => n + 1);
-                              onCambioEnPartidas?.();
+                              // Solo cerrar la franja cambia la clasificación (/code-review)
+                              if (cerrada) onCambioEnPartidas?.();
                             }}
                           />
                         )}

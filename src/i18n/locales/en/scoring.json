@@ -311,6 +311,7 @@
       "NR": "NR",
       "NP": "NS"
     },
-    "standingsTable": "Standings"
+    "standingsTable": "Standings",
+    "none": "–"
   }
 }

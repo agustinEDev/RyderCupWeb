@@ -311,6 +311,7 @@
       "NR": "NR",
       "NP": "NP"
     },
-    "standingsTable": "Clasificación"
+    "standingsTable": "Clasificación",
+    "none": "–"
   }
 }

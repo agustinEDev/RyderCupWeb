@@ -299,6 +299,28 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     expect(screen.getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' })).toHaveFocus();
   });
 
+  it('10f (/code-review): tras mover, el foco vuelve al icono del jugador, no se pierde', async () => {
+    mockMover.mockResolvedValue(vista());
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    fireEvent.change(await abrirMover('ANA'), { target: { value: 'g3' } });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' })).toHaveFocus());
+  });
+
+  it('10g (/code-review): mientras se guarda, «Cancelar» no se puede pulsar', async () => {
+    mockMover.mockReturnValue(new Promise(() => {}));
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    fireEvent.change(await abrirMover('ANA'), { target: { value: 'g3' } });
+
+    expect(within(screen.getByTestId('partida-jugador-ana')).getByRole('button', { name: 'partidas.cancel' })).toBeDisabled();
+  });
+
   it('10e (revisor): si mover falla, la lista se cierra (lo pintado se relee)', async () => {
     mockMover.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_FULL' }));
     pintar({ organiza: true });
@@ -506,6 +528,8 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     fireEvent.click(subir());
     await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
     expect(onCambio).toHaveBeenCalledTimes(1);
+    // Reordenar no cierra la franja: la clasificación no cambia (/code-review)
+    expect(onCambio).toHaveBeenCalledWith({ cerrada: false });
   });
 
   it('si mientras se escribe llega una lectura más nueva, se vuelve a leer al acabar', async () => {
@@ -549,7 +573,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
 
     await waitFor(() => expect(mockCerrar).toHaveBeenCalledWith('r1'));
     expect(mockToast.success).toHaveBeenCalledWith('partidas.windowClosed');
-    expect(onCambio).toHaveBeenCalled();
+    expect(onCambio).toHaveBeenCalledWith({ cerrada: true });
     // Todas acabadas: ya no hay nada que cerrar
     await waitFor(() => expect(screen.queryByRole('button', { name: 'partidas.closeWindow' })).toBeNull());
   });
