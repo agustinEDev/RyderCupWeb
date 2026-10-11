@@ -317,7 +317,10 @@
       "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually.",
       "playersWithoutTeeWindow_one": "{{jugadores}} still needs a tee time window.",
       "playersWithoutTeeWindow_other": "{{count}} players still need a tee time window: {{jugadores}}.",
-      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window»."
+      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window».",
+      "playersWithoutHandicap_one": "{{jugadores}} has no handicap: set a custom one and close again.",
+      "playersWithoutHandicap_other": "{{count}} players have no handicap ({{jugadores}}): set a custom one and close again.",
+      "playersWithoutHandicapUnnamed": "Some players have no handicap: set a custom one and close again."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
@@ -343,7 +346,22 @@
         "DRAFT": "Captains' draft",
         "PENDING": "Not split yet"
       },
-      "tournamentType": "Type:"
+      "tournamentType": "Type:",
+      "categories": "Categories",
+      "equalCategories_one": "{{count}} equal category",
+      "equalCategories_other": "{{count}} equal categories (split when enrollments close)",
+      "categoryLimits": "Limits: {{limites}}",
+      "noCategories": "One category",
+      "matchdaysLabel": "Days per player",
+      "matchdays_one": "{{count}} day",
+      "matchdays_other": "{{count}} days",
+      "overallLabel": "Overall standings",
+      "overall": {
+        "ACCUMULATED": "Accumulated",
+        "BEST_CARD": "Best card"
+      },
+      "equalCategoriesSplit_one": "{{count}} equal category: {{limites}}",
+      "equalCategoriesSplit_other": "{{count}} equal categories, split: {{limites}}"
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
@@ -439,7 +457,10 @@
       "captainOf": "{{team}} captain",
       "viceCaptainOf": "{{team}} vice-captain",
       "playersUnavailable": "The list of enrolled players could not be loaded. Open the competition again to retry."
-    }
+    },
+    "fixedHandicap": "{{handicap}} · category {{categoria}}",
+    "fixedHandicapNoCategory": "{{handicap}}",
+    "missingHandicapBadge": "No handicap"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -496,7 +517,9 @@
     "colorHint": "Used to assign the right tees in matches",
     "noPreference": "No preference",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "needsHandicap": "To join a Stableford or a Medal you need your handicap in your profile.",
+    "addHandicap": "Add it"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",
@@ -581,5 +604,30 @@
     "turnLost": "Your minute ran out and the app picked for you. It is the other captain's turn now.",
     "turnLostDraftOver": "Your minute ran out and the app picked for you. That finished the draft.",
     "open": "Go to the draft room"
+  },
+  "handicaps": {
+    "title": "Handicaps",
+    "update": "Update handicaps",
+    "launched": "Handicaps are being updated with the RFEG.",
+    "resumed": "Finishing the update that was left halfway.",
+    "inProgress_one": "Updating with the RFEG: {{count}} player left.",
+    "inProgress_other": "Updating with the RFEG: {{count}} players left.",
+    "completed": "Updated with the RFEG on {{cuando}}.",
+    "incomplete": "The last update ({{cuando}}) was left halfway.",
+    "pending": "Not updated: {{jugadores}}.",
+    "stopped": "The last update was stopped: the competition started or the window closed.",
+    "openUntil": "Available until {{cuando}} (course time).",
+    "openUntilStart": "Available until the competition starts.",
+    "scheduled": "Scheduled: {{cuando}}, course time ({{zona}}).",
+    "cancelSchedule": "Cancel it",
+    "schedule": "Schedule…",
+    "scheduleAt": "Date and time, in course time ({{zona}})",
+    "scheduleSave": "Schedule",
+    "cancel": "Cancel",
+    "error": "It could not be done. Try again.",
+    "scheduledDevice": "Scheduled: {{cuando}}, this device's time (the course has no time zone).",
+    "scheduleAtDevice": "Date and time, in this device's time (the course has no time zone)",
+    "openUntilDevice": "Available until {{cuando}} (this device's time).",
+    "timeDoesNotExist": "That time does not exist at the course because of the clock change: pick another."
   }
 }

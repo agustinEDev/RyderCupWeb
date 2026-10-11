@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
@@ -15,10 +15,12 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
+import { useLaMasNueva } from '../hooks/useLaMasNueva';
 import { CountryFlag } from '../utils/countryUtils';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
+import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -93,6 +95,8 @@ const CompetitionDetail = () => {
   // Por qué no se pudo pedir plaza: se lee en el modal, que sigue abierto (#710)
   const [errorAlApuntarse, setErrorAlApuntarse] = useState(null);
   const [editingHandicapId, setEditingHandicapId] = useState(null);
+  // Los que el servidor dijo que no tienen hándicap al cerrar (FE #824, PR 5)
+  const [sinHandicap, setSinHandicap] = useState(() => new Set());
   const [handicapInput, setHandicapInput] = useState('');
   const [savingHandicapId, setSavingHandicapId] = useState(null);
   const [revertingHandicapId, setRevertingHandicapId] = useState(null);
@@ -106,6 +110,17 @@ const CompetitionDetail = () => {
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
   const [irASinFranja, setIrASinFranja] = useState(0);
+  // Para releer los hándicaps sin pisar otra competición, y saber cuándo acaba
+  // una actualización (FE #824, PR 5)
+  const idActual = useRef(id);
+  const estadoDeLaActualizacion = useRef(null);
+  // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
+  // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
+  const lecturasDeLaFicha = useLaMasNueva();
+  const lecturasDeInscripciones = useLaMasNueva();
+  useEffect(() => {
+    idActual.current = id;
+  }, [id]);
   const numeroDeSesiones = agendaLeida?.rounds?.length ?? null;
 
   // Determine where user came from (browse or my competitions)
@@ -308,11 +323,56 @@ const CompetitionDetail = () => {
         updatedAt: result.updatedAt
       }));
       refrescarCanDelete();
+      // Con otro estado, el personalizado puede dejar de poderse cambiar: el
+      // editor abierto se cierra (/code-review)
+      setEditingHandicapId(null);
+      setSinHandicap(new Set());
+      // Al cerrar (o reabrir) un stroke play se fija (o se suelta) el hándicap
+      // de cada uno y su categoría: la lista de antes no lo trae (FE #824,
+      // PR 5). Solo en stroke play: en una Ryder nada de eso cambia
+      // Con su turno: una lectura vieja de la tarjeta no la pisa (revisor)
+      if (esStrokePlay) {
+        const deLaLista = lecturasDeInscripciones.turno();
+        listEnrollmentsUseCase
+          .execute(id)
+          .then((lista) => lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista))
+          .catch((e) => console.error('Error reloading enrollments after status change:', e));
+      }
     } catch (error) {
       console.error(`Error ${action}:`, error);
       console.error('Error details:', error.stack || error.message || String(error));
       // Un stroke play no se cierra ni se inicia con aprobados sin franja: se
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
+      // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista
+      // y se abre el personalizado del primero (Agustín, 11 oct 2026)
+      if (error?.errorCode === 'PLAYERS_WITHOUT_HANDICAP') {
+        const faltan = error.data?.players || [];
+        const nombres = faltan.map((p) => p.name).filter(Boolean);
+        customToast.error(
+          nombres.length > 0
+            ? t('detail.errors.playersWithoutHandicap', { count: faltan.length, jugadores: nombres.join(', ') })
+            : t('detail.errors.playersWithoutHandicapUnnamed')
+        );
+        setSinHandicap(new Set(faltan.map((p) => p.user_id)));
+        // Con la lista releída: el que falta puede no estar en la de aquí
+        // (otra pestaña, una aprobación reciente) (/code-review)
+        try {
+          const lista = await listEnrollmentsUseCase.execute(id);
+          setEnrollments(lista);
+          const primero = lista.find(
+            (e) => e.status === 'APPROVED' && faltan.some((p) => p.user_id === e.userId)
+          );
+          if (primero) {
+            handleStartEditHandicap(primero);
+            document
+              .querySelector(`[data-testid="aprobado-${primero.userId}"]`)
+              ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (e) {
+          console.error('Error reloading enrollments after missing handicaps:', e);
+        }
+        return;
+      }
       if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
         const faltan = error.data?.players || [];
         const jugadores = faltan.map((p) => p.name).filter(Boolean);
@@ -338,19 +398,72 @@ const CompetitionDetail = () => {
   // Si ahora se puede borrar: la respuesta de un cambio de estado no lo trae, y
   // el de antes ya no vale —cancelar la vuelve borrable— (FE #667). En silencio,
   // sin la espera de pantalla completa; si falla, no se ofrece lo que no se sabe
-  const refrescarCanDelete = () =>
-    getCompetitionDetailUseCase
+  const refrescarCanDelete = () => {
+    const turno = lecturasDeLaFicha.turno();
+    return getCompetitionDetailUseCase
       .execute(id)
       // Solo si esa ficha es la del estado de ahora: con dos cambios seguidos, la
       // del primero puede llegar tarde y decidiría el botón del segundo
-      .then((data) =>
+      .then((data) => {
         setCompetition(prev =>
           prev.status === data.status
             ? { ...prev, canDelete: data.canDelete, teamsAssigned: data.teamsAssigned }
             : prev
-        )
-      )
+        );
+        // Lo de los hándicaps cambia al cerrar (FE #824, PR 5) y vale sea cual
+        // sea el estado, pero no pisa lo de una lectura más nueva de la tarjeta
+        // (/code-review). Aparte: si gasta el turno, se pinta (revisor)
+        if (lecturasDeLaFicha.aplicar(turno)) {
+          setCompetition(prev => ({
+            ...prev,
+            handicapUpdate: data.handicapUpdate,
+            handicapUpdateWindow: data.handicapUpdateWindow,
+          }));
+        }
+      })
       .catch(() => setCompetition(prev => ({ ...prev, canDelete: false })));
+  };
+
+  // Lo de los hándicaps y las inscripciones, sin la espera de pantalla
+  // completa: la tarjeta lo pide al lanzar o programar, y cada 15 s mientras
+  // hay una en marcha (FE #824, PR 5)
+  // Las inscripciones (hándicap fijado y categoría) solo cambian al acabar una
+  // actualización: releerlas cada 15 s mientras dura eran peticiones de más
+  // (revisor). Y una respuesta de otra competición (se cambió de ruta) no pisa,
+  // ni una vieja a otra más nueva si se cruzan (el sondeo y un botón; CodeRabbit)
+  const releerHandicaps = useCallback(() => {
+    const deEsta = id;
+    const turno = lecturasDeLaFicha.turno();
+    getCompetitionDetailUseCase
+      .execute(deEsta)
+      .then((data) => {
+        if (deEsta !== idActual.current || !lecturasDeLaFicha.aplicar(turno)) return;
+        const estaba = estadoDeLaActualizacion.current;
+        estadoDeLaActualizacion.current = data.handicapUpdate?.status ?? null;
+        setCompetition((prev) => ({
+          ...prev,
+          handicapUpdate: data.handicapUpdate,
+          handicapUpdateWindow: data.handicapUpdateWindow,
+        }));
+        if (estadoDeLaActualizacion.current !== 'IN_PROGRESS' || estaba !== 'IN_PROGRESS') {
+          const deLaLista = lecturasDeInscripciones.turno();
+          return listEnrollmentsUseCase
+            .execute(deEsta)
+            .then(
+              (lista) =>
+                deEsta === idActual.current && lecturasDeInscripciones.aplicar(deLaLista) && setEnrollments(lista)
+            );
+        }
+        return undefined;
+      })
+      .catch((e) => console.error('Error reloading handicap updates:', e));
+  }, [id, lecturasDeLaFicha, lecturasDeInscripciones]);
+
+  // Lo último que se sabe de la actualización, para notar cuándo acaba
+  const estadoCargado = competition?.handicapUpdate?.status ?? null;
+  useEffect(() => {
+    estadoDeLaActualizacion.current = estadoCargado;
+  }, [estadoCargado]);
 
   const confirmarCapitanes = async (capitanes) => {
     const cerraba = competition.status === 'ACTIVE';
@@ -522,6 +635,13 @@ const CompetitionDetail = () => {
     try {
       await setCustomHandicapUseCase.execute(competition.id, enrollmentId, value);
       customToast.success(t('detail.handicapUpdated'));
+      // Con su personalizado ya no le falta: deja de estar marcado (revisor)
+      const suyo = enrollments.find((e) => e.id === enrollmentId)?.userId;
+      setSinHandicap((s) => {
+        const sin = new Set(s);
+        sin.delete(suyo);
+        return sin;
+      });
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
       setEditingHandicapId(null);
@@ -756,8 +876,16 @@ const CompetitionDetail = () => {
     },
   ].filter((accion) => accion.cuando);
 
+  // En un stroke play el personalizado se cambia hasta cerrar: al cerrar se fija
+  // (el servidor lo rechaza después). En una Ryder, hasta iniciar
   const canEditHandicap =
-    canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status);
+    canManage &&
+    (esStrokePlay ? ['DRAFT', 'ACTIVE'] : ['DRAFT', 'ACTIVE', 'CLOSED']).includes(competition.status);
+  // Con el hándicap ya fijado (stroke play cerrado), es ese el que se enseña
+  const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
+  // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
+  const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
 
   // Una programada es un borrador con días de antelación (RyderCupAM#332). En
   // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
@@ -1237,6 +1365,43 @@ const CompetitionDetail = () => {
                       </p>
                     </div>
                   )}
+                  {/* Los ajustes de un Stableford o un Medal: solo se veían al
+                      editarla (FE #824, PR 5) */}
+                  {esStrokePlay && competition.strokePlay && (
+                    <div data-testid="ajustes-del-torneo" className="contents">
+                      <div data-testid="ajuste-categorias">
+                        <span className="text-gray-500 text-sm">{t('detail.settings.categories')}</span>
+                        <p className="text-gray-900 font-medium">
+                          {competition.strokePlay.categoryCount != null
+                            ? t(
+                                // Ya repartidas (desde el cierre), no «se reparten al cerrar» (revisor)
+                                competition.strokePlay.categoryLimits.length > 0
+                                  ? 'detail.settings.equalCategoriesSplit'
+                                  : 'detail.settings.equalCategories',
+                                {
+                                  count: competition.strokePlay.categoryCount,
+                                  limites: limitesEnTexto(competition.strokePlay),
+                                }
+                              )
+                            : competition.strokePlay.categoryLimits.length > 0
+                              ? t('detail.settings.categoryLimits', { limites: limitesEnTexto(competition.strokePlay) })
+                              : t('detail.settings.noCategories')}
+                        </p>
+                      </div>
+                      <div data-testid="ajuste-jornadas">
+                        <span className="text-gray-500 text-sm">{t('detail.settings.matchdaysLabel')}</span>
+                        <p className="text-gray-900 font-medium">
+                          {t('detail.settings.matchdays', { count: competition.strokePlay.maxMatchdaysPerPlayer })}
+                        </p>
+                      </div>
+                      <div data-testid="ajuste-general">
+                        <span className="text-gray-500 text-sm">{t('detail.settings.overallLabel')}</span>
+                        <p className="text-gray-900 font-medium">
+                          {t(`detail.settings.overall.${competition.strokePlay.overallStanding}`)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {/* El modo elegido al crearla no salía en ningún sitio (#710) */}
                   {competition.setupMode && (
                     <div>
@@ -1279,6 +1444,22 @@ const CompetitionDetail = () => {
                 </div>
               </div>
             </motion.div>
+
+            {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
+                cómo fue la última actualización con la RFEG, el botón y la
+                programada. La ventana solo le llega al organizador */}
+            {canManage &&
+              competition.handicapUpdateWindow &&
+              ['CLOSED', 'IN_PROGRESS'].includes(competition.status) && (
+                <div className="p-4">
+                  <HandicapsDeLaCompeticion
+                    competitionId={competition.id}
+                    handicapUpdate={competition.handicapUpdate}
+                    handicapUpdateWindow={competition.handicapUpdateWindow}
+                    onReleer={releerHandicaps}
+                  />
+                </div>
+              )}
 
             {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
                 organizador la cambia aquí mismo (FE #654) */}
@@ -1361,8 +1542,17 @@ const CompetitionDetail = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {approvedEnrollments
+                    {[...approvedEnrollments]
                       .sort((a, b) => {
+                        // Un stroke play cerrado: por hándicap fijado, que es también
+                        // el orden de las categorías (salen de él) (FE #824, PR 5).
+                        // Los que no lo tienen, detrás: una sola regla, para que el
+                        // orden no dependa de con quién se compara (/code-review)
+                        if (conFijado(a) || conFijado(b)) {
+                          if (!conFijado(b)) return -1;
+                          if (!conFijado(a)) return 1;
+                          return a.fixedHandicap - b.fixedHandicap;
+                        }
                         // Sort by team first, then by handicap
                         if (a.team && b.team && a.team !== b.team) {
                           return a.team.localeCompare(b.team);
@@ -1373,6 +1563,7 @@ const CompetitionDetail = () => {
                         <div
                           key={enrollment.id}
                           data-testid={`aprobado-${enrollment.userId}`}
+                          data-sin-handicap={sinHandicap.has(enrollment.userId) || undefined}
                           className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
                         >
                           {/* `min-w-0`: sin él, la etiqueta de capitán con el nombre
@@ -1396,6 +1587,12 @@ const CompetitionDetail = () => {
                                 className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-medium max-w-full"
                               >
                                 <span className="truncate min-w-0">{equipoDe(enrollment.userId)}</span>
+                              </span>
+                            )}
+                            {/* Que se vea a quién le falta, no solo en un atributo (revisor) */}
+                            {sinHandicap.has(enrollment.userId) && (
+                              <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
+                                {t('detail.missingHandicapBadge')}
                               </span>
                             )}
                             <div className="flex items-center gap-2 mt-1">
@@ -1441,7 +1638,14 @@ const CompetitionDetail = () => {
                                 </div>
                               ) : (
                                 <>
-                                  {enrollment.hasCustomHandicap ? (
+                                  {conFijado(enrollment) ? (
+                                    <span data-testid={`fijado-${enrollment.userId}`} className="text-green-700 text-sm font-medium">
+                                      {t(enrollment.category != null ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
+                                        handicap: unDecimal(enrollment.fixedHandicap),
+                                        categoria: enrollment.category,
+                                      })}
+                                    </span>
+                                  ) : enrollment.hasCustomHandicap ? (
                                     <span className="text-amber-700 text-sm font-medium">
                                       {t('detail.handicapLabel', { handicap: Number(enrollment.customHandicap).toFixed(1) })}
                                       {' '}
@@ -1614,6 +1818,8 @@ const CompetitionDetail = () => {
         onConfirm={handleEnroll}
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}
+        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
+        faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
       />
     </div>
   );
