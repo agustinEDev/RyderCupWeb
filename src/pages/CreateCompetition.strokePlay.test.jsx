@@ -125,6 +125,12 @@ describe('CreateCompetition · Stableford y Medal con sus ajustes (FE #824)', ()
     expect(screen.queryByTestId('modo-RYDER_CUP')).toBeNull();
   });
 
+  it.each(['STABLEFORD', 'MEDAL'])('pasada: el ejemplo del nombre es el de un %s, no «Ryder Cup de amigos»', async (tipo) => {
+    await alTipo(tipo);
+
+    expect(await screen.findByTestId('campo-nombre')).toHaveAttribute('placeholder', `create.competitionNamePlaceholderFor.${tipo}`);
+  });
+
   it('3: una Ryder no tiene sección de stroke play', async () => {
     await alTipo('RYDER_CUP');
     fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));

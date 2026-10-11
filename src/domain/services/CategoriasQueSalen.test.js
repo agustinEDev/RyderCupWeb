@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { categoriasQueSalen, REPETIDOS, MENOS_DE_SEIS } from './CategoriasQueSalen';
+import { categoriasQueSalen, salenDeLosInscritos, REPETIDOS, MENOS_DE_SEIS } from './CategoriasQueSalen';
 
 /**
  * El aviso de «salieron menos categorías» (FE #824, PR 8, caso 9; decidido el
@@ -71,5 +71,17 @@ describe('categoriasQueSalen (FE #824, PR 8)', () => {
 
   it('antes de repartir (inscritos sin categoría) no se avisa de nada', () => {
     expect(categoriasQueSalen(ajustes({ categoryCount: 3 }), [null, null])).toBeNull();
+  });
+});
+
+describe('salenDeLosInscritos (/code-review: la página no repite la regla)', () => {
+  it.each([
+    [[], 0],
+    [[null, null], 0],
+    [[1, 1, null], 1],
+    [[1, 3], 3],
+    [[2, 1, 2], 2],
+  ])('con %j salen %i', (categorias, salen) => {
+    expect(salenDeLosInscritos(categorias)).toBe(salen);
   });
 });

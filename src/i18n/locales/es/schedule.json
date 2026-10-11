@@ -364,6 +364,7 @@
     "closeWindow": "Cerrar la franja",
     "closeWindowConfirm": "Se cierran las partidas sin acabar: las tarjetas completas quedan entregadas, las que van a medias como retirados y las que no tienen ningún hoyo como no presentados.",
     "closeWindowYes": "Sí, cerrarla",
-    "windowClosed": "Franja cerrada."
+    "windowClosed": "Franja cerrada.",
+    "movePlayer": "Mover a {{jugador}}"
   }
 }

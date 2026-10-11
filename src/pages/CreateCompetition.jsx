@@ -999,7 +999,12 @@ const CreateCompetition = () => {
                       name="competitionName"
                       value={formData.competitionName}
                       onChange={handleInputChange}
-                      placeholder={t('create.competitionNamePlaceholder')}
+                      // El ejemplo, del tipo elegido: «Ryder Cup de amigos» en un Medal no (pasada)
+                      placeholder={t(
+                        formData.tournamentType && !conEquipos
+                          ? `create.competitionNamePlaceholderFor.${formData.tournamentType}`
+                          : 'create.competitionNamePlaceholder'
+                      )}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>

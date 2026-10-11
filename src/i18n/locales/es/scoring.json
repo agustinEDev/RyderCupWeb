@@ -243,7 +243,6 @@
     "categoryN": "{{numero}}.ª categoría",
     "standingsEmpty": "Todavía no hay nadie en la clasificación.",
     "standingsNotLoaded": "No se pudo leer la clasificación.",
-    "finished": "Acabó",
     "thru_one": "tras {{count}} hoyo",
     "thru_other": "tras {{count}} hoyos",
     "status": {
@@ -291,9 +290,6 @@
       "NOT_ORGANIZER": "Solo el organizador puede hacer esto.",
       "generic": "No se pudo hacer."
     },
-    "categoryShort": "{{numero}}.ª cat.",
-    "cards_one": "{{count}} tarjeta",
-    "cards_other": "{{count}} tarjetas",
     "rule": {
       "ACCUMULATED": "Regla: suma de todas las tarjetas",
       "BEST_CARD": "Regla: la mejor tarjeta de cada uno"
@@ -303,6 +299,19 @@
     "standingsTitle": "Clasificación",
     "overall": "General",
     "scratch": "Scratch",
-    "loadingStandings": "Cargando la clasificación…"
+    "loadingStandings": "Cargando la clasificación…",
+    "colPos": "Pos",
+    "colPlayer": "Jugador",
+    "colPoints": "Pts",
+    "colToPar": "± Par",
+    "colThru": "Hoyo",
+    "thruFinished": "F",
+    "statusShort": {
+      "SIN_EMPEZAR": "–",
+      "NR": "NR",
+      "NP": "NP"
+    },
+    "standingsTable": "Clasificación",
+    "none": "–"
   }
 }

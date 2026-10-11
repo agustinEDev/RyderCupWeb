@@ -22,7 +22,7 @@ import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompetici
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
 import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
-import { categoriasQueSalen } from '../domain/services/CategoriasQueSalen';
+import { categoriasQueSalen, salenDeLosInscritos } from '../domain/services/CategoriasQueSalen';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -118,6 +118,9 @@ const CompetitionDetail = () => {
   const estadoDeLaActualizacion = useRef(null);
   // Mientras se releen la ficha y las inscripciones tras cerrar (PR 8)
   const [releyendoTrasCerrar, setReleyendoTrasCerrar] = useState(false);
+  // Sube con cada cambio en las partidas: cerrar una franja pasa lo sin acabar
+  // a NR/NP, y la clasificación se relee (pasada, FE #824)
+  const [versionClasificaciones, setVersionClasificaciones] = useState(0);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -931,6 +934,8 @@ const CompetitionDetail = () => {
   const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
   const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
+  const hayVariasCategorias = salenDeLosInscritos(approvedEnrollments.map((e) => e.category ?? null)) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
 
   // Una programada es un borrador con días de antelación (RyderCupAM#332). En
@@ -1526,6 +1531,7 @@ const CompetitionDetail = () => {
                   competitionId={competition.id}
                   userId={user.id}
                   enJuego={competition.status === 'IN_PROGRESS'}
+                  version={versionClasificaciones}
                 />
               </div>
             )}
@@ -1568,6 +1574,7 @@ const CompetitionDetail = () => {
                   // y no juega las sigue viendo (CodeRabbit)
                   puedeVerPartidas={canManage}
                   organizaPartidas={canManage && competition.status !== 'COMPLETED'}
+                  onCambioEnPartidas={() => setVersionClasificaciones((n) => n + 1)}
                 />
               ) : (
               <AgendaDeLaCompeticion
@@ -1717,7 +1724,7 @@ const CompetitionDetail = () => {
                                 <>
                                   {conFijado(enrollment) ? (
                                     <span data-testid={`fijado-${enrollment.userId}`} className="text-green-700 text-sm font-medium">
-                                      {t(enrollment.category != null ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
+                                      {t(enrollment.category != null && hayVariasCategorias ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
                                         handicap: unDecimal(enrollment.fixedHandicap),
                                         categoria: enrollment.category,
                                       })}

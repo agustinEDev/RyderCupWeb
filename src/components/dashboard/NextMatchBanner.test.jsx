@@ -85,6 +85,13 @@ describe('NextMatchBanner', () => {
       expect(banner).not.toHaveTextContent('nextMatch.versus');
     });
 
+    it('la cabecera dice «tu próxima partida» (pasada)', () => {
+      renderBanner({ match: partida });
+
+      expect(screen.getByTestId('next-match-banner')).toHaveTextContent('nextMatch.labelTeeGroup');
+      expect(screen.getByTestId('next-match-banner')).not.toHaveTextContent(/nextMatch\.label$|nextMatch\.label[^T]/);
+    });
+
     it('lleva a anotar su partida, con la competición', () => {
       renderBanner({ match: partida });
 

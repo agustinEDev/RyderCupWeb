@@ -364,6 +364,7 @@
     "closeWindow": "Close the window",
     "closeWindowConfirm": "Unfinished groups are closed: complete cards are submitted, partial ones count as retired and those with no holes as no shows.",
     "closeWindowYes": "Yes, close it",
-    "windowClosed": "Window closed."
+    "windowClosed": "Window closed.",
+    "movePlayer": "Move {{jugador}}"
   }
 }

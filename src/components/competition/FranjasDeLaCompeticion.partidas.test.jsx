@@ -194,6 +194,16 @@ describe('FranjasDeLaCompeticion · partidas (FE #824, PR 6)', () => {
     await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(2));
   });
 
+  it('/code-review: generar no relee la clasificación de la ficha; solo cerrar la franja', async () => {
+    const onCambioEnPartidas = vi.fn();
+    pinta({ verPartidas: true, organizaPartidas: true, puedeElegir: false, onCambioEnPartidas });
+    fireEvent.click((await en('m')).getByRole('button', { name: /partidas.show/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'partidas.generate' }));
+
+    await waitFor(() => expect(mockMias).toHaveBeenCalledTimes(2));
+    expect(onCambioEnPartidas).not.toHaveBeenCalled();
+  });
+
   it('17: si el organizador mueve plazas, las partidas desplegadas y las mías se releen', async () => {
     pinta({ verPartidas: true, organizaPartidas: true, puedeColocar: true, canManage: true, puedeElegir: false });
     const fila = await en('m');

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { ArrowDown, ArrowRightLeft, ArrowUp, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import {
   getTeeGroupsUseCase,
   generateTeeGroupsUseCase,
@@ -82,6 +82,22 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   // Lo abierto: la confirmación de volver a generar o borrar, y los marcadores
   const [confirmando, setConfirmando] = useState(null);
   const [marcando, setMarcando] = useState(null);
+  // A quién se está moviendo: su lista solo se abre al pulsar su icono (pasada:
+  // a todo lo ancho, una línea por jugador)
+  const [moviendo, setMoviendo] = useState(null);
+  // Al cerrar su lista (cancelando o tras mover), el foco vuelve al icono de
+  // ese jugador, en cuanto se pueda pulsar; si ya no está, se olvida (revisor,
+  // /code-review)
+  const [volverAlIcono, setVolver] = useState(null);
+  const setVolverAlIcono = (userId) => setVolver((antes) => ({ userId, vez: (antes?.vez ?? 0) + 1 }));
+  const atendida = useRef(0);
+  const iconos = useRef(new Map());
+  // Tras cada pintado: con su icono ya pulsable, el foco va a él
+  useEffect(() => {
+    if (!volverAlIcono || ocupado || atendida.current === volverAlIcono.vez) return;
+    atendida.current = volverAlIcono.vez;
+    iconos.current.get(volverAlIcono.userId)?.focus();
+  }, [volverAlIcono, ocupado]);
   // Lecturas y escrituras se cruzan: una vieja no pisa a otra más nueva
   const lecturas = useLaMasNueva();
 
@@ -131,7 +147,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
    * Lo de «salen antes» es solo al mover: cambiar el orden adelanta una a
    * propósito (revisor).
    */
-  const cambiar = async (accion, aviso, alAcabar, { avisarSiSeAdelantan = false } = {}) => {
+  const cambiar = async (accion, aviso, alAcabar, { avisarSiSeAdelantan = false, cierra = false } = {}) => {
     // Un doble toque no manda dos: React pinta los botones desactivados antes
     // del segundo
     setOcupado(true);
@@ -146,7 +162,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       }
       alAcabar?.();
       customToast.success(t(aviso));
-      onCambio?.();
+      // La clasificación solo cambia al cerrar la franja: lo demás no la relee
+      onCambio?.({ cerrada: cierra });
       const adelantadas = aplicada && avisarSiSeAdelantan ? partidasQueSeAdelantan(antes, nueva.groups) : null;
       if (adelantadas) {
         customToast.info(t('partidas.earlier', { ...adelantadas, count: adelantadas.hasta - adelantadas.desde + 1 }));
@@ -157,9 +174,11 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       if (!aplicada) await leer();
     } catch (error) {
       customToast.error(mensaje(error));
-      // Lo abierto se cierra: se relee, y lo que confirmaba o editaba ya no vale
+      // Lo abierto se cierra: se relee, y lo que confirmaba, editaba o movía ya no vale
       setConfirmando(null);
       setMarcando(null);
+      if (moviendo) setVolverAlIcono(moviendo);
+      setMoviendo(null);
       await leer();
     } finally {
       setOcupado(false);
@@ -170,7 +189,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     cambiar(() => generateTeeGroupsUseCase.execute(franja.id, orden), 'partidas.generated', () => setConfirmando(null));
   // Cerrar la franja (PR 7): lo sin acabar se da por terminado
   const cerrarLaFranja = () =>
-    cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null));
+    cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null), {
+      cierra: true,
+    });
   const borrar = () =>
     cambiar(() => deleteTeeGroupsUseCase.execute(franja.id), 'partidas.removed', () => setConfirmando(null));
   const mover = (jugador, destino) => {
@@ -180,7 +201,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       // Lo que no viene lo quita el caso de uso
       () => moveTeeGroupPlayerUseCase.execute(franja.id, { userId: jugador, groupId, swapWithUserId }),
       'partidas.moved',
-      null,
+      () => {
+        setVolverAlIcono(jugador);
+        setMoviendo(null);
+      },
       { avisarSiSeAdelantan: true }
     );
   };
@@ -220,7 +244,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     ];
   };
 
-  const selectorDeDestino = (jugador, nombre, { etiqueta, placeholder, conIntercambios }) => {
+  const selectorDeDestino = (jugador, nombre, { etiqueta, placeholder, conIntercambios, enfocar = false }) => {
     const opciones = opcionesDeDestino(jugador, { conIntercambios });
     if (opciones.length === 0) return null;
     return (
@@ -228,6 +252,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
         aria-label={t(etiqueta, { jugador: nombre })}
         value=""
         disabled={ocupado}
+        // Se abre desde su icono: el foco va a ella, no se queda en <body> (revisor)
+        autoFocus={enfocar}
         onChange={(e) => mover(jugador, e.target.value)}
         className={selector}
       >
@@ -412,12 +438,42 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
                           </span>
                         )}
-                        {editable &&
-                          selectorDeDestino(p.userId, p.name, {
-                            etiqueta: 'partidas.moveTo',
-                            placeholder: 'partidas.moveToPlaceholder',
-                            conIntercambios: true,
-                          })}
+                        {editable && moviendo !== p.userId && opcionesDeDestino(p.userId, { conIntercambios: true }).length > 0 && (
+                          <button
+                            type="button"
+                            disabled={ocupado}
+                            aria-label={t('partidas.movePlayer', { jugador: p.name })}
+                            ref={(boton) => {
+                              if (boton) iconos.current.set(p.userId, boton);
+                              else iconos.current.delete(p.userId);
+                            }}
+                            onClick={() => setMoviendo(p.userId)}
+                            className={`${icono} ml-auto`}
+                          >
+                            <ArrowRightLeft className="h-4 w-4" />
+                          </button>
+                        )}
+                        {editable && moviendo === p.userId && (
+                          <span className="flex w-full items-center gap-1">
+                            {selectorDeDestino(p.userId, p.name, {
+                              etiqueta: 'partidas.moveTo',
+                              placeholder: 'partidas.moveToPlaceholder',
+                              conIntercambios: true,
+                              enfocar: true,
+                            })}
+                            <button
+                              type="button"
+                              disabled={ocupado}
+                              onClick={() => {
+                                setVolverAlIcono(p.userId);
+                                setMoviendo(null);
+                              }}
+                              className="min-h-11 px-2 text-xs text-gray-600"
+                            >
+                              {t('partidas.cancel')}
+                            </button>
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>

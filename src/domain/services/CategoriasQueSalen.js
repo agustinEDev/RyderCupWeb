@@ -22,13 +22,24 @@ const POR_CATEGORIA = 6;
  * @param {Array<number|null>} categoriasDeLosInscritos - La de cada aprobado
  * @returns {{pedidas: number, salen: number, motivo: string}|null}
  */
+/**
+ * Cuántas salieron: la más alta asignada (se numeran desde 1, sin huecos).
+ *
+ * @param {Array<number|null>} categoriasDeLosInscritos - La de cada aprobado
+ * @returns {number} 0 si nadie tiene
+ */
+export const salenDeLosInscritos = (categoriasDeLosInscritos) => {
+  const asignadas = categoriasDeLosInscritos.filter((c) => c != null);
+  return asignadas.length === 0 ? 0 : Math.max(...asignadas);
+};
+
 export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categoriasDeLosInscritos) => {
   const limites = categoryLimits?.length ?? 0;
   const pedidas = categoryCount ?? (limites > 0 ? limites + 1 : 0);
   const asignadas = categoriasDeLosInscritos.filter((c) => c != null);
   if (pedidas <= 1 || asignadas.length === 0) return null;
 
-  const salen = Math.max(...asignadas);
+  const salen = salenDeLosInscritos(asignadas);
   if (salen >= pedidas) return null;
 
   // En «iguales», los límites que se guardaron al repartir: si son menos de

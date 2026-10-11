@@ -188,6 +188,10 @@
           "hint": "Only their best round counts."
         }
       }
+    },
+    "competitionNamePlaceholderFor": {
+      "STABLEFORD": "E.g. Sunday Stableford",
+      "MEDAL": "E.g. Spring Medal"
     }
   },
   "edit": {

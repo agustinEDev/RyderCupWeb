@@ -124,7 +124,7 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
 
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">
-          {t('nextMatch.label')}
+          {t(esPartida ? 'nextMatch.labelTeeGroup' : 'nextMatch.label')}
         </span>
         <span className="block truncate text-base font-bold text-gray-900">
           {titulo.filter(Boolean).join(' · ')}

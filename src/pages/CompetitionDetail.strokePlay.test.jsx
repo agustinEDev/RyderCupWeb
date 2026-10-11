@@ -53,6 +53,7 @@ vi.mock('../composition', () => ({
   reorderTeeGroupsUseCase: { execute: vi.fn() },
   setTeeGroupMarkersUseCase: { execute: vi.fn() },
   deleteTeeGroupsUseCase: { execute: vi.fn() },
+  closeTeeWindowUseCase: { execute: vi.fn() },
   scheduleHandicapUpdateUseCase: { execute: vi.fn() },
   cancelScheduledHandicapUpdateUseCase: { execute: vi.fn() },
   // Las plazas y esperas de las franjas (FE #824, PR 4)
@@ -335,6 +336,27 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     await act(async () => vi.advanceTimersByTime(60000));
 
     await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(lecturas));
+  });
+
+  it('pasada: al cerrar una franja, la clasificación de la ficha se relee (lo sin acabar pasa a NR/NP)', async () => {
+    const { getScheduleUseCase, getTeeGroupsUseCase, closeTeeWindowUseCase, getCompetitionStandingsUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    const grupo = { id: 'g1', number: 1, teeTime: '08:00', status: 'IN_PROGRESS', incomplete: false, players: [{ userId: 'ana', name: 'Ana', handicap: 5, playingHandicap: 5, marksUserId: null }] };
+    getTeeGroupsUseCase.execute.mockResolvedValue({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [grupo] });
+    closeTeeWindowUseCase.execute.mockResolvedValueOnce({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [{ ...grupo, status: 'COMPLETED' }] });
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'IN_PROGRESS' }));
+    renderPage();
+    await screen.findByTestId('clasificaciones');
+    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(1));
+
+    const franja = within(await screen.findByTestId('franja-r1'));
+    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
+    fireEvent.click(await franja.findByRole('button', { name: 'partidas.closeWindow' }));
+    fireEvent.click(franja.getByRole('button', { name: 'partidas.closeWindowYes' }));
+
+    await waitFor(() => expect(closeTeeWindowUseCase.execute).toHaveBeenCalledWith('r1'));
+    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(2));
   });
 
   it.each(['ACTIVE', 'CLOSED'])('1 (PR 8): %s, todavía no hay clasificación', async (status) => {
@@ -665,6 +687,14 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
     const ana = await screen.findByTestId('aprobado-ana');
     expect(within(ana).getByTitle('detail.editHandicap')).toBeInTheDocument();
     expect(within(ana).queryByTestId('fijado-ana')).toBeNull();
+  });
+
+  it('2e (pasada): si sale una sola categoría, no se nombra', async () => {
+    mockListEnrollments.mockResolvedValue([conFijado('ana', 'Ana Alba', 5.2, 1), conFijado('bea', 'Bea Blanco', 14.0, 1)]);
+    mockGetCompetitionDetail.mockResolvedValue(medal({ status: 'CLOSED' }));
+    renderPage();
+
+    expect(await screen.findByTestId('fijado-ana')).toHaveTextContent('detail.fixedHandicapNoCategory');
   });
 
   it('2: cerradas, el fijado y la categoría, por categoría y hándicap, sin lápiz', async () => {

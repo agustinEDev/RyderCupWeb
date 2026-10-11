@@ -188,6 +188,10 @@
           "hint": "Cuenta solo su mejor vuelta."
         }
       }
+    },
+    "competitionNamePlaceholderFor": {
+      "STABLEFORD": "Ej: Stableford de los domingos",
+      "MEDAL": "Ej: Medal de primavera"
     }
   },
   "edit": {
