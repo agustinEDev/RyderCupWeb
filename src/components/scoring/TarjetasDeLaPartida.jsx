@@ -79,19 +79,23 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     setCorrigiendo({ jugador, hoyo, propio, marcador, propioAntes: propio, marcadorAntes: marcador });
   };
   const golpeAEnviar = (valor) => (valor === RECOGIDA ? null : Number(valor));
-  const guardarCorreccion = () => {
-    const { jugador, hoyo, propio, marcador, propioAntes, marcadorAntes } = corrigiendo;
+  // Lo que se manda: los lados que cambian y tienen golpe. Una sola regla para
+  // el botón y para el envío (/code-review)
+  const ladosCambiados = ({ propio, marcador, propioAntes, marcadorAntes }) => {
     const lados = {};
     if (propio !== propioAntes && propio !== SIN_GOLPE) lados.ownScore = golpeAEnviar(propio);
     if (marcador !== marcadorAntes && marcador !== SIN_GOLPE) lados.markerScore = golpeAEnviar(marcador);
-    hacer(() => correctTeeGroupHoleUseCase.execute(scoringView.matchId, jugador, hoyo, lados), 'partida.corrected', () =>
-      setCorrigiendo(null)
+    return lados;
+  };
+  const guardarCorreccion = () => {
+    const { jugador, hoyo } = corrigiendo;
+    hacer(
+      () => correctTeeGroupHoleUseCase.execute(scoringView.matchId, jugador, hoyo, ladosCambiados(corrigiendo)),
+      'partida.corrected',
+      () => setCorrigiendo(null)
     );
   };
-  const hayCambios =
-    corrigiendo &&
-    ((corrigiendo.propio !== corrigiendo.propioAntes && corrigiendo.propio !== SIN_GOLPE) ||
-      (corrigiendo.marcador !== corrigiendo.marcadorAntes && corrigiendo.marcador !== SIN_GOLPE));
+  const hayCambios = Boolean(corrigiendo) && Object.keys(ladosCambiados(corrigiendo)).length > 0;
 
   const selectorDeGolpe = (etiqueta, valor, onCambiar) => (
     <label className="flex min-w-0 flex-1 flex-col text-xs text-gray-600">

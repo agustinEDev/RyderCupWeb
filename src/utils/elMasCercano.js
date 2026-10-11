@@ -12,5 +12,6 @@ export const elMasCercano = (a, b) => {
   if (!a || !b) return a ?? b ?? null;
   const porDia = (a.roundDate || '').localeCompare(b.roundDate || '');
   if (porDia !== 0) return porDia < 0 ? a : b;
-  return (ORDEN_DE_FRANJA[b.sessionType] ?? 9) < (ORDEN_DE_FRANJA[a.sessionType] ?? 9) ? b : a;
+  // Sin franja conocida, la primera: como ordena la lista de la Ryder
+  return (ORDEN_DE_FRANJA[b.sessionType] ?? 0) < (ORDEN_DE_FRANJA[a.sessionType] ?? 0) ? b : a;
 };

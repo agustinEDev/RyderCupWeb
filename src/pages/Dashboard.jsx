@@ -21,6 +21,8 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { leeLosProximosPartidos, precargaElProximoDia } from '../services/partidosSinCobertura';
 import { elMasCercano } from '../utils/elMasCercano';
+import { fechaLocal } from '../utils/fechaLocal';
+import { lasUltimasPartidas, recuerdaLasPartidas } from '../services/loUltimoConocido';
 import {
   elPanelYaSePinto,
   anotaQueElPanelSePinto,
@@ -68,7 +70,7 @@ const Dashboard = () => {
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   // Las próximas partidas de stroke play (FE #824, PR 7): el banner enseña la
   // más cercana entre estas y los partidos de la Ryder
-  const [proximasPartidas, setProximasPartidas] = useState([]);
+  const [proximasPartidas, setProximasPartidas] = useState({ partidas: [], desdeMemoria: false });
   const [upcomingSinRespuesta, setUpcomingSinRespuesta] = useState(false);
   const [upcomingDesdeMemoria, setUpcomingDesdeMemoria] = useState(false);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
@@ -341,30 +343,39 @@ const Dashboard = () => {
       // cobertura no hay de dónde sacarlas y el banner se queda con lo de la
       // Ryder. La del próximo día se guarda para anotarla sin cobertura, como
       // los partidos, pero con SU vista
+      // Sin cobertura, las guardadas de hoy en adelante: son la puerta a su
+      // pantalla, que sabe pintarse con la vista precargada (/code-review). La
+      // lista se guarda solo entera, como la de los partidos
+      const lasGuardadas = () => ({
+        partidas: (lasUltimasPartidas() ?? []).filter((p) => p.roundDate >= fechaLocal()),
+        desdeMemoria: true,
+      });
       const leeLasPartidas = async () => {
-        if (competitionsError) return [];
+        if (competitionsError) return lasGuardadas();
         try {
-          const { matches } = await getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, competitions);
+          const { matches, complete } = await getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, competitions);
+          if (complete) recuerdaLasPartidas(matches);
           precargaElProximoDia({ partidos: matches, userId: user.id, pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id) });
-          return matches;
+          return { partidas: matches, desdeMemoria: false };
         } catch {
-          return [];
+          return lasGuardadas();
         }
       };
-      // Sin esperarlas: el banner no aguarda a una competición de stroke play
-      // lenta para enseñar el partido de la Ryder (revisor). Cuando llegan, se
-      // vuelve a elegir el más cercano
-      leeLasPartidas().then((partidas) => {
-        if (!cancelled) setProximasPartidas(partidas);
-      });
-      const leido = await leeLosProximosPartidos({
-        lee: () => (competitionsError
-          ? Promise.reject(competitionsError)
-          : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
-        userId: user.id,
-        pideLaVista: (id) => getScoringViewUseCase.execute(id),
-      });
+      // Las dos a la vez, y el banner espera a ambas: sin eso, quien solo
+      // juega stroke play veía un momento «crea una partida rápida» y podía
+      // pulsarlo (/code-review). Sin cobertura la de las partidas falla deprisa
+      const [leido, partidas] = await Promise.all([
+        leeLosProximosPartidos({
+          lee: () => (competitionsError
+            ? Promise.reject(competitionsError)
+            : getUpcomingMatchesUseCase.executeWithCompleteness(user.id, competitions)),
+          userId: user.id,
+          pideLaVista: (id) => getScoringViewUseCase.execute(id),
+        }),
+        leeLasPartidas(),
+      ]);
       if (!cancelled) {
+        setProximasPartidas(partidas);
         setUpcomingMatches(leido.partidos);
         setUpcomingSinRespuesta(leido.sinRespuesta);
         setUpcomingDesdeMemoria(leido.desdeMemoria);
@@ -393,6 +404,9 @@ const Dashboard = () => {
   // Los textos cuentan como carga: los trozos de i18n llegan en diferido, y
   // levantar la cortina sin ellos enseña las claves en crudo y un cambio de
   // texto a continuacion, que es el mismo parpadeo con otra cara.
+  // El próximo del banner: el más cercano entre el partido y la partida (PR 7)
+  const proximo = elMasCercano(upcomingMatches[0] ?? null, proximasPartidas.partidas[0] ?? null);
+
   const noQuedaNadaCargando =
     textosListos &&
     textosDeRapidaListos &&
@@ -650,9 +664,10 @@ const Dashboard = () => {
                 </span>
               )}
               <NextMatchBanner
-                match={elMasCercano(upcomingMatches[0] ?? null, proximasPartidas[0] ?? null)}
+                match={proximo}
                 sinRespuesta={upcomingSinRespuesta}
-                desdeMemoria={upcomingDesdeMemoria}
+                // De memoria, según de dónde salga el que se enseña
+                desdeMemoria={proximo?.esPartidaDeFranja ? proximasPartidas.desdeMemoria : upcomingDesdeMemoria}
                 isLoading={isLoadingUpcoming}
                 onCreateQuickMatch={() => setShowQuickMatchModal(true)}
               />

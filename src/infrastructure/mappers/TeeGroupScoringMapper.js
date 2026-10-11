@@ -84,7 +84,8 @@ class TeeGroupScoringMapper {
       scorecardSubmittedBy: jugadores.filter((p) => p.card_status === 'ENTREGADA').map((p) => p.user_id),
       strokePlay: {
         roundId: api.round_id,
-        teeTime: api.tee_time,
+        // HH:MM, como en ScheduleMapper
+        teeTime: typeof api.tee_time === 'string' ? api.tee_time.slice(0, 5) : api.tee_time,
         tournamentType: api.tournament_type,
         pickedUpAllowed: api.picked_up_allowed,
         iMarkUserId: api.i_mark_user_id ?? null,

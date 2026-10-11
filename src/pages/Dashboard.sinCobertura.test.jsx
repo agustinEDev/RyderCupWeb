@@ -62,9 +62,10 @@ for (const ruta of [
 
 // Deja rastro de lo que recibe, que es lo que se mira
 vi.doMock('../components/dashboard/NextMatchBanner', () => ({
-  default: ({ match, sinRespuesta, desdeMemoria }) => (
+  default: ({ match, sinRespuesta, desdeMemoria, isLoading }) => (
     <div
       data-testid="banner"
+      data-cargando={String(Boolean(isLoading))}
       data-partido={match?.id ?? ''}
       data-sin-respuesta={String(Boolean(sinRespuesta))}
       data-desde-memoria={String(Boolean(desdeMemoria))}
@@ -72,7 +73,7 @@ vi.doMock('../components/dashboard/NextMatchBanner', () => ({
   ),
 }));
 
-const { olvidaTodo, recuerdaLosPartidos, losUltimosPartidos } = await import('../services/loUltimoConocido');
+const { olvidaTodo, recuerdaLosPartidos, losUltimosPartidos, recuerdaLasPartidas, lasUltimasPartidas } = await import('../services/loUltimoConocido');
 const { olvidaLasPrecargas } = await import('../services/partidosSinCobertura');
 const { olvidaQueElPanelSePinto } = await import('../utils/primeraCargaDelPanel');
 const { reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
@@ -133,14 +134,65 @@ describe('el próximo partido del panel sin cobertura', () => {
     expect(banner()).toHaveAttribute('data-partido', 'g-1');
   });
 
-  it('el banner no espera a las partidas: si tardan, enseña ya el partido (revisor)', async () => {
-    mockLee.mockResolvedValue({ matches: [partido], complete: true });
-    mockPartidas.mockReturnValue(new Promise(() => {}));
+  it('el banner espera a las dos listas: sin eso, quien solo juega stroke play veía un momento «crea una partida rápida» (/code-review)', async () => {
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    let soltar;
+    mockPartidas.mockReturnValue(new Promise((r) => (soltar = r)));
+
+    render(<Dashboard />);
+    await asienta();
+    // Mientras tanto ni se pinta (la cortina del arranque espera a todo): nada
+    // de «crea una partida rápida» que pulsar
+    expect(screen.queryByTestId('banner')).toBeNull();
+
+    await act(async () => soltar({ matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }], complete: true }));
+    await asienta();
+    expect(banner()).toHaveAttribute('data-cargando', 'false');
+    expect(banner()).toHaveAttribute('data-partido', 'g-1');
+  });
+
+  it('con red, la lista de partidas se guarda entera para llegar a ellas sin cobertura (/code-review)', async () => {
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }], complete: true });
 
     render(<Dashboard />);
     await asienta();
 
-    expect(banner()).toHaveAttribute('data-partido', 'm-1');
+    expect(lasUltimasPartidas()).toEqual([expect.objectContaining({ id: 'g-1' })]);
+  });
+
+  it('media lista de partidas no pisa la guardada', async () => {
+    recuerdaLasPartidas([{ id: 'g-vieja', esPartidaDeFranja: true, roundDate: '2099-01-01' }]);
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [], complete: false });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(lasUltimasPartidas()).toEqual([expect.objectContaining({ id: 'g-vieja' })]);
+  });
+
+  it('sin red: la partida guardada llega al banner, y se sabe que es de memoria (/code-review)', async () => {
+    recuerdaLasPartidas([{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }]);
+    mockLee.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', 'g-1');
+    expect(banner()).toHaveAttribute('data-desde-memoria', 'true');
+  });
+
+  it('sin red, una partida guardada de un día pasado no se ofrece', async () => {
+    recuerdaLasPartidas([{ id: 'g-0', esPartidaDeFranja: true, roundDate: '2000-01-01', sessionType: 'MORNING' }]);
+    mockLee.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', '');
   });
 
   it('si las partidas no se pueden leer, el banner sigue con el partido', async () => {

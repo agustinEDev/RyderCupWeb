@@ -14,6 +14,11 @@ describe('elMasCercano (FE #824, PR 7)', () => {
     expect(elMasCercano(p('2030-10-12', 'MORNING', { id: 'a' }), p('2030-10-12', 'MORNING', { id: 'b' })).id).toBe('a');
   });
 
+  it('sin franja conocida cuenta como la primera, como en la lista de la Ryder', () => {
+    expect(elMasCercano(p('2030-10-12', 'MORNING', { id: 'a' }), p('2030-10-12', undefined, { id: 'b' })).id).toBe('a');
+    expect(elMasCercano(p('2030-10-12', 'AFTERNOON', { id: 'a' }), p('2030-10-12', undefined, { id: 'b' })).id).toBe('b');
+  });
+
   it('si falta uno, el otro; si faltan los dos, nada', () => {
     expect(elMasCercano(null, p('2030-10-12', 'MORNING', { id: 'b' })).id).toBe('b');
     expect(elMasCercano(p('2030-10-12', 'MORNING', { id: 'a' }), undefined).id).toBe('a');

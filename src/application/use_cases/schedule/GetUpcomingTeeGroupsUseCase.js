@@ -1,3 +1,5 @@
+import { fechaLocal } from '../../../utils/fechaLocal';
+
 const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
 const COMPETICIONES_CON_PARTIDAS = ['CLOSED', 'IN_PROGRESS'];
 
@@ -35,8 +37,7 @@ class GetUpcomingTeeGroupsUseCase {
     );
     // De hoy en adelante: una franja que nadie cerró sigue «en juego» días
     // después, y en el banner taparía lo de hoy (revisor)
-    const pad = (n) => String(n).padStart(2, '0');
-    const hoy = `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`;
+    const hoy = fechaLocal(ahora);
     const leidas = await Promise.allSettled(
       deStrokePlay.map(async (c) => (await this.#partidasDe(c, userId)).filter((p) => p.roundDate >= hoy))
     );

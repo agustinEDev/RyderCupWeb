@@ -187,6 +187,13 @@ const GroupScoringPage = () => {
     return err?.i18nKey ? t(err.i18nKey) : t(CLAVE_POR_ACCION[origenDelError]);
   };
   const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
+  // El selector pinta un hoyo como hecho si todos lo tienen validado: quien se
+  // retiró o no se presentó ya no anota, y con él dentro ningún hoyo volvía a
+  // ponerse en verde (/code-review)
+  const siguen = new Set(
+    strokePlay.cards.filter((c) => !['RETIRADO', 'NO_PRESENTADO'].includes(c.cardStatus)).map((c) => c.userId)
+  );
+  const golpesDelSelector = scoresVisibles.map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => siguen.has(p.userId)) }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -264,7 +271,7 @@ const GroupScoringPage = () => {
             <HoleSelector
               currentHole={currentHole}
               onSelect={setCurrentHole}
-              scores={scoresVisibles}
+              scores={golpesDelSelector}
               totalHoles={totalHoles}
               noGuardados={hoyosNoGuardados}
             />

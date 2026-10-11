@@ -49,7 +49,7 @@ vi.mock('../../composition', () => ({
   retireFromTeeGroupUseCase: { execute: (...a) => mockRetirarse(...a) },
 }));
 
-const llamadas = vi.hoisted(() => ({ useScoring: null, casilla: null, clasificacion: null, tarjetas: null }));
+const llamadas = vi.hoisted(() => ({ useScoring: null, casilla: null, clasificacion: null, tarjetas: null, selector: null }));
 let mockHook;
 vi.mock('../../hooks/useScoring', () => ({
   useScoring: (...args) => {
@@ -64,7 +64,12 @@ vi.mock('../../components/scoring/HoleInput', () => ({
     return <div data-testid="hole-input" />;
   },
 }));
-vi.mock('../../components/scoring/HoleSelector', () => ({ default: () => <div data-testid="hole-selector" /> }));
+vi.mock('../../components/scoring/HoleSelector', () => ({
+  default: (props) => {
+    llamadas.selector = props;
+    return <div data-testid="hole-selector" />;
+  },
+}));
 vi.mock('../../components/scoring/ClasificacionDeLaFranja', () => ({
   default: (props) => {
     llamadas.clasificacion = props;
@@ -227,6 +232,20 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
 
     expect(llamadas.casilla.isMarkerScoreLocked).toBe(true);
     expect(llamadas.casilla.isOwnScoreLocked).toBe(false);
+  });
+
+  it('el selector de hoyos no cuenta a quien se retiró: si no, ningún hoyo volvía a ponerse en verde (/code-review)', () => {
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana'), jugador('cris', null, { card_status: 'RETIRADO' })]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.selector.scores[0].playerScores.map((p) => p.userId)).toEqual(['ana', 'bea']);
+  });
+
+  it('la hora de la cabecera, en HH:MM aunque llegue con segundos', () => {
+    mockHook = hook({ scoringView: vista({ tee_time: '08:10:00' }) });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('"hora":"08:10"');
   });
 
   it('lo pintado sale de la memoria del móvil: se dice (FE #614, revisor)', () => {
