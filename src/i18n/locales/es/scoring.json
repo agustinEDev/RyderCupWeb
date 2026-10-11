@@ -60,7 +60,16 @@
     "tapToScore": "Anotar",
     "pairBall": "Vuestra bola",
     "rivalBall": "Bola rival",
-    "rivalCount": "Según el rival"
+    "rivalCount": "Según el rival",
+    "youMark": "Anotas a {{nombre}}",
+    "otherPut": "{{nombre}} puso {{golpes}}",
+    "yourMarker": "Tu marcador",
+    "theMarkedPlayer": "Tu marcado",
+    "strokesReceived_one": "{{count}} golpe recibido",
+    "strokesReceived_other": "{{count}} golpes recibidos",
+    "strokesGiven_one": "Da {{count}} golpe",
+    "strokesGiven_other": "Da {{count}} golpes",
+    "rivalPair": "La pareja rival"
   },
   "scorecard": {
     "title": "Tarjeta",
@@ -125,7 +134,9 @@
     "waitingForPlayers_other": "Esperando a que {{count}} jugadores entreguen su tarjeta: {{names}}",
     "waitingForPair": "Esperando a que {{names}} entreguen la tarjeta de su pareja",
     "allValidated": "{{count}}/{{total}} hoyos validados",
-    "notReady": "No todos los hoyos están validados"
+    "notReady": "No todos los hoyos están validados",
+    "groupOver": "Partida terminada",
+    "groupCompleted": "Partida completada"
   },
   "summary": {
     "title": "Resumen del Partido",
@@ -249,7 +260,8 @@
       "CLASIFICADO": "Clasificado",
       "SIN_EMPEZAR": "Sin empezar",
       "NR": "NR (no termina)",
-      "NP": "NP (no presentado)"
+      "NP": "NP (no presentado)",
+      "RETIRADO": "Retirado"
     },
     "cardStatus": {
       "JUGANDO": "Jugando",
@@ -309,9 +321,21 @@
     "statusShort": {
       "SIN_EMPEZAR": "–",
       "NR": "NR",
-      "NP": "NP"
+      "NP": "NP",
+      "RETIRADO": "R"
     },
     "standingsTable": "Clasificación",
-    "none": "–"
+    "none": "–",
+    "noMarkerInPlay": "Nadie en juego le marca: sus hoyos los validas tú.",
+    "validateScored": "Validar lo anotado por {{jugador}}",
+    "validateScoredShort": "Validar lo anotado",
+    "validateScoredConfirm_one": "Se valida {{count}} hoyo que {{jugador}} anotó y nadie le marcó. Los que no coinciden se corrigen uno a uno.",
+    "validateScoredConfirm_other": "Se validan {{count}} hoyos que {{jugador}} anotó y nadie le marcó. Los que no coinciden se corrigen uno a uno.",
+    "scoredValidated_one": "{{count}} hoyo validado",
+    "scoredValidated_other": "{{count}} hoyos validados",
+    "broughtInToast": "{{viene}} pasa a esta partida para acompañar a {{jugador}}",
+    "cannotClear": "Un golpe anotado no se borra: elige otro número.",
+    "notOpenYet": "La anotación de esta partida aún no ha abierto",
+    "organiserValidates": "Nadie en juego te marca: tus hoyos los valida el organizador. Sigue anotando tus golpes."
   }
 }

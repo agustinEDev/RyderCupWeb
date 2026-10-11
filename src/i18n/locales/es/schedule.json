@@ -225,7 +225,8 @@
       "teeTimeFormat": "Escribe las dos horas de salida.",
       "lastBeforeFirst": "La última salida no puede ser antes que la primera.",
       "intervalRange": "Entre salidas, de 5 a 20 minutos.",
-      "groupSize": "Las partidas son de 3 o 4 jugadores."
+      "groupSize": "Las partidas son de 3 o 4 jugadores.",
+      "firstTeePassed": "Esa primera salida ya ha pasado: elige una hora futura."
     },
     "noCourses": "Añade un campo a la competición para poder crear franjas.",
     "allFull": "Todas las jornadas tienen ya sus tres franjas.",
@@ -248,9 +249,9 @@
     "take": "Coger plaza",
     "switchHere": "Cambiarme aquí",
     "switchFor": "Cambiar por esta",
-    "release": "Soltar",
-    "releaseConfirm": "¿Soltar tu plaza? Puede cogerla otro jugador al momento.",
-    "releaseYes": "Sí, soltarla",
+    "release": "Dejar la plaza",
+    "releaseConfirm": "¿Dejar tu plaza? Puede cogerla otro jugador al momento.",
+    "releaseYes": "Sí, dejarla",
     "wait": "Apuntarme a la espera",
     "leaveWaiting": "Salir de la espera",
     "whichToLeave": "¿Qué franja dejas?",
@@ -275,7 +276,9 @@
     "playerRemoved": "Jugador quitado de la franja.",
     "placed": "Jugador colocado en la franja.",
     "removePlayerConfirm": "¿Quitar a {{jugador}}? Su plaza pasa al primero de la espera.",
-    "removePlayerYes": "Sí, quitarlo"
+    "removePlayerYes": "Sí, quitarlo",
+    "waitingPosition_female_one": "Eres la {{count}}.ª en espera",
+    "waitingPosition_female_other": "Eres la {{count}}.ª en espera"
   },
   "partidas": {
     "show": "Partidas",
@@ -365,6 +368,8 @@
     "closeWindowConfirm": "Se cierran las partidas sin acabar: las tarjetas completas quedan entregadas, las que van a medias como retirados y las que no tienen ningún hoyo como no presentados.",
     "closeWindowYes": "Sí, cerrarla",
     "windowClosed": "Franja cerrada.",
-    "movePlayer": "Mover a {{jugador}}"
+    "movePlayer": "Mover a {{jugador}}",
+    "broughtIn": "Te han pasado a la partida {{numero}} · sale a las {{hora}}",
+    "yourCategory": "Tu categoría: {{categoria}}.ª"
   }
 }

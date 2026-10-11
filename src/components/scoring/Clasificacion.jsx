@@ -91,10 +91,14 @@ const Clasificacion = ({
   const puesto = (fila) => (fila.position == null ? SIN : fila.tied ? `T${fila.position}` : `${fila.position}`);
   // THRU, como en los circuitos: los hoyos jugados, F acabado, o el código
   // (NR, NP) con su nombre entero al pasar por encima (pasada, FE #824)
-  const thru = (fila) =>
-    fila.status !== 'CLASIFICADO'
-      ? { texto: t(`partida.statusShort.${fila.status}`), titulo: t(`partida.status.${fila.status}`) }
-      : { texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru), titulo: undefined };
+  // Un retirado en Stableford conserva su puesto con lo jugado, pero sus hoyos
+  // decían que seguía en el campo: «R» (QA del 11 oct 2026)
+  const codigo = (estado) => ({ texto: t(`partida.statusShort.${estado}`), titulo: t(`partida.status.${estado}`) });
+  const thru = (fila) => {
+    if (fila.status !== 'CLASIFICADO') return codigo(fila.status);
+    if (fila.retired) return codigo('RETIRADO');
+    return { texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru), titulo: undefined };
+  };
 
   // Una línea por jugador, en columnas: POS · JUGADOR · PTS/PAR · THRU, como
   // los leaderboards de los circuitos (decidido con Agustín tras la pasada)
@@ -103,7 +107,8 @@ const Clasificacion = ({
     const { texto, titulo } = thru(fila);
     return (
       <tr key={testId} data-testid={testId} data-yo={String(yo)} className={yo ? 'bg-green-50 font-semibold' : ''}>
-        <td className="w-10 py-2 pl-3 text-gray-500">{puesto(fila)}</td>
+        {/* «T22» no cabía en w-10 y se pegaba al nombre (QA del 11 oct 2026) */}
+        <td className="w-12 py-2 pr-2 pl-3 text-gray-500 tabular-nums">{puesto(fila)}</td>
         {/* Con el nombre entero al pasar por encima: a 360 px se corta (revisor) */}
         <td title={fila.name} className="max-w-0 truncate py-2 pr-2 text-gray-900">{fila.name}</td>
         <td className="w-14 py-2 text-right font-bold text-gray-900 tabular-nums">{valor(fila)}</td>
@@ -120,7 +125,7 @@ const Clasificacion = ({
       {conCabecera && (
         <thead className="border-b border-gray-200 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
           <tr>
-            <th scope="col" className="w-10 py-2 pl-3 font-semibold">{t('partida.colPos')}</th>
+            <th scope="col" className="w-12 py-2 pr-2 pl-3 font-semibold">{t('partida.colPos')}</th>
             <th scope="col" className="py-2 pr-2 font-semibold">{t('partida.colPlayer')}</th>
             <th scope="col" className="w-14 py-2 text-right font-semibold">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
             <th scope="col" className="w-14 py-2 pr-3 text-right font-semibold">{t('partida.colThru')}</th>

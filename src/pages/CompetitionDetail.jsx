@@ -23,6 +23,8 @@ import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeti
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
 import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
 import { categoriasQueSalen, salenDeLosInscritos } from '../domain/services/CategoriasQueSalen';
+import { sinFranja } from '../domain/services/PlazasEnFranjas';
+import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
@@ -34,6 +36,7 @@ import {
   nameCaptainsUseCase,
   startCompetitionUseCase,
   completeCompetitionUseCase,
+  getTeeGroupsUseCase,
   cancelCompetitionUseCase,
   deleteCompetitionUseCase,
   reopenEnrollmentsUseCase,
@@ -270,6 +273,26 @@ const CompetitionDetail = () => {
       }
     }
 
+    // Con franjas y alguien sin plaza, el servidor no deja cerrar: se dice
+    // antes, con sus nombres, y se lleva a colocarlos (QA del 11 oct 2026).
+    // Sin ninguna franja con hoja, lo decide el servidor
+    if (action === 'close-enrollments' && esStrokePlay) {
+      const conHoja = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet);
+      const faltan = conHoja.length > 0 ? sinFranja(conHoja, approvedEnrollments) : [];
+      if (faltan.length > 0) {
+        const datos = {
+          count: faltan.length,
+          jugadores: faltan.map((e) => e.userName || t('detail.unknownUser')).join(', '),
+        };
+        const ir = await preguntar('closeWithoutTeeWindow', { datos });
+        // Se releen siempre: lo pintado puede ser viejo (alguien cogió plaza
+        // en su móvil) y el siguiente intento lo miraría con lo de antes (revisor)
+        setVersionFranjas((v) => v + 1);
+        if (ir) setIrASinFranja((v) => v + 1);
+        return;
+      }
+    }
+
     if (!(await preguntar(action, { destructiva: action === 'cancel' }))) {
       return;
     }
@@ -497,6 +520,30 @@ const CompetitionDetail = () => {
       })
       .catch((e) => console.error('Error reloading handicap updates:', e));
   }, [id, lecturasDeLaFicha, lecturasDeInscripciones]);
+
+  // Con todas las franjas jugadas y cerradas, «Terminar competición» a la
+  // vista del organizador: en el menú no se encontraba (QA del 11 oct 2026).
+  // Una franja no cambia de estado al cerrarse: se miran sus partidas
+  // Con las franjas a las que se refiere: un «sí» de otras no vale (/code-review)
+  const [cierre, setCierre] = useState({ clave: null, cerradas: false });
+  const leeSiTerminar =
+    competition?.hasTeams === false &&
+    competition?.status === 'IN_PROGRESS' &&
+    (hasCreatorRole || isAdmin || competition?.creatorId === user?.id);
+  // Solo las que tienen a alguien: una franja vacía no se juega (revisor). Se
+  // mira con cada lectura de la agenda: también acaban partidas al entregar
+  const franjasJugadas = (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet?.placesTaken > 0).map((r) => r.id);
+  const claveDeFranjas = franjasJugadas.join('|');
+  useEffect(() => {
+    if (!leeSiTerminar || !claveDeFranjas) return undefined;
+    let vigente = true;
+    Promise.all(claveDeFranjas.split('|').map((roundId) => getTeeGroupsUseCase.execute(roundId)))
+      .then((vistas) => vigente && setCierre({ clave: claveDeFranjas, cerradas: todasLasFranjasCerradas(vistas) }))
+      .catch(() => vigente && setCierre({ clave: claveDeFranjas, cerradas: false }));
+    return () => {
+      vigente = false;
+    };
+  }, [leeSiTerminar, claveDeFranjas, versionClasificaciones, agendaLeida]);
 
   // Lo último que se sabe de la actualización, para notar cuándo acaba
   const estadoCargado = competition?.handicapUpdate?.status ?? null;
@@ -937,6 +984,34 @@ const CompetitionDetail = () => {
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
   const hayVariasCategorias = salenDeLosInscritos(approvedEnrollments.map((e) => e.category ?? null)) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
+  // Lo que se pidió frente a lo que salió al cerrar (QA del 11 oct 2026): «3
+  // categorías iguales, repartidas: 14,0» eran 2, y con una sola el jugador
+  // seguía viendo los límites pedidos
+  const categoriasAsignadas = approvedEnrollments.map((e) => e.category ?? null);
+  const salieron = salenDeLosInscritos(categoriasAsignadas);
+  const menosDeLasPedidas = esStrokePlay && competition.strokePlay ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas) : null;
+  const textoDeCategorias = (ajustes) => {
+    if (menosDeLasPedidas && menosDeLasPedidas.salen > 1) {
+      // Los de «iguales» son los repartidos; los escritos a mano no dicen cuáles quedaron
+      const conLimites = ajustes.categoryCount != null && ajustes.categoryLimits.length > 0;
+      return t(conLimites ? 'detail.settings.categoriesCameOutWithLimits' : 'detail.settings.categoriesCameOut', {
+        count: menosDeLasPedidas.pedidas,
+        salen: menosDeLasPedidas.salen,
+        limites: limitesEnTexto(ajustes),
+      });
+    }
+    if (salieron === 1) return t('detail.settings.noCategories');
+    if (ajustes.categoryCount != null) {
+      return t(
+        // Ya repartidas (desde el cierre), no «se reparten al cerrar» (revisor)
+        ajustes.categoryLimits.length > 0 ? 'detail.settings.equalCategoriesSplit' : 'detail.settings.equalCategories',
+        { count: ajustes.categoryCount, limites: limitesEnTexto(ajustes) }
+      );
+    }
+    return ajustes.categoryLimits.length > 0
+      ? t('detail.settings.categoryLimits', { limites: limitesEnTexto(ajustes) })
+      : t('detail.settings.noCategories');
+  };
 
   // Una programada es un borrador con días de antelación (RyderCupAM#332). En
   // cuanto abre deja de ser borrador, así que la fecha solo se enseña mientras
@@ -1422,22 +1497,7 @@ const CompetitionDetail = () => {
                     <div data-testid="ajustes-del-torneo" className="contents">
                       <div data-testid="ajuste-categorias">
                         <span className="text-gray-500 text-sm">{t('detail.settings.categories')}</span>
-                        <p className="text-gray-900 font-medium">
-                          {competition.strokePlay.categoryCount != null
-                            ? t(
-                                // Ya repartidas (desde el cierre), no «se reparten al cerrar» (revisor)
-                                competition.strokePlay.categoryLimits.length > 0
-                                  ? 'detail.settings.equalCategoriesSplit'
-                                  : 'detail.settings.equalCategories',
-                                {
-                                  count: competition.strokePlay.categoryCount,
-                                  limites: limitesEnTexto(competition.strokePlay),
-                                }
-                              )
-                            : competition.strokePlay.categoryLimits.length > 0
-                              ? t('detail.settings.categoryLimits', { limites: limitesEnTexto(competition.strokePlay) })
-                              : t('detail.settings.noCategories')}
-                        </p>
+                        <p className="text-gray-900 font-medium">{textoDeCategorias(competition.strokePlay)}</p>
                       </div>
                       <div data-testid="ajuste-jornadas">
                         <span className="text-gray-500 text-sm">{t('detail.settings.matchdaysLabel')}</span>
@@ -1521,6 +1581,22 @@ const CompetitionDetail = () => {
               </div>
             )}
 
+            {leeSiTerminar && claveDeFranjas && cierre.clave === claveDeFranjas && cierre.cerradas && (
+              <div className="px-4 pt-4">
+                <div data-testid="terminar-competicion" role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+                  <span className="w-full">{t('detail.allWindowsClosed')}</span>
+                  <button
+                    type="button"
+                    disabled={isProcessing}
+                    onClick={() => handleStatusChange('complete')}
+                    className="min-h-11 rounded-lg bg-primary px-4 font-semibold text-white disabled:opacity-50"
+                  >
+                    {t('detail.actions.complete')}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Las clasificaciones de un Stableford o un Medal, desde que se
                 juega (FE #824, PR 8): para cualquiera con sesión */}
             {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
@@ -1553,6 +1629,9 @@ const CompetitionDetail = () => {
                   // abiertas; el organizador coloca y mueve hasta iniciar, y
                   // quita solo con ellas abiertas
                   userId={user.id}
+                  genero={user.gender}
+                  // Con una sola categoría no se nombra (QA del 11 oct 2026)
+                  miCategoria={salieron > 1 ? (approvedEnrollments.find((e) => e.userId === user.id)?.category ?? null) : null}
                   estoyInscrito={estoyInscrito}
                   puedeElegir={competition.status === 'ACTIVE'}
                   maxMatchdaysPerPlayer={competition.strokePlay?.maxMatchdaysPerPlayer}

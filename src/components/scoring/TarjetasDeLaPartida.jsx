@@ -5,15 +5,20 @@ import {
   correctTeeGroupHoleUseCase,
   reopenTeeGroupCardUseCase,
   markTeeGroupNoShowUseCase,
+  validateTeeGroupScoredHolesUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
+import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
 const GOLPES = Array.from({ length: 15 }, (_, i) => i + 1);
-const NUEVE = [0, 9];
+// Quien solo mira, en dos filas de nueve; el organizador toca cada hoyo, y a
+// 360 px nueve botones no llegan a 44 px: en filas de seis (QA del 11 oct 2026)
+const TRAMOS_DE_NUEVE = { desde: [0, 9], largo: 9, columnas: 'grid-cols-9' };
+const TRAMOS_DE_SEIS = { desde: [0, 6, 12], largo: 6, columnas: 'grid-cols-6' };
 // Las tarjetas cerradas se reabren; la que se juega, no
 const CERRADAS = ['ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'];
 
@@ -56,12 +61,13 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     return golpe.ownSubmitted ? uno(golpe.ownScore, true) : uno(golpe.markerScore, golpe.markerSubmitted);
   };
 
-  const hacer = async (accion, aviso, alAcabar) => {
+  const hacer = async (accion, aviso, alAcabar, despues) => {
     setOcupado(true);
     try {
-      await accion();
+      const respuesta = await accion();
       alAcabar?.();
-      customToast.success(t(aviso));
+      customToast.success(typeof aviso === 'string' ? t(aviso) : t(aviso.clave, aviso.params));
+      despues?.(respuesta);
       onCambio?.();
     } catch (error) {
       customToast.error(mensajeDeErrorDePartida(t, error));
@@ -96,6 +102,30 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     );
   };
   const hayCambios = Boolean(corrigiendo) && Object.keys(ladosCambiados(corrigiendo)).length > 0;
+  // «Sin golpe» en un lado que tenía uno no lo borra (el servidor no borra):
+  // sin decirlo, «Guardar» se quedaba apagado sin más (QA del 11 oct 2026)
+  const quiereBorrar =
+    Boolean(corrigiendo) &&
+    ((corrigiendo.propio === SIN_GOLPE && corrigiendo.propioAntes !== SIN_GOLPE) ||
+      (corrigiendo.marcador === SIN_GOLPE && corrigiendo.marcadorAntes !== SIN_GOLPE));
+
+  // Sin nadie en juego que le marque (se fue, o ya entregó): valida el
+  // organizador, de una vez, lo que anotó (BE #539)
+  const porValidar = (jugador) =>
+    scoringView.scores.filter((s) => {
+      const golpe = s.playerScores.find((p) => p.userId === jugador);
+      return golpe?.ownSubmitted && !golpe.markerSubmitted;
+    }).length;
+
+  // Si al marcar un no presentado viene alguien de otra partida, se dice
+  const avisarSiVieneAlguien = (respuesta) => {
+    const antes = new Set(strokePlay.cards.map((c) => c.userId));
+    const tarjetas = respuesta?.strokePlay?.cards ?? [];
+    const viene = tarjetas.find((c) => c.broughtIn && !antes.has(c.userId));
+    // A quien viene a acompañar: al que marca (/code-review)
+    const acompana = tarjetas.find((c) => c.userId === viene?.marksUserId);
+    if (viene && acompana) customToast.info(t('partida.broughtInToast', { viene: viene.name, jugador: acompana.name }));
+  };
 
   const selectorDeGolpe = (etiqueta, valor, onCambiar) => (
     <label className="flex min-w-0 flex-1 flex-col text-xs text-gray-600">
@@ -126,6 +156,10 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
         const { userId: jugador, name, cardStatus } = tarjeta;
         const seJuega = cardStatus === 'JUGANDO';
         const confirmaEsta = confirmando?.jugador === jugador ? confirmando : null;
+        const tramos = organiza && seJuega ? TRAMOS_DE_SEIS : TRAMOS_DE_NUEVE;
+        const sinMarcador = organiza && sinMarcadorEnJuego(strokePlay.cards, jugador);
+        // Sin ningún hoyo solo suyo no hay nada que validar de una vez (revisor)
+        const cuantosPorValidar = sinMarcador ? porValidar(jugador) : 0;
         return (
           <section
             key={jugador}
@@ -141,9 +175,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
               <span className="text-xs text-gray-500">{t('partida.thru', { count: tarjeta.totals.thru })}</span>
             </div>
 
-            {NUEVE.map((desde) => (
-              <div key={desde} className="mt-2 grid grid-cols-9 gap-0.5 text-center text-xs">
-                {Array.from({ length: 9 }, (_, i) => desde + i + 1).map((hoyo) => {
+            {/* La de un no presentado no enseña golpes: los que metiera su
+                marcador no son suyos (QA del 11 oct 2026) */}
+            {cardStatus !== 'NO_PRESENTADO' && tramos.desde.map((desde) => (
+              <div key={desde} className={`mt-2 grid ${tramos.columnas} gap-0.5 text-center text-xs`}>
+                {Array.from({ length: tramos.largo }, (_, i) => desde + i + 1).map((hoyo) => {
                   const golpe = golpeDe(jugador, hoyo);
                   const estado = golpe?.validationStatus ?? 'pending';
                   const color =
@@ -191,6 +227,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   {selectorDeGolpe('partida.ownSide', corrigiendo.propio, (v) => setCorrigiendo((c) => ({ ...c, propio: v })))}
                   {selectorDeGolpe('partida.markerSide', corrigiendo.marcador, (v) => setCorrigiendo((c) => ({ ...c, marcador: v })))}
                 </div>
+                {quiereBorrar && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -207,8 +244,20 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
               </div>
             )}
 
+            {sinMarcador && <p className="mt-2 text-xs text-amber-800">{t('partida.noMarkerInPlay')}</p>}
             {organiza && (
               <div className="mt-2 flex flex-wrap gap-2">
+                {cuantosPorValidar > 0 && (
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    aria-label={t('partida.validateScored', { jugador: name })}
+                    onClick={() => setConfirmando({ jugador, accion: 'validar', cuantos: cuantosPorValidar })}
+                    className="min-h-11 rounded-lg border border-primary px-3 text-sm font-semibold text-primary"
+                  >
+                    {t('partida.validateScoredShort')}
+                  </button>
+                )}
                 {CERRADAS.includes(cardStatus) && (
                   <button
                     type="button"
@@ -236,17 +285,29 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
 
             {confirmaEsta && (
               <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
-                <span className="min-w-0 flex-1">
-                  {t(confirmaEsta.accion === 'reabrir' ? 'partida.reopenConfirm' : 'partida.noShowConfirm', { jugador: name })}
+                {/* El texto en su línea, los botones debajo (gemelo de «Cerrar la franja») */}
+                <span className="w-full">
+                  {confirmaEsta.accion === 'validar'
+                    ? t('partida.validateScoredConfirm', { jugador: name, count: confirmaEsta.cuantos })
+                    : t(confirmaEsta.accion === 'reabrir' ? 'partida.reopenConfirm' : 'partida.noShowConfirm', { jugador: name })}
                 </span>
                 <button
                   type="button"
                   disabled={ocupado}
-                  onClick={() =>
-                    confirmaEsta.accion === 'reabrir'
-                      ? hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', () => setConfirmando(null))
-                      : hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', () => setConfirmando(null))
-                  }
+                  onClick={() => {
+                    const cerrar = () => setConfirmando(null);
+                    if (confirmaEsta.accion === 'reabrir') {
+                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar);
+                    } else if (confirmaEsta.accion === 'validar') {
+                      hacer(
+                        () => validateTeeGroupScoredHolesUseCase.execute(scoringView.matchId, jugador),
+                        { clave: 'partida.scoredValidated', params: { count: confirmaEsta.cuantos } },
+                        cerrar
+                      );
+                    } else {
+                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien);
+                    }
+                  }}
                   className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"
                 >
                   {t('partida.yes')}

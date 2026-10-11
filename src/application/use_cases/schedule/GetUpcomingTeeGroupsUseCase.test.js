@@ -56,7 +56,28 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
       teeTime: '12:10',
       matchNumber: 2,
       partnerNames: ['Ana', 'Bea'],
+      broughtIn: false,
     });
+  });
+
+  it('12 (QA del 11 oct 2026): si le pasaron a esa partida, lo lleva', async () => {
+    const traida = partida('g2', 2, '12:10');
+    traida.players = traida.players.map((p) => (p.userId === 'yo' ? { ...p, broughtIn: true } : p));
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', traida)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches[0].broughtIn).toBe(true);
+  });
+
+  it('12: que viniera otro de la partida no es que viniera yo', async () => {
+    const traida = partida('g2', 2, '12:10');
+    traida.players = traida.players.map((p) => (p.userId === 'ana' ? { ...p, broughtIn: true } : p));
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', traida)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches[0].broughtIn).toBe(false);
   });
 
   it('las de días pasados no salen aunque nadie cerrara la franja (revisor)', async () => {

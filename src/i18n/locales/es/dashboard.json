@@ -96,7 +96,8 @@
     "sinRespuestaDesc": "Vuelve a intentarlo en un rato.",
     "desdeMemoria": "No se ha podido actualizar: puede no estar al día.",
     "teeGroup": "Partida {{numero}}.ª",
-    "labelTeeGroup": "Tu próxima partida"
+    "labelTeeGroup": "Tu próxima partida",
+    "broughtIn": "Te han pasado a la partida {{numero}}"
   },
   "recentMatches": {
     "title": "Últimas partidas",

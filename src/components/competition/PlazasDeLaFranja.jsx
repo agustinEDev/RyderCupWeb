@@ -31,7 +31,7 @@ const secundario = `${boton} border-gray-300 bg-white text-gray-700 hover:bg-gra
  * @param {(accion: Function, aviso: string) => void} props.hacer
  * @param {Object} props.casos - Los casos de uso de plazas y esperas
  */
-export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta, franjasPorId, ocupado, hacer, casos }) => {
+export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta, franjasPorId, ocupado, hacer, casos, genero }) => {
   const { t } = useTranslation('schedule');
   const [confirmandoSoltar, setConfirmandoSoltar] = useState(false);
   const [eligiendoCual, setEligiendoCual] = useState(false);
@@ -50,7 +50,8 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
       <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">{t('franjas.mine')}</span>
     ) : accion.tipo === DEJAR_DE_ESPERAR ? (
       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-        {t('franjas.waitingPosition', { count: accion.posicion })}
+        {/* «la 1.ª» a una jugadora (QA del 11 oct 2026) */}
+        {t('franjas.waitingPosition', genero === 'FEMALE' ? { count: accion.posicion, context: 'female' } : { count: accion.posicion })}
       </span>
     ) : null;
   if (!puedeElegir) return estado;

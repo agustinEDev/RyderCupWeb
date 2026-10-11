@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { situacionEnLasFranjas, destinosParaMover, COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from './PlazasEnFranjas';
+import { situacionEnLasFranjas, destinosParaMover, sinFranja, COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from './PlazasEnFranjas';
 
 /**
  * Qué puede hacer un jugador en cada franja (FE #824, PR 4). Las reglas del
@@ -126,5 +126,22 @@ describe('adónde puede mover el organizador a un jugador (/code-review: la regl
     ];
 
     expect(destinosParaMover(franjas, YO, 'm').map((f) => f.id)).toEqual(['t', 'f']);
+  });
+});
+
+describe('sinFranja: los aprobados sin plaza en ninguna (QA del 11 oct 2026: la regla, una vez)', () => {
+  const inscritos = [{ userId: 'ana' }, { userId: 'bea' }, { userId: 'cris' }];
+  const conPlaza = (ids) => ({ teeSheet: { playerIds: ids } });
+
+  it('los que no tienen plaza en ninguna franja', () => {
+    expect(sinFranja([conPlaza(['ana']), conPlaza(['cris'])], inscritos)).toEqual([{ userId: 'bea' }]);
+  });
+
+  it('en lista de espera no es tener plaza', () => {
+    expect(sinFranja([{ teeSheet: { playerIds: [], waitingIds: ['ana'] } }], inscritos).map((i) => i.userId)).toEqual(['ana', 'bea', 'cris']);
+  });
+
+  it('una sesión sin hoja no cuenta', () => {
+    expect(sinFranja([{}, conPlaza(['ana', 'bea', 'cris'])], inscritos)).toEqual([]);
   });
 });

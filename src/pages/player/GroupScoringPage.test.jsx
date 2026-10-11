@@ -255,6 +255,60 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(screen.getByTestId('pintado-de-memoria')).toHaveTextContent('offline.noSeActualiza');
   });
 
+  // QA del 11 oct 2026
+  describe('lo del QA', () => {
+    it('7: antes de que abra habla de la partida, no del partido', () => {
+      mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+      render(<GroupScoringPage />);
+
+      expect(screen.getByText('partida.notOpenYet')).toBeInTheDocument();
+      expect(screen.queryByText('notOpenYet.title')).toBeNull();
+    });
+
+    it('7: la barra de entregar dice «partida terminada»', () => {
+      mockHook = hook({ canSubmitScorecard: true, partidoAcabado: true });
+      render(<GroupScoringPage />);
+
+      expect(screen.getByTestId('barra-de-entrega')).toHaveTextContent('submit.groupOver');
+      expect(screen.getByTestId('barra-de-entrega')).not.toHaveTextContent('submit.matchOver');
+    });
+
+    it('10: sin nadie en juego que me marque, sé que valida el organizador', () => {
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { marked_by_user_id: null }), jugador('bea', 'ana', { marks_user_id: null })]) });
+      render(<GroupScoringPage />);
+
+      expect(screen.getByTestId('sin-marcador')).toHaveTextContent('partida.organiserValidates');
+    });
+
+    it('10: también si quien me marcaba ya entregó', () => {
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea'), jugador('bea', 'ana', { card_status: 'ENTREGADA' })]) });
+      render(<GroupScoringPage />);
+
+      expect(screen.getByTestId('sin-marcador')).toBeInTheDocument();
+    });
+
+    it('10: con marcador en juego, nada', () => {
+      render(<GroupScoringPage />);
+
+      expect(screen.queryByTestId('sin-marcador')).toBeNull();
+    });
+
+    it('15-16: la casilla sabe a quién anoto y quién me anota', () => {
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { marked_by_user_id: 'cris' }), jugador('bea', 'cris'), jugador('cris', 'ana')]) });
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.markedName).toBe('BEA');
+      expect(llamadas.casilla.markerName).toBe('CRIS');
+    });
+
+    it('26: sin conexión, un solo aviso (no también el de «no se actualiza»)', () => {
+      mockHook = hook({ isOffline: true, pintadoDeMemoria: true });
+      render(<GroupScoringPage />);
+
+      expect(screen.queryByTestId('pintado-de-memoria')).toBeNull();
+    });
+  });
+
   it('antes de que abra no se ofrece retirarse (revisor)', () => {
     mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
     render(<GroupScoringPage />);

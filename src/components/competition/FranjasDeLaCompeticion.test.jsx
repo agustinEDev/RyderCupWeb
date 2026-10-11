@@ -156,6 +156,27 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     );
   });
 
+  it('9 (QA del 11 oct 2026): el mismo día, una primera salida ya pasada no se guarda, y se dice por qué', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2030, 9, 12, 13, 0));
+    try {
+      pinta();
+      fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+
+      // La tarde del 12 empieza a las 12:00 y ya son las 13:00
+      expect(screen.getByRole('alert')).toHaveTextContent('franjas.errors.firstTeePassed');
+      expect(screen.getByLabelText('franjas.firstTee')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByRole('button', { name: 'franjas.save' })).toBeDisabled();
+
+      fireEvent.change(screen.getByLabelText('franjas.firstTee'), { target: { value: '13:30' } });
+
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.getByRole('button', { name: 'franjas.save' })).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('4b: cambiar de franja repone las horas propuestas…', async () => {
     pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));

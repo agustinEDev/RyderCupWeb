@@ -129,6 +129,13 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
         <span className="block truncate text-base font-bold text-gray-900">
           {titulo.filter(Boolean).join(' · ')}
         </span>
+        {/* Le pasaron de otra partida: su hora puede ser otra (QA del 11 oct 2026) */}
+        {esPartida && match.broughtIn && (
+          <span className="block text-xs font-semibold text-amber-800">
+            {/* La hora ya va en la línea de abajo (revisor) */}
+            {t('nextMatch.broughtIn', { numero: match.matchNumber })}
+          </span>
+        )}
         {(when || session) && (
           <span className="block truncate text-xs text-amber-800">
             {[when, session, esPartida ? match.teeTime : match.golfCourseName].filter(Boolean).join(' · ')}

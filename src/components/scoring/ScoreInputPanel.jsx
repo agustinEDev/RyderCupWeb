@@ -56,7 +56,8 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
           <button
             onClick={onClose}
             aria-label={t('input.close')}
-            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+            // 44 px para el dedo: era de 14×18 (QA del 11 oct 2026)
+            className="-mr-2 flex min-h-11 min-w-11 items-center justify-center text-lg leading-none text-gray-400 hover:text-gray-600"
           >
             ✕
           </button>

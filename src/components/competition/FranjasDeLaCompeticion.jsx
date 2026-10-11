@@ -12,7 +12,7 @@ import {
   joinWaitingListUseCase,
   leaveWaitingListUseCase,
 } from '../../composition';
-import { situacionEnLasFranjas, destinosParaMover } from '../../domain/services/PlazasEnFranjas';
+import { situacionEnLasFranjas, destinosParaMover, sinFranja as sinFranjaDe } from '../../domain/services/PlazasEnFranjas';
 import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFranja';
 import PartidasEnLaFranja from './PartidasEnLaFranja';
 import MisPartidas from './MisPartidas';
@@ -20,7 +20,7 @@ import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import {
-  errorDeHoja,
+  errorDeLaFranja,
   numeroDeSalidas,
   cupoDeLaHoja,
   hojaPropuesta,
@@ -65,11 +65,12 @@ const CAMPOS_DEL_ERROR = {
   lastBeforeFirst: ['ultima'],
   intervalRange: ['intervalo'],
   groupSize: ['tamano'],
+  firstTeePassed: ['primera'],
 };
 
-const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
+const CamposDeLaHoja = ({ hoja, dia, primeraAntes, onCambio, resumenId }) => {
   const { t } = useTranslation('schedule');
-  const error = errorDeHoja(hoja);
+  const error = errorDeLaFranja({ dia, hoja, primeraAntes });
   const errorId = `${resumenId}-error`;
   // El campo que falla se marca y apunta a su error (revisor)
   const marca = (campo) =>
@@ -173,6 +174,8 @@ const CamposDeLaHoja = ({ hoja, onCambio, resumenId }) => {
  * @param {number} [props.versionCampos] - Cambia cuando cambian los campos
  * @param {(agenda: Object|null) => void} [props.onAgenda] - Lo leído, para la ficha
  * @param {string} [props.userId] - Quién mira
+ * @param {string} [props.genero] - El suyo: «la 1.ª en espera» a una jugadora
+ * @param {number|null} [props.miCategoria] - La suya, si salió más de una, para «Tu partida»
  * @param {boolean} [props.estoyInscrito] - Si quien mira es un inscrito aprobado
  * @param {boolean} [props.puedeElegir] - Si el jugador elige ya (inscripciones abiertas)
  * @param {number} [props.maxMatchdaysPerPlayer] - Jornadas por jugador
@@ -195,6 +198,8 @@ const FranjasDeLaCompeticion = ({
   versionCampos,
   onAgenda,
   userId,
+  genero,
+  miCategoria = null,
   estoyInscrito = false,
   puedeElegir = false,
   maxMatchdaysPerPlayer,
@@ -327,10 +332,7 @@ const FranjasDeLaCompeticion = ({
   const nombres = useMemo(() => new Map(inscritos.map((i) => [i.userId, i.userName])), [inscritos]);
   const nombreDe = (id) => nombres.get(id) || t('franjas.unknownPlayer');
   const etiqueta = (f) => ({ franja: t(`sessions.${f.sessionType}`), dia: fecha(f.roundDate) });
-  const sinFranja = useMemo(() => {
-    const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
-    return inscritos.filter((i) => !conPlaza.has(i.userId));
-  }, [franjas, inscritos]);
+  const sinFranja = useMemo(() => sinFranjaDe(franjas, inscritos), [franjas, inscritos]);
   // Llevar a «Sin franja» cuando lo pide la ficha, pero con lo releído: con lo
   // de antes el bloque puede no estar todavía (CodeRabbit en la #836)
   // Se cuenta en lecturas, no comparando agendas: dos lecturas iguales también
@@ -482,12 +484,12 @@ const FranjasDeLaCompeticion = ({
       </label>
     );
 
-  const botonesDeGuardar = (hoja, guardar, cancelar, sinCambios = false) => (
+  const botonesDeGuardar = (franja, guardar, cancelar, sinCambios = false) => (
     <div className="flex flex-wrap gap-2">
       <button
         type="button"
         onClick={guardar}
-        disabled={ocupado || sinCambios || errorDeHoja(hoja) !== null}
+        disabled={ocupado || sinCambios || errorDeLaFranja(franja) !== null}
         className="rounded-lg bg-primary px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
       >
         {t('franjas.save')}
@@ -544,7 +546,7 @@ const FranjasDeLaCompeticion = ({
 
       {/* Las partidas (PR 6): la mía de cada jornada, releída con cada lectura de
           la agenda. Tras la primera: antes se pedía dos veces al abrir la ficha */}
-      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} fecha={fecha} version={`${lecturas}|${cambiosEnPartidas}`} />}
+      {verPartidas && estoyInscrito && agenda && <MisPartidas competitionId={competitionId} userId={userId} fecha={fecha} version={`${lecturas}|${cambiosEnPartidas}`} categoria={miCategoria} />}
 
       {cupoCorto && (
         <p data-testid="franjas-cupo-corto" className="mb-3 text-sm text-amber-800">
@@ -632,6 +634,7 @@ const FranjasDeLaCompeticion = ({
                             ocupado={ocupado}
                             hacer={hacer}
                             casos={casos}
+                            genero={genero}
                           />
                         )}
                         {/* Los nombres, para los inscritos y el organizador */}
@@ -674,11 +677,13 @@ const FranjasDeLaCompeticion = ({
                         {variosCampos && selectorDeCampo(editando.campo, (campo) => setEditando((e) => ({ ...e, campo })))}
                         <CamposDeLaHoja
                           hoja={editando.hoja}
+                          dia={f.roundDate}
+                          primeraAntes={editando.hojaOriginal.primera}
                           onCambio={(h) => setEditando((e) => ({ ...e, hoja: h }))}
                           resumenId={`franjas-resumen-${f.id}`}
                         />
                         {botonesDeGuardar(
-                          editando.hoja,
+                          { dia: f.roundDate, hoja: editando.hoja, primeraAntes: editando.hojaOriginal.primera },
                           guardarCambio,
                           () => setEditando(null),
                           // Sin cambios no hay nada que mandar (/code-review)
@@ -768,10 +773,11 @@ const FranjasDeLaCompeticion = ({
               {selectorDeCampo(nueva.campo, (campo) => setNueva((n) => ({ ...n, campo })))}
               <CamposDeLaHoja
                 hoja={nueva.hoja}
+                dia={nueva.dia}
                 onCambio={cambiaLaHojaNueva}
                 resumenId="franjas-resumen-nueva"
               />
-              {botonesDeGuardar(nueva.hoja, guardarNueva, () => setNueva(null))}
+              {botonesDeGuardar({ dia: nueva.dia, hoja: nueva.hoja }, guardarNueva, () => setNueva(null))}
             </div>
           )}
         </div>

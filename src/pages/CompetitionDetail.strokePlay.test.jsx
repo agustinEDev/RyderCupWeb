@@ -457,6 +457,115 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
     expect(bloque).toHaveTextContent('Ana Alba');
   });
 
+  it('25 (QA del 11 oct 2026): con franjas y gente sin plaza, el diálogo lo dice antes y no cierra', async () => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    await conFranjas([{ id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_MATCHES', matches: [], teeSheet: hoja({ playerIds: ['org', 'ana'] }) }]);
+    mockGetCompetitionDetail.mockResolvedValue(stableford());
+    const traerALaVista = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = traerALaVista;
+    renderPage();
+
+    await screen.findByTestId('franja-m');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+
+    expect(await screen.findByText('detail.confirmDialogs.closeWithoutTeeWindow.body_2')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(traerALaVista).toHaveBeenCalled(), { timeout: 3000 });
+    expect(mockCloseEnrollments).not.toHaveBeenCalled();
+  });
+
+  it('25: con todos colocados, el diálogo de siempre', async () => {
+    mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+    await conFranjas([
+      { id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_MATCHES', matches: [], teeSheet: hoja({ playerIds: INSCRITOS.map((e) => e.userId) }) },
+    ]);
+    mockGetCompetitionDetail.mockResolvedValue(stableford());
+    renderPage();
+
+    await screen.findByTestId('franja-m');
+    abrirMenuDeAcciones();
+    fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
+    fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+    await waitFor(() => expect(mockCloseEnrollments).toHaveBeenCalledWith('comp-1'));
+  });
+
+  describe('28 (QA del 11 oct 2026): con todas las franjas cerradas, «Terminar competición» a la vista', () => {
+    // Las partidas leídas no se cuelan en los tests de después (revisor)
+    afterEach(async () => {
+      const { getTeeGroupsUseCase } = await import('../composition');
+      getTeeGroupsUseCase.execute.mockReset();
+      getTeeGroupsUseCase.execute.mockResolvedValue({ roundId: 'r1', editable: true, unassignedPlayers: [], groups: [] });
+    });
+
+    const enJuego = async (estados) => {
+      const { getTeeGroupsUseCase } = await import('../composition');
+      await conFranjas([{ id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja({ placesTaken: 2, playerIds: ['org', 'ana'] }) }]);
+      getTeeGroupsUseCase.execute.mockResolvedValue({
+        roundId: 'm', editable: false, unassignedPlayers: [], groups: estados.map((status, i) => ({ id: `g${i}`, number: i + 1, teeTime: '08:00', status, incomplete: false, players: [] })),
+      });
+      mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'IN_PROGRESS' }));
+    };
+
+    it('el organizador lo ve y termina, con confirmación', async () => {
+      mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+      await enJuego(['COMPLETED', 'COMPLETED']);
+      const { completeCompetitionUseCase } = await import('../composition');
+      completeCompetitionUseCase.execute.mockResolvedValue({ id: 'comp-1', status: 'COMPLETED' });
+      renderPage();
+
+      const aviso = await screen.findByTestId('terminar-competicion');
+      expect(aviso).toHaveTextContent('detail.allWindowsClosed');
+      fireEvent.click(within(aviso).getByRole('button', { name: 'detail.actions.complete' }));
+      fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
+
+      await waitFor(() => expect(completeCompetitionUseCase.execute).toHaveBeenCalledWith('comp-1'));
+    });
+
+    it('con alguna sin acabar, no', async () => {
+      mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+      await enJuego(['COMPLETED', 'IN_PROGRESS']);
+      const { getTeeGroupsUseCase } = await import('../composition');
+      renderPage();
+
+      await waitFor(() => expect(getTeeGroupsUseCase.execute).toHaveBeenCalledWith('m'));
+      // Con la lectura ya contestada: si no, el aviso no estaría pasara lo que pasara (revisor)
+      await act(async () => {
+        await getTeeGroupsUseCase.execute.mock.results.at(-1).value;
+      });
+      expect(screen.queryByTestId('terminar-competicion')).toBeNull();
+    });
+
+    it('una franja sin nadie apuntado no impide terminar (no se juega)', async () => {
+      mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
+      const { getTeeGroupsUseCase } = await import('../composition');
+      await conFranjas([
+        { id: 'm', roundDate: '2026-10-03', sessionType: 'MORNING', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja({ placesTaken: 2, playerIds: ['org', 'ana'] }) },
+        { id: 't', roundDate: '2026-10-03', sessionType: 'AFTERNOON', status: 'PENDING_TEAMS', matches: [], teeSheet: hoja({ placesTaken: 0 }) },
+      ]);
+      getTeeGroupsUseCase.execute.mockImplementation((roundId) =>
+        Promise.resolve({ roundId, editable: false, unassignedPlayers: [], groups: roundId === 'm' ? [{ id: 'g1', number: 1, teeTime: '08:00', status: 'COMPLETED', incomplete: false, players: [] }] : [] })
+      );
+      mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'IN_PROGRESS' }));
+      renderPage();
+
+      expect(await screen.findByTestId('terminar-competicion')).toBeInTheDocument();
+      expect(getTeeGroupsUseCase.execute).not.toHaveBeenCalledWith('t');
+    });
+
+    it('quien no organiza, no', async () => {
+      mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+      await enJuego(['COMPLETED']);
+      mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'IN_PROGRESS', creatorId: 'otra' }));
+      renderPage();
+
+      await screen.findByTestId('franja-m');
+      expect(screen.queryByTestId('terminar-competicion')).toBeNull();
+    });
+  });
+
   it('15: cerrar con jugadores sin franja los nombra y lleva a «Sin franja»', async () => {
     mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
     mockGetCompetitionDetail.mockResolvedValue(stableford());
@@ -1187,6 +1296,76 @@ describe('CompetitionDetail · los ajustes de un Stableford o un Medal (FE #824,
     renderPage();
 
     expect(await screen.findByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.equalCategoriesSplit_3');
+  });
+
+  // QA del 11 oct 2026 (caso 22): lo que se pidió y lo que salió
+  it('22: si salieron menos de las pedidas, lo dice: 2 de 3, con el límite que quedó', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS.map((e, i) => ({ ...e, fixedHandicap: 10, category: i < 2 ? 1 : 2 })));
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [14], categoryCount: 3, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      status: 'CLOSED',
+    });
+    renderPage();
+
+    const texto = await screen.findByTestId('ajuste-categorias');
+    await waitFor(() => expect(texto).toHaveTextContent('detail.settings.categoriesCameOutWithLimits_3'));
+    expect(texto).not.toHaveTextContent('equalCategoriesSplit');
+  });
+
+  it('22: con límites a mano, cuántas salieron, sin los límites escritos (ya no valen)', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS.map((e, i) => ({ ...e, fixedHandicap: 10, category: i < 2 ? 1 : 2 })));
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [12, 24], categoryCount: null, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      status: 'CLOSED',
+    });
+    renderPage();
+
+    const texto = await screen.findByTestId('ajuste-categorias');
+    await waitFor(() => expect(texto).toHaveTextContent('detail.settings.categoriesCameOut_3'));
+    expect(texto).not.toHaveTextContent('WithLimits');
+  });
+
+  it('21: con varias categorías, «Tu partida» dice la mía', async () => {
+    const { getMyTeeGroupsUseCase } = await import('../composition');
+    getMyTeeGroupsUseCase.execute.mockResolvedValue([
+      { roundId: 'r1', roundDate: '2026-10-03', sessionType: 'MORNING', group: { id: 'g1', number: 1, teeTime: '08:00', status: 'SCHEDULED', incomplete: false, players: [{ userId: 'org', name: 'Olga', marksUserId: 'ana' }, { userId: 'ana', name: 'Ana', marksUserId: 'org' }] } },
+    ]);
+    mockListEnrollments.mockResolvedValue(INSCRITOS.map((e, i) => ({ ...e, fixedHandicap: 10, category: e.userId === 'org' ? 2 : (i % 2) + 1 })));
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [12], categoryCount: null, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      status: 'CLOSED',
+    });
+    try {
+      renderPage();
+
+      expect(await screen.findByTestId('mi-categoria')).toBeInTheDocument();
+    } finally {
+      // Que no se cuele en el siguiente (las demás no tienen partidas)
+      getMyTeeGroupsUseCase.execute.mockResolvedValue([]);
+    }
+  });
+
+  it('22: si salió una sola, «una sola categoría», sin límites', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS.map((e) => ({ ...e, fixedHandicap: 10, category: 1 })));
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [12, 24], categoryCount: null, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      status: 'CLOSED',
+    });
+    renderPage();
+
+    const texto = await screen.findByTestId('ajuste-categorias');
+    await waitFor(() => expect(texto).toHaveTextContent('detail.settings.noCategories'));
+  });
+
+  it('22: si salieron todas, como hasta ahora', async () => {
+    mockListEnrollments.mockResolvedValue(INSCRITOS.map((e, i) => ({ ...e, fixedHandicap: 10, category: (i % 3) + 1 })));
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [12, 24], categoryCount: null, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      status: 'CLOSED',
+    });
+    renderPage();
+
+    expect(await screen.findByTestId('ajuste-categorias')).toHaveTextContent('detail.settings.categoryLimits');
   });
 
   it('sin categorías', async () => {

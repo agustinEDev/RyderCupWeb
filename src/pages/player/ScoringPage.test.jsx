@@ -647,6 +647,16 @@ describe('ScoringPage · cuando lo que se ve sale de la foto del móvil (FE #614
     expect(screen.queryAllByText('retry')).toHaveLength(0);
   });
 
+  it('sin conexión, un solo aviso: el de no tener conexión (QA del 11 oct 2026)', () => {
+    mockUseScoring.pintadoDeMemoria = true;
+    mockUseScoring.isOffline = true;
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('pintado-de-memoria')).not.toBeInTheDocument();
+    expect(screen.queryAllByText('retry')).toHaveLength(0);
+  });
+
   it('con un error de verdad y sin foto, sigue saliendo el recuadro rojo', () => {
     mockUseScoring.pintadoDeMemoria = false;
     mockUseScoring.error = Object.assign(new Error('500'), { status: 500 });

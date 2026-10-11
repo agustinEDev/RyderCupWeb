@@ -96,7 +96,8 @@
     "sinRespuestaDesc": "Try again in a while.",
     "desdeMemoria": "Could not refresh: it may be out of date.",
     "teeGroup": "Group {{numero}}",
-    "labelTeeGroup": "Your next group"
+    "labelTeeGroup": "Your next group",
+    "broughtIn": "You were moved to group {{numero}}"
   },
   "recentMatches": {
     "title": "Recent matches",

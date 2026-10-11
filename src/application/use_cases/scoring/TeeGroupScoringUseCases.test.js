@@ -3,6 +3,7 @@ import RetireFromTeeGroupUseCase from './RetireFromTeeGroupUseCase';
 import CorrectTeeGroupHoleUseCase from './CorrectTeeGroupHoleUseCase';
 import ReopenTeeGroupCardUseCase from './ReopenTeeGroupCardUseCase';
 import MarkTeeGroupNoShowUseCase from './MarkTeeGroupNoShowUseCase';
+import ValidateTeeGroupScoredHolesUseCase from './ValidateTeeGroupScoredHolesUseCase';
 import CloseTeeWindowUseCase from './CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from './GetTeeWindowStandingsUseCase';
 import GetCompetitionStandingsUseCase from './GetCompetitionStandingsUseCase';
@@ -14,6 +15,7 @@ const repo = () => ({
   correctHole: vi.fn().mockResolvedValue({}),
   reopenCard: vi.fn().mockResolvedValue({}),
   markNoShow: vi.fn().mockResolvedValue({}),
+  validateScored: vi.fn().mockResolvedValue({}),
   closeWindow: vi.fn().mockResolvedValue({}),
   getWindowStandings: vi.fn().mockResolvedValue({}),
   getCompetitionStandings: vi.fn().mockResolvedValue({}),
@@ -29,6 +31,7 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     await con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 7, { ownScore: 5 });
     await con(ReopenTeeGroupCardUseCase, r).execute('g-1', 'ana');
     await con(MarkTeeGroupNoShowUseCase, r).execute('g-1', 'ana');
+    await con(ValidateTeeGroupScoredHolesUseCase, r).execute('g-1', 'ana');
     await con(CloseTeeWindowUseCase, r).execute('r-1');
     await con(GetTeeWindowStandingsUseCase, r).execute('r-1', 2);
     await con(GetCompetitionStandingsUseCase, r).execute('c-1', 3);
@@ -38,6 +41,7 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
     expect(r.correctHole).toHaveBeenCalledWith('g-1', 'ana', 7, { ownScore: 5 });
     expect(r.reopenCard).toHaveBeenCalledWith('g-1', 'ana');
     expect(r.markNoShow).toHaveBeenCalledWith('g-1', 'ana');
+    expect(r.validateScored).toHaveBeenCalledWith('g-1', 'ana');
     expect(r.closeWindow).toHaveBeenCalledWith('r-1');
     expect(r.getWindowStandings).toHaveBeenCalledWith('r-1', 2);
     expect(r.getCompetitionStandings).toHaveBeenCalledWith('c-1', 3);
@@ -54,6 +58,8 @@ describe('Anotar partidas · casos de uso (FE #824, PR 7)', () => {
 
   it.each([
     ['retirarse sin partida', (r) => con(RetireFromTeeGroupUseCase, r).execute(''), 'retire'],
+    ['validar lo anotado sin partida', (r) => con(ValidateTeeGroupScoredHolesUseCase, r).execute('', 'ana'), 'validateScored'],
+    ['validar lo anotado sin jugador', (r) => con(ValidateTeeGroupScoredHolesUseCase, r).execute('g-1', ''), 'validateScored'],
     ['corregir sin jugador', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', '', 7, { ownScore: 5 }), 'correctHole'],
     ['corregir el hoyo 0', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 0, { ownScore: 5 }), 'correctHole'],
     ['corregir el hoyo 19', (r) => con(CorrectTeeGroupHoleUseCase, r).execute('g-1', 'ana', 19, { ownScore: 5 }), 'correctHole'],

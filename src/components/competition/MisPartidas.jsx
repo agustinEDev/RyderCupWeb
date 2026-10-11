@@ -15,8 +15,9 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
  * @param {string} props.userId - Quién mira
  * @param {string|number} props.version - Cambia cuando cambian plazas o partidas
  * @param {(dia: string) => string} props.fecha - «sáb 12 oct», la de las franjas
+ * @param {number|null} [props.categoria] - La suya, si salió más de una (QA del 11 oct 2026)
  */
-const MisPartidas = ({ competitionId, userId, version, fecha }) => {
+const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }) => {
   const { t } = useTranslation('schedule');
   const [mias, setMias] = useState([]);
   const lecturas = useLaMasNueva();
@@ -28,10 +29,16 @@ const MisPartidas = ({ competitionId, userId, version, fecha }) => {
       .catch(() => {});
   }, [competitionId, version, lecturas]);
 
-  if (mias.length === 0) return null;
+  // Su categoría, también antes de tener partida (/code-review)
+  if (mias.length === 0 && categoria == null) return null;
 
   return (
     <ul className="mb-3 space-y-1 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+      {categoria != null && (
+        <li data-testid="mi-categoria" className="font-semibold">
+          {t('partidas.yourCategory', { categoria })}
+        </li>
+      )}
       {mias.map(({ roundId, roundDate, sessionType, group }) => {
         const yo = group.players.find((p) => p.userId === userId);
         const companeros = group.players.filter((p) => p.userId !== userId).map((p) => p.name);
@@ -48,6 +55,13 @@ const MisPartidas = ({ competitionId, userId, version, fecha }) => {
               ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
               : t('partidas.mineAlone', datos)}
             {marcado && <span> · {t('partidas.youMark', { jugador: marcado.name })}</span>}
+            {/* Le pasaron de otra partida para que alguien no se quedara solo
+                (QA del 11 oct 2026, BE #539): su hora puede haber cambiado */}
+            {yo?.broughtIn && (
+              <span data-testid={`traido-${roundId}`} className="block font-semibold text-amber-800">
+                {t('partidas.broughtIn', { numero: group.number, hora: group.teeTime })}
+              </span>
+            )}
             {/* A anotarla (PR 7): antes de su hora, la pantalla dice cuándo abre */}
             <Link
               to={`/player/groups/${group.id}/scoring?competition=${competitionId}`}

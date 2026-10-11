@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan } from './PartidasDeLaFranja';
+import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan, todasLasFranjasCerradas, sinMarcadorEnJuego } from './PartidasDeLaFranja';
 
 /**
  * Las reglas de las partidas que el organizador ve antes de pedir nada (FE
@@ -124,5 +124,35 @@ describe('PartidasDeLaFranja · qué horas se adelantan al mover (FE #824, PR 6)
     const despues = [partida('g2', 1, ['b'], '08:55')];
 
     expect(partidasQueSeAdelantan(antes, despues)).toEqual({ desde: 1, hasta: 1, minutos: 10 });
+  });
+});
+
+describe('todasLasFranjasCerradas (QA del 11 oct 2026: «Terminar competición»)', () => {
+  const vista = (...estados) => ({ groups: estados.map((status, i) => ({ id: `g${i}`, status })) });
+
+  it.each([
+    [[vista('COMPLETED', 'COMPLETED'), vista('COMPLETED')], true],
+    [[vista('COMPLETED'), vista('COMPLETED', 'IN_PROGRESS')], false],
+    [[vista('COMPLETED'), vista('SCHEDULED')], false],
+    // Una franja sin partidas no se ha jugado
+    [[vista('COMPLETED'), vista()], false],
+    [[], false],
+  ])('%j → %s', (vistas, cerradas) => {
+    expect(todasLasFranjasCerradas(vistas)).toBe(cerradas);
+  });
+});
+
+describe('sinMarcadorEnJuego (BE #539)', () => {
+  const t = (userId, cardStatus, markedByUserId = null) => ({ userId, cardStatus, markedByUserId });
+
+  it.each([
+    ['nadie le marca', [t('ana', 'JUGANDO')], true],
+    ['su marcador ya entregó', [t('ana', 'JUGANDO', 'bea'), t('bea', 'ENTREGADA')], true],
+    ['su marcador se retiró', [t('ana', 'JUGANDO', 'bea'), t('bea', 'RETIRADO')], true],
+    ['su marcador juega', [t('ana', 'JUGANDO', 'bea'), t('bea', 'JUGANDO')], false],
+    ['su tarjeta ya no se juega', [t('ana', 'ENTREGADA')], false],
+    ['no está en la partida', [t('bea', 'JUGANDO')], false],
+  ])('%s', (_caso, tarjetas, sin) => {
+    expect(sinMarcadorEnJuego(tarjetas, 'ana')).toBe(sin);
   });
 });

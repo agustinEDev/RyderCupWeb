@@ -72,13 +72,34 @@ const secundario = `${boton} border-gray-300 bg-white text-gray-700 hover:bg-gra
 const icono = 'flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-50';
 const selector = 'min-h-11 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-xs';
 
+// El orden con el que se generaron por última vez las de una franja: al volver
+// se proponía siempre «altos primero» (QA del 11 oct 2026). Es una comodidad de
+// quien organiza, en su navegador; sin almacenamiento, el de siempre
+const ORDENES = ['HIGH_FIRST', 'LOW_FIRST'];
+const claveDelOrden = (roundId) => `rydercup-orden-de-salida-${roundId}`;
+const ordenRecordado = (roundId) => {
+  try {
+    const guardado = globalThis.localStorage.getItem(claveDelOrden(roundId));
+    return ORDENES.includes(guardado) ? guardado : 'HIGH_FIRST';
+  } catch {
+    return 'HIGH_FIRST';
+  }
+};
+const recordarOrden = (roundId, orden) => {
+  try {
+    globalThis.localStorage.setItem(claveDelOrden(roundId), orden);
+  } catch {
+    // Sin almacenamiento no se recuerda: nada más
+  }
+};
+
 const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, organiza, version, onCambio }) => {
   const { t, i18n } = useTranslation('schedule');
   const [abierta, setAbierta] = useState(false);
   const [vista, setVista] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
   const [ocupado, setOcupado] = useState(false);
-  const [orden, setOrden] = useState('HIGH_FIRST');
+  const [orden, setOrden] = useState(() => ordenRecordado(franja.id));
   // Lo abierto: la confirmación de volver a generar o borrar, y los marcadores
   const [confirmando, setConfirmando] = useState(null);
   const [marcando, setMarcando] = useState(null);
@@ -186,7 +207,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
   };
 
   const generar = () =>
-    cambiar(() => generateTeeGroupsUseCase.execute(franja.id, orden), 'partidas.generated', () => setConfirmando(null));
+    cambiar(() => generateTeeGroupsUseCase.execute(franja.id, orden), 'partidas.generated', () => {
+      setConfirmando(null);
+      recordarOrden(franja.id, orden);
+    });
   // Cerrar la franja (PR 7): lo sin acabar se da por terminado
   const cerrarLaFranja = () =>
     cambiar(() => closeTeeWindowUseCase.execute(franja.id), 'partidas.windowClosed', () => setConfirmando(null), {
@@ -255,7 +279,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
         // Se abre desde su icono: el foco va a ella, no se queda en <body> (revisor)
         autoFocus={enfocar}
         onChange={(e) => mover(jugador, e.target.value)}
-        className={selector}
+        // Encoge junto a su «Cancelar»: con todo su ancho, el botón se salía de
+        // la tarjeta a 360 px (QA del 11 oct 2026)
+        className={`${selector} min-w-0 flex-1`}
       >
         <option value="">{t(placeholder)}</option>
         {opciones.map((o) => (
@@ -274,7 +300,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       <div className="mt-2 space-y-2 rounded-lg bg-gray-50 p-2">
         {partida.players.map((p) => (
           <label key={p.userId} className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-gray-700">
-            <span className="min-w-0 flex-1 truncate">{p.name}</span>
+            {/* El nombre entero en su línea: cortado a «Pa…» no se sabía quién
+                marca a quién (QA del 11 oct 2026) */}
+            <span className="w-full break-words">{p.name}</span>
             <select
               aria-label={t('partidas.whoMarks', { jugador: p.name })}
               value={marcando.valores[p.userId] ?? ''}
@@ -313,7 +341,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
 
   const confirmacion = (texto, si, accion) => (
     <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
-      <span className="min-w-0 flex-1">{texto}</span>
+      {/* El texto en su línea y los botones debajo: a su lado, a 360 px quedaba
+          en una columna de una palabra (QA del 11 oct 2026) */}
+      <span className="w-full">{texto}</span>
       <button type="button" disabled={ocupado} onClick={accion} className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white">
         {t(si)}
       </button>
@@ -430,14 +460,19 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                         data-testid={`partida-jugador-${p.userId}`}
                         className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-gray-700"
                       >
-                        <span className="font-medium text-gray-900">{p.name}</span>
-                        <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
-                        <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
-                        {p.marksUserId && (
-                          <span className="text-gray-500">
-                            {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
-                          </span>
-                        )}
+                        {/* Sus datos a la izquierda y el icono de mover en su
+                            columna: en la línea de «marca a X» parecía cambiar
+                            el marcador (QA del 11 oct 2026) */}
+                        <div data-testid={`datos-${p.userId}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
+                          <span className="font-medium break-words text-gray-900">{p.name}</span>
+                          <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
+                          <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
+                          {p.marksUserId && (
+                            <span className="text-gray-500">
+                              {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
+                            </span>
+                          )}
+                        </div>
                         {editable && moviendo !== p.userId && opcionesDeDestino(p.userId, { conIntercambios: true }).length > 0 && (
                           <button
                             type="button"
@@ -448,7 +483,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                               else iconos.current.delete(p.userId);
                             }}
                             onClick={() => setMoviendo(p.userId)}
-                            className={`${icono} ml-auto`}
+                            className={`${icono} shrink-0`}
                           >
                             <ArrowRightLeft className="h-4 w-4" />
                           </button>
@@ -468,7 +503,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                                 setVolverAlIcono(p.userId);
                                 setMoviendo(null);
                               }}
-                              className="min-h-11 px-2 text-xs text-gray-600"
+                              className="min-h-11 shrink-0 px-2 text-xs text-gray-600"
                             >
                               {t('partidas.cancel')}
                             </button>
@@ -498,7 +533,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
               <ul className="mt-1 space-y-1">
                 {vista.unassignedPlayers.map((p) => (
                   <li key={p.userId} className="flex min-w-0 flex-wrap items-center gap-2 text-gray-800">
-                    <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                    <span className="w-full break-words">{p.name}</span>
                     {editable &&
                       selectorDeDestino(p.userId, p.name, {
                         etiqueta: 'partidas.placeIn',
