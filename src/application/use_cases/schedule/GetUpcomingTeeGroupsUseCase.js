@@ -68,6 +68,8 @@ class GetUpcomingTeeGroupsUseCase {
         teeTime: group.teeTime,
         matchNumber: group.number,
         partnerNames: group.players.filter((p) => p.userId !== userId).map((p) => p.name),
+        // Le pasaron de otra para acompañar al que se quedó solo (BE #539)
+        broughtIn: Boolean(group.players.find((p) => p.userId === userId)?.broughtIn),
       }));
   }
 }

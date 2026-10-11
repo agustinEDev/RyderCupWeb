@@ -259,7 +259,8 @@
       "CLASIFICADO": "Ranked",
       "SIN_EMPEZAR": "Not started",
       "NR": "NR (no return)",
-      "NP": "NS (no show)"
+      "NP": "NS (no show)",
+      "RETIRADO": "Retired"
     },
     "cardStatus": {
       "JUGANDO": "Playing",
@@ -319,7 +320,8 @@
     "statusShort": {
       "SIN_EMPEZAR": "–",
       "NR": "NR",
-      "NP": "NS"
+      "NP": "NS",
+      "RETIRADO": "R"
     },
     "standingsTable": "Standings",
     "none": "–",

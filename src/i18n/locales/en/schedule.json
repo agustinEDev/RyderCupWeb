@@ -225,7 +225,8 @@
       "teeTimeFormat": "Enter both tee times.",
       "lastBeforeFirst": "The last tee time cannot be before the first.",
       "intervalRange": "Between tee times, 5 to 20 minutes.",
-      "groupSize": "Groups are of 3 or 4 players."
+      "groupSize": "Groups are of 3 or 4 players.",
+      "firstTeePassed": "That first tee time has already passed: pick a later time."
     },
     "noCourses": "Add a course to the competition to create windows.",
     "allFull": "Every day already has its three windows.",
@@ -248,9 +249,9 @@
     "take": "Take a place",
     "switchHere": "Switch here",
     "switchFor": "Switch for this one",
-    "release": "Release",
-    "releaseConfirm": "Release your place? Another player may take it right away.",
-    "releaseYes": "Yes, release it",
+    "release": "Leave my place",
+    "releaseConfirm": "Leave your place? Another player may take it right away.",
+    "releaseYes": "Yes, leave it",
     "wait": "Join the waiting list",
     "leaveWaiting": "Leave the waiting list",
     "whichToLeave": "Which window do you leave?",
@@ -365,6 +366,8 @@
     "closeWindowConfirm": "Unfinished groups are closed: complete cards are submitted, partial ones count as retired and those with no holes as no shows.",
     "closeWindowYes": "Yes, close it",
     "windowClosed": "Window closed.",
-    "movePlayer": "Move {{jugador}}"
+    "movePlayer": "Move {{jugador}}",
+    "broughtIn": "You were moved to group {{numero}} · tees off at {{hora}}",
+    "yourCategory": "Your category: {{categoria}}"
   }
 }

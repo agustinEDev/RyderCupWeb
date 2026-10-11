@@ -222,6 +222,15 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       await waitFor(() => expect(mockDejarDeEsperar).toHaveBeenCalledWith('m', YO));
     });
 
+    it('8 (QA del 11 oct 2026): a una jugadora, «la 1.ª en espera»', async () => {
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, playerIds: ['ana', 'bea'], waitingIds: [YO] })],
+      });
+      pinta({ genero: 'FEMALE' });
+
+      expect((await en('m')).getByText('franjas.waitingPosition {"count":1,"context":"female"}')).toBeInTheDocument();
+    });
+
     it('8: con las inscripciones cerradas ve su franja, sin botones', async () => {
       mockLeer.mockResolvedValue({
         rounds: [

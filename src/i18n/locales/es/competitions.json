@@ -308,6 +308,13 @@
         "body": "Volverá a estar en curso para, por ejemplo, añadir otra ronda. Los partidos ya completados no cambian.",
         "confirm": "Sí, reabrirlo",
         "keep": "No, dejarlo terminado"
+      },
+      "closeWithoutTeeWindow": {
+        "title": "Hay jugadores sin franja",
+        "body_one": "{{jugadores}} no tiene franja: hay que colocarle antes de cerrar las inscripciones.",
+        "body_other": "{{count}} jugadores no tienen franja ({{jugadores}}): hay que colocarlos antes de cerrar las inscripciones.",
+        "confirm": "Ir a colocarlos",
+        "keep": "Ahora no"
       }
     },
     "errors": {
@@ -365,7 +372,11 @@
         "BEST_CARD": "Mejor tarjeta"
       },
       "equalCategoriesSplit_one": "{{count}} categoría igual: {{limites}}",
-      "equalCategoriesSplit_other": "{{count}} categorías iguales, repartidas: {{limites}}"
+      "equalCategoriesSplit_other": "{{count}} categorías iguales, repartidas: {{limites}}",
+      "categoriesCameOut_one": "Salieron {{salen}} de {{count}} pedida",
+      "categoriesCameOut_other": "Salieron {{salen}} de las {{count}} pedidas",
+      "categoriesCameOutWithLimits_one": "Salieron {{salen}} de {{count}} pedida · límites: {{limites}}",
+      "categoriesCameOutWithLimits_other": "Salieron {{salen}} de las {{count}} pedidas · límites: {{limites}}"
     },
     "approvedPlayers": "Jugadores aprobados",
     "noApprovedPlayers": "Aún no hay jugadores aprobados",
@@ -470,7 +481,8 @@
       "REPETIDOS_other": "Se pidieron {{pedidas}} categorías y salen {{count}}: hay hándicaps repetidos en las fronteras y esas categorías se juntaron.",
       "MENOS_DE_SEIS_one": "Se pidieron {{pedidas}} categorías y sale {{count}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado.",
       "MENOS_DE_SEIS_other": "Se pidieron {{pedidas}} categorías y salen {{count}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado."
-    }
+    },
+    "allWindowsClosed": "Todas las franjas están cerradas: cuando revises la clasificación, termina la competición."
   },
   "browse": {
     "title": "Explorar Competiciones",

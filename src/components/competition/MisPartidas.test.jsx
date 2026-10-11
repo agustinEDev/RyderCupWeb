@@ -55,6 +55,37 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(lineas[1]).not.toHaveTextContent('partidas.youMark');
   });
 
+  it('12 (QA del 11 oct 2026): si me han pasado a esta partida, se dice con su número y su hora', async () => {
+    const yo = { ...jugador('yo', 'ana'), broughtIn: true };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), yo])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    expect(await screen.findByTestId('traido-r1')).toHaveTextContent('partidas.broughtIn {"numero":2,"hora":"09:10"}');
+  });
+
+  it('21 (QA del 11 oct 2026): con varias categorías, la suya', async () => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), jugador('yo', 'ana')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" categoria={2} />);
+
+    expect(await screen.findByTestId('mi-categoria')).toHaveTextContent('partidas.yourCategory {"categoria":2}');
+  });
+
+  it('21: sin categoría (una sola, o aún sin cerrar), nada', async () => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), jugador('yo', 'ana')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" categoria={null} />);
+
+    await screen.findByTestId('mi-partida-r1');
+    expect(screen.queryByTestId('mi-categoria')).toBeNull();
+  });
+
+  it('12: sin haber venido de otra, nada', async () => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), jugador('yo', 'ana')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    await screen.findByTestId('mi-partida-r1');
+    expect(screen.queryByTestId('traido-r1')).toBeNull();
+  });
+
   it('cada línea lleva a anotar su partida, con la competición (PR 7)', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('ana', 'bea'), jugador('bea', 'ana')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="ana" version="v" />);

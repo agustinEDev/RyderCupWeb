@@ -227,6 +227,13 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).not.toHaveTextContent('input.strokes');
   });
 
+  it('4 (QA del 11 oct 2026): la X que cierra el teclado se toca con el dedo (44 px)', () => {
+    render(<HoleInput {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('own-score-button'));
+
+    expect(screen.getByRole('button', { name: 'input.close' })).toHaveClass('min-h-11', 'min-w-11');
+  });
+
   // QA del 11 oct 2026 (casos 15 y 16)
   describe('con nombres: a quién anotas y qué puso el otro', () => {
     it('15: la casilla del marcado dice a quién anotas', () => {
@@ -266,6 +273,40 @@ describe('HoleInput', () => {
       );
 
       expect(screen.getByTestId('lo-que-puso-el-otro-marked')).toHaveTextContent('input.otherPut {"nombre":"Bruno","golpes":4}');
+    });
+
+    it('16: cada desacuerdo dice solo lo suyo (mutaciones)', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          markedName="Bruno"
+          validationStatus="match"
+          markedValidationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+          markedPlayerScore={{ ownScore: 4, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.queryByTestId('lo-que-puso-el-otro-own')).toBeNull();
+      expect(screen.getByTestId('lo-que-puso-el-otro-marked')).toBeInTheDocument();
+    });
+
+    it('16: y al revés', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          markedName="Bruno"
+          validationStatus="mismatch"
+          markedValidationStatus="match"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 6, markerSubmitted: true }}
+          markedPlayerScore={{ ownScore: 4, ownSubmitted: true, markerScore: 4, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toBeInTheDocument();
+      expect(screen.queryByTestId('lo-que-puso-el-otro-marked')).toBeNull();
     });
 
     it('16: una raya del otro se dice raya', () => {

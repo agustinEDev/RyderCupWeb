@@ -81,3 +81,14 @@ export const partidasQueSeAdelantan = (antes, despues) => {
     minutos: horaDe.get(primera.id) - minutos(primera.teeTime),
   };
 };
+
+/**
+ * Si todas las franjas se han jugado y cerrado: cada una con partidas, y todas
+ * acabadas. Entonces el organizador puede terminar la competición (QA del 11
+ * oct 2026: no se veía cómo).
+ *
+ * @param {Array<{groups: Array<{status: string}>}>} vistas - Las partidas de cada franja
+ */
+export const todasLasFranjasCerradas = (vistas) =>
+  vistas.length > 0 && vistas.every((v) => v.groups.length > 0 && v.groups.every((g) => g.status === 'COMPLETED'));
+

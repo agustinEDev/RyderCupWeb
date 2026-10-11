@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan } from './PartidasDeLaFranja';
+import { destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan, todasLasFranjasCerradas } from './PartidasDeLaFranja';
 
 /**
  * Las reglas de las partidas que el organizador ve antes de pedir nada (FE
@@ -124,5 +124,20 @@ describe('PartidasDeLaFranja · qué horas se adelantan al mover (FE #824, PR 6)
     const despues = [partida('g2', 1, ['b'], '08:55')];
 
     expect(partidasQueSeAdelantan(antes, despues)).toEqual({ desde: 1, hasta: 1, minutos: 10 });
+  });
+});
+
+describe('todasLasFranjasCerradas (QA del 11 oct 2026: «Terminar competición»)', () => {
+  const vista = (...estados) => ({ groups: estados.map((status, i) => ({ id: `g${i}`, status })) });
+
+  it.each([
+    [[vista('COMPLETED', 'COMPLETED'), vista('COMPLETED')], true],
+    [[vista('COMPLETED'), vista('COMPLETED', 'IN_PROGRESS')], false],
+    [[vista('COMPLETED'), vista('SCHEDULED')], false],
+    // Una franja sin partidas no se ha jugado
+    [[vista('COMPLETED'), vista()], false],
+    [[], false],
+  ])('%j → %s', (vistas, cerradas) => {
+    expect(todasLasFranjasCerradas(vistas)).toBe(cerradas);
   });
 });

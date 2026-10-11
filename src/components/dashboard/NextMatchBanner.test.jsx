@@ -74,6 +74,18 @@ describe('NextMatchBanner', () => {
       partnerNames: ['Ana', 'Bea'],
     };
 
+    it('12 (QA del 11 oct 2026): si le pasaron a esta partida, lo dice con su hora', () => {
+      renderBanner({ match: { ...partida, broughtIn: true } });
+
+      expect(screen.getByTestId('next-match-banner')).toHaveTextContent('nextMatch.broughtIn {"numero":2,"hora":"08:10"}');
+    });
+
+    it('12: si no, no', () => {
+      renderBanner({ match: partida });
+
+      expect(screen.getByTestId('next-match-banner')).not.toHaveTextContent('nextMatch.broughtIn');
+    });
+
     it('se nombra como partida, con su hora y sus compañeros', () => {
       renderBanner({ match: partida });
 

@@ -108,7 +108,7 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' }));
       expect(mockValidar).not.toHaveBeenCalled();
-      expect(screen.getByText('partida.validateScoredConfirm {"jugador":"ANA","count":2}')).toBeInTheDocument();
+      expect(screen.getByText('partida.validateScoredConfirm {"jugador":"ANA","count":2}')).toHaveClass('w-full');
       fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
 
       await waitFor(() => expect(mockValidar).toHaveBeenCalledWith('g-1', 'ana'));
@@ -130,6 +130,22 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
 
       await waitFor(() => expect(mockToast.info).toHaveBeenCalledWith('partida.broughtInToast {"viene":"CRIS","jugador":"BEA"}'));
+    });
+
+    it('13: quien ya había venido antes no se anuncia otra vez', async () => {
+      const yaEstaba = [
+        jugador('ana', 'JUGANDO', hoyosDeAna, { marked_by_user_id: 'bea' }),
+        jugador('bea', 'JUGANDO', hoyosDeAna, { marks_user_id: 'ana', brought_in: true }),
+        jugador('cris', 'JUGANDO', hoyosDeAna),
+      ];
+      mockNoPresentado.mockResolvedValue(vista('STABLEFORD', yaEstaba.map((j) => (j.user_id === 'cris' ? { ...j, card_status: 'NO_PRESENTADO' } : j))));
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', yaEstaba) });
+
+      fireEvent.click(within(screen.getByTestId('tarjeta-cris')).getByRole('button', { name: 'partida.noShow {"jugador":"CRIS"}' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('partida.markedNoShow'));
+      expect(mockToast.info).not.toHaveBeenCalled();
     });
 
     it('13: sin nadie que venga, solo el aviso de siempre', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { errorDeHoja, numeroDeSalidas, cupoDeLaHoja, hojaPropuesta } from './HojaDeSalidas';
+import { errorDeHoja, errorDeLaFranja, numeroDeSalidas, cupoDeLaHoja, hojaPropuesta } from './HojaDeSalidas';
 
 /**
  * La hoja de salidas de una franja (FE #824, RyderCupAm#251): las mismas reglas
@@ -63,5 +63,39 @@ describe('HojaDeSalidas (FE #824)', () => {
     ])('%s: de %s a %s, cada 10 min, partidas de 4', (franja, primera, ultima) => {
       expect(hojaPropuesta(franja)).toEqual({ primera, ultima, intervalo: 10, tamano: 4 });
     });
+  });
+});
+
+describe('errorDeLaFranja: su primera salida ya pasó (QA del 11 oct 2026)', () => {
+  const hoja = { primera: '09:00', ultima: '12:00', intervalo: 10, tamano: 4 };
+  // El reloj del móvil, en su hora local (la del campo, casi siempre)
+  const a = (hora) => new Date(2030, 9, 12, ...hora.split(':').map(Number));
+
+  it.each([
+    ['08:59', null],
+    ['09:00', 'firstTeePassed'],
+    ['15:00', 'firstTeePassed'],
+  ])('hoy a las %s, una franja de las 9:00 da %s', (ahora, error) => {
+    expect(errorDeLaFranja({ dia: '2030-10-12', hoja }, a(ahora))).toBe(error);
+  });
+
+  it('mañana, aunque sea antes en el reloj, no ha pasado', () => {
+    expect(errorDeLaFranja({ dia: '2030-10-13', hoja }, a('15:00'))).toBeNull();
+  });
+
+  it('cambiar otra cosa de una ya empezada vale: su primera salida no cambia', () => {
+    expect(errorDeLaFranja({ dia: '2030-10-12', hoja, primeraAntes: '09:00' }, a('15:00'))).toBeNull();
+  });
+
+  it('cambiarla a otra hora ya pasada, no', () => {
+    expect(errorDeLaFranja({ dia: '2030-10-12', hoja, primeraAntes: '16:00' }, a('15:00'))).toBe('firstTeePassed');
+  });
+
+  it('un error de la hoja va antes', () => {
+    expect(errorDeLaFranja({ dia: '2030-10-12', hoja: { ...hoja, intervalo: 3 } }, a('15:00'))).toBe('intervalRange');
+  });
+
+  it('sin día, solo la hoja', () => {
+    expect(errorDeLaFranja({ dia: null, hoja }, a('15:00'))).toBeNull();
   });
 });

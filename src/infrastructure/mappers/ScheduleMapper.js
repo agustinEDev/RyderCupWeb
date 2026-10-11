@@ -160,6 +160,7 @@ class ScheduleMapper {
         teeGender: p.tee_gender ?? null,
         strokesByHole: p.strokes_by_hole || [],
         marksUserId: p.marks_user_id ?? null,
+        broughtIn: p.brought_in ?? false,
       })),
     };
   }

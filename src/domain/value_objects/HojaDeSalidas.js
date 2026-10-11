@@ -47,6 +47,25 @@ export const errorDeHoja = ({ primera, ultima, intervalo, tamano }) => {
   return null;
 };
 
+/**
+ * El primer problema de una franja: el de su hoja o, si su primera salida (o
+ * la nueva, al cambiarla) ya llegó, `firstTeePassed`. Una franja pasada no
+ * admite partidas y sus jugadores se quedaban sin ella (QA del 11 oct 2026).
+ * Con el reloj del móvil, que casi siempre está en la hora del campo: quien
+ * manda es el servidor, que la rechaza con la zona del campo.
+ *
+ * @param {{dia: string|null, hoja: Object, primeraAntes?: string}} franja - `primeraAntes`, al cambiar una
+ * @param {Date} [ahora]
+ * @returns {string|null}
+ */
+export const errorDeLaFranja = ({ dia, hoja, primeraAntes }, ahora = new Date()) => {
+  const deLaHoja = errorDeHoja(hoja);
+  if (deLaHoja || !dia || hoja.primera === primeraAntes) return deLaHoja;
+  const [anio, mes, diaDelMes] = dia.split('-').map(Number);
+  const sale = new Date(anio, mes - 1, diaDelMes, 0, minutos(hoja.primera));
+  return ahora >= sale ? 'firstTeePassed' : null;
+};
+
 /** Cuántas salidas tiene: de la primera a la última que cabe. 0 si no es posible. */
 export const numeroDeSalidas = (hoja) =>
   errorDeHoja(hoja) ? 0 : Math.floor((minutos(hoja.ultima) - minutos(hoja.primera)) / hoja.intervalo) + 1;

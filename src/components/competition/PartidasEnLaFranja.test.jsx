@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within, waitFor, act } from '@testing-library/react';
 
 /**
@@ -100,6 +100,19 @@ const desplegar = async () => {
 };
 
 describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
+  // El orden de salida se recuerda en el navegador (QA): cada test, con el suyo
+  // limpio, o lo que genera uno se cuela en el siguiente
+  let guardado;
+  beforeEach(() => {
+    guardado = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => guardado.get(k) ?? null,
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockLeer.mockReset();
@@ -186,6 +199,69 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await waitFor(() => expect(mockGenerar).toHaveBeenCalledWith('r1', 'LOW_FIRST'));
     expect(await screen.findByTestId('partida-g1')).toBeInTheDocument();
     expect(mockToast.success).toHaveBeenCalledWith('partidas.generated');
+  });
+
+  describe('20 (QA del 11 oct 2026): el orden de salida recuerda el último usado en la franja', () => {
+    it('tras generar con «bajos primero», al volver se propone ese', async () => {
+      mockLeer.mockResolvedValue(vista({ groups: [] }));
+      mockGenerar.mockResolvedValue(vista());
+      const { unmount } = pintar({ organiza: true });
+      await desplegar();
+      fireEvent.change(await screen.findByRole('combobox', { name: 'partidas.order' }), { target: { value: 'LOW_FIRST' } });
+      fireEvent.click(screen.getByRole('button', { name: 'partidas.generate' }));
+      await waitFor(() => expect(mockGenerar).toHaveBeenCalled());
+      unmount();
+
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByRole('combobox', { name: 'partidas.order' })).toHaveValue('LOW_FIRST');
+    });
+
+    it('un valor guardado que no es un orden no se propone', async () => {
+      guardado.set('rydercup-orden-de-salida-r1', 'CUALQUIERA');
+      mockLeer.mockResolvedValue(vista({ groups: [] }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByRole('combobox', { name: 'partidas.order' })).toHaveValue('HIGH_FIRST');
+      // Y es el que se manda: el desplegable enseñaría el primero aunque el estado fuera otro
+      mockGenerar.mockResolvedValue(vista());
+      fireEvent.click(screen.getByRole('button', { name: 'partidas.generate' }));
+      await waitFor(() => expect(mockGenerar).toHaveBeenCalledWith('r1', 'HIGH_FIRST'));
+    });
+
+    it('elegirlo sin generar no lo recuerda', async () => {
+      mockLeer.mockResolvedValue(vista({ groups: [] }));
+      const { unmount } = pintar({ organiza: true });
+      await desplegar();
+      fireEvent.change(await screen.findByRole('combobox', { name: 'partidas.order' }), { target: { value: 'LOW_FIRST' } });
+      unmount();
+
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByRole('combobox', { name: 'partidas.order' })).toHaveValue('HIGH_FIRST');
+    });
+
+    it('sin almacenamiento (privado), se propone «altos primero» y genera igual', async () => {
+      vi.stubGlobal('localStorage', {
+        getItem: () => {
+          throw new Error('bloqueado');
+        },
+        setItem: () => {
+          throw new Error('bloqueado');
+        },
+      });
+      mockLeer.mockResolvedValue(vista({ groups: [] }));
+      mockGenerar.mockResolvedValue(vista());
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByRole('combobox', { name: 'partidas.order' })).toHaveValue('HIGH_FIRST');
+      fireEvent.click(screen.getByRole('button', { name: 'partidas.generate' }));
+      await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('partidas.generated'));
+    });
   });
 
   it('8: volver a generar pide confirmación con cuántas se sustituyen', async () => {
@@ -321,6 +397,40 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     expect(within(screen.getByTestId('partida-jugador-ana')).getByRole('button', { name: 'partidas.cancel' })).toBeDisabled();
   });
 
+  it('18 (QA del 11 oct 2026): en el editor de marcadores, los nombres enteros', async () => {
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    fireEvent.click(within(screen.getByTestId('partida-g1')).getByRole('button', { name: /partidas.markers/ }));
+
+    const etiqueta = screen.getByRole('combobox', { name: 'partidas.whoMarks {"jugador":"ANA"}' }).closest('label');
+    expect(within(etiqueta).getByText('ANA')).toHaveClass('w-full', 'break-words');
+  });
+
+  it('18-19 (QA del 11 oct 2026): el nombre entero, y el icono en su columna, no en la línea de «marca a»', async () => {
+    pintar({ organiza: true });
+    await desplegar();
+    const fila = await screen.findByTestId('partida-jugador-ana');
+
+    const icono = within(fila).getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' });
+    expect(icono.parentElement).toBe(fila);
+    const marca = within(fila).getByText(/partidas.marks/);
+    expect(marca.closest('[data-testid="datos-ana"]')).not.toBeNull();
+    expect(within(fila).getByText('ANA')).not.toHaveClass('truncate');
+  });
+
+  it('2 (QA del 11 oct 2026): la lista encoge para que «Cancelar» quepa en la tarjeta', async () => {
+    pintar({ organiza: true });
+    await desplegar();
+    await screen.findByTestId('partida-g1');
+
+    const lista = await abrirMover('ANA');
+
+    expect(lista).toHaveClass('min-w-0', 'flex-1');
+    expect(within(screen.getByTestId('partida-jugador-ana')).getByRole('button', { name: 'partidas.cancel' })).toHaveClass('shrink-0');
+  });
+
   it('10e (revisor): si mover falla, la lista se cierra (lo pintado se relee)', async () => {
     mockMover.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_FULL' }));
     pintar({ organiza: true });
@@ -367,6 +477,8 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await desplegar();
 
     const bloque = await screen.findByTestId('partidas-sin-partida');
+    // El nombre entero, en su línea: «Pa…» no decía a quién se colocaba (QA)
+    expect(within(bloque).getByText('Zoe Zamora')).toHaveClass('w-full', 'break-words');
     expect(bloque).toHaveTextContent('Zoe Zamora');
     const colocar = within(bloque).getByRole('combobox', { name: 'partidas.placeIn {"jugador":"Zoe Zamora"}' });
     expect(within(colocar).getAllByRole('option').map((o) => o.value)).toEqual(['', 'g1', 'g3', 'NUEVA']);
@@ -568,6 +680,8 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'partidas.closeWindow' }));
     expect(screen.getByText('partidas.closeWindowConfirm')).toBeInTheDocument();
+    // A 360 px el texto iba en una columna de una palabra junto a los botones (QA)
+    expect(screen.getByText('partidas.closeWindowConfirm')).toHaveClass('w-full');
     expect(mockCerrar).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'partidas.closeWindowYes' }));
 

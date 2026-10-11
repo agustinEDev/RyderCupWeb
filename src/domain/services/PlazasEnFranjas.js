@@ -78,3 +78,16 @@ export const destinosParaMover = (franjas, userId, desdeId) => {
       (f.roundDate === desde?.roundDate || !diasQueJuega.has(f.roundDate))
   );
 };
+
+/**
+ * Los aprobados sin plaza en ninguna franja: con alguno, no se pueden cerrar
+ * las inscripciones (QA del 11 oct 2026; la regla, aquí una vez). Estar en la
+ * lista de espera no es tener plaza.
+ *
+ * @param {Array<{teeSheet?: {playerIds: string[]}}>} franjas
+ * @param {Array<{userId: string}>} inscritos
+ */
+export const sinFranja = (franjas, inscritos) => {
+  const conPlaza = new Set(franjas.flatMap((f) => f.teeSheet?.playerIds ?? []));
+  return inscritos.filter((i) => !conPlaza.has(i.userId));
+};

@@ -29,6 +29,7 @@ const VISTA = {
           tee_gender: 'FEMALE',
           strokes_by_hole: Array(18).fill(0),
           marks_user_id: 'u-2',
+          brought_in: true,
         },
       ],
     },
@@ -56,6 +57,8 @@ const VISTA_LEIDA = {
           teeGender: 'FEMALE',
           strokesByHole: Array(18).fill(0),
           marksUserId: 'u-2',
+          // Vino de otra partida a acompañar al que se quedó solo (BE #539)
+          broughtIn: true,
         },
       ],
     },
@@ -84,7 +87,7 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
     api.mockResolvedValue({
       round_id: 'r-1',
       editable: false,
-      groups: [{ ...VISTA.groups[0], players: [{ ...VISTA.groups[0].players[0], marks_user_id: null, tee_gender: null }] }],
+      groups: [{ ...VISTA.groups[0], players: [{ ...VISTA.groups[0].players[0], marks_user_id: null, tee_gender: null, brought_in: undefined }] }],
     });
 
     const vista = await repo.getTeeGroups('r-1');
@@ -92,6 +95,8 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
     expect(vista.unassignedPlayers).toEqual([]);
     expect(vista.groups[0].players[0].marksUserId).toBeNull();
     expect(vista.groups[0].players[0].teeGender).toBeNull();
+    // Sin el campo (backend anterior), no vino de ninguna parte
+    expect(vista.groups[0].players[0].broughtIn).toBe(false);
   });
 
   it('mis partidas, por jornada', async () => {

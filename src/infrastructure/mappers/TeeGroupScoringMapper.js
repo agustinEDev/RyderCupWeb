@@ -116,6 +116,8 @@ class TeeGroupScoringMapper {
       cards: r.cards,
       thru: r.thru,
       status: r.status,
+      // Su última tarjeta quedó retirada: en Stableford cuenta, pero no sigue (BE)
+      retired: r.retired ?? false,
     });
     return {
       tournamentType: api.tournament_type,

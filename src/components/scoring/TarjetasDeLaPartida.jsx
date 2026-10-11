@@ -284,7 +284,8 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
 
             {confirmaEsta && (
               <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
-                <span className="min-w-0 flex-1">
+                {/* El texto en su línea, los botones debajo (gemelo de «Cerrar la franja») */}
+                <span className="w-full">
                   {confirmaEsta.accion === 'validar'
                     ? t('partida.validateScoredConfirm', { jugador: name, count: confirmaEsta.cuantos })
                     : t(confirmaEsta.accion === 'reabrir' ? 'partida.reopenConfirm' : 'partida.noShowConfirm', { jugador: name })}

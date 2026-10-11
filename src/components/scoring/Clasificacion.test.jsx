@@ -75,6 +75,27 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(celdas[3]).toHaveTextContent(/^0$/);
   });
 
+  it('23 (QA del 11 oct 2026): un retirado en Stableford conserva su puesto y en HOYO va «R»', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 4, value: 9, thru: 5, retired: true })]));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    const celdas = (await screen.findByTestId('fila-ana')).querySelectorAll('td');
+    expect(celdas[0]).toHaveTextContent('4');
+    expect(celdas[2]).toHaveTextContent('9');
+    const r = celdas[3].querySelector('abbr');
+    expect(r).toHaveTextContent('partida.statusShort.RETIRADO');
+    expect(r).toHaveAttribute('title', 'partida.status.RETIRADO');
+  });
+
+  it('3 (QA del 11 oct 2026): POS cabe «T22» sin pegarse al nombre', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: 22, tied: true })]));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    const celda = (await screen.findByTestId('fila-ana')).querySelectorAll('td')[0];
+    expect(celda).toHaveClass('w-12', 'pr-2');
+    expect(screen.getAllByRole('columnheader')[0]).toHaveClass('w-12');
+  });
+
   it('/code-review: el guion de puesto y valor también pasa por t()', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { position: null, value: null, status: 'NP', thru: 0 })]));
     render(<Clasificacion pedir={pedir} userId="x" activa />);

@@ -259,7 +259,8 @@
       "CLASIFICADO": "Clasificado",
       "SIN_EMPEZAR": "Sin empezar",
       "NR": "NR (no termina)",
-      "NP": "NP (no presentado)"
+      "NP": "NP (no presentado)",
+      "RETIRADO": "Retirado"
     },
     "cardStatus": {
       "JUGANDO": "Jugando",
@@ -319,7 +320,8 @@
     "statusShort": {
       "SIN_EMPEZAR": "–",
       "NR": "NR",
-      "NP": "NP"
+      "NP": "NP",
+      "RETIRADO": "R"
     },
     "standingsTable": "Clasificación",
     "none": "–",

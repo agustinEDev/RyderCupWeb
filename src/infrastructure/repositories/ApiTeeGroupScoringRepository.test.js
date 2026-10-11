@@ -196,7 +196,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       scale: 'NETA',
       rule: 'ACCUMULATED',
       category: 2,
-      rows: [{ position: 3, tied: true, user_id: 'ana', name: 'Ana', category: 2, handicap: '12.3', value: -2, cards: 1, thru: 18, status: 'CLASIFICADO' }],
+      rows: [{ position: 3, tied: true, user_id: 'ana', name: 'Ana', category: 2, handicap: '12.3', value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true }],
       me: null,
     });
 
@@ -208,7 +208,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       scale: 'NETA',
       rule: 'ACCUMULATED',
       category: 2,
-      rows: [{ position: 3, tied: true, userId: 'ana', name: 'Ana', category: 2, handicap: 12.3, value: -2, cards: 1, thru: 18, status: 'CLASIFICADO' }],
+      rows: [{ position: 3, tied: true, userId: 'ana', name: 'Ana', category: 2, handicap: 12.3, value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true }],
       me: null,
     });
 
@@ -242,6 +242,6 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
 
     const c = await repo.getWindowStandings('r-1');
 
-    expect(c.me).toEqual({ position: null, tied: false, userId: 'yo', name: 'Yo', category: null, handicap: -1.2, value: null, cards: 0, thru: 0, status: 'NP' });
+    expect(c.me).toEqual({ position: null, tied: false, userId: 'yo', name: 'Yo', category: null, handicap: -1.2, value: null, cards: 0, thru: 0, status: 'NP', retired: false });
   });
 });
