@@ -184,6 +184,18 @@ describe('el próximo partido del panel sin cobertura', () => {
     expect(banner()).toHaveAttribute('data-desde-memoria', 'true');
   });
 
+  it.each([401, 403])('un %s al leer las partidas desmiente lo guardado: se borra y no se ofrece (CodeRabbit)', async (status) => {
+    recuerdaLasPartidas([{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }]);
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockRejectedValue(Object.assign(new Error('x'), { status }));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', '');
+    expect(lasUltimasPartidas()).toBeNull();
+  });
+
   it('sin red, una partida guardada de un día pasado no se ofrece', async () => {
     recuerdaLasPartidas([{ id: 'g-0', esPartidaDeFranja: true, roundDate: '2000-01-01', sessionType: 'MORNING' }]);
     mockLee.mockRejectedValue(new TypeError('Failed to fetch'));

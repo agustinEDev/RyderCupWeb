@@ -69,7 +69,7 @@ class ApiTeeGroupScoringRepository extends ITeeGroupScoringRepository {
   }
 
   async getWindowStandings(roundId, category) {
-    const filtro = category != null ? `?category=${category}` : '';
+    const filtro = category != null ? `?category=${encodeURIComponent(category)}` : '';
     return TeeGroupScoringMapper.toStandingsDTO(await apiRequest(`${BASE}/rounds/${roundId}/standings${filtro}`));
   }
 }

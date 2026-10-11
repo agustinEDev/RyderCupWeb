@@ -67,6 +67,15 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
     expect(matches.map((m) => m.id)).toEqual(['g1']);
   });
 
+  it('sin hora (no debería pasar), ordenar no revienta (CodeRabbit)', async () => {
+    const sinHora = (id) => ({ ...partida(id, 1, undefined) });
+    const c = casos({ a: [mia('r1', '2030-10-12', 'MORNING', sinHora('g1')), mia('r2', '2030-10-12', 'MORNING', sinHora('g2'))] });
+
+    const { matches } = await new GetUpcomingTeeGroupsUseCase(c).executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches.map((m) => m.id).sort()).toEqual(['g1', 'g2']);
+  });
+
   it('las acabadas no salen', async () => {
     const c = casos({ a: [mia('r1', '2030-10-12', 'MORNING', partida('g1', 1, '08:00', 'COMPLETED'))] });
 

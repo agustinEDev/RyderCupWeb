@@ -46,7 +46,7 @@ class GetUpcomingTeeGroupsUseCase {
         .filter((r) => r.status === 'fulfilled')
         .flatMap((r) => r.value)
         // Por día y hora de salida: la hora ya ordena las franjas de un día
-        .sort((a, b) => a.roundDate.localeCompare(b.roundDate) || a.teeTime.localeCompare(b.teeTime)),
+        .sort((a, b) => a.roundDate.localeCompare(b.roundDate) || (a.teeTime ?? '').localeCompare(b.teeTime ?? '')),
       complete: leidas.every((r) => r.status === 'fulfilled'),
     };
   }

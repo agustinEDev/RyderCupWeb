@@ -22,7 +22,7 @@ import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { leeLosProximosPartidos, precargaElProximoDia } from '../services/partidosSinCobertura';
 import { elMasCercano } from '../utils/elMasCercano';
 import { fechaLocal } from '../utils/fechaLocal';
-import { lasUltimasPartidas, recuerdaLasPartidas } from '../services/loUltimoConocido';
+import { lasUltimasPartidas, olvidaLoDeEstaCuenta, recuerdaLasPartidas } from '../services/loUltimoConocido';
 import {
   elPanelYaSePinto,
   anotaQueElPanelSePinto,
@@ -357,7 +357,13 @@ const Dashboard = () => {
           if (complete) recuerdaLasPartidas(matches);
           precargaElProximoDia({ partidos: matches, userId: user.id, pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id) });
           return { partidas: matches, desdeMemoria: false };
-        } catch {
+        } catch (err) {
+          // Un 401 o un 403 desmienten lo guardado, como con los partidos: se
+          // borra lo de esta cuenta y no se ofrece nada de memoria (CodeRabbit)
+          if (err?.status === 401 || err?.status === 403) {
+            olvidaLoDeEstaCuenta();
+            return { partidas: [], desdeMemoria: false };
+          }
           return lasGuardadas();
         }
       };
