@@ -29,7 +29,8 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
       .catch(() => {});
   }, [competitionId, version, lecturas]);
 
-  if (mias.length === 0) return null;
+  // Su categoría, también antes de tener partida (/code-review)
+  if (mias.length === 0 && categoria == null) return null;
 
   return (
     <ul className="mb-3 space-y-1 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">

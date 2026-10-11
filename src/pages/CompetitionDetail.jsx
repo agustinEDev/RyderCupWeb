@@ -524,7 +524,8 @@ const CompetitionDetail = () => {
   // Con todas las franjas jugadas y cerradas, «Terminar competición» a la
   // vista del organizador: en el menú no se encontraba (QA del 11 oct 2026).
   // Una franja no cambia de estado al cerrarse: se miran sus partidas
-  const [todasCerradas, setTodasCerradas] = useState(false);
+  // Con las franjas a las que se refiere: un «sí» de otras no vale (/code-review)
+  const [cierre, setCierre] = useState({ clave: null, cerradas: false });
   const leeSiTerminar =
     competition?.hasTeams === false &&
     competition?.status === 'IN_PROGRESS' &&
@@ -537,8 +538,8 @@ const CompetitionDetail = () => {
     if (!leeSiTerminar || !claveDeFranjas) return undefined;
     let vigente = true;
     Promise.all(claveDeFranjas.split('|').map((roundId) => getTeeGroupsUseCase.execute(roundId)))
-      .then((vistas) => vigente && setTodasCerradas(todasLasFranjasCerradas(vistas)))
-      .catch(() => vigente && setTodasCerradas(false));
+      .then((vistas) => vigente && setCierre({ clave: claveDeFranjas, cerradas: todasLasFranjasCerradas(vistas) }))
+      .catch(() => vigente && setCierre({ clave: claveDeFranjas, cerradas: false }));
     return () => {
       vigente = false;
     };
@@ -1580,7 +1581,7 @@ const CompetitionDetail = () => {
               </div>
             )}
 
-            {leeSiTerminar && todasCerradas && (
+            {leeSiTerminar && claveDeFranjas && cierre.clave === claveDeFranjas && cierre.cerradas && (
               <div className="px-4 pt-4">
                 <div data-testid="terminar-competicion" role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
                   <span className="w-full">{t('detail.allWindowsClosed')}</span>

@@ -110,15 +110,17 @@ const HoleInput = ({
       : val;
   };
 
+  // En foursomes la bola es de la pareja: «La pareja rival puso…» (/code-review)
+  const nombreDelOtro = (nombre, porDefecto) => (enParejas ? t('input.rivalPair') : nombre || t(porDefecto));
   const golpesEnTexto = (golpes) => (golpes === null ? t('input.pickedUp') : golpes);
   const loQuePuso = {
     own:
       validationStatus === 'mismatch' && playerScore?.markerSubmitted
-        ? t('input.otherPut', { nombre: markerName || t('input.yourMarker'), golpes: golpesEnTexto(playerScore.markerScore) })
+        ? t('input.otherPut', { nombre: nombreDelOtro(markerName, 'input.yourMarker'), golpes: golpesEnTexto(playerScore.markerScore) })
         : null,
     marked:
       markedValidationStatus === 'mismatch' && markedPlayerScore?.ownSubmitted
-        ? t('input.otherPut', { nombre: markedName || t('input.theMarkedPlayer'), golpes: golpesEnTexto(markedPlayerScore.ownScore) })
+        ? t('input.otherPut', { nombre: nombreDelOtro(markedName, 'input.theMarkedPlayer'), golpes: golpesEnTexto(markedPlayerScore.ownScore) })
         : null,
   };
 

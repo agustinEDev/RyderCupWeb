@@ -309,6 +309,20 @@ describe('HoleInput', () => {
       expect(screen.queryByTestId('lo-que-puso-el-otro-marked')).toBeNull();
     });
 
+    it('16: en foursomes, lo que puso la pareja rival, no una persona', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          matchFormat="FOURSOMES"
+          markerName="Diego"
+          validationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 6, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toHaveTextContent('input.otherPut {"nombre":"input.rivalPair","golpes":6}');
+    });
+
     it('16: una raya del otro se dice raya', () => {
       render(
         <HoleInput

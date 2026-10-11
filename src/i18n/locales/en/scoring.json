@@ -68,7 +68,8 @@
     "strokesReceived_one": "{{count}} stroke received",
     "strokesReceived_other": "{{count}} strokes received",
     "strokesGiven_one": "Gives {{count}} stroke",
-    "strokesGiven_other": "Gives {{count}} strokes"
+    "strokesGiven_other": "Gives {{count}} strokes",
+    "rivalPair": "The rival pair"
   },
   "scorecard": {
     "title": "Scorecard",

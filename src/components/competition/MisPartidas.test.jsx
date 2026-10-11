@@ -70,6 +70,13 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(await screen.findByTestId('mi-categoria')).toHaveTextContent('partidas.yourCategory {"categoria":2}');
   });
 
+  it('21: su categoría, aunque aún no tenga partida (/code-review)', async () => {
+    mockMias.mockResolvedValue([]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" categoria={2} />);
+
+    expect(await screen.findByTestId('mi-categoria')).toBeInTheDocument();
+  });
+
   it('21: sin categoría (una sola, o aún sin cerrar), nada', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), jugador('yo', 'ana')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" categoria={null} />);

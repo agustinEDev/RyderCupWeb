@@ -142,6 +142,23 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       await waitFor(() => expect(mockToast.info).toHaveBeenCalledWith('partida.broughtInToast {"viene":"CRIS","jugador":"BEA"}'));
     });
 
+    it('13: se nombra a quien acompaña (al que marca), no a cualquiera que siga jugando', async () => {
+      mockNoPresentado.mockResolvedValue(
+        vista('STABLEFORD', [
+          jugador('ana', 'NO_PRESENTADO', hoyosDeAna),
+          jugador('bea', 'ENTREGADA', hoyosDeAna),
+          jugador('cris', 'JUGANDO', hoyosDeAna, { marks_user_id: 'dani', marked_by_user_id: 'dani' }),
+          jugador('dani', 'JUGANDO', hoyosDeAna, { marks_user_id: 'cris', marked_by_user_id: 'cris', brought_in: true }),
+        ])
+      );
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea')) });
+
+      fireEvent.click(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockToast.info).toHaveBeenCalledWith('partida.broughtInToast {"viene":"DANI","jugador":"CRIS"}'));
+    });
+
     it('13: quien ya había venido antes no se anuncia otra vez', async () => {
       const yaEstaba = [
         jugador('ana', 'JUGANDO', hoyosDeAna, { marked_by_user_id: 'bea' }),

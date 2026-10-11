@@ -151,7 +151,7 @@ const GroupScoringPage = () => {
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
   // Con nombre: «Anotas a Bruno» y, en un desacuerdo, qué puso (QA del 11 oct 2026)
   const nombreDe = (jugador) => scoringView.players.find((p) => p.userId === jugador)?.userName ?? null;
-  const meMarca = strokePlay.cards.find((c) => c.userId === userId)?.markedByUserId;
+  const meMarca = miTarjeta?.markedByUserId;
   const sinMarcador = isMatchPlayer && sinMarcadorEnJuego(strokePlay.cards, userId);
 
   const anotar = (golpes, tocado) =>

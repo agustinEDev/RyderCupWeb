@@ -68,7 +68,8 @@
     "strokesReceived_one": "{{count}} golpe recibido",
     "strokesReceived_other": "{{count}} golpes recibidos",
     "strokesGiven_one": "Da {{count}} golpe",
-    "strokesGiven_other": "Da {{count}} golpes"
+    "strokesGiven_other": "Da {{count}} golpes",
+    "rivalPair": "La pareja rival"
   },
   "scorecard": {
     "title": "Tarjeta",

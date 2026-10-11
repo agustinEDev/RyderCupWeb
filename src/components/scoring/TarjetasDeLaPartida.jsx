@@ -122,7 +122,8 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     const antes = new Set(strokePlay.cards.map((c) => c.userId));
     const tarjetas = respuesta?.strokePlay?.cards ?? [];
     const viene = tarjetas.find((c) => c.broughtIn && !antes.has(c.userId));
-    const acompana = tarjetas.find((c) => c.cardStatus === 'JUGANDO' && c.userId !== viene?.userId);
+    // A quien viene a acompañar: al que marca (/code-review)
+    const acompana = tarjetas.find((c) => c.userId === viene?.marksUserId);
     if (viene && acompana) customToast.info(t('partida.broughtInToast', { viene: viene.name, jugador: acompana.name }));
   };
 
