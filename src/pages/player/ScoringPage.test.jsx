@@ -299,10 +299,25 @@ describe('ScoringPage', () => {
   it('regresión (12 oct 2026): sin red, quien no juega no recibe el aviso de anotar', () => {
     mockUseScoring.isOffline = true;
     mockUseScoring.isMatchPlayer = false;
+    mockUseScoring.canScore = false;
     try {
       render(<ScoringPage />);
 
       expect(screen.queryByTestId('anotar-sin-conexion')).toBeNull();
+    } finally {
+      mockUseScoring.isOffline = false;
+      mockUseScoring.isMatchPlayer = true;
+      mockUseScoring.canScore = true;
+    }
+  });
+
+  it('revisor: el administrador que anota sin jugar sí recibe el aviso de anotar', () => {
+    mockUseScoring.isOffline = true;
+    mockUseScoring.isMatchPlayer = false;
+    try {
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('anotar-sin-conexion')).toBeInTheDocument();
     } finally {
       mockUseScoring.isOffline = false;
       mockUseScoring.isMatchPlayer = true;

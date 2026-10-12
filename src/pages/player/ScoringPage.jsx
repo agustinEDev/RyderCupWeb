@@ -425,8 +425,8 @@ const ScoringPage = () => {
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
 
-      {/* Solo quien anota: al organizador que no juega no le vale «lo que anotes se guarda» */}
-        {isOffline && isMatchPlayer && <AnotarSinConexion pendingCount={pendingQueueSize} />}
+      {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
+      {isOffline && canScore && <AnotarSinConexion pendingCount={pendingQueueSize} />}
 
       {/* El gemelo de la pantalla sin nada pintado (FE #625): con cobertura y el
           servidor caído, la casilla enseña el golpe y nada decía que el otro

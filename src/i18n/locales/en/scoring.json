@@ -269,8 +269,8 @@
     "cardStatus": {
       "JUGANDO": "Playing",
       "ENTREGADA": "Submitted",
-      "RETIRADO": "Retired",
-      "NO_PRESENTADO": "No show",
+      "RETIRADO": "Withdrawn",
+      "NO_PRESENTADO": "No-show",
       "RETIRADO_female": "Withdrawn",
       "NO_PRESENTADO_female": "No-show"
     },

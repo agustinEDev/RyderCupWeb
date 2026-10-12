@@ -162,7 +162,7 @@ const QuickMatchScoringPage = () => {
   // Sin red (lo dice el navegador), las pendientes van en el aviso de arriba,
   // uno solo, como en la Ryder y las partidas (regresión del 12 oct 2026). Con
   // red pero sin salir (dos barras), el recuadro de siempre
-  const avisoDePendientes = pendientes > 0 && sinConexion ? (
+  const avisoDePendientes = sinConexion && (isScorer || pendientes > 0) ? (
     <AnotarSinConexion pendingCount={pendientes} />
   ) : pendientes > 0 && (
     <div className="max-w-4xl mx-auto px-4 pt-4">
@@ -466,7 +466,8 @@ const QuickMatchScoringPage = () => {
 
       {/* Que no haya golpes pendientes no quita que la pantalla lleve un rato
           sin actualizarse: sin decirlo, se lee como si estuviera al día */}
-      {sondeoSinRespuesta && quickMatch && pendientes === 0 && (
+      {/* Sin red, ya lo dice el aviso de arriba: uno solo (revisor) */}
+      {sondeoSinRespuesta && !sinConexion && quickMatch && pendientes === 0 && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <p
             data-testid="quick-match-sin-conexion"
