@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pencil } from 'lucide-react';
 import {
@@ -42,6 +42,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const { t } = useTranslation('scoring');
   const [corrigiendo, setCorrigiendo] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
+  // Adónde vuelve el foco tras un fallo: cuando el botón deja de estar
+  // desactivado, que es al acabar la acción (CodeRabbit en la #844)
+  const focoTrasFallo = useRef(null);
   const [ocupado, setOcupado] = useState(false);
 
   const { strokePlay } = scoringView;
@@ -61,18 +64,33 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     return golpe.ownSubmitted ? uno(golpe.ownScore, true) : uno(golpe.markerScore, golpe.markerSubmitted);
   };
 
-  const hacer = async (accion, aviso, alAcabar, despues) => {
+  useEffect(() => {
+    if (ocupado || !focoTrasFallo.current) return;
+    focoTrasFallo.current.focus();
+    focoTrasFallo.current = null;
+  }, [ocupado]);
+
+  const hacer = async (accion, aviso, alAcabar, despues, alFallar) => {
     setOcupado(true);
+    let respuesta;
     try {
-      const respuesta = await accion();
-      alAcabar?.();
-      customToast.success(typeof aviso === 'string' ? t(aviso) : t(aviso.clave, aviso.params));
-      despues?.(respuesta);
-      onCambio?.();
+      respuesta = await accion();
     } catch (error) {
       customToast.error(mensajeDeErrorDePartida(t, error));
+      // Una confirmación no se queda abierta tras el error (QA 3)
+      alFallar?.();
+      return;
     } finally {
       setOcupado(false);
+    }
+    // Lo de después ya no es un fallo de la petición (/code-review)
+    alAcabar?.();
+    customToast.success(typeof aviso === 'string' ? t(aviso) : t(aviso.clave, aviso.params));
+    try {
+      despues?.(respuesta);
+      onCambio?.();
+    } catch {
+      // El refresco se reintenta solo con el sondeo
     }
   };
 
@@ -252,7 +270,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.validateScored', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'validar', cuantos: cuantosPorValidar })}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'validar', cuantos: cuantosPorValidar, origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-primary px-3 text-sm font-semibold text-primary"
                   >
                     {t('partida.validateScoredShort')}
@@ -263,7 +281,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.reopen', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'reabrir' })}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'reabrir', origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-gray-300 px-3 text-sm text-gray-700"
                   >
                     {t('partida.reopenShort')}
@@ -274,7 +292,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.noShow', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'noPresentado' })}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'noPresentado', origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-gray-300 px-3 text-sm text-gray-700"
                   >
                     {t('partida.noShowShort')}
@@ -296,23 +314,39 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   disabled={ocupado}
                   onClick={() => {
                     const cerrar = () => setConfirmando(null);
+                    // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
+                    const alFallar = () => {
+                      setConfirmando(null);
+                      focoTrasFallo.current = confirmaEsta.origen;
+                    };
                     if (confirmaEsta.accion === 'reabrir') {
-                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar);
+                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, alFallar);
                     } else if (confirmaEsta.accion === 'validar') {
                       hacer(
                         () => validateTeeGroupScoredHolesUseCase.execute(scoringView.matchId, jugador),
                         { clave: 'partida.scoredValidated', params: { count: confirmaEsta.cuantos } },
-                        cerrar
+                        cerrar,
+                        undefined,
+                        alFallar
                       );
                     } else {
-                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien);
+                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien, alFallar);
                     }
                   }}
                   className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"
                 >
                   {t('partida.yes')}
                 </button>
-                <button type="button" onClick={() => setConfirmando(null)} className="min-h-11 rounded-md px-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // El foco vuelve al botón que la abrió (/code-review)
+                    const { origen } = confirmaEsta;
+                    setConfirmando(null);
+                    origen?.focus();
+                  }}
+                  className="min-h-11 rounded-md px-3"
+                >
                   {t('partida.no')}
                 </button>
               </div>

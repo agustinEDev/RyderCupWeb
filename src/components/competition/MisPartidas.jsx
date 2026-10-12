@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
-import { companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
 
 /**
  * «Tu partida» de cada jornada, arriba de las franjas (FE #824, PR 6; caso 5,
@@ -44,7 +44,8 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         const yo = group.players.find((p) => p.userId === userId);
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
         const companeros = companerosDe(group, userId).map((p) => p.name);
-        const marcado = juegan(group).find((p) => p.userId === yo?.marksUserId);
+        // Retirado, ya no marca a nadie (/code-review)
+        const marcado = yo?.cardStatus === 'RETIRADO' ? null : juegan(group).find((p) => p.userId === yo?.marksUserId);
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),
@@ -77,7 +78,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
               to={`/player/groups/${group.id}/scoring?competition=${competitionId}`}
               className="ml-2 inline-flex min-h-11 items-center font-semibold text-primary underline"
             >
-              {t('partidas.score')}
+              {t(anotaSuTarjeta(group, userId) ? 'partidas.score' : 'partidas.viewCard')}
             </Link>
           </li>
         );

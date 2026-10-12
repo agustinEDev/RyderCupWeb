@@ -13,8 +13,11 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
-import { destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
+
+// «Retirada», «No presentada» para ellas (revisor)
+const enFemenino = (jugador) => (jugador.teeGender === 'FEMALE' ? [{ context: 'female' }] : []);
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -424,6 +427,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
           <ol className="space-y-2">
             {grupos.map((g, i) => {
               const mia = g.players.some((p) => p.userId === userId);
+              // Anotar solo con mi tarjeta abierta; si no (NP, retirado, cerrada), verla (QA 3)
+              const anoto = anotaSuTarjeta(g, userId);
               return (
                 <li
                   key={g.id}
@@ -435,7 +440,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                     <span className="font-semibold text-gray-900">
                       {t('partidas.number', { numero: g.number, hora: g.teeTime })}
                     </span>
-                    {g.incomplete && (
+                    {/* Cerrada, ya no le falta nadie (QA 3) */}
+                    {g.incomplete && g.status !== 'COMPLETED' && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
                         {t('partidas.incomplete')}
                       </span>
@@ -476,10 +482,13 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
-                            <span className="font-semibold text-red-700">{t('partidas.noShow')}</span>
+                            <span className="font-semibold text-red-700">{t('partidas.noShow', ...enFemenino(p))}</span>
                           )}
-                          {/* Ni el NP marca ni se marca a un NP (CodeRabbit) */}
-                          {p.marksUserId && !esNoPresentado(p) && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
+                          {p.cardStatus === 'RETIRADO' && (
+                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn', ...enFemenino(p))}</span>
+                          )}
+                          {/* Ni el NP o el retirado marcan, ni se marca a un NP (CodeRabbit, /code-review) */}
+                          {p.marksUserId && !esNoPresentado(p) && p.cardStatus !== 'RETIRADO' && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
                             <span className="text-gray-500">
                               {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
                             </span>
@@ -530,7 +539,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                     to={`/player/groups/${g.id}/scoring?competition=${competitionId}`}
                     className="mt-1 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline"
                   >
-                    {t(mia ? 'partidas.score' : 'partidas.viewCard')}
+                    {t(anoto ? 'partidas.score' : 'partidas.viewCard')}
                   </Link>
                 </li>
               );

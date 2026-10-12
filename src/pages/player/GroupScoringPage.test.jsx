@@ -243,6 +243,52 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(llamadas.selector.scores[0].playerScores.map((p) => p.userId)).toEqual(['ana', 'bea']);
   });
 
+  // 3.ª pasada del QA (12 oct 2026): la retirada veía en verde los hoyos que
+  // no jugó (los validaban los demás) y sin «Te anotó X»
+  it('QA 3: quien se retiró ve su tarjeta en solo lectura y la tira de hoyos con la suya', () => {
+    const jugado = { ...hoyo(1), own_score: 5, own_submitted: true, status: 'PENDING' };
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'RETIRADO', holes: [jugado, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.isReadOnly).toBe(true);
+    expect(llamadas.selector.scores[0].playerScores.map((p) => p.userId)).toEqual(['ana']);
+  });
+
+  it('revisor: la retirada lee «Te anotó» solo en los hoyos que alguien le anotó, y sigue con columna', () => {
+    const anotado = { ...hoyo(1), own_score: 5, own_submitted: true, marker_score: 5, marker_submitted: true, status: 'MATCH', marker_by: 'bea', marker_by_name: 'Bea' };
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'cris', { card_status: 'RETIRADO', marked_by_user_id: null, holes: [anotado, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.markerName).toBe('Bea');
+    expect(llamadas.casilla.hasMarker).toBe(true);
+  });
+
+  it('revisor: en la tira de la retirada, los hoyos que no jugó salen vacíos, no «por validar»', () => {
+    const jugado = { ...hoyo(1), own_score: 5, own_submitted: true, marker_score: 5, marker_submitted: true, status: 'MATCH' };
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'cris', { card_status: 'RETIRADO', holes: [jugado, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.selector.scores.map((s) => s.holeNumber)).toEqual([1]);
+  });
+
+  it('revisor: un hoyo que nadie le anotó no lleva nombre de marcador', () => {
+    mockHook = hook({ currentHole: 1, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO' }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.isReadOnly).toBe(true);
+    expect(llamadas.casilla.markerName).toBeNull();
+  });
+
+  it('revisor: si retirarse falla, la confirmación se cierra', async () => {
+    mockRetirarse.mockRejectedValueOnce(Object.assign(new Error('x'), { errorCode: 'GROUP_NOT_SCORING' }));
+    render(<GroupScoringPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retire' }));
+    fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'partida.retireYes' })).toBeNull());
+  });
+
   it('la hora de la cabecera, en HH:MM aunque llegue con segundos', () => {
     mockHook = hook({ scoringView: vista({ tee_time: '08:10:00' }) });
     render(<GroupScoringPage />);

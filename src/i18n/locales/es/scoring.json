@@ -302,6 +302,8 @@
       "SCORECARD_NOT_READY": "Faltan hoyos por validar para entregar la tarjeta.",
       "SCORECARD_NOT_READY_holes_one": "Falta por validar el hoyo {{hoyos}} para entregar la tarjeta.",
       "SCORECARD_NOT_READY_holes_other": "Faltan por validar los hoyos {{hoyos}} para entregar la tarjeta.",
+      "PLAYER_HAS_MARKER": "Ese jugador tiene marcador en juego: sus hoyos los valida él.",
+      "GROUP_FULL": "La partida ya está completa: no se puede reabrir esta tarjeta.",
       "NOT_ORGANIZER": "Solo el organizador puede hacer esto.",
       "generic": "No se pudo hacer."
     },

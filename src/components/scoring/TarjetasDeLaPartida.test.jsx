@@ -82,6 +82,18 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       expect(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' })).toBeInTheDocument();
     });
 
+    it('revisor: si «Validar lo anotado» falla, la confirmación se cierra', async () => {
+      mockValidar.mockRejectedValueOnce(Object.assign(new Error('x'), { errorCode: 'PLAYER_HAS_MARKER' }));
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador(null)) });
+
+      const ana = within(screen.getByTestId('tarjeta-ana'));
+      fireEvent.click(ana.getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' }));
+      fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.PLAYER_HAS_MARKER'));
+      expect(ana.queryByRole('button', { name: 'partida.yes' })).toBeNull();
+    });
+
     it('11: también si su marcador ya entregó', () => {
       pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea', 'ENTREGADA')) });
 
@@ -337,6 +349,54 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
     await waitFor(() => expect(mockReabrir).toHaveBeenCalledWith('g-1', 'bea'));
     expect(onCambio).toHaveBeenCalled();
+  });
+
+  it('QA 3: si reabrir falla (partida completa), su texto y la confirmación se cierra', async () => {
+    mockReabrir.mockRejectedValueOnce(Object.assign(new Error('detail'), { errorCode: 'GROUP_FULL' }));
+    pintar({ organiza: true });
+
+    const bea = within(screen.getByTestId('tarjeta-bea'));
+    fireEvent.click(bea.getByRole('button', { name: 'partida.reopen {"jugador":"BEA"}' }));
+    fireEvent.click(bea.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_FULL'));
+    expect(bea.queryByRole('button', { name: 'partida.yes' })).toBeNull();
+  });
+
+  it('revisor: si marcar no presentado falla, la confirmación también se cierra', async () => {
+    mockNoPresentado.mockRejectedValueOnce(Object.assign(new Error('x'), { errorCode: 'NOT_ORGANIZER' }));
+    pintar({ organiza: true });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(ana.queryByRole('button', { name: 'partida.yes' })).toBeNull());
+    // Y el foco vuelve a quien abrió la confirmación (revisor)
+    await waitFor(() => expect(document.activeElement).toBe(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' })));
+  });
+
+  it('/code-review: si la petición fue bien pero avisar falla, no se dice que falló ni se reenfoca', async () => {
+    mockNoPresentado.mockResolvedValueOnce(null);
+    const onCambio = vi.fn(() => { throw new Error('refresco'); });
+    pintar({ organiza: true, onCambio });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalled());
+    expect(mockToast.error).not.toHaveBeenCalled();
+  });
+
+  it('/code-review: con «No», el foco vuelve al botón que la abrió', () => {
+    pintar({ organiza: true });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.no' }));
+
+    expect(document.activeElement).toBe(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
   });
 
   it('15g: no presentado, a quien sigue jugando, con confirmación; «No» no hace nada', async () => {

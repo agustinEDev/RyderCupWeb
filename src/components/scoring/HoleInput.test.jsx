@@ -245,6 +245,18 @@ describe('HoleInput', () => {
       expect(screen.queryByText('input.markerScore')).toBeNull();
     });
 
+    it('revisor (QA 3): en solo lectura, un hoyo sin jugar sale vacío, no con la raya de «recogió»', () => {
+      render(<HoleInput {...defaultProps} isReadOnly playerScore={{ ownScore: null, ownSubmitted: false, markerScore: null, markerSubmitted: false }} />);
+
+      expect(screen.getByTestId('hole-input')).not.toHaveTextContent('—');
+    });
+
+    it('/code-review: en solo lectura, la recogida tiene nombre para el lector de pantalla', () => {
+      render(<HoleInput {...defaultProps} isReadOnly playerScore={{ ownScore: null, ownSubmitted: true, markerScore: 5, markerSubmitted: true }} />);
+
+      expect(screen.getByLabelText('input.pickedUp')).toBeInTheDocument();
+    });
+
     it('en solo lectura, sin marcador, solo tu número', () => {
       render(<HoleInput {...defaultProps} isReadOnly hasMarker={false} playerScore={{ ownScore: 5, markerScore: null }} />);
 

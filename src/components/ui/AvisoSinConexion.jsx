@@ -31,11 +31,18 @@ const AvisoSinConexion = () => {
       className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-2 bg-amber-50 px-4 py-2 text-sm text-amber-900 border-b border-amber-200"
     >
       <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-      <span role="status">{t(anotando ? 'sinConexion.anotando' : 'sinConexion.aviso')}</span>
-      {/* Fuera de la región que se lee: si no, cada anotación sin red la
-          repetía entera al lector de pantalla (revisor) */}
-      {/* Con su propia región educada: se anuncia el número, no el aviso entero (CodeRabbit) */}
-      {anotando?.pendientes > 0 && <span aria-live="polite">· {t('sinConexion.pendientes', { count: anotando.pendientes })}</span>}
+      {/* Un solo párrafo: las pendientes siguen al aviso en la misma línea de
+          texto, no en una aparte (QA 3). El número, fuera de la región que se
+          lee entera y en la suya educada (revisor y CodeRabbit) */}
+      <p className="min-w-0 text-center">
+        <span role="status">{t(anotando ? 'sinConexion.anotando' : 'sinConexion.aviso')}</span>
+        {anotando?.pendientes > 0 && (
+          <>
+            {' '}
+            <span aria-live="polite">· {t('sinConexion.pendientes', { count: anotando.pendientes })}</span>
+          </>
+        )}
+      </p>
     </div>
   );
 };

@@ -302,6 +302,8 @@
       "SCORECARD_NOT_READY": "Some holes still need validating before the card can be submitted.",
       "SCORECARD_NOT_READY_holes_one": "Hole {{hoyos}} still needs validating before the card can be submitted.",
       "SCORECARD_NOT_READY_holes_other": "Holes {{hoyos}} still need validating before the card can be submitted.",
+      "PLAYER_HAS_MARKER": "That player has a marker in play: their holes are validated by the marker.",
+      "GROUP_FULL": "The group is already full: this card cannot be reopened.",
       "NOT_ORGANIZER": "Only the organiser can do this.",
       "generic": "It could not be done."
     },

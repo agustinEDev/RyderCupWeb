@@ -96,6 +96,20 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(await screen.findByTestId('mi-partida-r1')).not.toHaveTextContent('partidas.youMark');
   });
 
+  it.each(['RETIRADO', 'ENTREGADA'])('revisor: con mi tarjeta %s, «Ver tarjeta» y no «Anotar»', async (estado) => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [{ ...jugador('yo', 'bea'), cardStatus: estado }, jugador('bea', 'yo')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    expect(within(await screen.findByTestId('mi-partida-r1')).getByRole('link')).toHaveTextContent('partidas.viewCard');
+  });
+
+  it('/code-review: retirado, ya no «marcas a» nadie', async () => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [{ ...jugador('yo', 'bea'), cardStatus: 'RETIRADO' }, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    expect(await screen.findByTestId('mi-partida-r1')).not.toHaveTextContent('partidas.youMark');
+  });
+
   it('21 (QA del 11 oct 2026): con varias categorías, la suya', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '09:10', [jugador('ana', 'yo'), jugador('yo', 'ana')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" categoria={2} />);

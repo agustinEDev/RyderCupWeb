@@ -279,12 +279,13 @@ const HoleInput = ({
         <div className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}>
           <div>
             <p className="text-xs text-gray-500">{etiquetaPropia}</p>
-            <p className="text-xl font-bold">{displayScore(playerScore.ownScore)}</p>
+            {/* Sin anotar, hueco y no la raya de «recogió» (revisor, QA 3) */}
+            <p className="text-xl font-bold">{displayScore(playerScore.ownSubmitted === false ? undefined : playerScore.ownScore, t('input.pickedUp'))}</p>
           </div>
           {conMarcador && (
             <div>
               <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
-              <p className="text-xl font-bold">{displayScore(playerScore.markerScore)}</p>
+              <p className="text-xl font-bold">{displayScore(playerScore.markerSubmitted === false ? undefined : playerScore.markerScore, t('input.pickedUp'))}</p>
             </div>
           )}
         </div>
