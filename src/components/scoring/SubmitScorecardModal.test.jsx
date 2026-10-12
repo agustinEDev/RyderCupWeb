@@ -77,4 +77,19 @@ describe('SubmitScorecardModal', () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  // 2.ª pasada del QA (12 oct 2026): en una partida el organizador la puede
+  // reabrir; «no se puede deshacer» solo es verdad en la Ryder
+  it('en una partida, que solo el organizador puede reabrirla', () => {
+    render(<SubmitScorecardModal isOpen reopenable validatedHoles={18} totalHoles={18} onConfirm={vi.fn()} onClose={vi.fn()} />);
+
+    expect(screen.getByText('submit.confirmReopenable')).toBeInTheDocument();
+    expect(screen.queryByText('submit.confirm')).toBeNull();
+  });
+
+  it('en la Ryder, como siempre', () => {
+    render(<SubmitScorecardModal isOpen validatedHoles={18} totalHoles={18} onConfirm={vi.fn()} onClose={vi.fn()} />);
+
+    expect(screen.getByText('submit.confirm')).toBeInTheDocument();
+  });
 });

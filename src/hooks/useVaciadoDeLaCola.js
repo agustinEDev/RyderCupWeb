@@ -20,7 +20,8 @@ const ESPERAS_MS = [30_000, 120_000, 300_000];
  * y no tiene otra forma de saberlo.
  */
 const partidaQueSeEstaAnotando = (pathname) => {
-  const encaje = /\/(?:player\/matches|quick-matches)\/([^/]+)\/scoring$/.exec(pathname);
+  // También la de una partida de stroke play (FE #824, PR 7)
+  const encaje = /\/(?:player\/matches|player\/groups|quick-matches)\/([^/]+)\/scoring$/.exec(pathname);
   return encaje ? encaje[1] : null;
 };
 

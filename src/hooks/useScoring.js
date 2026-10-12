@@ -1,10 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-  getScoringViewUseCase,
-  submitHoleScoreUseCase,
-  submitScorecardUseCase,
-  concedeMatchUseCase,
-} from '../composition';
+import { ORIGEN_RYDER } from './origenesDeAnotacion';
 import { seGuardaParaDespues } from '../utils/politicaDeLaCola';
 import { abreMasTarde } from '../services/partidosSinCobertura';
 import {
@@ -87,7 +82,7 @@ const estaSuperada = (guardada, loEnviado) => {
  * @param {string} currentUserId
  * @returns {Object} Scoring state and actions
  */
-export const useScoring = (matchId, currentUserId, isAdmin = false) => {
+export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORIGEN_RYDER) => {
   const [scoringView, setScoringView] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -214,19 +209,23 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
    * reemplaza cada 10 s, y colgar de él un `useCallback` reconstruía
    * `submitScore` seis veces por minuto en la pantalla más caliente.
    */
-  const laPartidaRef = useRef({ matchName: null, matchNumber: null });
+  const laPartidaRef = useRef({ matchName: null, matchNumber: null, ...(origen.tipo ? { tipo: origen.tipo } : {}) });
   useEffect(() => {
     // Solo si la vista ES de esta partida: la ruta no lleva `key` y la vista
     // no se vacía al cambiar de partida, así que al ir de A a B hay un render
     // con `matchId` de B y la vista de A. Sin esta guarda se le ponía a B el
     // nombre de A, y como el nombre no se pisa, para siempre
     const esDeEsta = Boolean(matchId) && scoringView?.matchId === matchId;
+    // Y de qué es, para que el vaciado de fondo la mande a su endpoint (PR 7).
+    // La Ryder no lleva tipo, como siempre
+    const deQue = origen.tipo ? { tipo: origen.tipo } : {};
     laPartidaRef.current = esDeEsta
       ? {
         matchName: scoringView?.roundInfo?.golfCourseName ?? null,
         matchNumber: scoringView?.matchNumber ?? null,
+        ...deQue,
       }
-      : { matchName: null, matchNumber: null };
+      : { matchName: null, matchNumber: null, ...deQue };
     // Y se le pone nombre a lo que se guardó sin él: en un arranque en frío
     // sin cobertura esta vista no llega nunca, así que todo lo anotado ese día
     // quedó sin nombre y el panel enseñaba «una partida anterior». En cuanto
@@ -237,7 +236,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
       offlineQueue.ponleNombre(matchId, laPartidaRef.current);
       golpesPerdidos.ponleNombre(matchId, laPartidaRef.current);
     }
-  }, [matchId, scoringView?.matchId, scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber]);
+  }, [matchId, scoringView?.matchId, scoringView?.roundInfo?.golfCourseName, scoringView?.matchNumber, origen.tipo]);
 
   const pendientesPropias = useCallback(
     () => offlineQueue.getByMatch(matchId, currentUserId).filter((e) => e.participantId == null).length,
@@ -309,6 +308,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
           [encima.marca]: true,
           validationStatus: 'pending',
           ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
+          // Lo de la cola es de quien anota aquí: ya no es del marcador de antes
+          ...(encima.campo === 'markerScore' ? { markerBy: null, markerByName: null } : {}),
         }
     );
 
@@ -394,7 +395,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     const salio = ++relojRef.current;
     const esVieja = () => esDeOtraPartida(matchId) || salio < ultimaAplicadaRef.current;
     try {
-      const data = await getScoringViewUseCase.execute(matchId);
+      const data = await origen.leeLaVista.execute(matchId);
       if (esVieja()) return null;
       ultimaAplicadaRef.current = salio;
       setScoringView(data);
@@ -455,7 +456,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // foto de las partidas que juegas. Recrea la petición —y reinicia el sondeo—
     // al cambiar de cuenta, que es lo que se quiere: la cola es por dueño desde
     // la FE #521, y la foto también
-  }, [matchId, isOffline, esDeOtraPartida, currentUserId]);
+  }, [matchId, isOffline, esDeOtraPartida, currentUserId, origen.leeLaVista]);
 
   // --- Un escritor a la vez: el envío o el vaciado (FE #601) ---
   // El golpe se guarda en la cola ANTES de enviarlo, así que un vaciado que
@@ -504,7 +505,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
         // con los demás, que con mala cobertura son segundos. Y cuenta como lo
         // último aplicado, para que un sondeo de antes no lo deshaga
         manda: async (entrada) => {
-          const vista = await submitHoleScoreUseCase.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData);
+          const vista = await origen.anota.execute(entrada.matchId, entrada.holeNumber, entrada.scoreData);
           if (!vista?.matchId || esDeOtraPartida(entrada.matchId)) return;
           marcaEscritura();
           setScoringView((prev) => conHoyosDe(vista, prev));
@@ -536,7 +537,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     setPendingQueueSize(pendientesPropias());
     await fetchScoringView();
     return resultado;
-  }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura, esDeOtraPartida]);
+  }, [matchId, fetchScoringView, pendientesPropias, currentUserId, marcaEscritura, esDeOtraPartida, origen.anota]);
 
   // Un solo vaciado a la vez. Hay cuatro disparadores —montar, `online`, el sondeo y
   // volver a la aplicación— y llegan juntos: al entrar desde el aviso del
@@ -713,7 +714,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     // Si el servidor contestó —acepte o rechace— hay cobertura para lo aplazado
     let contesto = false;
     try {
-      const updatedView = await submitHoleScoreUseCase.execute(matchId, holeNumber, scoreData);
+      const updatedView = await origen.anota.execute(matchId, holeNumber, scoreData);
       contesto = true;
       // La respuesta trae la vista con el golpe: una pedida antes ya no vale (FE #606).
       // Salvo que ya se esté en otro partido: ni se pinta ni cuenta como aplicada
@@ -783,7 +784,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida]);
+  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -791,7 +792,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
 
     setIsSubmitting(true);
     try {
-      const summary = await submitScorecardUseCase.execute(matchId);
+      const summary = await origen.entrega.execute(matchId);
       // Como un golpe que llega: una vista pedida antes ya no vale (FE #606)
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       setMatchSummary(summary);
@@ -803,15 +804,16 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, canSubmitScorecard, fetchScoringView, marcaEscritura, esDeOtraPartida]);
+  }, [matchId, canSubmitScorecard, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.entrega]);
 
   // --- Concede match ---
   const concedeMatch = useCallback(async (concedingTeam, reason) => {
-    if (!matchId) return;
+    // En stroke play no se concede: su origen no lo trae
+    if (!matchId || !origen.concede) return;
 
     setIsSubmitting(true);
     try {
-      await concedeMatchUseCase.execute(matchId, concedingTeam, reason);
+      await origen.concede.execute(matchId, concedingTeam, reason);
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       await fetchScoringView();
       if (!esDeOtraPartida(matchId)) setFallo(null);
@@ -820,7 +822,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida]);
+  }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.concede]);
 
 
 

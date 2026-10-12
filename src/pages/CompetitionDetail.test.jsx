@@ -1240,7 +1240,7 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
     // jsdom no maqueta: se comprueba lo que evita el desborde. El texto puede
     // encogerse y el correo partirse por cualquier sitio
     expect(within(fila).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
-    expect(within(fila).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(fila).getByText(CORREO_LARGO)).toHaveClass('wrap-anywhere');
     expect(within(fila).getByText('detail.rejected')).toHaveClass('flex-none');
   });
 
@@ -1255,7 +1255,7 @@ describe('CompetitionDetail · solicitudes rechazadas (FE #744)', () => {
     renderPage();
 
     const pendiente = await screen.findByTestId('pendiente-u-p');
-    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(within(pendiente).getByText(CORREO_LARGO)).toHaveClass('wrap-anywhere');
     expect(within(pendiente).getByText(CORREO_LARGO).parentElement).toHaveClass('min-w-0');
   });
 });

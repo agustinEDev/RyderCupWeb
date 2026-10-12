@@ -8,7 +8,7 @@ import { CUPO_POR_DEFECTO, cupoDeJugadores } from './cupoDeJugadores';
  * Era un campo obligatorio y vacío: obligaba a decidir un tope antes de poder
  * crear nada, y quien monta una Ryder con sus amigos no tiene opinión sobre eso.
  * Ahora se pliega con los demás valores por defecto, y si no se toca vale 12
- * —acordado con Agustín el 19 sep—. El tope de 100 sigue siendo de la API.
+ * —acordado con Agustín el 19 sep—. El tope (200 desde la BE #314) sigue siendo de la API.
  */
 describe('cupoDeJugadores', () => {
   it('sin decir nada, son 12', () => {
@@ -21,7 +21,7 @@ describe('cupoDeJugadores', () => {
   it('y si se dice, se respeta', () => {
     expect(cupoDeJugadores('20')).toBe(20);
     expect(cupoDeJugadores(8)).toBe(8);
-    expect(cupoDeJugadores('100')).toBe(100);
+    expect(cupoDeJugadores('200')).toBe(200);
   });
 
   it('lo ilegible cae en el defecto, no en un NaN camino del servidor', () => {

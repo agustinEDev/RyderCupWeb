@@ -94,6 +94,23 @@ describe('GolpesSinEnviar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/quick-matches/qm-1/scoring');
   });
 
+  it('y a la de su partida cuando es de stroke play, nombrada como partida (FE #824, PR 7)', () => {
+    cola.enqueue('g-1', 3, { ownScore: 4 }, null, 'u1', { tipo: cola.TIPO_PARTIDA_DE_FRANJA, matchNumber: 2 });
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(screen.getByText(/partida=golpesSinEnviar.partidaDeFranja\(numero=2\)/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/player/groups/g-1/scoring');
+  });
+
+  it('un golpe perdido de una partida de stroke play también se nombra como partida', () => {
+    golpesPerdidos.apunta({ matchId: 'g-1', matchNumber: 3, holeNumber: 5, userId: 'u1', tipo: cola.TIPO_PARTIDA_DE_FRANJA });
+    render(<GolpesSinEnviar userId="u1" />);
+
+    expect(screen.getByText(/golpesSinEnviar.partidaDeFranja\(numero=3\)/)).toBeInTheDocument();
+  });
+
   it('no enseña lo de la persona que usó el móvil antes', () => {
     cola.enqueue('m-9', 3, { ownScore: 4 }, null, 'otra', { matchName: 'Partida ajena' });
     golpesPerdidos.apunta({ matchId: 'm-9', matchName: 'Partida ajena', holeNumber: 5, userId: 'otra' });

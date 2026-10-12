@@ -60,6 +60,10 @@ import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetit
 import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
 import CreateCompetitionWithGolfCoursesUseCase from '../application/use_cases/competition/CreateCompetitionWithGolfCoursesUseCase';
 import UpdateCompetitionUseCase from '../application/use_cases/competition/UpdateCompetitionUseCase';
+import UpdateStrokePlaySettingsUseCase from '../application/use_cases/competition/UpdateStrokePlaySettingsUseCase';
+import LaunchHandicapUpdateUseCase from '../application/use_cases/competition/LaunchHandicapUpdateUseCase';
+import ScheduleHandicapUpdateUseCase from '../application/use_cases/competition/ScheduleHandicapUpdateUseCase';
+import CancelScheduledHandicapUpdateUseCase from '../application/use_cases/competition/CancelScheduledHandicapUpdateUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
 import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
 import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
@@ -99,6 +103,21 @@ import ResetEnvelopesUseCase from '../application/use_cases/envelope/ResetEnvelo
 import ListMyPendingEnvelopesUseCase from '../application/use_cases/envelope/ListMyPendingEnvelopesUseCase';
 import ListMySessionsWithoutMatchesUseCase from '../application/use_cases/envelope/ListMySessionsWithoutMatchesUseCase';
 import CreateRoundUseCase from '../application/use_cases/schedule/CreateRoundUseCase';
+import TakeTeeWindowPlaceUseCase from '../application/use_cases/schedule/TakeTeeWindowPlaceUseCase';
+import ReleaseTeeWindowPlaceUseCase from '../application/use_cases/schedule/ReleaseTeeWindowPlaceUseCase';
+import JoinWaitingListUseCase from '../application/use_cases/schedule/JoinWaitingListUseCase';
+import LeaveWaitingListUseCase from '../application/use_cases/schedule/LeaveWaitingListUseCase';
+import ListMyAssignedPlacesUseCase from '../application/use_cases/schedule/ListMyAssignedPlacesUseCase';
+import AcknowledgeAssignedPlaceUseCase from '../application/use_cases/schedule/AcknowledgeAssignedPlaceUseCase';
+// Partidas de las franjas (FE #824, PR 6)
+import GetTeeGroupsUseCase from '../application/use_cases/schedule/GetTeeGroupsUseCase';
+import GetMyTeeGroupsUseCase from '../application/use_cases/schedule/GetMyTeeGroupsUseCase';
+import GetUpcomingTeeGroupsUseCase from '../application/use_cases/schedule/GetUpcomingTeeGroupsUseCase';
+import GenerateTeeGroupsUseCase from '../application/use_cases/schedule/GenerateTeeGroupsUseCase';
+import MoveTeeGroupPlayerUseCase from '../application/use_cases/schedule/MoveTeeGroupPlayerUseCase';
+import ReorderTeeGroupsUseCase from '../application/use_cases/schedule/ReorderTeeGroupsUseCase';
+import SetTeeGroupMarkersUseCase from '../application/use_cases/schedule/SetTeeGroupMarkersUseCase';
+import DeleteTeeGroupsUseCase from '../application/use_cases/schedule/DeleteTeeGroupsUseCase';
 import UpdateRoundUseCase from '../application/use_cases/schedule/UpdateRoundUseCase';
 import DeleteRoundUseCase from '../application/use_cases/schedule/DeleteRoundUseCase';
 import GenerateMatchesUseCase from '../application/use_cases/schedule/GenerateMatchesUseCase';
@@ -154,11 +173,22 @@ import GetScoringBreakdownUseCase from '../application/use_cases/player_stats/Ge
 
 // Scoring Use Cases (Sprint 4)
 import ApiScoringRepository from '../infrastructure/repositories/ApiScoringRepository';
+import ApiTeeGroupScoringRepository from '../infrastructure/repositories/ApiTeeGroupScoringRepository';
 import GetScoringViewUseCase from '../application/use_cases/scoring/GetScoringViewUseCase';
 import SubmitHoleScoreUseCase from '../application/use_cases/scoring/SubmitHoleScoreUseCase';
 import SubmitScorecardUseCase from '../application/use_cases/scoring/SubmitScorecardUseCase';
 import GetLeaderboardUseCase from '../application/use_cases/scoring/GetLeaderboardUseCase';
 import ConcedeMatchUseCase from '../application/use_cases/scoring/ConcedeMatchUseCase';
+// Anotar las partidas de stroke play (FE #824, PR 7)
+import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFromTeeGroupUseCase';
+import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
+import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTeeGroupCardUseCase';
+import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
+import ValidateTeeGroupScoredHolesUseCase from '../application/use_cases/scoring/ValidateTeeGroupScoredHolesUseCase';
+import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
+import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
+import GetCompetitionStandingsUseCase from '../application/use_cases/scoring/GetCompetitionStandingsUseCase';
+import GetScratchStandingsUseCase from '../application/use_cases/scoring/GetScratchStandingsUseCase';
 
 // Enrollment Use Cases
 import ApiEnrollmentRepository from '../infrastructure/repositories/ApiEnrollmentRepository';
@@ -167,7 +197,6 @@ import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnro
 import ApproveEnrollmentUseCase from '../application/use_cases/enrollment/ApproveEnrollmentUseCase';
 import RejectEnrollmentUseCase from '../application/use_cases/enrollment/RejectEnrollmentUseCase';
 import CancelEnrollmentUseCase from '../application/use_cases/enrollment/CancelEnrollmentUseCase';
-import WithdrawEnrollmentUseCase from '../application/use_cases/enrollment/WithdrawEnrollmentUseCase';
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
@@ -209,6 +238,7 @@ const apiSupportRepository = new ApiSupportRepository();
 const apiCountryRepository = new ApiCountryRepository();
 const apiInvitationRepository = new ApiInvitationRepository();
 const apiScoringRepository = new ApiScoringRepository();
+const apiTeeGroupScoringRepository = new ApiTeeGroupScoringRepository();
 const apiQuickMatchRepository = new ApiQuickMatchRepository();
 
 // --- Casos de Uso ---
@@ -236,6 +266,10 @@ const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ auth
 const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
+const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({ competitionRepository: apiCompetitionRepository });
+const launchHandicapUpdateUseCase = new LaunchHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
+const scheduleHandicapUpdateUseCase = new ScheduleHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
+const cancelScheduledHandicapUpdateUseCase = new CancelScheduledHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
 const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
@@ -265,6 +299,19 @@ const getScheduleUseCase = new GetScheduleUseCase({ scheduleRepository: apiSched
 const configureScheduleUseCase = new ConfigureScheduleUseCase({ scheduleRepository: apiScheduleRepository });
 const assignTeamsUseCase = new AssignTeamsUseCase({ scheduleRepository: apiScheduleRepository });
 const createRoundUseCase = new CreateRoundUseCase({ scheduleRepository: apiScheduleRepository });
+const takeTeeWindowPlaceUseCase = new TakeTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
+const releaseTeeWindowPlaceUseCase = new ReleaseTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
+const joinWaitingListUseCase = new JoinWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
+const leaveWaitingListUseCase = new LeaveWaitingListUseCase({ scheduleRepository: apiScheduleRepository });
+const listMyAssignedPlacesUseCase = new ListMyAssignedPlacesUseCase({ scheduleRepository: apiScheduleRepository });
+const acknowledgeAssignedPlaceUseCase = new AcknowledgeAssignedPlaceUseCase({ scheduleRepository: apiScheduleRepository });
+const getTeeGroupsUseCase = new GetTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const getMyTeeGroupsUseCase = new GetMyTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const generateTeeGroupsUseCase = new GenerateTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const moveTeeGroupPlayerUseCase = new MoveTeeGroupPlayerUseCase({ scheduleRepository: apiScheduleRepository });
+const reorderTeeGroupsUseCase = new ReorderTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
+const setTeeGroupMarkersUseCase = new SetTeeGroupMarkersUseCase({ scheduleRepository: apiScheduleRepository });
+const deleteTeeGroupsUseCase = new DeleteTeeGroupsUseCase({ scheduleRepository: apiScheduleRepository });
 const updateRoundUseCase = new UpdateRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const deleteRoundUseCase = new DeleteRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const generateMatchesUseCase = new GenerateMatchesUseCase({ scheduleRepository: apiScheduleRepository });
@@ -333,6 +380,23 @@ const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: a
 const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });
 const getLeaderboardUseCase = new GetLeaderboardUseCase({ scoringRepository: apiScoringRepository });
 const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScoringRepository });
+// Las partidas de stroke play se anotan con los MISMOS casos de uso que el
+// partido de la Ryder, sobre su repositorio: misma validación de lo que se manda
+// (omitir no es raya) y mismo `useScoring` con su cola (FE #824, PR 7)
+const getTeeGroupScoringViewUseCase = new GetScoringViewUseCase({ scoringRepository: apiTeeGroupScoringRepository });
+const submitTeeGroupHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: apiTeeGroupScoringRepository });
+const submitTeeGroupScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiTeeGroupScoringRepository });
+const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const validateTeeGroupScoredHolesUseCase = new ValidateTeeGroupScoredHolesUseCase({
+  teeGroupScoringRepository: apiTeeGroupScoringRepository,
+});
+const closeTeeWindowUseCase = new CloseTeeWindowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const getTeeWindowStandingsUseCase = new GetTeeWindowStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const getCompetitionStandingsUseCase = new GetCompetitionStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const getScratchStandingsUseCase = new GetScratchStandingsUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 
 // Enrollment Use Cases
 const requestEnrollmentUseCase = new RequestEnrollmentUseCase(apiEnrollmentRepository);
@@ -345,10 +409,12 @@ const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
   getScheduleUseCase,
   listEnrollmentsUseCase,
 });
+// Y las partidas de stroke play, aparte: el banner del panel enseña la más
+// cercana de las dos (FE #824, PR 7)
+const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCompetitionsUseCase, getMyTeeGroupsUseCase });
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
 const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
-const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRepository);
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepository);
@@ -417,6 +483,10 @@ export {
   createCompetitionUseCase,
   createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
+  updateStrokePlaySettingsUseCase,
+  launchHandicapUpdateUseCase,
+  scheduleHandicapUpdateUseCase,
+  cancelScheduledHandicapUpdateUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
   activateCompetitionUseCase,
@@ -445,7 +515,6 @@ export {
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
   userCancelEnrollmentUseCase, // Usuario cancela su solicitud (diferente de cancelCompetitionUseCase)
-  withdrawEnrollmentUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,
@@ -488,6 +557,19 @@ export {
   listMyPendingEnvelopesUseCase,
   listMySessionsWithoutMatchesUseCase,
   createRoundUseCase,
+  takeTeeWindowPlaceUseCase,
+  releaseTeeWindowPlaceUseCase,
+  joinWaitingListUseCase,
+  leaveWaitingListUseCase,
+  listMyAssignedPlacesUseCase,
+  acknowledgeAssignedPlaceUseCase,
+  getTeeGroupsUseCase,
+  getMyTeeGroupsUseCase,
+  generateTeeGroupsUseCase,
+  moveTeeGroupPlayerUseCase,
+  reorderTeeGroupsUseCase,
+  setTeeGroupMarkersUseCase,
+  deleteTeeGroupsUseCase,
   updateRoundUseCase,
   deleteRoundUseCase,
   generateMatchesUseCase,
@@ -519,6 +601,7 @@ export {
   getScoringBreakdownUseCase,
   getRecentMatchesUseCase,
   getUpcomingMatchesUseCase,
+  getUpcomingTeeGroupsUseCase,
   getPlayerStatsByGolfCourseUseCase,
   listPendingFriendRequestsUseCase,
   // Scoring Use Cases (Sprint 4)
@@ -527,6 +610,18 @@ export {
   submitScorecardUseCase,
   getLeaderboardUseCase,
   concedeMatchUseCase,
+  getTeeGroupScoringViewUseCase,
+  submitTeeGroupHoleScoreUseCase,
+  submitTeeGroupScorecardUseCase,
+  retireFromTeeGroupUseCase,
+  correctTeeGroupHoleUseCase,
+  reopenTeeGroupCardUseCase,
+  markTeeGroupNoShowUseCase,
+  validateTeeGroupScoredHolesUseCase,
+  closeTeeWindowUseCase,
+  getTeeWindowStandingsUseCase,
+  getCompetitionStandingsUseCase,
+  getScratchStandingsUseCase,
   // Quick Match Use Cases (FE #236)
   createQuickMatchUseCase,
   addFriendParticipantUseCase,

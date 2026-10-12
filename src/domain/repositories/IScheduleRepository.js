@@ -143,6 +143,60 @@ class IScheduleRepository {
   async reassignPlayers(matchId, teamAIds, teamBIds) {
     throw new Error('Method not implemented');
   }
+
+  // Plazas y esperas en las franjas de stroke play (FE #824)
+  async takePlace(roundId, opciones) {
+    throw new Error('IScheduleRepository.takePlace must be implemented');
+  }
+
+  async releasePlace(roundId, userId) {
+    throw new Error('IScheduleRepository.releasePlace must be implemented');
+  }
+
+  async joinWaitingList(roundId) {
+    throw new Error('IScheduleRepository.joinWaitingList must be implemented');
+  }
+
+  async leaveWaitingList(roundId, userId) {
+    throw new Error('IScheduleRepository.leaveWaitingList must be implemented');
+  }
+
+  async getMyAssignedPlaces() {
+    throw new Error('IScheduleRepository.getMyAssignedPlaces must be implemented');
+  }
+
+  async acknowledgeAssignedPlace(roundId) {
+    throw new Error('IScheduleRepository.acknowledgeAssignedPlace must be implemented');
+  }
+
+  // Partidas de las franjas de stroke play (FE #824, PR 6)
+  async getTeeGroups(roundId) {
+    throw new Error('IScheduleRepository.getTeeGroups must be implemented');
+  }
+
+  async getMyTeeGroups(competitionId) {
+    throw new Error('IScheduleRepository.getMyTeeGroups must be implemented');
+  }
+
+  async generateTeeGroups(roundId, order) {
+    throw new Error('IScheduleRepository.generateTeeGroups must be implemented');
+  }
+
+  async moveTeeGroupPlayer(roundId, movimiento) {
+    throw new Error('IScheduleRepository.moveTeeGroupPlayer must be implemented');
+  }
+
+  async reorderTeeGroups(roundId, groupIds) {
+    throw new Error('IScheduleRepository.reorderTeeGroups must be implemented');
+  }
+
+  async setTeeGroupMarkers(groupId, markers) {
+    throw new Error('IScheduleRepository.setTeeGroupMarkers must be implemented');
+  }
+
+  async deleteTeeGroups(roundId) {
+    throw new Error('IScheduleRepository.deleteTeeGroups must be implemented');
+  }
 }
 
 export default IScheduleRepository;

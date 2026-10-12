@@ -152,6 +152,31 @@ class ICompetitionRepository {
   }
 
   /**
+   * Cambia los ajustes de un Stableford o un Medal (FE #824). Solo lo que llega.
+   * @param {string} competitionId
+   * @param {{categoryLimits?: number[], categoryCount?: number, maxMatchdaysPerPlayer?: number, overallStanding?: string}} cambios
+   * @returns {Promise<import('../value_objects/StrokePlaySetup').StrokePlaySetup>} Los ajustes como quedan
+   */
+  /** Lanza la actualización de hándicaps con la RFEG (FE #824). */
+  async launchHandicapUpdate(competitionId) {
+    throw new Error('ICompetitionRepository.launchHandicapUpdate must be implemented');
+  }
+
+  /** Programa la actualización de hándicaps; `runAt` con su huso. */
+  async scheduleHandicapUpdate(competitionId, runAt) {
+    throw new Error('ICompetitionRepository.scheduleHandicapUpdate must be implemented');
+  }
+
+  /** Anula la actualización programada. */
+  async cancelScheduledHandicapUpdate(competitionId) {
+    throw new Error('ICompetitionRepository.cancelScheduledHandicapUpdate must be implemented');
+  }
+
+  async updateStrokePlay(competitionId, cambios) {
+    throw new Error('ICompetitionRepository.updateStrokePlay must be implemented');
+  }
+
+  /**
    * Activates a competition (DRAFT → ACTIVE).
    * @param {string} competitionId
    * @returns {Promise<Object>} Updated competition data

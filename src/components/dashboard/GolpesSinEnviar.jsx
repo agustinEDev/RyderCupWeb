@@ -117,7 +117,9 @@ const GolpesSinEnviar = ({ userId = null }) => {
     navigate(
       partida.esPartidaRapida
         ? `/quick-matches/${partida.matchId}/scoring`
-        : `/player/matches/${partida.matchId}/scoring`
+        : partida.esPartidaDeFranja
+          ? `/player/groups/${partida.matchId}/scoring`
+          : `/player/matches/${partida.matchId}/scoring`
     );
   };
 
@@ -129,6 +131,12 @@ const GolpesSinEnviar = ({ userId = null }) => {
    * traducción con los datos crudos, no el almacenamiento
    */
   const nombreDe = (algo) => {
+    // Una partida de stroke play se llama partida, por su número (PR 7). El
+    // resumen de la cola lo marca; un aviso de golpe perdido lleva el tipo
+    const deFranja = algo.esPartidaDeFranja || algo.tipo === offlineQueue.TIPO_PARTIDA_DE_FRANJA;
+    if (deFranja && algo.matchNumber != null) {
+      return t('golpesSinEnviar.partidaDeFranja', { numero: algo.matchNumber });
+    }
     if (algo.matchNumber != null && algo.matchName) {
       return t('golpesSinEnviar.partidaConNumero', {
         numero: algo.matchNumber,

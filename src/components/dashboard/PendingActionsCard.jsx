@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox, AlertTriangle } from 'lucide-react';
+import { Mail, Users, Flag, TrendingUp, ChevronRight, Bell, UserPlus, Zap, Inbox, AlertTriangle, CalendarCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEntryMotion } from '../../hooks/useEntryMotion';
 import { slideUp, getEntryProps } from '../../utils/animations';
@@ -12,7 +12,10 @@ import {
   listMyQuickMatchesUseCase,
   listMyPendingEnvelopesUseCase,
   listMySessionsWithoutMatchesUseCase,
+  listMyAssignedPlacesUseCase,
+  acknowledgeAssignedPlaceUseCase,
 } from '../../composition';
+import customToast from '../../utils/toast';
 import { loQueSeEnseñoAntes, recuerdaLasAccionesPendientes } from '../../services/accionesPendientes';
 import BlockLoader from '../ui/BlockLoader';
 import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
@@ -34,6 +37,36 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
   const [sesionesSinPartidos, setSesionesSinPartidos] = useState(
     recordado?.sesionesSinPartidos ?? []
   );
+  // Las plazas que le asignaron desde una lista de espera (FE #824): sin
+  // correo, se entera aquí hasta que pulsa «Entendido»
+  const [plazasAsignadas, setPlazasAsignadas] = useState(recordado?.plazasAsignadas ?? []);
+  // Las que ya se mandaron como vistas: un doble toque no repite el envío, y una
+  // lectura lanzada antes no las devuelve a la lista (revisor)
+  const [enviandoVista, setEnviandoVista] = useState(() => new Set());
+  const vistas = useRef(new Set());
+  // Si se desmonta (o se cierra sesión) antes de que acabe un «Entendido», ya
+  // no se escribe la memoria: sería de la cuenta anterior (/code-review)
+  const montada = useRef(true);
+  useEffect(() => {
+    montada.current = true;
+    return () => {
+      montada.current = false;
+    };
+  }, []);
+  // Otra cuenta en la misma tarjeta montada: lo de la anterior no se enseña ni
+  // un momento mientras llega lo nuevo (CodeRabbit en la #836). Se reinicia al
+  // pintar, no en un efecto, para que no llegue a verse
+  const [cuentaDe, setCuentaDe] = useState(user?.id);
+  if (user?.id !== cuentaDe) {
+    setCuentaDe(user?.id);
+    setPendingInvitations(0);
+    setPendingEnrollments([]);
+    setPendingFriendRequests(0);
+    setActiveQuickMatches([]);
+    setSobresPendientes([]);
+    setSesionesSinPartidos([]);
+    setPlazasAsignadas([]);
+  }
   // Solo se enseña la espera cuando NO hay nada que enseñar: con lo de antes en
   // pantalla, el refresco va en silencio
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +81,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     activeQuickMatches: recordado?.activeQuickMatches ?? [],
     sobresPendientes: recordado?.sobresPendientes ?? [],
     sesionesSinPartidos: recordado?.sesionesSinPartidos ?? [],
+    plazasAsignadas: recordado?.plazasAsignadas ?? [],
   });
 
   const isCreator = useMemo(() => user?.is_admin ||
@@ -80,6 +114,7 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           organiza
             ? pedir(() => listMySessionsWithoutMatchesUseCase.execute())
             : Promise.resolve([]),
+          pedir(() => listMyAssignedPlacesUseCase.execute()),
         ]);
 
         // Una respuesta que llega cuando ya nos hemos ido no escribe: antes solo
@@ -121,6 +156,10 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
           aplicado.sesionesSinPartidos = results[5].value || [];
           setSesionesSinPartidos(aplicado.sesionesSinPartidos);
         }
+        if (results[6].status === 'fulfilled') {
+          aplicado.plazasAsignadas = (results[6].value || []).filter((p) => !vistas.current.has(p.roundId));
+          setPlazasAsignadas(aplicado.plazasAsignadas);
+        }
 
         ultimoAplicado.current = aplicado;
         recuerdaLasAccionesPendientes({ ...aplicado });
@@ -159,7 +198,35 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
     return [dia, franja].filter(Boolean).join(' ');
   };
 
-  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length + sesionesSinPartidos.length;
+  // «Entendido»: fuera de la lista en cuanto el servidor lo acepta, también de
+  // la memoria (si no, volvería al volver a Inicio). Si falla, se queda y se dice
+  const entendido = async (plaza) => {
+    setEnviandoVista((s) => new Set(s).add(plaza.roundId));
+    try {
+      await acknowledgeAssignedPlaceUseCase.execute(plaza.roundId);
+      vistas.current.add(plaza.roundId);
+      if (!montada.current) return;
+      const quedan = (lista) => lista.filter((p) => p.roundId !== plaza.roundId);
+      ultimoAplicado.current = {
+        ...ultimoAplicado.current,
+        plazasAsignadas: quedan(ultimoAplicado.current.plazasAsignadas),
+      };
+      recuerdaLasAccionesPendientes({ ...ultimoAplicado.current });
+      setPlazasAsignadas(quedan);
+    } catch (error) {
+      // El nuestro, traducido: el del servidor puede venir en otro idioma (CodeRabbit)
+      console.error('No se ha podido marcar la plaza como vista:', error);
+      customToast.error(t('pendingActions.placeAssignedOkFailed'));
+    } finally {
+      if (montada.current) setEnviandoVista((s) => {
+        const sin = new Set(s);
+        sin.delete(plaza.roundId);
+        return sin;
+      });
+    }
+  };
+
+  const totalItems = pendingInvitations + pendingEnrollments.length + (upcomingMatches > 0 ? 1 : 0) + (handicapPending ? 1 : 0) + (pendingFriendRequests > 0 ? 1 : 0) + activeQuickMatches.length + sobresPendientes.length + sesionesSinPartidos.length + plazasAsignadas.length;
 
   if (isLoading) {
     return (
@@ -306,6 +373,42 @@ const PendingActionsCard = ({ user, competitions, onHandicapAction, handicapPend
               </div>
               <ChevronRight className="w-4 h-4 shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
             </button>
+          ))}
+
+          {/* La plaza que le tocó desde una lista de espera (FE #824). Dos
+              botones hermanos, no uno dentro de otro: ir a la competición y
+              «Entendido» */}
+          {plazasAsignadas.map((plaza) => (
+            <div
+              key={plaza.roundId}
+              data-testid={`plaza-asignada-${plaza.roundId}`}
+              className="flex items-center justify-between gap-2 w-full p-3 bg-white/70 rounded-lg"
+            >
+              <button
+                type="button"
+                data-testid={`plaza-asignada-ir-${plaza.roundId}`}
+                onClick={() => navigate(`/competitions/${plaza.competitionId}`)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CalendarCheck className="w-4 h-4 text-green-700" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{t('pendingActions.placeAssigned')}</p>
+                  <p className="truncate text-xs text-gray-500">
+                    {[cuandoSeJuega(plaza), plaza.competitionName].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => entendido(plaza)}
+                disabled={enviandoVista.has(plaza.roundId)}
+                className="min-h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {t('pendingActions.placeAssignedOk')}
+              </button>
+            </div>
           ))}
 
           {/* La sesión que se abrió sin poder crear sus partidos (BE #361): la

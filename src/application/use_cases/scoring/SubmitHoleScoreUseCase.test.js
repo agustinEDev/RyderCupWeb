@@ -102,8 +102,9 @@ describe('SubmitHoleScoreUseCase', () => {
   });
 
   it('should throw for invalid own score (out of range)', async () => {
-    const scoreData = { ownScore: 10, markedPlayerId: 'u2', markedScore: 4 };
-    await expect(useCase.execute('m-1', 1, scoreData)).rejects.toThrow('Invalid HoleScore: 10');
+    // Hasta 15, como el backend (FE #824, PR 7): el 10 vale, el 16 no
+    const scoreData = { ownScore: 16, markedPlayerId: 'u2', markedScore: 4 };
+    await expect(useCase.execute('m-1', 1, scoreData)).rejects.toThrow('Invalid HoleScore: 16');
   });
 
   it('should throw for invalid marked score (out of range)', async () => {

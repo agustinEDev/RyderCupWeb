@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista, olvidaLoDeEstaCuenta, precarga, recuerdaLosPartidos, losUltimosPartidos } from './loUltimoConocido';
+import { recuerda, loQueSeSupo, olvida, olvidaTodo, recuerdaLaLista, laUltimaLista, olvidaLoDeEstaCuenta, precarga, recuerdaLosPartidos, losUltimosPartidos, recuerdaLasPartidas, lasUltimasPartidas } from './loUltimoConocido';
 
 /**
  * LA TABLA M — lo último que se supo de una partida.
@@ -309,6 +309,23 @@ describe('loUltimoConocido, lo precargado', () => {
     localStorage.setItem('rydercup-ultimos-partidos', '{"no":"es una lista"}');
 
     expect(losUltimosPartidos()).toBeNull();
+  });
+
+  it('las partidas de stroke play, con su clave: no pisan los partidos (FE #824, PR 7)', () => {
+    recuerdaLosPartidos([{ id: 'm-1' }]);
+
+    recuerdaLasPartidas([{ id: 'g-1', esPartidaDeFranja: true }]);
+
+    expect(losUltimosPartidos()).toEqual([{ id: 'm-1' }]);
+    expect(lasUltimasPartidas()).toEqual([{ id: 'g-1', esPartidaDeFranja: true }]);
+  });
+
+  it('al cerrar sesión se van también las partidas', () => {
+    recuerdaLasPartidas([{ id: 'g-1' }]);
+
+    olvidaLoDeEstaCuenta();
+
+    expect(lasUltimasPartidas()).toBeNull();
   });
 
   it('al cerrar sesión se van también los partidos', () => {

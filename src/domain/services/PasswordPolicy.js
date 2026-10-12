@@ -31,6 +31,25 @@ export const PASSWORD_UPPERCASE = /\p{Lu}/u;
 export const PASSWORD_LOWERCASE = /\p{Ll}/u;
 export const PASSWORD_DIGIT = /\p{Nd}/u;
 
+/** Límites de la política, los del backend: 12 (OWASP ASVS V2.1.1) y 128 (coste del hash). */
+export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MAX_LENGTH = 128;
+
+/**
+ * Lo que el backend considera espacio en los bordes: los 29 caracteres de
+ * `str.isspace()`, que son los que quita `str.strip()`. `trim()` no es lo mismo:
+ * quita U+FEFF, que Python deja, y deja U+0085 y U+001C-U+001F, que Python
+ * quita (FE #827). Sin igualarlos, front y back no estaban de acuerdo.
+ */
+// U+001C-U+001F son de control y son justo los que hay que detectar: Python los
+// cuenta como espacio
+const EDGE_WHITESPACE =
+  // eslint-disable-next-line no-control-regex
+  /^[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]|[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]$/;
+
+/** Si la contraseña empieza o acaba en un espacio, contado como el backend. */
+export const hasEdgeWhitespace = (password) => EDGE_WHITESPACE.test(password);
+
 /**
  * Validates password strength
  * @param {string} password - Password to validate
@@ -46,8 +65,8 @@ export const validatePassword = (password) => {
     };
   }
 
-  const minLength = 12; // OWASP ASVS V2.1.1 requirement
-  const maxLength = 128; // Prevent DoS attacks via excessive hashing
+  const minLength = PASSWORD_MIN_LENGTH;
+  const maxLength = PASSWORD_MAX_LENGTH;
   const hasUpperCase = PASSWORD_UPPERCASE.test(password);
   const hasLowerCase = PASSWORD_LOWERCASE.test(password);
   const hasNumbers = PASSWORD_DIGIT.test(password);
@@ -63,7 +82,7 @@ export const validatePassword = (password) => {
 
   // Los espacios al principio o al final los rechaza el backend (suelen venir
   // de copiar y pegar); en medio sí valen
-  if (password.trim() !== password) {
+  if (hasEdgeWhitespace(password)) {
     return {
       isValid: false,
       messageKey: 'validation.passwordSpaces',

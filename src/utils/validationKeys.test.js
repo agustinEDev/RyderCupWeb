@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import es from '../i18n/locales/es/auth.json';
 import en from '../i18n/locales/en/auth.json';
-import { validateEmail, validatePassword, validateName } from './validation';
+import {
+  PASSWORD_ERROR_CODES,
+  passwordErrorTranslation,
+  validateEmail,
+  validatePassword,
+  validateName,
+} from './validation';
 
 /**
  * Las validaciones devuelven `messageKey` y la interfaz lo pinta con `t()`. Si
@@ -35,6 +41,11 @@ const CASOS = [
   ['nombre con simbolos', () => validateName('Juan@#$', 'First name')],
   ['apellido vacio', () => validateName('', 'Last name')],
   ['campo generico vacio', () => validateName('')],
+  // Todos los del mapa, no una lista copiada: uno nuevo sin su texto lo cazaría
+  ...PASSWORD_ERROR_CODES.map((codigo) => [
+    `codigo del backend ${codigo}`,
+    () => ({ isValid: false, messageKey: passwordErrorTranslation(codigo).key }),
+  ]),
 ];
 
 describe('toda clave de validacion existe en los dos idiomas', () => {

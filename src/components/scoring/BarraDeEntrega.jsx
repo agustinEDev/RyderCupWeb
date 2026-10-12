@@ -18,6 +18,8 @@ import { useTranslation } from 'react-i18next';
  * @param {boolean} [sePuedeSeguir] - Decidido con hoyos por jugar: se avisa de que
  *   se puede seguir, porque quien entrega a mitad deja fuera de su tarjeta los
  *   hoyos que anote después
+ * @param {boolean} [dePartida] - Una partida de stroke play: «partida», no
+ *   «partido» (QA del 11 oct 2026)
  */
 const BarraDeEntrega = ({
   estado,
@@ -28,14 +30,16 @@ const BarraDeEntrega = ({
   pendientes = [],
   completado = false,
   sePuedeSeguir = false,
+  dePartida = false,
 }) => {
   const { t } = useTranslation('scoring');
+  const acabado = t(dePartida ? 'submit.groupOver' : 'submit.matchOver');
 
   return (
     <div
       data-testid="barra-de-entrega"
       role="region"
-      aria-label={t('submit.matchOver')}
+      aria-label={acabado}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
     >
       <div className="mx-auto max-w-2xl space-y-2">
@@ -45,7 +49,7 @@ const BarraDeEntrega = ({
               {t(esFoursomes ? 'submit.pairSubmitted' : 'submit.alreadySubmitted')}
             </p>
             {completado ? (
-              <p className="text-gray-500">{t('submit.matchCompleted')}</p>
+              <p className="text-gray-500">{t(dePartida ? 'submit.groupCompleted' : 'submit.matchCompleted')}</p>
             ) : (
               pendientes.length > 0 && (
                 <p className="text-gray-500">
@@ -62,7 +66,7 @@ const BarraDeEntrega = ({
         ) : (
           <>
             <div className="flex items-baseline justify-between gap-3">
-              <p className="font-bold text-gray-900">{t('submit.matchOver')}</p>
+              <p className="font-bold text-gray-900">{acabado}</p>
               {marcador && <p className="min-w-0 truncate font-bold text-primary">{marcador}</p>}
             </div>
             {estado === 'entregar' ? (

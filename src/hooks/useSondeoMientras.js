@@ -1,0 +1,32 @@
+import { useEffect } from 'react';
+
+/**
+ * Llama a `pedir` cada `cada` ms mientras `activo` sea cierto (FE #824, PR 5).
+ * Para cuando deja de serlo y al desmontar. `pedir` tiene que ser estable
+ * (`useCallback`): si no, el reloj se rearma en cada pintada.
+ *
+ * Los sondeos del proyecto van en hooks propios (CLAUDE.md), no en el componente.
+ */
+export const useSondeoMientras = (activo, pedir, cada) => {
+  useEffect(() => {
+    if (!activo || !pedir) return undefined;
+    // Con la pestaña del navegador oculta (el móvil en el bolsillo) no se
+    // pide: como los demás sondeos del proyecto (revisor, PR 8)
+    const reloj = setInterval(() => {
+      if (globalThis.document?.visibilityState === 'hidden') return;
+      pedir();
+    }, cada);
+    // Y al volver a ella, en el momento: si no, lo de antes seguía hasta el
+    // siguiente golpe de reloj (/code-review)
+    const alVolver = () => {
+      if (globalThis.document?.visibilityState === 'visible') pedir();
+    };
+    globalThis.document?.addEventListener('visibilitychange', alVolver);
+    return () => {
+      clearInterval(reloj);
+      globalThis.document?.removeEventListener('visibilitychange', alVolver);
+    };
+  }, [activo, pedir, cada]);
+};
+
+export default useSondeoMientras;

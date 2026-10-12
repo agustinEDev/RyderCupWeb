@@ -53,16 +53,15 @@ const baseQuickMatch = {
   effectiveAllowance: 100,
 };
 
-const renderPage = () => {
-  return render(
-    <MemoryRouter initialEntries={['/quick-matches/qm-1/scoring']}>
-      <Routes>
-        <Route path="/quick-matches/:quickMatchId/scoring" element={<QuickMatchScoringPage />} />
-        <Route path="/quick-matches" element={<div data-testid="my-quick-matches-page" />} />
-      </Routes>
-    </MemoryRouter>
-  );
-};
+const renderTree = () => (
+  <MemoryRouter initialEntries={['/quick-matches/qm-1/scoring']}>
+    <Routes>
+      <Route path="/quick-matches/:quickMatchId/scoring" element={<QuickMatchScoringPage />} />
+      <Route path="/quick-matches" element={<div data-testid="my-quick-matches-page" />} />
+    </Routes>
+  </MemoryRouter>
+);
+const renderPage = () => render(renderTree());
 
 const baseHookState = {
   quickMatch: baseQuickMatch,
@@ -1219,6 +1218,47 @@ describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)',
     expect(aviso).toBeInTheDocument();
     expect(aviso.className).toContain('amber');
     expect(aviso.className).not.toContain('red');
+  });
+
+  it('revisor: sin red y sin pendientes, quien anota ya ve el aviso de anotar, y uno solo', async () => {
+    const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    try {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+        isScorer: true, coveredParticipantIds: ['user-1'], setCurrentHole: vi.fn(), submitScore: vi.fn(),
+        completeMatch: vi.fn(), cancelMatch: vi.fn(), refetch: vi.fn(),
+        pendientes: 0, perdidos: [], discrepancias: [], resuelveDiscrepancia,
+        loadError: { message: 'sin red' },
+      });
+      render(<><AvisoSinConexion />{renderTree()}</>);
+
+      expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+      expect(screen.queryByTestId('quick-match-sin-conexion')).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+    }
+  });
+
+  it('regresión (12 oct 2026): sin red, las pendientes van en el aviso de arriba, no en otro recuadro', async () => {
+    const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    try {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+        isScorer: true, coveredParticipantIds: ['user-1'], setCurrentHole: vi.fn(), submitScore: vi.fn(),
+        completeMatch: vi.fn(), cancelMatch: vi.fn(), refetch: vi.fn(),
+        pendientes: 2, perdidos: [], discrepancias: [], resuelveDiscrepancia,
+      });
+      render(<><AvisoSinConexion />{renderTree()}</>);
+
+      expect(screen.queryByTestId('quick-match-pendientes')).toBeNull();
+      expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+    } finally {
+      Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+    }
   });
 
   it('con varios jugadores, cada hoyo se nombra una vez', () => {

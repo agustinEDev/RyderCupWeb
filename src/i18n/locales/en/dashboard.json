@@ -52,7 +52,10 @@
       "STABLEFORD": "Stableford"
     },
     "envelopePending": "You have an envelope to hand in",
-    "sessionWithoutMatches": "A session was left without matches"
+    "sessionWithoutMatches": "A session was left without matches",
+    "placeAssigned": "You got a place from the waiting list",
+    "placeAssignedOk": "Got it",
+    "placeAssignedOkFailed": "Could not mark it as seen. Try again."
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",
@@ -91,7 +94,10 @@
     },
     "sinRespuestaTitle": "Your next match could not be checked",
     "sinRespuestaDesc": "Try again in a while.",
-    "desdeMemoria": "Could not refresh: it may be out of date."
+    "desdeMemoria": "Could not refresh: it may be out of date.",
+    "teeGroup": "Group {{numero}}",
+    "labelTeeGroup": "Your next group",
+    "broughtIn": "You were moved to group {{numero}}"
   },
   "recentMatches": {
     "title": "Recent matches",
@@ -156,6 +162,7 @@
     "partidaSinNombre": "an earlier match",
     "partidaConNumero": "Match {{numero}} · {{campo}}",
     "soloNumero": "Match {{numero}}",
+    "partidaDeFranja": "Group {{numero}}",
     "perdidos_one": "One hole from {{partida}} could not be saved:",
     "perdidos_other": "{{count}} holes from {{partida}} could not be saved:",
     "perdido": "Hole {{hoyo}} — the server did not accept it",

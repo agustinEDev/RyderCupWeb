@@ -13,12 +13,13 @@ import ScorecardTable from '../../components/scoring/ScorecardTable';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
 import PreMatchInfo from '../../components/scoring/PreMatchInfo';
 import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
-import OfflineBanner from '../../components/scoring/OfflineBanner';
+import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import EarlyEndModal from '../../components/scoring/EarlyEndModal';
 import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
+import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const TABS = ['input', 'scorecard', 'leaderboard'];
@@ -26,24 +27,6 @@ const TABS = ['input', 'scorecard', 'leaderboard'];
 // `setTimeout` no aguanta más de 2^31-1 ms: pasado eso dispara INMEDIATAMENTE y
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
-
-// Los golpes que siguen en el móvil CON cobertura: lo caído es el servidor, así
-// que el banner de sin conexión diría algo falso (FE #617). En las dos pantallas,
-// la de nada pintado y la del partido en pantalla (FE #625)
-const PendientesASalvo = ({ count }) => {
-  const { t } = useTranslation('scoring');
-  if (count <= 0) return null;
-  return (
-    <div className="max-w-4xl mx-auto px-4 pt-4">
-      <p
-        data-testid="pendientes-a-salvo"
-        className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm"
-      >
-        {t('offline.pendientesASalvo')} {t('offline.pendingScores', { count })}
-      </p>
-    </div>
-  );
-};
 
 const ScoringPage = () => {
   const { matchId } = useParams();
@@ -380,7 +363,8 @@ const ScoringPage = () => {
 
         {/* Sin conexión, su aviso: se perdía cuando la cola estaba vacía, que es
             el caso más común al llegar al campo con un partido nunca abierto aquí */}
-        {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+        {/* Sin vista aún no se sabe quién juega: el aviso de anotar, por si acaso */}
+        {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
 
         {/* Y con cobertura, los golpes pendientes se cuentan aparte: el banner de
             arriba afirma «estás sin conexión», y aquí sí la hay —lo caído es el
@@ -441,7 +425,8 @@ const ScoringPage = () => {
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
 
-      {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+      {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
+      {isOffline && canScore && <AnotarSinConexion pendingCount={pendingQueueSize} />}
 
       {/* El gemelo de la pantalla sin nada pintado (FE #625): con cobertura y el
           servidor caído, la casilla enseña el golpe y nada decía que el otro
@@ -489,7 +474,8 @@ const ScoringPage = () => {
           que decirlo, y en ámbar y no en rojo: con un 5xx esto pasa CON cobertura,
           y sin avisar se lee como si fuera lo de ahora mismo —con su resultado, su
           tarjeta y su botón de entregar— cuando puede ser de hace rato */}
-      {pintadoDeMemoria && scoringView && (
+      {/* Sin conexión ya lo dice su aviso: dos casi iguales sobraban (QA del 11 oct 2026) */}
+      {pintadoDeMemoria && scoringView && !isOffline && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <p
             data-testid="pintado-de-memoria"
@@ -618,6 +604,8 @@ const ScoringPage = () => {
                 holeNumber={currentHole}
                 par={currentHoleData.par}
                 markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
+                markedName={markerAssignment?.marksName ?? null}
+                markerName={markerAssignment?.markedByName ?? null}
                 strokeIndex={currentHoleData.strokeIndex}
                 playerScore={currentPlayerScore}
                 markedPlayerScore={markedPlayerScore}

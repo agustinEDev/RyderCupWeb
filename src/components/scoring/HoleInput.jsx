@@ -13,6 +13,17 @@ const HoleInput = ({
   // el de quien anota. Sin él, marcar a alguien de otra barra le ponía las
   // etiquetas del par propio. Ver RyderCupWeb#417.
   markedPar = null,
+  // Nombres de a quién anotas y de quién te anota (QA del 11 oct 2026):
+  // «Anotación marcador» se leía como lo que tu marcador te apuntó a ti
+  markedName = null,
+  markerName = null,
+  // 2.ª pasada del QA (12 oct 2026): sin nadie a quien marcar (retirado, solo,
+  // reabierta), sin la segunda casilla; sin marcador, en solo lectura igual
+  marksSomeone = true,
+  hasMarker = true,
+  // Quién puso el número del marcado, si no fuiste tú: tras cambiar el círculo
+  // salía bajo «Anotas a X» un número del marcador anterior como si fuera tuyo
+  markedScoredBy = null,
   strokeIndex,
   playerScore,
   markedPlayerScore,
@@ -29,6 +40,8 @@ const HoleInput = ({
   teamAName,
   teamBName,
   matchFormat,
+  // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
+  allowPickedUp = true,
 }) => {
   const { t } = useTranslation('scoring');
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
@@ -40,8 +53,20 @@ const HoleInput = ({
   // marcador» hablaban como si cada uno jugara la suya
   const enParejas = matchFormat === 'FOURSOMES';
   const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
-  const etiquetaMarcado = t(enParejas ? 'input.rivalBall' : 'input.markerScore');
-  const etiquetaDelMarcador = t(enParejas ? 'input.rivalCount' : 'input.markerScore');
+  const etiquetaMarcado = enParejas
+    ? t('input.rivalBall')
+    : markedName
+      ? t('input.youMark', { nombre: markedName })
+      : t('input.markerScore');
+  const etiquetaDelMarcador = enParejas
+    ? t('input.rivalCount')
+    : markerName
+      ? t('input.scoredForYou', { nombre: markerName })
+      : t('input.markerScore');
+  const conMarcado = enParejas || marksSomeone;
+  const conMarcador = enParejas || hasMarker;
+  // Lo que puso otro marcador no se toca desde aquí
+  const marcadoBloqueado = isMarkerScoreLocked || !conMarcado || Boolean(markedScoredBy);
   // undefined = hole not scored yet (nothing persisted); null = explicitly picked up.
   const ownDeLaVista = playerScore?.ownSubmitted ? playerScore.ownScore : undefined;
   const markedDeLaVista = markedPlayerScore?.markerSubmitted ? markedPlayerScore.markerScore : undefined;
@@ -73,11 +98,13 @@ const HoleInput = ({
     setOpenPanel(null);
     // Con el golpe que se ha tocado: el envío lleva los dos, y quien lo recibe
     // necesita saber cuál volvió a anotar el jugador (FE #622)
-    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: markedValue }, 'ownScore');
+    // El número de otro marcador no se reenvía como tuyo (/code-review)
+    const marcado = markedScoredBy || !conMarcado ? undefined : markedValue;
+    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: marcado }, 'ownScore');
   };
 
   const handleMarkedSelect = (val) => {
-    if (isReadOnly || isMarkerScoreLocked) return;
+    if (isReadOnly || marcadoBloqueado) return;
     setMarkedValue(val);
     setOpenPanel(null);
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
@@ -100,12 +127,26 @@ const HoleInput = ({
       : val;
   };
 
+  // En foursomes la bola es de la pareja: «La pareja rival puso…» (/code-review)
+  const nombreDelOtro = (nombre, porDefecto) => (enParejas ? t('input.rivalPair') : nombre || t(porDefecto));
+  const golpesEnTexto = (golpes) => (golpes === null ? t('input.pickedUp') : golpes);
+  const loQuePuso = {
+    own:
+      validationStatus === 'mismatch' && playerScore?.markerSubmitted
+        ? t('input.otherPut', { nombre: nombreDelOtro(markerName, 'input.yourMarker'), golpes: golpesEnTexto(playerScore.markerScore) })
+        : null,
+    marked:
+      markedValidationStatus === 'mismatch' && markedPlayerScore?.ownSubmitted
+        ? t('input.otherPut', { nombre: nombreDelOtro(markedName, 'input.theMarkedPlayer'), golpes: golpesEnTexto(markedPlayerScore.ownScore) })
+        : null,
+  };
+
   // El siguiente hueco por anotar: el tuyo antes que el del rival (FE #725).
   // La raya ya es un golpe anotado; solo cuenta lo que se puede tocar
   const siguienteHueco =
     !isOwnScoreLocked && ownValue === undefined
       ? 'own'
-      : !isMarkerScoreLocked && markedValue === undefined
+      : !marcadoBloqueado && markedValue === undefined
         ? 'marked'
         : null;
 
@@ -115,10 +156,18 @@ const HoleInput = ({
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
           <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
-          <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>
+          {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
+          {strokeIndex != null && <span className="text-sm text-gray-500">{t('input.strokeIndex')} {strokeIndex}</span>}
+          {/* Cuántos: con 2 golpes decía lo mismo que con 1, y el plus que da
+              golpe no veía nada (QA del 11 oct 2026) */}
           {strokesReceived > 0 && (
             <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
-              {t('input.strokeReceived')}
+              {t('input.strokesReceived', { count: strokesReceived })}
+            </span>
+          )}
+          {strokesReceived < 0 && (
+            <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+              {t('input.strokesGiven', { count: -strokesReceived })}
             </span>
           )}
         </div>
@@ -129,13 +178,14 @@ const HoleInput = ({
         // Etiquetas en una fila de la rejilla y huecos en la siguiente (FE #736):
         // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
         // una columna por jugador su hueco quedaba más abajo. Así comparten fila
-        <div data-testid="huecos-del-hoyo" className="grid grid-cols-2 gap-x-4 gap-y-1 items-end">
+        <div data-testid="huecos-del-hoyo" className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}>
           <label htmlFor={idPropio} className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
           {/* La marca del jugador al que anotas va aquí y no en la cabecera:
               la de arriba es la de TU resultado, y son dos acuerdos distintos.
               Sin esta, un anotador veía su tick verde mientras la tira de
               hoyos se ponía roja por el otro, sin forma de saber por quién.
               La tarjeta ya no la lleva, así que este es el único sitio. */}
+          {conMarcado && (
           <div className="flex items-center justify-between gap-2">
             <label htmlFor={idMarcado} className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
             {markedValidationStatus && (
@@ -144,6 +194,7 @@ const HoleInput = ({
               </span>
             )}
           </div>
+          )}
 
           {/* Own score */}
           {!isOwnScoreLocked ? (
@@ -172,7 +223,7 @@ const HoleInput = ({
           )}
 
           {/* Marker score */}
-          {!isMarkerScoreLocked ? (
+          {!conMarcado ? null : !marcadoBloqueado ? (
             <button
               id={idMarcado}
               data-testid="marked-score-button"
@@ -191,24 +242,52 @@ const HoleInput = ({
                 </span>
               )}
             </button>
+          ) : markedScoredBy ? (
+            <div className="flex h-12 flex-col items-center justify-center">
+              <p data-testid="marked-score-value" className="text-2xl font-bold text-gray-400">
+                {displayScore(markedValue, t('input.pickedUp'))}
+              </p>
+              <p data-testid="anotado-por-otro" className="text-xs text-gray-500">
+                {t('input.scoredBy', { nombre: markedScoredBy })}
+              </p>
+            </div>
           ) : (
             <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
               {displayScore(markedValue, t('input.pickedUp'))}
             </p>
           )}
+
+          {/* En un desacuerdo, lo que puso el otro: con solo la ✗ no se sabía
+              qué discutir (QA del 11 oct 2026) */}
+          {(validationStatus === 'mismatch' || markedValidationStatus === 'mismatch') && (
+            <>
+              {/* Cada uno en su columna; vacío, un hueco sin texto (revisor) */}
+              <p className="text-xs text-red-700">
+                {loQuePuso.own && <span data-testid="lo-que-puso-el-otro-own">{loQuePuso.own}</span>}
+              </p>
+              {conMarcado && (
+                <p className="text-xs text-red-700">
+                  {loQuePuso.marked && <span data-testid="lo-que-puso-el-otro-marked">{loQuePuso.marked}</span>}
+                </p>
+              )}
+            </>
+          )}
         </div>
       )}
 
       {isReadOnly && playerScore && (
-        <div className="grid grid-cols-2 gap-4 text-center">
+        <div className={`grid ${conMarcador ? 'grid-cols-2' : 'grid-cols-1'} gap-4 text-center`}>
           <div>
             <p className="text-xs text-gray-500">{etiquetaPropia}</p>
-            <p className="text-xl font-bold">{displayScore(playerScore.ownScore)}</p>
+            {/* Sin anotar, hueco y no la raya de «recogió» (revisor, QA 3) */}
+            <p className="text-xl font-bold">{displayScore(playerScore.ownSubmitted === false ? undefined : playerScore.ownScore, t('input.pickedUp'))}</p>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
-            <p className="text-xl font-bold">{displayScore(playerScore.markerScore)}</p>
-          </div>
+          {conMarcador && (
+            <div>
+              <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
+              <p className="text-xl font-bold">{displayScore(playerScore.markerSubmitted === false ? undefined : playerScore.markerScore, t('input.pickedUp'))}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -239,6 +318,7 @@ const HoleInput = ({
           onClose={() => setOpenPanel(null)}
           label={etiquetaPropia}
           par={par}
+          allowPickedUp={allowPickedUp}
         />
       )}
       {openPanel === 'marked' && (
@@ -248,6 +328,7 @@ const HoleInput = ({
           onClose={() => setOpenPanel(null)}
           label={etiquetaMarcado}
           par={markedPar ?? par}
+          allowPickedUp={allowPickedUp}
         />
       )}
     </div>

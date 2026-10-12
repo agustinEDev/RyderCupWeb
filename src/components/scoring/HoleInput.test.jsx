@@ -69,6 +69,23 @@ describe('HoleInput', () => {
     expect(screen.queryByTestId('marked-validation')).not.toBeInTheDocument();
   });
 
+  it('sin recogida (Medal), el teclado no ofrece la raya; por defecto sí (FE #824, PR 7)', () => {
+    const { unmount } = render(<HoleInput {...defaultProps} allowPickedUp={false} />);
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(screen.queryByTestId('picked-up-button')).toBeNull();
+    unmount();
+
+    render(<HoleInput {...defaultProps} />);
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+  });
+
+  it('sin índice del hoyo (partidas de stroke play), no se enseña la etiqueta vacía (pasada)', () => {
+    render(<HoleInput {...defaultProps} strokeIndex={null} />);
+
+    expect(screen.queryByText(/input\.strokeIndex/)).toBeNull();
+  });
+
   it('should render hole info', () => {
     render(<HoleInput {...defaultProps} />);
     expect(screen.getByTestId('hole-input')).toHaveTextContent('5');
@@ -195,9 +212,215 @@ describe('HoleInput', () => {
     expect(screen.getByTestId('hole-input')).toHaveTextContent('input.allSquare');
   });
 
-  it('should show strokes received badge', () => {
-    render(<HoleInput {...defaultProps} strokesReceived={1} />);
-    expect(screen.getByTestId('hole-input')).toHaveTextContent('input.strokeReceived');
+  // QA del 11 oct 2026 (casos 5 y 6): cuántos, y también el plus que da golpe
+  it.each([
+    [1, 'input.strokesReceived {"count":1}'],
+    [2, 'input.strokesReceived {"count":2}'],
+    [-1, 'input.strokesGiven {"count":1}'],
+  ])('con %i golpes en el hoyo dice %s', (golpes, texto) => {
+    render(<HoleInput {...defaultProps} strokesReceived={golpes} />);
+    expect(screen.getByTestId('hole-input')).toHaveTextContent(texto);
+  });
+
+  it('sin golpes en el hoyo no dice nada', () => {
+    render(<HoleInput {...defaultProps} strokesReceived={0} />);
+    expect(screen.getByTestId('hole-input')).not.toHaveTextContent('input.strokes');
+  });
+
+  it('4 (QA del 11 oct 2026): la X que cierra el teclado se toca con el dedo (44 px)', () => {
+    render(<HoleInput {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('own-score-button'));
+
+    expect(screen.getByRole('button', { name: 'input.close' })).toHaveClass('min-h-11', 'min-w-11');
+  });
+
+  // 2.ª pasada del QA (12 oct 2026)
+  describe('quien no marca a nadie y el número que puso otro marcador', () => {
+    it('sin nadie a quien marcar, solo tu casilla: ni «Anotación Marcador» ni la segunda', () => {
+      render(<HoleInput {...defaultProps} marksSomeone={false} />);
+
+      expect(screen.getByTestId('own-score-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('marked-score-button')).toBeNull();
+      expect(screen.queryByTestId('marked-score-value')).toBeNull();
+      expect(screen.queryByText('input.markerScore')).toBeNull();
+    });
+
+    it('revisor (QA 3): en solo lectura, un hoyo sin jugar sale vacío, no con la raya de «recogió»', () => {
+      render(<HoleInput {...defaultProps} isReadOnly playerScore={{ ownScore: null, ownSubmitted: false, markerScore: null, markerSubmitted: false }} />);
+
+      expect(screen.getByTestId('hole-input')).not.toHaveTextContent('—');
+    });
+
+    it('/code-review: en solo lectura, la recogida tiene nombre para el lector de pantalla', () => {
+      render(<HoleInput {...defaultProps} isReadOnly playerScore={{ ownScore: null, ownSubmitted: true, markerScore: 5, markerSubmitted: true }} />);
+
+      expect(screen.getByLabelText('input.pickedUp')).toBeInTheDocument();
+    });
+
+    it('en solo lectura, sin marcador, solo tu número', () => {
+      render(<HoleInput {...defaultProps} isReadOnly hasMarker={false} playerScore={{ ownScore: 5, markerScore: null }} />);
+
+      expect(screen.getByText('input.yourScore')).toBeInTheDocument();
+      expect(screen.queryByText('input.markerScore')).toBeNull();
+    });
+
+    it('en solo lectura, con marcador, dice quién te anotó', () => {
+      render(<HoleInput {...defaultProps} isReadOnly markerName="Zaira" playerScore={{ ownScore: 5, markerScore: 5 }} />);
+
+      expect(screen.getByText('input.scoredForYou {"nombre":"Zaira"}')).toBeInTheDocument();
+      expect(screen.queryByText('input.markerScore')).toBeNull();
+    });
+
+    it('el número que puso el marcador anterior, con su nombre y sin poder tocarlo', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markedName="Vanesa"
+          markedScoredBy="Ulises"
+          markedPlayerScore={{ markerScore: 6, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.queryByTestId('marked-score-button')).toBeNull();
+      expect(screen.getByTestId('marked-score-value')).toHaveTextContent('6');
+      expect(screen.getByTestId('anotado-por-otro')).toHaveTextContent('input.scoredBy {"nombre":"Ulises"}');
+    });
+
+    it('/code-review: anotar solo lo tuyo no reenvía como tuyo el número de otro marcador', () => {
+      const onScoreChange = vi.fn();
+      render(
+        <HoleInput {...defaultProps} onScoreChange={onScoreChange} markedName="Vanesa" markedScoredBy="Ulises"
+          markedPlayerScore={{ markerScore: 6, markerSubmitted: true }} />
+      );
+
+      fireEvent.click(screen.getByTestId('own-score-button'));
+      fireEvent.click(screen.getByRole('button', { name: /5/ }));
+
+      expect(onScoreChange).toHaveBeenCalledWith({ ownScore: 5, markedScore: undefined }, 'ownScore');
+    });
+
+    it('sin otro que lo pusiera, la casilla es tuya como siempre', () => {
+      render(<HoleInput {...defaultProps} markedName="Vanesa" markedPlayerScore={{ markerScore: 6, markerSubmitted: true }} />);
+
+      expect(screen.getByTestId('marked-score-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('anotado-por-otro')).toBeNull();
+    });
+  });
+
+  // QA del 11 oct 2026 (casos 15 y 16)
+  describe('con nombres: a quién anotas y qué puso el otro', () => {
+    it('15: la casilla del marcado dice a quién anotas', () => {
+      render(<HoleInput {...defaultProps} markedName="Bruno" />);
+
+      expect(screen.getByRole('button', { name: 'input.youMark {"nombre":"Bruno"}' })).toBe(screen.getByTestId('marked-score-button'));
+      expect(screen.queryByText('input.markerScore')).not.toBeInTheDocument();
+    });
+
+    it('15: en foursomes sigue siendo la bola rival', () => {
+      render(<HoleInput {...defaultProps} markedName="Bruno" matchFormat="FOURSOMES" />);
+
+      expect(screen.queryByText(/input.youMark/)).not.toBeInTheDocument();
+    });
+
+    it('16: en un desacuerdo de mi golpe, lo que puso quien me marca', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          validationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 6, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toHaveTextContent('input.otherPut {"nombre":"Diego","golpes":6}');
+    });
+
+    it('16: en un desacuerdo del marcado, lo que se puso él', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markedName="Bruno"
+          markedValidationStatus="mismatch"
+          markedPlayerScore={{ ownScore: 4, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-marked')).toHaveTextContent('input.otherPut {"nombre":"Bruno","golpes":4}');
+    });
+
+    it('16: cada desacuerdo dice solo lo suyo (mutaciones)', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          markedName="Bruno"
+          validationStatus="match"
+          markedValidationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+          markedPlayerScore={{ ownScore: 4, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.queryByTestId('lo-que-puso-el-otro-own')).toBeNull();
+      expect(screen.getByTestId('lo-que-puso-el-otro-marked')).toBeInTheDocument();
+    });
+
+    it('16: y al revés', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          markedName="Bruno"
+          validationStatus="mismatch"
+          markedValidationStatus="match"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 6, markerSubmitted: true }}
+          markedPlayerScore={{ ownScore: 4, ownSubmitted: true, markerScore: 4, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toBeInTheDocument();
+      expect(screen.queryByTestId('lo-que-puso-el-otro-marked')).toBeNull();
+    });
+
+    it('16: en foursomes, lo que puso la pareja rival, no una persona', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          matchFormat="FOURSOMES"
+          markerName="Diego"
+          validationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 6, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toHaveTextContent('input.otherPut {"nombre":"input.rivalPair","golpes":6}');
+    });
+
+    it('16: una raya del otro se dice raya', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          validationStatus="mismatch"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: null, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.getByTestId('lo-que-puso-el-otro-own')).toHaveTextContent('input.otherPut {"nombre":"Diego","golpes":"input.pickedUp"}');
+    });
+
+    it('16: sin desacuerdo, nada', () => {
+      render(
+        <HoleInput
+          {...defaultProps}
+          markerName="Diego"
+          validationStatus="match"
+          playerScore={{ ownScore: 5, ownSubmitted: true, markerScore: 5, markerSubmitted: true }}
+        />
+      );
+
+      expect(screen.queryByTestId('lo-que-puso-el-otro-own')).toBeNull();
+    });
   });
 
   it('should show team A name for hole winner A', () => {

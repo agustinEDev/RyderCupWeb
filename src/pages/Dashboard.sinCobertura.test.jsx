@@ -14,6 +14,7 @@ import { render, act, screen } from '@testing-library/react';
 
 const respuestas = {};
 const mockLee = vi.fn();
+const mockPartidas = vi.fn();
 
 vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: () => respuestas.competiciones() },
@@ -21,6 +22,8 @@ vi.mock('../composition', () => ({
   getRecentMatchesUseCase: { execute: () => Promise.resolve([]) },
   getUpcomingMatchesUseCase: { executeWithCompleteness: (...a) => mockLee(...a) },
   getScoringViewUseCase: { execute: () => new Promise(() => {}) },
+  getUpcomingTeeGroupsUseCase: { executeWithCompleteness: (...a) => mockPartidas(...a) },
+  getTeeGroupScoringViewUseCase: { execute: () => new Promise(() => {}) },
 }));
 
 const usuario = { id: 'u-1', first_name: 'Agustin', email: 'a@b.c' };
@@ -59,9 +62,10 @@ for (const ruta of [
 
 // Deja rastro de lo que recibe, que es lo que se mira
 vi.doMock('../components/dashboard/NextMatchBanner', () => ({
-  default: ({ match, sinRespuesta, desdeMemoria }) => (
+  default: ({ match, sinRespuesta, desdeMemoria, isLoading }) => (
     <div
       data-testid="banner"
+      data-cargando={String(Boolean(isLoading))}
       data-partido={match?.id ?? ''}
       data-sin-respuesta={String(Boolean(sinRespuesta))}
       data-desde-memoria={String(Boolean(desdeMemoria))}
@@ -69,7 +73,7 @@ vi.doMock('../components/dashboard/NextMatchBanner', () => ({
   ),
 }));
 
-const { olvidaTodo, recuerdaLosPartidos, losUltimosPartidos } = await import('../services/loUltimoConocido');
+const { olvidaTodo, recuerdaLosPartidos, losUltimosPartidos, recuerdaLasPartidas, lasUltimasPartidas } = await import('../services/loUltimoConocido');
 const { olvidaLasPrecargas } = await import('../services/partidosSinCobertura');
 const { olvidaQueElPanelSePinto } = await import('../utils/primeraCargaDelPanel');
 const { reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
@@ -100,6 +104,8 @@ describe('el próximo partido del panel sin cobertura', () => {
     olvidaQueElPanelSePinto();
     reiniciaLaCortina();
     mockLee.mockReset();
+    mockPartidas.mockReset();
+    mockPartidas.mockResolvedValue({ matches: [], complete: true });
     respuestas.competiciones = () => Promise.resolve([{ id: 'c-1', status: 'IN_PROGRESS' }]);
     vi.spyOn(console, 'error').mockImplementation(() => {});
     document.body.innerHTML = '';
@@ -115,6 +121,100 @@ describe('el próximo partido del panel sin cobertura', () => {
     expect(banner()).toHaveAttribute('data-sin-respuesta', 'false');
     expect(banner()).toHaveAttribute('data-desde-memoria', 'false');
     expect(losUltimosPartidos()).toHaveLength(1);
+  });
+
+  it('una partida de stroke play antes que el partido: el banner enseña la partida (FE #824, PR 7)', async () => {
+    mockLee.mockResolvedValue({ matches: [{ ...partido, sessionType: 'AFTERNOON' }], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }], complete: true });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(mockPartidas).toHaveBeenCalledWith('u-1', [{ id: 'c-1', status: 'IN_PROGRESS' }]);
+    expect(banner()).toHaveAttribute('data-partido', 'g-1');
+  });
+
+  it('el banner espera a las dos listas: sin eso, quien solo juega stroke play veía un momento «crea una partida rápida» (/code-review)', async () => {
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    let soltar;
+    mockPartidas.mockReturnValue(new Promise((r) => (soltar = r)));
+
+    render(<Dashboard />);
+    await asienta();
+    // Mientras tanto ni se pinta (la cortina del arranque espera a todo): nada
+    // de «crea una partida rápida» que pulsar
+    expect(screen.queryByTestId('banner')).toBeNull();
+
+    await act(async () => soltar({ matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }], complete: true }));
+    await asienta();
+    expect(banner()).toHaveAttribute('data-cargando', 'false');
+    expect(banner()).toHaveAttribute('data-partido', 'g-1');
+  });
+
+  it('con red, la lista de partidas se guarda entera para llegar a ellas sin cobertura (/code-review)', async () => {
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }], complete: true });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(lasUltimasPartidas()).toEqual([expect.objectContaining({ id: 'g-1' })]);
+  });
+
+  it('media lista de partidas no pisa la guardada', async () => {
+    recuerdaLasPartidas([{ id: 'g-vieja', esPartidaDeFranja: true, roundDate: '2099-01-01' }]);
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [], complete: false });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(lasUltimasPartidas()).toEqual([expect.objectContaining({ id: 'g-vieja' })]);
+  });
+
+  it('sin red: la partida guardada llega al banner, y se sabe que es de memoria (/code-review)', async () => {
+    recuerdaLasPartidas([{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }]);
+    mockLee.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', 'g-1');
+    expect(banner()).toHaveAttribute('data-desde-memoria', 'true');
+  });
+
+  it.each([401, 403])('un %s al leer las partidas desmiente lo guardado: se borra y no se ofrece (CodeRabbit)', async (status) => {
+    recuerdaLasPartidas([{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }]);
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockRejectedValue(Object.assign(new Error('x'), { status }));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', '');
+    expect(lasUltimasPartidas()).toBeNull();
+  });
+
+  it('sin red, una partida guardada de un día pasado no se ofrece', async () => {
+    recuerdaLasPartidas([{ id: 'g-0', esPartidaDeFranja: true, roundDate: '2000-01-01', sessionType: 'MORNING' }]);
+    mockLee.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', '');
+  });
+
+  it('si las partidas no se pueden leer, el banner sigue con el partido', async () => {
+    mockLee.mockResolvedValue({ matches: [partido], complete: true });
+    mockPartidas.mockRejectedValue(new Error('x'));
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(banner()).toHaveAttribute('data-partido', 'm-1');
   });
 
   it('sin red y con lista guardada: el banner recibe el partido guardado, y sabe que es de memoria', async () => {

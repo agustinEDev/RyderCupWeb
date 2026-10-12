@@ -1,0 +1,10 @@
+# La imagen solo se usa en el Kind local (Dockerfile). El .env entra, porque
+# el Kind lo necesita (Google, nombre, versión); el .env.local es para probar
+# en local y no debe colarse en el Kind (revisor, 12 oct 2026)
+.env.local
+.env.*.local
+node_modules
+dist
+coverage
+playwright-report
+test-results

@@ -1,12 +1,12 @@
+import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
 import { numeroEntero } from './numeroEntero';
+import { diasDelTorneo, errorDeAjustes } from './ajustesDeStrokePlay';
 
-const MIN_PLAYERS = 2;
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
 const MIN_HANDICAP = 1;
 const MAX_HANDICAP = 54;
-const MAX_PLAYERS = 100;
 
 /**
  * Validates the CreateCompetition/EditCompetition form data.
@@ -66,6 +66,17 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
     return { key: 'endDateAfterStart' };
   }
 
+  // Los ajustes de un Stableford o un Medal (FE #824), ya con las fechas: las
+  // jornadas de cada jugador no pueden pasar de los días del torneo
+  if (!tieneEquipos(formData.tournamentType) && formData.strokePlay) {
+    const dias = diasDelTorneo(formData.startDate, formData.endDate);
+    const error = errorDeAjustes(formData.strokePlay, dias);
+    if (error) {
+      // Con `count`: «1 día» o «3 días» (i18next pone el plural)
+      return error === 'matchdaysMoreThanDays' ? { key: error, count: dias } : { key: error };
+    }
+  }
+
   if (!formData.country) {
     return { key: 'countryRequired' };
   }
@@ -101,7 +112,7 @@ export const validateCompetitionForm = (formData, { exigirCampos = true, inscrit
   }
 
   if (numPlayers > MAX_PLAYERS) {
-    return { key: 'playersMaximum' };
+    return { key: 'playersMaximum', max: MAX_PLAYERS };
   }
 
   // Y no por debajo de quien ya está dentro (FE #662). El servidor lo rechaza

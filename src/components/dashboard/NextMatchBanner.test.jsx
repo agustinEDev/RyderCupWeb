@@ -12,7 +12,8 @@ vi.mock('react-router', async () => {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, options) => (options?.opponents ? `${key}:${options.opponents}` : key),
+    t: (key, options) =>
+      options?.opponents ? `${key}:${options.opponents}` : options ? `${key} ${JSON.stringify(options)}` : key,
     i18n: { language: 'es' },
   }),
 }));
@@ -58,6 +59,58 @@ describe('NextMatchBanner', () => {
     fireEvent.click(screen.getByTestId('next-match-banner'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/player/matches/match-1/scoring');
+  });
+
+  describe('una partida de stroke play (FE #824, PR 7)', () => {
+    const partida = {
+      id: 'g-1',
+      esPartidaDeFranja: true,
+      competitionId: 'c-1',
+      competitionName: 'Medal de octubre',
+      roundDate: '2026-08-10',
+      sessionType: 'MORNING',
+      teeTime: '08:10',
+      matchNumber: 2,
+      partnerNames: ['Ana', 'Bea'],
+    };
+
+    it('12 (QA del 11 oct 2026): si le pasaron a esta partida, lo dice con su hora', () => {
+      renderBanner({ match: { ...partida, broughtIn: true } });
+
+      expect(screen.getByTestId('next-match-banner')).toHaveTextContent('nextMatch.broughtIn {"numero":2}');
+    });
+
+    it('12: si no, no', () => {
+      renderBanner({ match: partida });
+
+      expect(screen.getByTestId('next-match-banner')).not.toHaveTextContent('nextMatch.broughtIn');
+    });
+
+    it('se nombra como partida, con su hora y sus compañeros', () => {
+      renderBanner({ match: partida });
+
+      const banner = screen.getByTestId('next-match-banner');
+      expect(banner).toHaveTextContent('nextMatch.teeGroup {"numero":2}');
+      expect(banner).toHaveTextContent('Medal de octubre');
+      expect(banner).toHaveTextContent('08:10');
+      expect(banner).toHaveTextContent('nextMatch.withPartners {"partners":"Ana, Bea"}');
+      expect(banner).not.toHaveTextContent('nextMatch.versus');
+    });
+
+    it('la cabecera dice «tu próxima partida» (pasada)', () => {
+      renderBanner({ match: partida });
+
+      expect(screen.getByTestId('next-match-banner')).toHaveTextContent('nextMatch.labelTeeGroup');
+      expect(screen.getByTestId('next-match-banner')).not.toHaveTextContent(/nextMatch\.label$|nextMatch\.label[^T]/);
+    });
+
+    it('lleva a anotar su partida, con la competición', () => {
+      renderBanner({ match: partida });
+
+      fireEvent.click(screen.getByTestId('next-match-banner'));
+
+      expect(mockNavigate).toHaveBeenCalledWith('/player/groups/g-1/scoring?competition=c-1');
+    });
   });
 
   /**
