@@ -350,6 +350,28 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     expect(screen.getByTestId('tarjeta-cris')).not.toHaveTextContent('female');
   });
 
+  it('QA 5.ª pasada: «No presentada» también en la acción del organizador (botón, confirmación y aviso)', async () => {
+    const hoyos = Array.from({ length: 18 }, (_, i) => hoyo(i + 1));
+    const jugadores = [
+      jugador('ana', 'JUGANDO', hoyos, { tee_gender: 'FEMALE' }),
+      jugador('cris', 'JUGANDO', hoyos, { tee_gender: 'MALE' }),
+    ];
+    mockNoPresentado.mockResolvedValue(vista('STABLEFORD', jugadores));
+    pintar({ organiza: true, scoringView: vista('STABLEFORD', jugadores) });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    const cris = within(screen.getByTestId('tarjeta-cris'));
+    expect(cris.getByRole('button', { name: 'partida.noShow {"jugador":"CRIS"}' })).toHaveTextContent(/^partida\.noShowShort$/);
+    const boton = ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA","context":"female"}' });
+    expect(boton).toHaveTextContent('partida.noShowShort {"context":"female"}');
+
+    fireEvent.click(boton);
+    expect(screen.getByTestId('tarjeta-ana')).toHaveTextContent('partida.noShowConfirm {"jugador":"ANA","context":"female"}');
+    fireEvent.click(screen.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('partida.markedNoShow {"context":"female"}'));
+  });
+
   it('15f: una tarjeta entregada no se corrige: primero se reabre, con confirmación', async () => {
     const onCambio = vi.fn();
     pintar({ organiza: true, onCambio });

@@ -292,11 +292,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   <button
                     type="button"
                     disabled={ocupado}
-                    aria-label={t('partida.noShow', { jugador: name })}
+                    aria-label={t('partida.noShow', conGenero(teeGender, { jugador: name }))}
                     onClick={(e) => setConfirmando({ jugador, accion: 'noPresentado', origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-gray-300 px-3 text-sm text-gray-700"
                   >
-                    {t('partida.noShowShort')}
+                    {t('partida.noShowShort', conGenero(teeGender))}
                   </button>
                 )}
               </div>
@@ -308,7 +308,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                 <span className="w-full">
                   {confirmaEsta.accion === 'validar'
                     ? t('partida.validateScoredConfirm', { jugador: name, count: confirmaEsta.cuantos })
-                    : t(confirmaEsta.accion === 'reabrir' ? 'partida.reopenConfirm' : 'partida.noShowConfirm', { jugador: name })}
+                    : confirmaEsta.accion === 'reabrir'
+                      ? t('partida.reopenConfirm', { jugador: name })
+                      : t('partida.noShowConfirm', conGenero(teeGender, { jugador: name }))}
                 </span>
                 <button
                   type="button"
@@ -331,7 +333,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                         alFallar
                       );
                     } else {
-                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien, alFallar);
+                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), { clave: 'partida.markedNoShow', params: conGenero(teeGender) }, cerrar, avisarSiVieneAlguien, alFallar);
                     }
                   }}
                   className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"

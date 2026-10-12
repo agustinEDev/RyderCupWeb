@@ -288,9 +288,13 @@
     "reopenConfirm": "¿Reabrir la tarjeta de {{jugador}}? Podrá volver a anotarse y corregirse.",
     "reopened": "Tarjeta reabierta.",
     "noShow": "Marcar a {{jugador}} como no presentado",
+    "noShow_female": "Marcar a {{jugador}} como no presentada",
     "noShowShort": "No presentado",
+    "noShowShort_female": "No presentada",
     "noShowConfirm": "¿Marcar a {{jugador}} como no presentado? Su tarjeta queda cerrada sin hoyos.",
+    "noShowConfirm_female": "¿Marcar a {{jugador}} como no presentada? Su tarjeta queda cerrada sin hoyos.",
     "markedNoShow": "Marcado como no presentado.",
+    "markedNoShow_female": "Marcada como no presentada.",
     "errors": {
       "NOT_GROUP_PLAYER": "No juegas esta partida.",
       "NOT_YOUR_MARKED_PLAYER": "Ese no es el jugador al que marcas.",

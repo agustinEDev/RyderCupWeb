@@ -369,7 +369,7 @@
     "score": "Score",
     "viewCard": "View card",
     "closeWindow": "Close the window",
-    "closeWindowConfirm": "Unfinished groups are closed: complete cards are submitted, partial ones count as retired and those with no holes as no shows.",
+    "closeWindowConfirm": "Unfinished groups are closed: complete cards (18 validated holes) are submitted, those with no strokes entered count as no shows and the rest as retired, even if their strokes are not validated.",
     "closeWindowYes": "Yes, close it",
     "windowClosed": "Window closed.",
     "movePlayer": "Move {{jugador}}",
