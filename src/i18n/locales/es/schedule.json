@@ -372,7 +372,7 @@
     "score": "Anotar",
     "viewCard": "Ver tarjeta",
     "closeWindow": "Cerrar la franja",
-    "closeWindowConfirm": "Se cierran las partidas sin acabar: las tarjetas completas quedan entregadas, las que van a medias como retirados y las que no tienen ningún hoyo como no presentados.",
+    "closeWindowConfirm": "Se cierran las partidas sin acabar: las tarjetas completas (18 hoyos validados) quedan entregadas, las que no tienen ningún golpe anotado como no presentados y el resto como retirados, aunque sus golpes no estén validados.",
     "closeWindowYes": "Sí, cerrarla",
     "windowClosed": "Franja cerrada.",
     "movePlayer": "Mover a {{jugador}}",
