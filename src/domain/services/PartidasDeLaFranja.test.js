@@ -201,10 +201,10 @@ describe('PartidasDeLaFranja · los no presentados (QA 2, 12 oct 2026)', () => {
     expect(destinosDelJugador(v, 'c', HOJA).conSitio.map((g) => g.id)).toEqual(['g2']);
   });
 
-  it('/code-review: una partida solo de NP no tiene sitio: quien llegue jugaría solo', () => {
+  it('a una partida solo de NP se puede mover: queda incompleta, como una nueva (M1, 12 oct 2026)', () => {
     const v = vista([partida('g1', 1, ['a', 'b', 'c']), conNP('g2', 2, ['x', 'y'], [])]);
 
-    expect(destinosDelJugador(v, 'a', HOJA).conSitio).toEqual([]);
+    expect(destinosDelJugador(v, 'a', HOJA).conSitio.map((g) => g.id)).toEqual(['g2']);
   });
 
   it('al NP no se le ofrece nada', () => {

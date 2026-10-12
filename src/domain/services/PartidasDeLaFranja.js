@@ -47,9 +47,9 @@ export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   const unoDeVarios = origen ? origen.players.length > 1 : true;
 
   return {
-    // Una partida solo de no presentados no tiene sitio: quien llegue jugaría
-    // solo (/code-review)
-    conSitio: sinQuedarSolo ? otras.filter((g) => juegan(g).length > 0 && juegan(g).length < tamano) : [],
+    // A una solo de no presentados también: queda incompleta hasta que el
+    // organizador traiga a otro, como una nueva (M1; decidido el 12 oct 2026)
+    conSitio: sinQuedarSolo ? otras.filter((g) => juegan(g).length < tamano) : [],
     intercambios: origen
       ? otras.filter((g) => juegan(g).length >= tamano).flatMap((g) => juegan(g).map((con) => ({ partida: g, con })))
       : [],
