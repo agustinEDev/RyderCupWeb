@@ -62,6 +62,8 @@
     "rivalBall": "Rival ball",
     "rivalCount": "Per the rivals",
     "youMark": "You score {{nombre}}",
+    "scoredBy": "Scored by {{nombre}}",
+    "scoredForYou": "{{nombre}} recorded your score",
     "otherPut": "{{nombre}} put {{golpes}}",
     "yourMarker": "Your marker",
     "theMarkedPlayer": "Your player",
@@ -121,6 +123,7 @@
     "matchOver": "Match over",
     "keepPlaying": "You can keep playing; hand it in when you finish.",
     "title": "Submit Scorecard",
+    "confirmReopenable": "Submit your scorecard? After that, only the organiser can reopen it to make corrections.",
     "confirm": "Are you sure you want to submit your scorecard? This action cannot be undone.",
     "button": "Submit Scorecard",
     "submit": "Submit Scorecard",
@@ -176,7 +179,6 @@
     "noGuardados_other": "Holes {{holes}} could not be saved on this device: storage is full or the browser does not allow saving data. Free up space or allow saving data, and enter them again.",
     "noGuardadosSinAnotar_one": "Hole {{holes}} was never saved and can no longer be entered here. Talk to the competition organiser.",
     "noGuardadosSinAnotar_other": "Holes {{holes}} were never saved and can no longer be entered here. Talk to the competition organiser.",
-    "banner": "You are offline. Scores will be saved locally and synced when reconnected.",
     "syncing": "Syncing scores...",
     "syncComplete": "All scores synced",
     "pendingScores_one": "{{count}} score pending sync",
@@ -228,6 +230,7 @@
     "walkover": "{{team}} wins by walkover: the opponent did not show up. There is nothing to score."
   },
   "partida": {
+    "anotherMarker": "another marker",
     "header": "Group {{numero}} · {{hora}}",
     "backToCompetition": "Back to the competition",
     "type": {

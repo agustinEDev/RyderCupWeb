@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { errorDeHoja, errorDeLaFranja, numeroDeSalidas, cupoDeLaHoja, hojaPropuesta } from './HojaDeSalidas';
+import { afterEach, vi, describe, it, expect } from 'vitest';
+import { avisoDeLaFranja, errorDeHoja, errorDeLaFranja, numeroDeSalidas, cupoDeLaHoja, hojaPropuesta } from './HojaDeSalidas';
 
 /**
  * La hoja de salidas de una franja (FE #824, RyderCupAm#251): las mismas reglas
@@ -97,5 +97,65 @@ describe('errorDeLaFranja: su primera salida ya pasó (QA del 11 oct 2026)', () 
 
   it('sin día, solo la hoja', () => {
     expect(errorDeLaFranja({ dia: null, hoja }, a('15:00'))).toBeNull();
+  });
+});
+
+/**
+ * El cambio de hora de primavera (2.ª pasada del QA, 12 oct 2026): el 28 de
+ * marzo de 2027 en Madrid se pasa de las 2:00 a las 3:00. Una salida en ese
+ * hueco no existe, y el formulario lo dice antes de guardar.
+ *
+ *   hoja (28/03/2027, Madrid)  | resultado
+ *   ---------------------------|----------------
+ *   02:30-03:30                | teeTimeSkipped (la primera)
+ *   01:50-04:00                | teeTimeSkipped (las de en medio)
+ *   01:00-02:00                | teeTimeSkipped (la última, justo en el salto)
+ *   01:00-01:50                | nada
+ *   03:00-04:00                | nada
+ *   otro día, 01:50-04:00      | nada
+ *   en una zona sin cambio     | nada
+ */
+describe('avisoDeLaFranja: salidas que no existen por el cambio de hora (aviso, no bloquea)', () => {
+  const hoja = (primera, ultima) => ({ primera, ultima, intervalo: 10, tamano: 4 });
+  const ANTES = new Date(Date.UTC(2027, 0, 1));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each([
+    ['02:30', '03:30', 'teeTimeSkipped'],
+    ['01:50', '04:00', 'teeTimeSkipped'],
+    ['01:00', '02:00', 'teeTimeSkipped'],
+    ['01:00', '01:50', null],
+    ['03:00', '04:00', null],
+  ])('en Madrid, de %s a %s: %s', (primera, ultima, error) => {
+    vi.stubEnv('TZ', 'Europe/Madrid');
+
+    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja(primera, ultima) })).toBe(error);
+    // Con la zona del móvil, que puede no ser la del campo: no bloquea (CodeRabbit en la #843)
+    expect(errorDeLaFranja({ dia: '2027-03-28', hoja: hoja(primera, ultima) }, ANTES)).toBeNull();
+  });
+
+  it('otro día, nada', () => {
+    vi.stubEnv('TZ', 'Europe/Madrid');
+
+    expect(avisoDeLaFranja({ dia: '2027-03-27', hoja: hoja('01:50', '04:00') })).toBeNull();
+  });
+
+  it('en una zona sin cambio de hora, nada', () => {
+    vi.stubEnv('TZ', 'UTC');
+
+    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja('01:50', '04:00') })).toBeNull();
+  });
+
+  it('una hoja que no vale no avisa de nada: va antes su error', () => {
+    vi.stubEnv('TZ', 'Europe/Madrid');
+
+    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: { ...hoja('01:50', '04:00'), intervalo: 3 } })).toBeNull();
+    expect(avisoDeLaFranja({ dia: null, hoja: hoja('01:50', '04:00') })).toBeNull();
+  });
+
+  it('también al cambiar una sin tocar su primera salida', () => {
+    vi.stubEnv('TZ', 'Europe/Madrid');
+
+    expect(avisoDeLaFranja({ dia: '2027-03-28', hoja: hoja('01:50', '04:00') })).toBe('teeTimeSkipped');
   });
 });

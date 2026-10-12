@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 
+// El aviso del cambio de hora depende de la zona del móvil: aquí se controla
+// (su regla se prueba en HojaDeSalidas.test.js)
+const mockAviso = vi.hoisted(() => ({ valor: null }));
+vi.mock('../../domain/value_objects/HojaDeSalidas', async (original) => ({
+  ...(await original()),
+  avisoDeLaFranja: () => mockAviso.valor,
+}));
+
 /**
  * Las franjas de un Stableford o un Medal en la ficha (FE #824, PR 3). La
  * tabla aprobada el 10 oct 2026:
@@ -174,6 +182,20 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
       expect(screen.getByRole('button', { name: 'franjas.save' })).toBeEnabled();
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it('QA 2 (CodeRabbit en la #843): una salida en el salto del cambio de hora avisa, pero deja guardar', async () => {
+    mockAviso.valor = 'teeTimeSkipped';
+    try {
+      pinta();
+      fireEvent.click(await screen.findByRole('button', { name: 'franjas.add' }));
+
+      expect(screen.getByTestId('franjas-resumen-nueva-aviso')).toHaveTextContent('franjas.errors.teeTimeSkipped');
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.getByRole('button', { name: 'franjas.save' })).toBeEnabled();
+    } finally {
+      mockAviso.valor = null;
     }
   });
 

@@ -53,3 +53,18 @@ describe('ScheduleMapper · las franjas (FE #824)', () => {
     expect(ScheduleMapper.toScheduleDTO({ days: [] }).teeSheetCapacity).toBeNull();
   });
 });
+
+describe('ScheduleMapper · el estado de la tarjeta en las partidas (QA 2, 12 oct 2026)', () => {
+  const grupo = (players) => ({ id: 'g', number: 1, tee_time: '08:00:00', status: 'SCHEDULED', incomplete: false, players });
+  const jugador = (extra = {}) => ({ user_id: 'u', name: 'U', handicap: '1.0', playing_handicap: 1, tee_color: 'YELLOW', strokes_by_hole: [], ...extra });
+
+  it('lleva el de cada jugador', () => {
+    const dto = ScheduleMapper.toTeeGroupDTO(grupo([jugador({ card_status: 'NO_PRESENTADO' })]));
+
+    expect(dto.players[0].cardStatus).toBe('NO_PRESENTADO');
+  });
+
+  it('un backend de antes, que no lo trae: juega', () => {
+    expect(ScheduleMapper.toTeeGroupDTO(grupo([jugador()])).players[0].cardStatus).toBe('JUGANDO');
+  });
+});

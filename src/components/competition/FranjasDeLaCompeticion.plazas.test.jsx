@@ -373,6 +373,14 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('t', { userId: 'sin' }));
     });
 
+    it('QA 2 (12 oct 2026): el nombre entero en su línea, no «O…» al lado del selector', async () => {
+      organizador();
+
+      const nombre = within(await screen.findByTestId('sin-franja')).getByText('Sin Franja');
+      expect(nombre).not.toHaveClass('truncate');
+      expect(nombre).toHaveClass('basis-full', 'break-words');
+    });
+
     it('12b: «Mover a…» no ofrece franjas de un día en que el jugador ya juega en otra', async () => {
       mockLeer.mockResolvedValue({
         rounds: [

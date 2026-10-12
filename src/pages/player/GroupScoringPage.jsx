@@ -13,7 +13,7 @@ import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import HoleInput from '../../components/scoring/HoleInput';
 import HoleSelector from '../../components/scoring/HoleSelector';
-import OfflineBanner from '../../components/scoring/OfflineBanner';
+import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
@@ -117,7 +117,7 @@ const GroupScoringPage = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
-        {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+        {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
         {!isOffline && <PendientesASalvo count={pendingQueueSize} />}
         <div className="mx-auto max-w-4xl px-4 py-6 text-center">
           <p className="text-gray-700">{error ? motivoDe(error) : t('offline.nothingCached')}</p>
@@ -151,7 +151,21 @@ const GroupScoringPage = () => {
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
   // Con nombre: «Anotas a Bruno» y, en un desacuerdo, qué puso (QA del 11 oct 2026)
   const nombreDe = (jugador) => scoringView.players.find((p) => p.userId === jugador)?.userName ?? null;
+  // El número del marcado que puso otro (el marcador de antes, o el
+  // organizador): con su nombre y sin tocarlo (2.ª pasada del QA)
+  const loPusoOtro =
+    suGolpe?.markerSubmitted && suGolpe.markerBy && suGolpe.markerBy !== userId
+      ? suGolpe.markerByName ?? nombreDe(suGolpe.markerBy) ?? t('partida.anotherMarker')
+      : null;
   const meMarca = miTarjeta?.markedByUserId;
+  // Si quien me marcaba se retiró o no se presentó, ya no me marca (CodeRabbit)
+  const sigueMarcandome =
+    Boolean(meMarca) && !['RETIRADO', 'NO_PRESENTADO'].includes(strokePlay.cards.find((c) => c.userId === meMarca)?.cardStatus);
+  // Quién me anotó ESTE hoyo: tras cambiar el círculo puede no ser mi marcador
+  // de ahora (revisor)
+  const meAnoto = miGolpe?.markerSubmitted && miGolpe.markerBy
+    ? miGolpe.markerByName ?? nombreDe(miGolpe.markerBy)
+    : nombreDe(meMarca);
   const sinMarcador = isMatchPlayer && sinMarcadorEnJuego(strokePlay.cards, userId);
 
   const anotar = (golpes, tocado) =>
@@ -203,7 +217,7 @@ const GroupScoringPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
-      {isOffline && <OfflineBanner pendingCount={pendingQueueSize} />}
+      {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
       {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
 
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-4">
@@ -304,7 +318,10 @@ const GroupScoringPage = () => {
                 par={parDe(userId)}
                 markedPar={parDe(marcoA)}
                 markedName={nombreDe(marcoA)}
-                markerName={nombreDe(meMarca)}
+                markerName={meAnoto}
+                marksSomeone={Boolean(marcoA)}
+                hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
+                markedScoredBy={loPusoOtro}
                 strokeIndex={null}
                 playerScore={miGolpe}
                 markedPlayerScore={suGolpe}
@@ -394,6 +411,7 @@ const GroupScoringPage = () => {
       <SessionBlockedModal isOpen={isSessionBlocked} onTakeOver={takeOverSession} onGoBack={() => navigate(-1)} />
       <SubmitScorecardModal
         isOpen={verEntrega && canSubmitScorecard}
+        reopenable
         validatedHoles={validatedHoles}
         totalHoles={holesToSubmit}
         isSubmitting={isSubmitting}

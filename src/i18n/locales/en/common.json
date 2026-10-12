@@ -131,6 +131,9 @@
   "brandMarkAlt": "RyderCupFriends logo",
   "demasiadasPeticiones": "Too many attempts in a row. Wait a minute and try again.",
   "sinConexion": {
+    "anotando": "No connection. What you score is kept on this phone and sent when coverage is back.",
+    "pendientes_one": "{{count}} pending",
+    "pendientes_other": "{{count}} pending",
     "aviso": "No connection. What you see may be out of date.",
     "mensaje": "No connection. Try again when you have coverage."
   },

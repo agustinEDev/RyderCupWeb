@@ -574,6 +574,78 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     await waitFor(() => expect(within(g1).queryByRole('button', { name: 'partidas.markersSave' })).toBeNull());
   });
 
+  // 2.ª pasada del QA (12 oct 2026): el NP sigue en su partida, pero no juega
+  describe('un no presentado', () => {
+    const conNP = () =>
+      vista({
+        groups: [
+          partida('g1', 1, '08:00', [jugador('ana', 'bea'), jugador('bea', 'cris'), jugador('cris', 'ana'), jugador('raquel', 'ana', { cardStatus: 'NO_PRESENTADO' })]),
+          G2,
+        ],
+      });
+
+    it('se ve marcado como tal y no se mueve', async () => {
+      mockLeer.mockResolvedValue(conNP());
+      pintar({ organiza: true });
+      await desplegar();
+
+      const raquel = await screen.findByTestId('partida-jugador-raquel');
+      expect(raquel).toHaveTextContent('partidas.noShow');
+      // Aunque le quede un marcador viejo, el NP no marca (/code-review)
+      expect(raquel).not.toHaveTextContent('partidas.marks');
+      expect(screen.queryByRole('button', { name: 'partidas.movePlayer {"jugador":"RAQUEL"}' })).toBeNull();
+      // Contraprueba: a quien juega sí se le puede mover
+      expect(screen.getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' })).toBeInTheDocument();
+      expect(screen.getByTestId('partida-jugador-ana')).not.toHaveTextContent('partidas.noShow');
+    });
+
+    it('revisor: quien marcaba al NP abre el editor sin marcado, y dice que falta', async () => {
+      mockLeer.mockResolvedValue(vista({
+        groups: [partida('g1', 1, '08:00', [jugador('ana', 'raquel'), jugador('bea', 'cris'), jugador('cris', 'ana'), jugador('raquel', null, { cardStatus: 'NO_PRESENTADO' })]), G2],
+      }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      const g1 = await screen.findByTestId('partida-g1');
+      fireEvent.click(within(g1).getByRole('button', { name: 'partidas.markers {"numero":1}' }));
+      expect(within(g1).getByRole('combobox', { name: 'partidas.whoMarks {"jugador":"ANA"}' })).toHaveValue('');
+      expect(within(g1).getByRole('alert')).toHaveTextContent('partidas.markersErrors.MISSING');
+    });
+
+    it('CodeRabbit: «marca a» un no presentado no se enseña', async () => {
+      mockLeer.mockResolvedValue(vista({
+        groups: [partida('g1', 1, '08:00', [jugador('ana', 'raquel'), jugador('bea', 'ana'), jugador('raquel', null, { cardStatus: 'NO_PRESENTADO' })]), G2],
+      }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByTestId('partida-jugador-ana')).not.toHaveTextContent('partidas.marks');
+      expect(screen.getByTestId('partida-jugador-bea')).toHaveTextContent('partidas.marks {"jugador":"ANA"}');
+    });
+
+    it('no entra en el editor de marcadores ni se manda', async () => {
+      mockLeer.mockResolvedValue(conNP());
+      mockMarcadores.mockResolvedValue(conNP());
+      pintar({ organiza: true });
+      await desplegar();
+
+      const g1 = await screen.findByTestId('partida-g1');
+      fireEvent.click(within(g1).getByRole('button', { name: 'partidas.markers {"numero":1}' }));
+      expect(within(g1).queryByRole('combobox', { name: 'partidas.whoMarks {"jugador":"RAQUEL"}' })).toBeNull();
+      const deAna = within(g1).getByRole('combobox', { name: 'partidas.whoMarks {"jugador":"ANA"}' });
+      expect(within(deAna).getAllByRole('option').map((o) => o.value)).toEqual(['', 'bea', 'cris']);
+      fireEvent.click(within(g1).getByRole('button', { name: 'partidas.markersSave' }));
+
+      await waitFor(() =>
+        expect(mockMarcadores).toHaveBeenCalledWith('g1', [
+          { userId: 'ana', marksUserId: 'bea' },
+          { userId: 'bea', marksUserId: 'cris' },
+          { userId: 'cris', marksUserId: 'ana' },
+        ])
+      );
+    });
+  });
+
   it('14b: una incompleta no tiene «Marcadores»', async () => {
     pintar({ organiza: true });
     await desplegar();

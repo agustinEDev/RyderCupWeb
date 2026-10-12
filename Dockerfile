@@ -22,8 +22,14 @@ RUN npm ci
 # Copiar código fuente
 COPY . .
 
-# Build para producción
-# NOTA: Variables de entorno se inyectarán en runtime, no en build time
+# Esta imagen solo se usa en el Kind local: sin DSN, no manda errores al
+# Sentry de verdad. Sin esto se colaba el del .env de quien la construye
+# (2.ª pasada del QA, 12 oct 2026). Vite da prioridad al entorno sobre el .env
+ARG VITE_SENTRY_DSN=""
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+
+# Build: Vite mete en el bundle las VITE_* del .env (el .env.local queda
+# fuera, ver .dockerignore) y del entorno, que manda
 RUN npm run build
 
 # ==========================================

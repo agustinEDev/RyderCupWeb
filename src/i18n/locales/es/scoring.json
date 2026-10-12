@@ -62,6 +62,8 @@
     "rivalBall": "Bola rival",
     "rivalCount": "Según el rival",
     "youMark": "Anotas a {{nombre}}",
+    "scoredBy": "Lo anotó {{nombre}}",
+    "scoredForYou": "Te anotó {{nombre}}",
     "otherPut": "{{nombre}} puso {{golpes}}",
     "yourMarker": "Tu marcador",
     "theMarkedPlayer": "Tu marcado",
@@ -121,6 +123,7 @@
     "matchOver": "Partido terminado",
     "keepPlaying": "Podéis seguir jugando; entregadla cuando acabéis.",
     "title": "Enviar Tarjeta",
+    "confirmReopenable": "¿Enviar tu tarjeta? Después solo el organizador podrá reabrirla para corregirla.",
     "confirm": "¿Estás seguro de que quieres enviar tu tarjeta? Esta acción no se puede deshacer.",
     "button": "Enviar Tarjeta",
     "submit": "Enviar Tarjeta",
@@ -176,7 +179,6 @@
     "noGuardados_other": "No se pudieron guardar en el móvil los hoyos {{holes}}: el almacenamiento está lleno o el navegador no deja guardar datos. Libera espacio o permite guardar datos, y vuelve a anotarlos.",
     "noGuardadosSinAnotar_one": "No llegó a guardarse el hoyo {{holes}} y ya no se puede anotar desde aquí. Habla con quien organiza la competición.",
     "noGuardadosSinAnotar_other": "No llegaron a guardarse los hoyos {{holes}} y ya no se pueden anotar desde aquí. Habla con quien organiza la competición.",
-    "banner": "Estás sin conexión. Las anotaciones se guardarán localmente y se sincronizarán al reconectar.",
     "syncing": "Sincronizando anotaciones...",
     "syncComplete": "Todas las anotaciones sincronizadas",
     "pendingScores_one": "{{count}} anotación pendiente de sincronizar",
@@ -228,6 +230,7 @@
     "walkover": "{{team}} gana por walkover: el rival no se presentó. No hay nada que anotar."
   },
   "partida": {
+    "anotherMarker": "otro marcador",
     "header": "Partida {{numero}}.ª · {{hora}}",
     "backToCompetition": "Volver a la competición",
     "type": {

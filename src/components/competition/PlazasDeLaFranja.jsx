@@ -239,7 +239,8 @@ export const SinFranja = ({ jugadores, conSitio, etiqueta, ocupado, hacer, casos
       <ul className="space-y-1">
         {jugadores.map(({ userId, userName }) => (
           <li key={userId} className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-800">
-            <span className="min-w-0 flex-1 truncate">{userName}</span>
+            {/* En su línea y entero: al lado del selector quedaba «O…» (2.ª pasada del QA) */}
+            <span className="min-w-0 basis-full break-words">{userName}</span>
             {conSitio.length > 0 && (
               <select aria-label={t('franjas.placeIn', { jugador: userName })} value="" disabled={ocupado}
                 onChange={(e) =>

@@ -197,7 +197,6 @@ import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnro
 import ApproveEnrollmentUseCase from '../application/use_cases/enrollment/ApproveEnrollmentUseCase';
 import RejectEnrollmentUseCase from '../application/use_cases/enrollment/RejectEnrollmentUseCase';
 import CancelEnrollmentUseCase from '../application/use_cases/enrollment/CancelEnrollmentUseCase';
-import WithdrawEnrollmentUseCase from '../application/use_cases/enrollment/WithdrawEnrollmentUseCase';
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
@@ -416,7 +415,6 @@ const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCo
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
 const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
-const withdrawEnrollmentUseCase = new WithdrawEnrollmentUseCase(apiEnrollmentRepository);
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepository);
@@ -517,7 +515,6 @@ export {
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
   userCancelEnrollmentUseCase, // Usuario cancela su solicitud (diferente de cancelCompetitionUseCase)
-  withdrawEnrollmentUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,

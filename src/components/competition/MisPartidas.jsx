@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
+import { companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
 
 /**
  * «Tu partida» de cada jornada, arriba de las franjas (FE #824, PR 6; caso 5,
@@ -41,14 +42,23 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
       )}
       {mias.map(({ roundId, roundDate, sessionType, group }) => {
         const yo = group.players.find((p) => p.userId === userId);
-        const companeros = group.players.filter((p) => p.userId !== userId).map((p) => p.name);
-        const marcado = group.players.find((p) => p.userId === yo?.marksUserId);
+        // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
+        const companeros = companerosDe(group, userId).map((p) => p.name);
+        const marcado = juegan(group).find((p) => p.userId === yo?.marksUserId);
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),
           numero: group.number,
           hora: group.teeTime,
         };
+        // Si el no presentado soy yo: ni compañeros ni anotar (revisor, 12 oct 2026)
+        if (esNoPresentado(yo)) {
+          return (
+            <li key={roundId} data-testid={`mi-partida-${roundId}`}>
+              {t('partidas.youAreNoShow', datos)}
+            </li>
+          );
+        }
         return (
           <li key={roundId} data-testid={`mi-partida-${roundId}`}>
             {companeros.length > 0

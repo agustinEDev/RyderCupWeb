@@ -66,6 +66,25 @@ export const errorDeLaFranja = ({ dia, hoja, primeraAntes }, ahora = new Date())
   return ahora >= sale ? 'firstTeePassed' : null;
 };
 
+/**
+ * `teeTimeSkipped` si alguna salida cae en la hora que se salta por el cambio
+ * de hora de primavera (2.ª pasada del QA, 12 oct 2026). Es un AVISO, no
+ * bloquea: se mira con la zona del móvil, que puede no ser la del campo, y
+ * quien manda es el servidor (CodeRabbit en la #843; decidido con Agustín).
+ *
+ * @param {{dia: string|null, hoja: Object}} franja
+ * @returns {'teeTimeSkipped'|null}
+ */
+export const avisoDeLaFranja = ({ dia, hoja }) => {
+  if (!dia || errorDeHoja(hoja)) return null;
+  const [anio, mes, diaDelMes] = dia.split('-').map(Number);
+  for (let hora = minutos(hoja.primera); hora <= minutos(hoja.ultima); hora += hoja.intervalo) {
+    const sale = new Date(anio, mes - 1, diaDelMes, 0, hora);
+    if (sale.getHours() * 60 + sale.getMinutes() !== hora) return 'teeTimeSkipped';
+  }
+  return null;
+};
+
 /** Cuántas salidas tiene: de la primera a la última que cabe. 0 si no es posible. */
 export const numeroDeSalidas = (hoja) =>
   errorDeHoja(hoja) ? 0 : Math.floor((minutos(hoja.ultima) - minutos(hoja.primera)) / hoja.intervalo) + 1;
