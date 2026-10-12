@@ -650,6 +650,15 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
       expect(within(await screen.findByTestId('partida-g1')).getByRole('link')).toHaveTextContent('partidas.viewCard');
     });
 
+    it('/code-review: el retirado no «marca a» nadie', async () => {
+      mockLeer.mockResolvedValue(vista({ groups: [partida('g1', 1, '08:00', [jugador('ana', 'bea'), jugador('bea', 'ana'), jugador('cris', 'bea', { cardStatus: 'RETIRADO' })], { status: 'IN_PROGRESS' })] }));
+      pintar();
+      await desplegar();
+
+      expect(await screen.findByTestId('partida-jugador-cris')).not.toHaveTextContent('partidas.marks');
+      expect(screen.getByTestId('partida-jugador-ana')).toHaveTextContent('partidas.marks');
+    });
+
     it('revisor: «Retirada» y «No presentada» para ellas', async () => {
       mockLeer.mockResolvedValue(vista({ groups: [partida('g1', 1, '08:00', [jugador('ana', null, { cardStatus: 'RETIRADO', teeGender: 'FEMALE' }), jugador('bea', null, { cardStatus: 'NO_PRESENTADO', teeGender: 'FEMALE' }), jugador('cris', null, { cardStatus: 'RETIRADO', teeGender: 'MALE' })], { status: 'COMPLETED' })] }));
       pintar();

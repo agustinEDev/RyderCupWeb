@@ -487,8 +487,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           {p.cardStatus === 'RETIRADO' && (
                             <span className="font-semibold text-amber-800">{t('partidas.withdrawn', ...enFemenino(p))}</span>
                           )}
-                          {/* Ni el NP marca ni se marca a un NP (CodeRabbit) */}
-                          {p.marksUserId && !esNoPresentado(p) && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
+                          {/* Ni el NP o el retirado marcan, ni se marca a un NP (CodeRabbit, /code-review) */}
+                          {p.marksUserId && !esNoPresentado(p) && p.cardStatus !== 'RETIRADO' && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
                             <span className="text-gray-500">
                               {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
                             </span>

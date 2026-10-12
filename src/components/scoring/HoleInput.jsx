@@ -280,12 +280,12 @@ const HoleInput = ({
           <div>
             <p className="text-xs text-gray-500">{etiquetaPropia}</p>
             {/* Sin anotar, hueco y no la raya de «recogió» (revisor, QA 3) */}
-            <p className="text-xl font-bold">{displayScore(playerScore.ownSubmitted === false ? undefined : playerScore.ownScore)}</p>
+            <p className="text-xl font-bold">{displayScore(playerScore.ownSubmitted === false ? undefined : playerScore.ownScore, t('input.pickedUp'))}</p>
           </div>
           {conMarcador && (
             <div>
               <p className="text-xs text-gray-500">{etiquetaDelMarcador}</p>
-              <p className="text-xl font-bold">{displayScore(playerScore.markerSubmitted === false ? undefined : playerScore.markerScore)}</p>
+              <p className="text-xl font-bold">{displayScore(playerScore.markerSubmitted === false ? undefined : playerScore.markerScore, t('input.pickedUp'))}</p>
             </div>
           )}
         </div>

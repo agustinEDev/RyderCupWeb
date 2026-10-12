@@ -22,7 +22,8 @@ export const juegan = (partida) => partida.players.filter((p) => !esNoPresentado
  */
 export const anotaSuTarjeta = (partida, userId) => {
   const yo = partida.players.find((p) => p.userId === userId);
-  return Boolean(yo) && (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO';
+  // Ni en una partida ya cerrada, aunque su tarjeta quedara abierta (/code-review)
+  return Boolean(yo) && (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO' && partida.status !== 'COMPLETED';
 };
 
 /** Con quién juega: sin él ni los no presentados. */

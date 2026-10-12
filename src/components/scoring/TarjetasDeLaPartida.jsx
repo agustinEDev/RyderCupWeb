@@ -63,18 +63,25 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
 
   const hacer = async (accion, aviso, alAcabar, despues, alFallar) => {
     setOcupado(true);
+    let respuesta;
     try {
-      const respuesta = await accion();
-      alAcabar?.();
-      customToast.success(typeof aviso === 'string' ? t(aviso) : t(aviso.clave, aviso.params));
-      despues?.(respuesta);
-      onCambio?.();
+      respuesta = await accion();
     } catch (error) {
       customToast.error(mensajeDeErrorDePartida(t, error));
       // Una confirmación no se queda abierta tras el error (QA 3)
       alFallar?.();
+      return;
     } finally {
       setOcupado(false);
+    }
+    // Lo de después ya no es un fallo de la petición (/code-review)
+    alAcabar?.();
+    customToast.success(typeof aviso === 'string' ? t(aviso) : t(aviso.clave, aviso.params));
+    try {
+      despues?.(respuesta);
+      onCambio?.();
+    } catch {
+      // El refresco se reintenta solo con el sondeo
     }
   };
 
@@ -323,7 +330,16 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                 >
                   {t('partida.yes')}
                 </button>
-                <button type="button" onClick={() => setConfirmando(null)} className="min-h-11 rounded-md px-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // El foco vuelve al botón que la abrió (/code-review)
+                    const { origen } = confirmaEsta;
+                    setConfirmando(null);
+                    origen?.focus();
+                  }}
+                  className="min-h-11 rounded-md px-3"
+                >
                   {t('partida.no')}
                 </button>
               </div>

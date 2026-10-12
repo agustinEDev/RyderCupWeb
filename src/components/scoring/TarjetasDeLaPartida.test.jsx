@@ -376,6 +376,29 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     await waitFor(() => expect(document.activeElement).toBe(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' })));
   });
 
+  it('/code-review: si la petición fue bien pero avisar falla, no se dice que falló ni se reenfoca', async () => {
+    mockNoPresentado.mockResolvedValueOnce(null);
+    const onCambio = vi.fn(() => { throw new Error('refresco'); });
+    pintar({ organiza: true, onCambio });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalled());
+    expect(mockToast.error).not.toHaveBeenCalled();
+  });
+
+  it('/code-review: con «No», el foco vuelve al botón que la abrió', () => {
+    pintar({ organiza: true });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.no' }));
+
+    expect(document.activeElement).toBe(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+  });
+
   it('15g: no presentado, a quien sigue jugando, con confirmación; «No» no hace nada', async () => {
     pintar({ organiza: true });
 

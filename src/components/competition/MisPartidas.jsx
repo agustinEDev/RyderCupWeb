@@ -44,7 +44,8 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         const yo = group.players.find((p) => p.userId === userId);
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
         const companeros = companerosDe(group, userId).map((p) => p.name);
-        const marcado = juegan(group).find((p) => p.userId === yo?.marksUserId);
+        // Retirado, ya no marca a nadie (/code-review)
+        const marcado = yo?.cardStatus === 'RETIRADO' ? null : juegan(group).find((p) => p.userId === yo?.marksUserId);
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),

@@ -225,6 +225,11 @@ describe('PartidasDeLaFranja · los no presentados (QA 2, 12 oct 2026)', () => {
     expect(anotaSuTarjeta(g, 'z')).toBe(false);
   });
 
+  it('/code-review: en una partida cerrada no se anota aunque la tarjeta siga abierta', () => {
+    const g = { id: 'g', status: 'COMPLETED', players: [{ userId: 'a', cardStatus: 'JUGANDO' }] };
+    expect(anotaSuTarjeta(g, 'a')).toBe(false);
+  });
+
   it('los compañeros, sin el NP ni uno mismo', () => {
     expect(companerosDe(conNP('g1', 1, ['x'], ['a', 'b']), 'a').map((p) => p.userId)).toEqual(['b']);
   });
