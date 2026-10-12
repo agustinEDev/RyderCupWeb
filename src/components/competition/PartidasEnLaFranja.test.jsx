@@ -579,7 +579,7 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     const conNP = () =>
       vista({
         groups: [
-          partida('g1', 1, '08:00', [jugador('ana', 'bea'), jugador('bea', 'cris'), jugador('cris', 'ana'), jugador('raquel', null, { cardStatus: 'NO_PRESENTADO' })]),
+          partida('g1', 1, '08:00', [jugador('ana', 'bea'), jugador('bea', 'cris'), jugador('cris', 'ana'), jugador('raquel', 'ana', { cardStatus: 'NO_PRESENTADO' })]),
           G2,
         ],
       });
@@ -591,6 +591,8 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
 
       const raquel = await screen.findByTestId('partida-jugador-raquel');
       expect(raquel).toHaveTextContent('partidas.noShow');
+      // Aunque le quede un marcador viejo, el NP no marca (/code-review)
+      expect(raquel).not.toHaveTextContent('partidas.marks');
       expect(screen.queryByRole('button', { name: 'partidas.movePlayer {"jugador":"RAQUEL"}' })).toBeNull();
       // Contraprueba: a quien juega sí se le puede mover
       expect(screen.getByRole('button', { name: 'partidas.movePlayer {"jugador":"ANA"}' })).toBeInTheDocument();

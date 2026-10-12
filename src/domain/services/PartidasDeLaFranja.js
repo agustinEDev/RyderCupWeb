@@ -11,7 +11,7 @@ const enLaPartida = (partida, userId) => partida.players.some((p) => p.userId ==
 
 // Un no presentado sigue en su partida (su NP sale en la clasificación), pero
 // no ocupa sitio, no se mueve y no es compañero de nadie (RyderCupAm#543)
-const esNoPresentado = (jugador) => jugador.cardStatus === 'NO_PRESENTADO';
+export const esNoPresentado = (jugador) => jugador?.cardStatus === 'NO_PRESENTADO';
 
 /** Los de la partida que juegan: sin los no presentados. */
 export const juegan = (partida) => partida.players.filter((p) => !esNoPresentado(p));
@@ -37,7 +37,7 @@ export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p
  */
 export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   const origen = vista.groups.find((g) => enLaPartida(g, userId)) ?? null;
-  if (origen && esNoPresentado(origen.players.find((p) => p.userId === userId))) {
+  if (esNoPresentado(origen?.players.find((p) => p.userId === userId))) {
     return { conSitio: [], intercambios: [], nueva: false };
   }
   const otras = vista.groups.filter((g) => g !== origen);
@@ -47,7 +47,9 @@ export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   const unoDeVarios = origen ? origen.players.length > 1 : true;
 
   return {
-    conSitio: sinQuedarSolo ? otras.filter((g) => juegan(g).length < tamano) : [],
+    // Una partida solo de no presentados no tiene sitio: quien llegue jugaría
+    // solo (/code-review)
+    conSitio: sinQuedarSolo ? otras.filter((g) => juegan(g).length > 0 && juegan(g).length < tamano) : [],
     intercambios: origen
       ? otras.filter((g) => juegan(g).length >= tamano).flatMap((g) => juegan(g).map((con) => ({ partida: g, con })))
       : [],

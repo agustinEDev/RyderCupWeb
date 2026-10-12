@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
-import { companerosDe, juegan } from '../../domain/services/PartidasDeLaFranja';
+import { companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
 
 /**
  * «Tu partida» de cada jornada, arriba de las franjas (FE #824, PR 6; caso 5,
@@ -52,7 +52,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
           hora: group.teeTime,
         };
         // Si el no presentado soy yo: ni compañeros ni anotar (revisor, 12 oct 2026)
-        if (yo?.cardStatus === 'NO_PRESENTADO') {
+        if (esNoPresentado(yo)) {
           return (
             <li key={roundId} data-testid={`mi-partida-${roundId}`}>
               {t('partidas.youAreNoShow', datos)}

@@ -308,6 +308,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           [encima.marca]: true,
           validationStatus: 'pending',
           ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
+          // Lo de la cola es de quien anota aquí: ya no es del marcador de antes
+          ...(encima.campo === 'markerScore' ? { markerBy: null, markerByName: null } : {}),
         }
     );
 

@@ -13,7 +13,7 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
-import { destinosDelJugador, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
+import { destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 
 /**
@@ -248,15 +248,16 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
       () => setMarcando(null)
     );
 
-  const enJuegoIds = (partida) => new Set(juegan(partida).map((p) => p.userId));
-  const abrirMarcadores = (partida) =>
+  const abrirMarcadores = (partida) => {
+    const enJuego = new Set(juegan(partida).map((p) => p.userId));
     setMarcando({
       groupId: partida.id,
       // A un no presentado no se le marca: como si faltara (revisor)
       valores: Object.fromEntries(
-        juegan(partida).map((p) => [p.userId, enJuegoIds(partida).has(p.marksUserId) ? p.marksUserId : ''])
+        juegan(partida).map((p) => [p.userId, enJuego.has(p.marksUserId) ? p.marksUserId : ''])
       ),
     });
+  };
 
   const opcionesDeDestino = (jugador, { conIntercambios }) => {
     const d = destinosDelJugador(vista, jugador, { tamano, salidas });
@@ -474,10 +475,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
                           <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
-                          {p.cardStatus === 'NO_PRESENTADO' && (
+                          {esNoPresentado(p) && (
                             <span className="font-semibold text-red-700">{t('partidas.noShow')}</span>
                           )}
-                          {p.marksUserId && (
+                          {p.marksUserId && !esNoPresentado(p) && (
                             <span className="text-gray-500">
                               {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
                             </span>

@@ -98,7 +98,9 @@ const HoleInput = ({
     setOpenPanel(null);
     // Con el golpe que se ha tocado: el envío lleva los dos, y quien lo recibe
     // necesita saber cuál volvió a anotar el jugador (FE #622)
-    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: markedValue }, 'ownScore');
+    // El número de otro marcador no se reenvía como tuyo (/code-review)
+    const marcado = markedScoredBy || !conMarcado ? undefined : markedValue;
+    if (onScoreChange) onScoreChange({ ownScore: val, markedScore: marcado }, 'ownScore');
   };
 
   const handleMarkedSelect = (val) => {

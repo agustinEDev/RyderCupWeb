@@ -1,5 +1,5 @@
 import { fechaLocal } from '../../../utils/fechaLocal';
-import { companerosDe } from '../../../domain/services/PartidasDeLaFranja';
+import { companerosDe, esNoPresentado } from '../../../domain/services/PartidasDeLaFranja';
 
 const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
 const COMPETICIONES_CON_PARTIDAS = ['CLOSED', 'IN_PROGRESS'];
@@ -57,7 +57,7 @@ class GetUpcomingTeeGroupsUseCase {
     return mias
       .filter(({ group }) => POR_JUGAR.includes(group.status))
       // Si es no presentado, no juega: no es su próxima partida (revisor, 12 oct 2026)
-      .filter(({ group }) => group.players.find((p) => p.userId === userId)?.cardStatus !== 'NO_PRESENTADO')
+      .filter(({ group }) => !esNoPresentado(group.players.find((p) => p.userId === userId)))
       .map(({ roundId, roundDate, sessionType, group }) => ({
         id: group.id,
         // Lo distingue de un partido de la Ryder: su pantalla y su vista son otras

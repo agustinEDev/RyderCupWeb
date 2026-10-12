@@ -1716,6 +1716,18 @@ describe('useScoring · lo que se ve junta el servidor y la cola (FE #606)', () 
     expect(visible(app.result, 5, 'u1')).toEqual(expect.objectContaining({ ownScore: 6, ownSubmitted: true }));
   });
 
+  it('/code-review: lo mío en la cola encima del número de otro marcador ya no se dice suyo', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(
+      vistaCon([hoyo(5, [fila('u2', { markerScore: 6, markerSubmitted: true, markerBy: 'viejo', markerByName: 'Ulises' })])])
+    );
+    const app = await monta();
+    enCola = [guardada(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 })];
+
+    app.rerender();
+
+    expect(visible(app.result, 5, 'u2')).toEqual(expect.objectContaining({ markerScore: 5, markerBy: null, markerByName: null }));
+  });
+
   it('Q3 · un golpe rechazado deja de verse: manda lo del servidor', async () => {
     getScoringViewUseCase.execute.mockResolvedValue(
       vistaCon([hoyo(5, [fila('u1', { ownScore: 4, ownSubmitted: true })])])

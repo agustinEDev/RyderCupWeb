@@ -274,6 +274,19 @@ describe('HoleInput', () => {
       expect(screen.getByTestId('anotado-por-otro')).toHaveTextContent('input.scoredBy {"nombre":"Ulises"}');
     });
 
+    it('/code-review: anotar solo lo tuyo no reenvía como tuyo el número de otro marcador', () => {
+      const onScoreChange = vi.fn();
+      render(
+        <HoleInput {...defaultProps} onScoreChange={onScoreChange} markedName="Vanesa" markedScoredBy="Ulises"
+          markedPlayerScore={{ markerScore: 6, markerSubmitted: true }} />
+      );
+
+      fireEvent.click(screen.getByTestId('own-score-button'));
+      fireEvent.click(screen.getByRole('button', { name: /5/ }));
+
+      expect(onScoreChange).toHaveBeenCalledWith({ ownScore: 5, markedScore: undefined }, 'ownScore');
+    });
+
     it('sin otro que lo pusiera, la casilla es tuya como siempre', () => {
       render(<HoleInput {...defaultProps} markedName="Vanesa" markedPlayerScore={{ markerScore: 6, markerSubmitted: true }} />);
 
