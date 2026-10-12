@@ -270,7 +270,9 @@
       "JUGANDO": "Jugando",
       "ENTREGADA": "Entregada",
       "RETIRADO": "Retirado",
-      "NO_PRESENTADO": "No presentado"
+      "NO_PRESENTADO": "No presentado",
+      "RETIRADO_female": "Retirada",
+      "NO_PRESENTADO_female": "No presentada"
     },
     "points_one": "{{count}} punto",
     "points_other": "{{count}} puntos",

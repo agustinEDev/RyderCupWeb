@@ -96,6 +96,8 @@ class TeeGroupScoringMapper {
           userId: p.user_id,
           name: p.name,
           cardStatus: p.card_status,
+          // Para «Retirada», «No presentada» (pasada en el móvil, 12 oct 2026)
+          teeGender: p.tee_gender ?? null,
           marksUserId: p.marks_user_id ?? null,
           markedByUserId: p.marked_by_user_id ?? null,
           // Vino de otra partida a acompañar al que se quedó solo (BE #539)

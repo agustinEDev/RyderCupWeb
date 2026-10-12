@@ -337,6 +337,19 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     expect(screen.getByRole('button', { name: 'partida.save' })).toBeDisabled();
   });
 
+  it('regresión (12 oct 2026): «Retirada» / «No presentada» para ellas en Tarjetas', () => {
+    const vacios = Array.from({ length: 18 }, (_, i) => hoyo(i + 1));
+    pintar({ scoringView: vista('STABLEFORD', [
+      jugador('ana', 'RETIRADO', vacios, { tee_gender: 'FEMALE' }),
+      jugador('bea', 'NO_PRESENTADO', vacios, { tee_gender: 'FEMALE' }),
+      jugador('cris', 'RETIRADO', vacios, { tee_gender: 'MALE' }),
+    ]) });
+
+    expect(screen.getByTestId('tarjeta-ana')).toHaveTextContent('partida.cardStatus.RETIRADO {"context":"female"}');
+    expect(screen.getByTestId('tarjeta-bea')).toHaveTextContent('partida.cardStatus.NO_PRESENTADO {"context":"female"}');
+    expect(screen.getByTestId('tarjeta-cris')).not.toHaveTextContent('female');
+  });
+
   it('15f: una tarjeta entregada no se corrige: primero se reabre, con confirmación', async () => {
     const onCambio = vi.fn();
     pintar({ organiza: true, onCambio });

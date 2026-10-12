@@ -56,7 +56,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         if (esNoPresentado(yo)) {
           return (
             <li key={roundId} data-testid={`mi-partida-${roundId}`}>
-              {t('partidas.youAreNoShow', datos)}
+              {t('partidas.youAreNoShow', yo.teeGender === 'FEMALE' ? { ...datos, context: 'female' } : datos)}
             </li>
           );
         }

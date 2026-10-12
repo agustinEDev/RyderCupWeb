@@ -296,6 +296,19 @@ describe('ScoringPage', () => {
     expect(screen.getByTestId('header-auth')).toBeInTheDocument();
   });
 
+  it('regresión (12 oct 2026): sin red, quien no juega no recibe el aviso de anotar', () => {
+    mockUseScoring.isOffline = true;
+    mockUseScoring.isMatchPlayer = false;
+    try {
+      render(<ScoringPage />);
+
+      expect(screen.queryByTestId('anotar-sin-conexion')).toBeNull();
+    } finally {
+      mockUseScoring.isOffline = false;
+      mockUseScoring.isMatchPlayer = true;
+    }
+  });
+
   it('should not show offline banner when online', () => {
     render(<ScoringPage />);
     expect(screen.queryByTestId('anotar-sin-conexion')).toBeNull();

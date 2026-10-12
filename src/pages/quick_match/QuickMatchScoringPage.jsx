@@ -19,6 +19,8 @@ import QuickMatchClassificationTable from '../../components/quick_match/QuickMat
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import BlockLoader from '../../components/ui/BlockLoader';
+import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
+import { useSinConexion } from '../../hooks/useSinConexion';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -149,6 +151,7 @@ const QuickMatchScoringPage = () => {
   // del móvil: en los dos casos lo que hay en pantalla puede no estar al día, y
   // en ninguno es un error. Con un 5xx la pantalla se pintaba entera desde el
   // móvil bajo un recuadro rojo, sin decir que era una foto de antes
+  const sinConexion = useSinConexion();
   const sondeoSinRespuesta =
     (!!loadError && (loadError.status ?? loadError.response?.status) === undefined)
     || !!pintadoDeMemoria;
@@ -156,7 +159,12 @@ const QuickMatchScoringPage = () => {
 
   const hoyosPerdidos = [...new Set((perdidos ?? []).map((x) => x.holeNumber))].sort((a, b) => a - b);
 
-  const avisoDePendientes = pendientes > 0 && (
+  // Sin red (lo dice el navegador), las pendientes van en el aviso de arriba,
+  // uno solo, como en la Ryder y las partidas (regresión del 12 oct 2026). Con
+  // red pero sin salir (dos barras), el recuadro de siempre
+  const avisoDePendientes = pendientes > 0 && sinConexion ? (
+    <AnotarSinConexion pendingCount={pendientes} />
+  ) : pendientes > 0 && (
     <div className="max-w-4xl mx-auto px-4 pt-4">
       <p
         data-testid="quick-match-pendientes"

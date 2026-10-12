@@ -171,7 +171,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   return (
     <div className="space-y-4">
       {strokePlay.cards.map((tarjeta) => {
-        const { userId: jugador, name, cardStatus } = tarjeta;
+        const { userId: jugador, name, cardStatus, teeGender } = tarjeta;
         const seJuega = cardStatus === 'JUGANDO';
         const confirmaEsta = confirmando?.jugador === jugador ? confirmando : null;
         const tramos = organiza && seJuega ? TRAMOS_DE_SEIS : TRAMOS_DE_NUEVE;
@@ -187,7 +187,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <span className="font-semibold text-gray-900">{name}</span>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                {t(`partida.cardStatus.${cardStatus}`)}
+                {t(`partida.cardStatus.${cardStatus}`, ...(teeGender === 'FEMALE' ? [{ context: 'female' }] : []))}
               </span>
               <span className="ml-auto text-sm font-bold text-gray-900">{total(tarjeta)}</span>
               <span className="text-xs text-gray-500">{t('partida.thru', { count: tarjeta.totals.thru })}</span>

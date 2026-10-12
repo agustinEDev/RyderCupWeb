@@ -124,6 +124,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           userId: 'ana',
           name: 'Ana Alba',
           cardStatus: 'JUGANDO',
+          teeGender: null,
           marksUserId: 'bea',
           markedByUserId: 'bea',
           broughtIn: false,
@@ -133,6 +134,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           userId: 'bea',
           name: 'Bea Blanco',
           cardStatus: 'ENTREGADA',
+          teeGender: null,
           marksUserId: 'ana',
           markedByUserId: 'ana',
           // Vino de otra partida (BE #539)

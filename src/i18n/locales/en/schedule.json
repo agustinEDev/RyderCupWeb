@@ -334,6 +334,7 @@
     "notEditable": "They can no longer be changed: the window's first group has teed off.",
     "error": "The change could not be made.",
     "mine": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · with {{companeros}}",
+    "youAreNoShow_female": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · No-show",
     "youAreNoShow": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · No-show",
     "mineAlone": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · no playing partners yet",
     "youMark": "you mark {{jugador}}",

@@ -407,6 +407,14 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
       expect(llamadas.casilla.hasMarker).toBe(false);
     });
 
+    it('regresión: el organizador que no juega no publica «lo que anotes se guarda»', async () => {
+      const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+      mockHook = hook({ isOffline: true, isMatchPlayer: false, canScore: false });
+      render(<><AvisoSinConexion /><GroupScoringPage /></>);
+
+      expect(screen.queryByText(/sinConexion\.anotando/)).toBeNull();
+    });
+
     it('revisor: sin red, se lo dice al aviso de arriba', async () => {
       const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
       mockHook = hook({ isOffline: true, pendingQueueSize: 2 });
