@@ -20,6 +20,7 @@ import customToast from '../../utils/toast';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import {
+  avisoDeLaFranja,
   errorDeLaFranja,
   numeroDeSalidas,
   cupoDeLaHoja,
@@ -66,12 +67,13 @@ const CAMPOS_DEL_ERROR = {
   intervalRange: ['intervalo'],
   groupSize: ['tamano'],
   firstTeePassed: ['primera'],
-  teeTimeSkipped: ['primera', 'ultima'],
 };
 
 const CamposDeLaHoja = ({ hoja, dia, primeraAntes, onCambio, resumenId }) => {
   const { t } = useTranslation('schedule');
   const error = errorDeLaFranja({ dia, hoja, primeraAntes });
+  // El cambio de hora, con la zona del móvil: avisa sin bloquear (CodeRabbit)
+  const aviso = avisoDeLaFranja({ dia, hoja });
   const errorId = `${resumenId}-error`;
   // El campo que falla se marca y apunta a su error (revisor)
   const marca = (campo) =>
@@ -134,6 +136,11 @@ const CamposDeLaHoja = ({ hoja, dia, primeraAntes, onCambio, resumenId }) => {
         </label>
       </div>
       <p className="text-xs text-gray-500">{t('franjas.lastTeeHint')}</p>
+      {!error && aviso && (
+        <p data-testid={`${resumenId}-aviso`} role="status" className="text-sm text-amber-800">
+          {t(`franjas.errors.${aviso}`)}
+        </p>
+      )}
       {error ? (
         <p id={errorId} role="alert" className="text-sm text-red-600">
           {t(`franjas.errors.${error}`)}

@@ -63,7 +63,7 @@
     "rivalCount": "Per the rivals",
     "youMark": "You score {{nombre}}",
     "scoredBy": "Scored by {{nombre}}",
-    "scoredForYou": "{{nombre}} scored you",
+    "scoredForYou": "{{nombre}} recorded your score",
     "otherPut": "{{nombre}} put {{golpes}}",
     "yourMarker": "Your marker",
     "theMarkedPlayer": "Your player",

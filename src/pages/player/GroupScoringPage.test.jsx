@@ -354,6 +354,13 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
       expect(llamadas.casilla.hasMarker).toBe(true);
     });
 
+    it('CodeRabbit: si quien me marcaba ya no juega y no me anotó este hoyo, sin columna', () => {
+      mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { marked_by_user_id: 'bea' }), jugador('bea', 'ana', { card_status: 'RETIRADO' })]) });
+      render(<GroupScoringPage />);
+
+      expect(llamadas.casilla.hasMarker).toBe(false);
+    });
+
     it('revisor: sin red, se lo dice al aviso de arriba', async () => {
       const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
       mockHook = hook({ isOffline: true, pendingQueueSize: 2 });

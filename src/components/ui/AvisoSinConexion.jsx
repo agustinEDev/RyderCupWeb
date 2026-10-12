@@ -34,7 +34,8 @@ const AvisoSinConexion = () => {
       <span role="status">{t(anotando ? 'sinConexion.anotando' : 'sinConexion.aviso')}</span>
       {/* Fuera de la región que se lee: si no, cada anotación sin red la
           repetía entera al lector de pantalla (revisor) */}
-      {anotando?.pendientes > 0 && <span>· {t('sinConexion.pendientes', { count: anotando.pendientes })}</span>}
+      {/* Con su propia región educada: se anuncia el número, no el aviso entero (CodeRabbit) */}
+      {anotando?.pendientes > 0 && <span aria-live="polite">· {t('sinConexion.pendientes', { count: anotando.pendientes })}</span>}
     </div>
   );
 };

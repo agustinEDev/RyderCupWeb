@@ -478,7 +478,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           {esNoPresentado(p) && (
                             <span className="font-semibold text-red-700">{t('partidas.noShow')}</span>
                           )}
-                          {p.marksUserId && !esNoPresentado(p) && (
+                          {/* Ni el NP marca ni se marca a un NP (CodeRabbit) */}
+                          {p.marksUserId && !esNoPresentado(p) && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
                             <span className="text-gray-500">
                               {t('partidas.marks', { jugador: nombres.get(p.marksUserId) || t('partidas.unknownPlayer') })}
                             </span>

@@ -158,6 +158,9 @@ const GroupScoringPage = () => {
       ? suGolpe.markerByName ?? nombreDe(suGolpe.markerBy) ?? t('partida.anotherMarker')
       : null;
   const meMarca = miTarjeta?.markedByUserId;
+  // Si quien me marcaba se retiró o no se presentó, ya no me marca (CodeRabbit)
+  const sigueMarcandome =
+    Boolean(meMarca) && !['RETIRADO', 'NO_PRESENTADO'].includes(strokePlay.cards.find((c) => c.userId === meMarca)?.cardStatus);
   // Quién me anotó ESTE hoyo: tras cambiar el círculo puede no ser mi marcador
   // de ahora (revisor)
   const meAnoto = miGolpe?.markerSubmitted && miGolpe.markerBy
@@ -317,7 +320,7 @@ const GroupScoringPage = () => {
                 markedName={nombreDe(marcoA)}
                 markerName={meAnoto}
                 marksSomeone={Boolean(marcoA)}
-                hasMarker={Boolean(meMarca) || Boolean(miGolpe?.markerSubmitted)}
+                hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
                 markedScoredBy={loPusoOtro}
                 strokeIndex={null}
                 playerScore={miGolpe}

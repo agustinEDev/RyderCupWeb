@@ -612,6 +612,17 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
       expect(within(g1).getByRole('alert')).toHaveTextContent('partidas.markersErrors.MISSING');
     });
 
+    it('CodeRabbit: «marca a» un no presentado no se enseña', async () => {
+      mockLeer.mockResolvedValue(vista({
+        groups: [partida('g1', 1, '08:00', [jugador('ana', 'raquel'), jugador('bea', 'ana'), jugador('raquel', null, { cardStatus: 'NO_PRESENTADO' })]), G2],
+      }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByTestId('partida-jugador-ana')).not.toHaveTextContent('partidas.marks');
+      expect(screen.getByTestId('partida-jugador-bea')).toHaveTextContent('partidas.marks {"jugador":"ANA"}');
+    });
+
     it('no entra en el editor de marcadores ni se manda', async () => {
       mockLeer.mockResolvedValue(conNP());
       mockMarcadores.mockResolvedValue(conNP());

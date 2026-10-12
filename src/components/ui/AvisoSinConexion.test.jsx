@@ -106,6 +106,8 @@ describe('AvisoSinConexion', () => {
     expect(screen.getByRole('status')).toHaveTextContent('sinConexion.anotando');
     expect(screen.getByRole('status')).not.toHaveTextContent('sinConexion.pendientes');
     expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.pendientes');
+    // Con su propia región educada: el número se anuncia sin repetir el aviso (CodeRabbit)
+    expect(screen.getByText(/sinConexion\.pendientes/)).toHaveAttribute('aria-live', 'polite');
   });
 
   it('al salir de anotar vuelve a ser el aviso general', () => {
