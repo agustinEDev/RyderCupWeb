@@ -82,6 +82,18 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       expect(within(screen.getByTestId('tarjeta-ana')).getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' })).toBeInTheDocument();
     });
 
+    it('revisor: si «Validar lo anotado» falla, la confirmación se cierra', async () => {
+      mockValidar.mockRejectedValueOnce(Object.assign(new Error('x'), { errorCode: 'PLAYER_HAS_MARKER' }));
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador(null)) });
+
+      const ana = within(screen.getByTestId('tarjeta-ana'));
+      fireEvent.click(ana.getByRole('button', { name: 'partida.validateScored {"jugador":"ANA"}' }));
+      fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.PLAYER_HAS_MARKER'));
+      expect(ana.queryByRole('button', { name: 'partida.yes' })).toBeNull();
+    });
+
     it('11: también si su marcador ya entregó', () => {
       pintar({ organiza: true, scoringView: vista('STABLEFORD', conMarcador('bea', 'ENTREGADA')) });
 
@@ -349,6 +361,19 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_FULL'));
     expect(bea.queryByRole('button', { name: 'partida.yes' })).toBeNull();
+  });
+
+  it('revisor: si marcar no presentado falla, la confirmación también se cierra', async () => {
+    mockNoPresentado.mockRejectedValueOnce(Object.assign(new Error('x'), { errorCode: 'NOT_ORGANIZER' }));
+    pintar({ organiza: true });
+
+    const ana = within(screen.getByTestId('tarjeta-ana'));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' }));
+    fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(ana.queryByRole('button', { name: 'partida.yes' })).toBeNull());
+    // Y el foco vuelve a quien abrió la confirmación (revisor)
+    await waitFor(() => expect(document.activeElement).toBe(ana.getByRole('button', { name: 'partida.noShow {"jugador":"ANA"}' })));
   });
 
   it('15g: no presentado, a quien sigue jugando, con confirmación; «No» no hace nada', async () => {

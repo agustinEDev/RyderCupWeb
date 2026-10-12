@@ -18,6 +18,8 @@ export const CODIGOS_DE_PARTIDA = [
   'NOT_ORGANIZER',
   // Reabrir a un no presentado con la partida ya completa (QA 3, 12 oct 2026)
   'GROUP_FULL',
+  // «Validar lo anotado» a quien tiene marcador (revisor)
+  'PLAYER_HAS_MARKER',
 ];
 
 /**

@@ -165,7 +165,9 @@ const GroupScoringPage = () => {
   // de ahora (revisor)
   const meAnoto = miGolpe?.markerSubmitted && miGolpe.markerBy
     ? miGolpe.markerByName ?? nombreDe(miGolpe.markerBy)
-    : nombreDe(meMarca);
+    : cerradaSinEntregar
+      ? null
+      : nombreDe(meMarca);
   const sinMarcador = isMatchPlayer && sinMarcadorEnJuego(strokePlay.cards, userId);
 
   const anotar = (golpes, tocado) =>
@@ -195,6 +197,8 @@ const GroupScoringPage = () => {
       await refetch();
     } catch (err) {
       customToast.error(mensajeDeErrorDePartida(t, err));
+      // La confirmación no se queda abierta tras el error (revisor)
+      setRetirandose(false);
     } finally {
       setOcupado(false);
     }
@@ -215,7 +219,10 @@ const GroupScoringPage = () => {
   // Y quien ya no sigue (retirado, no presentado) ve la suya: los hoyos que no
   // jugó no son verdes para él (3.ª pasada del QA)
   const delSelector = isMatchPlayer && !siguen.has(userId) ? new Set([userId]) : siguen;
-  const golpesDelSelector = scoresVisibles.map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }));
+  const golpesDelSelector = scoresVisibles
+    .map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }))
+    // Lo que no jugó quien ya no sigue sale vacío, no «por validar» (revisor)
+    .filter((s) => delSelector === siguen || s.playerScores.some((p) => p.ownSubmitted || p.markerSubmitted));
 
   return (
     <div className="min-h-screen bg-gray-50">

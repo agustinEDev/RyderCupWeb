@@ -642,6 +642,24 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
       expect(screen.getByTestId('partida-jugador-bea')).not.toHaveTextContent('partidas.withdrawn');
     });
 
+    it.each(['RETIRADO', 'ENTREGADA', 'NO_PRESENTADO'])('revisor: con mi tarjeta %s, «Ver tarjeta»', async (estado) => {
+      mockLeer.mockResolvedValue(vista({ groups: [partida('g1', 1, '08:00', [jugador('ana', 'bea', { cardStatus: estado }), jugador('bea', 'ana')], { status: 'IN_PROGRESS' })] }));
+      pintar();
+      await desplegar();
+
+      expect(within(await screen.findByTestId('partida-g1')).getByRole('link')).toHaveTextContent('partidas.viewCard');
+    });
+
+    it('revisor: «Retirada» y «No presentada» para ellas', async () => {
+      mockLeer.mockResolvedValue(vista({ groups: [partida('g1', 1, '08:00', [jugador('ana', null, { cardStatus: 'RETIRADO', teeGender: 'FEMALE' }), jugador('bea', null, { cardStatus: 'NO_PRESENTADO', teeGender: 'FEMALE' }), jugador('cris', null, { cardStatus: 'RETIRADO', teeGender: 'MALE' })], { status: 'COMPLETED' })] }));
+      pintar();
+      await desplegar();
+
+      expect(await screen.findByTestId('partida-jugador-ana')).toHaveTextContent('partidas.withdrawn {"context":"female"}');
+      expect(screen.getByTestId('partida-jugador-bea')).toHaveTextContent('partidas.noShow {"context":"female"}');
+      expect(screen.getByTestId('partida-jugador-cris')).toHaveTextContent(/partidas\.withdrawn$|partidas\.withdrawn[^ ]/);
+    });
+
     it('QA 3: en juego, la mía con mi tarjeta abierta sigue diciendo «Anotar»', async () => {
       pintar();
       await desplegar();

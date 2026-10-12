@@ -13,8 +13,11 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
-import { destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
+
+// «Retirada», «No presentada» para ellas (revisor)
+const enFemenino = (jugador) => (jugador.teeGender === 'FEMALE' ? [{ context: 'female' }] : []);
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -425,8 +428,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
             {grupos.map((g, i) => {
               const mia = g.players.some((p) => p.userId === userId);
               // Anotar solo con mi tarjeta abierta; si no (NP, retirado, cerrada), verla (QA 3)
-              const miTarjeta = g.players.find((p) => p.userId === userId)?.cardStatus;
-              const anoto = mia && !['NO_PRESENTADO', 'RETIRADO', 'ENTREGADA'].includes(miTarjeta);
+              const anoto = anotaSuTarjeta(g, userId);
               return (
                 <li
                   key={g.id}
@@ -480,10 +482,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
-                            <span className="font-semibold text-red-700">{t('partidas.noShow')}</span>
+                            <span className="font-semibold text-red-700">{t('partidas.noShow', ...enFemenino(p))}</span>
                           )}
                           {p.cardStatus === 'RETIRADO' && (
-                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn')}</span>
+                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn', ...enFemenino(p))}</span>
                           )}
                           {/* Ni el NP marca ni se marca a un NP (CodeRabbit) */}
                           {p.marksUserId && !esNoPresentado(p) && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (

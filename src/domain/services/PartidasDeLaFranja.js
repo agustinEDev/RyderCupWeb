@@ -16,6 +16,15 @@ export const esNoPresentado = (jugador) => jugador?.cardStatus === 'NO_PRESENTAD
 /** Los de la partida que juegan: sin los no presentados. */
 export const juegan = (partida) => partida.players.filter((p) => !esNoPresentado(p));
 
+/**
+ * Si anota en esa partida: está en ella y su tarjeta sigue abierta. Con la
+ * tarjeta cerrada (entregada, retirado, no presentado) solo la ve (QA 3).
+ */
+export const anotaSuTarjeta = (partida, userId) => {
+  const yo = partida.players.find((p) => p.userId === userId);
+  return Boolean(yo) && (yo.cardStatus ?? 'JUGANDO') === 'JUGANDO';
+};
+
 /** Con quién juega: sin él ni los no presentados. */
 export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p.userId !== userId);
 

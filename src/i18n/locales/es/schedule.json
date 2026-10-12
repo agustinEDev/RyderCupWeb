@@ -290,6 +290,8 @@
     "incomplete": "Incompleta · sin marcador",
     "playing": "de juego {{juego}}",
     "withdrawn": "Retirado",
+    "withdrawn_female": "Retirada",
+    "noShow_female": "No presentada",
     "noShow": "No presentado",
     "marks": "marca a {{jugador}}",
     "unknownPlayer": "Jugador",

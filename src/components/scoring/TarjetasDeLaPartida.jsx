@@ -254,7 +254,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.validateScored', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'validar', cuantos: cuantosPorValidar })}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'validar', cuantos: cuantosPorValidar, origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-primary px-3 text-sm font-semibold text-primary"
                   >
                     {t('partida.validateScoredShort')}
@@ -265,7 +265,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.reopen', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'reabrir' })}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'reabrir', origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-gray-300 px-3 text-sm text-gray-700"
                   >
                     {t('partida.reopenShort')}
@@ -276,7 +276,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     type="button"
                     disabled={ocupado}
                     aria-label={t('partida.noShow', { jugador: name })}
-                    onClick={() => setConfirmando({ jugador, accion: 'noPresentado' })}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'noPresentado', origen: e.currentTarget })}
                     className="min-h-11 rounded-lg border border-gray-300 px-3 text-sm text-gray-700"
                   >
                     {t('partida.noShowShort')}
@@ -298,18 +298,25 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   disabled={ocupado}
                   onClick={() => {
                     const cerrar = () => setConfirmando(null);
+                    // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
+                    const alFallar = () => {
+                      setConfirmando(null);
+                      // Cuando vuelva a estar activo: mientras se pide, está desactivado
+                      const { origen } = confirmaEsta;
+                      globalThis.setTimeout(() => origen?.focus(), 0);
+                    };
                     if (confirmaEsta.accion === 'reabrir') {
-                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, cerrar);
+                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, alFallar);
                     } else if (confirmaEsta.accion === 'validar') {
                       hacer(
                         () => validateTeeGroupScoredHolesUseCase.execute(scoringView.matchId, jugador),
                         { clave: 'partida.scoredValidated', params: { count: confirmaEsta.cuantos } },
                         cerrar,
                         undefined,
-                        cerrar
+                        alFallar
                       );
                     } else {
-                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien, cerrar);
+                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien, alFallar);
                     }
                   }}
                   className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"

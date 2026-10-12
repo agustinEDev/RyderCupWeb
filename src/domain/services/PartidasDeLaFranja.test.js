@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { companerosDe, destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan, todasLasFranjasCerradas, sinMarcadorEnJuego } from './PartidasDeLaFranja';
+import { anotaSuTarjeta, companerosDe, destinosDelJugador, errorDeMarcadores, partidasQueSeAdelantan, todasLasFranjasCerradas, sinMarcadorEnJuego } from './PartidasDeLaFranja';
 
 /**
  * Las reglas de las partidas que el organizador ve antes de pedir nada (FE
@@ -211,6 +211,18 @@ describe('PartidasDeLaFranja · los no presentados (QA 2, 12 oct 2026)', () => {
     const v = vista([conNP('g1', 1, ['x'], ['b', 'c']), partida('g2', 2, ['d', 'e'])]);
 
     expect(destinosDelJugador(v, 'x', HOJA)).toEqual({ conSitio: [], intercambios: [], nueva: false });
+  });
+
+  it.each([
+    ['JUGANDO', true],
+    [undefined, true],
+    ['ENTREGADA', false],
+    ['RETIRADO', false],
+    ['NO_PRESENTADO', false],
+  ])('anotaSuTarjeta con %s: %s', (estado, anota) => {
+    const g = { id: 'g', players: [{ userId: 'a', cardStatus: estado }, jugador('b')] };
+    expect(anotaSuTarjeta(g, 'a')).toBe(anota);
+    expect(anotaSuTarjeta(g, 'z')).toBe(false);
   });
 
   it('los compañeros, sin el NP ni uno mismo', () => {

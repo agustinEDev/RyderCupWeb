@@ -290,6 +290,8 @@
     "incomplete": "Incomplete · no marker",
     "playing": "playing hcp {{juego}}",
     "withdrawn": "Withdrawn",
+    "withdrawn_female": "Withdrawn",
+    "noShow_female": "No-show",
     "noShow": "No-show",
     "marks": "marks {{jugador}}",
     "unknownPlayer": "Player",
