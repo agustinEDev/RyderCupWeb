@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pencil } from 'lucide-react';
 import {
@@ -42,6 +42,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const { t } = useTranslation('scoring');
   const [corrigiendo, setCorrigiendo] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
+  // Adónde vuelve el foco tras un fallo: cuando el botón deja de estar
+  // desactivado, que es al acabar la acción (CodeRabbit en la #844)
+  const focoTrasFallo = useRef(null);
   const [ocupado, setOcupado] = useState(false);
 
   const { strokePlay } = scoringView;
@@ -60,6 +63,12 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     }
     return golpe.ownSubmitted ? uno(golpe.ownScore, true) : uno(golpe.markerScore, golpe.markerSubmitted);
   };
+
+  useEffect(() => {
+    if (ocupado || !focoTrasFallo.current) return;
+    focoTrasFallo.current.focus();
+    focoTrasFallo.current = null;
+  }, [ocupado]);
 
   const hacer = async (accion, aviso, alAcabar, despues, alFallar) => {
     setOcupado(true);
@@ -308,9 +317,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
                     const alFallar = () => {
                       setConfirmando(null);
-                      // Cuando vuelva a estar activo: mientras se pide, está desactivado
-                      const { origen } = confirmaEsta;
-                      globalThis.setTimeout(() => origen?.focus(), 0);
+                      focoTrasFallo.current = confirmaEsta.origen;
                     };
                     if (confirmaEsta.accion === 'reabrir') {
                       hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, alFallar);
