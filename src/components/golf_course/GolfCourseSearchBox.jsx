@@ -21,12 +21,14 @@ import BlockLoader from '../ui/BlockLoader';
  * - idsYaElegidos: string[] - Courses already in the caller's list. They are not
  *   offered again: the creation form stacks courses, and offering one that is
  *   already there only served to add the same course twice
- * The "courses near me" button is always offered: every course picker uses this
- *   component (decided on 12 Oct 2026)
- * - allowOtherCountries: boolean - Widen the search beyond `countryCode` when it
- *   yields nothing. Off by default: for the competition builders `countryCode` is
- *   not "the user's country" but a constraint of the form, and a course from
- *   elsewhere gets filed under the wrong country and silently dropped
+ * - allowOtherCountries: boolean - Search beyond `countryCode`: a name search
+ *   that yields nothing is widened, and "courses near me" looks in any country.
+ *   Off by default: for the competition builders `countryCode` is not "the
+ *   user's country" but a constraint of the form, and a course from elsewhere
+ *   gets filed under the wrong country and silently dropped
+ *
+ * The "courses near me" button is always offered: every course picker of the
+ * catalogue uses this component (decided on 12 Oct 2026).
  */
 // Cuántos campos se piden por vuelta. Es una lista para elegir en el móvil, no
 // un catálogo: más de esto no cabe en pantalla y solo alarga la respuesta.

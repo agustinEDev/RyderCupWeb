@@ -270,9 +270,7 @@
       "JUGANDO": "Playing",
       "ENTREGADA": "Submitted",
       "RETIRADO": "Withdrawn",
-      "NO_PRESENTADO": "No-show",
-      "RETIRADO_female": "Withdrawn",
-      "NO_PRESENTADO_female": "No-show"
+      "NO_PRESENTADO": "No-show"
     },
     "points_one": "{{count}} point",
     "points_other": "{{count}} points",

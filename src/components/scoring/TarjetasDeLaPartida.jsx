@@ -11,6 +11,7 @@ import customToast from '../../utils/toast';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
+import { conGenero } from '../../utils/genero';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
@@ -187,7 +188,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <span className="font-semibold text-gray-900">{name}</span>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                {t(`partida.cardStatus.${cardStatus}`, ...(teeGender === 'FEMALE' ? [{ context: 'female' }] : []))}
+                {t(`partida.cardStatus.${cardStatus}`, conGenero(teeGender))}
               </span>
               <span className="ml-auto text-sm font-bold text-gray-900">{total(tarjeta)}</span>
               <span className="text-xs text-gray-500">{t('partida.thru', { count: tarjeta.totals.thru })}</span>

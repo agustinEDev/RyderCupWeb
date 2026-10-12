@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
+import { conGenero } from '../../utils/genero';
 
 /**
  * «Tu partida» de cada jornada, arriba de las franjas (FE #824, PR 6; caso 5,
@@ -56,7 +57,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         if (esNoPresentado(yo)) {
           return (
             <li key={roundId} data-testid={`mi-partida-${roundId}`}>
-              {t('partidas.youAreNoShow', yo.teeGender === 'FEMALE' ? { ...datos, context: 'female' } : datos)}
+              {t('partidas.youAreNoShow', conGenero(yo.teeGender, datos))}
             </li>
           );
         }
