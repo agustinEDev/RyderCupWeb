@@ -21,7 +21,8 @@ import BlockLoader from '../ui/BlockLoader';
  * - idsYaElegidos: string[] - Courses already in the caller's list. They are not
  *   offered again: the creation form stacks courses, and offering one that is
  *   already there only served to add the same course twice
- * - allowNearby: boolean - Offer the "courses near me" button. Off by default
+ * The "courses near me" button is always offered: every course picker uses this
+ *   component (decided on 12 Oct 2026)
  * - allowOtherCountries: boolean - Widen the search beyond `countryCode` when it
  *   yields nothing. Off by default: for the competition builders `countryCode` is
  *   not "the user's country" but a constraint of the form, and a course from
@@ -84,7 +85,6 @@ const GolfCourseSearchBox = ({
   selectedCourse,
   onCourseSelect,
   onRequestNewCourse,
-  allowNearby = false,
   allowOtherCountries = false,
   idsYaElegidos = []
 }) => {
@@ -153,7 +153,9 @@ const GolfCourseSearchBox = ({
         // Estando sobre el campo, la nacionalidad del jugador no dice nada del
         // campo que pisa: Ponte de Lima está a 30 km de la frontera, y filtrar
         // por país dejaba "el más cercano" buscando solo en el país de uno
-        const page = await buscar(searchingNearby ? undefined : countryCode);
+        // En una competición, dentro de su país: solo admite campos de sus
+        // países (12 oct 2026). En la partida rápida, en cualquiera
+        const page = await buscar(searchingNearby && allowOtherCountries ? undefined : countryCode);
         if (cancelled) return;
 
         // Un campo de fuera existía y la búsqueda por nombre lo escondía, así
@@ -373,44 +375,42 @@ const GolfCourseSearchBox = ({
           {/* Vive dentro del desplegable, no en el formulario: así no ocupa
               sitio en un paso que ya es largo, y el permiso solo se pide a quien
               ha abierto la lista para elegir campo */}
-          {allowNearby && (
-            <div className="border-b border-gray-200 p-2">
-              {isNearbyActive ? (
-                <p className="px-2 py-1 text-xs text-gray-500">
-                  {t('searchBox.sortedByDistance', {
-                    defaultValue:
-                      'Nearest first. Courses without a location only show up by name.',
-                  })}
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleNearbyClick}
-                  disabled={geoStatus === 'requesting'}
-                  data-testid="golf-course-nearby-button"
-                  className="w-full flex items-center gap-2 px-2 py-2 text-left text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium disabled:opacity-50"
-                >
-                  <Navigation className="w-4 h-4 flex-shrink-0" />
-                  {geoStatus === 'requesting'
-                    ? t('searchBox.locating', { defaultValue: 'Getting your location...' })
-                    : t('searchBox.nearbyCourses', { defaultValue: 'Courses near me' })}
-                </button>
-              )}
+          <div className="border-b border-gray-200 p-2">
+            {isNearbyActive ? (
+              <p className="px-2 py-1 text-xs text-gray-500">
+                {t('searchBox.sortedByDistance', {
+                  defaultValue:
+                    'Nearest first. Courses without a location only show up by name.',
+                })}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNearbyClick}
+                disabled={geoStatus === 'requesting'}
+                data-testid="golf-course-nearby-button"
+                className="w-full flex items-center gap-2 px-2 py-2 text-left text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors font-medium disabled:opacity-50"
+              >
+                <Navigation className="w-4 h-4 flex-shrink-0" />
+                {geoStatus === 'requesting'
+                  ? t('searchBox.locating', { defaultValue: 'Getting your location...' })
+                  : t('searchBox.nearbyCourses', { defaultValue: 'Courses near me' })}
+              </button>
+            )}
 
-              {/* Denegar el permiso no rompe nada: se dice y el buscador por
-                  nombre sigue exactamente igual de disponible */}
-              {/* Aparece como respuesta a pulsar el botón, así que hay que
-                  anunciarlo: quien usa lector de pantalla no ve que el texto
-                  ha cambiado bajo el botón que acaba de activar */}
-              {GEO_ERROR_MESSAGES[geoStatus] && (
-                <p role="status" className="px-2 pt-1 text-xs text-gray-500">
-                  {t(GEO_ERROR_MESSAGES[geoStatus].key, {
-                    defaultValue: GEO_ERROR_MESSAGES[geoStatus].fallback,
-                  })}
-                </p>
-              )}
-            </div>
-          )}
+            {/* Denegar el permiso no rompe nada: se dice y el buscador por
+                nombre sigue exactamente igual de disponible */}
+            {/* Aparece como respuesta a pulsar el botón, así que hay que
+                anunciarlo: quien usa lector de pantalla no ve que el texto
+                ha cambiado bajo el botón que acaba de activar */}
+            {GEO_ERROR_MESSAGES[geoStatus] && (
+              <p role="status" className="px-2 pt-1 text-xs text-gray-500">
+                {t(GEO_ERROR_MESSAGES[geoStatus].key, {
+                  defaultValue: GEO_ERROR_MESSAGES[geoStatus].fallback,
+                })}
+              </p>
+            )}
+          </div>
 
           {/* Sin este aviso, ver campos de otro país en un buscador que
               siempre ha enseñado los tuyos parece un fallo. Se anuncia porque
