@@ -623,6 +623,32 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
       expect(screen.getByTestId('partida-jugador-bea')).toHaveTextContent('partidas.marks {"jugador":"ANA"}');
     });
 
+    // 3.ª pasada del QA (12 oct 2026): la ficha tras cerrar la franja
+    it('QA 3: cerrada, sin «Incompleta»; el retirado, con su etiqueta; y el NP ve su tarjeta, no «Anotar»', async () => {
+      mockLeer.mockResolvedValue(vista({
+        editable: false,
+        groups: [
+          partida('g1', 1, '08:00', [jugador('ana', null, { cardStatus: 'NO_PRESENTADO' }), jugador('raquel', null, { cardStatus: 'NO_PRESENTADO' })], { status: 'COMPLETED', incomplete: true }),
+          partida('g2', 2, '08:10', [jugador('bea', 'cris', { cardStatus: 'ENTREGADA' }), jugador('cris', null, { cardStatus: 'RETIRADO' })], { status: 'COMPLETED' }),
+        ],
+      }));
+      pintar();
+      await desplegar();
+
+      const g1 = await screen.findByTestId('partida-g1');
+      expect(g1).not.toHaveTextContent('partidas.incomplete');
+      expect(within(g1).getByRole('link')).toHaveTextContent('partidas.viewCard');
+      expect(screen.getByTestId('partida-jugador-cris')).toHaveTextContent('partidas.withdrawn');
+      expect(screen.getByTestId('partida-jugador-bea')).not.toHaveTextContent('partidas.withdrawn');
+    });
+
+    it('QA 3: en juego, la mía con mi tarjeta abierta sigue diciendo «Anotar»', async () => {
+      pintar();
+      await desplegar();
+
+      expect(within(await screen.findByTestId('partida-g1')).getByRole('link')).toHaveTextContent('partidas.score');
+    });
+
     it('no entra en el editor de marcadores ni se manda', async () => {
       mockLeer.mockResolvedValue(conNP());
       mockMarcadores.mockResolvedValue(conNP());

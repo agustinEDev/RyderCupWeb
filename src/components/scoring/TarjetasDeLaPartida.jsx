@@ -61,7 +61,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     return golpe.ownSubmitted ? uno(golpe.ownScore, true) : uno(golpe.markerScore, golpe.markerSubmitted);
   };
 
-  const hacer = async (accion, aviso, alAcabar, despues) => {
+  const hacer = async (accion, aviso, alAcabar, despues, alFallar) => {
     setOcupado(true);
     try {
       const respuesta = await accion();
@@ -71,6 +71,8 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
       onCambio?.();
     } catch (error) {
       customToast.error(mensajeDeErrorDePartida(t, error));
+      // Una confirmación no se queda abierta tras el error (QA 3)
+      alFallar?.();
     } finally {
       setOcupado(false);
     }
@@ -297,15 +299,17 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   onClick={() => {
                     const cerrar = () => setConfirmando(null);
                     if (confirmaEsta.accion === 'reabrir') {
-                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar);
+                      hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, cerrar);
                     } else if (confirmaEsta.accion === 'validar') {
                       hacer(
                         () => validateTeeGroupScoredHolesUseCase.execute(scoringView.matchId, jugador),
                         { clave: 'partida.scoredValidated', params: { count: confirmaEsta.cuantos } },
+                        cerrar,
+                        undefined,
                         cerrar
                       );
                     } else {
-                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien);
+                      hacer(() => markTeeGroupNoShowUseCase.execute(scoringView.matchId, jugador), 'partida.markedNoShow', cerrar, avisarSiVieneAlguien, cerrar);
                     }
                   }}
                   className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"

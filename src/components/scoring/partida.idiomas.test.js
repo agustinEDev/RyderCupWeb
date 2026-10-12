@@ -38,7 +38,7 @@ const existe = (textos, ruta) => {
 describe('los textos de anotar una partida (FE #824, PR 7)', () => {
   it('lee de verdad el código', () => {
     expect(sueltas.length).toBeGreaterThan(30);
-    expect(lista('CODIGOS_DE_PARTIDA')).toHaveLength(11);
+    expect(lista('CODIGOS_DE_PARTIDA')).toHaveLength(12);
   });
 
   it.each([

@@ -188,7 +188,8 @@ const Clasificacion = ({
         </div>
       )}
       {/* La scratch corta en el 25.º: quien queda fuera ve su fila debajo */}
-      {clasificacion.me && (
+      {/* Sin haber jugado no tiene posición (QA 3) */}
+      {clasificacion.me && clasificacion.me.status !== 'SIN_EMPEZAR' && (
         <div>
           <p className="mb-1 text-xs font-semibold text-gray-600">{t('partida.yourPosition')}</p>
           <div className="overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">

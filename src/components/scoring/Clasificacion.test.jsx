@@ -40,6 +40,15 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(screen.getByText('partida.rule.BEST_CARD')).toBeInTheDocument();
   });
 
+  it('QA 3 (12 oct 2026): sin haber jugado, sin «Tu posición» fijada', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { me: fila('yo', { position: null, value: null, status: 'SIN_EMPEZAR', thru: 0 }) }));
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+
+    await screen.findByTestId('fila-ana');
+    expect(screen.queryByTestId('fila-fuera-del-corte')).toBeNull();
+    expect(screen.queryByText('partida.yourPosition')).toBeNull();
+  });
+
   it('Medal: la columna es al par', async () => {
     const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana', { value: -4 })], { tournamentType: 'MEDAL' }));
     render(<Clasificacion pedir={pedir} userId="x" activa />);

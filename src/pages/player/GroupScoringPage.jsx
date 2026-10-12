@@ -212,7 +212,10 @@ const GroupScoringPage = () => {
   const siguen = new Set(
     strokePlay.cards.filter((c) => !['RETIRADO', 'NO_PRESENTADO'].includes(c.cardStatus)).map((c) => c.userId)
   );
-  const golpesDelSelector = scoresVisibles.map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => siguen.has(p.userId)) }));
+  // Y quien ya no sigue (retirado, no presentado) ve la suya: los hoyos que no
+  // jugó no son verdes para él (3.ª pasada del QA)
+  const delSelector = isMatchPlayer && !siguen.has(userId) ? new Set([userId]) : siguen;
+  const golpesDelSelector = scoresVisibles.map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -328,7 +331,8 @@ const GroupScoringPage = () => {
                 validationStatus={miGolpe?.validationStatus}
                 markedValidationStatus={suGolpe?.validationStatus}
                 strokesReceived={miGolpe?.strokesReceivedThisHole}
-                isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
+                // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
+                isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
                 isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
                 // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
                 isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}

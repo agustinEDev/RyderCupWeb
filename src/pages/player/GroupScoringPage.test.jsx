@@ -243,6 +243,16 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(llamadas.selector.scores[0].playerScores.map((p) => p.userId)).toEqual(['ana', 'bea']);
   });
 
+  // 3.ª pasada del QA (12 oct 2026): la retirada veía en verde los hoyos que
+  // no jugó (los validaban los demás) y sin «Te anotó X»
+  it('QA 3: quien se retiró ve su tarjeta en solo lectura y la tira de hoyos con la suya', () => {
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'RETIRADO' }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.isReadOnly).toBe(true);
+    expect(llamadas.selector.scores[0].playerScores.map((p) => p.userId)).toEqual(['ana']);
+  });
+
   it('la hora de la cabecera, en HH:MM aunque llegue con segundos', () => {
     mockHook = hook({ scoringView: vista({ tee_time: '08:10:00' }) });
     render(<GroupScoringPage />);

@@ -339,6 +339,18 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     expect(onCambio).toHaveBeenCalled();
   });
 
+  it('QA 3: si reabrir falla (partida completa), su texto y la confirmación se cierra', async () => {
+    mockReabrir.mockRejectedValueOnce(Object.assign(new Error('detail'), { errorCode: 'GROUP_FULL' }));
+    pintar({ organiza: true });
+
+    const bea = within(screen.getByTestId('tarjeta-bea'));
+    fireEvent.click(bea.getByRole('button', { name: 'partida.reopen {"jugador":"BEA"}' }));
+    fireEvent.click(bea.getByRole('button', { name: 'partida.yes' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_FULL'));
+    expect(bea.queryByRole('button', { name: 'partida.yes' })).toBeNull();
+  });
+
   it('15g: no presentado, a quien sigue jugando, con confirmación; «No» no hace nada', async () => {
     pintar({ organiza: true });
 

@@ -424,6 +424,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
           <ol className="space-y-2">
             {grupos.map((g, i) => {
               const mia = g.players.some((p) => p.userId === userId);
+              // Anotar solo con mi tarjeta abierta; si no (NP, retirado, cerrada), verla (QA 3)
+              const miTarjeta = g.players.find((p) => p.userId === userId)?.cardStatus;
+              const anoto = mia && !['NO_PRESENTADO', 'RETIRADO', 'ENTREGADA'].includes(miTarjeta);
               return (
                 <li
                   key={g.id}
@@ -435,7 +438,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                     <span className="font-semibold text-gray-900">
                       {t('partidas.number', { numero: g.number, hora: g.teeTime })}
                     </span>
-                    {g.incomplete && (
+                    {/* Cerrada, ya no le falta nadie (QA 3) */}
+                    {g.incomplete && g.status !== 'COMPLETED' && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
                         {t('partidas.incomplete')}
                       </span>
@@ -477,6 +481,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
                             <span className="font-semibold text-red-700">{t('partidas.noShow')}</span>
+                          )}
+                          {p.cardStatus === 'RETIRADO' && (
+                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn')}</span>
                           )}
                           {/* Ni el NP marca ni se marca a un NP (CodeRabbit) */}
                           {p.marksUserId && !esNoPresentado(p) && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (
@@ -530,7 +537,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                     to={`/player/groups/${g.id}/scoring?competition=${competitionId}`}
                     className="mt-1 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline"
                   >
-                    {t(mia ? 'partidas.score' : 'partidas.viewCard')}
+                    {t(anoto ? 'partidas.score' : 'partidas.viewCard')}
                   </Link>
                 </li>
               );
