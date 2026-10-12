@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.41.0] - 2026-10-12
+
+**Torneos Stableford y Medal** (FE #791, #824): crear y editar, franjas de
+salida, plazas y lista de espera, hándicaps fijados, partidas, anotación por
+partidas (también sin cobertura) y clasificaciones. Además, «Campos cerca de mí»
+en todos los buscadores de campo y arreglos de contraseñas y del panel. Va con
+el backend **2.27.0**.
+
+**Notas de despliegue.** Sin variables nuevas. Necesita el backend 2.27.0
+(desplegarlo antes y comprobar `/health`). Probado en el Kind con cinco pasadas
+de QA a 360 px (es y en, sin scroll lateral) y en un iPhone real.
+
+### Added
+
+- **Crear y editar un Stableford o un Medal** (#834): categorías con límites a
+  mano o N categorías iguales, jornadas por jugador y regla de la general.
+- **Franjas de salida** (#835, #836): por día y sesión con su hoja de salidas y
+  cupo; los jugadores cogen plaza, cambian de franja o esperan en la lista, y el
+  organizador coloca, mueve y quita.
+- **Hándicaps** (#837): fijados al cerrar inscripciones, tarjeta «Hándicaps» del
+  organizador (actualizar desde la RFEG o programarlo) y aviso a quien no tiene.
+- **Partidas** (#838): generar, mover con intercambio, reordenar y cambiar
+  marcadores; «Tu partida» arriba y el banner del panel lleva a anotarla.
+- **Anotar una partida** (#839): Anotar, Clasificación y Tarjetas; validación con
+  el marcador, entregar, retirarse; el organizador corrige, reabre, marca no
+  presentados, valida lo anotado y cierra la franja. Funciona sin cobertura.
+- **Clasificaciones General y Scratch** (#840) tipo leaderboard (POS, PTS/PAR,
+  HOYO), con aviso si salen menos categorías de las pedidas.
+- **«Campos cerca de mí» en todos los buscadores de campo** (#849); en una
+  competición, dentro de su país.
+- Hasta 200 jugadores por competición (#833).
+- Los rechazos de contraseña del backend, en el idioma de la app (#829).
+
+### Changed
+
+- **Un único aviso sin conexión**, arriba, con lo pendiente (#843): sustituye a
+  los avisos de cada pantalla, también en la Ryder y la partida rápida.
+- Textos en femenino según la barra de salida («Retirada», «No presentada»,
+  «1.ª en espera») (#849, #850).
+
+### Fixed
+
+- Hallazgos de las pasadas de navegador y QA (#841, #842, #843, #844, #849,
+  #850): marcador que se va, nombres enteros a 360 px, cada número es de quien lo
+  puso, la tarjeta cerrada muestra solo lo jugado, foco al fallar una
+  confirmación, hora inexistente por el cambio de hora y más.
+- Correos largos dentro de los 360 px en el panel (#830).
+- Los espacios de los extremos de la contraseña se tratan como en el backend y
+  ya no se recortan contraseñas (#831).
+
 ## [2.40.1] - 2026-10-08
 
 Hotfix: los formularios piden la misma contraseña que el backend. Va con el
