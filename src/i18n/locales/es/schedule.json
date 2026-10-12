@@ -334,6 +334,7 @@
     "notEditable": "Ya no se cambian: ha salido la primera partida de la franja.",
     "error": "No se pudo hacer el cambio.",
     "mine": "Tu partida: {{franja}} del {{dia}} · {{numero}}.ª · {{hora}} · con {{companeros}}",
+    "youAreNoShow_female": "Tu partida: {{franja}} del {{dia}} · {{numero}}.ª · {{hora}} · No presentada",
     "youAreNoShow": "Tu partida: {{franja}} del {{dia}} · {{numero}}.ª · {{hora}} · No presentado",
     "mineAlone": "Tu partida: {{franja}} del {{dia}} · {{numero}}.ª · {{hora}} · de momento sin compañeros",
     "youMark": "marcas a {{jugador}}",

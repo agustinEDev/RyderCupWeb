@@ -323,19 +323,26 @@ describe('GolfCourseSearchBox', () => {
       stubGeolocation((success) => success(MADRID));
     });
 
-    it('no ofrece la cercanía a quien no la ha pedido', async () => {
-      // Los otros tres usos del buscador (añadir campo a competición y los de
-      // crear competición) eligen campo para otro día y otro sitio
+    it('ofrece la cercanía siempre: en todo selector de campos (12 oct 2026)', async () => {
       renderBox();
       await openDropdown();
 
-      await screen.findByText('Real Club de Golf');
-      expect(screen.queryByTestId('golf-course-nearby-button')).not.toBeInTheDocument();
+      expect(await screen.findByTestId('golf-course-nearby-button')).toBeInTheDocument();
+    });
+
+    it('en una competición, la cercanía busca dentro de su país', async () => {
+      renderBox();
+      await openDropdown();
+
+      fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
+
+      await waitFor(() => expect(mockList.mock.calls.at(-1)[0].lat).toBe(40.417));
+      expect(mockList.mock.calls.at(-1)[0].countryCode).toBe('ES');
     });
 
     it('no pide la ubicación a quien solo quería teclear', async () => {
       // El permiso es un diálogo del navegador: pedirlo al abrir es intrusivo
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       await screen.findByTestId('golf-course-nearby-button');
@@ -346,7 +353,7 @@ describe('GolfCourseSearchBox', () => {
       // La lectura del GPS llega con precisión de metros y la query string
       // acaba en los registros de nginx, Cloudflare, Render y Sentry. Tres
       // decimales (~110 m) ordenan igual y no dicen en qué casa está (FE #385)
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -360,7 +367,7 @@ describe('GolfCourseSearchBox', () => {
 
     it('no recorta por radio: enseña los más cercanos aunque estén lejos', async () => {
       // Un radio fijo deja Soria vacía. Más vale ver "a 78 km" que nada
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -378,7 +385,7 @@ describe('GolfCourseSearchBox', () => {
         courses: [{ ...course('1', 'Club de Campo'), distanceKm: 78 }],
         total: 1,
       });
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -392,7 +399,7 @@ describe('GolfCourseSearchBox', () => {
         courses: [{ ...course('1', 'Club de Campo'), distanceKm: 0 }],
         total: 1,
       });
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -403,7 +410,7 @@ describe('GolfCourseSearchBox', () => {
     it('vuelve a buscar por nombre en cuanto se teclea', async () => {
       // 11 de los 802 campos importados no tienen coordenadas y solo se
       // alcanzan por nombre: la cercanía no puede secuestrar el buscador
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
       await waitFor(() => {
@@ -422,7 +429,7 @@ describe('GolfCourseSearchBox', () => {
 
     it('sigue sirviendo por nombre si se deniega el permiso', async () => {
       stubGeolocation((_success, failure) => failure({ code: 1 }));
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -448,7 +455,7 @@ describe('GolfCourseSearchBox', () => {
       [3, 'el tiempo agotado invita a reintentar', /took too long/],
     ])('código %i: %s', async (code, _description, expected) => {
       stubGeolocation((_success, failure) => failure({ code }));
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -464,7 +471,7 @@ describe('GolfCourseSearchBox', () => {
       // orden por distancia, el backend no recibiría coordenadas y el botón de
       // reintentar habría desaparecido
       stubGeolocation((success) => success({ coords: { latitude: NaN, longitude: NaN } }));
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -479,7 +486,7 @@ describe('GolfCourseSearchBox', () => {
       // Decirle "activa el permiso" a quien no ha denegado nada es peor que no
       // decir nada: manda a buscar un ajuste que ya está puesto
       stubGeolocation((_success, failure) => failure({}));
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -496,7 +503,7 @@ describe('GolfCourseSearchBox', () => {
       stubGeolocation((success, failure) =>
         readingFails ? failure({ code: 3 }) : success(MADRID)
       );
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -529,7 +536,7 @@ describe('GolfCourseSearchBox', () => {
         configurable: true,
         writable: true,
       });
-      renderBox({ allowNearby: true });
+      renderBox();
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));
@@ -562,7 +569,7 @@ describe('GolfCourseSearchBox', () => {
       // Estando sobre el campo, la nacionalidad del jugador no dice nada del
       // campo que pisa: con el país puesto, "el más cercano" a Ponte de Lima
       // seguía buscando entre los españoles
-      renderBox({ allowNearby: true });
+      renderBox({ allowOtherCountries: true });
       await openDropdown();
 
       fireEvent.click(await screen.findByTestId('golf-course-nearby-button'));

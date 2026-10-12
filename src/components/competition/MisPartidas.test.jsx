@@ -88,6 +88,14 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(within(linea).queryByRole('link')).toBeNull();
   });
 
+  it('regresión: «No presentada» si es ella', async () => {
+    const yo = { ...jugador('yo', 'bea'), cardStatus: 'NO_PRESENTADO', teeGender: 'FEMALE' };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [yo, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    expect(await screen.findByTestId('mi-partida-r1')).toHaveTextContent('"context":"female"');
+  });
+
   it('revisor: a quien marco, solo entre los que juegan', async () => {
     const np = { ...jugador('bea', null), cardStatus: 'NO_PRESENTADO' };
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('yo', 'bea'), np, jugador('cris', 'yo')])]);

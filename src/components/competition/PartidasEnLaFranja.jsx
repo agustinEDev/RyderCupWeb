@@ -15,9 +15,7 @@ import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
 import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
-
-// «Retirada», «No presentada» para ellas (revisor)
-const enFemenino = (jugador) => (jugador.teeGender === 'FEMALE' ? [{ context: 'female' }] : []);
+import { conGenero } from '../../utils/genero';
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -482,10 +480,10 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                           <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
-                            <span className="font-semibold text-red-700">{t('partidas.noShow', ...enFemenino(p))}</span>
+                            <span className="font-semibold text-red-700">{t('partidas.noShow', conGenero(p.teeGender))}</span>
                           )}
                           {p.cardStatus === 'RETIRADO' && (
-                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn', ...enFemenino(p))}</span>
+                            <span className="font-semibold text-amber-800">{t('partidas.withdrawn', conGenero(p.teeGender))}</span>
                           )}
                           {/* Ni el NP o el retirado marcan, ni se marca a un NP (CodeRabbit, /code-review) */}
                           {p.marksUserId && !esNoPresentado(p) && p.cardStatus !== 'RETIRADO' && !esNoPresentado(g.players.find((o) => o.userId === p.marksUserId)) && (

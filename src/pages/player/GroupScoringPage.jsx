@@ -117,6 +117,7 @@ const GroupScoringPage = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth user={user} />
+        {/* Sin vista aún no se sabe quién juega: el aviso de anotar, por si acaso */}
         {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
         {!isOffline && <PendientesASalvo count={pendingQueueSize} />}
         <div className="mx-auto max-w-4xl px-4 py-6 text-center">
@@ -227,7 +228,8 @@ const GroupScoringPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
-      {isOffline && <AnotarSinConexion pendingCount={pendingQueueSize} />}
+      {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
+      {isOffline && canScore && <AnotarSinConexion pendingCount={pendingQueueSize} />}
       {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
 
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-4">

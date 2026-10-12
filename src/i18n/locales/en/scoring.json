@@ -61,7 +61,7 @@
     "pairBall": "Your ball",
     "rivalBall": "Rival ball",
     "rivalCount": "Per the rivals",
-    "youMark": "You score {{nombre}}",
+    "youMark": "You mark {{nombre}}",
     "scoredBy": "Scored by {{nombre}}",
     "scoredForYou": "{{nombre}} recorded your score",
     "otherPut": "{{nombre}} put {{golpes}}",
@@ -269,8 +269,8 @@
     "cardStatus": {
       "JUGANDO": "Playing",
       "ENTREGADA": "Submitted",
-      "RETIRADO": "Retired",
-      "NO_PRESENTADO": "No show"
+      "RETIRADO": "Withdrawn",
+      "NO_PRESENTADO": "No-show"
     },
     "points_one": "{{count}} point",
     "points_other": "{{count}} points",
