@@ -19,7 +19,10 @@ const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18, noG
     if (hasAllMatch) return 'validated';
     const hasMismatch = holeScore.playerScores.some(ps => ps.validationStatus === 'mismatch');
     if (hasMismatch) return 'mismatch';
-    return 'pending';
+    // Sin nada anotado aún, vacío: la API trae fila de los 18 hoyos, también de
+    // los no jugados de un partido acabado (#847)
+    const algoAnotado = holeScore.playerScores.some(ps => ps.ownSubmitted || ps.markerSubmitted);
+    return algoAnotado ? 'pending' : 'empty';
   };
 
   const statusColors = {

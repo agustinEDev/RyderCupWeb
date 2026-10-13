@@ -29,12 +29,15 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
     return null;
   };
 
-  const handleCustomConfirm = () => {
-    const trimmed = customInput.trim();
-    const num = Number(trimmed);
-    if (Number.isInteger(num) && String(num) === trimmed && num >= 1 && num <= MAX_SCORE) {
-      onSelect(num);
-    }
+  const trimmed = customInput.trim();
+  const num = Number(trimmed);
+  const valido = Number.isInteger(num) && String(num) === trimmed && num >= 1 && num <= MAX_SCORE;
+  // Con algo escrito que no vale, se dice por qué: antes no pasaba nada (#855)
+  const fueraDeRango = trimmed !== '' && !valido;
+
+  const handleCustomConfirm = (e) => {
+    e?.preventDefault();
+    if (valido) onSelect(num);
   };
 
   return (
@@ -110,7 +113,8 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
             </div>
           </>
         ) : (
-          <div className="flex flex-col gap-3">
+          // Un formulario: Intro confirma (#855)
+          <form className="flex flex-col gap-3" onSubmit={handleCustomConfirm}>
             <p className="text-sm text-gray-500">{t('input.enterCustomScore')}</p>
             <div className="flex gap-2">
               <input
@@ -121,25 +125,34 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
                 max={MAX_SCORE}
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-lg font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-invalid={fueraDeRango}
+                // min-w-0: el campo encoge y los botones caben a 360 px (#855)
+                className="min-w-0 flex-1 border border-gray-300 rounded-lg px-3 py-2 text-lg font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary"
                 autoFocus
               />
               <button
-                onClick={handleCustomConfirm}
+                type="submit"
+                disabled={!valido}
                 aria-label={t('input.confirmScore')}
-                className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90"
+                className="shrink-0 px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50"
               >
                 ✓
               </button>
               <button
+                type="button"
                 onClick={() => { setCustomMode(false); setCustomInput(''); }}
                 aria-label={t('input.back')}
-                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+                className="shrink-0 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
               >
                 ←
               </button>
             </div>
-          </div>
+            {fueraDeRango && (
+              <p role="alert" className="text-sm text-red-600">
+                {t('input.customScoreRange', { max: MAX_SCORE })}
+              </p>
+            )}
+          </form>
         )}
       </div>
     </div>

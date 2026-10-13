@@ -67,4 +67,32 @@ describe('ScheduleMapper · el estado de la tarjeta en las partidas (QA 2, 12 oc
   it('un backend de antes, que no lo trae: juega', () => {
     expect(ScheduleMapper.toTeeGroupDTO(grupo([jugador()])).players[0].cardStatus).toBe('JUGANDO');
   });
+
+  it('#544: cada partida dice si se puede tocar, y la franja si cabe una nueva', () => {
+    const vista = ScheduleMapper.toTeeGroupsDTO({
+      round_id: 'r-1',
+      editable: false,
+      can_add_group: true,
+      unassigned_players: [],
+      groups: [
+        { id: 'p-1', number: 1, tee_time: '09:00', status: 'IN_PROGRESS', incomplete: false, can_change: false, players: [] },
+        { id: 'p-2', number: 2, tee_time: '09:10', status: 'SCHEDULED', incomplete: false, can_change: true, players: [] },
+      ],
+    });
+
+    expect(vista.canAddGroup).toBe(true);
+    expect(vista.groups.map((g) => g.canChange)).toEqual([false, true]);
+  });
+
+  it('#544: un backend sin los campos nuevos, todo según `editable`', () => {
+    const vista = ScheduleMapper.toTeeGroupsDTO({
+      round_id: 'r-1',
+      editable: true,
+      unassigned_players: [],
+      groups: [{ id: 'p-1', number: 1, tee_time: '09:00', status: 'SCHEDULED', incomplete: false, players: [] }],
+    });
+
+    expect(vista.canAddGroup).toBe(true);
+    expect(vista.groups[0].canChange).toBe(true);
+  });
 });

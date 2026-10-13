@@ -184,6 +184,8 @@ import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFr
 import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
 import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTeeGroupCardUseCase';
 import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
+import RetireTeeGroupPlayerUseCase from '../application/use_cases/scoring/RetireTeeGroupPlayerUseCase';
+import DeleteTeeGroupHoleUseCase from '../application/use_cases/scoring/DeleteTeeGroupHoleUseCase';
 import ValidateTeeGroupScoredHolesUseCase from '../application/use_cases/scoring/ValidateTeeGroupScoredHolesUseCase';
 import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
@@ -390,6 +392,8 @@ const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScorin
 const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const retireTeeGroupPlayerUseCase = new RetireTeeGroupPlayerUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const deleteTeeGroupHoleUseCase = new DeleteTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const validateTeeGroupScoredHolesUseCase = new ValidateTeeGroupScoredHolesUseCase({
   teeGroupScoringRepository: apiTeeGroupScoringRepository,
 });
@@ -617,6 +621,8 @@ export {
   correctTeeGroupHoleUseCase,
   reopenTeeGroupCardUseCase,
   markTeeGroupNoShowUseCase,
+  retireTeeGroupPlayerUseCase,
+  deleteTeeGroupHoleUseCase,
   validateTeeGroupScoredHolesUseCase,
   closeTeeWindowUseCase,
   getTeeWindowStandingsUseCase,

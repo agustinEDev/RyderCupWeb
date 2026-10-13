@@ -221,6 +221,15 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(screen.queryByTestId('estado-de-entrega')).toBeNull();
   });
 
+  it('#854: el no presentado ve por qué no anota y no tiene casilla', () => {
+    llamadas.casilla = null;
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO', tee_gender: 'FEMALE' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('no-presentado')).toHaveTextContent('partida.youAreNoShowHere {"context":"female"}');
+    expect(llamadas.casilla).toBeNull();
+  });
+
   it('entregada, la barra lo dice (la tarjeta entregada no cuenta como retirada)', () => {
     mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });
     render(<GroupScoringPage />);

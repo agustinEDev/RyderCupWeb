@@ -61,11 +61,18 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
             </li>
           );
         }
+        // Retirado: con quién jugó y su estado, no «de momento sin compañeros» (#853)
+        const retirado = yo?.cardStatus === 'RETIRADO';
+        const linea = retirado
+          ? companeros.length > 0
+            ? t('partidas.youRetired', conGenero(yo.teeGender, { ...datos, companeros: companeros.join(', ') }))
+            : t('partidas.youRetiredAlone', conGenero(yo.teeGender, datos))
+          : companeros.length > 0
+            ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
+            : t('partidas.mineAlone', datos);
         return (
           <li key={roundId} data-testid={`mi-partida-${roundId}`}>
-            {companeros.length > 0
-              ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
-              : t('partidas.mineAlone', datos)}
+            {linea}
             {marcado && <span> · {t('partidas.youMark', { jugador: marcado.name })}</span>}
             {/* Le pasaron de otra partida para que alguien no se quedara solo
                 (QA del 11 oct 2026, BE #539): su hora puede haber cambiado */}
