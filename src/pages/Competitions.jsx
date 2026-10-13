@@ -102,7 +102,10 @@ const Competitions = () => {
           // Se busca sobre lo que se ve: la tarjeta enseña los países en el
           // idioma de la aplicación, así que buscar «España» tenía que
           // encontrar una competición cuya `location` del backend dice «Spain»
-          ubicacionDe(comp, i18n.language).toLowerCase().includes(query)
+          ubicacionDe(comp, i18n.language).toLowerCase().includes(query) ||
+          // Y por sus campos, todos: la tarjeta enseña el nombre de uno, y
+          // con varios, su conjunto (revisión de la FE-B)
+          (comp.golfCourses ?? []).some((campo) => campo.name?.toLowerCase().includes(query))
       );
     }
 
@@ -317,7 +320,8 @@ const Competitions = () => {
                 <Users className="w-4 h-4 shrink-0" />
                 <span>
                   {t('myCompetitions.players', { count: competition.enrolledCount || 0, max: competition.maxPlayers })}
-                  {competition.playingDays != null && (
+                  {/* Sin jornadas todavía no se dice «0 jornadas» (Agustín, 13 oct) */}
+                  {competition.playingDays > 0 && (
                     <> · {t('myCompetitions.playingDays', { count: competition.playingDays })}</>
                   )}
                 </span>

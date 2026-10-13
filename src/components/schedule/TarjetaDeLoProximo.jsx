@@ -23,7 +23,14 @@ import { diaCorto } from '../../utils/diaDeLaSesion';
 const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
   const { t, i18n } = useTranslation('dashboard');
   const { t: tSchedule } = useTranslation('schedule');
-  const lista = (nombres) => new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(nombres);
+  const lista = (nombres) => {
+    // Un idioma mal escrito («es_ES») hace lanzar a `Intl`: comas, sin más
+    try {
+      return new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(nombres);
+    } catch {
+      return nombres.join(', ');
+    }
+  };
 
   const esPartida = Boolean(partido.esPartidaDeFranja);
   const cuando = [
@@ -44,7 +51,8 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
       : t('upcomingMatches.alone')
     : t('upcomingMatches.versus', {
         nosotros: lista([t('upcomingMatches.you'), ...companeros]),
-        ellos: lista(partido.opponentNames ?? []),
+        // Sin rivales todavía, «por decidir»: no «Tú vs » (revisión de la FE-B)
+        ellos: partido.opponentNames?.length ? lista(partido.opponentNames) : t('upcomingMatches.toBeDecided'),
       });
 
   const destino = esPartida

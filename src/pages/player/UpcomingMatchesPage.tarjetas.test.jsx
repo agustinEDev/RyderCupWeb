@@ -18,6 +18,14 @@
  *   9   la Ryder no contesta y no hay nada         | las partidas que sí llegaron; sin ellas,
  *       |                                          | «no se pudo preguntar»
  *   10  partido sin formato                        | no se pinta «formats.null»
+ *
+ * Y lo que añadió la revisión (Agustín, 13 oct):
+ *
+ *   6c  partida de stroke play de hoy, sin empezar | «Anotar», con red
+ *   9   falla una lista y llega la otra            | lo que llegó, con el aviso de que
+ *       |                                          | puede faltar alguno
+ *   9c  solo una lista viene de memoria            | «algunos de» los que se vieron
+ *   11  Ryder sin rivales todavía                  | «Tú y Nacho vs por decidir»
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -46,7 +54,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 
-const { olvidaTodo } = await import('../../services/loUltimoConocido');
+const { olvidaTodo, recuerdaLasPartidas } = await import('../../services/loUltimoConocido');
 const { olvidaLasPrecargas } = await import('../../services/partidosSinCobertura');
 const UpcomingMatchesPage = (await import('./UpcomingMatchesPage')).default;
 
@@ -234,6 +242,15 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     expect(within(ryder).queryByText('upcomingMatches.scoreMatch')).not.toBeInTheDocument();
   });
 
+  it('6c · una partida de stroke play de hoy, sin empezar: «Anotar», con red', async () => {
+    responde({ partidas: [partida({ roundDate: '2026-09-20' })] });
+
+    pinta();
+
+    const [medal] = await tarjetas();
+    expect(within(medal).getByRole('link', { name: 'upcomingMatches.scoreMatch' })).toBeInTheDocument();
+  });
+
   it('7 · solo se ve el estado «En juego»', async () => {
     responde({ partidos: [partido({ status: 'IN_PROGRESS' })], partidas: [partida()] });
 
@@ -261,6 +278,38 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     expect(await tarjetas()).toHaveLength(1);
     expect(screen.queryByText('upcomingMatches.sinRespuesta')).not.toBeInTheDocument();
+    expect(screen.getByTestId('upcoming-matches-incompleta')).toHaveTextContent('upcomingMatches.incompleta');
+  });
+
+  it('9 · y al revés: las partidas no contestan y los partidos sí', async () => {
+    mockPartidos.mockResolvedValue({ matches: [partido()], complete: true });
+    mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    pinta();
+
+    expect(await tarjetas()).toHaveLength(1);
+    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+  });
+
+  it('9 · contestan las dos: sin aviso', async () => {
+    responde({ partidos: [partido()], partidas: [partida()] });
+
+    pinta();
+
+    await tarjetas();
+    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
+  });
+
+  it('9c · solo las partidas vienen de memoria: «algunos de» los que se vieron', async () => {
+    recuerdaLasPartidas([partida({ roundDate: '2026-09-21' })]);
+    mockPartidos.mockResolvedValue({ matches: [partido()], complete: true });
+    mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    pinta();
+
+    expect(await tarjetas()).toHaveLength(2);
+    expect(screen.getByTestId('upcoming-matches-desde-memoria')).toHaveTextContent('upcomingMatches.desdeMemoriaParcial');
+    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
   });
 
   it('9b · no contesta ninguno y nada guardado: no se pudo preguntar', async () => {
@@ -271,6 +320,7 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
 
     expect(await screen.findByText('upcomingMatches.sinRespuesta')).toBeInTheDocument();
     expect(screen.queryByText('upcomingMatches.noMatches')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
   });
 
   it('10 · un partido sin formato no pinta «formats.null»', async () => {
@@ -281,6 +331,17 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     const [ryder] = await tarjetas();
     expect(within(ryder).getByTestId('cuando')).toHaveTextContent('Jue 24 sept · sessions.AFTERNOON');
     expect(within(ryder).getByTestId('cuando')).not.toHaveTextContent('formats');
+  });
+
+  it('11 · una Ryder sin rivales todavía: «por decidir», no «Tú vs »', async () => {
+    responde({ partidos: [partido({ opponentNames: [] })] });
+
+    pinta();
+
+    const [ryder] = await tarjetas();
+    expect(within(ryder).getByTestId('con-quien')).toHaveTextContent(
+      'upcomingMatches.versus {"nosotros":"upcomingMatches.you y Nacho","ellos":"upcomingMatches.toBeDecided"}'
+    );
   });
 });
 

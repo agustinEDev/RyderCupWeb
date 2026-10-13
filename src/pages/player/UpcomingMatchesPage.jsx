@@ -36,6 +36,9 @@ const UpcomingMatchesPage = () => {
   // De memoria se dice por lista: anotar sin red depende de de dónde vino
   const [desdeMemoria, setDesdeMemoria] = useState({ partidos: false, partidas: false });
   const [sinRespuesta, setSinRespuesta] = useState(false);
+  // Una de las dos listas no contestó y la otra sí: se enseña lo que llegó,
+  // diciendo que puede faltar alguno (revisión de la FE-B, Agustín, 13 oct)
+  const [incompleta, setIncompleta] = useState(false);
 
   const loadMatches = useCallback(async () => {
     if (!user) {
@@ -66,7 +69,9 @@ const UpcomingMatchesPage = () => {
     setMatches(juntos);
     setDesdeMemoria({ partidos: leido.desdeMemoria, partidas: partidas.desdeMemoria });
     // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
-    setSinRespuesta(juntos.length === 0 && (leido.sinRespuesta || partidas.sinRespuesta));
+    const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
+    setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
+    setIncompleta(juntos.length > 0 && algunaSinRespuesta);
     setIsLoading(false);
   }, [user]);
 
@@ -116,7 +121,14 @@ const UpcomingMatchesPage = () => {
 
         {(desdeMemoria.partidos || desdeMemoria.partidas) && (
           <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-desde-memoria">
-            {t('upcomingMatches.desdeMemoria')}
+            {/* Solo una de las dos de memoria: «algunos de» los que se vieron */}
+            {t(desdeMemoria.partidos && desdeMemoria.partidas ? 'upcomingMatches.desdeMemoria' : 'upcomingMatches.desdeMemoriaParcial')}
+          </p>
+        )}
+
+        {incompleta && (
+          <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-incompleta">
+            {t('upcomingMatches.incompleta')}
           </p>
         )}
 

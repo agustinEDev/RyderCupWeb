@@ -46,4 +46,9 @@ describe('diaCorto (FE #845)', () => {
     expect(diaCorto(null, 'es')).toBeNull();
     expect(diaCorto('24/09/2026', 'es')).toBeNull();
   });
+
+  it('4 · un idioma mal escrito no tumba la pantalla: sale en el de por defecto', () => {
+    expect(() => diaCorto('2026-09-24', 'es_ES')).not.toThrow();
+    expect(diaCorto('2026-09-24', 'es_ES')).toMatch(/24/);
+  });
 });

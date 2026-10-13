@@ -98,7 +98,6 @@ const CreateCompetition = () => {
   const isEditMode = Boolean(competitionId);
   // El género del organizador, que juega: solo al crear y solo si le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
-  const pideGenero = !isEditMode && generoParaApuntarse.falta;
   const [genero, setGenero] = useState('');
   // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
   // esa competición ya existe y su tipo no se cambia aquí
@@ -194,6 +193,9 @@ const CreateCompetition = () => {
   // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
   // la de siempre: así se cargaba y se creaba todo antes del tipo
   const conEquipos = tieneEquipos(formData.tournamentType);
+  // Y si no juega («¿Juegas tú?» desmarcada, solo en stroke play), ni se pide
+  // ni se guarda: el servidor tampoco lo exige (Agustín, 13 oct)
+  const pideGenero = !isEditMode && generoParaApuntarse.falta && (conEquipos || formData.organizerPlays);
 
   // El resumen del plegable no puede prometer un equipo que ya no está escrito
   // Vaciar el campo en edición no puede recortar el cupo de una competición con
@@ -779,6 +781,13 @@ const CreateCompetition = () => {
             await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
           } catch (error) {
             console.error('Error updating competition (second request):', error);
+            // Lo general fue segundo y el nombre ya lo tiene otra: junto al
+            // campo, como si fuera la primera (revisión de la FE-B). Los
+            // ajustes ya quedaron guardados y al reintentar no se reenvían
+            if (ajustesPrimero && error?.status === 409) {
+              senalaElNombre('nameTaken');
+              return;
+            }
             // El motivo como en cualquier otro fallo: las sesiones que se quedan
             // fuera, con sus días, antes que el texto en bruto (revisor)
             const texto = t(ajustesPrimero ? 'edit.generalNotSaved' : 'edit.strokePlayNotSaved', {

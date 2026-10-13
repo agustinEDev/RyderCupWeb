@@ -12,6 +12,10 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   C1  sin género, lo elige y crea           | se guarda y luego se crea
  *   C2  sin género y sin elegirlo              | el navegador no lo envía: es obligatorio
  *   C3  con género                            | ni se pregunta ni se toca el perfil
+ *   C5  stroke play y «¿Juegas tú?» desmarcada| ni se pregunta ni se toca el perfil: no
+ *       |                                      | juega (revisión de la FE-B, 13 oct);
+ *       |                                      | marcada otra vez, vuelve
+ *   C6  la desmarca y cambia a una Ryder      | se pregunta: en una Ryder siempre juega
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -100,6 +104,41 @@ const rellenaYCrea = async () => {
 };
 
 describe('CreateCompetition · el género del organizador', () => {
+  it('C5: en un Medal, si no juega, ni se pregunta ni se guarda; si vuelve a jugar, sí', async () => {
+    faltaGenero = true;
+    mockCrear.mockClear();
+    mockGuardarGenero.mockClear();
+    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    fireEvent.click(await screen.findByTestId('tipo-MEDAL'));
+    const juega = await screen.findByRole('checkbox', { name: 'create.organizerPlays' });
+    expect(screen.getByTestId('selector-de-genero')).toBeInTheDocument();
+
+    fireEvent.click(juega);
+    expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
+    await rellenaYCrea();
+
+    await waitFor(() => expect(mockCrear).toHaveBeenCalled());
+    expect(mockGuardarGenero).not.toHaveBeenCalled();
+    expect(mockCrear.mock.calls[0][0].organizer_plays).toBe(false);
+
+    fireEvent.click(juega);
+    expect(screen.getByTestId('selector-de-genero')).toBeInTheDocument();
+  });
+
+  it('C6: la desmarca en un Medal y cambia a una Ryder: se pregunta, que ahí juega', async () => {
+    faltaGenero = true;
+    render(<MemoryRouter><CreateCompetition /></MemoryRouter>);
+    fireEvent.click(await screen.findByTestId('tipo-MEDAL'));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'create.organizerPlays' }));
+    expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('volver-al-tipo'));
+    fireEvent.click(await screen.findByTestId('tipo-RYDER_CUP'));
+    fireEvent.click(await screen.findByTestId('modo-RYDER_CUP'));
+
+    expect(await screen.findByTestId('selector-de-genero')).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockCrear.mockClear();

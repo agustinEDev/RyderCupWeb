@@ -18,6 +18,9 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *         |                                            | texto del servidor ni el aviso de arriba
  *   21c   se corrige el nombre                       | el aviso se va
  *   21d   otro error del servidor                    | como antes: arriba y en un aviso
+ *   21e   al editar, el 409 llega en la segunda      | también junto al campo, no arriba
+ *         | petición (los ajustes van primero)         | con el texto del servidor (revisión)
+ *   21f   un 409 de los ajustes, que van segundos    | no es el nombre: como antes, arriba
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -216,6 +219,39 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
     enviar();
 
     await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('País no válido'));
+    expect(screen.queryByTestId('error-del-nombre')).toBeNull();
+  });
+
+  it('21e: al editar, un 409 tras guardar los ajustes primero también va al campo', async () => {
+    composicion.updateStrokePlaySettingsUseCase.execute.mockResolvedValue({ ...MEDAL_GUARDADO.strokePlay, maxMatchdaysPerPlayer: 2 });
+    composicion.updateCompetitionUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Ya existe una competición con el nombre «Medal»'), { status: 409 })
+    );
+    const jornadas = await alEditar();
+    fireEvent.change(jornadas, { target: { value: '2' } });
+
+    enviar();
+
+    expect(await screen.findByTestId('error-del-nombre')).toHaveTextContent('create.errors.nameTaken');
+    expect(screen.getByTestId('campo-nombre')).toHaveAttribute('aria-invalid', 'true');
+    expect(composicion.updateStrokePlaySettingsUseCase.execute.mock.invocationCallOrder[0]).toBeLessThan(
+      composicion.updateCompetitionUseCase.execute.mock.invocationCallOrder[0]
+    );
+    expect(screen.queryByText(/edit\.generalNotSaved/)).toBeNull();
+    expect(mockToast.error).not.toHaveBeenCalled();
+  });
+
+  it('21f: un 409 de los ajustes (que van segundos) no es el nombre: arriba, como antes', async () => {
+    composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('conflicto'), { status: 409 })
+    );
+    const jornadas = await alEditar();
+    fireEvent.change(screen.getByLabelText(/endDate/), { target: { value: '2030-10-13' } });
+    fireEvent.change(jornadas, { target: { value: '4' } });
+
+    enviar();
+
+    expect(await screen.findByText('edit.strokePlayNotSaved {"motivo":"conflicto"}')).toBeInTheDocument();
     expect(screen.queryByTestId('error-del-nombre')).toBeNull();
   });
 });

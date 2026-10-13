@@ -15,9 +15,14 @@
  *   12   jugadores y jornadas                  | «3 / 3 jugadores»; en stroke play,
  *        |                                       | además «2 jornadas»
  *   13   estado y solicitudes pendientes       | como estaban
+ *
+ * Y lo que añadió la revisión (Agustín, 13 oct):
+ *
+ *   12c  stroke play sin jornadas (0)          | no se dice «0 jornadas»
+ *   14   buscar por el nombre de un campo      | la encuentra, aunque tenga varios
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 const mockList = vi.fn();
@@ -181,6 +186,32 @@ describe('Mis competiciones · tarjetas (FE #846)', () => {
 
     expect(within(ryder).getByTestId('jugadores')).not.toHaveTextContent('playingDays');
     expect(within(sinDato).getByTestId('jugadores')).not.toHaveTextContent('playingDays');
+  });
+
+  it('12c · sin jornadas todavía (0): no se dice «0 jornadas»', async () => {
+    const [c] = await tarjeta([competicion({ playingDays: 0 })]);
+
+    expect(within(c).getByTestId('jugadores')).not.toHaveTextContent('playingDays');
+  });
+
+  it('14 · se busca también por el nombre del campo, aunque tenga varios', async () => {
+    await tarjeta([
+      competicion({ name: 'Liga de otoño' }),
+      competicion({
+        id: 'c-2',
+        name: 'Gira',
+        golfCourses: [
+          { id: 'gc-2', name: 'Golf Meis', countryCode: 'ES' },
+          { id: 'gc-3', name: 'Penha Longa', countryCode: 'PT' },
+        ],
+      }),
+    ]);
+
+    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: 'penha' } });
+
+    const quedan = screen.getAllByTestId('tarjeta-competicion');
+    expect(quedan).toHaveLength(1);
+    expect(within(quedan[0]).getByText('Gira')).toBeInTheDocument();
   });
 
   it('13 · el estado y las solicitudes pendientes siguen', async () => {

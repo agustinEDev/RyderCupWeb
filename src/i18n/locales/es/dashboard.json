@@ -73,7 +73,10 @@
     "you": "Tú",
     "versus": "{{nosotros}} vs {{ellos}}",
     "with": "Con {{companeros}}",
-    "alone": "De momento sin compañeros"
+    "alone": "De momento sin compañeros",
+    "desdeMemoriaParcial": "No se ha podido actualizar todo: algunos son los últimos que se vieron y puede que no estén al día.",
+    "incompleta": "No se han podido cargar todos tus partidos; puede faltar alguno.",
+    "toBeDecided": "por decidir"
   },
   "nextMatch": {
     "label": "Tu próximo partido",

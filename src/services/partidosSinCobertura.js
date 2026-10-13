@@ -161,10 +161,11 @@ export const leeLasProximasPartidas = async ({ lee, userId, pideLaVista, ahora =
     precargaElProximoDia({ partidos: matches, userId, pideLaVista, ahora });
     return { partidas: matches, desdeMemoria: false, sinRespuesta: false };
   } catch (err) {
+    console.error('Error loading upcoming tee groups:', err);
     // Un 401 o un 403 desmienten lo guardado, como con los partidos (CodeRabbit)
     if (err?.status === 401 || err?.status === 403) {
       olvidaLoDeEstaCuenta();
-      return { partidas: [], desdeMemoria: false, sinRespuesta: false };
+      return { partidas: [], desdeMemoria: false, sinRespuesta: true };
     }
   }
   const hoy = fechaLocal(ahora);
@@ -299,6 +300,11 @@ export const sePuedeAnotar = (partido, { desdeMemoria, ahora = new Date() }) => 
     if (Number.isNaN(abre.getTime())) return deHoyYSinPoderPreguntar();
     return ahora >= abre;
   }
+
+  // Una partida de stroke play no trae hora de apertura (MyTeeGroupDTO) y
+  // empieza con el primer golpe: la de HOY se ofrece anotar, con red y sin
+  // ella (revisión de la FE-B, Agustín, 13 oct)
+  if (partido.esPartidaDeFranja) return partido.roundDate === fechaLocal(ahora);
 
   return deHoyYSinPoderPreguntar();
 };

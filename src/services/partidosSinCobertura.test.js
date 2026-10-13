@@ -334,7 +334,9 @@ describe('partidosSinCobertura', () => {
    *   P3  sin red, con guardadas              | las de hoy en adelante, desde memoria
    *   P4  sin red y nada guardado             | vacía y sin respuesta
    *   P5  401 o 403                           | se olvida lo de la cuenta; vacía, sin
-   *       |                                     | memoria y con respuesta (desmiente)
+   *       |                                     | memoria y sin respuesta, como los
+   *       |                                     | partidos (revisión de la FE-B)
+   *   P6  cualquier otro fallo                | se deja en la consola, como los partidos
    */
   describe('leer las próximas partidas (FE #845)', () => {
     const partida = (id, roundDate = '2026-09-17') => ({ id, roundDate, status: 'SCHEDULED', esPartidaDeFranja: true });
@@ -406,9 +408,24 @@ describe('partidosSinCobertura', () => {
           ahora: HOY,
         });
 
-        expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: false });
+        expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true });
         expect(lasUltimasPartidas()).toBeNull();
       }
+    });
+
+    it('P6 · cualquier otro fallo se deja en la consola', async () => {
+      const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fallo = new TypeError('Failed to fetch');
+
+      await leeLasProximasPartidas({
+        lee: () => Promise.reject(fallo),
+        userId: USUARIO,
+        pideLaVista: vi.fn(),
+        ahora: HOY,
+      });
+
+      expect(consola).toHaveBeenCalledWith(expect.any(String), fallo);
+      consola.mockRestore();
     });
   });
 
@@ -506,6 +523,29 @@ describe('partidosSinCobertura', () => {
     it('B5c: y una hora ilegible se trata igual que no tenerla', () => {
       expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: 'mañana' }), { desdeMemoria: true, ahora: HOY })).toBe(true);
       expect(sePuedeAnotar(partido('m', '2026-09-17', { scoringOpensAt: 'mañana' }), { desdeMemoria: false, ahora: HOY })).toBe(false);
+    });
+
+    /**
+     * Las partidas de stroke play no traen hora de apertura (MyTeeGroupDTO) y
+     * empiezan con el primer golpe: la de HOY se ofrece anotar, con red y sin
+     * ella (revisión de la FE-B, Agustín, 13 oct).
+     */
+    it('S1: una partida de stroke play de hoy, con red, sí', () => {
+      const deHoy = { ...partido('g', '2026-09-17'), esPartidaDeFranja: true };
+      expect(sePuedeAnotar(deHoy, { desdeMemoria: false, ahora: HOY })).toBe(true);
+      expect(sePuedeAnotar(deHoy, { desdeMemoria: true, ahora: HOY })).toBe(true);
+    });
+
+    it('S2: la de otro día, no', () => {
+      const manana = { ...partido('g', '2026-09-18'), esPartidaDeFranja: true };
+      expect(sePuedeAnotar(manana, { desdeMemoria: false, ahora: HOY })).toBe(false);
+      expect(sePuedeAnotar(manana, { desdeMemoria: true, ahora: HOY })).toBe(false);
+    });
+
+    it('S3: si algún día trae su hora, manda la hora', () => {
+      const abre = new Date(2026, 8, 17, 18, 0).toISOString();
+      const conHora = { ...partido('g', '2026-09-17', { scoringOpensAt: abre }), esPartidaDeFranja: true };
+      expect(sePuedeAnotar(conHora, { desdeMemoria: false, ahora: HOY })).toBe(false);
     });
 
     it('en juego manda el estado, aunque la hora no haya llegado', () => {

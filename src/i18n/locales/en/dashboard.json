@@ -73,7 +73,10 @@
     "you": "You",
     "versus": "{{nosotros}} vs {{ellos}}",
     "with": "With {{companeros}}",
-    "alone": "No playing partners yet"
+    "alone": "No playing partners yet",
+    "desdeMemoriaParcial": "Could not refresh everything: some are the last ones seen and may be out of date.",
+    "incompleta": "Not all your matches could be loaded; some may be missing.",
+    "toBeDecided": "TBD"
   },
   "nextMatch": {
     "label": "Your next match",

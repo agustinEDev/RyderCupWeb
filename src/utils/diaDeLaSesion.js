@@ -25,10 +25,17 @@ export const diaDeLaSesion = (iso) => {
 export const diaCorto = (iso, idioma) => {
   const dia = diaDeLaSesion(iso);
   if (!dia) return null;
-  const texto = new Intl.DateTimeFormat(idioma, { weekday: 'short', day: 'numeric', month: 'short' })
+  // Un idioma mal escrito («es_ES») hace lanzar a `Intl`: el de por defecto
+  let formato;
+  try {
+    formato = new Intl.DateTimeFormat(idioma, { weekday: 'short', day: 'numeric', month: 'short' });
+  } catch {
+    formato = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+  const texto = formato
     .formatToParts(dia)
     .filter((parte) => parte.type !== 'literal')
     .map((parte) => parte.value)
     .join(' ');
-  return texto.charAt(0).toLocaleUpperCase(idioma) + texto.slice(1);
+  return texto.charAt(0).toLocaleUpperCase(formato.resolvedOptions().locale) + texto.slice(1);
 };
