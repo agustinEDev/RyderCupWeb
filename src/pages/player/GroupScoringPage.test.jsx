@@ -247,6 +247,13 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(screen.queryByText(/sinConexion.anotando/)).toBeNull();
   });
 
+  it('/code-review: ni «a salvo» con su cola: el servidor ya no se la va a guardar', () => {
+    mockHook = hook({ pendingQueueSize: 2, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('pendientes-a-salvo')).toBeNull();
+  });
+
   it('entregada, la barra lo dice (la tarjeta entregada no cuenta como retirada)', () => {
     mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });
     render(<GroupScoringPage />);

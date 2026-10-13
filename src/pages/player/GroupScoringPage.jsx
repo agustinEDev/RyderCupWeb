@@ -232,7 +232,7 @@ const GroupScoringPage = () => {
       {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
       {/* Ni al no presentado: ya no anota (revisor) */}
       {isOffline && canScore && !noPresentado && <AnotarSinConexion pendingCount={pendingQueueSize} />}
-      {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
+      {!isOffline && !avisoDelVaciado && !noPresentado && <PendientesASalvo count={pendingQueueSize} />}
 
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-4">
         {hoyosNoGuardados.length > 0 && !noPresentado && (

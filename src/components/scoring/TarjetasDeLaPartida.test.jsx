@@ -633,6 +633,61 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('tarjeta-bea')));
     });
 
+    it('/code-review: si el lado elegido ya no está, no se confirma: vuelve a elegir', () => {
+      const { rerender } = pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteScored' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteSide.both' }));
+
+      const soloSuyo = [hoyo(1, { own_score: 5, own_submitted: true }), ...hoyosDeAna.slice(1)];
+      rerender(<TarjetasDeLaPartida scoringView={vista('STABLEFORD', [jugador('ana', 'JUGANDO', soloSuyo)])} userId="ana" organiza onCambio={vi.fn()} />);
+
+      expect(screen.queryByText(/partida.deleteConfirm/)).toBeNull();
+      expect(screen.getByRole('button', { name: 'partida.deleteSide.own' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'partida.deleteSide.both' })).toBeNull();
+    });
+
+    it('/code-review: el foco sigue cada paso de borrar', () => {
+      pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteScored' }));
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'partida.deleteSide.own' }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteSide.own' }));
+      const hoja = within(screen.getByTestId('corregir-ana-1'));
+      expect(document.activeElement).toBe(hoja.getByRole('button', { name: 'partida.no' }));
+
+      fireEvent.click(hoja.getByRole('button', { name: 'partida.no' }));
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'partida.deleteSide.own' }));
+
+      fireEvent.click(hoja.getByRole('button', { name: 'partida.cancel' }));
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'partida.deleteScored' }));
+    });
+
+    it('/code-review: mientras se borra, «No» está desactivado', async () => {
+      let soltar;
+      mockBorrar.mockReturnValue(new Promise((r) => (soltar = r)));
+      pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteScored' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteSide.own' }));
+      const hoja = within(screen.getByTestId('corregir-ana-1'));
+      fireEvent.click(hoja.getByRole('button', { name: 'partida.yes' }));
+
+      expect(hoja.getByRole('button', { name: 'partida.no' })).toBeDisabled();
+      soltar({});
+      await waitFor(() => expect(screen.queryByTestId('corregir-ana-1')).toBeNull());
+    });
+
+    it('/code-review: tras retirar con éxito, el foco va a la tarjeta', async () => {
+      pintar({ organiza: true, scoringView: vista('STABLEFORD', jugo()) });
+      const ana = within(screen.getByTestId('tarjeta-ana'));
+      fireEvent.click(ana.getByRole('button', { name: /partida.retirePlayer / }));
+      fireEvent.click(ana.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('tarjeta-ana')));
+    });
+
     it('9: si borrar falla, la hoja sigue abierta con lo que había', async () => {
       mockBorrar.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_NOT_SCORING' }));
       pintar({ organiza: true });

@@ -52,7 +52,10 @@ describe('ScoreInputPanel «Otro…» (#855)', () => {
     const { onSelect, campo } = abrirOtro();
     fireEvent.change(campo, { target: { value: valor } });
 
-    expect(screen.getByRole('alert')).toHaveTextContent('input.customScoreRange');
+    // Sin `role="alert"`: no interrumpe al lector de pantalla a cada tecla (/code-review)
+    expect(screen.getByTestId('fuera-de-rango')).toHaveTextContent('input.customScoreRange');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(campo).toHaveAttribute('aria-describedby', 'fuera-de-rango');
     expect(screen.getByRole('button', { name: 'input.confirmScore' })).toBeDisabled();
     fireEvent.submit(campo.closest('form'));
     expect(onSelect).not.toHaveBeenCalled();
@@ -61,7 +64,7 @@ describe('ScoreInputPanel «Otro…» (#855)', () => {
   it('vacío, sin aviso y sin confirmar', () => {
     abrirOtro();
 
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByTestId('fuera-de-rango')).toBeNull();
     expect(screen.getByRole('button', { name: 'input.confirmScore' })).toBeDisabled();
   });
 

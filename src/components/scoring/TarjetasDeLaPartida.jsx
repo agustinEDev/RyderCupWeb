@@ -216,6 +216,12 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
         const sinMarcador = organiza && sinMarcadorEnJuego(strokePlay.cards, jugador);
         // Sin ningún hoyo solo suyo no hay nada que validar de una vez (revisor)
         const cuantosPorValidar = sinMarcador ? porValidar(jugador) : 0;
+        // Si el lado elegido para borrar ya no está (llegó un cambio), se vuelve a elegir (/code-review)
+        const enEsta = corrigiendo?.jugador === jugador ? corrigiendo : null;
+        const pasoDeBorrar =
+          enEsta && ['own', 'marker', 'both'].includes(enEsta.borrar) && !ladosParaBorrar(enEsta).includes(enEsta.borrar)
+            ? 'eligiendo'
+            : enEsta?.borrar ?? null;
         return (
           <section
             key={jugador}
@@ -292,31 +298,35 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   {t('partida.correctingHole', { hoyo: corrigiendo.hoyo })}
                 </p>
                 {/* Mientras se elige qué borrar, no se corrige a la vez (revisor) */}
-                {corrigiendo.borrar == null && (
+                {pasoDeBorrar == null && (
                 <div className="flex flex-wrap gap-2">
                   {selectorDeGolpe('partida.ownSide', corrigiendo.propio, (v) => setCorrigiendo((c) => ({ ...c, propio: v })))}
                   {selectorDeGolpe('partida.markerSide', corrigiendo.marcador, (v) => setCorrigiendo((c) => ({ ...c, marcador: v })))}
                 </div>
                 )}
-                {quiereBorrar && corrigiendo.borrar == null && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
+                {quiereBorrar && pasoDeBorrar == null && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
                 {/* Borrar lo anotado, por lados y con confirmación (RyderCupAm#553) */}
-                {ladosParaBorrar(corrigiendo).length > 0 && corrigiendo.borrar == null && (
+                {ladosParaBorrar(corrigiendo).length > 0 && pasoDeBorrar == null && (
                   <button
                     type="button"
                     disabled={ocupado}
+                    // Al volver de «Cancelar», el foco aquí (/code-review)
+                    autoFocus={corrigiendo.focoEnBorrar}
                     onClick={() => setCorrigiendo((c) => ({ ...c, borrar: 'eligiendo' }))}
                     className="min-h-11 rounded-lg border border-red-200 px-3 text-sm text-red-600"
                   >
                     {t('partida.deleteScored')}
                   </button>
                 )}
-                {corrigiendo.borrar === 'eligiendo' && (
+                {pasoDeBorrar === 'eligiendo' && (
                   <div className="flex flex-wrap gap-2">
-                    {ladosParaBorrar(corrigiendo).map((lado) => (
+                    {ladosParaBorrar(corrigiendo).map((lado, i) => (
                       <button
                         key={lado}
                         type="button"
                         disabled={ocupado}
+                        // Cada paso deja el foco en el siguiente (/code-review)
+                        autoFocus={i === 0}
                         onClick={() => setCorrigiendo((c) => ({ ...c, borrar: lado }))}
                         className="min-h-11 rounded-lg border border-red-200 px-3 text-sm text-red-600"
                       >
@@ -325,14 +335,15 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     ))}
                     <button
                       type="button"
-                      onClick={() => setCorrigiendo((c) => ({ ...c, borrar: null }))}
+                      disabled={ocupado}
+                      onClick={() => setCorrigiendo((c) => ({ ...c, borrar: null, focoEnBorrar: true }))}
                       className="min-h-11 rounded-lg px-3 text-sm text-gray-600"
                     >
                       {t('partida.cancel')}
                     </button>
                   </div>
                 )}
-                {['own', 'marker', 'both'].includes(corrigiendo.borrar) && (
+                {['own', 'marker', 'both'].includes(pasoDeBorrar) && (
                   <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
                     <span className="w-full">
                       {t(`partida.deleteConfirm.${corrigiendo.borrar}`, { hoyo: corrigiendo.hoyo, jugador: name })}
@@ -347,6 +358,8 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     </button>
                     <button
                       type="button"
+                      disabled={ocupado}
+                      autoFocus
                       onClick={() => setCorrigiendo((c) => ({ ...c, borrar: 'eligiendo' }))}
                       className="min-h-11 rounded-md px-3"
                     >
@@ -354,7 +367,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     </button>
                   </div>
                 )}
-                {corrigiendo.borrar == null && (
+                {pasoDeBorrar == null && (
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -439,7 +452,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   type="button"
                   disabled={ocupado}
                   onClick={() => {
-                    const cerrar = () => setConfirmando(null);
+                    // Con éxito, el botón que la abrió suele desaparecer: a la tarjeta (/code-review)
+                    const cerrar = () => {
+                      setConfirmando(null);
+                      focoPendiente.current = secciones.current.get(jugador);
+                    };
                     // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
                     // Si se relee, su botón puede desaparecer: a la tarjeta (revisor)
                     const alFallar = (codigo) => {

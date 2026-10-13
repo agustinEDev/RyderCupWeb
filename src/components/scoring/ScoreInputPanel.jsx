@@ -127,6 +127,7 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
                 aria-invalid={fueraDeRango}
+                aria-describedby={fueraDeRango ? 'fuera-de-rango' : undefined}
                 // min-w-0: el campo encoge y los botones caben a 360 px (#855)
                 className="min-w-0 flex-1 border border-gray-300 rounded-lg px-3 py-2 text-lg font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary"
                 autoFocus
@@ -149,7 +150,8 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
               </button>
             </div>
             {fueraDeRango && (
-              <p role="alert" className="text-sm text-red-600">
+              // Sin `role="alert"`: interrumpía al lector de pantalla a cada tecla (/code-review)
+              <p id="fuera-de-rango" data-testid="fuera-de-rango" className="text-sm text-red-600">
                 {t('input.customScoreRange', { max: MAX_SCORE })}
               </p>
             )}
