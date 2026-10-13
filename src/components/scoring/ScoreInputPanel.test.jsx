@@ -40,7 +40,15 @@ describe('ScoreInputPanel «Otro…» (#855)', () => {
     expect(onSelect).toHaveBeenCalledWith(12);
   });
 
-  it.each(['16', '0', 'abc'])('con «%s» dice el rango y no deja confirmar', (valor) => {
+  it('revisor: «07» vale 7', () => {
+    const { onSelect, campo } = abrirOtro();
+    fireEvent.change(campo, { target: { value: '07' } });
+    fireEvent.click(screen.getByRole('button', { name: 'input.confirmScore' }));
+
+    expect(onSelect).toHaveBeenCalledWith(7);
+  });
+
+  it.each(['16', '0', 'abc', '+5', '4.5', '00'])('con «%s» dice el rango y no deja confirmar', (valor) => {
     const { onSelect, campo } = abrirOtro();
     fireEvent.change(campo, { target: { value: valor } });
 

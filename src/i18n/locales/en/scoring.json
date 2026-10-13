@@ -349,7 +349,7 @@
     "retirePlayerConfirm": "Retire {{jugador}}? Their card is closed with what has been scored so far.",
     "retiredByOrganiser": "Retired.",
     "deleteScored": "Delete what was scored",
-    "deleted": "Hole deleted.",
+    "deleted": "Score deleted.",
     "deleteSide": {
       "own": "The player's",
       "marker": "The marker's",

@@ -778,6 +778,18 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
       expect(screen.queryByRole('button', { name: /partidas.(generate|regenerate|remove)/ })).toBeNull();
     });
 
+    it('revisor: uno sin partida se coloca solo en las que no han salido, y en una nueva si cabe', async () => {
+      mockLeer.mockResolvedValue(empezada({ unassignedPlayers: [{ userId: 'zoe', name: 'ZOE' }] }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      const lista = await screen.findByRole('combobox', { name: 'partidas.placeIn {"jugador":"ZOE"}' });
+      const valores = within(lista).getAllByRole('option').map((o) => o.value);
+      expect(valores.slice(0, 2)).toEqual(['', 'g3']);
+      expect(valores.some((v) => v.startsWith('g1'))).toBe(false);
+      expect(within(lista).getByRole('option', { name: 'partidas.newGroup' })).toBeInTheDocument();
+    });
+
     it('a quien no organiza, nada de eso', async () => {
       mockLeer.mockResolvedValue(empezada());
       pintar();

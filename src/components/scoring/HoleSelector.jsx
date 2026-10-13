@@ -14,7 +14,7 @@ const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18, noG
     const holeScore = scores.find(s => s.holeNumber === holeNumber);
     if (!holeScore) return 'empty';
     const hasPlayers = Array.isArray(holeScore.playerScores) && holeScore.playerScores.length > 0;
-    if (!hasPlayers) return 'pending';
+    if (!hasPlayers) return 'empty';
     const hasAllMatch = holeScore.playerScores.every(ps => ps.validationStatus === 'match');
     if (hasAllMatch) return 'validated';
     const hasMismatch = holeScore.playerScores.some(ps => ps.validationStatus === 'mismatch');

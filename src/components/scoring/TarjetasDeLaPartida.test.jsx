@@ -591,6 +591,48 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       await waitFor(() => expect(screen.queryByTestId('corregir-ana-2')).toBeNull());
     });
 
+    it('revisor: mientras se elige qué borrar, no se corrige ni se guarda', () => {
+      pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteScored' }));
+
+      expect(screen.queryByRole('combobox', { name: 'partida.ownSide' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'partida.save' })).toBeNull();
+    });
+
+    it('revisor: los lados para borrar, con lo de ahora (si llega un golpe con la hoja abierta)', () => {
+      const deAna = [hoyo(1, { marker_score: 4, marker_submitted: true }), ...hoyosDeAna.slice(1)];
+      const { rerender } = pintar({ organiza: true, scoringView: vista('STABLEFORD', [jugador('ana', 'JUGANDO', deAna)]) });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+
+      const ahora = [hoyo(1, { own_score: 5, own_submitted: true, marker_score: 4, marker_submitted: true, status: 'MISMATCH' }), ...hoyosDeAna.slice(1)];
+      rerender(<TarjetasDeLaPartida scoringView={vista('STABLEFORD', [jugador('ana', 'JUGANDO', ahora)])} userId="ana" organiza onCambio={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteScored' }));
+
+      expect(screen.getByRole('button', { name: 'partida.deleteSide.own' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'partida.deleteSide.both' })).toBeInTheDocument();
+    });
+
+    it('revisor: tras borrar, el foco vuelve a la celda del hoyo', async () => {
+      pintar({ organiza: true });
+      fireEvent.click(screen.getByTestId('hoyo-ana-1'));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteScored' }));
+      fireEvent.click(screen.getByRole('button', { name: 'partida.deleteSide.own' }));
+      fireEvent.click(within(screen.getByTestId('corregir-ana-1')).getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('hoyo-ana-1')));
+    });
+
+    it('revisor: tras un fallo que relee, el foco va a la tarjeta (su botón desaparece)', async () => {
+      mockReabrir.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'SCORECARD_ALREADY_OPEN' }));
+      pintar({ organiza: true });
+      const bea = within(screen.getByTestId('tarjeta-bea'));
+      fireEvent.click(bea.getByRole('button', { name: 'partida.reopen {"jugador":"BEA"}' }));
+      fireEvent.click(bea.getByRole('button', { name: 'partida.yes' }));
+
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('tarjeta-bea')));
+    });
+
     it('9: si borrar falla, la hoja sigue abierta con lo que había', async () => {
       mockBorrar.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_NOT_SCORING' }));
       pintar({ organiza: true });

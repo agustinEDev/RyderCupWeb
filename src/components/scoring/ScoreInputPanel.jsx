@@ -30,8 +30,9 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
   };
 
   const trimmed = customInput.trim();
-  const num = Number(trimmed);
-  const valido = Number.isInteger(num) && String(num) === trimmed && num >= 1 && num <= MAX_SCORE;
+  // Solo cifras: «07» es 7; «+5», «4.5» o «abc», no (revisor)
+  const num = /^\d+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+  const valido = num >= 1 && num <= MAX_SCORE;
   // Con algo escrito que no vale, se dice por qué: antes no pasaba nada (#855)
   const fueraDeRango = trimmed !== '' && !valido;
 

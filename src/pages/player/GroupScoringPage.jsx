@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { conGenero } from '../../utils/genero';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -10,6 +9,7 @@ import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
 import { retireFromTeeGroupUseCase } from '../../composition';
 import customToast from '../../utils/toast';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
+import { conGenero } from '../../utils/genero';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import HoleInput from '../../components/scoring/HoleInput';
@@ -223,19 +223,19 @@ const GroupScoringPage = () => {
   // jugó no son verdes para él (3.ª pasada del QA)
   const delSelector = isMatchPlayer && !siguen.has(userId) ? new Set([userId]) : siguen;
   const golpesDelSelector = scoresVisibles
-    .map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }))
-    // Lo que no jugó quien ya no sigue sale vacío, no «por validar» (revisor)
-    .filter((s) => delSelector === siguen || s.playerScores.some((p) => p.ownSubmitted || p.markerSubmitted));
+    // Lo que nadie anotó sale vacío en el selector (#847)
+    .map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }));
 
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
       {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
-      {isOffline && canScore && <AnotarSinConexion pendingCount={pendingQueueSize} />}
+      {/* Ni al no presentado: ya no anota (revisor) */}
+      {isOffline && canScore && !noPresentado && <AnotarSinConexion pendingCount={pendingQueueSize} />}
       {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
 
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-4">
-        {hoyosNoGuardados.length > 0 && (
+        {hoyosNoGuardados.length > 0 && !noPresentado && (
           <p data-testid="no-guardados" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {t('offline.noGuardados', { count: hoyosNoGuardados.length, holes: hoyosNoGuardados.join(', ') })}
           </p>

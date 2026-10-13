@@ -91,6 +91,12 @@ describe('HoleSelector · los hoyos que no se pudieron guardar (FE #622)', () =>
       expect(screen.getByTestId('hole-btn-12').className).not.toContain('bg-yellow-100');
     });
 
+    it('revisor: una fila sin nadie (todos retirados), también gris', () => {
+      render(<HoleSelector currentHole={1} onSelect={vi.fn()} scores={[{ holeNumber: 4, playerScores: [] }]} />);
+
+      expect(screen.getByTestId('hole-btn-4').className).toContain('bg-gray-100');
+    });
+
     it('con algo anotado y sin validar, sí amarillo', () => {
       const anotado = { ...sinNada, ownSubmitted: true };
       render(<HoleSelector currentHole={1} onSelect={vi.fn()} scores={[{ holeNumber: 3, playerScores: [anotado, sinNada] }]} />);

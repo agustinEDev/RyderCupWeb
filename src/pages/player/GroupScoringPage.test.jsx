@@ -228,6 +228,23 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
 
     expect(screen.getByTestId('no-presentado')).toHaveTextContent('partida.youAreNoShowHere {"context":"female"}');
     expect(llamadas.casilla).toBeNull();
+    // Ni la tira, ni pasar de hoyo, ni «Retirarme» (revisor)
+    expect(screen.queryByTestId('hole-selector')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'input.nextHole' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'partida.retire' })).toBeNull();
+  });
+
+  it('revisor: el no presentado no ve los avisos de anotar sin conexión ni de hoyos sin guardar', async () => {
+    const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+    mockHook = hook({
+      isOffline: true,
+      noGuardados: { 3: { turno: 1 } },
+      scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO' }), jugador('bea', 'ana')]),
+    });
+    render(<><AvisoSinConexion /><GroupScoringPage /></>);
+
+    expect(screen.queryByTestId('no-guardados')).toBeNull();
+    expect(screen.queryByText(/sinConexion.anotando/)).toBeNull();
   });
 
   it('entregada, la barra lo dice (la tarjeta entregada no cuenta como retirada)', () => {
@@ -277,7 +294,10 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     mockHook = hook({ scoringView: vista({}, [jugador('ana', 'cris', { card_status: 'RETIRADO', holes: [jugado, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
     render(<GroupScoringPage />);
 
-    expect(llamadas.selector.scores.map((s) => s.holeNumber)).toEqual([1]);
+    // Solo la suya, y solo el 1 con algo: la tira pinta vacío lo demás (#847)
+    expect(llamadas.selector.scores.every((s) => s.playerScores.every((p) => p.userId === 'ana'))).toBe(true);
+    const conAlgo = llamadas.selector.scores.filter((s) => s.playerScores.some((p) => p.ownSubmitted || p.markerSubmitted));
+    expect(conAlgo.map((s) => s.holeNumber)).toEqual([1]);
   });
 
   it('revisor: un hoyo que nadie le anotó no lleva nombre de marcador', () => {

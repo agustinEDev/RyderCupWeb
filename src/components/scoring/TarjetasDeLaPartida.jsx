@@ -50,9 +50,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const { t } = useTranslation('scoring');
   const [corrigiendo, setCorrigiendo] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
-  // Adónde vuelve el foco tras un fallo: cuando el botón deja de estar
-  // desactivado, que es al acabar la acción (CodeRabbit en la #844)
-  const focoTrasFallo = useRef(null);
+  // Adónde va el foco al acabar una acción: cuando el botón deja de estar
+  // desactivado (CodeRabbit en la #844)
+  const focoPendiente = useRef(null);
+  // Cada tarjeta, para llevarle el foco si el botón que lo tenía desaparece
+  const secciones = useRef(new Map());
   const [ocupado, setOcupado] = useState(false);
 
   const { strokePlay } = scoringView;
@@ -73,9 +75,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   };
 
   useEffect(() => {
-    if (ocupado || !focoTrasFallo.current) return;
-    focoTrasFallo.current.focus();
-    focoTrasFallo.current = null;
+    if (ocupado || !focoPendiente.current) return;
+    focoPendiente.current.focus();
+    focoPendiente.current = null;
   }, [ocupado]);
 
   const hacer = async (accion, aviso, alAcabar, despues, alFallar) => {
@@ -88,7 +90,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
       if (SOLO_AVISO.includes(codigo)) customToast.info(mensajeDeErrorDePartida(t, error));
       else customToast.error(mensajeDeErrorDePartida(t, error));
       // Una confirmación no se queda abierta tras el error (QA 3)
-      alFallar?.();
+      alFallar?.(codigo);
       if (RELEER_TRAS_FALLO.includes(codigo)) onCambio?.();
       return;
     } finally {
@@ -113,11 +115,13 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     setConfirmando(null);
     setCorrigiendo({ jugador, hoyo, propio, marcador, propioAntes: propio, marcadorAntes: marcador, borrar: null });
   };
-  // Qué lados se pueden borrar: los que tienen algo anotado ahora (RyderCupAm#553)
-  const ladosParaBorrar = ({ propioAntes, marcadorAntes }) => {
+  // Qué lados se pueden borrar: los que tienen algo anotado ahora, aunque haya
+  // llegado con la hoja abierta (RyderCupAm#553; revisor)
+  const ladosParaBorrar = ({ jugador, hoyo }) => {
+    const golpe = golpeDe(jugador, hoyo);
     const lados = [];
-    if (propioAntes !== SIN_GOLPE) lados.push('own');
-    if (marcadorAntes !== SIN_GOLPE) lados.push('marker');
+    if (golpe?.ownSubmitted) lados.push('own');
+    if (golpe?.markerSubmitted) lados.push('marker');
     if (lados.length === 2) lados.push('both');
     return lados;
   };
@@ -126,7 +130,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     hacer(
       () => deleteTeeGroupHoleUseCase.execute(scoringView.matchId, jugador, hoyo, borrar),
       'partida.deleted',
-      () => setCorrigiendo(null),
+      () => {
+        setCorrigiendo(null);
+        // La hoja se cierra: el foco, a la celda del hoyo (revisor)
+        focoPendiente.current = document.querySelector(`[data-testid="hoyo-${jugador}-${hoyo}"]`);
+      },
       undefined,
       // Si falla, la hoja sigue con lo que había
       () => setCorrigiendo((c) => (c ? { ...c, borrar: null } : c))
@@ -212,6 +220,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
           <section
             key={jugador}
             data-testid={`tarjeta-${jugador}`}
+            tabIndex={-1}
+            ref={(el) => {
+              if (el) secciones.current.set(jugador, el);
+              else secciones.current.delete(jugador);
+            }}
             className={`rounded-lg border bg-white p-3 ${jugador === userId ? 'border-green-300' : 'border-gray-200'}`}
           >
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -278,11 +291,14 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   <Pencil className="h-3 w-3" />
                   {t('partida.correctingHole', { hoyo: corrigiendo.hoyo })}
                 </p>
+                {/* Mientras se elige qué borrar, no se corrige a la vez (revisor) */}
+                {corrigiendo.borrar == null && (
                 <div className="flex flex-wrap gap-2">
                   {selectorDeGolpe('partida.ownSide', corrigiendo.propio, (v) => setCorrigiendo((c) => ({ ...c, propio: v })))}
                   {selectorDeGolpe('partida.markerSide', corrigiendo.marcador, (v) => setCorrigiendo((c) => ({ ...c, marcador: v })))}
                 </div>
-                {quiereBorrar && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
+                )}
+                {quiereBorrar && corrigiendo.borrar == null && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
                 {/* Borrar lo anotado, por lados y con confirmación (RyderCupAm#553) */}
                 {ladosParaBorrar(corrigiendo).length > 0 && corrigiendo.borrar == null && (
                   <button
@@ -338,6 +354,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     </button>
                   </div>
                 )}
+                {corrigiendo.borrar == null && (
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -351,6 +368,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     {t('partida.cancel')}
                   </button>
                 </div>
+                )}
               </div>
             )}
 
@@ -423,9 +441,10 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   onClick={() => {
                     const cerrar = () => setConfirmando(null);
                     // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
-                    const alFallar = () => {
+                    // Si se relee, su botón puede desaparecer: a la tarjeta (revisor)
+                    const alFallar = (codigo) => {
                       setConfirmando(null);
-                      focoTrasFallo.current = confirmaEsta.origen;
+                      focoPendiente.current = RELEER_TRAS_FALLO.includes(codigo) ? secciones.current.get(jugador) : confirmaEsta.origen;
                     };
                     if (confirmaEsta.accion === 'reabrir') {
                       hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, alFallar);
