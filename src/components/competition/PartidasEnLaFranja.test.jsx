@@ -708,13 +708,109 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
   });
 
   it('15: ya salió la primera: sin botones, con el motivo', async () => {
-    mockLeer.mockResolvedValue(vista({ editable: false, unassignedPlayers: [{ userId: 'zoe', name: 'Zoe Zamora' }] }));
+    const fijas = [G1, G2, G3].map((g) => ({ ...g, canChange: false }));
+    mockLeer.mockResolvedValue(
+      vista({ editable: false, canAddGroup: false, groups: fijas, unassignedPlayers: [{ userId: 'zoe', name: 'Zoe Zamora' }] })
+    );
     pintar({ organiza: true });
     await desplegar();
 
     expect(await screen.findByText('partidas.notEditable')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /partidas.(regenerate|remove|up|down|markers)/ })).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  // #544 (RyderCupAm#557): empezada la franja, las que no han salido se siguen tocando
+  describe('con la franja empezada', () => {
+    const empezada = (extra = {}) =>
+      vista({ editable: false, canAddGroup: true, groups: [{ ...G1, canChange: false }, { ...G2, canChange: true }, { ...G3, canChange: true }], ...extra });
+
+    it('11: la que salió, sin flechas, sin «Marcadores» y sin mover a los suyos', async () => {
+      mockLeer.mockResolvedValue(empezada());
+      pintar({ organiza: true });
+      await desplegar();
+
+      const g1 = within(await screen.findByTestId('partida-g1'));
+      expect(g1.queryByRole('button', { name: /partidas.(up|down|markers|movePlayer)/ })).toBeNull();
+    });
+
+    it('11: la que sigue no sube por encima de una que salió; entre las que no, sí', async () => {
+      mockLeer.mockResolvedValue(empezada());
+      pintar({ organiza: true });
+      await desplegar();
+
+      const g2 = within(await screen.findByTestId('partida-g2'));
+      expect(g2.queryByRole('button', { name: 'partidas.up {"numero":2}' })).toBeNull();
+      expect(g2.getByRole('button', { name: 'partidas.down {"numero":2}' })).toBeInTheDocument();
+      expect(g2.getByRole('button', { name: 'partidas.markers {"numero":2}' })).toBeInTheDocument();
+      expect(within(screen.getByTestId('partida-g3')).getByRole('button', { name: 'partidas.up {"numero":3}' })).toBeInTheDocument();
+    });
+
+    it('13: a una que salió no se mueve a nadie, aunque tenga sitio', async () => {
+      mockLeer.mockResolvedValue(empezada());
+      pintar({ organiza: true });
+      await desplegar();
+
+      const opciones = within(await abrirMover('DANI')).getAllByRole('option').map((o) => o.value);
+      expect(opciones.some((v) => v.startsWith('g1'))).toBe(false);
+    });
+
+    it('12: «Partida nueva» solo si el servidor dice que cabe', async () => {
+      mockLeer.mockResolvedValue(empezada());
+      const { unmount } = pintar({ organiza: true });
+      await desplegar();
+      expect(within(await abrirMover('DANI')).getByRole('option', { name: 'partidas.newGroup' })).toBeInTheDocument();
+      unmount();
+
+      mockLeer.mockResolvedValue(empezada({ canAddGroup: false }));
+      pintar({ organiza: true });
+      await desplegar();
+      expect(within(await abrirMover('DANI')).queryByRole('option', { name: 'partidas.newGroup' })).toBeNull();
+    });
+
+    it('15: generar y borrar, no; el motivo dice que las que no han salido sí se cambian', async () => {
+      mockLeer.mockResolvedValue(empezada());
+      pintar({ organiza: true });
+      await desplegar();
+
+      expect(await screen.findByText('partidas.notEditablePartly')).toBeInTheDocument();
+      expect(screen.queryByText('partidas.notEditable')).toBeNull();
+      expect(screen.queryByRole('button', { name: /partidas.(generate|regenerate|remove)/ })).toBeNull();
+    });
+
+    it('revisor: uno sin partida se coloca solo en las que no han salido, y en una nueva si cabe', async () => {
+      mockLeer.mockResolvedValue(empezada({ unassignedPlayers: [{ userId: 'zoe', name: 'ZOE' }] }));
+      pintar({ organiza: true });
+      await desplegar();
+
+      const lista = await screen.findByRole('combobox', { name: 'partidas.placeIn {"jugador":"ZOE"}' });
+      const valores = within(lista).getAllByRole('option').map((o) => o.value);
+      expect(valores.slice(0, 2)).toEqual(['', 'g3']);
+      expect(valores.some((v) => v.startsWith('g1'))).toBe(false);
+      expect(within(lista).getByRole('option', { name: 'partidas.newGroup' })).toBeInTheDocument();
+    });
+
+    it('a quien no organiza, nada de eso', async () => {
+      mockLeer.mockResolvedValue(empezada());
+      pintar();
+      await desplegar();
+
+      await screen.findByTestId('partida-g2');
+      expect(screen.queryByRole('button', { name: /partidas.(up|down|markers|movePlayer)/ })).toBeNull();
+    });
+
+    it('14: GROUP_ALREADY_OUT se traduce y se relee', async () => {
+      mockReordenar.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'GROUP_ALREADY_OUT' }));
+      mockLeer.mockResolvedValue(empezada());
+      pintar({ organiza: true });
+      await desplegar();
+      const lecturas = mockLeer.mock.calls.length;
+
+      fireEvent.click(within(await screen.findByTestId('partida-g3')).getByRole('button', { name: 'partidas.up {"numero":3}' }));
+
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partidas.errors.GROUP_ALREADY_OUT'));
+      await waitFor(() => expect(mockLeer.mock.calls.length).toBeGreaterThan(lecturas));
+    });
   });
 
   it('15c: al jugador no se le dice que ya no se cambian (no las cambia él)', async () => {

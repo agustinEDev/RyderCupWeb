@@ -27,7 +27,7 @@ const existe = (grupo, clave) =>
 describe('los textos de las partidas (FE #824, PR 6)', () => {
   it('lee de verdad el código: más de veinte claves y todos los errores del contrato', () => {
     expect(sueltas.length).toBeGreaterThan(20);
-    expect(errores).toHaveLength(19);
+    expect(errores).toHaveLength(20);
   });
 
   it.each([

@@ -13,7 +13,7 @@ import {
 } from '../../composition';
 import customToast from '../../utils/toast';
 import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
-import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan } from '../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan, seCambia } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { conGenero } from '../../utils/genero';
 
@@ -48,6 +48,8 @@ const CON_NOMBRES = ['PLAYERS_WITHOUT_TEE', 'PLAYERS_WITHOUT_HANDICAP'];
 const CON_TEXTO = [
   'GROUPS_WINDOW_CLOSED',
   'GROUP_ALREADY_STARTED',
+  // Una partida que ya salió no se toca (RyderCupAm#557)
+  'GROUP_ALREADY_OUT',
   'COURSE_WITHOUT_TIMEZONE',
   'NOT_ENOUGH_PLAYERS',
   'NOT_A_TEE_WINDOW',
@@ -148,7 +150,11 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
     () => new Map(grupos.flatMap((g) => g.players.map((p) => [p.userId, p.name]))),
     [grupos]
   );
+  // Generar y borrar, solo antes de que salga la primera; tocar una partida,
+  // mientras no haya salido ella (#544)
   const editable = organiza && !sinCargar && vista?.editable === true;
+  const tocable = (g) => organiza && !sinCargar && seCambia(g);
+  const algunaSeCambia = grupos.some(seCambia);
 
   const mensaje = (error) => {
     const codigo = error?.errorCode;
@@ -444,14 +450,15 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                         {t('partidas.incomplete')}
                       </span>
                     )}
-                    {editable && (
+                    {tocable(g) && (
                       <span className="ml-auto flex">
-                        {i > 0 && (
+                        {/* No se pasa por delante de una que ya salió */}
+                        {i > 0 && seCambia(grupos[i - 1]) && (
                           <button type="button" disabled={ocupado} aria-label={t('partidas.up', { numero: g.number })} onClick={() => reordenar(i, i - 1)} className={icono}>
                             <ArrowUp className="h-4 w-4" />
                           </button>
                         )}
-                        {i < grupos.length - 1 && (
+                        {i < grupos.length - 1 && seCambia(grupos[i + 1]) && (
                           <button type="button" disabled={ocupado} aria-label={t('partidas.down', { numero: g.number })} onClick={() => reordenar(i, i + 1)} className={icono}>
                             <ArrowDown className="h-4 w-4" />
                           </button>
@@ -492,7 +499,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             </span>
                           )}
                         </div>
-                        {editable && moviendo !== p.userId && opcionesDeDestino(p.userId, { conIntercambios: true }).length > 0 && (
+                        {tocable(g) && moviendo !== p.userId && opcionesDeDestino(p.userId, { conIntercambios: true }).length > 0 && (
                           <button
                             type="button"
                             disabled={ocupado}
@@ -507,7 +514,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             <ArrowRightLeft className="h-4 w-4" />
                           </button>
                         )}
-                        {editable && moviendo === p.userId && (
+                        {tocable(g) && moviendo === p.userId && (
                           <span className="flex w-full items-center gap-1">
                             {selectorDeDestino(p.userId, p.name, {
                               etiqueta: 'partidas.moveTo',
@@ -531,7 +538,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                       </li>
                     ))}
                   </ul>
-                  {editable && marcando?.groupId === g.id && editorDeMarcadores(g)}
+                  {tocable(g) && marcando?.groupId === g.id && editorDeMarcadores(g)}
                   {/* A su tarjeta (PR 7): anotar la mía, ver las demás */}
                   <Link
                     to={`/player/groups/${g.id}/scoring?competition=${competitionId}`}
@@ -553,7 +560,7 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                 {vista.unassignedPlayers.map((p) => (
                   <li key={p.userId} className="flex min-w-0 flex-wrap items-center gap-2 text-gray-800">
                     <span className="w-full break-words">{p.name}</span>
-                    {editable &&
+                    {organiza && !sinCargar &&
                       selectorDeDestino(p.userId, p.name, {
                         etiqueta: 'partidas.placeIn',
                         placeholder: 'partidas.placeInPlaceholder',
@@ -577,7 +584,9 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                 {t('partidas.closeWindow')}
               </button>
             ))}
-          {organiza && !vista.editable && <p className="text-xs text-gray-500">{t('partidas.notEditable')}</p>}
+          {organiza && !vista.editable && (
+            <p className="text-xs text-gray-500">{t(algunaSeCambia ? 'partidas.notEditablePartly' : 'partidas.notEditable')}</p>
+          )}
         </div>
       )}
     </div>

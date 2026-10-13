@@ -102,6 +102,8 @@ class TeeGroupScoringMapper {
           markedByUserId: p.marked_by_user_id ?? null,
           // Vino de otra partida a acompañar al que se quedó solo (BE #539)
           broughtIn: p.brought_in ?? false,
+          // Si ya jugó, el organizador le retira: no puede darle por no presentado (RyderCupAm#553)
+          played: p.played ?? false,
           totals: totalesDe(p.totals || {}),
         })),
       },

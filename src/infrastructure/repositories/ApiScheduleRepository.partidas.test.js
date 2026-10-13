@@ -11,6 +11,7 @@ vi.mock('../../services/api', () => ({ default: vi.fn() }));
 const VISTA = {
   round_id: 'r-1',
   editable: true,
+  can_add_group: false,
   unassigned_players: [{ user_id: 'u-9', name: 'Ines Ibarra' }],
   groups: [
     {
@@ -19,6 +20,7 @@ const VISTA = {
       tee_time: '08:00:00',
       status: 'SCHEDULED',
       incomplete: false,
+      can_change: false,
       players: [
         {
           user_id: 'u-1',
@@ -39,6 +41,8 @@ const VISTA = {
 const VISTA_LEIDA = {
   roundId: 'r-1',
   editable: true,
+  // Lo que diga el backend, aunque `editable` diga otra cosa (#544)
+  canAddGroup: false,
   unassignedPlayers: [{ userId: 'u-9', name: 'Ines Ibarra' }],
   groups: [
     {
@@ -47,6 +51,7 @@ const VISTA_LEIDA = {
       teeTime: '08:00',
       status: 'SCHEDULED',
       incomplete: false,
+      canChange: false,
       players: [
         {
           userId: 'u-1',
@@ -108,9 +113,9 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
     const mias = await repo.getMyTeeGroups('c-1');
 
     expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/groups/me');
-    expect(mias).toEqual([
-      { roundId: 'r-1', roundDate: '2030-10-12', sessionType: 'MORNING', group: VISTA_LEIDA.groups[0] },
-    ]);
+    // `canChange` es de la vista de la franja (#544): aquí no viene
+    const partida = Object.fromEntries(Object.entries(VISTA_LEIDA.groups[0]).filter(([campo]) => campo !== 'canChange'));
+    expect(mias).toEqual([{ roundId: 'r-1', roundDate: '2030-10-12', sessionType: 'MORNING', group: partida }]);
   });
 
   it('generar, con el orden', async () => {

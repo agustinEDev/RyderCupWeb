@@ -111,6 +111,29 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(within(await screen.findByTestId('mi-partida-r1')).getByRole('link')).toHaveTextContent('partidas.viewCard');
   });
 
+  it('#853: retirada, con sus compañeros y «Retirada», sin «de momento sin compañeros»', async () => {
+    const yo = { ...jugador('yo', 'bea'), cardStatus: 'RETIRADO', teeGender: 'FEMALE' };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [yo, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    const linea = await screen.findByTestId('mi-partida-r1');
+    expect(linea).toHaveTextContent('partidas.youRetired');
+    expect(linea).toHaveTextContent('"companeros":"BEA, CRIS"');
+    expect(linea).toHaveTextContent('"context":"female"');
+    expect(linea).not.toHaveTextContent('partidas.mineAlone');
+  });
+
+  it('#853: retirado y solo con no presentados, «Retirado» sin «de momento sin compañeros»', async () => {
+    const yo = { ...jugador('yo', null), cardStatus: 'RETIRADO' };
+    const np = { ...jugador('bea', null), cardStatus: 'NO_PRESENTADO' };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [yo, np])]);
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    const linea = await screen.findByTestId('mi-partida-r1');
+    expect(linea).toHaveTextContent('partidas.youRetiredAlone');
+    expect(linea).not.toHaveTextContent('partidas.mineAlone');
+  });
+
   it('/code-review: retirado, ya no «marcas a» nadie', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [{ ...jugador('yo', 'bea'), cardStatus: 'RETIRADO' }, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);

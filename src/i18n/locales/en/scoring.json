@@ -48,6 +48,7 @@
     "scoreBogey": "Bogey",
     "scoreDouble": "Dbl. Bogey",
     "scoreTriple": "Triple",
+    "customScoreRange": "Enter a number of strokes from 1 to {{max}}.",
     "customScore": "Other...",
     "enterCustomScore": "Enter number of strokes (max. 15)",
     "close": "Close score panel",
@@ -286,6 +287,8 @@
     "reopenConfirm": "Reopen {{jugador}}'s card? It can be scored and corrected again.",
     "reopened": "Card reopened.",
     "noShow": "Mark {{jugador}} as no show",
+    "youAreNoShowHere": "The organiser has marked you as a no-show: you cannot score in this group.",
+    "noShowTotal": "NS",
     "noShowShort": "No show",
     "noShowConfirm": "Mark {{jugador}} as no show? Their card is closed with no holes.",
     "markedNoShow": "Marked as no show.",
@@ -303,6 +306,8 @@
       "SCORECARD_NOT_READY_holes_one": "Hole {{hoyos}} still needs validating before the card can be submitted.",
       "SCORECARD_NOT_READY_holes_other": "Holes {{hoyos}} still need validating before the card can be submitted.",
       "PLAYER_HAS_MARKER": "That player has a marker in play: their holes are validated by the marker.",
+      "SCORECARD_ALREADY_OPEN": "That card was already open: the group has been refreshed.",
+      "PLAYER_HAS_STROKES": "That player has already scored, so they are not a no-show. Retire them if they are not carrying on.",
       "GROUP_FULL": "The group is already full: this card cannot be reopened.",
       "NOT_ORGANIZER": "Only the organiser can do this.",
       "generic": "It could not be done."
@@ -339,7 +344,23 @@
     "scoredValidated_one": "{{count}} hole validated",
     "scoredValidated_other": "{{count}} holes validated",
     "broughtInToast": "{{viene}} joins this group to keep {{jugador}} company",
-    "cannotClear": "A scored stroke cannot be cleared: pick another number.",
+    "retirePlayer": "Retire {{jugador}}",
+    "retirePlayerShort": "Retire",
+    "retirePlayerConfirm": "Retire {{jugador}}? Their card is closed with what has been scored so far.",
+    "retiredByOrganiser": "Retired.",
+    "deleteScored": "Delete what was scored",
+    "deleted": "Score deleted.",
+    "deleteSide": {
+      "own": "The player's",
+      "marker": "The marker's",
+      "both": "Both"
+    },
+    "deleteConfirm": {
+      "own": "Delete what {{jugador}} scored on hole {{hoyo}}?",
+      "marker": "Delete what {{jugador}}'s marker scored on hole {{hoyo}}?",
+      "both": "Delete everything scored for {{jugador}} on hole {{hoyo}}?"
+    },
+    "cannotClear": "A stroke cannot be left blank: to remove it, use \"Delete what was scored\".",
     "notOpenYet": "Scoring for this group has not opened yet",
     "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes."
   }

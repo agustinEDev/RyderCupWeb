@@ -51,7 +51,7 @@ const VISTA = {
         ...Array.from({ length: 16 }, (_, i) => hoyo(i + 3)),
       ],
     }),
-    jugador('bea', 'Bea Blanco', 'ana', 'ana', { card_status: 'ENTREGADA', brought_in: true, tee_color: 'RED' }),
+    jugador('bea', 'Bea Blanco', 'ana', 'ana', { card_status: 'ENTREGADA', brought_in: true, tee_color: 'RED', played: true }),
   ],
 };
 
@@ -128,6 +128,8 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           marksUserId: 'bea',
           markedByUserId: 'bea',
           broughtIn: false,
+          // Si jugó: «Retirar» y no «No presentado» (RyderCupAm#553)
+          played: false,
           totals: { thru: 1, points: 3, grossPoints: 2, gross: 4, net: 3, toParNet: -1, toParGross: 0, complete: false },
         },
         {
@@ -139,6 +141,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           markedByUserId: 'ana',
           // Vino de otra partida (BE #539)
           broughtIn: true,
+          played: true,
           totals: { thru: 1, points: 3, grossPoints: 2, gross: 4, net: 3, toParNet: -1, toParGross: 0, complete: false },
         },
       ],
@@ -170,10 +173,22 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     ['no presentado', (r) => r.markNoShow('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/no-show'],
     // QA del 11 oct 2026: quien juega sin marcador (BE #539)
     ['validar lo anotado', (r) => r.validateScored('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/validate-scored'],
+    // El organizador retira a quien ya jugó (RyderCupAm#553)
+    ['retirar a un jugador', (r) => r.retirePlayer('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/retire'],
   ])('%s: POST y devuelve la vista', async (_caso, hacer, url) => {
     const v = await hacer(repo);
 
     expect(api).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+    expect(v.matchId).toBe('g-1');
+  });
+
+  it('borrar lo anotado en un hoyo (organizador): DELETE con el lado (RyderCupAm#553)', async () => {
+    const v = await repo.deleteHole('g-1', 'ana', 7, 'marker');
+
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/groups/g-1/players/ana/holes/7?side=marker',
+      expect.objectContaining({ method: 'DELETE' })
+    );
     expect(v.matchId).toBe('g-1');
   });
 
@@ -191,7 +206,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     const vista = await repo.closeWindow('r-1');
 
     expect(api).toHaveBeenCalledWith('/api/v1/competitions/rounds/r-1/groups/close', { method: 'POST' });
-    expect(vista).toEqual({ roundId: 'r-1', editable: false, unassignedPlayers: [], groups: [] });
+    expect(vista).toEqual({ roundId: 'r-1', editable: false, canAddGroup: false, unassignedPlayers: [], groups: [] });
   });
 
   it('la clasificación de la franja, con o sin categoría', async () => {

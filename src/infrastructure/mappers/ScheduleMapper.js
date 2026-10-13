@@ -173,7 +173,9 @@ class ScheduleMapper {
       roundId: apiView.round_id,
       editable: apiView.editable,
       unassignedPlayers: (apiView.unassigned_players || []).map((p) => ({ userId: p.user_id, name: p.name })),
-      groups: (apiView.groups || []).map((g) => ScheduleMapper.toTeeGroupDTO(g)),
+      // Sin los campos nuevos (un backend de antes), lo que diga `editable` (#544)
+      canAddGroup: apiView.can_add_group ?? apiView.editable,
+      groups: (apiView.groups || []).map((g) => ({ ...ScheduleMapper.toTeeGroupDTO(g), canChange: g.can_change ?? apiView.editable })),
     };
   }
 }
