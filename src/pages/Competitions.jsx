@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, MapPin, Plus, Filter, Search, AlertCircle, Crown, Flag, WifiOff } from 'lucide-react';
+import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff } from 'lucide-react';
 import customToast from '../utils/toast';
 import { esFalloDeRed } from '../utils/sinCobertura';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,8 @@ import { CountryFlag } from '../utils/countryUtils';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatCountryName } from '../services/countries';
 import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
+import { diaCorto } from '../utils/diaDeLaSesion';
+import EtiquetaDelTipo from '../components/competition/EtiquetaDelTipo';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -36,7 +38,19 @@ const Competitions = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('competitions');
   const { t: tComun } = useTranslation('common');
+  const { t: tSchedule } = useTranslation('schedule');
   const { user } = useAuth();
+
+  // «Organizas» o «Juegas» (FE #846); pendiente o rechazada, ninguno
+  const papelEn = (competition) => {
+    if (competition.creatorId === user?.id) return 'myCompetitions.youOrganise';
+    return competition.enrollment_status === 'APPROVED' ? 'myCompetitions.youPlay' : null;
+  };
+  // «Lun 12 oct · 08:10», o con la sesión si aún no hay hora
+  const proximaSalida = ({ date, sessionType, teeTime }) =>
+    [diaCorto(date, i18n.language), teeTime ?? tSchedule(`sessions.${sessionType}`)].filter(Boolean).join(' · ');
+  const nombreDelPais = (competition, code) =>
+    formatCountryName((competition.countries ?? []).find((c) => c.code === code), i18n.language) || code;
   const [competitions, setCompetitions] = useState([]);
   const [sinCobertura, setSinCobertura] = useState(false);
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
@@ -191,17 +205,25 @@ const Competitions = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
             onClick={() => handleViewCompetition(competition.id)}
-            className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group"
+            data-testid="tarjeta-competicion"
+            className="min-w-0 bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group"
           >
             {/* Header */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors flex items-center gap-2">
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors break-words">
                   {competition.name}
-                  {competition.creatorId === user?.id && (
-                    <Crown className="w-4 h-4 text-accent flex-shrink-0" title={t('myCompetitions.youAreTheCreator')} />
-                  )}
                 </h3>
+                {/* Qué torneo es y qué hago en él, en vez de la corona (FE #846).
+                    Quien organiza y juega, «Organizas»: es lo que le distingue */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <EtiquetaDelTipo tipo={competition.tournamentType} />
+                  {papelEn(competition) && (
+                    <span data-testid="mi-papel" className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                      {t(papelEn(competition))}
+                    </span>
+                  )}
+                </div>
                 {/* Show pending enrollment requests if user is creator */}
                 {competition.creatorId === user?.id && competition.pending_enrollments_count > 0 && (
                   <div className="mt-1">
@@ -211,13 +233,12 @@ const Competitions = () => {
                     </span>
                   </div>
                 )}
-                {/* Show enrollment status if user is enrolled (not creator) */}
-                {competition.creatorId !== user?.id && competition.enrollment_status && (
+                {/* La inscripción que aún no es «Juegas»: pendiente o rechazada */}
+                {competition.creatorId !== user?.id && competition.enrollment_status && competition.enrollment_status !== 'APPROVED' && (
                   <div className="mt-1">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getEnrollmentStatusClasses(competition.enrollment_status)}`}
                     >
-                      {competition.enrollment_status === 'APPROVED' && '✓ '}
                       {competition.enrollment_status === 'PENDING' && '⏳ '}
                       {competition.enrollment_status === 'REJECTED' && '✗ '}
                       {t('myCompetitions.enrollmentStatus', { status: etiquetaDeInscripcion(t, competition.enrollment_status, user?.gender) })}
@@ -226,7 +247,7 @@ const Competitions = () => {
                 )}
               </div>
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
                   competition.status
                 )}`}
               >
@@ -236,61 +257,71 @@ const Competitions = () => {
 
             {/* Details */}
             <div className="space-y-2">
-              {/* Dates */}
+              {/* Dates, y mi próxima salida si juego (FE #846) */}
               <div className="flex items-center gap-2 text-gray-600 text-sm">
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 shrink-0" />
                 <span>{formatDateRange(competition.startDate, competition.endDate, i18n.language)}</span>
               </div>
-
-              {/* Location */}
-              {/* La ubicación se rehace aquí y no se usa la del backend: allí se
-                  arma uniendo `name_en`, así que en una aplicación en español la
-                  tarjeta decía «Spain, France» mientras la bandera de dos líneas
-                  más abajo ya decía «España, Francia» (FE #513) */}
-              {ubicacionDe(competition, i18n.language) && (
-                <div className="flex items-center gap-2 text-gray-600 text-sm">
-                  <MapPin className="w-4 h-4" />
-                  <span>{ubicacionDe(competition, i18n.language)}</span>
+              {competition.myNextSession && (
+                <div data-testid="proxima-salida" className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                  <Clock className="w-4 h-4 shrink-0 text-primary" />
+                  <span>{t('myCompetitions.nextSession', { cuando: proximaSalida(competition.myNextSession) })}</span>
                 </div>
               )}
 
-              {/* Players */}
-              <div className="flex items-center gap-2 text-gray-600 text-sm">
-                <Users className="w-4 h-4" />
-                <span>
-                  {t('myCompetitions.players', { count: competition.enrolledCount || 0, max: competition.maxPlayers })}
-                </span>
+              {/* Dónde: el campo con su bandera, o «Varios campos»; sin campos
+                  todavía, el país como antes. El país no se repite (FE #846).
+                  La ubicación se rehace aquí y no se usa la del backend: allí
+                  se arma uniendo `name_en` (FE #513) */}
+              <div data-testid="donde" className="flex min-w-0 items-center gap-2 text-gray-600 text-sm">
+                <MapPin className="w-4 h-4 shrink-0" />
+                {competition.golfCourses?.length > 0 ? (
+                  <>
+                    <span className="flex shrink-0 items-center gap-1">
+                      {[...new Set(competition.golfCourses.map((c) => c.countryCode))].map((code) => (
+                        <span key={code} data-testid="bandera">
+                          <CountryFlag
+                            countryCode={code}
+                            style={{ width: '20px', height: 'auto' }}
+                            title={nombreDelPais(competition, code)}
+                          />
+                        </span>
+                      ))}
+                    </span>
+                    <span className="min-w-0 truncate">
+                      {competition.golfCourses.length === 1
+                        ? competition.golfCourses[0].name
+                        : t('myCompetitions.severalCourses')}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex shrink-0 items-center gap-1">
+                      {(competition.countries ?? []).slice(0, 3).map((country, index) => (
+                        <span key={country.code || index} data-testid="bandera">
+                          <CountryFlag
+                            countryCode={country.code}
+                            style={{ width: '20px', height: 'auto' }}
+                            title={formatCountryName(country, i18n.language) || country.code}
+                          />
+                        </span>
+                      ))}
+                    </span>
+                    <span className="min-w-0 truncate">{ubicacionDe(competition, i18n.language)}</span>
+                  </>
+                )}
               </div>
 
-              {/* Golf Courses / Countries */}
-              {competition.countries && competition.countries.length > 0 && (
-                <div className="flex items-center gap-2 text-gray-600 text-sm">
-                  <Flag className="w-4 h-4" />
-                  <div className="flex items-center gap-1.5">
-                    {/* Show country flags */}
-                    {competition.countries.slice(0, 3).map((country, index) => (
-                      <CountryFlag
-                        key={country.code || index}
-                        countryCode={country.code}
-                        style={{ width: '20px', height: 'auto' }}
-                        title={formatCountryName(country, i18n.language) || country.code}
-                      />
-                    ))}
-                    {/* Show count text only if golf_courses_count is available */}
-                    {competition.golf_courses_count !== undefined && competition.golf_courses_count > 0 && (
-                      <span className="ml-1">
-                        {t('myCompetitions.golfCoursesCount', { count: competition.golf_courses_count })}
-                      </span>
-                    )}
-                    {/* Show +N if more than 3 countries */}
-                    {competition.countries.length > 3 && (
-                      <span className="text-xs text-gray-500">
-                        +{competition.countries.length - 3}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Jugadores y, en stroke play, cuántas jornadas: en una Ryder llega null (FE #846) */}
+              <div data-testid="jugadores" className="flex items-center gap-2 text-gray-600 text-sm">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>
+                  {t('myCompetitions.players', { count: competition.enrolledCount || 0, max: competition.maxPlayers })}
+                  {competition.playingDays != null && (
+                    <> · {t('myCompetitions.playingDays', { count: competition.playingDays })}</>
+                  )}
+                </span>
+              </div>
             </div>
           </motion.div>
         ))}

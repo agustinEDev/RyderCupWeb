@@ -5,10 +5,19 @@ import {
   partidosDelProximoDia,
   precargaElProximoDia,
   leeLosProximosPartidos,
+  leeLasProximasPartidas,
   sePuedeAnotar,
   olvidaLasPrecargas,
 } from './partidosSinCobertura';
-import { loQueSeSupo, recuerda, recuerdaLosPartidos, losUltimosPartidos, olvidaTodo } from './loUltimoConocido';
+import {
+  loQueSeSupo,
+  recuerda,
+  recuerdaLosPartidos,
+  losUltimosPartidos,
+  olvidaTodo,
+  recuerdaLasPartidas,
+  lasUltimasPartidas,
+} from './loUltimoConocido';
 
 /**
  * LA TABLA — llegar al campo con el partido ya en el móvil (FE #615).
@@ -310,6 +319,95 @@ describe('partidosSinCobertura', () => {
 
         expect(r.partidos).toEqual([]);
         expect(r.desdeMemoria).toBe(false);
+      }
+    });
+  });
+
+  /**
+   * Las partidas de stroke play, con red o sin ella (FE #845): lo que hacía el
+   * panel, para que «Mis próximos partidos» lo haga igual.
+   *
+   *   #   caso                                | qué pasa
+   *   ----|-------------------------------------|------------------------------------
+   *   P1  con red, lista entera               | se enseña, se guarda y se precarga
+   *   P2  con red, media lista                | se enseña, no se guarda
+   *   P3  sin red, con guardadas              | las de hoy en adelante, desde memoria
+   *   P4  sin red y nada guardado             | vacía y sin respuesta
+   *   P5  401 o 403                           | se olvida lo de la cuenta; vacía, sin
+   *       |                                     | memoria y con respuesta (desmiente)
+   */
+  describe('leer las próximas partidas (FE #845)', () => {
+    const partida = (id, roundDate = '2026-09-17') => ({ id, roundDate, status: 'SCHEDULED', esPartidaDeFranja: true });
+
+    it('P1 · con red y entera: se enseña, se guarda y se precarga la del día', async () => {
+      const pideLaVista = vi.fn().mockResolvedValue(vistaDe('g-1'));
+
+      const r = await leeLasProximasPartidas({
+        lee: () => Promise.resolve({ matches: [partida('g-1')], complete: true }),
+        userId: USUARIO,
+        pideLaVista,
+        ahora: HOY,
+      });
+
+      expect(r).toEqual({ partidas: [partida('g-1')], desdeMemoria: false, sinRespuesta: false });
+      expect(lasUltimasPartidas()).toEqual([partida('g-1')]);
+      await asienta();
+      expect(pideLaVista).toHaveBeenCalledWith('g-1');
+    });
+
+    it('P2 · media lista: se enseña pero no pisa la guardada', async () => {
+      recuerdaLasPartidas([partida('vieja')]);
+
+      const r = await leeLasProximasPartidas({
+        lee: () => Promise.resolve({ matches: [partida('g-1')], complete: false }),
+        userId: USUARIO,
+        pideLaVista: vi.fn().mockResolvedValue(null),
+        ahora: HOY,
+      });
+
+      expect(r.partidas).toEqual([partida('g-1')]);
+      expect(lasUltimasPartidas()).toEqual([partida('vieja')]);
+    });
+
+    it('P3 · sin red: las guardadas de hoy en adelante', async () => {
+      recuerdaLasPartidas([partida('ayer', '2026-09-16'), partida('hoy'), partida('manana', '2026-09-18')]);
+
+      const r = await leeLasProximasPartidas({
+        lee: () => Promise.reject(new TypeError('Failed to fetch')),
+        userId: USUARIO,
+        pideLaVista: vi.fn(),
+        ahora: HOY,
+      });
+
+      expect(r.partidas.map((p) => p.id)).toEqual(['hoy', 'manana']);
+      expect(r.desdeMemoria).toBe(true);
+      expect(r.sinRespuesta).toBe(false);
+    });
+
+    it('P4 · sin red y nada guardado: no se pudo preguntar', async () => {
+      const r = await leeLasProximasPartidas({
+        lee: () => Promise.reject(new TypeError('Failed to fetch')),
+        userId: USUARIO,
+        pideLaVista: vi.fn(),
+        ahora: HOY,
+      });
+
+      expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true });
+    });
+
+    it('P5 · un 401 o un 403 desmienten lo guardado', async () => {
+      for (const estado of [401, 403]) {
+        recuerdaLasPartidas([partida('hoy')]);
+
+        const r = await leeLasProximasPartidas({
+          lee: () => Promise.reject(conEstado(estado)),
+          userId: USUARIO,
+          pideLaVista: vi.fn(),
+          ahora: HOY,
+        });
+
+        expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: false });
+        expect(lasUltimasPartidas()).toBeNull();
       }
     });
   });

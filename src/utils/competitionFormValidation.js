@@ -1,5 +1,6 @@
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
+import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { numeroEntero } from './numeroEntero';
 import { diasDelTorneo, errorDeAjustes } from './ajustesDeStrokePlay';
 
@@ -24,6 +25,19 @@ const MAX_HANDICAP = 54;
 export const validateCompetitionForm = (formData, { exigirCampos = true, inscritos = 0 } = {}) => {
   if (!formData.competitionName?.trim()) {
     return { key: 'nameRequired' };
+  }
+  // Lo que la API rechazaría con un 400 sin código, avisado antes y en el
+  // idioma de la app (RyderCupAm#540): medido como ella, ya sin espacios de
+  // sobra, y con alguna letra o cifra («...» no es un nombre)
+  const nombre = formData.competitionName.trim().replace(/\s+/g, ' ');
+  if (nombre.length < CompetitionName.MIN_LENGTH) {
+    return { key: 'nameTooShort' };
+  }
+  if (!/[\p{L}\p{N}]/u.test(nombre)) {
+    return { key: 'nameUnreadable' };
+  }
+  if (nombre.length > CompetitionName.MAX_LENGTH) {
+    return { key: 'nameTooLong' };
   }
 
   // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo

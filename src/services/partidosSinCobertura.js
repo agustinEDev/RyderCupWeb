@@ -14,10 +14,12 @@
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { fechaLocal } from '../utils/fechaLocal';
 import {
+  lasUltimasPartidas,
   losUltimosPartidos,
   olvida,
   olvidaLoDeEstaCuenta,
   precarga,
+  recuerdaLasPartidas,
   recuerdaLosPartidos,
 } from './loUltimoConocido';
 
@@ -137,6 +139,39 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
   return guardados.length > 0
     ? { partidos: guardados, desdeMemoria: true, sinRespuesta: false }
     : { partidos: [], desdeMemoria: false, sinRespuesta: true };
+};
+
+/**
+ * Las próximas partidas de stroke play, con red o sin ella. Nunca lanza.
+ *
+ * Lo que hacía el panel por su cuenta, aquí para que «Mis próximos partidos»
+ * lo haga igual (FE #845): la lista entera se guarda, la del próximo día se
+ * precarga con SU vista, y sin cobertura salen las guardadas de hoy en
+ * adelante. A diferencia de los partidos, media lista vacía se enseña tal cual:
+ * así lo hacía el panel.
+ *
+ * @param {{lee: () => Promise<{matches: Array, complete: boolean}>, userId: string,
+ *   pideLaVista: (id: string) => Promise<Object>, ahora?: Date}} p
+ * @returns {Promise<{partidas: Array, desdeMemoria: boolean, sinRespuesta: boolean}>}
+ */
+export const leeLasProximasPartidas = async ({ lee, userId, pideLaVista, ahora = new Date() }) => {
+  try {
+    const { matches, complete } = await lee();
+    if (complete) recuerdaLasPartidas(matches);
+    precargaElProximoDia({ partidos: matches, userId, pideLaVista, ahora });
+    return { partidas: matches, desdeMemoria: false, sinRespuesta: false };
+  } catch (err) {
+    // Un 401 o un 403 desmienten lo guardado, como con los partidos (CodeRabbit)
+    if (err?.status === 401 || err?.status === 403) {
+      olvidaLoDeEstaCuenta();
+      return { partidas: [], desdeMemoria: false, sinRespuesta: false };
+    }
+  }
+  const hoy = fechaLocal(ahora);
+  const guardadas = (lasUltimasPartidas() ?? []).filter((p) => p?.roundDate && p.roundDate >= hoy);
+  return guardadas.length > 0
+    ? { partidas: guardadas, desdeMemoria: true, sinRespuesta: false }
+    : { partidas: [], desdeMemoria: false, sinRespuesta: true };
 };
 
 /**

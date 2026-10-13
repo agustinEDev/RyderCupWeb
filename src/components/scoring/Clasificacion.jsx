@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
+import { conGenero } from '../../utils/genero';
 
 const HOYOS = 18;
 
@@ -93,10 +94,15 @@ const Clasificacion = ({
   // (NR, NP) con su nombre entero al pasar por encima (pasada, FE #824)
   // Un retirado en Stableford conserva su puesto con lo jugado, pero sus hoyos
   // decían que seguía en el campo: «R» (QA del 11 oct 2026)
-  const codigo = (estado) => ({ texto: t(`partida.statusShort.${estado}`), titulo: t(`partida.status.${estado}`) });
+  // El nombre entero, en femenino si la fila es de una jugadora: «No
+  // presentada», «Retirada» (FE #856)
+  const codigo = (estado, genero) => ({
+    texto: t(`partida.statusShort.${estado}`),
+    titulo: t(`partida.status.${estado}`, conGenero(genero)),
+  });
   const thru = (fila) => {
-    if (fila.status !== 'CLASIFICADO') return codigo(fila.status);
-    if (fila.retired) return codigo('RETIRADO');
+    if (fila.status !== 'CLASIFICADO') return codigo(fila.status, fila.teeGender);
+    if (fila.retired) return codigo('RETIRADO', fila.teeGender);
     return { texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru), titulo: undefined };
   };
 

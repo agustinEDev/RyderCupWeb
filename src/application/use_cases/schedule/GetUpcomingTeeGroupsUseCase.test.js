@@ -142,6 +142,14 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
     expect(c.listUserCompetitionsUseCase.execute).toHaveBeenCalledWith('yo');
   });
 
+  it('lleva el tipo de torneo de su competición, para la etiqueta de la tarjeta (FE #845)', async () => {
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'MORNING', partida('g1', 1, '08:00'))] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a', { tournamentType: 'MEDAL' })], new Date(2030, 9, 1));
+
+    expect(matches[0].tournamentType).toBe('MEDAL');
+  });
+
   it('sin usuario, falla', async () => {
     await expect(new GetUpcomingTeeGroupsUseCase(casos({})).executeWithCompleteness('')).rejects.toThrow();
   });

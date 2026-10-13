@@ -20,8 +20,12 @@ import { MemoryRouter } from 'react-router';
 const mockLee = vi.fn();
 const mockVista = vi.fn();
 vi.mock('../../composition', () => ({
+  listUserCompetitionsUseCase: { execute: () => Promise.resolve([]) },
   getUpcomingMatchesUseCase: { executeWithCompleteness: (...a) => mockLee(...a) },
   getScoringViewUseCase: { execute: (...a) => mockVista(...a) },
+  // Las partidas de stroke play van aparte (FE #845): aquí, ninguna
+  getUpcomingTeeGroupsUseCase: { executeWithCompleteness: () => Promise.resolve({ matches: [], complete: true }) },
+  getTeeGroupScoringViewUseCase: { execute: () => Promise.resolve(null) },
 }));
 
 // El MISMO objeto en cada render: uno nuevo recrea `loadMatches` y el efecto

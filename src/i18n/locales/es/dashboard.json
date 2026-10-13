@@ -20,7 +20,7 @@
   "quickActions": {
     "title": "Acciones Rápidas",
     "createTournament": "Crear Torneo",
-    "createTournamentDesc": "Comenzar un nuevo torneo Ryder Cup",
+    "createTournamentDesc": "Comenzar un nuevo torneo",
     "quickMatch": "Partida Rápida",
     "quickMatchDesc": "Juega una ronda con amigos sin crear un torneo"
   },
@@ -59,19 +59,21 @@
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",
-    "subtitle": "Tus partidos programados y en progreso en todas las competiciones",
+    "subtitle": "Tus partidos y partidas de todas las competiciones",
     "noMatches": "No tienes próximos partidos",
     "noMatchesDesc": "Cuando estés inscrito en competiciones activas con partidos programados, aparecerán aquí.",
     "scoreMatch": "Anotar",
-    "viewSchedule": "Ver Calendario",
-    "matchNumber": "Partido #{{number}}",
-    "round": "Ronda",
     "loading": "Cargando partidos...",
-    "teamA": "Equipo A",
-    "teamB": "Equipo B",
     "desdeMemoria": "No se ha podido actualizar: estos son los últimos partidos que se vieron y puede que no estén al día.",
     "sinRespuesta": "No se han podido consultar tus partidos",
-    "sinRespuestaDesc": "Vuelve a intentarlo en un rato."
+    "sinRespuestaDesc": "Vuelve a intentarlo en un rato.",
+    "viewCard": "Ver tarjeta",
+    "inPlay": "En juego",
+    "teeGroup": "{{numero}}.ª partida",
+    "you": "Tú",
+    "versus": "{{nosotros}} vs {{ellos}}",
+    "with": "Con {{companeros}}",
+    "alone": "De momento sin compañeros"
   },
   "nextMatch": {
     "label": "Tu próximo partido",

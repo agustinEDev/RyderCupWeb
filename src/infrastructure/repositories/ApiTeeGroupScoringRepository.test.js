@@ -215,7 +215,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       scale: 'NETA',
       rule: 'ACCUMULATED',
       category: 2,
-      rows: [{ position: 3, tied: true, user_id: 'ana', name: 'Ana', category: 2, handicap: '12.3', value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true }],
+      rows: [{ position: 3, tied: true, user_id: 'ana', name: 'Ana', category: 2, handicap: '12.3', value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true, tee_gender: 'FEMALE' }],
       me: null,
     });
 
@@ -227,12 +227,24 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       scale: 'NETA',
       rule: 'ACCUMULATED',
       category: 2,
-      rows: [{ position: 3, tied: true, userId: 'ana', name: 'Ana', category: 2, handicap: 12.3, value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true }],
+      rows: [{ position: 3, tied: true, userId: 'ana', name: 'Ana', category: 2, handicap: 12.3, value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true, teeGender: 'FEMALE' }],
       me: null,
     });
 
     await repo.getWindowStandings('r-1');
     expect(api).toHaveBeenLastCalledWith('/api/v1/competitions/rounds/r-1/standings');
+  });
+
+  it('FE #856: sin el género de la fila (servidor anterior), null', async () => {
+    api.mockResolvedValue({
+      tournament_type: 'MEDAL', scale: 'NETA', rule: 'ACCUMULATED', category: null,
+      rows: [{ position: null, tied: false, user_id: 'ana', name: 'Ana', category: 1, handicap: '1', value: null, cards: 0, thru: 0, status: 'NP' }],
+      me: null,
+    });
+
+    const c = await repo.getWindowStandings('r-1');
+
+    expect(c.rows[0].teeGender).toBeNull();
   });
 
   it('la general de la competición, con o sin categoría (PR 8)', async () => {
@@ -261,6 +273,6 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
 
     const c = await repo.getWindowStandings('r-1');
 
-    expect(c.me).toEqual({ position: null, tied: false, userId: 'yo', name: 'Yo', category: null, handicap: -1.2, value: null, cards: 0, thru: 0, status: 'NP', retired: false });
+    expect(c.me).toEqual({ position: null, tied: false, userId: 'yo', name: 'Yo', category: null, handicap: -1.2, value: null, cards: 0, thru: 0, status: 'NP', retired: false, teeGender: null });
   });
 });

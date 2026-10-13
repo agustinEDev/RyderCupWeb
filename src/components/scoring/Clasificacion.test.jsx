@@ -244,4 +244,25 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
 
     expect(await screen.findByText('partida.noResultsYet')).toBeInTheDocument();
   });
+  /**
+   * FE #856: «No presentada» y «Retirada» cuando la fila es de una jugadora
+   * (`teeGender`, RyderCupAm#558), también en lo que oye un lector de pantalla.
+   */
+  it('NP y retirada en femenino si la fila lo es; en masculino o sin dato, como siempre', async () => {
+    const pedir = vi.fn().mockResolvedValue(
+      clasificacion([
+        fila('ana', { position: null, value: null, status: 'NP', thru: 0, teeGender: 'FEMALE' }),
+        fila('bea', { position: 4, value: 9, thru: 5, retired: true, teeGender: 'FEMALE' }),
+        fila('carlos', { position: null, value: null, status: 'NP', thru: 0, teeGender: 'MALE' }),
+        fila('dani', { position: 5, value: 8, thru: 5, retired: true, teeGender: null }),
+      ])
+    );
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    const codigo = async (id) => (await screen.findByTestId(`fila-${id}`)).querySelector('abbr');
+    expect(await codigo('ana')).toHaveAttribute('title', 'partida.status.NP {"context":"female"}');
+    expect(await codigo('bea')).toHaveAttribute('title', 'partida.status.RETIRADO {"context":"female"}');
+    expect(await codigo('carlos')).toHaveAttribute('title', 'partida.status.NP');
+    expect(await codigo('dani')).toHaveAttribute('title', 'partida.status.RETIRADO');
+  });
 });

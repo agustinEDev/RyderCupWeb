@@ -15,6 +15,15 @@ import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 // Mientras hay una en marcha, cada cuánto se mira cómo va
 const CADA = 15000;
 
+// Los motivos que el servidor manda como código (RyderCupAm#541), para decirlos
+// en el idioma de la app. Uno que no esté aquí deja el texto del servidor
+const MOTIVOS = new Set([
+  'STATUS', 'NO_WINDOWS', 'RYDER', 'DAY_IN_PLAY', 'NO_DAYS_LEFT', 'TOO_CLOSE',
+  'NO_TIMEZONE', 'DISABLED', 'RUNNING', 'IN_THE_PAST', 'TOO_TIGHT',
+]);
+// Al programar, estos son de la hora pedida, no de la ventana a esa hora
+const DE_LA_HORA_PEDIDA = new Set(['IN_THE_PAST', 'TOO_TIGHT', 'DISABLED', 'RUNNING']);
+
 /**
  * La tarjeta «Hándicaps» del organizador (FE #824, PR 5; RyderCupAM#507, #509,
  * #510). Decidido con Agustín el 11 oct 2026:
@@ -62,13 +71,27 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
 
   const cuando = (iso) => horaEnElCampo(iso, zona, i18n.language);
 
-  const hacer = async (accion, alAcabar) => {
+  // El motivo de un código conocido, traducido; si no, null
+  const motivo = (codigo) => (MOTIVOS.has(codigo) ? t(`handicaps.reasons.${codigo}`) : null);
+
+  // Por qué no se pudo: por su código si lo trae y se conoce; si no, lo que diga
+  // el servidor. Al programar, el de la ventana es «a esa hora no se podría»
+  const porQueNo = (error, alProgramar) => {
+    const codigo = error?.data?.reason_code;
+    const traducido = motivo(codigo);
+    if (!traducido) return error.message || t('handicaps.error');
+    return alProgramar && !DE_LA_HORA_PEDIDA.has(codigo)
+      ? t('handicaps.notAtThatTime', { motivo: traducido })
+      : traducido;
+  };
+
+  const hacer = async (accion, alAcabar, { alProgramar = false } = {}) => {
     setOcupado(true);
     try {
       await accion();
       alAcabar?.();
     } catch (error) {
-      customToast.error(error.message || t('handicaps.error'));
+      customToast.error(porQueNo(error, alProgramar));
     } finally {
       // También si falló: un 409 es que ya hay otra en marcha, y la tarjeta
       // tiene que enterarse (revisor)
@@ -86,7 +109,8 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   const programar = () =>
     hacer(
       () => scheduleHandicapUpdateUseCase.execute(competitionId, aIsoConHuso(programando, zona)),
-      () => setProgramando(null)
+      () => setProgramando(null),
+      { alProgramar: true }
     );
 
   const anular = () => hacer(() => cancelScheduledHandicapUpdateUseCase.execute(competitionId));
@@ -139,7 +163,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
             ? ventana.closesAt
               ? t(delCampo ? 'handicaps.openUntil' : 'handicaps.openUntilDevice', { cuando: cuando(ventana.closesAt) })
               : t('handicaps.openUntilStart')
-            : ventana?.reason}
+            : (motivo(ventana?.reasonCode) ?? ventana?.reason)}
         </p>
       </div>
 
