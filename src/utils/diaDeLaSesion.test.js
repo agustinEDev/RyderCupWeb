@@ -35,7 +35,8 @@ describe('diaDeLaSesion', () => {
  */
 describe('diaCorto (FE #845)', () => {
   it('1 · en español, con mayúscula y sin coma', () => {
-    expect(diaCorto('2026-09-24', 'es')).toBe('Jue 24 sept');
+    // «sep» o «sept»: ICU ha cambiado esa abreviatura entre versiones (CodeRabbit)
+    expect(diaCorto('2026-09-24', 'es')).toMatch(/^Jue 24 sept?$/);
   });
 
   it('2 · en inglés, en su orden', () => {

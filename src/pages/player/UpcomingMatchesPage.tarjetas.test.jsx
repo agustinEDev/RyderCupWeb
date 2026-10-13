@@ -155,7 +155,7 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder] = await tarjetas();
-    expect(within(ryder).getByTestId('cuando')).toHaveTextContent('Jue 24 sept · sessions.AFTERNOON · formats.FOURBALL');
+    expect(within(ryder).getByTestId('cuando')).toHaveTextContent(/^Jue 24 sept? · sessions\.AFTERNOON · formats\.FOURBALL$/);
   });
 
   it('4 · stroke play: día, hora y número de partida', async () => {
@@ -354,7 +354,7 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     pinta();
 
     const [ryder] = await tarjetas();
-    expect(within(ryder).getByTestId('cuando')).toHaveTextContent('Jue 24 sept · sessions.AFTERNOON');
+    expect(within(ryder).getByTestId('cuando')).toHaveTextContent(/^Jue 24 sept? · sessions\.AFTERNOON$/);
     expect(within(ryder).getByTestId('cuando')).not.toHaveTextContent('formats');
   });
 
