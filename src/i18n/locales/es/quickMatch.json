@@ -4,7 +4,11 @@
     "step": "Paso {{current}} de {{total}}",
     "cancel": "Cancelar",
     "errors": {
-      "generic": "Ha ocurrido un error. Inténtalo de nuevo."
+      "generic": "Ha ocurrido un error. Inténtalo de nuevo.",
+      "notFound": "Ya no se encuentra el campo o alguno de tus amigos. Revisa la partida.",
+      "notFriends": "Alguno de los jugadores ya no está entre tus amigos. Quítalo y vuelve a intentarlo.",
+      "conflict": "Hay un jugador repetido, o esa partida ya existe. Revisa la plantilla.",
+      "invalid": "Algo de la partida no vale: revisa las barras, los equipos y quién anota."
     },
     "course": {
       "heading": "Campo y formato",
@@ -59,7 +63,8 @@
       "creatorBadge": "Tú",
       "guestBadge": "Invitado",
       "teePlaceholder": "Elige sus barras",
-      "guestFallbackName": "el invitado"
+      "guestFallbackName": "el invitado",
+      "errorTeamFull": "Ese equipo ya está completo: elige el otro."
     },
     "scorers": {
       "heading": "Elegir anotadores",

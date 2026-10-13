@@ -35,185 +35,49 @@ describe('ApiQuickMatchRepository', () => {
     repo = new ApiQuickMatchRepository();
   });
 
-  describe('create', () => {
-    it('should POST to /quick-matches with golf_course_id, match_format and name null by default', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      const result = await repo.create('course-1', 'SINGLES', null);
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
-        method: 'POST',
-        body: JSON.stringify({
-          golf_course_id: 'course-1',
-          match_format: 'SINGLES',
-          scoring_format: null,
-          name: null,
-          allowance_percentage: null,
-          play_mode: 'HANDICAP',
-          creator_tee_color: null,
-          creator_tee_gender: null,
-        }),
-      });
-      expect(result).toBeInstanceOf(QuickMatch);
-    });
-
-    it('should POST scoring_format for a free-play quick match', async () => {
-      apiRequest.mockResolvedValue({ ...mockQuickMatchApi, match_format: null, scoring_format: 'STABLEFORD' });
-
-      await repo.create('course-1', null, 'STABLEFORD');
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
-        method: 'POST',
-        body: JSON.stringify({
-          golf_course_id: 'course-1',
-          match_format: null,
-          scoring_format: 'STABLEFORD',
-          name: null,
-          allowance_percentage: null,
-          play_mode: 'HANDICAP',
-          creator_tee_color: null,
-          creator_tee_gender: null,
-        }),
-      });
-    });
-
-    it('should POST the given name when provided', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.create('course-1', 'SINGLES', null, 'Viernes con Rafa');
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
-        method: 'POST',
-        body: JSON.stringify({
-          golf_course_id: 'course-1',
-          match_format: 'SINGLES',
-          scoring_format: null,
-          name: 'Viernes con Rafa',
-          allowance_percentage: null,
-          play_mode: 'HANDICAP',
-          creator_tee_color: null,
-          creator_tee_gender: null,
-        }),
-      });
-    });
-
-    it('should POST allowance and creator tee when provided in options', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.create('course-1', 'SINGLES', null, null, {
-        allowancePercentage: 90,
-        creatorTeeColor: 'YELLOW',
-        creatorTeeGender: 'MALE',
-      });
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches', {
-        method: 'POST',
-        body: JSON.stringify({
-          golf_course_id: 'course-1',
-          match_format: 'SINGLES',
-          scoring_format: null,
-          name: null,
-          allowance_percentage: 90,
-          play_mode: 'HANDICAP',
-          creator_tee_color: 'YELLOW',
-          creator_tee_gender: 'MALE',
-        }),
-      });
-    });
-  });
-
-  describe('addFriendParticipant', () => {
-    it('should POST to /quick-matches/{id}/participants with friend_user_id and team', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.addFriendParticipant('qm-1', 'user-2', 'A');
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants', {
-        method: 'POST',
-        body: JSON.stringify({ friend_user_id: 'user-2', team: 'A', tee_color: null, tee_gender: null }),
-      });
-    });
-
-    it('should POST the chosen tee when provided in options', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.addFriendParticipant('qm-1', 'user-2', 'A', {
-        color: 'YELLOW',
-        teeGender: 'MALE',
-      });
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants', {
-        method: 'POST',
-        body: JSON.stringify({
-          friend_user_id: 'user-2',
-          team: 'A',
-          tee_color: 'YELLOW',
-          tee_gender: 'MALE',
-        }),
-      });
-    });
-  });
-
-  describe('addGuestParticipant', () => {
-    it('should POST to /quick-matches/{id}/participants/guest with guest data', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.addGuestParticipant('qm-1', {
-        firstName: 'Jane',
-        lastName: 'Doe',
-        handicap: 15,
-        team: null,
-      });
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants/guest', {
-        method: 'POST',
-        body: JSON.stringify({
-          first_name: 'Jane',
-          last_name: 'Doe',
-          handicap: 15,
-          team: null,
-          tee_color: null,
-          tee_gender: null,
-        }),
-      });
-    });
-
-    it('should POST the chosen tee when the guest carries color/teeGender', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.addGuestParticipant('qm-1', {
-        firstName: 'Jane',
-        lastName: 'Doe',
-        handicap: 15,
-        team: null,
-        color: 'RED',
-        teeGender: 'FEMALE',
-      });
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/participants/guest', {
-        method: 'POST',
-        body: JSON.stringify({
-          first_name: 'Jane',
-          last_name: 'Doe',
-          handicap: 15,
-          team: null,
-          tee_color: 'RED',
-          tee_gender: 'FEMALE',
-        }),
-      });
-    });
-  });
-
-  describe('start', () => {
-    it('should POST to /quick-matches/{id}/start with scorer_ids', async () => {
+  describe('createAndStart (FE #848)', () => {
+    it('POSTea a /quick-matches/start el borrador entero, en snake_case y en orden', async () => {
       apiRequest.mockResolvedValue({ ...mockQuickMatchApi, status: 'IN_PROGRESS' });
 
-      await repo.start('qm-1', ['p-1']);
-
-      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/start', {
-        method: 'POST',
-        body: JSON.stringify({ scorer_ids: ['p-1'] }),
+      const qm = await repo.createAndStart({
+        quickMatchId: 'id-1',
+        golfCourseId: 'course-1',
+        matchFormat: null,
+        scoringFormat: 'MEDAL',
+        name: 'Viernes',
+        allowancePercentage: 95,
+        playMode: 'HANDICAP',
+        creatorTeeColor: 'WHITE',
+        creatorTeeGender: 'MALE',
+        creatorHandicap: 9.5,
+        participants: [
+          { kind: 'GUEST', firstName: 'Ana', lastName: 'Pérez', handicap: 18.4, team: null, teeColor: 'RED', teeGender: 'FEMALE' },
+          { kind: 'FRIEND', friendUserId: 'user-2', handicap: null, team: null, teeColor: null, teeGender: null },
+        ],
+        scorerUserIds: ['user-1', 'user-2'],
       });
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/start', {
+        method: 'POST',
+        body: JSON.stringify({
+          quick_match_id: 'id-1',
+          golf_course_id: 'course-1',
+          match_format: null,
+          scoring_format: 'MEDAL',
+          name: 'Viernes',
+          allowance_percentage: 95,
+          play_mode: 'HANDICAP',
+          creator_tee_color: 'WHITE',
+          creator_tee_gender: 'MALE',
+          creator_handicap: 9.5,
+          participants: [
+            { kind: 'GUEST', first_name: 'Ana', last_name: 'Pérez', handicap: 18.4, team: null, tee_color: 'RED', tee_gender: 'FEMALE' },
+            { kind: 'FRIEND', friend_user_id: 'user-2', handicap: null, team: null, tee_color: null, tee_gender: null },
+          ],
+          scorer_user_ids: ['user-1', 'user-2'],
+        }),
+      });
+      expect(qm).toBeInstanceOf(QuickMatch);
     });
   });
 
@@ -227,36 +91,6 @@ describe('ApiQuickMatchRepository', () => {
         method: 'POST',
       });
       expect(result).toBeInstanceOf(QuickMatch);
-    });
-  });
-
-  describe('setParticipantHandicap', () => {
-    it('should PATCH to /quick-matches/{id}/participants/{participantId}/handicap with the new value', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.setParticipantHandicap('qm-1', 'p-1', 16.4);
-
-      expect(apiRequest).toHaveBeenCalledWith(
-        '/api/v1/quick-matches/qm-1/participants/p-1/handicap',
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ handicap: 16.4 }),
-        }
-      );
-    });
-
-    it('should PATCH with null to clear an override', async () => {
-      apiRequest.mockResolvedValue(mockQuickMatchApi);
-
-      await repo.setParticipantHandicap('qm-1', 'p-1', null);
-
-      expect(apiRequest).toHaveBeenCalledWith(
-        '/api/v1/quick-matches/qm-1/participants/p-1/handicap',
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ handicap: null }),
-        }
-      );
     });
   });
 
@@ -349,7 +183,9 @@ describe('ApiQuickMatchRepository · el tope de tiempo de anotar (FE #624)', () 
   });
 
   it('empezarla no: no retiene ninguna cola', async () => {
-    await repo.start('qm-1', ['u-1']).catch(() => {});
+    await repo
+      .createAndStart({ quickMatchId: 'qm-1', golfCourseId: 'c-1', participants: [], scorerUserIds: ['u-1'] })
+      .catch(() => {});
 
     expect(topeDe()).toBeUndefined();
   });
