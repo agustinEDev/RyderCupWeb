@@ -201,7 +201,11 @@ const Competitions = () => {
     // Renderizado normal de la lista de competiciones
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCompetitions.map((competition, index) => (
+        {filteredCompetitions.map((competition, index) => {
+          // Una vez por tarjeta (`/code-review`)
+          const papel = papelEn(competition);
+          return (
+
           <motion.div
             key={competition.id}
             initial={{ opacity: 0, y: 20 }}
@@ -221,9 +225,9 @@ const Competitions = () => {
                     Quien organiza y juega, «Organizas»: es lo que le distingue */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <EtiquetaDelTipo tipo={competition.tournamentType} />
-                  {papelEn(competition) && (
+                  {papel && (
                     <span data-testid="mi-papel" className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
-                      {t(papelEn(competition))}
+                      {t(papel)}
                     </span>
                   )}
                 </div>
@@ -328,7 +332,8 @@ const Competitions = () => {
               </div>
             </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     );
   };

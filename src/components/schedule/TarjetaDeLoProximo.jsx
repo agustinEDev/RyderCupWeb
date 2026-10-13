@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import EtiquetaDelTipo from '../competition/EtiquetaDelTipo';
 import { diaCorto } from '../../utils/diaDeLaSesion';
+import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 
 /**
  * Una tarjeta de «Mis próximos partidos» (FE #845): un partido de la Ryder o
@@ -55,9 +56,7 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
         ellos: partido.opponentNames?.length ? lista(partido.opponentNames) : t('upcomingMatches.toBeDecided'),
       });
 
-  const destino = esPartida
-    ? `/player/groups/${partido.id}/scoring?competition=${partido.competitionId}`
-    : `/player/matches/${partido.id}/scoring`;
+  const destino = rutaDeAnotacion(partido);
 
   return (
     <article
@@ -88,6 +87,12 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
           <p data-testid="con-quien" className="mt-0.5 break-words text-sm font-medium text-gray-900">
             {conQuien}
           </p>
+          {/* Le pasaron de partida: su hora puede ser otra. Como en el panel (`/code-review`) */}
+          {esPartida && partido.broughtIn && (
+            <p data-testid="me-pasaron" className="mt-0.5 text-xs font-medium text-amber-700">
+              {t('nextMatch.broughtIn', { numero: partido.matchNumber })}
+            </p>
+          )}
         </div>
         <Link
           to={destino}

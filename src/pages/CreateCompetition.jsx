@@ -44,6 +44,7 @@ import {
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
+import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 
@@ -60,7 +61,7 @@ const getMessageClassName = (type) => {
 // Para preguntar «¿vale lo que está plegado?» hay que dar por buenos los campos
 // de fuera: si no, el primer error de ellos taparía siempre al del plegable
 const FORMULARIO_MINIMO = {
-  competitionName: 'xxx',
+  competitionName: 'x'.repeat(CompetitionName.MIN_LENGTH),
   startDate: '2026-01-01',
   endDate: '2026-01-02',
   country: { code: 'ES' },
@@ -711,6 +712,9 @@ const CreateCompetition = () => {
     // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
     let generoGuardado = false;
+    // Solo el 409 de la propia competición es «ese nombre ya lo tienes»: el del
+    // perfil o el de los ajustes no tienen nada que ver con él (`/code-review`)
+    let enLaCompeticion = false;
 
     try {
       const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
@@ -723,7 +727,8 @@ const CreateCompetition = () => {
       }
 
       const payload = {
-        name: formData.competitionName.trim(),
+        // Como la guarda la API, que mide el texto en bruto (`/code-review`)
+        name: CompetitionName.normalize(formData.competitionName),
         start_date: formData.startDate,
         end_date: formData.endDate,
         main_country: formData.country?.code,
@@ -769,8 +774,12 @@ const CreateCompetition = () => {
           !conEquipos && ajustesCargados.current
             ? cambiosDeAjustes(ajustesCargados.current, formData.strokePlay)
             : null;
-        const guardaLoGeneral = () => updateCompetitionUseCase.execute(competitionId, payload);
+        const guardaLoGeneral = () => {
+          enLaCompeticion = true;
+          return updateCompetitionUseCase.execute(competitionId, payload);
+        };
         const guardaLosAjustes = async () => {
+          enLaCompeticion = false;
           // Lo guardado pasa a ser la referencia: reintentar no los reenvía
           ajustesCargados.current = await updateStrokePlaySettingsUseCase.execute(competitionId, cambios);
         };
@@ -784,7 +793,7 @@ const CreateCompetition = () => {
             // Lo general fue segundo y el nombre ya lo tiene otra: junto al
             // campo, como si fuera la primera (revisión de la FE-B). Los
             // ajustes ya quedaron guardados y al reintentar no se reenvían
-            if (ajustesPrimero && error?.status === 409) {
+            if (enLaCompeticion && error?.status === 409) {
               senalaElNombre('nameTaken');
               return;
             }
@@ -818,6 +827,7 @@ const CreateCompetition = () => {
           id: gc.course.id,
           name: gc.course.name
         }));
+        enLaCompeticion = true;
         const { competition: createdCompetition, successCount, failedCourses } =
           await createCompetitionWithGolfCoursesUseCase.execute(payload, golfCourses);
 
@@ -861,7 +871,7 @@ const CreateCompetition = () => {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} competition:`, error);
       // Ya tiene otra con ese nombre: junto al campo y en el idioma de la app,
       // no el texto del servidor (RyderCupAm#540)
-      if (error?.status === 409) {
+      if (enLaCompeticion && error?.status === 409) {
         senalaElNombre('nameTaken');
         return;
       }

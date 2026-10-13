@@ -88,4 +88,57 @@ describe('CompetitionName', () => {
       expect(name.toString()).toBe('My Competition');
     });
   });
+
+  /**
+   * La regla del nombre al escribirlo, la misma que aplica la API
+   * (RyderCupAm#540), aquí y no repetida en el formulario (`/code-review`):
+   *
+   *   #   caso                                   | queda
+   *   ----|----------------------------------------|------------------------------
+   *   N1  espacios de sobra, dentro y fuera      | normalize los deja en uno
+   *   N2  vacío o solo espacios                  | REQUIRED
+   *   N3  menos de 3, ya normalizado             | TOO_SHORT
+   *   N4  sin letras ni cifras («...»)           | UNREADABLE
+   *   N5  más de 100, ya normalizado             | TOO_LONG; 100 con un doble
+   *       |                                        | espacio dentro, vale
+   *   N6  bien                                   | null
+   *   N7  lo que llega del servidor              | isValid sigue como estaba: un
+   *       |                                        | nombre antiguo se sigue leyendo
+   */
+  describe('normalize y problemWith (al escribirlo)', () => {
+    it('N1 · normalize deja un espacio entre palabras y ninguno en los bordes', () => {
+      expect(CompetitionName.normalize('  Ryder   de\totoño ')).toBe('Ryder de otoño');
+      expect(CompetitionName.normalize(null)).toBe('');
+    });
+
+    it('N2 · vacío o solo espacios: REQUIRED', () => {
+      expect(CompetitionName.problemWith('')).toBe('REQUIRED');
+      expect(CompetitionName.problemWith('    ')).toBe('REQUIRED');
+      expect(CompetitionName.problemWith(undefined)).toBe('REQUIRED');
+    });
+
+    it('N3 · corto, medido ya normalizado', () => {
+      expect(CompetitionName.problemWith('ab   ')).toBe('TOO_SHORT');
+      expect(CompetitionName.problemWith('a b')).toBeNull();
+    });
+
+    it('N4 · sin letras ni cifras: UNREADABLE', () => {
+      expect(CompetitionName.problemWith('...')).toBe('UNREADABLE');
+      expect(CompetitionName.problemWith('2026')).toBeNull();
+    });
+
+    it('N5 · largo, medido ya normalizado', () => {
+      expect(CompetitionName.problemWith('x'.repeat(101))).toBe('TOO_LONG');
+      expect(CompetitionName.problemWith(`${'x'.repeat(50)}  ${'x'.repeat(49)}`)).toBeNull();
+    });
+
+    it('N6 · un nombre bien, null', () => {
+      expect(CompetitionName.problemWith('Ryder de otoño')).toBeNull();
+    });
+
+    it('N7 · isValid no cambia: un nombre antiguo sin letras se sigue leyendo', () => {
+      expect(CompetitionName.isValid('...')).toBe(true);
+    });
+  });
 });
+

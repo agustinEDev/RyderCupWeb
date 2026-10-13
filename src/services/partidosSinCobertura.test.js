@@ -228,13 +228,24 @@ describe('partidosSinCobertura', () => {
   describe('leer los próximos partidos', () => {
     const pideLaVista = (id) => Promise.resolve(vistaDe(id));
 
+    it('media lista con partidos: se enseña y se dice que puede faltar alguno (`/code-review`)', async () => {
+      const r = await leeLosProximosPartidos({
+        lee: () => Promise.resolve({ matches: [partido('m-1')], complete: false }),
+        userId: USUARIO,
+        pideLaVista,
+        ahora: HOY,
+      });
+
+      expect(r).toEqual({ partidos: [partido('m-1')], desdeMemoria: false, sinRespuesta: false, incompleta: true });
+    });
+
     it('con red: los enseña, los guarda y precarga', async () => {
       const lee = () => Promise.resolve({ matches: [partido('m-1')], complete: true });
 
       const r = await leeLosProximosPartidos({ lee, userId: USUARIO, pideLaVista, ahora: HOY });
       await asienta();
 
-      expect(r).toEqual({ partidos: [partido('m-1')], desdeMemoria: false, sinRespuesta: false });
+      expect(r).toEqual({ partidos: [partido('m-1')], desdeMemoria: false, sinRespuesta: false, incompleta: false });
       expect(losUltimosPartidos()).toHaveLength(1);
       expect(loQueSeSupo('m-1')).not.toBeNull();
     });
@@ -274,7 +285,7 @@ describe('partidosSinCobertura', () => {
         ahora: HOY,
       });
 
-      expect(r).toEqual({ partidos: [], desdeMemoria: false, sinRespuesta: true });
+      expect(r).toEqual({ partidos: [], desdeMemoria: false, sinRespuesta: true, incompleta: false });
     });
 
     it('media lista se enseña, pero no pisa la completa que había', async () => {
@@ -337,6 +348,8 @@ describe('partidosSinCobertura', () => {
    *       |                                     | memoria y sin respuesta, como los
    *       |                                     | partidos (revisión de la FE-B)
    *   P6  cualquier otro fallo                | se deja en la consola, como los partidos
+   *   P7  media lista VACÍA                   | como sin red: lo guardado o «sin
+   *       |                                     | respuesta», no «no tienes» (`/code-review`)
    */
   describe('leer las próximas partidas (FE #845)', () => {
     const partida = (id, roundDate = '2026-09-17') => ({ id, roundDate, status: 'SCHEDULED', esPartidaDeFranja: true });
@@ -351,7 +364,7 @@ describe('partidosSinCobertura', () => {
         ahora: HOY,
       });
 
-      expect(r).toEqual({ partidas: [partida('g-1')], desdeMemoria: false, sinRespuesta: false });
+      expect(r).toEqual({ partidas: [partida('g-1')], desdeMemoria: false, sinRespuesta: false, incompleta: false });
       expect(lasUltimasPartidas()).toEqual([partida('g-1')]);
       await asienta();
       expect(pideLaVista).toHaveBeenCalledWith('g-1');
@@ -368,7 +381,19 @@ describe('partidosSinCobertura', () => {
       });
 
       expect(r.partidas).toEqual([partida('g-1')]);
+      expect(r.incompleta).toBe(true);
       expect(lasUltimasPartidas()).toEqual([partida('vieja')]);
+    });
+
+    it('P7 · media lista vacía: lo guardado, o «sin respuesta»', async () => {
+      const lee = () => Promise.resolve({ matches: [], complete: false });
+
+      const nada = await leeLasProximasPartidas({ lee, userId: USUARIO, pideLaVista: vi.fn(), ahora: HOY });
+      expect(nada).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false });
+
+      recuerdaLasPartidas([partida('hoy')]);
+      const guardadas = await leeLasProximasPartidas({ lee, userId: USUARIO, pideLaVista: vi.fn(), ahora: HOY });
+      expect(guardadas).toEqual({ partidas: [partida('hoy')], desdeMemoria: true, sinRespuesta: false, incompleta: false });
     });
 
     it('P3 · sin red: las guardadas de hoy en adelante', async () => {
@@ -394,7 +419,7 @@ describe('partidosSinCobertura', () => {
         ahora: HOY,
       });
 
-      expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true });
+      expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false });
     });
 
     it('P5 · un 401 o un 403 desmienten lo guardado', async () => {
@@ -408,7 +433,7 @@ describe('partidosSinCobertura', () => {
           ahora: HOY,
         });
 
-        expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true });
+        expect(r).toEqual({ partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false });
         expect(lasUltimasPartidas()).toBeNull();
       }
     });

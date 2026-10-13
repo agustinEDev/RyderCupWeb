@@ -16,6 +16,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *       |                                      | juega (revisión de la FE-B, 13 oct);
  *       |                                      | marcada otra vez, vuelve
  *   C6  la desmarca y cambia a una Ryder      | se pregunta: en una Ryder siempre juega
+ *   C7  guardar el género da un 409           | no es el nombre: arriba (`/code-review`)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -123,6 +124,20 @@ describe('CreateCompetition · el género del organizador', () => {
 
     fireEvent.click(juega);
     expect(screen.getByTestId('selector-de-genero')).toBeInTheDocument();
+  });
+
+  it('C7: si guardar el género da un 409, no se culpa al nombre', async () => {
+    faltaGenero = true;
+    mockCrear.mockClear();
+    mockGuardarGenero.mockRejectedValueOnce(Object.assign(new Error('conflicto en el perfil'), { status: 409 }));
+    await abreElFormulario();
+
+    fireEvent.change(screen.getByTestId('selector-de-genero'), { target: { value: 'FEMALE' } });
+    await rellenaYCrea();
+
+    expect(await screen.findByText('conflicto en el perfil')).toBeInTheDocument();
+    expect(screen.queryByTestId('error-del-nombre')).not.toBeInTheDocument();
+    expect(mockCrear).not.toHaveBeenCalled();
   });
 
   it('C6: la desmarca en un Medal y cambia a una Ryder: se pregunta, que ahí juega', async () => {

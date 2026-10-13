@@ -26,6 +26,11 @@
  *       |                                          | puede faltar alguno
  *   9c  solo una lista viene de memoria            | «algunos de» los que se vieron
  *   11  Ryder sin rivales todavía                  | «Tú y Nacho vs por decidir»
+ *
+ * Y lo que añadió `/code-review`:
+ *
+ *   9d  una lista llega a medias, con algo         | el mismo aviso de que puede faltar
+ *   12  me pasaron de partida                      | «Te han pasado a la N.ª partida»
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -312,6 +317,26 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     expect(screen.queryByTestId('upcoming-matches-incompleta')).not.toBeInTheDocument();
   });
 
+  it('9d · una lista llega a medias, con algo: el mismo aviso', async () => {
+    mockPartidos.mockResolvedValue({ matches: [partido()], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [partida()], complete: false });
+
+    pinta();
+
+    expect(await tarjetas()).toHaveLength(2);
+    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+  });
+
+  it('9d · y si la que llega a medias es la de la Ryder, también', async () => {
+    mockPartidos.mockResolvedValue({ matches: [partido()], complete: false });
+    mockPartidas.mockResolvedValue({ matches: [partida()], complete: true });
+
+    pinta();
+
+    expect(await tarjetas()).toHaveLength(2);
+    expect(screen.getByTestId('upcoming-matches-incompleta')).toBeInTheDocument();
+  });
+
   it('9b · no contesta ninguno y nada guardado: no se pudo preguntar', async () => {
     mockPartidos.mockRejectedValue(new TypeError('Failed to fetch'));
     mockPartidas.mockRejectedValue(new TypeError('Failed to fetch'));
@@ -342,6 +367,29 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     expect(within(ryder).getByTestId('con-quien')).toHaveTextContent(
       'upcomingMatches.versus {"nosotros":"upcomingMatches.you y Nacho","ellos":"upcomingMatches.toBeDecided"}'
     );
+  });
+});
+
+describe('Mis próximos partidos · me pasaron de partida (`/code-review`)', () => {
+  beforeEach(() => {
+    const guardado = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    });
+    olvidaTodo();
+    olvidaLasPrecargas();
+  });
+
+  it('12 · se dice en la tarjeta, como en el panel; si no, nada', async () => {
+    responde({ partidas: [partida({ broughtIn: true }), partida({ id: 'g-2', matchNumber: 3 })] });
+
+    pinta();
+
+    const [traida, otra] = await tarjetas();
+    expect(within(traida).getByTestId('me-pasaron')).toHaveTextContent('nextMatch.broughtIn {"numero":2}');
+    expect(within(otra).queryByTestId('me-pasaron')).not.toBeInTheDocument();
   });
 });
 

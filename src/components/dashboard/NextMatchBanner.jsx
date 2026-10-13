@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { Calendar, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../ui/BlockLoader';
+import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 
 /**
  * La pieza central del panel: cuándo juego y contra quién.
@@ -107,9 +108,7 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
   const titulo = esPartida
     ? [t('nextMatch.teeGroup', { numero: match.matchNumber }), match.competitionName]
     : [match.matchFormat && t(`nextMatch.format.${match.matchFormat}`), match.competitionName];
-  const destino = esPartida
-    ? `/player/groups/${match.id}/scoring?competition=${match.competitionId}`
-    : `/player/matches/${match.id}/scoring`;
+  const destino = rutaDeAnotacion(match);
 
   return (
     <button

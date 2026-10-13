@@ -244,7 +244,8 @@ const AgendaDeLaCompeticion = ({
                       <span className="font-semibold text-gray-900">
                         {t(`sessions.${s.sessionType}`)}
                       </span>
-                      {!tocable && (
+                      {/* Una sesión sin formato no pinta «formats.null» (`/code-review`) */}
+                      {!tocable && s.matchFormat && (
                         <span className="text-gray-700">· {t(`formats.${s.matchFormat}`)}</span>
                       )}
                       {!unSoloCampo && !tocable && nombreDelCampo(s.golfCourseId) && (

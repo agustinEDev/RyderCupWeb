@@ -71,7 +71,8 @@ const UpcomingMatchesPage = () => {
     // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
     const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
     setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
-    setIncompleta(juntos.length > 0 && algunaSinRespuesta);
+    // Y si alguna llegó a medias, también puede faltar alguno (`/code-review`)
+    setIncompleta(juntos.length > 0 && (algunaSinRespuesta || leido.incompleta || partidas.incompleta));
     setIsLoading(false);
   }, [user]);
 

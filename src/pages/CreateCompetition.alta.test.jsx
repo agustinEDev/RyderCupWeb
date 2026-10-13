@@ -21,6 +21,9 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   21e   al editar, el 409 llega en la segunda      | también junto al campo, no arriba
  *         | petición (los ajustes van primero)         | con el texto del servidor (revisión)
  *   21f   un 409 de los ajustes, que van segundos    | no es el nombre: como antes, arriba
+ *   21g   un 409 de los ajustes, que van primeros    | tampoco (`/code-review`)
+ *   22    el nombre se manda normalizado             | sin espacios de sobra: la API mide
+ *         |                                            | el texto en bruto (`/code-review`)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -254,4 +257,28 @@ describe('CreateCompetition · BE-B en el alta (FE)', () => {
     expect(await screen.findByText('edit.strokePlayNotSaved {"motivo":"conflicto"}')).toBeInTheDocument();
     expect(screen.queryByTestId('error-del-nombre')).toBeNull();
   });
+
+  it('21g: un 409 de los ajustes (que van primeros) tampoco es el nombre', async () => {
+    composicion.updateStrokePlaySettingsUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('conflicto'), { status: 409 })
+    );
+    const jornadas = await alEditar();
+    fireEvent.change(jornadas, { target: { value: '2' } });
+
+    enviar();
+
+    await vi.waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('conflicto'));
+    expect(screen.queryByTestId('error-del-nombre')).toBeNull();
+    expect(composicion.updateCompetitionUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('22: el nombre se manda sin espacios de sobra', async () => {
+    await alTipo('MEDAL');
+    fireEvent.change(await screen.findByTestId('campo-nombre'), { target: { value: '  Medal   de\totoño ' } });
+
+    enviar();
+
+    expect((await enviado()).name).toBe('Medal de otoño');
+  });
 });
+
