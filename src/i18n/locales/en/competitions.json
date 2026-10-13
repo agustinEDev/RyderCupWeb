@@ -18,16 +18,19 @@
     "inProgress": "In Progress",
     "completed": "Completed",
     "cancelled": "Cancelled",
-    "youAreTheCreator": "You are the creator",
     "pendingRequest": "pending request",
     "pendingRequests": "pending requests",
     "enrollmentStatus": "Enrollment: {{status}}",
     "players": "{{count}} / {{max}} players",
-    "golfCoursesCount_one": "{{count}} golf course",
-    "golfCoursesCount_other": "{{count}} golf courses",
     "countriesCount_one": "{{count}} country",
     "countriesCount_other": "{{count}} countries",
-    "sinCoberturaDetalle": "The list could not be fetched. Whatever you have is still there: check again when you have coverage."
+    "sinCoberturaDetalle": "The list could not be fetched. Whatever you have is still there: check again when you have coverage.",
+    "youOrganise": "You organise",
+    "youPlay": "You play",
+    "nextSession": "Your next round: {{cuando}}",
+    "severalCourses": "Several courses",
+    "playingDays_one": "{{count}} playing day",
+    "playingDays_other": "{{count}} playing days"
   },
   "create": {
     "title": "Create Competition",
@@ -117,7 +120,11 @@
       "matchdaysRange": "Each player must be able to play at least one day.",
       "matchdaysMoreThanDays_one": "The tournament lasts {{count}} day: no more days per player fit.",
       "matchdaysMoreThanDays_other": "The tournament lasts {{count}} days: no more days per player fit.",
-      "categoryLimitEmpty": "Type the limit or remove it."
+      "categoryLimitEmpty": "Type the limit or remove it.",
+      "nameTooShort": "The name needs at least 3 characters.",
+      "nameTooLong": "The name cannot be longer than 100 characters.",
+      "nameUnreadable": "The name needs at least one letter or digit.",
+      "nameTaken": "You already have a competition with that name: choose another."
     },
     "success": "Competition created successfully!",
     "partialSuccess": "Competition created, but {{failed}} course(s) could not be added: {{courses}}. {{success}} course(s) were added successfully.",
@@ -192,7 +199,8 @@
     "competitionNamePlaceholderFor": {
       "STABLEFORD": "E.g. Sunday Stableford",
       "MEDAL": "E.g. Spring Medal"
-    }
+    },
+    "organizerPlays": "Are you playing? If not, you do not take a place."
   },
   "edit": {
     "title": "Edit Competition",
@@ -650,6 +658,20 @@
     "scheduledDevice": "Scheduled: {{cuando}}, this device's time (the course has no time zone).",
     "scheduleAtDevice": "Date and time, in this device's time (the course has no time zone)",
     "openUntilDevice": "Available until {{cuando}} (this device's time).",
-    "timeDoesNotExist": "That time does not exist at the course because of the clock change: pick another."
+    "timeDoesNotExist": "That time does not exist at the course because of the clock change: pick another.",
+    "notAtThatTime": "It would not be possible at that time: {{motivo}}",
+    "reasons": {
+      "STATUS": "Handicaps are updated from the close of enrolment until the competition ends.",
+      "NO_WINDOWS": "With no tee windows, they are updated until the competition starts.",
+      "RYDER": "In a Ryder Cup they are updated until the competition starts.",
+      "DAY_IN_PLAY": "A playing day is under way: it will be possible when the day ends.",
+      "NO_DAYS_LEFT": "There are no playing days left.",
+      "TOO_CLOSE": "The next tee time is too close: there would not be time to check everyone.",
+      "NO_TIMEZONE": "The local time of one of the competition courses is unknown.",
+      "DISABLED": "Updating with the RFEG is only switched on in production.",
+      "RUNNING": "Handicaps are already being updated.",
+      "IN_THE_PAST": "Schedule it for a moment in the future.",
+      "TOO_TIGHT": "Too tight: schedule it at least 2 minutes before the window closes."
+    }
   }
 }

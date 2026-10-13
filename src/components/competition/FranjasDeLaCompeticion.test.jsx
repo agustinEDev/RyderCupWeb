@@ -420,6 +420,13 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     );
   });
 
+  it('FE #856: con las inscripciones cerradas ya no se dice cuántos caben', async () => {
+    pinta({ maxPlayers: 100, inscripcionesAbiertas: false });
+
+    await screen.findByTestId('franja-r-1');
+    expect(screen.queryByTestId('franjas-cupo-corto')).not.toBeInTheDocument();
+  });
+
   it('1c: las salidas son las que dice el servidor', async () => {
     mockLeer.mockResolvedValue({
       rounds: [franja({ teeSheet: hoja({ teeTimes: ['08:00', '08:10', '08:20'], capacity: 12 }) })],

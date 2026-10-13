@@ -80,7 +80,8 @@ class ScheduleMapper {
       // sobra con equipos desiguales. Un servidor anterior no lo manda
       restingPlayerIds: apiRound.resting_player_ids || [],
       sessionType: apiRound.session_type,
-      matchFormat: apiRound.match_format,
+      // Null en una franja de stroke play: no tiene formato (RyderCupAm#541)
+      matchFormat: apiRound.match_format ?? null,
       teeSheet: ScheduleMapper.toTeeSheetDTO(apiRound.tee_sheet),
       handicapMode: apiRound.handicap_mode || null,
       allowancePercentage: apiRound.allowance_percentage ?? null,

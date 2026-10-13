@@ -1625,6 +1625,8 @@ const CompetitionDetail = () => {
                   endDate={competition.endDate}
                   canManage={canManage && ['DRAFT', 'ACTIVE', 'CLOSED'].includes(competition.status)}
                   maxPlayers={competition.maxPlayers}
+                  // «Caben N de los M», solo mientras se apunta gente (FE #856)
+                  inscripcionesAbiertas={['DRAFT', 'ACTIVE'].includes(competition.status)}
                   // Las plazas (PR 4): el jugador elige con las inscripciones
                   // abiertas; el organizador coloca y mueve hasta iniciar, y
                   // quita solo con ellas abiertas

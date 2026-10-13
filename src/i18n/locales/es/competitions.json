@@ -18,16 +18,19 @@
     "inProgress": "En Progreso",
     "completed": "Completada",
     "cancelled": "Cancelada",
-    "youAreTheCreator": "Eres el creador",
     "pendingRequest": "solicitud pendiente",
     "pendingRequests": "solicitudes pendientes",
     "enrollmentStatus": "Inscripción: {{status}}",
     "players": "{{count}} / {{max}} jugadores",
-    "golfCoursesCount_one": "{{count}} campo",
-    "golfCoursesCount_other": "{{count}} campos",
     "countriesCount_one": "{{count}} país",
     "countriesCount_other": "{{count}} países",
-    "sinCoberturaDetalle": "No se ha podido consultar la lista. Lo que tengas sigue ahí: vuelve a mirar cuando haya cobertura."
+    "sinCoberturaDetalle": "No se ha podido consultar la lista. Lo que tengas sigue ahí: vuelve a mirar cuando haya cobertura.",
+    "youOrganise": "Organizas",
+    "youPlay": "Juegas",
+    "nextSession": "Tu próxima salida: {{cuando}}",
+    "severalCourses": "Varios campos",
+    "playingDays_one": "{{count}} jornada",
+    "playingDays_other": "{{count}} jornadas"
   },
   "create": {
     "title": "Crear Competición",
@@ -117,7 +120,11 @@
       "matchdaysRange": "Cada jugador tiene que poder jugar al menos una jornada.",
       "matchdaysMoreThanDays_one": "El torneo dura {{count}} día: no caben más jornadas por jugador.",
       "matchdaysMoreThanDays_other": "El torneo dura {{count}} días: no caben más jornadas por jugador.",
-      "categoryLimitEmpty": "Escribe el límite o quítalo."
+      "categoryLimitEmpty": "Escribe el límite o quítalo.",
+      "nameTooShort": "El nombre necesita al menos 3 caracteres.",
+      "nameTooLong": "El nombre no puede pasar de 100 caracteres.",
+      "nameUnreadable": "El nombre necesita alguna letra o cifra.",
+      "nameTaken": "Ya tienes una competición con ese nombre: elige otro."
     },
     "success": "¡Competición creada exitosamente!",
     "partialSuccess": "Competición creada, pero {{failed}} campo(s) no se pudieron añadir: {{courses}}. Se añadieron {{success}} campo(s) correctamente.",
@@ -192,7 +199,8 @@
     "competitionNamePlaceholderFor": {
       "STABLEFORD": "Ej: Stableford de los domingos",
       "MEDAL": "Ej: Medal de primavera"
-    }
+    },
+    "organizerPlays": "¿Juegas tú? Si no, no ocupas plaza."
   },
   "edit": {
     "title": "Editar Competición",
@@ -650,6 +658,20 @@
     "scheduledDevice": "Programada: {{cuando}}, hora de este dispositivo (el campo no tiene zona horaria).",
     "scheduleAtDevice": "Fecha y hora, en la hora de este dispositivo (el campo no tiene zona horaria)",
     "openUntilDevice": "Se puede hasta el {{cuando}} (hora de este dispositivo).",
-    "timeDoesNotExist": "Esa hora no existe en el campo por el cambio de hora: elige otra."
+    "timeDoesNotExist": "Esa hora no existe en el campo por el cambio de hora: elige otra.",
+    "notAtThatTime": "A esa hora no se podría: {{motivo}}",
+    "reasons": {
+      "STATUS": "Los hándicaps se actualizan desde que se cierran las inscripciones hasta que termina la competición.",
+      "NO_WINDOWS": "Sin franjas, se actualizan hasta iniciar la competición.",
+      "RYDER": "En una Ryder se actualizan hasta iniciar la competición.",
+      "DAY_IN_PLAY": "Hay una jornada en marcha: se podrá al acabar el día.",
+      "NO_DAYS_LEFT": "Ya no quedan jornadas por jugar.",
+      "TOO_CLOSE": "Queda muy poco para la siguiente salida: no daría tiempo a preguntar por todos.",
+      "NO_TIMEZONE": "No se sabe la hora local de algún campo de la competición.",
+      "DISABLED": "La actualización con la RFEG solo está encendida en producción.",
+      "RUNNING": "Ya se están actualizando los hándicaps.",
+      "IN_THE_PAST": "Prográmala para un momento en el futuro.",
+      "TOO_TIGHT": "Demasiado justo: prográmala con al menos 2 minutos de margen antes de que se cierre la ventana."
+    }
   }
 }

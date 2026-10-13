@@ -65,6 +65,8 @@ class GetUpcomingTeeGroupsUseCase {
         status: group.status,
         competitionId: competicion.id,
         competitionName: competicion.name,
+        // Para la etiqueta de su tarjeta (FE #845)
+        tournamentType: competicion.tournamentType,
         roundId,
         roundDate,
         sessionType,

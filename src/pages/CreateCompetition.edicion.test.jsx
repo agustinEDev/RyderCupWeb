@@ -241,7 +241,8 @@ describe('CreateCompetition · editar (FE #710)', () => {
     // render, y un efecto que mirara solo el texto no se volvía a ejecutar
     const original = globalThis.Element.prototype.scrollIntoView;
     globalThis.Element.prototype.scrollIntoView = vi.fn();
-    mockValidar.mockReturnValue({ key: 'nameRequired' });
+    // Uno que va arriba: los del nombre se dicen junto a su campo (RyderCupAm#540)
+    mockValidar.mockReturnValue({ key: 'datesRequired' });
     mockDetalle.mockResolvedValueOnce(competicion('ACTIVE'));
     pintaEdicion();
     // Cargada del todo: mientras carga, la página pasa un momento por la

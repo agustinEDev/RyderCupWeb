@@ -14,10 +14,12 @@
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import { fechaLocal } from '../utils/fechaLocal';
 import {
+  lasUltimasPartidas,
   losUltimosPartidos,
   olvida,
   olvidaLoDeEstaCuenta,
   precarga,
+  recuerdaLasPartidas,
   recuerdaLosPartidos,
 } from './loUltimoConocido';
 
@@ -107,7 +109,10 @@ const losGuardados = (ahora) => {
  *
  * @param {{lee: () => Promise<{matches: Array, complete: boolean}>, userId: string,
  *   pideLaVista: (id: string) => Promise<Object>, ahora?: Date}} p
- * @returns {Promise<{partidos: Array, desdeMemoria: boolean, sinRespuesta: boolean}>}
+ * Y `incompleta` cuando se enseña media lista: alguna competición no contestó y
+ * puede faltar algún partido (`/code-review`).
+ *
+ * @returns {Promise<{partidos: Array, desdeMemoria: boolean, sinRespuesta: boolean, incompleta: boolean}>}
  */
 export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora = new Date() }) => {
   try {
@@ -119,7 +124,7 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
       // campo faltaría justo el partido de la competición que falló
       if (complete) recuerdaLosPartidos(matches);
       precargaElProximoDia({ partidos: matches, userId, pideLaVista, ahora });
-      return { partidos: matches, desdeMemoria: false, sinRespuesta: false };
+      return { partidos: matches, desdeMemoria: false, sinRespuesta: false, incompleta: !complete };
     }
   } catch (err) {
     console.error('Error loading upcoming matches:', err);
@@ -129,14 +134,50 @@ export const leeLosProximosPartidos = async ({ lee, userId, pideLaVista, ahora =
     // refresco fallido viene en `.response` y no desmiente nada (FE #514)—
     if (err?.status === 401 || err?.status === 403) {
       olvidaLoDeEstaCuenta();
-      return { partidos: [], desdeMemoria: false, sinRespuesta: true };
+      return { partidos: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
     }
   }
 
   const guardados = losGuardados(ahora);
   return guardados.length > 0
-    ? { partidos: guardados, desdeMemoria: true, sinRespuesta: false }
-    : { partidos: [], desdeMemoria: false, sinRespuesta: true };
+    ? { partidos: guardados, desdeMemoria: true, sinRespuesta: false, incompleta: false }
+    : { partidos: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
+};
+
+/**
+ * Las próximas partidas de stroke play, con red o sin ella. Nunca lanza.
+ *
+ * Lo que hacía el panel por su cuenta, aquí para que «Mis próximos partidos»
+ * lo haga igual (FE #845): la lista entera se guarda, la del próximo día se
+ * precarga con SU vista, y sin cobertura salen las guardadas de hoy en
+ * adelante. Media lista VACÍA, como en los partidos, no dice nada: se trata
+ * como sin red (`/code-review`); con algo, se enseña con `incompleta`.
+ *
+ * @param {{lee: () => Promise<{matches: Array, complete: boolean}>, userId: string,
+ *   pideLaVista: (id: string) => Promise<Object>, ahora?: Date}} p
+ * @returns {Promise<{partidas: Array, desdeMemoria: boolean, sinRespuesta: boolean, incompleta: boolean}>}
+ */
+export const leeLasProximasPartidas = async ({ lee, userId, pideLaVista, ahora = new Date() }) => {
+  try {
+    const { matches, complete } = await lee();
+    if (complete || matches.length > 0) {
+      if (complete) recuerdaLasPartidas(matches);
+      precargaElProximoDia({ partidos: matches, userId, pideLaVista, ahora });
+      return { partidas: matches, desdeMemoria: false, sinRespuesta: false, incompleta: !complete };
+    }
+  } catch (err) {
+    console.error('Error loading upcoming tee groups:', err);
+    // Un 401 o un 403 desmienten lo guardado, como con los partidos (CodeRabbit)
+    if (err?.status === 401 || err?.status === 403) {
+      olvidaLoDeEstaCuenta();
+      return { partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
+    }
+  }
+  const hoy = fechaLocal(ahora);
+  const guardadas = (lasUltimasPartidas() ?? []).filter((p) => p?.roundDate && p.roundDate >= hoy);
+  return guardadas.length > 0
+    ? { partidas: guardadas, desdeMemoria: true, sinRespuesta: false, incompleta: false }
+    : { partidas: [], desdeMemoria: false, sinRespuesta: true, incompleta: false };
 };
 
 /**
@@ -264,6 +305,11 @@ export const sePuedeAnotar = (partido, { desdeMemoria, ahora = new Date() }) => 
     if (Number.isNaN(abre.getTime())) return deHoyYSinPoderPreguntar();
     return ahora >= abre;
   }
+
+  // Una partida de stroke play no trae hora de apertura (MyTeeGroupDTO) y
+  // empieza con el primer golpe: la de HOY se ofrece anotar, con red y sin
+  // ella (revisión de la FE-B, Agustín, 13 oct)
+  if (partido.esPartidaDeFranja) return partido.roundDate === fechaLocal(ahora);
 
   return deHoyYSinPoderPreguntar();
 };

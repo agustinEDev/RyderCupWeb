@@ -125,6 +125,8 @@ class TeeGroupScoringMapper {
       status: r.status,
       // Su última tarjeta quedó retirada: en Stableford cuenta, pero no sigue (BE)
       retired: r.retired ?? false,
+      // Para «No presentada» o «Retirada» (FE #856, RyderCupAm#558)
+      teeGender: r.tee_gender ?? null,
     });
     return {
       tournamentType: api.tournament_type,
