@@ -45,30 +45,21 @@ const DE_LA_HORA_PEDIDA = new Set(['IN_THE_PAST', 'TOO_TIGHT', 'DISABLED', 'RUNN
  */
 const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdateWindow, onReleer }) => {
   const { t, i18n } = useTranslation('competitions');
-  // Lo leído del campo, con la competición y el intento a los que pertenece:
-  // solo vale para esos. Otra competición empieza de cero sin arrastrar la
-  // zona de la anterior (`/code-review`)
+  // Lo leído del campo, con el intento al que pertenece: mientras se reintenta,
+  // la zona no se da por sabida. Una competición nueva no lo arrastra: al
+  // cambiar de ficha la tarjeta se monta de nuevo (`/code-review`, #863)
   const [lectura, setLectura] = useState(0);
-  const [leido, setLeido] = useState({ competitionId: null, lectura: -1, zona: null, ilegible: false });
-  const deEsta = leido.competitionId === competitionId;
-  const zona = deEsta ? leido.zona : null;
+  const [leido, setLeido] = useState({ lectura: -1, zona: null, ilegible: false });
+  const { zona } = leido;
   // Hasta saber la zona no se programa: una hora escrita antes se leería en
   // otra (revisor). Si no se pudo leer, tampoco (ver `zonaIlegible`)
-  const zonaSabida = deEsta && leido.lectura === lectura;
+  const zonaSabida = leido.lectura === lectura;
   // No se pudo leer: no es que el campo no tenga zona, así que ni se dice eso
   // ni se programa a ciegas en la del dispositivo (QA de la release, 14 oct).
   // Mientras se reintenta, el aviso se queda
-  const zonaIlegible = deEsta && leido.ilegible;
+  const zonaIlegible = leido.ilegible;
   const [ocupado, setOcupado] = useState(false);
   const [programando, setProgramando] = useState(null);
-  // Lo escrito es de la competición en la que se abrió: en otra, el formulario
-  // empieza cerrado, o se guardaría en su nombre antes de saber su zona
-  // (CodeRabbit, #863)
-  const [abiertoEn, setAbiertoEn] = useState(competitionId);
-  if (abiertoEn !== competitionId) {
-    setAbiertoEn(competitionId);
-    setProgramando(null);
-  }
 
   // La zona del campo, para escribir y decir las horas en la suya
   useEffect(() => {
@@ -78,9 +69,9 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
       .then((r) => {
         if (!vigente) return;
         const laZona = aCamposDeLaCompeticion(r).find((c) => c.timezone)?.timezone ?? null;
-        setLeido({ competitionId, lectura, zona: laZona, ilegible: false });
+        setLeido({ lectura, zona: laZona, ilegible: false });
       })
-      .catch(() => vigente && setLeido({ competitionId, lectura, zona: null, ilegible: true }));
+      .catch(() => vigente && setLeido({ lectura, zona: null, ilegible: true }));
     return () => {
       vigente = false;
     };

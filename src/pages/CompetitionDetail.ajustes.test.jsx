@@ -247,7 +247,13 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     describe('de una ficha a otra sin desmontar (CodeRabbit, #863)', () => {
       const AOtra = () => {
         const navigate = useNavigate();
-        return <button type="button" onClick={() => navigate('/competitions/comp-2#clasificaciones')}>a-la-otra</button>;
+        return (
+          <>
+            <button type="button" onClick={() => navigate('/competitions/comp-2#clasificaciones')}>a-la-otra</button>
+            <button type="button" onClick={() => navigate('/competitions/comp-2')}>a-la-otra-sin-ancla</button>
+            <button type="button" onClick={() => navigate('/competitions/comp-1#clasificaciones')}>a-la-primera</button>
+          </>
+        );
       };
       const pintaConSalto = () =>
         render(
@@ -283,6 +289,33 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
         await new Promise((r) => setTimeout(r, 50));
 
         expect(baja).toHaveBeenCalledTimes(1);
+      });
+      it('C3: volver a la primera con el ancla tras pasar por otra sin ella también baja', async () => {
+        roles = { isAdmin: false, isCreator: false, isLoading: false };
+        mockDetalle.mockImplementation(async (id) => medal(id));
+        pintaConSalto();
+        await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(1));
+
+        fireEvent.click(screen.getByRole('button', { name: 'a-la-otra-sin-ancla' }));
+        await vi.waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('comp-2'));
+        await screen.findByTestId('clasificaciones-stroke-play');
+        fireEvent.click(screen.getByRole('button', { name: 'a-la-primera' }));
+
+        await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(2));
+      });
+
+      it('C4: un enlace con el id en mayúsculas también baja (el servidor lo devuelve en minúsculas)', async () => {
+        roles = { isAdmin: false, isCreator: false, isLoading: false };
+        mockDetalle.mockImplementation(async (id) => medal(id.toLowerCase()));
+        render(
+          <MemoryRouter initialEntries={['/competitions/COMP-1#clasificaciones']}>
+            <Routes>
+              <Route path="/competitions/:id" element={<CompetitionDetail />} />
+            </Routes>
+          </MemoryRouter>
+        );
+
+        await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(1));
       });
     });
 

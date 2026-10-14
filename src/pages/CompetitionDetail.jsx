@@ -784,17 +784,20 @@ const CompetitionDetail = () => {
     competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
   // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
   // stroke play hasta aquí): se baja sola en cuanto la sección está pintada,
-  // UNA vez por competición: una recarga posterior de la ficha no te devuelve
-  // abajo, y otra ficha sí baja. Con la de la ruta ya pintada: al pasar de una
-  // a otra, la anterior sigue en pantalla un instante (CodeRabbit, #863)
+  // UNA vez por llegada: una recarga posterior de la ficha no te devuelve
+  // abajo, y cada vez que se llega con el ancla, sí, venga de donde venga
+  // (`/code-review`, #863). Con la de la ruta ya pintada: al pasar de una a
+  // otra, la anterior sigue en pantalla un instante (CodeRabbit, #863). Sin
+  // distinguir mayúsculas: el servidor devuelve el id en minúsculas
   const bajoEn = useRef(null);
-  const pintada = competition?.id;
+  const pintada = competition?.id?.toLowerCase();
+  const llegada = location.key;
   useEffect(() => {
     if (location.hash !== '#clasificaciones' || !conClasificacion || isLoading) return;
-    if (pintada !== id || bajoEn.current === id) return;
-    bajoEn.current = id;
+    if (pintada !== id?.toLowerCase() || bajoEn.current === llegada) return;
+    bajoEn.current = llegada;
     bajaALaClasificacion();
-  }, [location.hash, conClasificacion, isLoading, pintada, id]);
+  }, [location.hash, conClasificacion, isLoading, pintada, id, llegada]);
 
   if (isLoading) {
     return (

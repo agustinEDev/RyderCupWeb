@@ -17,18 +17,15 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Lo que contesta el leaderboard si un test no dice otra cosa
+const { mockRyder } = vi.hoisted(() => ({
+  mockRyder: { teamAName: 'Red', teamBName: 'Blue', teamAPoints: 3, teamBPoints: 2, matches: [] },
+}));
+
 const mockDetalle = vi.fn();
 vi.mock('../../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
-  getLeaderboardUseCase: {
-    execute: vi.fn().mockResolvedValue({
-      teamAName: 'Red',
-      teamBName: 'Blue',
-      teamAPoints: 3,
-      teamBPoints: 2,
-      matches: [],
-    }),
-  },
+  getLeaderboardUseCase: { execute: vi.fn().mockResolvedValue(mockRyder) },
 }));
 
 const mockUser = { current: null };
@@ -117,11 +114,14 @@ describe('LeaderboardPage', () => {
    * compartido a esta página llevaba al error del servidor (QA de la release).
    */
   describe('una competición de stroke play', () => {
-    // Aunque falle una aserción: los temporizadores falsos no pasan al siguiente
+    // Aunque falle una aserción: ni los temporizadores falsos ni lo que
+    // contestan los mocks pasan al siguiente (`/code-review`, #863)
     afterEach(() => {
       vi.useRealTimers();
       vi.restoreAllMocks();
       mockParams.id = 'c-1';
+      getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      mockDetalle.mockReset();
     });
 
     it('L1: redirige a su ficha, a la clasificación', async () => {
@@ -175,8 +175,6 @@ describe('LeaderboardPage', () => {
 
       expect(getLeaderboardUseCase.execute.mock.calls.length).toBeGreaterThanOrEqual(3);
       expect(mockDetalle).toHaveBeenCalledTimes(1);
-      vi.useRealTimers();
-      getLeaderboardUseCase.execute.mockReset();
     });
 
     it('L7: si la ficha no respondió (sin red), el siguiente refresco vuelve a preguntar y redirige (CodeRabbit, #863)', async () => {
@@ -191,8 +189,6 @@ describe('LeaderboardPage', () => {
 
       expect(await screen.findByTestId('redirige')).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
       expect(mockDetalle).toHaveBeenCalledTimes(2);
-      vi.useRealTimers();
-      getLeaderboardUseCase.execute.mockReset();
     });
 
     it('L8: si la ficha respondió con un error, no se vuelve a preguntar (una por competición)', async () => {
@@ -208,8 +204,6 @@ describe('LeaderboardPage', () => {
 
       expect(getLeaderboardUseCase.execute.mock.calls.length).toBeGreaterThanOrEqual(3);
       expect(mockDetalle).toHaveBeenCalledTimes(1);
-      vi.useRealTimers();
-      getLeaderboardUseCase.execute.mockReset();
     });
 
     it('L9: la consulta vieja de otra competición que falla sin red no hace repreguntar a la actual', async () => {
@@ -230,7 +224,6 @@ describe('LeaderboardPage', () => {
       await vi.advanceTimersByTimeAsync(30000);
 
       expect(mockDetalle).toHaveBeenCalledTimes(2);
-      getLeaderboardUseCase.execute.mockReset();
     });
 
     it('L10: sin conexión en el dispositivo, aunque llegue un error con código, se vuelve a preguntar', async () => {
@@ -247,7 +240,6 @@ describe('LeaderboardPage', () => {
       await vi.advanceTimersByTimeAsync(30000);
 
       expect(await screen.findByTestId('redirige')).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
-      getLeaderboardUseCase.execute.mockReset();
     });
 
     it('L6: sin sesión no pregunta por la ficha (no podría leerla)', async () => {
