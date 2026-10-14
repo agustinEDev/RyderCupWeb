@@ -49,13 +49,12 @@ vi.mock('../../components/layout/Footer', () => ({
 
 // La general de un Stableford o un Medal: aquí importa con qué se pinta
 vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', () => ({
-  default: ({ competitionId, userId, enJuego, sinTitulo }) => (
+  default: ({ competitionId, userId, enJuego }) => (
     <div
       data-testid="general-stroke-play"
       data-competition={competitionId}
       data-user={userId}
       data-en-juego={String(enJuego)}
-      data-sin-titulo={String(Boolean(sinTitulo))}
     />
   ),
 }));
@@ -206,16 +205,6 @@ describe('LeaderboardPage', () => {
       render(<LeaderboardPage />);
 
       expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'true');
-    });
-
-    it('G12 (revisor): la sección va sin su título: «Clasificación» ya es el h1 de la página', async () => {
-      mockUser.current = { id: 'u-1' };
-      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
-      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
-
-      render(<LeaderboardPage />);
-
-      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-sin-titulo', 'true');
     });
 
     it('L11 (revisor): con el doble arranque de React en desarrollo (StrictMode), una sola consulta de la ficha y se ve la general', async () => {

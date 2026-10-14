@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trophy } from 'lucide-react';
 import { getCompetitionStandingsUseCase, getScratchStandingsUseCase } from '../../composition';
 import Clasificacion from './Clasificacion';
 
@@ -9,21 +8,20 @@ const CADA = 60000;
 const PESTANAS = ['overall', 'scratch'];
 
 /**
- * La sección «Clasificación» de la ficha de un Stableford o un Medal (FE #824,
- * PR 8; decidido con Agustín el 11 oct 2026): pestañas General (con filtro de
- * categoría, categoría y tarjetas de cada uno y la regla del torneo) y
- * Scratch (corte en el 25.º; quien queda fuera ve su fila debajo). La ve
- * cualquiera con sesión. Se relee cada 60 s solo con la competición en juego
- * y la pestaña a la vista; acabada, una lectura.
+ * La clasificación de un Stableford o un Medal, en su propia página
+ * (`/competitions/:id/leaderboard`; 14 oct 2026: en la ficha, con 200
+ * participantes, no cabía): pestañas General (con filtro de categoría y la
+ * regla del torneo) y Scratch (corte en el 25.º; quien queda fuera ve su fila
+ * debajo). La ve cualquiera con sesión. Se relee cada 60 s mientras `enJuego`
+ * y la pestaña está a la vista; si no, una lectura.
  *
  * @param {Object} props
  * @param {string} props.competitionId
  * @param {string} [props.userId] - Quién mira, destacado
  * @param {boolean} props.enJuego - Si la competición está en juego
  * @param {number} [props.version] - Sube cuando cambian las partidas: se relee
- * @param {boolean} [props.sinTitulo] - Sin su título (en su página, el h1 ya lo dice)
  */
-const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, version, sinTitulo = false }) => {
+const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, version }) => {
   const { t } = useTranslation('scoring');
   const [pestana, setPestana] = useState('overall');
   const pedirGeneral = useCallback(
@@ -34,14 +32,10 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, versio
   const cada = enJuego ? CADA : null;
 
   return (
-    <section data-testid="clasificaciones" className="space-y-3 rounded-xl border border-gray-200 bg-white px-3 py-4 shadow-sm">
-      {/* En su propia página, «Clasificación» ya es el h1 (revisor) */}
-      {!sinTitulo && (
-        <h3 className="flex items-center gap-2 px-1 text-base font-semibold text-gray-900">
-          <Trophy className="h-5 w-5 text-green-600" />
-          {t('partida.standingsTitle')}
-        </h3>
-      )}
+    // Sin tarjeta ni título propios: es lo único de su página, que ya dice
+    // «Clasificación» en su h1, y con el relleno de la tarjeta los nombres se
+    // quedaban en unos 125 px a 360 (pasada del 14 oct, FE #865)
+    <section data-testid="clasificaciones" className="space-y-3">
       <div role="tablist" aria-label={t('partida.standingsTitle')} className="flex border-b border-gray-200">
         {PESTANAS.map((p) => (
           <button
