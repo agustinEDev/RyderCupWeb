@@ -73,6 +73,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const ultimoIntento = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  // El aviso va arriba y el botón que lo provoca, abajo: en un móvil se
+  // pintaba fuera de la vista y parecía que no pasaba nada
+  const avisoDeError = useRef(null);
+  useEffect(() => {
+    if (error) avisoDeError.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [error]);
 
   const [participantTab, setParticipantTab] = useState('friends');
   const [friends, setFriends] = useState([]);
@@ -89,7 +95,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   useEffect(() => {
     if (step === 2 && currentUser?.id) {
       listFriendsUseCase
-        .execute(currentUser.id)
+        // Todos (hasta el máximo del servidor): con los 20 de por defecto, a
+        // quien tiene más amigos le faltaban en la lista
+        .execute(currentUser.id, { limit: 100 })
         .then((res) => setFriends(res.friendships))
         .catch(() => setFriends([]));
     }
@@ -353,11 +361,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     setStep(3);
   };
 
+  // Vacío, un registrado juega con el de su perfil —el servidor no tiene «sin
+  // hándicap» para él—, así que es eso lo que se enseña; un invitado, sin él
   const handleConfirmParticipantHandicap = (newHandicap) => {
     const { participantId } = editingHandicapParticipant;
     setEditingHandicapParticipant(null);
     setParticipants((prev) =>
-      prev.map((p) => (p.participantId === participantId ? { ...p, handicap: newHandicap } : p))
+      prev.map((p) =>
+        p.participantId === participantId
+          ? { ...p, handicap: newHandicap === null && !p.isGuest ? p.profileHandicap : newHandicap }
+          : p
+      )
     );
   };
 
@@ -409,10 +423,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     };
   };
 
+  // Tras un fallo SIN respuesta (sin red, 5xx, tiempo agotado) la partida
+  // pudo crearse: el id se conserva aunque cambie el borrador, y el servidor
+  // devuelve la que ya hay en vez de crear otra. Tras un rechazo claro (4xx)
+  // no se creó nada, y un borrador distinto estrena id
   const idDelIntento = (peticion) => {
     const firma = JSON.stringify(peticion);
-    if (ultimoIntento.current?.firma !== firma) {
-      ultimoIntento.current = { firma, id: globalThis.crypto.randomUUID() };
+    const previo = ultimoIntento.current;
+    if (!previo || (previo.firma !== firma && !previo.quizaCreada)) {
+      ultimoIntento.current = { firma, id: globalThis.crypto.randomUUID(), quizaCreada: false };
     }
     return ultimoIntento.current.id;
   };
@@ -428,6 +447,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       });
       onStarted(started.id);
     } catch (err) {
+      ultimoIntento.current.quizaCreada = !err?.status || err.status >= 500;
       const motivo = MOTIVO_POR_CODIGO[err?.status];
       setError(
         motivo
@@ -469,7 +489,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
         </div>
 
         {error && (
-          <div className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600" data-testid="quick-match-modal-error">
+          <div
+            ref={avisoDeError}
+            className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600"
+            data-testid="quick-match-modal-error"
+          >
             {error}
           </div>
         )}
@@ -514,7 +538,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             isTeamFormat={isTeamFormat}
             isFreePlay={isFreePlay}
             selectedTeam={selectedTeam}
-            onSelectedTeamChange={setSelectedTeam}
+            onSelectedTeamChange={(team) => {
+              setSelectedTeam(team);
+              setError('');
+            }}
             participantTab={participantTab}
             onParticipantTabChange={setParticipantTab}
             availableFriends={availableFriends}

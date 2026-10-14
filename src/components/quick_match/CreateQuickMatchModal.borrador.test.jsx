@@ -18,9 +18,22 @@
  *        |                                           | se queda
  *   18   foursomes: las dos parejas / la mía        | los UserId de quien anota
  *   R    reintentar lo mismo tras un fallo          | el MISMO id (el servidor devuelve
- *        |                                           | la que ya creó); cambiar algo, otro
+ *        |                                           | la que ya creó)
  *   12b  un equipo ya completo                      | se avisa en el momento, sin añadir
  *   14b  volver al paso 1                           | la plantilla empieza de nuevo
+ *
+ * Y lo que añadió la revisión (14 oct):
+ *
+ *   V1   vaciar el hándicap de un registrado        | vuelve el del perfil, sin override
+ *   V2   un amigo sin hándicap al que se le pone    | viaja como override
+ *   V3   el hándicap tecleado de un invitado        | viaja en la petición
+ *   V4   un 5xx; un 429                             | el genérico; el texto de la app; el
+ *        |                                           | borrador sigue
+ *   V5   sin respuesta, se cambia algo y se reintenta| el MISMO id: si se creó, vuelve esa
+ *   V6   un 4xx, se cambia algo y se reintenta       | otro id: no se creó nada
+ *   V7   el aviso de error                          | se desplaza a la vista
+ *   V8   la lista de amigos                         | se piden hasta 100
+ *   V9   «equipo completo» y se cambia de equipo     | el aviso se va
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
@@ -269,8 +282,7 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     expect(screen.getByTestId('quick-match-start')).toBeInTheDocument();
   });
 
-  it('R · reintentar lo mismo usa el mismo id; cambiar algo, otro', async () => {
-    mockIniciar.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  it('R · reintentar lo mismo tras un fallo usa el mismo id', async () => {
     mockIniciar.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     abre();
     await alPaso2();
@@ -279,16 +291,9 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     fireEvent.click(screen.getByTestId('quick-match-start'));
     await screen.findByTestId('quick-match-modal-error');
     fireEvent.click(screen.getByTestId('quick-match-start'));
+
     await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(2));
     expect(peticion(1).quickMatchId).toBe(peticion(0).quickMatchId);
-
-    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
-    const panel = await screen.findByRole('dialog', { name: 'Yo' });
-    teclea(panel, '8');
-    fireEvent.click(screen.getByTestId('quick-match-start'));
-
-    await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(3));
-    expect(peticion(2).quickMatchId).not.toBe(peticion(0).quickMatchId);
   });
 
   it('18 · foursomes: las dos parejas anotan, por su UserId', async () => {
@@ -341,4 +346,158 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     await screen.findByTestId('quick-match-participants-next');
     expect(screen.queryByText('Ana Pérez')).not.toBeInTheDocument();
   });
+
+  it('V1 · vaciar el hándicap de un registrado vuelve al del perfil, sin override', async () => {
+    abre();
+    await alPaso2();
+    await anadeAmigo('f-1');
+    await alResumen();
+
+    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-2'));
+    teclea(await screen.findByRole('dialog', { name: 'Rafa' }), '');
+    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
+    teclea(await screen.findByRole('dialog', { name: 'Yo' }), '');
+
+    expect(screen.getByTestId('quick-match-handicap-button-user-2')).toHaveTextContent('20.1');
+    expect(screen.getByTestId('quick-match-handicap-button-user-1')).toHaveTextContent('12.4');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(peticion().creatorHandicap).toBeNull();
+    expect(peticion().participants[0].handicap).toBeNull();
+  });
+
+  it('V2 · un amigo sin hándicap al que se le pone uno: viaja como override', async () => {
+    abre();
+    await alPaso2();
+    await anadeAmigo('f-2');
+    await alResumen();
+
+    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-3'));
+    teclea(await screen.findByRole('dialog', { name: 'Luis' }), '25');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(peticion().participants[0]).toMatchObject({ friendUserId: 'user-3', handicap: 25 });
+  });
+
+  it('V3 · el hándicap tecleado de un invitado viaja en la petición', async () => {
+    abre();
+    await alPaso2();
+    fireEvent.click(screen.getByTestId('quick-match-tab-guest'));
+    fireEvent.click(screen.getByTestId('quick-match-guest-handicap-button'));
+    teclea(await screen.findByRole('dialog', { name: 'create.participants.guestHandicap' }), '18.4');
+    anadeInvitado('Ana', 'Pérez');
+    await alResumen();
+
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(peticion().participants[0]).toMatchObject({ kind: 'GUEST', handicap: 18.4 });
+  });
+
+  it.each([
+    [503, 'Service Unavailable', 'create.errors.generic'],
+    [429, 'Demasiadas peticiones', 'Demasiadas peticiones'],
+  ])('V4 · un %i: %s, y el borrador sigue', async (status, texto, esperado) => {
+    mockIniciar.mockRejectedValue(Object.assign(new Error(texto), { status }));
+    abre();
+    await alPaso2();
+    await anadeAmigo('f-1');
+    await alResumen();
+
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent(esperado);
+    expect(screen.getByText('Rafa')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['sin red', new TypeError('Failed to fetch')],
+    ['un 503', Object.assign(new Error('Service Unavailable'), { status: 503 })],
+  ])('V5 · %s, se cambia algo y se reintenta: el MISMO id', async (_caso, fallo) => {
+    mockIniciar.mockRejectedValueOnce(fallo);
+    abre();
+    await alPaso2();
+    await alResumen();
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+    await screen.findByTestId('quick-match-modal-error');
+
+    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
+    teclea(await screen.findByRole('dialog', { name: 'Yo' }), '8');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(2));
+    expect(peticion(1).quickMatchId).toBe(peticion(0).quickMatchId);
+    expect(peticion(1).creatorHandicap).toBe(8);
+  });
+
+  it('V6 · un 4xx, se cambia algo y se reintenta: otro id', async () => {
+    mockIniciar.mockRejectedValueOnce(Object.assign(new Error('nope'), { status: 422 }));
+    abre();
+    await alPaso2();
+    await alResumen();
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+    await screen.findByTestId('quick-match-modal-error');
+
+    fireEvent.click(screen.getByTestId('quick-match-handicap-button-user-1'));
+    teclea(await screen.findByRole('dialog', { name: 'Yo' }), '8');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(2));
+    expect(peticion(1).quickMatchId).not.toBe(peticion(0).quickMatchId);
+  });
+
+  it('V7 · el aviso de error se desplaza a la vista', async () => {
+    const desplaza = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = desplaza;
+    mockIniciar.mockRejectedValue(Object.assign(new Error('nope'), { status: 422 }));
+    abre();
+    await alPaso2();
+    await alResumen();
+
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+
+    await screen.findByTestId('quick-match-modal-error');
+    await waitFor(() => expect(desplaza).toHaveBeenCalled());
+    delete globalThis.Element.prototype.scrollIntoView;
+  });
+
+  it('V8 · la lista de amigos se pide entera (hasta 100)', async () => {
+    abre();
+    await alPaso2();
+
+    expect(mockListFriends).toHaveBeenCalledWith('user-1', { limit: 100 });
+  });
+
+  it('V9 · el aviso de «equipo completo» se va al cambiar de equipo', async () => {
+    abre();
+    await alPaso2({ libre: false, formato: 'FOURBALL' });
+    await anadeAmigo('f-1');
+    anadeInvitado('Ana', 'Pérez');
+    expect(screen.getByTestId('quick-match-modal-error')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('quick-match-team-B'));
+
+    expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
+  });
+
+  it('V1b · vaciar el de un invitado lo deja sin hándicap', async () => {
+    abre();
+    await alPaso2();
+    fireEvent.click(screen.getByTestId('quick-match-tab-guest'));
+    fireEvent.click(screen.getByTestId('quick-match-guest-handicap-button'));
+    teclea(await screen.findByRole('dialog', { name: 'create.participants.guestHandicap' }), '18.4');
+    anadeInvitado('Ana', 'Pérez');
+    await alResumen();
+    const boton = screen.getAllByTestId(/^quick-match-handicap-button-invitado-/)[0];
+
+    fireEvent.click(boton);
+    teclea(await screen.findByRole('dialog', { name: 'Ana Pérez' }), '');
+
+    expect(boton).toHaveTextContent('create.summary.handicapPlaceholder');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(peticion().participants[0].handicap).toBeNull();
+  });
 });
+
