@@ -558,6 +558,47 @@ describe('la consulta compartida cuando la página se va', () => {
     expect(peticiones).toHaveLength(1);
   });
 
+  describe('si la página vuelve desde la caché del historial (Atrás tras salir)', () => {
+    const locationDeVerdad = window.location;
+    let recarga;
+    beforeEach(() => {
+      recarga = vi.fn();
+      delete window.location;
+      window.location = { href: '/', reload: recarga };
+    });
+    afterEach(() => {
+      window.location = locationDeVerdad;
+    });
+    const vuelveDeLaCache = (persisted) => {
+      const evento = new globalThis.Event('pageshow');
+      Object.defineProperty(evento, 'persisted', { value: persisted });
+      globalThis.dispatchEvent(evento);
+    };
+
+    it('B1: con la marca puesta, se recarga: si no, se quedaba en «Loading...» para siempre (revisor)', () => {
+      laPaginaSeVa();
+      olvidaLaSesion();
+
+      vuelveDeLaCache(true);
+
+      expect(recarga).toHaveBeenCalledTimes(1);
+    });
+
+    it('B2: sin la marca (una vuelta atrás normal), no se toca nada', () => {
+      vuelveDeLaCache(true);
+
+      expect(recarga).not.toHaveBeenCalled();
+    });
+
+    it('B2b: una carga normal de la página (no desde la caché), tampoco', () => {
+      laPaginaSeVa();
+
+      vuelveDeLaCache(false);
+
+      expect(recarga).not.toHaveBeenCalled();
+    });
+  });
+
   it('el reinicio de las pruebas la deja como al cargar la página', async () => {
     laPaginaSeVa();
     reiniciaLaSesionCompartida();

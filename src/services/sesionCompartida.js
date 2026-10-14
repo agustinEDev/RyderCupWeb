@@ -122,6 +122,14 @@ let instantanea = NADA_SABIDO;
 // La página se está yendo (una salida que recarga): preguntar ya no sirve de
 // nada, la recarga cortaría la petición a medias (FE #865)
 let seVa = false;
+// Pero el navegador puede guardar la página que se iba en su caché del
+// historial (bfcache, casi siempre en Safari) con esta marca puesta y la sesión
+// olvidada: al volver Atrás se restauraba tal cual y se quedaba en «Loading...»
+// para siempre, porque nada vuelve a preguntar. Se hace lo que la marca
+// esperaba, recargar (revisor, FE #865)
+globalThis.addEventListener?.('pageshow', (evento) => {
+  if (evento.persisted && seVa) globalThis.location.reload();
+});
 let enVuelo = null;
 let generacion = 0;
 let reintento = null;
