@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
@@ -25,6 +25,7 @@ const HOYOS = 18;
  * @param {boolean} [props.conRegla] - La regla del torneo arriba (la general)
  * @param {string} [props.vacia] - Qué decir sin nadie todavía
  * @param {boolean} [props.filtrable] - Con filtro de categoría (la scratch no lo tiene)
+ * @param {'una'|'alAbrir'} [props.centraEnMi] - Si participo, llevarme a mi fila
  */
 const Clasificacion = ({
   pedir,
@@ -35,6 +36,7 @@ const Clasificacion = ({
   conRegla = false,
   vacia = 'partida.standingsEmpty',
   filtrable = true,
+  centraEnMi = null,
 }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
@@ -46,6 +48,11 @@ const Clasificacion = ({
   // bajo la categoría nueva (/code-review)
   const [cambiandoDeFiltro, setCambiandoDeFiltro] = useState(false);
   const lecturas = useLaMasNueva();
+  // Si participo, me lleva a mi fila, centrada (14 oct 2026): «una», la
+  // primera vez que se ve; «alAbrir», cada vez que se abre. Los refrescos y el
+  // filtro no me mueven
+  const bloqueRef = useRef(null);
+  const yaCentrada = useRef(false);
 
   const leer = useCallback(async () => {
     const turno = lecturas.turno();
@@ -71,6 +78,18 @@ const Clasificacion = ({
     leer();
   }, [activa, leer, cada, version]);
   useSondeoMientras(activa && cada != null, leer, cada ?? 0);
+  useEffect(() => {
+    if (!activa && centraEnMi === 'alAbrir') yaCentrada.current = false;
+  }, [activa, centraEnMi]);
+  useEffect(() => {
+    if (!centraEnMi || !activa || !clasificacion || yaCentrada.current) return;
+    // También la de debajo del corte (scratch)
+    const mia = bloqueRef.current?.querySelector('tr[data-yo="true"]');
+    if (!mia) return;
+    yaCentrada.current = true;
+    const sinAnimacion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    mia.scrollIntoView({ block: 'center', behavior: sinAnimacion ? 'auto' : 'smooth' });
+  }, [centraEnMi, activa, clasificacion]);
 
   if (!activa) return null;
 
@@ -112,14 +131,21 @@ const Clasificacion = ({
     const yo = fila.userId === userId;
     const { texto, titulo } = thru(fila);
     return (
-      <tr key={testId} data-testid={testId} data-yo={String(yo)} className={yo ? 'bg-green-50 font-semibold' : ''}>
+      <tr
+        key={testId}
+        data-testid={testId}
+        data-yo={String(yo)}
+        className={yo ? 'bg-green-50/70 shadow-[inset_3px_0_0_var(--color-primary,#16a34a)]' : ''}
+      >
         {/* «T22» no cabía en w-10 y se pegaba al nombre (QA del 11 oct 2026) */}
-        <td className="w-12 py-2 pr-2 pl-3 text-gray-500 tabular-nums">{puesto(fila)}</td>
+        <td className="w-12 py-2.5 pr-2 pl-3 text-xs font-medium text-gray-400 tabular-nums">{puesto(fila)}</td>
         {/* El nombre entero, en dos líneas si no cabe: cortado a 360 px se leía
             «Helena Pru…» (2.ª pasada del QA, 12 oct 2026) */}
-        <td title={fila.name} className="break-words py-2 pr-2 text-gray-900">{fila.name}</td>
-        <td className="w-14 py-2 text-right font-bold text-gray-900 tabular-nums">{valor(fila)}</td>
-        <td data-columna="thru" className="w-14 py-2 pr-3 text-right text-xs text-gray-500 tabular-nums">
+        <td title={fila.name} className={`break-words py-2.5 pr-2 leading-snug ${yo ? 'font-semibold text-gray-900' : 'text-gray-800'}`}>
+          {fila.name}
+        </td>
+        <td className="w-12 py-2.5 text-right text-[15px] font-semibold text-gray-900 tabular-nums">{valor(fila)}</td>
+        <td data-columna="thru" className="w-12 py-2.5 pr-3 text-right text-[11px] text-gray-400 tabular-nums">
           {/* NR, NP: abreviatura con su nombre entero, que los lectores de pantalla sí dicen (revisor) */}
           {titulo ? <abbr title={titulo} className="no-underline">{texto}</abbr> : texto}
         </td>
@@ -130,21 +156,21 @@ const Clasificacion = ({
   const tabla = (filas, conCabecera, nombre) => (
     <table aria-label={nombre} className="w-full table-fixed border-collapse text-sm">
       {conCabecera && (
-        <thead className="border-b border-gray-200 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        <thead className="border-b border-gray-100 text-left text-[10px] font-medium uppercase tracking-wider text-gray-400">
           <tr>
-            <th scope="col" className="w-12 py-2 pr-2 pl-3 font-semibold">{t('partida.colPos')}</th>
-            <th scope="col" className="py-2 pr-2 font-semibold">{t('partida.colPlayer')}</th>
-            <th scope="col" className="w-14 py-2 text-right font-semibold">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
-            <th scope="col" className="w-14 py-2 pr-3 text-right font-semibold">{t('partida.colThru')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 pr-2 pl-3 font-medium">{t('partida.colPos')}</th>
+            <th scope="col" className="pt-1 pb-1.5 pr-2 font-medium">{t('partida.colPlayer')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 text-right font-medium">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 pr-3 text-right font-medium">{t('partida.colThru')}</th>
           </tr>
         </thead>
       )}
-      <tbody className="divide-y divide-gray-100">{filas}</tbody>
+      <tbody className="divide-y divide-gray-50">{filas}</tbody>
     </table>
   );
 
   return (
-    <div className="space-y-3">
+    <div ref={bloqueRef} className="space-y-3">
       {conRegla && <p className="text-xs text-gray-500">{t(`partida.rule.${clasificacion.rule}`)}</p>}
       {/* Solo donde hay categorías: las filas de la scratch traen la suya,
           pero la scratch no se filtra (revisor) */}
@@ -185,7 +211,7 @@ const Clasificacion = ({
       ) : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="overflow-hidden bg-white">
           {tabla(
             clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)),
             true,

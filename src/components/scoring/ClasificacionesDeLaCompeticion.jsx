@@ -33,8 +33,8 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, versio
   const cada = enJuego ? CADA : null;
 
   return (
-    <section data-testid="clasificaciones" className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+    <section data-testid="clasificaciones" className="space-y-3 rounded-xl border border-gray-200 bg-white px-3 py-4 shadow-sm">
+      <h3 className="flex items-center gap-2 px-1 text-base font-semibold text-gray-900">
         <Trophy className="h-5 w-5 text-green-600" />
         {t('partida.standingsTitle')}
       </h3>
@@ -65,6 +65,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, versio
           cada={cada}
           version={version}
           conRegla
+          centraEnMi="una"
           vacia="partida.noResultsYet"
         />
       </div>
@@ -77,6 +78,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, versio
           version={version}
           filtrable={false}
           conRegla
+          centraEnMi="una"
           vacia="partida.noResultsYet"
         />
       </div>

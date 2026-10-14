@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 /**
@@ -88,3 +88,28 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
     }
   });
 });
+
+describe('ClasificacionesDeLaCompeticion · me lleva a mi fila (14 oct 2026)', () => {
+  let centra;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    centra = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = centra;
+    mockGeneral.mockResolvedValue(clasificacion([fila('ana'), fila('yo', { position: 2 })]));
+    mockScratch.mockResolvedValue(clasificacion([fila('yo', { position: 1 }), fila('ana', { position: 2 })], { scale: 'SCRATCH' }));
+  });
+  afterEach(() => delete globalThis.Element.prototype.scrollIntoView);
+
+  it('G4: la general me centra al abrir la página, la scratch la primera vez que se abre, y volver a la general no', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="yo" enJuego={false} />);
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'partida.scratch' }));
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('tab', { name: 'partida.overall' }));
+    await act(async () => {});
+
+    expect(centra).toHaveBeenCalledTimes(2);
+  });
+});
+

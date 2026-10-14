@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 
 /**
@@ -266,3 +266,114 @@ describe('Clasificacion · general y scratch (FE #824, PR 8)', () => {
     expect(await codigo('dani')).toHaveAttribute('title', 'partida.status.RETIRADO');
   });
 });
+
+/**
+ * Si participo, la clasificación me lleva a mi fila (14 oct 2026): centrada,
+ * una vez por pestaña en la página de la general y cada vez que se abre la
+ * pestaña en la anotación. Los refrescos y el filtro no me mueven.
+ */
+describe('Clasificacion · me lleva a mi fila', () => {
+  let centra;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    centra = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = centra;
+  });
+  // jsdom no lo tiene: que no se quede puesto para los demás
+  afterEach(() => {
+    delete globalThis.Element.prototype.scrollIntoView;
+    delete globalThis.matchMedia;
+  });
+  const conYo = () => clasificacion([fila('ana', { category: 1 }), fila('yo', { position: 2, category: 2 })]);
+
+  it('S1: con mi fila, la centra al abrirse', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+    expect(centra.mock.contexts[0]).toBe(screen.getByTestId('fila-yo'));
+    expect(centra).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' });
+  });
+
+  it('S2: ni el refresco ni el filtro de categoría me vuelven a mover', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa cada={60000} centraEnMi="una" />);
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+
+    await act(async () => vi.advanceTimersByTime(60000));
+    await waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
+    fireEvent.change(screen.getByLabelText('partida.category'), { target: { value: '2' } });
+    await waitFor(() => expect(pedir).toHaveBeenCalledWith(2));
+    await screen.findByTestId('fila-yo');
+
+    expect(centra).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('S3: fuera del corte (scratch), centra mi fila de debajo', async () => {
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('ana')], { scale: 'SCRATCH', me: fila('yo', { position: 31 }) }));
+    render(<Clasificacion pedir={pedir} userId="yo" activa filtrable={false} centraEnMi="una" />);
+
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+    expect(centra.mock.contexts[0]).toBe(screen.getByTestId('fila-fuera-del-corte'));
+  });
+
+  it('S4: si no participo, no se mueve', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="organizador" activa centraEnMi="una" />);
+    await screen.findByTestId('fila-yo');
+
+    expect(centra).not.toHaveBeenCalled();
+  });
+
+  it('S5: con «reducir movimiento», el salto es instantáneo', async () => {
+    globalThis.matchMedia = vi.fn((q) => ({ matches: q === '(prefers-reduced-motion: reduce)' }));
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+
+    await waitFor(() => expect(centra).toHaveBeenCalledWith({ block: 'center', behavior: 'auto' }));
+  });
+
+  it('S6: sin pedirlo, nunca se mueve', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+    await screen.findByTestId('fila-yo');
+
+    expect(centra).not.toHaveBeenCalled();
+  });
+
+  it('S7: «una»: cerrar la pestaña y volver a abrirla no me vuelve a mover', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+
+    rerender(<Clasificacion pedir={pedir} userId="yo" activa={false} centraEnMi="una" />);
+    rerender(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+    await waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
+
+    expect(centra).toHaveBeenCalledTimes(1);
+  });
+
+  it('S8: «alAbrir»: cada vez que se abre la pestaña me lleva, ya leída la clasificación', async () => {
+    let suelta;
+    const pedir = vi.fn().mockResolvedValueOnce(conYo()).mockReturnValueOnce(new Promise((r) => { suelta = r; }));
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />);
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+
+    rerender(<Clasificacion pedir={pedir} userId="yo" activa={false} centraEnMi="alAbrir" />);
+    rerender(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />);
+    await act(async () => suelta(conYo()));
+
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(2));
+  });
+
+  it('D1: la tabla va sin marco propio (la tarjeta que la contiene ya lo tiene)', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+
+    const tabla = await screen.findByRole('table', { name: 'partida.standingsTable' });
+    expect(tabla.parentElement).not.toHaveClass('border');
+  });
+});
+

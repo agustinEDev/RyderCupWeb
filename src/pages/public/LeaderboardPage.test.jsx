@@ -45,6 +45,13 @@ vi.mock('../../components/layout/Footer', () => ({
   default: () => <div data-testid="footer">Footer</div>,
 }));
 
+// La general de un Stableford o un Medal: aquí importa con qué se pinta
+vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', () => ({
+  default: ({ competitionId, userId, enJuego }) => (
+    <div data-testid="general-stroke-play" data-competition={competitionId} data-user={userId} data-en-juego={String(enJuego)} />
+  ),
+}));
+
 vi.mock('../../components/scoring/LeaderboardView', () => ({
   default: ({ leaderboard }) => leaderboard ? <div data-testid="leaderboard-view">Leaderboard</div> : null,
 }));
@@ -110,8 +117,8 @@ describe('LeaderboardPage', () => {
   });
 
   /**
-   * La de un Stableford o un Medal vive en su ficha: un enlace guardado o
-   * compartido a esta página llevaba al error del servidor (QA de la release).
+   * Un Stableford o un Medal tiene aquí su general (14 oct 2026): antes el
+   * enlace llevaba al error del servidor y luego redirigía a la ficha.
    */
   describe('una competición de stroke play', () => {
     // Aunque falle una aserción: ni los temporizadores falsos ni lo que
@@ -124,17 +131,73 @@ describe('LeaderboardPage', () => {
       mockDetalle.mockReset();
     });
 
-    it('L1: redirige a su ficha, a la clasificación', async () => {
+    it('G1: con sesión y en juego, la página pinta su general (no redirige) con el nombre de la competición', async () => {
       mockUser.current = { id: 'u-1' };
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
-      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false });
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa de Otoño', status: 'IN_PROGRESS' });
 
       render(<LeaderboardPage />);
 
-      const redirige = await screen.findByTestId('redirige');
-      expect(redirige).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
-      expect(redirige).toHaveAttribute('data-replace', 'true');
+      const general = await screen.findByTestId('general-stroke-play');
+      expect(general).toHaveAttribute('data-competition', 'c-1');
+      expect(general).toHaveAttribute('data-user', 'u-1');
+      expect(general).toHaveAttribute('data-en-juego', 'true');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('leaderboard.title');
+      expect(screen.getByText('Copa de Otoño')).toBeInTheDocument();
+      expect(screen.queryByTestId('redirige')).not.toBeInTheDocument();
       expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('leaderboard-view')).not.toBeInTheDocument();
+    });
+
+    it('G2: acabada, su general sin releer en juego', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'COMPLETED' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'false');
+    });
+
+    it('G1b: una vez vista su general, deja de pedir el leaderboard de la Ryder cada 30 s', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+      render(<LeaderboardPage />);
+      await screen.findByTestId('general-stroke-play');
+      const pedidas = getLeaderboardUseCase.execute.mock.calls.length;
+
+      await vi.advanceTimersByTimeAsync(30000);
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(getLeaderboardUseCase.execute.mock.calls.length).toBe(pedidas);
+    });
+
+    it('G11: si la página pasa a otra competición (una Ryder) sin desmontarse, no sigue pintando la general de la anterior', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+      const { rerender } = render(<LeaderboardPage />);
+      await screen.findByTestId('general-stroke-play');
+
+      mockParams.id = 'c-2';
+      rerender(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
+      expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+    });
+
+    it('G10: volver lleva a la ficha, venga de donde venga', async () => {
+      mockUser.current = { id: 'u-1' };
+      mockLocationState.state = null;
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+
+      render(<LeaderboardPage />);
+      await screen.findByTestId('general-stroke-play');
+
+      expect(screen.getByText(/summary.backToCompetition/).closest('a')).toHaveAttribute('href', '/competitions/c-1');
     });
 
     it('L2: un 400 de una Ryder (o sin poder leer la ficha) sigue diciendo el error', async () => {
@@ -143,7 +206,7 @@ describe('LeaderboardPage', () => {
       mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: true });
       render(<LeaderboardPage />);
       expect(await screen.findByText('otro motivo')).toBeInTheDocument();
-      expect(screen.queryByTestId('redirige')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
     });
 
     it('L3: sin poder leer la ficha, el error, sin redirigir', async () => {
@@ -152,7 +215,7 @@ describe('LeaderboardPage', () => {
       mockDetalle.mockRejectedValueOnce(Object.assign(new Error('401'), { status: 401 }));
       render(<LeaderboardPage />);
       expect(await screen.findByText('llega con sus rondas')).toBeInTheDocument();
-      expect(screen.queryByTestId('redirige')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
     });
 
     it('L4: otros fallos no piden la ficha', async () => {
@@ -177,7 +240,7 @@ describe('LeaderboardPage', () => {
       expect(mockDetalle).toHaveBeenCalledTimes(1);
     });
 
-    it('L7: si la ficha no respondió (sin red), el siguiente refresco vuelve a preguntar y redirige (CodeRabbit, #863)', async () => {
+    it('L7: si la ficha no respondió (sin red), el siguiente refresco vuelve a preguntar y pinta su general (CodeRabbit, #863)', async () => {
       mockUser.current = { id: 'u-1' };
       vi.useFakeTimers({ shouldAdvanceTime: true });
       getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
@@ -187,7 +250,7 @@ describe('LeaderboardPage', () => {
 
       await vi.advanceTimersByTimeAsync(30000);
 
-      expect(await screen.findByTestId('redirige')).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
+      expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
       expect(mockDetalle).toHaveBeenCalledTimes(2);
     });
 
@@ -239,7 +302,7 @@ describe('LeaderboardPage', () => {
 
       await vi.advanceTimersByTimeAsync(30000);
 
-      expect(await screen.findByTestId('redirige')).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
+      expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
     });
 
     it('L6: sin sesión no pregunta por la ficha (no podría leerla)', async () => {
