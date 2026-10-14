@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight, ChevronDown } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
+import Plegable from '../components/ui/Plegable';
 import TituloConNumero from '../components/ui/TituloConNumero';
 import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
 import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
@@ -792,8 +793,17 @@ const CompetitionDetail = () => {
   // todas, igual que una competición sin tipo
   const esStrokePlay = competition.hasTeams === false;
   // La de la Ryder o, en un Stableford o un Medal, su general: con 200
-  // participantes no cabe en la ficha (14 oct 2026)
-  const irALaClasificacion = () => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } });
+  // participantes no cabe en la ficha (14 oct 2026). Con lo que ya se sabe de
+  // ella: la página no tiene que preguntarlo otra vez (/code-review)
+  const irALaClasificacion = () =>
+    navigate(`/competitions/${id}/leaderboard`, {
+      state: {
+        from: 'detail',
+        ...(esStrokePlay && {
+          competicion: { id: competition.id, hasTeams: false, name: competition.name, status: competition.status },
+        }),
+      },
+    });
   const repartoAMostrar =
     competition.actualTeamAssignment ??
     (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
@@ -1451,14 +1461,16 @@ const CompetitionDetail = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="p-4"
             >
-              <details open={!conClasificacion} className="group bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 group-open:mb-4 [&::-webkit-details-marker]:hidden">
-                <h3 className="text-gray-900 font-bold text-lg flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-primary" />
-                  {t('detail.settings.title')}
-                </h3>
-                  <ChevronDown aria-hidden="true" className="h-5 w-5 flex-none text-gray-400 transition-transform group-open:rotate-180" />
-                </summary>
+              {/* En juego o acabado, plegada: lo que se mira es la clasificación y las partidas */}
+              <Plegable
+                abiertoAlPrincipio={!conClasificacion}
+                titulo={
+                  <>
+                    <Settings className="w-5 h-5 text-primary" />
+                    {t('detail.settings.title')}
+                  </>
+                }
+              >
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {conEquipos && (
@@ -1563,7 +1575,7 @@ const CompetitionDetail = () => {
                     </p>
                   </div>
                 </div>
-              </details>
+              </Plegable>
             </motion.div>
 
             {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
@@ -1690,14 +1702,16 @@ const CompetitionDetail = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="p-4"
             >
-              <details open={!conClasificacion} className="group bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 group-open:mb-4 [&::-webkit-details-marker]:hidden">
-                <h3 className="text-gray-900 font-bold text-base sm:text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5 flex-none text-green-600" />
-                  <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
-                </h3>
-                  <ChevronDown aria-hidden="true" className="h-5 w-5 flex-none text-gray-400 transition-transform group-open:rotate-180" />
-                </summary>
+              <Plegable
+                abiertoAlPrincipio={!conClasificacion}
+                claseDelTitulo="text-base sm:text-lg"
+                titulo={
+                  <>
+                    <Users className="w-5 h-5 flex-none text-green-600" />
+                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
+                  </>
+                }
+              >
 
                 {approvedEnrollments.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
@@ -1847,7 +1861,7 @@ const CompetitionDetail = () => {
                       ))}
                   </div>
                 )}
-              </details>
+              </Plegable>
             </motion.div>
 
             {/* Pending & Rejected Enrollments - Only visible to creator/admin */}

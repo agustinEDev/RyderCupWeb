@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
@@ -10,22 +10,30 @@ import { useAuth } from '../../hooks/useAuth';
 import { getCompetitionDetailUseCase, getLeaderboardUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
+import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 
 const POLL_INTERVAL = 30000; // 30 seconds
+// La ficha de un stroke play en juego, para enterarse de que empieza o acaba
+const CADA_FICHA = 5 * 60000;
 
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
   const { t } = useTranslation('scoring');
-  const { user } = useAuth();
+  const { user, loading: sesionCargando } = useAuth();
   const location = useLocation();
+  // Desde la ficha llega lo que ya se sabe de la competición: de esta, y de
+  // un stroke play, no hace falta preguntar nada para pintar su general
+  // (/code-review)
+  const traida = location.state?.competicion;
+  const desdeLaFicha = traida?.id === competitionId && traida?.hasTeams === false ? traida : null;
 
   const [leaderboard, setLeaderboard] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!desdeLaFicha);
   const [error, setError] = useState(null);
   // Un Stableford o un Medal tiene aquí su general (14 oct 2026: en la ficha,
   // con 200 participantes, no cabe). La de la Ryder contesta 400 y la ficha
   // dice cuál es
-  const [laDeStrokePlay, setLaDeStrokePlay] = useState(null);
+  const [laDeStrokePlay, setLaDeStrokePlay] = useState(desdeLaFicha);
   // Otra competición sin desmontarse: de cero, sin enseñar nada de la anterior
   // mientras llega lo suyo (revisor)
   const [delId, setDelId] = useState(competitionId);
@@ -33,14 +41,20 @@ const LeaderboardPage = () => {
     setDelId(competitionId);
     setLeaderboard(null);
     setError(null);
-    setIsLoading(true);
-    setLaDeStrokePlay(null);
+    setIsLoading(!desdeLaFicha);
+    setLaDeStrokePlay(desdeLaFicha);
   }
+  // Si hay sesión, no el objeto: uno nuevo en cada render relanzaría la carga
+  const conSesion = Boolean(user);
+  // Sin sesión no se ve (ni se podría releer): si se pierde, se quita (/code-review)
+  const general = conSesion ? laDeStrokePlay : null;
+  // Se relee mientras se juega o está a punto de jugarse (/code-review)
+  const enJuego = ['CLOSED', 'IN_PROGRESS'].includes(general?.status);
 
   // Dynamic back link based on where the user came from. La general de un
   // stroke play vuelve siempre a su ficha: su agenda es la de la Ryder
   const from = location.state?.from;
-  const aLaFicha = from === 'detail' || laDeStrokePlay !== null;
+  const aLaFicha = from === 'detail' || general !== null;
   const backTo = aLaFicha ? `/competitions/${competitionId}` : `/competitions/${competitionId}/schedule`;
   const backText = aLaFicha ? t('summary.backToCompetition') : t('summary.backToSchedule');
   // Se pregunta una vez por competición, no en cada refresco: el cubo de
@@ -48,12 +62,31 @@ const LeaderboardPage = () => {
   // curso: quien llega mientras tanto (el doble arranque de React en
   // desarrollo, un refresco) espera a esa misma (revisor)
   const fichaMirada = useRef(null);
-  // Si hay sesión, no el objeto: uno nuevo en cada render relanzaría la carga
-  const conSesion = Boolean(user);
   const pollRef = useRef(null);
 
+  // Su estado, cada 5 min: que empiece o acabe se sabe sin recargar, y acabada
+  // deja de releerse (/code-review). Lo que llegue para otra, no vale
+  const idActual = useRef(competitionId);
   useEffect(() => {
-    if (!competitionId) return;
+    idActual.current = competitionId;
+  }, [competitionId]);
+  const releerLaFicha = useCallback(() => {
+    const para = competitionId;
+    getCompetitionDetailUseCase
+      .execute(para)
+      .then((competicion) => {
+        if (idActual.current === para && competicion?.hasTeams === false) setLaDeStrokePlay(competicion);
+      })
+      .catch(() => {});
+  }, [competitionId]);
+  useSondeoMientras(enJuego, releerLaFicha, CADA_FICHA);
+
+  const yaSabida = desdeLaFicha !== null;
+  useEffect(() => {
+    // Hasta saber si hay sesión no se pide nada: si no, el 400 de un stroke
+    // play salía un instante como error (/code-review). Y si la ficha ya dijo
+    // que es un stroke play, la de la Ryder no hace falta
+    if (!competitionId || sesionCargando || yaSabida) return undefined;
     let vigente = true;
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): ni se pregunta
@@ -107,7 +140,7 @@ const LeaderboardPage = () => {
       vigente = false;
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [competitionId, conSesion]);
+  }, [competitionId, conSesion, sesionCargando, yaSabida]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -124,7 +157,7 @@ const LeaderboardPage = () => {
             &larr; {backText}
           </Link>
         )}
-        <h1 className={`text-2xl font-bold text-gray-900 ${laDeStrokePlay ? 'mb-1' : 'mb-6'}`}>{t('leaderboard.title')}</h1>
+        <h1 className={`text-2xl font-bold text-gray-900 ${general ? 'mb-1' : 'mb-6'}`}>{t('leaderboard.title')}</h1>
 
         {isLoading && (
           <BlockLoader texto={t('loading')} />
@@ -136,16 +169,15 @@ const LeaderboardPage = () => {
           </div>
         )}
 
-        {laDeStrokePlay ? (
+        {general ? (
           <>
-            <p className="mb-5 text-sm text-gray-500">{laDeStrokePlay.name}</p>
+            <p className="mb-5 text-sm text-gray-500">{general.name}</p>
             <ClasificacionesDeLaCompeticion
               // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
               key={competitionId}
               competitionId={competitionId}
               userId={user?.id}
-              // Mientras no acabe: abierta antes de empezar, se ve empezar sin recargar (revisor)
-              enJuego={laDeStrokePlay.status !== 'COMPLETED'}
+              enJuego={enJuego}
               sinTitulo
             />
           </>

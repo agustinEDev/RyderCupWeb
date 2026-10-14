@@ -30,8 +30,9 @@ vi.mock('../../composition', () => ({
 }));
 
 const mockUser = { current: null };
+const mockSesionCargando = { current: false };
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: mockUser.current }),
+  useAuth: () => ({ user: mockUser.current, loading: mockSesionCargando.current }),
 }));
 
 vi.mock('../../components/layout/Header', () => ({
@@ -134,6 +135,8 @@ describe('LeaderboardPage', () => {
       vi.useRealTimers();
       vi.restoreAllMocks();
       mockParams.id = 'c-1';
+      mockSesionCargando.current = false;
+      mockLocationState.state = null;
       getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
       mockDetalle.mockReset();
     });
@@ -253,6 +256,109 @@ describe('LeaderboardPage', () => {
       render(<LeaderboardPage />);
 
       expect(screen.queryByText(/summary.back/)).not.toBeInTheDocument();
+    });
+
+    it.each(['ACTIVE', 'CANCELLED', 'DRAFT'])('G2c (/code-review): %s, no relee', async (status) => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'false');
+    });
+
+    it('G2d (/code-review): la ficha se vuelve a mirar cada 5 min: si el torneo acaba, deja de releer', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle
+        .mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' })
+        .mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'COMPLETED' });
+      render(<LeaderboardPage />);
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'true');
+
+      await vi.advanceTimersByTimeAsync(4 * 60000);
+      expect(mockDetalle).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(60000);
+
+      await vi.waitFor(() => expect(screen.getByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'false'));
+      expect(mockDetalle).toHaveBeenCalledTimes(2);
+    });
+
+    it('G2e: si la relectura de la ficha llega cuando ya se mira otra competición, no la pinta', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      let llegaTarde;
+      mockDetalle
+        .mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' })
+        .mockReturnValueOnce(new Promise((r) => { llegaTarde = r; }));
+      const { rerender } = render(<LeaderboardPage />);
+      await screen.findByTestId('general-stroke-play');
+      await vi.advanceTimersByTimeAsync(5 * 60000);
+      await vi.waitFor(() => expect(mockDetalle).toHaveBeenCalledTimes(2));
+
+      getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+      mockParams.id = 'c-2';
+      rerender(<LeaderboardPage />);
+      await act(async () => llegaTarde({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' }));
+
+      expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+      expect(screen.queryByText('Copa')).not.toBeInTheDocument();
+    });
+
+    it('G13 (/code-review): desde la ficha, con lo que ya sabe de la competición: ni el leaderboard de la Ryder ni otra consulta de la ficha', async () => {
+      mockUser.current = { id: 'u-1' };
+      mockLocationState.state = { from: 'detail', competicion: { id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' } };
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'true');
+      expect(screen.getByText('Copa')).toBeInTheDocument();
+      expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+      expect(mockDetalle).not.toHaveBeenCalled();
+    });
+
+    it('G13b: lo que trae la ficha de OTRA competición no vale', async () => {
+      mockUser.current = { id: 'u-1' };
+      mockLocationState.state = { from: 'detail', competicion: { id: 'otra', hasTeams: false, name: 'Otra', status: 'IN_PROGRESS' } };
+
+      render(<LeaderboardPage />);
+
+      await vi.waitFor(() => expect(getLeaderboardUseCase.execute).toHaveBeenCalledWith('c-1'));
+      expect(screen.queryByText('Otra')).not.toBeInTheDocument();
+    });
+
+    it('L12 (/code-review): mientras se sabe si hay sesión no se pide nada, y no parpadea el error', async () => {
+      mockUser.current = null;
+      mockSesionCargando.current = true;
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+      const { rerender } = render(<LeaderboardPage />);
+      await act(async () => {});
+      expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+      expect(screen.getByText('loading')).toBeInTheDocument();
+
+      mockUser.current = { id: 'u-1' };
+      mockSesionCargando.current = false;
+      rerender(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
+      expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
+    });
+
+    it('L13 (/code-review): si se pierde la sesión (otra pestaña), la general no se queda releyendo sin ella', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+      const { rerender } = render(<LeaderboardPage />);
+      await screen.findByTestId('general-stroke-play');
+
+      mockUser.current = null;
+      rerender(<LeaderboardPage />);
+
+      await vi.waitFor(() => expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument());
     });
 
     it('G10: volver lleva a la ficha, venga de donde venga', async () => {

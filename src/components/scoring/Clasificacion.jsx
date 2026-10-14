@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
+import { useCentrarEnMiFila } from '../../hooks/useCentrarEnMiFila';
 import { conGenero } from '../../utils/genero';
 
 const HOYOS = 18;
@@ -48,15 +49,9 @@ const Clasificacion = ({
   // bajo la categoría nueva (/code-review)
   const [cambiandoDeFiltro, setCambiandoDeFiltro] = useState(false);
   const lecturas = useLaMasNueva();
-  // Si participo, me lleva a mi fila, centrada (14 oct 2026): «una», la
-  // primera vez que se ve; «alAbrir», cada vez que se abre. Con una lectura
-  // llegada después de abrir, no con la de antes, que mi puesto puede haber
-  // cambiado (revisor). Lo primero que se ve cuenta: si ahí no estaba, un
-  // refresco que me trae no me mueve mientras leo (revisor)
-  const bloqueRef = useRef(null);
-  const yaCentrada = useRef(false);
-  const [leidas, setLeidas] = useState(0);
-  const abiertaTras = useRef(0);
+  // Cada lectura que responde, bien o mal: con ella se decide si llevarme a
+  // mi fila (ver useCentrarEnMiFila)
+  const [respuestas, setRespuestas] = useState(0);
 
   const leer = useCallback(async () => {
     const turno = lecturas.turno();
@@ -64,14 +59,16 @@ const Clasificacion = ({
       const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
-      setLeidas((n) => n + 1);
+      setRespuestas((n) => n + 1);
       setSinCargar(false);
       setCambiandoDeFiltro(false);
       if (categoria == null) {
         setCategorias([...new Set(leida.rows.map((r) => r.category).filter((c) => c != null))].sort((a, b) => a - b));
       }
     } catch {
-      if (lecturas.aplicar(turno)) setSinCargar(true);
+      if (!lecturas.aplicar(turno)) return;
+      setSinCargar(true);
+      setRespuestas((n) => n + 1);
     }
   }, [pedir, categoria, lecturas]);
 
@@ -83,20 +80,7 @@ const Clasificacion = ({
     leer();
   }, [activa, leer, cada, version]);
   useSondeoMientras(activa && cada != null, leer, cada ?? 0);
-  useEffect(() => {
-    if (activa || centraEnMi !== 'alAbrir') return;
-    yaCentrada.current = false;
-    abiertaTras.current = leidas;
-  }, [activa, centraEnMi, leidas]);
-  useEffect(() => {
-    if (!centraEnMi || !activa || yaCentrada.current || leidas <= abiertaTras.current) return;
-    yaCentrada.current = true;
-    // También la de debajo del corte (scratch)
-    const mia = bloqueRef.current?.querySelector('tr[data-yo="true"]');
-    if (!mia) return;
-    const sinAnimacion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    mia.scrollIntoView({ block: 'center', behavior: sinAnimacion ? 'auto' : 'smooth' });
-  }, [centraEnMi, activa, leidas]);
+  const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
 
   if (!activa) return null;
 
@@ -142,7 +126,9 @@ const Clasificacion = ({
         key={testId}
         data-testid={testId}
         data-yo={String(yo)}
-        className={yo ? 'bg-green-50/70' : ''}
+        // Enfocable a mano: al llevarme a ella, el foco viene con la vista
+        tabIndex={yo ? -1 : undefined}
+        className={yo ? 'bg-green-50/70 outline-none' : ''}
       >
         {/* «T22» no cabía en w-10 y se pegaba al nombre (QA del 11 oct 2026) */}
         {/* La marca de mi fila, en su primera celda: Safari no pinta sombras

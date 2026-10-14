@@ -385,6 +385,42 @@ describe('Clasificacion · me lleva a mi fila', () => {
     vi.useRealTimers();
   });
 
+  it('S10 (/code-review): si la lectura al abrir falla, cuenta como vista: la siguiente que trae mi fila no me mueve', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const pedir = vi.fn().mockRejectedValueOnce(new TypeError('sin cobertura')).mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa cada={30000} centraEnMi="alAbrir" />);
+    await screen.findByText('partida.standingsNotLoaded');
+
+    await act(async () => vi.advanceTimersByTime(30000));
+    await screen.findByTestId('fila-yo');
+
+    expect(centra).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it.each(['wheel', 'touchmove', 'keydown', 'pointerdown'])(
+    'S11 (/code-review): si me muevo yo (%s) antes de que llegue la lectura, no me lleva',
+    async (gesto) => {
+      let suelta;
+      const pedir = vi.fn().mockReturnValueOnce(new Promise((r) => { suelta = r; }));
+      render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+
+      globalThis.dispatchEvent(new globalThis.Event(gesto));
+      await act(async () => suelta(conYo()));
+      await screen.findByTestId('fila-yo');
+
+      expect(centra).not.toHaveBeenCalled();
+    }
+  );
+
+  it('S12 (/code-review): al llevarme a mi fila, el foco va con ella (lector de pantalla), sin mover más la vista', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="una" />);
+
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+    expect(document.activeElement).toBe(screen.getByTestId('fila-yo'));
+  });
+
   it('D2 (revisor): la marca de mi fila va en su primera celda (Safari no pinta sombras en una fila de tabla)', async () => {
     const pedir = vi.fn().mockResolvedValue(conYo());
     render(<Clasificacion pedir={pedir} userId="yo" activa />);

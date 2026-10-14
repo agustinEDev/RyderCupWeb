@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 
 /**
  * La configuración de la competición, escrita en cristiano (FE #705).
@@ -70,12 +70,20 @@ vi.mock('../composition', () => ({
 
 const CompetitionDetail = (await import('./CompetitionDetail')).default;
 
+// Lo que la ficha le pasa al navegar, a la vista para comprobarlo
+const PaginaDeClasificacion = () => (
+  <>
+    <p>pagina-de-clasificacion</p>
+    <pre data-testid="estado-de-la-navegacion">{JSON.stringify(useLocation().state)}</pre>
+  </>
+);
+
 const pintar = (ruta = '/competitions/comp-1') =>
   render(
     <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
-        <Route path="/competitions/:id/leaderboard" element={<p>pagina-de-clasificacion</p>} />
+        <Route path="/competitions/:id/leaderboard" element={<PaginaDeClasificacion />} />
       </Routes>
     </MemoryRouter>
   );
@@ -155,6 +163,27 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
       fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
 
       expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
+    });
+
+    it('G13 (/code-review): le pasa lo que ya sabe de la competición, para no volver a preguntarlo', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'STABLEFORD' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      const estado = JSON.parse((await screen.findByTestId('estado-de-la-navegacion')).textContent);
+      expect(estado).toEqual({ from: 'detail', competicion: { id: 'comp-1', hasTeams: false, name: 'Prueba', status: 'IN_PROGRESS' } });
+    });
+
+    it('G13c: a la de una Ryder no le pasa nada más que de dónde viene', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      expect(JSON.parse((await screen.findByTestId('estado-de-la-navegacion')).textContent)).toEqual({ from: 'detail' });
     });
 
     it('F2b: y el organizador, desde su acción principal', async () => {
