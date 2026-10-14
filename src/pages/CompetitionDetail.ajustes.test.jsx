@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
@@ -74,9 +74,9 @@ vi.mock('../composition', () => ({
 
 const CompetitionDetail = (await import('./CompetitionDetail')).default;
 
-const pintar = () =>
+const pintar = (ruta = '/competitions/comp-1') =>
   render(
-    <MemoryRouter initialEntries={['/competitions/comp-1']}>
+    <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
         <Route path="/competitions/:id/leaderboard" element={<p>pagina-de-clasificacion</p>} />
@@ -157,6 +157,11 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
       baja = vi.fn();
       globalThis.Element.prototype.scrollIntoView = baja;
     });
+    // jsdom no lo tiene: que no se quede puesto para el resto del fichero
+    afterEach(() => {
+      delete globalThis.Element.prototype.scrollIntoView;
+      delete globalThis.matchMedia;
+    });
 
     it('CL1: quien juega baja a la clasificación de la ficha, sin salir de ella', async () => {
       roles = { isAdmin: false, isCreator: false, isLoading: false };
@@ -177,7 +182,48 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
       fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
 
       expect(baja).toHaveBeenCalled();
+      expect(baja.mock.contexts[0]).toBe(document.getElementById('clasificaciones'));
       expect(screen.queryByText('pagina-de-clasificacion')).not.toBeInTheDocument();
+    });
+
+    it('CL2b: el foco pasa a la clasificación (teclado, lector de pantalla)', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'STABLEFORD' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      expect(document.activeElement).toBe(document.getElementById('clasificaciones'));
+    });
+
+    it('CL2c: con «reducir movimiento», sin animación', async () => {
+      globalThis.matchMedia = (q) => ({ matches: q.includes('prefers-reduced-motion'), addEventListener() {}, removeEventListener() {} });
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'STABLEFORD' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      expect(baja).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'auto' }));
+    });
+
+    it('CL4: llegar con #clasificaciones (desde la página de la Ryder) baja sola', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'MEDAL' });
+      pintar('/competitions/comp-1#clasificaciones');
+
+      await screen.findByTestId('clasificaciones-stroke-play');
+      await vi.waitFor(() => expect(baja).toHaveBeenCalled());
+      expect(baja.mock.contexts[0]).toBe(document.getElementById('clasificaciones'));
+    });
+
+    it('CL3b: el organizador de una Ryder sigue yendo a su página', async () => {
+      ficha({ status: 'IN_PROGRESS' });
+      pintar();
+
+      fireEvent.click(await screen.findByTestId('accion-principal'));
+
+      expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
     });
 
     it('CL3: en una Ryder sigue llevando a su página', async () => {

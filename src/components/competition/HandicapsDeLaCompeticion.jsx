@@ -181,7 +181,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
             <Clock className="h-4 w-4 text-gray-500" />
             {delCampo
               ? t('handicaps.scheduled', { cuando: cuando(ventana.scheduledAt), zona })
-              : t(zonaIlegible ? 'handicaps.scheduledUnknownZone' : 'handicaps.scheduledDevice', {
+              : t(zonaIlegible || !zonaSabida ? 'handicaps.scheduledUnknownZone' : 'handicaps.scheduledDevice', {
                   cuando: cuando(ventana.scheduledAt),
                 })}
           </p>
@@ -192,7 +192,11 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
       )}
 
       {zonaIlegible && (
-        <div data-testid="handicaps-zona-ilegible" className="flex flex-wrap items-center gap-2 text-sm text-amber-800">
+        <div
+          data-testid="handicaps-zona-ilegible"
+          role="status"
+          className="flex flex-wrap items-center gap-2 text-sm text-amber-800"
+        >
           <span>{t('handicaps.zoneUnreadable')}</span>
           <button
             type="button"
@@ -200,6 +204,8 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
               setZonaSabida(false);
               setLectura((n) => n + 1);
             }}
+            // Mientras lee, no: varios toques serían varias peticiones
+            disabled={!zonaSabida}
             className={`${boton} border border-gray-300 text-gray-700`}
           >
             {t('handicaps.retryZone')}

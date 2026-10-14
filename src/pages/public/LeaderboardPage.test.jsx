@@ -6,6 +6,7 @@ vi.mock('react-router', () => ({
   useParams: () => ({ id: 'c-1' }),
   useLocation: () => mockLocationState,
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+  Navigate: ({ to, replace }) => <div data-testid="redirige" data-to={to} data-replace={String(Boolean(replace))} />,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -15,7 +16,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+const mockDetalle = vi.fn();
 vi.mock('../../composition', () => ({
+  getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
   getLeaderboardUseCase: {
     execute: vi.fn().mockResolvedValue({
       teamAName: 'Red',
@@ -107,4 +110,46 @@ describe('LeaderboardPage', () => {
     expect(screen.getByTestId('header-auth')).toBeInTheDocument();
     expect(screen.queryByTestId('header')).not.toBeInTheDocument();
   });
+
+  /**
+   * La de un Stableford o un Medal vive en su ficha: un enlace guardado o
+   * compartido a esta página llevaba al error del servidor (QA de la release).
+   */
+  describe('una competición de stroke play', () => {
+    it('L1: redirige a su ficha, a la clasificación', async () => {
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false });
+
+      render(<LeaderboardPage />);
+
+      const redirige = await screen.findByTestId('redirige');
+      expect(redirige).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
+      expect(redirige).toHaveAttribute('data-replace', 'true');
+      expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
+    });
+
+    it('L2: un 400 de una Ryder (o sin poder leer la ficha) sigue diciendo el error', async () => {
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('otro motivo'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: true });
+      render(<LeaderboardPage />);
+      expect(await screen.findByText('otro motivo')).toBeInTheDocument();
+      expect(screen.queryByTestId('redirige')).not.toBeInTheDocument();
+    });
+
+    it('L3: sin poder leer la ficha, el error, sin redirigir', async () => {
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockRejectedValueOnce(Object.assign(new Error('401'), { status: 401 }));
+      render(<LeaderboardPage />);
+      expect(await screen.findByText('llega con sus rondas')).toBeInTheDocument();
+      expect(screen.queryByTestId('redirige')).not.toBeInTheDocument();
+    });
+
+    it('L4: otros fallos no piden la ficha', async () => {
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('caído'), { status: 500 }));
+      render(<LeaderboardPage />);
+      expect(await screen.findByText('caído')).toBeInTheDocument();
+      expect(mockDetalle).not.toHaveBeenCalled();
+    });
+  });
 });
+

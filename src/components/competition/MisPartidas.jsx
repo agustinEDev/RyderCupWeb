@@ -49,10 +49,9 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         const companeros = companerosDe(group, userId).map((p) =>
           nombreDeCompanero(t, 'partidas.withdrawnPartner', { name: p.name, withdrawn: seRetiro(p), teeGender: p.teeGender })
         );
-        // Solo mientras juega: retirado (/code-review) o con su tarjeta ya
-        // entregada (QA de la release), ya no marca a nadie
-        const marcado =
-          (yo?.cardStatus ?? 'JUGANDO') !== 'JUGANDO' ? null : juegan(group).find((p) => p.userId === yo?.marksUserId);
+        // Solo mientras anota: retirado (/code-review), con su tarjeta ya
+        // entregada o la partida cerrada (QA de la release), no marca a nadie
+        const marcado = anotaSuTarjeta(group, userId) ? juegan(group).find((p) => p.userId === yo?.marksUserId) : null;
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),

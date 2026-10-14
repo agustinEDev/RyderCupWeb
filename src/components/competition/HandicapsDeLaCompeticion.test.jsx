@@ -225,6 +225,29 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(await screen.findByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledUnknownZone/);
   });
 
+  it('15b4: mientras lee, lo programado tampoco dice que el campo no tiene zona', () => {
+    mockCampos.mockReturnValue(new Promise(() => {}));
+    pinta({ handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } });
+
+    expect(screen.getByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledUnknownZone/);
+  });
+
+  it('15b5: reintentar que vuelve a fallar: el aviso sigue (y se anuncia) y no se programa', async () => {
+    let falla;
+    mockCampos.mockRejectedValueOnce(new Error('sin red')).mockReturnValueOnce(new Promise((_r, rej) => { falla = rej; }));
+    pinta();
+    const reintentar = await screen.findByRole('button', { name: 'handicaps.retryZone' });
+    expect(screen.getByTestId('handicaps-zona-ilegible')).toHaveAttribute('role', 'status');
+
+    fireEvent.click(reintentar);
+    expect(reintentar).toBeDisabled();
+    expect(screen.getByTestId('handicaps-zona-ilegible')).toBeInTheDocument();
+    await act(async () => falla(new Error('otra vez')));
+
+    expect(await screen.findByRole('button', { name: 'handicaps.retryZone' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+  });
+
   it('15b3: reintentar la vuelve a leer, y con ella se programa en la del campo', async () => {
     mockCampos.mockRejectedValueOnce(new Error('sin red'));
     pinta();

@@ -69,6 +69,19 @@ const VUELTAS = {
 };
 const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
 
+/**
+ * Baja a las clasificaciones de un Stableford o un Medal en la propia ficha,
+ * y les pasa el foco, para quien navega con teclado o lector de pantalla. Sin
+ * animación si el sistema pide reducir el movimiento (QA de la release).
+ */
+const bajaALaClasificacion = () => {
+  const seccion = globalThis.document.getElementById('clasificaciones');
+  if (!seccion) return;
+  const quieto = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  seccion.scrollIntoView({ behavior: quieto ? 'auto' : 'smooth', block: 'start' });
+  seccion.focus({ preventScroll: true });
+};
+
 const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -765,6 +778,14 @@ const CompetitionDetail = () => {
     ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
     : null;
 
+  // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
+  // stroke play hasta aquí): se baja sola en cuanto la sección está pintada
+  const conClasificacion =
+    competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
+  useEffect(() => {
+    if (location.hash === '#clasificaciones' && conClasificacion && !isLoading) bajaALaClasificacion();
+  }, [location.hash, conClasificacion, isLoading]);
+
   if (isLoading) {
     return (
       <FullScreenLoader texto={t('detail.loadingCompetition')} />
@@ -792,7 +813,7 @@ const CompetitionDetail = () => {
   // stroke play decía «llega con sus rondas» (QA de la release, 14 oct)
   const irALaClasificacion = () => {
     if (esStrokePlay) {
-      globalThis.document.getElementById('clasificaciones')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      bajaALaClasificacion();
       return;
     }
     navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } });
@@ -1610,7 +1631,8 @@ const CompetitionDetail = () => {
             {/* Las clasificaciones de un Stableford o un Medal, desde que se
                 juega (FE #824, PR 8): para cualquiera con sesión */}
             {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
-              <div id="clasificaciones" className="p-4 scroll-mt-16">
+              // Enfocable a mano: al bajar hasta aquí, el foco viene con la vista
+              <div id="clasificaciones" tabIndex={-1} className="p-4 scroll-mt-16 outline-none">
                 <ClasificacionesDeLaCompeticion
                   // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
                   key={competition.id}

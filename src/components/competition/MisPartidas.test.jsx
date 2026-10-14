@@ -152,6 +152,17 @@ describe('MisPartidas (FE #824, PR 6)', () => {
 
     const linea = await screen.findByTestId('mi-partida-r1');
     expect(linea).not.toHaveTextContent('partidas.youMark');
+    expect(linea).toHaveTextContent(/partidas\.mine .*BEA/);
+  });
+
+  it('QA de la release: una partida ya cerrada con mi tarjeta abierta, tampoco', async () => {
+    const cerrada = mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('yo', 'bea'), jugador('bea', 'yo')]);
+    cerrada.group.status = 'COMPLETED';
+    mockMias.mockResolvedValue([cerrada]);
+
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    expect(await screen.findByTestId('mi-partida-r1')).not.toHaveTextContent('partidas.youMark');
   });
 
   it('/code-review: retirado, ya no «marcas a» nadie', async () => {
