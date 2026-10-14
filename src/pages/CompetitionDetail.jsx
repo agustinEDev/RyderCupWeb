@@ -69,6 +69,19 @@ const VUELTAS = {
 };
 const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
 
+/**
+ * Baja a las clasificaciones de un Stableford o un Medal en la propia ficha,
+ * y les pasa el foco, para quien navega con teclado o lector de pantalla. Sin
+ * animación si el sistema pide reducir el movimiento (QA de la release).
+ */
+const bajaALaClasificacion = () => {
+  const seccion = globalThis.document.getElementById('clasificaciones');
+  if (!seccion) return;
+  const quieto = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  seccion.scrollIntoView({ behavior: quieto ? 'auto' : 'smooth', block: 'start' });
+  seccion.focus({ preventScroll: true });
+};
+
 const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -765,6 +778,27 @@ const CompetitionDetail = () => {
     ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
     : null;
 
+  // Un Stableford o un Medal en juego o acabado: su clasificación está aquí.
+  // La misma condición para la sección, el botón y la bajada automática
+  const conClasificacion =
+    competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
+  // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
+  // stroke play hasta aquí): se baja sola en cuanto la sección está pintada,
+  // UNA vez por llegada: una recarga posterior de la ficha no te devuelve
+  // abajo, y cada vez que se llega con el ancla, sí, venga de donde venga
+  // (`/code-review`, #863). Con la de la ruta ya pintada: al pasar de una a
+  // otra, la anterior sigue en pantalla un instante (CodeRabbit, #863). Sin
+  // distinguir mayúsculas: el servidor devuelve el id en minúsculas
+  const bajoEn = useRef(null);
+  const pintada = competition?.id?.toLowerCase();
+  const llegada = location.key;
+  useEffect(() => {
+    if (location.hash !== '#clasificaciones' || !conClasificacion || isLoading) return;
+    if (pintada !== id?.toLowerCase() || bajoEn.current === llegada) return;
+    bajoEn.current = llegada;
+    bajaALaClasificacion();
+  }, [location.hash, conClasificacion, isLoading, pintada, id, llegada]);
+
   if (isLoading) {
     return (
       <FullScreenLoader texto={t('detail.loadingCompetition')} />
@@ -787,6 +821,16 @@ const CompetitionDetail = () => {
   // Un Stableford o un Medal (FE #824). Sin el dato, una Ryder: es lo que eran
   // todas, igual que una competición sin tipo
   const esStrokePlay = competition.hasTeams === false;
+  // La clasificación de un Stableford o un Medal está en esta misma ficha: se
+  // baja hasta ella. La página de clasificación es la de la Ryder, y con un
+  // stroke play decía «llega con sus rondas» (QA de la release, 14 oct)
+  const irALaClasificacion = () => {
+    if (conClasificacion) {
+      bajaALaClasificacion();
+      return;
+    }
+    navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } });
+  };
   const repartoAMostrar =
     competition.actualTeamAssignment ??
     (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
@@ -942,7 +986,7 @@ const CompetitionDetail = () => {
       id: 'leaderboard',
       label: t('detail.actions.leaderboard'),
       icon: BarChart3,
-      onClick: () => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } }),
+      onClick: irALaClasificacion,
       cuando: competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED',
     },
   };
@@ -1312,7 +1356,7 @@ const CompetitionDetail = () => {
                 className="p-4"
               >
                 <button
-                  onClick={() => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } })}
+                  onClick={irALaClasificacion}
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
                 >
                   <BarChart3 className="w-5 h-5" />
@@ -1599,8 +1643,9 @@ const CompetitionDetail = () => {
 
             {/* Las clasificaciones de un Stableford o un Medal, desde que se
                 juega (FE #824, PR 8): para cualquiera con sesión */}
-            {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
-              <div className="p-4">
+            {conClasificacion && (
+              // Enfocable a mano: al bajar hasta aquí, el foco viene con la vista
+              <div id="clasificaciones" tabIndex={-1} className="p-4 scroll-mt-16 outline-none">
                 <ClasificacionesDeLaCompeticion
                   // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
                   key={competition.id}

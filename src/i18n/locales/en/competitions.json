@@ -672,6 +672,9 @@
       "RUNNING": "Handicaps are already being updated.",
       "IN_THE_PAST": "Schedule it for a moment in the future.",
       "TOO_TIGHT": "Too tight: schedule it at least 2 minutes before the window closes."
-    }
+    },
+    "zoneUnreadable": "The course time zone could not be read.",
+    "retryZone": "Try again",
+    "scheduledUnknownZone": "Scheduled: {{cuando}}, this device's time."
   }
 }
