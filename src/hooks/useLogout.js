@@ -34,12 +34,16 @@ export const useLogout = () => {
    * @param {boolean} options.skipBackendCall - If true, skip backend logout call (useful when device already revoked)
    * @param {string|null} options.recargarEn - Destino de una salida con recarga
    *   completa. Sin esto se navega a `/login` como cliente.
+   * @param {boolean} options.desdeOtraPestana - El cierre llega de otra pestaña: ni avisar ni llamar al backend
    */
-  const logout = useCallback(async ({ skipBackendCall = false, recargarEn = null } = {}) => {
-    // A las demas pestañas primero: son las que no se enteran de nada
-    broadcastLogout();
+  const logout = useCallback(async ({ skipBackendCall = false, recargarEn = null, desdeOtraPestana = false } = {}) => {
+    // A las demas pestañas primero: son las que no se enteran de nada. Si el
+    // cierre llega de otra, ni se avisa ni se llama al backend: comparten
+    // cookies y ya lo hizo ella. Avisar de vuelta era un eco sin fin entre
+    // pestañas, con miles de POST /auth/logout (FE #865)
+    if (!desdeOtraPestana) broadcastLogout();
 
-    if (!skipBackendCall) {
+    if (!skipBackendCall && !desdeOtraPestana) {
       try {
         // Con un tope: un rechazo se recoge abajo, pero una peticion COLGADA
         // —la cobertura de dos barras del campo— no se rechaza nunca, y sin

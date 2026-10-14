@@ -13,6 +13,7 @@ import { MemoryRouter } from 'react-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useLogout } from './useLogout';
 import { logoutUseCase } from '../composition';
+import { broadcastLogout } from '../utils/broadcastAuth';
 
 vi.mock('../composition', () => ({
   logoutUseCase: { execute: vi.fn() },
@@ -120,3 +121,33 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
   });
 });
+
+describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    siembraLaCuenta();
+    logoutUseCase.execute.mockResolvedValue(undefined);
+  });
+
+  it('O1/O2: «desde otra pestaña» limpia y va al formulario, sin volver a avisar ni llamar al backend', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+
+    expect(broadcastLogout).not.toHaveBeenCalled();
+    expect(logoutUseCase.execute).not.toHaveBeenCalled();
+    expect(loQueQueda()).toEqual([]);
+    expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
+  });
+
+  it('O3: quien sale a mano avisa a las demás y llama al backend, una vez cada cosa', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout());
+
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+    expect(logoutUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+});
+

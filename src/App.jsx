@@ -173,7 +173,8 @@ function AppContent() {
    */
   const handleLogoutFromOtherTab = useCallback(async () => {
     setIsAuthenticated(false);
-    await logout();
+    // Sin eco: ni se vuelve a avisar ni se llama al backend (FE #865)
+    await logout({ desdeOtraPestana: true });
   }, [logout]);
 
   /**
