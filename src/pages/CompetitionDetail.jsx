@@ -778,12 +778,18 @@ const CompetitionDetail = () => {
     ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
     : null;
 
-  // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
-  // stroke play hasta aquí): se baja sola en cuanto la sección está pintada
+  // Un Stableford o un Medal en juego o acabado: su clasificación está aquí.
+  // La misma condición para la sección, el botón y la bajada automática
   const conClasificacion =
     competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
+  // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
+  // stroke play hasta aquí): se baja sola en cuanto la sección está pintada,
+  // UNA vez: una recarga posterior de la ficha no te devuelve abajo
+  const yaBajo = useRef(false);
   useEffect(() => {
-    if (location.hash === '#clasificaciones' && conClasificacion && !isLoading) bajaALaClasificacion();
+    if (yaBajo.current || location.hash !== '#clasificaciones' || !conClasificacion || isLoading) return;
+    yaBajo.current = true;
+    bajaALaClasificacion();
   }, [location.hash, conClasificacion, isLoading]);
 
   if (isLoading) {
@@ -812,7 +818,7 @@ const CompetitionDetail = () => {
   // baja hasta ella. La página de clasificación es la de la Ryder, y con un
   // stroke play decía «llega con sus rondas» (QA de la release, 14 oct)
   const irALaClasificacion = () => {
-    if (esStrokePlay) {
+    if (conClasificacion) {
       bajaALaClasificacion();
       return;
     }
@@ -1630,7 +1636,7 @@ const CompetitionDetail = () => {
 
             {/* Las clasificaciones de un Stableford o un Medal, desde que se
                 juega (FE #824, PR 8): para cualquiera con sesión */}
-            {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
+            {conClasificacion && (
               // Enfocable a mano: al bajar hasta aquí, el foco viene con la vista
               <div id="clasificaciones" tabIndex={-1} className="p-4 scroll-mt-16 outline-none">
                 <ClasificacionesDeLaCompeticion

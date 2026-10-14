@@ -45,14 +45,20 @@ const DE_LA_HORA_PEDIDA = new Set(['IN_THE_PAST', 'TOO_TIGHT', 'DISABLED', 'RUNN
  */
 const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdateWindow, onReleer }) => {
   const { t, i18n } = useTranslation('competitions');
-  const [zona, setZona] = useState(null);
-  // Hasta saber la zona no se programa: una hora escrita antes se leería en
-  // otra (revisor). Si no se pudo saber, se programa en la del dispositivo
-  const [zonaSabida, setZonaSabida] = useState(false);
-  // No se pudo leer: no es que el campo no tenga zona, así que ni se dice eso
-  // ni se programa a ciegas en la del dispositivo (QA de la release, 14 oct)
-  const [zonaIlegible, setZonaIlegible] = useState(false);
+  // Lo leído del campo, con la competición y el intento a los que pertenece:
+  // solo vale para esos. Otra competición empieza de cero sin arrastrar la
+  // zona de la anterior (`/code-review`)
   const [lectura, setLectura] = useState(0);
+  const [leido, setLeido] = useState({ competitionId: null, lectura: -1, zona: null, ilegible: false });
+  const deEsta = leido.competitionId === competitionId;
+  const zona = deEsta ? leido.zona : null;
+  // Hasta saber la zona no se programa: una hora escrita antes se leería en
+  // otra (revisor). Si no se pudo leer, tampoco (ver `zonaIlegible`)
+  const zonaSabida = deEsta && leido.lectura === lectura;
+  // No se pudo leer: no es que el campo no tenga zona, así que ni se dice eso
+  // ni se programa a ciegas en la del dispositivo (QA de la release, 14 oct).
+  // Mientras se reintenta, el aviso se queda
+  const zonaIlegible = deEsta && leido.ilegible;
   const [ocupado, setOcupado] = useState(false);
   const [programando, setProgramando] = useState(null);
 
@@ -63,11 +69,10 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
       // La del primer campo que la tenga: casi todos los torneos son de un huso
       .then((r) => {
         if (!vigente) return;
-        setZona(aCamposDeLaCompeticion(r).find((c) => c.timezone)?.timezone ?? null);
-        setZonaIlegible(false);
+        const laZona = aCamposDeLaCompeticion(r).find((c) => c.timezone)?.timezone ?? null;
+        setLeido({ competitionId, lectura, zona: laZona, ilegible: false });
       })
-      .catch(() => vigente && setZonaIlegible(true))
-      .finally(() => vigente && setZonaSabida(true));
+      .catch(() => vigente && setLeido({ competitionId, lectura, zona: null, ilegible: true }));
     return () => {
       vigente = false;
     };
@@ -200,10 +205,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
           <span>{t('handicaps.zoneUnreadable')}</span>
           <button
             type="button"
-            onClick={() => {
-              setZonaSabida(false);
-              setLectura((n) => n + 1);
-            }}
+            onClick={() => setLectura((n) => n + 1)}
             // Mientras lee, no: varios toques serían varias peticiones
             disabled={!zonaSabida}
             className={`${boton} border border-gray-300 text-gray-700`}

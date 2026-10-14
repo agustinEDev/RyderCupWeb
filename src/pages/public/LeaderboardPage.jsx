@@ -33,27 +33,39 @@ const LeaderboardPage = () => {
   // ficha. Un enlace guardado o compartido aquí acababa en el error del
   // servidor (QA de la release, 14 oct)
   const [esStrokePlay, setEsStrokePlay] = useState(false);
+  // Se pregunta una vez por competición, no en cada refresco: el cubo de
+  // límites es el mismo para todo el campo (ADR-038)
+  const fichaMirada = useRef(null);
+  // Si hay sesión, no el objeto: uno nuevo en cada render relanzaría la carga
+  const conSesion = Boolean(user);
   const pollRef = useRef(null);
 
   useEffect(() => {
     if (!competitionId) return;
+    let vigente = true;
+
+    // Sin sesión no se puede leer la ficha (ni entrar en ella): ni se pregunta
+    const esDeStrokePlay = async () => {
+      if (!conSesion || fichaMirada.current === competitionId) return false;
+      fichaMirada.current = competitionId;
+      const competicion = await getCompetitionDetailUseCase.execute(competitionId).catch(() => null);
+      return competicion?.hasTeams === false;
+    };
 
     const fetchLeaderboard = async () => {
       try {
         const data = await getLeaderboardUseCase.execute(competitionId);
+        if (!vigente) return;
         setLeaderboard(data);
         setError(null);
       } catch (err) {
-        if (err?.status === 400) {
-          const competicion = await getCompetitionDetailUseCase.execute(competitionId).catch(() => null);
-          if (competicion?.hasTeams === false) {
-            setEsStrokePlay(true);
-            return;
-          }
+        if (err?.status === 400 && (await esDeStrokePlay())) {
+          if (vigente) setEsStrokePlay(true);
+          return;
         }
-        setError(err);
+        if (vigente) setError(err);
       } finally {
-        setIsLoading(false);
+        if (vigente) setIsLoading(false);
       }
     };
 
@@ -63,9 +75,10 @@ const LeaderboardPage = () => {
     pollRef.current = setInterval(fetchLeaderboard, POLL_INTERVAL);
 
     return () => {
+      vigente = false;
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [competitionId]);
+  }, [competitionId, conSesion]);
 
   if (esStrokePlay) return <Navigate to={`/competitions/${competitionId}#clasificaciones`} replace />;
 

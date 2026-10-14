@@ -248,6 +248,30 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
   });
 
+  it('15b6: otra competición empieza de cero: no se queda con la zona de la anterior', async () => {
+    const props = { handicapUpdate: null, onReleer: vi.fn(), handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } };
+    const { rerender } = render(<HandicapsDeLaCompeticion competitionId="c-1" {...props} />);
+    expect(await screen.findByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduled /);
+
+    mockCampos.mockRejectedValueOnce(new Error('sin red'));
+    rerender(<HandicapsDeLaCompeticion competitionId="c-2" {...props} />);
+
+    await screen.findByTestId('handicaps-zona-ilegible');
+    expect(screen.getByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledUnknownZone/);
+  });
+
+  it('15b7: mientras lee la de otra competición, ni usa la zona de la anterior ni se programa', async () => {
+    const props = { handicapUpdate: null, onReleer: vi.fn(), handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } };
+    const { rerender } = render(<HandicapsDeLaCompeticion competitionId="c-1" {...props} />);
+    expect(await screen.findByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduled /);
+
+    mockCampos.mockReturnValueOnce(new Promise(() => {}));
+    rerender(<HandicapsDeLaCompeticion competitionId="c-2" {...props} />);
+
+    expect(screen.getByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledUnknownZone/);
+    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+  });
+
   it('15b3: reintentar la vuelve a leer, y con ella se programa en la del campo', async () => {
     mockCampos.mockRejectedValueOnce(new Error('sin red'));
     pinta();

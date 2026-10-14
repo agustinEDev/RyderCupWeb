@@ -51,7 +51,8 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         );
         // Solo mientras anota: retirado (/code-review), con su tarjeta ya
         // entregada o la partida cerrada (QA de la release), no marca a nadie
-        const marcado = anotaSuTarjeta(group, userId) ? juegan(group).find((p) => p.userId === yo?.marksUserId) : null;
+        const anota = anotaSuTarjeta(group, userId);
+        const marcado = anota ? juegan(group).find((p) => p.userId === yo?.marksUserId) : null;
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),
@@ -91,7 +92,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
               to={`/player/groups/${group.id}/scoring?competition=${competitionId}`}
               className="ml-2 inline-flex min-h-11 items-center font-semibold text-primary underline"
             >
-              {t(anotaSuTarjeta(group, userId) ? 'partidas.score' : 'partidas.viewCard')}
+              {t(anota ? 'partidas.score' : 'partidas.viewCard')}
             </Link>
           </li>
         );

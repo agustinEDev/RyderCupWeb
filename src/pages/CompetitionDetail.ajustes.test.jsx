@@ -217,6 +217,33 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
       expect(baja.mock.contexts[0]).toBe(document.getElementById('clasificaciones'));
     });
 
+    it('CL4b: baja una sola vez: si la ficha se vuelve a cargar, no te devuelve abajo', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'MEDAL' });
+      const { rerender } = pintar('/competitions/comp-1#clasificaciones');
+      await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(1));
+
+      roles = { ...roles, isLoading: true };
+      rerender(
+        <MemoryRouter initialEntries={['/competitions/comp-1#clasificaciones']}>
+          <Routes>
+            <Route path="/competitions/:id" element={<CompetitionDetail />} />
+          </Routes>
+        </MemoryRouter>
+      );
+      roles = { ...roles, isLoading: false };
+      rerender(
+        <MemoryRouter initialEntries={['/competitions/comp-1#clasificaciones']}>
+          <Routes>
+            <Route path="/competitions/:id" element={<CompetitionDetail />} />
+          </Routes>
+        </MemoryRouter>
+      );
+      await screen.findByTestId('clasificaciones-stroke-play');
+
+      expect(baja).toHaveBeenCalledTimes(1);
+    });
+
     it('CL3b: el organizador de una Ryder sigue yendo a su página', async () => {
       ficha({ status: 'IN_PROGRESS' });
       pintar();

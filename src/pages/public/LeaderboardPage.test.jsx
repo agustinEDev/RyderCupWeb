@@ -117,6 +117,7 @@ describe('LeaderboardPage', () => {
    */
   describe('una competición de stroke play', () => {
     it('L1: redirige a su ficha, a la clasificación', async () => {
+      mockUser.current = { id: 'u-1' };
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
       mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false });
 
@@ -129,6 +130,7 @@ describe('LeaderboardPage', () => {
     });
 
     it('L2: un 400 de una Ryder (o sin poder leer la ficha) sigue diciendo el error', async () => {
+      mockUser.current = { id: 'u-1' };
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('otro motivo'), { status: 400 }));
       mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: true });
       render(<LeaderboardPage />);
@@ -137,6 +139,7 @@ describe('LeaderboardPage', () => {
     });
 
     it('L3: sin poder leer la ficha, el error, sin redirigir', async () => {
+      mockUser.current = { id: 'u-1' };
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
       mockDetalle.mockRejectedValueOnce(Object.assign(new Error('401'), { status: 401 }));
       render(<LeaderboardPage />);
@@ -148,6 +151,33 @@ describe('LeaderboardPage', () => {
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('caído'), { status: 500 }));
       render(<LeaderboardPage />);
       expect(await screen.findByText('caído')).toBeInTheDocument();
+      expect(mockDetalle).not.toHaveBeenCalled();
+    });
+  
+    it('L5: la ficha se pregunta una vez, no en cada refresco', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('otro motivo'), { status: 400 }));
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: true });
+      render(<LeaderboardPage />);
+      await screen.findByText('otro motivo');
+
+      await vi.advanceTimersByTimeAsync(30000);
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(getLeaderboardUseCase.execute.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(mockDetalle).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+      getLeaderboardUseCase.execute.mockReset();
+    });
+
+    it('L6: sin sesión no pregunta por la ficha (no podría leerla)', async () => {
+      mockUser.current = null;
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByText('llega con sus rondas')).toBeInTheDocument();
       expect(mockDetalle).not.toHaveBeenCalled();
     });
   });
