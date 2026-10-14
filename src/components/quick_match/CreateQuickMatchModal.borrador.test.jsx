@@ -42,6 +42,7 @@
  *   C1b  sin respuesta y se reintenta igual         | sin aviso
  *   C3   un fallo antes de llegar al servidor       | no fija el id: cambiar algo, otro
  *   C5   más de 100 amigos                          | se piden todas las páginas
+ *   Q1   invitado con nombre o apellido en blanco   | se avisa y no se añade (QA)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
@@ -610,6 +611,19 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
 
     await waitFor(() => expect(mockIniciar).toHaveBeenCalledTimes(2));
     expect(peticion(1).quickMatchId).toBe(peticion(0).quickMatchId);
+  });
+
+  it.each([
+    ['nombre', '   ', 'Pérez'],
+    ['apellido', 'Ana', '   '],
+  ])('Q1 · invitado con el %s en blanco: se avisa y no se añade', async (_campo, nombre, apellido) => {
+    abre();
+    await alPaso2();
+
+    anadeInvitado(nombre, apellido);
+
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorGuestName');
+    expect(screen.queryAllByTestId(/^quick-match-remove-invitado-/)).toHaveLength(0);
   });
 });
 

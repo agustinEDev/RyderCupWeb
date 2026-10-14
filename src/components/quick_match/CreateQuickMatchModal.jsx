@@ -256,7 +256,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     e.preventDefault();
     const firstName = guestForm.firstName.trim();
     const lastName = guestForm.lastName.trim();
-    if (!firstName || !lastName) return;
+    // Solo espacios pasan el `required` del navegador: se dice, no se calla
+    if (!firstName || !lastName) {
+      setError(t('create.participants.errorGuestName'));
+      return;
+    }
     if (courseTees.length > 0 && guestTeeKey === NO_TEE_KEY) {
       setError(t('create.participants.errorTeeRequired'));
       return;

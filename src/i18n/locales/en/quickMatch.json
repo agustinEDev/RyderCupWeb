@@ -64,7 +64,8 @@
       "guestBadge": "Guest",
       "teePlaceholder": "Pick their tee",
       "guestFallbackName": "the guest",
-      "errorTeamFull": "That team is already full: pick the other one."
+      "errorTeamFull": "That team is already full: pick the other one.",
+      "errorGuestName": "Enter the guest's first and last name."
     },
     "scorers": {
       "heading": "Choose scorers",

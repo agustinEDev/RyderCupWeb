@@ -64,7 +64,8 @@
       "guestBadge": "Invitado",
       "teePlaceholder": "Elige sus barras",
       "guestFallbackName": "el invitado",
-      "errorTeamFull": "Ese equipo ya está completo: elige el otro."
+      "errorTeamFull": "Ese equipo ya está completo: elige el otro.",
+      "errorGuestName": "Escribe el nombre y los apellidos del invitado."
     },
     "scorers": {
       "heading": "Elegir anotadores",
