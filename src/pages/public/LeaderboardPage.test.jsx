@@ -171,6 +171,39 @@ describe('LeaderboardPage', () => {
       getLeaderboardUseCase.execute.mockReset();
     });
 
+    it('L7: si la ficha no respondió (sin red), el siguiente refresco vuelve a preguntar y redirige (CodeRabbit, #863)', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockRejectedValueOnce(new TypeError('sin conexión')).mockResolvedValue({ id: 'c-1', hasTeams: false });
+      render(<LeaderboardPage />);
+      await screen.findByText('llega con sus rondas');
+
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(await screen.findByTestId('redirige')).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
+      expect(mockDetalle).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      getLeaderboardUseCase.execute.mockReset();
+    });
+
+    it('L8: si la ficha respondió con un error, no se vuelve a preguntar (una por competición)', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockRejectedValue(Object.assign(new Error('Error del servidor'), { status: 500 }));
+      render(<LeaderboardPage />);
+      await screen.findByText('llega con sus rondas');
+
+      await vi.advanceTimersByTimeAsync(30000);
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(getLeaderboardUseCase.execute.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(mockDetalle).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+      getLeaderboardUseCase.execute.mockReset();
+    });
+
     it('L6: sin sesión no pregunta por la ficha (no podría leerla)', async () => {
       mockUser.current = null;
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 /**
  * La configuración de la competición, escrita en cristiano (FE #705).
@@ -242,6 +242,48 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
       await screen.findByTestId('clasificaciones-stroke-play');
 
       expect(baja).toHaveBeenCalledTimes(1);
+    });
+
+    describe('de una ficha a otra sin desmontar (CodeRabbit, #863)', () => {
+      const AOtra = () => {
+        const navigate = useNavigate();
+        return <button type="button" onClick={() => navigate('/competitions/comp-2#clasificaciones')}>a-la-otra</button>;
+      };
+      const pintaConSalto = () =>
+        render(
+          <MemoryRouter initialEntries={['/competitions/comp-1#clasificaciones']}>
+            <AOtra />
+            <Routes>
+              <Route path="/competitions/:id" element={<CompetitionDetail />} />
+            </Routes>
+          </MemoryRouter>
+        );
+      const medal = (id) => ({ id, name: id, status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'MEDAL', countries: [], maxPlayers: 12, playMode: 'HANDICAP', teamAssignment: 'MANUAL' });
+
+      it('C1: la otra también baja sola y se lleva el foco', async () => {
+        roles = { isAdmin: false, isCreator: false, isLoading: false };
+        mockDetalle.mockImplementation(async (id) => medal(id));
+        pintaConSalto();
+        await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(1));
+
+        fireEvent.click(screen.getByRole('button', { name: 'a-la-otra' }));
+
+        await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(2));
+        expect(baja.mock.contexts[1]).toBe(document.getElementById('clasificaciones'));
+        expect(document.activeElement).toBe(document.getElementById('clasificaciones'));
+      });
+
+      it('C2: mientras carga la otra, no baja sobre la sección de la anterior', async () => {
+        roles = { isAdmin: false, isCreator: false, isLoading: false };
+        mockDetalle.mockImplementation((id) => (id === 'comp-1' ? Promise.resolve(medal(id)) : new Promise(() => {})));
+        pintaConSalto();
+        await vi.waitFor(() => expect(baja).toHaveBeenCalledTimes(1));
+
+        fireEvent.click(screen.getByRole('button', { name: 'a-la-otra' }));
+        await new Promise((r) => setTimeout(r, 50));
+
+        expect(baja).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('CL3b: el organizador de una Ryder sigue yendo a su página', async () => {

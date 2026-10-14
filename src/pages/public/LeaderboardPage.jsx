@@ -48,7 +48,12 @@ const LeaderboardPage = () => {
     const esDeStrokePlay = async () => {
       if (!conSesion || fichaMirada.current === competitionId) return false;
       fichaMirada.current = competitionId;
-      const competicion = await getCompetitionDetailUseCase.execute(competitionId).catch(() => null);
+      const competicion = await getCompetitionDetailUseCase.execute(competitionId).catch((err) => {
+        // Sin respuesta (sin red) no se sabe nada: el siguiente refresco vuelve
+        // a preguntar. Con respuesta, aunque sea un error, no (CodeRabbit, #863)
+        if (err instanceof TypeError) fichaMirada.current = null;
+        return null;
+      });
       return competicion?.hasTeams === false;
     };
 

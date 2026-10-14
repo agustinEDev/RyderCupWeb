@@ -272,6 +272,37 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
   });
 
+  describe('el formulario de programar abierto al pasar a otra competición (CodeRabbit, #863)', () => {
+    const props = { handicapUpdate: null, onReleer: vi.fn(), handicapUpdateWindow: ABIERTA };
+    const abreEnC1 = async () => {
+      const vista = render(<HandicapsDeLaCompeticion competitionId="c-1" {...props} />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeEnabled());
+      fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
+      fireEvent.change(await screen.findByLabelText(/^handicaps\.scheduleAt/), { target: { value: '2030-10-12T03:00' } });
+      return vista;
+    };
+
+    it('H1: en la otra sale cerrado: no se programa a ciegas mientras lee su zona', async () => {
+      const { rerender } = await abreEnC1();
+
+      mockCampos.mockReturnValueOnce(new Promise(() => {}));
+      rerender(<HandicapsDeLaCompeticion competitionId="c-2" {...props} />);
+
+      expect(screen.queryByRole('button', { name: 'handicaps.scheduleSave' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+    });
+
+    it('H2: al volver a la primera, tampoco recupera lo escrito', async () => {
+      const { rerender } = await abreEnC1();
+      rerender(<HandicapsDeLaCompeticion competitionId="c-2" {...props} />);
+
+      rerender(<HandicapsDeLaCompeticion competitionId="c-1" {...props} />);
+
+      expect(screen.queryByRole('button', { name: 'handicaps.scheduleSave' })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/^handicaps\.scheduleAt/)).not.toBeInTheDocument();
+    });
+  });
+
   it('15b3: reintentar la vuelve a leer, y con ella se programa en la del campo', async () => {
     mockCampos.mockRejectedValueOnce(new Error('sin red'));
     pinta();

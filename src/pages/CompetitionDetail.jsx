@@ -784,13 +784,17 @@ const CompetitionDetail = () => {
     competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
   // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
   // stroke play hasta aquí): se baja sola en cuanto la sección está pintada,
-  // UNA vez: una recarga posterior de la ficha no te devuelve abajo
-  const yaBajo = useRef(false);
+  // UNA vez por competición: una recarga posterior de la ficha no te devuelve
+  // abajo, y otra ficha sí baja. Con la de la ruta ya pintada: al pasar de una
+  // a otra, la anterior sigue en pantalla un instante (CodeRabbit, #863)
+  const bajoEn = useRef(null);
+  const pintada = competition?.id;
   useEffect(() => {
-    if (yaBajo.current || location.hash !== '#clasificaciones' || !conClasificacion || isLoading) return;
-    yaBajo.current = true;
+    if (location.hash !== '#clasificaciones' || !conClasificacion || isLoading) return;
+    if (pintada !== id || bajoEn.current === id) return;
+    bajoEn.current = id;
     bajaALaClasificacion();
-  }, [location.hash, conClasificacion, isLoading]);
+  }, [location.hash, conClasificacion, isLoading, pintada, id]);
 
   if (isLoading) {
     return (

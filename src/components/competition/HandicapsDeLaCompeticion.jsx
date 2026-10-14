@@ -61,6 +61,14 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   const zonaIlegible = deEsta && leido.ilegible;
   const [ocupado, setOcupado] = useState(false);
   const [programando, setProgramando] = useState(null);
+  // Lo escrito es de la competición en la que se abrió: en otra, el formulario
+  // empieza cerrado, o se guardaría en su nombre antes de saber su zona
+  // (CodeRabbit, #863)
+  const [abiertoEn, setAbiertoEn] = useState(competitionId);
+  if (abiertoEn !== competitionId) {
+    setAbiertoEn(competitionId);
+    setProgramando(null);
+  }
 
   // La zona del campo, para escribir y decir las horas en la suya
   useEffect(() => {
