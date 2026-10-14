@@ -207,6 +207,36 @@ describe('Mis próximos partidos · tarjetas (FE #845)', () => {
     expect(within(medal).getByTestId('con-quien')).toHaveTextContent('upcomingMatches.with {"companeros":"Bea, Cris y Dani"}');
   });
 
+  it('5e · una compañera retirada sigue, marcada: «Con Bea (retirada)» (QA de la release)', async () => {
+    responde({
+      partidas: [
+        partida({
+          partnerNames: ['Bea', 'Cris'],
+          partners: [
+            { name: 'Bea', withdrawn: true, teeGender: 'FEMALE' },
+            { name: 'Cris', withdrawn: false, teeGender: null },
+          ],
+        }),
+      ],
+    });
+
+    pinta();
+
+    const [medal] = await tarjetas();
+    expect(within(medal).getByTestId('con-quien')).toHaveTextContent(
+      'upcomingMatches.with {"companeros":"upcomingMatches.withdrawnPartner {\\"nombre\\":\\"Bea\\",\\"context\\":\\"female\\"} y Cris"}'
+    );
+  });
+
+  it('5f · lo guardado antes, sin `partners`, sigue con los nombres', async () => {
+    responde({ partidas: [partida({ partnerNames: ['Bea'] })] });
+
+    pinta();
+
+    const [medal] = await tarjetas();
+    expect(within(medal).getByTestId('con-quien')).toHaveTextContent('upcomingMatches.with {"companeros":"Bea"}');
+  });
+
   it('5d · solo en su partida: «De momento sin compañeros»', async () => {
     responde({ partidas: [partida({ partnerNames: [] })] });
 

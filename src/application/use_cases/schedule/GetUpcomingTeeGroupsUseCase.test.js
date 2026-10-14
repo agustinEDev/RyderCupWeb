@@ -56,6 +56,10 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
       teeTime: '12:10',
       matchNumber: 2,
       partnerNames: ['Ana', 'Bea'],
+      partners: [
+        { name: 'Ana', withdrawn: false, teeGender: null },
+        { name: 'Bea', withdrawn: false, teeGender: null },
+      ],
       broughtIn: false,
     });
   });
@@ -78,6 +82,31 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
     const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
 
     expect(matches[0].partnerNames).toEqual(['Bea']);
+  });
+
+  it('QA de la release: un compañero retirado sigue, marcado, con su barra', async () => {
+    const conRetirada = partida('g2', 2, '12:10');
+    conRetirada.players = conRetirada.players.map((p) =>
+      p.userId === 'ana' ? { ...p, cardStatus: 'RETIRADO', teeGender: 'FEMALE' } : p
+    );
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', conRetirada)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches[0].partners).toEqual([
+      { name: 'Ana', withdrawn: true, teeGender: 'FEMALE' },
+      { name: 'Bea', withdrawn: false, teeGender: null },
+    ]);
+  });
+
+  it.each(['ENTREGADA', 'RETIRADO'])('QA de la release: con mi tarjeta %s ya no es mi próxima partida', async (estado) => {
+    const yaAcabe = partida('g2', 2, '12:10', 'IN_PROGRESS');
+    yaAcabe.players = yaAcabe.players.map((p) => (p.userId === 'yo' ? { ...p, cardStatus: estado } : p));
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', yaAcabe)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches).toEqual([]);
   });
 
   it('revisor (12 oct 2026): si yo soy el no presentado, no sale como próxima', async () => {

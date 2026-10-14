@@ -134,6 +134,17 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(linea).not.toHaveTextContent('partidas.mineAlone');
   });
 
+  it('QA de la release: una compañera retirada sigue en la línea, marcada', async () => {
+    const bea = { ...jugador('bea', 'yo'), cardStatus: 'RETIRADO', teeGender: 'FEMALE' };
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [jugador('yo', 'bea'), bea])]);
+
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    const linea = await screen.findByTestId('mi-partida-r1');
+    expect(linea.textContent).toMatch(/partidas\.withdrawnPartner \{\\"nombre\\":\\"BEA\\",\\"context\\":\\"female\\"\}/);
+    expect(linea).not.toHaveTextContent('partidas.mineAlone');
+  });
+
   it('/code-review: retirado, ya no «marcas a» nadie', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [{ ...jugador('yo', 'bea'), cardStatus: 'RETIRADO' }, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);

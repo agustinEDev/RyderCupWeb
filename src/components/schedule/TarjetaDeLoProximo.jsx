@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import EtiquetaDelTipo from '../competition/EtiquetaDelTipo';
 import { diaCorto } from '../../utils/diaDeLaSesion';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
+import { conGenero } from '../../utils/genero';
 
 /**
  * Una tarjeta de «Mis próximos partidos» (FE #845): un partido de la Ryder o
@@ -45,7 +46,13 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
         ]),
   ].filter(Boolean);
 
-  const companeros = partido.partnerNames ?? [];
+  // Con quién, y quién se retiró (QA de la release). Lo guardado antes de
+  // `partners` solo trae los nombres
+  const companeros = partido.partners
+    ? partido.partners.map((p) =>
+        p.withdrawn ? t('upcomingMatches.withdrawnPartner', conGenero(p.teeGender, { nombre: p.name })) : p.name
+      )
+    : (partido.partnerNames ?? []);
   const conQuien = esPartida
     ? companeros.length > 0
       ? t('upcomingMatches.with', { companeros: lista(companeros) })

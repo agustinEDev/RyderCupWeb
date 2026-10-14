@@ -27,9 +27,14 @@ export const anotaSuTarjeta = (partida, userId) => {
 };
 
 /** Con quién juega: sin él ni los no presentados. */
-// Ni el que se retiró: ya no juega con nadie (QA de la release, 14 oct)
-export const companerosDe = (partida, userId) =>
-  juegan(partida).filter((p) => p.userId !== userId && p.cardStatus !== 'RETIRADO');
+export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p.userId !== userId);
+
+/**
+ * Se retiró: sigue siendo de la partida, y se dice al nombrarlo —«Con Bea
+ * (retirada)»— en vez de esconderlo, que dejaba «de momento sin compañeros»
+ * junto a «marcas a Bea» (QA de la release, 14 oct).
+ */
+export const seRetiro = (jugador) => jugador?.cardStatus === 'RETIRADO';
 
 /** Si una partida aún se puede tocar: no ha salido (#544). Sin el campo, sí. */
 export const seCambia = (partida) => partida.canChange !== false;

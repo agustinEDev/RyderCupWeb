@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
-import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan, seRetiro } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
 
 /**
@@ -44,7 +44,10 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
       {mias.map(({ roundId, roundDate, sessionType, group }) => {
         const yo = group.players.find((p) => p.userId === userId);
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
-        const companeros = companerosDe(group, userId).map((p) => p.name);
+        // Quien se retiró sigue, dicho: «con Bea (retirada)» (QA de la release)
+        const companeros = companerosDe(group, userId).map((p) =>
+          seRetiro(p) ? t('partidas.withdrawnPartner', conGenero(p.teeGender, { nombre: p.name })) : p.name
+        );
         // Retirado, ya no marca a nadie (/code-review)
         const marcado = yo?.cardStatus === 'RETIRADO' ? null : juegan(group).find((p) => p.userId === yo?.marksUserId);
         const datos = {

@@ -378,6 +378,7 @@
     "windowClosed": "Window closed.",
     "movePlayer": "Move {{jugador}}",
     "broughtIn": "You were moved to group {{numero}} · tees off at {{hora}}",
-    "yourCategory": "Your category: {{categoria}}"
+    "yourCategory": "Your category: {{categoria}}",
+    "withdrawnPartner": "{{nombre}} (withdrawn)"
   }
 }
