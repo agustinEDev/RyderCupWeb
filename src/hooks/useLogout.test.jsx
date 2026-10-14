@@ -151,3 +151,60 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
   });
 });
 
+describe('useLogout · las demás pestañas se enteran cuando el servidor ya cerró (FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    siembraLaCuenta();
+    delete window.location;
+    window.location = { href: '' };
+  });
+
+  it('O5: avisa a las demás DESPUÉS de que el servidor responda (antes, su consulta de sesión aún valía)', async () => {
+    let responde;
+    logoutUseCase.execute.mockReturnValue(new Promise((r) => { responde = r; }));
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    let salida;
+    act(() => { salida = result.current.logout(); });
+    await act(async () => {});
+    expect(broadcastLogout).not.toHaveBeenCalled();
+
+    await act(async () => { responde(); await salida; });
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('O5b: si el servidor no contesta, avisa al vencer el tope (no se quedan sin enterarse)', async () => {
+    vi.useFakeTimers();
+    logoutUseCase.execute.mockImplementation(() => new Promise(() => {}));
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    let salida;
+    act(() => { salida = result.current.logout({ recargarEn: '/' }); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(4_999); });
+    expect(broadcastLogout).not.toHaveBeenCalled();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); await salida; });
+    vi.useRealTimers();
+
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('O6: si la llamada al servidor falla, también avisa a las demás', async () => {
+    logoutUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('O6b: sin llamada al servidor (dispositivo ya revocado), avisa igual', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(async () => { await result.current.logout({ skipBackendCall: true }); });
+
+    expect(logoutUseCase.execute).not.toHaveBeenCalled();
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+});
+

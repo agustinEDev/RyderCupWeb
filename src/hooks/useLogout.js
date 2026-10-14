@@ -37,12 +37,6 @@ export const useLogout = () => {
    * @param {boolean} options.desdeOtraPestana - El cierre llega de otra pestaña: ni avisar ni llamar al backend
    */
   const logout = useCallback(async ({ skipBackendCall = false, recargarEn = null, desdeOtraPestana = false } = {}) => {
-    // A las demas pestañas primero: son las que no se enteran de nada. Si el
-    // cierre llega de otra, ni se avisa ni se llama al backend: comparten
-    // cookies y ya lo hizo ella. Avisar de vuelta era un eco sin fin entre
-    // pestañas, con miles de POST /auth/logout (FE #865)
-    if (!desdeOtraPestana) broadcastLogout();
-
     if (!skipBackendCall && !desdeOtraPestana) {
       try {
         // Con un tope: un rechazo se recoge abajo, pero una peticion COLGADA
@@ -57,6 +51,14 @@ export const useLogout = () => {
         // Continue with client-side cleanup even if backend fails
       }
     }
+
+    // A las demás pestañas, con el servidor ya respondido (o vencido el tope):
+    // si se enteraban antes, limpiaban con las cookies aún válidas, volvían a
+    // preguntar por la sesión y un 200 dejaba el dispositivo con los datos de
+    // quien salía (FE #865). Si el cierre llega de otra pestaña, ni se avisa
+    // ni se llama al backend: comparten cookies y ya lo hizo ella. Avisar de
+    // vuelta era un eco sin fin entre pestañas, con miles de POST /auth/logout
+    if (!desdeOtraPestana) broadcastLogout();
 
     if (recargarEn) {
       // La navegacion se pide ANTES de tocar el estado. Limpiar reinicia la
