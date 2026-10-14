@@ -7,12 +7,13 @@
  *   el backend no contesta                  | queda limpio igual
  *   salida por navegación (dispositivos)    | queda limpio y va a /login
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useLogout } from './useLogout';
 import { logoutUseCase } from '../composition';
+import { broadcastLogout } from '../utils/broadcastAuth';
 
 vi.mock('../composition', () => ({
   logoutUseCase: { execute: vi.fn() },
@@ -33,6 +34,14 @@ const almacen = (() => {
   };
 })();
 vi.stubGlobal('localStorage', almacen);
+
+// Cada test toca `window.location` y algunos los temporizadores: se devuelven
+// aunque falle una aserción, para no arrastrarlos al siguiente (/code-review)
+const locationDeVerdad = window.location;
+afterEach(() => {
+  vi.useRealTimers();
+  window.location = locationDeVerdad;
+});
 
 const navigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -120,3 +129,84 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
   });
 });
+
+describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    siembraLaCuenta();
+    delete window.location;
+    window.location = { href: '' };
+    logoutUseCase.execute.mockResolvedValue(undefined);
+  });
+
+  it('O8: «desde otra pestaña» sale recargando a /login, pedida la navegación ANTES de limpiar, sin avisar ni llamar al backend', async () => {
+    // Limpiando primero, la consulta de la sesión volvía a preguntar: un 200
+    // reescribía los datos y un 401 acababa en «sesión caducada» (/code-review)
+    const quitar = localStorage.removeItem;
+    let destinoAlLimpiar = null;
+    localStorage.removeItem = (k) => {
+      if (destinoAlLimpiar === null) destinoAlLimpiar = window.location.href;
+      quitar(k);
+    };
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+    localStorage.removeItem = quitar;
+
+    expect(window.location.href).toBe('/login');
+    expect(destinoAlLimpiar).toBe('/login');
+    expect(navigate).not.toHaveBeenCalled();
+    expect(broadcastLogout).not.toHaveBeenCalled();
+    expect(logoutUseCase.execute).not.toHaveBeenCalled();
+    expect(loQueQueda()).toEqual([]);
+  });
+
+  it('O3: quien sale a mano avisa a las demás y llama al backend, una vez cada cosa', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout());
+
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+    expect(logoutUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useLogout · las demás pestañas se enteran al momento (FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    siembraLaCuenta();
+    delete window.location;
+    window.location = { href: '' };
+  });
+
+  it('O5′: quien sale avisa a las demás ANTES de esperar al servidor: inmediato, y aunque la pestaña se cierre durante la espera', async () => {
+    logoutUseCase.execute.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    act(() => { result.current.logout(); });
+    await act(async () => {});
+
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('O6: si la llamada al servidor falla, también avisa a las demás', async () => {
+    logoutUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('O6b: sin llamada al servidor (dispositivo ya revocado), avisa igual', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(async () => { await result.current.logout({ skipBackendCall: true }); });
+
+    expect(logoutUseCase.execute).not.toHaveBeenCalled();
+    expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+});
+
