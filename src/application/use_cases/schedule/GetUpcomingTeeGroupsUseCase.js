@@ -1,5 +1,5 @@
 import { fechaLocal } from '../../../utils/fechaLocal';
-import { companerosDe, seRetiro } from '../../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, companerosDe, seRetiro } from '../../../domain/services/PartidasDeLaFranja';
 
 const POR_JUGAR = ['SCHEDULED', 'IN_PROGRESS'];
 const COMPETICIONES_CON_PARTIDAS = ['CLOSED', 'IN_PROGRESS'];
@@ -59,8 +59,9 @@ class GetUpcomingTeeGroupsUseCase {
       // Solo si sigue jugando: no presentado (revisor, 12 oct 2026), o con la
       // tarjeta entregada o retirado mientras los demás acaban, ya no es su
       // próxima partida —ni para la lista ni para el contador del panel—
-      .filter(({ group }) => (group.players.find((p) => p.userId === userId)?.cardStatus ?? 'JUGANDO') === 'JUGANDO')
-      .map(({ roundId, roundDate, sessionType, group }) => ({
+      .filter(({ group }) => anotaSuTarjeta(group, userId))
+      .map(({ roundId, roundDate, sessionType, group }) => ({ roundId, roundDate, sessionType, group, companeros: companerosDe(group, userId) }))
+      .map(({ roundId, roundDate, sessionType, group, companeros }) => ({
         id: group.id,
         // Lo distingue de un partido de la Ryder: su pantalla y su vista son otras
         esPartidaDeFranja: true,
@@ -75,9 +76,9 @@ class GetUpcomingTeeGroupsUseCase {
         teeTime: group.teeTime,
         matchNumber: group.number,
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
-        partnerNames: companerosDe(group, userId).map((p) => p.name),
+        partnerNames: companeros.map((p) => p.name),
         // Y quién se retiró, con su barra para decirlo en femenino (QA de la release)
-        partners: companerosDe(group, userId).map((p) => ({
+        partners: companeros.map((p) => ({
           name: p.name,
           withdrawn: seRetiro(p),
           teeGender: p.teeGender ?? null,

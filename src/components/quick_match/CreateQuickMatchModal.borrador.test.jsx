@@ -637,5 +637,16 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
     expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
   });
+
+  it('Q1c · el aviso se va en cuanto se corrige el nombre, sin esperar a «Añadir»', async () => {
+    abre();
+    await alPaso2();
+    anadeInvitado('   ', 'Pérez');
+    expect(screen.getByTestId('quick-match-modal-error')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), { target: { value: 'Ana' } });
+
+    expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
+  });
 });
 

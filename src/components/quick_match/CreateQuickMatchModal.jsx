@@ -249,8 +249,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     ]);
   };
 
-  const handleGuestFirstNameChange = (value) => setGuestForm((g) => ({ ...g, firstName: value }));
-  const handleGuestLastNameChange = (value) => setGuestForm((g) => ({ ...g, lastName: value }));
+  // Al corregirlo, el aviso de nombre en blanco ya no tiene razón de ser
+  const handleGuestFirstNameChange = (value) => {
+    setError('');
+    setGuestForm((g) => ({ ...g, firstName: value }));
+  };
+  const handleGuestLastNameChange = (value) => {
+    setError('');
+    setGuestForm((g) => ({ ...g, lastName: value }));
+  };
 
   const handleAddGuest = (e) => {
     e.preventDefault();

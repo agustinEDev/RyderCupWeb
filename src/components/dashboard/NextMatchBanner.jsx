@@ -3,6 +3,7 @@ import { Calendar, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../ui/BlockLoader';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
+import { nombresDeCompaneros } from '../../utils/nombreDeCompanero';
 
 /**
  * La pieza central del panel: cuándo juego y contra quién.
@@ -101,7 +102,8 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
     : null;
   const session = match.sessionType ? t(`nextMatch.session.${match.sessionType}`) : null;
   const opponents = (match.opponentNames || []).join(', ');
-  const partners = (match.partnerNames || []).join(', ');
+  // Como la tarjeta: quien se retiró, dicho (QA de la release)
+  const partners = nombresDeCompaneros(t, 'upcomingMatches.withdrawnPartner', match).join(', ');
   // Una partida de stroke play (FE #824, PR 7): sin formato ni rivales, con su
   // número, su hora y su pantalla
   const esPartida = Boolean(match.esPartidaDeFranja);

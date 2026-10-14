@@ -5,6 +5,7 @@ import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan, seRetiro } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
+import { nombreDeCompanero } from '../../utils/nombreDeCompanero';
 
 /**
  * «Tu partida» de cada jornada, arriba de las franjas (FE #824, PR 6; caso 5,
@@ -46,7 +47,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
         // Quien se retiró sigue, dicho: «con Bea (retirada)» (QA de la release)
         const companeros = companerosDe(group, userId).map((p) =>
-          seRetiro(p) ? t('partidas.withdrawnPartner', conGenero(p.teeGender, { nombre: p.name })) : p.name
+          nombreDeCompanero(t, 'partidas.withdrawnPartner', { name: p.name, withdrawn: seRetiro(p), teeGender: p.teeGender })
         );
         // Retirado, ya no marca a nadie (/code-review)
         const marcado = yo?.cardStatus === 'RETIRADO' ? null : juegan(group).find((p) => p.userId === yo?.marksUserId);
