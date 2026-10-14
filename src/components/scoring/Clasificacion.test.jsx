@@ -363,9 +363,35 @@ describe('Clasificacion · me lleva a mi fila', () => {
 
     rerender(<Clasificacion pedir={pedir} userId="yo" activa={false} centraEnMi="alAbrir" />);
     rerender(<Clasificacion pedir={pedir} userId="yo" activa centraEnMi="alAbrir" />);
-    await act(async () => suelta(conYo()));
+    // S8b (revisor): con la lectura vieja todavía no, que mi puesto puede haber cambiado
+    await act(async () => {});
+    expect(centra).toHaveBeenCalledTimes(1);
+    await act(async () => suelta(clasificacion([fila('yo', { position: 1 }), fila('ana', { position: 2 })])));
 
     await waitFor(() => expect(centra).toHaveBeenCalledTimes(2));
+    expect(centra.mock.contexts[1]).toBe(screen.getByTestId('fila-yo'));
+  });
+
+  it('S9: lo primero que se ve cuenta: si ahí no estaba mi fila, el refresco que la trae no me mueve', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const pedir = vi.fn().mockResolvedValueOnce(clasificacion([fila('ana')])).mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa cada={60000} centraEnMi="una" />);
+    await screen.findByTestId('fila-ana');
+
+    await act(async () => vi.advanceTimersByTime(60000));
+    await screen.findByTestId('fila-yo');
+
+    expect(centra).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('D2 (revisor): la marca de mi fila va en su primera celda (Safari no pinta sombras en una fila de tabla)', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+
+    const mia = await screen.findByTestId('fila-yo');
+    expect(mia.className).not.toMatch(/shadow/);
+    expect(mia.querySelector('td').className).toMatch(/shadow-\[inset_3px_0_0_var\(--color-primary-500\)\]/);
   });
 
   it('D1: la tabla va sin marco propio (la tarjeta que la contiene ya lo tiene)', async () => {

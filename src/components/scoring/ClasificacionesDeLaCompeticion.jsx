@@ -21,8 +21,9 @@ const PESTANAS = ['overall', 'scratch'];
  * @param {string} [props.userId] - Quién mira, destacado
  * @param {boolean} props.enJuego - Si la competición está en juego
  * @param {number} [props.version] - Sube cuando cambian las partidas: se relee
+ * @param {boolean} [props.sinTitulo] - Sin su título (en su página, el h1 ya lo dice)
  */
-const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, version }) => {
+const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, version, sinTitulo = false }) => {
   const { t } = useTranslation('scoring');
   const [pestana, setPestana] = useState('overall');
   const pedirGeneral = useCallback(
@@ -34,10 +35,13 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego, versio
 
   return (
     <section data-testid="clasificaciones" className="space-y-3 rounded-xl border border-gray-200 bg-white px-3 py-4 shadow-sm">
-      <h3 className="flex items-center gap-2 px-1 text-base font-semibold text-gray-900">
-        <Trophy className="h-5 w-5 text-green-600" />
-        {t('partida.standingsTitle')}
-      </h3>
+      {/* En su propia página, «Clasificación» ya es el h1 (revisor) */}
+      {!sinTitulo && (
+        <h3 className="flex items-center gap-2 px-1 text-base font-semibold text-gray-900">
+          <Trophy className="h-5 w-5 text-green-600" />
+          {t('partida.standingsTitle')}
+        </h3>
+      )}
       <div role="tablist" aria-label={t('partida.standingsTitle')} className="flex border-b border-gray-200">
         {PESTANAS.map((p) => (
           <button

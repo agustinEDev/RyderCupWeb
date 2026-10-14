@@ -113,3 +113,24 @@ describe('ClasificacionesDeLaCompeticion · me lleva a mi fila (14 oct 2026)', (
   });
 });
 
+describe('ClasificacionesDeLaCompeticion · en su propia página (14 oct 2026)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGeneral.mockResolvedValue(clasificacion([fila('ana')]));
+  });
+
+  it('G12: con `sinTitulo` no repite «Clasificación» (la página ya lo dice en su h1)', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="yo" enJuego={false} sinTitulo />);
+    await screen.findByTestId('fila-ana');
+
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: 'partida.standingsTitle' })).toBeInTheDocument();
+  });
+
+  it('G12b: sin ella, su título sigue', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="yo" enJuego={false} />);
+
+    expect(await screen.findByRole('heading', { name: 'partida.standingsTitle' })).toBeInTheDocument();
+  });
+});
+

@@ -24,10 +24,18 @@ const LeaderboardPage = () => {
   const [error, setError] = useState(null);
   // Un Stableford o un Medal tiene aquí su general (14 oct 2026: en la ficha,
   // con 200 participantes, no cabe). La de la Ryder contesta 400 y la ficha
-  // dice cuál es. Con el id de la ruta para el que se leyó: si la página pasa
-  // a otra competición sin desmontarse, no pinta la de la anterior
-  const [strokePlay, setStrokePlay] = useState(null);
-  const laDeStrokePlay = strokePlay?.para === competitionId ? strokePlay.competicion : null;
+  // dice cuál es
+  const [laDeStrokePlay, setLaDeStrokePlay] = useState(null);
+  // Otra competición sin desmontarse: de cero, sin enseñar nada de la anterior
+  // mientras llega lo suyo (revisor)
+  const [delId, setDelId] = useState(competitionId);
+  if (delId !== competitionId) {
+    setDelId(competitionId);
+    setLeaderboard(null);
+    setError(null);
+    setIsLoading(true);
+    setLaDeStrokePlay(null);
+  }
 
   // Dynamic back link based on where the user came from. La general de un
   // stroke play vuelve siempre a su ficha: su agenda es la de la Ryder
@@ -36,7 +44,9 @@ const LeaderboardPage = () => {
   const backTo = aLaFicha ? `/competitions/${competitionId}` : `/competitions/${competitionId}/schedule`;
   const backText = aLaFicha ? t('summary.backToCompetition') : t('summary.backToSchedule');
   // Se pregunta una vez por competición, no en cada refresco: el cubo de
-  // límites es el mismo para todo el campo (ADR-038)
+  // límites es el mismo para todo el campo (ADR-038). Con la consulta en
+  // curso: quien llega mientras tanto (el doble arranque de React en
+  // desarrollo, un refresco) espera a esa misma (revisor)
   const fichaMirada = useRef(null);
   // Si hay sesión, no el objeto: uno nuevo en cada render relanzaría la carga
   const conSesion = Boolean(user);
@@ -47,18 +57,23 @@ const LeaderboardPage = () => {
     let vigente = true;
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): ni se pregunta
-    const esDeStrokePlay = async () => {
-      if (!conSesion || fichaMirada.current === competitionId) return null;
-      fichaMirada.current = competitionId;
-      const competicion = await getCompetitionDetailUseCase.execute(competitionId).catch((err) => {
-        // Sin respuesta (sin red) no se sabe nada: el siguiente refresco vuelve
-        // a preguntar. Con respuesta, aunque sea un error, no (CodeRabbit, #863).
-        // Y solo si la marca sigue siendo de esta: una consulta vieja no borra la
-        // de la competición que se mira ahora (revisor)
-        if (esFalloDeRed(err) && fichaMirada.current === competitionId) fichaMirada.current = null;
-        return null;
-      });
-      return competicion?.hasTeams === false ? competicion : null;
+    const esDeStrokePlay = () => {
+      if (!conSesion) return Promise.resolve(null);
+      if (fichaMirada.current?.id === competitionId) return fichaMirada.current.promesa;
+      const marca = { id: competitionId, promesa: null };
+      marca.promesa = getCompetitionDetailUseCase
+        .execute(competitionId)
+        .then((competicion) => (competicion?.hasTeams === false ? competicion : null))
+        .catch((err) => {
+          // Sin respuesta (sin red) no se sabe nada: el siguiente refresco vuelve
+          // a preguntar. Con respuesta, aunque sea un error, no (CodeRabbit, #863).
+          // Y solo si la marca sigue siendo esta: una consulta vieja no borra la
+          // de la competición que se mira ahora (revisor)
+          if (esFalloDeRed(err) && fichaMirada.current === marca) fichaMirada.current = null;
+          return null;
+        });
+      fichaMirada.current = marca;
+      return marca.promesa;
     };
 
     const fetchLeaderboard = async () => {
@@ -71,7 +86,7 @@ const LeaderboardPage = () => {
         const competicion = err?.status === 400 ? await esDeStrokePlay() : null;
         if (competicion) {
           if (!vigente) return;
-          setStrokePlay({ para: competitionId, competicion });
+          setLaDeStrokePlay(competicion);
           setError(null);
           // La de la Ryder no va a cambiar de opinión: se deja de pedir
           clearInterval(pollRef.current);
@@ -99,12 +114,16 @@ const LeaderboardPage = () => {
       {user ? <HeaderAuth user={user} /> : <Header />}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
-        <Link
-          to={backTo}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
-        >
-          &larr; {backText}
-        </Link>
+        {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
+            de texto y de destino al detectar un stroke play (revisor) */}
+        {!isLoading && (
+          <Link
+            to={backTo}
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+          >
+            &larr; {backText}
+          </Link>
+        )}
         <h1 className={`text-2xl font-bold text-gray-900 ${laDeStrokePlay ? 'mb-1' : 'mb-6'}`}>{t('leaderboard.title')}</h1>
 
         {isLoading && (
@@ -125,7 +144,9 @@ const LeaderboardPage = () => {
               key={competitionId}
               competitionId={competitionId}
               userId={user?.id}
-              enJuego={laDeStrokePlay.status === 'IN_PROGRESS'}
+              // Mientras no acabe: abierta antes de empezar, se ve empezar sin recargar (revisor)
+              enJuego={laDeStrokePlay.status !== 'COMPLETED'}
+              sinTitulo
             />
           </>
         ) : (

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
 
 const mockLocationState = { state: null };
 const mockParams = { id: 'c-1' };
@@ -47,8 +48,14 @@ vi.mock('../../components/layout/Footer', () => ({
 
 // La general de un Stableford o un Medal: aquí importa con qué se pinta
 vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', () => ({
-  default: ({ competitionId, userId, enJuego }) => (
-    <div data-testid="general-stroke-play" data-competition={competitionId} data-user={userId} data-en-juego={String(enJuego)} />
+  default: ({ competitionId, userId, enJuego, sinTitulo }) => (
+    <div
+      data-testid="general-stroke-play"
+      data-competition={competitionId}
+      data-user={userId}
+      data-en-juego={String(enJuego)}
+      data-sin-titulo={String(Boolean(sinTitulo))}
+    />
   ),
 }));
 
@@ -83,22 +90,22 @@ describe('LeaderboardPage', () => {
   });
 
   it('should show loading spinner initially', () => {
-    getLeaderboardUseCase.execute.mockReturnValue(new Promise(() => {})); // never resolves
+    getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {})); // never resolves
     render(<LeaderboardPage />);
     expect(screen.getByText('loading')).toBeInTheDocument();
   });
 
-  it('should link back to schedule by default', () => {
+  it('should link back to schedule by default', async () => {
     mockLocationState.state = null;
     render(<LeaderboardPage />);
-    const backLink = screen.getByText(/summary.backToSchedule/);
+    const backLink = await screen.findByText(/summary.backToSchedule/);
     expect(backLink.closest('a')).toHaveAttribute('href', '/competitions/c-1/schedule');
   });
 
-  it('should link back to competition detail when from=detail', () => {
+  it('should link back to competition detail when from=detail', async () => {
     mockLocationState.state = { from: 'detail' };
     render(<LeaderboardPage />);
-    const backLink = screen.getByText(/summary.backToCompetition/);
+    const backLink = await screen.findByText(/summary.backToCompetition/);
     expect(backLink.closest('a')).toHaveAttribute('href', '/competitions/c-1');
   });
 
@@ -186,6 +193,66 @@ describe('LeaderboardPage', () => {
 
       expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
       expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+    });
+
+    it('G2b (revisor): abierta antes de empezar (CLOSED), relee: al empezar el torneo se ve sin recargar', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'CLOSED' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'true');
+    });
+
+    it('G12 (revisor): la sección va sin su título: «Clasificación» ya es el h1 de la página', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-sin-titulo', 'true');
+    });
+
+    it('L11 (revisor): con el doble arranque de React en desarrollo (StrictMode), una sola consulta de la ficha y se ve la general', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+
+      render(
+        <StrictMode>
+          <LeaderboardPage />
+        </StrictMode>
+      );
+
+      expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
+      expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
+      expect(mockDetalle).toHaveBeenCalledTimes(1);
+    });
+
+    it('G11b (revisor): al pasar a otra competición sin desmontar, «cargando» y nada de la anterior', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+      const { rerender } = render(<LeaderboardPage />);
+      await screen.findByTestId('general-stroke-play');
+
+      getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+      mockParams.id = 'c-2';
+      rerender(<LeaderboardPage />);
+
+      expect(screen.getByText('loading')).toBeInTheDocument();
+      expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+      expect(screen.queryByText('Copa')).not.toBeInTheDocument();
+    });
+
+    it('G10b (revisor): mientras carga no hay enlace de volver (aún no se sabe adónde)', () => {
+      getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+
+      render(<LeaderboardPage />);
+
+      expect(screen.queryByText(/summary.back/)).not.toBeInTheDocument();
     });
 
     it('G10: volver lleva a la ficha, venga de donde venga', async () => {

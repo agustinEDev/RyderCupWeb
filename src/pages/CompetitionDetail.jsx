@@ -122,7 +122,7 @@ const CompetitionDetail = () => {
   const [releyendoTrasCerrar, setReleyendoTrasCerrar] = useState(false);
   // Sube con cada cambio en las partidas: se vuelve a mirar si se puede
   // terminar el torneo (todas las franjas cerradas)
-  const [versionClasificaciones, setVersionClasificaciones] = useState(0);
+  const [versionDePartidas, setVersionDePartidas] = useState(0);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -542,7 +542,7 @@ const CompetitionDetail = () => {
     return () => {
       vigente = false;
     };
-  }, [leeSiTerminar, claveDeFranjas, versionClasificaciones, agendaLeida]);
+  }, [leeSiTerminar, claveDeFranjas, versionDePartidas, agendaLeida]);
 
   // Lo último que se sabe de la actualización, para notar cuándo acaba
   const estadoCargado = competition?.handicapUpdate?.status ?? null;
@@ -1651,7 +1651,7 @@ const CompetitionDetail = () => {
                   // y no juega las sigue viendo (CodeRabbit)
                   puedeVerPartidas={canManage}
                   organizaPartidas={canManage && competition.status !== 'COMPLETED'}
-                  onCambioEnPartidas={() => setVersionClasificaciones((n) => n + 1)}
+                  onCambioEnPartidas={() => setVersionDePartidas((n) => n + 1)}
                 />
               ) : (
               <AgendaDeLaCompeticion

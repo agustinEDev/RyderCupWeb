@@ -49,10 +49,14 @@ const Clasificacion = ({
   const [cambiandoDeFiltro, setCambiandoDeFiltro] = useState(false);
   const lecturas = useLaMasNueva();
   // Si participo, me lleva a mi fila, centrada (14 oct 2026): «una», la
-  // primera vez que se ve; «alAbrir», cada vez que se abre. Los refrescos y el
-  // filtro no me mueven
+  // primera vez que se ve; «alAbrir», cada vez que se abre. Con una lectura
+  // llegada después de abrir, no con la de antes, que mi puesto puede haber
+  // cambiado (revisor). Lo primero que se ve cuenta: si ahí no estaba, un
+  // refresco que me trae no me mueve mientras leo (revisor)
   const bloqueRef = useRef(null);
   const yaCentrada = useRef(false);
+  const [leidas, setLeidas] = useState(0);
+  const abiertaTras = useRef(0);
 
   const leer = useCallback(async () => {
     const turno = lecturas.turno();
@@ -60,6 +64,7 @@ const Clasificacion = ({
       const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
+      setLeidas((n) => n + 1);
       setSinCargar(false);
       setCambiandoDeFiltro(false);
       if (categoria == null) {
@@ -79,17 +84,19 @@ const Clasificacion = ({
   }, [activa, leer, cada, version]);
   useSondeoMientras(activa && cada != null, leer, cada ?? 0);
   useEffect(() => {
-    if (!activa && centraEnMi === 'alAbrir') yaCentrada.current = false;
-  }, [activa, centraEnMi]);
+    if (activa || centraEnMi !== 'alAbrir') return;
+    yaCentrada.current = false;
+    abiertaTras.current = leidas;
+  }, [activa, centraEnMi, leidas]);
   useEffect(() => {
-    if (!centraEnMi || !activa || !clasificacion || yaCentrada.current) return;
+    if (!centraEnMi || !activa || yaCentrada.current || leidas <= abiertaTras.current) return;
+    yaCentrada.current = true;
     // También la de debajo del corte (scratch)
     const mia = bloqueRef.current?.querySelector('tr[data-yo="true"]');
     if (!mia) return;
-    yaCentrada.current = true;
     const sinAnimacion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     mia.scrollIntoView({ block: 'center', behavior: sinAnimacion ? 'auto' : 'smooth' });
-  }, [centraEnMi, activa, clasificacion]);
+  }, [centraEnMi, activa, leidas]);
 
   if (!activa) return null;
 
@@ -135,10 +142,18 @@ const Clasificacion = ({
         key={testId}
         data-testid={testId}
         data-yo={String(yo)}
-        className={yo ? 'bg-green-50/70 shadow-[inset_3px_0_0_var(--color-primary,#16a34a)]' : ''}
+        className={yo ? 'bg-green-50/70' : ''}
       >
         {/* «T22» no cabía en w-10 y se pegaba al nombre (QA del 11 oct 2026) */}
-        <td className="w-12 py-2.5 pr-2 pl-3 text-xs font-medium text-gray-400 tabular-nums">{puesto(fila)}</td>
+        {/* La marca de mi fila, en su primera celda: Safari no pinta sombras
+            en una fila de tabla (revisor) */}
+        <td
+          className={`w-12 py-2.5 pr-2 pl-3 text-xs font-medium text-gray-400 tabular-nums ${
+            yo ? 'shadow-[inset_3px_0_0_var(--color-primary-500)]' : ''
+          }`}
+        >
+          {puesto(fila)}
+        </td>
         {/* El nombre entero, en dos líneas si no cabe: cortado a 360 px se leía
             «Helena Pru…» (2.ª pasada del QA, 12 oct 2026) */}
         <td title={fila.name} className={`break-words py-2.5 pr-2 leading-snug ${yo ? 'font-semibold text-gray-900' : 'text-gray-800'}`}>
