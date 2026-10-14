@@ -21,6 +21,7 @@ import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
 import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
+import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -119,6 +120,10 @@ function AppContent() {
   // Va aquí arriba, colgado del router y no de cada pantalla: el defecto no era
   // de una pantalla concreta, eran las 24
   useVolverArriba();
+
+  // Una página que vuelve desde la caché del historial del navegador se recarga:
+  // volvía congelada, en «Loading...» tras salir o con la cuenta de antes (FE #865)
+  useRecargaAlVolverDeLaCache();
 
   // La cortina del arranque: se queda puesta hasta que la pantalla de destino
   // avisa de que no le queda nada cargando (FE #485)

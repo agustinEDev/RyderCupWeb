@@ -82,3 +82,29 @@ describe('App · cerrar sesión en otra pestaña, sin eco (FE #865)', () => {
     expect(mockLogout).not.toHaveBeenCalled();
   });
 });
+
+describe('App · una página que vuelve de la caché del historial se recarga (FE #865)', () => {
+  beforeEach(() => {
+    window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    window.history.pushState({}, '', '/dashboard');
+  });
+  afterEach(() => {
+    delete window.matchMedia;
+    vi.unstubAllGlobals();
+    window.history.pushState({}, '', '/');
+  });
+
+  it('B4 en la aplicación: montada, al volver de la caché recarga', async () => {
+    render(<App />);
+    await screen.findByText('panel');
+    const recarga = vi.fn();
+    vi.stubGlobal('location', { ...window.location, reload: recarga });
+
+    const evento = new globalThis.Event('pageshow');
+    Object.defineProperty(evento, 'persisted', { value: true });
+    await act(async () => globalThis.dispatchEvent(evento));
+
+    expect(recarga).toHaveBeenCalledTimes(1);
+  });
+});
+
