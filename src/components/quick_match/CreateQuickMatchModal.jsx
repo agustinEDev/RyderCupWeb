@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { mensajeDeError } from '../../utils/sinCobertura';
+import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
+import { idAleatorio } from '../../utils/idAleatorio';
+import customToast from '../../utils/toast';
 import { nombreVisible } from '../../utils/nombreVisible';
 import { X } from 'lucide-react';
 import HandicapInputPanel from './HandicapInputPanel';
@@ -27,6 +29,23 @@ import {
   parseTeeKey,
   teeKey,
 } from './createQuickMatchModalConstants';
+
+const AMIGOS_POR_PAGINA = 100;
+
+/** La lista de amigos entera, página a página. */
+const leeTodosLosAmigos = async (userId) => {
+  const amigos = [];
+  for (let page = 1; ; page += 1) {
+    const { friendships, totalCount } = await listFriendsUseCase.execute(userId, {
+      limit: AMIGOS_POR_PAGINA,
+      page,
+    });
+    amigos.push(...friendships);
+    // Ya están todos; o una página vacía, por si el total no cuadra: sin
+    // eso, un total mal contado pediría páginas para siempre
+    if (amigos.length >= totalCount || friendships.length === 0) return amigos;
+  }
+};
 
 // Por qué no se pudo empezar, por el código del servidor (FE #848): todo se
 // comprueba al confirmar, así que el motivo se dice en el resumen
@@ -94,11 +113,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
 
   useEffect(() => {
     if (step === 2 && currentUser?.id) {
-      listFriendsUseCase
-        // Todos (hasta el máximo del servidor): con los 20 de por defecto, a
-        // quien tiene más amigos le faltaban en la lista
-        .execute(currentUser.id, { limit: 100 })
-        .then((res) => setFriends(res.friendships))
+      // Todos, de 100 en 100 (el máximo del servidor): con los 20 de por
+      // defecto, a quien tiene más amigos le faltaban en la lista
+      leeTodosLosAmigos(currentUser.id)
+        .then(setFriends)
         .catch(() => setFriends([]));
     }
   }, [step, currentUser?.id]);
@@ -143,9 +161,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   );
 
   // No hay nada en el servidor hasta confirmar: cerrar es solo cerrar
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
+  const handleClose = onClose;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -255,7 +271,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       ...prev,
       {
         // Sin cuenta: un id solo del borrador, que no viaja
-        participantId: `invitado-${globalThis.crypto.randomUUID()}`,
+        participantId: `invitado-${idAleatorio()}`,
         userId: null,
         name: `${firstName} ${lastName}`,
         firstName,
@@ -431,23 +447,31 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     const firma = JSON.stringify(peticion);
     const previo = ultimoIntento.current;
     if (!previo || (previo.firma !== firma && !previo.quizaCreada)) {
-      ultimoIntento.current = { firma, id: globalThis.crypto.randomUUID(), quizaCreada: false };
+      ultimoIntento.current = { firma, id: idAleatorio(), quizaCreada: false };
     }
     return ultimoIntento.current.id;
   };
+
+  // Pudo llegar: sin red, cortada por tiempo o un 5xx. Un fallo en el propio
+  // móvil antes de mandar nada (o un 4xx) dice que no se creó
+  const pudoLlegar = (err) =>
+    esFalloDeRed(err) || err?.name === 'AbortError' || err?.status >= 500;
 
   const handleStart = async () => {
     setIsProcessing(true);
     setError('');
     try {
       const peticion = peticionDelBorrador();
-      const started = await createAndStartQuickMatchUseCase.execute({
-        quickMatchId: idDelIntento(peticion),
-        ...peticion,
-      });
+      const quickMatchId = idDelIntento(peticion);
+      // Con el id de un intento que quizá se creó y el borrador cambiado, el
+      // servidor devuelve la que ya hay: se dice que valió lo de antes
+      const cambiado =
+        ultimoIntento.current.quizaCreada && ultimoIntento.current.firma !== JSON.stringify(peticion);
+      const started = await createAndStartQuickMatchUseCase.execute({ quickMatchId, ...peticion });
+      if (cambiado) customToast.info(t('create.alreadyCreated'));
       onStarted(started.id);
     } catch (err) {
-      ultimoIntento.current.quizaCreada = !err?.status || err.status >= 500;
+      if (ultimoIntento.current) ultimoIntento.current.quizaCreada = pudoLlegar(err);
       const motivo = MOTIVO_POR_CODIGO[err?.status];
       setError(
         motivo

@@ -53,6 +53,8 @@ describe('CreateAndStartQuickMatchUseCase', () => {
     ['sin campo', { golfCourseId: null }, 'golfCourseId is required'],
     ['sin anotadores', { scorerUserIds: [] }, 'scorerUserIds must contain 1 to 4 user ids'],
     ['cinco anotadores', { scorerUserIds: ['a', 'b', 'c', 'd', 'e'] }, 'scorerUserIds must contain 1 to 4 user ids'],
+    ['los dos formatos', { matchFormat: 'SINGLES', scoringFormat: 'MEDAL' }, 'exactly one of matchFormat or scoringFormat'],
+    ['ningún formato', { matchFormat: null, scoringFormat: null }, 'exactly one of matchFormat or scoringFormat'],
   ])('%s: no llama al servidor', async (_caso, extra, mensaje) => {
     await expect(useCase.execute(peticion(extra))).rejects.toThrow(mensaje);
     expect(repo.createAndStart).not.toHaveBeenCalled();

@@ -111,7 +111,8 @@
       "male": "Men's",
       "female": "Women's",
       "mixed": "Mixed"
-    }
+    },
+    "alreadyCreated": "The match had already been created with what you sent before; your changes were not applied."
   },
   "dashboard": {
     "ctaTitle": "Impromptu round?",

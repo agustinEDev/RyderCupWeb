@@ -111,7 +111,8 @@
       "male": "Masculinas",
       "female": "Femeninas",
       "mixed": "Mixtas"
-    }
+    },
+    "alreadyCreated": "La partida ya se había creado con lo que mandaste antes; los cambios no se han aplicado."
   },
   "dashboard": {
     "ctaTitle": "¿Partido improvisado?",

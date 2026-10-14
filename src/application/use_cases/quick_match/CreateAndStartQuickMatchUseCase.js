@@ -25,6 +25,9 @@ class CreateAndStartQuickMatchUseCase {
     if (!peticion.golfCourseId) {
       throw new Error('golfCourseId is required');
     }
+    if (!peticion.matchFormat === !peticion.scoringFormat) {
+      throw new Error('exactly one of matchFormat or scoringFormat is required');
+    }
     const anotadores = peticion.scorerUserIds;
     if (!Array.isArray(anotadores) || anotadores.length < 1 || anotadores.length > 4) {
       throw new Error('scorerUserIds must contain 1 to 4 user ids');
