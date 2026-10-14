@@ -8,15 +8,26 @@
  *   salida por navegación (dispositivos)    | queda limpio y va a /login
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useLogout } from './useLogout';
 import { logoutUseCase } from '../composition';
 import { broadcastLogout } from '../utils/broadcastAuth';
+import { reiniciaLaSesionCompartida, anotaLaSesion } from '../services/sesionCompartida';
+import { useAuth } from './useAuth';
 
 vi.mock('../composition', () => ({
   logoutUseCase: { execute: vi.fn() },
+}));
+
+// La consulta de la sesión, de verdad, sin red: aquí se cuenta cuántas veces pregunta
+const mockPreguntas = [];
+vi.mock('../utils/tokenRefreshInterceptor', () => ({
+  fetchWithTokenRefresh: (url) => {
+    mockPreguntas.push(url);
+    return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+  },
 }));
 
 vi.mock('../utils/broadcastAuth', () => ({
@@ -37,10 +48,11 @@ vi.stubGlobal('localStorage', almacen);
 
 // Cada test toca `window.location` y algunos los temporizadores: se devuelven
 // aunque falle una aserción, para no arrastrarlos al siguiente (/code-review)
-const locationDeVerdad = window.location;
 afterEach(() => {
   vi.useRealTimers();
-  window.location = locationDeVerdad;
+  vi.unstubAllGlobals();
+  // Este fichero no trae `localStorage`: se vuelve a poner tras soltar los demás
+  vi.stubGlobal('localStorage', almacen);
 });
 
 const navigate = vi.fn();
@@ -73,8 +85,7 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     localStorage.clear();
     navigate.mockClear();
     logoutUseCase.execute.mockReset();
-    delete window.location;
-    window.location = { href: '' };
+    vi.stubGlobal('location', { href: '' });
   });
 
   it('la salida con recarga se lleva lo de la cuenta', async () => {
@@ -135,8 +146,7 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
     vi.clearAllMocks();
     localStorage.clear();
     siembraLaCuenta();
-    delete window.location;
-    window.location = { href: '' };
+    vi.stubGlobal('location', { href: '' });
     logoutUseCase.execute.mockResolvedValue(undefined);
   });
 
@@ -177,8 +187,7 @@ describe('useLogout · las demás pestañas se enteran al momento (FE #865)', ()
     vi.clearAllMocks();
     localStorage.clear();
     siembraLaCuenta();
-    delete window.location;
-    window.location = { href: '' };
+    vi.stubGlobal('location', { href: '' });
   });
 
   it('O5′: quien sale avisa a las demás ANTES de esperar al servidor: inmediato, y aunque la pestaña se cierre durante la espera', async () => {
@@ -207,6 +216,62 @@ describe('useLogout · las demás pestañas se enteran al momento (FE #865)', ()
 
     expect(logoutUseCase.execute).not.toHaveBeenCalled();
     expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useLogout · al salir recargando no se vuelve a preguntar por la sesión (FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    siembraLaCuenta();
+    reiniciaLaSesionCompartida();
+    mockPreguntas.length = 0;
+    logoutUseCase.execute.mockResolvedValue(undefined);
+    vi.stubGlobal('location', { href: '' });
+  });
+  afterEach(() => reiniciaLaSesionCompartida());
+
+  // Como en la aplicación: un guardia con `useAuth` montado, que es quien vuelve
+  // a preguntar en cuanto la sesión se olvida (/code-review)
+  const ConGuardia = ({ salida }) => {
+    useAuth();
+    const { logout } = useLogout();
+    salida.current = logout;
+    return null;
+  };
+  const conGuardia = () => {
+    anotaLaSesion({ id: 'u-1' });
+    const salida = { current: null };
+    render(<ConGuardia salida={salida} />, { wrapper: envoltorio });
+    return salida;
+  };
+
+  it('Q1′: con un guardia montado, la salida con recarga no vuelve a preguntar por la sesión', async () => {
+    const salida = conGuardia();
+
+    await act(() => salida.current({ recargarEn: '/' }));
+    await act(async () => {});
+
+    expect(mockPreguntas).toEqual([]);
+    expect(loQueQueda()).toEqual([]);
+  });
+
+  it('Q3′: tampoco la pestaña que se entera de otra (sale recargando)', async () => {
+    const salida = conGuardia();
+
+    await act(() => salida.current({ desdeOtraPestana: true }));
+    await act(async () => {});
+
+    expect(mockPreguntas).toEqual([]);
+  });
+
+  it('Q2: la salida sin recarga sí vuelve a preguntar (si no, los guardias se quedarían cargando)', async () => {
+    const salida = conGuardia();
+
+    await act(() => salida.current());
+    await act(async () => {});
+
+    expect(mockPreguntas).toHaveLength(1);
   });
 });
 

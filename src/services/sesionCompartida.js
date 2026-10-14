@@ -119,6 +119,9 @@ const NADA_SABIDO = {
 };
 
 let instantanea = NADA_SABIDO;
+// La página se está yendo (una salida que recarga): preguntar ya no sirve de
+// nada, la recarga cortaría la petición a medias (FE #865)
+let seVa = false;
 let enVuelo = null;
 let generacion = 0;
 let reintento = null;
@@ -308,6 +311,12 @@ export const suscribeALaSesion = (oyente) => {
  *   sepa: es lo que hace `refetch` tras guardar algo del perfil.
  */
 export const consultaLaSesion = ({ forzar = false } = {}) => {
+  // Con la página yéndose no se sale a la red: se sigue en «no se sabe»
+  // (`cargando` arriba) hasta que la recarga empiece de cero. Con el usuario
+  // que haya, no con un `null` que se leería como «no hay sesión» (/code-review).
+  // Si el navegador guardara la página en su caché del historial con esto
+  // puesto, al volver la recarga `useRecargaAlVolverDeLaCache`
+  if (seVa) return Promise.resolve(instantanea.user);
   if (!forzar) {
     if (instantanea.resuelta) return Promise.resolve(instantanea.user);
     if (enVuelo) return enVuelo;
@@ -419,6 +428,18 @@ export const olvidaLaSesion = () => {
  * ese camino cuando toca, y antes de todo esto tampoco se revalidaba.
  */
 
+/**
+ * La página se va: una salida que recarga ya ha pedido la navegación. Desde
+ * aquí la consulta no vuelve a preguntar —limpiar la sesión la devolvía a «no
+ * se sabe» y `useAuth` preguntaba otra vez, una petición que la recarga cortaba
+ * a medias y que el servidor recibía igual (FE #865)—. Lo deshace la recarga.
+ * Las salidas sin recarga no la llaman: ahí preguntar es lo que saca a los
+ * guardias de «Cargando...».
+ */
+export const laPaginaSeVa = () => {
+  seVa = true;
+};
+
 /** Solo para las pruebas: esto vive en el módulo y sobrevive de una a otra. */
 export const reiniciaLaSesionCompartida = () => {
   generacion += 1;
@@ -427,6 +448,7 @@ export const reiniciaLaSesionCompartida = () => {
   reintento = null;
   fallosSeguidos = 0;
   instantanea = NADA_SABIDO;
+  seVa = false;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes
   // montados sin enterarse de nada mas, sin que nada lo delatara
 };

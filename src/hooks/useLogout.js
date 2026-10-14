@@ -4,6 +4,7 @@ import { useAuthContext } from './useAuthContext';
 import { clearUserContext } from '../utils/sentryHelpers';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { logoutUseCase } from '../composition';
+import { laPaginaSeVa } from '../services/sesionCompartida';
 
 /**
  * Centralized logout hook
@@ -75,6 +76,10 @@ export const useLogout = () => {
       // de debajo es sincrona y se ejecuta igual, que asignar `href` no corta
       // el script
       window.location.href = recargarEn;
+      // Y la consulta de la sesión ya no pregunta: limpiar la devuelve a «no se
+      // sabe» y volvía a pedir /current-user, que la recarga cortaba a medias
+      // (FE #865)
+      laPaginaSeVa();
     }
 
     // Clear client-side state
