@@ -34,6 +34,7 @@ const {
   loQueHaySobreLaSesion,
   suscribeALaSesion,
   olvidaLaSesion,
+  laPaginaSeVa,
   reiniciaLaSesionCompartida,
   ESPERA_TRAS_FALLO_MS,
 } = await import('./sesionCompartida');
@@ -520,3 +521,50 @@ describe('sesionCompartida · sin señal no se echa a nadie (FE #524)', () => {
     expect(localStorage.getItem(RECUERDO)).toBeNull();
   });
 });
+
+/**
+ * Salir recargando la página (FE #865): tras limpiar, la consulta volvía a
+ * preguntar por la sesión y la recarga cortaba esa petición a medias. Una
+ * petición de más por pestaña en cada salida, y un 401 en el servidor.
+ */
+describe('la consulta compartida cuando la página se va', () => {
+  beforeEach(() => {
+    reiniciaLaSesionCompartida();
+    peticiones.length = 0;
+    respuestas.length = 0;
+    revocado.si = false;
+  });
+
+  it('Q1: con la página yéndose, olvidar la sesión no vuelve a preguntar: se queda cargando hasta la recarga', async () => {
+    await consultaLaSesion();
+    peticiones.length = 0;
+
+    laPaginaSeVa();
+    olvidaLaSesion();
+    await consultaLaSesion();
+    await consultaLaSesion({ forzar: true });
+
+    expect(peticiones).toEqual([]);
+    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, cargando: true, resuelta: false });
+  });
+
+  it('Q2: sin ella (salida sin recarga), olvidar la sesión vuelve a preguntar como siempre', async () => {
+    await consultaLaSesion();
+    peticiones.length = 0;
+
+    olvidaLaSesion();
+    await consultaLaSesion();
+
+    expect(peticiones).toHaveLength(1);
+  });
+
+  it('el reinicio de las pruebas la deja como al cargar la página', async () => {
+    laPaginaSeVa();
+    reiniciaLaSesionCompartida();
+
+    await consultaLaSesion();
+
+    expect(peticiones).toHaveLength(1);
+  });
+});
+

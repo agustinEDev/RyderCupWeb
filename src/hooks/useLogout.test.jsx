@@ -14,9 +14,19 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { useLogout } from './useLogout';
 import { logoutUseCase } from '../composition';
 import { broadcastLogout } from '../utils/broadcastAuth';
+import { consultaLaSesion, reiniciaLaSesionCompartida } from '../services/sesionCompartida';
 
 vi.mock('../composition', () => ({
   logoutUseCase: { execute: vi.fn() },
+}));
+
+// La consulta de la sesión, de verdad, sin red: aquí se cuenta cuántas veces pregunta
+const mockPreguntas = [];
+vi.mock('../utils/tokenRefreshInterceptor', () => ({
+  fetchWithTokenRefresh: (url) => {
+    mockPreguntas.push(url);
+    return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+  },
 }));
 
 vi.mock('../utils/broadcastAuth', () => ({
@@ -207,6 +217,48 @@ describe('useLogout · las demás pestañas se enteran al momento (FE #865)', ()
 
     expect(logoutUseCase.execute).not.toHaveBeenCalled();
     expect(broadcastLogout).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useLogout · al salir recargando no se vuelve a preguntar por la sesión (FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    siembraLaCuenta();
+    reiniciaLaSesionCompartida();
+    mockPreguntas.length = 0;
+    logoutUseCase.execute.mockResolvedValue(undefined);
+    delete window.location;
+    window.location = { href: '' };
+  });
+  afterEach(() => reiniciaLaSesionCompartida());
+
+  it('Q1: la salida con recarga deja la consulta sin salir a la red', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ recargarEn: '/' }));
+    await consultaLaSesion();
+
+    expect(mockPreguntas).toEqual([]);
+    expect(loQueQueda()).toEqual([]);
+  });
+
+  it('Q3: la pestaña que se entera de otra (sale recargando) tampoco pregunta', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+    await consultaLaSesion();
+
+    expect(mockPreguntas).toEqual([]);
+  });
+
+  it('Q2: la salida sin recarga sí vuelve a preguntar (si no, los guardias se quedarían cargando)', async () => {
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout());
+    await consultaLaSesion();
+
+    expect(mockPreguntas).toHaveLength(1);
   });
 });
 
