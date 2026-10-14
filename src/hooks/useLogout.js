@@ -34,9 +34,22 @@ export const useLogout = () => {
    * @param {boolean} options.skipBackendCall - If true, skip backend logout call (useful when device already revoked)
    * @param {string|null} options.recargarEn - Destino de una salida con recarga
    *   completa. Sin esto se navega a `/login` como cliente.
-   * @param {boolean} options.desdeOtraPestana - El cierre llega de otra pestaña: ni avisar ni llamar al backend
+   * @param {boolean} options.desdeOtraPestana - El cierre llega de otra pestaña: sin avisar ni llamar
+   *   al backend, y recargando a `/login` (la navegación pedida antes de limpiar)
    */
-  const logout = useCallback(async ({ skipBackendCall = false, recargarEn = null, desdeOtraPestana = false } = {}) => {
+  const logout = useCallback(async ({ skipBackendCall = false, recargarEn: destino = null, desdeOtraPestana = false } = {}) => {
+    // El cierre llega de otra pestaña: ni se avisa (avisar de vuelta era un
+    // eco sin fin, con miles de POST /auth/logout) ni se llama al backend
+    // (comparten cookies y ya lo hizo ella), y se sale RECARGANDO: limpiar sin
+    // haber pedido la navegación hacía volver a preguntar por la sesión, y un
+    // 200 reescribía los datos de quien salía o un 401 acababa en «sesión
+    // caducada» (FE #865, /code-review)
+    const recargarEn = desdeOtraPestana ? '/login' : destino;
+
+    // A las demas pestañas primero: son las que no se enteran de nada, y así
+    // lo saben aunque esta se cierre mientras espera al servidor
+    if (!desdeOtraPestana) broadcastLogout();
+
     if (!skipBackendCall && !desdeOtraPestana) {
       try {
         // Con un tope: un rechazo se recoge abajo, pero una peticion COLGADA
@@ -51,14 +64,6 @@ export const useLogout = () => {
         // Continue with client-side cleanup even if backend fails
       }
     }
-
-    // A las demás pestañas, con el servidor ya respondido (o vencido el tope):
-    // si se enteraban antes, limpiaban con las cookies aún válidas, volvían a
-    // preguntar por la sesión y un 200 dejaba el dispositivo con los datos de
-    // quien salía (FE #865). Si el cierre llega de otra pestaña, ni se avisa
-    // ni se llama al backend: comparten cookies y ya lo hizo ella. Avisar de
-    // vuelta era un eco sin fin entre pestañas, con miles de POST /auth/logout
-    if (!desdeOtraPestana) broadcastLogout();
 
     if (recargarEn) {
       // La navegacion se pide ANTES de tocar el estado. Limpiar reinicia la

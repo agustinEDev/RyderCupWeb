@@ -7,7 +7,7 @@
  *   el backend no contesta                  | queda limpio igual
  *   salida por navegación (dispositivos)    | queda limpio y va a /login
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { AuthProvider } from '../contexts/AuthContext';
@@ -34,6 +34,14 @@ const almacen = (() => {
   };
 })();
 vi.stubGlobal('localStorage', almacen);
+
+// Cada test toca `window.location` y algunos los temporizadores: se devuelven
+// aunque falle una aserción, para no arrastrarlos al siguiente (/code-review)
+const locationDeVerdad = window.location;
+afterEach(() => {
+  vi.useRealTimers();
+  window.location = locationDeVerdad;
+});
 
 const navigate = vi.fn();
 vi.mock('react-router', async () => {
@@ -127,18 +135,31 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
     vi.clearAllMocks();
     localStorage.clear();
     siembraLaCuenta();
+    delete window.location;
+    window.location = { href: '' };
     logoutUseCase.execute.mockResolvedValue(undefined);
   });
 
-  it('O1/O2: «desde otra pestaña» limpia y va al formulario, sin volver a avisar ni llamar al backend', async () => {
+  it('O8: «desde otra pestaña» sale recargando a /login, pedida la navegación ANTES de limpiar, sin avisar ni llamar al backend', async () => {
+    // Limpiando primero, la consulta de la sesión volvía a preguntar: un 200
+    // reescribía los datos y un 401 acababa en «sesión caducada» (/code-review)
+    const quitar = localStorage.removeItem;
+    let destinoAlLimpiar = null;
+    localStorage.removeItem = (k) => {
+      if (destinoAlLimpiar === null) destinoAlLimpiar = window.location.href;
+      quitar(k);
+    };
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
     await act(() => result.current.logout({ desdeOtraPestana: true }));
+    localStorage.removeItem = quitar;
 
+    expect(window.location.href).toBe('/login');
+    expect(destinoAlLimpiar).toBe('/login');
+    expect(navigate).not.toHaveBeenCalled();
     expect(broadcastLogout).not.toHaveBeenCalled();
     expect(logoutUseCase.execute).not.toHaveBeenCalled();
     expect(loQueQueda()).toEqual([]);
-    expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
   });
 
   it('O3: quien sale a mano avisa a las demás y llama al backend, una vez cada cosa', async () => {
@@ -151,7 +172,7 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
   });
 });
 
-describe('useLogout · las demás pestañas se enteran cuando el servidor ya cerró (FE #865)', () => {
+describe('useLogout · las demás pestañas se enteran al momento (FE #865)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -160,31 +181,12 @@ describe('useLogout · las demás pestañas se enteran cuando el servidor ya cer
     window.location = { href: '' };
   });
 
-  it('O5: avisa a las demás DESPUÉS de que el servidor responda (antes, su consulta de sesión aún valía)', async () => {
-    let responde;
-    logoutUseCase.execute.mockReturnValue(new Promise((r) => { responde = r; }));
+  it('O5′: quien sale avisa a las demás ANTES de esperar al servidor: inmediato, y aunque la pestaña se cierre durante la espera', async () => {
+    logoutUseCase.execute.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 
-    let salida;
-    act(() => { salida = result.current.logout(); });
+    act(() => { result.current.logout(); });
     await act(async () => {});
-    expect(broadcastLogout).not.toHaveBeenCalled();
-
-    await act(async () => { responde(); await salida; });
-    expect(broadcastLogout).toHaveBeenCalledTimes(1);
-  });
-
-  it('O5b: si el servidor no contesta, avisa al vencer el tope (no se quedan sin enterarse)', async () => {
-    vi.useFakeTimers();
-    logoutUseCase.execute.mockImplementation(() => new Promise(() => {}));
-    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
-
-    let salida;
-    act(() => { salida = result.current.logout({ recargarEn: '/' }); });
-    await act(async () => { await vi.advanceTimersByTimeAsync(4_999); });
-    expect(broadcastLogout).not.toHaveBeenCalled();
-    await act(async () => { await vi.advanceTimersByTimeAsync(1); await salida; });
-    vi.useRealTimers();
 
     expect(broadcastLogout).toHaveBeenCalledTimes(1);
   });
