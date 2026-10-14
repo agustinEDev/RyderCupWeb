@@ -49,6 +49,10 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   // Hasta saber la zona no se programa: una hora escrita antes se leería en
   // otra (revisor). Si no se pudo saber, se programa en la del dispositivo
   const [zonaSabida, setZonaSabida] = useState(false);
+  // No se pudo leer: no es que el campo no tenga zona, así que ni se dice eso
+  // ni se programa a ciegas en la del dispositivo (QA de la release, 14 oct)
+  const [zonaIlegible, setZonaIlegible] = useState(false);
+  const [lectura, setLectura] = useState(0);
   const [ocupado, setOcupado] = useState(false);
   const [programando, setProgramando] = useState(null);
 
@@ -57,13 +61,17 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
     let vigente = true;
     (async () => getCompetitionGolfCoursesUseCase.execute(competitionId))()
       // La del primer campo que la tenga: casi todos los torneos son de un huso
-      .then((r) => vigente && setZona(aCamposDeLaCompeticion(r).find((c) => c.timezone)?.timezone ?? null))
-      .catch(() => {})
+      .then((r) => {
+        if (!vigente) return;
+        setZona(aCamposDeLaCompeticion(r).find((c) => c.timezone)?.timezone ?? null);
+        setZonaIlegible(false);
+      })
+      .catch(() => vigente && setZonaIlegible(true))
       .finally(() => vigente && setZonaSabida(true));
     return () => {
       vigente = false;
     };
-  }, [competitionId]);
+  }, [competitionId, lectura]);
 
   const enMarcha = handicapUpdate?.status === 'IN_PROGRESS';
   // En un hook propio, como el resto de sondeos del proyecto (CLAUDE.md)
@@ -173,10 +181,28 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
             <Clock className="h-4 w-4 text-gray-500" />
             {delCampo
               ? t('handicaps.scheduled', { cuando: cuando(ventana.scheduledAt), zona })
-              : t('handicaps.scheduledDevice', { cuando: cuando(ventana.scheduledAt) })}
+              : t(zonaIlegible ? 'handicaps.scheduledUnknownZone' : 'handicaps.scheduledDevice', {
+                  cuando: cuando(ventana.scheduledAt),
+                })}
           </p>
           <button type="button" onClick={anular} disabled={ocupado} className={`${boton} border border-gray-300 text-gray-700`}>
             {t('handicaps.cancelSchedule')}
+          </button>
+        </div>
+      )}
+
+      {zonaIlegible && (
+        <div data-testid="handicaps-zona-ilegible" className="flex flex-wrap items-center gap-2 text-sm text-amber-800">
+          <span>{t('handicaps.zoneUnreadable')}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setZonaSabida(false);
+              setLectura((n) => n + 1);
+            }}
+            className={`${boton} border border-gray-300 text-gray-700`}
+          >
+            {t('handicaps.retryZone')}
           </button>
         </div>
       )}
@@ -187,7 +213,7 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
           onClick={() => setProgramando(ventana?.scheduledAt ? aEntradaDelCampo(ventana.scheduledAt, zona) : '')}
           // Con la ventana cerrada también: se puede programar para cuando se
           // abra, y si no, el servidor dice por qué (/code-review)
-          disabled={ocupado || !zonaSabida}
+          disabled={ocupado || !zonaSabida || zonaIlegible}
           className={`${boton} border border-gray-300 text-gray-700`}
         >
           {t('handicaps.schedule')}

@@ -39,6 +39,10 @@ vi.mock('framer-motion', () => ({
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
+// Las de un Stableford o Medal: aquí solo importa que estén en la ficha
+vi.mock('../components/scoring/ClasificacionesDeLaCompeticion', () => ({
+  default: () => <div data-testid="clasificaciones-stroke-play" />,
+}));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'creator-1' }, loading: false }) }));
 let roles = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../hooks/useUserRoles', () => ({ useUserRoles: () => roles }));
@@ -75,6 +79,7 @@ const pintar = () =>
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
       <Routes>
         <Route path="/competitions/:id" element={<CompetitionDetail />} />
+        <Route path="/competitions/:id/leaderboard" element={<p>pagina-de-clasificacion</p>} />
       </Routes>
     </MemoryRouter>
   );
@@ -139,6 +144,51 @@ describe('CompetitionDetail · la configuración, en cristiano', () => {
     pintar();
 
     expect(await screen.findByText('detail.actions.leaderboard')).toBeInTheDocument();
+  });
+
+  /**
+   * En un Stableford o un Medal la clasificación vive en la propia ficha: el
+   * botón llevaba a la de la Ryder, que dice «llega con sus rondas» con el
+   * texto del servidor (QA de la release, 14 oct). Ahora baja hasta la suya.
+   */
+  describe('el botón «Clasificación» en stroke play', () => {
+    let baja;
+    beforeEach(() => {
+      baja = vi.fn();
+      globalThis.Element.prototype.scrollIntoView = baja;
+    });
+
+    it('CL1: quien juega baja a la clasificación de la ficha, sin salir de ella', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona', hasTeams: false, tournamentType: 'STABLEFORD' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      expect(baja).toHaveBeenCalled();
+      expect(baja.mock.contexts[0]).toBe(document.getElementById('clasificaciones'));
+      expect(screen.queryByText('pagina-de-clasificacion')).not.toBeInTheDocument();
+    });
+
+    it('CL2: y el organizador, desde su acción principal', async () => {
+      ficha({ status: 'COMPLETED', hasTeams: false, tournamentType: 'MEDAL' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      expect(baja).toHaveBeenCalled();
+      expect(screen.queryByText('pagina-de-clasificacion')).not.toBeInTheDocument();
+    });
+
+    it('CL3: en una Ryder sigue llevando a su página', async () => {
+      roles = { isAdmin: false, isCreator: false, isLoading: false };
+      ficha({ status: 'IN_PROGRESS', creatorId: 'otra-persona' });
+      pintar();
+
+      fireEvent.click(await screen.findByText('detail.actions.leaderboard'));
+
+      expect(await screen.findByText('pagina-de-clasificacion')).toBeInTheDocument();
+    });
   });
 
   it('C6: sin modo de juego no se pinta media clave', async () => {

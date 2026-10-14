@@ -145,6 +145,15 @@ describe('MisPartidas (FE #824, PR 6)', () => {
     expect(linea).not.toHaveTextContent('partidas.mineAlone');
   });
 
+  it('QA de la release: con mi tarjeta entregada, ya no «marcas a» nadie', async () => {
+    mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [{ ...jugador('yo', 'bea'), cardStatus: 'ENTREGADA' }, jugador('bea', 'yo')])]);
+
+    render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);
+
+    const linea = await screen.findByTestId('mi-partida-r1');
+    expect(linea).not.toHaveTextContent('partidas.youMark');
+  });
+
   it('/code-review: retirado, ya no «marcas a» nadie', async () => {
     mockMias.mockResolvedValue([mia('r1', '2030-10-12', 'MORNING', 2, '08:10', [{ ...jugador('yo', 'bea'), cardStatus: 'RETIRADO' }, jugador('bea', 'cris'), jugador('cris', 'bea')])]);
     render(<MisPartidas fecha={(d) => d} competitionId="c-1" userId="yo" version="v" />);

@@ -672,6 +672,9 @@
       "RUNNING": "Ya se están actualizando los hándicaps.",
       "IN_THE_PAST": "Prográmala para un momento en el futuro.",
       "TOO_TIGHT": "Demasiado justo: prográmala con al menos 2 minutos de margen antes de que se cierre la ventana."
-    }
+    },
+    "zoneUnreadable": "No se ha podido leer la zona horaria del campo.",
+    "retryZone": "Reintentar",
+    "scheduledUnknownZone": "Programada: {{cuando}}, hora de este dispositivo."
   }
 }

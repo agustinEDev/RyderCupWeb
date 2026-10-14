@@ -787,6 +787,16 @@ const CompetitionDetail = () => {
   // Un Stableford o un Medal (FE #824). Sin el dato, una Ryder: es lo que eran
   // todas, igual que una competición sin tipo
   const esStrokePlay = competition.hasTeams === false;
+  // La clasificación de un Stableford o un Medal está en esta misma ficha: se
+  // baja hasta ella. La página de clasificación es la de la Ryder, y con un
+  // stroke play decía «llega con sus rondas» (QA de la release, 14 oct)
+  const irALaClasificacion = () => {
+    if (esStrokePlay) {
+      globalThis.document.getElementById('clasificaciones')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } });
+  };
   const repartoAMostrar =
     competition.actualTeamAssignment ??
     (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
@@ -942,7 +952,7 @@ const CompetitionDetail = () => {
       id: 'leaderboard',
       label: t('detail.actions.leaderboard'),
       icon: BarChart3,
-      onClick: () => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } }),
+      onClick: irALaClasificacion,
       cuando: competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED',
     },
   };
@@ -1312,7 +1322,7 @@ const CompetitionDetail = () => {
                 className="p-4"
               >
                 <button
-                  onClick={() => navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } })}
+                  onClick={irALaClasificacion}
                   className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md"
                 >
                   <BarChart3 className="w-5 h-5" />
@@ -1600,7 +1610,7 @@ const CompetitionDetail = () => {
             {/* Las clasificaciones de un Stableford o un Medal, desde que se
                 juega (FE #824, PR 8): para cualquiera con sesión */}
             {esStrokePlay && ['IN_PROGRESS', 'COMPLETED'].includes(competition.status) && (
-              <div className="p-4">
+              <div id="clasificaciones" className="p-4 scroll-mt-16">
                 <ClasificacionesDeLaCompeticion
                   // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
                   key={competition.id}
