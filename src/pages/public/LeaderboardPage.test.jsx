@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
 
 const mockLocationState = { state: null };
+const mockParams = { id: 'c-1' };
 vi.mock('react-router', () => ({
-  useParams: () => ({ id: 'c-1' }),
+  useParams: () => mockParams,
   useLocation: () => mockLocationState,
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
   Navigate: ({ to, replace }) => <div data-testid="redirige" data-to={to} data-replace={String(Boolean(replace))} />,
@@ -116,6 +117,13 @@ describe('LeaderboardPage', () => {
    * compartido a esta página llevaba al error del servidor (QA de la release).
    */
   describe('una competición de stroke play', () => {
+    // Aunque falle una aserción: los temporizadores falsos no pasan al siguiente
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+      mockParams.id = 'c-1';
+    });
+
     it('L1: redirige a su ficha, a la clasificación', async () => {
       mockUser.current = { id: 'u-1' };
       getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
@@ -201,6 +209,44 @@ describe('LeaderboardPage', () => {
       expect(getLeaderboardUseCase.execute.mock.calls.length).toBeGreaterThanOrEqual(3);
       expect(mockDetalle).toHaveBeenCalledTimes(1);
       vi.useRealTimers();
+      getLeaderboardUseCase.execute.mockReset();
+    });
+
+    it('L9: la consulta vieja de otra competición que falla sin red no hace repreguntar a la actual', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      let fallaLaDeC1;
+      mockDetalle
+        .mockReturnValueOnce(new Promise((_r, rej) => { fallaLaDeC1 = rej; }))
+        .mockResolvedValue({ id: 'c-2', hasTeams: true });
+      const { rerender } = render(<LeaderboardPage />);
+      await vi.waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('c-1'));
+
+      mockParams.id = 'c-2';
+      rerender(<LeaderboardPage />);
+      await vi.waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('c-2'));
+      await act(async () => fallaLaDeC1(new TypeError('sin conexión')));
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(mockDetalle).toHaveBeenCalledTimes(2);
+      getLeaderboardUseCase.execute.mockReset();
+    });
+
+    it('L10: sin conexión en el dispositivo, aunque llegue un error con código, se vuelve a preguntar', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(false);
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle
+        .mockRejectedValueOnce(Object.assign(new Error('Service Unavailable'), { status: 503 }))
+        .mockResolvedValue({ id: 'c-1', hasTeams: false });
+      render(<LeaderboardPage />);
+      await screen.findByText('llega con sus rondas');
+
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(await screen.findByTestId('redirige')).toHaveAttribute('data-to', '/competitions/c-1#clasificaciones');
       getLeaderboardUseCase.execute.mockReset();
     });
 

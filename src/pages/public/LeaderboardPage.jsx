@@ -8,6 +8,7 @@ import LeaderboardView from '../../components/scoring/LeaderboardView';
 import { useAuth } from '../../hooks/useAuth';
 import { getCompetitionDetailUseCase, getLeaderboardUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { esFalloDeRed } from '../../utils/sinCobertura';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 
@@ -50,8 +51,10 @@ const LeaderboardPage = () => {
       fichaMirada.current = competitionId;
       const competicion = await getCompetitionDetailUseCase.execute(competitionId).catch((err) => {
         // Sin respuesta (sin red) no se sabe nada: el siguiente refresco vuelve
-        // a preguntar. Con respuesta, aunque sea un error, no (CodeRabbit, #863)
-        if (err instanceof TypeError) fichaMirada.current = null;
+        // a preguntar. Con respuesta, aunque sea un error, no (CodeRabbit, #863).
+        // Y solo si la marca sigue siendo de esta: una consulta vieja no borra la
+        // de la competición que se mira ahora (revisor)
+        if (esFalloDeRed(err) && fichaMirada.current === competitionId) fichaMirada.current = null;
         return null;
       });
       return competicion?.hasTeams === false;
