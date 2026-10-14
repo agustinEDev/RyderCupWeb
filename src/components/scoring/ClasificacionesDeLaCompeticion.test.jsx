@@ -124,7 +124,8 @@ describe('ClasificacionesDeLaCompeticion · en su propia página (14 oct 2026, F
     await screen.findByTestId('fila-ana');
 
     const seccion = screen.getByTestId('clasificaciones');
-    expect(seccion.className).not.toMatch(/\b(border|shadow|rounded|ring|p[xytblr]?-(\d|\[))/);
+    // Nada que la estreche otra vez: tarjeta, rellenos, márgenes, anchos máximos o fondo propio
+    expect(seccion.className).not.toMatch(/\b(border|shadow|rounded|ring|bg-|max-w-|[pm][xytblr]?-(\d|\[))/);
     expect(screen.queryByRole('heading')).not.toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: 'partida.standingsTitle' })).toBeInTheDocument();
   });
