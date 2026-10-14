@@ -212,7 +212,8 @@ const Clasificacion = ({
       ) : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
-        <div className="overflow-hidden bg-white">
+        // Redondeada: sobre el gris de su página no queda un rectángulo plano (revisor)
+        <div className="overflow-hidden rounded-lg bg-white">
           {tabla(
             clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)),
             true,

@@ -437,5 +437,13 @@ describe('Clasificacion · me lleva a mi fila', () => {
     const tabla = await screen.findByRole('table', { name: 'partida.standingsTable' });
     expect(tabla.parentElement).not.toHaveClass('border');
   });
+
+  it('D3 (revisor): sus esquinas, redondeadas: sobre el gris de su página no queda un rectángulo plano', async () => {
+    const pedir = vi.fn().mockResolvedValue(conYo());
+    render(<Clasificacion pedir={pedir} userId="yo" activa />);
+
+    const tabla = await screen.findByRole('table', { name: 'partida.standingsTable' });
+    expect(tabla.parentElement).toHaveClass('rounded-lg');
+  });
 });
 
