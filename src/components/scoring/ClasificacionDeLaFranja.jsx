@@ -16,7 +16,8 @@ const CADA = 30000;
  */
 const ClasificacionDeLaFranja = ({ roundId, userId, activa }) => {
   const pedir = useCallback((categoria) => getTeeWindowStandingsUseCase.execute(roundId, categoria), [roundId]);
-  return <Clasificacion pedir={pedir} userId={userId} activa={activa} cada={CADA} />;
+  // Cada vez que se abre la pestaña, si juego, me lleva a mi fila (14 oct 2026)
+  return <Clasificacion pedir={pedir} userId={userId} activa={activa} cada={CADA} centraEnMi="alAbrir" />;
 };
 
 export default ClasificacionDeLaFranja;

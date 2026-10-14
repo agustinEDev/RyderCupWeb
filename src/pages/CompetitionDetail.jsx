@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
+import Plegable from '../components/ui/Plegable';
 import TituloConNumero from '../components/ui/TituloConNumero';
 import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
 import { siguientePasoDeLaCompeticion } from '../utils/siguientePasoDeLaCompeticion';
@@ -21,7 +22,6 @@ import CompetitionGolfCoursesSection from '../components/competition/Competition
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';
 import HandicapsDeLaCompeticion from '../components/competition/HandicapsDeLaCompeticion';
-import ClasificacionesDeLaCompeticion from '../components/scoring/ClasificacionesDeLaCompeticion';
 import { categoriasQueSalen, salenDeLosInscritos } from '../domain/services/CategoriasQueSalen';
 import { sinFranja } from '../domain/services/PlazasEnFranjas';
 import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
@@ -68,19 +68,6 @@ const VUELTAS = {
   invitations: { to: '/player/invitations', clave: 'detail.backToInvitations' },
 };
 const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
-
-/**
- * Baja a las clasificaciones de un Stableford o un Medal en la propia ficha,
- * y les pasa el foco, para quien navega con teclado o lector de pantalla. Sin
- * animación si el sistema pide reducir el movimiento (QA de la release).
- */
-const bajaALaClasificacion = () => {
-  const seccion = globalThis.document.getElementById('clasificaciones');
-  if (!seccion) return;
-  const quieto = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-  seccion.scrollIntoView({ behavior: quieto ? 'auto' : 'smooth', block: 'start' });
-  seccion.focus({ preventScroll: true });
-};
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
@@ -134,9 +121,9 @@ const CompetitionDetail = () => {
   const estadoDeLaActualizacion = useRef(null);
   // Mientras se releen la ficha y las inscripciones tras cerrar (PR 8)
   const [releyendoTrasCerrar, setReleyendoTrasCerrar] = useState(false);
-  // Sube con cada cambio en las partidas: cerrar una franja pasa lo sin acabar
-  // a NR/NP, y la clasificación se relee (pasada, FE #824)
-  const [versionClasificaciones, setVersionClasificaciones] = useState(0);
+  // Sube con cada cambio en las partidas: se vuelve a mirar si se puede
+  // terminar el torneo (todas las franjas cerradas)
+  const [versionDePartidas, setVersionDePartidas] = useState(0);
   // Lecturas que pueden cruzarse (el sondeo, los botones de la tarjeta y la
   // ficha tras un cambio de estado): una vieja no pisa a otra más nueva
   const lecturasDeLaFicha = useLaMasNueva();
@@ -556,7 +543,7 @@ const CompetitionDetail = () => {
     return () => {
       vigente = false;
     };
-  }, [leeSiTerminar, claveDeFranjas, versionClasificaciones, agendaLeida]);
+  }, [leeSiTerminar, claveDeFranjas, versionDePartidas, agendaLeida]);
 
   // Lo último que se sabe de la actualización, para notar cuándo acaba
   const estadoCargado = competition?.handicapUpdate?.status ?? null;
@@ -778,26 +765,10 @@ const CompetitionDetail = () => {
     ? t(`detail.fewerCategories.${avisoDeCategorias.motivo}`, { ...avisoDeCategorias, count: avisoDeCategorias.salen })
     : null;
 
-  // Un Stableford o un Medal en juego o acabado: su clasificación está aquí.
-  // La misma condición para la sección, el botón y la bajada automática
+  // Un Stableford o un Medal en juego o acabado: tiene su general, en su
+  // página, y la ficha pliega lo que ya no se mira (14 oct 2026)
   const conClasificacion =
     competition?.hasTeams === false && ['IN_PROGRESS', 'COMPLETED'].includes(competition?.status);
-  // Llega con #clasificaciones (desde la página de la Ryder, que redirige un
-  // stroke play hasta aquí): se baja sola en cuanto la sección está pintada,
-  // UNA vez por llegada: una recarga posterior de la ficha no te devuelve
-  // abajo, y cada vez que se llega con el ancla, sí, venga de donde venga
-  // (`/code-review`, #863). Con la de la ruta ya pintada: al pasar de una a
-  // otra, la anterior sigue en pantalla un instante (CodeRabbit, #863). Sin
-  // distinguir mayúsculas: el servidor devuelve el id en minúsculas
-  const bajoEn = useRef(null);
-  const pintada = competition?.id?.toLowerCase();
-  const llegada = location.key;
-  useEffect(() => {
-    if (location.hash !== '#clasificaciones' || !conClasificacion || isLoading) return;
-    if (pintada !== id?.toLowerCase() || bajoEn.current === llegada) return;
-    bajoEn.current = llegada;
-    bajaALaClasificacion();
-  }, [location.hash, conClasificacion, isLoading, pintada, id, llegada]);
 
   if (isLoading) {
     return (
@@ -821,16 +792,18 @@ const CompetitionDetail = () => {
   // Un Stableford o un Medal (FE #824). Sin el dato, una Ryder: es lo que eran
   // todas, igual que una competición sin tipo
   const esStrokePlay = competition.hasTeams === false;
-  // La clasificación de un Stableford o un Medal está en esta misma ficha: se
-  // baja hasta ella. La página de clasificación es la de la Ryder, y con un
-  // stroke play decía «llega con sus rondas» (QA de la release, 14 oct)
-  const irALaClasificacion = () => {
-    if (conClasificacion) {
-      bajaALaClasificacion();
-      return;
-    }
-    navigate(`/competitions/${id}/leaderboard`, { state: { from: 'detail' } });
-  };
+  // La de la Ryder o, en un Stableford o un Medal, su general: con 200
+  // participantes no cabe en la ficha (14 oct 2026). Con lo que ya se sabe de
+  // ella: la página no tiene que preguntarlo otra vez (/code-review)
+  const irALaClasificacion = () =>
+    navigate(`/competitions/${id}/leaderboard`, {
+      state: {
+        from: 'detail',
+        ...(esStrokePlay && {
+          competicion: { id: competition.id, hasTeams: false, name: competition.name, status: competition.status },
+        }),
+      },
+    });
   const repartoAMostrar =
     competition.actualTeamAssignment ??
     (competition.setupMode === 'RYDER_CUP' ? 'PENDING' : competition.teamAssignment);
@@ -1488,11 +1461,16 @@ const CompetitionDetail = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="p-4"
             >
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-primary" />
-                  {t('detail.settings.title')}
-                </h3>
+              {/* En juego o acabado, plegada: lo que se mira es la clasificación y las partidas */}
+              <Plegable
+                abiertoAlPrincipio={!conClasificacion}
+                titulo={
+                  <>
+                    <Settings className="w-5 h-5 text-primary" />
+                    {t('detail.settings.title')}
+                  </>
+                }
+              >
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {conEquipos && (
@@ -1597,7 +1575,7 @@ const CompetitionDetail = () => {
                     </p>
                   </div>
                 </div>
-              </div>
+              </Plegable>
             </motion.div>
 
             {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
@@ -1641,21 +1619,6 @@ const CompetitionDetail = () => {
               </div>
             )}
 
-            {/* Las clasificaciones de un Stableford o un Medal, desde que se
-                juega (FE #824, PR 8): para cualquiera con sesión */}
-            {conClasificacion && (
-              // Enfocable a mano: al bajar hasta aquí, el foco viene con la vista
-              <div id="clasificaciones" tabIndex={-1} className="p-4 scroll-mt-16 outline-none">
-                <ClasificacionesDeLaCompeticion
-                  // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
-                  key={competition.id}
-                  competitionId={competition.id}
-                  userId={user.id}
-                  enJuego={competition.status === 'IN_PROGRESS'}
-                  version={versionClasificaciones}
-                />
-              </div>
-            )}
 
             {/* La agenda: el torneo ES su agenda, a la vista de todos, y el
                 organizador la cambia aquí mismo (FE #654) */}
@@ -1700,7 +1663,7 @@ const CompetitionDetail = () => {
                   // y no juega las sigue viendo (CodeRabbit)
                   puedeVerPartidas={canManage}
                   organizaPartidas={canManage && competition.status !== 'COMPLETED'}
-                  onCambioEnPartidas={() => setVersionClasificaciones((n) => n + 1)}
+                  onCambioEnPartidas={() => setVersionDePartidas((n) => n + 1)}
                 />
               ) : (
               <AgendaDeLaCompeticion
@@ -1739,11 +1702,16 @@ const CompetitionDetail = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="p-4"
             >
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-gray-900 font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 flex-none text-green-600" />
-                  <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
-                </h3>
+              <Plegable
+                abiertoAlPrincipio={!conClasificacion}
+                claseDelTitulo="text-base sm:text-lg"
+                titulo={
+                  <>
+                    <Users className="w-5 h-5 flex-none text-green-600" />
+                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
+                  </>
+                }
+              >
 
                 {approvedEnrollments.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
@@ -1893,7 +1861,7 @@ const CompetitionDetail = () => {
                       ))}
                   </div>
                 )}
-              </div>
+              </Plegable>
             </motion.div>
 
             {/* Pending & Rejected Enrollments - Only visible to creator/admin */}
