@@ -178,7 +178,6 @@ const LeaderboardPage = () => {
               competitionId={competitionId}
               userId={user?.id}
               enJuego={enJuego}
-              sinTitulo
             />
           </>
         ) : (
