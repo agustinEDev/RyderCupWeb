@@ -274,4 +274,16 @@ describe('PartidasDeLaFranja · los no presentados (QA 2, 12 oct 2026)', () => {
   it('los compañeros, sin el NP ni uno mismo', () => {
     expect(companerosDe(conNP('g1', 1, ['x'], ['a', 'b']), 'a').map((p) => p.userId)).toEqual(['b']);
   });
+
+  it('el que se retiró sigue siendo compañero: se marca como retirado al pintarlo (QA de la release)', () => {
+    const g = { id: 'g1', number: 1, players: [jugador('a'), { ...jugador('b'), cardStatus: 'RETIRADO' }, jugador('c')] };
+
+    expect(companerosDe(g, 'a').map((p) => p.userId)).toEqual(['b', 'c']);
+  });
+
+  it('el que entregó su tarjeta sí sigue siendo compañero', () => {
+    const g = { id: 'g1', number: 1, players: [jugador('a'), { ...jugador('b'), cardStatus: 'ENTREGADA' }] };
+
+    expect(companerosDe(g, 'a').map((p) => p.userId)).toEqual(['b']);
+  });
 });

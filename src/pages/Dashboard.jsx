@@ -628,7 +628,9 @@ const Dashboard = () => {
                 setHandicapAlAbrir(user?.handicap ?? null);
                 setShowHandicapModal(true);
               }}
-              upcomingMatches={upcomingMatches.length}
+              // Los de la Ryder y las partidas de stroke play: quien solo
+              // juega stroke play no veía la tarjeta (QA de la release)
+              upcomingMatches={upcomingMatches.length + proximasPartidas.partidas.length}
             />
 
             {/* Statistics Cards */}

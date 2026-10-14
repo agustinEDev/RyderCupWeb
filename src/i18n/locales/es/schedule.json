@@ -383,6 +383,8 @@
     "windowClosed": "Franja cerrada.",
     "movePlayer": "Mover a {{jugador}}",
     "broughtIn": "Te han pasado a la {{numero}}.ª partida · sale a las {{hora}}",
-    "yourCategory": "Tu categoría: {{categoria}}.ª"
+    "yourCategory": "Tu categoría: {{categoria}}.ª",
+    "withdrawnPartner": "{{nombre}} (retirado)",
+    "withdrawnPartner_female": "{{nombre}} (retirada)"
   }
 }

@@ -249,14 +249,25 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     ]);
   };
 
-  const handleGuestFirstNameChange = (value) => setGuestForm((g) => ({ ...g, firstName: value }));
-  const handleGuestLastNameChange = (value) => setGuestForm((g) => ({ ...g, lastName: value }));
+  // Al corregirlo, el aviso de nombre en blanco ya no tiene razón de ser
+  const handleGuestFirstNameChange = (value) => {
+    setError('');
+    setGuestForm((g) => ({ ...g, firstName: value }));
+  };
+  const handleGuestLastNameChange = (value) => {
+    setError('');
+    setGuestForm((g) => ({ ...g, lastName: value }));
+  };
 
   const handleAddGuest = (e) => {
     e.preventDefault();
     const firstName = guestForm.firstName.trim();
     const lastName = guestForm.lastName.trim();
-    if (!firstName || !lastName) return;
+    // Solo espacios pasan el `required` del navegador: se dice, no se calla
+    if (!firstName || !lastName) {
+      setError(t('create.participants.errorGuestName'));
+      return;
+    }
     if (courseTees.length > 0 && guestTeeKey === NO_TEE_KEY) {
       setError(t('create.participants.errorTeeRequired'));
       return;
