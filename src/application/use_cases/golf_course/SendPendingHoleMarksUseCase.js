@@ -5,9 +5,8 @@ import { enviarMarcaDeHoyo } from './enviarMarcaDeHoyo';
  * sin cobertura (BE #532, PR C), solo las de quien tiene la sesión.
  *
  * Una a una y una tanda a la vez por jugador: el evento de vuelta de la red
- * llega a veces dos veces, y la misma marca no tiene por qué salir dos. Sin
- * red (o con el tope de peticiones) se para ahí, que el resto tampoco
- * saldría; un error del servidor con una no detiene las de los demás campos.
+ * llega a veces dos veces, y la misma marca no tiene por qué salir dos. Con un
+ * fallo que tumbaría a las demás (sin red, el servidor, la sesión) se para ahí.
  *
  * `sigue` se mira antes de cada envío: en un móvil compartido, si cambia la
  * sesión a mitad, lo que queda de uno no puede salir con las cookies de otro.
@@ -20,13 +19,17 @@ class SendPendingHoleMarksUseCase {
 
   /** @returns {Promise<{enviadas: number, rechazadas: number, pendientes: number}>} */
   execute(userId, { sigue = () => true } = {}) {
-    if (!this.enMarcha.has(userId)) {
-      this.enMarcha.set(
-        userId,
-        this.vaciar(userId, sigue).finally(() => this.enMarcha.delete(userId)),
-      );
-    }
-    return this.enMarcha.get(userId);
+    const enCurso = this.enMarcha.get(userId);
+    if (enCurso?.sigue()) return enCurso.promesa;
+    // Una tanda que ya se va a cortar (la sesión cambió y volvió): la nueva va detrás
+    const promesa = (enCurso?.promesa ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => this.vaciar(userId, sigue))
+      .finally(() => {
+        if (this.enMarcha.get(userId)?.promesa === promesa) this.enMarcha.delete(userId);
+      });
+    this.enMarcha.set(userId, { promesa, sigue });
+    return promesa;
   }
 
   async vaciar(userId, sigue) {
@@ -40,7 +43,7 @@ class SendPendingHoleMarksUseCase {
       const resultado = await enviarMarcaDeHoyo(this.dependencias, userId, golfCourseId, marca);
       if (resultado.estado === 'pendiente') {
         cuenta.pendientes += 1;
-        if (resultado.sinRed) {
+        if (resultado.paraLaTanda) {
           cuenta.pendientes += todas.length - i - 1;
           break;
         }

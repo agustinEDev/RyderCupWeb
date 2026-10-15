@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getMyHoleMarksUseCase, saveHoleMarkUseCase } from '../composition';
+import { MARCAS_CAMBIADAS } from './useEnvioDeMarcas';
 
 /**
  * Las marcas del jugador en el campo, por hoyo (BE #532, PR C), y cómo guardar
@@ -22,8 +23,12 @@ export function useMarcasDelCampo({ golfCourseId, userId }) {
       .catch(() => {
         // Se quedan las del móvil
       });
+    // Lo que la cola de fondo envía o descarta llega al mapa abierto
+    const alCambiar = () => setEstado({ de: `${userId}:${golfCourseId}`, marcas: getMyHoleMarksUseCase.guardadas(userId, golfCourseId) });
+    globalThis.addEventListener(MARCAS_CAMBIADAS, alCambiar);
     return () => {
       vigente = false;
+      globalThis.removeEventListener(MARCAS_CAMBIADAS, alCambiar);
     };
   }, [userId, golfCourseId]);
 

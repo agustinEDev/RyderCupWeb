@@ -198,4 +198,16 @@ describe('LocalStorageHoleMarkStore', () => {
 
     expect(Object.keys(store.load('u1', 'gc-1').marcas)).toEqual(['5']);
   });
+
+  it('confirmada una mientras ya había otra más nueva pendiente, a esa se vuelve si la nueva se rechaza', () => {
+    const a = marca(3, '2026-10-15T08:00:00.000Z');
+    const b = marca(3, '2026-10-15T08:01:00.000Z');
+    store.ponerPendiente('u1', 'gc-1', a);
+    store.ponerPendiente('u1', 'gc-1', b);
+    store.confirmar('u1', 'gc-1', a, a);
+
+    store.descartar('u1', 'gc-1', b);
+
+    expect(store.load('u1', 'gc-1')).toEqual({ marcas: { 3: a }, pendientes: {} });
+  });
 });

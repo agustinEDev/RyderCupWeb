@@ -185,16 +185,53 @@ describe('marcas de hoyo — casos de uso (PR C)', () => {
       expect(store.pendientes('u1')).toHaveLength(2);
     });
 
-    it('un error del servidor con una no para las de otros campos', async () => {
+    it.each([
+      ['el servidor caído (5xx)', http(503)],
+      ['un CSRF caducado (FE #521: no se repite por marca)', Object.assign(new Error('csrf'), { errorCode: 'CSRF_VALIDATION_FAILED' })],
+      ['el tope del refresco del token', Object.assign(new Error('tope'), { name: 'AbortError' })],
+    ])('%s para la tanda, como la cola de golpes, y no se avisa como fallo nuestro', async (_caso, fallo) => {
       await pendiente('gc-1', 3);
       await pendiente('gc-2', 7);
       repo.saveHoleMark.mockClear();
-      repo.saveHoleMark.mockRejectedValueOnce(http(500));
+      reportarFallo.mockClear();
+      repo.saveHoleMark.mockRejectedValue(fallo);
+
+      const cuenta = await vaciado().execute('u1');
+
+      expect(repo.saveHoleMark).toHaveBeenCalledTimes(1);
+      expect(cuenta).toEqual({ enviadas: 0, rechazadas: 0, pendientes: 2 });
+      expect(reportarFallo).not.toHaveBeenCalled();
+    });
+
+    it('un fallo nuestro (ni red ni servidor) se avisa, y sigue con las demás', async () => {
+      await pendiente('gc-1', 3);
+      await pendiente('gc-2', 7);
+      repo.saveHoleMark.mockClear();
+      reportarFallo.mockClear();
+      repo.saveHoleMark.mockRejectedValueOnce(new RangeError('algo nuestro'));
 
       const cuenta = await vaciado().execute('u1');
 
       expect(repo.saveHoleMark).toHaveBeenCalledTimes(2);
       expect(cuenta).toEqual({ enviadas: 1, rechazadas: 0, pendientes: 1 });
+      expect(reportarFallo).toHaveBeenCalledTimes(1);
+    });
+
+    it('si la sesión cambió y volvió al mismo jugador, la tanda nueva va detrás de la que se corta', async () => {
+      await pendiente('gc-1', 3);
+      repo.saveHoleMark.mockClear();
+      const uno = vaciado();
+      // La de la sesión anterior, que ya no sigue
+      const vieja = uno.execute('u1', { sigue: () => false });
+
+      const nueva = uno.execute('u1', { sigue: () => true });
+      await vieja;
+      const cuenta = await nueva;
+
+      expect(nueva).not.toBe(vieja);
+      expect(repo.saveHoleMark).toHaveBeenCalledTimes(1);
+      expect(cuenta.enviadas).toBe(1);
+      expect(store.pendientes('u1')).toEqual([]);
     });
 
     it('el tope de peticiones (429) para la tanda, como sin red', async () => {

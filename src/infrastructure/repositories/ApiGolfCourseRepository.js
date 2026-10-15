@@ -104,7 +104,13 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       body: JSON.stringify(HoleMarkMapper.toApi(marca)),
       topeMs: TOPE_DE_ANOTAR_MS,
     });
-    return HoleMarkMapper.toDomain(data);
+    // Un 2xx dice que el servidor la tiene: si no se entiende lo que devuelve,
+    // vale la enviada (si no, quedaría pendiente y se reenviaría siempre)
+    try {
+      return HoleMarkMapper.toDomain(data);
+    } catch {
+      return marca;
+    }
   }
 
   /**

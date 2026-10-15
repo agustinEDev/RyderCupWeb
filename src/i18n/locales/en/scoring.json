@@ -403,6 +403,8 @@
     "yaTieneDatos": "This hole already has its tee and green",
     "noSeGuardo": "The mark could not be saved",
     "tramo": "{{metros}} m",
-    "faltaLaSalida": "This hole has no tee: mark the tee too"
+    "faltaLaSalida": "This hole has no tee: mark the tee too",
+    "marcaRechazada_one": "A hole mark could not be saved",
+    "marcaRechazada_other": "{{count}} hole marks could not be saved"
   }
 }

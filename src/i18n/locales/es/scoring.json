@@ -413,6 +413,8 @@
     "yaTieneDatos": "Este hoyo ya tiene salida y green",
     "noSeGuardo": "No se ha podido guardar la marca",
     "tramo": "{{metros}} m",
-    "faltaLaSalida": "Este hoyo no tiene salida: márcala también"
+    "faltaLaSalida": "Este hoyo no tiene salida: márcala también",
+    "marcaRechazada_one": "Una marca de hoyo no se ha podido guardar",
+    "marcaRechazada_other": "{{count}} marcas de hoyo no se han podido guardar"
   }
 }

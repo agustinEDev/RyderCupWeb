@@ -1,10 +1,15 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { sendPendingHoleMarksUseCase } from '../composition';
 
 // Si queda algo pendiente con la aplicación abierta (el wifi de un club tras su
 // portal, un tope de peticiones), se reintenta así, como la cola de golpes, y
 // agotada la escalera se espera a la red o a volver a la aplicación (FE #551)
 export const ESPERAS_MS = [30_000, 120_000, 300_000];
+
+/** Se emite cuando la cola ha enviado o descartado alguna marca: el mapa abierto se refresca. */
+export const MARCAS_CAMBIADAS = 'rydercup:marcas-de-hoyos';
 
 /**
  * Envía las marcas de hoyo que se quedaron en el móvil sin cobertura (BE #532,
@@ -15,6 +20,7 @@ export const ESPERAS_MS = [30_000, 120_000, 300_000];
  * negociar.
  */
 export const useEnvioDeMarcas = ({ activo, userId = null }) => {
+  const { t } = useTranslation('scoring');
   useEffect(() => {
     if (!activo || !userId) return undefined;
     let vigente = true;
@@ -26,8 +32,11 @@ export const useEnvioDeMarcas = ({ activo, userId = null }) => {
       reintento = null;
       sendPendingHoleMarksUseCase
         .execute(userId, { sigue: () => vigente })
-        .then(({ pendientes }) => {
+        .then(({ enviadas, rechazadas, pendientes }) => {
           if (!vigente) return;
+          if (enviadas || rechazadas) globalThis.dispatchEvent(new globalThis.CustomEvent(MARCAS_CAMBIADAS));
+          // Se envió sin nadie mirando: lo que el servidor no quiso, se dice
+          if (rechazadas) toast.error(t('mapa.marcaRechazada', { count: rechazadas }));
           if (!pendientes) {
             fallos = 0;
             return;
@@ -56,5 +65,5 @@ export const useEnvioDeMarcas = ({ activo, userId = null }) => {
       globalThis.removeEventListener('online', porSenal);
       globalThis.document.removeEventListener('visibilitychange', alVolver);
     };
-  }, [activo, userId]);
+  }, [activo, userId, t]);
 };

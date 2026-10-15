@@ -66,6 +66,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
   const { marcas, guardar } = useMarcasDelCampo({ golfCourseId, userId });
   const [remarcando, setRemarcando] = useState(false);
+  // Cuántas veces se ha guardado o vuelto a marcar: cambia la `key` del mapa
+  // (la hora de la marca no vale: el servidor la devuelve escrita de otra forma)
+  const [vuelta, setVuelta] = useState(0);
 
   // Lo que ya hay: el hoyo aprobado (con su green, o solo con su salida) y, si
   // le falta algo, la marca del jugador, que él ve al momento (PR C)
@@ -88,6 +91,7 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   // el servidor no la quiere, se dice aquí (el mapa ya es otro) y vuelve la de antes
   const guardarMarca = async (datos) => {
     setRemarcando(false);
+    setVuelta((v) => v + 1);
     const resultado = await guardar({ holeNumber: numeroDeHoyo, ...datos });
     if (resultado.estado === 'rechazada') toast.error(t(ERROR_DE_MARCA[resultado.errorCode] ?? 'mapa.noSeGuardo'));
     return resultado;
@@ -104,7 +108,7 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
         {/* Si los datos del campo llegan (o cambian) con el mapa abierto, se
             rehace con ellos: el mapa fija su encuadre y su giro al montarse */}
         <MapaDelHoyo
-          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${deMiMarca ? miMarca.markedAt : (porMarcar ?? '')}`}
+          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${deMiMarca ? 'mia' : (porMarcar ?? '')}-${vuelta}`}
           golfCourseId={golfCourseId}
           numeroDeHoyo={numeroDeHoyo}
           par={par}
@@ -114,7 +118,14 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           metros={metros}
           porMarcar={porMarcar}
           onGuardarMarca={porMarcar ? guardarMarca : null}
-          onVolverAMarcar={deMiMarca ? () => setRemarcando(true) : null}
+          onVolverAMarcar={
+            deMiMarca
+              ? () => {
+                  setRemarcando(true);
+                  setVuelta((v) => v + 1);
+                }
+              : null
+          }
           // Volviendo a marcar, «Ahora no» devuelve la marca que ya había
           onAhoraNo={remarcando ? () => setRemarcando(false) : null}
         />

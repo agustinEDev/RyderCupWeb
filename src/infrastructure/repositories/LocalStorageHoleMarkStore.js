@@ -65,8 +65,13 @@ class LocalStorageHoleMarkStore extends IHoleMarkStore {
   confirmar(userId, golfCourseId, enviada, guardada) {
     conCampo(userId, golfCourseId, (campo) => {
       const hoyo = enviada.holeNumber;
-      // Si mientras se enviaba se marcó otra vez, manda la nueva
-      if (campo.pendientes[hoyo] && !misma(campo.pendientes[hoyo], enviada)) return;
+      // Si mientras se enviaba se marcó otra vez, manda la nueva; esta, que el
+      // servidor ya tiene, es a la que se vuelve si la nueva se rechaza
+      if (campo.pendientes[hoyo] && !misma(campo.pendientes[hoyo], enviada)) {
+        campo.previas[hoyo] = guardada;
+        campo.version += 1;
+        return;
+      }
       delete campo.pendientes[hoyo];
       delete campo.previas[hoyo];
       campo.marcas[hoyo] = guardada;

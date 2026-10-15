@@ -5,7 +5,7 @@ const casos = vi.hoisted(() => ({
   mias: { guardadas: vi.fn(() => ({})), execute: vi.fn(async () => ({})) },
   guardar: { execute: vi.fn(async () => ({ estado: 'guardada' })) },
 }));
-vi.mock('../composition', () => ({ getMyHoleMarksUseCase: casos.mias, saveHoleMarkUseCase: casos.guardar }));
+vi.mock('../composition', () => ({ getMyHoleMarksUseCase: casos.mias, saveHoleMarkUseCase: casos.guardar, sendPendingHoleMarksUseCase: {} }));
 
 const { useMarcasDelCampo } = await import('./useMarcasDelCampo');
 
@@ -90,5 +90,19 @@ describe('useMarcasDelCampo', () => {
     await act(async () => {});
 
     expect(result.current.marcas).toEqual({ 3: M3 });
+  });
+
+  it('lo que la cola de fondo envía o descarta llega al mapa abierto', async () => {
+    casos.mias.guardadas.mockReturnValue({ 3: M3 });
+    casos.mias.execute.mockResolvedValue({ 3: M3 });
+    const { result } = renderHook(() => useMarcasDelCampo({ golfCourseId: 'gc-1', userId: 'u1' }));
+    await waitFor(() => expect(result.current.marcas).toEqual({ 3: M3 }));
+    casos.mias.guardadas.mockReturnValue({});
+
+    act(() => {
+      globalThis.dispatchEvent(new globalThis.CustomEvent('rydercup:marcas-de-hoyos'));
+    });
+
+    expect(result.current.marcas).toEqual({});
   });
 });

@@ -334,4 +334,17 @@ describe('VentanaDelMapa — marcar el hoyo (PR C)', () => {
 
     expect(carga.props).toMatchObject({ porMarcar: null, onGuardarMarca: null });
   });
+
+  it('confirmada por el servidor (otra forma de escribir la hora), el mapa no se rehace', async () => {
+    const mia = { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: '2026-10-16T10:00:00.123Z' };
+    misMarcas.marcas = { 3: mia };
+    const { rerender } = abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+    const antes = carga.montajes;
+
+    misMarcas.marcas = { 3: { ...mia, markedAt: '2026-10-16T10:00:00.123000+00:00' } };
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: null })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={142} userId="u1" />);
+
+    expect(carga.montajes).toBe(antes);
+  });
 });

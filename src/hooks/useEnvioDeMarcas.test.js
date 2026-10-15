@@ -3,8 +3,11 @@ import { renderHook } from '@testing-library/react';
 
 const envio = vi.hoisted(() => ({ execute: vi.fn(async () => ({ pendientes: 0 })) }));
 vi.mock('../composition', () => ({ sendPendingHoleMarksUseCase: envio }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k, o) => (o ? `${k} ${JSON.stringify(o)}` : k) }) }));
+const toastFalso = vi.hoisted(() => ({ error: vi.fn() }));
+vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
-const { useEnvioDeMarcas, ESPERAS_MS } = await import('./useEnvioDeMarcas');
+const { useEnvioDeMarcas, ESPERAS_MS, MARCAS_CAMBIADAS } = await import('./useEnvioDeMarcas');
 
 describe('useEnvioDeMarcas (C17/C18)', () => {
   beforeEach(() => {
@@ -132,5 +135,31 @@ describe('useEnvioDeMarcas (C17/C18)', () => {
 
       expect(envio.execute).not.toHaveBeenCalled();
     });
+  });
+
+  it('si envió o descartó algo, avisa al mapa abierto; si descartó, se lo dice al jugador', async () => {
+    envio.execute.mockResolvedValue({ enviadas: 1, rechazadas: 2, pendientes: 0 });
+    const oyente = vi.fn();
+    globalThis.addEventListener(MARCAS_CAMBIADAS, oyente);
+
+    renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+    await vi.waitFor(() => expect(oyente).toHaveBeenCalledTimes(1));
+
+    expect(toastFalso.error).toHaveBeenCalledWith('mapa.marcaRechazada {"count":2}');
+    globalThis.removeEventListener(MARCAS_CAMBIADAS, oyente);
+  });
+
+  it('sin nada que contar, ni aviso ni evento', async () => {
+    envio.execute.mockResolvedValue({ enviadas: 0, rechazadas: 0, pendientes: 0 });
+    const oyente = vi.fn();
+    globalThis.addEventListener(MARCAS_CAMBIADAS, oyente);
+
+    renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(oyente).not.toHaveBeenCalled();
+    expect(toastFalso.error).not.toHaveBeenCalled();
+    globalThis.removeEventListener(MARCAS_CAMBIADAS, oyente);
   });
 });
