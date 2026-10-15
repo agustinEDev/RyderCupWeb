@@ -153,7 +153,7 @@ const securityHeaders = {
   // unstyled — this was verified against production in #295, where the policy had
   // been strict since Dec 2025 without anyone noticing, because it never applied.
   // script-src stays strict, which is what actually stops an XSS.
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://www.ign.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 }
 
 // https://vitejs.dev/config/
@@ -219,7 +219,9 @@ export default defineConfig(() => ({
         // respondería desde la caché y diría la versión de la publicación
         // anterior, que es justo la mentira que venía a quitar. Y no hace falta
         // para mover el service worker, de eso se encarga la marca del HTML
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // `mjs`: el worker de MapLibre (mapa del hoyo, BE #532) va como fichero
+        // aparte; sin él precacheado, el mapa no arranca sin cobertura
+        globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff2}'],
         // Explicit cap so oversized assets fail the SW build loudly instead of silently
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
@@ -333,7 +335,7 @@ export default defineConfig(() => ({
           // CSP más permisivo en desarrollo para soportar HMR de Vite
           const devHeaders = {
             ...securityHeaders,
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' ws://localhost:* https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' ws://localhost:* https://www.ign.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
           }
           for (const [key, value] of Object.entries(devHeaders)) {
             res.setHeader(key, value)

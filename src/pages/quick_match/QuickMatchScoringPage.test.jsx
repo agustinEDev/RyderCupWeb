@@ -22,17 +22,21 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 
 const mockUseQuickMatchScoring = vi.fn();
-const distancias = vi.hoisted(() => ({ args: null, valor: { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } } }));
-vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
-  useDistanciasDelHoyo: (args) => {
-    distancias.args = args;
-    return distancias.valor;
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
   },
 }));
-vi.mock('../../components/scoring/LineaDeDistancias', () => ({
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
   default: (props) => {
-    distancias.linea = props;
-    return <p data-testid="linea-de-distancias" />;
+    mapaHoyo.ventana = props;
+    return null;
   },
 }));
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
@@ -1797,10 +1801,9 @@ describe('QuickMatchScoringPage · los avisos, tras probarlo en el campo (FE #51
   });
 });
 
-describe('QuickMatchScoringPage — distancias al green (mapa de hoyos)', () => {
+describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    distancias.valor = { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } };
     mockUseQuickMatchScoring.mockReturnValue({
       ...baseHookState,
       quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [baseHookState.myParticipant] },
@@ -1813,43 +1816,39 @@ describe('QuickMatchScoringPage — distancias al green (mapa de hoyos)', () => 
       cancelMatch: vi.fn(),
       refetch: vi.fn(),
     });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
   });
 
-  it('M5: pide las distancias del campo de la partida, de esta partida y del hoyo que se anota', () => {
+  it('pide el mapa del campo de lo que se anota', () => {
     renderPage();
 
-    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'qm-1', hoyo: 1, visible: true });
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
   });
 
-  it('G2: en otra pestaña, la anotación no se ve: GPS apagado', () => {
+  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
     renderPage();
 
-    fireEvent.click(screen.getByTestId('quick-match-tab-classification'));
-
-    expect(distancias.args.visible).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.abrir' }));
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
-  it('L1: con green, la tarjeta lleva la línea de distancias', () => {
-    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} } };
-
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
     renderPage();
 
-    expect(screen.getByTestId('linea-de-distancias')).toBeInTheDocument();
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
   });
 
-  it('a la línea le llegan la atribución y «Ocultar»', () => {
-    const ocultar = vi.fn();
-    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} }, atribucion: '© OSM', ocultar };
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      renderPage();
+    } finally {
+      vi.unstubAllGlobals();
+    }
 
-    renderPage();
-
-    expect(distancias.linea).toMatchObject({ atribucion: '© OSM', onOcultar: ocultar });
-  });
-
-  it('L3: sin green, sin línea de distancias', () => {
-    renderPage();
-
-    expect(screen.queryByTestId('linea-de-distancias')).toBeNull();
+    expect(watchPosition).not.toHaveBeenCalled();
   });
 });
-

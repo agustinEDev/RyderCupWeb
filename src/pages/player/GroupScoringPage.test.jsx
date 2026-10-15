@@ -58,13 +58,24 @@ vi.mock('../../hooks/useScoring', () => ({
   },
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
-const distancias = vi.hoisted(() => ({ args: null, valor: { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } } }));
-vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
-  useDistanciasDelHoyo: (args) => {
-    distancias.args = args;
-    return distancias.valor;
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
   },
 }));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
+
 vi.mock('../../components/scoring/HoleInput', () => ({
   default: (props) => {
     llamadas.casilla = props;
@@ -563,54 +574,44 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
   });
 });
 
-describe('GroupScoringPage — distancias al green (mapa de hoyos)', () => {
+describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
   beforeEach(() => {
     mockBusqueda = new URLSearchParams('competition=c-1');
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
-    distancias.valor = { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } };
-  });
-
-  it('M5: pide las distancias del campo de la franja, de esta partida y del hoyo que se anota', () => {
     mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
-
-    render(<GroupScoringPage />);
-
-    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'g-1', hoyo: 1, visible: true });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
   });
 
-  it('G2: con la anotación aún sin abrir, GPS apagado', () => {
-    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1', status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
-
+  it('pide el mapa del campo de lo que se anota', () => {
     render(<GroupScoringPage />);
 
-    expect(distancias.args.visible).toBe(false);
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
   });
 
-  it('a la línea le llegan la atribución y «Ocultar»', () => {
-    const ocultar = vi.fn();
-    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
-    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} }, atribucion: '© OSM', ocultar };
-
+  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
     render(<GroupScoringPage />);
 
-    expect(llamadas.casilla.pie.props).toMatchObject({ atribucion: '© OSM', onOcultar: ocultar });
+    const pie = llamadas.casilla.pie;
+    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
   });
 
-  it('L1: con green, la tarjeta lleva la línea de distancias al pie', () => {
-    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
-    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} } };
-
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
     render(<GroupScoringPage />);
 
-    expect(llamadas.casilla.pie).not.toBeNull();
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
   });
 
-  it('L3: sin green, la tarjeta queda como siempre (sin pie)', () => {
-    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      render(<GroupScoringPage />);
+    } finally {
+      vi.unstubAllGlobals();
+    }
 
-    render(<GroupScoringPage />);
-
-    expect(llamadas.casilla.pie).toBeNull();
+    expect(watchPosition).not.toHaveBeenCalled();
   });
 });
-

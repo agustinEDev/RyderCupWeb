@@ -77,3 +77,38 @@ describe('GetHoleMapUseCase.guardado (la copia, al momento)', () => {
     expect(holeMapCache.load).not.toHaveBeenCalled();
   });
 });
+
+describe('GetHoleMapUseCase — D3: un mapa que no se entiende se avisa', () => {
+  const conAviso = (getHoleMap) => {
+    const reportarFallo = vi.fn();
+    const golfCourseRepository = { getHoleMap: vi.fn(getHoleMap) };
+    const holeMapCache = { save: vi.fn(), load: vi.fn(() => GUARDADO), remove: vi.fn() };
+    return { useCase: new GetHoleMapUseCase({ golfCourseRepository, holeMapCache, reportarFallo }), reportarFallo };
+  };
+
+  it('un mapa mal formado (el mapper revienta) se avisa y se usa la copia', async () => {
+    const roto = new TypeError("Cannot read properties of null (reading 'coordinates')");
+    const { useCase, reportarFallo } = conAviso(async () => { throw roto; });
+
+    expect(await useCase.execute('gc-1')).toEqual(GUARDADO);
+    expect(reportarFallo).toHaveBeenCalledWith(roto, { golfCourseId: 'gc-1' });
+  });
+
+  it('sin red no se avisa: es lo normal en el campo', async () => {
+    const sinRed = new TypeError('Sin conexión', { cause: new TypeError('Failed to fetch') });
+    const { useCase, reportarFallo } = conAviso(async () => { throw sinRed; });
+
+    await useCase.execute('gc-1');
+
+    expect(reportarFallo).not.toHaveBeenCalled();
+  });
+
+  it('un error del servidor (con su estado HTTP) no se avisa aquí: ya lo registra la API', async () => {
+    const delServidor = Object.assign(new Error('boom'), { status: 500 });
+    const { useCase, reportarFallo } = conAviso(async () => { throw delServidor; });
+
+    await useCase.execute('gc-1');
+
+    expect(reportarFallo).not.toHaveBeenCalled();
+  });
+});

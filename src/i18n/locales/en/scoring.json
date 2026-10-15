@@ -364,15 +364,25 @@
     "notOpenYet": "Scoring for this group has not opened yet",
     "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes."
   },
-  "distancias": {
-    "activar": "Turn on distances",
+  "mapa": {
+    "abrir": "Map",
+    "titulo": "Hole {{numero}} · Par {{par}}",
+    "cerrar": "Close",
+    "centrame": "Centre me",
+    "verHoyo": "Whole hole",
+    "norte": "North",
     "buscando": "Looking for GPS signal…",
     "denegado": "Location not allowed",
     "noDisponible": "This phone does not share its location",
-    "delante": "F",
-    "centro": "C",
-    "fondo": "B",
-    "etiqueta": "To the green: front {{front}} m, centre {{center}} m, back {{back}} m",
-    "ocultar": "Hide"
+    "delante": "Front",
+    "centro": "Centre",
+    "fondo": "Back",
+    "metros": "m",
+    "etiqueta": "To the green: front {{front}} metres, centre {{center}} metres, back {{back}} metres",
+    "hastaAhi": "To there {{metros}} m",
+    "deAhiAlGreen": "From there to the centre of the green {{metros}} m",
+    "quitarPunto": "Remove",
+    "ayudaMedir": "Tap the map to measure",
+    "noCarga": "The map could not be opened. Check the connection and try again."
   }
 }

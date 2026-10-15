@@ -35,6 +35,7 @@ import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGol
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
 import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
+import { captureError } from '../utils/sentryHelpers';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
 import UpdateGolfCourseUseCase from '../application/use_cases/golf_course/UpdateGolfCourseUseCase';
@@ -444,6 +445,7 @@ const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: ap
 const getHoleMapUseCase = new GetHoleMapUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeMapCache: new LocalStorageHoleMapCache(),
+  reportarFallo: (error, contexto) => captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
 });
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });

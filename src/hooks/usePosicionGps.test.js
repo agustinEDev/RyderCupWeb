@@ -95,6 +95,27 @@ describe('usePosicionGps', () => {
     expect(result.current).toEqual({ estado: 'buscando', posicion: null });
   });
 
+  it('G4: una lectura con coordenadas rotas (NaN) se descarta', () => {
+    const { result } = renderHook(() => usePosicionGps({ activo: true }));
+
+    act(() => gps.exito(posicion(Number.NaN, -5.33, 5)));
+
+    expect(result.current).toEqual({ estado: 'buscando', posicion: null });
+  });
+
+  it('G5: un permiso denegado al instante (dentro de la propia llamada) no rompe la pantalla', () => {
+    gps.watchPosition.mockImplementation((_exito, error) => {
+      error({ code: 1 });
+      return 9;
+    });
+
+    const { result } = renderHook(() => usePosicionGps({ activo: true }));
+
+    expect(result.current.estado).toBe('denegado');
+    expect(gps.clearWatch).toHaveBeenCalledWith(9);
+    expect(gps.clearWatch).not.toHaveBeenCalledWith(null);
+  });
+
   it('un navegador sin geolocalización → «no disponible»', () => {
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: undefined });
 

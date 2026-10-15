@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
-import { useDistanciasDelHoyo } from '../../hooks/useDistanciasDelHoyo';
-import LineaDeDistancias from '../../components/scoring/LineaDeDistancias';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import { getLeaderboardUseCase } from '../../composition';
@@ -245,14 +246,8 @@ const ScoringPage = () => {
     status: scoringView?.matchStatus,
     scoringOpensAt: scoringView?.scoringOpensAt,
   });
-  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532); el
-  // GPS, solo con la anotación a la vista
-  const distancias = useDistanciasDelHoyo({
-    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
-    partida: matchId,
-    hoyo: currentHole,
-    visible: activeTab === 'input' && !aunNoAbre,
-  });
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null });
   // La hora del CAMPO, que es la que el servidor va a aplicar, no la del móvil:
   // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
   // mirado desde la península anunciaba una hora que no era la suya. La cadena
@@ -604,44 +599,43 @@ const ScoringPage = () => {
             )}
 
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
-              <HoleInput
-                // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
-                // la casilla guarda su propia selección y solo adopta la vista
-                // cuando esta cambia, así que enseñaba un golpe que no estaba en
-                // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
-                key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                pie={distancias.green ? (
-                  <LineaDeDistancias
-                    green={distancias.green}
-                    activadas={distancias.activadas}
-                    gps={distancias.gps}
-                    onActivar={distancias.activar}
-                    atribucion={distancias.atribucion}
-                    onOcultar={distancias.ocultar}
-                  />
-                ) : null}
-                matchFormat={scoringView?.matchFormat}
-                holeNumber={currentHole}
-                par={currentHoleData.par}
-                markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
-                markedName={markerAssignment?.marksName ?? null}
-                markerName={markerAssignment?.markedByName ?? null}
-                strokeIndex={currentHoleData.strokeIndex}
-                playerScore={currentPlayerScore}
-                markedPlayerScore={markedPlayerScore}
-                validationStatus={currentPlayerScore?.validationStatus}
-                markedValidationStatus={markedPlayerScore?.validationStatus}
-                netScore={currentPlayerScore?.netScore}
-                strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
-                holeResult={currentHoleScore?.holeResult}
-                standing={currentHoleScore?.holeResult?.standing}
-                isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
-                isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
-                isMarkerScoreLocked={isMarkerScoreLocked || !canScore || isSessionBlocked}
-                onScoreChange={handleScoreChange}
-                teamAName={scoringView?.teamAName}
-                teamBName={scoringView?.teamBName}
-              />
+              <>
+                <HoleInput
+                  // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
+                  // la casilla guarda su propia selección y solo adopta la vista
+                  // cuando esta cambia, así que enseñaba un golpe que no estaba en
+                  // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
+                  key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                  pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                  matchFormat={scoringView?.matchFormat}
+                  holeNumber={currentHole}
+                  par={currentHoleData.par}
+                  markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
+                  markedName={markerAssignment?.marksName ?? null}
+                  markerName={markerAssignment?.markedByName ?? null}
+                  strokeIndex={currentHoleData.strokeIndex}
+                  playerScore={currentPlayerScore}
+                  markedPlayerScore={markedPlayerScore}
+                  validationStatus={currentPlayerScore?.validationStatus}
+                  markedValidationStatus={markedPlayerScore?.validationStatus}
+                  netScore={currentPlayerScore?.netScore}
+                  strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
+                  holeResult={currentHoleScore?.holeResult}
+                  standing={currentHoleScore?.holeResult?.standing}
+                  isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
+                  isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
+                  isMarkerScoreLocked={isMarkerScoreLocked || !canScore || isSessionBlocked}
+                  onScoreChange={handleScoreChange}
+                  teamAName={scoringView?.teamAName}
+                  teamBName={scoringView?.teamBName}
+                />
+                <VentanaDelMapa
+                  mapaDelHoyo={mapaDelHoyo}
+                  golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
+                  numeroDeHoyo={currentHole}
+                  par={currentHoleData.par}
+                />
+              </>
             )}
 
             {/* Prev/Next navigation */}

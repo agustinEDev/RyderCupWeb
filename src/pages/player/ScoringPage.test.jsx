@@ -73,14 +73,23 @@ const mockUseScoring = {
   refetch: vi.fn(),
 };
 
-const distancias = vi.hoisted(() => ({ args: null, valor: { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } } }));
-vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
-  useDistanciasDelHoyo: (args) => {
-    distancias.args = args;
-    return distancias.valor;
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
   },
 }));
-vi.mock('../../components/scoring/LineaDeDistancias', () => ({ default: () => <p data-testid="linea-de-distancias" /> }));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
 vi.mock('../../hooks/useScoring', () => ({
   useScoring: () => mockUseScoring,
 }));
@@ -1484,71 +1493,46 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
   });
 });
 
-describe('ScoringPage — distancias al green (mapa de hoyos)', () => {
+describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
   const vistaOriginal = mockUseScoring.scoringView;
-  beforeEach(() => {
-    vi.clearAllMocks();
-    distancias.valor = { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } };
-    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1' } };
-  });
   afterEach(() => {
     mockUseScoring.scoringView = vistaOriginal;
   });
-
-  it('M5: pide las distancias del campo de la jornada, de este partido y del hoyo que se anota', () => {
-    render(<ScoringPage />);
-
-    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'm-1', hoyo: 1, visible: true });
+  beforeEach(() => {
+    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1' } };
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
   });
 
-  it('G2: en otra pestaña, la anotación no se ve: GPS apagado', () => {
+  it('pide el mapa del campo de lo que se anota', () => {
     render(<ScoringPage />);
 
-    fireEvent.click(screen.getByTestId('tab-scorecard'));
-
-    expect(distancias.args.visible).toBe(false);
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
   });
 
-  it('G2: con la anotación aún sin abrir, GPS apagado', () => {
-    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, matchStatus: 'SCHEDULED', scoringOpensAt: '2999-01-01T08:00:00+01:00' };
-
+  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
     render(<ScoringPage />);
 
-    expect(distancias.args.visible).toBe(false);
+    const pie = casilla.props.pie;
+    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
   });
 
-  it('a la línea le llegan la atribución y «Ocultar»', () => {
-    const ocultar = vi.fn();
-    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} }, atribucion: '© OSM', ocultar };
-
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
     render(<ScoringPage />);
 
-    expect(casilla.props.pie.props).toMatchObject({ atribucion: '© OSM', onOcultar: ocultar });
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
   });
 
-  it('L4: en otro hoyo, las distancias de ese hoyo', () => {
-    mockUseScoring.currentHole = 3;
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
     try {
       render(<ScoringPage />);
     } finally {
-      mockUseScoring.currentHole = 1;
+      vi.unstubAllGlobals();
     }
 
-    expect(distancias.args.hoyo).toBe(3);
-  });
-
-  it('L1: con green, la casilla lleva la línea de distancias al pie', () => {
-    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} } };
-
-    render(<ScoringPage />);
-
-    expect(casilla.props.pie).not.toBeNull();
-  });
-
-  it('L3: sin green, la casilla queda como siempre (sin pie)', () => {
-    render(<ScoringPage />);
-
-    expect(casilla.props.pie).toBeNull();
+    expect(watchPosition).not.toHaveBeenCalled();
   });
 });
-
