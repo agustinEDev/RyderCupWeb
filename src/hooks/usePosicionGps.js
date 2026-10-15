@@ -37,7 +37,11 @@ export function usePosicionGps({ activo }) {
       },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
     );
-    return () => geolocation.clearWatch(id);
+    return () => {
+      geolocation.clearWatch(id);
+      // Al volver a activarse, nada de la posición de antes
+      setLectura({ estado: 'buscando', posicion: null });
+    };
   }, [activo, geolocation]);
 
   if (!activo) return { estado: 'inactivo', posicion: null };

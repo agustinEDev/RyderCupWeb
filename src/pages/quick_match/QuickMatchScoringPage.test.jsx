@@ -29,7 +29,12 @@ vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
     return distancias.valor;
   },
 }));
-vi.mock('../../components/scoring/LineaDeDistancias', () => ({ default: () => <p data-testid="linea-de-distancias" /> }));
+vi.mock('../../components/scoring/LineaDeDistancias', () => ({
+  default: (props) => {
+    distancias.linea = props;
+    return <p data-testid="linea-de-distancias" />;
+  },
+}));
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
   useQuickMatchScoring: (...args) => {
     const estado = mockUseQuickMatchScoring(...args);
@@ -1813,7 +1818,15 @@ describe('QuickMatchScoringPage — distancias al green (mapa de hoyos)', () => 
   it('M5: pide las distancias del campo de la partida, de esta partida y del hoyo que se anota', () => {
     renderPage();
 
-    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'qm-1', hoyo: 1 });
+    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'qm-1', hoyo: 1, visible: true });
+  });
+
+  it('G2: en otra pestaña, la anotación no se ve: GPS apagado', () => {
+    renderPage();
+
+    fireEvent.click(screen.getByTestId('quick-match-tab-classification'));
+
+    expect(distancias.args.visible).toBe(false);
   });
 
   it('L1: con green, la tarjeta lleva la línea de distancias', () => {
@@ -1822,6 +1835,15 @@ describe('QuickMatchScoringPage — distancias al green (mapa de hoyos)', () => 
     renderPage();
 
     expect(screen.getByTestId('linea-de-distancias')).toBeInTheDocument();
+  });
+
+  it('a la línea le llegan la atribución y «Ocultar»', () => {
+    const ocultar = vi.fn();
+    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} }, atribucion: '© OSM', ocultar };
+
+    renderPage();
+
+    expect(distancias.linea).toMatchObject({ atribucion: '© OSM', onOcultar: ocultar });
   });
 
   it('L3: sin green, sin línea de distancias', () => {

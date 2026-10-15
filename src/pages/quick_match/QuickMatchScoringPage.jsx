@@ -120,11 +120,13 @@ const QuickMatchScoringPage = () => {
     discrepancias,
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
-  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532)
+  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532); el
+  // GPS, solo con la anotación a la vista
   const distancias = useDistanciasDelHoyo({
     golfCourseId: quickMatch?.golfCourseId ?? null,
     partida: quickMatchId,
     hoyo: currentHole,
+    visible: activeTab === 'input',
   });
 
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
@@ -624,6 +626,8 @@ const QuickMatchScoringPage = () => {
                         activadas={distancias.activadas}
                         gps={distancias.gps}
                         onActivar={distancias.activar}
+                        atribucion={distancias.atribucion}
+                        onOcultar={distancias.ocultar}
                       />
                     ) : null}
                     holeNumber={currentHole}

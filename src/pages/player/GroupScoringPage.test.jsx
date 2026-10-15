@@ -575,7 +575,25 @@ describe('GroupScoringPage — distancias al green (mapa de hoyos)', () => {
 
     render(<GroupScoringPage />);
 
-    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'g-1', hoyo: 1 });
+    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'g-1', hoyo: 1, visible: true });
+  });
+
+  it('G2: con la anotación aún sin abrir, GPS apagado', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1', status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+
+    render(<GroupScoringPage />);
+
+    expect(distancias.args.visible).toBe(false);
+  });
+
+  it('a la línea le llegan la atribución y «Ocultar»', () => {
+    const ocultar = vi.fn();
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} }, atribucion: '© OSM', ocultar };
+
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.pie.props).toMatchObject({ atribucion: '© OSM', onOcultar: ocultar });
   });
 
   it('L1: con green, la tarjeta lleva la línea de distancias al pie', () => {

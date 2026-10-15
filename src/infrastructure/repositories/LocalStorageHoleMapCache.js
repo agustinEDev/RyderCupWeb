@@ -1,6 +1,10 @@
 import IHoleMapCache from '../../domain/repositories/IHoleMapCache';
 
-const clave = (golfCourseId) => `mapaDeHoyos:${golfCourseId}`;
+// La versión de la forma de lo guardado: si cambia, las copias viejas no se leen
+const clave = (golfCourseId) => `mapaDeHoyos:v1:${golfCourseId}`;
+
+const esMapaDe = (mapa, golfCourseId) =>
+  Boolean(mapa) && mapa.golfCourseId === golfCourseId && typeof mapa.holes === 'object' && mapa.holes !== null;
 
 /**
  * El mapa de hoyos guardado en localStorage, por campo.
@@ -20,7 +24,8 @@ class LocalStorageHoleMapCache extends IHoleMapCache {
   load(golfCourseId) {
     try {
       const guardado = globalThis.localStorage.getItem(clave(golfCourseId));
-      return guardado ? JSON.parse(guardado) : null;
+      const mapa = guardado ? JSON.parse(guardado) : null;
+      return esMapaDe(mapa, golfCourseId) ? mapa : null;
     } catch {
       return null;
     }

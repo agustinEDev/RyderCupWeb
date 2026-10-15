@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const execute = vi.fn();
-vi.mock('../composition', () => ({ getHoleMapUseCase: { execute: (...a) => execute(...a) } }));
+const copia = vi.fn();
+vi.mock('../composition', () => ({
+  getHoleMapUseCase: { execute: (...a) => execute(...a), guardado: (...a) => copia(...a) },
+}));
 
 const { useDistanciasDelHoyo } = await import('./useDistanciasDelHoyo');
 
@@ -18,6 +21,8 @@ describe('useDistanciasDelHoyo', () => {
 
   beforeEach(() => {
     execute.mockReset();
+    copia.mockReset();
+    copia.mockReturnValue(null);
     gps = { watchPosition: vi.fn(() => 1), clearWatch: vi.fn() };
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
     const guardado = new Map();
@@ -101,5 +106,79 @@ describe('useDistanciasDelHoyo', () => {
     await waitFor(() => expect(execute).toHaveBeenCalled());
 
     expect(gps.watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('useDistanciasDelHoyo — sin cobertura, fuera de la anotación y ocultar', () => {
+  let gps;
+
+  beforeEach(() => {
+    execute.mockReset();
+    copia.mockReset();
+    copia.mockReturnValue(null);
+    gps = { watchPosition: vi.fn(() => 1), clearWatch: vi.fn() };
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+    const almacen = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
+      setItem: (k, v) => almacen.set(k, String(v)),
+      removeItem: (k) => almacen.delete(k),
+    });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('M3: con cobertura mala (la red no contesta), la copia del móvil al momento', () => {
+    execute.mockReturnValue(new Promise(() => {}));
+    copia.mockReturnValue(MAPA);
+
+    const { result } = renderHook(() => useDistanciasDelHoyo({ golfCourseId: 'gc-1', partida: 'p-1', hoyo: 1 }));
+
+    expect(result.current.green).toEqual(GREEN);
+    expect(copia).toHaveBeenCalledWith('gc-1');
+  });
+
+  it('M4: cuando contesta la red, manda lo nuevo sobre la copia', async () => {
+    const nuevo = { ...MAPA, version: 'v2', holes: { 1: { green: null, playLine: [] } } };
+    execute.mockResolvedValue(nuevo);
+    copia.mockReturnValue(MAPA);
+
+    const { result } = renderHook(() => useDistanciasDelHoyo({ golfCourseId: 'gc-1', partida: 'p-1', hoyo: 1 }));
+
+    await waitFor(() => expect(result.current.green).toBeNull());
+  });
+
+  it('la atribución del mapa (licencia de OSM)', async () => {
+    execute.mockResolvedValue({ ...MAPA, attribution: '© OpenStreetMap contributors (ODbL)' });
+
+    const { result } = renderHook(() => useDistanciasDelHoyo({ golfCourseId: 'gc-1', partida: 'p-1', hoyo: 1 }));
+
+    await waitFor(() => expect(result.current.atribucion).toBe('© OpenStreetMap contributors (ODbL)'));
+  });
+
+  it('G2: con la anotación sin verse (otra pestaña, aún cerrada), el GPS apagado', async () => {
+    globalThis.localStorage.setItem('distanciasActivadas:p-1', '1');
+    execute.mockResolvedValue(MAPA);
+    const { result, rerender } = renderHook((props) => useDistanciasDelHoyo(props), {
+      initialProps: { golfCourseId: 'gc-1', partida: 'p-1', hoyo: 1, visible: true },
+    });
+    await waitFor(() => expect(result.current.green).toEqual(GREEN));
+    expect(gps.watchPosition).toHaveBeenCalledTimes(1);
+
+    rerender({ golfCourseId: 'gc-1', partida: 'p-1', hoyo: 1, visible: false });
+
+    expect(gps.clearWatch).toHaveBeenCalledWith(1);
+  });
+
+  it('ocultar apaga el GPS', async () => {
+    globalThis.localStorage.setItem('distanciasActivadas:p-1', '1');
+    execute.mockResolvedValue(MAPA);
+    const { result } = renderHook(() => useDistanciasDelHoyo({ golfCourseId: 'gc-1', partida: 'p-1', hoyo: 1 }));
+    await waitFor(() => expect(gps.watchPosition).toHaveBeenCalled());
+
+    act(() => result.current.ocultar());
+
+    expect(result.current.activadas).toBe(false);
+    expect(gps.clearWatch).toHaveBeenCalledWith(1);
   });
 });

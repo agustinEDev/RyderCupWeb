@@ -91,14 +91,16 @@ const GroupScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(groupId, user?.id, user?.is_admin ?? false, ORIGEN_PARTIDA_DE_FRANJA);
-  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532)
+
+  const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
+  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532); el
+  // GPS, solo con la anotación a la vista
   const distancias = useDistanciasDelHoyo({
     golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
     partida: groupId,
     hoyo: currentHole,
+    visible: !aunNoAbre,
   });
-
-  const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
     if (!aunNoAbre) return undefined;
@@ -349,6 +351,8 @@ const GroupScoringPage = () => {
                       activadas={distancias.activadas}
                       gps={distancias.gps}
                       onActivar={distancias.activar}
+                      atribucion={distancias.atribucion}
+                      onOcultar={distancias.ocultar}
                     />
                   ) : null}
                   holeNumber={currentHole}

@@ -372,6 +372,7 @@
     "delante": "F",
     "centro": "C",
     "fondo": "B",
-    "etiqueta": "To the green: front {{front}} m, centre {{center}} m, back {{back}} m"
+    "etiqueta": "To the green: front {{front}} m, centre {{center}} m, back {{back}} m",
+    "ocultar": "Hide"
   }
 }

@@ -75,12 +75,6 @@ const ScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
-  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532)
-  const distancias = useDistanciasDelHoyo({
-    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
-    partida: matchId,
-    hoyo: currentHole,
-  });
 
   // Los hoyos que no se pudieron guardar, en orden (FE #622). Los que ya no se
   // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
@@ -250,6 +244,14 @@ const ScoringPage = () => {
   const aunNoAbre = abreMasTarde({
     status: scoringView?.matchStatus,
     scoringOpensAt: scoringView?.scoringOpensAt,
+  });
+  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532); el
+  // GPS, solo con la anotación a la vista
+  const distancias = useDistanciasDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    partida: matchId,
+    hoyo: currentHole,
+    visible: activeTab === 'input' && !aunNoAbre,
   });
   // La hora del CAMPO, que es la que el servidor va a aplicar, no la del móvil:
   // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
@@ -614,6 +616,8 @@ const ScoringPage = () => {
                     activadas={distancias.activadas}
                     gps={distancias.gps}
                     onActivar={distancias.activar}
+                    atribucion={distancias.atribucion}
+                    onOcultar={distancias.ocultar}
                   />
                 ) : null}
                 matchFormat={scoringView?.matchFormat}

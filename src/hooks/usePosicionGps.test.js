@@ -82,6 +82,19 @@ describe('usePosicionGps', () => {
     expect(result.current.estado).toBe('buscando');
   });
 
+  it('al volver a activarse, no enseña la posición de antes', () => {
+    const { result, rerender } = renderHook(({ activo }) => usePosicionGps({ activo }), {
+      initialProps: { activo: true },
+    });
+    act(() => gps.exito(posicion(36.28, -5.33, 8)));
+    expect(result.current.estado).toBe('listo');
+
+    rerender({ activo: false });
+    rerender({ activo: true });
+
+    expect(result.current).toEqual({ estado: 'buscando', posicion: null });
+  });
+
   it('un navegador sin geolocalización → «no disponible»', () => {
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: undefined });
 

@@ -55,3 +55,40 @@ describe('useDistanciasActivadas (G3)', () => {
     expect(result.current.activadas).toBe(true);
   });
 });
+
+describe('useDistanciasActivadas — cambiar de partida y ocultar', () => {
+  let guardado;
+
+  beforeEach(() => {
+    guardado = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('pasar a otra partida sin salir de la pantalla no la deja activada', () => {
+    const { result, rerender } = renderHook(({ partida }) => useDistanciasActivadas(partida), {
+      initialProps: { partida: 'partida-1' },
+    });
+    act(() => result.current.activar());
+
+    rerender({ partida: 'partida-2' });
+
+    expect(result.current.activadas).toBe(false);
+  });
+
+  it('ocultar las desactiva y lo olvida para esa partida', () => {
+    const { result, unmount } = renderHook(() => useDistanciasActivadas('partida-1'));
+    act(() => result.current.activar());
+
+    act(() => result.current.ocultar());
+
+    expect(result.current.activadas).toBe(false);
+    unmount();
+    expect(renderHook(() => useDistanciasActivadas('partida-1')).result.current.activadas).toBe(false);
+  });
+});

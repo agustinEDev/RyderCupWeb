@@ -61,3 +61,19 @@ describe('GetHoleMapUseCase', () => {
     expect(golfCourseRepository.getHoleMap).not.toHaveBeenCalled();
   });
 });
+
+describe('GetHoleMapUseCase.guardado (la copia, al momento)', () => {
+  it('da la copia del móvil sin esperar a la red', () => {
+    const { useCase, golfCourseRepository } = caso({ getHoleMap: () => new Promise(() => {}), guardado: GUARDADO });
+
+    expect(useCase.guardado('gc-1')).toEqual(GUARDADO);
+    expect(golfCourseRepository.getHoleMap).not.toHaveBeenCalled();
+  });
+
+  it('sin campo, nada', () => {
+    const { useCase, holeMapCache } = caso({ getHoleMap: async () => MAPA, guardado: GUARDADO });
+
+    expect(useCase.guardado(null)).toBeNull();
+    expect(holeMapCache.load).not.toHaveBeenCalled();
+  });
+});

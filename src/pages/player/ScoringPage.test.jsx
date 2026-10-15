@@ -1498,7 +1498,32 @@ describe('ScoringPage — distancias al green (mapa de hoyos)', () => {
   it('M5: pide las distancias del campo de la jornada, de este partido y del hoyo que se anota', () => {
     render(<ScoringPage />);
 
-    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'm-1', hoyo: 1 });
+    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'm-1', hoyo: 1, visible: true });
+  });
+
+  it('G2: en otra pestaña, la anotación no se ve: GPS apagado', () => {
+    render(<ScoringPage />);
+
+    fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+    expect(distancias.args.visible).toBe(false);
+  });
+
+  it('G2: con la anotación aún sin abrir, GPS apagado', () => {
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, matchStatus: 'SCHEDULED', scoringOpensAt: '2999-01-01T08:00:00+01:00' };
+
+    render(<ScoringPage />);
+
+    expect(distancias.args.visible).toBe(false);
+  });
+
+  it('a la línea le llegan la atribución y «Ocultar»', () => {
+    const ocultar = vi.fn();
+    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} }, atribucion: '© OSM', ocultar };
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.pie.props).toMatchObject({ atribucion: '© OSM', onOcultar: ocultar });
   });
 
   it('L4: en otro hoyo, las distancias de ese hoyo', () => {
