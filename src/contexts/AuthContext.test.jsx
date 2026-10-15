@@ -255,17 +255,6 @@ describe('AuthContext', () => {
       expect(golpesPerdidos.pendientes('otra-cuenta-cualquiera')).toHaveLength(0);
     });
 
-    it('se lleva la última posición GPS del mapa de hoyos', () => {
-      localStorage.setItem('mapaDeHoyos:ultimaPosicion', JSON.stringify({ lat: 36.28, lon: -5.33 }));
-
-      const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
-      act(() => {
-        result.current.clearAuth();
-      });
-
-      expect(localStorage.getItem('mapaDeHoyos:ultimaPosicion')).toBeNull();
-    });
-
     it('should clear legacy access_token from localStorage', () => {
       localStorage.setItem('access_token', 'legacy-token-123');
 

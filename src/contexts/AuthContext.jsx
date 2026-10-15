@@ -11,7 +11,6 @@ import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
-import { olvidaLaUltimaPosicion } from '../services/ultimaPosicion';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -125,9 +124,6 @@ export const AuthProvider = ({ children }) => {
     // siguiente persona vería el modal con el hándicap de esta cuenta, y
     // aceptarlo lo guardaría en su perfil
     olvidaElRefrescoDeHandicap();
-    // Y la última posición GPS del mapa de hoyos: diría a la siguiente cuenta
-    // dónde estuvo esta
-    olvidaLaUltimaPosicion();
     // Los avisos de golpes que no se pudieron guardar NO se tocan, ni aquí ni
     // en los cierres duros. Se intentó borrarlos y es un error: no se pueden
     // regenerar —el golpe que describen ya salió de la cola al escribirlos— y

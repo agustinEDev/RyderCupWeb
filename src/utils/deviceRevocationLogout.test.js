@@ -227,12 +227,6 @@ describe('deviceRevocationLogout utilities', () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
     });
 
-    it('se lleva la última posición GPS del mapa de hoyos', () => {
-      handleDeviceRevocationLogout();
-
-      expect(localStorage.removeItem).toHaveBeenCalledWith('mapaDeHoyos:ultimaPosicion');
-    });
-
     it('se lleva lo pendiente del hándicap de esa cuenta (FE #677)', () => {
       // No pasa por `clearAuth` y recarga, pero la recarga no borra el
       // almacenamiento: en un móvil compartido, la siguiente persona vería el

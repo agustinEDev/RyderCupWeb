@@ -1,49 +1,24 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const getCampo = vi.fn();
 vi.mock('../composition', () => ({ getGolfCourseUseCase: { execute: (...a) => getCampo(...a) } }));
 
 const { useCentroSinMapa } = await import('./useCentroSinMapa');
-const { recordarPosicion } = await import('../services/ultimaPosicion');
 
 describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)', () => {
-  let almacen;
-
-  beforeEach(() => {
-    getCampo.mockReset();
-    almacen = new Map();
-    vi.stubGlobal('localStorage', {
-      getItem: (k) => (almacen.has(k) ? almacen.get(k) : null),
-      setItem: (k, v) => almacen.set(k, String(v)),
-      removeItem: (k) => almacen.delete(k),
-    });
-  });
-
-  afterEach(() => vi.unstubAllGlobals());
+  beforeEach(() => vi.clearAllMocks());
 
   it('en el campo, si se conoce su ubicación', async () => {
     getCampo.mockResolvedValue({ location: { latitude: 36.29, longitude: -5.33 } });
 
     const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: true }));
 
-    await waitFor(() => expect(result.current).toEqual({ lat: 36.29, lon: -5.33, fuente: 'campo' }));
+    await waitFor(() => expect(result.current).toEqual({ lat: 36.29, lon: -5.33 }));
     expect(getCampo).toHaveBeenCalledWith('gc-1');
   });
 
-  it('sin la del campo (sin red o sin coordenadas), en la última posición conocida', async () => {
-    recordarPosicion({ lat: 40.4, lon: -3.7 });
-    getCampo.mockRejectedValue(new TypeError('Sin conexión'));
-
-    const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: true }));
-
-    expect(result.current).toEqual({ lat: 40.4, lon: -3.7, fuente: 'ultima' });
-    await waitFor(() => expect(getCampo).toHaveBeenCalled());
-    expect(result.current).toEqual({ lat: 40.4, lon: -3.7, fuente: 'ultima' });
-  });
-
-  it('un campo sin coordenadas no pisa la última posición', async () => {
-    recordarPosicion({ lat: 40.4, lon: -3.7 });
+  it('un campo sin coordenadas: nada (se espera al GPS)', async () => {
     getCampo.mockResolvedValue({ location: { latitude: null, longitude: null } });
 
     const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: true }));
@@ -52,10 +27,31 @@ describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)',
     await act(async () => {
       await Promise.resolve();
     });
-    expect(result.current).toEqual({ lat: 40.4, lon: -3.7, fuente: 'ultima' });
+    expect(result.current).toBeNull();
   });
 
-  it('sin nada, null', () => {
+  it('sin red: nada, sin romper', async () => {
+    getCampo.mockRejectedValue(new TypeError('Sin conexión'));
+
+    const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: true }));
+
+    await waitFor(() => expect(getCampo).toHaveBeenCalled());
+    expect(result.current).toBeNull();
+  });
+
+  it('al cambiar de campo, no se usa la ubicación del anterior', async () => {
+    getCampo.mockResolvedValueOnce({ location: { latitude: 36.29, longitude: -5.33 } }).mockReturnValueOnce(new Promise(() => {}));
+    const { result, rerender } = renderHook(({ id }) => useCentroSinMapa({ golfCourseId: id, activo: true }), {
+      initialProps: { id: 'gc-1' },
+    });
+    await waitFor(() => expect(result.current).toEqual({ lat: 36.29, lon: -5.33 }));
+
+    rerender({ id: 'gc-2' });
+
+    expect(result.current).toBeNull();
+  });
+
+  it('sin campo, ni se pide', () => {
     const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: null, activo: true }));
 
     expect(result.current).toBeNull();
@@ -66,28 +62,5 @@ describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)',
     renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: false }));
 
     expect(getCampo).not.toHaveBeenCalled();
-  });
-
-  it('una última posición rota se ignora', () => {
-    almacen.set('mapaDeHoyos:ultimaPosicion', '{"lat":"x"}');
-
-    const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: null, activo: true }));
-
-    expect(result.current).toBeNull();
-  });
-});
-
-describe('useCentroSinMapa — sin leer el almacenamiento en cada lectura del GPS', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('la última posición se lee una vez, no en cada render', () => {
-    const getItem = vi.fn(() => null);
-    vi.stubGlobal('localStorage', { getItem, setItem: vi.fn(), removeItem: vi.fn() });
-    const { rerender } = renderHook(() => useCentroSinMapa({ golfCourseId: null, activo: true }));
-
-    rerender();
-    rerender();
-
-    expect(getItem).toHaveBeenCalledTimes(1);
   });
 });

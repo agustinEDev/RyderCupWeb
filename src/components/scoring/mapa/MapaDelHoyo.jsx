@@ -8,7 +8,6 @@ import { distanciaEnMetros, distanciasAlGreen } from '../../../domain/services/d
 import { limitesDelHoyo, orientacionDelHoyo } from '../../../domain/services/geometriaDelHoyo';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
 import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
-import { recordarPosicion } from '../../../services/ultimaPosicion';
 import { captureError } from '../../../utils/sentryHelpers';
 import ModalShell from '../../ui/ModalShell';
 
@@ -32,8 +31,6 @@ const ESTILO = {
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
 const ZOOM_SIN_MAPA = 17;
-// Cada cuánto se guarda la última posición: el GPS da una por segundo
-const GUARDAR_POSICION_CADA_MS = 30_000;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
 // fijo, en apaisado (~360 px) no cabía el hoyo y MapLibre no lo encuadraba
@@ -91,7 +88,6 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   const marcaTocada = useRef(null);
   const centradoEnGps = useRef(false);
   const movidoPorElJugador = useRef(false);
-  const posicionGuardada = useRef(0);
   // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto
   const inicio = useRef({ hoyo, conMapa, centroSinMapa });
 
@@ -173,10 +169,6 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
       marcaGps.current = null;
       return;
     }
-    if (Date.now() - posicionGuardada.current >= GUARDAR_POSICION_CADA_MS) {
-      posicionGuardada.current = Date.now();
-      recordarPosicion(posicion);
-    }
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     if (!inicio.current.conMapa && !centradoEnGps.current) {
@@ -201,11 +193,7 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   // hizo el GPS ni el jugador lo ha movido
   useEffect(() => {
     const mapa = mapaRef.current;
-    if (!mapa || !centroSinMapa || inicio.current.conMapa) return;
-    const yaEn = inicio.current.centroSinMapa;
-    // Ya en el campo, nada; en la última posición (que puede ser de otro
-    // campo), solo la del campo lo mueve
-    if (yaEn?.fuente === 'campo' || (yaEn && centroSinMapa.fuente !== 'campo')) return;
+    if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
     if (centradoEnGps.current || movidoPorElJugador.current) return;
     inicio.current.centroSinMapa = centroSinMapa;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });

@@ -59,12 +59,6 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
     return centro.valor;
   },
 }));
-vi.mock('../../../services/ultimaPosicion', () => ({
-  recordarPosicion: (p) => {
-    centro.recordada = p;
-    centro.veces = (centro.veces ?? 0) + 1;
-  },
-}));
 
 const { default: MapaDelHoyo } = await import('./MapaDelHoyo');
 
@@ -99,8 +93,6 @@ describe('MapaDelHoyo', () => {
   beforeEach(() => {
     mapas.length = 0;
     centro.valor = null;
-    centro.recordada = undefined;
-    centro.veces = 0;
     mapas.marcas = [];
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
@@ -255,7 +247,7 @@ describe('MapaDelHoyo', () => {
     });
 
     it('S3: sin GPS todavía, se abre en el campo (o la última posición)', () => {
-      centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+      centro.valor = { lat: 36.29, lon: -5.33 };
 
       abrir({ hoyo: null });
 
@@ -347,13 +339,6 @@ describe('MapaDelHoyo', () => {
       expect(screen.getByText('mapa.noDisponible')).toBeInTheDocument();
     });
 
-    it('una posición buena se recuerda para la próxima vez sin señal', () => {
-      abrir();
-
-      act(() => gps.exito(lectura(36.2888, -5.332)));
-
-      expect(centro.recordada).toEqual({ lat: 36.2888, lon: -5.332 });
-    });
   });
 
   describe('licencias y tamaño', () => {
@@ -390,7 +375,6 @@ describe('MapaDelHoyo — tras la revisión', () => {
     mapas.length = 0;
     mapas.marcas = [];
     centro.valor = null;
-    centro.veces = 0;
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
   });
@@ -404,27 +388,19 @@ describe('MapaDelHoyo — tras la revisión', () => {
     const { rerender } = abrir({ hoyo: null });
     expect(mapa().jumpTo).not.toHaveBeenCalled();
 
-    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+    centro.valor = { lat: 36.29, lon: -5.33 };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
     expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.33, 36.29] }));
   });
 
-  it('un hoyo con mapa no salta a una posición guardada: va encuadrado', () => {
-    const { rerender } = abrir();
-
-    centro.valor = { lat: 40.4, lon: -3.7, fuente: 'ultima' };
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={HOYO} atribucion={null} onCerrar={() => {}} />);
-
-    expect(mapa().jumpTo).not.toHaveBeenCalled();
-  });
 
   it('S3: si el jugador ya movió el mapa, no se lo cambia', () => {
     const { rerender } = abrir({ hoyo: null });
     act(() => mapa().oyentes.movestart({ originalEvent: {} }));
 
-    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+    centro.valor = { lat: 36.29, lon: -5.33 };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
@@ -435,7 +411,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
     act(() => gps.exito(lectura(36.2888, -5.332)));
     mapa().jumpTo.mockClear();
 
-    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+    centro.valor = { lat: 36.29, lon: -5.33 };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
@@ -478,18 +454,6 @@ describe('MapaDelHoyo — tras la revisión', () => {
     expect(yo.remove).toHaveBeenCalled();
   });
 
-  it('la última posición se guarda como mucho cada 30 s, no en cada lectura', () => {
-    vi.useFakeTimers();
-    abrir();
-
-    act(() => gps.exito(lectura(36.2888, -5.332)));
-    act(() => gps.exito(lectura(36.2889, -5.332)));
-    expect(centro.veces).toBe(1);
-
-    act(() => vi.advanceTimersByTime(30_000));
-    act(() => gps.exito(lectura(36.289, -5.332)));
-    expect(centro.veces).toBe(2);
-  });
 });
 
 describe('MapaDelHoyo — tras /code-review', () => {
@@ -508,26 +472,7 @@ describe('MapaDelHoyo — tras /code-review', () => {
     mapas.sinWebgl = false;
   });
 
-  it('abierto en la última posición, la del campo que llega después lo lleva al campo', () => {
-    centro.valor = { lat: 40.4, lon: -3.7, fuente: 'ultima' };
-    const { rerender } = abrir({ hoyo: null });
-    expect(mapa().opciones.center).toEqual([-3.7, 40.4]);
 
-    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
-
-    expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.33, 36.29] }));
-  });
-
-  it('abierto ya en el campo, no vuelve a saltar', () => {
-    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
-    const { rerender } = abrir({ hoyo: null });
-
-    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
-    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
-
-    expect(mapa().jumpTo).not.toHaveBeenCalled();
-  });
 
   it('un móvil sin WebGL: sin mapa, pero con las distancias al green, que solo piden GPS', () => {
     mapas.sinWebgl = true;

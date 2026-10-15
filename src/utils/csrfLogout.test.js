@@ -52,14 +52,6 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
     expect(laUltimaLista()).toBeNull();
   });
 
-  it('se lleva la última posición GPS del mapa de hoyos', () => {
-    localStorage.setItem('mapaDeHoyos:ultimaPosicion', JSON.stringify({ lat: 36.28, lon: -5.33 }));
-
-    handleCsrfLogout();
-
-    expect(localStorage.getItem('mapaDeHoyos:ultimaPosicion')).toBeNull();
-  });
-
   it('se lleva también lo pendiente del hándicap de esa cuenta (FE #677)', () => {
     localStorage.setItem('refrescar_handicap', 'true');
     localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
