@@ -219,7 +219,15 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
         </button>
       </div>
 
-      <div ref={montarMapa} className="absolute inset-0" />
+      {/* El contenedor llena un envoltorio y no se posiciona él: MapLibre le pone
+          `.maplibregl-map { position: relative; overflow: hidden }`, y su hoja va
+          sin @layer, así que gana a las utilidades de Tailwind (en `utilities`) sea
+          cual sea el orden. Con `absolute inset-0` en él se quedaba sin alto y el
+          lienzo, recortado: mapa gris, sin punto azul y sin medir (pasa igual con
+          cualquier utilidad que choque en un elemento `.maplibregl-*`) */}
+      <div className="absolute inset-0">
+        <div ref={montarMapa} className="h-full w-full" />
+      </div>
 
       <div
         data-testid="mapa-abajo"

@@ -488,3 +488,26 @@ describe('MapaDelHoyo — tras /code-review', () => {
     expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toBeInTheDocument();
   });
 });
+
+describe('MapaDelHoyo — tras la prueba en el Kind', () => {
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = null;
+  });
+
+  it('el contenedor del mapa no depende de su propia posición: MapLibre le pone `position: relative`', () => {
+    // La hoja de MapLibre (`.maplibregl-map { position: relative; overflow: hidden }`)
+    // va sin @layer y gana a las utilidades de Tailwind: con `absolute inset-0` en
+    // el propio contenedor, este se quedaba con 0 de alto y recortaba el lienzo
+    abrir();
+
+    const contenedor = mapas[0].opciones.container;
+    expect(contenedor.className).not.toMatch(/(^|\s)(absolute|fixed|sticky|relative|inset-\S+|top-\S+|bottom-\S+|left-\S+|right-\S+)(\s|$)/);
+    expect(contenedor.className).toContain('h-full');
+    expect(contenedor.className).toContain('w-full');
+    expect(contenedor.parentElement.className).toContain('absolute');
+    expect(contenedor.parentElement.className).toContain('inset-0');
+  });
+});
