@@ -91,3 +91,31 @@ describe('useMapaDelHoyo', () => {
     expect(result.current.mapa.abierto).toBe(false);
   });
 });
+
+describe('useMapaDelHoyo — recargar y sesión tomada', () => {
+  it('recargando, el navegador repone el estado del historial: aun así no se abre solo', () => {
+    const wrapper = ({ children }) => (
+      <MemoryRouter initialEntries={[{ pathname: '/scoring/m-1', hash: '#mapa', state: { mapaAbiertoAqui: 'de-otra-carga' } }]}>
+        {children}
+      </MemoryRouter>
+    );
+    const { result } = renderHook(() => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }), location: useLocation() }), { wrapper });
+
+    expect(result.current.mapa.abierto).toBe(false);
+    expect(result.current.location.hash).toBe('');
+  });
+
+  it('si otro móvil toma la sesión, el mapa se cierra (su «Volver» saldría solo del mapa)', () => {
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/inicio', '/scoring/m-1']} initialIndex={1}>{children}</MemoryRouter>;
+    const { result, rerender } = renderHook(
+      ({ bloqueada }) => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', cerrarSi: bloqueada }), location: useLocation() }),
+      { wrapper, initialProps: { bloqueada: false } }
+    );
+    act(() => result.current.mapa.abrir());
+
+    rerender({ bloqueada: true });
+
+    expect(result.current.mapa.abierto).toBe(false);
+    expect(result.current.location.pathname).toBe('/scoring/m-1');
+  });
+});

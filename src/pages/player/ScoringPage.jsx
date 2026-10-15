@@ -247,7 +247,10 @@ const ScoringPage = () => {
     scoringOpensAt: scoringView?.scoringOpensAt,
   });
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
-  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null });
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    cerrarSi: isSessionBlocked,
+  });
   // La hora del CAMPO, que es la que el servidor va a aplicar, no la del móvil:
   // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
   // mirado desde la península anunciaba una hora que no era la suya. La cadena

@@ -6,9 +6,9 @@
  * porque el jugador las necesita sin cobertura, con su GPS.
  */
 
-const RADIO_TERRESTRE_M = 6371008.8;
+import { radianes } from './geometriaDelHoyo';
 
-const radianes = (grados) => (grados * Math.PI) / 180;
+const RADIO_TERRESTRE_M = 6371008.8;
 
 /**
  * Metros enteros entre dos puntos `{ lat, lon }`.

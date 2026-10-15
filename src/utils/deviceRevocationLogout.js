@@ -22,6 +22,7 @@
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
+import { olvidaLaUltimaPosicion } from '../services/ultimaPosicion';
 import i18next from 'i18next';
 import customToast from './toast';
 
@@ -167,6 +168,8 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
   // saldría con el hándicap de esta cuenta
   olvidaElRefrescoDeHandicap();
+  // Y la última posición GPS del mapa de hoyos: diría dónde estuvo esta cuenta
+  olvidaLaUltimaPosicion();
 
   // Clear Sentry user context (if Sentry is initialized)
   if (window.Sentry && typeof window.Sentry.setUser === 'function') {

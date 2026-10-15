@@ -1507,7 +1507,7 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
   it('pide el mapa del campo de lo que se anota', () => {
     render(<ScoringPage />);
 
-    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
   });
 
   it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
@@ -1534,5 +1534,19 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
     }
 
     expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('ScoringPage — sesión tomada con el mapa abierto', () => {
+  afterEach(() => {
+    mockUseScoring.isSessionBlocked = false;
+  });
+
+  it('el mapa se cierra para que «Volver» salga de la anotación', () => {
+    mockUseScoring.isSessionBlocked = true;
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });

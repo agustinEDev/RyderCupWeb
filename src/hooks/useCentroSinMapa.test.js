@@ -4,7 +4,8 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 const getCampo = vi.fn();
 vi.mock('../composition', () => ({ getGolfCourseUseCase: { execute: (...a) => getCampo(...a) } }));
 
-const { useCentroSinMapa, recordarPosicion } = await import('./useCentroSinMapa');
+const { useCentroSinMapa } = await import('./useCentroSinMapa');
+const { recordarPosicion } = await import('../services/ultimaPosicion');
 
 describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)', () => {
   let almacen;
@@ -26,7 +27,7 @@ describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)',
 
     const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: true }));
 
-    await waitFor(() => expect(result.current).toEqual({ lat: 36.29, lon: -5.33 }));
+    await waitFor(() => expect(result.current).toEqual({ lat: 36.29, lon: -5.33, fuente: 'campo' }));
     expect(getCampo).toHaveBeenCalledWith('gc-1');
   });
 
@@ -36,9 +37,9 @@ describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)',
 
     const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: 'gc-1', activo: true }));
 
-    expect(result.current).toEqual({ lat: 40.4, lon: -3.7 });
+    expect(result.current).toEqual({ lat: 40.4, lon: -3.7, fuente: 'ultima' });
     await waitFor(() => expect(getCampo).toHaveBeenCalled());
-    expect(result.current).toEqual({ lat: 40.4, lon: -3.7 });
+    expect(result.current).toEqual({ lat: 40.4, lon: -3.7, fuente: 'ultima' });
   });
 
   it('un campo sin coordenadas no pisa la última posición', async () => {
@@ -51,7 +52,7 @@ describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)',
     await act(async () => {
       await Promise.resolve();
     });
-    expect(result.current).toEqual({ lat: 40.4, lon: -3.7 });
+    expect(result.current).toEqual({ lat: 40.4, lon: -3.7, fuente: 'ultima' });
   });
 
   it('sin nada, null', () => {
@@ -73,5 +74,20 @@ describe('useCentroSinMapa (S3: dónde se abre un hoyo sin mapa, aún sin GPS)',
     const { result } = renderHook(() => useCentroSinMapa({ golfCourseId: null, activo: true }));
 
     expect(result.current).toBeNull();
+  });
+});
+
+describe('useCentroSinMapa — sin leer el almacenamiento en cada lectura del GPS', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('la última posición se lee una vez, no en cada render', () => {
+    const getItem = vi.fn(() => null);
+    vi.stubGlobal('localStorage', { getItem, setItem: vi.fn(), removeItem: vi.fn() });
+    const { rerender } = renderHook(() => useCentroSinMapa({ golfCourseId: null, activo: true }));
+
+    rerender();
+    rerender();
+
+    expect(getItem).toHaveBeenCalledTimes(1);
   });
 });

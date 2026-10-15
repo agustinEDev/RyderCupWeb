@@ -95,7 +95,10 @@ const GroupScoringPage = () => {
 
   const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
-  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null });
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    cerrarSi: isSessionBlocked,
+  });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
     if (!aunNoAbre) return undefined;

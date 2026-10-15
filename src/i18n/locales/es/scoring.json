@@ -393,6 +393,9 @@
     "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
     "quitarPunto": "Quitar",
     "ayudaMedir": "Toca el mapa para medir",
-    "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo."
+    "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
+    "atribucionPnoa": "PNOA © IGN",
+    "atribucionOsm": "© OSM",
+    "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen."
   }
 }

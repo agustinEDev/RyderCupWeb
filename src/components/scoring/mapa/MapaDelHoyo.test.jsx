@@ -11,6 +11,7 @@ const mapas = vi.hoisted(() => []);
 vi.mock('maplibre-gl', () => {
   class Map {
     constructor(opciones) {
+      if (mapas.sinWebgl) throw new Error('Failed to initialize WebGL');
       this.opciones = opciones;
       this.oyentes = {};
       this.fuentes = {};
@@ -57,6 +58,8 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
     centro.args = args;
     return centro.valor;
   },
+}));
+vi.mock('../../../services/ultimaPosicion', () => ({
   recordarPosicion: (p) => {
     centro.recordada = p;
     centro.veces = (centro.veces ?? 0) + 1;
@@ -252,7 +255,7 @@ describe('MapaDelHoyo', () => {
     });
 
     it('S3: sin GPS todavía, se abre en el campo (o la última posición)', () => {
-      centro.valor = { lat: 36.29, lon: -5.33 };
+      centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
 
       abrir({ hoyo: null });
 
@@ -357,8 +360,8 @@ describe('MapaDelHoyo', () => {
     it('L2: «PNOA © IGN» siempre; «© OSM» como enlace a su licencia si el mapa es de OSM', () => {
       abrir({ atribucion: '© OpenStreetMap contributors (ODbL)' });
 
-      expect(screen.getByText('PNOA © IGN')).toBeInTheDocument();
-      const osm = screen.getByRole('link', { name: '© OSM' });
+      expect(screen.getByText('mapa.atribucionPnoa')).toBeInTheDocument();
+      const osm = screen.getByRole('link', { name: 'mapa.atribucionOsm' });
       expect(osm).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
       expect(osm).toHaveAttribute('target', '_blank');
       expect(osm).toHaveAttribute('rel', expect.stringContaining('noopener'));
@@ -367,7 +370,7 @@ describe('MapaDelHoyo', () => {
     it('L2: sin OSM, sin su enlace', () => {
       abrir({ hoyo: null, atribucion: null });
 
-      expect(screen.queryByRole('link', { name: '© OSM' })).toBeNull();
+      expect(screen.queryByRole('link', { name: 'mapa.atribucionOsm' })).toBeNull();
     });
 
     it('L4: los botones miden al menos 44 px', () => {
@@ -401,7 +404,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
     const { rerender } = abrir({ hoyo: null });
     expect(mapa().jumpTo).not.toHaveBeenCalled();
 
-    centro.valor = { lat: 36.29, lon: -5.33 };
+    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
@@ -411,7 +414,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
   it('un hoyo con mapa no salta a una posición guardada: va encuadrado', () => {
     const { rerender } = abrir();
 
-    centro.valor = { lat: 40.4, lon: -3.7 };
+    centro.valor = { lat: 40.4, lon: -3.7, fuente: 'ultima' };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={HOYO} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
@@ -421,7 +424,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
     const { rerender } = abrir({ hoyo: null });
     act(() => mapa().oyentes.movestart({ originalEvent: {} }));
 
-    centro.valor = { lat: 36.29, lon: -5.33 };
+    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
@@ -432,7 +435,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
     act(() => gps.exito(lectura(36.2888, -5.332)));
     mapa().jumpTo.mockClear();
 
-    centro.valor = { lat: 36.29, lon: -5.33 };
+    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
     rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
     expect(mapa().jumpTo).not.toHaveBeenCalled();
@@ -486,5 +489,57 @@ describe('MapaDelHoyo — tras la revisión', () => {
     act(() => vi.advanceTimersByTime(30_000));
     act(() => gps.exito(lectura(36.289, -5.332)));
     expect(centro.veces).toBe(2);
+  });
+});
+
+describe('MapaDelHoyo — tras /code-review', () => {
+  let gps;
+
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.sinWebgl = false;
+    centro.valor = null;
+    gps = gpsFalso();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    mapas.sinWebgl = false;
+  });
+
+  it('abierto en la última posición, la del campo que llega después lo lleva al campo', () => {
+    centro.valor = { lat: 40.4, lon: -3.7, fuente: 'ultima' };
+    const { rerender } = abrir({ hoyo: null });
+    expect(mapa().opciones.center).toEqual([-3.7, 40.4]);
+
+    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.33, 36.29] }));
+  });
+
+  it('abierto ya en el campo, no vuelve a saltar', () => {
+    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+    const { rerender } = abrir({ hoyo: null });
+
+    centro.valor = { lat: 36.29, lon: -5.33, fuente: 'campo' };
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).not.toHaveBeenCalled();
+  });
+
+  it('un móvil sin WebGL: sin mapa, pero con las distancias al green, que solo piden GPS', () => {
+    mapas.sinWebgl = true;
+
+    abrir();
+    act(() => gps.exito(lectura(36.2888, -5.332)));
+
+    expect(screen.getByText('mapa.sinMapaEnEsteMovil')).toBeInTheDocument();
+    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('133');
+    expect(screen.queryByRole('button', { name: 'mapa.verHoyo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'mapa.centrame' })).toBeNull();
+    expect(screen.queryByText('mapa.ayudaMedir')).toBeNull();
+    expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toBeInTheDocument();
   });
 });

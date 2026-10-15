@@ -6,7 +6,7 @@
  * (`[[oeste, sur], [este, norte]]`, longitud primero).
  */
 
-const radianes = (grados) => (grados * Math.PI) / 180;
+export const radianes = (grados) => (grados * Math.PI) / 180;
 const grados = (rad) => (rad * 180) / Math.PI;
 
 /** El rumbo inicial de `a` a `b`, en grados desde el norte (0–360). */

@@ -7,7 +7,9 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { distanciaEnMetros, distanciasAlGreen } from '../../../domain/services/distanciasAlGreen';
 import { limitesDelHoyo, orientacionDelHoyo } from '../../../domain/services/geometriaDelHoyo';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
-import { recordarPosicion, useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
+import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
+import { recordarPosicion } from '../../../services/ultimaPosicion';
+import { captureError } from '../../../utils/sentryHelpers';
 import ModalShell from '../../ui/ModalShell';
 
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
@@ -79,6 +81,9 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   const gps = usePosicionGps({ activo: true });
   const centroSinMapa = useCentroSinMapa({ golfCourseId, activo: !conMapa });
   const [tocado, setTocado] = useState(null);
+  // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero las distancias
+  // al green solo piden el GPS
+  const [sinMapa, setSinMapa] = useState(false);
 
   const contenedor = useRef(null);
   const mapaRef = useRef(null);
@@ -98,19 +103,30 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
     mapaRef.current?.fitBounds(limites, { bearing: orientacionDelHoyo(h), padding: margenDelEncuadre(alto), animate: animar });
   }, []);
 
-  useEffect(() => {
+  // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
+  // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
+  const montarMapa = useCallback((nodo) => {
+    if (!nodo) return undefined;
+    contenedor.current = nodo;
     const { hoyo: h, conMapa: orientado, centroSinMapa: centro } = inicio.current;
-    const mapa = new MapaDeMapLibre({
-      container: contenedor.current,
-      style: ESTILO,
-      attributionControl: false,
-      bearing: orientado ? orientacionDelHoyo(h) : 0,
-      // Un hoyo con mapa se ve como se juega: sin giro ni inclinación
-      dragRotate: !orientado,
-      pitchWithRotate: false,
-      touchPitch: false,
-      ...(centro ? { center: lngLat(centro), zoom: ZOOM_SIN_MAPA } : ESPAÑA),
-    });
+    let mapa;
+    try {
+      mapa = new MapaDeMapLibre({
+        container: nodo,
+        style: ESTILO,
+        attributionControl: false,
+        bearing: orientado ? orientacionDelHoyo(h) : 0,
+        // Un hoyo con mapa se ve como se juega: sin giro ni inclinación
+        dragRotate: !orientado,
+        pitchWithRotate: false,
+        touchPitch: false,
+        ...(centro ? { center: lngLat(centro), zoom: ZOOM_SIN_MAPA } : ESPAÑA),
+      });
+    } catch (error) {
+      captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
+      setSinMapa(true);
+      return undefined;
+    }
     mapaRef.current = mapa;
     if (orientado) {
       mapa.touchZoomRotate.disableRotation();
@@ -185,7 +201,11 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   // hizo el GPS ni el jugador lo ha movido
   useEffect(() => {
     const mapa = mapaRef.current;
-    if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
+    if (!mapa || !centroSinMapa || inicio.current.conMapa) return;
+    const yaEn = inicio.current.centroSinMapa;
+    // Ya en el campo, nada; en la última posición (que puede ser de otro
+    // campo), solo la del campo lo mueve
+    if (yaEn?.fuente === 'campo' || (yaEn && centroSinMapa.fuente !== 'campo')) return;
     if (centradoEnGps.current || movidoPorElJugador.current) return;
     inicio.current.centroSinMapa = centroSinMapa;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
@@ -211,15 +231,16 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
         </button>
       </div>
 
-      <div ref={contenedor} className="absolute inset-0" />
+      <div ref={montarMapa} className="absolute inset-0" />
 
       <div
         data-testid="mapa-abajo"
         className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
       >
+        {sinMapa && <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.sinMapaEnEsteMovil')}</p>}
         {aviso && <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{aviso}</p>}
 
-        {tocado ? (
+        {sinMapa ? null : tocado ? (
           <div className={`${PLACA} pointer-events-auto flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 font-mono text-base`}>
             <span className="flex flex-col">
               {hastaAhi !== null && <span>{t('mapa.hastaAhi', { metros: hastaAhi })}</span>}
@@ -254,17 +275,17 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
 
         <div className="flex items-center gap-2">
           <span className="pointer-events-auto flex-1 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
-            <span>PNOA © IGN</span>
+            <span>{t('mapa.atribucionPnoa')}</span>
             {atribucion && (
               <>
                 {' · '}
                 <a href={LICENCIA_OSM} target="_blank" rel="noopener noreferrer" title={atribucion} className="underline">
-                  © OSM
+                  {t('mapa.atribucionOsm')}
                 </a>
               </>
             )}
           </span>
-          {conMapa ? (
+          {sinMapa ? null : conMapa ? (
             <button type="button" onClick={() => encuadrarHoyo(true)} className={`${BOTON} pointer-events-auto`}>
               <Maximize2 className="h-4 w-4" aria-hidden="true" />
               {t('mapa.verHoyo')}
@@ -275,15 +296,17 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
               {t('mapa.norte')}
             </button>
           )}
-          <button
-            type="button"
-            disabled={!posicion}
-            onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
-            className={`${BOTON} pointer-events-auto`}
-          >
-            <LocateFixed className="h-4 w-4" aria-hidden="true" />
-            {t('mapa.centrame')}
-          </button>
+          {!sinMapa && (
+            <button
+              type="button"
+              disabled={!posicion}
+              onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
+              className={`${BOTON} pointer-events-auto`}
+            >
+              <LocateFixed className="h-4 w-4" aria-hidden="true" />
+              {t('mapa.centrame')}
+            </button>
+          )}
         </div>
       </div>
     </ModalShell>

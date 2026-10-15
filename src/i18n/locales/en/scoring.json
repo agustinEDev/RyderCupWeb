@@ -383,6 +383,9 @@
     "deAhiAlGreen": "From there to the centre of the green {{metros}} m",
     "quitarPunto": "Remove",
     "ayudaMedir": "Tap the map to measure",
-    "noCarga": "The map could not be opened. Check the connection and try again."
+    "noCarga": "The map could not be opened. Check the connection and try again.",
+    "atribucionPnoa": "PNOA © IGN",
+    "atribucionOsm": "© OSM",
+    "sinMapaEnEsteMovil": "This phone cannot draw the map; the distances to the green still work."
   }
 }
