@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { orientacionDelHoyo, limitesDelHoyo } from '../../../domain/services/geometriaDelHoyo';
+import { orientacionDelHoyo, limitesDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k, o) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
@@ -39,12 +39,26 @@ vi.mock('maplibre-gl', () => {
     }
   }
   class Marker {
-    constructor() {
-      this.remove = vi.fn();
+    constructor(opciones = {}) {
+      this.opciones = opciones;
+      this.oyentes = {};
+      this.remove = vi.fn(() => {
+        this.quitada = true;
+      });
       mapas.marcas = [...(mapas.marcas ?? []), this];
     }
     setLngLat(p) {
       this.p = p;
+      return this;
+    }
+    getLngLat() {
+      return { lng: this.p[0], lat: this.p[1] };
+    }
+    getElement() {
+      return this.opciones.element;
+    }
+    on(evento, fn) {
+      this.oyentes[evento] = fn;
       return this;
     }
     addTo() {
@@ -282,6 +296,88 @@ describe('MapaDelHoyo', () => {
       expect(screen.getByText('mapa.deAhiAlGreen {"metros":78}')).toBeInTheDocument();
     });
 
+    it('M2 (16 oct): en el mapa, una línea de ti al punto y otra del punto al green, con sus metros', () => {
+      abrir();
+      act(() => mapa().oyentes.load());
+      act(() => gps.exito(lectura(36.2888, -5.332)));
+
+      tocar(36.2893, -5.332);
+
+      const lineas = mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
+      expect(lineas).toEqual([
+        [[-5.332, 36.2888], [-5.332, 36.2893]],
+        [[-5.332, 36.2893], [-5.332, 36.29]],
+      ]);
+      const etiquetas = mapas.marcas.filter((m) => !m.quitada && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
+      expect(etiquetas.map((m) => m.opciones.element.textContent)).toEqual(['mapa.tramo {"metros":56}', 'mapa.tramo {"metros":78}']);
+      // Cada etiqueta, en mitad de su tramo
+      expect(etiquetas[0].p[1]).toBeCloseTo((36.2888 + 36.2893) / 2, 9);
+      // Ya no hay cuadro: los metros, para lectores de pantalla
+      expect(screen.getByRole('status')).toHaveClass('sr-only');
+    });
+
+    it('M2: al moverte, la línea y su etiqueta te siguen sin rehacerse', () => {
+      abrir();
+      act(() => mapa().oyentes.load());
+      act(() => gps.exito(lectura(36.2888, -5.332)));
+      tocar(36.2893, -5.332);
+      const antes = mapas.marcas.length;
+
+      act(() => gps.exito(lectura(36.2885, -5.332)));
+
+      expect(mapas.marcas.length).toBe(antes);
+      expect(mapa().fuentes.medida.data.features[0].geometry.coordinates[0]).toEqual([-5.332, 36.2885]);
+      expect(mapas.marcas.some((m) => !m.quitada && m.opciones.element?.textContent === 'mapa.tramo {"metros":89}')).toBe(true);
+    });
+
+    it('M3 (16 oct): al tocar, el mapa gira hacia el punto y os encuadra, contigo abajo', () => {
+      abrir({ hoyo: null });
+      act(() => gps.exito(lectura(36.2888, -5.332)));
+      mapa().fitBounds.mockClear();
+
+      tocar(36.2893, -5.3315);
+
+      expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
+      const [limites, opciones] = mapa().fitBounds.mock.calls[0];
+      expect(limites).toEqual([
+        [-5.332, 36.2888],
+        [-5.3315, 36.2893],
+      ]);
+      expect(opciones.bearing).toBeCloseTo(rumbo({ lat: 36.2888, lon: -5.332 }, { lat: 36.2893, lon: -5.3315 }), 6);
+      expect(opciones.padding).toMatchObject({ top: expect.any(Number), bottom: expect.any(Number) });
+    });
+
+    it('M3: también en un hoyo con mapa (que no se gira con los dedos)', () => {
+      abrir();
+      act(() => gps.exito(lectura(36.2888, -5.332)));
+      mapa().fitBounds.mockClear();
+
+      tocar(36.2893, -5.332);
+
+      expect(mapa().fitBounds.mock.calls[0][1].bearing).toBeCloseTo(0, 6);
+    });
+
+    it('M3: sin GPS no gira (no se sabe dónde estás)', () => {
+      abrir({ hoyo: null });
+      mapa().fitBounds.mockClear();
+
+      tocar(36.2893, -5.3315);
+
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('M2: «Quitar» borra las líneas y sus metros', () => {
+      abrir();
+      act(() => mapa().oyentes.load());
+      act(() => gps.exito(lectura(36.2888, -5.332)));
+      tocar(36.2893, -5.332);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
+
+      expect(mapa().fuentes.medida.data.features).toEqual([]);
+      expect(mapas.marcas.filter((m) => !m.quitada && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''))).toEqual([]);
+    });
+
     it('M2: sin green, solo hasta ahí', () => {
       abrir({ hoyo: null });
       act(() => gps.exito(lectura(36.2888, -5.332)));
@@ -492,6 +588,284 @@ describe('MapaDelHoyo — tras /code-review', () => {
     expect(screen.queryByRole('button', { name: 'mapa.centrame' })).toBeNull();
     expect(screen.queryByText('mapa.ayudaMedir')).toBeNull();
     expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toBeInTheDocument();
+  });
+});
+
+describe('MapaDelHoyo — marcar un hoyo sin datos (PR C)', () => {
+  const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
+  const T = { lat: 36.28, lon: -5.33 };
+  const alNorte = (m) => ({ lat: T.lat + m / M_POR_GRADO, lon: T.lon });
+  const G = alNorte(300);
+  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const vivas = () => mapas.marcas.filter((m) => !m.quitada);
+  const arrastrables = () => vivas().filter((m) => m.opciones.draggable);
+  const soltar = (marca, p) =>
+    act(() => {
+      marca.setLngLat([p.lon, p.lat]);
+      marca.oyentes.dragend({ target: marca });
+    });
+  const datosDelMarcado = () => mapa().fuentes.marcado?.data;
+  const tipos = () => (datosDelMarcado()?.features ?? []).map((f) => f.properties.tipo);
+  const marcar = (props = {}) => {
+    const onGuardarMarca = props.onGuardarMarca ?? vi.fn(async () => ({ estado: 'guardada' }));
+    const r = abrir({ hoyo: null, porMarcar: 'salida', onGuardarMarca, ...props });
+    act(() => mapa().oyentes.load());
+    return { ...r, onGuardarMarca };
+  };
+
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = null;
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gpsFalso() });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('C1: sin datos, pide la salida, con «Ahora no»', () => {
+    marcar();
+
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'mapa.ahoraNo' })).toBeInTheDocument();
+    expect(screen.queryByText('mapa.ayudaMedir')).toBeNull();
+  });
+
+  it('C4/C6: el toque marca la salida (no mide) y aparece el arco con los metros de la tarjeta', () => {
+    marcar({ metros: 142 });
+
+    tocar(T);
+
+    expect(screen.queryByText(/mapa\.hastaAhi/)).toBeNull();
+    expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    expect(tipos()).toEqual(['arco']);
+    const arco = datosDelMarcado().features[0].geometry.coordinates;
+    expect(arco[0]).toEqual(arco.at(-1));
+    expect(vivas().some((m) => m.opciones.element?.textContent === 'mapa.arco {"metros":142}')).toBe(true);
+  });
+
+  it('C7: sin metros en la tarjeta, ni arco', () => {
+    marcar({ metros: null });
+
+    tocar(T);
+
+    expect(tipos()).toEqual([]);
+  });
+
+  it('C8: al tocar el green sale la recta con un punto arrastrable en medio, y «Guardar»/«Volver a marcar»', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+
+    tocar(G);
+
+    expect(tipos()).toEqual(['linea', 'arco']);
+    expect(datosDelMarcado().features[0].geometry.coordinates).toEqual([
+      [T.lon, T.lat],
+      [G.lon, G.lat],
+    ]);
+    expect(arrastrables()).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'mapa.volverAMarcar' })).toBeInTheDocument();
+    expect(screen.getByText('mapa.ayudaCodo')).toBeInTheDocument();
+  });
+
+  it('C9: soltar el punto forma un codo; con dos codos no salen más puntos', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    const codo1 = { lat: 36.281, lon: -5.331 };
+
+    soltar(arrastrables()[0], codo1);
+
+    expect(datosDelMarcado().features[0].geometry.coordinates).toHaveLength(3);
+    // El codo (que se puede volver a mover) y un punto en cada tramo
+    expect(arrastrables()).toHaveLength(3);
+
+    soltar(arrastrables().at(-1), { lat: 36.282, lon: -5.3315 });
+
+    expect(datosDelMarcado().features[0].geometry.coordinates).toHaveLength(4);
+    expect(arrastrables()).toHaveLength(2);
+    expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
+  });
+
+  it('C9: un codo se puede volver a arrastrar', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    soltar(arrastrables()[0], { lat: 36.281, lon: -5.331 });
+    const codo = arrastrables()[0];
+
+    soltar(codo, { lat: 36.2812, lon: -5.3313 });
+
+    expect(datosDelMarcado().features[0].geometry.coordinates[1]).toEqual([-5.3313, 36.2812]);
+  });
+
+  it('C4: mientras se ajusta la línea, un toque no mide ni mueve nada', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+
+    tocar(alNorte(150));
+
+    // Ni el punto amarillo de medir
+    expect(vivas().some((m) => m.opciones.element?.className.includes('h-3.5'))).toBe(false);
+    expect(datosDelMarcado().features[0].geometry.coordinates).toEqual([
+      [T.lon, T.lat],
+      [G.lon, G.lat],
+    ]);
+  });
+
+  it('C9: con un codo, el punto del primer tramo entra ANTES de ese codo', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    const segundo = { lat: 36.2815, lon: -5.331 };
+    soltar(arrastrables()[0], segundo);
+    // Los arrastrables: el codo, y los puntos del primer y del segundo tramo
+    const delPrimerTramo = arrastrables()[1];
+    const primero = { lat: 36.2805, lon: -5.3302 };
+
+    soltar(delPrimerTramo, primero);
+
+    expect(datosDelMarcado().features[0].geometry.coordinates).toEqual([
+      [T.lon, T.lat],
+      [primero.lon, primero.lat],
+      [segundo.lon, segundo.lat],
+      [G.lon, G.lat],
+    ]);
+  });
+
+  it('C11: «Volver a marcar» empieza de cero', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.volverAMarcar' }));
+
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+    expect(tipos()).toEqual([]);
+  });
+
+  it('C12: «Guardar» envía salida, codos y green', async () => {
+    const { onGuardarMarca } = marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    const codo = { lat: 36.281, lon: -5.331 };
+    soltar(arrastrables()[0], codo);
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(onGuardarMarca).toHaveBeenCalledWith({ tee: T, bends: [codo], greenCenter: G });
+  });
+
+  it('C13: si la línea se aparta más de un 25 % de la tarjeta, se pregunta', async () => {
+    const { onGuardarMarca } = marcar({ metros: 142 });
+    tocar(T);
+    tocar(G);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' }));
+
+    expect(onGuardarMarca).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('mapa.avisoTarjeta {"tipo":"tarjeta","marcado":300,"tarjeta":142}');
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.corregir' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.siGuardar' })));
+    expect(onGuardarMarca).toHaveBeenCalledTimes(1);
+  });
+
+  it('C13: dentro del 25 %, guarda sin preguntar', async () => {
+    const { onGuardarMarca } = marcar({ metros: 280 });
+    tocar(T);
+    tocar(G);
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(onGuardarMarca).toHaveBeenCalledTimes(1);
+  });
+
+  it('la salida y el green a menos de 40 m no se guardan: se dice por qué', () => {
+    const { onGuardarMarca } = marcar();
+    tocar(T);
+    tocar(alNorte(20));
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' }));
+
+    expect(onGuardarMarca).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('mapa.fueraDeLimites');
+  });
+
+  it.each([
+    ['HOLE_ALREADY_MAPPED', 'mapa.yaTieneDatos'],
+    ['HOLE_MARK_TOO_FAR_FROM_COURSE', 'mapa.lejosDelCampo'],
+    ['OTRA_COSA', 'mapa.noSeGuardo'],
+  ])('si el servidor la rechaza (%s), se avisa y se puede corregir', async (codigo, texto) => {
+    marcar({ onGuardarMarca: vi.fn(async () => ({ estado: 'rechazada', errorCode: codigo })) });
+    tocar(T);
+    tocar(G);
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(texto);
+    expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).not.toBeDisabled();
+  });
+
+  it('si guardar revienta, también se avisa', async () => {
+    marcar({ onGuardarMarca: vi.fn(async () => { throw new Error('x'); }) });
+    tocar(T);
+    tocar(G);
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('mapa.noSeGuardo');
+  });
+
+  it('C3: «Ahora no» deja medir como siempre, y «Marcar hoyo» vuelve a pedirlo', () => {
+    marcar({ metros: 142 });
+    tocar(T);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+
+    expect(screen.getByText('mapa.ayudaMedir')).toBeInTheDocument();
+    expect(tipos()).toEqual([]);
+    tocar(G);
+    expect(screen.queryByText('mapa.pideGreen')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.marcarHoyo' }));
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+  });
+
+  it('C2: con la salida en el mapa, solo se pide el green, sin codos, y se mide desde esa salida', async () => {
+    const conSalida = { playLine: [T, alNorte(280)], green: null };
+    const { onGuardarMarca } = marcar({ hoyo: conSalida, porMarcar: 'green', metros: 300 });
+
+    expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    tocar(G);
+
+    expect(arrastrables()).toHaveLength(0);
+    expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+    expect(onGuardarMarca).toHaveBeenCalledWith({ tee: null, bends: [], greenCenter: G });
+  });
+
+  it('C16: en un hoyo marcado por el jugador, «Volver a marcar»', () => {
+    const onVolverAMarcar = vi.fn();
+    abrir({ hoyo: { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) }, marcadoPorMi: true }, onVolverAMarcar });
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.volverAMarcar' }));
+
+    expect(onVolverAMarcar).toHaveBeenCalled();
+  });
+
+  it('sin `porMarcar` (hoyo completo), no se pide nada', () => {
+    abrir();
+
+    expect(screen.queryByText('mapa.pideSalida')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'mapa.volverAMarcar' })).toBeNull();
   });
 });
 

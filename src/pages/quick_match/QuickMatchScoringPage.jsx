@@ -631,6 +631,8 @@ const QuickMatchScoringPage = () => {
                       golfCourseId={quickMatch?.golfCourseId ?? null}
                       numeroDeHoyo={currentHole}
                       par={currentHoleData.par}
+                      metros={currentHoleData.meters ?? null}
+                      userId={user?.id ?? null}
                     />
                   </>
                 )}

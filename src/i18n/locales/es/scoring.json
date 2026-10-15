@@ -396,6 +396,22 @@
     "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
     "atribucionPnoa": "PNOA © IGN",
     "atribucionOsm": "© OSM",
-    "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen."
+    "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen.",
+    "pideSalida": "Toca dónde está la salida",
+    "pideGreen": "Toca el centro del green",
+    "ahoraNo": "Ahora no",
+    "marcarHoyo": "Marcar hoyo",
+    "ayudaCodo": "Si el hoyo hace codo, arrastra el punto del medio",
+    "guardarMarca": "Guardar",
+    "volverAMarcar": "Volver a marcar",
+    "arco": "{{metros}} m",
+    "avisoTarjeta": "Tu marca está a {{marcado}} m y la tarjeta dice {{tarjeta}} m. ¿Seguro?",
+    "siGuardar": "Sí, guardar",
+    "corregir": "Corregir",
+    "fueraDeLimites": "La salida y el green tienen que estar a entre 40 y 750 m",
+    "lejosDelCampo": "La marca está a más de 3 km del campo",
+    "yaTieneDatos": "Este hoyo ya tiene salida y green",
+    "noSeGuardo": "No se ha podido guardar la marca",
+    "tramo": "{{metros}} m"
   }
 }

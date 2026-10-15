@@ -162,3 +162,59 @@ describe('ApiGolfCourseRepository.getHoleMap', () => {
     await expect(new ApiGolfCourseRepository().getHoleMap('gc-1')).rejects.toThrow('x');
   });
 });
+
+describe('ApiGolfCourseRepository — marcas de hoyo (PR C)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const MARCA = {
+    tee: { lat: 36.28, lon: -5.33 },
+    bends: [],
+    greenCenter: { lat: 36.2827, lon: -5.33 },
+    markedAt: '2026-10-15T08:05:00.000Z',
+  };
+  const RESPUESTA = {
+    hole_number: 3,
+    tee: { latitude: 36.28, longitude: -5.33 },
+    bends: [],
+    green_center: { latitude: 36.2827, longitude: -5.33 },
+    marked_at: '2026-10-15T08:05:00Z',
+  };
+
+  it('guardar es un PUT al hoyo con el cuerpo de la API, y devuelve la que queda', async () => {
+    apiRequest.mockResolvedValue(RESPUESTA);
+
+    const guardada = await new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA);
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/marks/3', {
+      method: 'PUT',
+      body: JSON.stringify({
+        tee: { latitude: 36.28, longitude: -5.33 },
+        bends: [],
+        green_center: { latitude: 36.2827, longitude: -5.33 },
+        marked_at: '2026-10-15T08:05:00.000Z',
+      }),
+    });
+    expect(guardada.holeNumber).toBe(3);
+    expect(guardada.greenCenter).toEqual({ lat: 36.2827, lon: -5.33 });
+  });
+
+  it('las mías, traducidas', async () => {
+    apiRequest.mockResolvedValue([RESPUESTA, { ...RESPUESTA, hole_number: 5, tee: null }]);
+
+    const mias = await new ApiGolfCourseRepository().getMyHoleMarks('gc-1');
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/marks/mine');
+    expect(mias.map((m) => [m.holeNumber, m.tee])).toEqual([
+      [3, { lat: 36.28, lon: -5.33 }],
+      [5, null],
+    ]);
+  });
+
+  it('los fallos se propagan (los decide quien guarda)', async () => {
+    apiRequest.mockImplementation(async () => {
+      throw Object.assign(new Error('x'), { status: 409, errorCode: 'HOLE_ALREADY_MAPPED' });
+    });
+
+    await expect(new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA)).rejects.toMatchObject({ errorCode: 'HOLE_ALREADY_MAPPED' });
+  });
+});

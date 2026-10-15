@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 vi.mock('../../../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
@@ -18,6 +18,14 @@ vi.mock('./MapaDelHoyo', async () => {
   };
   return { default: MapaFalso };
 });
+
+const misMarcas = vi.hoisted(() => ({ marcas: {}, guardar: vi.fn(async () => ({ estado: 'guardada' })), args: null }));
+vi.mock('../../../hooks/useMarcasDelCampo', () => ({
+  useMarcasDelCampo: (args) => {
+    misMarcas.args = args;
+    return { marcas: misMarcas.marcas, guardar: misMarcas.guardar };
+  },
+}));
 
 const { default: VentanaDelMapa } = await import('./VentanaDelMapa');
 const { default: BotonMapa } = await import('./BotonMapa');
@@ -156,5 +164,153 @@ describe('VentanaDelMapa — tras la revisión', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'mapa.cerrar' }));
 
     expect(mapaDelHoyo.cerrar).toHaveBeenCalled();
+  });
+});
+
+
+describe('VentanaDelMapa — marcar el hoyo (PR C)', () => {
+  const T = { lat: 36.28, lon: -5.33 };
+  const G = { lat: 36.2827, lon: -5.33 };
+  const OSM = '© OpenStreetMap contributors (ODbL)';
+  const conMapa = (holes) => estado({ mapaDelCampo: { version: 'v1', attribution: OSM, holes } });
+  const abrirCon = (mapaDelHoyo, extra = {}) =>
+    render(<VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={142} userId="u1" {...extra} />);
+
+  beforeEach(() => {
+    carga.falla = false;
+    carga.suspende = false;
+    carga.props = null;
+    carga.montajes = 0;
+    misMarcas.marcas = {};
+    misMarcas.guardar.mockClear();
+    misMarcas.guardar.mockResolvedValue({ estado: 'guardada' });
+  });
+
+  it('las marcas son las del jugador en ese campo', async () => {
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(misMarcas.args).toEqual({ golfCourseId: 'gc-1', userId: 'u1' });
+  });
+
+  it('C1: sin datos del hoyo, se piden salida y green, con los metros de la tarjeta', async () => {
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', metros: 142, onVolverAMarcar: null });
+    expect(carga.props.onGuardarMarca).toEqual(expect.any(Function));
+  });
+
+  it('C1: un mapa aprobado que no trae ese hoyo, igual', async () => {
+    abrirCon(conMapa({ 1: { playLine: [T, G], green: GREEN } }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', atribucion: null });
+  });
+
+  it('C2: con salida y sin green, se ve el hoyo y solo se pide el green', async () => {
+    const conSalida = { playLine: [T, { lat: 36.2825, lon: -5.33 }], green: null };
+    abrirCon(conMapa({ 3: conSalida }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props).toMatchObject({ hoyo: conSalida, porMarcar: 'green', atribucion: OSM });
+  });
+
+  it('con salida y green aprobados no se pide nada (aunque haya una marca vieja)', async () => {
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(conMapa({ 3: { playLine: [T, G], green: GREEN } }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props).toMatchObject({ hoyo: { green: GREEN }, porMarcar: null, onGuardarMarca: null, onVolverAMarcar: null });
+  });
+
+  it('C14/C16: con su marca, el hoyo se ve marcado, sin atribución de OSM, y con «Volver a marcar»', async () => {
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo).toMatchObject({ playLine: [T, G], marcadoPorMi: true });
+    expect(carga.props.hoyo.green.center).toEqual(G);
+    expect(carga.props).toMatchObject({ porMarcar: null, atribucion: null, onGuardarMarca: null });
+    expect(carga.props.onVolverAMarcar).toEqual(expect.any(Function));
+  });
+
+  it('C2: su green sobre la salida del mapa: la línea del mapa termina en su green, con atribución', async () => {
+    const conSalida = { playLine: [T, { lat: 36.2825, lon: -5.33 }], green: null };
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: null, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(conMapa({ 3: conSalida }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine).toEqual([T, G]);
+    expect(carga.props.atribucion).toBe(OSM);
+  });
+
+  it('su marca entera sobre una salida aprobada (hecha sin cobertura): todo es suyo, sin atribución', async () => {
+    const conSalida = { playLine: [T, { lat: 36.2825, lon: -5.33 }], green: null };
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: { lat: 36.2801, lon: -5.33 }, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(conMapa({ 3: conSalida }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine[0]).toEqual({ lat: 36.2801, lon: -5.33 });
+    expect(carga.props.atribucion).toBeNull();
+  });
+
+  it('C16: «Volver a marcar» rehace el mapa pidiendo otra vez la marca', async () => {
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+    const antes = carga.montajes;
+
+    act(() => carga.props.onVolverAMarcar());
+
+    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida' });
+    expect(carga.montajes).toBe(antes + 1);
+  });
+
+  it('C12/C15: guardar envía el hoyo con lo marcado y, guardada, vuelve a verse marcado', async () => {
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+    act(() => carga.props.onVolverAMarcar());
+
+    let r;
+    await act(async () => {
+      r = await carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G });
+    });
+
+    expect(misMarcas.guardar).toHaveBeenCalledWith({ holeNumber: 3, tee: T, bends: [], greenCenter: G });
+    expect(r).toEqual({ estado: 'guardada' });
+    expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true } });
+  });
+
+  it('rechazada, se sigue marcando', async () => {
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
+    misMarcas.guardar.mockResolvedValue({ estado: 'rechazada', errorCode: 'X' });
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+    act(() => carga.props.onVolverAMarcar());
+
+    await act(async () => carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G }));
+
+    expect(carga.props.porMarcar).toBe('salida');
+  });
+
+  it('C17: una marca nueva (pendiente o guardada) rehace el mapa como hoyo marcado', async () => {
+    const { rerender } = abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+    const antes = carga.montajes;
+
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'b' } };
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: null })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={142} userId="u1" />);
+
+    expect(carga.props.hoyo.marcadoPorMi).toBe(true);
+    expect(carga.montajes).toBe(antes + 1);
+  });
+
+  it('sin jugador, no se marca', async () => {
+    abrirCon(estado({ mapaDelCampo: null }), { userId: null });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props).toMatchObject({ porMarcar: null, onGuardarMarca: null });
   });
 });

@@ -35,6 +35,10 @@ import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGol
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
 import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
+import LocalStorageHoleMarkStore from '../infrastructure/repositories/LocalStorageHoleMarkStore';
+import SaveHoleMarkUseCase from '../application/use_cases/golf_course/SaveHoleMarkUseCase';
+import SendPendingHoleMarksUseCase from '../application/use_cases/golf_course/SendPendingHoleMarksUseCase';
+import GetMyHoleMarksUseCase from '../application/use_cases/golf_course/GetMyHoleMarksUseCase';
 import { captureError } from '../utils/sentryHelpers';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
@@ -447,6 +451,13 @@ const getHoleMapUseCase = new GetHoleMapUseCase({
   holeMapCache: new LocalStorageHoleMapCache(),
   reportarFallo: (error, contexto) => captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
 });
+// Las marcas del jugador en hoyos sin datos (BE #532, PR C): en el móvil antes
+// de nada, y se envían cuando haya cobertura
+const holeMarkStore = new LocalStorageHoleMarkStore();
+const reportarFalloDeMarca = (error, contexto) => captureError(error, { tags: { modulo: 'marcas-de-hoyos' }, extra: contexto });
+const saveHoleMarkUseCase = new SaveHoleMarkUseCase({ golfCourseRepository: apiGolfCourseRepository, holeMarkStore, reportarFallo: reportarFalloDeMarca });
+const sendPendingHoleMarksUseCase = new SendPendingHoleMarksUseCase({ golfCourseRepository: apiGolfCourseRepository, holeMarkStore, reportarFallo: reportarFalloDeMarca });
+const getMyHoleMarksUseCase = new GetMyHoleMarksUseCase({ golfCourseRepository: apiGolfCourseRepository, holeMarkStore });
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -529,6 +540,9 @@ export {
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
   getHoleMapUseCase,
+  saveHoleMarkUseCase,
+  sendPendingHoleMarksUseCase,
+  getMyHoleMarksUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,
   updateGolfCourseUseCase,

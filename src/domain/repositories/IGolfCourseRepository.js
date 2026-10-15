@@ -34,6 +34,26 @@ class IGolfCourseRepository {
   }
 
   /**
+   * Guarda (o sustituye) la marca del jugador en un hoyo (BE #532, PR C)
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   * @param {Object} marca - { tee, bends, greenCenter, markedAt }
+   * @returns {Promise<Object>} La marca que queda guardada (puede ser otra más reciente)
+   */
+  async saveHoleMark(id, holeNumber, marca) {
+    throw new Error('Method not implemented: saveHoleMark');
+  }
+
+  /**
+   * Las marcas del jugador en el campo (BE #532, PR C)
+   * @param {string} id - Golf course ID
+   * @returns {Promise<Object[]>}
+   */
+  async getMyHoleMarks(id) {
+    throw new Error('Method not implemented: getMyHoleMarks');
+  }
+
+  /**
    * Create a new golf course request (any user)
    * Creates a golf course in PENDING_APPROVAL status
    * @param {Object} golfCourseData - Golf course data

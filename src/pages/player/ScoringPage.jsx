@@ -637,6 +637,8 @@ const ScoringPage = () => {
                   golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
                   numeroDeHoyo={currentHole}
                   par={currentHoleData.par}
+                  metros={currentHoleData.meters ?? null}
+                  userId={currentUserId ?? null}
                 />
               </>
             )}

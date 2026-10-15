@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import BlockLoader from '../../ui/BlockLoader';
 import ModalShell from '../../ui/ModalShell';
 import { captureError } from '../../../utils/sentryHelpers';
+import { hoyoDeUnaMarca } from '../../../domain/services/hoyoMarcado';
+import { useMarcasDelCampo } from '../../../hooks/useMarcasDelCampo';
 
 // Aparte: MapLibre pesa, y la anotación no tiene por qué cargarlo hasta que se
 // abre. Una carga nueva en cada apertura: React guarda la que falló, y con una
@@ -49,11 +51,33 @@ class SiNoCarga extends Component {
   }
 }
 
-const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par }) => {
+const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null }) => {
   const { t } = useTranslation('scoring');
   const [MapaDelHoyo] = useState(cargarMapa);
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
-  const hoyo = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
+  const { marcas, guardar } = useMarcasDelCampo({ golfCourseId, userId });
+  const [remarcando, setRemarcando] = useState(false);
+
+  // Lo que ya hay: el hoyo aprobado (con su green, o solo con su salida) y, si
+  // le falta algo, la marca del jugador, que él ve al momento (PR C)
+  const aprobado = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
+  const conSalida = (aprobado?.playLine?.length ?? 0) > 0;
+  const completo = Boolean(aprobado?.green);
+  const miMarca = completo || remarcando || !userId ? null : (marcas[numeroDeHoyo] ?? null);
+  const deMiMarca = miMarca ? hoyoDeUnaMarca(miMarca, aprobado) : null;
+  const hoyo = completo ? aprobado : (deMiMarca ?? (conSalida ? aprobado : null));
+  // Lo que falta por marcar: sin salida, salida y green; con salida, el green
+  let porMarcar = null;
+  if (!completo && !deMiMarca && userId) porMarcar = conSalida ? 'green' : 'salida';
+
+  // La atribución, si algo de lo que se ve sale del mapa (y no todo de la marca)
+  const usaElMapa = completo || (conSalida && !miMarca?.tee);
+
+  const guardarMarca = async (datos) => {
+    const resultado = await guardar({ holeNumber: numeroDeHoyo, ...datos });
+    if (resultado.estado !== 'rechazada') setRemarcando(false);
+    return resultado;
+  };
   return (
     <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')}>
       <Suspense
@@ -66,13 +90,17 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par }) => {
         {/* Si los datos del campo llegan (o cambian) con el mapa abierto, se
             rehace con ellos: el mapa fija su encuadre y su giro al montarse */}
         <MapaDelHoyo
-          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}`}
+          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${deMiMarca ? miMarca.markedAt : (porMarcar ?? '')}`}
           golfCourseId={golfCourseId}
           numeroDeHoyo={numeroDeHoyo}
           par={par}
           hoyo={hoyo}
-          atribucion={mapaDelCampo?.attribution ?? null}
+          atribucion={usaElMapa ? (mapaDelCampo?.attribution ?? null) : null}
           onCerrar={cerrar}
+          metros={metros}
+          porMarcar={porMarcar}
+          onGuardarMarca={porMarcar ? guardarMarca : null}
+          onVolverAMarcar={deMiMarca ? () => setRemarcando(true) : null}
         />
       </Suspense>
     </SiNoCarga>

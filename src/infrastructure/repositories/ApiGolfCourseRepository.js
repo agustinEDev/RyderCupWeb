@@ -1,5 +1,6 @@
 import GolfCourse from '../../domain/entities/GolfCourse.js';
 import HoleMapMapper from '../mappers/HoleMapMapper';
+import HoleMarkMapper from '../mappers/HoleMarkMapper';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../../services/api.js';
 
@@ -88,6 +89,27 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND') return null;
       throw error;
     }
+  }
+
+  /**
+   * @override
+   * Devuelve la marca que queda guardada: si había una más reciente (la cola
+   * llegó tarde), es esa.
+   */
+  async saveHoleMark(id, holeNumber, marca) {
+    const data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/${holeNumber}`, {
+      method: 'PUT',
+      body: JSON.stringify(HoleMarkMapper.toApi(marca)),
+    });
+    return HoleMarkMapper.toDomain(data);
+  }
+
+  /**
+   * @override
+   */
+  async getMyHoleMarks(id) {
+    const data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/mine`);
+    return data.map(HoleMarkMapper.toDomain);
   }
 
   /**

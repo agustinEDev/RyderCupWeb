@@ -372,6 +372,7 @@ const GroupScoringPage = () => {
                     golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
                     numeroDeHoyo={currentHole}
                     par={parDe(userId)}
+                    userId={userId ?? null}
                   />
                 </>
               )}
