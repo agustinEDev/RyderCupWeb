@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Compass, LocateFixed, Maximize2, X } from 'lucide-react';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import './mapa.css';
 import { distanciaEnMetros, distanciasAlGreen } from '../../../domain/services/distanciasAlGreen';
 import { limitesDelHoyo, orientacionDelHoyo } from '../../../domain/services/geometriaDelHoyo';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';

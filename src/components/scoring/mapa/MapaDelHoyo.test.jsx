@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { orientacionDelHoyo, limitesDelHoyo } from '../../../domain/services/geometriaDelHoyo';
 
 vi.mock('react-i18next', () => ({
@@ -61,6 +63,10 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
 }));
 
 const { default: MapaDelHoyo } = await import('./MapaDelHoyo');
+const leer = (ruta) => readFileSync(resolve(process.cwd(), ruta), 'utf8');
+const indexCss = leer('src/index.css');
+const mapaCss = leer('src/components/scoring/mapa/mapa.css');
+const mapaJsx = leer('src/components/scoring/mapa/MapaDelHoyo.jsx');
 
 const GREEN = {
   front: { lat: 36.2898, lon: -5.332 },
@@ -486,5 +492,28 @@ describe('MapaDelHoyo — tras /code-review', () => {
     expect(screen.queryByRole('button', { name: 'mapa.centrame' })).toBeNull();
     expect(screen.queryByText('mapa.ayudaMedir')).toBeNull();
     expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toBeInTheDocument();
+  });
+});
+
+describe('MapaDelHoyo — tras la prueba en el Kind', () => {
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = null;
+  });
+
+  it('la hoja de MapLibre va en su capa, por debajo de las utilidades de Tailwind', () => {
+    // Sin capa ganaba a todas las utilidades: `.maplibregl-map { position: relative;
+    // overflow: hidden }` pisaba el `absolute inset-0` del contenedor, que se quedaba
+    // con 0 de alto y recortaba el lienzo (en el build, el mapa salía gris)
+    const orden = indexCss.match(/@layer ([a-z, ]+);/)[1].split(/,\s*/);
+    expect(orden.indexOf('maplibre')).toBeGreaterThan(-1);
+    expect(orden.indexOf('maplibre')).toBeLessThan(orden.indexOf('utilities'));
+    expect(indexCss.indexOf('@layer theme')).toBeLessThan(indexCss.indexOf('@import "tailwindcss"'));
+    expect(mapaCss).toMatch(/@import 'maplibre-gl\/dist\/maplibre-gl\.css' layer\(maplibre\);/);
+    // Y nadie la importa sin capa
+    expect(mapaJsx).toContain("import './mapa.css';");
+    expect(mapaJsx).not.toContain('maplibre-gl.css');
   });
 });
