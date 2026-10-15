@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getMyHoleMarksUseCase, saveHoleMarkUseCase } from '../composition';
 import { MARCAS_CAMBIADAS } from './useEnvioDeMarcas';
 
@@ -11,6 +11,11 @@ export function useMarcasDelCampo({ golfCourseId, userId }) {
   const copia = useMemo(() => getMyHoleMarksUseCase.guardadas(userId, golfCourseId), [userId, golfCourseId]);
   const [estado, setEstado] = useState({ de: null, marcas: {} });
   const de = `${userId}:${golfCourseId}`;
+  // El campo y el jugador de ahora: un envío lento de otro no pisa su estado
+  const deAhora = useRef(de);
+  useEffect(() => {
+    deAhora.current = de;
+  }, [de]);
 
   useEffect(() => {
     if (!userId || !golfCourseId) return undefined;
@@ -34,7 +39,11 @@ export function useMarcasDelCampo({ golfCourseId, userId }) {
 
   const guardar = useCallback(
     async ({ holeNumber, tee, bends, greenCenter }) => {
-      const refrescar = () => setEstado({ de: `${userId}:${golfCourseId}`, marcas: getMyHoleMarksUseCase.guardadas(userId, golfCourseId) });
+      const clave = `${userId}:${golfCourseId}`;
+      const refrescar = () => {
+        if (deAhora.current !== clave) return;
+        setEstado({ de: clave, marcas: getMyHoleMarksUseCase.guardadas(userId, golfCourseId) });
+      };
       // Se ve en cuanto está en el móvil: con mala cobertura el envío tarda
       const resultado = await saveHoleMarkUseCase.execute({
         userId,

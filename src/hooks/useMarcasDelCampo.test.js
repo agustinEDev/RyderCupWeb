@@ -105,4 +105,29 @@ describe('useMarcasDelCampo', () => {
 
     expect(result.current.marcas).toEqual({});
   });
+
+  it('un envío lento de otro campo no pisa el estado del campo de ahora', async () => {
+    // La copia del móvil de gc-2 va por detrás de lo que trae el servidor
+    const M6 = { holeNumber: 6, markedAt: 'c' };
+    casos.mias.guardadas.mockImplementation((_u, gc) => (gc === 'gc-2' ? { 5: M5 } : {}));
+    casos.mias.execute.mockImplementation(async (_u, gc) => (gc === 'gc-2' ? { 5: M5, 6: M6 } : {}));
+    let terminar;
+    casos.guardar.execute.mockImplementation(() => new Promise((r) => (terminar = r)));
+    const { result, rerender } = renderHook(({ gc }) => useMarcasDelCampo({ golfCourseId: gc, userId: 'u1' }), {
+      initialProps: { gc: 'gc-1' },
+    });
+    let guardado;
+    act(() => {
+      guardado = result.current.guardar({ holeNumber: 3, tee: null, bends: [], greenCenter: { lat: 1, lon: 2 } });
+    });
+
+    rerender({ gc: 'gc-2' });
+    await waitFor(() => expect(result.current.marcas).toEqual({ 5: M5, 6: M6 }));
+    await act(async () => {
+      terminar({ estado: 'guardada' });
+      await guardado;
+    });
+
+    expect(result.current.marcas).toEqual({ 5: M5, 6: M6 });
+  });
 });

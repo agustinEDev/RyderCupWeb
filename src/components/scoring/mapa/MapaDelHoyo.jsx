@@ -413,9 +413,8 @@ const MapaDelHoyo = ({
     }
     setAvisoDeMarca(null);
     setGuardando(true);
-    let resultado;
     try {
-      resultado = await onGuardarMarca({
+      await onGuardarMarca({
         tee: marcandoSalida ? marca.tee : null,
         bends: marca.bends, // sin salida propia no hay codos que arrastrar
         greenCenter: marca.green,
@@ -423,11 +422,11 @@ const MapaDelHoyo = ({
     } catch (error) {
       captureError(error, { tags: { modulo: 'marcas-de-hoyos' } });
       setAvisoDeMarca({ tipo: 'error', texto: t('mapa.noSeGuardo') });
-      resultado = { estado: 'rechazada', errorCode: null };
     }
     // Guardada (o pendiente de enviar), la ventana rehace el mapa con el hoyo
-    // marcado; si el servidor la rechaza, lo dice ella. Aquí solo se vuelve a poder pulsar
-    if (resultado?.estado === 'rechazada') setGuardando(false);
+    // marcado; si el servidor la rechaza, lo dice ella. Aquí solo se vuelve a
+    // poder pulsar, pase lo que pase (si no se rehace, no se queda bloqueado)
+    setGuardando(false);
   };
 
   const distancias = distanciasAlGreen(posicion, hoyo?.green);

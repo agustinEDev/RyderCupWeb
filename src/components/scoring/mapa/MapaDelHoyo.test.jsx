@@ -811,6 +811,16 @@ describe('MapaDelHoyo — marcar un hoyo sin datos (PR C)', () => {
     expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).not.toBeDisabled();
   });
 
+  it('si guardar no rehace el mapa (resultado raro), «Guardar» no se queda bloqueado', async () => {
+    marcar({ onGuardarMarca: vi.fn(async () => undefined) });
+    tocar(T);
+    tocar(G);
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).not.toBeDisabled();
+  });
+
   it('mientras guarda, «Guardar» no se puede pulsar dos veces', async () => {
     let terminar;
     const { onGuardarMarca } = marcar({ onGuardarMarca: vi.fn(() => new Promise((r) => (terminar = r))) });

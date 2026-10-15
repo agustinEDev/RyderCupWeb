@@ -143,7 +143,53 @@ describe('LocalStorageHoleMarkStore', () => {
     });
 
     expect(() => store.ponerPendiente('u1', 'gc-1', marca(3))).not.toThrow();
-    expect(store.load('u1', 'gc-1')).toEqual({ marcas: {}, pendientes: {} });
+    expect(store.load('u1', 'gc-1').marcas[3]).toEqual(marca(3));
+  });
+
+  it('si localStorage no deja escribir, la marca sigue viéndose y en la cola mientras la app esté abierta', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+      removeItem: (k) => guardado.delete(k),
+    });
+
+    store.ponerPendiente('u1', 'gc-1', marca(3));
+
+    expect(store.load('u1', 'gc-1').marcas[3]).toEqual(marca(3));
+    expect(store.pendientes('u1')).toEqual([{ golfCourseId: 'gc-1', marca: marca(3) }]);
+    store.confirmar('u1', 'gc-1', marca(3), marca(3));
+    expect(store.pendientes('u1')).toEqual([]);
+  });
+
+  it('cuando localStorage vuelve a dejar escribir, se guarda ahí y deja la memoria', () => {
+    let lleno = true;
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => {
+        if (lleno) throw new Error('QuotaExceededError');
+        guardado.set(k, String(v));
+      },
+      removeItem: (k) => guardado.delete(k),
+    });
+    store.ponerPendiente('u1', 'gc-1', marca(3));
+    lleno = false;
+
+    store.ponerPendiente('u1', 'gc-1', marca(4));
+
+    expect(Object.keys(new LocalStorageHoleMarkStore().load('u1', 'gc-1').marcas)).toEqual(['3', '4']);
+    // Y deja su copia: lo que escribe otra pestaña, lo ve
+    new LocalStorageHoleMarkStore().ponerPendiente('u1', 'gc-1', marca(5));
+    expect(Object.keys(store.load('u1', 'gc-1').marcas)).toEqual(['3', '4', '5']);
+  });
+
+  it('otra pestaña ve lo escrito (se lee de localStorage, no de una copia propia)', () => {
+    store.ponerPendiente('u1', 'gc-1', marca(3));
+
+    new LocalStorageHoleMarkStore().ponerPendiente('u1', 'gc-1', marca(4));
+
+    expect(Object.keys(store.load('u1', 'gc-1').marcas)).toEqual(['3', '4']);
   });
 
   it('si el servidor rechaza una marca nueva, vuelve la que había confirmada', () => {
