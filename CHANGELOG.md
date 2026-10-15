@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.42.0] - 2026-10-15
+
+**La clasificación de un Stableford o un Medal en su propia página, partida
+rápida sin «Pendientes» a medias y lo que salió de las pasadas de QA.** La
+general deja la ficha (con 200 jugadores no cabía) y tiene su página, que te
+lleva a tu fila; la partida rápida es un borrador local hasta «Confirmar e
+iniciar»; tarjetas compactas en el panel y en «Mis competiciones»; y arreglos
+del cierre de sesión entre pestañas. Va con el backend **2.28.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.28.0, que
+trae un cambio incompatible** (`match_format` nulo en las franjas de stroke
+play): desplegar el backend, comprobar `/health` y este frontend justo después.
+El presupuesto del bundle sube a 2250 KB (#864). Probado en el Kind a 360 px con
+dos pasadas de QA (21 y 50 casos), en Chrome con dos pestañas y en un iPhone real.
+
+### Added
+
+- **La clasificación de un Stableford o un Medal tiene su propia página**
+  (`/competitions/:id/leaderboard`, General y Scratch) y el botón de la ficha
+  lleva a ella; si juegas, te lleva a tu fila, centrada y con el foco. En la
+  anotación, la pestaña de la franja también (#864).
+- **Partida rápida como borrador local** (#861, #848): nada llega al servidor
+  hasta «Confirmar e iniciar», que la crea e inicia en una sola petición con
+  reintentos seguros; el resumen enseña los hándicaps sin crear nada.
+- **Tarjetas compactas** de los próximos partidos (Ryder y partidas de stroke
+  play juntas) y de «Mis competiciones», con tipo, campos, jornadas y próxima
+  sesión; la búsqueda también encuentra por campo (#860, #845, #846).
+- **Acciones del organizador en las tarjetas**: retirar a quien ya jugó en vez
+  de darlo por no presentado y borrar lo anotado en un hoyo; mover jugadores y
+  reordenar las partidas que aún no han salido (#859).
+- «¿Juegas tú?» al crear un Stableford o un Medal, y los motivos de la
+  actualización de hándicaps traducidos (#860).
+
+### Changed
+
+- **La ficha de un stroke play en juego o acabado** pliega «Configuración» y
+  «Jugadores aprobados»; la clasificación ya no está dentro (#864).
+- **Tabla de clasificación más fina**: sin marco propio, con más aire, la
+  cabecera más ligera, tu fila marcada con una barra verde y esquinas
+  redondeadas; en su página usa todo el ancho, y a 360 px ningún nombre ocupa
+  más de dos líneas (#864, #867).
+- El contador del panel suma las partidas de stroke play, y una partida con tu
+  tarjeta entregada deja de ser «próxima»; un compañero retirado se nombra
+  («Con Bea (retirada)») (#862).
+- Textos neutros y en femenino según la barra de salida (NP, Retirada) (#860, #856).
+
+### Fixed
+
+- **Cerrar sesión con dos pestañas abiertas** mandaba miles de
+  `POST /auth/logout` (un eco entre pestañas): ahora uno solo, y la otra pestaña
+  sale sola a `/login` (#866).
+- Al salir recargando ya no se vuelve a preguntar por la sesión (una petición
+  cortada por pestaña), y una página que vuelve desde la caché del historial se
+  recarga en vez de quedarse en «Cargando…» (#868).
+- Un enlace a `/competitions/:id/leaderboard` de un stroke play mostraba el
+  error del servidor (#863, #864).
+- La tarjeta de hándicaps ya no programa en la hora del dispositivo si no puede
+  leer la zona del campo: lo dice y ofrece reintentar (#863).
+- «Marcas a …» desaparece al entregar la tarjeta o con la partida cerrada (#863).
+- Tarjeta de no presentado, «Tu partida» de un retirado, la hoja «Otro…» a
+  360 px y los hoyos sin anotar en gris (#859, #847, #853, #854, #855).
+- Un invitado de partida rápida con nombre en blanco ya no se ignora en
+  silencio (#862).
+
 ## [2.41.0] - 2026-10-12
 
 **Torneos Stableford y Medal** (FE #791, #824): crear y editar, franjas de
