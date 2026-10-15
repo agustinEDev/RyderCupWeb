@@ -168,7 +168,7 @@ describe('LocalStorageHoleMapCache — con el almacenamiento lleno', () => {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
       setItem: (k, v) => {
         if (k.startsWith('mapaDeHoyos:v1:gc-') && !guardado.has(k) && mapas() >= 20) {
-          throw new DOMException('lleno', 'QuotaExceededError');
+          throw new globalThis.DOMException('lleno', 'QuotaExceededError');
         }
         guardado.set(k, String(v));
       },
