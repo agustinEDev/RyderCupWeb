@@ -669,3 +669,17 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
     });
   });
 });
+
+describe('HoleInput — pie con las distancias (mapa de hoyos)', () => {
+  it('pinta lo que se le pase en `pie`, al final de la tarjeta', () => {
+    render(<HoleInput holeNumber={1} par={4} pie={<p>linea-de-distancias</p>} onScoreChange={() => {}} />);
+
+    expect(screen.getByText('linea-de-distancias')).toBeInTheDocument();
+  });
+
+  it('sin `pie`, la tarjeta queda como siempre', () => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} />);
+
+    expect(screen.queryByTestId('pie-del-hoyo')).toBeNull();
+  });
+});

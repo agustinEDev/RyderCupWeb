@@ -40,7 +40,14 @@ class TeeGroupScoringMapper {
       // En stroke play no se decide antes del 18
       isDecided: false,
       decidedResult: null,
-      roundInfo: { id: api.round_id, date: null, sessionType: null, golfCourseName: null },
+      // El campo de la franja, para pedir su mapa de hoyos (BE #532)
+      roundInfo: {
+        id: api.round_id,
+        date: null,
+        sessionType: null,
+        golfCourseName: null,
+        golfCourseId: api.golf_course_id ?? null,
+      },
       competitionId: null,
       teamAName: null,
       teamBName: null,

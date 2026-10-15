@@ -5,6 +5,9 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import { useScoring } from '../../hooks/useScoring';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
 import { retireFromTeeGroupUseCase } from '../../composition';
 import customToast from '../../utils/toast';
@@ -91,6 +94,11 @@ const GroupScoringPage = () => {
   } = useScoring(groupId, user?.id, user?.is_admin ?? false, ORIGEN_PARTIDA_DE_FRANJA);
 
   const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    cerrarSi: isSessionBlocked,
+  });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
     if (!aunNoAbre) return undefined;
@@ -333,30 +341,39 @@ const GroupScoringPage = () => {
                 </div>
               )}
               {!aunNoAbre && (
-                <HoleInput
-                  key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                  holeNumber={currentHole}
-                  par={parDe(userId)}
-                  markedPar={parDe(marcoA)}
-                  markedName={nombreDe(marcoA)}
-                  markerName={meAnoto}
-                  marksSomeone={Boolean(marcoA)}
-                  hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
-                  markedScoredBy={loPusoOtro}
-                  strokeIndex={null}
-                  playerScore={miGolpe}
-                  markedPlayerScore={suGolpe}
-                  validationStatus={miGolpe?.validationStatus}
-                  markedValidationStatus={suGolpe?.validationStatus}
-                  strokesReceived={miGolpe?.strokesReceivedThisHole}
-                  // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
-                  isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
-                  isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
-                  // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
-                  isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
-                  onScoreChange={anotar}
-                  allowPickedUp={strokePlay.pickedUpAllowed}
-                />
+                <>
+                  <HoleInput
+                    key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                    pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                    holeNumber={currentHole}
+                    par={parDe(userId)}
+                    markedPar={parDe(marcoA)}
+                    markedName={nombreDe(marcoA)}
+                    markerName={meAnoto}
+                    marksSomeone={Boolean(marcoA)}
+                    hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
+                    markedScoredBy={loPusoOtro}
+                    strokeIndex={null}
+                    playerScore={miGolpe}
+                    markedPlayerScore={suGolpe}
+                    validationStatus={miGolpe?.validationStatus}
+                    markedValidationStatus={suGolpe?.validationStatus}
+                    strokesReceived={miGolpe?.strokesReceivedThisHole}
+                    // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
+                    isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
+                    isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
+                    // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
+                    isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
+                    onScoreChange={anotar}
+                    allowPickedUp={strokePlay.pickedUpAllowed}
+                  />
+                  <VentanaDelMapa
+                    mapaDelHoyo={mapaDelHoyo}
+                    golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
+                    numeroDeHoyo={currentHole}
+                    par={parDe(userId)}
+                  />
+                </>
               )}
               <div className="flex justify-between">
                 <button

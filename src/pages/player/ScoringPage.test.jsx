@@ -73,6 +73,23 @@ const mockUseScoring = {
   refetch: vi.fn(),
 };
 
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
 vi.mock('../../hooks/useScoring', () => ({
   useScoring: () => mockUseScoring,
 }));
@@ -1473,5 +1490,63 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
     rerender(<ScoringPage />);
 
     expect(casilla.montajes).toBe(antes);
+  });
+});
+
+describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
+  const vistaOriginal = mockUseScoring.scoringView;
+  afterEach(() => {
+    mockUseScoring.scoringView = vistaOriginal;
+  });
+  beforeEach(() => {
+    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1' } };
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
+  });
+
+  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+    render(<ScoringPage />);
+
+    const pie = casilla.props.pie;
+    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      render(<ScoringPage />);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('ScoringPage — sesión tomada con el mapa abierto', () => {
+  afterEach(() => {
+    mockUseScoring.isSessionBlocked = false;
+  });
+
+  it('el mapa se cierra para que «Volver» salga de la anotación', () => {
+    mockUseScoring.isSessionBlocked = true;
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });

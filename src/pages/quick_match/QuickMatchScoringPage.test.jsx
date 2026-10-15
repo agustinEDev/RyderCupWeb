@@ -22,6 +22,23 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 
 const mockUseQuickMatchScoring = vi.fn();
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
   useQuickMatchScoring: (...args) => {
     const estado = mockUseQuickMatchScoring(...args);
@@ -1781,5 +1798,57 @@ describe('QuickMatchScoringPage · los avisos, tras probarlo en el campo (FE #51
     verClasificacion();
 
     expect(screen.getByTestId('quick-match-resultado-atrasado')).toBeInTheDocument();
+  });
+});
+
+describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [baseHookState.myParticipant] },
+      // La tarjeta del hoyo solo se pinta a quien anota
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    renderPage();
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
+  });
+
+  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.abrir' }));
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    renderPage();
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      renderPage();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
   });
 });

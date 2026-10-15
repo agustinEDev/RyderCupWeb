@@ -373,5 +373,29 @@
     "cannotClear": "Un número no se deja en blanco: para quitarlo, «Borrar lo anotado».",
     "notOpenYet": "La anotación de esta partida aún no ha abierto",
     "organiserValidates": "Nadie en juego te marca: tus hoyos los valida el organizador. Sigue anotando tus golpes."
+  },
+  "mapa": {
+    "abrir": "Mapa",
+    "titulo": "Hoyo {{numero}} · Par {{par}}",
+    "cerrar": "Cerrar",
+    "centrame": "Céntrame",
+    "verHoyo": "Ver hoyo",
+    "norte": "Norte",
+    "buscando": "Buscando señal GPS…",
+    "denegado": "Ubicación no permitida",
+    "noDisponible": "Este móvil no da la ubicación",
+    "delante": "Delante",
+    "centro": "Centro",
+    "fondo": "Fondo",
+    "metros": "m",
+    "etiqueta": "Al green: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
+    "hastaAhi": "Hasta ahí {{metros}} m",
+    "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
+    "quitarPunto": "Quitar",
+    "ayudaMedir": "Toca el mapa para medir",
+    "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
+    "atribucionPnoa": "PNOA © IGN",
+    "atribucionOsm": "© OSM",
+    "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen."
   }
 }

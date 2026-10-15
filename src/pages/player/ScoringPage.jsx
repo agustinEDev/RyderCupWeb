@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import { getLeaderboardUseCase } from '../../composition';
@@ -242,6 +245,11 @@ const ScoringPage = () => {
   const aunNoAbre = abreMasTarde({
     status: scoringView?.matchStatus,
     scoringOpensAt: scoringView?.scoringOpensAt,
+  });
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    cerrarSi: isSessionBlocked,
   });
   // La hora del CAMPO, que es la que el servidor va a aplicar, no la del móvil:
   // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
@@ -594,34 +602,43 @@ const ScoringPage = () => {
             )}
 
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
-              <HoleInput
-                // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
-                // la casilla guarda su propia selección y solo adopta la vista
-                // cuando esta cambia, así que enseñaba un golpe que no estaba en
-                // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
-                key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                matchFormat={scoringView?.matchFormat}
-                holeNumber={currentHole}
-                par={currentHoleData.par}
-                markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
-                markedName={markerAssignment?.marksName ?? null}
-                markerName={markerAssignment?.markedByName ?? null}
-                strokeIndex={currentHoleData.strokeIndex}
-                playerScore={currentPlayerScore}
-                markedPlayerScore={markedPlayerScore}
-                validationStatus={currentPlayerScore?.validationStatus}
-                markedValidationStatus={markedPlayerScore?.validationStatus}
-                netScore={currentPlayerScore?.netScore}
-                strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
-                holeResult={currentHoleScore?.holeResult}
-                standing={currentHoleScore?.holeResult?.standing}
-                isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
-                isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
-                isMarkerScoreLocked={isMarkerScoreLocked || !canScore || isSessionBlocked}
-                onScoreChange={handleScoreChange}
-                teamAName={scoringView?.teamAName}
-                teamBName={scoringView?.teamBName}
-              />
+              <>
+                <HoleInput
+                  // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
+                  // la casilla guarda su propia selección y solo adopta la vista
+                  // cuando esta cambia, así que enseñaba un golpe que no estaba en
+                  // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
+                  key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                  pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                  matchFormat={scoringView?.matchFormat}
+                  holeNumber={currentHole}
+                  par={currentHoleData.par}
+                  markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
+                  markedName={markerAssignment?.marksName ?? null}
+                  markerName={markerAssignment?.markedByName ?? null}
+                  strokeIndex={currentHoleData.strokeIndex}
+                  playerScore={currentPlayerScore}
+                  markedPlayerScore={markedPlayerScore}
+                  validationStatus={currentPlayerScore?.validationStatus}
+                  markedValidationStatus={markedPlayerScore?.validationStatus}
+                  netScore={currentPlayerScore?.netScore}
+                  strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
+                  holeResult={currentHoleScore?.holeResult}
+                  standing={currentHoleScore?.holeResult?.standing}
+                  isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
+                  isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
+                  isMarkerScoreLocked={isMarkerScoreLocked || !canScore || isSessionBlocked}
+                  onScoreChange={handleScoreChange}
+                  teamAName={scoringView?.teamAName}
+                  teamBName={scoringView?.teamBName}
+                />
+                <VentanaDelMapa
+                  mapaDelHoyo={mapaDelHoyo}
+                  golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
+                  numeroDeHoyo={currentHole}
+                  par={currentHoleData.par}
+                />
+              </>
             )}
 
             {/* Prev/Next navigation */}

@@ -58,6 +58,24 @@ vi.mock('../../hooks/useScoring', () => ({
   },
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
+
 vi.mock('../../components/scoring/HoleInput', () => ({
   default: (props) => {
     llamadas.casilla = props;
@@ -553,5 +571,59 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_NOT_SCORING'));
+  });
+});
+
+describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
+  beforeEach(() => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
+  });
+
+  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+    render(<GroupScoringPage />);
+
+    const pie = llamadas.casilla.pie;
+    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      render(<GroupScoringPage />);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('GroupScoringPage — sesión tomada con el mapa abierto', () => {
+  it('el mapa se cierra para que «Volver» salga de la anotación', () => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook({ isSessionBlocked: true });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });

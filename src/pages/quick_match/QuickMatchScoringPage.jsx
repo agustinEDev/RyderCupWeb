@@ -11,6 +11,9 @@ import {
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
@@ -118,6 +121,8 @@ const QuickMatchScoringPage = () => {
     discrepancias,
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: quickMatch?.golfCourseId ?? null });
 
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla
@@ -608,17 +613,26 @@ const QuickMatchScoringPage = () => {
                 />
 
                 {currentHoleData && (
-                  <QuickMatchHoleInput
-                    key={currentHole}
-                    holeNumber={currentHole}
-                    par={currentHoleData.par}
-                    strokeIndex={currentHoleData.strokeIndex}
-                    meters={currentHoleData.meters ?? null}
-                    entries={entries}
-                    isReadOnly={isReadOnly}
-                    allowPickedUp={allowsPickedUp}
-                    onScoreChange={handleScoreChange}
-                  />
+                  <>
+                    <QuickMatchHoleInput
+                      key={currentHole}
+                      pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                      holeNumber={currentHole}
+                      par={currentHoleData.par}
+                      strokeIndex={currentHoleData.strokeIndex}
+                      meters={currentHoleData.meters ?? null}
+                      entries={entries}
+                      isReadOnly={isReadOnly}
+                      allowPickedUp={allowsPickedUp}
+                      onScoreChange={handleScoreChange}
+                    />
+                    <VentanaDelMapa
+                      mapaDelHoyo={mapaDelHoyo}
+                      golfCourseId={quickMatch?.golfCourseId ?? null}
+                      numeroDeHoyo={currentHole}
+                      par={currentHoleData.par}
+                    />
+                  </>
                 )}
 
                 <div className="flex gap-3">

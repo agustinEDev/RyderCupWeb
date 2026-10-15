@@ -22,7 +22,7 @@ import { clasesDelHueco } from '../scoring/clasesDelHueco';
  * Quien anota no necesita excepción: su hoyo y la cabecera salen de la misma
  * resolución, así que no difiere de sí mismo y no se le duplica nada.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, onScoreChange }) => {
+const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, onScoreChange, pie = null }) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 
@@ -150,6 +150,13 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
           </div>
         ))}
       </div>
+
+      {/* El botón «Mapa» del hoyo (BE #532); sin él, sin pie */}
+      {pie && (
+        <div data-testid="pie-del-hoyo" className="border-t border-gray-100 pt-3">
+          {pie}
+        </div>
+      )}
 
       {openEntry && (
         <ScoreInputPanel

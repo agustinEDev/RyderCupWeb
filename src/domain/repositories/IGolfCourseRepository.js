@@ -25,6 +25,15 @@ class IGolfCourseRepository {
   }
 
   /**
+   * El mapa de hoyos aprobado del campo (BE #532)
+   * @param {string} id - Golf course ID
+   * @returns {Promise<Object|null>} El mapa, o null si no tiene
+   */
+  async getHoleMap(id) {
+    throw new Error('Method not implemented: getHoleMap');
+  }
+
+  /**
    * Create a new golf course request (any user)
    * Creates a golf course in PENDING_APPROVAL status
    * @param {Object} golfCourseData - Golf course data
