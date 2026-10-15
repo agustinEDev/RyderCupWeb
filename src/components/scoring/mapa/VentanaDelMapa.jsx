@@ -1,24 +1,30 @@
-import { Component, lazy, Suspense } from 'react';
+import { Component, lazy, Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../../ui/BlockLoader';
+import ModalShell from '../../ui/ModalShell';
 import { captureError } from '../../../utils/sentryHelpers';
 
-// Aparte: MapLibre pesa, y la anotación no tiene por qué cargarlo hasta que se abre
-const MapaDelHoyo = lazy(() => import('./MapaDelHoyo'));
+// Aparte: MapLibre pesa, y la anotación no tiene por qué cargarlo hasta que se
+// abre. Una carga nueva en cada apertura: React guarda la que falló, y con una
+// sola, tras un fallo el mapa ya no abría hasta recargar la página
+const cargarMapa = () => lazy(() => import('./MapaDelHoyo'));
 
-const NoCarga = ({ onCerrar }) => {
+// La caja de `ModalShell` (que ya se anuncia como diálogo), a toda la pantalla
+const CAPA = 'fixed inset-x-0 inset-y-0 flex flex-col items-center justify-center gap-4 p-6 text-center';
+
+/** De un modal se sale siempre: también mientras carga y si no carga. */
+const SalidaDelMapa = ({ onCerrar, children, oscuro = false }) => {
   const { t } = useTranslation('scoring');
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-gray-900 p-6 text-center text-white">
-      <p>{t('mapa.noCarga')}</p>
-      <button type="button" onClick={onCerrar} className="min-h-11 rounded-xl bg-white px-5 font-semibold text-gray-900">
+    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} boxClassName={`${CAPA} ${oscuro ? 'bg-gray-900 text-white' : 'bg-white'}`}>
+      <button type="button" onClick={onCerrar} className="min-h-11 order-last rounded-xl bg-gray-900 px-5 font-semibold text-white">
         {t('mapa.cerrar')}
       </button>
-    </div>
+      {children}
+    </ModalShell>
   );
 };
 
-/** De un modal se sale siempre: si el mapa no carga, un aviso con «Cerrar». */
 class SiNoCarga extends Component {
   constructor(props) {
     super(props);
@@ -34,31 +40,37 @@ class SiNoCarga extends Component {
   }
 
   render() {
-    return this.state.fallo ? <NoCarga onCerrar={this.props.onCerrar} /> : this.props.children;
+    if (!this.state.fallo) return this.props.children;
+    return (
+      <SalidaDelMapa onCerrar={this.props.onCerrar} oscuro>
+        <p>{this.props.texto}</p>
+      </SalidaDelMapa>
+    );
   }
 }
 
-/**
- * El mapa del hoyo cuando está abierto (BE #532), con los datos de ese hoyo
- * sacados del mapa del campo; sin mapa del campo, el hoyo va como sin mapa.
- */
-const VentanaDelMapa = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par }) => {
-  if (!mapaDelHoyo.abierto) return null;
+const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par }) => {
+  const { t } = useTranslation('scoring');
+  const [MapaDelHoyo] = useState(cargarMapa);
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
+  const hoyo = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
   return (
-    <SiNoCarga onCerrar={cerrar}>
+    <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')}>
       <Suspense
         fallback={
-          <div role="dialog" aria-modal="true" aria-busy="true" className="fixed inset-0 z-50 flex items-center justify-center bg-white">
+          <SalidaDelMapa onCerrar={cerrar}>
             <BlockLoader />
-          </div>
+          </SalidaDelMapa>
         }
       >
+        {/* Si los datos del campo llegan (o cambian) con el mapa abierto, se
+            rehace con ellos: el mapa fija su encuadre y su giro al montarse */}
         <MapaDelHoyo
+          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}`}
           golfCourseId={golfCourseId}
           numeroDeHoyo={numeroDeHoyo}
           par={par}
-          hoyo={mapaDelCampo?.holes?.[numeroDeHoyo] ?? null}
+          hoyo={hoyo}
           atribucion={mapaDelCampo?.attribution ?? null}
           onCerrar={cerrar}
         />
@@ -66,5 +78,11 @@ const VentanaDelMapa = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par }) => {
     </SiNoCarga>
   );
 };
+
+/**
+ * El mapa del hoyo cuando está abierto (BE #532), con los datos de ese hoyo
+ * sacados del mapa del campo; sin mapa del campo, el hoyo va como sin mapa.
+ */
+const VentanaDelMapa = (props) => (props.mapaDelHoyo.abierto ? <MapaAbierto {...props} /> : null);
 
 export default VentanaDelMapa;

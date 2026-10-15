@@ -4,14 +4,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 vi.mock('../../../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
 
-const carga = vi.hoisted(() => ({ falla: false, props: null }));
-vi.mock('./MapaDelHoyo', () => ({
-  default: (props) => {
+const carga = vi.hoisted(() => ({ falla: false, suspende: false, props: null, montajes: 0 }));
+vi.mock('./MapaDelHoyo', async () => {
+  const { useState } = await vi.importActual('react');
+  const MapaFalso = (props) => {
+    if (carga.suspende) throw new Promise(() => {});
     if (carga.falla) throw new Error('Failed to fetch dynamically imported module');
+    useState(() => {
+      carga.montajes += 1;
+    });
     carga.props = props;
     return <div data-testid="mapa-del-hoyo" />;
-  },
-}));
+  };
+  return { default: MapaFalso };
+});
 
 const { default: VentanaDelMapa } = await import('./VentanaDelMapa');
 const { default: BotonMapa } = await import('./BotonMapa');
@@ -27,7 +33,9 @@ const estado = (extra = {}) => ({
 describe('VentanaDelMapa', () => {
   beforeEach(() => {
     carga.falla = false;
+    carga.suspende = false;
     carga.props = null;
+    carga.montajes = 0;
   });
 
   it('cerrado, nada', () => {
@@ -83,5 +91,70 @@ describe('BotonMapa', () => {
 
     expect(onAbrir).toHaveBeenCalled();
     expect(boton).toHaveClass('min-h-11');
+  });
+});
+
+describe('VentanaDelMapa — tras la revisión', () => {
+  beforeEach(() => {
+    carga.falla = false;
+    carga.suspende = false;
+    carga.montajes = 0;
+  });
+
+  const ventana = (mapaDelHoyo) => <VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />;
+
+  it('si los datos del campo llegan con el mapa abierto, el mapa se rehace con ellos', async () => {
+    const { rerender } = render(ventana(estado({ mapaDelCampo: null })));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    rerender(ventana(estado()));
+
+    await screen.findByTestId('mapa-del-hoyo');
+    expect(carga.montajes).toBe(2);
+    expect(carga.props.hoyo).toEqual({ playLine: [], green: GREEN });
+  });
+
+  it('una versión nueva del mapa también lo rehace', async () => {
+    const { rerender } = render(ventana(estado({ mapaDelCampo: { version: 'v1', holes: { 3: { playLine: [], green: GREEN } } } })));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    rerender(ventana(estado({ mapaDelCampo: { version: 'v2', holes: { 3: { playLine: [], green: GREEN } } } })));
+
+    await screen.findByTestId('mapa-del-hoyo');
+    expect(carga.montajes).toBe(2);
+  });
+
+  it('sin cambios en los datos, no se rehace', async () => {
+    const mapaDelHoyo = estado();
+    const { rerender } = render(ventana(mapaDelHoyo));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    rerender(ventana({ ...mapaDelHoyo }));
+
+    expect(carga.montajes).toBe(1);
+  });
+
+  it('tras un fallo de carga, volver a abrirlo lo intenta de nuevo', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    carga.falla = true;
+    const { rerender } = render(ventana(estado()));
+    await screen.findByText('mapa.noCarga');
+
+    rerender(ventana(estado({ abierto: false })));
+    carga.falla = false;
+    rerender(ventana(estado()));
+
+    expect(await screen.findByTestId('mapa-del-hoyo')).toBeInTheDocument();
+    globalThis.console.error.mockRestore();
+  });
+
+  it('mientras carga, también se puede cerrar', async () => {
+    carga.suspende = true;
+    const mapaDelHoyo = estado();
+    render(ventana(mapaDelHoyo));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'mapa.cerrar' }));
+
+    expect(mapaDelHoyo.cerrar).toHaveBeenCalled();
   });
 });

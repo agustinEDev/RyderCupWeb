@@ -8,6 +8,7 @@ import { distanciaEnMetros, distanciasAlGreen } from '../../../domain/services/d
 import { limitesDelHoyo, orientacionDelHoyo } from '../../../domain/services/geometriaDelHoyo';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
 import { recordarPosicion, useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
+import ModalShell from '../../ui/ModalShell';
 
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
@@ -29,7 +30,17 @@ const ESTILO = {
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
 const ZOOM_SIN_MAPA = 17;
-const MARGEN = { top: 90, bottom: 190, left: 40, right: 40 };
+// Cada cuánto se guarda la última posición: el GPS da una por segundo
+const GUARDAR_POSICION_CADA_MS = 30_000;
+
+// Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
+// fijo, en apaisado (~360 px) no cabía el hoyo y MapLibre no lo encuadraba
+const margenDelEncuadre = (alto) => ({
+  top: Math.round(Math.min(90, alto * 0.15)),
+  bottom: Math.round(Math.min(240, alto * 0.4)),
+  left: 40,
+  right: 40,
+});
 
 const lngLat = (p) => [p.lon, p.lat];
 
@@ -74,12 +85,17 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   const marcaGps = useRef(null);
   const marcaTocada = useRef(null);
   const centradoEnGps = useRef(false);
+  const movidoPorElJugador = useRef(false);
+  const posicionGuardada = useRef(0);
   // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto
   const inicio = useRef({ hoyo, conMapa, centroSinMapa });
 
   const encuadrarHoyo = useCallback((animar) => {
     const { hoyo: h } = inicio.current;
-    mapaRef.current?.fitBounds(limitesDelHoyo(h), { bearing: orientacionDelHoyo(h), padding: MARGEN, animate: animar });
+    const limites = limitesDelHoyo(h);
+    if (!limites) return;
+    const alto = contenedor.current?.clientHeight || 640;
+    mapaRef.current?.fitBounds(limites, { bearing: orientacionDelHoyo(h), padding: margenDelEncuadre(alto), animate: animar });
   }, []);
 
   useEffect(() => {
@@ -118,6 +134,10 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
         paint: { 'circle-radius': 6, 'circle-color': '#facc15', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
       });
     });
+    // Con `originalEvent`, lo movió el jugador (no un `jumpTo` nuestro)
+    mapa.on('movestart', (e) => {
+      if (e.originalEvent) movidoPorElJugador.current = true;
+    });
     // Un toque sin arrastrar mide; arrastrar y pellizcar mueven el mapa
     mapa.on('click', (e) => setTocado({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
     return () => {
@@ -130,8 +150,17 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   const posicion = gps.estado === 'listo' ? gps.posicion : null;
   useEffect(() => {
     const mapa = mapaRef.current;
-    if (!mapa || !posicion) return;
-    recordarPosicion(posicion);
+    if (!mapa) return;
+    if (!posicion) {
+      // Sin señal buena, el punto azul no se queda donde ya no estás
+      marcaGps.current?.remove();
+      marcaGps.current = null;
+      return;
+    }
+    if (Date.now() - posicionGuardada.current >= GUARDAR_POSICION_CADA_MS) {
+      posicionGuardada.current = Date.now();
+      recordarPosicion(posicion);
+    }
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     if (!inicio.current.conMapa && !centradoEnGps.current) {
@@ -152,13 +181,15 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
     marcaTocada.current.setLngLat(lngLat(tocado));
   }, [tocado]);
 
+  // La ubicación del campo llega después de abrir: centra el mapa si aún no lo
+  // hizo el GPS ni el jugador lo ha movido
   useEffect(() => {
-    const alPulsar = (e) => {
-      if (e.key === 'Escape') onCerrar();
-    };
-    globalThis.document.addEventListener('keydown', alPulsar);
-    return () => globalThis.document.removeEventListener('keydown', alPulsar);
-  }, [onCerrar]);
+    const mapa = mapaRef.current;
+    if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
+    if (centradoEnGps.current || movidoPorElJugador.current) return;
+    inicio.current.centroSinMapa = centroSinMapa;
+    mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
+  }, [centroSinMapa]);
 
   const distancias = distanciasAlGreen(posicion, hoyo?.green);
   const hastaAhi = tocado && posicion ? distanciaEnMetros(posicion, tocado) : null;
@@ -166,18 +197,26 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('mapa.titulo', { numero: numeroDeHoyo, par })} className="fixed inset-0 z-50 bg-gray-700">
-      <div ref={contenedor} className="absolute inset-0" />
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
-        <h2 className={`${PLACA} px-3.5 py-2 text-lg font-extrabold`}>{t('mapa.titulo', { numero: numeroDeHoyo, par })}</h2>
+    // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
+    // cerrar, no se sale con el tabulador, Escape cierra y debajo no se desplaza
+    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-gray-700">
+      <div
+        data-testid="mapa-arriba"
+        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 pt-[calc(1rem+env(safe-area-inset-top))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
+      >
+        <h2 id="titulo-del-mapa" className={`${PLACA} px-3.5 py-2 text-lg font-extrabold`}>{t('mapa.titulo', { numero: numeroDeHoyo, par })}</h2>
         <button type="button" onClick={onCerrar} className={`${BOTON} pointer-events-auto`}>
           <X className="h-4 w-4" aria-hidden="true" />
           {t('mapa.cerrar')}
         </button>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-2.5 p-4">
+      <div ref={contenedor} className="absolute inset-0" />
+
+      <div
+        data-testid="mapa-abajo"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
+      >
         {aviso && <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{aviso}</p>}
 
         {tocado ? (
@@ -247,7 +286,7 @@ const MapaDelHoyo = ({ golfCourseId, numeroDeHoyo, par, hoyo, atribucion, onCerr
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 };
 

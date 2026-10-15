@@ -42,13 +42,52 @@ describe('useMapaDelHoyo', () => {
     expect(result.current.location.pathname).toBe('/scoring/m-1');
   });
 
-  it('entrando ya con el mapa abierto (recargar), cerrar no saca de la anotación', () => {
+  it('entrando ya con #mapa (recargar), se quita: se vuelve a la tarjeta, sin entrada de más', () => {
     const { result } = montar('/scoring/m-1#mapa');
-    expect(result.current.mapa.abierto).toBe(true);
 
+    expect(result.current.mapa.abierto).toBe(false);
+    expect(result.current.location.hash).toBe('');
+    expect(result.current.location.pathname).toBe('/scoring/m-1');
+  });
+
+  it('recargando con #mapa, el mapa no llega a abrirse ni un instante', () => {
+    const vistos = [];
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1#mapa']}>{children}</MemoryRouter>;
+    renderHook(
+      () => {
+        const mapa = useMapaDelHoyo({ golfCourseId: 'gc-1' });
+        vistos.push(mapa.abierto);
+        return mapa;
+      },
+      { wrapper }
+    );
+
+    expect(vistos).not.toContain(true);
+  });
+
+  it('dos toques en «Mapa» lo abren una sola vez: un «Cerrar» basta', () => {
+    const { result } = montar();
+
+    act(() => {
+      result.current.mapa.abrir();
+      result.current.mapa.abrir();
+    });
     act(() => result.current.mapa.cerrar());
 
     expect(result.current.mapa.abierto).toBe(false);
+  });
+
+  it('dos toques en «Cerrar» no sacan de la anotación', () => {
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/inicio', '/scoring/m-1']} initialIndex={1}>{children}</MemoryRouter>;
+    const { result } = renderHook(() => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1' }), location: useLocation() }), { wrapper });
+    act(() => result.current.mapa.abrir());
+
+    act(() => {
+      result.current.mapa.cerrar();
+      result.current.mapa.cerrar();
+    });
+
     expect(result.current.location.pathname).toBe('/scoring/m-1');
+    expect(result.current.mapa.abierto).toBe(false);
   });
 });

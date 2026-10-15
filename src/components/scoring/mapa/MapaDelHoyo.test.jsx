@@ -36,6 +36,10 @@ vi.mock('maplibre-gl', () => {
     }
   }
   class Marker {
+    constructor() {
+      this.remove = vi.fn();
+      mapas.marcas = [...(mapas.marcas ?? []), this];
+    }
     setLngLat(p) {
       this.p = p;
       return this;
@@ -43,7 +47,6 @@ vi.mock('maplibre-gl', () => {
     addTo() {
       return this;
     }
-    remove() {}
   }
   return { Map, Marker, setWorkerUrl: vi.fn() };
 });
@@ -56,6 +59,7 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
   },
   recordarPosicion: (p) => {
     centro.recordada = p;
+    centro.veces = (centro.veces ?? 0) + 1;
   },
 }));
 
@@ -93,6 +97,8 @@ describe('MapaDelHoyo', () => {
     mapas.length = 0;
     centro.valor = null;
     centro.recordada = undefined;
+    centro.veces = 0;
+    mapas.marcas = [];
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
   });
@@ -371,5 +377,114 @@ describe('MapaDelHoyo', () => {
         expect(screen.getByRole('button', { name: nombre })).toHaveClass('min-h-11');
       }
     });
+  });
+});
+
+describe('MapaDelHoyo — tras la revisión', () => {
+  let gps;
+
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    centro.valor = null;
+    centro.veces = 0;
+    gps = gpsFalso();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('S3: la ubicación del campo que llega después centra el mapa, una vez', () => {
+    const { rerender } = abrir({ hoyo: null });
+    expect(mapa().jumpTo).not.toHaveBeenCalled();
+
+    centro.valor = { lat: 36.29, lon: -5.33 };
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
+    expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-5.33, 36.29] }));
+  });
+
+  it('un hoyo con mapa no salta a una posición guardada: va encuadrado', () => {
+    const { rerender } = abrir();
+
+    centro.valor = { lat: 40.4, lon: -3.7 };
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={HOYO} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).not.toHaveBeenCalled();
+  });
+
+  it('S3: si el jugador ya movió el mapa, no se lo cambia', () => {
+    const { rerender } = abrir({ hoyo: null });
+    act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+
+    centro.valor = { lat: 36.29, lon: -5.33 };
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).not.toHaveBeenCalled();
+  });
+
+  it('S3: con el GPS ya centrado, la del campo no lo mueve', () => {
+    const { rerender } = abrir({ hoyo: null });
+    act(() => gps.exito(lectura(36.2888, -5.332)));
+    mapa().jumpTo.mockClear();
+
+    centro.valor = { lat: 36.29, lon: -5.33 };
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).not.toHaveBeenCalled();
+  });
+
+  it('el foco entra al mapa por «Cerrar»', () => {
+    abrir();
+
+    expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toHaveFocus();
+  });
+
+  it('respeta las zonas seguras del iPhone (muesca y barra de inicio)', () => {
+    abrir();
+
+    expect(screen.getByTestId('mapa-arriba').className).toContain('env(safe-area-inset-top)');
+    expect(screen.getByTestId('mapa-abajo').className).toContain('env(safe-area-inset-bottom)');
+  });
+
+  it('el margen del encuadre sale del alto de la pantalla (apaisado)', () => {
+    const alto = vi.spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(360);
+    try {
+      abrir();
+    } finally {
+      alto.mockRestore();
+    }
+
+    expect(mapa().fitBounds).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ padding: expect.objectContaining({ top: 54, bottom: 144 }) })
+    );
+  });
+
+  it('sin señal buena, el punto azul se quita', () => {
+    abrir();
+    act(() => gps.exito(lectura(36.2888, -5.332)));
+    const yo = mapas.marcas[0];
+
+    act(() => gps.exito(lectura(36.2888, -5.332, 60)));
+
+    expect(yo.remove).toHaveBeenCalled();
+  });
+
+  it('la última posición se guarda como mucho cada 30 s, no en cada lectura', () => {
+    vi.useFakeTimers();
+    abrir();
+
+    act(() => gps.exito(lectura(36.2888, -5.332)));
+    act(() => gps.exito(lectura(36.2889, -5.332)));
+    expect(centro.veces).toBe(1);
+
+    act(() => vi.advanceTimersByTime(30_000));
+    act(() => gps.exito(lectura(36.289, -5.332)));
+    expect(centro.veces).toBe(2);
   });
 });

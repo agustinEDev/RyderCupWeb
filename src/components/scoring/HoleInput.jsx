@@ -42,8 +42,8 @@ const HoleInput = ({
   matchFormat,
   // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
   allowPickedUp = true,
-  // Lo que va al pie de la tarjeta: la línea de distancias al green (mapa de
-  // hoyos). Sin ella, la tarjeta queda como siempre
+  // Lo que va al pie de la tarjeta: el botón «Mapa» del hoyo (BE #532). Sin
+  // él, la tarjeta queda como siempre
   pie = null,
 }) => {
   const { t } = useTranslation('scoring');

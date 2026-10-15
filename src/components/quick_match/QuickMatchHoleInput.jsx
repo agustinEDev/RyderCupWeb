@@ -151,7 +151,7 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
         ))}
       </div>
 
-      {/* La línea de distancias al green (mapa de hoyos); sin ella, sin pie */}
+      {/* El botón «Mapa» del hoyo (BE #532); sin él, sin pie */}
       {pie && (
         <div data-testid="pie-del-hoyo" className="border-t border-gray-100 pt-3">
           {pie}
