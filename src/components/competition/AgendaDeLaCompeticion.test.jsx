@@ -163,6 +163,14 @@ describe('AgendaDeLaCompeticion · lo que enseña', () => {
     expect(screen.queryByTestId('agenda-anadir')).not.toBeInTheDocument();
   });
 
+  it('AG19: una sesión sin formato no pinta «formats.null» (`/code-review`)', async () => {
+    mockVerAgenda.mockResolvedValue({ teamAssignment: null, rounds: [sesion({ matchFormat: null })] });
+    pintar({ canManage: false });
+
+    const fila = await screen.findByTestId('agenda-sesion-r1');
+    expect(fila).not.toHaveTextContent('formats.');
+  });
+
   it('AG12: si no se puede leer, lo dice; no que no hay sesiones', async () => {
     mockVerAgenda.mockRejectedValue(new TypeError('Sin conexión'));
     pintar();

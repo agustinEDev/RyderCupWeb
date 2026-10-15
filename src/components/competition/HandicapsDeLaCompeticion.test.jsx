@@ -204,13 +204,59 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     expect(screen.getByLabelText(/^handicaps\.scheduleAtDevice/)).toBeInTheDocument();
   });
 
-  it('15b: si los campos no se pudieron leer, también', async () => {
+  /**
+   * Que no se pudiera leer no es que el campo no tenga zona (QA de la release,
+   * 14 oct): se dice, se puede reintentar y no se programa a ciegas en la hora
+   * del dispositivo.
+   */
+  it('15b: si los campos no se pudieron leer, se dice y no se programa', async () => {
     mockCampos.mockRejectedValue(new Error('sin red'));
     pinta();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'handicaps.schedule' }));
+    expect(await screen.findByTestId('handicaps-zona-ilegible')).toHaveTextContent('handicaps.zoneUnreadable');
+    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+    expect(screen.queryByText(/scheduleAtDevice|scheduledDevice/)).not.toBeInTheDocument();
+  });
 
-    expect(await screen.findByLabelText(/^handicaps\.scheduleAtDevice/)).toBeInTheDocument();
+  it('15b2: lo ya programado, en la hora del dispositivo sin decir que el campo no tiene zona', async () => {
+    mockCampos.mockRejectedValue(new Error('sin red'));
+    pinta({ handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } });
+
+    expect(await screen.findByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledUnknownZone/);
+  });
+
+  it('15b4: mientras lee, lo programado tampoco dice que el campo no tiene zona', () => {
+    mockCampos.mockReturnValue(new Promise(() => {}));
+    pinta({ handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } });
+
+    expect(screen.getByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduledUnknownZone/);
+  });
+
+  it('15b5: reintentar que vuelve a fallar: el aviso sigue (y se anuncia) y no se programa', async () => {
+    let falla;
+    mockCampos.mockRejectedValueOnce(new Error('sin red')).mockReturnValueOnce(new Promise((_r, rej) => { falla = rej; }));
+    pinta();
+    const reintentar = await screen.findByRole('button', { name: 'handicaps.retryZone' });
+    expect(screen.getByTestId('handicaps-zona-ilegible')).toHaveAttribute('role', 'status');
+
+    fireEvent.click(reintentar);
+    expect(reintentar).toBeDisabled();
+    expect(screen.getByTestId('handicaps-zona-ilegible')).toBeInTheDocument();
+    await act(async () => falla(new Error('otra vez')));
+
+    expect(await screen.findByRole('button', { name: 'handicaps.retryZone' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeDisabled();
+  });
+
+  it('15b3: reintentar la vuelve a leer, y con ella se programa en la del campo', async () => {
+    mockCampos.mockRejectedValueOnce(new Error('sin red'));
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'handicaps.retryZone' }));
+
+    await waitFor(() => expect(screen.queryByTestId('handicaps-zona-ilegible')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
+    expect(screen.getByLabelText(/^handicaps\.scheduleAt\b/)).toBeInTheDocument();
+    expect(mockCampos).toHaveBeenCalledTimes(2);
   });
 
   it('15c: hasta saber la zona no se puede abrir el programador (revisor)', async () => {
@@ -259,5 +305,83 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
 
     expect(screen.getByRole('button', { name: 'handicaps.scheduleSave' })).toBeDisabled();
+  });
+  /**
+   * RyderCupAm#541 (FE de BE-B): el motivo llega también como código y se dice
+   * en el idioma de la app. Un código que no se conoce, o ninguno, deja el
+   * texto del servidor.
+   *
+   *   R1  ventana cerrada con código           | su texto
+   *   R2  código desconocido                   | el del servidor
+   *   R3  lanzar: 409 RUNNING                  | su texto
+   *   R4  programar: la ventana a esa hora     | «A esa hora no se podría: …»
+   *   R5  programar: en el pasado o justo      | su texto, sin «a esa hora»
+   */
+  const rechazo = (reasonCode, mensaje = 'texto del servidor') =>
+    Object.assign(new Error(mensaje), { status: 400, data: { error_code: 'HANDICAP_UPDATE_NOT_ALLOWED', reason_code: reasonCode } });
+  const programa = async () => {
+    await waitFor(() => expect(screen.getByRole('button', { name: 'handicaps.schedule' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.schedule' }));
+    fireEvent.change(await screen.findByLabelText(/^handicaps\.scheduleAt/), { target: { value: '2030-10-12T03:00' } });
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.scheduleSave' }));
+  };
+
+  it('R1: cerrada con código, el motivo traducido', async () => {
+    pinta({ handicapUpdateWindow: { open: false, closesAt: null, reason: 'Hay una jornada en marcha.', reasonCode: 'DAY_IN_PLAY', scheduledAt: null } });
+
+    expect(await screen.findByTestId('handicaps-ventana')).toHaveTextContent('handicaps.reasons.DAY_IN_PLAY');
+  });
+
+  it.each(['STATUS', 'NO_WINDOWS', 'RYDER', 'DAY_IN_PLAY', 'NO_DAYS_LEFT', 'TOO_CLOSE', 'NO_TIMEZONE', 'DISABLED', 'RUNNING'])(
+    'R1b: %s, traducido',
+    async (codigo) => {
+      pinta({ handicapUpdateWindow: { open: false, closesAt: null, reason: 'x', reasonCode: codigo, scheduledAt: null } });
+
+      expect(await screen.findByTestId('handicaps-ventana')).toHaveTextContent(`handicaps.reasons.${codigo}`);
+    }
+  );
+
+  it('R2: un código que no se conoce, el texto del servidor', async () => {
+    pinta({ handicapUpdateWindow: { open: false, closesAt: null, reason: 'Motivo nuevo del servidor.', reasonCode: 'SOMETHING_NEW', scheduledAt: null } });
+
+    expect(await screen.findByTestId('handicaps-ventana')).toHaveTextContent('Motivo nuevo del servidor.');
+  });
+
+  it('R3: lanzar con otra en marcha (409 RUNNING), traducido', async () => {
+    mockLanzar.mockRejectedValue(rechazo('RUNNING', 'Ya se están actualizando los hándicaps.'));
+    pinta();
+
+    fireEvent.click(screen.getByRole('button', { name: 'handicaps.update' }));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('handicaps.reasons.RUNNING'));
+  });
+
+  it('R4: programar a una hora en que la ventana estaría cerrada: «a esa hora no se podría»', async () => {
+    mockProgramar.mockRejectedValue(rechazo('DAY_IN_PLAY'));
+    pinta();
+
+    await programa();
+
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith('handicaps.notAtThatTime {"motivo":"handicaps.reasons.DAY_IN_PLAY"}')
+    );
+  });
+
+  it.each(['IN_THE_PAST', 'TOO_TIGHT', 'DISABLED'])('R5: programar, %s: su texto, sin «a esa hora»', async (codigo) => {
+    mockProgramar.mockRejectedValue(rechazo(codigo));
+    pinta();
+
+    await programa();
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith(`handicaps.reasons.${codigo}`));
+  });
+
+  it('R5b: programar con un código desconocido, el texto del servidor', async () => {
+    mockProgramar.mockRejectedValue(rechazo('SOMETHING_NEW', 'A esa hora no se podría: algo nuevo.'));
+    pinta();
+
+    await programa();
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('A esa hora no se podría: algo nuevo.'));
   });
 });

@@ -37,6 +37,11 @@ describe('ScheduleMapper', () => {
       expect(dto.matches).toEqual([]);
     });
 
+    it('sin formato (una franja de stroke play, RyderCupAm#541): null, nunca undefined', () => {
+      expect(ScheduleMapper.toRoundDTO({ id: 'r', match_format: null, matches: [] }).matchFormat).toBeNull();
+      expect(ScheduleMapper.toRoundDTO({ id: 'r', matches: [] }).matchFormat).toBeNull();
+    });
+
     it('D1: quién descansa viaja en la sesión, y un servidor anterior no lo manda (#710)', () => {
       const base = { id: 'r1', matches: [] };
 

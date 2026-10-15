@@ -51,7 +51,6 @@ for (const ruta of [
   '../components/ui/Avatar',
   '../components/profile/HandicapRequestModal',
   '../components/EmailVerificationBanner',
-  '../components/dashboard/PendingActionsCard',
   '../components/dashboard/PlayerStatsCards',
   '../components/dashboard/RecentMatches',
   '../components/quick_match/CreateQuickMatchModal',
@@ -59,6 +58,11 @@ for (const ruta of [
 ]) {
   vi.doMock(ruta, () => ({ default: () => null }));
 }
+
+// Cuántos próximos le llegan a «Requiere tu atención» (QA de la release)
+vi.doMock('../components/dashboard/PendingActionsCard', () => ({
+  default: ({ upcomingMatches }) => <div data-testid="pendientes" data-proximos={String(upcomingMatches)} />,
+}));
 
 // Deja rastro de lo que recibe, que es lo que se mira
 vi.doMock('../components/dashboard/NextMatchBanner', () => ({
@@ -121,6 +125,35 @@ describe('el próximo partido del panel sin cobertura', () => {
     expect(banner()).toHaveAttribute('data-sin-respuesta', 'false');
     expect(banner()).toHaveAttribute('data-desde-memoria', 'false');
     expect(losUltimosPartidos()).toHaveLength(1);
+  });
+
+  it('«N partidos próximos» cuenta también las partidas de stroke play (QA de la release)', async () => {
+    mockLee.mockResolvedValue({ matches: [partido], complete: true });
+    mockPartidas.mockResolvedValue({
+      matches: [
+        { id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' },
+        { id: 'g-2', esPartidaDeFranja: true, roundDate: '2099-01-02', sessionType: 'MORNING' },
+      ],
+      complete: true,
+    });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(screen.getByTestId('pendientes')).toHaveAttribute('data-proximos', '3');
+  });
+
+  it('y quien solo juega stroke play también las ve contadas', async () => {
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockResolvedValue({
+      matches: [{ id: 'g-1', esPartidaDeFranja: true, roundDate: '2099-01-01', sessionType: 'MORNING' }],
+      complete: true,
+    });
+
+    render(<Dashboard />);
+    await asienta();
+
+    expect(screen.getByTestId('pendientes')).toHaveAttribute('data-proximos', '1');
   });
 
   it('una partida de stroke play antes que el partido: el banner enseña la partida (FE #824, PR 7)', async () => {

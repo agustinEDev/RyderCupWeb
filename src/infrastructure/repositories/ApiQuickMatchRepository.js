@@ -7,12 +7,7 @@ import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
  * ApiQuickMatchRepository - REST API implementation
  *
  * Endpoints:
- * - POST   /api/v1/quick-matches
- * - POST   /api/v1/quick-matches/{id}/participants
- * - POST   /api/v1/quick-matches/{id}/participants/guest
- * - DELETE /api/v1/quick-matches/{id}/participants/{participantId}
- * - PATCH  /api/v1/quick-matches/{id}/participants/{participantId}/handicap
- * - POST   /api/v1/quick-matches/{id}/start
+ * - POST   /api/v1/quick-matches/start
  * - POST   /api/v1/quick-matches/{id}/complete
  * - POST   /api/v1/quick-matches/{id}/cancel
  * - POST   /api/v1/quick-matches/{id}/holes/{n}/score
@@ -38,86 +33,46 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return queryString ? `?${queryString}` : '';
   }
 
-  async create(golfCourseId, matchFormat, scoringFormat, name = null, options = {}) {
-    const {
-      allowancePercentage = null,
-      playMode = 'HANDICAP',
-      creatorTeeColor = null,
-      creatorTeeGender = null,
-    } = options;
-    const apiData = await apiRequest('/api/v1/quick-matches', {
+  /**
+   * Crea la partida con todo el borrador del asistente y la inicia en una
+   * sola petición (FE #848). Los jugadores van en el orden en que se añadieron.
+   */
+  async createAndStart(peticion) {
+    const apiData = await apiRequest('/api/v1/quick-matches/start', {
       method: 'POST',
       body: JSON.stringify({
-        golf_course_id: golfCourseId,
-        match_format: matchFormat,
-        scoring_format: scoringFormat,
-        name,
-        allowance_percentage: allowancePercentage,
-        play_mode: playMode,
-        creator_tee_color: creatorTeeColor,
-        creator_tee_gender: creatorTeeGender,
+        quick_match_id: peticion.quickMatchId,
+        golf_course_id: peticion.golfCourseId,
+        match_format: peticion.matchFormat ?? null,
+        scoring_format: peticion.scoringFormat ?? null,
+        name: peticion.name ?? null,
+        allowance_percentage: peticion.allowancePercentage ?? null,
+        play_mode: peticion.playMode ?? 'HANDICAP',
+        creator_tee_color: peticion.creatorTeeColor ?? null,
+        creator_tee_gender: peticion.creatorTeeGender ?? null,
+        creator_handicap: peticion.creatorHandicap ?? null,
+        participants: (peticion.participants ?? []).map((p) =>
+          p.kind === 'FRIEND'
+            ? {
+                kind: 'FRIEND',
+                friend_user_id: p.friendUserId,
+                handicap: p.handicap ?? null,
+                team: p.team ?? null,
+                tee_color: p.teeColor ?? null,
+                tee_gender: p.teeGender ?? null,
+              }
+            : {
+                kind: 'GUEST',
+                first_name: p.firstName,
+                last_name: p.lastName,
+                handicap: p.handicap ?? null,
+                team: p.team ?? null,
+                tee_color: p.teeColor ?? null,
+                tee_gender: p.teeGender ?? null,
+              }
+        ),
+        scorer_user_ids: peticion.scorerUserIds,
       }),
-    });
-
-    return QuickMatchMapper.toDomain(apiData);
-  }
-
-  async addFriendParticipant(quickMatchId, friendUserId, team = null, options = {}) {
-    const { color = null, teeGender = null } = options;
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/participants`, {
-      method: 'POST',
-      body: JSON.stringify({
-        friend_user_id: friendUserId,
-        team,
-        tee_color: color,
-        tee_gender: teeGender,
-      }),
-    });
-
-    return QuickMatchMapper.toDomain(apiData);
-  }
-
-  async addGuestParticipant(quickMatchId, guest) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/participants/guest`, {
-      method: 'POST',
-      body: JSON.stringify({
-        first_name: guest.firstName,
-        last_name: guest.lastName,
-        handicap: guest.handicap ?? null,
-        team: guest.team ?? null,
-        tee_color: guest.color ?? null,
-        tee_gender: guest.teeGender ?? null,
-      }),
-    });
-
-    return QuickMatchMapper.toDomain(apiData);
-  }
-
-  async removeParticipant(quickMatchId, participantId) {
-    const apiData = await apiRequest(
-      `/api/v1/quick-matches/${quickMatchId}/participants/${participantId}`,
-      { method: 'DELETE' }
-    );
-
-    return QuickMatchMapper.toDomain(apiData);
-  }
-
-  async setParticipantHandicap(quickMatchId, participantId, handicap) {
-    const apiData = await apiRequest(
-      `/api/v1/quick-matches/${quickMatchId}/participants/${participantId}/handicap`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ handicap }),
-      }
-    );
-
-    return QuickMatchMapper.toDomain(apiData);
-  }
-
-  async start(quickMatchId, scorerIds) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/start`, {
-      method: 'POST',
-      body: JSON.stringify({ scorer_ids: scorerIds }),
     });
 
     return QuickMatchMapper.toDomain(apiData);

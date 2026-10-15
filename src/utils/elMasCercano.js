@@ -10,8 +10,16 @@ const ORDEN_DE_FRANJA = { MORNING: 0, AFTERNOON: 1, EVENING: 2 };
  */
 export const elMasCercano = (a, b) => {
   if (!a || !b) return a ?? b ?? null;
-  const porDia = (a.roundDate || '').localeCompare(b.roundDate || '');
-  if (porDia !== 0) return porDia < 0 ? a : b;
-  // Sin franja conocida, la primera: como ordena la lista de la Ryder
-  return (ORDEN_DE_FRANJA[b.sessionType] ?? 0) < (ORDEN_DE_FRANJA[a.sessionType] ?? 0) ? b : a;
+  return porCuandoSeJuega(b, a) < 0 ? b : a;
 };
+
+/**
+ * La misma regla como orden, para `sort` (FE #845): «Mis próximos partidos»
+ * junta los de la Ryder y las partidas. Por día, franja y hora de salida; sin
+ * hora (una sesión de la Ryder no la tiene) va antes que con ella.
+ */
+export const porCuandoSeJuega = (a, b) =>
+  (a.roundDate || '').localeCompare(b.roundDate || '') ||
+  // Sin franja conocida, la primera: como ordena la lista de la Ryder
+  (ORDEN_DE_FRANJA[a.sessionType] ?? 0) - (ORDEN_DE_FRANJA[b.sessionType] ?? 0) ||
+  (a.teeTime ?? '').localeCompare(b.teeTime ?? '');

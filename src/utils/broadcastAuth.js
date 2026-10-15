@@ -68,14 +68,17 @@ const initBroadcastChannel = () => {
  * Broadcast a logout event to all other tabs
  * This should be called when the user explicitly logs out in one tab
  *
- * @example
- * // In HeaderAuth.jsx handleLogout():
- * import { broadcastLogout } from '../utils/broadcastAuth';
+ * Quien sale avisa PRIMERO, antes de esperar al servidor: así las demás se
+ * enteran aunque esta pestaña se cierre durante la espera. La que recibe el
+ * aviso NO vuelve a avisar ni llama al backend, y sale recargando a `/login`
+ * con la navegación pedida antes de limpiar (`useLogout`, opción
+ * `desdeOtraPestana`): avisar de vuelta era un eco sin fin, y limpiar antes de
+ * navegar la hacía volver a preguntar por la sesión (FE #865).
  *
- * const handleLogout = async () => {
- *   broadcastLogout(); // Notify other tabs
- *   // ... rest of logout logic
- * };
+ * @example
+ * // Desde useLogout (no llamarlo a mano en cada pantalla, FE #531):
+ * const { logout } = useLogout();
+ * await logout({ recargarEn: '/' });
  */
 export const broadcastLogout = () => {
   const channel = initBroadcastChannel();

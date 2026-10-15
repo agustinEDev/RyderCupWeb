@@ -274,8 +274,8 @@
     "waitingJoined": "You are on the waiting list.",
     "waitingLeft": "You left the waiting list.",
     "moved": "Player moved.",
-    "playerRemoved": "Player removed from the window.",
-    "placed": "Player placed in the window.",
+    "playerRemoved": "Place freed.",
+    "placed": "Place assigned.",
     "removePlayerConfirm": "Remove {{jugador}}? Their place goes to the first on the waiting list.",
     "removePlayerYes": "Yes, remove",
     "waitingPosition_female_one": "You are #{{count}} on the waiting list",
@@ -329,10 +329,13 @@
     "markersSave": "Save markers",
     "markersSaved": "Markers saved.",
     "cancel": "Cancel",
+    "notEditablePartly": "The window's first group has teed off: they can no longer be regenerated, but the groups still to tee off can be changed.",
     "notEditable": "They can no longer be changed: the window's first group has teed off.",
     "error": "The change could not be made.",
     "mine": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · with {{companeros}}",
     "youAreNoShow": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · No-show",
+    "youRetired": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · with {{companeros}} · Retired",
+    "youRetiredAlone": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · Retired",
     "mineAlone": "Your group: {{franja}} on {{dia}} · group {{numero}} · {{hora}} · no playing partners yet",
     "youMark": "you mark {{jugador}}",
     "markersErrors": {
@@ -347,7 +350,8 @@
       "PLAYERS_WITHOUT_HANDICAP_other": "Groups can't be generated: {{count}} players have no handicap ({{jugadores}}).",
       "GROUPS_WINDOW_CLOSED": "This window's groups can no longer be changed.",
       "GROUP_ALREADY_STARTED": "A group in this window has already teed off: its groups can no longer be changed.",
-      "COURSE_WITHOUT_TIMEZONE": "This window's course has no time zone: ask the administrator before generating.",
+      "GROUP_ALREADY_OUT": "That group has already teed off: it cannot be changed.",
+      "COURSE_WITHOUT_TIMEZONE": "This window's course has no time zone: ask the administrator.",
       "NOT_ENOUGH_PLAYERS": "There are not enough players in this window to make groups.",
       "NOT_A_TEE_WINDOW": "This window has no tee sheet.",
       "INVALID_MARKERS": "Those markers are not valid: each player marks another and is marked by only one.",
@@ -355,7 +359,7 @@
       "ORIGIN_WOULD_BE_ALONE": "Their group would be left with one player: swap them with someone instead.",
       "NO_FREE_TEE_TIME": "There are no free tee times left for a new group.",
       "SWAP_NEEDS_GROUP": "You can only swap with someone in another group.",
-      "SWAP_PLAYER_NOT_IN_GROUP": "That player is no longer in that group.",
+      "SWAP_PLAYER_NOT_IN_GROUP": "That person is no longer in that group.",
       "ALREADY_IN_GROUP": "Already in that group.",
       "GROUP_NOT_IN_WINDOW": "That group is not in this window.",
       "PLAYER_NOT_IN_WINDOW": "That player has no place in this window.",
@@ -374,6 +378,7 @@
     "windowClosed": "Window closed.",
     "movePlayer": "Move {{jugador}}",
     "broughtIn": "You were moved to group {{numero}} · tees off at {{hora}}",
-    "yourCategory": "Your category: {{categoria}}"
+    "yourCategory": "Your category: {{categoria}}",
+    "withdrawnPartner": "{{nombre}} (withdrawn)"
   }
 }

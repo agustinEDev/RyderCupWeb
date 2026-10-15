@@ -51,6 +51,33 @@ export class CompetitionName {
   }
 
   /**
+   * The name as the API stores it: one space between words and none at the
+   * edges (RyderCupAm#540). Non-strings become ''.
+   * @param {unknown} value
+   * @returns {string}
+   */
+  static normalize(value) {
+    return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+  }
+
+  /**
+   * What is wrong with a name being written, measured once normalised, as the
+   * API measures it (RyderCupAm#540). Stricter than `isValid`, which stays as
+   * it was so names saved before this rule can still be read.
+   * @param {unknown} value
+   * @returns {'REQUIRED'|'TOO_SHORT'|'UNREADABLE'|'TOO_LONG'|null}
+   */
+  static problemWith(value) {
+    const name = CompetitionName.normalize(value);
+    if (!name) return 'REQUIRED';
+    if (name.length < CompetitionName.MIN_LENGTH) return 'TOO_SHORT';
+    // «...» is not a name: at least one letter or digit
+    if (!/[\p{L}\p{N}]/u.test(name)) return 'UNREADABLE';
+    if (name.length > CompetitionName.MAX_LENGTH) return 'TOO_LONG';
+    return null;
+  }
+
+  /**
    * Returns the primitive string value of the CompetitionName.
    * @returns {string} The competition name string.
    */

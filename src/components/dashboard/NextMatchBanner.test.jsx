@@ -97,6 +97,22 @@ describe('NextMatchBanner', () => {
       expect(banner).not.toHaveTextContent('nextMatch.versus');
     });
 
+    it('QA de la release: una compañera retirada, marcada, como en la tarjeta', () => {
+      renderBanner({
+        match: {
+          ...partida,
+          partners: [
+            { name: 'Ana', withdrawn: true, teeGender: 'FEMALE' },
+            { name: 'Bea', withdrawn: false, teeGender: null },
+          ],
+        },
+      });
+
+      expect(screen.getByTestId('next-match-banner').textContent).toContain(
+        'upcomingMatches.withdrawnPartner {\\"nombre\\":\\"Ana\\",\\"context\\":\\"female\\"}, Bea'
+      );
+    });
+
     it('la cabecera dice «tu próxima partida» (pasada)', () => {
       renderBanner({ match: partida });
 

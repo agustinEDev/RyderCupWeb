@@ -1,8 +1,15 @@
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { tieneEquipos } from '../domain/value_objects/TournamentType';
+import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { numeroEntero } from './numeroEntero';
 import { diasDelTorneo, errorDeAjustes } from './ajustesDeStrokePlay';
 
+const ERRORES_DEL_NOMBRE = {
+  REQUIRED: 'nameRequired',
+  TOO_SHORT: 'nameTooShort',
+  UNREADABLE: 'nameUnreadable',
+  TOO_LONG: 'nameTooLong',
+};
 const MIN_TEAM_NAME = 3;
 const MAX_TEAM_NAME = 50;
 const MIN_HANDICAP = 1;
@@ -22,8 +29,11 @@ const MAX_HANDICAP = 54;
  * Returns `null` when the form is valid.
  */
 export const validateCompetitionForm = (formData, { exigirCampos = true, inscritos = 0 } = {}) => {
-  if (!formData.competitionName?.trim()) {
-    return { key: 'nameRequired' };
+  // La regla del nombre vive en el dominio, medida como la API (RyderCupAm#540):
+  // aquí solo se traduce a la clave de su aviso
+  const problema = CompetitionName.problemWith(formData.competitionName);
+  if (problema) {
+    return { key: ERRORES_DEL_NOMBRE[problema] };
   }
 
   // Los dos nombres se normalizan UNA vez y las tres comprobaciones miran lo

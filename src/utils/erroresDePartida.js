@@ -20,6 +20,10 @@ export const CODIGOS_DE_PARTIDA = [
   'GROUP_FULL',
   // «Validar lo anotado» a quien tiene marcador (revisor)
   'PLAYER_HAS_MARKER',
+  // Reabrir una tarjeta que ya estaba abierta, y dar por no presentado a
+  // quien ya jugó (RyderCupAm#553)
+  'SCORECARD_ALREADY_OPEN',
+  'PLAYER_HAS_STROKES',
 ];
 
 /**

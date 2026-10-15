@@ -62,6 +62,32 @@ describe('validateCompetitionForm', () => {
     expect(result).toEqual({ key: 'nameRequired' });
   });
 
+  /**
+   * FE de RyderCupAm#540: lo que el servidor rechazaría con un 400 sin código
+   * se avisa antes, junto al campo y en el idioma de la app. Las mismas
+   * medidas que la API (3 a 100, ya sin espacios de sobra) y alguna letra o
+   * cifra: «...» o «---» no son un nombre.
+   */
+  it('returns nameTooShort below 3 characters, counted without spare spaces', () => {
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'ab' })).toEqual({ key: 'nameTooShort' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '  ab   ' })).toEqual({ key: 'nameTooShort' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'abc' })).toBeNull();
+  });
+
+  it('returns nameTooLong above 100 characters', () => {
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'a'.repeat(101) })).toEqual({ key: 'nameTooLong' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'a'.repeat(100) })).toBeNull();
+    // Los espacios de sobra no cuentan: la API los junta antes de medir
+    expect(validateCompetitionForm({ ...validFormData, competitionName: `a${' '.repeat(120)}b` })).toBeNull();
+  });
+
+  it('returns nameUnreadable without any letter or digit', () => {
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '...' })).toEqual({ key: 'nameUnreadable' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '- - -' })).toEqual({ key: 'nameUnreadable' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'Ñu 2' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '2026' })).toBeNull();
+  });
+
   it('returns teamNamesRequired when teamOneName is empty', () => {
     const result = validateCompetitionForm({ ...validFormData, teamOneName: '' });
     expect(result).toEqual({ key: 'teamNamesRequired' });

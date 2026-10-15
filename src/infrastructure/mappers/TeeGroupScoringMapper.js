@@ -102,6 +102,8 @@ class TeeGroupScoringMapper {
           markedByUserId: p.marked_by_user_id ?? null,
           // Vino de otra partida a acompañar al que se quedó solo (BE #539)
           broughtIn: p.brought_in ?? false,
+          // Si ya jugó, el organizador le retira: no puede darle por no presentado (RyderCupAm#553)
+          played: p.played ?? false,
           totals: totalesDe(p.totals || {}),
         })),
       },
@@ -123,6 +125,8 @@ class TeeGroupScoringMapper {
       status: r.status,
       // Su última tarjeta quedó retirada: en Stableford cuenta, pero no sigue (BE)
       retired: r.retired ?? false,
+      // Para «No presentada» o «Retirada» (FE #856, RyderCupAm#558)
+      teeGender: r.tee_gender ?? null,
     });
     return {
       tournamentType: api.tournament_type,

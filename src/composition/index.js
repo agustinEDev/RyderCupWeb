@@ -184,6 +184,8 @@ import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFr
 import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
 import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTeeGroupCardUseCase';
 import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
+import RetireTeeGroupPlayerUseCase from '../application/use_cases/scoring/RetireTeeGroupPlayerUseCase';
+import DeleteTeeGroupHoleUseCase from '../application/use_cases/scoring/DeleteTeeGroupHoleUseCase';
 import ValidateTeeGroupScoredHolesUseCase from '../application/use_cases/scoring/ValidateTeeGroupScoredHolesUseCase';
 import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
@@ -204,12 +206,7 @@ import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrol
 
 // Quick Match Use Cases (FE #236)
 import ApiQuickMatchRepository from '../infrastructure/repositories/ApiQuickMatchRepository';
-import CreateQuickMatchUseCase from '../application/use_cases/quick_match/CreateQuickMatchUseCase';
-import AddFriendParticipantUseCase from '../application/use_cases/quick_match/AddFriendParticipantUseCase';
-import AddGuestParticipantUseCase from '../application/use_cases/quick_match/AddGuestParticipantUseCase';
-import RemoveQuickMatchParticipantUseCase from '../application/use_cases/quick_match/RemoveQuickMatchParticipantUseCase';
-import SetQuickMatchParticipantHandicapUseCase from '../application/use_cases/quick_match/SetQuickMatchParticipantHandicapUseCase';
-import StartQuickMatchUseCase from '../application/use_cases/quick_match/StartQuickMatchUseCase';
+import CreateAndStartQuickMatchUseCase from '../application/use_cases/quick_match/CreateAndStartQuickMatchUseCase';
 import CompleteQuickMatchUseCase from '../application/use_cases/quick_match/CompleteQuickMatchUseCase';
 import CancelQuickMatchUseCase from '../application/use_cases/quick_match/CancelQuickMatchUseCase';
 import HideQuickMatchUseCase from '../application/use_cases/quick_match/HideQuickMatchUseCase';
@@ -390,6 +387,8 @@ const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScorin
 const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const retireTeeGroupPlayerUseCase = new RetireTeeGroupPlayerUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const deleteTeeGroupHoleUseCase = new DeleteTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const validateTeeGroupScoredHolesUseCase = new ValidateTeeGroupScoredHolesUseCase({
   teeGroupScoringRepository: apiTeeGroupScoringRepository,
 });
@@ -421,12 +420,7 @@ const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepos
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Quick Match Use Cases (FE #236)
-const createQuickMatchUseCase = new CreateQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const addFriendParticipantUseCase = new AddFriendParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const addGuestParticipantUseCase = new AddGuestParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const removeQuickMatchParticipantUseCase = new RemoveQuickMatchParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const setQuickMatchParticipantHandicapUseCase = new SetQuickMatchParticipantHandicapUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const startQuickMatchUseCase = new StartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -617,18 +611,15 @@ export {
   correctTeeGroupHoleUseCase,
   reopenTeeGroupCardUseCase,
   markTeeGroupNoShowUseCase,
+  retireTeeGroupPlayerUseCase,
+  deleteTeeGroupHoleUseCase,
   validateTeeGroupScoredHolesUseCase,
   closeTeeWindowUseCase,
   getTeeWindowStandingsUseCase,
   getCompetitionStandingsUseCase,
   getScratchStandingsUseCase,
   // Quick Match Use Cases (FE #236)
-  createQuickMatchUseCase,
-  addFriendParticipantUseCase,
-  addGuestParticipantUseCase,
-  removeQuickMatchParticipantUseCase,
-  setQuickMatchParticipantHandicapUseCase,
-  startQuickMatchUseCase,
+  createAndStartQuickMatchUseCase,
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
   hideQuickMatchUseCase,
