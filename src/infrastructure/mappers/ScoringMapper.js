@@ -39,6 +39,8 @@ class ScoringMapper {
           date: apiData.round_info.date,
           sessionType: apiData.round_info.session_type,
           golfCourseName: apiData.round_info.golf_course_name,
+          // Para pedir el mapa de hoyos del campo (BE #532)
+          golfCourseId: apiData.round_info.golf_course_id ?? null,
         }
         : null,
       competitionId: apiData.competition_id,

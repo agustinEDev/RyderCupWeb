@@ -33,6 +33,8 @@ import GetAdjacentCountriesUseCase from '../application/use_cases/country/GetAdj
 import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCourseRepository';
 import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGolfCoursesUseCase';
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
+import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
+import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
 import UpdateGolfCourseUseCase from '../application/use_cases/golf_course/UpdateGolfCourseUseCase';
@@ -438,6 +440,11 @@ const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDevic
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
 const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+// El mapa de hoyos para la anotación, con su copia para jugar sin cobertura (BE #532)
+const getHoleMapUseCase = new GetHoleMapUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeMapCache: new LocalStorageHoleMapCache(),
+});
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -519,6 +526,7 @@ export {
   // Golf Course Use Cases (v2.1.0 - Sprint 1)
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
+  getHoleMapUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,
   updateGolfCourseUseCase,

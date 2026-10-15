@@ -1,4 +1,5 @@
 import GolfCourse from '../../domain/entities/GolfCourse.js';
+import HoleMapMapper from '../mappers/HoleMapMapper';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../../services/api.js';
 
@@ -73,6 +74,20 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
   async getById(id) {
     const data = await apiRequest(`/api/v1/golf-courses/${id}`);
     return new GolfCourse(data);
+  }
+
+  /**
+   * @override
+   * El mapa de hoyos APROBADO del campo, o `null` si no tiene (404
+   * HOLE_MAP_NOT_FOUND): sin mapa no es un error, es un campo sin mapear.
+   */
+  async getHoleMap(id) {
+    try {
+      return HoleMapMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map`));
+    } catch (error) {
+      if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND') return null;
+      throw error;
+    }
   }
 
   /**

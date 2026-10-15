@@ -373,5 +373,15 @@
     "cannotClear": "Un número no se deja en blanco: para quitarlo, «Borrar lo anotado».",
     "notOpenYet": "La anotación de esta partida aún no ha abierto",
     "organiserValidates": "Nadie en juego te marca: tus hoyos los valida el organizador. Sigue anotando tus golpes."
+  },
+  "distancias": {
+    "activar": "Activar distancias",
+    "buscando": "Buscando señal GPS…",
+    "denegado": "Ubicación no permitida",
+    "noDisponible": "Este móvil no da la ubicación",
+    "delante": "D",
+    "centro": "C",
+    "fondo": "F",
+    "etiqueta": "Al green: delante {{front}} m, centro {{center}} m, fondo {{back}} m"
   }
 }

@@ -73,6 +73,14 @@ const mockUseScoring = {
   refetch: vi.fn(),
 };
 
+const distancias = vi.hoisted(() => ({ args: null, valor: { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } } }));
+vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
+  useDistanciasDelHoyo: (args) => {
+    distancias.args = args;
+    return distancias.valor;
+  },
+}));
+vi.mock('../../components/scoring/LineaDeDistancias', () => ({ default: () => <p data-testid="linea-de-distancias" /> }));
 vi.mock('../../hooks/useScoring', () => ({
   useScoring: () => mockUseScoring,
 }));
@@ -1475,3 +1483,47 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
     expect(casilla.montajes).toBe(antes);
   });
 });
+
+describe('ScoringPage — distancias al green (mapa de hoyos)', () => {
+  const vistaOriginal = mockUseScoring.scoringView;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    distancias.valor = { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } };
+    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1' } };
+  });
+  afterEach(() => {
+    mockUseScoring.scoringView = vistaOriginal;
+  });
+
+  it('M5: pide las distancias del campo de la jornada, de este partido y del hoyo que se anota', () => {
+    render(<ScoringPage />);
+
+    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'm-1', hoyo: 1 });
+  });
+
+  it('L4: en otro hoyo, las distancias de ese hoyo', () => {
+    mockUseScoring.currentHole = 3;
+    try {
+      render(<ScoringPage />);
+    } finally {
+      mockUseScoring.currentHole = 1;
+    }
+
+    expect(distancias.args.hoyo).toBe(3);
+  });
+
+  it('L1: con green, la casilla lleva la línea de distancias al pie', () => {
+    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} } };
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.pie).not.toBeNull();
+  });
+
+  it('L3: sin green, la casilla queda como siempre (sin pie)', () => {
+    render(<ScoringPage />);
+
+    expect(casilla.props.pie).toBeNull();
+  });
+});
+

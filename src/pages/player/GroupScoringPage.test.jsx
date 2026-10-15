@@ -58,6 +58,13 @@ vi.mock('../../hooks/useScoring', () => ({
   },
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
+const distancias = vi.hoisted(() => ({ args: null, valor: { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } } }));
+vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
+  useDistanciasDelHoyo: (args) => {
+    distancias.args = args;
+    return distancias.valor;
+  },
+}));
 vi.mock('../../components/scoring/HoleInput', () => ({
   default: (props) => {
     llamadas.casilla = props;
@@ -555,3 +562,37 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_NOT_SCORING'));
   });
 });
+
+describe('GroupScoringPage — distancias al green (mapa de hoyos)', () => {
+  beforeEach(() => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    distancias.valor = { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } };
+  });
+
+  it('M5: pide las distancias del campo de la franja, de esta partida y del hoyo que se anota', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+
+    render(<GroupScoringPage />);
+
+    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'g-1', hoyo: 1 });
+  });
+
+  it('L1: con green, la tarjeta lleva la línea de distancias al pie', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} } };
+
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.pie).not.toBeNull();
+  });
+
+  it('L3: sin green, la tarjeta queda como siempre (sin pie)', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+
+    render(<GroupScoringPage />);
+
+    expect(llamadas.casilla.pie).toBeNull();
+  });
+});
+

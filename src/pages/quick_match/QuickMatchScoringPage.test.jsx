@@ -22,6 +22,14 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 
 const mockUseQuickMatchScoring = vi.fn();
+const distancias = vi.hoisted(() => ({ args: null, valor: { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } } }));
+vi.mock('../../hooks/useDistanciasDelHoyo', () => ({
+  useDistanciasDelHoyo: (args) => {
+    distancias.args = args;
+    return distancias.valor;
+  },
+}));
+vi.mock('../../components/scoring/LineaDeDistancias', () => ({ default: () => <p data-testid="linea-de-distancias" /> }));
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
   useQuickMatchScoring: (...args) => {
     const estado = mockUseQuickMatchScoring(...args);
@@ -1783,3 +1791,43 @@ describe('QuickMatchScoringPage · los avisos, tras probarlo en el campo (FE #51
     expect(screen.getByTestId('quick-match-resultado-atrasado')).toBeInTheDocument();
   });
 });
+
+describe('QuickMatchScoringPage — distancias al green (mapa de hoyos)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    distancias.valor = { green: null, activadas: false, activar: () => {}, gps: { estado: 'inactivo', posicion: null } };
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [baseHookState.myParticipant] },
+      // La tarjeta del hoyo solo se pinta a quien anota
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+  });
+
+  it('M5: pide las distancias del campo de la partida, de esta partida y del hoyo que se anota', () => {
+    renderPage();
+
+    expect(distancias.args).toEqual({ golfCourseId: 'gc-1', partida: 'qm-1', hoyo: 1 });
+  });
+
+  it('L1: con green, la tarjeta lleva la línea de distancias', () => {
+    distancias.valor = { ...distancias.valor, green: { front: {}, center: {}, back: {} } };
+
+    renderPage();
+
+    expect(screen.getByTestId('linea-de-distancias')).toBeInTheDocument();
+  });
+
+  it('L3: sin green, sin línea de distancias', () => {
+    renderPage();
+
+    expect(screen.queryByTestId('linea-de-distancias')).toBeNull();
+  });
+});
+

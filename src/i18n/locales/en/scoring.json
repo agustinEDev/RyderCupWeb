@@ -363,5 +363,15 @@
     "cannotClear": "A stroke cannot be left blank: to remove it, use \"Delete what was scored\".",
     "notOpenYet": "Scoring for this group has not opened yet",
     "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes."
+  },
+  "distancias": {
+    "activar": "Turn on distances",
+    "buscando": "Looking for GPS signal…",
+    "denegado": "Location not allowed",
+    "noDisponible": "This phone does not share its location",
+    "delante": "F",
+    "centro": "C",
+    "fondo": "B",
+    "etiqueta": "To the green: front {{front}} m, centre {{center}} m, back {{back}} m"
   }
 }

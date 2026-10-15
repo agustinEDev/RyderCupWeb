@@ -5,6 +5,8 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import { useScoring } from '../../hooks/useScoring';
+import { useDistanciasDelHoyo } from '../../hooks/useDistanciasDelHoyo';
+import LineaDeDistancias from '../../components/scoring/LineaDeDistancias';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
 import { retireFromTeeGroupUseCase } from '../../composition';
 import customToast from '../../utils/toast';
@@ -89,6 +91,12 @@ const GroupScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(groupId, user?.id, user?.is_admin ?? false, ORIGEN_PARTIDA_DE_FRANJA);
+  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532)
+  const distancias = useDistanciasDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    partida: groupId,
+    hoyo: currentHole,
+  });
 
   const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
@@ -335,6 +343,14 @@ const GroupScoringPage = () => {
               {!aunNoAbre && (
                 <HoleInput
                   key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                  pie={distancias.green ? (
+                    <LineaDeDistancias
+                      green={distancias.green}
+                      activadas={distancias.activadas}
+                      gps={distancias.gps}
+                      onActivar={distancias.activar}
+                    />
+                  ) : null}
                   holeNumber={currentHole}
                   par={parDe(userId)}
                   markedPar={parDe(marcoA)}

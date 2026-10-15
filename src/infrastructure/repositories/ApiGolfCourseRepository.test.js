@@ -126,3 +126,39 @@ describe('ApiGolfCourseRepository.list', () => {
     expect(calledParams().get('lon')).toBe('0');
   });
 });
+
+describe('ApiGolfCourseRepository.getHoleMap', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('pide el mapa del campo y lo traduce', async () => {
+    apiRequest.mockResolvedValue({
+      golf_course_id: 'gc-1',
+      status: 'APPROVED',
+      version: 'v1',
+      attribution: null,
+      holes_needing_green: [],
+      geojson: { type: 'FeatureCollection', features: [] },
+    });
+
+    const mapa = await new ApiGolfCourseRepository().getHoleMap('gc-1');
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map');
+    expect(mapa.version).toBe('v1');
+  });
+
+  it('M2: un 404 HOLE_MAP_NOT_FOUND es «sin mapa», no un error', async () => {
+    apiRequest.mockImplementation(async () => {
+      throw Object.assign(new Error('x'), { status: 404, errorCode: 'HOLE_MAP_NOT_FOUND' });
+    });
+
+    expect(await new ApiGolfCourseRepository().getHoleMap('gc-1')).toBeNull();
+  });
+
+  it('cualquier otro fallo se propaga', async () => {
+    apiRequest.mockImplementation(async () => {
+      throw Object.assign(new Error('x'), { status: 500 });
+    });
+
+    await expect(new ApiGolfCourseRepository().getHoleMap('gc-1')).rejects.toThrow('x');
+  });
+});

@@ -75,7 +75,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     expect(v.matchStatus).toBe('IN_PROGRESS');
     expect(v.scoringOpensAt).toBe('2030-10-12T06:00:00Z');
     expect(v.isDecided).toBe(false);
-    expect(v.roundInfo).toEqual({ id: 'r-1', date: null, sessionType: null, golfCourseName: null });
+    expect(v.roundInfo).toEqual({ id: 'r-1', date: null, sessionType: null, golfCourseName: null, golfCourseId: null });
     expect(v.markerAssignments).toEqual([
       { scorerUserId: 'ana', scorerName: 'Ana Alba', marksUserId: 'bea', marksName: 'Bea Blanco', markedByUserId: 'bea', markedByName: 'Bea Blanco' },
       { scorerUserId: 'bea', scorerName: 'Bea Blanco', marksUserId: 'ana', marksName: 'Ana Alba', markedByUserId: 'ana', markedByName: 'Ana Alba' },

@@ -11,6 +11,8 @@ import {
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
+import { useDistanciasDelHoyo } from '../../hooks/useDistanciasDelHoyo';
+import LineaDeDistancias from '../../components/scoring/LineaDeDistancias';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
@@ -118,6 +120,12 @@ const QuickMatchScoringPage = () => {
     discrepancias,
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532)
+  const distancias = useDistanciasDelHoyo({
+    golfCourseId: quickMatch?.golfCourseId ?? null,
+    partida: quickMatchId,
+    hoyo: currentHole,
+  });
 
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla
@@ -610,6 +618,14 @@ const QuickMatchScoringPage = () => {
                 {currentHoleData && (
                   <QuickMatchHoleInput
                     key={currentHole}
+                    pie={distancias.green ? (
+                      <LineaDeDistancias
+                        green={distancias.green}
+                        activadas={distancias.activadas}
+                        gps={distancias.gps}
+                        onActivar={distancias.activar}
+                      />
+                    ) : null}
                     holeNumber={currentHole}
                     par={currentHoleData.par}
                     strokeIndex={currentHoleData.strokeIndex}

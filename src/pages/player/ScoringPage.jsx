@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
+import { useDistanciasDelHoyo } from '../../hooks/useDistanciasDelHoyo';
+import LineaDeDistancias from '../../components/scoring/LineaDeDistancias';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import { getLeaderboardUseCase } from '../../composition';
@@ -73,6 +75,12 @@ const ScoringPage = () => {
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
+  // Distancias al green del hoyo que se anota (mapa de hoyos, BE #532)
+  const distancias = useDistanciasDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    partida: matchId,
+    hoyo: currentHole,
+  });
 
   // Los hoyos que no se pudieron guardar, en orden (FE #622). Los que ya no se
   // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
@@ -600,6 +608,14 @@ const ScoringPage = () => {
                 // cuando esta cambia, así que enseñaba un golpe que no estaba en
                 // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
                 key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                pie={distancias.green ? (
+                  <LineaDeDistancias
+                    green={distancias.green}
+                    activadas={distancias.activadas}
+                    gps={distancias.gps}
+                    onActivar={distancias.activar}
+                  />
+                ) : null}
                 matchFormat={scoringView?.matchFormat}
                 holeNumber={currentHole}
                 par={currentHoleData.par}

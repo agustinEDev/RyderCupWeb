@@ -42,6 +42,9 @@ const HoleInput = ({
   matchFormat,
   // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
   allowPickedUp = true,
+  // Lo que va al pie de la tarjeta: la línea de distancias al green (mapa de
+  // hoyos). Sin ella, la tarjeta queda como siempre
+  pie = null,
 }) => {
   const { t } = useTranslation('scoring');
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
@@ -291,7 +294,8 @@ const HoleInput = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3">
+        {pie && <div data-testid="pie-del-hoyo" className="w-full">{pie}</div>}
         {netScore !== null && netScore !== undefined && (
           <span className="text-gray-600">{t('input.netScore')}: <strong>{netScore}</strong></span>
         )}

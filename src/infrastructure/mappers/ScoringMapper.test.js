@@ -15,6 +15,7 @@ describe('ScoringMapper', () => {
         date: '2026-03-01',
         session_type: 'MORNING',
         golf_course_name: 'Club de Golf Madrid',
+        golf_course_id: 'gc-madrid',
       },
       competition_id: 'comp-1',
       team_a_name: 'Equipo Rojo',
@@ -112,6 +113,8 @@ describe('ScoringMapper', () => {
       expect(dto.roundInfo.id).toBe('round-1');
       expect(dto.roundInfo.date).toBe('2026-03-01');
       expect(dto.roundInfo.sessionType).toBe('MORNING');
+      // El campo de la ronda, para pedir su mapa de hoyos (FE, mapas)
+      expect(dto.roundInfo.golfCourseId).toBe('gc-madrid');
       expect(dto.roundInfo.golfCourseName).toBe('Club de Golf Madrid');
     });
 
