@@ -193,6 +193,7 @@ describe('ApiGolfCourseRepository — marcas de hoyo (PR C)', () => {
         green_center: { latitude: 36.2827, longitude: -5.33 },
         marked_at: '2026-10-15T08:05:00.000Z',
       }),
+      topeMs: 15000,
     });
     expect(guardada.holeNumber).toBe(3);
     expect(guardada.greenCenter).toEqual({ lat: 36.2827, lon: -5.33 });
@@ -203,7 +204,7 @@ describe('ApiGolfCourseRepository — marcas de hoyo (PR C)', () => {
 
     const mias = await new ApiGolfCourseRepository().getMyHoleMarks('gc-1');
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/marks/mine');
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/marks/mine', { topeMs: 15000 });
     expect(mias.map((m) => [m.holeNumber, m.tee])).toEqual([
       [3, { lat: 36.28, lon: -5.33 }],
       [5, null],

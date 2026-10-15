@@ -47,6 +47,33 @@ describe('marcas de hoyo — casos de uso (PR C)', () => {
     });
 
   describe('C12/C14: guardar con red', () => {
+    it('C17: avisa en cuanto la marca está en el móvil, antes de enviarla', async () => {
+      let enElMovilAlAvisar;
+      const alGuardarEnElMovil = vi.fn(() => {
+        enElMovilAlAvisar = store.load('u1', 'gc-1').marcas[3];
+      });
+      repo.saveHoleMark.mockImplementation(async () => {
+        expect(alGuardarEnElMovil).toHaveBeenCalled();
+        return { holeNumber: 3, tee: SALIDA, bends: [], greenCenter: GREEN, markedAt: 'x' };
+      });
+
+      await guardar({ alGuardarEnElMovil });
+
+      expect(enElMovilAlAvisar.markedAt).toBe(AHORA);
+    });
+
+    it('una foto del servidor que llega después de guardar no borra la marca', async () => {
+      let responder;
+      repo.getMyHoleMarks.mockReturnValue(new Promise((r) => (responder = r)));
+      const pedido = new GetMyHoleMarksUseCase({ golfCourseRepository: repo, holeMarkStore: store }).execute('u1', 'gc-1');
+      await guardar();
+
+      responder([]);
+      const marcas = await pedido;
+
+      expect(Object.keys(marcas)).toEqual(['3']);
+    });
+
     it('se envía con la hora del jugador y queda la del servidor, ya no pendiente', async () => {
       const r = await guardar();
 
@@ -156,6 +183,76 @@ describe('marcas de hoyo — casos de uso (PR C)', () => {
       expect(repo.saveHoleMark).toHaveBeenCalledTimes(1);
       expect(cuenta).toEqual({ enviadas: 0, rechazadas: 0, pendientes: 2 });
       expect(store.pendientes('u1')).toHaveLength(2);
+    });
+
+    it('un error del servidor con una no para las de otros campos', async () => {
+      await pendiente('gc-1', 3);
+      await pendiente('gc-2', 7);
+      repo.saveHoleMark.mockClear();
+      repo.saveHoleMark.mockRejectedValueOnce(http(500));
+
+      const cuenta = await vaciado().execute('u1');
+
+      expect(repo.saveHoleMark).toHaveBeenCalledTimes(2);
+      expect(cuenta).toEqual({ enviadas: 1, rechazadas: 0, pendientes: 1 });
+    });
+
+    it('el tope de peticiones (429) para la tanda, como sin red', async () => {
+      await pendiente('gc-1', 3);
+      await pendiente('gc-1', 4);
+      repo.saveHoleMark.mockClear();
+      repo.saveHoleMark.mockRejectedValue(http(429));
+
+      const cuenta = await vaciado().execute('u1');
+
+      expect(repo.saveHoleMark).toHaveBeenCalledTimes(1);
+      expect(cuenta.pendientes).toBe(2);
+    });
+
+    it('D19: si cambia la sesión a mitad, lo que queda no sale', async () => {
+      await pendiente('gc-1', 3);
+      await pendiente('gc-1', 4);
+      repo.saveHoleMark.mockClear();
+      let sesion = true;
+      repo.saveHoleMark.mockImplementationOnce(async (_id, holeNumber, marca) => {
+        sesion = false;
+        return { ...marca, holeNumber };
+      });
+
+      const cuenta = await vaciado().execute('u1', { sigue: () => sesion });
+
+      expect(repo.saveHoleMark).toHaveBeenCalledTimes(1);
+      expect(cuenta).toEqual({ enviadas: 1, rechazadas: 0, pendientes: 1 });
+      expect(store.pendientes('u1')).toHaveLength(1);
+    });
+
+    it('la tanda en marcha es por jugador: la de otro no espera a la del primero', async () => {
+      await pendiente('gc-1', 3);
+      let soltar;
+      repo.saveHoleMark.mockClear();
+      repo.saveHoleMark.mockImplementationOnce(() => new Promise((r) => (soltar = r)));
+      const uno = vaciado();
+
+      const deU1 = uno.execute('u1');
+      const deU2 = await uno.execute('u2');
+
+      expect(deU2).toEqual({ enviadas: 0, rechazadas: 0, pendientes: 0 });
+      soltar({ holeNumber: 3, tee: null, bends: [], greenCenter: GREEN, markedAt: 'x' });
+      await deU1;
+    });
+
+    it('una rechazada en segundo plano queda apuntada con su código', async () => {
+      await pendiente('gc-1', 3);
+      repo.saveHoleMark.mockRejectedValueOnce(http(422, 'HOLE_MARK_TOO_FAR_FROM_COURSE'));
+      reportarFallo.mockClear();
+
+      await vaciado().execute('u1');
+
+      expect(reportarFallo).toHaveBeenCalledWith(expect.any(Error), {
+        golfCourseId: 'gc-1',
+        holeNumber: 3,
+        errorCode: 'HOLE_MARK_TOO_FAR_FROM_COURSE',
+      });
     });
 
     it('una rechazada se descarta y sigue con las demás', async () => {

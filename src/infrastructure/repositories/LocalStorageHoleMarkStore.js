@@ -6,6 +6,10 @@ import IHoleMarkStore from '../../domain/repositories/IHoleMarkStore';
 const clave = (userId) => `marcasDeHoyos:v1:${userId}`;
 
 const vacio = () => ({ marcas: {}, pendientes: {} });
+// Lo que se guarda por campo: además, la versión (cuántas veces se ha escrito
+// en el móvil) y la marca confirmada que había antes de una pendiente, para
+// volver a ella si el servidor rechaza la nueva
+const conTodo = (campo) => ({ ...vacio(), previas: {}, version: 0, ...campo });
 const misma = (a, b) => Boolean(a) && Boolean(b) && a.holeNumber === b.holeNumber && a.markedAt === b.markedAt;
 
 const leer = (userId) => {
@@ -28,7 +32,7 @@ const escribir = (userId, todo) => {
 const conCampo = (userId, golfCourseId, cambiar) => {
   if (!userId || !golfCourseId) return;
   const todo = leer(userId);
-  const campo = { ...vacio(), ...todo[golfCourseId] };
+  const campo = conTodo(todo[golfCourseId]);
   cambiar(campo);
   todo[golfCourseId] = campo;
   escribir(userId, todo);
@@ -42,10 +46,19 @@ class LocalStorageHoleMarkStore extends IHoleMarkStore {
     return { marcas: { ...campo?.marcas }, pendientes: { ...campo?.pendientes } };
   }
 
+  version(userId, golfCourseId) {
+    if (!userId || !golfCourseId) return 0;
+    return conTodo(leer(userId)[golfCourseId]).version;
+  }
+
   ponerPendiente(userId, golfCourseId, marca) {
     conCampo(userId, golfCourseId, (campo) => {
-      campo.marcas[marca.holeNumber] = marca;
-      campo.pendientes[marca.holeNumber] = marca;
+      const hoyo = marca.holeNumber;
+      const confirmada = campo.pendientes[hoyo] ? null : campo.marcas[hoyo];
+      if (confirmada) campo.previas[hoyo] = confirmada;
+      campo.marcas[hoyo] = marca;
+      campo.pendientes[hoyo] = marca;
+      campo.version += 1;
     });
   }
 
@@ -55,7 +68,9 @@ class LocalStorageHoleMarkStore extends IHoleMarkStore {
       // Si mientras se enviaba se marcó otra vez, manda la nueva
       if (campo.pendientes[hoyo] && !misma(campo.pendientes[hoyo], enviada)) return;
       delete campo.pendientes[hoyo];
+      delete campo.previas[hoyo];
       campo.marcas[hoyo] = guardada;
+      campo.version += 1;
     });
   }
 
@@ -63,13 +78,26 @@ class LocalStorageHoleMarkStore extends IHoleMarkStore {
     conCampo(userId, golfCourseId, (campo) => {
       const hoyo = enviada.holeNumber;
       if (misma(campo.pendientes[hoyo], enviada)) delete campo.pendientes[hoyo];
-      if (misma(campo.marcas[hoyo], enviada)) delete campo.marcas[hoyo];
+      if (misma(campo.marcas[hoyo], enviada)) {
+        // Vuelve la que había confirmada, si la había
+        if (campo.previas[hoyo]) campo.marcas[hoyo] = campo.previas[hoyo];
+        else delete campo.marcas[hoyo];
+      }
+      if (!campo.pendientes[hoyo]) delete campo.previas[hoyo];
+      campo.version += 1;
     });
   }
 
-  ponerDelServidor(userId, golfCourseId, marcas) {
+  ponerDelServidor(userId, golfCourseId, marcas, versionAlPedir = null) {
     conCampo(userId, golfCourseId, (campo) => {
-      campo.marcas = Object.fromEntries(marcas.map((m) => [m.holeNumber, m]));
+      const delServidor = Object.fromEntries(marcas.map((m) => [m.holeNumber, m]));
+      if (versionAlPedir !== null && versionAlPedir !== campo.version) {
+        // Mientras llegaba se escribió en el móvil: la foto del servidor es
+        // vieja, y solo aporta los hoyos que aquí no hay
+        for (const [hoyo, m] of Object.entries(delServidor)) campo.marcas[hoyo] ??= m;
+        return;
+      }
+      campo.marcas = delServidor;
       Object.assign(campo.marcas, campo.pendientes);
     });
   }

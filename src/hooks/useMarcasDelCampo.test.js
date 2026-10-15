@@ -40,9 +40,25 @@ describe('useMarcasDelCampo', () => {
     });
 
     expect(r).toEqual({ estado: 'pendiente' });
-    expect(casos.guardar.execute).toHaveBeenCalledWith({
-      userId: 'u1', golfCourseId: 'gc-1', holeNumber: 3, tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 },
+    expect(casos.guardar.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u1', golfCourseId: 'gc-1', holeNumber: 3, tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 } }),
+    );
+    expect(result.current.marcas).toEqual({ 3: M3 });
+  });
+
+  it('C17: con el envío colgado (mala cobertura), la marca se ve en cuanto está en el móvil', async () => {
+    casos.mias.guardadas.mockReturnValueOnce({}).mockReturnValue({ 3: M3 });
+    casos.guardar.execute.mockImplementation(({ alGuardarEnElMovil }) => {
+      alGuardarEnElMovil();
+      return new Promise(() => {});
     });
+    const { result } = renderHook(() => useMarcasDelCampo({ golfCourseId: 'gc-1', userId: 'u1' }));
+    await waitFor(() => expect(casos.mias.execute).toHaveBeenCalled());
+
+    act(() => {
+      result.current.guardar({ holeNumber: 3, tee: null, bends: [], greenCenter: { lat: 3, lon: 4 } });
+    });
+
     expect(result.current.marcas).toEqual({ 3: M3 });
   });
 

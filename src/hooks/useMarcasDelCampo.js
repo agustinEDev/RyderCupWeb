@@ -29,8 +29,18 @@ export function useMarcasDelCampo({ golfCourseId, userId }) {
 
   const guardar = useCallback(
     async ({ holeNumber, tee, bends, greenCenter }) => {
-      const resultado = await saveHoleMarkUseCase.execute({ userId, golfCourseId, holeNumber, tee, bends, greenCenter });
-      setEstado({ de: `${userId}:${golfCourseId}`, marcas: getMyHoleMarksUseCase.guardadas(userId, golfCourseId) });
+      const refrescar = () => setEstado({ de: `${userId}:${golfCourseId}`, marcas: getMyHoleMarksUseCase.guardadas(userId, golfCourseId) });
+      // Se ve en cuanto está en el móvil: con mala cobertura el envío tarda
+      const resultado = await saveHoleMarkUseCase.execute({
+        userId,
+        golfCourseId,
+        holeNumber,
+        tee,
+        bends,
+        greenCenter,
+        alGuardarEnElMovil: refrescar,
+      });
+      refrescar();
       return resultado;
     },
     [userId, golfCourseId],

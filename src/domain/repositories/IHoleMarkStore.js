@@ -25,8 +25,16 @@ class IHoleMarkStore {
     throw new Error('Method not implemented: descartar');
   }
 
-  /** Lo que tiene el servidor, sin pisar lo pendiente (que es más nuevo). */
-  ponerDelServidor(userId, golfCourseId, marcas) {
+  /** Cuántas veces se ha escrito en el móvil: para saber si una foto del servidor llega vieja. */
+  version(userId, golfCourseId) {
+    throw new Error('Method not implemented: version');
+  }
+
+  /**
+   * Lo que tiene el servidor, sin pisar lo pendiente (que es más nuevo). Si
+   * desde `versionAlPedir` se escribió en el móvil, solo añade lo que falte.
+   */
+  ponerDelServidor(userId, golfCourseId, marcas, versionAlPedir) {
     throw new Error('Method not implemented: ponerDelServidor');
   }
 

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-const envio = vi.hoisted(() => ({ execute: vi.fn(async () => ({})) }));
+const envio = vi.hoisted(() => ({ execute: vi.fn(async () => ({ pendientes: 0 })) }));
 vi.mock('../composition', () => ({ sendPendingHoleMarksUseCase: envio }));
 
-const { useEnvioDeMarcas } = await import('./useEnvioDeMarcas');
+const { useEnvioDeMarcas, ESPERAS_MS } = await import('./useEnvioDeMarcas');
 
 describe('useEnvioDeMarcas (C17/C18)', () => {
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe('useEnvioDeMarcas (C17/C18)', () => {
   it('al arrancar con sesión y red, envía las del jugador', () => {
     renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
 
-    expect(envio.execute).toHaveBeenCalledWith('u1');
+    expect(envio.execute).toHaveBeenCalledWith('u1', { sigue: expect.any(Function) });
   });
 
   it('sin sesión o sin usuario, nada', () => {
@@ -68,5 +68,69 @@ describe('useEnvioDeMarcas (C17/C18)', () => {
 
     expect(() => renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }))).not.toThrow();
     await Promise.resolve();
+  });
+
+  it('D19: al cambiar de sesión, el envío en marcha deja de seguir', () => {
+    const { rerender } = renderHook(({ userId }) => useEnvioDeMarcas({ activo: true, userId }), { initialProps: { userId: 'u1' } });
+    const { sigue } = envio.execute.mock.calls[0][1];
+    expect(sigue()).toBe(true);
+
+    rerender({ userId: 'u2' });
+
+    expect(sigue()).toBe(false);
+    expect(envio.execute).toHaveBeenLastCalledWith('u2', { sigue: expect.any(Function) });
+  });
+
+  describe('C17: con la aplicación abierta, se reintenta (portal de un club, tope de peticiones)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('si queda algo pendiente, vuelve a intentarlo a los 30 s, 2 min y 5 min, y para', async () => {
+      envio.execute.mockResolvedValue({ pendientes: 1 });
+      renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(envio.execute).toHaveBeenCalledTimes(1);
+
+      for (const [i, espera] of ESPERAS_MS.entries()) {
+        await vi.advanceTimersByTimeAsync(espera);
+        expect(envio.execute).toHaveBeenCalledTimes(i + 2);
+      }
+      await vi.advanceTimersByTimeAsync(600_000);
+      expect(envio.execute).toHaveBeenCalledTimes(ESPERAS_MS.length + 1);
+    });
+
+    it('sin nada pendiente no reintenta', async () => {
+      envio.execute.mockResolvedValue({ pendientes: 0 });
+      renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+
+      await vi.advanceTimersByTimeAsync(600_000);
+
+      expect(envio.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('la vuelta de la red empieza la escalera de nuevo', async () => {
+      envio.execute.mockResolvedValue({ pendientes: 1 });
+      renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+      for (const espera of ESPERAS_MS) await vi.advanceTimersByTimeAsync(espera);
+      envio.execute.mockClear();
+
+      globalThis.dispatchEvent(new globalThis.Event('online'));
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[0]);
+
+      expect(envio.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('al desmontar no queda ningún reintento armado', async () => {
+      envio.execute.mockResolvedValue({ pendientes: 1 });
+      const { unmount } = renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+      unmount();
+      envio.execute.mockClear();
+
+      await vi.advanceTimersByTimeAsync(600_000);
+
+      expect(envio.execute).not.toHaveBeenCalled();
+    });
   });
 });

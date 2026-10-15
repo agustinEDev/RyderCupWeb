@@ -1,4 +1,5 @@
-import { Component, lazy, Suspense, useState } from 'react';
+import { Component, lazy, Suspense, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../../ui/BlockLoader';
 import ModalShell from '../../ui/ModalShell';
@@ -51,6 +52,14 @@ class SiNoCarga extends Component {
   }
 }
 
+// Del código del servidor al aviso; lo que no se reconoce, el genérico
+const ERROR_DE_MARCA = {
+  HOLE_ALREADY_MAPPED: 'mapa.yaTieneDatos',
+  HOLE_MARK_OUT_OF_RANGE: 'mapa.fueraDeLimites',
+  HOLE_MARK_TOO_FAR_FROM_COURSE: 'mapa.lejosDelCampo',
+  TEE_REQUIRED: 'mapa.faltaLaSalida',
+};
+
 const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null }) => {
   const { t } = useTranslation('scoring');
   const [MapaDelHoyo] = useState(cargarMapa);
@@ -64,7 +73,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const conSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
   const miMarca = completo || remarcando || !userId ? null : (marcas[numeroDeHoyo] ?? null);
-  const deMiMarca = miMarca ? hoyoDeUnaMarca(miMarca, aprobado) : null;
+  // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
+  // render rehacía las líneas del mapa
+  const deMiMarca = useMemo(() => (miMarca ? hoyoDeUnaMarca(miMarca, aprobado) : null), [miMarca, aprobado]);
   const hoyo = completo ? aprobado : (deMiMarca ?? (conSalida ? aprobado : null));
   // Lo que falta por marcar: sin salida, salida y green; con salida, el green
   let porMarcar = null;
@@ -73,9 +84,12 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   // La atribución, si algo de lo que se ve sale del mapa (y no todo de la marca)
   const usaElMapa = completo || (conSalida && !miMarca?.tee);
 
+  // En cuanto está en el móvil el mapa se rehace con el hoyo marcado; si luego
+  // el servidor no la quiere, se dice aquí (el mapa ya es otro) y vuelve la de antes
   const guardarMarca = async (datos) => {
+    setRemarcando(false);
     const resultado = await guardar({ holeNumber: numeroDeHoyo, ...datos });
-    if (resultado.estado !== 'rechazada') setRemarcando(false);
+    if (resultado.estado === 'rechazada') toast.error(t(ERROR_DE_MARCA[resultado.errorCode] ?? 'mapa.noSeGuardo'));
     return resultado;
   };
   return (
@@ -101,6 +115,8 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           porMarcar={porMarcar}
           onGuardarMarca={porMarcar ? guardarMarca : null}
           onVolverAMarcar={deMiMarca ? () => setRemarcando(true) : null}
+          // Volviendo a marcar, «Ahora no» devuelve la marca que ya había
+          onAhoraNo={remarcando ? () => setRemarcando(false) : null}
         />
       </Suspense>
     </SiNoCarga>

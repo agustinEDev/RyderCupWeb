@@ -412,6 +412,7 @@
     "lejosDelCampo": "La marca está a más de 3 km del campo",
     "yaTieneDatos": "Este hoyo ya tiene salida y green",
     "noSeGuardo": "No se ha podido guardar la marca",
-    "tramo": "{{metros}} m"
+    "tramo": "{{metros}} m",
+    "faltaLaSalida": "Este hoyo no tiene salida: márcala también"
   }
 }

@@ -24,6 +24,7 @@ vi.mock('maplibre-gl', () => {
       this.remove = vi.fn();
       this.addLayer = vi.fn();
       this.touchZoomRotate = { disableRotation: vi.fn() };
+      this.doubleClickZoom = { disable: vi.fn(), enable: vi.fn() };
       this.keyboard = { disableRotation: vi.fn() };
       mapas.push(this);
     }
@@ -799,19 +800,57 @@ describe('MapaDelHoyo — marcar un hoyo sin datos (PR C)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('mapa.fueraDeLimites');
   });
 
-  it.each([
-    ['HOLE_ALREADY_MAPPED', 'mapa.yaTieneDatos'],
-    ['HOLE_MARK_TOO_FAR_FROM_COURSE', 'mapa.lejosDelCampo'],
-    ['OTRA_COSA', 'mapa.noSeGuardo'],
-  ])('si el servidor la rechaza (%s), se avisa y se puede corregir', async (codigo, texto) => {
-    marcar({ onGuardarMarca: vi.fn(async () => ({ estado: 'rechazada', errorCode: codigo })) });
+  it('si el servidor la rechaza, el mapa no lo dice (lo dice la ventana) y se puede volver a guardar', async () => {
+    marcar({ onGuardarMarca: vi.fn(async () => ({ estado: 'rechazada', errorCode: 'HOLE_ALREADY_MAPPED' })) });
     tocar(T);
     tocar(G);
 
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(texto);
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).not.toBeDisabled();
+  });
+
+  it('mientras guarda, «Guardar» no se puede pulsar dos veces', async () => {
+    let terminar;
+    const { onGuardarMarca } = marcar({ onGuardarMarca: vi.fn(() => new Promise((r) => (terminar = r))) });
+    tocar(T);
+    tocar(G);
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).toBeDisabled();
+    await act(async () => terminar({ estado: 'guardada' }));
+    expect(onGuardarMarca).toHaveBeenCalledTimes(1);
+  });
+
+  it('mientras se marca, el doble toque no acerca el mapa (marcaría salida y green juntos)', () => {
+    marcar();
+
+    expect(mapa().doubleClickZoom.disable).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+    expect(mapa().doubleClickZoom.enable).toHaveBeenCalled();
+  });
+
+  it('C3/C16: volviendo a marcar, «Ahora no» devuelve la marca que había', () => {
+    const onAhoraNo = vi.fn();
+    marcar({ onAhoraNo });
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+
+    expect(onAhoraNo).toHaveBeenCalled();
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+  });
+
+  it('el aviso de la tarjeta lleva el foco a «Corregir» y se describe con su texto', () => {
+    marcar({ metros: 142 });
+    tocar(T);
+    tocar(G);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' }));
+
+    expect(screen.getByRole('button', { name: 'mapa.corregir' })).toHaveFocus();
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(/mapa\.avisoTarjeta/);
   });
 
   it('si guardar revienta, también se avisa', async () => {

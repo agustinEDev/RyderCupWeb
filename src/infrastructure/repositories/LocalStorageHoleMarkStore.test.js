@@ -145,4 +145,57 @@ describe('LocalStorageHoleMarkStore', () => {
     expect(() => store.ponerPendiente('u1', 'gc-1', marca(3))).not.toThrow();
     expect(store.load('u1', 'gc-1')).toEqual({ marcas: {}, pendientes: {} });
   });
+
+  it('si el servidor rechaza una marca nueva, vuelve la que había confirmada', () => {
+    const vieja = marca(3, '2026-10-15T07:00:00Z');
+    store.confirmar('u1', 'gc-1', vieja, vieja);
+    const nueva = marca(3, '2026-10-15T08:00:00.000Z');
+    store.ponerPendiente('u1', 'gc-1', nueva);
+
+    store.descartar('u1', 'gc-1', nueva);
+
+    expect(store.load('u1', 'gc-1')).toEqual({ marcas: { 3: vieja }, pendientes: {} });
+  });
+
+  it('confirmada la nueva, la de antes ya no vuelve', () => {
+    const vieja = marca(3, '2026-10-15T07:00:00Z');
+    store.confirmar('u1', 'gc-1', vieja, vieja);
+    const nueva = marca(3, '2026-10-15T08:00:00.000Z');
+    store.ponerPendiente('u1', 'gc-1', nueva);
+    store.confirmar('u1', 'gc-1', nueva, nueva);
+    const otra = marca(3, '2026-10-15T09:00:00.000Z');
+    store.ponerPendiente('u1', 'gc-1', otra);
+
+    store.descartar('u1', 'gc-1', otra);
+
+    expect(store.load('u1', 'gc-1').marcas[3]).toEqual(nueva);
+  });
+
+  it('la versión sube con cada escritura en el móvil', () => {
+    expect(store.version('u1', 'gc-1')).toBe(0);
+    store.ponerPendiente('u1', 'gc-1', marca(3));
+    expect(store.version('u1', 'gc-1')).toBe(1);
+    store.confirmar('u1', 'gc-1', marca(3), marca(3));
+    expect(store.version('u1', 'gc-1')).toBe(2);
+    expect(store.version(null, 'gc-1')).toBe(0);
+  });
+
+  it('una foto del servidor pedida ANTES de confirmar una marca no la borra (solo añade lo que falta)', () => {
+    const version = store.version('u1', 'gc-1');
+    store.ponerPendiente('u1', 'gc-1', marca(3));
+    store.confirmar('u1', 'gc-1', marca(3), marca(3));
+
+    store.ponerDelServidor('u1', 'gc-1', [marca(5)], version);
+
+    expect(Object.keys(store.load('u1', 'gc-1').marcas)).toEqual(['3', '5']);
+  });
+
+  it('una foto al día sustituye a lo confirmado', () => {
+    store.confirmar('u1', 'gc-1', marca(3), marca(3));
+    const version = store.version('u1', 'gc-1');
+
+    store.ponerDelServidor('u1', 'gc-1', [marca(5)], version);
+
+    expect(Object.keys(store.load('u1', 'gc-1').marcas)).toEqual(['5']);
+  });
 });

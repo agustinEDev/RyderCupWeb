@@ -18,7 +18,10 @@ const esDefinitivo = (error) => {
 };
 
 /**
- * @returns {Promise<{estado: 'guardada'|'pendiente'|'rechazada', marca: Object|null, errorCode?: string|null}>}
+ * `sinRed` dice si el fallo es de los que tumban también a las demás (sin red,
+ * tope de peticiones, sesión): entonces no vale la pena seguir con la cola.
+ *
+ * @returns {Promise<{estado: 'guardada'|'pendiente'|'rechazada', marca: Object|null, errorCode?: string|null, sinRed?: boolean}>}
  */
 export const enviarMarcaDeHoyo = async ({ golfCourseRepository, holeMarkStore, reportarFallo }, userId, golfCourseId, marca) => {
   try {
@@ -29,7 +32,7 @@ export const enviarMarcaDeHoyo = async ({ golfCourseRepository, holeMarkStore, r
     if (!esDefinitivo(error)) {
       // Sin red (lleva `cause`) o con un estado HTTP, ya se sabe por qué
       if (!error?.cause && !error?.status) reportarFallo(error, { golfCourseId });
-      return { estado: 'pendiente', marca };
+      return { estado: 'pendiente', marca, sinRed: Boolean(error?.cause) || SE_REINTENTA.has(error?.status) };
     }
     holeMarkStore.descartar(userId, golfCourseId, marca);
     return { estado: 'rechazada', marca: null, errorCode: error.errorCode ?? null };

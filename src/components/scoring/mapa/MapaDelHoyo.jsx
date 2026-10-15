@@ -84,12 +84,6 @@ const geojsonDeLaMedida = (tramos) => ({
 });
 const enMedio = (a, b) => ({ lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 });
 
-// Del código del servidor al aviso; lo que no se reconoce, el genérico
-const ERROR_DE_MARCA = {
-  HOLE_ALREADY_MAPPED: 'mapa.yaTieneDatos',
-  HOLE_MARK_OUT_OF_RANGE: 'mapa.fueraDeLimites',
-  HOLE_MARK_TOO_FAR_FROM_COURSE: 'mapa.lejosDelCampo',
-};
 
 const punto = (clase) => {
   const el = globalThis.document.createElement('div');
@@ -122,6 +116,7 @@ const MapaDelHoyo = ({
   porMarcar = null,
   onGuardarMarca = null,
   onVolverAMarcar = null,
+  onAhoraNo = null,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -147,6 +142,12 @@ const MapaDelHoyo = ({
   const [marca, setMarca] = useState({ fase: porMarcar && onGuardarMarca ? 'pidiendo' : null, tee: null, bends: [], green: null });
   const [avisoDeMarca, setAvisoDeMarca] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  // El aviso de la tarjeta pide una respuesta: el foco va a ella
+  const corregirRef = useRef(null);
+  const conAvisoDeTarjeta = avisoDeMarca?.tipo === 'tarjeta';
+  useEffect(() => {
+    if (conAvisoDeTarjeta) corregirRef.current?.focus();
+  }, [conAvisoDeTarjeta]);
   const marcandoSalida = porMarcar === 'salida';
   const salida = marcandoSalida ? marca.tee : (hoyo?.playLine?.[0] ?? null);
   const enMarcha = Boolean(marca.fase) && marca.fase !== 'pausado';
@@ -347,6 +348,12 @@ const MapaDelHoyo = ({
   // Lo que se está marcando, sobre el mapa: la línea y el arco, y como marcas
   // la salida, el green, los codos y los puntos que se arrastran para hacerlos
   const textoDelArco = metros ? t('mapa.arco', { metros }) : null;
+  // Mientras se marca, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
+  useEffect(() => {
+    const zoom = mapaRef.current?.doubleClickZoom;
+    if (enMarcha) zoom?.disable();
+    else zoom?.enable();
+  }, [enMarcha]);
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
@@ -415,13 +422,12 @@ const MapaDelHoyo = ({
       });
     } catch (error) {
       captureError(error, { tags: { modulo: 'marcas-de-hoyos' } });
+      setAvisoDeMarca({ tipo: 'error', texto: t('mapa.noSeGuardo') });
       resultado = { estado: 'rechazada', errorCode: null };
     }
-    // Guardada (o pendiente de enviar), la ventana rehace el mapa con el hoyo marcado
-    if (resultado?.estado === 'rechazada') {
-      setGuardando(false);
-      setAvisoDeMarca({ tipo: 'error', texto: t(ERROR_DE_MARCA[resultado.errorCode] ?? 'mapa.noSeGuardo') });
-    }
+    // Guardada (o pendiente de enviar), la ventana rehace el mapa con el hoyo
+    // marcado; si el servidor la rechaza, lo dice ella. Aquí solo se vuelve a poder pulsar
+    if (resultado?.estado === 'rechazada') setGuardando(false);
   };
 
   const distancias = distanciasAlGreen(posicion, hoyo?.green);
@@ -456,10 +462,10 @@ const MapaDelHoyo = ({
         {avisoDeMarca?.tipo === 'error' && <p role="alert" className={`${PLACA} self-start px-3.5 py-2 text-sm text-yellow-300`}>{avisoDeMarca.texto}</p>}
 
         {sinMapa ? null : avisoDeMarca?.tipo === 'tarjeta' ? (
-          <div role="alertdialog" aria-label={t('mapa.avisoTarjeta', avisoDeMarca)} className={`${PLACA} pointer-events-auto flex flex-col gap-2 px-3.5 py-3`}>
-            <p className="text-sm">{t('mapa.avisoTarjeta', avisoDeMarca)}</p>
+          <div role="alertdialog" aria-describedby="aviso-de-la-tarjeta" className={`${PLACA} pointer-events-auto flex flex-col gap-2 px-3.5 py-3`}>
+            <p id="aviso-de-la-tarjeta" className="text-sm">{t('mapa.avisoTarjeta', avisoDeMarca)}</p>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setAvisoDeMarca(null)} className={`${BOTON} flex-1 justify-center`}>
+              <button ref={corregirRef} type="button" onClick={() => setAvisoDeMarca(null)} className={`${BOTON} flex-1 justify-center`}>
                 {t('mapa.corregir')}
               </button>
               <button type="button" disabled={guardando} onClick={() => guardarMarca(true)} className={`${BOTON_VERDE} flex-1`}>
@@ -469,8 +475,8 @@ const MapaDelHoyo = ({
           </div>
         ) : marca.fase === 'pidiendo' ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
-            <span className="text-base font-semibold">{t(marcandoSalida && !marca.tee ? 'mapa.pideSalida' : 'mapa.pideGreen')}</span>
-            <button type="button" onClick={() => setMarca((m) => ({ ...m, fase: 'pausado' }))} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+            <span aria-live="polite" className="text-base font-semibold">{t(marcandoSalida && !marca.tee ? 'mapa.pideSalida' : 'mapa.pideGreen')}</span>
+            <button type="button" onClick={onAhoraNo ?? (() => setMarca((m) => ({ ...m, fase: 'pausado' })))} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
               {t('mapa.ahoraNo')}
             </button>
           </div>

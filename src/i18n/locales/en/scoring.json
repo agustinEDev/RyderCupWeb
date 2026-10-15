@@ -402,6 +402,7 @@
     "lejosDelCampo": "The mark is more than 3 km from the course",
     "yaTieneDatos": "This hole already has its tee and green",
     "noSeGuardo": "The mark could not be saved",
-    "tramo": "{{metros}} m"
+    "tramo": "{{metros}} m",
+    "faltaLaSalida": "This hole has no tee: mark the tee too"
   }
 }

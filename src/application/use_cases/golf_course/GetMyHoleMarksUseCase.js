@@ -18,9 +18,11 @@ class GetMyHoleMarksUseCase {
 
   async execute(userId, golfCourseId) {
     if (!userId || !golfCourseId) return {};
+    // Si mientras se pide se marca (y se confirma), la respuesta llega vieja
+    const version = this.holeMarkStore.version(userId, golfCourseId);
     try {
       const delServidor = await this.golfCourseRepository.getMyHoleMarks(golfCourseId);
-      this.holeMarkStore.ponerDelServidor(userId, golfCourseId, delServidor);
+      this.holeMarkStore.ponerDelServidor(userId, golfCourseId, delServidor, version);
     } catch {
       // Se quedan las del móvil
     }

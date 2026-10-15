@@ -3,6 +3,8 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 vi.mock('../../../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
+const toastFalso = vi.hoisted(() => ({ error: vi.fn() }));
+vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
 const carga = vi.hoisted(() => ({ falla: false, suspende: false, props: null, montajes: 0 }));
 vi.mock('./MapaDelHoyo', async () => {
@@ -283,16 +285,35 @@ describe('VentanaDelMapa — marcar el hoyo (PR C)', () => {
     expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true } });
   });
 
-  it('rechazada, se sigue marcando', async () => {
+  it.each([
+    ['HOLE_ALREADY_MAPPED', 'mapa.yaTieneDatos'],
+    ['HOLE_MARK_OUT_OF_RANGE', 'mapa.fueraDeLimites'],
+    ['HOLE_MARK_TOO_FAR_FROM_COURSE', 'mapa.lejosDelCampo'],
+    ['TEE_REQUIRED', 'mapa.faltaLaSalida'],
+    ['OTRA_COSA', 'mapa.noSeGuardo'],
+  ])('rechazada (%s): se avisa y queda la marca de antes', async (codigo, texto) => {
     misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    misMarcas.guardar.mockResolvedValue({ estado: 'rechazada', errorCode: 'X' });
+    misMarcas.guardar.mockResolvedValue({ estado: 'rechazada', errorCode: codigo });
     abrirCon(estado({ mapaDelCampo: null }));
     await screen.findByTestId('mapa-del-hoyo');
     act(() => carga.props.onVolverAMarcar());
 
     await act(async () => carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G }));
 
-    expect(carga.props.porMarcar).toBe('salida');
+    expect(toastFalso.error).toHaveBeenCalledWith(texto);
+    expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true } });
+  });
+
+  it('C3/C16: volviendo a marcar, «Ahora no» devuelve la marca que había', async () => {
+    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+    expect(carga.props.onAhoraNo).toBeNull();
+    act(() => carga.props.onVolverAMarcar());
+
+    act(() => carga.props.onAhoraNo());
+
+    expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true }, onAhoraNo: null });
   });
 
   it('C17: una marca nueva (pendiente o guardada) rehace el mapa como hoyo marcado', async () => {

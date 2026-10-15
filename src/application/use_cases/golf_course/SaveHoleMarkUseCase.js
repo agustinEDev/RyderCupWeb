@@ -20,11 +20,15 @@ class SaveHoleMarkUseCase {
   }
 
   /**
-   * @param {{userId: string, golfCourseId: string, holeNumber: number, tee: Object|null, bends: Object[], greenCenter: Object}} datos
+   * `alGuardarEnElMovil` avisa en cuanto la marca está en el móvil, antes de
+   * enviarla: con mala cobertura el envío tarda, y la marca se usa ya.
+   *
+   * @param {{userId: string, golfCourseId: string, holeNumber: number, tee: Object|null, bends: Object[], greenCenter: Object, alGuardarEnElMovil?: Function}} datos
    */
-  async execute({ userId, golfCourseId, holeNumber, tee, bends, greenCenter }) {
+  async execute({ userId, golfCourseId, holeNumber, tee, bends, greenCenter, alGuardarEnElMovil = () => {} }) {
     const marca = { holeNumber, tee: tee ?? null, bends: tee ? bends : [], greenCenter, markedAt: this.ahora() };
     this.dependencias.holeMarkStore.ponerPendiente(userId, golfCourseId, marca);
+    alGuardarEnElMovil(marca);
     return enviarMarcaDeHoyo(this.dependencias, userId, golfCourseId, marca);
   }
 }
