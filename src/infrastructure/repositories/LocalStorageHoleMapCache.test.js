@@ -156,3 +156,31 @@ describe('LocalStorageHoleMapCache — D4: solo los 20 campos más recientes', (
     expect(cache.load('gc-1')).toEqual(mapaDe(1));
   });
 });
+
+describe('LocalStorageHoleMapCache — con el almacenamiento lleno', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('se hace sitio quitando el más antiguo ANTES de guardar el nuevo', () => {
+    const guardado = new Map();
+    // Caben 20 mapas: el 21.º solo entra si antes se fue uno
+    const mapas = () => [...guardado.keys()].filter((k) => k.startsWith('mapaDeHoyos:v1:gc-')).length;
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => {
+        if (k.startsWith('mapaDeHoyos:v1:gc-') && !guardado.has(k) && mapas() >= 20) {
+          throw new DOMException('lleno', 'QuotaExceededError');
+        }
+        guardado.set(k, String(v));
+      },
+      removeItem: (k) => guardado.delete(k),
+    });
+    const cache = new LocalStorageHoleMapCache();
+    for (let n = 1; n <= 20; n += 1) cache.save({ ...MAPA, golfCourseId: `gc-${n}` });
+
+    cache.save({ ...MAPA, golfCourseId: 'gc-21' });
+
+    expect(cache.load('gc-21')).toEqual({ ...MAPA, golfCourseId: 'gc-21' });
+    expect(cache.load('gc-1')).toBeNull();
+  });
+});
+

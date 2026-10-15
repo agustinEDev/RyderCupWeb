@@ -31,10 +31,12 @@ class LocalStorageHoleMapCache extends IHoleMapCache {
   save(holeMap) {
     try {
       const id = holeMap.golfCourseId;
-      globalThis.localStorage.setItem(clave(id), JSON.stringify(holeMap));
       const indice = [id, ...leerIndice().filter((otro) => otro !== id)];
+      // Primero se hace sitio: con el almacenamiento lleno, guardar antes de
+      // quitar el más antiguo fallaba siempre y la copia se quedaba atascada
       for (const viejo of indice.slice(MAXIMO_DE_CAMPOS)) globalThis.localStorage.removeItem(clave(viejo));
       globalThis.localStorage.setItem(INDICE, JSON.stringify(indice.slice(0, MAXIMO_DE_CAMPOS)));
+      globalThis.localStorage.setItem(clave(id), JSON.stringify(holeMap));
     } catch {
       // Sin sitio: se queda sin copia
     }
