@@ -156,8 +156,9 @@ const GroupScoringPage = () => {
   const cerradaSinEntregar = Boolean(miTarjeta) && !seJuega(userId) && miTarjeta.cardStatus !== 'ENTREGADA';
   const noPresentado = miTarjeta?.cardStatus === 'NO_PRESENTADO';
 
-  const parDe = (jugador) =>
-    scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole)?.par ?? null;
+  const hoyoDeLaTarjetaDe = (jugador) =>
+    scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole);
+  const parDe = (jugador) => hoyoDeLaTarjetaDe(jugador)?.par ?? null;
   const golpesDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
@@ -379,6 +380,8 @@ const GroupScoringPage = () => {
                     golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
                     numeroDeHoyo={currentHole}
                     par={parDe(userId)}
+                    // Los metros desde mi barra, para el recuadro del mapa (16 oct)
+                    metros={hoyoDeLaTarjetaDe(userId)?.meters ?? null}
                     userId={userId ?? null}
                   />
                 </>

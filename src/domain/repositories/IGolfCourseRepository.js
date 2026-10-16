@@ -34,23 +34,24 @@ class IGolfCourseRepository {
   }
 
   /**
-   * Guarda (o sustituye) la marca del jugador en un hoyo (BE #532, PR C)
+   * El resumen de las muestras (anónimas) de cada hoyo (BE #532, marcado por par)
    * @param {string} id - Golf course ID
-   * @param {number} holeNumber - 1 a 18
-   * @param {Object} marca - { tee, bends, greenCenter, markedAt }
-   * @returns {Promise<Object>} La marca que queda guardada (puede ser otra más reciente)
+   * @returns {Promise<Object<number, {primera: Object|null, recoge: boolean}>>} por número de hoyo
    */
-  async saveHoleMark(id, holeNumber, marca) {
-    throw new Error('Method not implemented: saveHoleMark');
+  async getHoleSamples(id) {
+    throw new Error('Method not implemented: getHoleSamples');
   }
 
   /**
-   * Las marcas del jugador en el campo (BE #532, PR C)
+   * Envía una muestra de un hoyo (BE #532, marcado por par). Se resuelve si
+   * llegó, la guarde el servidor o no
    * @param {string} id - Golf course ID
-   * @returns {Promise<Object[]>}
+   * @param {number} holeNumber - 1 a 18
+   * @param {Object} muestra - { tee, bends, greenCenter }
+   * @returns {Promise<void>}
    */
-  async getMyHoleMarks(id) {
-    throw new Error('Method not implemented: getMyHoleMarks');
+  async sendHoleSample(id, holeNumber, muestra) {
+    throw new Error('Method not implemented: sendHoleSample');
   }
 
   /**

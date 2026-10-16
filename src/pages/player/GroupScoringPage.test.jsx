@@ -633,6 +633,22 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
   });
 
+  it('F12 (16 oct): el mapa recibe los metros del hoyo desde MI barra', () => {
+    const conMetros = (id, marks, base) =>
+      jugador(id, marks, { holes: Array.from({ length: 18 }, (_, i) => ({ ...hoyo(i + 1), meters: base + i })) });
+    mockHook = hook({ scoringView: vista({}, [conMetros('ana', 'bea', 300), conMetros('bea', 'ana', 250)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.metros).toBe(300);
+  });
+
+  it('F12: sin metros en la vista, el mapa recibe null', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.metros).toBeNull();
+  });
+
   it('T1: en la tarjeta no se pide el GPS', () => {
     const watchPosition = vi.fn();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });

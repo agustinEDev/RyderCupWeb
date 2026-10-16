@@ -10,7 +10,7 @@ import RoleGuard from './components/auth/RoleGuard';
 import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
-import { useEnvioDeMarcas } from './hooks/useEnvioDeMarcas';
+import { useEnvioDeMuestras } from './hooks/useEnvioDeMuestras';
 import { setUserContext } from './utils/sentryHelpers';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
@@ -140,8 +140,8 @@ function AppContent() {
   // pantalla dependería de que el usuario volviera a ella, que es justo lo que
   // no pasa
   useVaciadoDeLaCola({ activo: isAuthenticated, userId: usuarioActualId });
-  // Las marcas de hoyo que se quedaron sin enviar (BE #532, PR C)
-  useEnvioDeMarcas({ activo: isAuthenticated, userId: usuarioActualId });
+  // Las muestras de hoyo que se quedaron en la cola (BE #532, marcado por par)
+  useEnvioDeMuestras({ activo: isAuthenticated, userId: usuarioActualId });
 
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
   const showBottomNav = isAuthenticated && !isPublicRoute && !isScoringRoute;

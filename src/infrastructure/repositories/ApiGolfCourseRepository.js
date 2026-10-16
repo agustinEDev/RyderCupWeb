@@ -1,6 +1,6 @@
 import GolfCourse from '../../domain/entities/GolfCourse.js';
 import HoleMapMapper from '../mappers/HoleMapMapper';
-import HoleMarkMapper from '../mappers/HoleMarkMapper';
+import HoleSampleMapper from '../mappers/HoleSampleMapper';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../../services/api.js';
@@ -94,38 +94,31 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
 
   /**
    * @override
-   * Devuelve la marca que queda guardada: si había una más reciente (la cola
-   * llegó tarde), es esa. Con el tope de anotar: con mala cobertura la petición
-   * no falla, se queda colgada, y la marca tiene que pasar a la cola
+   * El resumen de las muestras del campo, por hoyo. Con el tope de anotar: con
+   * mala cobertura la petición no falla, se queda colgada
    */
-  async saveHoleMark(id, holeNumber, marca) {
-    let data;
-    try {
-      data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/${holeNumber}`, {
-        method: 'PUT',
-        body: JSON.stringify(HoleMarkMapper.toApi(marca)),
-        topeMs: TOPE_DE_ANOTAR_MS,
-      });
-    } catch (error) {
-      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
-      if (error instanceof SyntaxError) return marca;
-      throw error;
-    }
-    // Un 2xx dice que el servidor la tiene: si no se entiende lo que devuelve,
-    // vale la enviada (si no, quedaría pendiente y se reenviaría siempre)
-    try {
-      return HoleMarkMapper.toDomain(data);
-    } catch {
-      return marca;
-    }
+  async getHoleSamples(id) {
+    return HoleSampleMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples`, { topeMs: TOPE_DE_ANOTAR_MS }));
   }
 
   /**
    * @override
+   * El servidor contesta 204 tanto si la guarda como si ya no la quiere (el
+   * hoyo tiene bastantes): para el móvil, las dos cosas son «llegó». Con el
+   * tope de anotar, para que con mala cobertura la muestra se quede en la cola
    */
-  async getMyHoleMarks(id) {
-    const data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/mine`, { topeMs: TOPE_DE_ANOTAR_MS });
-    return data.map(HoleMarkMapper.toDomain);
+  async sendHoleSample(id, holeNumber, muestra) {
+    try {
+      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples/${holeNumber}`, {
+        method: 'POST',
+        body: JSON.stringify(HoleSampleMapper.toApi(muestra)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return;
+      throw error;
+    }
   }
 
   /**

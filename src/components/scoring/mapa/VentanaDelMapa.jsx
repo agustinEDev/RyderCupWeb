@@ -1,11 +1,10 @@
 import { Component, lazy, Suspense, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../../ui/BlockLoader';
 import ModalShell from '../../ui/ModalShell';
 import { captureError } from '../../../utils/sentryHelpers';
 import { hoyoDeUnaMarca } from '../../../domain/services/hoyoMarcado';
-import { useMarcasDelCampo } from '../../../hooks/useMarcasDelCampo';
+import { useMuestrasDelCampo } from '../../../hooks/useMuestrasDelCampo';
 
 // Aparte: MapLibre pesa, y la anotación no tiene por qué cargarlo hasta que se
 // abre. Una carga nueva en cada apertura: React guarda la que falló, y con una
@@ -52,58 +51,38 @@ class SiNoCarga extends Component {
   }
 }
 
-// Del código del servidor al aviso; lo que no se reconoce, el genérico
-const ERROR_DE_MARCA = {
-  HOLE_ALREADY_MAPPED: 'mapa.yaTieneDatos',
-  HOLE_MARK_OUT_OF_RANGE: 'mapa.fueraDeLimites',
-  HOLE_MARK_TOO_FAR_FROM_COURSE: 'mapa.lejosDelCampo',
-  TEE_REQUIRED: 'mapa.faltaLaSalida',
-};
+// Un hoyo del que aún no se sabe nada: sin muestra, y recogiendo
+const SIN_MUESTRAS = { primera: null, recoge: true };
 
 const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null }) => {
   const { t } = useTranslation('scoring');
   const [MapaDelHoyo] = useState(cargarMapa);
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
-  const { marcas, guardar } = useMarcasDelCampo({ golfCourseId, userId });
-  const [remarcando, setRemarcando] = useState(false);
-  // Cuántas veces se ha guardado o vuelto a marcar: cambia la `key` del mapa
-  // (la hora de la marca no vale: el servidor la devuelve escrita de otra forma)
-  const [vuelta, setVuelta] = useState(0);
+  const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId });
 
-  // Lo que ya hay: el hoyo aprobado (con su green, o solo con su salida) y, si
-  // le falta algo, la marca del jugador, que él ve al momento (PR C)
+  // Lo que se ve, por orden (16 oct): el hoyo aprobado con su green; si no, la
+  // primera muestra que hay de él; si no, la que este jugador dejó pendiente en
+  // el móvil; si no, lo aprobado que haya (solo la salida) o nada
   const aprobado = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
   const conSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
-  const miMarca = completo || remarcando || !userId ? null : (marcas[numeroDeHoyo] ?? null);
+  const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
+  const muestra = delHoyo.primera ?? pendientes[numeroDeHoyo] ?? null;
   // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
   // render rehacía las líneas del mapa
-  const deMiMarca = useMemo(() => (miMarca ? hoyoDeUnaMarca(miMarca, aprobado) : null), [miMarca, aprobado]);
-  const hoyo = completo ? aprobado : (deMiMarca ?? (conSalida ? aprobado : null));
-  // Lo que falta por marcar: sin salida, salida y green; con salida, el green
+  const deLaMuestra = useMemo(
+    () => (muestra ? hoyoDeUnaMarca({ tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter }) : null),
+    [muestra],
+  );
+  const hoyo = completo ? aprobado : (deLaMuestra ?? (conSalida ? aprobado : null));
+  // Sin línea, se pide: sin salida, salida y green; con salida, el green. Hace
+  // falta la sesión: lo que se marca se envía con ella
   let porMarcar = null;
-  if (!completo && !deMiMarca && userId) porMarcar = conSalida ? 'green' : 'salida';
+  if (!hoyo?.green && userId) porMarcar = conSalida ? 'green' : 'salida';
 
-  // La atribución, si algo de lo que se ve sale del mapa (y no todo de la marca)
-  const usaElMapa = completo || (conSalida && !miMarca?.tee);
+  // La atribución, si algo de lo que se ve sale del mapa (y no de una muestra)
+  const usaElMapa = completo || (conSalida && !muestra);
 
-  // En cuanto está en el móvil el mapa se rehace con el hoyo marcado; si luego
-  // el servidor no la quiere, se dice aquí (el mapa ya es otro) y vuelve la de antes
-  const guardarMarca = async (datos) => {
-    setRemarcando(false);
-    setVuelta((v) => v + 1);
-    let resultado;
-    try {
-      resultado = await guardar({ holeNumber: numeroDeHoyo, ...datos });
-    } catch (error) {
-      // El mapa ya se rehízo: el aviso, aquí
-      captureError(error, { tags: { modulo: 'marcas-de-hoyos' } });
-      toast.error(t('mapa.noSeGuardo'));
-      return { estado: 'rechazada', errorCode: null };
-    }
-    if (resultado.estado === 'rechazada') toast.error(t(ERROR_DE_MARCA[resultado.errorCode] ?? 'mapa.noSeGuardo'));
-    return resultado;
-  };
   return (
     <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')}>
       <Suspense
@@ -114,9 +93,10 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
         }
       >
         {/* Si los datos del campo llegan (o cambian) con el mapa abierto, se
-            rehace con ellos: el mapa fija su encuadre y su giro al montarse */}
+            rehace con ellos: el mapa fija su encuadre y su giro al montarse, y
+            al rehacerse envía lo que el jugador hubiera movido */}
         <MapaDelHoyo
-          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${deMiMarca ? 'mia' : (porMarcar ?? '')}-${vuelta}`}
+          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? 'muestra' : (porMarcar ?? '')}`}
           golfCourseId={golfCourseId}
           numeroDeHoyo={numeroDeHoyo}
           par={par}
@@ -125,17 +105,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           onCerrar={cerrar}
           metros={metros}
           porMarcar={porMarcar}
-          onGuardarMarca={porMarcar ? guardarMarca : null}
-          onVolverAMarcar={
-            deMiMarca
-              ? () => {
-                  setRemarcando(true);
-                  setVuelta((v) => v + 1);
-                }
-              : null
-          }
-          // Volviendo a marcar, «Ahora no» devuelve la marca que ya había
-          onAhoraNo={remarcando ? () => setRemarcando(false) : null}
+          // Transparente para el jugador: se envía sin avisar de nada (16 oct)
+          recoge={delHoyo.recoge}
+          onMuestra={userId ? (datos) => enviar(numeroDeHoyo, datos) : null}
         />
       </Suspense>
     </SiNoCarga>

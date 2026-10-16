@@ -1,16 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
-  MARGEN_DE_LA_TARJETA,
   MAX_CODOS,
   MAX_SALIDA_GREEN_M,
   METROS_AL_BORDE_DEL_GREEN,
   MIN_SALIDA_GREEN_M,
   circuloAlrededor,
-  difiereDeLaTarjeta,
+  codosDelPar,
+  conCodosDelPar,
   hoyoDeUnaMarca,
   longitudDeLaLinea,
   puntoDesde,
-  puntosParaArrastrar,
   salidaGreenFueraDeLimites,
   estaLejosDelCampo,
   MAX_DISTANCIA_AL_CAMPO_M,
@@ -26,10 +25,9 @@ const GREEN = alNorte(300);
 const CODO = { lat: 36.2815, lon: -5.331 };
 
 describe('hoyoMarcado — constantes aprobadas (15 oct)', () => {
-  it('delante y fondo a 10 m, hasta 2 codos, aviso al 25 % y límites 40-750 m', () => {
+  it('delante y fondo a 10 m, hasta 2 codos y límites 40-750 m', () => {
     expect(METROS_AL_BORDE_DEL_GREEN).toBe(10);
     expect(MAX_CODOS).toBe(2);
-    expect(MARGEN_DE_LA_TARJETA).toBe(0.25);
     expect([MIN_SALIDA_GREEN_M, MAX_SALIDA_GREEN_M]).toEqual([40, 750]);
   });
 });
@@ -121,27 +119,6 @@ describe('longitudDeLaLinea', () => {
   });
 });
 
-describe('difiereDeLaTarjeta (más de un 25 %)', () => {
-  it.each([
-    [142, 185, true],
-    [142, 178, true],
-    [142, 177, false],
-    [142, 142, false],
-    [142, 107, false],
-    [142, 106, true],
-    [400, 501, true],
-    [400, 500, false],
-  ])('tarjeta %i m, marcado %i m → %s', (tarjeta, marcado, avisa) => {
-    expect(difiereDeLaTarjeta(marcado, tarjeta)).toBe(avisa);
-  });
-
-  it('sin metros en la tarjeta, nunca avisa', () => {
-    expect(difiereDeLaTarjeta(500, null)).toBe(false);
-    expect(difiereDeLaTarjeta(500, undefined)).toBe(false);
-    expect(difiereDeLaTarjeta(500, 0)).toBe(false);
-  });
-});
-
 describe('salidaGreenFueraDeLimites (40-750 m en recta)', () => {
   it.each([
     [10, 'cerca'],
@@ -155,39 +132,67 @@ describe('salidaGreenFueraDeLimites (40-750 m en recta)', () => {
   });
 });
 
-describe('puntosParaArrastrar', () => {
-  it('sin codos, uno en mitad de la recta, que se inserta tras la salida', () => {
-    const [p, ...resto] = puntosParaArrastrar([SALIDA, GREEN]);
+// Agustín, 16 oct: al marcar el green salen ya los codos del par
+describe('codosDelPar', () => {
+  it.each([
+    [3, 0],
+    [4, 1],
+    [5, 2],
+    [null, 1],
+    [undefined, 1],
+    [6, 2],
+  ])('par %s → %i codos', (par, codos) => {
+    expect(codosDelPar(par)).toBe(codos);
+  });
+});
 
-    expect(resto).toEqual([]);
-    expect(p.indice).toBe(1);
-    expect(distanciaEnMetros(SALIDA, p.punto)).toBe(150);
-    expect(distanciaEnMetros(p.punto, GREEN)).toBe(150);
+describe('conCodosDelPar', () => {
+  it('par 3: la recta, sin codos', () => {
+    expect(conCodosDelPar([SALIDA, GREEN], 3)).toEqual([SALIDA, GREEN]);
   });
 
-  it('con un codo, uno en cada tramo', () => {
-    const puntos = puntosParaArrastrar([SALIDA, CODO, GREEN]);
+  it('par 4 (y sin par): un codo en mitad de la recta', () => {
+    for (const par of [4, null]) {
+      const [s, codo, g] = conCodosDelPar([SALIDA, GREEN], par);
 
-    expect(puntos.map((p) => p.indice)).toEqual([1, 2]);
+      expect([s, g]).toEqual([SALIDA, GREEN]);
+      expect(distanciaEnMetros(SALIDA, codo)).toBe(150);
+      expect(distanciaEnMetros(codo, GREEN)).toBe(150);
+    }
   });
 
-  it('par 5: la recta lleva dos, a un tercio y a dos tercios, que entran tras la salida', () => {
-    const puntos = puntosParaArrastrar([SALIDA, GREEN], { par: 5 });
+  it('par 5: dos codos, a un tercio y a dos tercios', () => {
+    const linea = conCodosDelPar([SALIDA, GREEN], 5);
 
-    expect(puntos.map((p) => p.indice)).toEqual([1, 1]);
-    expect(puntos.map((p) => distanciaEnMetros(SALIDA, p.punto))).toEqual([100, 200]);
+    expect(linea).toHaveLength(4);
+    expect(linea.slice(1, 3).map((p) => distanciaEnMetros(SALIDA, p))).toEqual([100, 200]);
   });
 
-  it('par 5 con un codo: ya uno en cada tramo, como siempre', () => {
-    expect(puntosParaArrastrar([SALIDA, CODO, GREEN], { par: 5 }).map((p) => p.indice)).toEqual([1, 2]);
+  it('la longitud no cambia: los codos van sobre la recta', () => {
+    expect(longitudDeLaLinea(conCodosDelPar([SALIDA, GREEN], 5))).toBe(300);
   });
 
-  it.each([3, 4, null])('par %s: uno en medio', (par) => {
-    expect(puntosParaArrastrar([SALIDA, GREEN], { par })).toHaveLength(1);
+  it('una línea que ya tiene los codos del par (o más) no cambia', () => {
+    const conUno = [SALIDA, CODO, GREEN];
+    const conTres = [SALIDA, alNorte(50), alNorte(100), alNorte(150), GREEN];
+
+    expect(conCodosDelPar(conUno, 4)).toBe(conUno);
+    expect(conCodosDelPar(conUno, 3)).toBe(conUno);
+    expect(conCodosDelPar(conTres, 5)).toBe(conTres);
   });
 
-  it('con dos codos, ninguno más', () => {
-    expect(puntosParaArrastrar([SALIDA, CODO, alNorte(200), GREEN])).toEqual([]);
+  it('par 5 con un codo: el que falta, en mitad del último tramo', () => {
+    const codo = alNorte(100);
+    const [, primero, segundo, g] = conCodosDelPar([SALIDA, codo, GREEN], 5);
+
+    expect(primero).toEqual(codo);
+    expect(distanciaEnMetros(codo, segundo)).toBe(100);
+    expect(g).toEqual(GREEN);
+  });
+
+  it('sin línea (un punto o nada), nada que añadir', () => {
+    expect(conCodosDelPar([SALIDA], 5)).toEqual([SALIDA]);
+    expect(conCodosDelPar([], 4)).toEqual([]);
   });
 });
 

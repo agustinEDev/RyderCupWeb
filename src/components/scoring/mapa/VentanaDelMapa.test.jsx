@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 vi.mock('../../../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
-const toastFalso = vi.hoisted(() => ({ error: vi.fn() }));
+const toastFalso = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
 const carga = vi.hoisted(() => ({ falla: false, suspende: false, props: null, montajes: 0 }));
@@ -21,11 +21,11 @@ vi.mock('./MapaDelHoyo', async () => {
   return { default: MapaFalso };
 });
 
-const misMarcas = vi.hoisted(() => ({ marcas: {}, guardar: vi.fn(async () => ({ estado: 'guardada' })), args: null }));
-vi.mock('../../../hooks/useMarcasDelCampo', () => ({
-  useMarcasDelCampo: (args) => {
-    misMarcas.args = args;
-    return { marcas: misMarcas.marcas, guardar: misMarcas.guardar };
+const lasMuestras = vi.hoisted(() => ({ muestras: {}, pendientes: {}, enviar: null, args: null }));
+vi.mock('../../../hooks/useMuestrasDelCampo', () => ({
+  useMuestrasDelCampo: (args) => {
+    lasMuestras.args = args;
+    return { muestras: lasMuestras.muestras, pendientes: lasMuestras.pendientes, enviar: lasMuestras.enviar };
   },
 }));
 
@@ -170,197 +170,145 @@ describe('VentanaDelMapa — tras la revisión', () => {
 });
 
 
-describe('VentanaDelMapa — marcar el hoyo (PR C)', () => {
+// Agustín, 16 oct: muestras anónimas. Lo que se ve, por orden: el hoyo
+// aprobado, la primera muestra, la pendiente del jugador; al cerrar, la muestra
+// se envía sin decirle nada
+describe('VentanaDelMapa — muestras del hoyo', () => {
   const T = { lat: 36.28, lon: -5.33 };
-  const G = { lat: 36.2827, lon: -5.33 };
-  const OSM = '© OpenStreetMap contributors (ODbL)';
-  const conMapa = (holes) => estado({ mapaDelCampo: { version: 'v1', attribution: OSM, holes } });
-  const abrirCon = (mapaDelHoyo, extra = {}) =>
-    render(<VentanaDelMapa mapaDelHoyo={mapaDelHoyo} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={142} userId="u1" {...extra} />);
+  const C = { lat: 36.2815, lon: -5.33 };
+  const G = { lat: 36.283, lon: -5.33 };
+  const PRIMERA = { tee: T, bends: [C], greenCenter: G };
+  const abrirEn = (mapaDelCampo, props = {}) =>
+    render(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" {...props} />);
 
   beforeEach(() => {
     carga.falla = false;
     carga.suspende = false;
     carga.props = null;
     carga.montajes = 0;
-    misMarcas.marcas = {};
-    misMarcas.guardar.mockClear();
-    misMarcas.guardar.mockResolvedValue({ estado: 'guardada' });
+    lasMuestras.muestras = {};
+    lasMuestras.pendientes = {};
+    lasMuestras.enviar = vi.fn(async () => {});
+    toastFalso.error.mockClear();
+    toastFalso.success.mockClear();
   });
 
-  it('las marcas son las del jugador en ese campo', async () => {
-    abrirCon(estado({ mapaDelCampo: null }));
+  it('pide las muestras de ese campo, con la sesión del jugador', async () => {
+    abrirEn(null);
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(misMarcas.args).toEqual({ golfCourseId: 'gc-1', userId: 'u1' });
+    expect(lasMuestras.args).toEqual({ golfCourseId: 'gc-1', userId: 'u-1' });
   });
 
-  it('C1: sin datos del hoyo, se piden salida y green, con los metros de la tarjeta', async () => {
-    abrirCon(estado({ mapaDelCampo: null }));
+  it('V1: sin nada del hoyo, se piden salida y green, recogiendo, con los metros de la tarjeta', async () => {
+    abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', metros: 142, onVolverAMarcar: null });
-    expect(carga.props.onGuardarMarca).toEqual(expect.any(Function));
+    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', recoge: true, metros: 300, atribucion: null });
   });
 
-  it('C1: un mapa aprobado que no trae ese hoyo, igual', async () => {
-    abrirCon(conMapa({ 1: { playLine: [T, G], green: GREEN } }));
+  it('V1: con la salida aprobada y sin green, se ve y se pide el green', async () => {
+    const conSalida = { playLine: [T], green: null };
+    abrirEn({ attribution: 'osm', holes: { 3: conSalida } });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', atribucion: null });
+    expect(carga.props).toMatchObject({ hoyo: conSalida, porMarcar: 'green', atribucion: 'osm' });
   });
 
-  it('C2: con salida y sin green, se ve el hoyo y solo se pide el green', async () => {
-    const conSalida = { playLine: [T, { lat: 36.2825, lon: -5.33 }], green: null };
-    abrirCon(conMapa({ 3: conSalida }));
+  it('V2: con la primera muestra, se ve ella (sin atribución) y no se pide nada', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
+
+    abrirEn({ attribution: 'osm', holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: conSalida, porMarcar: 'green', atribucion: OSM });
-  });
-
-  it('con salida y green aprobados no se pide nada (aunque haya una marca vieja)', async () => {
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(conMapa({ 3: { playLine: [T, G], green: GREEN } }));
-    await screen.findByTestId('mapa-del-hoyo');
-
-    expect(carga.props).toMatchObject({ hoyo: { green: GREEN }, porMarcar: null, onGuardarMarca: null, onVolverAMarcar: null });
-  });
-
-  it('C14/C16: con su marca, el hoyo se ve marcado, sin atribución de OSM, y con «Volver a marcar»', async () => {
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(estado({ mapaDelCampo: null }));
-    await screen.findByTestId('mapa-del-hoyo');
-
-    expect(carga.props.hoyo).toMatchObject({ playLine: [T, G], marcadoPorMi: true });
+    expect(carga.props.hoyo.playLine).toEqual([T, C, G]);
     expect(carga.props.hoyo.green.center).toEqual(G);
-    expect(carga.props).toMatchObject({ porMarcar: null, atribucion: null, onGuardarMarca: null });
-    expect(carga.props.onVolverAMarcar).toEqual(expect.any(Function));
+    expect(carga.props).toMatchObject({ porMarcar: null, recoge: true, atribucion: null });
   });
 
-  it('C2: su green sobre la salida del mapa: la línea del mapa termina en su green, con atribución', async () => {
-    const conSalida = { playLine: [T, { lat: 36.2825, lon: -5.33 }], green: null };
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: null, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(conMapa({ 3: conSalida }));
+  it('V2: la primera muestra va antes que lo que el jugador dejó pendiente', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.green.center).toEqual(G);
+  });
+
+  it('V3: sin muestra en el servidor, la pendiente del jugador (hecha sin cobertura)', async () => {
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: G } };
+
+    abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
     expect(carga.props.hoyo.playLine).toEqual([T, G]);
-    expect(carga.props.atribucion).toBe(OSM);
+    expect(carga.props.porMarcar).toBeNull();
   });
 
-  it('su marca entera sobre una salida aprobada (hecha sin cobertura): todo es suyo, sin atribución', async () => {
-    const conSalida = { playLine: [T, { lat: 36.2825, lon: -5.33 }], green: null };
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: { lat: 36.2801, lon: -5.33 }, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(conMapa({ 3: conSalida }));
+  it('V4: un hoyo aprobado entero va antes que cualquier muestra, con su atribución', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
+
+    abrirEn(estado().mapaDelCampo);
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props.hoyo.playLine[0]).toEqual({ lat: 36.2801, lon: -5.33 });
-    expect(carga.props.atribucion).toBeNull();
+    expect(carga.props).toMatchObject({ hoyo: { playLine: [], green: GREEN }, porMarcar: null, atribucion: '© OpenStreetMap contributors (ODbL)' });
   });
 
-  it('C16: «Volver a marcar» rehace el mapa pidiendo otra vez la marca', async () => {
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(estado({ mapaDelCampo: null }));
+  it('V5: si el hoyo ya no recoge, el mapa lo sabe (se mueve para medir, sin enviar)', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: false } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.recoge).toBe(false);
+  });
+
+  it('V6: sin saber nada del hoyo (sin red la primera vez), recoge', async () => {
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.recoge).toBe(true);
+  });
+
+  it('V7: la muestra del mapa se envía para ESE hoyo, sin avisos', async () => {
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    await act(async () => carga.props.onMuestra(PRIMERA));
+
+    expect(lasMuestras.enviar).toHaveBeenCalledWith(3, PRIMERA);
+    expect(toastFalso.error).not.toHaveBeenCalled();
+    expect(toastFalso.success).not.toHaveBeenCalled();
+  });
+
+  it('V8: sin jugador, ni se pide marcar ni se envía nada', async () => {
+    abrirEn({ holes: {} }, { userId: null });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props).toMatchObject({ porMarcar: null, onMuestra: null });
+  });
+
+  it('V9: cuando llega la primera muestra con el mapa abierto, el mapa se rehace con ella', async () => {
+    const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    act(() => carga.props.onVolverAMarcar());
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" />);
 
-    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida' });
     expect(carga.montajes).toBe(antes + 1);
+    expect(carga.props.hoyo.green.center).toEqual(G);
   });
 
-  it('C12/C15: guardar envía el hoyo con lo marcado y, guardada, vuelve a verse marcado', async () => {
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(estado({ mapaDelCampo: null }));
-    await screen.findByTestId('mapa-del-hoyo');
-    act(() => carga.props.onVolverAMarcar());
-
-    let r;
-    await act(async () => {
-      r = await carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G });
-    });
-
-    expect(misMarcas.guardar).toHaveBeenCalledWith({ holeNumber: 3, tee: T, bends: [], greenCenter: G });
-    expect(r).toEqual({ estado: 'guardada' });
-    expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true } });
-  });
-
-  it.each([
-    ['HOLE_ALREADY_MAPPED', 'mapa.yaTieneDatos'],
-    ['HOLE_MARK_OUT_OF_RANGE', 'mapa.fueraDeLimites'],
-    ['HOLE_MARK_TOO_FAR_FROM_COURSE', 'mapa.lejosDelCampo'],
-    ['TEE_REQUIRED', 'mapa.faltaLaSalida'],
-    ['OTRA_COSA', 'mapa.noSeGuardo'],
-  ])('rechazada (%s): se avisa y queda la marca de antes', async (codigo, texto) => {
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    misMarcas.guardar.mockResolvedValue({ estado: 'rechazada', errorCode: codigo });
-    abrirCon(estado({ mapaDelCampo: null }));
-    await screen.findByTestId('mapa-del-hoyo');
-    act(() => carga.props.onVolverAMarcar());
-
-    await act(async () => carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G }));
-
-    expect(toastFalso.error).toHaveBeenCalledWith(texto);
-    expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true } });
-  });
-
-  it('C3/C16: volviendo a marcar, «Ahora no» devuelve la marca que había', async () => {
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'a' } };
-    abrirCon(estado({ mapaDelCampo: null }));
-    await screen.findByTestId('mapa-del-hoyo');
-    expect(carga.props.onAhoraNo).toBeNull();
-    act(() => carga.props.onVolverAMarcar());
-
-    act(() => carga.props.onAhoraNo());
-
-    expect(carga.props).toMatchObject({ porMarcar: null, hoyo: { marcadoPorMi: true }, onAhoraNo: null });
-  });
-
-  it('C17: una marca nueva (pendiente o guardada) rehace el mapa como hoyo marcado', async () => {
-    const { rerender } = abrirCon(estado({ mapaDelCampo: null }));
+  it('V9: si solo se refrescan las muestras (sin cambiar lo que se ve), no se rehace', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
+    const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    misMarcas.marcas = { 3: { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: 'b' } };
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: null })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={142} userId="u1" />);
-
-    expect(carga.props.hoyo.marcadoPorMi).toBe(true);
-    expect(carga.montajes).toBe(antes + 1);
-  });
-
-  it('sin jugador, no se marca', async () => {
-    abrirCon(estado({ mapaDelCampo: null }), { userId: null });
-    await screen.findByTestId('mapa-del-hoyo');
-
-    expect(carga.props).toMatchObject({ porMarcar: null, onGuardarMarca: null });
-  });
-
-  it('confirmada por el servidor (otra forma de escribir la hora), el mapa no se rehace', async () => {
-    const mia = { holeNumber: 3, tee: T, bends: [], greenCenter: G, markedAt: '2026-10-16T10:00:00.123Z' };
-    misMarcas.marcas = { 3: mia };
-    const { rerender } = abrirCon(estado({ mapaDelCampo: null }));
-    await screen.findByTestId('mapa-del-hoyo');
-    const antes = carga.montajes;
-
-    misMarcas.marcas = { 3: { ...mia, markedAt: '2026-10-16T10:00:00.123000+00:00' } };
-    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: null })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={142} userId="u1" />);
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" />);
 
     expect(carga.montajes).toBe(antes);
-  });
-
-  it('si guardar revienta (el mapa ya se rehízo), el aviso lo da la ventana y queda apuntado', async () => {
-    const { captureError } = await import('../../../utils/sentryHelpers');
-    misMarcas.guardar.mockRejectedValue(new Error('x'));
-    abrirCon(estado({ mapaDelCampo: null }));
-    await screen.findByTestId('mapa-del-hoyo');
-
-    let r;
-    await act(async () => {
-      r = await carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G });
-    });
-
-    expect(r).toEqual({ estado: 'rechazada', errorCode: null });
-    expect(toastFalso.error).toHaveBeenCalledWith('mapa.noSeGuardo');
-    expect(captureError).toHaveBeenCalled();
   });
 });

@@ -67,8 +67,8 @@ class TeeGroupScoringMapper {
         color: p.tee_color ?? null,
         playingHandicap: p.playing_handicap,
         strokesReceived: numeros.map((n) => hoyoDe(p, n)?.strokes_received ?? 0),
-        // El par de SU barra; la vista no trae índice ni metros
-        holeCard: numeros.map((n) => ({ holeNumber: n, par: hoyoDe(p, n)?.par ?? null, strokeIndex: null, meters: null })),
+        // El par y los metros de SU barra (los metros, BE #574); la vista no trae índice
+        holeCard: numeros.map((n) => ({ holeNumber: n, par: hoyoDe(p, n)?.par ?? null, strokeIndex: null, meters: hoyoDe(p, n)?.meters ?? null })),
       })),
       holes: numeros.map((n) => ({ holeNumber: n, par: jugadores[0] ? hoyoDe(jugadores[0], n)?.par ?? null : null, strokeIndex: null })),
       scores: numeros.map((n) => ({
