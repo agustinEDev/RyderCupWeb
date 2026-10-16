@@ -1011,3 +1011,90 @@ describe('MapaDelHoyo — tras la prueba en el Kind', () => {
     expect(mapaJsx).not.toContain('maplibre-gl.css');
   });
 });
+
+describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
+  let gps;
+  const CAMPO = { lat: 36.29, lon: -5.33 };
+  const EN_CASA = { lat: 36.72, lon: -4.42 }; // ~95 km
+  const CERCA = { lat: 36.291, lon: -5.331 };
+  const tocar = (lat, lon) => act(() => mapa().oyentes.click({ lngLat: { lat, lng: lon } }));
+
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = null;
+    gps = gpsFalso();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sin mapa, con el GPS a kilómetros del campo, el mapa se queda en el campo', () => {
+    centro.valor = CAMPO;
+    abrir({ hoyo: null });
+    mapa().jumpTo.mockClear();
+
+    act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
+
+    expect(mapa().opciones.center).toEqual([CAMPO.lon, CAMPO.lat]);
+    expect(mapa().jumpTo).not.toHaveBeenCalled();
+  });
+
+  it('si el GPS (lejos) llegó antes que la ubicación del campo, al llegar esta vuelve al campo', () => {
+    const { rerender } = abrir({ hoyo: null });
+    act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [EN_CASA.lon, EN_CASA.lat], zoom: 17 });
+
+    centro.valor = CAMPO;
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [CAMPO.lon, CAMPO.lat], zoom: 17 });
+  });
+
+  it('cerca del campo (menos de 3 km), el mapa va a ti como siempre', () => {
+    centro.valor = CAMPO;
+    abrir({ hoyo: null });
+
+    act(() => gps.exito(lectura(CERCA.lat, CERCA.lon)));
+
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [CERCA.lon, CERCA.lat], zoom: 17 });
+  });
+
+  it('lejos, medir tocando: sin línea desde ti ni giro; queda la del punto al green', () => {
+    abrir();
+    act(() => mapa().oyentes.load());
+    act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
+    mapa().fitBounds.mockClear();
+
+    tocar(36.2893, -5.332);
+
+    expect(mapa().fitBounds).not.toHaveBeenCalled();
+    expect(mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates)).toEqual([
+      [[-5.332, 36.2893], [-5.332, 36.29]],
+    ]);
+    expect(screen.queryByText(/mapa\.hastaAhi/)).toBeNull();
+    expect(screen.getByText('mapa.deAhiAlGreen {"metros":78}')).toBeInTheDocument();
+  });
+
+  it('con mapa, lo de lejos se mide desde la salida del hoyo: a menos de 3 km de ella, se mide desde ti', () => {
+    abrir();
+    act(() => mapa().oyentes.load());
+    act(() => gps.exito(lectura(36.2888, -5.332)));
+
+    tocar(36.2893, -5.332);
+
+    expect(mapa().fuentes.medida.data.features).toHaveLength(2);
+  });
+
+  it('sin saber dónde está el campo (sin mapa y sin su ubicación), se da por hecho que estás en él', () => {
+    abrir({ hoyo: null });
+    act(() => mapa().oyentes.load());
+    act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
+    mapa().fitBounds.mockClear();
+
+    tocar(EN_CASA.lat + 0.001, EN_CASA.lon);
+
+    expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
+  });
+});

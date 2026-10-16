@@ -40,6 +40,9 @@ const ESTILO = {
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
 const DOBLE_TOQUE_MS = 400;
+// Más lejos que esto del campo no estás jugando (el mismo límite que las marcas):
+// el mapa no se va a tu casa, y medir no se hace desde ti (Agustín, 16 oct)
+const LEJOS_DEL_CAMPO_M = 3000;
 const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
@@ -126,6 +129,11 @@ const MapaDelHoyo = ({
   const gps = usePosicionGps({ activo: true });
   const posicion = gps.estado === 'listo' ? gps.posicion : null;
   const centroSinMapa = useCentroSinMapa({ golfCourseId, activo: !conMapa });
+  // Si estás en el campo: con mapa, se mide desde la salida del hoyo; sin él,
+  // desde la ubicación del campo (sin ella, se da por hecho que sí)
+  const referenciaDelCampo = conMapa ? hoyo.playLine[0] : centroSinMapa;
+  const lejos = Boolean(posicion && referenciaDelCampo && distanciaEnMetros(posicion, referenciaDelCampo) > LEJOS_DEL_CAMPO_M);
+  const posicionEnElCampo = lejos ? null : posicion;
   const [tocado, setTocado] = useState(null);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero las distancias
   // al green solo piden el GPS
@@ -200,11 +208,12 @@ const MapaDelHoyo = ({
       }
       if (marca.fase === 'ajustando') return;
       setTocado(p);
-      // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16 oct)
-      if (posicion) {
+      // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
+      // oct); lejos del campo no, que alejaría a kilómetros
+      if (posicionEnElCampo) {
         const alto = contenedor.current?.clientHeight || 640;
-        mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicion, p] }), {
-          bearing: rumbo(posicion, p),
+        mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionEnElCampo, p] }), {
+          bearing: rumbo(posicionEnElCampo, p),
           padding: margenDelEncuadre(alto),
           maxZoom: 18,
         });
@@ -313,11 +322,11 @@ const MapaDelHoyo = ({
     }
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
-    if (!inicio.current.conMapa && !centradoEnGps.current) {
+    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos) {
       centradoEnGps.current = true;
       mapa.jumpTo({ center: lngLat(posicion), zoom: ZOOM_SIN_MAPA });
     }
-  }, [posicion]);
+  }, [posicion, lejos]);
 
   useEffect(() => {
     const mapa = mapaRef.current;
@@ -338,7 +347,7 @@ const MapaDelHoyo = ({
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    const tramos = tramosDeLaMedida(posicion, tocado, green);
+    const tramos = tramosDeLaMedida(posicionEnElCampo, tocado, green);
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
     const etiquetas = etiquetasDeLaMedida.current;
@@ -350,17 +359,18 @@ const MapaDelHoyo = ({
       etiquetas[i].setLngLat(lngLat(enMedio(a, b)));
       etiquetas[i].getElement().textContent = textoDeTramo(distanciaEnMetros(a, b));
     });
-  }, [posicion, tocado, green, textoDeTramo]);
+  }, [posicionEnElCampo, tocado, green, textoDeTramo]);
 
   // La ubicación del campo llega después de abrir: centra el mapa si aún no lo
-  // hizo el GPS ni el jugador lo ha movido
+  // hizo el GPS ni el jugador lo ha movido. Si el GPS lo llevó antes a otro
+  // sitio y resulta que estás lejos del campo, vuelve al campo
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
-    if (centradoEnGps.current || movidoPorElJugador.current) return;
+    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current) return;
     inicio.current.centroSinMapa = centroSinMapa;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
-  }, [centroSinMapa]);
+  }, [centroSinMapa, lejos]);
 
   // Lo que se está marcando, sobre el mapa: la línea y el arco, y como marcas
   // la salida, el green, los codos y los puntos que se arrastran para hacerlos
@@ -447,7 +457,7 @@ const MapaDelHoyo = ({
   };
 
   const distancias = distanciasAlGreen(posicion, hoyo?.green);
-  const hastaAhi = tocado && posicion ? distanciaEnMetros(posicion, tocado) : null;
+  const hastaAhi = tocado && posicionEnElCampo ? distanciaEnMetros(posicionEnElCampo, tocado) : null;
   const deAhiAlGreen = tocado && hoyo?.green ? distanciaEnMetros(tocado, hoyo.green.center) : null;
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
 
