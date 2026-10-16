@@ -164,44 +164,58 @@ describe('ApiGolfCourseRepository.getHoleMap', () => {
 });
 
 /**
- * Muestras de hoyo, anónimas (BE #532, marcado por par).
+ * Muestras de hoyo, anónimas y por barra (BE #532, marcado por par).
  *
- * | Caso | Qué                                  | Qué se espera                                        |
- * |------|--------------------------------------|------------------------------------------------------|
- * | S4   | pedir el resumen                     | GET .../hole-map/samples con tope, por hoyo           |
- * | S5   | enviar una muestra                   | POST .../hole-map/samples/{hoyo} con el cuerpo, tope |
- * | S5   | 204 (sin cuerpo), o un 2xx sin JSON  | se resuelve: llegó                                   |
- * | S5   | 404 / 422 / sin red                  | se propaga (lo decide quien envía)                    |
+ * | Caso | Qué                                  | Qué se espera                                          |
+ * |------|--------------------------------------|--------------------------------------------------------|
+ * | S4   | pedir el resumen                     | GET .../hole-map/samples con tope, por hoyo y barra     |
+ * | S5   | enviar una muestra                   | POST .../hole-map/samples/{hoyo} con id, barra y puntos |
+ * | S5   | 204 (sin cuerpo), o un 2xx sin JSON  | se resuelve: llegó                                     |
+ * | S5   | 404 / 422 / sin red                  | se propaga (lo decide quien envía)                      |
  */
 describe('ApiGolfCourseRepository — muestras de hoyo', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  const MUESTRA = { tee: { lat: 36.28, lon: -5.33 }, bends: [], greenCenter: { lat: 36.2827, lon: -5.33 } };
+  const PUNTOS = { tee: { lat: 36.28, lon: -5.33 }, bends: [], greenCenter: { lat: 36.2827, lon: -5.33 } };
+  const MUESTRA = { id: 'm-1', barra: { color: 'YELLOW', gender: 'MALE' }, ...PUNTOS };
 
-  it('S4: el resumen, por hoyo y traducido', async () => {
+  it('S4: el resumen, por hoyo y por barra, traducido', async () => {
     apiRequest.mockResolvedValue([
-      { hole_number: 1, first_sample: null, collecting: true },
+      { hole_number: 1, tees: [] },
       {
         hole_number: 3,
-        first_sample: { tee: { latitude: 36.28, longitude: -5.33 }, bends: [], green_center: { latitude: 36.2827, longitude: -5.33 } },
-        collecting: false,
+        tees: [
+          {
+            tee_color: 'YELLOW',
+            tee_gender: 'MALE',
+            first_sample: { tee: { latitude: 36.28, longitude: -5.33 }, bends: [], green_center: { latitude: 36.2827, longitude: -5.33 } },
+            collecting: false,
+          },
+        ],
       },
     ]);
 
-    const muestras = await new ApiGolfCourseRepository().getHoleSamples('gc-1');
+    const resumen = await new ApiGolfCourseRepository().getHoleSamples('gc-1');
 
     expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/samples', { topeMs: 15000 });
-    expect(muestras).toEqual({ 1: { primera: null, recoge: true }, 3: { primera: MUESTRA, recoge: false } });
+    expect(resumen).toEqual({ 1: [], 3: [{ color: 'YELLOW', gender: 'MALE', primera: PUNTOS, recoge: false }] });
   });
 
-  it('S5: enviar es un POST al hoyo con el cuerpo de la API, y el 204 se resuelve', async () => {
+  it('S5: enviar es un POST al hoyo con el id, la barra y los puntos, y el 204 se resuelve', async () => {
     apiRequest.mockResolvedValue(null);
 
     await expect(new ApiGolfCourseRepository().sendHoleSample('gc-1', 3, MUESTRA)).resolves.toBeUndefined();
 
     expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/samples/3', {
       method: 'POST',
-      body: JSON.stringify({ tee: { latitude: 36.28, longitude: -5.33 }, bends: [], green_center: { latitude: 36.2827, longitude: -5.33 } }),
+      body: JSON.stringify({
+        id: 'm-1',
+        tee_color: 'YELLOW',
+        tee_gender: 'MALE',
+        tee: { latitude: 36.28, longitude: -5.33 },
+        bends: [],
+        green_center: { latitude: 36.2827, longitude: -5.33 },
+      }),
       topeMs: 15000,
     });
   });

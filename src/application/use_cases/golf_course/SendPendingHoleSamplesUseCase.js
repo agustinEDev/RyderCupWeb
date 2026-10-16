@@ -1,11 +1,13 @@
 import { enviarMuestraDeHoyo } from './enviarMuestraDeHoyo';
+import { crearRecienEnviadas } from './recienEnviadas';
 
 /**
  * SendPendingHoleSamplesUseCase: envía las muestras de hoyo que se quedaron en
  * la cola del móvil (BE #532, marcado por par), solo las de quien tiene la
  * sesión.
  *
- * Una a una y una tanda a la vez por jugador: el evento de vuelta de la red
+ * Una a una, sobre una foto de la cola (la que el jugador sustituye mientras
+ * tanto ya no sale), y una tanda a la vez por jugador: el evento de vuelta de la red
  * llega a veces dos veces, y la misma muestra no tiene por qué salir dos (cada
  * envío cuenta en el servidor). Con un fallo que tumbaría a las demás (sin
  * red, el servidor, la sesión) se para ahí.
@@ -14,8 +16,8 @@ import { enviarMuestraDeHoyo } from './enviarMuestraDeHoyo';
  * sesión a mitad, lo que queda de uno no puede salir con las cookies de otro.
  */
 class SendPendingHoleSamplesUseCase {
-  constructor({ golfCourseRepository, holeSampleStore, reportarFallo = () => {}, enVuelo = new Set() }) {
-    this.dependencias = { golfCourseRepository, holeSampleStore, reportarFallo, enVuelo };
+  constructor({ golfCourseRepository, holeSampleStore, reportarFallo = () => {}, enVuelo = new Set(), recienEnviadas = crearRecienEnviadas() }) {
+    this.dependencias = { golfCourseRepository, holeSampleStore, reportarFallo, enVuelo, recienEnviadas };
     this.enMarcha = new Map();
   }
 
@@ -43,7 +45,7 @@ class SendPendingHoleSamplesUseCase {
         break;
       }
       const { estado, paraLaTanda } = await enviarMuestraDeHoyo(this.dependencias, userId, entrada);
-      // La que ya va de camino la cuenta quien la envió
+      // La que ya va de camino la cuenta quien la envió, y la sustituida ya no está
       if (estado === 'enviada') cuenta.enviadas += 1;
       else if (estado === 'descartada') cuenta.descartadas += 1;
       else if (estado === 'pendiente') {

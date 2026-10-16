@@ -159,6 +159,9 @@ const GroupScoringPage = () => {
   const hoyoDeLaTarjetaDe = (jugador) =>
     scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole);
   const parDe = (jugador) => hoyoDeLaTarjetaDe(jugador)?.par ?? null;
+  // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra
+  const yo = scoringView.players.find((p) => p.userId === userId);
+  const miBarra = yo?.color ? { color: yo.color, gender: yo.teeGender ?? null } : null;
   const golpesDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
@@ -383,6 +386,7 @@ const GroupScoringPage = () => {
                     // Los metros desde mi barra, para el recuadro del mapa (16 oct)
                     metros={hoyoDeLaTarjetaDe(userId)?.meters ?? null}
                     userId={userId ?? null}
+                    barra={miBarra}
                   />
                 </>
               )}

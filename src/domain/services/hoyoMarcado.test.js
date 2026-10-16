@@ -50,7 +50,7 @@ describe('puntoDesde', () => {
 });
 
 describe('hoyoDeUnaMarca', () => {
-  it('marca entera: la línea es salida, codos y green; delante y fondo a 10 m sobre el último tramo', () => {
+  it('la línea es salida, codos y green; delante y fondo a 10 m sobre el último tramo', () => {
     const hoyo = hoyoDeUnaMarca({ tee: SALIDA, bends: [CODO], greenCenter: GREEN });
 
     expect(hoyo.playLine).toEqual([SALIDA, CODO, GREEN]);
@@ -60,7 +60,6 @@ describe('hoyoDeUnaMarca', () => {
     // Delante, del lado del codo; fondo, del otro
     expect(distanciaEnMetros(CODO, hoyo.green.front)).toBe(distanciaEnMetros(CODO, GREEN) - 10);
     expect(distanciaEnMetros(CODO, hoyo.green.back)).toBe(distanciaEnMetros(CODO, GREEN) + 10);
-    expect(hoyo.marcadoPorMi).toBe(true);
   });
 
   it('sin codos, la recta de la salida al green', () => {
@@ -71,32 +70,9 @@ describe('hoyoDeUnaMarca', () => {
     expect(distanciaEnMetros(SALIDA, hoyo.green.back)).toBe(310);
   });
 
-  it('solo green: la línea aprobada termina en el green marcado (conserva sus codos)', () => {
-    const aprobado = { playLine: [SALIDA, CODO, alNorte(280)], green: null };
-
-    const hoyo = hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN }, aprobado);
-
-    expect(hoyo.playLine).toEqual([SALIDA, CODO, GREEN]);
-    expect(hoyo.green.center).toEqual(GREEN);
-  });
-
-  it('solo green con una línea aprobada de un solo tramo', () => {
-    const aprobado = { playLine: [SALIDA, alNorte(250)], green: null };
-
-    expect(hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN }, aprobado).playLine).toEqual([SALIDA, GREEN]);
-  });
-
-  it('solo green con una línea aprobada de un solo punto: de esa salida al green', () => {
-    expect(hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN }, { playLine: [SALIDA], green: null }).playLine).toEqual([SALIDA, GREEN]);
-  });
-
-  it('solo green sin línea aprobada (no debería pasar) no da hoyo', () => {
-    expect(hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN }, null)).toBeNull();
-    expect(hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN }, { playLine: [], green: null })).toBeNull();
-  });
-
-  it('sin marca, no hay hoyo', () => {
+  it('sin marca, o sin salida, no hay hoyo', () => {
     expect(hoyoDeUnaMarca(null)).toBeNull();
+    expect(hoyoDeUnaMarca({ tee: null, bends: [], greenCenter: GREEN })).toBeNull();
   });
 });
 

@@ -643,6 +643,20 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.ventana.metros).toBe(300);
   });
 
+  it('16 oct: el mapa recibe mi barra (color y sexo), para las muestras', () => {
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { tee_color: 'RED', tee_gender: 'FEMALE' }), jugador('bea', 'ana')]) });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'RED', gender: 'FEMALE' });
+  });
+
+  it('16 oct: una barra sin sexo va con null', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: null });
+  });
+
   it('F12: sin metros en la vista, el mapa recibe null', () => {
     render(<GroupScoringPage />);
 

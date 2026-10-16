@@ -65,6 +65,8 @@ class TeeGroupScoringMapper {
         userName: p.name,
         team: null,
         color: p.tee_color ?? null,
+        // Con el color, la barra: las muestras del mapa van por barra (16 oct)
+        teeGender: p.tee_gender ?? null,
         playingHandicap: p.playing_handicap,
         strokesReceived: numeros.map((n) => hoyoDe(p, n)?.strokes_received ?? 0),
         // El par y los metros de SU barra (los metros, BE #574); la vista no trae índice

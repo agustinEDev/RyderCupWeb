@@ -134,6 +134,9 @@ const QuickMatchScoringPage = () => {
   // Si el grupo entero se anota desde este móvil —lo normal en un cuarteto con
   // invitados— no falta nada de nadie: la clasificación está completa, así que
   // ni se avisa ni se le quita el puesto a nadie
+  // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra (16 oct)
+  const yoEnLaPartida = (quickMatch?.participants ?? []).find((p) => p.userId && p.userId === user?.id);
+  const miBarra = yoEnLaPartida?.color ? { color: yoEnLaPartida.color, gender: yoEnLaPartida.teeGender ?? null } : null;
   const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
     (p) => !coveredParticipantIds.includes(p.participantId)
   );
@@ -629,6 +632,7 @@ const QuickMatchScoringPage = () => {
                       par={currentHoleData.par}
                       metros={currentHoleData.meters ?? null}
                       userId={user?.id ?? null}
+                      barra={miBarra}
                     />
                   </>
                 )}

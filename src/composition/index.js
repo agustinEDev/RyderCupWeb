@@ -41,6 +41,7 @@ import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCo
 import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHoleSampleUseCase';
 import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
 import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
+import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
 import { captureError } from '../utils/sentryHelpers';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
@@ -465,19 +466,27 @@ const holeSampleStore = new LocalStorageHoleSampleStore();
 const reportarFalloDeMuestra = (error, contexto) => captureError(error, { tags: { modulo: 'muestras-de-hoyos' }, extra: contexto });
 // Las que van de camino, compartidas: la cola de fondo no manda otra vez la que está saliendo
 const muestrasEnVuelo = new Set();
+// Las que llegaron y el resumen aún no trae: se siguen viendo en el mapa
+const muestrasRecienEnviadas = crearRecienEnviadas();
 const sendHoleSampleUseCase = new SendHoleSampleUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeSampleStore,
   reportarFallo: reportarFalloDeMuestra,
   enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
 });
 const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeSampleStore,
   reportarFallo: reportarFalloDeMuestra,
   enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
 });
-const getHoleSamplesUseCase = new GetHoleSamplesUseCase({ golfCourseRepository: apiGolfCourseRepository, holeSampleStore });
+const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  recienEnviadas: muestrasRecienEnviadas,
+});
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });

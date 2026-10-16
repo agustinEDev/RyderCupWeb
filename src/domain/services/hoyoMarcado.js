@@ -19,7 +19,7 @@ export const MAX_CODOS = 2;
 export const MIN_SALIDA_GREEN_M = 40;
 export const MAX_SALIDA_GREEN_M = 750;
 // A más de esto del campo no se está jugando: el mismo límite que el servidor
-// pone a cada punto de una marca (Agustín, 16 oct)
+// pone a cada punto de una muestra (Agustín, 16 oct)
 export const MAX_DISTANCIA_AL_CAMPO_M = 3000;
 
 const RADIO_TERRESTRE_M = 6371008.8; // el de distanciaEnMetros
@@ -47,23 +47,15 @@ const greenAlFinalDe = (linea) => {
 };
 
 /**
- * El hoyo que sale de una marca. Si la marca es solo del green, la línea es la
- * aprobada (con sus codos) terminada en el green marcado.
+ * El hoyo que sale de una línea marcada (o de una muestra): su salida, sus
+ * codos y su green, con delante y fondo a 10 m del centro sobre el último tramo.
  *
- * @param {{tee: Object|null, bends: Object[], greenCenter: Object}|null} marca
- * @param {{playLine: Object[]}|null} [aprobado] el hoyo del mapa, con su salida
+ * @param {{tee: Object, bends: Object[], greenCenter: Object}|null} marca
  */
-export const hoyoDeUnaMarca = (marca, aprobado = null) => {
-  if (!marca) return null;
-  let playLine;
-  if (marca.tee) {
-    playLine = [marca.tee, ...marca.bends, marca.greenCenter];
-  } else {
-    const base = aprobado?.playLine ?? [];
-    if (base.length === 0) return null;
-    playLine = [...base.slice(0, Math.max(1, base.length - 1)), marca.greenCenter];
-  }
-  return { playLine, green: greenAlFinalDe(playLine), marcadoPorMi: true };
+export const hoyoDeUnaMarca = (marca) => {
+  if (!marca?.tee) return null;
+  const playLine = [marca.tee, ...marca.bends, marca.greenCenter];
+  return { playLine, green: greenAlFinalDe(playLine) };
 };
 
 /** Lo que mide la línea siguiendo sus codos, en metros. */

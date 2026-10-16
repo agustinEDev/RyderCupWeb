@@ -1,7 +1,7 @@
 import { esFalloDeTodaLaSesion, esRechazoDefinitivo, noLlegoAlServidor } from '../../../utils/politicaDeLaCola';
 
 /** Lo que identifica una entrada de la cola mientras va de camino. */
-export const claveDelEnvio = (userId, { golfCourseId, holeNumber, enCola }) => `${userId}|${golfCourseId}|${holeNumber}|${enCola}`;
+export const claveDelEnvio = (userId, { id, enCola }) => `${userId}|${id}|${enCola}`;
 
 /**
  * Enviar una muestra de hoyo que ya está en la cola del móvil y apuntar lo que
@@ -22,19 +22,26 @@ export const claveDelEnvio = (userId, { golfCourseId, holeNumber, enCola }) => `
  *   una vez por muestra (FE #521).
  *
  * `enVuelo` son las que van de camino: compartido entre enviar y vaciar, para
- * que la tanda no mande otra vez una que ya está saliendo (cada envío cuenta
- * en el servidor como una muestra más).
+ * que la tanda no mande otra vez una que ya está saliendo. `recienEnviadas`,
+ * las que llegaron y el resumen aún no trae (ver `recienEnviadas.js`).
  *
- * @returns {Promise<{estado: 'enviada'|'pendiente'|'descartada'|'enVuelo', paraLaTanda?: boolean, errorCode?: string|null}>}
+ * Antes de enviar se mira que ESA versión siga en la cola: la tanda trabaja
+ * sobre una foto de la cola, y si mientras tanto el jugador volvió a marcar el
+ * hoyo, la vieja ya no vale (`sustituida`) y no sale.
+ *
+ * @returns {Promise<{estado: 'enviada'|'pendiente'|'descartada'|'enVuelo'|'sustituida', paraLaTanda?: boolean, errorCode?: string|null}>}
  */
-export const enviarMuestraDeHoyo = async ({ golfCourseRepository, holeSampleStore, reportarFallo, enVuelo }, userId, entrada) => {
+export const enviarMuestraDeHoyo = async ({ golfCourseRepository, holeSampleStore, reportarFallo, enVuelo, recienEnviadas }, userId, entrada) => {
   const clave = claveDelEnvio(userId, entrada);
   if (enVuelo.has(clave)) return { estado: 'enVuelo' };
+  if (!holeSampleStore.cola(userId).some((otra) => otra.id === entrada.id && otra.enCola === entrada.enCola)) return { estado: 'sustituida' };
   enVuelo.add(clave);
-  const { golfCourseId, holeNumber, tee, bends, greenCenter } = entrada;
+  const { id, barra, golfCourseId, holeNumber, tee, bends, greenCenter } = entrada;
   try {
-    await golfCourseRepository.sendHoleSample(golfCourseId, holeNumber, { tee, bends, greenCenter });
+    await golfCourseRepository.sendHoleSample(golfCourseId, holeNumber, { id, barra, tee, bends, greenCenter });
     holeSampleStore.quitarDeLaCola(userId, entrada);
+    // Se sigue viendo hasta que un resumen la traiga
+    recienEnviadas.apuntar(userId, entrada);
     return { estado: 'enviada' };
   } catch (error) {
     if (esRechazoDefinitivo(error)) {

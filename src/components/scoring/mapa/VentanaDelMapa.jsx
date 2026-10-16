@@ -52,22 +52,23 @@ class SiNoCarga extends Component {
 }
 
 // Un hoyo del que aún no se sabe nada: sin muestra, y recogiendo
-const SIN_MUESTRAS = { primera: null, recoge: true };
+const SIN_MUESTRAS = { primera: null, deOtra: null, recoge: true };
 
-const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null }) => {
+const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null, barra = null }) => {
   const { t } = useTranslation('scoring');
   const [MapaDelHoyo] = useState(cargarMapa);
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
-  const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId });
+  const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
 
   // Lo que se ve, por orden (16 oct): el hoyo aprobado con su green; si no, la
-  // primera muestra que hay de él; si no, la que este jugador dejó pendiente en
-  // el móvil; si no, lo aprobado que haya (solo la salida) o nada
+  // primera muestra de SU barra; si no, la de otra barra (el mismo green, y la
+  // salida se lleva a la suya); si no, la que este jugador dejó pendiente en el
+  // móvil; si no, lo aprobado que haya (solo la salida) o nada
   const aprobado = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
   const conSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
   const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
-  const muestra = delHoyo.primera ?? pendientes[numeroDeHoyo] ?? null;
+  const muestra = delHoyo.primera ?? delHoyo.deOtra ?? pendientes[numeroDeHoyo] ?? null;
   // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
   // render rehacía las líneas del mapa
   const deLaMuestra = useMemo(
@@ -76,12 +77,24 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   );
   const hoyo = completo ? aprobado : (deLaMuestra ?? (conSalida ? aprobado : null));
   // Sin línea, se pide: sin salida, salida y green; con salida, el green. Hace
-  // falta la sesión: lo que se marca se envía con ella
+  // falta la sesión y la barra: lo que se marca se envía con ellas
+  const puedeEnviar = Boolean(userId && barra);
   let porMarcar = null;
-  if (!hoyo?.green && userId) porMarcar = conSalida ? 'green' : 'salida';
-
+  if (!hoyo?.green && puedeEnviar) porMarcar = conSalida ? 'green' : 'salida';
   // La atribución, si algo de lo que se ve sale del mapa (y no de una muestra)
   const usaElMapa = completo || (conSalida && !muestra);
+
+  const ahora = {
+    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? 'muestra' : (porMarcar ?? '')}`,
+    hoyo,
+    porMarcar,
+    atribucion: usaElMapa ? (mapaDelCampo?.attribution ?? null) : null,
+  };
+  // En cuanto el jugador empieza a marcar o a mover, lo que ve no cambia hasta
+  // que cierre aunque llegue otra muestra o el mapa del campo (16 oct): rehacer
+  // el mapa a mitad le quitaba lo que estaba haciendo
+  const [congelado, setCongelado] = useState(null);
+  const visto = congelado ?? ahora;
 
   return (
     <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')}>
@@ -92,22 +105,23 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           </SalidaDelMapa>
         }
       >
-        {/* Si los datos del campo llegan (o cambian) con el mapa abierto, se
-            rehace con ellos: el mapa fija su encuadre y su giro al montarse, y
-            al rehacerse envía lo que el jugador hubiera movido */}
+        {/* Si los datos del campo llegan (o cambian) con el mapa abierto y el
+            jugador aún no ha empezado, se rehace con ellos: el mapa fija su
+            encuadre y su giro al montarse */}
         <MapaDelHoyo
-          key={`${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? 'muestra' : (porMarcar ?? '')}`}
+          key={visto.clave}
           golfCourseId={golfCourseId}
           numeroDeHoyo={numeroDeHoyo}
           par={par}
-          hoyo={hoyo}
-          atribucion={usaElMapa ? (mapaDelCampo?.attribution ?? null) : null}
+          hoyo={visto.hoyo}
+          atribucion={visto.atribucion}
           onCerrar={cerrar}
           metros={metros}
-          porMarcar={porMarcar}
+          porMarcar={visto.porMarcar}
           // Transparente para el jugador: se envía sin avisar de nada (16 oct)
           recoge={delHoyo.recoge}
-          onMuestra={userId ? (datos) => enviar(numeroDeHoyo, datos) : null}
+          onMuestra={puedeEnviar ? (datos) => enviar(numeroDeHoyo, datos) : null}
+          onEmpezar={() => setCongelado((c) => c ?? ahora)}
         />
       </Suspense>
     </SiNoCarga>

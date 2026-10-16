@@ -34,9 +34,9 @@ class IGolfCourseRepository {
   }
 
   /**
-   * El resumen de las muestras (anónimas) de cada hoyo (BE #532, marcado por par)
+   * El resumen de las muestras (anónimas) de cada hoyo, por barra (BE #532, marcado por par)
    * @param {string} id - Golf course ID
-   * @returns {Promise<Object<number, {primera: Object|null, recoge: boolean}>>} por número de hoyo
+   * @returns {Promise<Object<number, {color: string, gender: string|null, primera: Object|null, recoge: boolean}[]>>} por número de hoyo
    */
   async getHoleSamples(id) {
     throw new Error('Method not implemented: getHoleSamples');
@@ -47,7 +47,7 @@ class IGolfCourseRepository {
    * llegó, la guarde el servidor o no
    * @param {string} id - Golf course ID
    * @param {number} holeNumber - 1 a 18
-   * @param {Object} muestra - { tee, bends, greenCenter }
+   * @param {Object} muestra - { id, barra: { color, gender }, tee, bends, greenCenter }
    * @returns {Promise<void>}
    */
   async sendHoleSample(id, holeNumber, muestra) {

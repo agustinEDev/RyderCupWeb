@@ -3,19 +3,22 @@ import GetHoleSamplesUseCase from './GetHoleSamplesUseCase';
 import SendHoleSampleUseCase from './SendHoleSampleUseCase';
 import SendPendingHoleSamplesUseCase from './SendPendingHoleSamplesUseCase';
 import LocalStorageHoleSampleStore from '../../../infrastructure/repositories/LocalStorageHoleSampleStore';
+import { crearRecienEnviadas } from './recienEnviadas';
 
 /**
- * Las muestras de hoyo, anónimas (BE #532, marcado por par): todo sin que el
- * jugador lo note. Ni avisos ni mensajes: lo que el servidor no quiere es un
- * fallo nuestro y va a Sentry.
+ * Las muestras de hoyo, anónimas y por barra (BE #532, marcado por par): todo
+ * sin que el jugador lo note. Ni avisos ni mensajes: lo que el servidor no
+ * quiere es un fallo nuestro y va a Sentry.
  *
  * | Caso | Qué                                                    | Qué se espera                                           |
  * |------|--------------------------------------------------------|---------------------------------------------------------|
- * | S9   | el resumen, al momento                                 | el del móvil, sin pedir nada                            |
- * | S9   | el resumen del servidor                                | se guarda en el móvil y se da                           |
+ * | S9   | el resumen, al momento                                 | el del móvil, visto desde la barra del jugador, sin pedir nada |
+ * | S9   | el resumen del servidor                                | se guarda entero en el móvil y se da desde la barra     |
  * | S9   | el servidor falla                                      | el del móvil                                            |
- * | S9   | lo que espera en la cola, del jugador y del campo      | por hoyo, la última                                     |
- * | S10  | enviar con red                                         | a la cola ANTES de pedir; al llegar (2xx), fuera        |
+ * | S9   | lo que espera en la cola, del jugador, campo y barra   | por hoyo, la última                                     |
+ * | S10  | enviar con red                                         | a la cola ANTES de pedir, con id y barra; al llegar, fuera |
+ * | S10  | sin jugador, campo o barra                             | nada                                                    |
+ * | S10  | sin id                                                 | nada, y a Sentry (es un fallo del mapa)                 |
  * | S11  | 404 / 422 (rechazo definitivo)                         | fuera de la cola, a Sentry con su código, sin aviso     |
  * | S12  | sin red, 5xx, 429, 401, CSRF, tope                     | se queda en la cola, para la tanda, sin Sentry          |
  * | S12  | un fallo nuestro (ni red ni HTTP)                      | se queda en la cola, a Sentry, no para la tanda         |
@@ -24,14 +27,25 @@ import LocalStorageHoleSampleStore from '../../../infrastructure/repositories/Lo
  * | S13  | un rechazo definitivo a mitad                          | se descarta y sigue con las demás                       |
  * | S13  | `sigue()` deja de ser cierto (cambió la sesión)        | lo que queda no sale                                    |
  * | S13  | dos vaciados a la vez del mismo jugador                | uno solo; el de otro jugador no espera                  |
- * | S14  | la tanda encuentra una que ya se está enviando         | no la manda dos veces (cada envío cuenta en el servidor) |
+ * | S14  | la tanda encuentra una que ya se está enviando         | no la manda dos veces                                   |
+ * | S18  | mientras va una tanda lenta, el jugador sustituye una  | la vieja no sale (`sustituida`); la nueva, sí          |
+ * | S18  | la misma muestra (mismo id) se envía otra vez           | sustituye a la de la cola; sale una vez                 |
+ * | S19  | llega (2xx) y el resumen nuevo falla                    | se sigue viendo en `pendientes`, sin volver a la cola   |
+ * | S19  | el siguiente resumen que SÍ carga                       | deja de verse, diga lo que diga                         |
+ * | S19  | un resumen pedido ANTES de que llegara                  | no la quita (aún no podía tenerla)                      |
+ * | S19  | una nueva del mismo hoyo en la cola                     | se ve la de la cola                                     |
+ * | S19  | descartada o pendiente                                  | no se apunta como recién enviada                        |
  */
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
 const CODO = { lat: 36.2815, lon: -5.331 };
 const GREEN = { lat: 36.2827, lon: -5.33 };
 const AHORA = '2026-10-16T08:05:00.000Z';
-const RESUMEN = { 3: { primera: { tee: SALIDA, bends: [], greenCenter: GREEN }, recoge: true } };
+const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
+const ROJA = { color: 'RED', gender: 'FEMALE' };
+const PRIMERA = { tee: SALIDA, bends: [], greenCenter: GREEN };
+const RESUMEN = { 3: [{ color: 'WHITE', gender: 'MALE', primera: PRIMERA, recoge: false }, { color: 'YELLOW', gender: 'MALE', primera: PRIMERA, recoge: true }] };
+const VISTA_AMARILLA = { 3: { primera: PRIMERA, deOtra: PRIMERA, recoge: true } };
 
 const sinRed = () => Object.assign(new TypeError('sin conexión'), { cause: new TypeError('Failed to fetch') });
 const http = (status, errorCode = null) => Object.assign(new Error(`HTTP ${status}`), { status, errorCode });
@@ -44,6 +58,8 @@ describe('muestras de hoyo — casos de uso', () => {
   let repo;
   let reportarFallo;
   let enVuelo;
+  let recienEnviadas;
+  let ids;
 
   beforeEach(() => {
     guardado = new Map();
@@ -59,37 +75,44 @@ describe('muestras de hoyo — casos de uso', () => {
     };
     reportarFallo = vi.fn();
     enVuelo = new Set();
+    recienEnviadas = crearRecienEnviadas();
+    ids = 0;
   });
 
   afterEach(() => vi.unstubAllGlobals());
 
-  const deps = () => ({ golfCourseRepository: repo, holeSampleStore: store, reportarFallo, enVuelo });
-  const enviar = (datos = {}, ahora = AHORA) =>
-    new SendHoleSampleUseCase({ ...deps(), ahora: () => ahora }).execute({
+  const deps = () => ({ golfCourseRepository: repo, holeSampleStore: store, reportarFallo, enVuelo, recienEnviadas });
+  const enviar = (datos = {}, ahora = AHORA) => {
+    ids += 1;
+    return new SendHoleSampleUseCase({ ...deps(), ahora: () => ahora }).execute({
       userId: 'u1',
       golfCourseId: 'gc-1',
       holeNumber: 3,
+      barra: AMARILLA,
+      id: `m-${ids}`,
       tee: SALIDA,
       bends: [CODO],
       greenCenter: GREEN,
       ...datos,
     });
-  const resumen = () => new GetHoleSamplesUseCase({ golfCourseRepository: repo, holeSampleStore: store });
+  };
+  const resumen = () => new GetHoleSamplesUseCase({ golfCourseRepository: repo, holeSampleStore: store, recienEnviadas });
 
   describe('S9: el resumen del campo', () => {
-    it('al momento, el del móvil, sin pedir nada', () => {
+    it('al momento, el del móvil desde la barra del jugador, sin pedir nada', () => {
       store.saveResumen('gc-1', RESUMEN);
 
-      expect(resumen().guardadas('gc-1')).toEqual(RESUMEN);
+      expect(resumen().guardadas('gc-1', AMARILLA)).toEqual(VISTA_AMARILLA);
+      expect(resumen().guardadas('gc-1', ROJA)).toEqual({ 3: { primera: null, deOtra: PRIMERA, recoge: true } });
       expect(repo.getHoleSamples).not.toHaveBeenCalled();
     });
 
     it('sin copia en el móvil, vacío', () => {
-      expect(resumen().guardadas('gc-1')).toEqual({});
+      expect(resumen().guardadas('gc-1', AMARILLA)).toEqual({});
     });
 
-    it('el del servidor se guarda en el móvil y se da', async () => {
-      expect(await resumen().execute('gc-1')).toEqual(RESUMEN);
+    it('el del servidor se guarda ENTERO en el móvil (todas las barras) y se da desde la barra', async () => {
+      expect(await resumen().execute('gc-1', AMARILLA)).toEqual(VISTA_AMARILLA);
 
       expect(repo.getHoleSamples).toHaveBeenCalledWith('gc-1');
       expect(store.loadResumen('gc-1')).toEqual(RESUMEN);
@@ -103,34 +126,37 @@ describe('muestras de hoyo — casos de uso', () => {
       store.saveResumen('gc-1', RESUMEN);
       repo.getHoleSamples.mockRejectedValue(fallo);
 
-      expect(await resumen().execute('gc-1')).toEqual(RESUMEN);
+      expect(await resumen().execute('gc-1', AMARILLA)).toEqual(VISTA_AMARILLA);
       expect(store.loadResumen('gc-1')).toEqual(RESUMEN);
     });
 
     it('sin campo, nada y sin pedir', async () => {
-      expect(await resumen().execute(null)).toEqual({});
-      expect(resumen().guardadas(null)).toEqual({});
+      expect(await resumen().execute(null, AMARILLA)).toEqual({});
+      expect(resumen().guardadas(null, AMARILLA)).toEqual({});
       expect(repo.getHoleSamples).not.toHaveBeenCalled();
     });
 
-    it('lo pendiente del jugador en ese campo, por hoyo, sin lo de otros campos ni jugadores', async () => {
+    it('lo pendiente del jugador en ese campo y con esa barra, por hoyo', async () => {
       repo.sendHoleSample.mockRejectedValue(sinRed());
       await enviar({ holeNumber: 3 });
       await enviar({ holeNumber: 5, bends: [] });
+      await enviar({ holeNumber: 6, barra: ROJA });
       await enviar({ golfCourseId: 'gc-2', holeNumber: 7 });
       await enviar({ userId: 'u2', holeNumber: 9 });
 
-      expect(resumen().pendientes('u1', 'gc-1')).toEqual({
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({
         3: { tee: SALIDA, bends: [CODO], greenCenter: GREEN },
         5: { tee: SALIDA, bends: [], greenCenter: GREEN },
       });
-      expect(resumen().pendientes(null, 'gc-1')).toEqual({});
-      expect(resumen().pendientes('u1', null)).toEqual({});
+      expect(Object.keys(resumen().pendientes('u1', 'gc-1', ROJA))).toEqual(['6']);
+      expect(resumen().pendientes('u1', 'gc-1', null)).toEqual({});
+      expect(resumen().pendientes(null, 'gc-1', AMARILLA)).toEqual({});
+      expect(resumen().pendientes('u1', null, AMARILLA)).toEqual({});
     });
   });
 
   describe('S10: enviar con red', () => {
-    it('a la cola antes de pedir (y se avisa), y al llegar sale de ella', async () => {
+    it('a la cola antes de pedir (y se avisa), con id y barra; al llegar sale de ella', async () => {
       let enColaAlEnviar;
       const alQuedarEnCola = vi.fn();
       repo.sendHoleSample.mockImplementation(async () => {
@@ -140,28 +166,43 @@ describe('muestras de hoyo — casos de uso', () => {
 
       const r = await enviar({ alQuedarEnCola });
 
-      expect(enColaAlEnviar).toEqual([{ golfCourseId: 'gc-1', holeNumber: 3, tee: SALIDA, bends: [CODO], greenCenter: GREEN, enCola: AHORA }]);
-      expect(repo.sendHoleSample).toHaveBeenCalledWith('gc-1', 3, { tee: SALIDA, bends: [CODO], greenCenter: GREEN });
+      expect(enColaAlEnviar).toEqual([
+        { id: 'm-1', golfCourseId: 'gc-1', holeNumber: 3, barra: AMARILLA, tee: SALIDA, bends: [CODO], greenCenter: GREEN, enCola: AHORA },
+      ]);
+      expect(repo.sendHoleSample).toHaveBeenCalledWith('gc-1', 3, { id: 'm-1', barra: AMARILLA, tee: SALIDA, bends: [CODO], greenCenter: GREEN });
       expect(r).toEqual({ estado: 'enviada' });
       expect(store.cola('u1')).toEqual([]);
       expect(reportarFallo).not.toHaveBeenCalled();
     });
 
-    it('sin codos, lista vacía', async () => {
-      await enviar({ bends: undefined });
+    it('sin codos, lista vacía; sin género, null', async () => {
+      await enviar({ bends: undefined, barra: { color: 'RED' } });
 
-      expect(repo.sendHoleSample.mock.calls[0][2].bends).toEqual([]);
+      expect(repo.sendHoleSample.mock.calls[0][2]).toMatchObject({ bends: [], barra: { color: 'RED', gender: null } });
     });
 
-    it('sin jugador o sin campo, ni cola ni petición', async () => {
-      expect(await enviar({ userId: null })).toEqual({ estado: 'ignorada' });
-      expect(await enviar({ golfCourseId: null })).toEqual({ estado: 'ignorada' });
+    it.each([
+      ['sin jugador', { userId: null }],
+      ['sin campo', { golfCourseId: null }],
+      ['sin barra', { barra: null }],
+      ['con una barra sin color', { barra: { color: '', gender: 'MALE' } }],
+    ])('%s, ni cola ni petición ni Sentry', async (_caso, datos) => {
+      expect(await enviar(datos)).toEqual({ estado: 'ignorada' });
 
       expect(repo.sendHoleSample).not.toHaveBeenCalled();
       expect(guardado.size).toBe(0);
+      expect(reportarFallo).not.toHaveBeenCalled();
     });
 
-    it('si mientras se envía se hace otra del mismo hoyo, al llegar la primera se queda la nueva', async () => {
+    it('sin id, ni cola ni petición, y a Sentry: el mapa siempre lo pone', async () => {
+      expect(await enviar({ id: undefined })).toEqual({ estado: 'ignorada' });
+
+      expect(repo.sendHoleSample).not.toHaveBeenCalled();
+      expect(guardado.size).toBe(0);
+      expect(reportarFallo).toHaveBeenCalledWith(expect.any(Error), { golfCourseId: 'gc-1', holeNumber: 3 });
+    });
+
+    it('si mientras se envía se hace otra del mismo hoyo y barra, al llegar la primera se queda la nueva', async () => {
       let soltar;
       repo.sendHoleSample.mockImplementationOnce(() => new Promise((r) => (soltar = r)));
       const primera = enviar();
@@ -171,7 +212,7 @@ describe('muestras de hoyo — casos de uso', () => {
       soltar();
       await primera;
 
-      expect(store.cola('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:06:00.000Z']);
+      expect(store.cola('u1').map((e) => e.id)).toEqual(['m-2']);
     });
   });
 
@@ -240,9 +281,9 @@ describe('muestras de hoyo — casos de uso', () => {
       const cuenta = await vaciado().execute('u1');
 
       expect(cuenta).toEqual({ enviadas: 2, descartadas: 0, pendientes: 0 });
-      expect(repo.sendHoleSample.mock.calls.map((c) => [c[0], c[1]])).toEqual([
-        ['gc-1', 3],
-        ['gc-2', 7],
+      expect(repo.sendHoleSample.mock.calls.map((c) => [c[0], c[1], c[2].id])).toEqual([
+        ['gc-1', 3, 'm-1'],
+        ['gc-2', 7, 'm-2'],
       ]);
       expect(store.cola('u1')).toEqual([]);
     });
@@ -435,6 +476,169 @@ describe('muestras de hoyo — casos de uso', () => {
 
       expect(cuenta.enviadas).toBe(1);
       expect(enVuelo.size).toBe(0);
+    });
+  });
+
+  describe('S18: sustituida mientras esperaba', () => {
+    it('una tanda lenta no manda la vieja de un hoyo que el jugador ya ha vuelto a marcar', async () => {
+      // En la cola: el hoyo 4 (m-1) y el 3 (m-2)
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ holeNumber: 4 });
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ holeNumber: 3 });
+      repo.sendHoleSample.mockClear();
+      // La tanda empieza por el 4, que tarda
+      let soltar;
+      repo.sendHoleSample.mockImplementationOnce(() => new Promise((r) => (soltar = r)));
+      const tanda = new SendPendingHoleSamplesUseCase(deps()).execute('u1');
+      await vi.waitFor(() => expect(repo.sendHoleSample).toHaveBeenCalledTimes(1));
+
+      // Mientras, el jugador vuelve a marcar el 3 (otra muestra, m-3), que tampoco sale aún
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ holeNumber: 3 }, '2026-10-16T08:10:00.000Z');
+      soltar();
+      const cuenta = await tanda;
+
+      expect(repo.sendHoleSample.mock.calls.map((c) => c[2].id)).toEqual(['m-1', 'm-3']);
+      expect(cuenta).toEqual({ enviadas: 1, descartadas: 0, pendientes: 0 });
+      expect(store.cola('u1').map((e) => e.id)).toEqual(['m-3']);
+    });
+
+    it('lo mismo con la misma muestra (mismo id) cambiada: sale la versión nueva, no la vieja', async () => {
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ holeNumber: 4, id: 'otro' });
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ holeNumber: 3, id: 'x' });
+      repo.sendHoleSample.mockClear();
+      let soltar;
+      repo.sendHoleSample.mockImplementationOnce(() => new Promise((r) => (soltar = r)));
+      const tanda = new SendPendingHoleSamplesUseCase(deps()).execute('u1');
+      await vi.waitFor(() => expect(repo.sendHoleSample).toHaveBeenCalledTimes(1));
+
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ holeNumber: 3, id: 'x', greenCenter: CODO }, '2026-10-16T08:10:00.000Z');
+      soltar();
+      await tanda;
+
+      // La tanda no vuelve a mandar la vieja de 'x': la versión nueva ya salió (sin red) y espera
+      expect(repo.sendHoleSample.mock.calls.map((c) => [c[2].id, c[2].greenCenter])).toEqual([
+        ['otro', GREEN],
+        ['x', CODO],
+      ]);
+      expect(store.cola('u1')).toEqual([expect.objectContaining({ id: 'x', greenCenter: CODO })]);
+    });
+
+    it('la misma muestra (mismo id) enviada dos veces sin red queda una sola vez en la cola, en su sitio', async () => {
+      repo.sendHoleSample.mockRejectedValue(sinRed());
+      await enviar({ holeNumber: 3, id: 'x' });
+      await enviar({ holeNumber: 4, id: 'y' });
+      await enviar({ holeNumber: 3, id: 'x', greenCenter: CODO }, '2026-10-16T08:10:00.000Z');
+      repo.sendHoleSample.mockReset();
+      repo.sendHoleSample.mockResolvedValue(undefined);
+
+      const cuenta = await new SendPendingHoleSamplesUseCase(deps()).execute('u1');
+
+      expect(repo.sendHoleSample.mock.calls.map((c) => c[2].id)).toEqual(['x', 'y']);
+      expect(repo.sendHoleSample.mock.calls[0][2].greenCenter).toEqual(CODO);
+      expect(cuenta.enviadas).toBe(2);
+    });
+  });
+
+  describe('S19: recién enviada, mientras el resumen no la trae', () => {
+    const PUNTOS = { tee: SALIDA, bends: [CODO], greenCenter: GREEN };
+
+    it('llega y el resumen falla: se sigue viendo como pendiente, sin volver a la cola', async () => {
+      await enviar();
+      repo.getHoleSamples.mockRejectedValue(sinRed());
+
+      await resumen().execute('gc-1', AMARILLA);
+
+      expect(store.cola('u1')).toEqual([]);
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({ 3: PUNTOS });
+    });
+
+    it('el siguiente resumen que carga la quita, diga lo que diga', async () => {
+      await enviar();
+      repo.getHoleSamples.mockRejectedValueOnce(sinRed());
+      await resumen().execute('gc-1', AMARILLA);
+      repo.getHoleSamples.mockResolvedValueOnce({});
+
+      await resumen().execute('gc-1', AMARILLA);
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({});
+    });
+
+    it('vale para cualquier barra: el resumen de otro jugador o barra del mismo campo también la quita', async () => {
+      await enviar();
+
+      await resumen().execute('gc-1', ROJA);
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({});
+    });
+
+    it('el resumen de OTRO campo no la quita', async () => {
+      await enviar();
+
+      await resumen().execute('gc-2', AMARILLA);
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({ 3: PUNTOS });
+    });
+
+    it('no se vuelve a enviar: la cola de fondo no la ve', async () => {
+      await enviar();
+      repo.sendHoleSample.mockClear();
+
+      const cuenta = await new SendPendingHoleSamplesUseCase(deps()).execute('u1');
+
+      expect(repo.sendHoleSample).not.toHaveBeenCalled();
+      expect(cuenta).toEqual({ enviadas: 0, descartadas: 0, pendientes: 0 });
+    });
+
+    it('la que sale desde la cola de fondo también se apunta', async () => {
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar();
+      await new SendPendingHoleSamplesUseCase(deps()).execute('u1');
+
+      expect(store.cola('u1')).toEqual([]);
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({ 3: PUNTOS });
+    });
+
+    it('un resumen pedido ANTES de que llegara no la quita, aunque cargue', async () => {
+      let responder;
+      repo.getHoleSamples.mockReturnValueOnce(new Promise((r) => (responder = r)));
+      const pedido = resumen().execute('gc-1', AMARILLA);
+      await enviar();
+
+      responder({});
+      await pedido;
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({ 3: PUNTOS });
+    });
+
+    it('es de su jugador y su barra', async () => {
+      await enviar();
+
+      expect(resumen().pendientes('u2', 'gc-1', AMARILLA)).toEqual({});
+      expect(resumen().pendientes('u1', 'gc-1', ROJA)).toEqual({});
+    });
+
+    it('si hay otra nueva del mismo hoyo en la cola, se ve la de la cola', async () => {
+      await enviar();
+      repo.sendHoleSample.mockRejectedValueOnce(sinRed());
+      await enviar({ greenCenter: CODO });
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)[3].greenCenter).toEqual(CODO);
+    });
+
+    it.each([
+      ['descartada', http(422, 'HOLE_NOT_IN_COURSE')],
+      ['pendiente', sinRed()],
+    ])('una %s no se apunta como recién enviada', async (_caso, fallo) => {
+      repo.sendHoleSample.mockRejectedValueOnce(fallo);
+      await enviar();
+      store.quitarDeLaCola('u1', store.cola('u1')[0] ?? { id: 'nada' });
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({});
     });
   });
 });

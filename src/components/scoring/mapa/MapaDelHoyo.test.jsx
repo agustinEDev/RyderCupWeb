@@ -995,14 +995,41 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
     });
 
-    it('P6: solo el green, sobre la salida aprobada (con su codo): la línea sigue por ella', () => {
+    it('P6: solo el green, sobre la línea aprobada: su final (donde acaba en OSM) pasa a ser el green tocado', () => {
       const codo = alNorte(150);
-      marcar({ hoyo: { playLine: [T, codo], green: null }, porMarcar: 'green', metros: 300, par: 4 });
+      marcar({ hoyo: { playLine: [T, codo, alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 4 });
 
       tocar(G);
 
-      // Ya tiene el codo de su par: no se añade otro
+      // Ya tiene el codo de su par: no se añade otro, ni uno falso junto al green
       expect(lineaDibujada()).toEqual([[T.lon, T.lat], [codo.lon, codo.lat], [G.lon, G.lat]]);
+    });
+
+    it('P6: solo el green con la salida sola (un punto): la salida y el green, con los codos del par', () => {
+      marcar({ hoyo: { playLine: [T], green: null }, porMarcar: 'green', metros: 300, par: 5 });
+
+      tocar(G);
+
+      expect(lineaDibujada()).toHaveLength(4);
+      expect(lineaDibujada()[0]).toEqual([T.lon, T.lat]);
+    });
+
+    it('P6 (16 oct): pidiendo solo el green, la salida aprobada se ve y el mapa se aleja la mitad de la tarjeta', () => {
+      marcar({ hoyo: { playLine: [T], green: null }, porMarcar: 'green', metros: 300, par: 4 });
+
+      expect(vivas().some((m) => m.opciones.element?.className.includes('bg-white') && m.p[1] === T.lat)).toBe(true);
+      expect(mapa().fitBounds).toHaveBeenCalledWith(
+        limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }),
+        expect.objectContaining({ bearing: 0 }),
+      );
+    });
+
+    it('P5: la ayuda de los codos solo si se añadieron (sobre una línea aprobada con su codo, no)', () => {
+      marcar({ hoyo: { playLine: [T, alNorte(150), alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 4 });
+
+      tocar(G);
+
+      expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
     });
 
     it('P7: el doble toque (dos toques seguidos) no pone salida y green en el mismo sitio', () => {
@@ -1159,7 +1186,7 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       unmount();
 
-      expect(onMuestra).toHaveBeenCalledWith({ tee: T, bends: [], greenCenter: G });
+      expect(onMuestra).toHaveBeenCalledWith({ id: expect.any(String), tee: T, bends: [], greenCenter: G });
     });
 
     it('S2: abrir y cerrar sin mover nada no envía nada', () => {
@@ -1232,6 +1259,86 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       expect(screen.queryByRole('alertdialog')).toBeNull();
       expect(onMuestra).not.toHaveBeenCalled();
+    });
+
+    it('S9: la muestra lleva un id (un reintento cuenta una vez), el mismo si se envía dos veces sin cambios', () => {
+      const { unmount, onMuestra } = marcar({ metros: 300, par: 3 });
+      tocar(T);
+      tocar(G);
+      act(() => {
+        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
+        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      expect(onMuestra).toHaveBeenCalledTimes(1);
+      const { id } = onMuestra.mock.calls[0][0];
+      expect(id).toMatch(/^[0-9a-f-]{36}$/);
+
+      unmount();
+
+      // Sin cambios desde que se ocultó: no sale otra
+      expect(onMuestra).toHaveBeenCalledTimes(1);
+      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+    });
+
+    it('S9: al ocultarse la app se guarda lo hecho; si luego se mueve más, al cerrar sale otra con id nuevo', () => {
+      const { unmount, onMuestra } = marcar({ metros: 300, par: 4 });
+      tocar(T);
+      tocar(G);
+      act(() => {
+        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
+        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      soltar(arrastrables()[1], alEste(30, alNorte(150)));
+
+      unmount();
+
+      expect(onMuestra).toHaveBeenCalledTimes(2);
+      expect(onMuestra.mock.calls[1][0].id).not.toBe(onMuestra.mock.calls[0][0].id);
+    });
+
+    it('S9: ocultarse sin haber hecho nada no envía', () => {
+      const onMuestra = vi.fn();
+      abrir({ hoyo: hoyoCon([T, G]), par: 4, recoge: true, onMuestra });
+      act(() => {
+        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
+        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+
+      expect(onMuestra).not.toHaveBeenCalled();
+    });
+
+    it('S10: avisa la primera vez que el jugador empieza (para que no le cambien el mapa)', () => {
+      const onEmpezar = vi.fn();
+      marcar({ metros: 300, par: 4, onEmpezar });
+      expect(onEmpezar).not.toHaveBeenCalled();
+
+      tocar(T);
+      expect(onEmpezar).toHaveBeenCalledTimes(1);
+      tocar(G);
+      expect(onEmpezar).toHaveBeenCalledTimes(1);
+    });
+
+    it('S10: también al mover una línea que ya estaba', () => {
+      const onEmpezar = vi.fn();
+      abrir({ hoyo: hoyoCon([T, G]), par: 4, onEmpezar });
+      act(() => mapa().oyentes.load());
+
+      soltar(arrastrables()[1], alEste(30, alNorte(150)));
+
+      expect(onEmpezar).toHaveBeenCalledTimes(1);
+    });
+
+    it('S11: tocar un punto arrastrable no cuenta como toque en el mapa (no mide)', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 4 });
+      act(() => mapa().oyentes.load());
+      const evento = new globalThis.MouseEvent('click', { bubbles: true });
+      const parar = vi.spyOn(evento, 'stopPropagation');
+
+      arrastrables()[1].opciones.element.dispatchEvent(evento);
+
+      expect(parar).toHaveBeenCalled();
     });
 
     it('S8: «Cerrar» cierra (y la muestra sale al desmontar, una vez)', () => {

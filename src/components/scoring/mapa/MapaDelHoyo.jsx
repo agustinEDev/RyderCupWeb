@@ -44,7 +44,7 @@ const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
 // fijo, en apaisado (~360 px) no cabía el hoyo y MapLibre no lo encuadraba.
-// Abajo caben la ayuda, «Volver a marcar», el recuadro de distancias y los
+// Abajo caben la ayuda, «Marcar hoyo», el recuadro de distancias y los
 // botones: con menos, la salida de un hoyo marcado quedaba debajo
 const margenDelEncuadre = (alto) => ({
   top: Math.round(Math.min(90, alto * 0.15)),
@@ -154,6 +154,7 @@ const MapaDelHoyo = ({
   porMarcar = null,
   recoge = false,
   onMuestra = null,
+  onEmpezar = null,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -180,7 +181,7 @@ const MapaDelHoyo = ({
   const centradoEnGps = useRef(false);
   const movidoPorElJugador = useRef(false);
   // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto
-  const inicio = useRef({ hoyo, conMapa, centroSinMapa });
+  const inicio = useRef({ hoyo, conMapa, centroSinMapa, soloGreen: porMarcar === 'green', metros });
 
   // Marcar el hoyo: sin salida, se piden la salida y el centro del green; con
   // salida, el green. «Ahora no» deja medir como siempre
@@ -189,7 +190,7 @@ const MapaDelHoyo = ({
   const marcandoSalida = porMarcar === 'salida';
   const pidiendo = marca.fase === 'pidiendo';
   // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió
-  const [edicion, setEdicion] = useState(() => ({ linea: lineaParaMover(hoyo, par), cambiada: false }));
+  const [edicion, setEdicion] = useState(() => ({ linea: lineaParaMover(hoyo, par), cambiada: false, version: 0 }));
   const [conAyudaDeCodos, setConAyudaDeCodos] = useState(false);
   const linea = edicion.linea;
   // El hoyo tal y como está ahora: con la línea movida y, si el green no se
@@ -210,6 +211,15 @@ const MapaDelHoyo = ({
   // Al cerrar, lo último: se envía al desmontar, se cierre como se cierre
   // (botón, Escape o «atrás»)
   const alCerrar = useRef({ edicion, recoge, onMuestra });
+  // Lo ya enviado de esta apertura: la versión y su id. Si la app se oculta, sale
+  // ya; si luego no se toca, al cerrar no sale otra; si se toca, otra, con id nuevo
+  const enviada = useRef({ version: null, id: null });
+  const yaEmpezo = useRef(false);
+  const empezar = useCallback(() => {
+    if (yaEmpezo.current) return;
+    yaEmpezo.current = true;
+    onEmpezar?.();
+  }, [onEmpezar]);
 
   // El toque: mientras se marca, marca; si no, mide. Por ref, porque el mapa
   // se monta una vez y su oyente vería el estado de entonces
@@ -225,6 +235,7 @@ const MapaDelHoyo = ({
         if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
         ultimoToque.current = ahora;
         setAvisoDeMarca(null);
+        empezar();
         if (marcandoSalida && !marca.tee) {
           setMarca((m) => ({ ...m, tee: p }));
           // Se aleja (sin girar) la mitad que los metros de la tarjeta, para
@@ -238,15 +249,18 @@ const MapaDelHoyo = ({
           }
           return;
         }
-        const desde = marcandoSalida ? [marca.tee] : (hoyo?.playLine ?? []);
+        // Sobre la línea aprobada, su final (donde acaba el hoyo) es el green
+        const aprobada = hoyo?.playLine ?? [];
+        const desde = marcandoSalida ? [marca.tee] : aprobada.slice(0, Math.max(1, aprobada.length - 1));
         if (desde.length === 0 || salidaGreenFueraDeLimites(desde[0], p)) {
           setAvisoDeMarca(t('mapa.fueraDeLimites'));
           return;
         }
         // Con los codos de su par ya puestos, para llevarlos a la calle
         const nueva = conCodosDelPar([...desde, p], par);
-        setEdicion({ linea: nueva, cambiada: true });
-        setConAyudaDeCodos(nueva.length > 2);
+        setEdicion((e) => ({ linea: nueva, cambiada: true, version: e.version + 1 }));
+        // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
+        setConAyudaDeCodos(nueva.length > desde.length + 1);
         setMarca({ fase: null, tee: null });
         return;
       }
@@ -267,14 +281,25 @@ const MapaDelHoyo = ({
   // Al cerrar: si la hizo o la movió, y el hoyo aún recoge, la línea va como
   // muestra; si no es válida (green imposible, más codos de los que se guardan),
   // no. Nada de esto se le dice al jugador
-  useEffect(
-    () => () => {
-      const { edicion: { linea: ultima, cambiada }, recoge: recogiendo, onMuestra: enviar } = alCerrar.current;
+  useEffect(() => {
+    const enviarSiHace = () => {
+      const { edicion: { linea: ultima, cambiada, version }, recoge: recogiendo, onMuestra: enviar } = alCerrar.current;
       if (!cambiada || !recogiendo || !enviar || !ultima || !muestraValida(ultima)) return;
-      enviar({ tee: ultima[0], bends: ultima.slice(1, -1), greenCenter: ultima.at(-1) });
-    },
-    [],
-  );
+      if (enviada.current.version === version) return;
+      enviada.current = { version, id: globalThis.crypto.randomUUID() };
+      enviar({ id: enviada.current.id, tee: ultima[0], bends: ultima.slice(1, -1), greenCenter: ultima.at(-1) });
+    };
+    // Si se cierra la app (o el móvil la mata) con el mapa abierto, lo hecho no
+    // se pierde: sale al ocultarse (Agustín, 16 oct)
+    const alOcultarse = () => {
+      if (globalThis.document.visibilityState === 'hidden') enviarSiHace();
+    };
+    globalThis.document.addEventListener('visibilitychange', alOcultarse);
+    return () => {
+      globalThis.document.removeEventListener('visibilitychange', alOcultarse);
+      enviarSiHace();
+    };
+  }, []);
 
   const encuadrarHoyo = useCallback((animar) => {
     const { hoyo: h } = inicio.current;
@@ -315,6 +340,15 @@ const MapaDelHoyo = ({
       mapa.touchZoomRotate.disableRotation();
       mapa.keyboard.disableRotation();
       encuadrarHoyo(false);
+    } else if (inicio.current.soloGreen && inicio.current.metros && h?.playLine?.[0]) {
+      // Pidiendo solo el green: alejado la mitad de la tarjeta alrededor de la
+      // salida aprobada, como al tocarla (16 oct)
+      const alto = nodo.clientHeight || 640;
+      mapa.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(h.playLine[0], inicio.current.metros / 2) }), {
+        bearing: 0,
+        padding: margenDelEncuadre(alto),
+        animate: false,
+      });
     }
     mapa.on('load', () => {
       // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
@@ -428,11 +462,13 @@ const MapaDelHoyo = ({
     [textoDeTramo],
   );
   useEffect(() => ponerCifrasDeLaLinea(lineaVisible), [lineaVisible, ponerCifrasDeLaLinea]);
-  // Para el arrastre, la de ahora: los puntos no se rehacen si solo cambia ella
+  // Para el arrastre, las de ahora: los puntos no se rehacen si solo cambian ellas
   const cifrasAlArrastrar = useRef(ponerCifrasDeLaLinea);
+  const empezarAlArrastrar = useRef(empezar);
   useLayoutEffect(() => {
     cifrasAlArrastrar.current = ponerCifrasDeLaLinea;
-  }, [ponerCifrasDeLaLinea]);
+    empezarAlArrastrar.current = empezar;
+  }, [ponerCifrasDeLaLinea, empezar]);
   // La línea discontinua del hoyo, del mismo hoyo que sus cifras; con la línea
   // que se mueve, solo su green (la línea va aparte, entera)
   const hoyoQueSeDibuja = useMemo(() => (linea ? { playLine: [], green: hoyoAhora?.green ?? null } : hoyo), [linea, hoyo, hoyoAhora]);
@@ -461,14 +497,16 @@ const MapaDelHoyo = ({
     if (pidiendo) zoom?.disable();
     else zoom?.enable();
   }, [pidiendo]);
-  // La salida recién tocada, mientras se pide el green
+  // La salida mientras se pide el green: la recién tocada o, pidiendo solo el
+  // green, la aprobada (para ver desde dónde se mide)
+  const salidaQueSePinta = pidiendo ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null))) : null;
   useEffect(() => {
     const mapa = mapaRef.current;
     marcaDeLaSalida.current?.remove();
     marcaDeLaSalida.current = null;
-    if (!mapa || !marca.tee) return;
-    marcaDeLaSalida.current = new Marker({ element: punto(CLASE_DEL_PUNTO.salida) }).setLngLat(lngLat(marca.tee)).addTo(mapa);
-  }, [marca.tee]);
+    if (!mapa || !salidaQueSePinta) return;
+    marcaDeLaSalida.current = new Marker({ element: punto(CLASE_DEL_PUNTO.salida) }).setLngLat(lngLat(salidaQueSePinta)).addTo(mapa);
+  }, [salidaQueSePinta]);
   // La línea y sus puntos: la salida, los codos y el green se arrastran; con el
   // dedo, la línea y sus cifras lo siguen, y al soltar queda movida
   useEffect(() => {
@@ -493,9 +531,13 @@ const MapaDelHoyo = ({
           cifrasAlArrastrar.current(provisional);
         })
         .on('dragend', (e) => {
-          setEdicion({ linea: con(i, aqui(e)), cambiada: true });
+          const movida = con(i, aqui(e));
+          setEdicion((ed) => ({ linea: movida, cambiada: true, version: ed.version + 1 }));
           setConAyudaDeCodos(false);
+          empezarAlArrastrar.current();
         });
+      // Tocar un punto no es tocar el mapa: no mide encima de él
+      m.getElement().addEventListener('click', (e) => e.stopPropagation());
       puntosDeLaLinea.current.push(m);
     });
   }, [linea, datosDeLaLinea]);
