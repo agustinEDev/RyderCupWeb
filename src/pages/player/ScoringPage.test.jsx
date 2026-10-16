@@ -1634,6 +1634,64 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
   });
 
+  // RyderCupWeb #880: la Ryder marca y envía muestras como el resto
+  const conJugadores = (players) => {
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, players };
+  };
+
+  it('F2: a la ventana le llega mi barra (color y sexo)', () => {
+    conJugadores([
+      { userId: 'u1', userName: 'Yo', team: 'A', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u2', userName: 'Rival', team: 'B', color: 'RED', teeGender: 'FEMALE', holeCard: [] },
+    ]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: 'MALE' });
+    expect(mapaHoyo.ventana.userId).toBe('u1');
+  });
+
+  it('F2: mi barra sin sexo va con gender null', () => {
+    conJugadores([{ userId: 'u1', userName: 'Yo', team: 'A', color: 'YELLOW', teeGender: null, holeCard: [] }]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: null });
+  });
+
+  it('F3: si no juego en el partido (el organizador), no hay barra', () => {
+    conJugadores([
+      { userId: 'u2', userName: 'A', team: 'A', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u3', userName: 'B', team: 'B', color: 'RED', teeGender: 'FEMALE', holeCard: [] },
+    ]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toBeNull();
+  });
+
+  it('F3: mi barra sin color, no hay barra', () => {
+    conJugadores([{ userId: 'u1', userName: 'Yo', team: 'A', color: null, teeGender: 'MALE', holeCard: [] }]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toBeNull();
+  });
+
+  it('F4: en foursomes cada uno envía con SU barra (no la del compañero)', () => {
+    conJugadores([
+      { userId: 'u4', userName: 'Compañera', team: 'A', color: 'RED', teeGender: 'FEMALE', holeCard: [] },
+      { userId: 'u1', userName: 'Yo', team: 'A', color: 'WHITE', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u2', userName: 'R1', team: 'B', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u3', userName: 'R2', team: 'B', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+    ]);
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, matchFormat: 'FOURSOMES' };
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'WHITE', gender: 'MALE' });
+  });
+
   it('T1: en la tarjeta no se pide el GPS', () => {
     const watchPosition = vi.fn();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });

@@ -60,6 +60,8 @@ class ScoringMapper {
         team: p.team,
         // El DTO manda `tee_color`; leer `p.color` dejaba el color en undefined
         color: p.tee_color ?? p.color ?? null,
+        // El sexo de su barra: con el color, el mapa envía las muestras por barra (#880)
+        teeGender: p.tee_gender ?? null,
         playingHandicap: p.playing_handicap,
         strokesReceived: p.strokes_received || [],
         // La tarjeta de SU barra: par, índice y metros. El backend la resuelve y

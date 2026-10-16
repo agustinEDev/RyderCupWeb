@@ -290,7 +290,7 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props).toMatchObject({ porMarcar: null, onMuestra: null });
   });
 
-  it('V8: sin barra (la Ryder, hasta la FE #880), se ve y se mide, pero ni se marca ni se envía', async () => {
+  it('V8: sin barra (quien no juega el partido), se ve y se mide, pero ni se marca ni se envía', async () => {
     abrirEn({ holes: {} }, { barra: null });
     await screen.findByTestId('mapa-del-hoyo');
 

@@ -472,6 +472,22 @@ describe('ScoringMapper', () => {
    * no lo resuelva de otra manera». El mapper la tiraba, así que la pantalla
    * seguía puntuando contra la tarjeta del campo. Ver RyderCupWeb#417.
    */
+  // RyderCupWeb #880: con el color, el mapa del hoyo envía las muestras por barra
+  describe('el sexo de la barra de cada jugador', () => {
+    const vista = (players) => ScoringMapper.toScoringViewDTO({ players });
+
+    it.each([
+      ['MALE', 'MALE'],
+      ['FEMALE', 'FEMALE'],
+      [null, null],
+      [undefined, null],
+    ])('tee_gender %s → teeGender %s', (deLaApi, esperado) => {
+      const [jugador] = vista([{ user_id: 'u1', tee_color: 'YELLOW', tee_gender: deLaApi }]).players;
+
+      expect(jugador.teeGender).toBe(esperado);
+    });
+  });
+
   describe('la tarjeta de la barra de cada jugador', () => {
     const withHoleCard = {
       players: [
