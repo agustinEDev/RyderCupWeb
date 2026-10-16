@@ -25,6 +25,36 @@ class IGolfCourseRepository {
   }
 
   /**
+   * El mapa de hoyos aprobado del campo (BE #532)
+   * @param {string} id - Golf course ID
+   * @returns {Promise<Object|null>} El mapa, o null si no tiene
+   */
+  async getHoleMap(id) {
+    throw new Error('Method not implemented: getHoleMap');
+  }
+
+  /**
+   * El resumen de las muestras (anónimas) de cada hoyo, por barra (BE #532, marcado por par)
+   * @param {string} id - Golf course ID
+   * @returns {Promise<Object<number, {color: string, gender: string|null, primera: Object|null, recoge: boolean}[]>>} por número de hoyo
+   */
+  async getHoleSamples(id) {
+    throw new Error('Method not implemented: getHoleSamples');
+  }
+
+  /**
+   * Envía una muestra de un hoyo (BE #532, marcado por par). Se resuelve si
+   * llegó, la guarde el servidor o no
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   * @param {Object} muestra - { id, barra: { color, gender }, tee, bends, greenCenter }
+   * @returns {Promise<void>}
+   */
+  async sendHoleSample(id, holeNumber, muestra) {
+    throw new Error('Method not implemented: sendHoleSample');
+  }
+
+  /**
    * Create a new golf course request (any user)
    * Creates a golf course in PENDING_APPROVAL status
    * @param {Object} golfCourseData - Golf course data

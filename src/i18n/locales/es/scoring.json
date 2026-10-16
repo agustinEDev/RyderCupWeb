@@ -13,20 +13,12 @@
     "scorecard": "Tarjeta",
     "leaderboard": "Clasificación"
   },
-  "preMatch": {
-    "title": "Info del Partido",
-    "youMark": "Tú marcas a",
-    "markedBy": "Te marca",
-    "color": "Color de barras",
-    "handicap": "Hándicap",
-    "format": "Formato",
-    "ready": "Listo para Jugar",
-    "youMarkPair": "Marcáis a"
-  },
   "notOpenYet": {
     "title": "La anotación de este partido aún no ha abierto",
     "opensAt": "Abre a las {{hora}}, hora del campo.",
-    "meanwhile": "Hasta entonces, solo se puede anotar si alguien arranca el partido."
+    "meanwhile": "Hasta entonces, solo se puede anotar si alguien arranca el partido.",
+    "youWillMark": "Anotarás a {{nombre}}",
+    "youWillMarkPair": "Anotaréis a {{nombre}}"
   },
   "input": {
     "hole": "Hoyo",
@@ -72,7 +64,8 @@
     "strokesReceived_other": "{{count}} golpes recibidos",
     "strokesGiven_one": "Da {{count}} golpe",
     "strokesGiven_other": "Da {{count}} golpes",
-    "rivalPair": "La pareja rival"
+    "rivalPair": "La pareja rival",
+    "rivalBallOf": "Bola rival · {{nombre}}"
   },
   "scorecard": {
     "title": "Tarjeta",
@@ -140,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} hoyos validados",
     "notReady": "No todos los hoyos están validados",
     "groupOver": "Partida terminada",
-    "groupCompleted": "Partida completada"
+    "groupCompleted": "Partida completada",
+    "allHolesScored": "Todos los hoyos anotados"
   },
   "summary": {
     "title": "Resumen del Partido",
@@ -373,5 +367,40 @@
     "cannotClear": "Un número no se deja en blanco: para quitarlo, «Borrar lo anotado».",
     "notOpenYet": "La anotación de esta partida aún no ha abierto",
     "organiserValidates": "Nadie en juego te marca: tus hoyos los valida el organizador. Sigue anotando tus golpes."
+  },
+  "mapa": {
+    "abrir": "Mapa",
+    "titulo": "Hoyo {{numero}} · Par {{par}}",
+    "cerrar": "Cerrar",
+    "centrame": "Céntrame",
+    "verHoyo": "Ver hoyo",
+    "norte": "Norte",
+    "buscando": "Buscando señal GPS…",
+    "denegado": "Ubicación no permitida",
+    "noDisponible": "Este móvil no da la ubicación",
+    "delante": "Delante",
+    "centro": "Centro",
+    "fondo": "Fondo",
+    "metros": "m",
+    "etiqueta": "Desde la salida: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
+    "hastaAhi": "Hasta ahí {{metros}} m",
+    "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
+    "quitarPunto": "Quitar",
+    "ayudaMedir": "Toca el mapa para medir",
+    "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
+    "atribucionPnoa": "PNOA © IGN",
+    "atribucionOsm": "© OSM",
+    "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen.",
+    "pideSalida": "Toca dónde está la salida",
+    "pideGreen": "Toca el centro del green",
+    "ahoraNo": "Ahora no",
+    "marcarHoyo": "Marcar hoyo",
+    "ayudaCodo": "Arrastra los codos al centro de la calle",
+    "fueraDeLimites": "La salida y el green tienen que estar a entre 40 y 750 m",
+    "tramo": "{{metros}} m",
+    "lineaUnTramo": "De la salida al green: {{a}} metros",
+    "lineaDosTramos": "De la salida al codo: {{a}} metros; del codo al green: {{b}} metros",
+    "lineaTresTramos": "De la salida al primer codo: {{a}} metros; del primer al segundo codo: {{b}} metros; del segundo codo al green: {{c}} metros",
+    "lineaVariosTramos": "Tramos de la línea, de la salida al green: {{lista}} metros"
   }
 }

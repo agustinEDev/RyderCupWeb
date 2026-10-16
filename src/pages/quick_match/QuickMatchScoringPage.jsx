@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -11,10 +11,14 @@ import {
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
@@ -118,6 +122,8 @@ const QuickMatchScoringPage = () => {
     discrepancias,
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: quickMatch?.golfCourseId ?? null });
 
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla
@@ -128,6 +134,9 @@ const QuickMatchScoringPage = () => {
   // Si el grupo entero se anota desde este móvil —lo normal en un cuarteto con
   // invitados— no falta nada de nadie: la clasificación está completa, así que
   // ni se avisa ni se le quita el puesto a nadie
+  // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra (16 oct)
+  const yoEnLaPartida = (quickMatch?.participants ?? []).find((p) => p.userId && p.userId === user?.id);
+  const miBarra = yoEnLaPartida?.color ? { color: yoEnLaPartida.color, gender: yoEnLaPartida.teeGender ?? null } : null;
   const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
     (p) => !coveredParticipantIds.includes(p.participantId)
   );
@@ -539,8 +548,9 @@ const QuickMatchScoringPage = () => {
           &larr; {t('scoring.backToMyQuickMatches')}
         </button>
 
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          {/* min-w-0: sin él, un nombre de campo largo no se recorta y la cabecera se sale */}
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold text-gray-900">
               {quickMatch?.name || t('scoring.matchHeader')}
             </h1>
@@ -548,15 +558,10 @@ const QuickMatchScoringPage = () => {
               {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
               {quickMatch?.matchFormat ?? quickMatch?.scoringFormat}
             </p>
-            {courseName && (
-              <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1" data-testid="quick-match-course-name">
-                <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                {courseName}
-              </p>
-            )}
+            <CampoDeLaPartida nombre={courseName} />
           </div>
           {quickMatch?.isCompleted && (
-            <span className="text-sm font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
+            <span className="shrink-0 text-sm font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
               {t('scoring.finish.completed')}
             </span>
           )}
@@ -608,17 +613,28 @@ const QuickMatchScoringPage = () => {
                 />
 
                 {currentHoleData && (
-                  <QuickMatchHoleInput
-                    key={currentHole}
-                    holeNumber={currentHole}
-                    par={currentHoleData.par}
-                    strokeIndex={currentHoleData.strokeIndex}
-                    meters={currentHoleData.meters ?? null}
-                    entries={entries}
-                    isReadOnly={isReadOnly}
-                    allowPickedUp={allowsPickedUp}
-                    onScoreChange={handleScoreChange}
-                  />
+                  <>
+                    <QuickMatchHoleInput
+                      key={currentHole}
+                      holeNumber={currentHole}
+                      par={currentHoleData.par}
+                      strokeIndex={currentHoleData.strokeIndex}
+                      meters={currentHoleData.meters ?? null}
+                      entries={entries}
+                      isReadOnly={isReadOnly}
+                      allowPickedUp={allowsPickedUp}
+                      onScoreChange={handleScoreChange}
+                    />
+                    <VentanaDelMapa
+                      mapaDelHoyo={mapaDelHoyo}
+                      golfCourseId={quickMatch?.golfCourseId ?? null}
+                      numeroDeHoyo={currentHole}
+                      par={currentHoleData.par}
+                      metros={currentHoleData.meters ?? null}
+                      userId={user?.id ?? null}
+                      barra={miBarra}
+                    />
+                  </>
                 )}
 
                 <div className="flex gap-3">
@@ -626,16 +642,19 @@ const QuickMatchScoringPage = () => {
                     onClick={handlePrevHole}
                     disabled={currentHole <= 1}
                     data-testid="quick-match-prev-hole"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:hover:bg-white transition-colors"
+                    className="min-h-11 min-w-0 flex-1 flex items-center justify-center gap-1 px-2 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:hover:bg-white transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     {t('scoring.navigation.previous')}
                   </button>
+                  {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
+                  {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
+                  {currentHoleData && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                   <button
                     onClick={handleNextHole}
                     disabled={currentHole >= totalHoles}
                     data-testid="quick-match-next-hole"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors"
+                    className="min-h-11 min-w-0 flex-1 flex items-center justify-center gap-1 px-2 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors"
                   >
                     {t('scoring.navigation.next')}
                     <ChevronRight className="w-4 h-4" />

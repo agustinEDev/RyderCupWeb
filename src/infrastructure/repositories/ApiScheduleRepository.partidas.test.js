@@ -105,6 +105,25 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
     expect(vista.groups[0].players[0].broughtIn).toBe(false);
   });
 
+  it('mis partidas traen el campo de su franja (BE #573)', async () => {
+    api.mockResolvedValue({
+      groups: [
+        {
+          round_id: 'r-1',
+          round_date: '2030-10-12',
+          session_type: 'MORNING',
+          golf_course_id: 'gc-1',
+          golf_course_name: 'Golf de Meis - Par 72',
+          group: VISTA.groups[0],
+        },
+      ],
+    });
+
+    const [mia] = await repo.getMyTeeGroups('c-1');
+
+    expect(mia).toMatchObject({ golfCourseName: 'Golf de Meis - Par 72' });
+  });
+
   it('mis partidas, por jornada', async () => {
     api.mockResolvedValue({
       groups: [{ round_id: 'r-1', round_date: '2030-10-12', session_type: 'MORNING', group: VISTA.groups[0] }],
@@ -115,7 +134,9 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
     expect(api).toHaveBeenCalledWith('/api/v1/competitions/c-1/groups/me');
     // `canChange` es de la vista de la franja (#544): aquí no viene
     const partida = Object.fromEntries(Object.entries(VISTA_LEIDA.groups[0]).filter(([campo]) => campo !== 'canChange'));
-    expect(mias).toEqual([{ roundId: 'r-1', roundDate: '2030-10-12', sessionType: 'MORNING', group: partida }]);
+    expect(mias).toEqual([
+      { roundId: 'r-1', roundDate: '2030-10-12', sessionType: 'MORNING', golfCourseName: null, group: partida },
+    ]);
   });
 
   it('generar, con el orden', async () => {

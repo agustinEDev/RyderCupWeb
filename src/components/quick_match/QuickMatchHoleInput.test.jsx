@@ -68,3 +68,13 @@ describe('QuickMatchHoleInput · el hueco para anotar (FE #725)', () => {
     expect(screen.queryByTestId('anotar')).toBeNull();
   });
 });
+
+describe('QuickMatchHoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
+  it('16 oct: la tarjeta no lleva «Mapa» (va entre Anterior y Siguiente)', () => {
+    render(<QuickMatchHoleInput holeNumber={1} par={4} strokeIndex={1} entries={[]} />);
+
+    expect(screen.queryByRole('button', { name: /mapa/i })).toBeNull();
+    expect(screen.queryByTestId('accion-del-hoyo')).toBeNull();
+  });
+
+});

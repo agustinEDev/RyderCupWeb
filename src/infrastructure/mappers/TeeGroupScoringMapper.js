@@ -40,7 +40,15 @@ class TeeGroupScoringMapper {
       // En stroke play no se decide antes del 18
       isDecided: false,
       decidedResult: null,
-      roundInfo: { id: api.round_id, date: null, sessionType: null, golfCourseName: null },
+      // El campo de la franja, para pedir su mapa de hoyos (BE #532)
+      roundInfo: {
+        id: api.round_id,
+        date: null,
+        sessionType: null,
+        // Su nombre, bajo el título de la anotación (BE #573)
+        golfCourseName: api.golf_course_name ?? null,
+        golfCourseId: api.golf_course_id ?? null,
+      },
       competitionId: null,
       teamAName: null,
       teamBName: null,
@@ -57,10 +65,12 @@ class TeeGroupScoringMapper {
         userName: p.name,
         team: null,
         color: p.tee_color ?? null,
+        // Con el color, la barra: las muestras del mapa van por barra (16 oct)
+        teeGender: p.tee_gender ?? null,
         playingHandicap: p.playing_handicap,
         strokesReceived: numeros.map((n) => hoyoDe(p, n)?.strokes_received ?? 0),
-        // El par de SU barra; la vista no trae índice ni metros
-        holeCard: numeros.map((n) => ({ holeNumber: n, par: hoyoDe(p, n)?.par ?? null, strokeIndex: null, meters: null })),
+        // El par y los metros de SU barra (los metros, BE #574); la vista no trae índice
+        holeCard: numeros.map((n) => ({ holeNumber: n, par: hoyoDe(p, n)?.par ?? null, strokeIndex: null, meters: hoyoDe(p, n)?.meters ?? null })),
       })),
       holes: numeros.map((n) => ({ holeNumber: n, par: jugadores[0] ? hoyoDe(jugadores[0], n)?.par ?? null : null, strokeIndex: null })),
       scores: numeros.map((n) => ({

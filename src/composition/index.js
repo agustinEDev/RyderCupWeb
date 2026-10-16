@@ -33,6 +33,16 @@ import GetAdjacentCountriesUseCase from '../application/use_cases/country/GetAdj
 import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCourseRepository';
 import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGolfCoursesUseCase';
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
+import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
+import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
+import LocalStorageHoleSampleStore from '../infrastructure/repositories/LocalStorageHoleSampleStore';
+import LocalStorageCourseLocationCache from '../infrastructure/repositories/LocalStorageCourseLocationCache';
+import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCourseLocationUseCase';
+import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHoleSampleUseCase';
+import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
+import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
+import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
+import { captureError } from '../utils/sentryHelpers';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
 import UpdateGolfCourseUseCase from '../application/use_cases/golf_course/UpdateGolfCourseUseCase';
@@ -438,6 +448,45 @@ const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDevic
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
 const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+// Dónde está cada campo, con su copia en el móvil para el mapa sin cobertura (BE #532)
+const getCourseLocationUseCase = new GetCourseLocationUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  courseLocationCache: new LocalStorageCourseLocationCache(),
+});
+// El mapa de hoyos para la anotación, con su copia para jugar sin cobertura (BE #532)
+const getHoleMapUseCase = new GetHoleMapUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeMapCache: new LocalStorageHoleMapCache(),
+  reportarFallo: (error, contexto) => captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
+});
+// Las muestras de hoyo, anónimas (BE #532, marcado por par): a la cola del
+// móvil antes de nada y se envían cuando haya cobertura, sin decir nada al
+// jugador. Lo que el servidor no quiere es un fallo nuestro: a Sentry
+const holeSampleStore = new LocalStorageHoleSampleStore();
+const reportarFalloDeMuestra = (error, contexto) => captureError(error, { tags: { modulo: 'muestras-de-hoyos' }, extra: contexto });
+// Las que van de camino, compartidas: la cola de fondo no manda otra vez la que está saliendo
+const muestrasEnVuelo = new Set();
+// Las que llegaron y el resumen aún no trae: se siguen viendo en el mapa
+const muestrasRecienEnviadas = crearRecienEnviadas();
+const sendHoleSampleUseCase = new SendHoleSampleUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  reportarFallo: reportarFalloDeMuestra,
+  enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
+});
+const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  reportarFallo: reportarFalloDeMuestra,
+  enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
+});
+const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  recienEnviadas: muestrasRecienEnviadas,
+});
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -519,6 +568,11 @@ export {
   // Golf Course Use Cases (v2.1.0 - Sprint 1)
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
+  getHoleMapUseCase,
+  getCourseLocationUseCase,
+  sendHoleSampleUseCase,
+  sendPendingHoleSamplesUseCase,
+  getHoleSamplesUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,
   updateGolfCourseUseCase,

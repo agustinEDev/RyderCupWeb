@@ -5,6 +5,9 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import { useScoring } from '../../hooks/useScoring';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
 import { retireFromTeeGroupUseCase } from '../../composition';
 import customToast from '../../utils/toast';
@@ -13,6 +16,7 @@ import { conGenero } from '../../utils/genero';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import HoleInput from '../../components/scoring/HoleInput';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import HoleSelector from '../../components/scoring/HoleSelector';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
@@ -91,6 +95,11 @@ const GroupScoringPage = () => {
   } = useScoring(groupId, user?.id, user?.is_admin ?? false, ORIGEN_PARTIDA_DE_FRANJA);
 
   const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    cerrarSi: isSessionBlocked,
+  });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
     if (!aunNoAbre) return undefined;
@@ -147,8 +156,12 @@ const GroupScoringPage = () => {
   const cerradaSinEntregar = Boolean(miTarjeta) && !seJuega(userId) && miTarjeta.cardStatus !== 'ENTREGADA';
   const noPresentado = miTarjeta?.cardStatus === 'NO_PRESENTADO';
 
-  const parDe = (jugador) =>
-    scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole)?.par ?? null;
+  const hoyoDeLaTarjetaDe = (jugador) =>
+    scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole);
+  const parDe = (jugador) => hoyoDeLaTarjetaDe(jugador)?.par ?? null;
+  // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra
+  const yo = scoringView.players.find((p) => p.userId === userId);
+  const miBarra = yo?.color ? { color: yo.color, gender: yo.teeGender ?? null } : null;
   const golpesDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
@@ -274,6 +287,7 @@ const GroupScoringPage = () => {
             {t('partida.header', { numero: scoringView.matchNumber, hora: strokePlay.teeTime })}
           </h1>
           <p className="text-sm text-gray-500">{t(`partida.type.${strokePlay.tournamentType}`)}</p>
+          <CampoDeLaPartida nombre={scoringView.roundInfo?.golfCourseName} />
         </div>
 
         <div className="flex border-b border-gray-200" role="tablist">
@@ -330,48 +344,69 @@ const GroupScoringPage = () => {
                   <p className="mt-1 text-amber-800">
                     {t('notOpenYet.opensAt', { hora: horaDelCampo(scoringView.scoringOpensAt, i18n.language) })}
                   </p>
+                  {/* A quién vas a marcar, como en la Ryder (16 oct) */}
+                  {nombreDe(marcoA) && (
+                    <p data-testid="anotaras-a" className="mt-1 font-medium text-amber-900">
+                      {t('notOpenYet.youWillMark', { nombre: nombreDe(marcoA) })}
+                    </p>
+                  )}
                 </div>
               )}
               {!aunNoAbre && (
-                <HoleInput
-                  key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                  holeNumber={currentHole}
-                  par={parDe(userId)}
-                  markedPar={parDe(marcoA)}
-                  markedName={nombreDe(marcoA)}
-                  markerName={meAnoto}
-                  marksSomeone={Boolean(marcoA)}
-                  hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
-                  markedScoredBy={loPusoOtro}
-                  strokeIndex={null}
-                  playerScore={miGolpe}
-                  markedPlayerScore={suGolpe}
-                  validationStatus={miGolpe?.validationStatus}
-                  markedValidationStatus={suGolpe?.validationStatus}
-                  strokesReceived={miGolpe?.strokesReceivedThisHole}
-                  // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
-                  isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
-                  isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
-                  // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
-                  isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
-                  onScoreChange={anotar}
-                  allowPickedUp={strokePlay.pickedUpAllowed}
-                />
+                <>
+                  <HoleInput
+                    key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                    holeNumber={currentHole}
+                    par={parDe(userId)}
+                    markedPar={parDe(marcoA)}
+                    markedName={nombreDe(marcoA)}
+                    markerName={meAnoto}
+                    marksSomeone={Boolean(marcoA)}
+                    hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
+                    markedScoredBy={loPusoOtro}
+                    strokeIndex={null}
+                    playerScore={miGolpe}
+                    markedPlayerScore={suGolpe}
+                    validationStatus={miGolpe?.validationStatus}
+                    markedValidationStatus={suGolpe?.validationStatus}
+                    strokesReceived={miGolpe?.strokesReceivedThisHole}
+                    // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
+                    isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
+                    isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
+                    // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
+                    isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
+                    onScoreChange={anotar}
+                    allowPickedUp={strokePlay.pickedUpAllowed}
+                  />
+                  <VentanaDelMapa
+                    mapaDelHoyo={mapaDelHoyo}
+                    golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
+                    numeroDeHoyo={currentHole}
+                    par={parDe(userId)}
+                    // Los metros desde mi barra, para el recuadro del mapa (16 oct)
+                    metros={hoyoDeLaTarjetaDe(userId)?.meters ?? null}
+                    userId={userId ?? null}
+                    barra={miBarra}
+                  />
+                </>
               )}
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => setCurrentHole(currentHole - 1)}
                   disabled={currentHole <= 1}
-                  className="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 disabled:opacity-50"
+                  className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                 >
                   {t('input.prevHole')}
                 </button>
+                {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
+                {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
+                {!aunNoAbre && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                 <button
                   type="button"
                   onClick={() => setCurrentHole(currentHole + 1)}
                   disabled={currentHole >= totalHoles}
-                  className="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 disabled:opacity-50"
+                  className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                 >
                   {t('input.nextHole')}
                 </button>

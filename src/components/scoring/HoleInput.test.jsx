@@ -316,10 +316,17 @@ describe('HoleInput', () => {
       expect(screen.queryByText('input.markerScore')).not.toBeInTheDocument();
     });
 
-    it('15: en foursomes sigue siendo la bola rival', () => {
-      render(<HoleInput {...defaultProps} markedName="Bruno" matchFormat="FOURSOMES" />);
+    it('15: en foursomes sigue siendo la bola rival, con la pareja detrás (16 oct)', () => {
+      render(<HoleInput {...defaultProps} markedName="Luna / Óscar" matchFormat="FOURSOMES" />);
 
       expect(screen.queryByText(/input.youMark/)).not.toBeInTheDocument();
+      expect(screen.getByText('input.rivalBallOf {"nombre":"Luna / Óscar"}')).toBeInTheDocument();
+    });
+
+    it('15: en foursomes sin a quién se marca, solo «Bola rival»', () => {
+      render(<HoleInput {...defaultProps} markedName={null} matchFormat="FOURSOMES" />);
+
+      expect(screen.getByText('input.rivalBall')).toBeInTheDocument();
     });
 
     it('16: en un desacuerdo de mi golpe, lo que puso quien me marca', () => {
@@ -667,5 +674,31 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
         screen.getByTestId('marked-score-button')
       );
     });
+  });
+});
+
+describe('HoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
+  it('16 oct: la tarjeta no lleva «Mapa» (va entre Anterior y Siguiente)', () => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} />);
+
+    expect(screen.queryByRole('button', { name: /mapa/i })).toBeNull();
+    expect(screen.queryByTestId('accion-del-hoyo')).toBeNull();
+  });
+
+
+  it('16 oct: sin neto, resultado ni marcador, no hay pie (era una franja vacía)', () => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} />);
+
+    expect(screen.queryByTestId('pie-del-hoyo')).toBeNull();
+  });
+
+  it.each([
+    ['el neto', { netScore: 3 }],
+    ['el resultado', { holeResult: { winner: 'HALVED', standing: 'AS', standingTeam: null } }],
+    ['el marcador', { standing: '1UP', holeResult: { winner: 'A', standing: '1UP', standingTeam: 'A' } }],
+  ])('con %s, sí hay pie', (_que, props) => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} {...props} />);
+
+    expect(screen.getByTestId('pie-del-hoyo')).toBeInTheDocument();
   });
 });

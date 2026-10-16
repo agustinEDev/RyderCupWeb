@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Play } from 'lucide-react';
+import { MapPin, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import EtiquetaDelTipo from '../competition/EtiquetaDelTipo';
 import { diaCorto } from '../../utils/diaDeLaSesion';
@@ -86,6 +86,13 @@ const TarjetaDeLoProximo = ({ partido, puedeAnotar }) => {
           <p data-testid="cuando" className="text-xs text-gray-500">
             {cuando.join(' · ')}
           </p>
+          {/* El campo donde se juega (16 oct); sin nombre, ni la línea */}
+          {partido.golfCourseName && (
+            <p data-testid="campo" className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-gray-500">
+              <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span className="truncate">{partido.golfCourseName}</span>
+            </p>
+          )}
           <p data-testid="con-quien" className="mt-0.5 break-words text-sm font-medium text-gray-900">
             {conQuien}
           </p>

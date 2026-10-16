@@ -58,6 +58,24 @@ vi.mock('../../hooks/useScoring', () => ({
   },
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
+
 vi.mock('../../components/scoring/HoleInput', () => ({
   default: (props) => {
     llamadas.casilla = props;
@@ -553,5 +571,119 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_NOT_SCORING'));
+  });
+});
+
+describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
+  beforeEach(() => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
+  });
+
+  it('16 oct: antes de abrir, dice a quién vas a marcar', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMark');
+  });
+
+  it('16 oct: antes de abrir y sin a quién marcar, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00', i_mark_user_id: null }, [jugador('ana', null)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('anotaras-a')).toBeNull();
+  });
+
+  it('16 oct: el campo de la partida, bajo el título; sin nombre, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_name: 'Golf de Meis - Par 72' }) });
+    const { unmount } = render(<GroupScoringPage />);
+    expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Golf de Meis - Par 72');
+    unmount();
+
+    mockHook = hook();
+    render(<GroupScoringPage />);
+    expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
+  });
+
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
+    render(<GroupScoringPage />);
+
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(boton.previousElementSibling).toHaveTextContent('input.prevHole');
+    expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  it('F12 (16 oct): el mapa recibe los metros del hoyo desde MI barra', () => {
+    const conMetros = (id, marks, base) =>
+      jugador(id, marks, { holes: Array.from({ length: 18 }, (_, i) => ({ ...hoyo(i + 1), meters: base + i })) });
+    mockHook = hook({ scoringView: vista({}, [conMetros('ana', 'bea', 300), conMetros('bea', 'ana', 250)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.metros).toBe(300);
+  });
+
+  it('16 oct: el mapa recibe mi barra (color y sexo), para las muestras', () => {
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { tee_color: 'RED', tee_gender: 'FEMALE' }), jugador('bea', 'ana')]) });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'RED', gender: 'FEMALE' });
+  });
+
+  it('16 oct: una barra sin sexo va con null', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: null });
+  });
+
+  it('F12: sin metros en la vista, el mapa recibe null', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.metros).toBeNull();
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      render(<GroupScoringPage />);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('GroupScoringPage — sesión tomada con el mapa abierto', () => {
+  it('el mapa se cierra para que «Volver» salga de la anotación', () => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook({ isSessionBlocked: true });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });
