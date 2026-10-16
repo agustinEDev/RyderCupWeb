@@ -386,6 +386,25 @@
     "noCarga": "The map could not be opened. Check the connection and try again.",
     "atribucionPnoa": "PNOA © IGN",
     "atribucionOsm": "© OSM",
-    "sinMapaEnEsteMovil": "This phone cannot draw the map; the distances to the green still work."
+    "sinMapaEnEsteMovil": "This phone cannot draw the map; the distances to the green still work.",
+    "pideSalida": "Tap where the tee is",
+    "pideGreen": "Tap the centre of the green",
+    "ahoraNo": "Not now",
+    "marcarHoyo": "Mark hole",
+    "ayudaCodo": "If the hole doglegs, drag the middle point",
+    "guardarMarca": "Save",
+    "volverAMarcar": "Mark again",
+    "arco": "{{metros}} m",
+    "avisoTarjeta": "Your mark is {{marcado}} m and the card says {{tarjeta}} m. Are you sure?",
+    "siGuardar": "Yes, save",
+    "corregir": "Fix it",
+    "fueraDeLimites": "The tee and the green must be 40 to 750 m apart",
+    "lejosDelCampo": "The mark is more than 3 km from the course",
+    "yaTieneDatos": "This hole already has its tee and green",
+    "noSeGuardo": "The mark could not be saved",
+    "tramo": "{{metros}} m",
+    "faltaLaSalida": "This hole has no tee: mark the tee too",
+    "marcaRechazada_one": "A hole mark could not be saved",
+    "marcaRechazada_other": "{{count}} hole marks could not be saved"
   }
 }

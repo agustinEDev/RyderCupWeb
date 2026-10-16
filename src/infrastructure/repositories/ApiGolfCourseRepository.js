@@ -1,5 +1,7 @@
 import GolfCourse from '../../domain/entities/GolfCourse.js';
 import HoleMapMapper from '../mappers/HoleMapMapper';
+import HoleMarkMapper from '../mappers/HoleMarkMapper';
+import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../../services/api.js';
 
@@ -88,6 +90,42 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND') return null;
       throw error;
     }
+  }
+
+  /**
+   * @override
+   * Devuelve la marca que queda guardada: si había una más reciente (la cola
+   * llegó tarde), es esa. Con el tope de anotar: con mala cobertura la petición
+   * no falla, se queda colgada, y la marca tiene que pasar a la cola
+   */
+  async saveHoleMark(id, holeNumber, marca) {
+    let data;
+    try {
+      data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/${holeNumber}`, {
+        method: 'PUT',
+        body: JSON.stringify(HoleMarkMapper.toApi(marca)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return marca;
+      throw error;
+    }
+    // Un 2xx dice que el servidor la tiene: si no se entiende lo que devuelve,
+    // vale la enviada (si no, quedaría pendiente y se reenviaría siempre)
+    try {
+      return HoleMarkMapper.toDomain(data);
+    } catch {
+      return marca;
+    }
+  }
+
+  /**
+   * @override
+   */
+  async getMyHoleMarks(id) {
+    const data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/mine`, { topeMs: TOPE_DE_ANOTAR_MS });
+    return data.map(HoleMarkMapper.toDomain);
   }
 
   /**
