@@ -51,13 +51,19 @@ class GetHoleSamplesUseCase {
 
   pendientes(userId, golfCourseId, barra) {
     if (!userId || !golfCourseId || !barra) return {};
-    const enCola = Object.fromEntries(
-      this.holeSampleStore
-        .cola(userId)
-        .filter((entrada) => entrada.golfCourseId === golfCourseId && esLaMismaBarra(entrada.barra, barra))
-        .map(({ holeNumber, tee, bends, greenCenter }) => [holeNumber, { tee, bends, greenCenter }]),
-    );
-    return { ...this.recienEnviadas.de(userId, golfCourseId, barra), ...enCola };
+    const deEsteCampo = (entradas) =>
+      Object.fromEntries(
+        entradas
+          .filter((entrada) => entrada.golfCourseId === golfCourseId && esLaMismaBarra(entrada.barra, barra))
+          .map(({ holeNumber, tee, bends, greenCenter }) => [holeNumber, { tee, bends, greenCenter }]),
+      );
+    // Lo suyo, de más viejo a más nuevo: lo ya enviado, lo recién enviado y lo
+    // que espera en la cola
+    return {
+      ...deEsteCampo(this.holeSampleStore.mias(userId)),
+      ...this.recienEnviadas.de(userId, golfCourseId, barra),
+      ...deEsteCampo(this.holeSampleStore.cola(userId)),
+    };
   }
 }
 

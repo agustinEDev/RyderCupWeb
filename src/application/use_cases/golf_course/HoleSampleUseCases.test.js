@@ -41,6 +41,7 @@ const SALIDA = { lat: 36.28, lon: -5.33 };
 const CODO = { lat: 36.2815, lon: -5.331 };
 const GREEN = { lat: 36.2827, lon: -5.33 };
 const AHORA = '2026-10-16T08:05:00.000Z';
+const SALIDA2 = { lat: 36.2829, lon: -5.33 };
 const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
 const ROJA = { color: 'RED', gender: 'FEMALE' };
 const PRIMERA = { tee: SALIDA, bends: [], greenCenter: GREEN };
@@ -565,7 +566,8 @@ describe('muestras de hoyo — casos de uso', () => {
 
       await resumen().execute('gc-1', AMARILLA);
 
-      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({});
+      // De las recién enviadas se va; se sigue viendo porque es suya (16 oct)
+      expect(recienEnviadas.de('u1', 'gc-1', AMARILLA)).toEqual({});
     });
 
     it('vale para cualquier barra: el resumen de otro jugador o barra del mismo campo también la quita', async () => {
@@ -573,7 +575,7 @@ describe('muestras de hoyo — casos de uso', () => {
 
       await resumen().execute('gc-1', ROJA);
 
-      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({});
+      expect(recienEnviadas.de('u1', 'gc-1', AMARILLA)).toEqual({});
     });
 
     it('el resumen de OTRO campo no la quita', async () => {
@@ -639,6 +641,39 @@ describe('muestras de hoyo — casos de uso', () => {
       store.quitarDeLaCola('u1', store.cola('u1')[0] ?? { id: 'nada' });
 
       expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({});
+    });
+  });
+
+  // Agustín, 16 oct: el jugador solo ve lo suyo; lo enviado desde este móvil sigue a la vista
+  describe('las mías', () => {
+    it('al llegar al servidor, se apunta como mía y se sigue viendo después del resumen', async () => {
+      await enviar();
+      await resumen().execute('gc-1', AMARILLA);
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({ 3: { tee: SALIDA, bends: [CODO], greenCenter: GREEN } });
+    });
+
+    it('la de la cola (más nueva) va antes que la ya enviada', async () => {
+      await enviar();
+      repo.sendHoleSample.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      await enviar({ greenCenter: SALIDA2 });
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)[3].greenCenter).toEqual(SALIDA2);
+    });
+
+    it('una descartada por el servidor no se apunta', async () => {
+      repo.sendHoleSample.mockRejectedValueOnce(Object.assign(new Error('422'), { status: 422 }));
+
+      await enviar();
+
+      expect(store.mias('u1')).toEqual([]);
+    });
+
+    it('de otro jugador o de otra barra no se ven', async () => {
+      await enviar();
+
+      expect(resumen().pendientes('u2', 'gc-1', AMARILLA)).toEqual({});
+      expect(resumen().pendientes('u1', 'gc-1', { color: 'RED', gender: 'FEMALE' })).toEqual({});
     });
   });
 });

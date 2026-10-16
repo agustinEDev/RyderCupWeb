@@ -54,6 +54,22 @@ const margenDelEncuadre = (alto) => ({
   right: 40,
 });
 
+// Lo que de verdad tapan la cabecera y el panel de abajo, medido, con un poco
+// de aire: el hoyo, lo más grande que quepa sin cortarse (Agustín, 16 oct). Si
+// no se puede medir (aún sin pintar) o no cabría nada (apaisado), los de siempre
+const AIRE = 12;
+const LADOS = 24;
+const margenMedido = (contenedor, arriba, abajo) => {
+  const alto = contenedor?.clientHeight || 640;
+  const caja = contenedor?.getBoundingClientRect?.();
+  const deArriba = arriba?.getBoundingClientRect?.();
+  const deAbajo = abajo?.getBoundingClientRect?.();
+  if (!caja?.height || !deArriba?.height || !deAbajo?.height) return margenDelEncuadre(alto);
+  const top = Math.round(deArriba.bottom - caja.top + AIRE);
+  const bottom = Math.round(caja.bottom - deAbajo.top + AIRE);
+  return alto - top - bottom < 120 ? margenDelEncuadre(alto) : { top, bottom, left: LADOS, right: LADOS };
+};
+
 const lngLat = (p) => [p.lon, p.lat];
 
 const geojsonDelHoyo = (hoyo) => ({
@@ -182,6 +198,9 @@ const MapaDelHoyo = ({
   const [sinMapa, setSinMapa] = useState(false);
 
   const contenedor = useRef(null);
+  const arriba = useRef(null);
+  const abajo = useRef(null);
+  const margen = useCallback(() => margenMedido(contenedor.current, arriba.current, abajo.current), []);
   const mapaRef = useRef(null);
   const marcaGps = useRef(null);
   const marcaTocada = useRef(null);
@@ -246,10 +265,9 @@ const MapaDelHoyo = ({
         // buscar el green (16 oct: antes, a los metros enteros, con un anillo)
         const alejarDesde = (salidaTocada) => {
           if (!metros) return;
-          const alto = contenedor.current?.clientHeight || 640;
           mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(salidaTocada, metros / 2) }), {
             bearing: mapaRef.current.getBearing(),
-            padding: margenDelEncuadre(alto),
+            padding: margen(),
           });
         };
         const ahora = globalThis.performance.now();
@@ -289,10 +307,9 @@ const MapaDelHoyo = ({
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
       // oct); lejos del campo no, que alejaría a kilómetros
       if (posicionEnElCampo) {
-        const alto = contenedor.current?.clientHeight || 640;
         mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionEnElCampo, p] }), {
           bearing: rumbo(posicionEnElCampo, p),
-          padding: margenDelEncuadre(alto),
+          padding: margen(),
           maxZoom: 18,
         });
       }
@@ -326,9 +343,8 @@ const MapaDelHoyo = ({
     const { hoyo: h } = inicio.current;
     const limites = limitesDelHoyo(h);
     if (!limites) return;
-    const alto = contenedor.current?.clientHeight || 640;
-    mapaRef.current?.fitBounds(limites, { bearing: orientacionDelHoyo(h), padding: margenDelEncuadre(alto), animate: animar });
-  }, []);
+    mapaRef.current?.fitBounds(limites, { bearing: orientacionDelHoyo(h), padding: margen(), animate: animar });
+  }, [margen]);
 
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
   // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
@@ -364,14 +380,16 @@ const MapaDelHoyo = ({
     } else if (inicio.current.soloGreen && inicio.current.metros && h?.playLine?.[0]) {
       // Pidiendo solo el green: alejado la mitad de la tarjeta alrededor de la
       // salida aprobada, como al tocarla (16 oct)
-      const alto = nodo.clientHeight || 640;
       mapa.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(h.playLine[0], inicio.current.metros / 2) }), {
         bearing: 0,
-        padding: margenDelEncuadre(alto),
+        padding: margen(),
         animate: false,
       });
     }
     mapa.on('load', () => {
+      // Al crearse el mapa la ventana aún no tenía su tamaño ni sus paneles
+      // pintados: ahora sí, y el hoyo se encuadra lo más grande que quepa
+      if (orientado) encuadrarHoyo(false);
       // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
       mapa.addSource('hoyo', { type: 'geojson', data: geojsonDelHoyo(hoyoActual.current) });
       mapa.addLayer({
@@ -423,7 +441,7 @@ const MapaDelHoyo = ({
       mapa.remove();
       mapaRef.current = null;
     };
-  }, [encuadrarHoyo]);
+  }, [encuadrarHoyo, margen]);
 
   // Mi posición: el punto azul, y la primera vez sin mapa, el mapa va a ella
   useEffect(() => {
@@ -603,6 +621,7 @@ const MapaDelHoyo = ({
     // cerrar, no se sale con el tabulador, Escape cierra y debajo no se desplaza
     <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-gray-700">
       <div
+        ref={arriba}
         data-testid="mapa-arriba"
         className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 pt-[calc(1rem+env(safe-area-inset-top))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
       >
@@ -616,6 +635,7 @@ const MapaDelHoyo = ({
       <div ref={montarMapa} className="absolute inset-0" />
 
       <div
+        ref={abajo}
         data-testid="mapa-abajo"
         className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
       >

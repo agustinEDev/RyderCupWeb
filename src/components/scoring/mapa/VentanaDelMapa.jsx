@@ -60,15 +60,15 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
   const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
 
-  // Lo que se ve, por orden (16 oct): el hoyo aprobado con su green; si no, la
-  // primera muestra de SU barra; si no, la de otra barra (el mismo green, y la
-  // salida se lleva a la suya); si no, la que este jugador dejó pendiente en el
-  // móvil; si no, lo aprobado que haya (solo la salida) o nada
+  // Lo que se ve (Agustín, 16 oct): el hoyo aprobado con su green; si no, lo
+  // SUYO de este móvil (lo pendiente o lo ya enviado); si no, lo aprobado que
+  // haya (solo la salida) o nada, y marca él. Las muestras de otros no se
+  // enseñan nunca: son para el admin
   const aprobado = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
   const conSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
   const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
-  const muestra = delHoyo.primera ?? delHoyo.deOtra ?? pendientes[numeroDeHoyo] ?? null;
+  const muestra = pendientes[numeroDeHoyo] ?? null;
   // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
   // render rehacía las líneas del mapa
   const deLaMuestra = useMemo(
@@ -84,8 +84,8 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   // La atribución, si algo de lo que se ve sale del mapa (y no de una muestra)
   const usaElMapa = completo || (conSalida && !muestra);
 
-  // Qué muestra se ve, no solo si hay una: si llega otra (la de mi barra tras la
-  // de otra), el mapa se rehace con ella mientras el jugador no haya empezado
+  // Qué muestra se ve, no solo si hay una: si cambia, el mapa se rehace con
+  // ella mientras el jugador no haya empezado
   const deCualMuestra = muestra ? [muestra.tee, ...muestra.bends, muestra.greenCenter].map((p) => `${p.lat},${p.lon}`).join(';') : '';
   const ahora = {
     clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
