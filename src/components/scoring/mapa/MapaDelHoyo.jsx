@@ -769,6 +769,8 @@ const MapaDelHoyo = ({
   );
   const deLaTarjeta = useMemo(() => distanciasDelHoyo({ metros, hoyo: hoyoAhora }), [metros, hoyoAhora]);
   const distancias = desdeAqui ?? deLaTarjeta;
+  // De dónde salen las cifras: tu posición, tu barra (la tarjeta) o la salida (la línea)
+  const origenDelRecuadro = t(desdeAqui ? 'mapa.desdeTuPosicion' : metros ? 'mapa.desdeTuBarra' : 'mapa.desdeLaSalida');
   const hastaAhi = tocado && posicionEnElCampo ? distanciaEnMetros(posicionEnElCampo, tocado) : null;
   const deAhiAlGreen = tocado && green ? distanciaEnMetros(tocado, green.center) : null;
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
@@ -856,13 +858,14 @@ const MapaDelHoyo = ({
           </span>
         )}
         {distancias && (
-          <p className="self-start text-[11px] font-semibold text-white/90 [text-shadow:0_1px_2px_#000]">
-            {t(desdeAqui ? 'mapa.desdeTuPosicion' : metros ? 'mapa.desdeTuBarra' : 'mapa.desdeLaSalida')}
+          // Se lee en la frase del recuadro, con las cifras (CodeRabbit, 17 oct)
+          <p aria-hidden="true" className="self-start text-[11px] font-semibold text-white/90 [text-shadow:0_1px_2px_#000]">
+            {origenDelRecuadro}
           </p>
         )}
         {distancias && (
           <div className="grid grid-cols-[1fr_1.35fr_1fr] overflow-hidden rounded-2xl bg-white/95 text-gray-900 shadow-xl">
-            <span className="sr-only">{t('mapa.etiqueta', distancias)}</span>
+            <span className="sr-only">{t('mapa.etiqueta', { ...distancias, origen: origenDelRecuadro })}</span>
             {[
               ['delante', distancias.front, ''],
               ['centro', distancias.center, 'bg-green-700 text-white'],

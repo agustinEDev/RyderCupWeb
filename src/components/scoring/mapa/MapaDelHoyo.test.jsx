@@ -248,7 +248,7 @@ describe('MapaDelHoyo', () => {
     it('R10: el lector de pantalla lee las distancias como una frase', () => {
       abrir({ metros: 342 });
 
-      expect(screen.getByText('mapa.etiqueta {"front":320,"center":342,"back":364}')).toHaveClass('sr-only');
+      expect(screen.getByText('mapa.etiqueta {"front":320,"center":342,"back":364,"origen":"mapa.desdeTuBarra"}')).toHaveClass('sr-only');
     });
 
     it('H4: «Ver hoyo» vuelve a encuadrar el hoyo entero', () => {
@@ -2099,6 +2099,15 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       act(() => gps.exito(lectura(alNorte(150).lat, T.lon, 10)));
       expect(screen.getByTestId('distancia-centro')).toHaveTextContent('150');
+    });
+
+    it('B1: el lector de pantalla oye de dónde salen las cifras: desde tu posición', () => {
+      abrir({ hoyo: HOYO_T, metros: 342 });
+
+      act(() => gps.exito(lectura(alNorte(100).lat, T.lon, 10)));
+
+      expect(screen.getByText('mapa.etiqueta {"front":190,"center":200,"back":212,"origen":"mapa.desdeTuPosicion"}')).toHaveClass('sr-only');
+      expect(screen.getByText('mapa.desdeTuPosicion')).toHaveAttribute('aria-hidden', 'true');
     });
 
     it.each([
