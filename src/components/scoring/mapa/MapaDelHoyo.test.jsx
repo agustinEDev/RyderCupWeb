@@ -1104,6 +1104,13 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     expect(screen.queryByText(/mapa\.hastaAhi/)).toBeNull();
   });
 
+  it('un hoyo con solo la salida, sin ubicación del campo, se abre en esa salida', () => {
+    abrir({ hoyo: { playLine: [{ lat: 36.28, lon: -5.33 }], green: null } });
+
+    expect(mapa().opciones.center).toEqual([-5.33, 36.28]);
+    expect(mapa().opciones.zoom).toBe(17);
+  });
+
   it('un hoyo con solo la salida se mide desde ella, aunque no se sepa dónde está el campo', () => {
     abrir({ hoyo: { playLine: [{ lat: 36.28, lon: -5.33 }], green: null } });
     act(() => mapa().oyentes.load());

@@ -235,7 +235,9 @@ const MapaDelHoyo = ({
   const montarMapa = useCallback((nodo) => {
     if (!nodo) return undefined;
     contenedor.current = nodo;
-    const { hoyo: h, conMapa: orientado, centroSinMapa: centro } = inicio.current;
+    const { hoyo: h, conMapa: orientado, centroSinMapa: delCampo } = inicio.current;
+    // Sin la ubicación del campo, la salida del hoyo si la tiene (no España entera)
+    const centro = delCampo ?? h?.playLine?.[0] ?? null;
     let mapa;
     try {
       mapa = new MapaDeMapLibre({
