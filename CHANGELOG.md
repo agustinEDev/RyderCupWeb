@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.43.0] - 2026-10-16
+
+**El mapa del hoyo.** Desde la anotación (Ryder, stroke play y partida rápida)
+se abre el mapa del hoyo sobre la ortofoto del PNOA: el hoyo girado como se
+juega y lo más grande que cabe, los metros oficiales de la tarjeta (delante,
+centro y fondo), los metros de cada tramo de la línea, medir tocando y, en los
+hoyos sin datos, marcar la salida y el green con los codos de su par, que se
+envían como muestra anónima de la barra del jugador sin decirle nada. Además,
+la anotación compacta y el campo a la vista. Va con el backend **2.29.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.29.0**
+(las muestras y los metros de stroke play): backend, `/health` y este frontend
+justo después. La CSP de producción ya permite `https://www.ign.es` (teselas
+del PNOA). MapLibre va en su propio chunk, que solo se descarga al abrir el
+mapa. Probado en el Kind con dos pasadas de QA sin contexto, en WebKit con
+toques y en un iPhone real.
+
+### Added
+
+- **Mapa del hoyo** desde «Mapa», entre «Anterior» y «Siguiente», en las tres
+  anotaciones (#871, #873):
+  - el hoyo girado como se juega (salida abajo, green arriba) y encuadrado lo
+    más grande que cabe entre la cabecera y el panel de abajo, medidos (#884,
+    #885);
+  - el recuadro **DELANTE · CENTRO · FONDO** fijo con los metros oficiales de la
+    tarjeta de tu barra (con el contorno del green dibujado; ±10 m sin él); sin
+    metros, medido en el mapa siguiendo los codos (#878);
+  - los **metros de cada tramo** de la línea, que siguen al dedo al arrastrar
+    (#878);
+  - medir tocando: de ti al punto y del punto al green, girando el mapa hacia
+    el punto; lejos del campo (más de 3 km), solo del punto al green, sin girar,
+    sin recuadro desde ti y sin «Céntrame» (#874, #875);
+  - sin conexión, la ubicación del campo guardada en el móvil (#875).
+- **Marcar un hoyo sin datos** (#874, #881): tocar la salida (el mapa se aleja
+  a la mitad de la tarjeta) y el green (de 40 a 750 m), y la línea sale con los
+  **codos de su par** (par 3: ninguno; par 4: uno; par 5: dos) para llevarlos a
+  la calle. Cualquier línea se puede mover para medir. Al cerrar el mapa o al
+  pasar la app a segundo plano, lo que el jugador hizo o movió se envía como
+  **muestra anónima de su barra**, en silencio y con cola sin conexión. Se ve,
+  por orden, el hoyo aprobado, la primera muestra de su barra (o de otra) y la
+  suya del móvil. En la Ryder solo se mide hasta que traiga el sexo de la barra
+  (#880).
+- **El campo a la vista**: su nombre bajo el título de las tres anotaciones y en
+  cada tarjeta de «Mis Próximos Partidos» (#876).
+
+### Changed
+
+- **Anotación compacta** (#876): sin la tarjeta «Info del Partido»; «Anterior ·
+  Mapa · Siguiente» en una fila de 44 px con contraste; «Bola rival · A / B» en
+  foursomes; «Anotarás a…» antes de abrir; el formato traducido. Con los 18
+  hoyos anotados sin validar y sin decidir, ni «Conceder Partido» ni «Partido
+  terminado»: «Todos los hoyos anotados».
+- Stroke play pasa al mapa los metros y la barra del jugador (#881).
+
+### Fixed
+
+- El mapa salía en gris en el build de producción: la hoja de MapLibre pisaba
+  las utilidades de Tailwind; ahora va en su capa (#873).
+- El mapa dejaba de abrir con una línea que se podía mover: en MapLibre 6 `on`
+  devuelve una suscripción y no se puede encadenar (#882).
+- Marcar solo el green sobre una línea larga de OSM: se queda con los codos de
+  su par y se envía; sin puntos sueltos si algo falla; el doble toque en la
+  salida ya no corta el alejamiento (#883).
+
 ## [2.42.0] - 2026-10-15
 
 **La clasificación de un Stableford o un Medal en su propia página, partida
