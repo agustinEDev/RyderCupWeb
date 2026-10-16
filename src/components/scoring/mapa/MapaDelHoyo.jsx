@@ -4,7 +4,8 @@ import { Compass, LocateFixed, Maximize2, MapPin, X } from 'lucide-react';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
-import { distanciaEnMetros, distanciasAlGreen } from '../../../domain/services/distanciasAlGreen';
+import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
+import { distanciasDelHoyo } from '../../../domain/services/distanciasDelHoyo';
 import { limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
 import {
   circuloAlrededor,
@@ -34,7 +35,7 @@ const ESTILO = {
   version: 8,
   sources: { pnoa: { type: 'raster', tiles: [TESELAS_PNOA], tileSize: 256, maxzoom: 20 } },
   layers: [
-    // Sin teselas (sin cobertura), gris: las distancias siguen, que solo dependen del GPS
+    // Sin teselas (sin cobertura), gris: el recuadro y las cifras siguen, que no dependen de ellas
     { id: 'fondo', type: 'background', paint: { 'background-color': '#6b7280' } },
     { id: 'pnoa', type: 'raster', source: 'pnoa' },
   ],
@@ -87,6 +88,8 @@ const geojsonDeLaMedida = (tramos) => ({
   features: tramos.map(([a, b]) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [lngLat(a), lngLat(b)] } })),
 });
 const enMedio = (a, b) => ({ lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 });
+// Los tramos de una línea de juego: de la salida al codo, de codo a codo y al green
+const tramosDeLaLinea = (linea) => linea.slice(1).map((p, i) => [linea[i], p]);
 
 
 const punto = (clase) => {
@@ -94,6 +97,29 @@ const punto = (clase) => {
   el.className = clase;
   return el;
 };
+
+// La cifra de un tramo: amarilla la de medir, blanca la de la línea del hoyo
+const etiqueta = (tipo, color) => {
+  const el = punto(`rounded-md bg-gray-950/85 px-1.5 py-0.5 font-mono text-sm font-bold shadow ${color}`);
+  el.dataset.tramo = tipo;
+  // Las de la línea, el lector las lee juntas en una frase (más abajo)
+  if (tipo === 'linea') el.setAttribute('aria-hidden', 'true');
+  return el;
+};
+// Las cifras de unos tramos, sobre las que ya había: se mueven y se reescriben,
+// no se rehacen (con cada lectura del GPS, o con el dedo al arrastrar)
+const sincronizarCifras = (mapa, etiquetas, tramos, { tipo, color, offset, texto }) => {
+  while (etiquetas.length > tramos.length) etiquetas.pop().remove();
+  tramos.forEach(([a, b], i) => {
+    etiquetas[i] ??= new Marker({ element: etiqueta(tipo, color) }).setLngLat(lngLat(enMedio(a, b))).addTo(mapa);
+    etiquetas[i].setLngLat(lngLat(enMedio(a, b)));
+    if (offset) etiquetas[i].setOffset(offset);
+    etiquetas[i].getElement().textContent = texto(distanciaEnMetros(a, b));
+  });
+};
+// Mientras se ajusta, el punto que se arrastra está en mitad del tramo: la cifra, encima
+const SOBRE_EL_PUNTO = [0, -24];
+const EN_EL_TRAMO = [0, 0];
 
 const BOTON =
   'min-h-11 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 text-[15px] font-semibold text-gray-900 shadow-lg disabled:opacity-50';
@@ -105,9 +131,9 @@ const BOTON_VERDE =
 /**
  * El mapa del hoyo a pantalla completa (BE #532), sobre la ortofoto del PNOA.
  *
- * Con mapa del hoyo: la salida abajo y el green arriba, sin giro, y el recuadro
- * de distancias al green desde el GPS. Sin mapa: norte arriba, giro libre, y
- * se mide tocando. El GPS va mientras el mapa está abierto, ni antes ni después.
+ * Con mapa del hoyo: la salida abajo y el green arriba, sin giro. El recuadro
+ * de delante, centro y fondo es fijo, con los metros oficiales desde la
+ * salida (16 oct). Sin mapa: norte arriba, giro libre. Siempre se mide tocando. El GPS va mientras el mapa está abierto, ni antes ni después.
  */
 const MapaDelHoyo = ({
   golfCourseId,
@@ -132,12 +158,12 @@ const MapaDelHoyo = ({
   // dos, se da por hecho que sí)
   const referenciaDelCampo = hoyo?.playLine?.[0] ?? centroSinMapa;
   // Lejos (no estás jugando): el mapa no se va a tu casa, no se mide desde ti
-  // ni hay recuadro de distancias, y «Céntrame» no se puede pulsar (16 oct)
+  // y «Céntrame» no se puede pulsar (16 oct)
   const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
   const posicionEnElCampo = lejos ? null : posicion;
   const [tocado, setTocado] = useState(null);
-  // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero las distancias
-  // al green solo piden el GPS
+  // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
+  // la tarjeta sigue, que no lo necesita
   const [sinMapa, setSinMapa] = useState(false);
 
   const contenedor = useRef(null);
@@ -165,13 +191,11 @@ const MapaDelHoyo = ({
   const enMarcha = Boolean(marca.fase) && marca.fase !== 'pausado';
   // Memorizado: si cambiara en cada lectura del GPS, las marcas se rehacían y
   // se perdía el codo que se estaba arrastrando
-  const lineaMarcada = useMemo(
-    () =>
-      marca.green
-        ? (hoyoDeUnaMarca({ tee: marcandoSalida ? marca.tee : null, bends: marca.bends, greenCenter: marca.green }, hoyo)?.playLine ?? [])
-        : [],
+  const hoyoQueSeMarca = useMemo(
+    () => (marca.green ? hoyoDeUnaMarca({ tee: marcandoSalida ? marca.tee : null, bends: marca.bends, greenCenter: marca.green }, hoyo) : null),
     [marca, marcandoSalida, hoyo],
   );
+  const lineaMarcada = useMemo(() => hoyoQueSeMarca?.playLine ?? [], [hoyoQueSeMarca]);
   const datosDelMarcado = useMemo(
     () => geojsonDelMarcado({ linea: lineaMarcada, arco: enMarcha && salida && metros ? circuloAlrededor(salida, metros) : null }),
     [lineaMarcada, enMarcha, salida, metros],
@@ -179,6 +203,8 @@ const MapaDelHoyo = ({
   const ultimoMarcado = useRef(datosDelMarcado);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedida = useRef([]);
+  const etiquetasDeLaLinea = useRef([]);
+  const hoyoActual = useRef(hoyo);
   const marcasDelMarcado = useRef([]);
 
   // El toque: mientras se marca, marca; si no, mide. Por ref, porque el mapa
@@ -263,7 +289,8 @@ const MapaDelHoyo = ({
       encuadrarHoyo(false);
     }
     mapa.on('load', () => {
-      mapa.addSource('hoyo', { type: 'geojson', data: geojsonDelHoyo(h) });
+      // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
+      mapa.addSource('hoyo', { type: 'geojson', data: geojsonDelHoyo(hoyoActual.current) });
       mapa.addLayer({
         id: 'linea-de-juego',
         type: 'line',
@@ -308,6 +335,14 @@ const MapaDelHoyo = ({
     // Un toque sin arrastrar mide; arrastrar y pellizcar mueven el mapa
     mapa.on('click', (e) => alTocar.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
     return () => {
+      // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
+      // en desarrollo) pone los suyos, no mueve los de este
+      for (const m of [...etiquetasDeLaLinea.current, ...etiquetasDeLaMedida.current, ...marcasDelMarcado.current, marcaGps.current, marcaTocada.current]) m?.remove();
+      etiquetasDeLaLinea.current = [];
+      etiquetasDeLaMedida.current = [];
+      marcasDelMarcado.current = [];
+      marcaGps.current = null;
+      marcaTocada.current = null;
       mapa.remove();
       mapaRef.current = null;
     };
@@ -354,16 +389,50 @@ const MapaDelHoyo = ({
     const tramos = tramosDeLaMedida(posicionEnElCampo, tocado, green);
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
-    const etiquetas = etiquetasDeLaMedida.current;
-    while (etiquetas.length > tramos.length) etiquetas.pop().remove();
-    tramos.forEach(([a, b], i) => {
-      etiquetas[i] ??= new Marker({ element: punto('rounded-md bg-gray-950/85 px-1.5 py-0.5 font-mono text-sm font-bold text-yellow-300 shadow') })
-        .setLngLat(lngLat(enMedio(a, b)))
-        .addTo(mapa);
-      etiquetas[i].setLngLat(lngLat(enMedio(a, b)));
-      etiquetas[i].getElement().textContent = textoDeTramo(distanciaEnMetros(a, b));
-    });
+    sincronizarCifras(mapa, etiquetasDeLaMedida.current, tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo });
   }, [posicionEnElCampo, tocado, green, textoDeTramo]);
+
+  // Los metros de cada tramo de la línea que se ve: la que se está marcando o,
+  // si no, la del hoyo (Agustín, 16 oct: siempre que se pinta una línea). No
+  // dependen del GPS: valen lejos del campo y sin señal
+  const lineaVisible = useMemo(() => (lineaMarcada.length > 1 ? lineaMarcada : (hoyo?.playLine ?? [])), [lineaMarcada, hoyo]);
+  // Como las de medir, se mueven y se reescriben, no se rehacen. También
+  // mientras se arrastra un codo, antes de soltarlo (Agustín, 16 oct)
+  // Solo hay puntos que arrastrar marcando la salida, con menos de dos codos
+  const conPuntosEnMedio = marca.fase === 'ajustando' && marcandoSalida && puntosParaArrastrar(lineaMarcada, { par }).length > 0;
+  const ponerCifrasDeLaLinea = useCallback(
+    (linea) => {
+      const mapa = mapaRef.current;
+      if (!mapa) return;
+      sincronizarCifras(mapa, etiquetasDeLaLinea.current, tramosDeLaLinea(linea), {
+        tipo: 'linea',
+        color: 'text-white',
+        offset: conPuntosEnMedio ? SOBRE_EL_PUNTO : EN_EL_TRAMO,
+        texto: textoDeTramo,
+      });
+    },
+    [conPuntosEnMedio, textoDeTramo],
+  );
+  useEffect(() => ponerCifrasDeLaLinea(lineaVisible), [lineaVisible, ponerCifrasDeLaLinea]);
+  // La línea discontinua sale del mismo hoyo que sus cifras, aunque cambie
+  useEffect(() => {
+    hoyoActual.current = hoyo;
+    mapaRef.current?.getSource('hoyo')?.setData(geojsonDelHoyo(hoyo));
+  }, [hoyo]);
+  // Lo que se arrastra, sin soltar: la línea y sus cifras van con el dedo
+  const seguirAlDedo = useCallback(
+    (linea) => {
+      mapaRef.current?.getSource('marcado')?.setData({
+        ...datosDelMarcado,
+        features: [
+          { type: 'Feature', properties: { tipo: 'linea' }, geometry: { type: 'LineString', coordinates: linea.map(lngLat) } },
+          ...datosDelMarcado.features.filter((f) => f.properties.tipo !== 'linea'),
+        ],
+      });
+      ponerCifrasDeLaLinea(linea);
+    },
+    [datosDelMarcado, ponerCifrasDeLaLinea],
+  );
 
   // La ubicación del campo llega después de abrir: centra el mapa si aún no lo
   // hizo el GPS ni el jugador lo ha movido. Si el GPS lo llevó antes a otro
@@ -403,31 +472,39 @@ const MapaDelHoyo = ({
     if (marcandoSalida && marca.tee) poner(marca.tee, 'h-4 w-4 rounded-full border-[3px] border-gray-900 bg-white shadow');
     if (marca.green) poner(marca.green, 'h-4 w-4 rounded-full border-[3px] border-white bg-yellow-400 shadow');
     if (salida && metros) {
-      const etiqueta = punto('rounded-md bg-gray-950/85 px-1.5 py-0.5 text-xs font-bold text-yellow-300');
-      etiqueta.textContent = textoDelArco;
-      marcasDelMarcado.current.push(new Marker({ element: etiqueta }).setLngLat(lngLat(puntoDesde(salida, 0, metros))).addTo(mapa));
+      const cifraDelArco = punto('rounded-md bg-gray-950/85 px-1.5 py-0.5 text-xs font-bold text-yellow-300');
+      cifraDelArco.textContent = textoDelArco;
+      marcasDelMarcado.current.push(new Marker({ element: cifraDelArco }).setLngLat(lngLat(puntoDesde(salida, 0, metros))).addTo(mapa));
     }
     if (marca.fase === 'ajustando' && marcandoSalida) {
       // Cada codo se puede volver a arrastrar
+      const aqui = (e) => {
+        const { lat, lng } = e.target.getLngLat();
+        return { lat, lon: lng };
+      };
       marca.bends.forEach((codo, i) => {
-        poner(codo, 'h-5 w-5 rounded-full border-[3px] border-white bg-gray-900/70 shadow', { draggable: true }).on('dragend', (e) => {
-          const { lat, lng } = e.target.getLngLat();
-          setMarca((m) => ({ ...m, bends: m.bends.map((b, j) => (j === i ? { lat, lon: lng } : b)) }));
-        });
+        poner(codo, 'h-5 w-5 rounded-full border-[3px] border-white bg-gray-900/70 shadow', { draggable: true })
+          .on('drag', (e) => seguirAlDedo(lineaMarcada.map((p, j) => (j === i + 1 ? aqui(e) : p))))
+          .on('dragend', (e) => {
+            const p = aqui(e);
+            setMarca((m) => ({ ...m, bends: m.bends.map((b, j) => (j === i ? p : b)) }));
+          });
       });
       // Y en mitad de cada tramo, un punto que al soltarlo se convierte en codo
       for (const { indice, punto: medio } of puntosParaArrastrar(lineaMarcada, { par })) {
-        poner(medio, 'h-5 w-5 rounded-full border-2 border-dashed border-white bg-white/40 shadow', { draggable: true }).on('dragend', (e) => {
-          const { lat, lng } = e.target.getLngLat();
-          setMarca((m) => {
-            const bends = [...m.bends];
-            bends.splice(indice - 1, 0, { lat, lon: lng });
-            return { ...m, bends };
+        poner(medio, 'h-5 w-5 rounded-full border-2 border-dashed border-white bg-white/40 shadow', { draggable: true })
+          .on('drag', (e) => seguirAlDedo([...lineaMarcada.slice(0, indice), aqui(e), ...lineaMarcada.slice(indice)]))
+          .on('dragend', (e) => {
+            const p = aqui(e);
+            setMarca((m) => {
+              const bends = [...m.bends];
+              bends.splice(indice - 1, 0, p);
+              return { ...m, bends };
+            });
           });
-        });
       }
     }
-  }, [datosDelMarcado, enMarcha, marca, marcandoSalida, salida, metros, lineaMarcada, textoDelArco, par]);
+  }, [datosDelMarcado, enMarcha, marca, marcandoSalida, salida, metros, lineaMarcada, textoDelArco, par, seguirAlDedo]);
 
   const empezarAMarcar = () => {
     setAvisoDeMarca(null);
@@ -463,7 +540,17 @@ const MapaDelHoyo = ({
     setGuardando(false);
   };
 
-  const distancias = distanciasAlGreen(posicionEnElCampo, hoyo?.green);
+  const fraseDeLaLinea = useMemo(() => {
+    const lista = tramosDeLaLinea(lineaVisible).map(([p, q]) => distanciaEnMetros(p, q));
+    const [a, b, c] = lista;
+    const clave = [null, 'mapa.lineaUnTramo', 'mapa.lineaDosTramos', 'mapa.lineaTresTramos'][lista.length] ?? (lista.length ? 'mapa.lineaVariosTramos' : null);
+    if (!clave) return null;
+    return t(clave, lista.length > 3 ? { lista: lista.join(' · ') } : { a, b, c });
+  }, [lineaVisible, t]);
+  // Fijo, con los metros oficiales desde la salida: no mira el GPS (Agustín,
+  // 16 oct). Mientras se marca, del hoyo que se está marcando
+  const hoyoDelRecuadro = hoyoQueSeMarca ?? hoyo;
+  const distancias = useMemo(() => distanciasDelHoyo({ metros, hoyo: hoyoDelRecuadro }), [metros, hoyoDelRecuadro]);
   const hastaAhi = tocado && posicionEnElCampo ? distanciaEnMetros(posicionEnElCampo, tocado) : null;
   const deAhiAlGreen = tocado && hoyo?.green ? distanciaEnMetros(tocado, hoyo.green.center) : null;
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
@@ -547,6 +634,12 @@ const MapaDelHoyo = ({
           </button>
         )}
 
+        {/* Las cifras de la línea, en una frase, para quien no ve el mapa */}
+        {fraseDeLaLinea && (
+          <span data-testid="tramos-de-la-linea" className="sr-only">
+            {fraseDeLaLinea}
+          </span>
+        )}
         {distancias && (
           <div className="grid grid-cols-[1fr_1.35fr_1fr] overflow-hidden rounded-2xl bg-white/95 text-gray-900 shadow-xl">
             <span className="sr-only">{t('mapa.etiqueta', distancias)}</span>

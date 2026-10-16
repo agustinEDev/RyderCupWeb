@@ -372,7 +372,7 @@
     "centro": "Centre",
     "fondo": "Back",
     "metros": "m",
-    "etiqueta": "To the green: front {{front}} metres, centre {{center}} metres, back {{back}} metres",
+    "etiqueta": "From the tee: front {{front}} metres, centre {{center}} metres, back {{back}} metres",
     "hastaAhi": "To there {{metros}} m",
     "deAhiAlGreen": "From there to the centre of the green {{metros}} m",
     "quitarPunto": "Remove",
@@ -399,6 +399,10 @@
     "tramo": "{{metros}} m",
     "faltaLaSalida": "This hole has no tee: mark the tee too",
     "marcaRechazada_one": "A hole mark could not be saved",
-    "marcaRechazada_other": "{{count}} hole marks could not be saved"
+    "marcaRechazada_other": "{{count}} hole marks could not be saved",
+    "lineaUnTramo": "Tee to green: {{a}} metres",
+    "lineaDosTramos": "Tee to the bend: {{a}} metres; bend to green: {{b}} metres",
+    "lineaTresTramos": "Tee to the first bend: {{a}} metres; first to second bend: {{b}} metres; second bend to green: {{c}} metres",
+    "lineaVariosTramos": "Segments of the line, tee to green: {{lista}} metres"
   }
 }

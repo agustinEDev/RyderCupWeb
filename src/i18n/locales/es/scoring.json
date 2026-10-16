@@ -382,7 +382,7 @@
     "centro": "Centro",
     "fondo": "Fondo",
     "metros": "m",
-    "etiqueta": "Al green: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
+    "etiqueta": "Desde la salida: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
     "hastaAhi": "Hasta ahí {{metros}} m",
     "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
     "quitarPunto": "Quitar",
@@ -409,6 +409,10 @@
     "tramo": "{{metros}} m",
     "faltaLaSalida": "Este hoyo no tiene salida: márcala también",
     "marcaRechazada_one": "Una marca de hoyo no se ha podido guardar",
-    "marcaRechazada_other": "{{count}} marcas de hoyo no se han podido guardar"
+    "marcaRechazada_other": "{{count}} marcas de hoyo no se han podido guardar",
+    "lineaUnTramo": "De la salida al green: {{a}} metros",
+    "lineaDosTramos": "De la salida al codo: {{a}} metros; del codo al green: {{b}} metros",
+    "lineaTresTramos": "De la salida al primer codo: {{a}} metros; del primer al segundo codo: {{b}} metros; del segundo codo al green: {{c}} metros",
+    "lineaVariosTramos": "Tramos de la línea, de la salida al green: {{lista}} metros"
   }
 }
