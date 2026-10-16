@@ -33,7 +33,9 @@ vi.mock('maplibre-gl', () => {
     }
     // Como MapLibre 6: `on` devuelve una suscripción, no el mapa (no se encadena)
     on(evento, fn) {
-      this.oyentes[evento] = fn;
+      // Acumulan, como en la librería: dos del mismo evento se lanzan los dos
+      const antes = this.oyentes[evento];
+      this.oyentes[evento] = antes ? (...args) => { antes(...args); fn(...args); } : fn;
       return { unsubscribe: () => delete this.oyentes[evento] };
     }
     addSource(id, fuente) {
@@ -65,7 +67,9 @@ vi.mock('maplibre-gl', () => {
     // Como MapLibre 6: `on` devuelve una suscripción, no el marcador. Devolvía
     // `this` y tapó un `.on().on()` que en el Kind rompía el mapa (QA, 16 oct)
     on(evento, fn) {
-      this.oyentes[evento] = fn;
+      // Acumulan, como en la librería: dos del mismo evento se lanzan los dos
+      const antes = this.oyentes[evento];
+      this.oyentes[evento] = antes ? (...args) => { antes(...args); fn(...args); } : fn;
       return { unsubscribe: () => delete this.oyentes[evento] };
     }
     setOffset(o) {
