@@ -1372,6 +1372,17 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(Number(screen.getByTestId('distancia-centro').textContent)).toBeGreaterThan(300);
     });
 
+    it('M5: sin metros, un dogleg de OSM (con vértices) mide por su esquina, no atajando', () => {
+      const esquina = alNorte(240);
+      const verde = alEste(160, esquina);
+      const osm = [T, alNorte(40), alNorte(80), alNorte(120), alNorte(160), alNorte(200), esquina, alEste(40, esquina), alEste(80, esquina), alEste(120, esquina), verde];
+      abrir({ hoyo: hoyoCon(osm, { front: alEste(150, esquina), center: verde, back: alEste(170, esquina) }), par: 4, metros: null });
+      act(() => mapa().oyentes.load());
+
+      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [esquina.lon, esquina.lat], [verde.lon, verde.lat]]);
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('400');
+    });
+
     it('M5: con metros en la tarjeta, el recuadro no se mueve', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 4, metros: 342 });
       act(() => mapa().oyentes.load());
