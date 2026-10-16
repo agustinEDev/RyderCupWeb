@@ -1218,11 +1218,26 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(textos()).toEqual(['mapa.tramo {"metros":150}', 'mapa.tramo {"metros":150}']);
     });
 
-    it('M3: una línea de un mapa con más puntos que su par no se toca (se dibujan todos)', () => {
-      abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4 });
+    // Agustín, 16 oct (Torre de Hércules, todo pares 3 con un vértice de OSM en
+    // medio): la línea aprobada se enseña con los codos de su par
+    it.each([
+      [3, 2],
+      [4, 3],
+      [5, 4],
+    ])('M3: una línea de OSM con muchos puntos, en un par %i, se enseña con %i puntos (los codos del par)', (par, puntos) => {
+      abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), alNorte(200), G]), par });
       act(() => mapa().oyentes.load());
 
-      expect(lineaDibujada()).toHaveLength(5);
+      expect(lineaDibujada()).toHaveLength(puntos);
+      expect(arrastrables()).toHaveLength(puntos);
+    });
+
+    it('M3: un par 3 de OSM con un vértice en medio: recta, sin codo', () => {
+      abrir({ hoyo: hoyoCon([T, alEste(5, alNorte(60)), G]), par: 3 });
+      act(() => mapa().oyentes.load());
+
+      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [G.lon, G.lat]]);
+      expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
     });
 
     // Agustín, 16 oct: «que haga el zoom necesario para ver el hoyo entero sin cortar pero lo más grande posible»
@@ -1357,6 +1372,17 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(Number(screen.getByTestId('distancia-centro').textContent)).toBeGreaterThan(300);
     });
 
+    it('M5: sin metros, un dogleg de OSM (con vértices) mide por su esquina, no atajando', () => {
+      const esquina = alNorte(240);
+      const verde = alEste(160, esquina);
+      const osm = [T, alNorte(40), alNorte(80), alNorte(120), alNorte(160), alNorte(200), esquina, alEste(40, esquina), alEste(80, esquina), alEste(120, esquina), verde];
+      abrir({ hoyo: hoyoCon(osm, { front: alEste(150, esquina), center: verde, back: alEste(170, esquina) }), par: 4, metros: null });
+      act(() => mapa().oyentes.load());
+
+      expect(lineaDibujada()).toEqual([[T.lon, T.lat], [esquina.lon, esquina.lat], [verde.lon, verde.lat]]);
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('400');
+    });
+
     it('M5: con metros en la tarjeta, el recuadro no se mueve', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 4, metros: 342 });
       act(() => mapa().oyentes.load());
@@ -1449,15 +1475,16 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(onMuestra).not.toHaveBeenCalled();
     });
 
-    it('S5: ni una con más de dos codos (la de un mapa con muchos puntos)', () => {
+    it('S5: la de un mapa con muchos puntos, ya con los codos de su par, sí se envía al moverla', () => {
       const onMuestra = vi.fn();
       const { unmount } = abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4, recoge: true, onMuestra });
       act(() => mapa().oyentes.load());
-      soltar(arrastrables()[1], alEste(20, alNorte(50)));
+      soltar(arrastrables()[1], alEste(20, alNorte(150)));
 
       unmount();
 
-      expect(onMuestra).not.toHaveBeenCalled();
+      expect(onMuestra).toHaveBeenCalledTimes(1);
+      expect(onMuestra.mock.calls[0][0].bends).toHaveLength(1);
     });
 
     it('S6: sin quien la reciba (sin sesión), nada', () => {
@@ -1646,11 +1673,11 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(apuntado.captureError).toHaveBeenCalledWith(expect.any(Error), { tags: { modulo: 'mapa-de-hoyos' } });
     });
 
-    it('CR10: una línea de OSM con más puntos que codos: solo se arrastran la salida y el green', () => {
+    it('CR10: una línea de OSM larga, ya con los codos de su par: se arrastran la salida, su codo y el green', () => {
       abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4 });
       act(() => mapa().oyentes.load());
 
-      expect(arrastrables()).toHaveLength(2);
+      expect(arrastrables()).toHaveLength(3);
     });
 
     it('S8: «Cerrar» cierra (y la muestra sale al desmontar, una vez)', () => {
@@ -1727,8 +1754,8 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent(frase);
     });
 
-    it('T5: una línea de más de tres tramos (un mapa aprobado), la lista', () => {
-      abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]) });
+    it('T5: una línea de más de tres tramos (la de OSM de un hoyo aprobado sin green), la lista', () => {
+      abrir({ hoyo: { playLine: [T, alNorte(50), alNorte(100), alNorte(150), G], green: null } });
 
       expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('mapa.lineaVariosTramos {"lista":"50 · 50 · 50 · 150"}');
     });

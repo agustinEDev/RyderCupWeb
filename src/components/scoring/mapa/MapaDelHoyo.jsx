@@ -94,9 +94,14 @@ const geojsonDeLaLinea = (linea) => ({
 const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
 // La línea de un hoyo con salida y green, con los codos de su par para moverlos.
 // Acaba en el centro del green: la de OSM acaba donde termina el hoyo, cerca
-// pero no en él, y así se mide como la medida oficial (al centro del green)
+// pero no en él, y así se mide como la medida oficial (al centro del green). Y
+// con los codos de SU par, donde de verdad gira el hoyo (Agustín, 16 oct): OSM
+// dibuja vértices que no son codos, y un par 3 salía con uno; la línea guardada
+// no cambia, solo cómo se ve
 const lineaParaMover = (hoyo, par) =>
-  hoyo?.green && (hoyo.playLine?.length ?? 0) > 1 ? conCodosDelPar([...hoyo.playLine.slice(0, -1), hoyo.green.center], par) : null;
+  hoyo?.green && (hoyo.playLine?.length ?? 0) > 1
+    ? conCodosDelPar(aCodosDelPar([...hoyo.playLine.slice(0, -1), hoyo.green.center], par), par)
+    : null;
 // Lo que se envía al cerrar: una línea que el servidor puede guardar (hasta dos
 // codos, el green a 40-750 m y, si se sabe dónde está el campo, nada a más de 3 km)
 const muestraValida = (linea, campo) =>
@@ -607,14 +612,11 @@ const MapaDelHoyo = ({
       return { lat, lon: lng };
     };
     const con = (i, p) => linea.map((q, j) => (j === i ? p : q));
-    // Una línea con más puntos que codos se guardan (las de OSM, con muchos):
-    // se mueven la salida y el green; los de en medio siguen en la línea, sin punto
-    const muchos = linea.length - 2 > MAX_CODOS;
+    // La línea ya viene con los codos de su par (como mucho dos): todos se mueven
     // Si la librería cambia y algo de esto falla, el mapa sigue (sin puntos que
     // mover) en vez de caerse entero; el fallo queda apuntado
     try {
       linea.forEach((p, i) => {
-        if (muchos && i > 0 && i < linea.length - 1) return;
         // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
         const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
         puntosDeLaLinea.current.push(m);

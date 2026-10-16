@@ -173,27 +173,55 @@ describe('conCodosDelPar', () => {
   });
 });
 
-// QA del 16 oct (P2): una línea de OSM con muchos puntos no cabía en la muestra
+// QA del 16 oct (P2): una línea de OSM con muchos puntos no cabía en la muestra.
+// Agustín, 16 oct: los codos, donde de verdad gira el hoyo (no a partes iguales)
 describe('aCodosDelPar', () => {
-  const linea = [SALIDA, alNorte(50), alNorte(100), alNorte(160), alNorte(210), alNorte(250), GREEN];
+  const alEste = (m, de) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
 
-  it('par 4: la salida, el punto más cercano a la mitad del recorrido y el green', () => {
-    expect(aCodosDelPar(linea, 4)).toEqual([SALIDA, alNorte(160), GREEN]);
+  it('un par 4 en dogleg conserva su esquina, aunque no esté en la mitad del recorrido', () => {
+    // 300 m al norte y 100 m al este: con vértices cada 50 m, la esquina es la de los 300
+    const esquina = alNorte(300);
+    const green = alEste(100, esquina);
+    const linea = [SALIDA, alNorte(50), alNorte(100), alNorte(150), alNorte(200), alNorte(250), esquina, alEste(50, esquina), green];
+
+    expect(aCodosDelPar(linea, 4)).toEqual([SALIDA, esquina, green]);
   });
 
-  it('par 5: los más cercanos a un tercio y a dos tercios', () => {
-    expect(aCodosDelPar(linea, 5)).toEqual([SALIDA, alNorte(100), alNorte(210), GREEN]);
+  it('un par 5 en doble dogleg conserva sus dos esquinas, en orden', () => {
+    const e1 = alNorte(200);
+    const e2 = alEste(150, e1);
+    const green = { lat: e2.lat + 150 / M_POR_GRADO, lon: e2.lon };
+    const linea = [SALIDA, alNorte(100), e1, alEste(75, e1), e2, { lat: e2.lat + 75 / M_POR_GRADO, lon: e2.lon }, green];
+
+    expect(aCodosDelPar(linea, 5)).toEqual([SALIDA, e1, e2, green]);
   });
 
-  it('par 3: la recta', () => {
-    expect(aCodosDelPar(linea, 3)).toEqual([SALIDA, GREEN]);
+  it('los vértices casi en línea (menos de 15 m) no son codos: la recta', () => {
+    const casi = alEste(5, alNorte(150));
+
+    expect(aCodosDelPar([SALIDA, alNorte(50), casi, alNorte(250), GREEN], 4)).toEqual([SALIDA, GREEN]);
   });
 
-  it('sin par: como un par 4', () => {
-    expect(aCodosDelPar(linea, null)).toEqual([SALIDA, alNorte(160), GREEN]);
+  it('un par 3 va siempre recto, aunque OSM tenga un giro', () => {
+    const giro = alEste(60, alNorte(120));
+
+    expect(aCodosDelPar([SALIDA, giro, alNorte(200)], 3)).toEqual([SALIDA, alNorte(200)]);
   });
 
-  it('una línea que ya cabe (o con menos puntos) no cambia', () => {
+  it('un par 4 con un giro de verdad y otro menor se queda con el mayor', () => {
+    const grande = alEste(80, alNorte(150));
+    const pequeño = alEste(20, alNorte(250));
+
+    expect(aCodosDelPar([SALIDA, grande, pequeño, GREEN], 4)).toEqual([SALIDA, grande, GREEN]);
+  });
+
+  it('sin par: como un par 4 (un codo)', () => {
+    const esquina = alEste(80, alNorte(150));
+
+    expect(aCodosDelPar([SALIDA, alNorte(50), esquina, GREEN], null)).toEqual([SALIDA, esquina, GREEN]);
+  });
+
+  it('una línea que ya cabe en su par no cambia', () => {
     const corta = [SALIDA, CODO, GREEN];
 
     expect(aCodosDelPar(corta, 4)).toBe(corta);
@@ -201,45 +229,8 @@ describe('aCodosDelPar', () => {
     expect(aCodosDelPar([SALIDA, GREEN], 4)).toEqual([SALIDA, GREEN]);
   });
 
-  it('en un empate (dos a la misma distancia de la mitad), el primero de la línea', () => {
-    expect(aCodosDelPar([SALIDA, alNorte(100), alNorte(200), GREEN], 4)).toEqual([SALIDA, alNorte(100), GREEN]);
-  });
-
-  it('un nodo repetido seguido (OSM) no da dos codos en el mismo sitio', () => {
-    const r = aCodosDelPar([SALIDA, alNorte(100), alNorte(100), alNorte(100), GREEN], 5);
-
-    expect(new Set(r.map((p) => p.lat)).size).toBe(r.length);
-    expect(r).toEqual([SALIDA, alNorte(100), GREEN]);
-  });
-
-  it('CodeRabbit: con nodos muy juntos (a 0,3 m), el codo sale cerca de la mitad, no en el primero', () => {
-    const densa = [SALIDA, ...Array.from({ length: 999 }, (_, i) => alNorte((i + 1) * 0.3)), GREEN];
-
-    const [, codo] = aCodosDelPar(densa, 4);
-
-    expect(Math.abs(distanciaEnMetros(SALIDA, codo) - 150)).toBeLessThanOrEqual(1);
-  });
-
-  it('un nodo repetido seguido se quita también en una línea que ya cabe', () => {
+  it('un nodo repetido seguido (OSM) se quita, también en una línea que ya cabe', () => {
     expect(aCodosDelPar([SALIDA, alNorte(100), alNorte(100), GREEN], 5)).toEqual([SALIDA, alNorte(100), GREEN]);
-  });
-
-  it('los codos van en el orden de la línea aunque se elijan en otro', () => {
-    // Al tercio (100 m) el más cercano es el de 120; a los dos tercios ya solo
-    // quedan los de antes: el de 55. La línea sigue de la salida al green
-    const linea2 = [SALIDA, alNorte(20), alNorte(55), alNorte(120), GREEN];
-
-    expect(aCodosDelPar(linea2, 5)).toEqual([SALIDA, alNorte(55), alNorte(120), GREEN]);
-  });
-
-  it('no repite un punto: dos tercios que caen en el mismo se separan', () => {
-    const pocos = [SALIDA, alNorte(10), alNorte(150), alNorte(290), GREEN];
-
-    const r = aCodosDelPar(pocos, 5);
-
-    expect(r).toHaveLength(4);
-    expect(new Set(r.map((p) => p.lat)).size).toBe(4);
-    expect([r[0], r.at(-1)]).toEqual([SALIDA, GREEN]);
   });
 });
 
