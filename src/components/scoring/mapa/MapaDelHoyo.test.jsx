@@ -31,9 +31,10 @@ vi.mock('maplibre-gl', () => {
       this.keyboard = { disableRotation: vi.fn() };
       mapas.push(this);
     }
+    // Como MapLibre 6: `on` devuelve una suscripción, no el mapa (no se encadena)
     on(evento, fn) {
       this.oyentes[evento] = fn;
-      return this;
+      return { unsubscribe: () => delete this.oyentes[evento] };
     }
     addSource(id, fuente) {
       this.fuentes[id] = fuente;
@@ -61,9 +62,11 @@ vi.mock('maplibre-gl', () => {
     getElement() {
       return this.opciones.element;
     }
+    // Como MapLibre 6: `on` devuelve una suscripción, no el marcador. Devolvía
+    // `this` y tapó un `.on().on()` que en el Kind rompía el mapa (QA, 16 oct)
     on(evento, fn) {
       this.oyentes[evento] = fn;
-      return this;
+      return { unsubscribe: () => delete this.oyentes[evento] };
     }
     setOffset(o) {
       this.offset = o;
