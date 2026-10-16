@@ -91,6 +91,7 @@ vi.mock('maplibre-gl', () => {
       return this;
     }
   }
+  mapas.claseMarker = { Marker };
   return { Map, Marker, setWorkerUrl: vi.fn() };
 });
 
@@ -1028,6 +1029,20 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(lineaDibujada()).toEqual([[T.lon, T.lat], [codo.lon, codo.lat], [G.lon, G.lat]]);
     });
 
+    it('QA P2 (16 oct): solo el green sobre una línea de OSM con muchos puntos: queda con los codos de su par, y se envía', () => {
+      const osm = [T, alNorte(50), alNorte(100), alNorte(160), alNorte(210), alNorte(280)];
+      const { unmount, onMuestra } = marcar({ hoyo: { playLine: osm, green: null }, porMarcar: 'green', metros: 300, par: 4 });
+
+      tocar(G);
+
+      expect(lineaDibujada()).toHaveLength(3);
+      expect(arrastrables()).toHaveLength(3);
+      unmount();
+      expect(onMuestra).toHaveBeenCalledTimes(1);
+      expect(onMuestra.mock.calls[0][0].bends).toHaveLength(1);
+      expect(onMuestra.mock.calls[0][0].greenCenter).toEqual(G);
+    });
+
     it('P6: solo el green con la salida sola (un punto): la salida y el green, con los codos del par', () => {
       marcar({ hoyo: { playLine: [T], green: null }, porMarcar: 'green', metros: 300, par: 5 });
 
@@ -1045,6 +1060,14 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
         limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }),
         expect.objectContaining({ bearing: 0 }),
       );
+    });
+
+    it('/code-review: sobre una línea de OSM reducida a la que le falta un codo del par, la ayuda sí sale', () => {
+      marcar({ hoyo: { playLine: [T, alNorte(100), alNorte(100), alNorte(100), alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 5 });
+
+      tocar(G);
+
+      expect(screen.getByText('mapa.ayudaCodo')).toBeInTheDocument();
     });
 
     it('P5: la ayuda de los codos solo si se añadieron (sobre una línea aprobada con su codo, no)', () => {
@@ -1065,6 +1088,64 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
       expect(lineaDibujada()).toBeUndefined();
+    });
+
+    it('QA P3: si falla tras ponerlo en el mapa (al añadirle los oyentes), ese punto también se quita', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      act(() => mapa().oyentes.load());
+      const { Marker } = mapas.claseMarker;
+      const on = Marker.prototype.on;
+      Marker.prototype.on = () => {
+        throw new Error('API cambiada');
+      };
+      try {
+        soltar(arrastrables().at(-1), alNorte(280));
+      } finally {
+        Marker.prototype.on = on;
+      }
+
+      expect(arrastrables()).toEqual([]);
+    });
+
+    it('QA P3 (16 oct): un doble toque en la salida (que corta el alejamiento) vuelve a alejar a la mitad de la tarjeta', () => {
+      const toques = [1000, 1090];
+      reloj.mockImplementation(() => toques.shift() ?? 9999);
+      marcar({ metros: 300 });
+      mapa().fitBounds.mockClear();
+
+      tocar(T);
+      tocar(T);
+
+      expect(mapa().fitBounds).toHaveBeenCalledTimes(2);
+      expect(mapa().fitBounds.mock.calls[1][0]).toEqual(limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }));
+    });
+
+    it('QA P3: tras un green fuera de límites, un doble toque no reencuadra a la salida', () => {
+      marcar({ metros: 300 });
+      const a = (ms) => reloj.mockImplementation(() => ms);
+      a(1000);
+      tocar(T);
+      mapa().fitBounds.mockClear();
+
+      a(3000);
+      tocar(alNorte(20));
+      a(3090);
+      tocar(alNorte(20));
+
+      expect(screen.getByRole('alert')).toHaveTextContent('mapa.fueraDeLimites');
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('QA P3: sin metros de la tarjeta, el doble toque tampoco mueve el mapa', () => {
+      const toques = [1000, 1090];
+      reloj.mockImplementation(() => toques.shift() ?? 9999);
+      marcar({ metros: null });
+      mapa().fitBounds.mockClear();
+
+      tocar(T);
+      tocar(T);
+
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
     });
 
     it('P7: mientras se pide, el doble toque no acerca el mapa', () => {
@@ -1414,6 +1495,25 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       unmount();
 
       expect(onMuestra).not.toHaveBeenCalled();
+    });
+
+    it('QA P3 (16 oct): si poner los puntos falla a medias, no queda ningún punto suelto en el mapa', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 4 });
+      act(() => mapa().oyentes.load());
+      const original = globalThis.document.createElement.bind(globalThis.document);
+      let divs = 0;
+      const espia = vi.spyOn(globalThis.document, 'createElement').mockImplementation((tag) => {
+        // El primer punto se crea; el segundo revienta
+        if (tag === 'div' && (divs += 1) === 2) throw new Error('API cambiada');
+        return original(tag);
+      });
+      try {
+        soltar(arrastrables().at(-1), alNorte(280));
+      } finally {
+        espia.mockRestore();
+      }
+
+      expect(arrastrables()).toEqual([]);
     });
 
     it('QA (16 oct): si poner los puntos falla (la librería cambia), el mapa sigue y el fallo se apunta', () => {

@@ -11,7 +11,7 @@
  * codos van según el par (16 oct).
  */
 
-import { distanciaEnMetros } from './distanciasAlGreen';
+import { distanciaEnMetros, distanciaExacta } from './distanciasAlGreen';
 import { radianes, rumbo } from './geometriaDelHoyo';
 
 export const METROS_AL_BORDE_DEL_GREEN = 10;
@@ -100,6 +100,36 @@ export const conCodosDelPar = (linea, par) => {
   const hacia = rumbo(desde, green);
   const nuevos = Array.from({ length: faltan }, (_, i) => puntoDesde(desde, hacia, (largo * (i + 1)) / (faltan + 1)));
   return [...linea.slice(0, -1), ...nuevos, green];
+};
+
+/**
+ * Una línea con más puntos en medio de los codos de su par (las de OSM) se queda
+ * con los de su par: la salida, el green y, de los de en medio, los más
+ * cercanos a partes iguales del recorrido (en un par 5, a un tercio y a dos
+ * tercios), sin repetir ninguno. Así cabe en una muestra (QA del 16 oct). Una
+ * línea que ya cabe se queda como está.
+ */
+export const aCodosDelPar = (lineaEntera, par) => {
+  const codos = codosDelPar(par);
+  // OSM a veces repite un nodo seguido: dos codos en el mismo sitio, no
+  const sinRepetidos = lineaEntera.filter((p, i) => i === 0 || p.lat !== lineaEntera[i - 1].lat || p.lon !== lineaEntera[i - 1].lon);
+  const linea = sinRepetidos.length === lineaEntera.length ? lineaEntera : sinRepetidos;
+  if (linea.length - 2 <= codos) return linea;
+  const recorrido = [0];
+  // Sin redondear cada tramo: en una línea con nodos muy juntos sumarían 0
+  for (let i = 1; i < linea.length; i += 1) recorrido.push(recorrido[i - 1] + distanciaExacta(linea[i - 1], linea[i]));
+  const total = recorrido.at(-1);
+  const elegidos = [];
+  for (let k = 1; k <= codos; k += 1) {
+    const objetivo = (total * k) / (codos + 1);
+    let mejor = null;
+    for (let i = 1; i < linea.length - 1; i += 1) {
+      if (elegidos.includes(i)) continue;
+      if (mejor === null || Math.abs(recorrido[i] - objetivo) < Math.abs(recorrido[mejor] - objetivo)) mejor = i;
+    }
+    elegidos.push(mejor);
+  }
+  return [linea[0], ...elegidos.sort((a, b) => a - b).map((i) => linea[i]), linea.at(-1)];
 };
 
 /** Un anillo cerrado de puntos a `metros` de `centro` (el arco de la tarjeta). */

@@ -9,6 +9,7 @@ import { distanciasDelHoyo } from '../../../domain/services/distanciasDelHoyo';
 import { limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
 import {
   MAX_CODOS,
+  aCodosDelPar,
   circuloAlrededor,
   conCodosDelPar,
   estaLejosDelCampo,
@@ -234,27 +235,37 @@ const MapaDelHoyo = ({
   const alTocar = useRef(null);
   // El doble toque son dos `click` seguidos: el segundo no puede ser el green
   const ultimoToque = useRef(0);
+  // La salida del último toque, por si un doble toque corta su alejamiento
+  const salidaRecienTocada = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
     alCerrar.current = { edicion, recoge, onMuestra, campo: referenciaDelCampo };
     alTocar.current = (p) => {
       if (pidiendo) {
+        // Se aleja (sin girar) la mitad que los metros de la tarjeta, para
+        // buscar el green (16 oct: antes, a los metros enteros, con un anillo)
+        const alejarDesde = (salidaTocada) => {
+          if (!metros) return;
+          const alto = contenedor.current?.clientHeight || 640;
+          mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(salidaTocada, metros / 2) }), {
+            bearing: mapaRef.current.getBearing(),
+            padding: margenDelEncuadre(alto),
+          });
+        };
         const ahora = globalThis.performance.now();
-        if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
+        if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) {
+          // El segundo toque no marca, pero corta el alejamiento: se rehace (QA)
+          if (salidaRecienTocada.current) alejarDesde(salidaRecienTocada.current);
+          return;
+        }
         ultimoToque.current = ahora;
+        salidaRecienTocada.current = null;
         setAvisoDeMarca(null);
         empezar();
         if (marcandoSalida && !marca.tee) {
           setMarca((m) => ({ ...m, tee: p }));
-          // Se aleja (sin girar) la mitad que los metros de la tarjeta, para
-          // buscar el green (16 oct: antes, a los metros enteros, con un anillo)
-          if (metros) {
-            const alto = contenedor.current?.clientHeight || 640;
-            mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(p, metros / 2) }), {
-              bearing: mapaRef.current.getBearing(),
-              padding: margenDelEncuadre(alto),
-            });
-          }
+          salidaRecienTocada.current = p;
+          alejarDesde(p);
           return;
         }
         // Sobre la línea aprobada, su final (donde acaba el hoyo) es el green
@@ -264,11 +275,13 @@ const MapaDelHoyo = ({
           setAvisoDeMarca(t('mapa.fueraDeLimites'));
           return;
         }
-        // Con los codos de su par ya puestos, para llevarlos a la calle
-        const nueva = conCodosDelPar([...desde, p], par);
+        // Con los codos de su par ya puestos, para llevarlos a la calle; una
+        // línea de OSM con muchos puntos se queda con los de su par (QA, 16 oct)
+        const reducida = aCodosDelPar([...desde, p], par);
+        const nueva = conCodosDelPar(reducida, par);
         setEdicion((e) => ({ linea: nueva, cambiada: true, version: e.version + 1 }));
         // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
-        setConAyudaDeCodos(nueva.length > desde.length + 1);
+        setConAyudaDeCodos(nueva.length > reducida.length);
         setMarca({ fase: null, tee: null });
         return;
       }
@@ -537,9 +550,10 @@ const MapaDelHoyo = ({
     try {
       linea.forEach((p, i) => {
         if (muchos && i > 0 && i < linea.length - 1) return;
-        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true })
-          .setLngLat(lngLat(p))
-          .addTo(mapa);
+        // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
+        puntosDeLaLinea.current.push(m);
+        m.setLngLat(lngLat(p)).addTo(mapa);
         // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
         m.on('drag', (e) => {
           const provisional = con(i, aqui(e));
@@ -554,14 +568,17 @@ const MapaDelHoyo = ({
         });
         // Tocar un punto no es tocar el mapa: no mide encima de él
         m.getElement().addEventListener('click', (e) => e.stopPropagation());
-        puntosDeLaLinea.current.push(m);
       });
     } catch (error) {
+      // Sin puntos sueltos: los que llegaron a ponerse, fuera también
+      for (const m of puntosDeLaLinea.current) m.remove();
+      puntosDeLaLinea.current = [];
       captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
     }
   }, [linea, datosDeLaLinea]);
 
   const empezarAMarcar = () => {
+    salidaRecienTocada.current = null;
     setAvisoDeMarca(null);
     setTocado(null);
     setMarca({ fase: 'pidiendo', tee: null });
@@ -610,7 +627,10 @@ const MapaDelHoyo = ({
         {sinMapa ? null : pidiendo ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
             <span aria-live="polite" className="text-base font-semibold">{t(marcandoSalida && !marca.tee ? 'mapa.pideSalida' : 'mapa.pideGreen')}</span>
-            <button type="button" onClick={() => setMarca({ fase: 'pausado', tee: null })} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+            <button type="button" onClick={() => {
+                salidaRecienTocada.current = null;
+                setMarca({ fase: 'pausado', tee: null });
+              }} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
               {t('mapa.ahoraNo')}
             </button>
           </div>
