@@ -391,6 +391,12 @@
     "lineaUnTramo": "Tee to green: {{a}} metres",
     "lineaDosTramos": "Tee to the bend: {{a}} metres; bend to green: {{b}} metres",
     "lineaTresTramos": "Tee to the first bend: {{a}} metres; first to second bend: {{b}} metres; second bend to green: {{c}} metres",
-    "lineaVariosTramos": "Segments of the line, tee to green: {{lista}} metres"
+    "lineaVariosTramos": "Segments of the line, tee to green: {{lista}} metres",
+    "preguntaSalida": "Are you on the tee?",
+    "si": "Yes",
+    "no": "No",
+    "malGps": "We can't locate you well: tap where the tee is",
+    "desdeTuPosicion": "From your position",
+    "desdeTuBarra": "From your tee"
   }
 }

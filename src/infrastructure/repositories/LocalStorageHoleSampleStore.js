@@ -4,15 +4,16 @@ import { esLaMismaBarra } from '../../domain/services/muestrasDeLaBarra';
 // La versión de la forma de lo guardado: si cambia, las copias viejas no se leen.
 // El resumen es por campo y de todos; la cola, por jugador. Al cerrar sesión la
 // cola no se borra: sale cuando ese jugador vuelva a entrar
-const claveDelResumen = (golfCourseId) => `muestrasDeHoyos:v2:${golfCourseId}`;
+// v3 (17 oct): el resumen es por hoyo, ya no por barra
+const claveDelResumen = (golfCourseId) => `muestrasDeHoyos:v3:${golfCourseId}`;
 const claveDeLaCola = (userId) => `muestrasPendientes:v2:${userId}`;
 const claveDeLasMias = (userId) => `muestrasMias:v1:${userId}`;
 // Las ya enviadas que se guardan para verlas: de sobra para muchos campos
 export const MAX_MIAS = 500;
 
 // Lo que dejaron versiones anteriores y ya nadie lee: las marcas por jugador
-// (que no llegaron a salir) y las muestras sin barra
-const PREFIJOS_VIEJOS = ['marcasDeHoyos:v1:', 'muestrasDeHoyos:v1:', 'muestrasPendientes:v1:'];
+// (que no llegaron a salir), las muestras sin barra y el resumen por barra
+const PREFIJOS_VIEJOS = ['marcasDeHoyos:v1:', 'muestrasDeHoyos:v1:', 'muestrasPendientes:v1:', 'muestrasDeHoyos:v2:'];
 
 const esObjeto = (valor) => Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
 const esEntrada = (e) =>

@@ -1,16 +1,16 @@
-import { esLaMismaBarra, muestrasDeLaBarra } from '../../../domain/services/muestrasDeLaBarra';
+import { esLaMismaBarra } from '../../../domain/services/muestrasDeLaBarra';
 import { crearRecienEnviadas } from './recienEnviadas';
 
 /**
- * GetHoleSamplesUseCase: las muestras de cada hoyo de un campo vistas desde la
- * barra del jugador (BE #532, marcado por par), y las suyas que esperan en la
- * cola.
+ * GetHoleSamplesUseCase: las muestras de cada hoyo de un campo (BE #575, 17 oct:
+ * una referencia por hoyo, de cualquier barra), y las del jugador que esperan
+ * en la cola.
  *
- * El resumen es público (el mismo para cualquiera) y se guarda entero en el
- * móvil, con todas las barras, como la ubicación del campo: `guardadas` lo da
- * al momento (con mala cobertura la petición no falla, se queda colgada);
- * `execute` lo pide al servidor y lo guarda. Si el servidor falla, el del
- * móvil. Los dos lo dan ya visto desde la barra (`muestrasDeLaBarra`).
+ * El resumen es público (el mismo para cualquiera) y se guarda en el móvil,
+ * como la ubicación del campo: `guardadas` lo da al momento (con mala
+ * cobertura la petición no falla, se queda colgada); `execute` lo pide al
+ * servidor y lo guarda. Si el servidor falla, el del móvil. Por hoyo,
+ * `{ primera, green, recoge }`.
  *
  * `pendientes` son las del jugador en ese campo y con esa barra que aún no han
  * salido, por hoyo: una hecha sin cobertura se sigue dibujando. También las
@@ -29,12 +29,12 @@ class GetHoleSamplesUseCase {
     this.recienEnviadas = recienEnviadas;
   }
 
-  guardadas(golfCourseId, barra) {
+  guardadas(golfCourseId) {
     if (!golfCourseId) return {};
-    return muestrasDeLaBarra(this.holeSampleStore.loadResumen(golfCourseId), barra);
+    return this.holeSampleStore.loadResumen(golfCourseId) ?? {};
   }
 
-  async execute(golfCourseId, barra) {
+  async execute(golfCourseId) {
     if (!golfCourseId) return {};
     // Las que lleguen mientras se pide no pueden venir en este resumen
     const turno = this.recienEnviadas.turno();
@@ -42,10 +42,10 @@ class GetHoleSamplesUseCase {
       const resumen = await this.golfCourseRepository.getHoleSamples(golfCourseId);
       this.holeSampleStore.saveResumen(golfCourseId, resumen);
       this.recienEnviadas.olvidar(golfCourseId, turno);
-      return muestrasDeLaBarra(resumen, barra);
+      return resumen;
     } catch {
       // Se queda el del móvil
-      return this.guardadas(golfCourseId, barra);
+      return this.guardadas(golfCourseId);
     }
   }
 

@@ -28,3 +28,27 @@ export const distanciasDelHoyo = ({ metros, hoyo }) => {
   const hasta = (punto) => longitudDeLaLinea([...linea.slice(0, -1), punto]);
   return { front: hasta(green.front), center: hasta(green.center), back: hasta(green.back) };
 };
+
+// Más lejos que esto no estás jugando este hoyo (el mismo límite que una muestra)
+const MAX_AL_GREEN_M = 750;
+// Peor que esto, la posición no sirve para medir el hoyo (Agustín, 17 oct)
+export const PRECISION_PARA_MEDIR_M = 20;
+
+/**
+ * El recuadro desde donde está el jugador (Agustín, 17 oct): con buen GPS (error
+ * de 20 m o menos) y a 750 m o menos del centro del green, los metros a delante,
+ * centro y fondo desde su posición. Delante y fondo, a los del green si los trae;
+ * si no, ±10 m. Si no se cumple, null: se usa la tarjeta (`distanciasDelHoyo`).
+ *
+ * @param {{posicion: Object|null, precision: number|null, green: Object|null}} datos
+ * @returns {{front: number, center: number, back: number}|null}
+ */
+export const distanciasDesdeLaPosicion = ({ posicion, precision, green }) => {
+  if (!posicion || !green?.center || !Number.isFinite(precision) || precision > PRECISION_PARA_MEDIR_M) return null;
+  const center = distanciaEnMetros(posicion, green.center);
+  if (center > MAX_AL_GREEN_M) return null;
+  if (green.front && green.back) {
+    return { front: distanciaEnMetros(posicion, green.front), center, back: distanciaEnMetros(posicion, green.back) };
+  }
+  return { front: Math.max(0, center - METROS_AL_BORDE_DEL_GREEN), center, back: center + METROS_AL_BORDE_DEL_GREEN };
+};

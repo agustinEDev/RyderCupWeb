@@ -179,26 +179,22 @@ describe('ApiGolfCourseRepository — muestras de hoyo', () => {
   const PUNTOS = { tee: { lat: 36.28, lon: -5.33 }, bends: [], greenCenter: { lat: 36.2827, lon: -5.33 } };
   const MUESTRA = { id: 'm-1', barra: { color: 'YELLOW', gender: 'MALE' }, ...PUNTOS };
 
-  it('S4: el resumen, por hoyo y por barra, traducido', async () => {
+  it('S4: el resumen, por hoyo, traducido (17 oct)', async () => {
     apiRequest.mockResolvedValue([
-      { hole_number: 1, tees: [] },
+      { hole_number: 1, first_sample: null, first_green: null, collecting: true, tees: [] },
       {
         hole_number: 3,
-        tees: [
-          {
-            tee_color: 'YELLOW',
-            tee_gender: 'MALE',
-            first_sample: { tee: { latitude: 36.28, longitude: -5.33 }, bends: [], green_center: { latitude: 36.2827, longitude: -5.33 } },
-            collecting: false,
-          },
-        ],
+        first_sample: { tee: { latitude: 36.28, longitude: -5.33 }, bends: [], green_center: { latitude: 36.2827, longitude: -5.33 } },
+        first_green: null,
+        collecting: false,
+        tees: [],
       },
     ]);
 
     const resumen = await new ApiGolfCourseRepository().getHoleSamples('gc-1');
 
     expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/samples', { topeMs: 15000 });
-    expect(resumen).toEqual({ 1: [], 3: [{ color: 'YELLOW', gender: 'MALE', primera: PUNTOS, recoge: false }] });
+    expect(resumen).toEqual({ 1: { primera: null, green: null, recoge: true }, 3: { primera: PUNTOS, green: null, recoge: false } });
   });
 
   it('S5: enviar es un POST al hoyo con el id, la barra y los puntos, y el 204 se resuelve', async () => {

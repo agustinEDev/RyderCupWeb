@@ -401,6 +401,12 @@
     "lineaUnTramo": "De la salida al green: {{a}} metros",
     "lineaDosTramos": "De la salida al codo: {{a}} metros; del codo al green: {{b}} metros",
     "lineaTresTramos": "De la salida al primer codo: {{a}} metros; del primer al segundo codo: {{b}} metros; del segundo codo al green: {{c}} metros",
-    "lineaVariosTramos": "Tramos de la línea, de la salida al green: {{lista}} metros"
+    "lineaVariosTramos": "Tramos de la línea, de la salida al green: {{lista}} metros",
+    "preguntaSalida": "¿Estás en la salida?",
+    "si": "Sí",
+    "no": "No",
+    "malGps": "No te localizamos bien: toca dónde está la salida",
+    "desdeTuPosicion": "Desde tu posición",
+    "desdeTuBarra": "Desde tu barra"
   }
 }

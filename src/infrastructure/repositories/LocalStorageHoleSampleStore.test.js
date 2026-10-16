@@ -6,7 +6,7 @@ import LocalStorageHoleSampleStore from './LocalStorageHoleSampleStore';
  *
  * | Caso | Qué                                                     | Qué se espera                                           |
  * |------|---------------------------------------------------------|---------------------------------------------------------|
- * | S6   | el resumen de un campo                                  | se guarda y se lee por campo (`v2`), sin jugador en la clave |
+ * | S6   | el resumen de un campo                                  | se guarda y se lee por campo (`v3`), sin jugador en la clave |
  * | S6   | lo ilegible, o de otra forma                            | `null`                                                  |
  * | S7   | la cola, en un móvil compartido                         | cada jugador ve solo la suya (`v2`)                     |
  * | S7   | otra muestra (otro id) del mismo hoyo y barra           | queda solo la última, al final                          |
@@ -61,13 +61,13 @@ describe('LocalStorageHoleSampleStore', () => {
 
       expect(store.loadResumen('gc-1')).toEqual(RESUMEN);
       expect(store.loadResumen('gc-2')).toBeNull();
-      expect([...guardado.keys()]).toEqual(['muestrasDeHoyos:v2:gc-1']);
+      expect([...guardado.keys()]).toEqual(['muestrasDeHoyos:v3:gc-1']);
     });
 
     it('lo ilegible o con otra forma, null', () => {
-      guardado.set('muestrasDeHoyos:v2:gc-1', '{roto');
-      guardado.set('muestrasDeHoyos:v2:gc-2', '[1,2]');
-      guardado.set('muestrasDeHoyos:v2:gc-3', '"texto"');
+      guardado.set('muestrasDeHoyos:v3:gc-1', '{roto');
+      guardado.set('muestrasDeHoyos:v3:gc-2', '[1,2]');
+      guardado.set('muestrasDeHoyos:v3:gc-3', '"texto"');
 
       expect(store.loadResumen('gc-1')).toBeNull();
       expect(store.loadResumen('gc-2')).toBeNull();
@@ -262,18 +262,20 @@ describe('LocalStorageHoleSampleStore', () => {
   });
 
   describe('S17: lo que dejaron las versiones anteriores', () => {
-    it('al arrancar se borran las marcas y las muestras v1; lo demás se queda', () => {
+    it('al arrancar se borran las marcas, las muestras v1 y el resumen v2; lo demás se queda', () => {
       guardado.set('marcasDeHoyos:v1:u1', '{}');
       guardado.set('marcasDeHoyos:v1:u2', '{}');
       guardado.set('muestrasDeHoyos:v1:gc-1', '{}');
       guardado.set('muestrasPendientes:v1:u1', '[]');
+      // El resumen por barra (v2) ya no se lee desde el 17 oct
       guardado.set('muestrasDeHoyos:v2:gc-1', '{}');
+      guardado.set('muestrasDeHoyos:v3:gc-1', '{}');
       guardado.set('mapaDeHoyos:v1:gc-1', '{}');
       guardado.set('otraCosa', 'x');
 
       new LocalStorageHoleSampleStore();
 
-      expect([...guardado.keys()].sort()).toEqual(['mapaDeHoyos:v1:gc-1', 'muestrasDeHoyos:v2:gc-1', 'otraCosa']);
+      expect([...guardado.keys()].sort()).toEqual(['mapaDeHoyos:v1:gc-1', 'muestrasDeHoyos:v3:gc-1', 'otraCosa']);
     });
 
     it('si localStorage no deja recorrerlo o borrar, no revienta', () => {

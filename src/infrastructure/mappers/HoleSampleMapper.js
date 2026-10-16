@@ -1,13 +1,14 @@
 /**
  * Las muestras de hoyo entre la API y el dominio (BE #532, marcado por par).
  *
- * Son anónimas y por barra (color y género): el servidor no dice de quién es
- * cada una, solo, por hoyo, las barras que tienen muestras (la más antigua
- * primero), con la primera que le llegó de cada una y si aún recoge más. La
- * API nombra los puntos (`{ latitude, longitude }`); aquí pasan a
- * `{ lat, lon }`, como el resto de la app.
+ * Son anónimas y van por hoyo (BE #575, 17 oct: una referencia por hoyo): el
+ * servidor no dice de quién es cada una, solo, por hoyo, su primera muestra
+ * completa, el green de su primera muestra solo green y si aún recoge. La API
+ * nombra los puntos (`{ latitude, longitude }`); aquí pasan a `{ lat, lon }`,
+ * como el resto de la app. La lista por barra que aún manda (`tees`) es para
+ * los móviles de antes y no se lee.
  *
- * Lo que no se sabe de una barra es «sin primera y recogiendo»: así no se deja
+ * Lo que no se sabe de un hoyo es «sin muestra y recogiendo»: así no se deja
  * de recoger por un dato roto. La que se envía lleva su `id`, que pone el
  * móvil: con él, un reintento cuenta una sola vez.
  */
@@ -27,24 +28,18 @@ const primeraADominio = (muestra) => {
   };
 };
 
-const barraADominio = (barra) => ({
-  color: barra.tee_color,
-  gender: barra.tee_gender ?? null,
-  primera: primeraADominio(barra.first_sample),
-  recoge: barra.collecting !== false,
+const hoyoADominio = (hoyo) => ({
+  primera: primeraADominio(hoyo.first_sample),
+  green: esPunto(hoyo.first_green) ? aDominio(hoyo.first_green) : null,
+  recoge: hoyo.collecting !== false,
 });
 
 class HoleSampleMapper {
-  /** @returns {Object<number, {color: string, gender: string|null, primera: Object|null, recoge: boolean}[]>} por número de hoyo */
+  /** @returns {Object<number, {primera: Object|null, green: Object|null, recoge: boolean}>} por número de hoyo */
   static toDomain(api) {
     if (!Array.isArray(api)) return {};
     return Object.fromEntries(
-      api
-        .filter((hoyo) => Number.isInteger(hoyo?.hole_number))
-        .map((hoyo) => [
-          hoyo.hole_number,
-          (Array.isArray(hoyo.tees) ? hoyo.tees : []).filter((barra) => Boolean(barra?.tee_color)).map(barraADominio),
-        ]),
+      api.filter((hoyo) => Number.isInteger(hoyo?.hole_number)).map((hoyo) => [hoyo.hole_number, hoyoADominio(hoyo)]),
     );
   }
 
@@ -53,7 +48,8 @@ class HoleSampleMapper {
       id: muestra.id,
       tee_color: muestra.barra.color,
       tee_gender: muestra.barra.gender ?? null,
-      tee: aApi(muestra.tee),
+      // Sin salida, una solo green (17 oct): tampoco lleva codos
+      tee: muestra.tee ? aApi(muestra.tee) : null,
       bends: (muestra.bends ?? []).map(aApi),
       green_center: aApi(muestra.greenCenter),
     };

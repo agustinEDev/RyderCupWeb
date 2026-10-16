@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { distanciasDelHoyo } from './distanciasDelHoyo';
+import { distanciasDelHoyo, distanciasDesdeLaPosicion } from './distanciasDelHoyo';
 
 // Metros por grado de latitud con el radio que usa distanciaEnMetros
 const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
@@ -58,5 +58,42 @@ describe('distanciasDelHoyo', () => {
 
   it.each([0, undefined])('R5: unos metros de %s cuentan como sin metros', (metros) => {
     expect(distanciasDelHoyo({ metros, hoyo: null })).toBeNull();
+  });
+});
+
+// Agustín, 17 oct: en el hoyo y con buen GPS, el recuadro mide desde donde estás
+describe('distanciasDesdeLaPosicion (B1-B4)', () => {
+  const G = green(300, 12, 15);
+  const aqui = (metros) => alNorte(metros);
+
+  it('B1: con buen GPS y a 750 m o menos del green, desde la posición, a delante, centro y fondo', () => {
+    expect(distanciasDesdeLaPosicion({ posicion: aqui(150), precision: 8, green: G })).toEqual({ front: 138, center: 150, back: 165 });
+  });
+
+  it.each([
+    ['a 750 m justos', 750, 8, true],
+    ['a 751 m', 751, 8, false],
+    ['con 20 m de error', 150, 20, true],
+    ['con 21 m de error', 150, 21, false],
+  ])('B1/B2: %s', (_caso, metros, precision, desdeAqui) => {
+    const posicion = alNorte(300 - metros);
+
+    expect(distanciasDesdeLaPosicion({ posicion, precision, green: G }) !== null).toBe(desdeAqui);
+  });
+
+  it.each([
+    ['sin posición', { posicion: null, precision: 5, green: G }],
+    ['sin precisión', { posicion: aqui(150), precision: null, green: G }],
+    ['sin green', { posicion: aqui(150), precision: 5, green: null }],
+  ])('B2/B4: %s, nada (se usa la tarjeta, o no hay recuadro)', (_caso, datos) => {
+    expect(distanciasDesdeLaPosicion(datos)).toBeNull();
+  });
+
+  it('B3: un green sin contorno (solo el centro), ±10', () => {
+    expect(distanciasDesdeLaPosicion({ posicion: aqui(150), precision: 5, green: { center: alNorte(300) } })).toEqual({ front: 140, center: 150, back: 160 });
+  });
+
+  it('B3: delante nunca por debajo de 0 (en el green)', () => {
+    expect(distanciasDesdeLaPosicion({ posicion: alNorte(295), precision: 5, green: { center: alNorte(300) } }).front).toBe(0);
   });
 });

@@ -3,18 +3,19 @@ import { getHoleSamplesUseCase, sendHoleSampleUseCase } from '../composition';
 import { MUESTRA_PENDIENTE, MUESTRAS_CAMBIADAS } from './useEnvioDeMuestras';
 
 /**
- * Las muestras del campo para el mapa del hoyo, vistas desde la barra del
- * jugador (BE #532, marcado por par), y cómo enviar una.
+ * Las muestras del campo para el mapa del hoyo (BE #575, 17 oct: una
+ * referencia por hoyo), y cómo enviar una con la barra del jugador.
  *
- * - `muestras`: por hoyo, `{ primera, deOtra, recoge }`: la primera muestra
- *   de MI barra, la primera de otra barra, y si la mía aún recoge. La copia
- *   del móvil al momento y la red la refresca. Un hoyo que no está es
- *   `{ primera: null, deOtra: null, recoge: true }`.
+ * - `muestras`: por hoyo, `{ primera, green, recoge }`: su primera muestra
+ *   completa, el green de su primera solo green, y si aún recoge. La copia del
+ *   móvil al momento y la red la refresca. Un hoyo que no está es
+ *   `{ primera: null, green: null, recoge: true }`.
  * - `pendientes`: por hoyo, la última línea del jugador con su barra desde este
  *   móvil (`{ tee, bends, greenCenter }`): la que espera en la cola o, si no, la
  *   última ya enviada. Una hecha sin cobertura se sigue viendo, y la enviada
  *   también, cuando no hay otra que enseñar.
  * - `enviar(hoyo, { id, tee, bends, greenCenter })`: se dispara y se olvida, y
+ *   `tee: null` es una solo green;
  *   el hook le pone la barra. La promesa nunca se rechaza y el jugador no ve
  *   ningún aviso, salga o no. Sin barra o sin jugador no hace nada.
  *
@@ -29,7 +30,7 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
   const gender = barra?.gender ?? null;
   const miBarra = useMemo(() => (color ? { color, gender } : null), [color, gender]);
   const de = `${userId}|${golfCourseId}|${color}|${gender}`;
-  const copiaDeMuestras = useMemo(() => getHoleSamplesUseCase.guardadas(golfCourseId, miBarra), [golfCourseId, miBarra]);
+  const copiaDeMuestras = useMemo(() => getHoleSamplesUseCase.guardadas(golfCourseId), [golfCourseId]);
   const copiaDePendientes = useMemo(() => getHoleSamplesUseCase.pendientes(userId, golfCourseId, miBarra), [userId, golfCourseId, miBarra]);
   const [muestras, setMuestras] = useState({ de: null, muestras: {} });
   const [pendientes, setPendientes] = useState({ de: null, pendientes: {} });
@@ -54,7 +55,7 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
     async (clave) => {
       let nuevas = null;
       try {
-        nuevas = await getHoleSamplesUseCase.execute(golfCourseId, miBarra);
+        nuevas = await getHoleSamplesUseCase.execute(golfCourseId);
       } catch {
         // Se queda la copia del móvil
       }
@@ -62,7 +63,7 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
       if (nuevas) setMuestras({ de: clave, muestras: nuevas });
       refrescarPendientes(clave);
     },
-    [golfCourseId, miBarra, refrescarPendientes],
+    [golfCourseId, refrescarPendientes],
   );
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
     // También la primera vez, el resumen y lo pendiente a la vez: el resumen que
     // carga olvida las recién enviadas que ya trae
     getHoleSamplesUseCase
-      .execute(golfCourseId, miBarra)
+      .execute(golfCourseId)
       .catch(() => null)
       .then((nuevas) => {
         if (!vigente) return;
