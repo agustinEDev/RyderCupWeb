@@ -532,28 +532,33 @@ const MapaDelHoyo = ({
     // Una línea con más puntos que codos se guardan (las de OSM, con muchos):
     // se mueven la salida y el green; los de en medio siguen en la línea, sin punto
     const muchos = linea.length - 2 > MAX_CODOS;
-    linea.forEach((p, i) => {
-      if (muchos && i > 0 && i < linea.length - 1) return;
-      const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true })
-        .setLngLat(lngLat(p))
-        .addTo(mapa);
-      // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el
-      // marcador, y encadenarlos rompía el mapa (QA en el Kind, 16 oct)
-      m.on('drag', (e) => {
-        const provisional = con(i, aqui(e));
-        mapa.getSource('marcado')?.setData(geojsonDeLaLinea(provisional));
-        cifrasAlArrastrar.current(provisional);
+    // Si la librería cambia y algo de esto falla, el mapa sigue (sin puntos que
+    // mover) en vez de caerse entero; el fallo queda apuntado
+    try {
+      linea.forEach((p, i) => {
+        if (muchos && i > 0 && i < linea.length - 1) return;
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true })
+          .setLngLat(lngLat(p))
+          .addTo(mapa);
+        // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
+        m.on('drag', (e) => {
+          const provisional = con(i, aqui(e));
+          mapa.getSource('marcado')?.setData(geojsonDeLaLinea(provisional));
+          cifrasAlArrastrar.current(provisional);
+        });
+        m.on('dragend', (e) => {
+          const movida = con(i, aqui(e));
+          setEdicion((ed) => ({ linea: movida, cambiada: true, version: ed.version + 1 }));
+          setConAyudaDeCodos(false);
+          empezarAlArrastrar.current();
+        });
+        // Tocar un punto no es tocar el mapa: no mide encima de él
+        m.getElement().addEventListener('click', (e) => e.stopPropagation());
+        puntosDeLaLinea.current.push(m);
       });
-      m.on('dragend', (e) => {
-        const movida = con(i, aqui(e));
-        setEdicion((ed) => ({ linea: movida, cambiada: true, version: ed.version + 1 }));
-        setConAyudaDeCodos(false);
-        empezarAlArrastrar.current();
-      });
-      // Tocar un punto no es tocar el mapa: no mide encima de él
-      m.getElement().addEventListener('click', (e) => e.stopPropagation());
-      puntosDeLaLinea.current.push(m);
-    });
+    } catch (error) {
+      captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
+    }
   }, [linea, datosDeLaLinea]);
 
   const empezarAMarcar = () => {

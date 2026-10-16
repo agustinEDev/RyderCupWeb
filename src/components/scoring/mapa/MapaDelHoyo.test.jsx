@@ -13,8 +13,27 @@ vi.mock('react-i18next', () => ({
 // MapLibre de mentira: guarda lo que se le pide para poder comprobarlo
 const mapas = vi.hoisted(() => []);
 vi.mock('maplibre-gl', () => {
-  class Map {
+  // Como `Evented` de MapLibre 6: `on` devuelve una suscripción (no se
+  // encadena), acumula oyentes del mismo evento y cada uno se quita solo. La
+  // forma con capa (`on(tipo, capa, fn)`) guarda su `fn`. `oyentes[evento]`
+  // lanza todos los de ese evento
+  class Evented {
+    on(evento, ...resto) {
+      const fn = resto.at(-1);
+      this.lista ??= {};
+      this.oyentes ??= {};
+      (this.lista[evento] ??= []).push(fn);
+      this.oyentes[evento] = (...args) => this.lista[evento].forEach((f) => f(...args));
+      return {
+        unsubscribe: () => {
+          this.lista[evento] = this.lista[evento].filter((f) => f !== fn);
+        },
+      };
+    }
+  }
+  class Map extends Evented {
     constructor(opciones) {
+      super();
       if (mapas.sinWebgl) throw new Error('Failed to initialize WebGL');
       this.opciones = opciones;
       this.oyentes = {};
@@ -32,12 +51,7 @@ vi.mock('maplibre-gl', () => {
       mapas.push(this);
     }
     // Como MapLibre 6: `on` devuelve una suscripción, no el mapa (no se encadena)
-    on(evento, fn) {
-      // Acumulan, como en la librería: dos del mismo evento se lanzan los dos
-      const antes = this.oyentes[evento];
-      this.oyentes[evento] = antes ? (...args) => { antes(...args); fn(...args); } : fn;
-      return { unsubscribe: () => delete this.oyentes[evento] };
-    }
+
     addSource(id, fuente) {
       this.fuentes[id] = fuente;
     }
@@ -45,8 +59,9 @@ vi.mock('maplibre-gl', () => {
       return this.fuentes[id] ? { setData: (d) => { this.fuentes[id].data = d; } } : undefined;
     }
   }
-  class Marker {
+  class Marker extends Evented {
     constructor(opciones = {}) {
+      super();
       this.opciones = opciones;
       this.oyentes = {};
       this.remove = vi.fn(() => {
@@ -66,12 +81,7 @@ vi.mock('maplibre-gl', () => {
     }
     // Como MapLibre 6: `on` devuelve una suscripción, no el marcador. Devolvía
     // `this` y tapó un `.on().on()` que en el Kind rompía el mapa (QA, 16 oct)
-    on(evento, fn) {
-      // Acumulan, como en la librería: dos del mismo evento se lanzan los dos
-      const antes = this.oyentes[evento];
-      this.oyentes[evento] = antes ? (...args) => { antes(...args); fn(...args); } : fn;
-      return { unsubscribe: () => delete this.oyentes[evento] };
-    }
+
     setOffset(o) {
       this.offset = o;
       return this;
@@ -82,6 +92,12 @@ vi.mock('maplibre-gl', () => {
     }
   }
   return { Map, Marker, setWorkerUrl: vi.fn() };
+});
+
+const apuntado = vi.hoisted(() => ({ captureError: null }));
+vi.mock('../../../utils/sentryHelpers', () => {
+  apuntado.captureError = vi.fn();
+  return { captureError: (...args) => apuntado.captureError(...args) };
 });
 
 const centro = vi.hoisted(() => ({ valor: null, args: null }));
@@ -1398,6 +1414,24 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       unmount();
 
       expect(onMuestra).not.toHaveBeenCalled();
+    });
+
+    it('QA (16 oct): si poner los puntos falla (la librería cambia), el mapa sigue y el fallo se apunta', () => {
+      const original = globalThis.document.createElement.bind(globalThis.document);
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      act(() => mapa().oyentes.load());
+      const espia = vi.spyOn(globalThis.document, 'createElement').mockImplementation((tag) => {
+        if (tag === 'div') throw new Error('API cambiada');
+        return original(tag);
+      });
+      try {
+        soltar(arrastrables().at(-1), alNorte(280));
+      } finally {
+        espia.mockRestore();
+      }
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(apuntado.captureError).toHaveBeenCalledWith(expect.any(Error), { tags: { modulo: 'mapa-de-hoyos' } });
     });
 
     it('CR10: una línea de OSM con más puntos que codos: solo se arrastran la salida y el green', () => {
