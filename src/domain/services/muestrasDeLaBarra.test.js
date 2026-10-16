@@ -15,11 +15,14 @@ import { muestrasDeLaBarra, esLaMismaBarra } from './muestrasDeLaBarra';
  * | B6   | sin barra                                         | null              | null    | la más antigua    | true   |
  * | B7   | otra barra listada sin primera (rota)             | amarilla ♂        | null    | la siguiente con primera | true |
  * | B8   | hoyo vacío, o resumen roto                        | cualquiera        | null    | null              | true   |
+ * | B9   | sin la exacta, la de mi color sin género (como `tee_for`) | amarilla ♂  | la sin género | null       | según ella |
  */
 
 const M = (lat) => ({ tee: { lat, lon: 0 }, bends: [], greenCenter: { lat: lat + 0.001, lon: 0 } });
 const barra = (color, gender, primera, recoge = true) => ({ color, gender, primera, recoge });
 const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
+const MIA = M(1);
+const OTRA = M(2);
 
 describe('muestrasDeLaBarra', () => {
   it('B1: la de mi barra, sin otras', () => {
@@ -47,7 +50,8 @@ describe('muestrasDeLaBarra', () => {
 
     expect(muestrasDeLaBarra(resumen, { color: 'RED', gender: null })[3]).toEqual({ primera: M(1), deOtra: null, recoge: false });
     expect(muestrasDeLaBarra(resumen, { color: 'RED' })[3].primera).toEqual(M(1));
-    expect(muestrasDeLaBarra(resumen, { color: 'RED', gender: 'MALE' })[3].primera).toBeNull();
+    // Con género, sin la exacta, la sin género de su color es la suya (B9)
+    expect(muestrasDeLaBarra(resumen, { color: 'RED', gender: 'MALE' })[3].primera).toEqual(M(1));
   });
 
   it('B6: sin barra, todo es de otra y se recoge', () => {
@@ -69,6 +73,26 @@ describe('muestrasDeLaBarra', () => {
       4: { primera: null, deOtra: null, recoge: true },
     });
     expect(muestrasDeLaBarra(null, AMARILLA)).toEqual({});
+  });
+
+  // Como el servidor (`tee_for`): un campo con su barra sin género la da a
+  // quien juega ese color con género, y las muestras vuelven sin género
+  it('B9: sin mi barra exacta, la de mi color sin género es la mía', () => {
+    const resumen = { 1: [{ color: 'YELLOW', gender: null, primera: MIA, recoge: false }] };
+
+    expect(muestrasDeLaBarra(resumen, { color: 'YELLOW', gender: 'MALE' })[1]).toEqual({ primera: MIA, deOtra: null, recoge: false });
+  });
+
+  it('B9: si está la exacta, va antes que la sin género', () => {
+    const resumen = { 1: [{ color: 'YELLOW', gender: null, primera: OTRA, recoge: true }, { color: 'YELLOW', gender: 'MALE', primera: MIA, recoge: true }] };
+
+    expect(muestrasDeLaBarra(resumen, { color: 'YELLOW', gender: 'MALE' })[1].primera).toBe(MIA);
+  });
+
+  it('B9: al revés no (sin género no cae en la de un género)', () => {
+    const resumen = { 1: [{ color: 'YELLOW', gender: 'MALE', primera: OTRA, recoge: false }] };
+
+    expect(muestrasDeLaBarra(resumen, { color: 'YELLOW', gender: null })[1]).toEqual({ primera: null, deOtra: OTRA, recoge: true });
   });
 
   it('esLaMismaBarra: color y género, sin género = null', () => {

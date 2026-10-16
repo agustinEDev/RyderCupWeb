@@ -12,7 +12,9 @@
  * - `recoge`: si MI barra aún recoge muestras. Una barra que no está en la
  *   lista recoge; sin barra, también (no hay nada mío que esté completo).
  *
- * Sin género es un valor más: `null` y sin decir son lo mismo.
+ * Sin género es un valor más: `null` y sin decir son lo mismo. Sin mi barra
+ * exacta, cuenta como mía la de mi color sin género: el servidor resuelve la
+ * barra con la del campo (`tee_for`) y guarda ahí las de quien juega con género.
  */
 
 const generoDe = (barra) => barra?.gender ?? null;
@@ -33,7 +35,12 @@ export const muestrasDeLaBarra = (resumen, barra) => {
     Object.entries(resumen).map(([hoyo, barras]) => {
       const lista = Array.isArray(barras) ? barras.filter(Boolean) : [];
       if (!lista.length) return [hoyo, vacio()];
-      const mia = barra ? lista.find((otra) => esLaMismaBarra(otra, barra)) : null;
+      // La exacta; si no está, la de mi color sin género, que es la que el
+      // servidor me da cuando el campo no distingue (como `tee_for`)
+      const mia = barra
+        ? (lista.find((otra) => esLaMismaBarra(otra, barra)) ??
+          (generoDe(barra) ? lista.find((otra) => esLaMismaBarra(otra, { color: barra.color, gender: null })) : null))
+        : null;
       const deOtra = lista.find((otra) => otra !== mia && otra.primera)?.primera ?? null;
       return [hoyo, { primera: mia?.primera ?? null, deOtra, recoge: mia ? mia.recoge !== false : true }];
     }),
