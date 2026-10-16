@@ -129,9 +129,10 @@ const MapaDelHoyo = ({
   const gps = usePosicionGps({ activo: true });
   const posicion = gps.estado === 'listo' ? gps.posicion : null;
   const centroSinMapa = useCentroSinMapa({ golfCourseId, activo: !conMapa });
-  // Si estás en el campo: con mapa, se mide desde la salida del hoyo; sin él,
-  // desde la ubicación del campo (sin ella, se da por hecho que sí)
-  const referenciaDelCampo = conMapa ? hoyo.playLine[0] : centroSinMapa;
+  // Si estás en el campo: si el hoyo tiene salida (aunque no tenga green), se
+  // mide desde ella; si no, desde la ubicación del campo (sin ninguna de las
+  // dos, se da por hecho que sí)
+  const referenciaDelCampo = hoyo?.playLine?.[0] ?? centroSinMapa;
   const lejos = Boolean(posicion && referenciaDelCampo && distanciaEnMetros(posicion, referenciaDelCampo) > LEJOS_DEL_CAMPO_M);
   const posicionEnElCampo = lejos ? null : posicion;
   const [tocado, setTocado] = useState(null);
@@ -322,7 +323,8 @@ const MapaDelHoyo = ({
     }
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
-    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos) {
+    // Lejos no; y si mientras tanto el jugador movió el mapa, tampoco al llegar
+    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current) {
       centradoEnGps.current = true;
       mapa.jumpTo({ center: lngLat(posicion), zoom: ZOOM_SIN_MAPA });
     }
@@ -363,7 +365,8 @@ const MapaDelHoyo = ({
 
   // La ubicación del campo llega después de abrir: centra el mapa si aún no lo
   // hizo el GPS ni el jugador lo ha movido. Si el GPS lo llevó antes a otro
-  // sitio y resulta que estás lejos del campo, vuelve al campo
+  // sitio y resulta que estás lejos del campo, vuelve al campo. Es una vez:
+  // luego, aunque llegues al campo, solo «Céntrame» lo lleva a ti
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
