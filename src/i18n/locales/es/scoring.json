@@ -13,20 +13,12 @@
     "scorecard": "Tarjeta",
     "leaderboard": "Clasificación"
   },
-  "preMatch": {
-    "title": "Info del Partido",
-    "youMark": "Tú marcas a",
-    "markedBy": "Te marca",
-    "color": "Color de barras",
-    "handicap": "Hándicap",
-    "format": "Formato",
-    "ready": "Listo para Jugar",
-    "youMarkPair": "Marcáis a"
-  },
   "notOpenYet": {
     "title": "La anotación de este partido aún no ha abierto",
     "opensAt": "Abre a las {{hora}}, hora del campo.",
-    "meanwhile": "Hasta entonces, solo se puede anotar si alguien arranca el partido."
+    "meanwhile": "Hasta entonces, solo se puede anotar si alguien arranca el partido.",
+    "youWillMark": "Anotarás a {{nombre}}",
+    "youWillMarkPair": "Anotaréis a {{nombre}}"
   },
   "input": {
     "hole": "Hoyo",
@@ -72,7 +64,8 @@
     "strokesReceived_other": "{{count}} golpes recibidos",
     "strokesGiven_one": "Da {{count}} golpe",
     "strokesGiven_other": "Da {{count}} golpes",
-    "rivalPair": "La pareja rival"
+    "rivalPair": "La pareja rival",
+    "rivalBallOf": "Bola rival · {{nombre}}"
   },
   "scorecard": {
     "title": "Tarjeta",
@@ -140,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} hoyos validados",
     "notReady": "No todos los hoyos están validados",
     "groupOver": "Partida terminada",
-    "groupCompleted": "Partida completada"
+    "groupCompleted": "Partida completada",
+    "allHolesScored": "Todos los hoyos anotados"
   },
   "summary": {
     "title": "Resumen del Partido",

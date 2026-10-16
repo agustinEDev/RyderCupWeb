@@ -589,11 +589,41 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
   });
 
-  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+  it('16 oct: antes de abrir, dice a quién vas a marcar', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+
     render(<GroupScoringPage />);
 
-    const pie = llamadas.casilla.pie;
-    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMark');
+  });
+
+  it('16 oct: antes de abrir y sin a quién marcar, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00', i_mark_user_id: null }, [jugador('ana', null)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('anotaras-a')).toBeNull();
+  });
+
+  it('16 oct: el campo de la partida, bajo el título; sin nombre, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_name: 'Golf de Meis - Par 72' }) });
+    const { unmount } = render(<GroupScoringPage />);
+    expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Golf de Meis - Par 72');
+    unmount();
+
+    mockHook = hook();
+    render(<GroupScoringPage />);
+    expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
+  });
+
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
+    render(<GroupScoringPage />);
+
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(boton.previousElementSibling).toHaveTextContent('input.prevHole');
+    expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

@@ -53,6 +53,7 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
       roundId: 'r1',
       roundDate: '2030-10-12',
       sessionType: 'AFTERNOON',
+      golfCourseName: null,
       teeTime: '12:10',
       matchNumber: 2,
       partnerNames: ['Ana', 'Bea'],
@@ -62,6 +63,18 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
       ],
       broughtIn: false,
     });
+  });
+
+  it('lleva el nombre del campo de la franja, para su tarjeta (BE #573)', async () => {
+    const uc = new GetUpcomingTeeGroupsUseCase(
+      casos({ a: [{ ...mia('r1', '2030-10-12', 'AFTERNOON', partida('g2', 2, '12:10')), golfCourseName: 'Golf de Meis' }] }),
+    );
+
+    const {
+      matches: [unica],
+    } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(unica.golfCourseName).toBe('Golf de Meis');
   });
 
   it('12 (QA del 11 oct 2026): si le pasaron a esa partida, lo lleva', async () => {

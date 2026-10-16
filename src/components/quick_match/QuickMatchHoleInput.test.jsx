@@ -69,18 +69,12 @@ describe('QuickMatchHoleInput · el hueco para anotar (FE #725)', () => {
   });
 });
 
-describe('QuickMatchHoleInput — pie con las distancias (mapa de hoyos)', () => {
-  it('pinta lo que se le pase en `pie`, al final de la tarjeta', () => {
-    render(
-      <QuickMatchHoleInput holeNumber={1} par={4} strokeIndex={1} entries={[]} pie={<p>linea-de-distancias</p>} />
-    );
-
-    expect(screen.getByText('linea-de-distancias')).toBeInTheDocument();
-  });
-
-  it('sin `pie`, no hay pie', () => {
+describe('QuickMatchHoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
+  it('16 oct: la tarjeta no lleva «Mapa» (va entre Anterior y Siguiente)', () => {
     render(<QuickMatchHoleInput holeNumber={1} par={4} strokeIndex={1} entries={[]} />);
 
-    expect(screen.queryByTestId('pie-del-hoyo')).toBeNull();
+    expect(screen.queryByRole('button', { name: /mapa/i })).toBeNull();
+    expect(screen.queryByTestId('accion-del-hoyo')).toBeNull();
   });
+
 });

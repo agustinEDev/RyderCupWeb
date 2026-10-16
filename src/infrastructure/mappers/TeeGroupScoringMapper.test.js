@@ -20,6 +20,11 @@ describe('TeeGroupScoringMapper.toScoringViewDTO', () => {
     expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseId).toBe('gc-1');
   });
 
+  it('y su nombre, bajo el título de la anotación (BE #573); sin él, null', () => {
+    expect(TeeGroupScoringMapper.toScoringViewDTO({ ...VISTA, golf_course_name: 'Golf de Meis' }).roundInfo.golfCourseName).toBe('Golf de Meis');
+    expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseName).toBeNull();
+  });
+
   it('sin el campo (un backend anterior) queda en null', () => {
     const anterior = { ...VISTA };
     delete anterior.golf_course_id;

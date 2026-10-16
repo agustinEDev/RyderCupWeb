@@ -45,7 +45,8 @@ class TeeGroupScoringMapper {
         id: api.round_id,
         date: null,
         sessionType: null,
-        golfCourseName: null,
+        // Su nombre, bajo el título de la anotación (BE #573)
+        golfCourseName: api.golf_course_name ?? null,
         golfCourseId: api.golf_course_id ?? null,
       },
       competitionId: null,

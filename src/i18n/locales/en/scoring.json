@@ -13,20 +13,12 @@
     "scorecard": "Scorecard",
     "leaderboard": "Leaderboard"
   },
-  "preMatch": {
-    "title": "Match Info",
-    "youMark": "You mark",
-    "markedBy": "Marked by",
-    "color": "Tee colour",
-    "handicap": "Handicap",
-    "format": "Format",
-    "ready": "Ready to Play",
-    "youMarkPair": "You mark"
-  },
   "notOpenYet": {
     "title": "Scoring for this match has not opened yet",
     "opensAt": "It opens at {{hora}}, the course’s local time.",
-    "meanwhile": "Until then, scoring only works if someone starts the match."
+    "meanwhile": "Until then, scoring only works if someone starts the match.",
+    "youWillMark": "You will mark {{nombre}}",
+    "youWillMarkPair": "You will mark {{nombre}}"
   },
   "input": {
     "hole": "Hole",
@@ -72,7 +64,8 @@
     "strokesReceived_other": "{{count}} strokes received",
     "strokesGiven_one": "Gives {{count}} stroke",
     "strokesGiven_other": "Gives {{count}} strokes",
-    "rivalPair": "The rival pair"
+    "rivalPair": "The rival pair",
+    "rivalBallOf": "Rival ball · {{nombre}}"
   },
   "scorecard": {
     "title": "Scorecard",
@@ -140,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} holes validated",
     "notReady": "Not all holes are validated yet",
     "groupOver": "Group finished",
-    "groupCompleted": "Group completed"
+    "groupCompleted": "Group completed",
+    "allHolesScored": "All holes scored"
   },
   "summary": {
     "title": "Match Summary",

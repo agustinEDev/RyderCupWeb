@@ -42,11 +42,9 @@ const HoleInput = ({
   matchFormat,
   // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
   allowPickedUp = true,
-  // Lo que va al pie de la tarjeta: el botón «Mapa» del hoyo (BE #532). Sin
-  // él, la tarjeta queda como siempre
-  pie = null,
 }) => {
   const { t } = useTranslation('scoring');
+  const conPie = (netScore !== null && netScore !== undefined) || Boolean(holeResult) || Boolean(standing);
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
   // anunciaban «Anotar» y un lector de pantalla no sabía cuál era el tuyo
   // (CodeRabbit en la #747)
@@ -56,8 +54,12 @@ const HoleInput = ({
   // marcador» hablaban como si cada uno jugara la suya
   const enParejas = matchFormat === 'FOURSOMES';
   const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
+  // Con la pareja detrás (16 oct): al quitar «Info del Partido», era el único
+  // sitio que decía a quién se marca
   const etiquetaMarcado = enParejas
-    ? t('input.rivalBall')
+    ? markedName
+      ? t('input.rivalBallOf', { nombre: markedName })
+      : t('input.rivalBall')
     : markedName
       ? t('input.youMark', { nombre: markedName })
       : t('input.markerScore');
@@ -155,8 +157,8 @@ const HoleInput = ({
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
           <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
           {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
@@ -182,7 +184,7 @@ const HoleInput = ({
         // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
         // una columna por jugador su hueco quedaba más abajo. Así comparten fila
         <div data-testid="huecos-del-hoyo" className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}>
-          <label htmlFor={idPropio} className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
+          <label htmlFor={idPropio} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaPropia}</label>
           {/* La marca del jugador al que anotas va aquí y no en la cabecera:
               la de arriba es la de TU resultado, y son dos acuerdos distintos.
               Sin esta, un anotador veía su tick verde mientras la tira de
@@ -190,7 +192,8 @@ const HoleInput = ({
               La tarjeta ya no la lleva, así que este es el único sitio. */}
           {conMarcado && (
           <div className="flex items-center justify-between gap-2">
-            <label htmlFor={idMarcado} className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
+            {/* min-w-0 y break-words: en foursomes lleva la pareja, y un nombre largo ensanchaba la columna (scroll lateral a 360 px) */}
+            <label htmlFor={idMarcado} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
             {markedValidationStatus && (
               <span data-testid="marked-validation">
                 <ValidationIcon status={markedValidationStatus} />
@@ -294,26 +297,28 @@ const HoleInput = ({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3">
-        {pie && <div data-testid="pie-del-hoyo" className="w-full">{pie}</div>}
-        {netScore !== null && netScore !== undefined && (
-          <span className="text-gray-600">{t('input.netScore')}: <strong>{netScore}</strong></span>
-        )}
-        {holeResult && (
-          <span className="text-gray-600">
-            {holeResult.winner === 'HALVED'
-              ? t('input.halved')
-              : holeResult.winner === 'A' ? (teamAName || 'A') : holeResult.winner === 'B' ? (teamBName || 'B') : holeResult.winner}
-          </span>
-        )}
-        {standing && (
-          <span className="font-medium text-primary">
-            {standing === 'AS'
-              ? t('input.allSquare')
-              : `${holeResult?.standingTeam === 'A' ? (teamAName || 'A') : holeResult?.standingTeam === 'B' ? (teamBName || 'B') : ''} ${standing}`}
-          </span>
-        )}
-      </div>
+      {/* Sin nada que decir, sin pie: era una franja vacía que empujaba la navegación */}
+      {conPie && (
+        <div data-testid="pie-del-hoyo" className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3">
+          {netScore !== null && netScore !== undefined && (
+            <span className="text-gray-600">{t('input.netScore')}: <strong>{netScore}</strong></span>
+          )}
+          {holeResult && (
+            <span className="text-gray-600">
+              {holeResult.winner === 'HALVED'
+                ? t('input.halved')
+                : holeResult.winner === 'A' ? (teamAName || 'A') : holeResult.winner === 'B' ? (teamBName || 'B') : holeResult.winner}
+            </span>
+          )}
+          {standing && (
+            <span className="font-medium text-primary">
+              {standing === 'AS'
+                ? t('input.allSquare')
+                : `${holeResult?.standingTeam === 'A' ? (teamAName || 'A') : holeResult?.standingTeam === 'B' ? (teamBName || 'B') : ''} ${standing}`}
+            </span>
+          )}
+        </div>
+      )}
 
       {openPanel === 'own' && (
         <ScoreInputPanel

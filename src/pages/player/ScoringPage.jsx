@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -14,7 +14,7 @@ import HoleInput from '../../components/scoring/HoleInput';
 import HoleSelector from '../../components/scoring/HoleSelector';
 import ScorecardTable from '../../components/scoring/ScorecardTable';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
-import PreMatchInfo from '../../components/scoring/PreMatchInfo';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
@@ -35,6 +35,7 @@ const ScoringPage = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('scoring');
+  const { t: tSchedule } = useTranslation('schedule');
   const { user, loading: isLoadingUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('input');
@@ -215,6 +216,20 @@ const ScoringPage = () => {
   const markerAssignment = scoringView?.markerAssignments?.find(
     (ma) => ma.scorerUserId === currentUserId
   );
+
+  // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
+  // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
+  // Lo decía la tarjeta «Info del Partido», que se quitó para que la
+  // navegación se viera sin desplazar la pantalla (16 oct)
+  const formato = scoringView?.matchFormat;
+  const jugadores = scoringView?.players;
+  const marcoAId = markerAssignment?.marksUserId;
+  // (sin useMemo: el compilador de React ya lo memoriza)
+  const equipoMarcado = formato === 'FOURSOMES' && marcoAId ? jugadores?.find((p) => p.userId === marcoAId)?.team : null;
+  const parejaMarcada = equipoMarcado
+    ? jugadores.filter((p) => p.team === equipoMarcado).map((p) => p.userName).join(' / ')
+    : '';
+  const aQuienMarco = parejaMarcada || markerAssignment?.marksName || null;
 
   // Players who still need to submit their scorecard for the match to complete
   const esFoursomes = scoringView?.matchFormat === 'FOURSOMES';
@@ -524,15 +539,18 @@ const ScoringPage = () => {
         )}
 
         {/* Match header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          {/* min-w-0: sin él, un nombre de campo largo no se recorta y la cabecera se sale */}
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold text-gray-900">
               {t('matchHeader', { number: scoringView?.matchNumber })}
             </h1>
-            <p className="text-sm text-gray-500">{scoringView?.matchFormat}</p>
+            {/* El formato, traducido («Foursomes», no «FOURSOMES») */}
+            <p className="text-sm text-gray-500">{scoringView?.matchFormat && tSchedule(`formats.${scoringView.matchFormat}`)}</p>
+            <CampoDeLaPartida nombre={scoringView?.roundInfo?.golfCourseName} />
           </div>
           {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
-            <div className="text-right" data-testid="marcador-del-partido">
+            <div className="shrink-0 text-right" data-testid="marcador-del-partido">
               <p className="text-lg font-bold text-primary">{textoDelMarcador}</p>
               {scoringView?.matchStanding && (
                 <p className="text-xs text-gray-500">
@@ -564,16 +582,6 @@ const ScoringPage = () => {
         {/* Tab: Input */}
         {activeTab === 'input' && (
           <div className="space-y-4">
-            {/* Pre-match info (first time) */}
-            {markerAssignment && (
-              <PreMatchInfo
-                markerAssignment={markerAssignment}
-                matchFormat={scoringView?.matchFormat}
-                currentUserId={currentUserId}
-                players={scoringView?.players}
-              />
-            )}
-
             <HoleSelector
               currentHole={currentHole}
               onSelect={handleHoleSelect}
@@ -589,6 +597,12 @@ const ScoringPage = () => {
                   {t('notOpenYet.opensAt', { hora: horaDeApertura })}
                 </p>
                 <p className="mt-1 text-amber-800">{t('notOpenYet.meanwhile')}</p>
+                {/* A quién vas a marcar (16 oct): lo decía «Info del Partido» */}
+                {aQuienMarco && (
+                  <p data-testid="anotaras-a" className="mt-1 font-medium text-amber-900">
+                    {t(scoringView?.matchFormat === 'FOURSOMES' ? 'notOpenYet.youWillMarkPair' : 'notOpenYet.youWillMark', { nombre: aQuienMarco })}
+                  </p>
+                )}
               </div>
             )}
 
@@ -609,12 +623,11 @@ const ScoringPage = () => {
                   // cuando esta cambia, así que enseñaba un golpe que no estaba en
                   // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
                   key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                  pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                   matchFormat={scoringView?.matchFormat}
                   holeNumber={currentHole}
                   par={currentHoleData.par}
                   markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
-                  markedName={markerAssignment?.marksName ?? null}
+                  markedName={aQuienMarco}
                   markerName={markerAssignment?.markedByName ?? null}
                   strokeIndex={currentHoleData.strokeIndex}
                   playerScore={currentPlayerScore}
@@ -644,28 +657,33 @@ const ScoringPage = () => {
             )}
 
             {/* Prev/Next navigation */}
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={handlePrevHole}
                 disabled={currentHole <= 1}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                className="min-h-11 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
               >
                 {t('input.prevHole')}
               </button>
+              {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
+              {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
+              {currentHoleData && !aunNoAbre && !cerradoSinJugar && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
               <button
                 onClick={handleNextHole}
                 disabled={currentHole >= totalHoles}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                className="min-h-11 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
               >
                 {t('input.nextHole')}
               </button>
             </div>
 
-            {/* Concede button. Decidido, no queda nada que conceder (#710) */}
+            {/* Concede button. Decidido, no queda nada que conceder (#710); con
+                todos los hoyos anotados, tampoco: solo falta validar (16 oct) */}
             {canScore &&
               !hasSubmitted &&
               scoringView?.matchStatus === 'IN_PROGRESS' &&
-              !scoringView?.isDecided && (
+              !scoringView?.isDecided &&
+              !partidoAcabado && (
               <button
                 onClick={() => setShowConcedeModal(true)}
                 className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
@@ -709,6 +727,8 @@ const ScoringPage = () => {
               pendientes={pendingPlayers.map((p) => p.userName)}
               // Concedido o walkover también lo terminan: ya no se espera a nadie
               completado={scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar}
+              // Todo anotado y sin validar, sin decidir: no «Partido terminado»
+              soloAnotado={estadoDeEntrega === 'faltaValidar' && !scoringView?.isDecided}
               // Decidido no es acabado: se puede seguir jugando hasta el 18
               sePuedeSeguir={Boolean(scoringView?.isDecided) && holesToSubmit < totalHoles}
             />
