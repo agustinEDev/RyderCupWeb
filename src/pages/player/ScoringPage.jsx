@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -257,7 +258,7 @@ const ScoringPage = () => {
   // envía muestras del mapa (#880). Quien no juega el partido no tiene barra:
   // solo mide. En foursomes, la mía, no la del compañero
   const yo = scoringView?.players?.find((p) => p.userId === currentUserId);
-  const miBarra = yo?.color ? { color: yo.color, gender: yo.teeGender ?? null } : null;
+  const miBarra = barraDe(yo);
 
   // La anotación de un partido programado abre sola a una hora (BE #305). Antes
   // de esa hora no se ofrecen casillas: el servidor las rechazaría y el golpe

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { muestrasDeLaBarra, esLaMismaBarra } from './muestrasDeLaBarra';
+import { barraDe, muestrasDeLaBarra, esLaMismaBarra } from './muestrasDeLaBarra';
 
 /**
  * Lo que ve un jugador de las muestras de un campo, según su barra (BE #532,
@@ -100,5 +100,17 @@ describe('muestrasDeLaBarra', () => {
     expect(esLaMismaBarra({ color: 'RED', gender: 'MALE' }, { color: 'RED', gender: 'FEMALE' })).toBe(false);
     expect(esLaMismaBarra({ color: 'RED', gender: 'MALE' }, { color: 'WHITE', gender: 'MALE' })).toBe(false);
     expect(esLaMismaBarra(null, { color: 'RED' })).toBe(false);
+  });
+});
+
+describe('barraDe (la barra de un jugador de la anotación, #880)', () => {
+  it.each([
+    [{ color: 'YELLOW', teeGender: 'MALE' }, { color: 'YELLOW', gender: 'MALE' }],
+    [{ color: 'RED', teeGender: null }, { color: 'RED', gender: null }],
+    [{ color: 'RED' }, { color: 'RED', gender: null }],
+    [{ color: null, teeGender: 'MALE' }, null],
+    [undefined, null],
+  ])('%o → %o', (jugador, barra) => {
+    expect(barraDe(jugador)).toEqual(barra);
   });
 });

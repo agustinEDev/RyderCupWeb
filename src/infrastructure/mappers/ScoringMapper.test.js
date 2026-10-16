@@ -466,12 +466,7 @@ describe('ScoringMapper', () => {
       expect(dto.matchComplete).toBe(false);
     });
   });
-  /**
-   * El backend resuelve la tarjeta de cada barra y la manda por jugador
-   * (RyderCupAm#213) «para que el cliente no tenga que volver a resolverlo — y
-   * no lo resuelva de otra manera». El mapper la tiraba, así que la pantalla
-   * seguía puntuando contra la tarjeta del campo. Ver RyderCupWeb#417.
-   */
+
   // RyderCupWeb #880: con el color, el mapa del hoyo envía las muestras por barra
   describe('el sexo de la barra de cada jugador', () => {
     const vista = (players) => ScoringMapper.toScoringViewDTO({ players });
@@ -488,6 +483,12 @@ describe('ScoringMapper', () => {
     });
   });
 
+  /**
+   * El backend resuelve la tarjeta de cada barra y la manda por jugador
+   * (RyderCupAm#213) «para que el cliente no tenga que volver a resolverlo — y
+   * no lo resuelva de otra manera». El mapper la tiraba, así que la pantalla
+   * seguía puntuando contra la tarjeta del campo. Ver RyderCupWeb#417.
+   */
   describe('la tarjeta de la barra de cada jugador', () => {
     const withHoleCard = {
       players: [
