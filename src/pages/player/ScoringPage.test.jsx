@@ -136,9 +136,6 @@ vi.mock('../../components/scoring/ScorecardTable', () => ({
 vi.mock('../../components/scoring/LeaderboardView', () => ({
   default: () => <div data-testid="leaderboard-view">LeaderboardView</div>,
 }));
-vi.mock('../../components/scoring/PreMatchInfo', () => ({
-  default: () => <div data-testid="pre-match-info">PreMatchInfo</div>,
-}));
 vi.mock('../../components/scoring/MatchSummaryCard', () => ({
   default: ({ winnerName }) => (
     <div data-testid="match-summary-card">MatchSummaryCard {winnerName}</div>
@@ -285,9 +282,46 @@ describe('ScoringPage', () => {
     expect(screen.getByTestId('hole-selector')).toBeInTheDocument();
   });
 
-  it('should show pre-match info on hole 1', () => {
+  it('16 oct: sin «Info del Partido» (para que la navegación se vea sin desplazar)', () => {
     render(<ScoringPage />);
-    expect(screen.getByTestId('pre-match-info')).toBeInTheDocument();
+    expect(screen.queryByText('preMatch.title')).toBeNull();
+    expect(screen.queryByTestId('pre-match-info')).toBeNull();
+  });
+
+  it('16 oct: «Anotas a …» del hoyo dice a quién marco', () => {
+    render(<ScoringPage />);
+    expect(casilla.props.markedName).toBe('Player B');
+  });
+
+  it('16 oct: en foursomes, «Anotas a …» dice la pareja rival (#710)', () => {
+    const vista = mockUseScoring.scoringView;
+    mockUseScoring.scoringView = {
+      ...vista,
+      matchFormat: 'FOURSOMES',
+      players: [...vista.players, { userId: 'u3', userName: 'Player C', team: 'A' }, { userId: 'u4', userName: 'Player D', team: 'B' }],
+    };
+    try {
+      render(<ScoringPage />);
+      expect(casilla.props.markedName).toBe('Player B / Player D');
+    } finally {
+      mockUseScoring.scoringView = vista;
+    }
+  });
+
+  it('16 oct: el campo de la partida, bajo el título', () => {
+    const vista = mockUseScoring.scoringView;
+    mockUseScoring.scoringView = { ...vista, roundInfo: { ...vista.roundInfo, golfCourseName: 'Golf de Meis - Par 72' } };
+    try {
+      render(<ScoringPage />);
+      expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Golf de Meis - Par 72');
+    } finally {
+      mockUseScoring.scoringView = vista;
+    }
+  });
+
+  it('16 oct: sin nombre del campo, ni la línea', () => {
+    render(<ScoringPage />);
+    expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
   });
 
   it('should switch to scorecard tab', () => {
@@ -1513,8 +1547,8 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
   it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
     render(<ScoringPage />);
 
-    const pie = casilla.props.pie;
-    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+    const accion = casilla.props.accion;
+    expect(accion.props.onAbrir).toBe(mapaHoyo.valor.abrir);
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

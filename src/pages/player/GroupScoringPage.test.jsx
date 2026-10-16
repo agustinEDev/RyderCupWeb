@@ -589,11 +589,22 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
   });
 
+  it('16 oct: el campo de la partida, bajo el título; sin nombre, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_name: 'Golf de Meis - Par 72' }) });
+    const { unmount } = render(<GroupScoringPage />);
+    expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Golf de Meis - Par 72');
+    unmount();
+
+    mockHook = hook();
+    render(<GroupScoringPage />);
+    expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
+  });
+
   it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
     render(<GroupScoringPage />);
 
-    const pie = llamadas.casilla.pie;
-    expect(pie.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+    const accion = llamadas.casilla.accion;
+    expect(accion.props.onAbrir).toBe(mapaHoyo.valor.abrir);
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

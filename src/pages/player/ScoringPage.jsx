@@ -14,7 +14,7 @@ import HoleInput from '../../components/scoring/HoleInput';
 import HoleSelector from '../../components/scoring/HoleSelector';
 import ScorecardTable from '../../components/scoring/ScorecardTable';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
-import PreMatchInfo from '../../components/scoring/PreMatchInfo';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import MatchSummaryCard from '../../components/scoring/MatchSummaryCard';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
@@ -215,6 +215,17 @@ const ScoringPage = () => {
   const markerAssignment = scoringView?.markerAssignments?.find(
     (ma) => ma.scorerUserId === currentUserId
   );
+
+  // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
+  // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
+  // Lo decía la tarjeta «Info del Partido», que se quitó para que la
+  // navegación se viera sin desplazar la pantalla (16 oct)
+  const parejaMarcada = (() => {
+    if (scoringView?.matchFormat !== 'FOURSOMES' || !markerAssignment) return '';
+    const equipo = scoringView.players?.find((p) => p.userId === markerAssignment.marksUserId)?.team;
+    return equipo ? scoringView.players.filter((p) => p.team === equipo).map((p) => p.userName).join(' / ') : '';
+  })();
+  const aQuienMarco = parejaMarcada || markerAssignment?.marksName || null;
 
   // Players who still need to submit their scorecard for the match to complete
   const esFoursomes = scoringView?.matchFormat === 'FOURSOMES';
@@ -530,6 +541,7 @@ const ScoringPage = () => {
               {t('matchHeader', { number: scoringView?.matchNumber })}
             </h1>
             <p className="text-sm text-gray-500">{scoringView?.matchFormat}</p>
+            <CampoDeLaPartida nombre={scoringView?.roundInfo?.golfCourseName} />
           </div>
           {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
             <div className="text-right" data-testid="marcador-del-partido">
@@ -564,16 +576,6 @@ const ScoringPage = () => {
         {/* Tab: Input */}
         {activeTab === 'input' && (
           <div className="space-y-4">
-            {/* Pre-match info (first time) */}
-            {markerAssignment && (
-              <PreMatchInfo
-                markerAssignment={markerAssignment}
-                matchFormat={scoringView?.matchFormat}
-                currentUserId={currentUserId}
-                players={scoringView?.players}
-              />
-            )}
-
             <HoleSelector
               currentHole={currentHole}
               onSelect={handleHoleSelect}
@@ -609,12 +611,12 @@ const ScoringPage = () => {
                   // cuando esta cambia, así que enseñaba un golpe que no estaba en
                   // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
                   key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                  pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                  accion={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                   matchFormat={scoringView?.matchFormat}
                   holeNumber={currentHole}
                   par={currentHoleData.par}
                   markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
-                  markedName={markerAssignment?.marksName ?? null}
+                  markedName={aQuienMarco}
                   markerName={markerAssignment?.markedByName ?? null}
                   strokeIndex={currentHoleData.strokeIndex}
                   playerScore={currentPlayerScore}

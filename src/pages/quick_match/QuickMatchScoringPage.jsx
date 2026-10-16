@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -18,6 +18,7 @@ import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
@@ -553,12 +554,7 @@ const QuickMatchScoringPage = () => {
               {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
               {quickMatch?.matchFormat ?? quickMatch?.scoringFormat}
             </p>
-            {courseName && (
-              <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1" data-testid="quick-match-course-name">
-                <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                {courseName}
-              </p>
-            )}
+            <CampoDeLaPartida nombre={courseName} />
           </div>
           {quickMatch?.isCompleted && (
             <span className="text-sm font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
@@ -616,7 +612,7 @@ const QuickMatchScoringPage = () => {
                   <>
                     <QuickMatchHoleInput
                       key={currentHole}
-                      pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                      accion={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                       holeNumber={currentHole}
                       par={currentHoleData.par}
                       strokeIndex={currentHoleData.strokeIndex}

@@ -60,8 +60,8 @@ class GetUpcomingTeeGroupsUseCase {
       // tarjeta entregada o retirado mientras los demás acaban, ya no es su
       // próxima partida —ni para la lista ni para el contador del panel—
       .filter(({ group }) => anotaSuTarjeta(group, userId))
-      .map(({ roundId, roundDate, sessionType, group }) => ({ roundId, roundDate, sessionType, group, companeros: companerosDe(group, userId) }))
-      .map(({ roundId, roundDate, sessionType, group, companeros }) => ({
+      .map((mia) => ({ ...mia, companeros: companerosDe(mia.group, userId) }))
+      .map(({ roundId, roundDate, sessionType, golfCourseName, group, companeros }) => ({
         id: group.id,
         // Lo distingue de un partido de la Ryder: su pantalla y su vista son otras
         esPartidaDeFranja: true,
@@ -73,6 +73,8 @@ class GetUpcomingTeeGroupsUseCase {
         roundId,
         roundDate,
         sessionType,
+        // El campo de la franja, en su tarjeta (BE #573)
+        golfCourseName: golfCourseName ?? null,
         teeTime: group.teeTime,
         matchNumber: group.number,
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)

@@ -42,11 +42,13 @@ const HoleInput = ({
   matchFormat,
   // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
   allowPickedUp = true,
-  // Lo que va al pie de la tarjeta: el botón «Mapa» del hoyo (BE #532). Sin
-  // él, la tarjeta queda como siempre
-  pie = null,
+  // Lo que va a la derecha de la cabecera del hoyo: el botón «Mapa» (BE #532).
+  // Antes iba en una fila al pie; ahí, en un móvil, «Anterior / Siguiente» se
+  // quedaban por debajo de la pantalla (Agustín, 16 oct)
+  accion = null,
 }) => {
   const { t } = useTranslation('scoring');
+  const conPie = (netScore !== null && netScore !== undefined) || Boolean(holeResult) || Boolean(standing);
   // Cada etiqueta, atada a su botón: con los dos huecos vacíos los dos se
   // anunciaban «Anotar» y un lector de pantalla no sabía cuál era el tuyo
   // (CodeRabbit en la #747)
@@ -155,8 +157,9 @@ const HoleInput = ({
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Si «Mapa» no cabe en la fila, baja a la derecha en vez de empujar lo demás */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
           <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
           {/* Las partidas de stroke play no traen el índice: sin él, ni la etiqueta (pasada, FE #824) */}
@@ -174,7 +177,10 @@ const HoleInput = ({
             </span>
           )}
         </div>
-        <ValidationIcon status={validationStatus || 'pending'} />
+        <div className="ml-auto flex items-center gap-2">
+          {accion && <div data-testid="accion-del-hoyo">{accion}</div>}
+          <ValidationIcon status={validationStatus || 'pending'} />
+        </div>
       </div>
 
       {!isReadOnly && (
@@ -294,26 +300,28 @@ const HoleInput = ({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3">
-        {pie && <div data-testid="pie-del-hoyo" className="w-full">{pie}</div>}
-        {netScore !== null && netScore !== undefined && (
-          <span className="text-gray-600">{t('input.netScore')}: <strong>{netScore}</strong></span>
-        )}
-        {holeResult && (
-          <span className="text-gray-600">
-            {holeResult.winner === 'HALVED'
-              ? t('input.halved')
-              : holeResult.winner === 'A' ? (teamAName || 'A') : holeResult.winner === 'B' ? (teamBName || 'B') : holeResult.winner}
-          </span>
-        )}
-        {standing && (
-          <span className="font-medium text-primary">
-            {standing === 'AS'
-              ? t('input.allSquare')
-              : `${holeResult?.standingTeam === 'A' ? (teamAName || 'A') : holeResult?.standingTeam === 'B' ? (teamBName || 'B') : ''} ${standing}`}
-          </span>
-        )}
-      </div>
+      {/* Sin nada que decir, sin pie: era una franja vacía que empujaba la navegación */}
+      {conPie && (
+        <div data-testid="pie-del-hoyo" className="flex flex-wrap items-center justify-between gap-2 text-sm border-t border-gray-100 pt-3">
+          {netScore !== null && netScore !== undefined && (
+            <span className="text-gray-600">{t('input.netScore')}: <strong>{netScore}</strong></span>
+          )}
+          {holeResult && (
+            <span className="text-gray-600">
+              {holeResult.winner === 'HALVED'
+                ? t('input.halved')
+                : holeResult.winner === 'A' ? (teamAName || 'A') : holeResult.winner === 'B' ? (teamBName || 'B') : holeResult.winner}
+            </span>
+          )}
+          {standing && (
+            <span className="font-medium text-primary">
+              {standing === 'AS'
+                ? t('input.allSquare')
+                : `${holeResult?.standingTeam === 'A' ? (teamAName || 'A') : holeResult?.standingTeam === 'B' ? (teamBName || 'B') : ''} ${standing}`}
+            </span>
+          )}
+        </div>
+      )}
 
       {openPanel === 'own' && (
         <ScoreInputPanel

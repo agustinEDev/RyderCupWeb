@@ -671,15 +671,35 @@ describe('HoleInput · el teclado del marcado usa SU par', () => {
 });
 
 describe('HoleInput — pie con las distancias (mapa de hoyos)', () => {
-  it('pinta lo que se le pase en `pie`, al final de la tarjeta', () => {
-    render(<HoleInput holeNumber={1} par={4} pie={<p>linea-de-distancias</p>} onScoreChange={() => {}} />);
+  it('16 oct: lo que se le pase en `accion` («Mapa») va en la cabecera del hoyo, junto a su número', () => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} accion={<button type="button">mapa-del-hoyo</button>} />);
 
-    expect(screen.getByText('linea-de-distancias')).toBeInTheDocument();
+    const accion = screen.getByTestId('accion-del-hoyo');
+    expect(accion).toHaveTextContent('mapa-del-hoyo');
+    // En la cabecera (la primera fila de la tarjeta, la de «Hoyo 1»), no en un pie aparte
+    expect(accion.closest('[data-testid$="hole-input"]').firstElementChild).toContainElement(accion);
+    expect(screen.queryByTestId('pie-del-hoyo')).toBeNull();
   });
 
-  it('sin `pie`, la tarjeta queda como siempre', () => {
+  it('sin `accion`, ni el hueco', () => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} />);
+
+    expect(screen.queryByTestId('accion-del-hoyo')).toBeNull();
+  });
+
+  it('16 oct: sin neto, resultado ni marcador, no hay pie (era una franja vacía)', () => {
     render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} />);
 
     expect(screen.queryByTestId('pie-del-hoyo')).toBeNull();
+  });
+
+  it.each([
+    ['el neto', { netScore: 3 }],
+    ['el resultado', { holeResult: { winner: 'HALVED', standing: 'AS', standingTeam: null } }],
+    ['el marcador', { standing: '1UP', holeResult: { winner: 'A', standing: '1UP', standingTeam: 'A' } }],
+  ])('con %s, sí hay pie', (_que, props) => {
+    render(<HoleInput holeNumber={1} par={4} onScoreChange={() => {}} {...props} />);
+
+    expect(screen.getByTestId('pie-del-hoyo')).toBeInTheDocument();
   });
 });

@@ -135,6 +135,9 @@ class ApiScheduleRepository extends IScheduleRepository {
       roundId: m.round_id,
       roundDate: m.round_date,
       sessionType: m.session_type,
+      // El campo de la franja, para «Mis Próximos Partidos» (BE #573)
+      golfCourseId: m.golf_course_id ?? null,
+      golfCourseName: m.golf_course_name ?? null,
       group: ScheduleMapper.toTeeGroupDTO(m.group),
     }));
   }

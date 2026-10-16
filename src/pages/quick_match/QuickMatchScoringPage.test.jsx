@@ -127,7 +127,7 @@ describe('QuickMatchScoringPage', () => {
   it('should show the golf course the match was played on', () => {
     renderPage();
 
-    expect(screen.getByTestId('quick-match-course-name')).toHaveTextContent('Real Club de Golf');
+    expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Real Club de Golf');
   });
 
   it('should not show the course line while the course has not been loaded yet', () => {
@@ -142,7 +142,7 @@ describe('QuickMatchScoringPage', () => {
 
     renderPage();
 
-    expect(screen.queryByTestId('quick-match-course-name')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('campo-de-la-partida')).not.toBeInTheDocument();
   });
 
   it('should navigate back to the quick matches list, not the dashboard', async () => {
@@ -1826,10 +1826,12 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
   });
 
-  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+  it('T2: la tarjeta lleva «Mapa» en la cabecera del hoyo, que lo abre (16 oct)', () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'mapa.abrir' }));
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(screen.getByTestId('accion-del-hoyo')).toContainElement(boton);
+    fireEvent.click(boton);
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 

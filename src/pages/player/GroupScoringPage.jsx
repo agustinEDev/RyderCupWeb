@@ -16,6 +16,7 @@ import { conGenero } from '../../utils/genero';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import HoleInput from '../../components/scoring/HoleInput';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import HoleSelector from '../../components/scoring/HoleSelector';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
@@ -282,6 +283,7 @@ const GroupScoringPage = () => {
             {t('partida.header', { numero: scoringView.matchNumber, hora: strokePlay.teeTime })}
           </h1>
           <p className="text-sm text-gray-500">{t(`partida.type.${strokePlay.tournamentType}`)}</p>
+          <CampoDeLaPartida nombre={scoringView.roundInfo?.golfCourseName} />
         </div>
 
         <div className="flex border-b border-gray-200" role="tablist">
@@ -344,7 +346,7 @@ const GroupScoringPage = () => {
                 <>
                   <HoleInput
                     key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                    pie={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                    accion={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                     holeNumber={currentHole}
                     par={parDe(userId)}
                     markedPar={parDe(marcoA)}

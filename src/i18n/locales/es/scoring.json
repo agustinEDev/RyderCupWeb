@@ -13,16 +13,6 @@
     "scorecard": "Tarjeta",
     "leaderboard": "Clasificación"
   },
-  "preMatch": {
-    "title": "Info del Partido",
-    "youMark": "Tú marcas a",
-    "markedBy": "Te marca",
-    "color": "Color de barras",
-    "handicap": "Hándicap",
-    "format": "Formato",
-    "ready": "Listo para Jugar",
-    "youMarkPair": "Marcáis a"
-  },
   "notOpenYet": {
     "title": "La anotación de este partido aún no ha abierto",
     "opensAt": "Abre a las {{hora}}, hora del campo.",
