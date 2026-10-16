@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -136,7 +137,7 @@ const QuickMatchScoringPage = () => {
   // ni se avisa ni se le quita el puesto a nadie
   // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra (16 oct)
   const yoEnLaPartida = (quickMatch?.participants ?? []).find((p) => p.userId && p.userId === user?.id);
-  const miBarra = yoEnLaPartida?.color ? { color: yoEnLaPartida.color, gender: yoEnLaPartida.teeGender ?? null } : null;
+  const miBarra = barraDe(yoEnLaPartida);
   const hayQuienNoAnoto = (quickMatch?.participants ?? []).some(
     (p) => !coveredParticipantIds.includes(p.participantId)
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -253,6 +254,11 @@ const ScoringPage = () => {
   // Get current hole data
   const courseHoleData = scoringView?.holes?.find((h) => h.holeNumber === currentHole);
   const currentHoleData = holeFor(currentUserId) ?? courseHoleData;
+  // Mi barra (color y sexo), como en stroke play: con ella la Ryder marca y
+  // envía muestras del mapa (#880). Quien no juega el partido no tiene barra:
+  // solo mide. En foursomes, la mía, no la del compañero
+  const yo = scoringView?.players?.find((p) => p.userId === currentUserId);
+  const miBarra = barraDe(yo);
 
   // La anotación de un partido programado abre sola a una hora (BE #305). Antes
   // de esa hora no se ofrecen casillas: el servidor las rechazaría y el golpe
@@ -652,6 +658,7 @@ const ScoringPage = () => {
                   par={currentHoleData.par}
                   metros={currentHoleData.meters ?? null}
                   userId={currentUserId ?? null}
+                  barra={miBarra}
                 />
               </>
             )}

@@ -20,6 +20,13 @@
 const generoDe = (barra) => barra?.gender ?? null;
 
 /** Si dos barras son la misma: mismo color y mismo género. */
+/**
+ * La barra (color y sexo) de un jugador de la anotación, con la que el mapa del
+ * hoyo envía sus muestras; sin color, ninguna: solo se mide. La misma en la
+ * Ryder, en stroke play y en la partida rápida (#880).
+ */
+export const barraDe = (jugador) => (jugador?.color ? { color: jugador.color, gender: jugador.teeGender ?? null } : null);
+
 export const esLaMismaBarra = (a, b) => Boolean(a?.color) && a.color === b?.color && generoDe(a) === generoDe(b);
 
 const vacio = () => ({ primera: null, deOtra: null, recoge: true });
