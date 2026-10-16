@@ -12,8 +12,8 @@ import { crearRecienEnviadas } from './recienEnviadas';
  *
  * | Caso | Qué                                                    | Qué se espera                                           |
  * |------|--------------------------------------------------------|---------------------------------------------------------|
- * | S9   | el resumen, al momento                                 | el del móvil, visto desde la barra del jugador, sin pedir nada |
- * | S9   | el resumen del servidor                                | se guarda entero en el móvil y se da desde la barra     |
+ * | S9   | el resumen, al momento                                 | el del móvil, por hoyo, sin pedir nada                  |
+ * | S9   | el resumen del servidor                                | se guarda en el móvil y se da tal cual                  |
  * | S9   | el servidor falla                                      | el del móvil                                            |
  * | S9   | lo que espera en la cola, del jugador, campo y barra   | por hoyo, la última                                     |
  * | S10  | enviar con red                                         | a la cola ANTES de pedir, con id y barra; al llegar, fuera |
@@ -45,8 +45,8 @@ const SALIDA2 = { lat: 36.2829, lon: -5.33 };
 const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
 const ROJA = { color: 'RED', gender: 'FEMALE' };
 const PRIMERA = { tee: SALIDA, bends: [], greenCenter: GREEN };
-const RESUMEN = { 3: [{ color: 'WHITE', gender: 'MALE', primera: PRIMERA, recoge: false }, { color: 'YELLOW', gender: 'MALE', primera: PRIMERA, recoge: true }] };
-const VISTA_AMARILLA = { 3: { primera: PRIMERA, deOtra: PRIMERA, recoge: true } };
+// Por hoyo, de cualquier barra (BE #575, 17 oct: una referencia por hoyo)
+const RESUMEN = { 3: { primera: PRIMERA, green: GREEN, recoge: true } };
 
 const sinRed = () => Object.assign(new TypeError('sin conexión'), { cause: new TypeError('Failed to fetch') });
 const http = (status, errorCode = null) => Object.assign(new Error(`HTTP ${status}`), { status, errorCode });
@@ -100,20 +100,19 @@ describe('muestras de hoyo — casos de uso', () => {
   const resumen = () => new GetHoleSamplesUseCase({ golfCourseRepository: repo, holeSampleStore: store, recienEnviadas });
 
   describe('S9: el resumen del campo', () => {
-    it('al momento, el del móvil desde la barra del jugador, sin pedir nada', () => {
+    it('al momento, el del móvil, el mismo para cualquier barra, sin pedir nada', () => {
       store.saveResumen('gc-1', RESUMEN);
 
-      expect(resumen().guardadas('gc-1', AMARILLA)).toEqual(VISTA_AMARILLA);
-      expect(resumen().guardadas('gc-1', ROJA)).toEqual({ 3: { primera: null, deOtra: PRIMERA, recoge: true } });
+      expect(resumen().guardadas('gc-1')).toEqual(RESUMEN);
       expect(repo.getHoleSamples).not.toHaveBeenCalled();
     });
 
     it('sin copia en el móvil, vacío', () => {
-      expect(resumen().guardadas('gc-1', AMARILLA)).toEqual({});
+      expect(resumen().guardadas('gc-1')).toEqual({});
     });
 
-    it('el del servidor se guarda ENTERO en el móvil (todas las barras) y se da desde la barra', async () => {
-      expect(await resumen().execute('gc-1', AMARILLA)).toEqual(VISTA_AMARILLA);
+    it('el del servidor se guarda en el móvil y se da tal cual', async () => {
+      expect(await resumen().execute('gc-1')).toEqual(RESUMEN);
 
       expect(repo.getHoleSamples).toHaveBeenCalledWith('gc-1');
       expect(store.loadResumen('gc-1')).toEqual(RESUMEN);
@@ -127,13 +126,13 @@ describe('muestras de hoyo — casos de uso', () => {
       store.saveResumen('gc-1', RESUMEN);
       repo.getHoleSamples.mockRejectedValue(fallo);
 
-      expect(await resumen().execute('gc-1', AMARILLA)).toEqual(VISTA_AMARILLA);
+      expect(await resumen().execute('gc-1')).toEqual(RESUMEN);
       expect(store.loadResumen('gc-1')).toEqual(RESUMEN);
     });
 
     it('sin campo, nada y sin pedir', async () => {
-      expect(await resumen().execute(null, AMARILLA)).toEqual({});
-      expect(resumen().guardadas(null, AMARILLA)).toEqual({});
+      expect(await resumen().execute(null)).toEqual({});
+      expect(resumen().guardadas(null)).toEqual({});
       expect(repo.getHoleSamples).not.toHaveBeenCalled();
     });
 
@@ -180,6 +179,14 @@ describe('muestras de hoyo — casos de uso', () => {
       await enviar({ bends: undefined, barra: { color: 'RED' } });
 
       expect(repo.sendHoleSample.mock.calls[0][2]).toMatchObject({ bends: [], barra: { color: 'RED', gender: null } });
+    });
+
+    // 17 oct: quien no está en la salida manda solo el green
+    it('una solo green sale sin salida y sin codos, y se ve como pendiente', async () => {
+      await enviar({ tee: null, bends: [] });
+
+      expect(repo.sendHoleSample.mock.calls[0][2]).toMatchObject({ tee: null, bends: [], greenCenter: GREEN });
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)[3]).toEqual({ tee: null, bends: [], greenCenter: GREEN });
     });
 
     it.each([

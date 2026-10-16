@@ -31,8 +31,9 @@ const { useMuestrasDelCampo } = await import('./useMuestrasDelCampo');
 
 const P = { tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 } };
 const MUESTRA = { id: 'm-1', ...P };
-const H3 = { primera: P, deOtra: null, recoge: true };
-const H5 = { primera: null, deOtra: null, recoge: true };
+// Por hoyo, de cualquier barra (BE #575, 17 oct)
+const H3 = { primera: P, green: null, recoge: true };
+const H5 = { primera: null, green: { lat: 5, lon: 6 }, recoge: true };
 const AMARILLA = { color: 'YELLOW', gender: 'MALE' };
 const ROJA = { color: 'RED', gender: null };
 
@@ -54,7 +55,7 @@ describe('useMuestrasDelCampo', () => {
     expect(typeof result.current.enviar).toBe('function');
   });
 
-  it('S15: el resumen del móvil al momento y luego el del servidor, desde mi barra', async () => {
+  it('S15: el resumen del móvil al momento y luego el del servidor (el mismo para cualquier barra)', async () => {
     casos.muestras.guardadas.mockReturnValue({ 3: H3 });
     let responder;
     casos.muestras.execute.mockReturnValue(new Promise((r) => (responder = r)));
@@ -64,8 +65,8 @@ describe('useMuestrasDelCampo', () => {
     expect(result.current.muestras).toEqual({ 3: H3 });
     await act(async () => responder({ 3: H3, 5: H5 }));
     expect(result.current.muestras).toEqual({ 3: H3, 5: H5 });
-    expect(casos.muestras.execute).toHaveBeenCalledWith('gc-1', AMARILLA);
-    expect(casos.muestras.guardadas).toHaveBeenCalledWith('gc-1', AMARILLA);
+    expect(casos.muestras.execute).toHaveBeenCalledWith('gc-1');
+    expect(casos.muestras.guardadas).toHaveBeenCalledWith('gc-1');
   });
 
   it('S15: lo pendiente del jugador con su barra, al momento', () => {
@@ -87,15 +88,16 @@ describe('useMuestrasDelCampo', () => {
     expect(casos.muestras.execute).toHaveBeenCalledTimes(1);
   });
 
-  it('S15: cambiar de barra pide y muestra lo de la nueva, sin enseñar lo de la anterior', async () => {
-    casos.muestras.execute.mockImplementation(async (_gc, b) => (b.color === 'YELLOW' ? { 3: H3 } : new Promise(() => {})));
+  it('S15: cambiar de barra vuelve a mirar lo pendiente de la nueva (el resumen es el mismo)', async () => {
+    casos.muestras.execute.mockResolvedValue({ 3: H3 });
+    casos.muestras.pendientes.mockImplementation((_u, _gc, b) => (b?.color === 'RED' ? { 4: P } : {}));
     const { result, rerender } = montar();
     await waitFor(() => expect(result.current.muestras).toEqual({ 3: H3 }));
 
     rerender({ golfCourseId: 'gc-1', userId: 'u1', barra: ROJA });
 
-    expect(result.current.muestras).toEqual({});
-    expect(casos.muestras.execute).toHaveBeenLastCalledWith('gc-1', ROJA);
+    await waitFor(() => expect(result.current.pendientes).toEqual({ 4: P }));
+    expect(casos.muestras.pendientes).toHaveBeenLastCalledWith('u1', 'gc-1', ROJA);
   });
 
   it('S15: si el servidor falla, se queda el del móvil', async () => {
@@ -114,7 +116,7 @@ describe('useMuestrasDelCampo', () => {
     const { result } = montar({ userId: null, barra: null });
 
     await waitFor(() => expect(result.current.muestras).toEqual({ 3: H3 }));
-    expect(casos.muestras.execute).toHaveBeenCalledWith('gc-1', null);
+    expect(casos.muestras.execute).toHaveBeenCalledWith('gc-1');
     expect(result.current.pendientes).toEqual({});
   });
 

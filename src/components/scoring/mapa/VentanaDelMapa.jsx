@@ -52,7 +52,9 @@ class SiNoCarga extends Component {
 }
 
 // Un hoyo del que aún no se sabe nada: sin muestra, y recogiendo
-const SIN_MUESTRAS = { primera: null, deOtra: null, recoge: true };
+const SIN_MUESTRAS = { primera: null, green: null, recoge: true };
+const conSalida = (muestra) => Boolean(muestra?.tee);
+const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
 
 const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null, barra = null }) => {
   const { t } = useTranslation('scoring');
@@ -60,35 +62,52 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
   const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
 
-  // Lo que se ve, por orden (16 oct): el hoyo aprobado con su green; si no, la
-  // primera muestra de SU barra; si no, la de otra barra (el mismo green, y la
-  // salida se lleva a la suya); si no, la que este jugador dejó pendiente en el
-  // móvil; si no, lo aprobado que haya (solo la salida) o nada
+  // Lo que se ve, por orden (17 oct, una referencia por hoyo): el hoyo aprobado
+  // con su green; si no, la primera muestra completa del hoyo; si no, el green
+  // de una muestra solo green (y se pide la salida hasta él); si no, la que este
+  // jugador dejó en el móvil (completa, o solo su green); si no, lo aprobado que
+  // haya (solo la salida) o nada
   const aprobado = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
-  const conSalida = (aprobado?.playLine?.length ?? 0) > 0;
+  const aprobadoConSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
   const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
-  const muestra = delHoyo.primera ?? delHoyo.deOtra ?? pendientes[numeroDeHoyo] ?? null;
+  const mia = pendientes[numeroDeHoyo] ?? null;
+  // Mi línea completa que acaba en el green suelto es la que lo completa: va
+  // antes que él, o al reabrir no la vería (revisión, 17 oct)
+  const miaLoCompleta = conSalida(mia) && mismoPunto(mia.greenCenter, delHoyo.green);
+  const muestra = delHoyo.primera ?? (miaLoCompleta || (!delHoyo.green && conSalida(mia)) ? mia : null);
+  // Con la salida del mapa aprobado, se pide el green desde ella, como siempre:
+  // el green suelto no la tapa (revisión, 17 oct)
+  const greenSuelto = muestra || aprobadoConSalida ? null : (delHoyo.green ?? (mia && !conSalida(mia) ? mia.greenCenter : null));
   // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
   // render rehacía las líneas del mapa
   const deLaMuestra = useMemo(
     () => (muestra ? hoyoDeUnaMarca({ tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter }) : null),
     [muestra],
   );
-  const hoyo = completo ? aprobado : (deLaMuestra ?? (conSalida ? aprobado : null));
-  // Sin línea, se pide: sin salida, salida y green; con salida, el green. Hace
+  const deGreenSuelto = useMemo(() => (greenSuelto ? { playLine: [], green: { center: greenSuelto } } : null), [greenSuelto]);
+  const hoyo = completo ? aprobado : (deLaMuestra ?? deGreenSuelto ?? (aprobadoConSalida ? aprobado : null));
+  // Sin línea, se pide: sin salida, salida y green (antes, si estás en la
+  // salida); con salida, el green; con solo el green, la salida hasta él. Hace
   // falta la sesión y la barra: lo que se marca se envía con ellas
   const puedeEnviar = Boolean(userId && barra);
   let porMarcar = null;
-  if (!hoyo?.green && puedeEnviar) porMarcar = conSalida ? 'green' : 'salida';
+  if (puedeEnviar && !completo && !muestra) {
+    if (greenSuelto) porMarcar = 'salidaAlGreen';
+    else porMarcar = aprobadoConSalida ? 'green' : 'salida';
+  }
   // La atribución, si algo de lo que se ve sale del mapa (y no de una muestra)
-  const usaElMapa = completo || (conSalida && !muestra);
+  const usaElMapa = completo || (aprobadoConSalida && !muestra && !greenSuelto);
 
   // Qué muestra se ve, no solo si hay una: si llega otra (la de mi barra tras la
   // de otra), el mapa se rehace con ella mientras el jugador no haya empezado
-  const deCualMuestra = muestra ? [muestra.tee, ...muestra.bends, muestra.greenCenter].map((p) => `${p.lat},${p.lon}`).join(';') : '';
+  const deCualMuestra = muestra
+    ? [muestra.tee, ...muestra.bends, muestra.greenCenter].map((p) => `${p.lat},${p.lon}`).join(';')
+    : greenSuelto
+      ? `green:${greenSuelto.lat},${greenSuelto.lon}`
+      : '';
   const ahora = {
-    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
+    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && deCualMuestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
     hoyo,
     porMarcar,
     atribucion: usaElMapa ? (mapaDelCampo?.attribution ?? null) : null,
