@@ -82,9 +82,17 @@ export const salidaGreenFueraDeLimites = (salida, green) => {
 /**
  * Los puntos que se arrastran para formar un codo: uno en mitad de cada tramo,
  * con la posición en la que entraría en la línea. Con dos codos, ninguno más.
+ * En un par 5 (suele tener dos codos), la recta lleva dos, a un tercio y a dos
+ * tercios (Agustín, 16 oct).
  */
-export const puntosParaArrastrar = (linea) => {
+export const puntosParaArrastrar = (linea, { par = null } = {}) => {
   if (linea.length - 2 >= MAX_CODOS) return [];
+  if (par === 5 && linea.length === 2) {
+    const [salida, green] = linea;
+    const largo = distanciaEnMetros(salida, green);
+    const hacia = rumbo(salida, green);
+    return [1, 2].map((tercio) => ({ indice: 1, punto: puntoDesde(salida, hacia, (largo * tercio) / 3) }));
+  }
   return linea.slice(1).map((punto, i) => {
     const desde = linea[i];
     return { indice: i + 1, punto: puntoDesde(desde, rumbo(desde, punto), distanciaEnMetros(desde, punto) / 2) };

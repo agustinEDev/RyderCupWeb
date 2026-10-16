@@ -39,13 +39,16 @@ const ESTILO = {
   ],
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
+const DOBLE_TOQUE_MS = 400;
 const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
-// fijo, en apaisado (~360 px) no cabía el hoyo y MapLibre no lo encuadraba
+// fijo, en apaisado (~360 px) no cabía el hoyo y MapLibre no lo encuadraba.
+// Abajo caben la ayuda, «Volver a marcar», el recuadro de distancias y los
+// botones: con menos, la salida de un hoyo marcado quedaba debajo
 const margenDelEncuadre = (alto) => ({
   top: Math.round(Math.min(90, alto * 0.15)),
-  bottom: Math.round(Math.min(240, alto * 0.4)),
+  bottom: Math.round(Math.min(320, alto * 0.45)),
   left: 40,
   right: 40,
 });
@@ -172,13 +175,27 @@ const MapaDelHoyo = ({
   // El toque: mientras se marca, marca; si no, mide. Por ref, porque el mapa
   // se monta una vez y su oyente vería el estado de entonces
   const alTocar = useRef(null);
+  // El doble toque son dos `click` seguidos: el segundo no puede ser el green
+  const ultimoToque = useRef(0);
   useLayoutEffect(() => {
     ultimoMarcado.current = datosDelMarcado;
     alTocar.current = (p) => {
       if (marca.fase === 'pidiendo') {
+        const ahora = globalThis.performance.now();
+        if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
+        ultimoToque.current = ahora;
         setAvisoDeMarca(null);
-        if (marcandoSalida && !marca.tee) setMarca((m) => ({ ...m, tee: p }));
-        else setMarca((m) => ({ ...m, green: p, fase: 'ajustando' }));
+        if (marcandoSalida && !marca.tee) {
+          setMarca((m) => ({ ...m, tee: p }));
+          // Se aleja (sin girar) para que se vea el arco entero con su cifra
+          if (metros) {
+            const alto = contenedor.current?.clientHeight || 640;
+            mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(p, metros) }), {
+              bearing: mapaRef.current.getBearing(),
+              padding: margenDelEncuadre(alto),
+            });
+          }
+        } else setMarca((m) => ({ ...m, green: p, fase: 'ajustando' }));
         return;
       }
       if (marca.fase === 'ajustando') return;
@@ -382,7 +399,7 @@ const MapaDelHoyo = ({
         });
       });
       // Y en mitad de cada tramo, un punto que al soltarlo se convierte en codo
-      for (const { indice, punto: medio } of puntosParaArrastrar(lineaMarcada)) {
+      for (const { indice, punto: medio } of puntosParaArrastrar(lineaMarcada, { par })) {
         poner(medio, 'h-5 w-5 rounded-full border-2 border-dashed border-white bg-white/40 shadow', { draggable: true }).on('dragend', (e) => {
           const { lat, lng } = e.target.getLngLat();
           setMarca((m) => {
@@ -393,7 +410,7 @@ const MapaDelHoyo = ({
         });
       }
     }
-  }, [datosDelMarcado, enMarcha, marca, marcandoSalida, salida, metros, lineaMarcada, textoDelArco]);
+  }, [datosDelMarcado, enMarcha, marca, marcandoSalida, salida, metros, lineaMarcada, textoDelArco, par]);
 
   const empezarAMarcar = () => {
     setAvisoDeMarca(null);

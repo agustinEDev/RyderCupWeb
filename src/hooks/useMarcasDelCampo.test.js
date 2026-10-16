@@ -130,4 +130,18 @@ describe('useMarcasDelCampo', () => {
 
     expect(result.current.marcas).toEqual({ 5: M5, 6: M6 });
   });
+
+  it('si la marca se queda pendiente, avisa para que se reintente (y si se guarda, no)', async () => {
+    const oyente = vi.fn();
+    globalThis.addEventListener('rydercup:marca-de-hoyo-pendiente', oyente);
+    const { result } = renderHook(() => useMarcasDelCampo({ golfCourseId: 'gc-1', userId: 'u1' }));
+    casos.guardar.execute.mockResolvedValueOnce({ estado: 'guardada' }).mockResolvedValueOnce({ estado: 'pendiente' });
+
+    await act(async () => result.current.guardar({ holeNumber: 3, tee: null, bends: [], greenCenter: { lat: 1, lon: 2 } }));
+    expect(oyente).not.toHaveBeenCalled();
+    await act(async () => result.current.guardar({ holeNumber: 3, tee: null, bends: [], greenCenter: { lat: 1, lon: 2 } }));
+
+    expect(oyente).toHaveBeenCalledTimes(1);
+    globalThis.removeEventListener('rydercup:marca-de-hoyo-pendiente', oyente);
+  });
 });

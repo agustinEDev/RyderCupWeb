@@ -169,6 +169,21 @@ describe('puntosParaArrastrar', () => {
     expect(puntos.map((p) => p.indice)).toEqual([1, 2]);
   });
 
+  it('par 5: la recta lleva dos, a un tercio y a dos tercios, que entran tras la salida', () => {
+    const puntos = puntosParaArrastrar([SALIDA, GREEN], { par: 5 });
+
+    expect(puntos.map((p) => p.indice)).toEqual([1, 1]);
+    expect(puntos.map((p) => distanciaEnMetros(SALIDA, p.punto))).toEqual([100, 200]);
+  });
+
+  it('par 5 con un codo: ya uno en cada tramo, como siempre', () => {
+    expect(puntosParaArrastrar([SALIDA, CODO, GREEN], { par: 5 }).map((p) => p.indice)).toEqual([1, 2]);
+  });
+
+  it.each([3, 4, null])('par %s: uno en medio', (par) => {
+    expect(puntosParaArrastrar([SALIDA, GREEN], { par })).toHaveLength(1);
+  });
+
   it('con dos codos, ninguno más', () => {
     expect(puntosParaArrastrar([SALIDA, CODO, alNorte(200), GREEN])).toEqual([]);
   });

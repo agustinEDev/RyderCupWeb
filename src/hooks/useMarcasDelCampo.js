@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getMyHoleMarksUseCase, saveHoleMarkUseCase } from '../composition';
-import { MARCAS_CAMBIADAS } from './useEnvioDeMarcas';
+import { MARCA_PENDIENTE, MARCAS_CAMBIADAS } from './useEnvioDeMarcas';
 
 /**
  * Las marcas del jugador en el campo, por hoyo (BE #532, PR C), y cómo guardar
@@ -55,6 +55,7 @@ export function useMarcasDelCampo({ golfCourseId, userId }) {
         alGuardarEnElMovil: refrescar,
       });
       refrescar();
+      if (resultado.estado === 'pendiente') globalThis.dispatchEvent(new globalThis.CustomEvent(MARCA_PENDIENTE));
       return resultado;
     },
     [userId, golfCourseId],

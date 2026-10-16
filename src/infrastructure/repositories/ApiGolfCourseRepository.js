@@ -99,11 +99,18 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * no falla, se queda colgada, y la marca tiene que pasar a la cola
    */
   async saveHoleMark(id, holeNumber, marca) {
-    const data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/${holeNumber}`, {
-      method: 'PUT',
-      body: JSON.stringify(HoleMarkMapper.toApi(marca)),
-      topeMs: TOPE_DE_ANOTAR_MS,
-    });
+    let data;
+    try {
+      data = await apiRequest(`/api/v1/golf-courses/${id}/hole-map/marks/${holeNumber}`, {
+        method: 'PUT',
+        body: JSON.stringify(HoleMarkMapper.toApi(marca)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return marca;
+      throw error;
+    }
     // Un 2xx dice que el servidor la tiene: si no se entiende lo que devuelve,
     // vale la enviada (si no, quedaría pendiente y se reenviaría siempre)
     try {

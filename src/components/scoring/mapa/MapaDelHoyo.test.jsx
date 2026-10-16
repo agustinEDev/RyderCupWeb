@@ -25,6 +25,7 @@ vi.mock('maplibre-gl', () => {
       this.addLayer = vi.fn();
       this.touchZoomRotate = { disableRotation: vi.fn() };
       this.doubleClickZoom = { disable: vi.fn(), enable: vi.fn() };
+      this.getBearing = vi.fn(() => 0);
       this.keyboard = { disableRotation: vi.fn() };
       mapas.push(this);
     }
@@ -533,6 +534,20 @@ describe('MapaDelHoyo — tras la revisión', () => {
     expect(screen.getByTestId('mapa-abajo').className).toContain('env(safe-area-inset-bottom)');
   });
 
+  it('en un móvil normal (780 px) se reserva abajo el sitio de los paneles: la salida no queda tapada', () => {
+    const alto = vi.spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(780);
+    try {
+      abrir();
+    } finally {
+      alto.mockRestore();
+    }
+
+    expect(mapa().fitBounds).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ padding: expect.objectContaining({ top: 90, bottom: 320 }) })
+    );
+  });
+
   it('el margen del encuadre sale del alto de la pantalla (apaisado)', () => {
     const alto = vi.spyOn(globalThis.HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(360);
     try {
@@ -543,7 +558,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
 
     expect(mapa().fitBounds).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ padding: expect.objectContaining({ top: 54, bottom: 144 }) })
+      expect.objectContaining({ padding: expect.objectContaining({ top: 54, bottom: 162 }) })
     );
   });
 
@@ -614,15 +629,22 @@ describe('MapaDelHoyo — marcar un hoyo sin datos (PR C)', () => {
     return { ...r, onGuardarMarca };
   };
 
+  let reloj;
   beforeEach(() => {
     mapas.length = 0;
     mapas.marcas = [];
     mapas.sinWebgl = false;
     centro.valor = null;
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gpsFalso() });
+    // Un segundo entre toque y toque: así no cuentan como doble toque
+    let ahora = 0;
+    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    reloj.mockRestore();
+    vi.unstubAllGlobals();
+  });
 
   it('C1: sin datos, pide la salida, con «Ahora no»', () => {
     marcar();
@@ -734,6 +756,55 @@ describe('MapaDelHoyo — marcar un hoyo sin datos (PR C)', () => {
       [segundo.lon, segundo.lat],
       [G.lon, G.lat],
     ]);
+  });
+
+  it('par 5 (16 oct): la recta lleva dos puntos para arrastrar; soltar uno hace el codo', () => {
+    marcar({ par: 5, metros: 300 });
+    tocar(T);
+    tocar(G);
+
+    expect(arrastrables()).toHaveLength(2);
+    soltar(arrastrables()[1], { lat: 36.282, lon: -5.331 });
+    expect(datosDelMarcado().features[0].geometry.coordinates).toHaveLength(3);
+  });
+
+  it('C6: al tocar la salida, el mapa se aleja (sin girar) para enseñar el arco entero', () => {
+    marcar({ metros: 390 });
+    mapa().fitBounds.mockClear();
+    mapa().getBearing.mockReturnValue(25);
+
+    tocar(T);
+
+    expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
+    const [[[oeste, sur], [este, norte]], opciones] = mapa().fitBounds.mock.calls[0];
+    expect(norte - T.lat).toBeCloseTo(390 / M_POR_GRADO, 5);
+    expect(T.lat - sur).toBeCloseTo(390 / M_POR_GRADO, 5);
+    expect(este).toBeGreaterThan(T.lon);
+    expect(oeste).toBeLessThan(T.lon);
+    expect(opciones.bearing).toBe(25);
+  });
+
+  it('C6/C7: sin metros de la tarjeta, al tocar la salida el mapa no se mueve', () => {
+    marcar({ metros: null });
+    mapa().fitBounds.mockClear();
+
+    tocar(T);
+
+    expect(mapa().fitBounds).not.toHaveBeenCalled();
+  });
+
+  it('C23: el doble toque (dos toques seguidos) no marca salida y green en el mismo sitio', () => {
+    marcar();
+
+    reloj.mockReturnValue(1000);
+    tocar(T);
+    reloj.mockReturnValue(1150);
+    tocar(T);
+
+    expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    reloj.mockReturnValue(1600);
+    tocar(G);
+    expect(screen.getByRole('button', { name: 'mapa.guardarMarca' })).toBeInTheDocument();
   });
 
   it('C11: «Volver a marcar» empieza de cero', () => {

@@ -7,7 +7,7 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k, o) => (o ? `${
 const toastFalso = vi.hoisted(() => ({ error: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
-const { useEnvioDeMarcas, ESPERAS_MS, MARCAS_CAMBIADAS } = await import('./useEnvioDeMarcas');
+const { useEnvioDeMarcas, ESPERAS_MS, MARCAS_CAMBIADAS, MARCA_PENDIENTE } = await import('./useEnvioDeMarcas');
 
 describe('useEnvioDeMarcas (C17/C18)', () => {
   beforeEach(() => {
@@ -100,6 +100,21 @@ describe('useEnvioDeMarcas (C17/C18)', () => {
       }
       await vi.advanceTimersByTimeAsync(600_000);
       expect(envio.execute).toHaveBeenCalledTimes(ESPERAS_MS.length + 1);
+    });
+
+    it('una marca guardada que se quedó pendiente (envío lento) arma el reintento a los 30 s', async () => {
+      envio.execute.mockResolvedValue({ pendientes: 0 });
+      renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+      envio.execute.mockClear();
+
+      globalThis.dispatchEvent(new globalThis.CustomEvent(MARCA_PENDIENTE));
+      globalThis.dispatchEvent(new globalThis.CustomEvent(MARCA_PENDIENTE));
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[0] - 1);
+      expect(envio.execute).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(envio.execute).toHaveBeenCalledTimes(1);
     });
 
     it('sin nada pendiente no reintenta', async () => {

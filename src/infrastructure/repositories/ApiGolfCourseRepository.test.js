@@ -217,6 +217,12 @@ describe('ApiGolfCourseRepository — marcas de hoyo (PR C)', () => {
     expect(await new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA)).toBe(MARCA);
   });
 
+  it('un 2xx con un cuerpo que no es JSON (un proxy, un portal) vale como guardada', async () => {
+    apiRequest.mockRejectedValue(new SyntaxError('Unexpected token e in JSON'));
+
+    expect(await new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA)).toBe(MARCA);
+  });
+
   it('los fallos se propagan (los decide quien guarda)', async () => {
     apiRequest.mockImplementation(async () => {
       throw Object.assign(new Error('x'), { status: 409, errorCode: 'HOLE_ALREADY_MAPPED' });
