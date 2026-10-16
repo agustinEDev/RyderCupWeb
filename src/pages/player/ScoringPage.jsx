@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -35,6 +35,7 @@ const ScoringPage = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('scoring');
+  const { t: tSchedule } = useTranslation('schedule');
   const { user, loading: isLoadingUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('input');
@@ -220,11 +221,14 @@ const ScoringPage = () => {
   // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
   // Lo decía la tarjeta «Info del Partido», que se quitó para que la
   // navegación se viera sin desplazar la pantalla (16 oct)
-  const parejaMarcada = (() => {
-    if (scoringView?.matchFormat !== 'FOURSOMES' || !markerAssignment) return '';
-    const equipo = scoringView.players?.find((p) => p.userId === markerAssignment.marksUserId)?.team;
-    return equipo ? scoringView.players.filter((p) => p.team === equipo).map((p) => p.userName).join(' / ') : '';
-  })();
+  const formato = scoringView?.matchFormat;
+  const jugadores = scoringView?.players;
+  const marcoAId = markerAssignment?.marksUserId;
+  // (sin useMemo: el compilador de React ya lo memoriza)
+  const equipoMarcado = formato === 'FOURSOMES' && marcoAId ? jugadores?.find((p) => p.userId === marcoAId)?.team : null;
+  const parejaMarcada = equipoMarcado
+    ? jugadores.filter((p) => p.team === equipoMarcado).map((p) => p.userName).join(' / ')
+    : '';
   const aQuienMarco = parejaMarcada || markerAssignment?.marksName || null;
 
   // Players who still need to submit their scorecard for the match to complete
@@ -541,7 +545,8 @@ const ScoringPage = () => {
             <h1 className="text-xl font-bold text-gray-900">
               {t('matchHeader', { number: scoringView?.matchNumber })}
             </h1>
-            <p className="text-sm text-gray-500">{scoringView?.matchFormat}</p>
+            {/* El formato, traducido («Foursomes», no «FOURSOMES») */}
+            <p className="text-sm text-gray-500">{scoringView?.matchFormat && tSchedule(`formats.${scoringView.matchFormat}`)}</p>
             <CampoDeLaPartida nombre={scoringView?.roundInfo?.golfCourseName} />
           </div>
           {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
@@ -656,7 +661,7 @@ const ScoringPage = () => {
               <button
                 onClick={handlePrevHole}
                 disabled={currentHole <= 1}
-                className="min-h-11 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                className="min-h-11 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
               >
                 {t('input.prevHole')}
               </button>
@@ -666,17 +671,19 @@ const ScoringPage = () => {
               <button
                 onClick={handleNextHole}
                 disabled={currentHole >= totalHoles}
-                className="min-h-11 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                className="min-h-11 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
               >
                 {t('input.nextHole')}
               </button>
             </div>
 
-            {/* Concede button. Decidido, no queda nada que conceder (#710) */}
+            {/* Concede button. Decidido, no queda nada que conceder (#710); con
+                todos los hoyos anotados, tampoco: solo falta validar (16 oct) */}
             {canScore &&
               !hasSubmitted &&
               scoringView?.matchStatus === 'IN_PROGRESS' &&
-              !scoringView?.isDecided && (
+              !scoringView?.isDecided &&
+              !partidoAcabado && (
               <button
                 onClick={() => setShowConcedeModal(true)}
                 className="w-full px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50"
@@ -720,6 +727,8 @@ const ScoringPage = () => {
               pendientes={pendingPlayers.map((p) => p.userName)}
               // Concedido o walkover también lo terminan: ya no se espera a nadie
               completado={scoringView?.matchStatus === 'COMPLETED' || cerradoSinJugar}
+              // Todo anotado y sin validar, sin decidir: no «Partido terminado»
+              soloAnotado={estadoDeEntrega === 'faltaValidar' && !scoringView?.isDecided}
               // Decidido no es acabado: se puede seguir jugando hasta el 18
               sePuedeSeguir={Boolean(scoringView?.isDecided) && holesToSubmit < totalHoles}
             />

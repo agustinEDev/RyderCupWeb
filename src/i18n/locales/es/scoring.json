@@ -133,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} hoyos validados",
     "notReady": "No todos los hoyos están validados",
     "groupOver": "Partida terminada",
-    "groupCompleted": "Partida completada"
+    "groupCompleted": "Partida completada",
+    "allHolesScored": "Todos los hoyos anotados"
   },
   "summary": {
     "title": "Resumen del Partido",

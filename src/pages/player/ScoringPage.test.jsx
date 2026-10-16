@@ -381,7 +381,8 @@ describe('ScoringPage', () => {
   it('should show match header info', () => {
     render(<ScoringPage />);
     expect(screen.getByText(/matchHeader/)).toBeInTheDocument();
-    expect(screen.getByText('SINGLES')).toBeInTheDocument();
+    // El formato, traducido (16 oct: salía «SINGLES» tal cual)
+    expect(screen.getByText('formats.SINGLES')).toBeInTheDocument();
   });
 
   it('should render header', () => {
@@ -1129,6 +1130,36 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
       render(<ScoringPage />);
 
       expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
+    });
+
+    it('K3 (16 oct): con los 18 anotados y sin validar, ni conceder ni «Partido terminado»', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.partidoAcabado = true;
+      mockUseScoring.canSubmitScorecard = false;
+      try {
+        render(<ScoringPage />);
+
+        expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('barra-de-entrega')).toHaveTextContent('submit.allHolesScored');
+        expect(screen.getByTestId('barra-de-entrega')).not.toHaveTextContent('submit.matchOver');
+      } finally {
+        mockUseScoring.partidoAcabado = false;
+      }
+    });
+
+    it('K4: decidido y sin validar, sí es «Partido terminado»', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.partidoAcabado = true;
+      mockUseScoring.canSubmitScorecard = false;
+      try {
+        render(<ScoringPage />);
+
+        expect(screen.getByTestId('barra-de-entrega')).toHaveTextContent('submit.matchOver');
+      } finally {
+        mockUseScoring.partidoAcabado = false;
+      }
     });
 
     it('K2: sin decidir, sí', () => {

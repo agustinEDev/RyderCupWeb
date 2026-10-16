@@ -73,3 +73,18 @@ describe('BarraDeEntrega', () => {
     expect(screen.queryByText('submit.keepPlaying')).toBeNull();
   });
 });
+
+describe('BarraDeEntrega · todo anotado sin validar (16 oct)', () => {
+  it('con `soloAnotado`, dice «Todos los hoyos anotados», no que el partido ha terminado', () => {
+    render(<BarraDeEntrega estado="faltaValidar" soloAnotado />);
+
+    expect(screen.getByRole('region', { name: 'submit.allHolesScored' })).toBeInTheDocument();
+    expect(screen.queryByText('submit.matchOver')).toBeNull();
+  });
+
+  it('sin él, como siempre', () => {
+    render(<BarraDeEntrega estado="faltaValidar" />);
+
+    expect(screen.getByText('submit.matchOver')).toBeInTheDocument();
+  });
+});

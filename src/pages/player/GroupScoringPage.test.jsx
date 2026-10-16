@@ -589,6 +589,22 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
   });
 
+  it('16 oct: antes de abrir, dice a quién vas a marcar', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMark');
+  });
+
+  it('16 oct: antes de abrir y sin a quién marcar, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00', i_mark_user_id: null }, [jugador('ana', null)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('anotaras-a')).toBeNull();
+  });
+
   it('16 oct: el campo de la partida, bajo el título; sin nombre, ni la línea', () => {
     mockHook = hook({ scoringView: vista({ golf_course_name: 'Golf de Meis - Par 72' }) });
     const { unmount } = render(<GroupScoringPage />);

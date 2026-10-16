@@ -121,7 +121,7 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
 
     const [mia] = await repo.getMyTeeGroups('c-1');
 
-    expect(mia).toMatchObject({ golfCourseId: 'gc-1', golfCourseName: 'Golf de Meis - Par 72' });
+    expect(mia).toMatchObject({ golfCourseName: 'Golf de Meis - Par 72' });
   });
 
   it('mis partidas, por jornada', async () => {
@@ -135,7 +135,7 @@ describe('ApiScheduleRepository · partidas (FE #824, PR 6)', () => {
     // `canChange` es de la vista de la franja (#544): aquí no viene
     const partida = Object.fromEntries(Object.entries(VISTA_LEIDA.groups[0]).filter(([campo]) => campo !== 'canChange'));
     expect(mias).toEqual([
-      { roundId: 'r-1', roundDate: '2030-10-12', sessionType: 'MORNING', golfCourseId: null, golfCourseName: null, group: partida },
+      { roundId: 'r-1', roundDate: '2030-10-12', sessionType: 'MORNING', golfCourseName: null, group: partida },
     ]);
   });
 

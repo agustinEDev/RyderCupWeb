@@ -133,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} holes validated",
     "notReady": "Not all holes are validated yet",
     "groupOver": "Group finished",
-    "groupCompleted": "Group completed"
+    "groupCompleted": "Group completed",
+    "allHolesScored": "All holes scored"
   },
   "summary": {
     "title": "Match Summary",

@@ -184,7 +184,7 @@ const HoleInput = ({
         // la cabecera del marcado lleva su marca y es más alta que la tuya, y con
         // una columna por jugador su hueco quedaba más abajo. Así comparten fila
         <div data-testid="huecos-del-hoyo" className={`grid ${conMarcado ? 'grid-cols-2' : 'grid-cols-1'} gap-x-4 gap-y-1 items-end`}>
-          <label htmlFor={idPropio} className="text-xs font-medium text-gray-500">{etiquetaPropia}</label>
+          <label htmlFor={idPropio} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaPropia}</label>
           {/* La marca del jugador al que anotas va aquí y no en la cabecera:
               la de arriba es la de TU resultado, y son dos acuerdos distintos.
               Sin esta, un anotador veía su tick verde mientras la tira de
@@ -192,7 +192,8 @@ const HoleInput = ({
               La tarjeta ya no la lleva, así que este es el único sitio. */}
           {conMarcado && (
           <div className="flex items-center justify-between gap-2">
-            <label htmlFor={idMarcado} className="text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
+            {/* min-w-0 y break-words: en foursomes lleva la pareja, y un nombre largo ensanchaba la columna (scroll lateral a 360 px) */}
+            <label htmlFor={idMarcado} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaMarcado}</label>
             {markedValidationStatus && (
               <span data-testid="marked-validation">
                 <ValidationIcon status={markedValidationStatus} />

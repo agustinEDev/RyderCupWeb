@@ -340,6 +340,12 @@ const GroupScoringPage = () => {
                   <p className="mt-1 text-amber-800">
                     {t('notOpenYet.opensAt', { hora: horaDelCampo(scoringView.scoringOpensAt, i18n.language) })}
                   </p>
+                  {/* A quién vas a marcar, como en la Ryder (16 oct) */}
+                  {nombreDe(marcoA) && (
+                    <p data-testid="anotaras-a" className="mt-1 font-medium text-amber-900">
+                      {t('notOpenYet.youWillMark', { nombre: nombreDe(marcoA) })}
+                    </p>
+                  )}
                 </div>
               )}
               {!aunNoAbre && (
@@ -382,7 +388,7 @@ const GroupScoringPage = () => {
                   type="button"
                   onClick={() => setCurrentHole(currentHole - 1)}
                   disabled={currentHole <= 1}
-                  className="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 disabled:opacity-50"
+                  className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                 >
                   {t('input.prevHole')}
                 </button>
@@ -393,7 +399,7 @@ const GroupScoringPage = () => {
                   type="button"
                   onClick={() => setCurrentHole(currentHole + 1)}
                   disabled={currentHole >= totalHoles}
-                  className="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 disabled:opacity-50"
+                  className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                 >
                   {t('input.nextHole')}
                 </button>
