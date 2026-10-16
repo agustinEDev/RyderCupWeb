@@ -102,6 +102,31 @@ export const conCodosDelPar = (linea, par) => {
   return [...linea.slice(0, -1), ...nuevos, green];
 };
 
+/**
+ * Una línea con más puntos en medio de los codos de su par (las de OSM) se queda
+ * con los de su par: la salida, el green y, de los de en medio, los más
+ * cercanos a partes iguales del recorrido (en un par 5, a un tercio y a dos
+ * tercios), sin repetir ninguno. Así cabe en una muestra (QA del 16 oct). Una
+ * línea que ya cabe se queda como está.
+ */
+export const aCodosDelPar = (linea, par) => {
+  const codos = codosDelPar(par);
+  if (linea.length - 2 <= codos) return linea;
+  const recorrido = linea.reduce((acum, p, i) => [...acum, i === 0 ? 0 : acum[i - 1] + distanciaEnMetros(linea[i - 1], p)], []);
+  const total = recorrido.at(-1);
+  const elegidos = [];
+  for (let k = 1; k <= codos; k += 1) {
+    const objetivo = (total * k) / (codos + 1);
+    let mejor = null;
+    for (let i = 1; i < linea.length - 1; i += 1) {
+      if (elegidos.includes(i)) continue;
+      if (mejor === null || Math.abs(recorrido[i] - objetivo) < Math.abs(recorrido[mejor] - objetivo)) mejor = i;
+    }
+    elegidos.push(mejor);
+  }
+  return [linea[0], ...elegidos.sort((a, b) => a - b).map((i) => linea[i]), linea.at(-1)];
+};
+
 /** Un anillo cerrado de puntos a `metros` de `centro` (el arco de la tarjeta). */
 export const circuloAlrededor = (centro, metros, lados = 64) => {
   const anillo = Array.from({ length: lados }, (_, i) => puntoDesde(centro, (360 / lados) * i, metros));
