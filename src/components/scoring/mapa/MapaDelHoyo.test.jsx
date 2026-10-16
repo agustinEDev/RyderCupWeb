@@ -3,7 +3,7 @@ import { StrictMode } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { orientacionDelHoyo, limitesDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
+import { encuadreGirado, orientacionDelHoyo, limitesDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
 import { circuloAlrededor } from '../../../domain/services/hoyoMarcado';
 
 vi.mock('react-i18next', () => ({
@@ -193,7 +193,10 @@ describe('MapaDelHoyo', () => {
       expect(mapa().opciones.dragRotate).toBe(false);
       expect(mapa().opciones.pitchWithRotate).toBe(false);
       expect(mapa().touchZoomRotate.disableRotation).toHaveBeenCalled();
-      expect(mapa().fitBounds).toHaveBeenCalledWith(limitesDelHoyo(HOYO), expect.objectContaining({ bearing }));
+      // Con el hoyo girado (no su caja norte-sur): centro, zoom y rumbo, y SIN
+      // padding (MapLibre lo guardaría y lo sumaría a todo lo de después)
+      const { center, zoom } = encuadreGirado(HOYO, bearing, { ancho: 360, alto: 640, padding: { top: 90, bottom: 288, left: 40, right: 40 } });
+      expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [center.lon, center.lat], zoom, bearing });
     });
 
     it('dibuja la línea de juego y el green', () => {
@@ -242,11 +245,10 @@ describe('MapaDelHoyo', () => {
 
     it('H4: «Ver hoyo» vuelve a encuadrar el hoyo entero', () => {
       abrir();
-      mapa().fitBounds.mockClear();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      expect(mapa().fitBounds).toHaveBeenCalledWith(limitesDelHoyo(HOYO), expect.objectContaining({ bearing: expect.any(Number) }));
+      expect(mapa().easeTo).toHaveBeenCalledWith(expect.objectContaining({ bearing: orientacionDelHoyo(HOYO), zoom: expect.any(Number) }));
       expect(screen.queryByRole('button', { name: 'mapa.norte' })).toBeNull();
     });
 
@@ -591,10 +593,8 @@ describe('MapaDelHoyo — tras la revisión', () => {
       alto.mockRestore();
     }
 
-    expect(mapa().fitBounds).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ padding: expect.objectContaining({ top: 90, bottom: 320 }) })
-    );
+    const { zoom } = encuadreGirado(HOYO, orientacionDelHoyo(HOYO), { ancho: 360, alto: 780, padding: { top: 90, bottom: 320, left: 40, right: 40 } });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom }));
   });
 
   it('el margen del encuadre sale del alto de la pantalla (apaisado)', () => {
@@ -605,10 +605,8 @@ describe('MapaDelHoyo — tras la revisión', () => {
       alto.mockRestore();
     }
 
-    expect(mapa().fitBounds).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ padding: expect.objectContaining({ top: 54, bottom: 162 }) })
-    );
+    const { zoom } = encuadreGirado(HOYO, orientacionDelHoyo(HOYO), { ancho: 360, alto: 360, padding: { top: 54, bottom: 162, left: 40, right: 40 } });
+    expect(mapa().jumpTo).toHaveBeenLastCalledWith(expect.objectContaining({ zoom }));
   });
 
   it('sin señal buena, el punto azul se quita', () => {
@@ -1241,17 +1239,17 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
         globalThis.HTMLElement.prototype.getBoundingClientRect = original;
       }
 
-      expect(mapa().fitBounds).toHaveBeenLastCalledWith(limitesDelHoyo(hoyoCon([T, G])), expect.objectContaining({ animate: false }));
+      expect(mapa().jumpTo).toHaveBeenCalledWith(expect.objectContaining({ bearing: orientacionDelHoyo(hoyoCon([T, G])) }));
       expect(medidos).toContain('mapa-abajo');
     });
 
     it('Z1: al cargar el mapa (teselas lentas) no se vuelve a encuadrar: no quita lo que mira el jugador', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
-      mapa().fitBounds.mockClear();
+      mapa().jumpTo.mockClear();
 
       act(() => mapa().oyentes.load());
 
-      expect(mapa().fitBounds).not.toHaveBeenCalled();
+      expect(mapa().jumpTo).not.toHaveBeenCalled();
     });
 
     it('Z2: el margen es lo que tapan de verdad la cabecera y el panel de abajo, con 12 px de aire', () => {
@@ -1262,11 +1260,13 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       const contenedor = mapa().opciones.container;
       contenedor.getBoundingClientRect = caja(0, 844);
       Object.defineProperty(contenedor, 'clientHeight', { value: 844, configurable: true });
-      mapa().fitBounds.mockClear();
+      mapa().easeTo.mockClear();
+      mapa().jumpTo.mockClear();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 82, bottom: 296, left: 40, right: 40 });
+      const esperado = encuadreGirado(hoyoCon([T, G]), orientacionDelHoyo(hoyoCon([T, G])), { ancho: 360, alto: 844, padding: { top: 82, bottom: 296, left: 40, right: 40 } });
+      expect(mapa().easeTo.mock.calls[0][0]).toEqual({ center: [esperado.center.lon, esperado.center.lat], zoom: esperado.zoom, bearing: orientacionDelHoyo(hoyoCon([T, G])) });
     });
 
     it('Z3: si con lo medido no cabría nada (apaisado), los márgenes de siempre', () => {
@@ -1277,11 +1277,13 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       const contenedor = mapa().opciones.container;
       contenedor.getBoundingClientRect = caja(0, 360);
       Object.defineProperty(contenedor, 'clientHeight', { value: 360, configurable: true });
-      mapa().fitBounds.mockClear();
+      mapa().easeTo.mockClear();
+      mapa().jumpTo.mockClear();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 54, bottom: 162, left: 40, right: 40 });
+      const esperado = encuadreGirado(hoyoCon([T, G]), orientacionDelHoyo(hoyoCon([T, G])), { ancho: 360, alto: 360, padding: { top: 54, bottom: 162, left: 40, right: 40 } });
+      expect(mapa().easeTo.mock.calls[0][0].zoom).toBeCloseTo(esperado.zoom, 9);
     });
 
     it('Z5: si el panel de abajo crece después (el recuadro, avisos), se vuelve a encuadrar', () => {
@@ -1292,11 +1294,12 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
         disconnect() {}
       });
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
-      mapa().fitBounds.mockClear();
+      mapa().easeTo.mockClear();
+      mapa().jumpTo.mockClear();
 
       act(() => observados.at(-1).fn());
 
-      expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
+      expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
     });
 
     it('Z5: pero no si el jugador ya movió el mapa o tocó para medir', () => {
@@ -1308,22 +1311,32 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       });
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       act(() => mapa().oyentes.click({ lngLat: { lat: alNorte(150).lat, lng: T.lon } }));
-      mapa().fitBounds.mockClear();
+      mapa().easeTo.mockClear();
+      mapa().jumpTo.mockClear();
 
       act(() => observados.at(-1).fn());
       act(() => mapa().oyentes.movestart({ originalEvent: {} }));
       act(() => observados.at(-1).fn());
 
-      expect(mapa().fitBounds).not.toHaveBeenCalled();
+      expect(mapa().jumpTo).not.toHaveBeenCalled();
+    });
+
+    it('/code-review: la cámara del encuadre nunca lleva padding (no se queda guardado en el mapa)', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
+
+      for (const [camara] of [...mapa().jumpTo.mock.calls, ...mapa().easeTo.mock.calls]) expect(camara).not.toHaveProperty('padding');
     });
 
     it('Z4: si no se puede medir (jsdom, sin pintar), los márgenes de siempre', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
-      mapa().fitBounds.mockClear();
+      mapa().easeTo.mockClear();
+      mapa().jumpTo.mockClear();
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
 
-      expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 90, bottom: 288, left: 40, right: 40 });
+      const esperado = encuadreGirado(hoyoCon([T, G]), orientacionDelHoyo(hoyoCon([T, G])), { ancho: 360, alto: 640, padding: { top: 90, bottom: 288, left: 40, right: 40 } });
+      expect(mapa().easeTo.mock.calls[0][0].zoom).toBeCloseTo(esperado.zoom, 9);
     });
 
     it('M4: la línea que se mueve se dibuja aparte; del hoyo, solo su green', () => {
