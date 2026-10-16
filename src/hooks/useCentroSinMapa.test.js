@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
-const getCampo = vi.fn();
-vi.mock('../composition', () => ({ getGolfCourseUseCase: { execute: (...a) => getCampo(...a) } }));
+const getCampo = vi.hoisted(() => vi.fn());
+// El caso de uso de verdad, con el repositorio de mentira: el hook se prueba con su copia
+vi.mock('../composition', async () => {
+  const { default: GetCourseLocationUseCase } = await import('../application/use_cases/golf_course/GetCourseLocationUseCase');
+  const { default: LocalStorageCourseLocationCache } = await import('../infrastructure/repositories/LocalStorageCourseLocationCache');
+  return {
+    getCourseLocationUseCase: new GetCourseLocationUseCase({
+      golfCourseRepository: { getById: (...a) => getCampo(...a) },
+      courseLocationCache: new LocalStorageCourseLocationCache(),
+    }),
+  };
+});
 
 const { useCentroSinMapa } = await import('./useCentroSinMapa');
 
