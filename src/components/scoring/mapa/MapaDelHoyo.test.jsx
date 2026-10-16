@@ -1228,13 +1228,30 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
     });
 
     // Agustín, 16 oct: «que haga el zoom necesario para ver el hoyo entero sin cortar pero lo más grande posible»
-    it('Z1: al cargar el mapa (ya con su tamaño) se encuadra el hoyo otra vez', () => {
+    it('Z1: en cuanto la ventana está pintada se encuadra el hoyo, con el panel ya medible', () => {
+      const medidos = [];
+      const original = globalThis.HTMLElement.prototype.getBoundingClientRect;
+      globalThis.HTMLElement.prototype.getBoundingClientRect = function () {
+        medidos.push(this.dataset?.testid ?? this.className);
+        return original.call(this);
+      };
+      try {
+        abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      } finally {
+        globalThis.HTMLElement.prototype.getBoundingClientRect = original;
+      }
+
+      expect(mapa().fitBounds).toHaveBeenLastCalledWith(limitesDelHoyo(hoyoCon([T, G])), expect.objectContaining({ animate: false }));
+      expect(medidos).toContain('mapa-abajo');
+    });
+
+    it('Z1: al cargar el mapa (teselas lentas) no se vuelve a encuadrar: no quita lo que mira el jugador', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       mapa().fitBounds.mockClear();
 
       act(() => mapa().oyentes.load());
 
-      expect(mapa().fitBounds).toHaveBeenCalledWith(limitesDelHoyo(hoyoCon([T, G])), expect.objectContaining({ animate: false }));
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
     });
 
     it('Z2: el margen es lo que tapan de verdad la cabecera y el panel de abajo, con 12 px de aire', () => {
@@ -1267,7 +1284,7 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 54, bottom: 162, left: 40, right: 40 });
     });
 
-    it('Z3: si no se puede medir (o no cabría nada), los márgenes de siempre', () => {
+    it('Z4: si no se puede medir (jsdom, sin pintar), los márgenes de siempre', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       mapa().fitBounds.mockClear();
 

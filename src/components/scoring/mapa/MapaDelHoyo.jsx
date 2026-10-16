@@ -376,20 +376,10 @@ const MapaDelHoyo = ({
     if (orientado) {
       mapa.touchZoomRotate.disableRotation();
       mapa.keyboard.disableRotation();
-      encuadrarHoyo(false);
-    } else if (inicio.current.soloGreen && inicio.current.metros && h?.playLine?.[0]) {
-      // Pidiendo solo el green: alejado la mitad de la tarjeta alrededor de la
-      // salida aprobada, como al tocarla (16 oct)
-      mapa.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(h.playLine[0], inicio.current.metros / 2) }), {
-        bearing: 0,
-        padding: margen(),
-        animate: false,
-      });
     }
+    // El encuadre del hoyo (o del «solo green»), en cuanto la ventana está
+    // pintada: más abajo
     mapa.on('load', () => {
-      // Al crearse el mapa la ventana aún no tenía su tamaño ni sus paneles
-      // pintados: ahora sí, y el hoyo se encuadra lo más grande que quepa
-      if (orientado) encuadrarHoyo(false);
       // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
       mapa.addSource('hoyo', { type: 'geojson', data: geojsonDelHoyo(hoyoActual.current) });
       mapa.addLayer({
@@ -441,6 +431,25 @@ const MapaDelHoyo = ({
       mapa.remove();
       mapaRef.current = null;
     };
+  }, []);
+
+  // En cuanto la ventana está pintada (la cabecera y el panel de abajo ya se
+  // pueden medir), y antes de que el jugador pueda tocar nada, el hoyo se
+  // encuadra lo más grande que quepa. No se espera a `load`: con mala cobertura
+  // tarda, y al llegar le quitaría lo que estuviera mirando (revisión, 16 oct)
+  useLayoutEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa) return;
+    mapa.resize?.();
+    const { hoyo: h, conMapa: orientado, soloGreen, metros: deLaTarjeta } = inicio.current;
+    if (orientado) encuadrarHoyo(false);
+    else if (soloGreen && deLaTarjeta && h?.playLine?.[0]) {
+      mapa.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(h.playLine[0], deLaTarjeta / 2) }), {
+        bearing: 0,
+        padding: margen(),
+        animate: false,
+      });
+    }
   }, [encuadrarHoyo, margen]);
 
   // Mi posición: el punto azul, y la primera vez sin mapa, el mapa va a ella

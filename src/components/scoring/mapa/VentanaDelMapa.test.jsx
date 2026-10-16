@@ -216,35 +216,35 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props).toMatchObject({ hoyo: conSalida, porMarcar: 'green', atribucion: 'osm' });
   });
 
-  // Agustín, 16 oct: «al entrar en un hoyo que no está guardado, no tendría que salir nada»
-  it('V2: las muestras de otros (primera de mi barra o de otra) no se enseñan: se pide marcar', async () => {
-    lasMuestras.muestras = { 3: { primera: PRIMERA, deOtra: PRIMERA, recoge: true } };
+  it('V2: con la primera muestra, se ve ella (sin atribución) y no se pide nada', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
 
     abrirEn({ attribution: 'osm', holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida', recoge: true });
+    expect(carga.props.hoyo.playLine).toEqual([T, C, G]);
+    expect(carga.props.hoyo.green.center).toEqual(G);
+    expect(carga.props).toMatchObject({ porMarcar: null, recoge: true, atribucion: null });
   });
 
-  it('V3: lo suyo de este móvil (pendiente o ya enviado) sí se ve, sin pedir marcar', async () => {
-    lasMuestras.muestras = { 3: { primera: PRIMERA, deOtra: null, recoge: true } };
+  it('V2: la primera muestra va antes que lo que el jugador dejó pendiente', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
     lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
 
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props.hoyo.playLine).toEqual([T, C]);
-    expect(carga.props.porMarcar).toBeNull();
+    expect(carga.props.hoyo.green.center).toEqual(G);
   });
 
-  it('V3: con la salida aprobada y sin lo suyo, se pide el green aunque haya muestras de otros', async () => {
-    const conSalida = { playLine: [T], green: null };
-    lasMuestras.muestras = { 3: { primera: PRIMERA, deOtra: null, recoge: true } };
+  it('V3: sin muestra en el servidor, la pendiente del jugador (hecha sin cobertura)', async () => {
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: G } };
 
-    abrirEn({ holes: { 3: conSalida } });
+    abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props).toMatchObject({ hoyo: conSalida, porMarcar: 'green' });
+    expect(carga.props.hoyo.playLine).toEqual([T, G]);
+    expect(carga.props.porMarcar).toBeNull();
   });
 
   it('V4: un hoyo aprobado entero va antes que cualquier muestra, con su atribución', async () => {
@@ -297,13 +297,42 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props).toMatchObject({ porMarcar: null, onMuestra: null });
   });
 
-  it('V12: si cambia lo suyo que se ve (de pendiente a otra), el mapa se rehace', async () => {
-    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: G } };
+  it('V10: sin muestra de su barra, la de otra barra (no se le pide marcar de cero)', async () => {
+    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine).toEqual([T, C, G]);
+    expect(carga.props.porMarcar).toBeNull();
+  });
+
+  it('V10: la de su barra va antes que la de otra', async () => {
+    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, deOtra: PRIMERA, recoge: true } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.green.center).toEqual(C);
+  });
+
+  it('V10: la de otra barra va antes que la pendiente del jugador', async () => {
+    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.green.center).toEqual(G);
+  });
+
+  it('V12: si cambia QUÉ muestra se ve (llega la de mi barra tras la de otra), el mapa se rehace', async () => {
+    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
     const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
+    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, deOtra: PRIMERA, recoge: true } };
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
 
     expect(carga.montajes).toBe(antes + 1);
@@ -334,16 +363,16 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.recoge).toBe(false);
   });
 
-  it('V9: cuando llega una muestra de otro con el mapa abierto, el mapa no cambia (no se enseñan)', async () => {
+  it('V9: cuando llega la primera muestra con el mapa abierto, el mapa se rehace con ella', async () => {
     const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    lasMuestras.muestras = { 3: { primera: PRIMERA, deOtra: null, recoge: true } };
+    lasMuestras.muestras = { 3: { primera: PRIMERA, recoge: true } };
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
 
-    expect(carga.montajes).toBe(antes);
-    expect(carga.props).toMatchObject({ hoyo: null, porMarcar: 'salida' });
+    expect(carga.montajes).toBe(antes + 1);
+    expect(carga.props.hoyo.green.center).toEqual(G);
   });
 
   it('V9: si solo se refrescan las muestras (sin cambiar lo que se ve), no se rehace', async () => {
