@@ -216,7 +216,7 @@ const MapaDelHoyo = ({
   const marcaDeLaSalida = useRef(null);
   // Al cerrar, lo último: se envía al desmontar, se cierre como se cierre
   // (botón, Escape o «atrás»)
-  const alCerrar = useRef({ edicion, recoge, onMuestra, campo: centroSinMapa });
+  const alCerrar = useRef({ edicion, recoge, onMuestra, campo: referenciaDelCampo });
   // Lo ya enviado de esta apertura: la versión. Toda la apertura es una sola
   // muestra con un solo id: si la app se oculta, sale ya; si luego se toca, al
   // cerrar sale otra vez con el mismo id (en el móvil sustituye a la de la cola;
@@ -236,7 +236,7 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
-    alCerrar.current = { edicion, recoge, onMuestra, campo: centroSinMapa };
+    alCerrar.current = { edicion, recoge, onMuestra, campo: referenciaDelCampo };
     alTocar.current = (p) => {
       if (pidiendo) {
         const ahora = globalThis.performance.now();

@@ -1381,6 +1381,18 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(onMuestra).not.toHaveBeenCalled();
     });
 
+    it('CR6 (CodeRabbit): en un hoyo aprobado (sin la ubicación del campo), los 3 km se miden desde su salida', () => {
+      const onMuestra = vi.fn();
+      const { unmount } = abrir({ hoyo: hoyoCon([T, G]), par: 3, recoge: true, onMuestra });
+      act(() => mapa().oyentes.load());
+      soltar(arrastrables()[0], alNorte(-3500));
+      soltar(arrastrables().at(-1), alNorte(-3200));
+
+      unmount();
+
+      expect(onMuestra).not.toHaveBeenCalled();
+    });
+
     it('CR10: una línea de OSM con más puntos que codos: solo se arrastran la salida y el green', () => {
       abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4 });
       act(() => mapa().oyentes.load());
