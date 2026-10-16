@@ -92,7 +92,15 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const guardarMarca = async (datos) => {
     setRemarcando(false);
     setVuelta((v) => v + 1);
-    const resultado = await guardar({ holeNumber: numeroDeHoyo, ...datos });
+    let resultado;
+    try {
+      resultado = await guardar({ holeNumber: numeroDeHoyo, ...datos });
+    } catch (error) {
+      // El mapa ya se rehízo: el aviso, aquí
+      captureError(error, { tags: { modulo: 'marcas-de-hoyos' } });
+      toast.error(t('mapa.noSeGuardo'));
+      return { estado: 'rechazada', errorCode: null };
+    }
     if (resultado.estado === 'rechazada') toast.error(t(ERROR_DE_MARCA[resultado.errorCode] ?? 'mapa.noSeGuardo'));
     return resultado;
   };

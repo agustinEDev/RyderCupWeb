@@ -347,4 +347,20 @@ describe('VentanaDelMapa — marcar el hoyo (PR C)', () => {
 
     expect(carga.montajes).toBe(antes);
   });
+
+  it('si guardar revienta (el mapa ya se rehízo), el aviso lo da la ventana y queda apuntado', async () => {
+    const { captureError } = await import('../../../utils/sentryHelpers');
+    misMarcas.guardar.mockRejectedValue(new Error('x'));
+    abrirCon(estado({ mapaDelCampo: null }));
+    await screen.findByTestId('mapa-del-hoyo');
+
+    let r;
+    await act(async () => {
+      r = await carga.props.onGuardarMarca({ tee: T, bends: [], greenCenter: G });
+    });
+
+    expect(r).toEqual({ estado: 'rechazada', errorCode: null });
+    expect(toastFalso.error).toHaveBeenCalledWith('mapa.noSeGuardo');
+    expect(captureError).toHaveBeenCalled();
+  });
 });
