@@ -212,6 +212,10 @@ describe('aCodosDelPar', () => {
     expect(r).toEqual([SALIDA, alNorte(100), GREEN]);
   });
 
+  it('un nodo repetido seguido se quita también en una línea que ya cabe', () => {
+    expect(aCodosDelPar([SALIDA, alNorte(100), alNorte(100), GREEN], 5)).toEqual([SALIDA, alNorte(100), GREEN]);
+  });
+
   it('los codos van en el orden de la línea aunque se elijan en otro', () => {
     // Al tercio (100 m) el más cercano es el de 120; a los dos tercios ya solo
     // quedan los de antes: el de 55. La línea sigue de la salida al green

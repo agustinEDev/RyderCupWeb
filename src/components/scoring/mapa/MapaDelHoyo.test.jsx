@@ -1062,6 +1062,14 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       );
     });
 
+    it('/code-review: sobre una línea de OSM reducida a la que le falta un codo del par, la ayuda sí sale', () => {
+      marcar({ hoyo: { playLine: [T, alNorte(100), alNorte(100), alNorte(100), alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 5 });
+
+      tocar(G);
+
+      expect(screen.getByText('mapa.ayudaCodo')).toBeInTheDocument();
+    });
+
     it('P5: la ayuda de los codos solo si se añadieron (sobre una línea aprobada con su codo, no)', () => {
       marcar({ hoyo: { playLine: [T, alNorte(150), alNorte(280)], green: null }, porMarcar: 'green', metros: 300, par: 4 });
 
@@ -1110,21 +1118,6 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
 
       expect(mapa().fitBounds).toHaveBeenCalledTimes(2);
       expect(mapa().fitBounds.mock.calls[1][0]).toEqual(limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }));
-    });
-
-    it('QA P3: un triple toque seguido tampoco marca el green junto a la salida', () => {
-      marcar({ metros: 300 });
-      const a = (ms) => reloj.mockImplementation(() => ms);
-
-      a(1000);
-      tocar(T);
-      a(1300);
-      tocar(T);
-      a(1450);
-      tocar(alNorte(5));
-
-      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
-      expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it('QA P3: tras un green fuera de límites, un doble toque no reencuadra a la salida', () => {

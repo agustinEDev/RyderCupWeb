@@ -111,11 +111,12 @@ export const conCodosDelPar = (linea, par) => {
  */
 export const aCodosDelPar = (lineaEntera, par) => {
   const codos = codosDelPar(par);
-  if (lineaEntera.length - 2 <= codos) return lineaEntera;
   // OSM a veces repite un nodo seguido: dos codos en el mismo sitio, no
-  const linea = lineaEntera.filter((p, i) => i === 0 || p.lat !== lineaEntera[i - 1].lat || p.lon !== lineaEntera[i - 1].lon);
+  const sinRepetidos = lineaEntera.filter((p, i) => i === 0 || p.lat !== lineaEntera[i - 1].lat || p.lon !== lineaEntera[i - 1].lon);
+  const linea = sinRepetidos.length === lineaEntera.length ? lineaEntera : sinRepetidos;
   if (linea.length - 2 <= codos) return linea;
-  const recorrido = linea.reduce((acum, p, i) => [...acum, i === 0 ? 0 : acum[i - 1] + distanciaEnMetros(linea[i - 1], p)], []);
+  const recorrido = [0];
+  for (let i = 1; i < linea.length; i += 1) recorrido.push(recorrido[i - 1] + distanciaEnMetros(linea[i - 1], linea[i]));
   const total = recorrido.at(-1);
   const elegidos = [];
   for (let k = 1; k <= codos; k += 1) {

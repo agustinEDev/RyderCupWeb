@@ -254,9 +254,7 @@ const MapaDelHoyo = ({
         };
         const ahora = globalThis.performance.now();
         if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) {
-          // El segundo toque no marca, pero corta el alejamiento: se rehace (QA).
-          // Y cuenta como toque: un tercero seguido tampoco marca
-          ultimoToque.current = ahora;
+          // El segundo toque no marca, pero corta el alejamiento: se rehace (QA)
           if (salidaRecienTocada.current) alejarDesde(salidaRecienTocada.current);
           return;
         }
@@ -279,10 +277,11 @@ const MapaDelHoyo = ({
         }
         // Con los codos de su par ya puestos, para llevarlos a la calle; una
         // línea de OSM con muchos puntos se queda con los de su par (QA, 16 oct)
-        const nueva = conCodosDelPar(aCodosDelPar([...desde, p], par), par);
+        const reducida = aCodosDelPar([...desde, p], par);
+        const nueva = conCodosDelPar(reducida, par);
         setEdicion((e) => ({ linea: nueva, cambiada: true, version: e.version + 1 }));
         // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
-        setConAyudaDeCodos(nueva.length > desde.length + 1);
+        setConAyudaDeCodos(nueva.length > reducida.length);
         setMarca({ fase: null, tee: null });
         return;
       }
@@ -551,11 +550,10 @@ const MapaDelHoyo = ({
     try {
       linea.forEach((p, i) => {
         if (muchos && i > 0 && i < linea.length - 1) return;
-        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true })
-          .setLngLat(lngLat(p))
-          .addTo(mapa);
-        // Apuntado en cuanto está en el mapa: si algo falla después, se quita
+        // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
         puntosDeLaLinea.current.push(m);
+        m.setLngLat(lngLat(p)).addTo(mapa);
         // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
         m.on('drag', (e) => {
           const provisional = con(i, aqui(e));
