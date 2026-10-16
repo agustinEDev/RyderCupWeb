@@ -29,6 +29,12 @@ describe('distanciasDelHoyo', () => {
     expect(distanciasDelHoyo({ metros: 342, hoyo })).toEqual({ front: 332, center: 342, back: 352 });
   });
 
+  it('R1: delante nunca por debajo de 0 (pocos metros en la tarjeta, o un green raro)', () => {
+    const hoyo = { playLine: [SALIDA, alNorte(300)], green: green(300, 35, 10) };
+
+    expect(distanciasDelHoyo({ metros: 30, hoyo }).front).toBe(0);
+  });
+
   it('R4: sin metros en la tarjeta, medido en el mapa desde la salida siguiendo los codos', () => {
     const hoyo = { playLine: [SALIDA, alNorte(120), alNorte(300)], green: green(300, 12, 15) };
 

@@ -382,7 +382,7 @@
     "centro": "Centro",
     "fondo": "Fondo",
     "metros": "m",
-    "etiqueta": "Al green: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
+    "etiqueta": "Desde la salida: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
     "hastaAhi": "Hasta ahí {{metros}} m",
     "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
     "quitarPunto": "Quitar",

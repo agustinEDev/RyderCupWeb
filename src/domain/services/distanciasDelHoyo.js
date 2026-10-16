@@ -19,7 +19,8 @@ export const distanciasDelHoyo = ({ metros, hoyo }) => {
   const green = hoyo?.green ?? null;
   if (metros) {
     const alBorde = (borde) => (green?.[borde] ? distanciaEnMetros(green.center, green[borde]) : METROS_AL_BORDE_DEL_GREEN);
-    return { front: metros - alBorde('front'), center: metros, back: metros + alBorde('back') };
+    // Delante nunca por debajo de 0: con pocos metros en la tarjeta, o un green raro
+    return { front: Math.max(0, metros - alBorde('front')), center: metros, back: metros + alBorde('back') };
   }
   const linea = hoyo?.playLine ?? [];
   if (!green || linea.length < 2) return null;

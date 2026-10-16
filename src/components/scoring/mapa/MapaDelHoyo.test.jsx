@@ -1509,6 +1509,46 @@ describe('MapaDelHoyo — metros en cada tramo de la línea', () => {
     expect(linea.at(-1)).toEqual([T.lon, alNorte(280).lat]);
   });
 
+  it('CR1: si el hoyo cambia antes de que cargue el mapa, la línea sale del hoyo nuevo', () => {
+    const viejo = { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } };
+    const nuevo = { playLine: [T, alNorte(280)], green: { front: alNorte(270), center: alNorte(280), back: alNorte(290) } };
+    const { rerender } = abrir({ hoyo: viejo });
+
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={nuevo} atribucion={null} onCerrar={() => {}} />);
+    act(() => mapa().oyentes.load());
+
+    const linea = mapa().fuentes.hoyo.data.features.find((f) => f.properties.tipo === 'linea').geometry.coordinates;
+    expect(linea.at(-1)).toEqual([T.lon, alNorte(280).lat]);
+  });
+
+  it('CR2: sin metros en la tarjeta, mientras se marca, el recuadro mide la línea que se marca', () => {
+    marcar({ metros: null });
+    tocar(T);
+    tocar(G);
+
+    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('300');
+    soltar(arrastrables()[0], { lat: alNorte(150).lat, lon: T.lon + 0.001 });
+    expect(Number(screen.getByTestId('distancia-centro').textContent)).toBeGreaterThan(300);
+  });
+
+  it('CR4: marcando solo el green (sin puntos que arrastrar), las cifras van en su tramo', () => {
+    marcar({ hoyo: { playLine: [T, alNorte(150), alNorte(280)], green: null }, porMarcar: 'green', metros: 300 });
+
+    tocar(G);
+
+    expect(deLaLinea().every((m) => m.offset[0] === 0 && m.offset[1] === 0)).toBe(true);
+  });
+
+  it('CR4: con los dos codos puestos (ya no hay puntos en medio), en su tramo', () => {
+    marcar({ metros: 300, par: 5 });
+    tocar(T);
+    tocar(G);
+    soltar(arrastrables()[0], alNorte(100));
+    soltar(arrastrables().at(-1), alNorte(200));
+
+    expect(deLaLinea().every((m) => m.offset[0] === 0 && m.offset[1] === 0)).toBe(true);
+  });
+
   it('L16: con React en modo estricto (dos montajes), las cifras cuelgan del mapa que queda', () => {
     render(
       <StrictMode>
