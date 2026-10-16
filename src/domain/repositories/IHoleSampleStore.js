@@ -42,6 +42,20 @@ class IHoleSampleStore {
   cola(userId) {
     throw new Error('Method not implemented: cola');
   }
+
+  /**
+   * La que ya llegó al servidor desde este móvil: el jugador solo ve lo suyo (o
+   * lo aprobado), así que la sigue viendo. De cada hoyo, campo y barra, la última.
+   */
+  apuntarMia(userId, entrada) {
+    throw new Error('Method not implemented: apuntarMia');
+  }
+
+  /** @returns {Object[]} las del jugador ya enviadas desde este móvil */
+  mias(userId) {
+    throw new Error('Method not implemented: mias');
+  }
 }
 
 export default IHoleSampleStore;
+

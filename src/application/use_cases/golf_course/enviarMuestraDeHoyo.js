@@ -40,7 +40,8 @@ export const enviarMuestraDeHoyo = async ({ golfCourseRepository, holeSampleStor
   try {
     await golfCourseRepository.sendHoleSample(golfCourseId, holeNumber, { id, barra, tee, bends, greenCenter });
     holeSampleStore.quitarDeLaCola(userId, entrada);
-    // Se sigue viendo hasta que un resumen la traiga
+    // La suya: se sigue viendo en su mapa cuando no hay otra que enseñar
+    holeSampleStore.apuntarMia(userId, entrada);
     recienEnviadas.apuntar(userId, entrada);
     return { estado: 'enviada' };
   } catch (error) {

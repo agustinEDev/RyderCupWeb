@@ -293,4 +293,60 @@ describe('LocalStorageHoleSampleStore', () => {
       expect(() => new LocalStorageHoleSampleStore()).not.toThrow();
     });
   });
+
+  // Agustín, 16 oct: el jugador solo ve lo suyo (o lo aprobado), así que lo que
+  // ya envió desde este móvil se sigue viendo
+  describe('las mías (ya enviadas desde este móvil)', () => {
+    it('se guardan por jugador y se leen, con su clave', () => {
+      store.apuntarMia('u1', entrada());
+
+      expect(store.mias('u1')).toEqual([entrada()]);
+      expect(store.mias('u2')).toEqual([]);
+      expect([...guardado.keys()]).toContain('muestrasMias:v1:u1');
+    });
+
+    it('de cada hoyo, campo y barra, solo la última', () => {
+      store.apuntarMia('u1', entrada({ id: 'a', lat: 1 }));
+      store.apuntarMia('u1', entrada({ id: 'b', lat: 2 }));
+      store.apuntarMia('u1', entrada({ id: 'c', holeNumber: 4 }));
+
+      expect(store.mias('u1').map((e) => e.id)).toEqual(['b', 'c']);
+    });
+
+    it('/code-review: una versión más vieja de la misma muestra no pisa a la nueva', () => {
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:05:00.000Z', lat: 2 }));
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:00:00.000Z', lat: 1 }));
+
+      expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:05:00.000Z']);
+    });
+
+    it('CodeRabbit: las horas se comparan como instantes, no como texto', () => {
+      // 10:00+02:00 son las 08:00Z: más vieja que 08:30Z aunque como texto sea mayor
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:30:00.000Z', lat: 2 }));
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T10:00:00.000+02:00', lat: 1 }));
+
+      expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:30:00.000Z']);
+    });
+
+    it('sin jugador, nada', () => {
+      store.apuntarMia(null, entrada());
+
+      expect(store.mias(null)).toEqual([]);
+      expect(guardado.size).toBe(0);
+    });
+
+    it(`como mucho ${500}: más, se olvidan las más viejas`, () => {
+      for (let i = 1; i <= 505; i += 1) store.apuntarMia('u1', entrada({ id: `m${i}`, holeNumber: (i % 18) + 1, golfCourseId: `gc-${i}` }));
+
+      const mias = store.mias('u1');
+      expect(mias).toHaveLength(500);
+      expect(mias[0].id).toBe('m6');
+    });
+
+    it('lo ilegible, nada', () => {
+      guardado.set('muestrasMias:v1:u1', '{roto');
+
+      expect(store.mias('u1')).toEqual([]);
+    });
+  });
 });

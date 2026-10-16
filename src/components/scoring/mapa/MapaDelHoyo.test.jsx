@@ -1227,6 +1227,105 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(lineaDibujada()).toHaveLength(5);
     });
 
+    // Agustín, 16 oct: «que haga el zoom necesario para ver el hoyo entero sin cortar pero lo más grande posible»
+    it('Z1: en cuanto la ventana está pintada se encuadra el hoyo, con el panel ya medible', () => {
+      const medidos = [];
+      const original = globalThis.HTMLElement.prototype.getBoundingClientRect;
+      globalThis.HTMLElement.prototype.getBoundingClientRect = function () {
+        medidos.push(this.dataset?.testid ?? this.className);
+        return original.call(this);
+      };
+      try {
+        abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      } finally {
+        globalThis.HTMLElement.prototype.getBoundingClientRect = original;
+      }
+
+      expect(mapa().fitBounds).toHaveBeenLastCalledWith(limitesDelHoyo(hoyoCon([T, G])), expect.objectContaining({ animate: false }));
+      expect(medidos).toContain('mapa-abajo');
+    });
+
+    it('Z1: al cargar el mapa (teselas lentas) no se vuelve a encuadrar: no quita lo que mira el jugador', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      mapa().fitBounds.mockClear();
+
+      act(() => mapa().oyentes.load());
+
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('Z2: el margen es lo que tapan de verdad la cabecera y el panel de abajo, con 12 px de aire', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      const caja = (top, bottom) => () => ({ top, bottom, left: 0, right: 390, width: 390, height: bottom - top, x: 0, y: top });
+      screen.getByTestId('mapa-arriba').getBoundingClientRect = caja(0, 70);
+      screen.getByTestId('mapa-abajo').getBoundingClientRect = caja(560, 844);
+      const contenedor = mapa().opciones.container;
+      contenedor.getBoundingClientRect = caja(0, 844);
+      Object.defineProperty(contenedor, 'clientHeight', { value: 844, configurable: true });
+      mapa().fitBounds.mockClear();
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
+
+      expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 82, bottom: 296, left: 40, right: 40 });
+    });
+
+    it('Z3: si con lo medido no cabría nada (apaisado), los márgenes de siempre', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      const caja = (top, bottom) => () => ({ top, bottom, left: 0, right: 700, width: 700, height: bottom - top, x: 0, y: top });
+      screen.getByTestId('mapa-arriba').getBoundingClientRect = caja(0, 70);
+      screen.getByTestId('mapa-abajo').getBoundingClientRect = caja(120, 360);
+      const contenedor = mapa().opciones.container;
+      contenedor.getBoundingClientRect = caja(0, 360);
+      Object.defineProperty(contenedor, 'clientHeight', { value: 360, configurable: true });
+      mapa().fitBounds.mockClear();
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
+
+      expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 54, bottom: 162, left: 40, right: 40 });
+    });
+
+    it('Z5: si el panel de abajo crece después (el recuadro, avisos), se vuelve a encuadrar', () => {
+      const observados = [];
+      vi.stubGlobal('ResizeObserver', class {
+        constructor(fn) { this.fn = fn; observados.push(this); }
+        observe() {}
+        disconnect() {}
+      });
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      mapa().fitBounds.mockClear();
+
+      act(() => observados.at(-1).fn());
+
+      expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
+    });
+
+    it('Z5: pero no si el jugador ya movió el mapa o tocó para medir', () => {
+      const observados = [];
+      vi.stubGlobal('ResizeObserver', class {
+        constructor(fn) { this.fn = fn; observados.push(this); }
+        observe() {}
+        disconnect() {}
+      });
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      act(() => mapa().oyentes.click({ lngLat: { lat: alNorte(150).lat, lng: T.lon } }));
+      mapa().fitBounds.mockClear();
+
+      act(() => observados.at(-1).fn());
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+      act(() => observados.at(-1).fn());
+
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('Z4: si no se puede medir (jsdom, sin pintar), los márgenes de siempre', () => {
+      abrir({ hoyo: hoyoCon([T, G]), par: 3 });
+      mapa().fitBounds.mockClear();
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.verHoyo' }));
+
+      expect(mapa().fitBounds.mock.calls[0][1].padding).toEqual({ top: 90, bottom: 288, left: 40, right: 40 });
+    });
+
     it('M4: la línea que se mueve se dibuja aparte; del hoyo, solo su green', () => {
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
       act(() => mapa().oyentes.load());

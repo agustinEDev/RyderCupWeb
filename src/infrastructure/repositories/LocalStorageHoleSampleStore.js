@@ -6,6 +6,9 @@ import { esLaMismaBarra } from '../../domain/services/muestrasDeLaBarra';
 // cola no se borra: sale cuando ese jugador vuelva a entrar
 const claveDelResumen = (golfCourseId) => `muestrasDeHoyos:v2:${golfCourseId}`;
 const claveDeLaCola = (userId) => `muestrasPendientes:v2:${userId}`;
+const claveDeLasMias = (userId) => `muestrasMias:v1:${userId}`;
+// Las ya enviadas que se guardan para verlas: de sobra para muchos campos
+export const MAX_MIAS = 500;
 
 // Lo que dejaron versiones anteriores y ya nadie lee: las marcas por jugador
 // (que no llegaron a salir) y las muestras sin barra
@@ -94,6 +97,22 @@ class LocalStorageHoleSampleStore extends IHoleSampleStore {
         ? cola.map((otra, i) => (i === suSitio ? entrada : otra)).filter((otra, i) => i === suSitio || !delMismoSitio(otra, entrada))
         : [...cola.filter((otra) => !delMismoSitio(otra, entrada)), entrada];
     this.escribir(claveDeLaCola(userId), nueva);
+  }
+
+  mias(userId) {
+    if (!userId) return [];
+    const mias = this.leer(claveDeLasMias(userId));
+    return Array.isArray(mias) ? mias.filter(esEntrada) : [];
+  }
+
+  apuntarMia(userId, entrada) {
+    if (!userId) return;
+    const mias = this.mias(userId);
+    // Si dos versiones salieron a la vez, la más vieja no pisa a la nueva
+    // (como instantes: dos ISO con distinto desfase no se ordenan como texto)
+    if (mias.some((otra) => delMismoSitio(otra, entrada) && Date.parse(otra.enCola) > Date.parse(entrada.enCola))) return;
+    const nuevas = [...mias.filter((otra) => !delMismoSitio(otra, entrada)), entrada];
+    this.escribir(claveDeLasMias(userId), nuevas.slice(-MAX_MIAS));
   }
 
   quitarDeLaCola(userId, entrada) {
