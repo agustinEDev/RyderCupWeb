@@ -117,6 +117,22 @@ describe('useEnvioDeMarcas (C17/C18)', () => {
       expect(envio.execute).toHaveBeenCalledTimes(1);
     });
 
+    it('si una marca se queda pendiente mientras va una tanda, al acabar esta no se arma otro reintento', async () => {
+      let terminar;
+      envio.execute.mockImplementationOnce(() => new Promise((r) => (terminar = r))).mockResolvedValue({ pendientes: 1 });
+      renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+
+      globalThis.dispatchEvent(new globalThis.CustomEvent(MARCA_PENDIENTE));
+      terminar({ pendientes: 1 });
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[0]);
+      expect(envio.execute).toHaveBeenCalledTimes(2);
+
+      // Y la escalera sigue entera: el de 2 min no se salta
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[1]);
+      expect(envio.execute).toHaveBeenCalledTimes(3);
+    });
+
     it('sin nada pendiente no reintenta', async () => {
       envio.execute.mockResolvedValue({ pendientes: 0 });
       renderHook(() => useEnvioDeMarcas({ activo: true, userId: 'u1' }));

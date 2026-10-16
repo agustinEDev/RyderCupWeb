@@ -44,7 +44,8 @@ export const useEnvioDeMarcas = ({ activo, userId = null }) => {
             fallos = 0;
             return;
           }
-          if (fallos >= ESPERAS_MS.length) return;
+          // Ya armado (una marca se quedó pendiente mientras iba esta tanda): uno basta
+          if (reintento || fallos >= ESPERAS_MS.length) return;
           reintento = globalThis.setTimeout(envia, ESPERAS_MS[fallos]);
           fallos += 1;
         })
