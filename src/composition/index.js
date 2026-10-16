@@ -36,6 +36,8 @@ import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCo
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
 import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
 import LocalStorageHoleMarkStore from '../infrastructure/repositories/LocalStorageHoleMarkStore';
+import LocalStorageCourseLocationCache from '../infrastructure/repositories/LocalStorageCourseLocationCache';
+import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCourseLocationUseCase';
 import SaveHoleMarkUseCase from '../application/use_cases/golf_course/SaveHoleMarkUseCase';
 import SendPendingHoleMarksUseCase from '../application/use_cases/golf_course/SendPendingHoleMarksUseCase';
 import GetMyHoleMarksUseCase from '../application/use_cases/golf_course/GetMyHoleMarksUseCase';
@@ -445,6 +447,11 @@ const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDevic
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
 const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+// Dónde está cada campo, con su copia en el móvil para el mapa sin cobertura (BE #532)
+const getCourseLocationUseCase = new GetCourseLocationUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  courseLocationCache: new LocalStorageCourseLocationCache(),
+});
 // El mapa de hoyos para la anotación, con su copia para jugar sin cobertura (BE #532)
 const getHoleMapUseCase = new GetHoleMapUseCase({
   golfCourseRepository: apiGolfCourseRepository,
@@ -540,6 +547,7 @@ export {
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
   getHoleMapUseCase,
+  getCourseLocationUseCase,
   saveHoleMarkUseCase,
   sendPendingHoleMarksUseCase,
   getMyHoleMarksUseCase,
