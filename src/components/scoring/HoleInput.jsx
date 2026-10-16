@@ -42,10 +42,6 @@ const HoleInput = ({
   matchFormat,
   // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
   allowPickedUp = true,
-  // Lo que va a la derecha de la cabecera del hoyo: el botón «Mapa» (BE #532).
-  // Antes iba en una fila al pie; ahí, en un móvil, «Anterior / Siguiente» se
-  // quedaban por debajo de la pantalla (Agustín, 16 oct)
-  accion = null,
 }) => {
   const { t } = useTranslation('scoring');
   const conPie = (netScore !== null && netScore !== undefined) || Boolean(holeResult) || Boolean(standing);
@@ -58,8 +54,12 @@ const HoleInput = ({
   // marcador» hablaban como si cada uno jugara la suya
   const enParejas = matchFormat === 'FOURSOMES';
   const etiquetaPropia = t(enParejas ? 'input.pairBall' : 'input.yourScore');
+  // Con la pareja detrás (16 oct): al quitar «Info del Partido», era el único
+  // sitio que decía a quién se marca
   const etiquetaMarcado = enParejas
-    ? t('input.rivalBall')
+    ? markedName
+      ? t('input.rivalBallOf', { nombre: markedName })
+      : t('input.rivalBall')
     : markedName
       ? t('input.youMark', { nombre: markedName })
       : t('input.markerScore');
@@ -157,8 +157,7 @@ const HoleInput = ({
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      {/* Si «Mapa» no cabe en la fila, baja a la derecha en vez de empujar lo demás */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-lg font-bold text-gray-900">{t('input.hole')} {holeNumber}</span>
           <span className="text-sm text-gray-500">{t('input.par')} {par}</span>
@@ -177,10 +176,7 @@ const HoleInput = ({
             </span>
           )}
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          {accion && <div data-testid="accion-del-hoyo">{accion}</div>}
-          <ValidationIcon status={validationStatus || 'pending'} />
-        </div>
+        <ValidationIcon status={validationStatus || 'pending'} />
       </div>
 
       {!isReadOnly && (

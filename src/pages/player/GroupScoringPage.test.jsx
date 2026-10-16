@@ -600,11 +600,14 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
   });
 
-  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
     render(<GroupScoringPage />);
 
-    const accion = llamadas.casilla.accion;
-    expect(accion.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(boton.previousElementSibling).toHaveTextContent('input.prevHole');
+    expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Map as IconoMapa } from 'lucide-react';
 
-/** «Mapa», al pie de la tarjeta del hoyo: abre el mapa del hoyo (BE #532). */
+/** «Mapa», en la cabecera de la tarjeta del hoyo, a la derecha (16 oct): abre el mapa del hoyo (BE #532). */
 const BotonMapa = ({ onAbrir }) => {
   const { t } = useTranslation('scoring');
   return (

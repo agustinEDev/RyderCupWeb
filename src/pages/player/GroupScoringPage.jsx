@@ -346,7 +346,6 @@ const GroupScoringPage = () => {
                 <>
                   <HoleInput
                     key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                    accion={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                     holeNumber={currentHole}
                     par={parDe(userId)}
                     markedPar={parDe(marcoA)}
@@ -378,7 +377,7 @@ const GroupScoringPage = () => {
                   />
                 </>
               )}
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => setCurrentHole(currentHole - 1)}
@@ -387,6 +386,9 @@ const GroupScoringPage = () => {
                 >
                   {t('input.prevHole')}
                 </button>
+                {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
+                {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
+                {!aunNoAbre && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                 <button
                   type="button"
                   onClick={() => setCurrentHole(currentHole + 1)}

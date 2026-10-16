@@ -206,6 +206,49 @@ describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve 
     expect(screen.getByText(/notOpenYet.title|no ha abierto/i)).toBeInTheDocument();
   });
 
+  it('C1 · antes de abrir, dice a quién vas a marcar (16 oct: lo decía «Info del Partido»)', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMark');
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('Player B');
+  });
+
+  it('C1 · antes de abrir, en foursomes, a la pareja rival', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({
+      matchStatus: 'SCHEDULED',
+      scoringOpensAt: dentroDeUnaHora,
+      matchFormat: 'FOURSOMES',
+      players: [...vistaOriginal.players, { userId: 'u3', userName: 'Player C', team: 'A' }, { userId: 'u4', userName: 'Player D', team: 'B' }],
+    });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMarkPair');
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('Player B / Player D');
+  });
+
+  it('C1 · antes de abrir no hay «Mapa» (su ventana va con el hoyo)', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+  });
+
+  it('C1 · antes de abrir, sin a quién marcar, ni la línea', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora, markerAssignments: [] });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('anotaras-a')).toBeNull();
+  });
+
   it('C2 · programado pero su hora ya pasó: casillas, que el primer golpe lo abre', () => {
     const haceUnaHora = new Date(Date.now() - 3600 * 1000).toISOString();
     conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: haceUnaHora });
@@ -284,7 +327,6 @@ describe('ScoringPage', () => {
 
   it('16 oct: sin «Info del Partido» (para que la navegación se vea sin desplazar)', () => {
     render(<ScoringPage />);
-    expect(screen.queryByText('preMatch.title')).toBeNull();
     expect(screen.queryByTestId('pre-match-info')).toBeNull();
   });
 
@@ -1544,11 +1586,14 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
   });
 
-  it('T2: la tarjeta lleva «Mapa», que lo abre', () => {
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
     render(<ScoringPage />);
 
-    const accion = casilla.props.accion;
-    expect(accion.props.onAbrir).toBe(mapaHoyo.valor.abrir);
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(boton.previousElementSibling).toHaveTextContent('input.prevHole');
+    expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

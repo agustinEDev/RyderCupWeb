@@ -535,8 +535,9 @@ const ScoringPage = () => {
         )}
 
         {/* Match header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          {/* min-w-0: sin él, un nombre de campo largo no se recorta y la cabecera se sale */}
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold text-gray-900">
               {t('matchHeader', { number: scoringView?.matchNumber })}
             </h1>
@@ -544,7 +545,7 @@ const ScoringPage = () => {
             <CampoDeLaPartida nombre={scoringView?.roundInfo?.golfCourseName} />
           </div>
           {(resultadoDecidido || cerradoSinJugar || scoringView?.matchStanding) && (
-            <div className="text-right" data-testid="marcador-del-partido">
+            <div className="shrink-0 text-right" data-testid="marcador-del-partido">
               <p className="text-lg font-bold text-primary">{textoDelMarcador}</p>
               {scoringView?.matchStanding && (
                 <p className="text-xs text-gray-500">
@@ -591,6 +592,12 @@ const ScoringPage = () => {
                   {t('notOpenYet.opensAt', { hora: horaDeApertura })}
                 </p>
                 <p className="mt-1 text-amber-800">{t('notOpenYet.meanwhile')}</p>
+                {/* A quién vas a marcar (16 oct): lo decía «Info del Partido» */}
+                {aQuienMarco && (
+                  <p data-testid="anotaras-a" className="mt-1 font-medium text-amber-900">
+                    {t(scoringView?.matchFormat === 'FOURSOMES' ? 'notOpenYet.youWillMarkPair' : 'notOpenYet.youWillMark', { nombre: aQuienMarco })}
+                  </p>
+                )}
               </div>
             )}
 
@@ -611,7 +618,6 @@ const ScoringPage = () => {
                   // cuando esta cambia, así que enseñaba un golpe que no estaba en
                   // ningún sitio. Al montarse de nuevo, enseña lo que hay guardado
                   key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                  accion={<BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                   matchFormat={scoringView?.matchFormat}
                   holeNumber={currentHole}
                   par={currentHoleData.par}
@@ -646,18 +652,21 @@ const ScoringPage = () => {
             )}
 
             {/* Prev/Next navigation */}
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={handlePrevHole}
                 disabled={currentHole <= 1}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                className="min-h-11 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
               >
                 {t('input.prevHole')}
               </button>
+              {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
+              {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
+              {currentHoleData && !aunNoAbre && !cerradoSinJugar && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
               <button
                 onClick={handleNextHole}
                 disabled={currentHole >= totalHoles}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                className="min-h-11 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
               >
                 {t('input.nextHole')}
               </button>

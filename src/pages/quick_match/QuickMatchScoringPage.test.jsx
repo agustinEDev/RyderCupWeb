@@ -1826,11 +1826,12 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
   });
 
-  it('T2: la tarjeta lleva «Mapa» en la cabecera del hoyo, que lo abre (16 oct)', () => {
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
     renderPage();
 
     const boton = screen.getByRole('button', { name: 'mapa.abrir' });
-    expect(screen.getByTestId('accion-del-hoyo')).toContainElement(boton);
+    expect(screen.getByTestId('quick-match-prev-hole').nextElementSibling).toBe(boton);
+    expect(boton.nextElementSibling).toBe(screen.getByTestId('quick-match-next-hole'));
     fireEvent.click(boton);
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
