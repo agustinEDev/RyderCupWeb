@@ -326,6 +326,19 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.hoyo.green.center).toEqual(G);
   });
 
+  it('V12: si cambia QUÉ muestra se ve (llega la de mi barra tras la de otra), el mapa se rehace', async () => {
+    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
+    const { rerender } = abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+    const antes = carga.montajes;
+
+    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, deOtra: PRIMERA, recoge: true } };
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
+
+    expect(carga.montajes).toBe(antes + 1);
+    expect(carga.props.hoyo.green.center).toEqual(C);
+  });
+
   it('V11: en cuanto el jugador empieza, lo que ve no cambia aunque llegue una muestra', async () => {
     const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');

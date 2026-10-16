@@ -84,8 +84,11 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   // La atribución, si algo de lo que se ve sale del mapa (y no de una muestra)
   const usaElMapa = completo || (conSalida && !muestra);
 
+  // Qué muestra se ve, no solo si hay una: si llega otra (la de mi barra tras la
+  // de otra), el mapa se rehace con ella mientras el jugador no haya empezado
+  const deCualMuestra = muestra ? [muestra.tee, ...muestra.bends, muestra.greenCenter].map((p) => `${p.lat},${p.lon}`).join(';') : '';
   const ahora = {
-    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? 'muestra' : (porMarcar ?? '')}`,
+    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && muestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
     hoyo,
     porMarcar,
     atribucion: usaElMapa ? (mapaDelCampo?.attribution ?? null) : null,

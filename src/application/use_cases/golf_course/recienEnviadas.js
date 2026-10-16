@@ -12,6 +12,9 @@ import { esLaMismaBarra } from '../../../domain/services/muestrasDeLaBarra';
  * Solo en memoria: no vuelven a la cola ni se envían otra vez. Las comparten
  * enviar, vaciar la cola y leer el resumen (una sola en composition).
  */
+// Las de un día sin cobertura caben de sobra; más, se olvidan las más viejas
+export const MAX_RECIEN_ENVIADAS = 100;
+
 export const crearRecienEnviadas = () => {
   const apuntadas = [];
   // Cada apunte lleva su turno: un resumen pedido antes de que llegara una no
@@ -21,6 +24,7 @@ export const crearRecienEnviadas = () => {
     apuntar(userId, { golfCourseId, holeNumber, barra, tee, bends, greenCenter }) {
       turno += 1;
       apuntadas.push({ turno, userId, golfCourseId, holeNumber, barra, puntos: { tee, bends, greenCenter } });
+      if (apuntadas.length > MAX_RECIEN_ENVIADAS) apuntadas.splice(0, apuntadas.length - MAX_RECIEN_ENVIADAS);
     },
     /** El turno de ahora: se mira al pedir el resumen. */
     turno: () => turno,

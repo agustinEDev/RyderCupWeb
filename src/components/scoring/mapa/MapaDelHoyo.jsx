@@ -74,11 +74,17 @@ const geojsonDeLaLinea = (linea) => ({
   features: linea.length > 1 ? [{ type: 'Feature', properties: { tipo: 'linea' }, geometry: { type: 'LineString', coordinates: linea.map(lngLat) } }] : [],
 });
 const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
-// La línea de un hoyo con salida y green, con los codos de su par para moverlos
+// La línea de un hoyo con salida y green, con los codos de su par para moverlos.
+// Acaba en el centro del green: la de OSM acaba donde termina el hoyo, cerca
+// pero no en él, y así se mide como la medida oficial (al centro del green)
 const lineaParaMover = (hoyo, par) =>
-  hoyo?.green && (hoyo.playLine?.length ?? 0) > 1 ? conCodosDelPar(hoyo.playLine, par) : null;
-// Lo que se envía al cerrar: una línea que el servidor puede guardar
-const muestraValida = (linea) => linea.length - 2 <= MAX_CODOS && !salidaGreenFueraDeLimites(linea[0], linea.at(-1));
+  hoyo?.green && (hoyo.playLine?.length ?? 0) > 1 ? conCodosDelPar([...hoyo.playLine.slice(0, -1), hoyo.green.center], par) : null;
+// Lo que se envía al cerrar: una línea que el servidor puede guardar (hasta dos
+// codos, el green a 40-750 m y, si se sabe dónde está el campo, nada a más de 3 km)
+const muestraValida = (linea, campo) =>
+  linea.length - 2 <= MAX_CODOS &&
+  !salidaGreenFueraDeLimites(linea[0], linea.at(-1)) &&
+  !linea.some((p) => estaLejosDelCampo(p, campo));
 
 // Medir tocando: de ti al punto y del punto al centro del green, cada tramo
 // con sus metros al lado (Agustín, 16 oct: mejor que un cuadro aparte)
@@ -210,9 +216,11 @@ const MapaDelHoyo = ({
   const marcaDeLaSalida = useRef(null);
   // Al cerrar, lo último: se envía al desmontar, se cierre como se cierre
   // (botón, Escape o «atrás»)
-  const alCerrar = useRef({ edicion, recoge, onMuestra });
-  // Lo ya enviado de esta apertura: la versión y su id. Si la app se oculta, sale
-  // ya; si luego no se toca, al cerrar no sale otra; si se toca, otra, con id nuevo
+  const alCerrar = useRef({ edicion, recoge, onMuestra, campo: centroSinMapa });
+  // Lo ya enviado de esta apertura: la versión. Toda la apertura es una sola
+  // muestra con un solo id: si la app se oculta, sale ya; si luego se toca, al
+  // cerrar sale otra vez con el mismo id (en el móvil sustituye a la de la cola;
+  // en el servidor, si ya llegó, cuenta una)
   const enviada = useRef({ version: null, id: null });
   const yaEmpezo = useRef(false);
   const empezar = useCallback(() => {
@@ -228,7 +236,7 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
-    alCerrar.current = { edicion, recoge, onMuestra };
+    alCerrar.current = { edicion, recoge, onMuestra, campo: centroSinMapa };
     alTocar.current = (p) => {
       if (pidiendo) {
         const ahora = globalThis.performance.now();
@@ -283,10 +291,10 @@ const MapaDelHoyo = ({
   // no. Nada de esto se le dice al jugador
   useEffect(() => {
     const enviarSiHace = () => {
-      const { edicion: { linea: ultima, cambiada, version }, recoge: recogiendo, onMuestra: enviar } = alCerrar.current;
-      if (!cambiada || !recogiendo || !enviar || !ultima || !muestraValida(ultima)) return;
+      const { edicion: { linea: ultima, cambiada, version }, recoge: recogiendo, onMuestra: enviar, campo } = alCerrar.current;
+      if (!cambiada || !recogiendo || !enviar || !ultima || !muestraValida(ultima, campo)) return;
       if (enviada.current.version === version) return;
-      enviada.current = { version, id: globalThis.crypto.randomUUID() };
+      enviada.current = { version, id: enviada.current.id ?? globalThis.crypto.randomUUID() };
       enviar({ id: enviada.current.id, tee: ultima[0], bends: ultima.slice(1, -1), greenCenter: ultima.at(-1) });
     };
     // Si se cierra la app (o el móvil la mata) con el mapa abierto, lo hecho no
@@ -521,7 +529,11 @@ const MapaDelHoyo = ({
       return { lat, lon: lng };
     };
     const con = (i, p) => linea.map((q, j) => (j === i ? p : q));
+    // Una línea con más puntos que codos se guardan (las de OSM, con muchos):
+    // se mueven la salida y el green; los de en medio siguen en la línea, sin punto
+    const muchos = linea.length - 2 > MAX_CODOS;
     linea.forEach((p, i) => {
+      if (muchos && i > 0 && i < linea.length - 1) return;
       const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true })
         .setLngLat(lngLat(p))
         .addTo(mapa)

@@ -47,6 +47,8 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
   );
 
   // El resumen nuevo y lo que queda en la cola, a la vez
+  // Sin red, `execute` ya devuelve la copia del móvil; si aun así fallara,
+  // lo pendiente se refresca igual (y con ello la recién enviada sigue a la vista)
   const refrescarTodo = useCallback(
     async (clave) => {
       let nuevas = null;
@@ -65,13 +67,15 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
   useEffect(() => {
     if (!golfCourseId) return undefined;
     let vigente = true;
+    // También la primera vez, el resumen y lo pendiente a la vez: el resumen que
+    // carga olvida las recién enviadas que ya trae
     getHoleSamplesUseCase
       .execute(golfCourseId, miBarra)
+      .catch(() => null)
       .then((nuevas) => {
-        if (vigente) setMuestras({ de, muestras: nuevas });
-      })
-      .catch(() => {
-        // Se queda la copia del móvil
+        if (!vigente) return;
+        if (nuevas) setMuestras({ de, muestras: nuevas });
+        setPendientes({ de, pendientes: getHoleSamplesUseCase.pendientes(userId, golfCourseId, miBarra) });
       });
     // Lo que la cola de fondo envía o descarta llega al mapa abierto
     const alCambiar = () => {
@@ -82,7 +86,7 @@ export function useMuestrasDelCampo({ golfCourseId, userId, barra }) {
       vigente = false;
       globalThis.removeEventListener(MUESTRAS_CAMBIADAS, alCambiar);
     };
-  }, [de, golfCourseId, miBarra, refrescarTodo]);
+  }, [de, userId, golfCourseId, miBarra, refrescarTodo]);
 
   const enviar = useCallback(
     async (holeNumber, { id, tee, bends, greenCenter } = {}) => {

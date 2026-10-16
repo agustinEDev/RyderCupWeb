@@ -1116,11 +1116,11 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(textos()).toEqual(['mapa.tramo {"metros":150}', 'mapa.tramo {"metros":150}']);
     });
 
-    it('M3: una línea de un mapa con más puntos que su par no se toca', () => {
+    it('M3: una línea de un mapa con más puntos que su par no se toca (se dibujan todos)', () => {
       abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4 });
       act(() => mapa().oyentes.load());
 
-      expect(arrastrables()).toHaveLength(5);
+      expect(lineaDibujada()).toHaveLength(5);
     });
 
     it('M4: la línea que se mueve se dibuja aparte; del hoyo, solo su green', () => {
@@ -1280,7 +1280,7 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
     });
 
-    it('S9: al ocultarse la app se guarda lo hecho; si luego se mueve más, al cerrar sale otra con id nuevo', () => {
+    it('S9: al ocultarse la app se guarda lo hecho; si luego se mueve más, al cerrar sale otra vez', () => {
       const { unmount, onMuestra } = marcar({ metros: 300, par: 4 });
       tocar(T);
       tocar(G);
@@ -1294,7 +1294,6 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       unmount();
 
       expect(onMuestra).toHaveBeenCalledTimes(2);
-      expect(onMuestra.mock.calls[1][0].id).not.toBe(onMuestra.mock.calls[0][0].id);
     });
 
     it('S9: ocultarse sin haber hecho nada no envía', () => {
@@ -1339,6 +1338,54 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       arrastrables()[1].opciones.element.dispatchEvent(evento);
 
       expect(parar).toHaveBeenCalled();
+    });
+
+    it('CR1: un hoyo aprobado cuya línea no acaba en el centro del green (OSM): se mide al green de verdad', () => {
+      const verde = { front: alNorte(305), center: alNorte(320), back: alNorte(335) };
+      abrir({ hoyo: hoyoCon([T, G], verde), par: 3, metros: 342 });
+      act(() => mapa().oyentes.load());
+
+      // La línea acaba en su centro, y el recuadro usa su contorno (15 m), no ±10
+      expect(lineaDibujada().at(-1)).toEqual([T.lon, alNorte(320).lat]);
+      expect(screen.getByTestId('distancia-delante')).toHaveTextContent('327');
+      expect(textos()).toEqual(['mapa.tramo {"metros":320}']);
+    });
+
+    it('CR4: toda la apertura es una muestra con un solo id (oculta y luego cerrada tras moverla, el mismo)', () => {
+      const { unmount, onMuestra } = marcar({ metros: 300, par: 4 });
+      tocar(T);
+      tocar(G);
+      act(() => {
+        Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
+        globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'visible', configurable: true });
+      soltar(arrastrables()[1], alEste(30, alNorte(150)));
+
+      unmount();
+
+      expect(onMuestra).toHaveBeenCalledTimes(2);
+      expect(onMuestra.mock.calls[1][0].id).toBe(onMuestra.mock.calls[0][0].id);
+    });
+
+    it('CR6: un punto a más de 3 km del campo (si se sabe dónde está) no se envía', () => {
+      centro.valor = T;
+      const { unmount, onMuestra } = marcar({ metros: 300, par: 3 });
+      tocar(T);
+      tocar(G);
+      soltar(arrastrables()[0], alNorte(-3100));
+      soltar(arrastrables().at(-1), alNorte(-2800));
+
+      unmount();
+
+      expect(onMuestra).not.toHaveBeenCalled();
+    });
+
+    it('CR10: una línea de OSM con más puntos que codos: solo se arrastran la salida y el green', () => {
+      abrir({ hoyo: hoyoCon([T, alNorte(50), alNorte(100), alNorte(150), G]), par: 4 });
+      act(() => mapa().oyentes.load());
+
+      expect(arrastrables()).toHaveLength(2);
     });
 
     it('S8: «Cerrar» cierra (y la muestra sale al desmontar, una vez)', () => {

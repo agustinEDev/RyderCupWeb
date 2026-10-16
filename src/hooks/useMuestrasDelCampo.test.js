@@ -203,6 +203,17 @@ describe('useMuestrasDelCampo', () => {
     expect(desdeQueSeVio.every((v) => v.muestra || v.pendiente)).toBe(true);
   });
 
+  it('CR7: el primer resumen que carga refresca también lo pendiente (olvidó las recién enviadas que ya trae)', async () => {
+    casos.muestras.pendientes.mockReturnValue({ 3: P });
+    const { result } = montar();
+    expect(result.current.pendientes).toEqual({ 3: P });
+    casos.muestras.pendientes.mockReturnValue({});
+
+    await act(async () => {});
+
+    expect(result.current.pendientes).toEqual({});
+  });
+
   it('S19: llega y el resumen nuevo falla: se sigue viendo lo que dé `pendientes` (la recién enviada)', async () => {
     const { result } = montar();
     await act(async () => {});
