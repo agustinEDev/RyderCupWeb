@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida } from './geometriaDelHoyo';
+import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado } from './geometriaDelHoyo';
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
 const GREEN = {
@@ -75,5 +75,63 @@ describe('esPosicionValida (G4)', () => {
     ['nada', null],
   ])('%s → no', (_caso, posicion) => {
     expect(esPosicionValida(posicion)).toBe(false);
+  });
+});
+
+// Agustín, 16 oct: «que haga el zoom necesario para ver el hoyo entero sin
+// cortar pero lo más grande posible». fitBounds encuadra la caja norte-sur del
+// hoyo, que girada ocupa mucho más que él: el zoom se calcula con el hoyo girado
+describe('encuadreGirado', () => {
+  const M_POR_GRADO = 111319.49;
+  const S = { lat: 42.46, lon: -8.72 };
+  const norte = (m) => ({ lat: S.lat + m / M_POR_GRADO, lon: S.lon });
+  const noreste = (m) => ({ lat: S.lat + m / M_POR_GRADO / Math.SQRT2, lon: S.lon + m / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) / Math.SQRT2 });
+  const pantalla = { ancho: 400, alto: 900, padding: { top: 50, bottom: 250, left: 40, right: 40 } };
+
+  it('un hoyo recto hacia su rumbo llena el alto libre: 500 m en 600 px', () => {
+    const hoyo = { playLine: [S, norte(500)], green: null };
+
+    const { zoom } = encuadreGirado(hoyo, 0, pantalla);
+
+    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    expect(500 / mPorPx).toBeCloseTo(600, 0);
+  });
+
+  it('en diagonal y girado a su rumbo, el mismo zoom que recto (no el de su caja norte-sur)', () => {
+    const recto = encuadreGirado({ playLine: [S, norte(500)], green: null }, 0, pantalla);
+    const diagonal = encuadreGirado({ playLine: [S, noreste(500)], green: null }, 45, pantalla);
+
+    expect(diagonal.zoom).toBeCloseTo(recto.zoom, 3);
+  });
+
+  it('el centro es el del hoyo girado (la mitad de la línea)', () => {
+    const { center } = encuadreGirado({ playLine: [S, noreste(500)], green: null }, 45, pantalla);
+
+    expect(center.lat).toBeCloseTo(noreste(250).lat, 6);
+    expect(center.lon).toBeCloseTo(noreste(250).lon, 6);
+  });
+
+  it('si lo que manda es lo ancho, se encuadra por el ancho', () => {
+    const ancho = { playLine: [S, { lat: S.lat, lon: S.lon + 600 / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) }], green: null };
+
+    const { zoom } = encuadreGirado(ancho, 0, pantalla);
+
+    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    expect(600 / mPorPx).toBeCloseTo(320, 0);
+  });
+
+  it('incluye el green (delante y fondo)', () => {
+    const conGreen = { playLine: [S, norte(500)], green: { front: norte(490), center: norte(500), back: norte(520) } };
+
+    const { zoom } = encuadreGirado(conGreen, 0, pantalla);
+
+    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    expect(520 / mPorPx).toBeCloseTo(600, 0);
+  });
+
+  it('un solo punto (o sin sitio libre): zoom 19, y sin hoyo, null', () => {
+    expect(encuadreGirado({ playLine: [S], green: null }, 0, pantalla).zoom).toBe(19);
+    expect(encuadreGirado({ playLine: [S, norte(500)], green: null }, 0, { ancho: 80, alto: 300, padding: pantalla.padding }).zoom).toBe(19);
+    expect(encuadreGirado(null, 0, pantalla)).toBeNull();
   });
 });

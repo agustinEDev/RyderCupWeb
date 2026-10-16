@@ -45,6 +45,52 @@ export const limitesDelHoyo = (hoyo) => {
   ];
 };
 
+// Web Mercator, como el mapa: el radio de su esfera y el lado de sus teselas
+const RADIO_MERCATOR_M = 6378137;
+const TESELA_PX = 512;
+const ZOOM_MAXIMO = 19;
+
+/**
+ * El centro y el zoom para ver el hoyo entero, girado a `rumboGrados`, lo más
+ * grande que quepa en el hueco libre (la pantalla menos `padding`). `fitBounds`
+ * no vale con el mapa girado: encuadra la caja norte-sur del hoyo, que girada
+ * ocupa mucho más que él (en diagonal, casi el doble). `null` sin puntos.
+ *
+ * @param {{playLine: Object[], green: Object|null}|null} hoyo
+ * @param {number} rumboGrados
+ * @param {{ancho: number, alto: number, padding: {top, bottom, left, right}}} pantalla
+ * @returns {{center: {lat: number, lon: number}, zoom: number}|null}
+ */
+export const encuadreGirado = (hoyo, rumboGrados, { ancho, alto, padding }) => {
+  const green = hoyo?.green;
+  const puntos = [...(hoyo?.playLine ?? []), ...(green ? [green.front, green.center, green.back] : [])];
+  if (puntos.length === 0) return null;
+  const origen = puntos[0];
+  const coseno = Math.cos(radianes(origen.lat));
+  const r = radianes(rumboGrados);
+  // En metros desde el primer punto: a lo largo del hoyo (u) y de lado (v)
+  const giradas = puntos.map((p) => {
+    const este = radianes(p.lon - origen.lon) * RADIO_MERCATOR_M * coseno;
+    const norte = radianes(p.lat - origen.lat) * RADIO_MERCATOR_M;
+    return { u: este * Math.sin(r) + norte * Math.cos(r), v: este * Math.cos(r) - norte * Math.sin(r) };
+  });
+  const us = giradas.map((g) => g.u);
+  const vs = giradas.map((g) => g.v);
+  const [uMin, uMax, vMin, vMax] = [Math.min(...us), Math.max(...us), Math.min(...vs), Math.max(...vs)];
+  const u = (uMin + uMax) / 2;
+  const v = (vMin + vMax) / 2;
+  const center = {
+    lat: origen.lat + (u * Math.cos(r) - v * Math.sin(r)) / RADIO_MERCATOR_M / (Math.PI / 180),
+    lon: origen.lon + (u * Math.sin(r) + v * Math.cos(r)) / (RADIO_MERCATOR_M * coseno) / (Math.PI / 180),
+  };
+  const libreAlto = alto - padding.top - padding.bottom;
+  const libreAncho = ancho - padding.left - padding.right;
+  const mPorPx = Math.max((uMax - uMin) / libreAlto, (vMax - vMin) / libreAncho);
+  if (libreAlto <= 0 || libreAncho <= 0 || !(mPorPx > 0)) return { center, zoom: ZOOM_MAXIMO };
+  const zoom = Math.log2((2 * Math.PI * RADIO_MERCATOR_M * coseno) / (TESELA_PX * mPorPx));
+  return { center, zoom: Math.min(ZOOM_MAXIMO, zoom) };
+};
+
 /** Una posición con coordenadas de verdad: hay GPS y extensiones que dan NaN. */
 export const esPosicionValida = (posicion) =>
   Number.isFinite(posicion?.lat) &&

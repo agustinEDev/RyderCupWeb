@@ -6,7 +6,7 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
 import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
 import { distanciasDelHoyo } from '../../../domain/services/distanciasDelHoyo';
-import { limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
+import { encuadreGirado, limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
 import {
   MAX_CODOS,
   aCodosDelPar,
@@ -344,12 +344,28 @@ const MapaDelHoyo = ({
     };
   }, []);
 
-  const encuadrarHoyo = useCallback((animar) => {
-    const { hoyo: h } = inicio.current;
-    const limites = limitesDelHoyo(h);
-    if (!limites) return;
-    mapaRef.current?.fitBounds(limites, { bearing: orientacionDelHoyo(h), padding: margen(), animate: animar });
-  }, [margen]);
+  // El hoyo entero, girado como se juega y lo más grande que quepa: el centro y
+  // el zoom se calculan con el hoyo girado (`fitBounds` encuadra su caja
+  // norte-sur, que girada ocupa mucho más, y el hoyo salía pequeño; 16 oct)
+  const encuadrarHoyo = useCallback(
+    (animar) => {
+      const { hoyo: h } = inicio.current;
+      const orientacion = orientacionDelHoyo(h);
+      const mapa = mapaRef.current;
+      if (!mapa || orientacion === null) return;
+      const padding = margen();
+      const encuadre = encuadreGirado(h, orientacion, {
+        ancho: contenedor.current?.clientWidth || 360,
+        alto: contenedor.current?.clientHeight || 640,
+        padding,
+      });
+      if (!encuadre) return;
+      const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion, padding };
+      if (animar) mapa.easeTo(camara);
+      else mapa.jumpTo(camara);
+    },
+    [margen],
+  );
 
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
   // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
