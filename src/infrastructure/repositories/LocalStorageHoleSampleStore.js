@@ -109,7 +109,8 @@ class LocalStorageHoleSampleStore extends IHoleSampleStore {
     if (!userId) return;
     const mias = this.mias(userId);
     // Si dos versiones salieron a la vez, la más vieja no pisa a la nueva
-    if (mias.some((otra) => delMismoSitio(otra, entrada) && otra.enCola > entrada.enCola)) return;
+    // (como instantes: dos ISO con distinto desfase no se ordenan como texto)
+    if (mias.some((otra) => delMismoSitio(otra, entrada) && Date.parse(otra.enCola) > Date.parse(entrada.enCola))) return;
     const nuevas = [...mias.filter((otra) => !delMismoSitio(otra, entrada)), entrada];
     this.escribir(claveDeLasMias(userId), nuevas.slice(-MAX_MIAS));
   }

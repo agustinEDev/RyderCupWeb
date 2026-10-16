@@ -320,6 +320,14 @@ describe('LocalStorageHoleSampleStore', () => {
       expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:05:00.000Z']);
     });
 
+    it('CodeRabbit: las horas se comparan como instantes, no como texto', () => {
+      // 10:00+02:00 son las 08:00Z: más vieja que 08:30Z aunque como texto sea mayor
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:30:00.000Z', lat: 2 }));
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T10:00:00.000+02:00', lat: 1 }));
+
+      expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:30:00.000Z']);
+    });
+
     it('sin jugador, nada', () => {
       store.apuntarMia(null, entrada());
 
