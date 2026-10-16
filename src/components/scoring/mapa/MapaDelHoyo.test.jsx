@@ -2011,6 +2011,80 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
   });
 
+  // Revisión del 17 oct
+  it('R: contestar «No» o «Sí» con mal GPS ya cuenta como empezar (lo que se ve no se rehace)', () => {
+    const onEmpezar = vi.fn();
+    abrirSinLinea({ onEmpezar });
+    enLaSalida(40);
+
+    si();
+
+    expect(onEmpezar).toHaveBeenCalledTimes(1);
+  });
+
+  it('R: «No» también cuenta como empezar', () => {
+    const onEmpezar = vi.fn();
+    abrirSinLinea({ onEmpezar });
+    enLaSalida();
+
+    no();
+
+    expect(onEmpezar).toHaveBeenCalledTimes(1);
+  });
+
+  it('R: «Sí» con el green conocido fuera de 40-750 m: se avisa y se pide tocar la salida', () => {
+    const { unmount, onMuestra } = conGreenSuelto({ hoyo: { playLine: [], green: { center: alNorte(900) } } });
+    enLaSalida();
+
+    si();
+
+    expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
+    expect(screen.queryByText('mapa.preguntaSalida')).toBeNull();
+    tocar(alNorte(500));
+    unmount();
+    expect(onMuestra.mock.calls[0][0].tee).toEqual(alNorte(500));
+  });
+
+  it('R: tras «Ahora no», «Marcar hoyo» vuelve a preguntar si estás en la salida', () => {
+    abrirSinLinea();
+    enLaSalida();
+    no();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+    fireEvent.click(screen.getByRole('button', { name: /mapa\.marcarHoyo/ }));
+
+    expect(screen.getByText('mapa.preguntaSalida')).toBeInTheDocument();
+  });
+
+  it('R: con «No», un green a más de 750 m de ti no vale: se avisa', () => {
+    const { unmount, onMuestra } = abrirSinLinea();
+    enLaSalida();
+    no();
+
+    tocar(alNorte(900));
+
+    expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
+    unmount();
+    expect(onMuestra).not.toHaveBeenCalled();
+  });
+
+  it('R: el green marcado con «No» se puede arrastrar, y sale el de donde lo dejas', () => {
+    const { unmount, onMuestra } = abrirSinLinea();
+    enLaSalida();
+    no();
+    tocar(alNorte(300));
+
+    const green = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable);
+    expect(green).toHaveLength(1);
+    act(() => {
+      green[0].setLngLat([T.lon, alNorte(320).lat]);
+      green[0].oyentes.dragend({ target: green[0] });
+    });
+
+    unmount();
+    expect(onMuestra.mock.calls.at(-1)[0].greenCenter).toEqual({ lat: alNorte(320).lat, lon: T.lon });
+  });
+
   describe('el recuadro', () => {
     const HOYO_T = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(312) } };
 
@@ -2038,6 +2112,19 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
       expect(screen.getByText('mapa.desdeTuBarra')).toBeInTheDocument();
+    });
+
+    it('B2: sin metros en la tarjeta, medido sobre la línea: «desde la salida»', () => {
+      abrir({ hoyo: HOYO_T, metros: null });
+
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('300');
+      expect(screen.getByText('mapa.desdeLaSalida')).toBeInTheDocument();
+    });
+
+    it('B4: sin green, no hay recuadro aunque la tarjeta traiga metros', () => {
+      abrirSinLinea();
+
+      expect(screen.queryByTestId('distancia-centro')).toBeNull();
     });
   });
 });

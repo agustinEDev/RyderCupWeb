@@ -397,6 +397,7 @@
     "no": "No",
     "malGps": "We can't locate you well: tap where the tee is",
     "desdeTuPosicion": "From your position",
-    "desdeTuBarra": "From your tee"
+    "desdeTuBarra": "From your tee",
+    "desdeLaSalida": "From the tee"
   }
 }

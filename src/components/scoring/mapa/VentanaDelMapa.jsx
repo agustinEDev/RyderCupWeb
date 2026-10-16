@@ -54,6 +54,7 @@ class SiNoCarga extends Component {
 // Un hoyo del que aún no se sabe nada: sin muestra, y recogiendo
 const SIN_MUESTRAS = { primera: null, green: null, recoge: true };
 const conSalida = (muestra) => Boolean(muestra?.tee);
+const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
 
 const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = null, userId = null, barra = null }) => {
   const { t } = useTranslation('scoring');
@@ -71,8 +72,13 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const completo = Boolean(aprobado?.green);
   const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
   const mia = pendientes[numeroDeHoyo] ?? null;
-  const muestra = delHoyo.primera ?? (delHoyo.green ? null : conSalida(mia) ? mia : null);
-  const greenSuelto = muestra ? null : (delHoyo.green ?? (mia && !conSalida(mia) ? mia.greenCenter : null));
+  // Mi línea completa que acaba en el green suelto es la que lo completa: va
+  // antes que él, o al reabrir no la vería (revisión, 17 oct)
+  const miaLoCompleta = conSalida(mia) && mismoPunto(mia.greenCenter, delHoyo.green);
+  const muestra = delHoyo.primera ?? (miaLoCompleta || (!delHoyo.green && conSalida(mia)) ? mia : null);
+  // Con la salida del mapa aprobado, se pide el green desde ella, como siempre:
+  // el green suelto no la tapa (revisión, 17 oct)
+  const greenSuelto = muestra || aprobadoConSalida ? null : (delHoyo.green ?? (mia && !conSalida(mia) ? mia.greenCenter : null));
   // Memorizado: la anotación se refresca cada 10 s, y un hoyo nuevo en cada
   // render rehacía las líneas del mapa
   const deLaMuestra = useMemo(

@@ -338,6 +338,28 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.porMarcar).toBe('salidaAlGreen');
   });
 
+  // Revisión del 17 oct (decidido sin Agustín, lo más conservador; a confirmar)
+  it('V10: con la salida del mapa aprobado, se sigue pidiendo el green desde ella (el green suelto no la tapa)', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
+
+    abrirEn({ holes: { 3: { playLine: [T], green: null } } });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine).toEqual([T]);
+    expect(carga.props.porMarcar).toBe('green');
+  });
+
+  it('V10: mi línea completa que acaba en ese green suelto va antes que él (es la que lo completa)', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: G } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine).toEqual([T, G]);
+    expect(carga.props.porMarcar).toBeNull();
+  });
+
   it('V12: si cambia QUÉ se ve (llega una completa tras el green suelto), el mapa se rehace', async () => {
     lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
     const { rerender } = abrirEn({ holes: {} });

@@ -22,11 +22,16 @@ describe('distanciasDelHoyo', () => {
     expect(distanciasDelHoyo({ metros: 342, hoyo })).toEqual({ front: 332, center: 342, back: 352 });
   });
 
+  // B4 (Agustín, 17 oct): sin green no hay recuadro, aunque la tarjeta traiga metros
   it.each([
     ['sin hoyo', null],
     ['con solo la salida', { playLine: [SALIDA], green: null }],
-  ])('R3: %s, con la tarjeta: ±10', (_caso, hoyo) => {
-    expect(distanciasDelHoyo({ metros: 342, hoyo })).toEqual({ front: 332, center: 342, back: 352 });
+  ])('B4: %s, no hay recuadro', (_caso, hoyo) => {
+    expect(distanciasDelHoyo({ metros: 342, hoyo })).toBeNull();
+  });
+
+  it('B3: un green suelto (solo el centro), con la tarjeta: ±10', () => {
+    expect(distanciasDelHoyo({ metros: 342, hoyo: { playLine: [], green: { center: alNorte(300) } } })).toEqual({ front: 332, center: 342, back: 352 });
   });
 
   it('R1: delante nunca por debajo de 0 (pocos metros en la tarjeta, o un green raro)', () => {
@@ -91,6 +96,13 @@ describe('distanciasDesdeLaPosicion (B1-B4)', () => {
 
   it('B3: un green sin contorno (solo el centro), ±10', () => {
     expect(distanciasDesdeLaPosicion({ posicion: aqui(150), precision: 5, green: { center: alNorte(300) } })).toEqual({ front: 140, center: 150, back: 160 });
+  });
+
+  it('B3: de lado al green, delante y fondo no se cruzan: lo que mide el green, sobre el centro', () => {
+    // A 150 m al este del green, que va de sur a norte: los dos bordes a la misma distancia
+    const deLado = { lat: alNorte(300).lat, lon: SALIDA.lon + 150 / (M_POR_GRADO * Math.cos((SALIDA.lat * Math.PI) / 180)) };
+
+    expect(distanciasDesdeLaPosicion({ posicion: deLado, precision: 5, green: G })).toEqual({ front: 138, center: 150, back: 165 });
   });
 
   it('B3: delante nunca por debajo de 0 (en el green)', () => {

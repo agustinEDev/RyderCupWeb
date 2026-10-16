@@ -407,6 +407,7 @@
     "no": "No",
     "malGps": "No te localizamos bien: toca dónde está la salida",
     "desdeTuPosicion": "Desde tu posición",
-    "desdeTuBarra": "Desde tu barra"
+    "desdeTuBarra": "Desde tu barra",
+    "desdeLaSalida": "Desde la salida"
   }
 }
