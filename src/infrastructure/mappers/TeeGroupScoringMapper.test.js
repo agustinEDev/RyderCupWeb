@@ -25,6 +25,20 @@ describe('TeeGroupScoringMapper.toScoringViewDTO', () => {
     expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseName).toBeNull();
   });
 
+  it('F12 (BE #574): los metros de cada hoyo desde la barra de cada jugador; sin ellos, null', () => {
+    const hoyo = (n, meters) => ({ hole: n, par: 4, strokes_received: 0, own_score: null, own_submitted: false, marker_score: null, marker_submitted: false, status: 'PENDING', ...(meters === undefined ? {} : { meters }) });
+    const jugador = (id, metros) => ({ user_id: id, name: id, playing_handicap: 0, tee_color: 'YELLOW', holes: Array.from({ length: 18 }, (_, i) => hoyo(i + 1, metros(i))) });
+
+    const vista = TeeGroupScoringMapper.toScoringViewDTO({
+      ...VISTA,
+      players: [jugador('ana', (i) => 300 + i), jugador('bea', (i) => (i === 0 ? null : undefined))],
+    });
+
+    const [ana, bea] = vista.players;
+    expect(ana.holeCard.slice(0, 2).map((h) => h.meters)).toEqual([300, 301]);
+    expect(bea.holeCard.slice(0, 2).map((h) => h.meters)).toEqual([null, null]);
+  });
+
   it('sin el campo (un backend anterior) queda en null', () => {
     const anterior = { ...VISTA };
     delete anterior.golf_course_id;

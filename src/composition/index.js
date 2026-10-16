@@ -35,12 +35,13 @@ import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGol
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
 import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
-import LocalStorageHoleMarkStore from '../infrastructure/repositories/LocalStorageHoleMarkStore';
+import LocalStorageHoleSampleStore from '../infrastructure/repositories/LocalStorageHoleSampleStore';
 import LocalStorageCourseLocationCache from '../infrastructure/repositories/LocalStorageCourseLocationCache';
 import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCourseLocationUseCase';
-import SaveHoleMarkUseCase from '../application/use_cases/golf_course/SaveHoleMarkUseCase';
-import SendPendingHoleMarksUseCase from '../application/use_cases/golf_course/SendPendingHoleMarksUseCase';
-import GetMyHoleMarksUseCase from '../application/use_cases/golf_course/GetMyHoleMarksUseCase';
+import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHoleSampleUseCase';
+import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
+import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
+import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
 import { captureError } from '../utils/sentryHelpers';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
@@ -458,13 +459,34 @@ const getHoleMapUseCase = new GetHoleMapUseCase({
   holeMapCache: new LocalStorageHoleMapCache(),
   reportarFallo: (error, contexto) => captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
 });
-// Las marcas del jugador en hoyos sin datos (BE #532, PR C): en el móvil antes
-// de nada, y se envían cuando haya cobertura
-const holeMarkStore = new LocalStorageHoleMarkStore();
-const reportarFalloDeMarca = (error, contexto) => captureError(error, { tags: { modulo: 'marcas-de-hoyos' }, extra: contexto });
-const saveHoleMarkUseCase = new SaveHoleMarkUseCase({ golfCourseRepository: apiGolfCourseRepository, holeMarkStore, reportarFallo: reportarFalloDeMarca });
-const sendPendingHoleMarksUseCase = new SendPendingHoleMarksUseCase({ golfCourseRepository: apiGolfCourseRepository, holeMarkStore, reportarFallo: reportarFalloDeMarca });
-const getMyHoleMarksUseCase = new GetMyHoleMarksUseCase({ golfCourseRepository: apiGolfCourseRepository, holeMarkStore });
+// Las muestras de hoyo, anónimas (BE #532, marcado por par): a la cola del
+// móvil antes de nada y se envían cuando haya cobertura, sin decir nada al
+// jugador. Lo que el servidor no quiere es un fallo nuestro: a Sentry
+const holeSampleStore = new LocalStorageHoleSampleStore();
+const reportarFalloDeMuestra = (error, contexto) => captureError(error, { tags: { modulo: 'muestras-de-hoyos' }, extra: contexto });
+// Las que van de camino, compartidas: la cola de fondo no manda otra vez la que está saliendo
+const muestrasEnVuelo = new Set();
+// Las que llegaron y el resumen aún no trae: se siguen viendo en el mapa
+const muestrasRecienEnviadas = crearRecienEnviadas();
+const sendHoleSampleUseCase = new SendHoleSampleUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  reportarFallo: reportarFalloDeMuestra,
+  enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
+});
+const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  reportarFallo: reportarFalloDeMuestra,
+  enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
+});
+const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  recienEnviadas: muestrasRecienEnviadas,
+});
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -548,9 +570,9 @@ export {
   getGolfCourseUseCase,
   getHoleMapUseCase,
   getCourseLocationUseCase,
-  saveHoleMarkUseCase,
-  sendPendingHoleMarksUseCase,
-  getMyHoleMarksUseCase,
+  sendHoleSampleUseCase,
+  sendPendingHoleSamplesUseCase,
+  getHoleSamplesUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,
   updateGolfCourseUseCase,

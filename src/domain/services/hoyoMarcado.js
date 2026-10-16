@@ -7,7 +7,8 @@
  * fondo a 10 m del centro sobre el último tramo, hasta que haya contorno.
  *
  * Las reglas son las aprobadas el 15 oct; el límite de 40-750 m lo aplica
- * también el servidor, y aquí solo sirve para avisar antes de enviar.
+ * también el servidor, y aquí sirve para no aceptar un green imposible. Los
+ * codos van según el par (16 oct).
  */
 
 import { distanciaEnMetros } from './distanciasAlGreen';
@@ -15,11 +16,10 @@ import { radianes, rumbo } from './geometriaDelHoyo';
 
 export const METROS_AL_BORDE_DEL_GREEN = 10;
 export const MAX_CODOS = 2;
-export const MARGEN_DE_LA_TARJETA = 0.25;
 export const MIN_SALIDA_GREEN_M = 40;
 export const MAX_SALIDA_GREEN_M = 750;
 // A más de esto del campo no se está jugando: el mismo límite que el servidor
-// pone a cada punto de una marca (Agustín, 16 oct)
+// pone a cada punto de una muestra (Agustín, 16 oct)
 export const MAX_DISTANCIA_AL_CAMPO_M = 3000;
 
 const RADIO_TERRESTRE_M = 6371008.8; // el de distanciaEnMetros
@@ -47,32 +47,20 @@ const greenAlFinalDe = (linea) => {
 };
 
 /**
- * El hoyo que sale de una marca. Si la marca es solo del green, la línea es la
- * aprobada (con sus codos) terminada en el green marcado.
+ * El hoyo que sale de una línea marcada (o de una muestra): su salida, sus
+ * codos y su green, con delante y fondo a 10 m del centro sobre el último tramo.
  *
- * @param {{tee: Object|null, bends: Object[], greenCenter: Object}|null} marca
- * @param {{playLine: Object[]}|null} [aprobado] el hoyo del mapa, con su salida
+ * @param {{tee: Object, bends: Object[], greenCenter: Object}|null} marca
  */
-export const hoyoDeUnaMarca = (marca, aprobado = null) => {
-  if (!marca) return null;
-  let playLine;
-  if (marca.tee) {
-    playLine = [marca.tee, ...marca.bends, marca.greenCenter];
-  } else {
-    const base = aprobado?.playLine ?? [];
-    if (base.length === 0) return null;
-    playLine = [...base.slice(0, Math.max(1, base.length - 1)), marca.greenCenter];
-  }
-  return { playLine, green: greenAlFinalDe(playLine), marcadoPorMi: true };
+export const hoyoDeUnaMarca = (marca) => {
+  if (!marca?.tee) return null;
+  const playLine = [marca.tee, ...marca.bends, marca.greenCenter];
+  return { playLine, green: greenAlFinalDe(playLine) };
 };
 
 /** Lo que mide la línea siguiendo sus codos, en metros. */
 export const longitudDeLaLinea = (linea) =>
   linea.slice(1).reduce((total, punto, i) => total + distanciaEnMetros(linea[i], punto), 0);
-
-/** Si lo marcado se aparta de los metros de la tarjeta más de un 25 %. */
-export const difiereDeLaTarjeta = (metrosMarcados, metrosDeLaTarjeta) =>
-  Boolean(metrosDeLaTarjeta) && Math.abs(metrosMarcados - metrosDeLaTarjeta) > MARGEN_DE_LA_TARJETA * metrosDeLaTarjeta;
 
 /** Si la posición está a más de 3 km del campo; sin una de las dos, no se sabe y no. */
 export const estaLejosDelCampo = (posicion, campo) =>
@@ -87,23 +75,31 @@ export const salidaGreenFueraDeLimites = (salida, green) => {
 };
 
 /**
- * Los puntos que se arrastran para formar un codo: uno en mitad de cada tramo,
- * con la posición en la que entraría en la línea. Con dos codos, ninguno más.
- * En un par 5 (suele tener dos codos), la recta lleva dos, a un tercio y a dos
- * tercios (Agustín, 16 oct).
+ * Los codos que lleva un hoyo según su par (Agustín, 16 oct): un par 3, ninguno;
+ * un par 4, uno; un par 5 (o más), dos. Sin par conocido, uno.
  */
-export const puntosParaArrastrar = (linea, { par = null } = {}) => {
-  if (linea.length - 2 >= MAX_CODOS) return [];
-  if (par === 5 && linea.length === 2) {
-    const [salida, green] = linea;
-    const largo = distanciaEnMetros(salida, green);
-    const hacia = rumbo(salida, green);
-    return [1, 2].map((tercio) => ({ indice: 1, punto: puntoDesde(salida, hacia, (largo * tercio) / 3) }));
-  }
-  return linea.slice(1).map((punto, i) => {
-    const desde = linea[i];
-    return { indice: i + 1, punto: puntoDesde(desde, rumbo(desde, punto), distanciaEnMetros(desde, punto) / 2) };
-  });
+export const codosDelPar = (par) => {
+  if (par === 3) return 0;
+  if (par >= 5) return MAX_CODOS;
+  return 1;
+};
+
+/**
+ * La línea con los codos de su par: los que le faltan se ponen sobre ella, así
+ * que su longitud no cambia, y el jugador los arrastra a la calle. En la recta,
+ * a partes iguales (en un par 5, a un tercio y a dos tercios); con un codo ya
+ * puesto, el que falta en mitad del último tramo. Una línea con los suyos (o con
+ * más, como las de un mapa aprobado) se queda como está.
+ */
+export const conCodosDelPar = (linea, par) => {
+  const faltan = codosDelPar(par) - Math.max(0, linea.length - 2);
+  if (linea.length < 2 || faltan <= 0) return linea;
+  const desde = linea.at(-2);
+  const green = linea.at(-1);
+  const largo = distanciaEnMetros(desde, green);
+  const hacia = rumbo(desde, green);
+  const nuevos = Array.from({ length: faltan }, (_, i) => puntoDesde(desde, hacia, (largo * (i + 1)) / (faltan + 1)));
+  return [...linea.slice(0, -1), ...nuevos, green];
 };
 
 /** Un anillo cerrado de puntos a `metros` de `centro` (el arco de la tarjeta). */

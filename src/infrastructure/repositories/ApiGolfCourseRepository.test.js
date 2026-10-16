@@ -163,71 +163,81 @@ describe('ApiGolfCourseRepository.getHoleMap', () => {
   });
 });
 
-describe('ApiGolfCourseRepository — marcas de hoyo (PR C)', () => {
+/**
+ * Muestras de hoyo, anónimas y por barra (BE #532, marcado por par).
+ *
+ * | Caso | Qué                                  | Qué se espera                                          |
+ * |------|--------------------------------------|--------------------------------------------------------|
+ * | S4   | pedir el resumen                     | GET .../hole-map/samples con tope, por hoyo y barra     |
+ * | S5   | enviar una muestra                   | POST .../hole-map/samples/{hoyo} con id, barra y puntos |
+ * | S5   | 204 (sin cuerpo), o un 2xx sin JSON  | se resuelve: llegó                                     |
+ * | S5   | 404 / 422 / sin red                  | se propaga (lo decide quien envía)                      |
+ */
+describe('ApiGolfCourseRepository — muestras de hoyo', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  const MARCA = {
-    tee: { lat: 36.28, lon: -5.33 },
-    bends: [],
-    greenCenter: { lat: 36.2827, lon: -5.33 },
-    markedAt: '2026-10-15T08:05:00.000Z',
-  };
-  const RESPUESTA = {
-    hole_number: 3,
-    tee: { latitude: 36.28, longitude: -5.33 },
-    bends: [],
-    green_center: { latitude: 36.2827, longitude: -5.33 },
-    marked_at: '2026-10-15T08:05:00Z',
-  };
+  const PUNTOS = { tee: { lat: 36.28, lon: -5.33 }, bends: [], greenCenter: { lat: 36.2827, lon: -5.33 } };
+  const MUESTRA = { id: 'm-1', barra: { color: 'YELLOW', gender: 'MALE' }, ...PUNTOS };
 
-  it('guardar es un PUT al hoyo con el cuerpo de la API, y devuelve la que queda', async () => {
-    apiRequest.mockResolvedValue(RESPUESTA);
+  it('S4: el resumen, por hoyo y por barra, traducido', async () => {
+    apiRequest.mockResolvedValue([
+      { hole_number: 1, tees: [] },
+      {
+        hole_number: 3,
+        tees: [
+          {
+            tee_color: 'YELLOW',
+            tee_gender: 'MALE',
+            first_sample: { tee: { latitude: 36.28, longitude: -5.33 }, bends: [], green_center: { latitude: 36.2827, longitude: -5.33 } },
+            collecting: false,
+          },
+        ],
+      },
+    ]);
 
-    const guardada = await new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA);
+    const resumen = await new ApiGolfCourseRepository().getHoleSamples('gc-1');
 
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/marks/3', {
-      method: 'PUT',
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/samples', { topeMs: 15000 });
+    expect(resumen).toEqual({ 1: [], 3: [{ color: 'YELLOW', gender: 'MALE', primera: PUNTOS, recoge: false }] });
+  });
+
+  it('S5: enviar es un POST al hoyo con el id, la barra y los puntos, y el 204 se resuelve', async () => {
+    apiRequest.mockResolvedValue(null);
+
+    await expect(new ApiGolfCourseRepository().sendHoleSample('gc-1', 3, MUESTRA)).resolves.toBeUndefined();
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/samples/3', {
+      method: 'POST',
       body: JSON.stringify({
+        id: 'm-1',
+        tee_color: 'YELLOW',
+        tee_gender: 'MALE',
         tee: { latitude: 36.28, longitude: -5.33 },
         bends: [],
         green_center: { latitude: 36.2827, longitude: -5.33 },
-        marked_at: '2026-10-15T08:05:00.000Z',
       }),
       topeMs: 15000,
     });
-    expect(guardada.holeNumber).toBe(3);
-    expect(guardada.greenCenter).toEqual({ lat: 36.2827, lon: -5.33 });
   });
 
-  it('las mías, traducidas', async () => {
-    apiRequest.mockResolvedValue([RESPUESTA, { ...RESPUESTA, hole_number: 5, tee: null }]);
-
-    const mias = await new ApiGolfCourseRepository().getMyHoleMarks('gc-1');
-
-    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/marks/mine', { topeMs: 15000 });
-    expect(mias.map((m) => [m.holeNumber, m.tee])).toEqual([
-      [3, { lat: 36.28, lon: -5.33 }],
-      [5, null],
-    ]);
-  });
-
-  it('un 2xx que no se entiende vale como guardada la enviada (si no, se reenviaría siempre)', async () => {
-    apiRequest.mockResolvedValue(null);
-
-    expect(await new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA)).toBe(MARCA);
-  });
-
-  it('un 2xx con un cuerpo que no es JSON (un proxy, un portal) vale como guardada', async () => {
+  it('S5: un 2xx con un cuerpo que no es JSON (un proxy, un portal) también llegó', async () => {
     apiRequest.mockRejectedValue(new SyntaxError('Unexpected token e in JSON'));
 
-    expect(await new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA)).toBe(MARCA);
+    await expect(new ApiGolfCourseRepository().sendHoleSample('gc-1', 3, MUESTRA)).resolves.toBeUndefined();
   });
 
-  it('los fallos se propagan (los decide quien guarda)', async () => {
-    apiRequest.mockImplementation(async () => {
-      throw Object.assign(new Error('x'), { status: 409, errorCode: 'HOLE_ALREADY_MAPPED' });
-    });
+  it.each([
+    [404, 'GOLF_COURSE_NOT_FOUND'],
+    [422, 'HOLE_NOT_IN_COURSE'],
+  ])('S5: un %i %s se propaga', async (status, errorCode) => {
+    apiRequest.mockRejectedValue(Object.assign(new Error('x'), { status, errorCode }));
 
-    await expect(new ApiGolfCourseRepository().saveHoleMark('gc-1', 3, MARCA)).rejects.toMatchObject({ errorCode: 'HOLE_ALREADY_MAPPED' });
+    await expect(new ApiGolfCourseRepository().sendHoleSample('gc-1', 3, MUESTRA)).rejects.toMatchObject({ errorCode });
+  });
+
+  it('S4: los fallos del resumen se propagan (lo decide quien lo pide)', async () => {
+    apiRequest.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(new ApiGolfCourseRepository().getHoleSamples('gc-1')).rejects.toThrow('Failed to fetch');
   });
 });

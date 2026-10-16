@@ -1843,6 +1843,29 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
   });
 
+  it('16 oct: el mapa recibe mi barra (color y sexo), para las muestras', () => {
+    const yo = { ...baseHookState.myParticipant, userId: 'user-1', color: 'RED', teeGender: 'FEMALE' };
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...mockUseQuickMatchScoring(),
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [yo] },
+    });
+
+    renderPage();
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'RED', gender: 'FEMALE' });
+  });
+
+  it('16 oct: sin mi barra (sin color), el mapa no recibe barra', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...mockUseQuickMatchScoring(),
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [{ ...baseHookState.myParticipant, userId: 'user-1', color: null }] },
+    });
+
+    renderPage();
+
+    expect(mapaHoyo.ventana.barra).toBeNull();
+  });
+
   it('T1: en la tarjeta no se pide el GPS', () => {
     const watchPosition = vi.fn();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
