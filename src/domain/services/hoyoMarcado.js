@@ -11,7 +11,7 @@
  * codos van según el par (16 oct).
  */
 
-import { distanciaEnMetros } from './distanciasAlGreen';
+import { distanciaEnMetros, distanciaExacta } from './distanciasAlGreen';
 import { radianes, rumbo } from './geometriaDelHoyo';
 
 export const METROS_AL_BORDE_DEL_GREEN = 10;
@@ -116,7 +116,8 @@ export const aCodosDelPar = (lineaEntera, par) => {
   const linea = sinRepetidos.length === lineaEntera.length ? lineaEntera : sinRepetidos;
   if (linea.length - 2 <= codos) return linea;
   const recorrido = [0];
-  for (let i = 1; i < linea.length; i += 1) recorrido.push(recorrido[i - 1] + distanciaEnMetros(linea[i - 1], linea[i]));
+  // Sin redondear cada tramo: en una línea con nodos muy juntos sumarían 0
+  for (let i = 1; i < linea.length; i += 1) recorrido.push(recorrido[i - 1] + distanciaExacta(linea[i - 1], linea[i]));
   const total = recorrido.at(-1);
   const elegidos = [];
   for (let k = 1; k <= codos; k += 1) {

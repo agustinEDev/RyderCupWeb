@@ -212,6 +212,14 @@ describe('aCodosDelPar', () => {
     expect(r).toEqual([SALIDA, alNorte(100), GREEN]);
   });
 
+  it('CodeRabbit: con nodos muy juntos (a 0,3 m), el codo sale cerca de la mitad, no en el primero', () => {
+    const densa = [SALIDA, ...Array.from({ length: 999 }, (_, i) => alNorte((i + 1) * 0.3)), GREEN];
+
+    const [, codo] = aCodosDelPar(densa, 4);
+
+    expect(Math.abs(distanciaEnMetros(SALIDA, codo) - 150)).toBeLessThanOrEqual(1);
+  });
+
   it('un nodo repetido seguido se quita también en una línea que ya cabe', () => {
     expect(aCodosDelPar([SALIDA, alNorte(100), alNorte(100), GREEN], 5)).toEqual([SALIDA, alNorte(100), GREEN]);
   });

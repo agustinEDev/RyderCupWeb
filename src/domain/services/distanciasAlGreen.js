@@ -11,13 +11,19 @@ import { radianes } from './geometriaDelHoyo';
 const RADIO_TERRESTRE_M = 6371008.8;
 
 /**
- * Metros enteros entre dos puntos `{ lat, lon }`.
+ * Metros entre dos puntos `{ lat, lon }`, sin redondear: para sumar muchos
+ * tramos cortos (una línea de OSM) sin que cada uno se quede en 0.
  */
-export const distanciaEnMetros = (a, b) => {
+export const distanciaExacta = (a, b) => {
   const dLat = radianes(b.lat - a.lat);
   const dLon = radianes(b.lon - a.lon);
   const h =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(radianes(a.lat)) * Math.cos(radianes(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return Math.round(2 * RADIO_TERRESTRE_M * Math.asin(Math.min(1, Math.sqrt(h))));
+  return 2 * RADIO_TERRESTRE_M * Math.asin(Math.min(1, Math.sqrt(h)));
 };
+
+/**
+ * Metros enteros entre dos puntos `{ lat, lon }`: lo que se enseña.
+ */
+export const distanciaEnMetros = (a, b) => Math.round(distanciaExacta(a, b));
