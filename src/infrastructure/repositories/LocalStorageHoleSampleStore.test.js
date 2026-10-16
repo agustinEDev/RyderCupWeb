@@ -313,6 +313,13 @@ describe('LocalStorageHoleSampleStore', () => {
       expect(store.mias('u1').map((e) => e.id)).toEqual(['b', 'c']);
     });
 
+    it('/code-review: una versión más vieja de la misma muestra no pisa a la nueva', () => {
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:05:00.000Z', lat: 2 }));
+      store.apuntarMia('u1', entrada({ id: 'x', enCola: '2026-10-16T08:00:00.000Z', lat: 1 }));
+
+      expect(store.mias('u1').map((e) => e.enCola)).toEqual(['2026-10-16T08:05:00.000Z']);
+    });
+
     it('sin jugador, nada', () => {
       store.apuntarMia(null, entrada());
 

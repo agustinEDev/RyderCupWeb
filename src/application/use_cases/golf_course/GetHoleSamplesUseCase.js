@@ -51,10 +51,13 @@ class GetHoleSamplesUseCase {
 
   pendientes(userId, golfCourseId, barra) {
     if (!userId || !golfCourseId || !barra) return {};
+    // Mi barra, o la de mi color sin género: como el servidor (`tee_for`) y
+    // como `muestrasDeLaBarra`
+    const esMia = (otra) => esLaMismaBarra(otra, barra) || (Boolean(barra.gender) && esLaMismaBarra(otra, { color: barra.color, gender: null }));
     const deEsteCampo = (entradas) =>
       Object.fromEntries(
         entradas
-          .filter((entrada) => entrada.golfCourseId === golfCourseId && esLaMismaBarra(entrada.barra, barra))
+          .filter((entrada) => entrada.golfCourseId === golfCourseId && esMia(entrada.barra))
           .map(({ holeNumber, tee, bends, greenCenter }) => [holeNumber, { tee, bends, greenCenter }]),
       );
     // Lo suyo, de más viejo a más nuevo: lo ya enviado, lo recién enviado y lo

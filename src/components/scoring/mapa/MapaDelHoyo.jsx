@@ -58,7 +58,8 @@ const margenDelEncuadre = (alto) => ({
 // de aire: el hoyo, lo más grande que quepa sin cortarse (Agustín, 16 oct). Si
 // no se puede medir (aún sin pintar) o no cabría nada (apaisado), los de siempre
 const AIRE = 12;
-const LADOS = 24;
+// Los lados, con sitio para la muesca o las esquinas redondeadas (apaisado)
+const LADOS = 40;
 const margenMedido = (contenedor, arriba, abajo) => {
   const alto = contenedor?.clientHeight || 640;
   const caja = contenedor?.getBoundingClientRect?.();
@@ -193,6 +194,10 @@ const MapaDelHoyo = ({
   const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
   const posicionEnElCampo = lejos ? null : posicion;
   const [tocado, setTocado] = useState(null);
+  const tocadoAhora = useRef(null);
+  useLayoutEffect(() => {
+    tocadoAhora.current = tocado;
+  }, [tocado]);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
   const [sinMapa, setSinMapa] = useState(false);
@@ -376,9 +381,9 @@ const MapaDelHoyo = ({
     if (orientado) {
       mapa.touchZoomRotate.disableRotation();
       mapa.keyboard.disableRotation();
+      // Uno ya aquí, por si acaso; el bueno, en cuanto la ventana está pintada
+      encuadrarHoyo(false);
     }
-    // El encuadre del hoyo (o del «solo green»), en cuanto la ventana está
-    // pintada: más abajo
     mapa.on('load', () => {
       // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
       mapa.addSource('hoyo', { type: 'geojson', data: geojsonDelHoyo(hoyoActual.current) });
@@ -431,7 +436,7 @@ const MapaDelHoyo = ({
       mapa.remove();
       mapaRef.current = null;
     };
-  }, []);
+  }, [encuadrarHoyo]);
 
   // En cuanto la ventana está pintada (la cabecera y el panel de abajo ya se
   // pueden medir), y antes de que el jugador pueda tocar nada, el hoyo se
@@ -451,6 +456,20 @@ const MapaDelHoyo = ({
       });
     }
   }, [encuadrarHoyo, margen]);
+  // El panel de abajo crece después (el recuadro, los avisos del GPS): si el
+  // jugador aún no ha tocado ni movido nada, el hoyo se vuelve a encuadrar para
+  // que no quede debajo (/code-review, 16 oct)
+  useEffect(() => {
+    const panel = abajo.current;
+    const Observador = globalThis.ResizeObserver;
+    if (!panel || !Observador || !inicio.current.conMapa) return undefined;
+    const observador = new Observador(() => {
+      if (movidoPorElJugador.current || yaEmpezo.current || tocadoAhora.current) return;
+      encuadrarHoyo(false);
+    });
+    observador.observe(panel);
+    return () => observador.disconnect();
+  }, [encuadrarHoyo]);
 
   // Mi posición: el punto azul, y la primera vez sin mapa, el mapa va a ella
   useEffect(() => {

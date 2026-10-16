@@ -669,6 +669,12 @@ describe('muestras de hoyo — casos de uso', () => {
       expect(store.mias('u1')).toEqual([]);
     });
 
+    it('/code-review: la enviada con la barra sin género de mi color también es mía', async () => {
+      await enviar({ barra: { color: 'YELLOW', gender: null } });
+
+      expect(resumen().pendientes('u1', 'gc-1', AMARILLA)).toEqual({ 3: { tee: SALIDA, bends: [CODO], greenCenter: GREEN } });
+    });
+
     it('de otro jugador o de otra barra no se ven', async () => {
       await enviar();
 

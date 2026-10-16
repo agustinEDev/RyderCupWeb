@@ -10,9 +10,10 @@ import { MUESTRA_PENDIENTE, MUESTRAS_CAMBIADAS } from './useEnvioDeMuestras';
  *   de MI barra, la primera de otra barra, y si la mía aún recoge. La copia
  *   del móvil al momento y la red la refresca. Un hoyo que no está es
  *   `{ primera: null, deOtra: null, recoge: true }`.
- * - `pendientes`: por hoyo, la última muestra del jugador con su barra que aún
- *   espera en la cola (`{ tee, bends, greenCenter }`): una hecha sin cobertura
- *   se sigue viendo.
+ * - `pendientes`: por hoyo, la última línea del jugador con su barra desde este
+ *   móvil (`{ tee, bends, greenCenter }`): la que espera en la cola o, si no, la
+ *   última ya enviada. Una hecha sin cobertura se sigue viendo, y la enviada
+ *   también, cuando no hay otra que enseñar.
  * - `enviar(hoyo, { id, tee, bends, greenCenter })`: se dispara y se olvida, y
  *   el hook le pone la barra. La promesa nunca se rechaza y el jugador no ve
  *   ningún aviso, salga o no. Sin barra o sin jugador no hace nada.
