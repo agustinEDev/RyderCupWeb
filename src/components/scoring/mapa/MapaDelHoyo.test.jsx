@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { StrictMode } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -63,7 +64,12 @@ vi.mock('maplibre-gl', () => {
       this.oyentes[evento] = fn;
       return this;
     }
-    addTo() {
+    setOffset(o) {
+      this.offset = o;
+      return this;
+    }
+    addTo(mapa) {
+      this.mapa = mapa;
       return this;
     }
   }
@@ -174,23 +180,39 @@ describe('MapaDelHoyo', () => {
       expect(mapa().fuentes.hoyo.data.features[0].geometry.coordinates[0]).toEqual([-5.33, 36.28]);
     });
 
-    it('H2/H3: delante, centro y fondo desde mi posición, y cambian al moverme', () => {
-      abrir();
+    // Agustín, 16 oct: el recuadro es fijo, con los metros oficiales desde la salida
+    it('R1/R6: delante, centro y fondo con la tarjeta y el green dibujado, y no cambian al moverme', () => {
+      abrir({ metros: 342 });
+      // El green del hoyo: 22 m del centro a delante y al fondo
+      expect(screen.getByTestId('distancia-delante')).toHaveTextContent('320');
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
+      expect(screen.getByTestId('distancia-fondo')).toHaveTextContent('364');
 
       act(() => gps.exito(lectura(36.2888, -5.332)));
-      expect(screen.getByTestId('distancia-delante')).toHaveTextContent('111');
-      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('133');
-      expect(screen.getByTestId('distancia-fondo')).toHaveTextContent('156');
-
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
       act(() => gps.exito(lectura(36.2893, -5.332)));
-      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('78');
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
     });
 
-    it('L3: el lector de pantalla lee las distancias como una frase', () => {
-      abrir();
-      act(() => gps.exito(lectura(36.2888, -5.332)));
+    it('R4: sin metros en la tarjeta, medido en el mapa desde la salida, siguiendo el codo', () => {
+      abrir({ metros: null });
 
-      expect(screen.getByText('mapa.etiqueta {"front":111,"center":133,"back":156}')).toHaveClass('sr-only');
+      // Salida → codo (563 m) → centro del green (563 m); delante, del codo a 541 m
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('1126');
+      expect(screen.getByTestId('distancia-delante')).toHaveTextContent('1104');
+    });
+
+    it('R6: sin GPS, el recuadro está igual', () => {
+      abrir({ metros: 342 });
+      act(() => gps.error({ code: 1 }));
+
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
+    });
+
+    it('R10: el lector de pantalla lee las distancias como una frase', () => {
+      abrir({ metros: 342 });
+
+      expect(screen.getByText('mapa.etiqueta {"front":320,"center":342,"back":364}')).toHaveClass('sr-only');
     });
 
     it('H4: «Ver hoyo» vuelve a encuadrar el hoyo entero', () => {
@@ -229,12 +251,14 @@ describe('MapaDelHoyo', () => {
       expect(mapa().fuentes.hoyo.data.features.map((f) => f.geometry.type)).toEqual(['Point']);
     });
 
-    it('un green sin línea de juego da distancias igual (norte arriba)', () => {
-      abrir({ hoyo: { playLine: [], green: GREEN } });
-      act(() => gps.exito(lectura(36.2888, -5.332)));
-
+    it('un green sin línea de juego: con la tarjeta, recuadro (norte arriba); sin ella, no', () => {
+      const { unmount } = abrir({ hoyo: { playLine: [], green: GREEN }, metros: 342 });
       expect(mapa().opciones.bearing).toBe(0);
-      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('133');
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
+      unmount();
+
+      abrir({ hoyo: { playLine: [], green: GREEN }, metros: null });
+      expect(screen.queryByTestId('distancia-centro')).toBeNull();
     });
 
     it('un hoyo con mapa no necesita dónde centrarse', () => {
@@ -426,13 +450,13 @@ describe('MapaDelHoyo', () => {
   });
 
   describe('GPS', () => {
-    it('G1: con precisión peor de 30 m, «Buscando señal», sin distancias', () => {
-      abrir();
+    it('G1: con precisión peor de 30 m, «Buscando señal»; el recuadro, fijo, sigue', () => {
+      abrir({ metros: 342 });
 
       act(() => gps.exito(lectura(36.2888, -5.332, 50)));
 
       expect(screen.getByText('mapa.buscando')).toBeInTheDocument();
-      expect(screen.queryByTestId('distancia-centro')).toBeNull();
+      expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
     });
 
     it('G3: sin GPS en el navegador, el aviso', () => {
@@ -593,14 +617,13 @@ describe('MapaDelHoyo — tras /code-review', () => {
 
 
 
-  it('un móvil sin WebGL: sin mapa, pero con las distancias al green, que solo piden GPS', () => {
+  it('un móvil sin WebGL: sin mapa, pero con el recuadro de la tarjeta', () => {
     mapas.sinWebgl = true;
 
-    abrir();
-    act(() => gps.exito(lectura(36.2888, -5.332)));
+    abrir({ metros: 342 });
 
     expect(screen.getByText('mapa.sinMapaEnEsteMovil')).toBeInTheDocument();
-    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('133');
+    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
     expect(screen.queryByRole('button', { name: 'mapa.verHoyo' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'mapa.centrame' })).toBeNull();
     expect(screen.queryByText('mapa.ayudaMedir')).toBeNull();
@@ -1163,15 +1186,15 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     expect(mapa().jumpTo).toHaveBeenLastCalledWith({ center: [CERCA.lon, CERCA.lat], zoom: 17 });
   });
 
-  it('lejos, sin recuadro de distancias y «Céntrame» sin poder pulsarse; cerca, los dos', () => {
-    abrir();
+  it('lejos, «Céntrame» sin poder pulsarse y el recuadro igual; cerca, los dos', () => {
+    abrir({ metros: 342 });
     act(() => gps.exito(lectura(EN_CASA.lat, EN_CASA.lon)));
 
-    expect(screen.queryByTestId('distancia-centro')).toBeNull();
+    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
     expect(screen.getByRole('button', { name: 'mapa.centrame' })).toBeDisabled();
 
     act(() => gps.exito(lectura(36.2888, -5.332)));
-    expect(screen.getByTestId('distancia-centro')).toBeInTheDocument();
+    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('342');
     expect(screen.getByRole('button', { name: 'mapa.centrame' })).not.toBeDisabled();
   });
 
@@ -1248,6 +1271,17 @@ describe('MapaDelHoyo — metros en cada tramo de la línea', () => {
   afterEach(() => {
     reloj.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('R3: un hoyo sin datos, antes y mientras se marca, lleva el recuadro de la tarjeta ±10', () => {
+    marcar({ metros: 300 });
+    expect(screen.getByTestId('distancia-centro')).toHaveTextContent('300');
+
+    tocar(T);
+    tocar(G);
+
+    expect(screen.getByTestId('distancia-delante')).toHaveTextContent('290');
+    expect(screen.getByTestId('distancia-fondo')).toHaveTextContent('310');
   });
 
   it('L1: con solo la salida marcada no hay línea, ni metros (queda el arco de la tarjeta)', () => {
@@ -1362,6 +1396,128 @@ describe('MapaDelHoyo — metros en cada tramo de la línea', () => {
     act(() => mapa().oyentes.load());
 
     expect(textos()).toEqual([]);
+  });
+
+  // Agustín, 16 oct: las cifras van en los tramos y se actualizan mientras se arrastra
+  const arrastrar = (marca, p) =>
+    act(() => {
+      marca.setLngLat([p.lon, p.lat]);
+      marca.oyentes.drag({ target: marca });
+    });
+  const lineaDelMarcado = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea').geometry.coordinates;
+
+  it('L13: al arrastrar el punto de en medio, la línea y las cifras siguen al dedo antes de soltar', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+
+    arrastrar(arrastrables()[0], alNorte(100));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":200}']);
+    expect(lineaDelMarcado()).toHaveLength(3);
+    arrastrar(arrastrables()[0], alNorte(140));
+    expect(textos()).toEqual(['mapa.tramo {"metros":140}', 'mapa.tramo {"metros":160}']);
+    expect(deLaLinea()[0].p[1]).toBeCloseTo((T.lat + alNorte(140).lat) / 2, 9);
+  });
+
+  it('L13: al arrastrar un codo ya puesto, igual', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    soltar(arrastrables()[0], alNorte(100));
+    const codo = arrastrables()[0];
+
+    arrastrar(codo, alNorte(180));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":180}', 'mapa.tramo {"metros":120}']);
+    expect(lineaDelMarcado()[1]).toEqual([T.lon, alNorte(180).lat]);
+  });
+
+  it('L13: con un codo, arrastrar el punto del segundo tramo lo mete entre el codo y el green', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    soltar(arrastrables()[0], alNorte(100));
+    // El codo, el punto del primer tramo y el del segundo
+    arrastrar(arrastrables()[2], alNorte(250));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":150}', 'mapa.tramo {"metros":50}']);
+  });
+
+  it('L13: en un par 5, arrastrar el segundo punto mete el codo después del primero', () => {
+    marcar({ metros: 300, par: 5 });
+    tocar(T);
+    tocar(G);
+    // Los dos puntos, a un tercio y a dos tercios
+    arrastrar(arrastrables()[1], alNorte(250));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":250}', 'mapa.tramo {"metros":50}']);
+  });
+
+  it('L14: mientras se ajusta, las cifras van por encima del tramo (no las tapa el punto); guardado, en el tramo', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    expect(deLaLinea()[0].offset).toEqual([0, -24]);
+  });
+
+  it('L14: en un hoyo abierto (sin ajustar), en mitad del tramo', () => {
+    abrir({ hoyo: { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+
+    expect(deLaLinea()[0].offset).toEqual([0, 0]);
+  });
+
+  it('L15: el lector de pantalla no lee las cifras sueltas, sino una frase con los tramos', () => {
+    abrir({ hoyo: { playLine: [T, alNorte(120), G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+
+    expect(deLaLinea().every((m) => m.opciones.element.getAttribute('aria-hidden') === 'true')).toBe(true);
+    expect(screen.getByTestId('tramos-de-la-linea')).toHaveClass('sr-only');
+    expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('mapa.lineaDosTramos {"a":120,"b":180}');
+  });
+
+  it.each([
+    [[], 'mapa.lineaUnTramo {"a":300}'],
+    [[100, 200], 'mapa.lineaTresTramos {"a":100,"b":100,"c":100}'],
+  ])('L15: con codos a %j m, su frase', (codos, frase) => {
+    abrir({ hoyo: { playLine: [T, ...codos.map((m) => alNorte(m)), G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+
+    expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent(frase);
+  });
+
+  it('L15: una línea de más de tres tramos (un mapa aprobado), la lista', () => {
+    abrir({ hoyo: { playLine: [T, alNorte(50), alNorte(100), alNorte(150), G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+
+    expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('mapa.lineaVariosTramos {"lista":"50 · 50 · 50 · 150"}');
+  });
+
+  it('L15: sin línea, sin frase', () => {
+    abrir({ hoyo: null });
+
+    expect(screen.queryByTestId('tramos-de-la-linea')).toBeNull();
+  });
+
+  it('L17: si el hoyo cambia con el mapa abierto, la línea discontinua y sus cifras van juntas', () => {
+    const viejo = { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } };
+    const nuevo = { playLine: [T, alNorte(280)], green: { front: alNorte(270), center: alNorte(280), back: alNorte(290) } };
+    const { rerender } = abrir({ hoyo: viejo });
+    act(() => mapa().oyentes.load());
+
+    rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={nuevo} atribucion={null} onCerrar={() => {}} />);
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":280}']);
+    const linea = mapa().fuentes.hoyo.data.features.find((f) => f.properties.tipo === 'linea').geometry.coordinates;
+    expect(linea.at(-1)).toEqual([T.lon, alNorte(280).lat]);
+  });
+
+  it('L16: con React en modo estricto (dos montajes), las cifras cuelgan del mapa que queda', () => {
+    render(
+      <StrictMode>
+        <MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={{ playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } }} atribucion={null} onCerrar={() => {}} />
+      </StrictMode>
+    );
+
+    expect(deLaLinea().length).toBe(1);
+    expect(deLaLinea().every((m) => m.mapa === mapa())).toBe(true);
   });
 
   it('L12: el aviso de la tarjeta sigue midiendo por los codos (como la medida oficial)', async () => {
