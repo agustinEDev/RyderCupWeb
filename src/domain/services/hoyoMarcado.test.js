@@ -201,6 +201,17 @@ describe('aCodosDelPar', () => {
     expect(aCodosDelPar([SALIDA, GREEN], 4)).toEqual([SALIDA, GREEN]);
   });
 
+  it('en un empate (dos a la misma distancia de la mitad), el primero de la línea', () => {
+    expect(aCodosDelPar([SALIDA, alNorte(100), alNorte(200), GREEN], 4)).toEqual([SALIDA, alNorte(100), GREEN]);
+  });
+
+  it('un nodo repetido seguido (OSM) no da dos codos en el mismo sitio', () => {
+    const r = aCodosDelPar([SALIDA, alNorte(100), alNorte(100), alNorte(100), GREEN], 5);
+
+    expect(new Set(r.map((p) => p.lat)).size).toBe(r.length);
+    expect(r).toEqual([SALIDA, alNorte(100), GREEN]);
+  });
+
   it('los codos van en el orden de la línea aunque se elijan en otro', () => {
     // Al tercio (100 m) el más cercano es el de 120; a los dos tercios ya solo
     // quedan los de antes: el de 55. La línea sigue de la salida al green

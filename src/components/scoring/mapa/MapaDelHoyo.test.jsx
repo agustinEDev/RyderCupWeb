@@ -1112,6 +1112,37 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(mapa().fitBounds.mock.calls[1][0]).toEqual(limitesDelHoyo({ playLine: circuloAlrededor(T, 150) }));
     });
 
+    it('QA P3: un triple toque seguido tampoco marca el green junto a la salida', () => {
+      marcar({ metros: 300 });
+      const a = (ms) => reloj.mockImplementation(() => ms);
+
+      a(1000);
+      tocar(T);
+      a(1300);
+      tocar(T);
+      a(1450);
+      tocar(alNorte(5));
+
+      expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('QA P3: tras un green fuera de límites, un doble toque no reencuadra a la salida', () => {
+      marcar({ metros: 300 });
+      const a = (ms) => reloj.mockImplementation(() => ms);
+      a(1000);
+      tocar(T);
+      mapa().fitBounds.mockClear();
+
+      a(3000);
+      tocar(alNorte(20));
+      a(3090);
+      tocar(alNorte(20));
+
+      expect(screen.getByRole('alert')).toHaveTextContent('mapa.fueraDeLimites');
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
+    });
+
     it('QA P3: sin metros de la tarjeta, el doble toque tampoco mueve el mapa', () => {
       const toques = [1000, 1090];
       reloj.mockImplementation(() => toques.shift() ?? 9999);

@@ -254,7 +254,9 @@ const MapaDelHoyo = ({
         };
         const ahora = globalThis.performance.now();
         if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) {
-          // El segundo toque no marca, pero corta el alejamiento: se rehace (QA)
+          // El segundo toque no marca, pero corta el alejamiento: se rehace (QA).
+          // Y cuenta como toque: un tercero seguido tampoco marca
+          ultimoToque.current = ahora;
           if (salidaRecienTocada.current) alejarDesde(salidaRecienTocada.current);
           return;
         }
@@ -578,6 +580,7 @@ const MapaDelHoyo = ({
   }, [linea, datosDeLaLinea]);
 
   const empezarAMarcar = () => {
+    salidaRecienTocada.current = null;
     setAvisoDeMarca(null);
     setTocado(null);
     setMarca({ fase: 'pidiendo', tee: null });
@@ -626,7 +629,10 @@ const MapaDelHoyo = ({
         {sinMapa ? null : pidiendo ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
             <span aria-live="polite" className="text-base font-semibold">{t(marcandoSalida && !marca.tee ? 'mapa.pideSalida' : 'mapa.pideGreen')}</span>
-            <button type="button" onClick={() => setMarca({ fase: 'pausado', tee: null })} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+            <button type="button" onClick={() => {
+                salidaRecienTocada.current = null;
+                setMarca({ fase: 'pausado', tee: null });
+              }} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
               {t('mapa.ahoraNo')}
             </button>
           </div>

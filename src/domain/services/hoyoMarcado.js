@@ -109,8 +109,11 @@ export const conCodosDelPar = (linea, par) => {
  * tercios), sin repetir ninguno. Así cabe en una muestra (QA del 16 oct). Una
  * línea que ya cabe se queda como está.
  */
-export const aCodosDelPar = (linea, par) => {
+export const aCodosDelPar = (lineaEntera, par) => {
   const codos = codosDelPar(par);
+  if (lineaEntera.length - 2 <= codos) return lineaEntera;
+  // OSM a veces repite un nodo seguido: dos codos en el mismo sitio, no
+  const linea = lineaEntera.filter((p, i) => i === 0 || p.lat !== lineaEntera[i - 1].lat || p.lon !== lineaEntera[i - 1].lon);
   if (linea.length - 2 <= codos) return linea;
   const recorrido = linea.reduce((acum, p, i) => [...acum, i === 0 ? 0 : acum[i - 1] + distanciaEnMetros(linea[i - 1], p)], []);
   const total = recorrido.at(-1);
