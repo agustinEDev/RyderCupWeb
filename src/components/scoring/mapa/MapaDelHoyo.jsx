@@ -9,6 +9,7 @@ import { limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/servi
 import {
   circuloAlrededor,
   difiereDeLaTarjeta,
+  estaLejosDelCampo,
   hoyoDeUnaMarca,
   longitudDeLaLinea,
   puntoDesde,
@@ -40,9 +41,6 @@ const ESTILO = {
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
 const DOBLE_TOQUE_MS = 400;
-// Más lejos que esto del campo no estás jugando (el mismo límite que las marcas):
-// el mapa no se va a tu casa, y medir no se hace desde ti (Agustín, 16 oct)
-const LEJOS_DEL_CAMPO_M = 3000;
 const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
@@ -133,7 +131,9 @@ const MapaDelHoyo = ({
   // mide desde ella; si no, desde la ubicación del campo (sin ninguna de las
   // dos, se da por hecho que sí)
   const referenciaDelCampo = hoyo?.playLine?.[0] ?? centroSinMapa;
-  const lejos = Boolean(posicion && referenciaDelCampo && distanciaEnMetros(posicion, referenciaDelCampo) > LEJOS_DEL_CAMPO_M);
+  // Lejos (no estás jugando): el mapa no se va a tu casa, no se mide desde ti
+  // ni hay recuadro de distancias, y «Céntrame» no se puede pulsar (16 oct)
+  const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
   const posicionEnElCampo = lejos ? null : posicion;
   const [tocado, setTocado] = useState(null);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero las distancias
@@ -365,13 +365,15 @@ const MapaDelHoyo = ({
 
   // La ubicación del campo llega después de abrir: centra el mapa si aún no lo
   // hizo el GPS ni el jugador lo ha movido. Si el GPS lo llevó antes a otro
-  // sitio y resulta que estás lejos del campo, vuelve al campo. Es una vez:
-  // luego, aunque llegues al campo, solo «Céntrame» lo lleva a ti
+  // sitio y resulta que estás lejos del campo, vuelve al campo, y al llegar a
+  // él el mapa irá a ti, igual que si la ubicación hubiera llegado primero. Es
+  // una vez: con el mapa ya en ti (cerca), no salta solo después
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
-    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current) return;
     inicio.current.centroSinMapa = centroSinMapa;
+    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current) return;
+    centradoEnGps.current = false;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
   }, [centroSinMapa, lejos]);
 
@@ -459,7 +461,7 @@ const MapaDelHoyo = ({
     setGuardando(false);
   };
 
-  const distancias = distanciasAlGreen(posicion, hoyo?.green);
+  const distancias = distanciasAlGreen(posicionEnElCampo, hoyo?.green);
   const hastaAhi = tocado && posicionEnElCampo ? distanciaEnMetros(posicionEnElCampo, tocado) : null;
   const deAhiAlGreen = tocado && hoyo?.green ? distanciaEnMetros(tocado, hoyo.green.center) : null;
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
@@ -588,7 +590,7 @@ const MapaDelHoyo = ({
           {!sinMapa && (
             <button
               type="button"
-              disabled={!posicion}
+              disabled={!posicionEnElCampo}
               onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
               className={`${BOTON} pointer-events-auto`}
             >

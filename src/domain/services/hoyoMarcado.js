@@ -18,6 +18,9 @@ export const MAX_CODOS = 2;
 export const MARGEN_DE_LA_TARJETA = 0.25;
 export const MIN_SALIDA_GREEN_M = 40;
 export const MAX_SALIDA_GREEN_M = 750;
+// A más de esto del campo no se está jugando: el mismo límite que el servidor
+// pone a cada punto de una marca (Agustín, 16 oct)
+export const MAX_DISTANCIA_AL_CAMPO_M = 3000;
 
 const RADIO_TERRESTRE_M = 6371008.8; // el de distanciaEnMetros
 const grados = (rad) => (rad * 180) / Math.PI;
@@ -70,6 +73,10 @@ export const longitudDeLaLinea = (linea) =>
 /** Si lo marcado se aparta de los metros de la tarjeta más de un 25 %. */
 export const difiereDeLaTarjeta = (metrosMarcados, metrosDeLaTarjeta) =>
   Boolean(metrosDeLaTarjeta) && Math.abs(metrosMarcados - metrosDeLaTarjeta) > MARGEN_DE_LA_TARJETA * metrosDeLaTarjeta;
+
+/** Si la posición está a más de 3 km del campo; sin una de las dos, no se sabe y no. */
+export const estaLejosDelCampo = (posicion, campo) =>
+  Boolean(posicion && campo) && distanciaEnMetros(posicion, campo) > MAX_DISTANCIA_AL_CAMPO_M;
 
 /** 'cerca' o 'lejos' si la recta de la salida al green se sale de 40-750 m; si no, null. */
 export const salidaGreenFueraDeLimites = (salida, green) => {

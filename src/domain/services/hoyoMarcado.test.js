@@ -12,6 +12,8 @@ import {
   puntoDesde,
   puntosParaArrastrar,
   salidaGreenFueraDeLimites,
+  estaLejosDelCampo,
+  MAX_DISTANCIA_AL_CAMPO_M,
 } from './hoyoMarcado';
 import { distanciaEnMetros } from './distanciasAlGreen';
 import { rumbo } from './geometriaDelHoyo';
@@ -196,5 +198,20 @@ describe('circuloAlrededor', () => {
     expect(anillo.length).toBeGreaterThan(30);
     expect(anillo[0]).toEqual(anillo.at(-1));
     for (const p of anillo) expect(distanciaEnMetros(SALIDA, p)).toBe(142);
+  });
+});
+
+describe('estaLejosDelCampo (más de 3 km, como el servidor con las marcas)', () => {
+  it.each([
+    [2999, false],
+    [3001, true],
+  ])('a %i m → %s', (metros, lejos) => {
+    expect(MAX_DISTANCIA_AL_CAMPO_M).toBe(3000);
+    expect(estaLejosDelCampo(alNorte(metros), SALIDA)).toBe(lejos);
+  });
+
+  it('sin posición o sin campo, no se sabe: no está lejos', () => {
+    expect(estaLejosDelCampo(null, SALIDA)).toBe(false);
+    expect(estaLejosDelCampo(SALIDA, null)).toBe(false);
   });
 });
