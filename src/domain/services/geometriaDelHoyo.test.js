@@ -104,11 +104,22 @@ describe('encuadreGirado', () => {
     expect(diagonal.zoom).toBeCloseTo(recto.zoom, 3);
   });
 
-  it('el centro es el del hoyo girado (la mitad de la línea)', () => {
-    const { center } = encuadreGirado({ playLine: [S, noreste(500)], green: null }, 45, pantalla);
+  it('sin márgenes, el centro es la mitad del hoyo girado', () => {
+    const { center } = encuadreGirado({ playLine: [S, noreste(500)], green: null }, 45, { ...pantalla, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
 
     expect(center.lat).toBeCloseTo(noreste(250).lat, 6);
     expect(center.lon).toBeCloseTo(noreste(250).lon, 6);
+  });
+
+  it('con más margen abajo que arriba, el centro del mapa baja: el hoyo queda en medio del hueco', () => {
+    // 50 arriba y 250 abajo: el centro de la pantalla, 100 px por debajo del hueco
+    const hoyo = { playLine: [S, norte(500)], green: null };
+    const { center, zoom } = encuadreGirado(hoyo, 0, pantalla);
+
+    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    const metrosDelCentro = (center.lat - S.lat) * M_POR_GRADO;
+    expect(metrosDelCentro).toBeCloseTo(250 - 100 * mPorPx, 0);
+    expect(center.lon).toBeCloseTo(S.lon, 9);
   });
 
   it('si lo que manda es lo ancho, se encuadra por el ancho', () => {
@@ -129,9 +140,37 @@ describe('encuadreGirado', () => {
     expect(520 / mPorPx).toBeCloseTo(600, 0);
   });
 
-  it('un solo punto (o sin sitio libre): zoom 19, y sin hoyo, null', () => {
+  it('el zoom, contra una constante de Web Mercator (teselas de 512 px): 0,110139 m/px a zoom 19 y 42,46°', () => {
+    // A zoom 19 caben 0,110139 m por píxel aquí: 66,08 m llenan 600 px
+    const hoyo = { playLine: [S, norte(66.0834)], green: null };
+
+    expect(encuadreGirado(hoyo, 0, pantalla).zoom).toBeCloseTo(19, 2);
+  });
+
+  it('un hoyo con un codo hacia la derecha: el centro se va de lado, hacia el codo', () => {
+    const codo = { lat: norte(250).lat, lon: S.lon + 100 / (M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180)) };
+    const { center } = encuadreGirado({ playLine: [S, codo, norte(500)], green: null }, 0, { ...pantalla, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
+
+    const metrosAlEste = (center.lon - S.lon) * M_POR_GRADO * Math.cos((S.lat * Math.PI) / 180);
+    expect(metrosAlEste).toBeCloseTo(50, 0);
+  });
+
+  it('un punto imposible (NaN) se descarta; si no queda ninguno, null', () => {
+    expect(encuadreGirado({ playLine: [S, { lat: Number.NaN, lon: 1 }, norte(500)], green: null }, 0, pantalla).center.lat).not.toBeNaN();
+    expect(encuadreGirado({ playLine: [{ lat: Number.NaN, lon: Number.NaN }], green: null }, 0, pantalla)).toBeNull();
+  });
+
+  it('un solo punto: zoom 19; sin hoyo, null', () => {
     expect(encuadreGirado({ playLine: [S], green: null }, 0, pantalla).zoom).toBe(19);
-    expect(encuadreGirado({ playLine: [S, norte(500)], green: null }, 0, { ancho: 80, alto: 300, padding: pantalla.padding }).zoom).toBe(19);
     expect(encuadreGirado(null, 0, pantalla)).toBeNull();
+  });
+
+  it('sin hueco libre, la pantalla entera (no el zoom máximo)', () => {
+    const hoyo = { playLine: [S, norte(500)], green: null };
+
+    const { zoom } = encuadreGirado(hoyo, 0, { ancho: 80, alto: 300, padding: pantalla.padding });
+
+    const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+    expect(500 / mPorPx).toBeCloseTo(300, 0);
   });
 });

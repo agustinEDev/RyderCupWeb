@@ -352,6 +352,7 @@ const MapaDelHoyo = ({
       const { hoyo: h } = inicio.current;
       const orientacion = orientacionDelHoyo(h);
       const mapa = mapaRef.current;
+      // Sin rumbo no hay hoyo orientado que encuadrar (el mapa va con el norte arriba)
       if (!mapa || orientacion === null) return;
       const padding = margen();
       const encuadre = encuadreGirado(h, orientacion, {
@@ -360,7 +361,9 @@ const MapaDelHoyo = ({
         padding,
       });
       if (!encuadre) return;
-      const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion, padding };
+      // Sin `padding`: MapLibre lo guardaría y lo sumaría a todo lo de después
+      // (medir, «Céntrame»); el centro ya viene desplazado al medio del hueco
+      const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion };
       if (animar) mapa.easeTo(camara);
       else mapa.jumpTo(camara);
     },
