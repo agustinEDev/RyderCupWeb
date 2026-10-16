@@ -310,7 +310,7 @@ describe('MapaDelHoyo', () => {
         [[-5.332, 36.2888], [-5.332, 36.2893]],
         [[-5.332, 36.2893], [-5.332, 36.29]],
       ]);
-      const etiquetas = mapas.marcas.filter((m) => !m.quitada && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
+      const etiquetas = mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
       expect(etiquetas.map((m) => m.opciones.element.textContent)).toEqual(['mapa.tramo {"metros":56}', 'mapa.tramo {"metros":78}']);
       // Cada etiqueta, en mitad de su tramo
       expect(etiquetas[0].p[1]).toBeCloseTo((36.2888 + 36.2893) / 2, 9);
@@ -377,7 +377,7 @@ describe('MapaDelHoyo', () => {
       fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
 
       expect(mapa().fuentes.medida.data.features).toEqual([]);
-      expect(mapas.marcas.filter((m) => !m.quitada && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''))).toEqual([]);
+      expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''))).toEqual([]);
     });
 
     it('M2: sin green, solo hasta ahí', () => {
@@ -565,7 +565,8 @@ describe('MapaDelHoyo — tras la revisión', () => {
   it('sin señal buena, el punto azul se quita', () => {
     abrir();
     act(() => gps.exito(lectura(36.2888, -5.332)));
-    const yo = mapas.marcas[0];
+    // El punto azul (antes van las cifras de la línea del hoyo)
+    const yo = mapas.marcas.find((m) => m.opciones.element?.className.includes('bg-blue-500'));
 
     act(() => gps.exito(lectura(36.2888, -5.332, 60)));
 
@@ -1207,5 +1208,171 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
     tocar(EN_CASA.lat + 0.001, EN_CASA.lon);
 
     expect(mapa().fitBounds).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Agustín, 16 oct: los metros, siempre que se pinta una línea; la longitud
+// del hoyo (el aviso de la tarjeta) sigue los codos, como la medida oficial
+describe('MapaDelHoyo — metros en cada tramo de la línea', () => {
+  const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
+  const T = { lat: 36.28, lon: -5.33 };
+  const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
+  const G = alNorte(300);
+  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const vivas = () => mapas.marcas.filter((m) => !m.quitada);
+  const arrastrables = () => vivas().filter((m) => m.opciones.draggable);
+  const soltar = (marca, p) =>
+    act(() => {
+      marca.setLngLat([p.lon, p.lat]);
+      marca.oyentes.dragend({ target: marca });
+    });
+  const deLaLinea = () => vivas().filter((m) => m.opciones.element?.dataset?.tramo === 'linea');
+  const textos = () => deLaLinea().map((m) => m.opciones.element.textContent);
+  const marcar = (props = {}) => {
+    const r = abrir({ hoyo: null, porMarcar: 'salida', onGuardarMarca: vi.fn(async () => ({ estado: 'guardada' })), ...props });
+    act(() => mapa().oyentes.load());
+    return r;
+  };
+  let gps;
+  let reloj;
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = null;
+    gps = gpsFalso();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+    let ahora = 0;
+    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+  });
+  afterEach(() => {
+    reloj.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('L1: con solo la salida marcada no hay línea, ni metros (queda el arco de la tarjeta)', () => {
+    marcar({ metros: 300 });
+
+    tocar(T);
+
+    expect(textos()).toEqual([]);
+    expect(vivas().some((m) => m.opciones.element?.textContent === 'mapa.arco {"metros":300}')).toBe(true);
+  });
+
+  it('L2: con salida y green, la recta lleva sus metros en medio', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+
+    tocar(G);
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
+    expect(deLaLinea()[0].p[1]).toBeCloseTo((T.lat + G.lat) / 2, 9);
+  });
+
+  it('L3: al soltar un codo, cada tramo con los suyos; al moverlo, se rehacen', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+
+    soltar(arrastrables()[0], alNorte(100));
+    expect(textos()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":200}']);
+
+    soltar(arrastrables()[0], alNorte(120));
+    expect(textos()).toEqual(['mapa.tramo {"metros":120}', 'mapa.tramo {"metros":180}']);
+    // Y cada cifra se va a la mitad de su tramo nuevo
+    expect(deLaLinea()[0].p[1]).toBeCloseTo((T.lat + alNorte(120).lat) / 2, 9);
+  });
+
+  it('L4: con dos codos (par 5), tres tramos y tres cifras', () => {
+    marcar({ metros: 300, par: 5 });
+    tocar(T);
+    tocar(G);
+
+    soltar(arrastrables()[0], alNorte(100));
+    soltar(arrastrables().at(-1), alNorte(200));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":100}', 'mapa.tramo {"metros":100}']);
+  });
+
+  it('L5: «Volver a marcar» quita las cifras de la línea que había', () => {
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.volverAMarcar' }));
+
+    expect(textos()).toEqual([]);
+  });
+
+  it('L6: solo el green, sobre la salida aprobada con su codo: cada tramo con sus metros', () => {
+    const codo = alNorte(150);
+    marcar({ hoyo: { playLine: [T, codo, alNorte(280)], green: null }, porMarcar: 'green', metros: 300 });
+
+    tocar(G);
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":150}', 'mapa.tramo {"metros":150}']);
+  });
+
+  it('L7: un hoyo ya marcado, al abrirlo, lleva los metros de cada tramo', () => {
+    abrir({ hoyo: { playLine: [T, alNorte(120), G], green: { front: alNorte(290), center: G, back: alNorte(310) }, marcadoPorMi: true } });
+    act(() => mapa().oyentes.load());
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":120}', 'mapa.tramo {"metros":180}']);
+  });
+
+  it('L8: un hoyo del mapa aprobado, también', () => {
+    abrir({ hoyo: { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+    act(() => mapa().oyentes.load());
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
+  });
+
+  it('L9: lejos del campo, la línea marcada lleva sus metros igual', () => {
+    marcar({ metros: 300 });
+    act(() => gps.exito(lectura(40.4, -3.7)));
+    tocar(T);
+
+    tocar(G);
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
+  });
+
+  it('L9: sin GPS, también', () => {
+    abrir({ hoyo: { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+    act(() => mapa().oyentes.load());
+    act(() => gps.error({ code: 1 }));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
+  });
+
+  it('L10: medir tocando no se mezcla: sus cifras van aparte de las de la línea', () => {
+    abrir({ hoyo: { playLine: [T, G], green: { front: alNorte(290), center: G, back: alNorte(310) } } });
+    act(() => mapa().oyentes.load());
+    act(() => gps.exito(lectura(alNorte(50).lat, T.lon)));
+
+    tocar(alNorte(150));
+
+    expect(textos()).toEqual(['mapa.tramo {"metros":300}']);
+    const medida = vivas().filter((m) => m.opciones.element?.dataset?.tramo === 'medida').map((m) => m.opciones.element.textContent);
+    expect(medida).toEqual(['mapa.tramo {"metros":100}', 'mapa.tramo {"metros":150}']);
+  });
+
+  it('L11: un hoyo sin línea (solo el green, o nada) no pinta cifras', () => {
+    abrir({ hoyo: { playLine: [T], green: null } });
+    act(() => mapa().oyentes.load());
+
+    expect(textos()).toEqual([]);
+  });
+
+  it('L12: el aviso de la tarjeta sigue midiendo por los codos (como la medida oficial)', async () => {
+    // Recta de 300 m, pero con el codo a 200 m al este la línea mide más de 375 m
+    marcar({ metros: 300 });
+    tocar(T);
+    tocar(G);
+    soltar(arrastrables()[0], { lat: alNorte(150).lat, lon: T.lon + 200 / (M_POR_GRADO * Math.cos((T.lat * Math.PI) / 180)) });
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'mapa.guardarMarca' })));
+
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('"tarjeta":300');
   });
 });

@@ -87,11 +87,20 @@ const geojsonDeLaMedida = (tramos) => ({
   features: tramos.map(([a, b]) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [lngLat(a), lngLat(b)] } })),
 });
 const enMedio = (a, b) => ({ lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 });
+// Los tramos de una línea de juego: de la salida al codo, de codo a codo y al green
+const tramosDeLaLinea = (linea) => linea.slice(1).map((p, i) => [linea[i], p]);
 
 
 const punto = (clase) => {
   const el = globalThis.document.createElement('div');
   el.className = clase;
+  return el;
+};
+
+// La cifra de un tramo: amarilla la de medir, blanca la de la línea del hoyo
+const etiqueta = (tipo, color) => {
+  const el = punto(`rounded-md bg-gray-950/85 px-1.5 py-0.5 font-mono text-sm font-bold shadow ${color}`);
+  el.dataset.tramo = tipo;
   return el;
 };
 
@@ -179,6 +188,7 @@ const MapaDelHoyo = ({
   const ultimoMarcado = useRef(datosDelMarcado);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedida = useRef([]);
+  const etiquetasDeLaLinea = useRef([]);
   const marcasDelMarcado = useRef([]);
 
   // El toque: mientras se marca, marca; si no, mide. Por ref, porque el mapa
@@ -357,13 +367,29 @@ const MapaDelHoyo = ({
     const etiquetas = etiquetasDeLaMedida.current;
     while (etiquetas.length > tramos.length) etiquetas.pop().remove();
     tramos.forEach(([a, b], i) => {
-      etiquetas[i] ??= new Marker({ element: punto('rounded-md bg-gray-950/85 px-1.5 py-0.5 font-mono text-sm font-bold text-yellow-300 shadow') })
-        .setLngLat(lngLat(enMedio(a, b)))
-        .addTo(mapa);
+      etiquetas[i] ??= new Marker({ element: etiqueta('medida', 'text-yellow-300') }).setLngLat(lngLat(enMedio(a, b))).addTo(mapa);
       etiquetas[i].setLngLat(lngLat(enMedio(a, b)));
       etiquetas[i].getElement().textContent = textoDeTramo(distanciaEnMetros(a, b));
     });
   }, [posicionEnElCampo, tocado, green, textoDeTramo]);
+
+  // Los metros de cada tramo de la línea que se ve: la que se está marcando o,
+  // si no, la del hoyo (Agustín, 16 oct: siempre que se pinta una línea). No
+  // dependen del GPS: valen lejos del campo y sin señal
+  const lineaVisible = useMemo(() => (lineaMarcada.length > 1 ? lineaMarcada : (hoyo?.playLine ?? [])), [lineaMarcada, hoyo]);
+  // Como las de medir, se mueven y se reescriben, no se rehacen
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa) return;
+    const tramos = tramosDeLaLinea(lineaVisible);
+    const etiquetas = etiquetasDeLaLinea.current;
+    while (etiquetas.length > tramos.length) etiquetas.pop().remove();
+    tramos.forEach(([a, b], i) => {
+      etiquetas[i] ??= new Marker({ element: etiqueta('linea', 'text-white') }).setLngLat(lngLat(enMedio(a, b))).addTo(mapa);
+      etiquetas[i].setLngLat(lngLat(enMedio(a, b)));
+      etiquetas[i].getElement().textContent = textoDeTramo(distanciaEnMetros(a, b));
+    });
+  }, [lineaVisible, textoDeTramo]);
 
   // La ubicación del campo llega después de abrir: centra el mapa si aún no lo
   // hizo el GPS ni el jugador lo ha movido. Si el GPS lo llevó antes a otro
