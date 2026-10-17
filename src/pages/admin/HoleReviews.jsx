@@ -21,13 +21,23 @@ const HoleReviews = () => {
     hayLista.current = estado.cursos.length > 0;
   }, [estado.cursos]);
 
+  // Cada petición lleva su número: si dos se cruzan, solo cuenta la última que
+  // se pidió, o una lista vieja volvería a pintar un hoyo ya guardado (CodeRabbit)
+  const ultimaPeticion = useRef(0);
+
   // Pedir la lista; el estado cambia solo cuando contesta. Si falla con la lista
-  // ya a la vista, se queda (y quien la pidió avisa); sin ella, el fallo
+  // ya a la vista, se queda (y quien la pidió avisa); sin ella, el fallo. Una
+  // respuesta que ya no es la última devuelve null y no toca nada
   const pedir = useCallback(async () => {
+    ultimaPeticion.current += 1;
+    const esta = ultimaPeticion.current;
     try {
-      setEstado({ cargando: false, fallo: false, cursos: await listHoleReviewsUseCase.execute() });
+      const cursos = await listHoleReviewsUseCase.execute();
+      if (esta !== ultimaPeticion.current) return null;
+      setEstado({ cargando: false, fallo: false, cursos });
       return true;
     } catch {
+      if (esta !== ultimaPeticion.current) return null;
       setEstado((e) => ({ ...e, cargando: false, fallo: !hayLista.current }));
       return false;
     }
@@ -35,7 +45,7 @@ const HoleReviews = () => {
   const cargar = async () => {
     setEstado((e) => ({ ...e, cargando: true, fallo: false }));
     const bien = await pedir();
-    if (!bien && hayLista.current) customToast.error(t('holeReviews.error'));
+    if (bien === false && hayLista.current) customToast.error(t('holeReviews.error'));
   };
 
   useEffect(() => {

@@ -139,4 +139,40 @@ describe('HoleReviews', () => {
 
     expect(screen.queryByRole('region', { name: 'Alcanada' })).toBeNull();
   });
+  it('CodeRabbit: si dos recargas se cruzan, manda la última que se pidió', async () => {
+    let primera;
+    casos.lista.mockResolvedValueOnce(LISTA);
+    casos.lista.mockReturnValueOnce(new Promise((ok) => { primera = ok; }));
+    casos.lista.mockResolvedValueOnce([{ ...LISTA[0], holes: [LISTA[0].holes[1]] }]);
+    render(<HoleReviews />);
+    const { act } = await import('react');
+
+    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    await act(async () => revision.props.onCerrar({ cambiado: true }));
+    fireEvent.click(screen.getByRole('button', { name: /holeReviews.hole {"numero":7}/ }));
+    await act(async () => revision.props.onCerrar({ cambiado: true }));
+    // La primera recarga llega tarde, con la lista vieja: no pisa la nueva
+    await act(async () => primera(LISTA));
+
+    const filas = within(screen.getByRole('region', { name: 'Alcanada' })).getAllByRole('button');
+    expect(filas.map((f) => f.textContent)).toEqual([expect.stringContaining('"numero":7')]);
+  });
+
+  it('CodeRabbit: un fallo de una recarga vieja tampoco cuenta', async () => {
+    let primera;
+    casos.lista.mockResolvedValueOnce(LISTA);
+    casos.lista.mockReturnValueOnce(new Promise((_, mal) => { primera = mal; }));
+    casos.lista.mockResolvedValueOnce(LISTA);
+    render(<HoleReviews />);
+    const { act } = await import('react');
+
+    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    await act(async () => revision.props.onCerrar({ cambiado: true }));
+    fireEvent.click(screen.getByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+    await act(async () => revision.props.onCerrar({ cambiado: true }));
+    avisos.error.mockReset();
+    await act(async () => primera(new Error('tarde')));
+
+    expect(avisos.error).not.toHaveBeenCalled();
+  });
 });
