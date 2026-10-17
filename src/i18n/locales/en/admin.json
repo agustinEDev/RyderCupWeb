@@ -1,14 +1,6 @@
 {
   "title": "Admin Panel",
   "subtitle": "Users, statistics, and golf courses",
-  "tabs": {
-    "overview": "Overview",
-    "users": "Users",
-    "golfCourses": "Golf Courses",
-    "pending": "Pending",
-    "competitions": "Competitions",
-    "holeReviews": "Holes to review"
-  },
   "overview": {
     "totalUsers": "Registered users",
     "totalCompetitions": "Tournaments created",
@@ -183,5 +175,14 @@
     "pointTee": "Tee",
     "pointBend": "Bend",
     "pointGreen": "Green"
+  },
+  "menu": {
+    "label": "Panel sections",
+    "requests_one": "{{count}} request",
+    "requests_other": "{{count}} requests"
+  },
+  "golfTabs": {
+    "approved": "Approved",
+    "requests": "Requests"
   }
 }

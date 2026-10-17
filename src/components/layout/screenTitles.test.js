@@ -89,4 +89,17 @@ describe('resolveScreen', () => {
     expect(resolveScreen('/quick-matches')).toMatchObject({ titleKey: 'screens.myQuickMatches' });
     expect(resolveScreen('/quick-matches/q-1/scoring')).toBeNull();
   });
+  it('gives each admin section its title and sends it back to the admin menu (17 oct)', () => {
+    const secciones = {
+      resumen: 'screens.adminOverview',
+      usuarios: 'screens.adminUsers',
+      competiciones: 'screens.adminCompetitions',
+      campos: 'screens.adminGolfCourses',
+      hoyos: 'screens.adminHoles',
+    };
+    for (const [seccion, titleKey] of Object.entries(secciones)) {
+      expect(resolveScreen(`/admin/${seccion}`)).toEqual({ titleKey, backTo: '/admin', backByHistory: false });
+    }
+    expect(resolveScreen('/admin')).toMatchObject({ titleKey: 'screens.admin', backTo: '/profile' });
+  });
 });
