@@ -136,4 +136,31 @@ describe('AdminUsersTable · móvil', () => {
 
     expect(ficha()).toHaveClass('items-end');
   });
+
+  it('/code-review: la ficha respeta la barra de inicio del iPhone y la altura visible', () => {
+    pintar();
+    fireEvent.click(fila('Ana Ruiz'));
+    const caja = ficha().firstElementChild;
+
+    expect(caja).toHaveClass('pb-[calc(1.25rem+env(safe-area-inset-bottom))]', 'max-h-[85dvh]');
+  });
+
+  it('/code-review: las marcas de la fila no se encogen', () => {
+    pintar();
+
+    for (const marca of within(fila('Luis Gil')).getAllByText(/users\.(roleAdmin|statusInactive)/)) {
+      expect(marca).toHaveClass('flex-shrink-0');
+    }
+  });
+
+  it('/code-review: con la ficha abierta, si la lista cambia, la ficha enseña lo de ahora; si el usuario ya no está, se cierra', () => {
+    const manos = { onEdit: vi.fn(), onToggleActive: vi.fn(), onManageDelete: vi.fn() };
+    const { rerender } = render(<AdminUsersTable users={[ANA, LUIS]} {...manos} />);
+    fireEvent.click(fila('Ana Ruiz'));
+    rerender(<AdminUsersTable users={[{ ...ANA, isActive: false }, LUIS]} {...manos} />);
+
+    expect(within(ficha()).getByText('users.columnStatus').nextElementSibling).toHaveTextContent('users.statusInactive');
+    rerender(<AdminUsersTable users={[LUIS]} {...manos} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });

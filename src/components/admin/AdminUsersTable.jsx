@@ -3,7 +3,7 @@ import { Edit, UserX, UserCheck, Trash2, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import FichaDeFila from './FichaDeFila';
 
-const PILDORA = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border';
+const PILDORA = 'inline-flex flex-shrink-0 items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border';
 const PILDORA_ADMIN = `${PILDORA} bg-amber-100 text-amber-800 border-amber-200`;
 const PILDORA_INACTIVA = `${PILDORA} bg-gray-200 text-gray-700 border-gray-300`;
 
@@ -15,7 +15,10 @@ const PILDORA_INACTIVA = `${PILDORA} bg-gray-200 text-gray-700 border-gray-300`;
  */
 const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
   const { t, i18n } = useTranslation('admin');
-  const [abierto, setAbierto] = useState(null);
+  // Por id, no una copia: si la lista cambia con la ficha abierta, enseña lo de
+  // ahora, y si el usuario ya no está se cierra
+  const [idAbierto, setIdAbierto] = useState(null);
+  const abierto = users?.find((u) => u.id === idAbierto) ?? null;
 
   if (!users || users.length === 0) {
     return (
@@ -30,7 +33,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
   const fecha = (valor) => new Date(valor).toLocaleDateString(i18n.language);
   // Se cierra la ficha y se hace lo de siempre: lo que abre cada acción es otro modal
   const desdeLaFicha = (accion) => () => {
-    setAbierto(null);
+    setIdAbierto(null);
     accion(abierto);
   };
 
@@ -41,7 +44,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
         <li key={user.id}>
           <button
             type="button"
-            onClick={() => setAbierto(user)}
+            onClick={() => setIdAbierto(user.id)}
             className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
           >
             <span className="block min-w-0 flex-1">
@@ -70,7 +73,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
           { etiqueta: t('users.columnJoined'), valor: abierto.createdAt ? fecha(abierto.createdAt) : '—' },
           { etiqueta: t('users.columnLastLogin'), valor: abierto.lastLoginAt ? fecha(abierto.lastLoginAt) : t('users.lastLoginNever') },
         ]}
-        onClose={() => setAbierto(null)}
+        onClose={() => setIdAbierto(null)}
       >
         <button type="button" onClick={desdeLaFicha(onEdit)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
           <Edit aria-hidden="true" className="w-4 h-4" />

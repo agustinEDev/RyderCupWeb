@@ -45,7 +45,8 @@ import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
  *   18 hoyos del detalle de un campo
  * @param {boolean} [props.hojaInferior=false] En el móvil, la caja va pegada
  *   abajo, como una hoja que sube; en el ordenador, al centro como siempre. Para
- *   las fichas de las filas del panel de admin (17 oct 2026)
+ *   las fichas de las filas del panel de admin (17 oct 2026). Con
+ *   `scrollableBackdrop` a la vez, manda este último
  * @param {string} [props.boxClassName] La caja entera, en vez de la de siempre.
  *   Para los modales que traen la suya —con cabecera de borde, animada o sin
  *   relleno— y pasaron a este armazón sin cambiar de aspecto (4 oct 2026). Si se

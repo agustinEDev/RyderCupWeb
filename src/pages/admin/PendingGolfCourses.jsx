@@ -396,13 +396,13 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
                 <h3 className="text-lg font-bold text-gray-900 mb-3">{t('form.holes')}</h3>
                 {/* En el móvil, una fila por hoyo (17 oct 2026, entrega 5) */}
                 <ul aria-label={t('form.holes')} className="md:hidden divide-y divide-gray-100 text-sm">
-                  {(courseToView?.holes || []).map((hole) => (
-                    <li key={hole.holeNumber} className="py-2 text-gray-900">
+                  {(courseToView?.holes || []).map((hole, index) => (
+                    <li key={index} className="py-2 text-gray-900">
                       {t('form.holeRow', { hole: hole.holeNumber, par: hole.par, strokeIndex: hole.strokeIndex })}
                     </li>
                   ))}
                 </ul>
-                <p className="md:hidden border-t border-gray-200 py-2 text-sm font-bold text-gray-900">{t('form.totalPar')} {courseToView.totalPar}</p>
+                <p className="md:hidden border-t border-gray-200 py-2 text-sm font-bold text-gray-900">{t('form.totalPar')} {courseToView?.totalPar}</p>
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-100 border-b border-gray-200">

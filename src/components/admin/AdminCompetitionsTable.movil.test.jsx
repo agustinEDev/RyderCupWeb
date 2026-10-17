@@ -112,4 +112,16 @@ describe('AdminCompetitionsTable · móvil', () => {
     expect(manos.onEdit).not.toHaveBeenCalled();
     expect(manos.onTransition).not.toHaveBeenCalled();
   });
+
+  it('/code-review: con la ficha abierta, si la competición cambia de estado, la ficha da las acciones de ahora', () => {
+    const manos = { onEdit: vi.fn(), onTransition: vi.fn() };
+    const { rerender } = render(<AdminCompetitionsTable competitions={[BORRADOR, CERRADA]} {...manos} />);
+    fireEvent.click(fila('Copa b'));
+    rerender(<AdminCompetitionsTable competitions={[{ ...BORRADOR, status: 'ACTIVE' }, CERRADA]} {...manos} />);
+
+    expect(within(ficha()).queryByRole('button', { name: 'competitions.editTooltip' })).toBeNull();
+    expect(within(ficha()).getByRole('button', { name: 'competitions.actions.closeEnrollments' })).toBeInTheDocument();
+    rerender(<AdminCompetitionsTable competitions={[CERRADA]} {...manos} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });

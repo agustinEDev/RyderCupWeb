@@ -31,7 +31,10 @@ const TRANSITIONS_BY_STATUS = {
  */
 const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled = false }) => {
   const { t, i18n } = useTranslation(['admin', 'competitions']);
-  const [abierta, setAbierta] = useState(null);
+  // Por id, no una copia: si la competición cambia de estado con la ficha
+  // abierta, las acciones son las de ahora
+  const [idAbierta, setIdAbierta] = useState(null);
+  const abierta = competitions?.find((c) => c.id === idAbierta) ?? null;
 
   if (!competitions || competitions.length === 0) {
     return (
@@ -60,7 +63,7 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
   // Se cierra la ficha y se hace lo de siempre: cancelar sigue pidiendo su
   // confirmación, que vive en el panel
   const desdeLaFicha = (hacer) => () => {
-    setAbierta(null);
+    setIdAbierta(null);
     hacer();
   };
 
@@ -71,7 +74,7 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
         <li key={competition.id}>
           <button
             type="button"
-            onClick={() => setAbierta(competition)}
+            onClick={() => setIdAbierta(competition.id)}
             className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
           >
             <span className="block min-w-0 flex-1">
@@ -94,7 +97,7 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
           { etiqueta: t('competitions.columnStatus'), valor: insignia(abierta) },
           { etiqueta: t('competitions.columnDates'), valor: fechas(abierta) },
         ]}
-        onClose={() => setAbierta(null)}
+        onClose={() => setIdAbierta(null)}
       >
         {abierta.status === 'DRAFT' && (
           <button

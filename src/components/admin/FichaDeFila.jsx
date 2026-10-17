@@ -24,7 +24,7 @@ const FichaDeFila = ({ titulo, subtitulo, datos, onClose, children }) => {
       onClose={onClose}
       labelledBy={idDelTitulo}
       hojaInferior
-      boxClassName="bg-white w-full md:max-w-md md:mx-4 rounded-t-2xl md:rounded-2xl shadow-xl p-5 max-h-[85vh] overflow-y-auto"
+      boxClassName="bg-white w-full md:max-w-md md:mx-4 rounded-t-2xl md:rounded-2xl shadow-xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto"
     >
       <h2 id={idDelTitulo} className="text-lg font-bold text-gray-900 break-words">{titulo}</h2>
       {subtitulo && <p className="text-sm text-gray-500 break-all">{subtitulo}</p>}
