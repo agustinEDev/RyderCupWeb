@@ -4,7 +4,7 @@ import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
 import { TESELAS_PNOA } from '../../scoring/mapa/teselas';
-import { puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
+import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
 
 setWorkerUrl(urlDelWorker);
 
@@ -58,7 +58,20 @@ const COLOR_DE_LA_LINEA = '#d946ef';
  * línea guardada en cian discontinuo y la que el admin edita en magenta (colores
  * que no lleva ninguna barra), con su salida, sus codos y su green arrastrables. Al soltar un punto, `onLinea` recibe la línea movida.
  */
-const MapaDeRevision = ({ muestras, guardada, linea, onLinea, onToque, marcados = [], centro = null, posicion = null, centrarEnMi = 0 }) => {
+const SIN_MARCAR = [];
+
+const MapaDeRevision = ({
+  muestras,
+  guardada,
+  linea,
+  onLinea,
+  onToque,
+  marcados = SIN_MARCAR,
+  centro = null,
+  posicion = null,
+  centrarEnMi = 0,
+  bloqueada = false,
+}) => {
   const { t } = useTranslation('admin');
   const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
   const contenedor = useRef(null);
@@ -66,9 +79,11 @@ const MapaDeRevision = ({ muestras, guardada, linea, onLinea, onToque, marcados 
   const cargado = useRef(false);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
-  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion });
+  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada });
+  // Hasta qué pedido de «Mi posición» se ha centrado ya el mapa
+  const centradoPara = useRef(0);
   useLayoutEffect(() => {
-    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion };
+    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada };
   });
 
   // La línea que se edita y sus puntos. Con los mismos puntos, se mueven (no
@@ -91,21 +106,37 @@ const MapaDeRevision = ({ muestras, guardada, linea, onLinea, onToque, marcados 
       const bola = globalThis.document.createElement('div');
       bola.className = CLASE_DE_LA_BOLA;
       elemento.appendChild(bola);
-      const marca = new Marker({ element: elemento, draggable: true }).setLngLat(lngLat(p)).addTo(mapa);
+      // Mientras se marca desde cero, la línea de antes no se arrastra sin querer
+      const marca = new Marker({ element: elemento, draggable: !datos.current.bloqueada }).setLngLat(lngLat(p)).addTo(mapa);
       marca.on('dragend', (e) => {
         const { lat, lng } = e.target.getLngLat();
         const deAhora = puntosDeLaLinea(datos.current.linea);
-        const movida = deAhora.map((q, j) => (j === i ? { lat, lon: lng } : q));
-        datos.current.onLinea({ tee: movida[0], bends: movida.slice(1, -1), greenCenter: movida.at(-1) });
+        datos.current.onLinea(lineaDePuntos(deAhora.map((q, j) => (j === i ? { lat, lon: lng } : q))));
       });
       return marca;
     });
   };
 
+  // «Mi posición» (E14): se pinta siempre que la haya, y el mapa se centra en
+  // ella una vez por cada vez que se pide (aunque llegue después del toque, o
+  // antes de que cargue el mapa)
+  const centrarEnLaPosicion = () => {
+    const mapa = mapaRef.current;
+    if (!mapa || !cargado.current) return;
+    const { posicion: yo, centrarEnMi: pedido } = datos.current;
+    mapa.getSource('yo')?.setData(comoPuntos(yo ? [yo] : []));
+    if (yo && pedido > centradoPara.current) {
+      centradoPara.current = pedido;
+      mapa.easeTo({ center: lngLat(yo), zoom: Math.max(mapa.getZoom?.() ?? 16, 16) });
+    }
+  };
+
   // La de ahora, por ref: el mapa se monta una vez y sus oyentes la llaman
   const pintar = useRef(pintarLinea);
+  const centrar = useRef(centrarEnLaPosicion);
   useLayoutEffect(() => {
     pintar.current = pintarLinea;
+    centrar.current = centrarEnLaPosicion;
   });
 
   useEffect(() => {
@@ -143,6 +174,8 @@ const MapaDeRevision = ({ muestras, guardada, linea, onLinea, onToque, marcados 
         );
       }
       pintar.current();
+      // La posición pudo llegar antes de que cargara
+      centrar.current();
     });
     // Tocar el mapa solo cuenta mientras se marca
     mapa.on('click', (e) => datos.current.onToque?.({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
@@ -168,18 +201,11 @@ const MapaDeRevision = ({ muestras, guardada, linea, onLinea, onToque, marcados 
     if (cargado.current) mapaRef.current?.getSource('marcados')?.setData(comoPuntos(marcados));
   }, [marcados]);
 
-  // «Mi posición» (E14): se pinta siempre que la haya, y el mapa se centra en
-  // ella una vez por cada vez que se pide (aunque llegue después del toque)
-  const centradoPara = useRef(0);
+  useEffect(() => centrar.current(), [posicion, centrarEnMi]);
+
   useEffect(() => {
-    const mapa = mapaRef.current;
-    if (!mapa || !cargado.current) return;
-    mapa.getSource('yo')?.setData(comoPuntos(posicion ? [posicion] : []));
-    if (posicion && centrarEnMi > centradoPara.current) {
-      centradoPara.current = centrarEnMi;
-      mapa.easeTo({ center: lngLat(posicion), zoom: Math.max(mapa.getZoom?.() ?? 16, 16) });
-    }
-  }, [posicion, centrarEnMi]);
+    for (const m of puntos.current) m.setDraggable(!bloqueada);
+  }, [bloqueada]);
 
   return <div ref={contenedor} className="absolute inset-0" />;
 };

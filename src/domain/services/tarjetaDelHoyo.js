@@ -16,7 +16,11 @@ export const tarjetaDelHoyo = (barras) => {
   const pares = conPar.map((b) => b.par);
   const metros = (barras ?? []).map((b) => b.metros).filter(Number.isFinite);
   const conParYMetros = conPar.filter((b) => Number.isFinite(b.metros));
-  const masLarga = conParYMetros.reduce((larga, b) => (larga === null || b.metros > larga.metros ? b : larga), null);
+  // A igualdad de metros, la de par mayor
+  const masLarga = conParYMetros.reduce(
+    (larga, b) => (larga === null || b.metros > larga.metros || (b.metros === larga.metros && b.par > larga.par) ? b : larga),
+    null,
+  );
   return {
     parMinimo: Math.min(...pares),
     parMaximo: Math.max(...pares),

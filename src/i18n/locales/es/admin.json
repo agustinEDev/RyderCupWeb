@@ -186,7 +186,8 @@
     "greenTooFar": "La salida y el green están a más de 750 m: toca otra vez",
     "myPosition": "Mi posición",
     "findingPosition": "Buscando tu posición…",
-    "positionDenied": "Sin permiso de ubicación"
+    "positionDenied": "Sin permiso de ubicación",
+    "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez"
   },
   "menu": {
     "label": "Secciones del panel",

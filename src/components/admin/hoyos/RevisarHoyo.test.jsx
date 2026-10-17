@@ -42,8 +42,9 @@ vi.mock('../../../composition', () => ({
 }));
 const gps = vi.hoisted(() => ({ lectura: { estado: 'inactivo', posicion: null, precision: null }, activo: [] }));
 vi.mock('../../../hooks/usePosicionGps', () => ({
-  usePosicionGps: ({ activo }) => {
+  usePosicionGps: ({ activo, precisionMaxima }) => {
     gps.activo.push(activo);
+    gps.precisionMaxima = precisionMaxima;
     return activo ? gps.lectura : { estado: 'inactivo', posicion: null, precision: null };
   },
 }));
@@ -395,7 +396,7 @@ describe('RevisarHoyo', () => {
       expect(screen.getByText('holeReviews.cardRange {"par":"4–5","desde":410,"hasta":480}')).toBeInTheDocument();
     });
 
-    it('E1: el mapa parte de la ubicación del campo', async () => {
+    it('E14: el mapa parte de la ubicación del campo', async () => {
       casos.campo.mockResolvedValue({ ...campo({}), ubicacion: T });
       render(<RevisarHoyo golfCourseId="gc-1" nombre="Alcanada" numeroDeHoyo={1} onCerrar={vi.fn()} />);
       await screen.findByTestId('mapa-de-revision');
@@ -412,7 +413,7 @@ describe('RevisarHoyo', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'holeReviews.myPosition' }));
       expect(gps.activo.at(-1)).toBe(true);
-      expect(screen.getByRole('button', { name: 'holeReviews.findingPosition' })).toBeDisabled();
+      expect(screen.getByText('holeReviews.findingPosition')).toBeInTheDocument();
       const pedido = mapa.props.centrarEnMi;
       expect(pedido).toBeGreaterThan(0);
 
@@ -422,6 +423,13 @@ describe('RevisarHoyo', () => {
       await waitFor(() => expect(mapa.props.posicion).toEqual(alNorte(20)));
       fireEvent.click(screen.getByRole('button', { name: 'holeReviews.myPosition' }));
       expect(mapa.props.centrarEnMi).toBeGreaterThan(pedido);
+    });
+
+    it('E14: para centrar el mapa vale cualquier posición válida (un ordenador va por Wi-Fi)', async () => {
+      await abrir({ barras: PAR4 });
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.myPosition' }));
+
+      expect(gps.precisionMaxima).toBe(Infinity);
     });
 
     it('E14: sin permiso de ubicación, se dice', async () => {
@@ -435,6 +443,108 @@ describe('RevisarHoyo', () => {
     it('E12: lo que mide la línea sigue a la vista', async () => {
       await abrir({ barras: PAR4 });
       expect(screen.getByText(/holeReviews.lineMetres/)).toBeInTheDocument();
+    });
+
+    describe('revisión (17 oct)', () => {
+      const conCampo = async (hoyo) => {
+        casos.campo.mockResolvedValue({ ...campo(hoyo), ubicacion: T });
+        render(<RevisarHoyo golfCourseId="gc-1" nombre="Alcanada" numeroDeHoyo={1} onCerrar={vi.fn()} />);
+        await screen.findByTestId('mapa-de-revision');
+      };
+
+      it('E15: un punto a más de 3 km del campo: aviso, y no se coloca', async () => {
+        await conCampo({ muestras: [], barras: PAR4 });
+        marcar();
+        tocar(alNorte(3500));
+
+        expect(avisos.error).toHaveBeenCalledWith('holeReviews.tooFarFromCourse');
+        expect(mapa.props.marcados).toEqual([]);
+        expect(screen.getByText('holeReviews.tapTee')).toBeInTheDocument();
+        tocar(T);
+        tocar(alNorte(3600));
+        expect(avisos.error).toHaveBeenCalledTimes(2);
+        expect(screen.getByText('holeReviews.tapGreen')).toBeInTheDocument();
+      });
+
+      it('E15: sin ubicación del campo, no se puede mirar y se deja', async () => {
+        await abrir({ muestras: [], barras: PAR4 });
+        marcar();
+        tocar(alNorte(3500));
+
+        expect(screen.getByText('holeReviews.tapGreen')).toBeInTheDocument();
+      });
+
+      it('E4: mientras se marca, la línea de antes no se arrastra, y Cancelar la devuelve tal cual', async () => {
+        await abrir({ barras: PAR4 });
+        const antes = mapa.props.linea;
+        expect(mapa.props.bloqueada).toBe(false);
+        marcar();
+        expect(mapa.props.bloqueada).toBe(true);
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.cancelMarking' }));
+
+        expect(mapa.props.bloqueada).toBe(false);
+        expect(mapa.props.linea).toEqual(antes);
+        // Nada que guardar: la línea no se tocó
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
+        expect(screen.queryByText('holeReviews.unsaved')).toBeNull();
+      });
+
+      it('mientras se marca, reabrir, partir de otra muestra y borrar no se pueden pulsar', async () => {
+        await abrir({ guardada: { tee: T, bends: [], greenCenter: alNorte(300) }, barras: PAR4 });
+        marcar();
+
+        expect(screen.getByRole('button', { name: 'holeReviews.reopen' })).toBeDisabled();
+        for (const b of screen.getAllByRole('button', { name: 'holeReviews.useThis' })) expect(b).toBeDisabled();
+        for (const b of screen.getAllByRole('button', { name: 'holeReviews.delete' })) expect(b).toBeDisabled();
+      });
+
+      // Guardar, reabrir y borrar no se pueden pulsar mientras se marca, y marcar
+      // no se puede empezar mientras se guarda: nunca están a la vez
+      it('mientras se guarda, un toque en el mapa no cuenta', async () => {
+        await abrir({ barras: PAR4 });
+        casos.guardar.mockReturnValue(new Promise(() => {}));
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+
+        expect(mapa.props.onToque).toBeUndefined();
+      });
+
+      it('Escape mientras se marca cancela el marcado, no cierra', async () => {
+        const onCerrar = vi.fn();
+        await abrir({ barras: PAR4 }, onCerrar);
+        marcar();
+        fireEvent.keyDown(document, { key: 'Escape' });
+
+        expect(onCerrar).not.toHaveBeenCalled();
+        expect(screen.queryByText('holeReviews.tapTee')).toBeNull();
+      });
+
+      it('al empezar a marcar, el foco va a Cancelar; la instrucción se anuncia sin el botón', async () => {
+        await abrir({ barras: PAR4 });
+        marcar();
+
+        expect(screen.getByRole('button', { name: 'holeReviews.cancelMarking' })).toHaveFocus();
+        expect(screen.getByRole('status')).toHaveTextContent(/^holeReviews.tapTee$/);
+      });
+
+      it('«Mi posición» no se desactiva mientras busca: lo dice y queda ocupado', async () => {
+        gps.lectura = { estado: 'buscando', posicion: null, precision: null };
+        await abrir({ barras: PAR4 });
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.myPosition' }));
+
+        const boton = screen.getByRole('button', { name: 'holeReviews.myPosition' });
+        expect(boton).not.toBeDisabled();
+        expect(boton).toHaveAttribute('aria-busy', 'true');
+        expect(screen.getByText('holeReviews.findingPosition')).toBeInTheDocument();
+      });
+
+      it('sin marcar nada, lo marcado es siempre la misma lista vacía', async () => {
+        await abrir({ barras: PAR4 });
+        const antes = mapa.props.marcados;
+        marcar();
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.cancelMarking' }));
+
+        expect(mapa.props.marcados).toBe(antes);
+      });
     });
   });
 });

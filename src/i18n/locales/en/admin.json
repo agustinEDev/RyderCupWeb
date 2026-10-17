@@ -186,7 +186,8 @@
     "greenTooFar": "The tee and the green are more than 750 m apart: tap again",
     "myPosition": "My position",
     "findingPosition": "Finding your position…",
-    "positionDenied": "No location permission"
+    "positionDenied": "No location permission",
+    "tooFarFromCourse": "That point is more than 3 km from the course: tap again"
   },
   "menu": {
     "label": "Panel sections",

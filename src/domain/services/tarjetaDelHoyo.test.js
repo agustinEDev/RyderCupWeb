@@ -59,4 +59,9 @@ describe('tarjetaDelHoyo', () => {
   it('una barra sin par no cuenta para el par', () => {
     expect(tarjetaDelHoyo([barra(null, 300), barra(3, 150)])).toMatchObject({ parMinimo: 3, parMaximo: 3, metrosMaximo: 300 });
   });
+
+  it('dos barras igual de largas con distinto par: el par mayor', () => {
+    expect(tarjetaDelHoyo([barra(4, 450), barra(5, 450)]).parDeLaMasLarga).toBe(5);
+    expect(tarjetaDelHoyo([barra(5, 450), barra(4, 450)]).parDeLaMasLarga).toBe(5);
+  });
 });

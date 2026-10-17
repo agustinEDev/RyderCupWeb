@@ -15,6 +15,8 @@ import {
   salidaGreenFueraDeLimites,
   estaLejosDelCampo,
   MAX_DISTANCIA_AL_CAMPO_M,
+  lineaDePuntos,
+  puntosDeLaLinea,
 } from './hoyoMarcado';
 import { distanciaEnMetros } from './distanciasAlGreen';
 import { rumbo } from './geometriaDelHoyo';
@@ -323,5 +325,13 @@ describe('salidaPorMetros', () => {
   it('sin línea (un punto o nada), nada', () => {
     expect(salidaPorMetros([GREEN], 300)).toEqual([GREEN]);
     expect(salidaPorMetros(null, 300)).toBeNull();
+  });
+});
+
+describe('lineaDePuntos (17 oct)', () => {
+  it('es la inversa de puntosDeLaLinea', () => {
+    const linea = { tee: { lat: 1, lon: 1 }, bends: [{ lat: 2, lon: 2 }, { lat: 3, lon: 3 }], greenCenter: { lat: 4, lon: 4 } };
+    expect(lineaDePuntos(puntosDeLaLinea(linea))).toEqual(linea);
+    expect(lineaDePuntos([linea.tee, linea.greenCenter])).toEqual({ tee: linea.tee, bends: [], greenCenter: linea.greenCenter });
   });
 });

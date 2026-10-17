@@ -185,3 +185,6 @@ export const salidaPorMetros = (linea, metros) => {
 
 /** Los puntos de una línea `{ tee, bends, greenCenter }`, en orden: salida, codos y green. */
 export const puntosDeLaLinea = (linea) => [linea.tee, ...(linea.bends ?? []), linea.greenCenter];
+
+/** La inversa: de los puntos en orden (salida, codos y green) a la línea. */
+export const lineaDePuntos = (puntos) => ({ tee: puntos[0], bends: puntos.slice(1, -1), greenCenter: puntos.at(-1) });

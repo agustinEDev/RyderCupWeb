@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LocateFixed, X } from 'lucide-react';
 import {
@@ -7,7 +7,14 @@ import {
   reopenHoleUseCase,
   saveHoleLineUseCase,
 } from '../../../composition';
-import { conCodosDelPar, longitudDeLaLinea, puntosDeLaLinea, salidaGreenFueraDeLimites } from '../../../domain/services/hoyoMarcado';
+import {
+  conCodosDelPar,
+  estaLejosDelCampo,
+  lineaDePuntos,
+  longitudDeLaLinea,
+  puntosDeLaLinea,
+  salidaGreenFueraDeLimites,
+} from '../../../domain/services/hoyoMarcado';
 import { tarjetaDelHoyo } from '../../../domain/services/tarjetaDelHoyo';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
 import customToast from '../../../utils/toast';
@@ -20,6 +27,8 @@ const MapaDeRevision = lazy(() => import('./MapaDeRevision'));
 const lineaDe = (muestra) => (muestra?.tee ? { tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter } : null);
 
 const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-50';
+// Sin nada tocado, siempre la misma lista: el mapa no repinta por nada
+const SIN_MARCAR = [];
 
 /**
  * Revisar un hoyo (BE #575, 17 oct 2026: una referencia por hoyo). Sobre la
@@ -43,9 +52,16 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const [avisoAlCerrar, setAvisoAlCerrar] = useState(false);
   // «Mi posición» (E14): el GPS solo se pide al tocarlo, y cada toque recentra
   const [centrarEnMi, setCentrarEnMi] = useState(0);
-  const gps = usePosicionGps({ activo: centrarEnMi > 0 });
+  // Para centrar el mapa vale cualquier posición: un ordenador va por Wi-Fi
+  const gps = usePosicionGps({ activo: centrarEnMi > 0, precisionMaxima: Infinity });
   // Marcar desde cero (17 oct): null, o el paso y la salida ya tocada
   const [marcando, setMarcando] = useState(null);
+  // Al empezar a marcar, el foco va a Cancelar: el botón que lo empezó se desactiva
+  const botonDeCancelar = useRef(null);
+  const empezoAMarcar = Boolean(marcando);
+  useEffect(() => {
+    if (empezoAMarcar) botonDeCancelar.current?.focus();
+  }, [empezoAMarcar]);
 
   // `conservarLinea`: tras borrar una muestra, la que se edita no se toca
   const cargar = useCallback(
@@ -108,6 +124,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const barraDeTexto = (barra) =>
     [t(`golfCourses:form.teeColors.${barra.color}`), barra.gender ? t(`holeReviews.genders.${barra.gender}`) : null].filter(Boolean).join(' · ');
   const cerrar = () => {
+    // Escape mientras se marca cancela el marcado, no cierra
+    if (marcando) {
+      setMarcando(null);
+      return;
+    }
     // Con cambios sin guardar, primero se avisa (de un modal se sale siempre,
     // pero no perdiendo lo hecho por un descuido)
     if (editada && !avisoAlCerrar) {
@@ -133,8 +154,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   // La línea de la salida al green con los codos del par de la barra más larga,
   // sobre la recta; sin par, uno (E2, E7, E11)
   const lineaMarcada = (salida, green) => {
-    const puntos = conCodosDelPar([salida, green], tarjeta?.parDeLaMasLarga);
-    return { tee: puntos[0], bends: puntos.slice(1, -1), greenCenter: puntos.at(-1) };
+    return lineaDePuntos(conCodosDelPar([salida, green], tarjeta?.parDeLaMasLarga));
   };
   // Un green imposible (a menos de 40 m o a más de 750 m) no se coloca (E5)
   const fueraDeLimites = (salida, green) => {
@@ -143,6 +163,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     return Boolean(problema);
   };
   const alTocar = (punto) => {
+    // A más de 3 km del campo no se juega: el servidor no lo guardaría (E15)
+    if (ubicacion && estaLejosDelCampo(punto, ubicacion)) {
+      customToast.error(t('holeReviews.tooFarFromCourse'));
+      return;
+    }
     if (marcando.paso === 'green') {
       if (fueraDeLimites(marcando.salida, punto)) return;
       setMarcando(null);
@@ -174,27 +199,28 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
       <div className="relative h-[55dvh] w-full shrink-0 md:h-full md:flex-1">
         {instruccion && (
           // Encima del mapa, que es donde se toca
-          <div role="status" className="absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-2 rounded-lg bg-white/95 p-2 text-sm font-semibold text-gray-900 shadow">
-            <span>{t(instruccion)}</span>
-            <button type="button" onClick={() => setMarcando(null)} className={`${BOTON} bg-gray-100 text-gray-900`}>
+          <div className="absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-2 rounded-lg bg-white/95 p-2 text-sm font-semibold text-gray-900 shadow">
+            <span role="status">{t(instruccion)}</span>
+            <button ref={botonDeCancelar} type="button" onClick={() => setMarcando(null)} className={`${BOTON} shrink-0 bg-gray-100 text-gray-900`}>
               {t('holeReviews.cancelMarking')}
             </button>
           </div>
         )}
         <div className="absolute bottom-2 right-2 z-10 flex flex-col items-end gap-1">
-          {gps.estado === 'denegado' && (
+          {(gps.estado === 'denegado' || gps.estado === 'buscando') && (
             <p role="status" className="rounded bg-white/95 px-2 py-1 text-xs text-gray-900 shadow">
-              {t('holeReviews.positionDenied')}
+              {t(gps.estado === 'denegado' ? 'holeReviews.positionDenied' : 'holeReviews.findingPosition')}
             </p>
           )}
+          {/* Sin desactivarse mientras busca, para no perder el foco: lo dice arriba */}
           <button
             type="button"
-            disabled={gps.estado === 'buscando'}
+            aria-busy={gps.estado === 'buscando'}
             onClick={() => setCentrarEnMi((n) => n + 1)}
             className={`${BOTON} inline-flex items-center gap-1 bg-white text-gray-900 shadow`}
           >
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
-            {t(gps.estado === 'buscando' ? 'holeReviews.findingPosition' : 'holeReviews.myPosition')}
+            {t('holeReviews.myPosition')}
           </button>
         </div>
         {hoyo && (
@@ -205,7 +231,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               linea={linea}
               onLinea={elegirLinea}
               onToque={marcando ? alTocar : undefined}
-              marcados={marcando?.salida ? [marcando.salida] : []}
+              marcados={marcando?.salida ? [marcando.salida] : SIN_MARCAR}
+              bloqueada={Boolean(marcando)}
               centro={ubicacion}
               posicion={gps.posicion}
               centrarEnMi={centrarEnMi}
@@ -265,7 +292,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 {hoyo.guardada && (
                   <button
                     type="button"
-                    disabled={ocupado}
+                    disabled={ocupado || Boolean(marcando)}
                     onClick={() => hacer(() => reopenHoleUseCase.execute(golfCourseId, numeroDeHoyo), 'holeReviews.reopenedOk')}
                     className={`${BOTON} bg-gray-100 text-gray-900`}
                   >
@@ -301,21 +328,21 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                     </p>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {muestra.tee && (
-                        <button type="button" disabled={ocupado} onClick={() => elegirLinea(lineaDe(muestra))} className={`${BOTON} bg-gray-100 text-gray-900`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => elegirLinea(lineaDe(muestra))} className={`${BOTON} bg-gray-100 text-gray-900`}>
                           {t('holeReviews.useThis')}
                         </button>
                       )}
                       {porBorrar === muestra.id ? (
                         <button
                           type="button"
-                          disabled={ocupado}
+                          disabled={ocupado || Boolean(marcando)}
                           onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: true })}
                           className={`${BOTON} bg-red-600 text-white`}
                         >
                           {t('holeReviews.confirmDelete')}
                         </button>
                       ) : (
-                        <button type="button" disabled={ocupado} onClick={() => setPorBorrar(muestra.id)} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => setPorBorrar(muestra.id)} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
                           {t('holeReviews.delete')}
                         </button>
                       )}

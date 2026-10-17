@@ -49,6 +49,10 @@ vi.mock('maplibre-gl', () => {
       this.p = p;
       return this;
     }
+    setDraggable(si) {
+      this.opciones.draggable = si;
+      return this;
+    }
     getLngLat() {
       return { lng: this.p[0], lat: this.p[1] };
     }
@@ -202,6 +206,24 @@ describe('MapaDeRevision', () => {
       expect(mapa.easeTo).toHaveBeenCalledTimes(1);
       rerender(<MapaDeRevision {...props} posicion={G} centrarEnMi={2} />);
       expect(mapa.easeTo).toHaveBeenLastCalledWith(expect.objectContaining({ center: [G.lon, G.lat] }));
+    });
+
+    it('bloqueada (mientras se marca), sus puntos no se arrastran; al acabar, sí', () => {
+      const props = { muestras: [], guardada: null, linea: LINEA, onLinea: () => {} };
+      const { rerender } = render(<MapaDeRevision {...props} bloqueada />);
+      act(() => mapas.at(-1).oyentes.load());
+      expect(vivas().every((m) => m.opciones.draggable === false)).toBe(true);
+
+      rerender(<MapaDeRevision {...props} bloqueada={false} />);
+      expect(vivas().every((m) => m.opciones.draggable === true)).toBe(true);
+    });
+
+    it('E14: si la posición llega antes de que cargue el mapa, se centra al cargar', () => {
+      render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} posicion={T} centrarEnMi={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [T.lon, T.lat] }));
     });
   });
 });
