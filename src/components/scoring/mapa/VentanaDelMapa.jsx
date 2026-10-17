@@ -52,7 +52,7 @@ class SiNoCarga extends Component {
 }
 
 // Un hoyo del que aún no se sabe nada: sin muestra, y recogiendo
-const SIN_MUESTRAS = { primera: null, green: null, recoge: true };
+const SIN_MUESTRAS = { guardada: null, primera: null, green: null, recoge: true };
 const conSalida = (muestra) => Boolean(muestra?.tee);
 const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
 
@@ -62,20 +62,23 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
   const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
 
-  // Lo que se ve, por orden (17 oct, una referencia por hoyo): el hoyo aprobado
-  // con su green; si no, la primera muestra completa del hoyo; si no, el green
+  // Lo que se ve, por orden (17 oct, una referencia por hoyo): la línea que
+  // guardó el admin; si no, el hoyo aprobado con su green; si no, la primera
+  // muestra completa del hoyo; si no, el green
   // de una muestra solo green (y se pide la salida hasta él); si no, la que este
   // jugador dejó en el móvil (completa, o solo su green); si no, lo aprobado que
   // haya (solo la salida) o nada
-  const aprobado = mapaDelCampo?.holes?.[numeroDeHoyo] ?? null;
+  const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
+  const guardada = delHoyo.guardada ?? null;
+  // Con la línea del admin, lo del mapa no se usa
+  const aprobado = guardada ? null : (mapaDelCampo?.holes?.[numeroDeHoyo] ?? null);
   const aprobadoConSalida = (aprobado?.playLine?.length ?? 0) > 0;
   const completo = Boolean(aprobado?.green);
-  const delHoyo = muestras[numeroDeHoyo] ?? SIN_MUESTRAS;
   const mia = pendientes[numeroDeHoyo] ?? null;
   // Mi línea completa que acaba en el green suelto es la que lo completa: va
   // antes que él, o al reabrir no la vería (revisión, 17 oct)
   const miaLoCompleta = conSalida(mia) && mismoPunto(mia.greenCenter, delHoyo.green);
-  const muestra = delHoyo.primera ?? (miaLoCompleta || (!delHoyo.green && conSalida(mia)) ? mia : null);
+  const muestra = guardada ?? delHoyo.primera ?? (miaLoCompleta || (!delHoyo.green && conSalida(mia)) ? mia : null);
   // Con la salida del mapa aprobado, se pide el green desde ella, como siempre:
   // el green suelto no la tapa (revisión, 17 oct)
   const greenSuelto = muestra || aprobadoConSalida ? null : (delHoyo.green ?? (mia && !conSalida(mia) ? mia.greenCenter : null));
@@ -107,7 +110,8 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
       ? `green:${greenSuelto.lat},${greenSuelto.lon}`
       : '';
   const ahora = {
-    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && deCualMuestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
+    // Con los metros: la salida se coloca con ellos al abrir (V2)
+    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${metros ?? 'sin-metros'}-${hoyo ? 'con' : 'sin'}-${!completo && deCualMuestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
     hoyo,
     porMarcar,
     atribucion: usaElMapa ? (mapaDelCampo?.attribution ?? null) : null,
@@ -141,7 +145,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           metros={metros}
           porMarcar={visto.porMarcar}
           // Transparente para el jugador: se envía sin avisar de nada (16 oct)
-          recoge={delHoyo.recoge}
+          recoge={delHoyo.recoge && !guardada}
+          // Mi propia línea (de este móvil) no se mueve a mis metros: ya es mía
+          colocarSalida={!(muestra && muestra === mia)}
           onMuestra={puedeEnviar ? (datos) => enviar(numeroDeHoyo, datos) : null}
           onEmpezar={() => setCongelado((c) => c ?? ahora)}
         />

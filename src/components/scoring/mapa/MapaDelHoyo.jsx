@@ -15,6 +15,7 @@ import {
   estaLejosDelCampo,
   hoyoDeUnaMarca,
   salidaGreenFueraDeLimites,
+  salidaPorMetros,
 } from '../../../domain/services/hoyoMarcado';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
 import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
@@ -188,6 +189,7 @@ const MapaDelHoyo = ({
   recoge = false,
   onMuestra = null,
   onEmpezar = null,
+  colocarSalida = true,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -223,8 +225,22 @@ const MapaDelHoyo = ({
   const marcaTocada = useRef(null);
   const centradoEnGps = useRef(false);
   const movidoPorElJugador = useRef(false);
-  // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto
-  const inicio = useRef({ hoyo, conMapa, centroSinMapa, soloGreen: porMarcar === 'green', metros });
+  // La línea al abrir, con la salida llevada a los metros de mi tarjeta (V2, 17
+  // oct): la línea es una por hoyo, de la barra que sea. La mía (la que marqué
+  // desde este móvil) no se mueve
+  const [lineaInicial] = useState(() => {
+    const deLaReferencia = lineaParaMover(hoyo, par);
+    return colocarSalida ? salidaPorMetros(deLaReferencia, metros) : deLaReferencia;
+  });
+  // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto.
+  // El hoyo, con la salida que se ve: el encuadre la tiene que coger
+  const inicio = useRef({
+    hoyo: lineaInicial && hoyo ? { ...hoyo, playLine: lineaInicial } : hoyo,
+    conMapa,
+    centroSinMapa,
+    soloGreen: porMarcar === 'green',
+    metros,
+  });
 
   // Marcar el hoyo: sin salida, primero se pregunta si estás en ella (17 oct);
   // con salida, se pide el green. «Ahora no» deja medir como siempre
@@ -239,7 +255,7 @@ const MapaDelHoyo = ({
   const pidiendo = fase === 'pidiendo';
   // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió.
   // `green`: el que marcó quien no está en la salida (solo green, sin línea)
-  const [edicion, setEdicion] = useState(() => ({ linea: lineaParaMover(hoyo, par), green: null, cambiada: false, version: 0 }));
+  const [edicion, setEdicion] = useState(() => ({ linea: lineaInicial, green: null, cambiada: false, version: 0 }));
   const [conAyudaDeCodos, setConAyudaDeCodos] = useState(false);
   const linea = edicion.linea;
   // El hoyo tal y como está ahora: con la línea movida y, si el green no se

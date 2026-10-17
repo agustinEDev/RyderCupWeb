@@ -11,7 +11,7 @@
  * codos van según el par (16 oct).
  */
 
-import { distanciaEnMetros } from './distanciasAlGreen';
+import { distanciaEnMetros, distanciaExacta } from './distanciasAlGreen';
 import { radianes, rumbo } from './geometriaDelHoyo';
 
 export const METROS_AL_BORDE_DEL_GREEN = 10;
@@ -61,6 +61,9 @@ export const hoyoDeUnaMarca = (marca) => {
 /** Lo que mide la línea siguiendo sus codos, en metros. */
 export const longitudDeLaLinea = (linea) =>
   linea.slice(1).reduce((total, punto, i) => total + distanciaEnMetros(linea[i], punto), 0);
+
+/** Lo mismo, sin redondear cada tramo: para comparar con otros metros. */
+const longitudExacta = (linea) => linea.slice(1).reduce((total, punto, i) => total + distanciaExacta(linea[i], punto), 0);
 
 /** Si la posición está a más de 3 km del campo; sin una de las dos, no se sabe y no. */
 export const estaLejosDelCampo = (posicion, campo) =>
@@ -153,4 +156,29 @@ export const aCodosDelPar = (lineaEntera, par) => {
 export const circuloAlrededor = (centro, metros, lados = 64) => {
   const anillo = Array.from({ length: lados }, (_, i) => puntoDesde(centro, (360 / lados) * i, metros));
   return [...anillo, anillo[0]];
+};
+
+/**
+ * La línea con la salida del jugador (V2, Agustín, 17 oct): hay una referencia
+ * por hoyo, de la barra que sea, y cada uno la ve desde la suya. Su salida se
+ * lleva sobre el primer tramo lo que va de lo que mide la línea (siguiendo los
+ * codos) a los metros de su tarjeta: hacia delante si la tarjeta es más corta,
+ * hacia atrás (en la misma dirección) si es más larga. No se mueve sin metros,
+ * si la diferencia es más que lo que mide el primer tramo (adelantarla pasaría
+ * del primer codo), ni si deja el green a menos de 40 o más de 750 m en recta.
+ */
+export const salidaPorMetros = (linea, metros) => {
+  if (!Array.isArray(linea) || linea.length < 2 || !Number.isFinite(metros)) return linea;
+  const largo = longitudExacta(linea);
+  // Un punto roto (NaN) no se arrastra a la salida
+  if (!Number.isFinite(largo)) return linea;
+  const diferencia = largo - metros;
+  if (Math.abs(diferencia) < 0.5) return linea;
+  const [salida, siguiente] = linea;
+  const primerTramo = distanciaExacta(salida, siguiente);
+  if (Math.abs(diferencia) >= primerTramo) return linea;
+  // Hacia el primer codo; con la diferencia negativa, hacia atrás
+  const nueva = puntoDesde(salida, rumbo(salida, siguiente), diferencia);
+  if (salidaGreenFueraDeLimites(nueva, linea.at(-1))) return linea;
+  return [nueva, ...linea.slice(1)];
 };

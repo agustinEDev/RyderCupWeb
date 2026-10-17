@@ -8,6 +8,7 @@ import {
   aCodosDelPar,
   codosDelPar,
   conCodosDelPar,
+  salidaPorMetros,
   hoyoDeUnaMarca,
   longitudDeLaLinea,
   puntoDesde,
@@ -256,5 +257,71 @@ describe('estaLejosDelCampo (más de 3 km, como el servidor con las marcas)', ()
   it('sin posición o sin campo, no se sabe: no está lejos', () => {
     expect(estaLejosDelCampo(null, SALIDA)).toBe(false);
     expect(estaLejosDelCampo(SALIDA, null)).toBe(false);
+  });
+});
+
+// V2 (Agustín, 17 oct): una referencia por hoyo; la salida de cada jugador se
+// coloca sobre el primer tramo según los metros de su tarjeta
+describe('salidaPorMetros', () => {
+  const linea = [SALIDA, alNorte(250), GREEN]; // 250 + 50 = 300 m
+
+  it('con la tarjeta más corta que la línea, la salida va hacia delante sobre el primer tramo', () => {
+    const [salida, ...resto] = salidaPorMetros(linea, 270);
+
+    expect(distanciaEnMetros(SALIDA, salida)).toBe(30);
+    expect(resto).toEqual([alNorte(250), GREEN]);
+    expect(longitudDeLaLinea([salida, ...resto])).toBe(270);
+  });
+
+  it('con la tarjeta más larga, hacia atrás, en la misma dirección', () => {
+    const [salida] = salidaPorMetros(linea, 340);
+
+    expect(distanciaEnMetros(SALIDA, salida)).toBe(40);
+    expect(salida.lat).toBeLessThan(SALIDA.lat);
+  });
+
+  it.each([
+    ['sin metros', null],
+    ['metros que no son un número', 'x'],
+    ['los mismos metros', 300],
+  ])('%s: la línea, tal cual', (_caso, metros) => {
+    expect(salidaPorMetros(linea, metros)).toBe(linea);
+  });
+
+  it('si adelantarla pasa del primer codo, no se mueve', () => {
+    expect(salidaPorMetros(linea, 40)).toBe(linea);
+  });
+
+  it('si atrasarla es más que lo que mide el primer tramo, no se mueve (será otro hoyo o la tarjeta mal)', () => {
+    expect(salidaPorMetros(linea, 560)).toBe(linea);
+  });
+
+  it('en un par 3 (recto), adelantarla no deja el green a menos de 40 m', () => {
+    const recta = [SALIDA, GREEN];
+
+    expect(salidaPorMetros(recta, 30)).toBe(recta);
+    expect(distanciaEnMetros(SALIDA, salidaPorMetros(recta, 280)[0])).toBe(20);
+  });
+
+  it.each([[0], [-50]])('con %i metros, no se mueve', (metros) => {
+    expect(salidaPorMetros(linea, metros)).toBe(linea);
+  });
+
+  it('atrasarla no deja el green a más de 750 m', () => {
+    const larga = [SALIDA, alNorte(400), alNorte(720)];
+
+    expect(salidaPorMetros(larga, 770)).toBe(larga);
+    expect(distanciaEnMetros(salidaPorMetros(larga, 740)[0], alNorte(720))).toBe(740);
+  });
+
+  it('una línea con un punto roto no se mueve', () => {
+    const rota = [SALIDA, { lat: Number.NaN, lon: -5.33 }, GREEN];
+
+    expect(salidaPorMetros(rota, 250)).toBe(rota);
+  });
+
+  it('sin línea (un punto o nada), nada', () => {
+    expect(salidaPorMetros([GREEN], 300)).toEqual([GREEN]);
+    expect(salidaPorMetros(null, 300)).toBeNull();
   });
 });
