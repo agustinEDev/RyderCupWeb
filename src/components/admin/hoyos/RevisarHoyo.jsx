@@ -66,6 +66,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     try {
       await accion();
       setCambiado(true);
+      // Guardada (o quitada) la línea, ya no hay cambios que perder, aunque la
+      // recarga de después falle (CodeRabbit, 17 oct)
+      if (!conservarLinea) setEditada(false);
       if (ok) customToast.success(t(ok));
       await cargar({ conservarLinea });
     } catch (error) {

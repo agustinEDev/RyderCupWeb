@@ -220,6 +220,20 @@ describe('RevisarHoyo', () => {
     expect(screen.getByRole('button', { name: 'holeReviews.save' })).toBeDisabled();
   });
 
+  it('R5 (CodeRabbit): guardada la línea, aunque la recarga falle, cerrar no avisa de cambios sin guardar', async () => {
+    const onCerrar = await abrir();
+    act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
+    casos.guardar.mockResolvedValue(undefined);
+    casos.campo.mockRejectedValue(new Error('sin red'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+    await waitFor(() => expect(avisos.success).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'holeReviews.close' })).not.toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
+
+    expect(onCerrar).toHaveBeenCalledWith({ cambiado: true });
+  });
+
   it('R8: cerrar sin cambios', async () => {
     const onCerrar = await abrir();
 
