@@ -225,5 +225,18 @@ describe('MapaDeRevision', () => {
 
       expect(mapa.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [T.lon, T.lat] }));
     });
+
+    it('T7: la línea de OSM, en su color; sin ella, nada', () => {
+      const props = { muestras: [], guardada: null, linea: null, onLinea: () => {} };
+      const { rerender } = render(<MapaDeRevision {...props} osm={[T, C, G]} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.fuentes.osm.data.features[0].geometry.coordinates).toEqual([[T.lon, T.lat], [C.lon, C.lat], [G.lon, G.lat]]);
+      expect(mapa.capas.find((c) => c.id === 'osm').paint['line-color']).toBe('#22c55e');
+      expect(mapa.fitBounds).toHaveBeenCalled();
+      rerender(<MapaDeRevision {...props} osm={null} />);
+      expect(mapa.fuentes.osm.data.features).toEqual([]);
+    });
   });
 });

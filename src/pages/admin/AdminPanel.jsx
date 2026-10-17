@@ -15,6 +15,8 @@ import AdminEditCompetitionModal from '../../components/admin/AdminEditCompetiti
 import GolfCourses from './GolfCourses';
 import PendingGolfCourses from './PendingGolfCourses';
 import HoleReviews from './HoleReviews';
+import TodosLosCampos from '../../components/admin/hoyos/TodosLosCampos';
+import PestanasDeSeccion from '../../components/admin/PestanasDeSeccion';
 import {
   getAdminStatsUseCase,
   listAdminUsersUseCase,
@@ -61,9 +63,18 @@ const SECCIONES = [
   { ruta: 'hoyos', id: 'holes', label: 'common:screens.adminHoles', icon: MapPin },
 ];
 
-// Las dos pestañas de campos de golf; la de solicitudes va en la URL
-// (`?ver=solicitudes`) para poder enlazarla y que sobreviva a recargar
-const PESTAÑAS_DE_CAMPOS = ['approved', 'requests'];
+// Las pestañas de las secciones que las tienen; todas menos la primera llevan
+// su `ver` en la URL, para enlazarlas y que sobrevivan a recargar (17 oct)
+const PESTAÑAS = {
+  golfCourses: [
+    { id: 'approved', ver: null, label: 'golfTabs.approved' },
+    { id: 'requests', ver: 'solicitudes', label: 'golfTabs.requests' },
+  ],
+  holes: [
+    { id: 'pending', ver: null, label: 'holeTabs.pending' },
+    { id: 'allCourses', ver: 'campos', label: 'holeTabs.allCourses' },
+  ],
+};
 
 /**
  * AdminPanel Page
@@ -80,9 +91,13 @@ const AdminPanel = () => {
   // Sin sección (`/admin`), el ordenador enseña el resumen junto al menú
   const activeTab = abierta?.id ?? 'overview';
   const [parametros, setParametros] = useSearchParams();
-  const pestañaDeCampos = parametros.get('ver') === 'solicitudes' ? 'requests' : 'approved';
-  const elegirPestañaDeCampos = (pestaña) =>
-    setParametros(pestaña === 'requests' ? { ver: 'solicitudes' } : {}, { replace: true });
+  const deLaSeccion = PESTAÑAS[activeTab] ?? [];
+  const pestañaAbierta = (deLaSeccion.find((p) => p.ver === parametros.get('ver')) ?? deLaSeccion[0])?.id;
+  const pestanasDe = (id) => PESTAÑAS[id].map((p) => ({ id: p.id, label: t(p.label) }));
+  const elegirPestaña = (id) => {
+    const { ver } = deLaSeccion.find((p) => p.id === id);
+    setParametros(ver ? { ver } : {}, { replace: true });
+  };
 
   // Overview
   const [stats, setStats] = useState(null);
@@ -259,17 +274,6 @@ const AdminPanel = () => {
       setIsTransitioning(false);
       setCancelingCompetition(null);
     }
-  };
-
-  // Las flechas mueven entre las dos pestañas, como pide el patrón de pestañas
-  const alPulsarEnLasPestañas = (evento) => {
-    if (evento.key !== 'ArrowRight' && evento.key !== 'ArrowLeft') return;
-    evento.preventDefault();
-    const paso = evento.key === 'ArrowRight' ? 1 : -1;
-    const actual = PESTAÑAS_DE_CAMPOS.indexOf(pestañaDeCampos);
-    const siguiente = PESTAÑAS_DE_CAMPOS[(actual + paso + PESTAÑAS_DE_CAMPOS.length) % PESTAÑAS_DE_CAMPOS.length];
-    elegirPestañaDeCampos(siguiente);
-    globalThis.document.getElementById(`pestana-campos-${siguiente}`)?.focus();
   };
 
   const handleTransition = (competition, action) => {
@@ -569,33 +573,15 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'golfCourses' && (
-                  <>
-                    <div role="tablist" className="mb-4 flex border-b border-gray-200">
-                      {PESTAÑAS_DE_CAMPOS.map((pestaña) => (
-                        <button
-                          key={pestaña}
-                          id={`pestana-campos-${pestaña}`}
-                          type="button"
-                          role="tab"
-                          aria-controls="panel-campos"
-                          aria-selected={pestañaDeCampos === pestaña}
-                          tabIndex={pestañaDeCampos === pestaña ? 0 : -1}
-                          onClick={() => elegirPestañaDeCampos(pestaña)}
-                          onKeyDown={alPulsarEnLasPestañas}
-                          className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-medium ${
-                            pestañaDeCampos === pestaña ? 'border-primary text-primary' : 'border-transparent text-gray-500'
-                          }`}
-                        >
-                          {t(`golfTabs.${pestaña}`)}
-                        </button>
-                      ))}
-                    </div>
-                    <div id="panel-campos" role="tabpanel" aria-labelledby={`pestana-campos-${pestañaDeCampos}`}>
-                      {pestañaDeCampos === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={loadStats} />}
-                    </div>
-                  </>
+                  <PestanasDeSeccion nombre="campos" pestanas={pestanasDe('golfCourses')} actual={pestañaAbierta} onElegir={elegirPestaña}>
+                    {pestañaAbierta === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={loadStats} />}
+                  </PestanasDeSeccion>
                 )}
-                {activeTab === 'holes' && <HoleReviews />}
+                {activeTab === 'holes' && (
+                  <PestanasDeSeccion nombre="hoyos" pestanas={pestanasDe('holes')} actual={pestañaAbierta} onElegir={elegirPestaña}>
+                    {pestañaAbierta === 'pending' ? <HoleReviews /> : <TodosLosCampos />}
+                  </PestanasDeSeccion>
+                )}
               </div>
             </div>
           </div>

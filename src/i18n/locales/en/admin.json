@@ -150,7 +150,7 @@
     "save": "Save line",
     "reopen": "Reopen hole",
     "savedOk": "Hole {{numero}} saved",
-    "reopenedOk": "Hole reopened",
+    "reopenedOk": "Hole {{numero}} reopened",
     "deletedOk": "Sample deleted",
     "invalidLine": "The line is not valid: at most two bends, the green 40-750 m from the tee and no point more than 3 km from the course.",
     "actionError": "It could not be done. Try again.",
@@ -198,5 +198,18 @@
   "golfTabs": {
     "approved": "Approved",
     "requests": "Requests"
+  },
+  "allCourses": {
+    "intro": "Search for a course to see its 18 holes: fix the ones with a line or mark them from scratch.",
+    "hole": "Hole {{numero}}",
+    "saved": "Saved",
+    "osm": "OpenStreetMap",
+    "empty": "No data",
+    "changeCourse": "Change course",
+    "error": "The course could not be loaded."
+  },
+  "holeTabs": {
+    "pending": "Pending",
+    "allCourses": "All courses"
   }
 }
