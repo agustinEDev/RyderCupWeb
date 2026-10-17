@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
+import { MemoryRouter, Routes, Route, useLocation, useNavigate } from 'react-router';
 
 /**
  * «Todos los campos» de la sección Hoyos (17 oct, entrega 4). Casos T2–T9
@@ -29,6 +29,8 @@ vi.mock('./RevisarHoyo', () => ({
 }));
 const casos = vi.hoisted(() => ({ campo: vi.fn() }));
 vi.mock('../../../composition', () => ({ getHoleReviewUseCase: { execute: casos.campo } }));
+const avisos = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('../../../utils/toast', () => ({ default: avisos }));
 
 const { default: TodosLosCampos } = await import('./TodosLosCampos');
 
@@ -43,13 +45,20 @@ const CAMPO = {
     hoyo(1, { guardada: LINEA, osm: { puntos: [T, T], green: T }, muestras: [{ id: 's' }] }),
     hoyo(2, { osm: { puntos: [T, T], green: T }, muestras: [{ id: 's' }] }),
     hoyo(3, { muestras: [{ id: 's1' }, { id: 's2' }] }),
-    ...Array.from({ length: 15 }, (_, i) => hoyo(i + 4)),
+    hoyo(4, { osm: { puntos: [T, T], green: null }, muestras: [{ id: 's3' }] }),
+    ...Array.from({ length: 14 }, (_, i) => hoyo(i + 5)),
   ],
 };
 
 const DondeEstoy = () => {
   const { pathname, search } = useLocation();
-  return <p data-testid="ruta">{pathname + search}</p>;
+  const navigate = useNavigate();
+  return (
+    <>
+      <p data-testid="ruta">{pathname + search}</p>
+      <button type="button" onClick={() => navigate(-1)}>atrás</button>
+    </>
+  );
 };
 const abrir = (ruta = '/admin/hoyos?ver=campos') =>
   render(
@@ -94,8 +103,9 @@ describe('TodosLosCampos', () => {
       'allCourses.hole {"numero":1}allCourses.saved',
       'allCourses.hole {"numero":2}allCourses.osm',
       'allCourses.hole {"numero":3}holeReviews.samples {"count":2}',
-      'allCourses.hole {"numero":4}allCourses.empty',
+      'allCourses.hole {"numero":4}allCourses.osmWithoutGreen',
     ]);
+    expect(filas[4]).toHaveTextContent('allCourses.empty');
     for (const fila of filas) expect(fila).toHaveClass('w-full');
   });
 
@@ -154,5 +164,30 @@ describe('TodosLosCampos', () => {
     await act(async () => primera(CAMPO));
 
     expect(hoyo2()).toHaveTextContent('allCourses.saved');
+  });
+  it('con un hoyo abierto, «atrás» al buscador y otro campo: no reaparece el hoyo del anterior', async () => {
+    abrir();
+    fireEvent.click(screen.getByRole('button', { name: 'elegir campo' }));
+    fireEvent.click(await screen.findByRole('button', { name: /allCourses.hole {"numero":2}/ }));
+    expect(screen.getByTestId('revisar-hoyo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'atrás' }));
+    expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos\?ver=campos$/);
+    expect(screen.queryByTestId('revisar-hoyo')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'elegir campo' }));
+    await screen.findByRole('region', { name: 'Alcanada' });
+
+    expect(screen.queryByTestId('revisar-hoyo')).toBeNull();
+  });
+
+  it('si la recarga tras un cambio falla, la lista se queda y se avisa', async () => {
+    abrir('/admin/hoyos?ver=campos&campo=gc-1');
+    fireEvent.click(await screen.findByRole('button', { name: /allCourses.hole {"numero":2}/ }));
+    casos.campo.mockRejectedValue(new Error('sin red'));
+    await act(async () => revision.props.onCerrar({ cambiado: true }));
+
+    expect(screen.getByRole('region', { name: 'Alcanada' })).toBeInTheDocument();
+    expect(avisos.error).toHaveBeenCalledWith('allCourses.reloadError');
+    expect(screen.queryByText('allCourses.error')).toBeNull();
   });
 });

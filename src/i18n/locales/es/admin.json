@@ -206,7 +206,9 @@
     "osm": "OpenStreetMap",
     "empty": "Sin datos",
     "changeCourse": "Cambiar de campo",
-    "error": "No se ha podido cargar el campo."
+    "error": "No se ha podido cargar el campo.",
+    "osmWithoutGreen": "OpenStreetMap · sin green",
+    "reloadError": "No se ha podido recargar el campo."
   },
   "holeTabs": {
     "pending": "Pendientes",

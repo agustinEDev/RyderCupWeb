@@ -6,11 +6,12 @@
  * tabulador y las flechas para moverse.
  *
  * @param {string} nombre - prefijo de los ids (`pestana-<nombre>-<id>`, `panel-<nombre>`)
+ * @param {string} etiqueta - el nombre de las pestañas para los lectores (el de la sección)
  * @param {{id: string, label: string}[]} pestanas
  * @param {string} actual - el id de la abierta
  * @param {(id: string) => void} onElegir
  */
-const PestanasDeSeccion = ({ nombre, pestanas, actual, onElegir, children }) => {
+const PestanasDeSeccion = ({ nombre, etiqueta, pestanas, actual, onElegir, children }) => {
   const idDe = (id) => `pestana-${nombre}-${id}`;
   const alPulsar = (evento) => {
     if (evento.key !== 'ArrowRight' && evento.key !== 'ArrowLeft') return;
@@ -23,7 +24,7 @@ const PestanasDeSeccion = ({ nombre, pestanas, actual, onElegir, children }) => 
   };
   return (
     <>
-      <div role="tablist" className="mb-4 flex border-b border-gray-200">
+      <div role="tablist" aria-label={etiqueta} className="mb-4 flex border-b border-gray-200">
         {pestanas.map(({ id, label }) => (
           <button
             key={id}

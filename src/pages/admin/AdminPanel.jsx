@@ -573,12 +573,12 @@ const AdminPanel = () => {
                 )}
 
                 {activeTab === 'golfCourses' && (
-                  <PestanasDeSeccion nombre="campos" pestanas={pestanasDe('golfCourses')} actual={pestañaAbierta} onElegir={elegirPestaña}>
+                  <PestanasDeSeccion nombre="campos" etiqueta={t(abierta.label)} pestanas={pestanasDe('golfCourses')} actual={pestañaAbierta} onElegir={elegirPestaña}>
                     {pestañaAbierta === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={loadStats} />}
                   </PestanasDeSeccion>
                 )}
                 {activeTab === 'holes' && (
-                  <PestanasDeSeccion nombre="hoyos" pestanas={pestanasDe('holes')} actual={pestañaAbierta} onElegir={elegirPestaña}>
+                  <PestanasDeSeccion nombre="hoyos" etiqueta={t(abierta.label)} pestanas={pestanasDe('holes')} actual={pestañaAbierta} onElegir={elegirPestaña}>
                     {pestañaAbierta === 'pending' ? <HoleReviews /> : <TodosLosCampos />}
                   </PestanasDeSeccion>
                 )}

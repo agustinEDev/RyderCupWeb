@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 import { getHoleReviewUseCase } from '../../../composition';
+import customToast from '../../../utils/toast';
 import { useAuth } from '../../../hooks/useAuth';
 import GolfCourseSearchBox from '../../golf_course/GolfCourseSearchBox';
 import BlockLoader from '../../ui/BlockLoader';
@@ -12,7 +13,8 @@ import RevisarHoyo from './RevisarHoyo';
 // la línea de OSM aprobada, las muestras o nada
 const estadoDe = (hoyo, t) => {
   if (hoyo.guardada) return t('allCourses.saved');
-  if (hoyo.osm) return t('allCourses.osm');
+  // Sin green, la de OSM se ve pero no es de la que se parte (17 oct)
+  if (hoyo.osm) return t(hoyo.osm.green ? 'allCourses.osm' : 'allCourses.osmWithoutGreen');
   if (hoyo.muestras.length) return t('holeReviews.samples', { count: hoyo.muestras.length });
   return t('allCourses.empty');
 };
@@ -32,9 +34,23 @@ const TodosLosCampos = () => {
   const idDelCampo = parametros.get('campo');
   const [estado, setEstado] = useState({ id: null, campo: null, fallo: false });
   const [abierto, setAbierto] = useState(null);
+  // Otro campo (o ninguno, con «atrás»): la revisión del anterior no vuelve a
+  // salir encima. Se ajusta al pintar, no en un efecto
+  const [campoAnterior, setCampoAnterior] = useState(idDelCampo);
+  if (idDelCampo !== campoAnterior) {
+    setCampoAnterior(idDelCampo);
+    setAbierto(null);
+  }
   // Si se piden dos seguidos, solo cuenta el último (como en los pendientes)
   const ultimaPeticion = useRef(0);
 
+  // El id del campo que se ve, para saber si un fallo es de una recarga
+  const aLaVista = useRef(null);
+  useEffect(() => {
+    aLaVista.current = estado.campo ? estado.id : null;
+  }, [estado]);
+
+  // Si falla con el campo ya a la vista (una recarga), se queda y se avisa
   const pedir = async (id) => {
     ultimaPeticion.current += 1;
     const esta = ultimaPeticion.current;
@@ -42,7 +58,9 @@ const TodosLosCampos = () => {
       const campo = await getHoleReviewUseCase.execute(id);
       if (esta === ultimaPeticion.current) setEstado({ id, campo, fallo: false });
     } catch {
-      if (esta === ultimaPeticion.current) setEstado({ id, campo: null, fallo: true });
+      if (esta !== ultimaPeticion.current) return;
+      if (aLaVista.current === id) customToast.error(t('allCourses.reloadError'));
+      else setEstado({ id, campo: null, fallo: true });
     }
   };
   const pedirElCampo = useRef(pedir);

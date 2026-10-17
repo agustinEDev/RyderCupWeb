@@ -58,7 +58,10 @@ const STATS = {
   totalGolfCoursesPending: 2,
 };
 
-const DondeEstoy = () => <p data-testid="ruta">{useLocation().pathname}</p>;
+const DondeEstoy = () => {
+  const { pathname, search } = useLocation();
+  return <p data-testid="ruta">{pathname + search}</p>;
+};
 
 const abrir = (ruta) =>
   render(
@@ -196,7 +199,11 @@ describe('AdminPanel · secciones', () => {
     fireEvent.click(pestañas[1]);
     expect(screen.getByTestId('todos-los-campos')).toBeInTheDocument();
     expect(screen.queryByTestId('hole-reviews')).not.toBeInTheDocument();
-    expect(screen.getByTestId('ruta')).toHaveTextContent('/admin/hoyos');
+    expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos\?ver=campos$/);
+    fireEvent.click(pestañas[0]);
+    expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos$/);
+    // Las pestañas tienen nombre: el de su sección
+    expect(screen.getByRole('tablist')).toHaveAccessibleName('common:screens.adminHoles');
   });
 
   it('T6: todos los campos tiene su URL y se abre directo', async () => {

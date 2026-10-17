@@ -206,7 +206,9 @@
     "osm": "OpenStreetMap",
     "empty": "No data",
     "changeCourse": "Change course",
-    "error": "The course could not be loaded."
+    "error": "The course could not be loaded.",
+    "osmWithoutGreen": "OpenStreetMap · no green",
+    "reloadError": "The course could not be reloaded."
   },
   "holeTabs": {
     "pending": "Pending",
