@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 
 /**
  * Los dos modales de los campos pendientes (detalle y rechazo) pasaron a
@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
  * —antes no— y pulsar fuera sigue sin cerrarlos.
  */
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
+  useTranslation: () => ({ t: (clave, o) => (o ? `${clave} ${JSON.stringify(o)}` : clave), i18n: { language: 'es' } }),
 }));
 vi.mock('framer-motion', () => ({
   motion: {
@@ -56,7 +56,10 @@ vi.mock('../../composition', () => ({
         totalPar: 72,
         originalGolfCourseId: null,
         tees: [],
-        holes: [],
+        holes: [
+          { holeNumber: 1, par: 4, strokeIndex: 7 },
+          { holeNumber: 2, par: 3, strokeIndex: 15 },
+        ],
       },
     ]),
   },
@@ -102,6 +105,20 @@ describe('PendingGolfCourses · sus modales', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('F7: en el móvil los hoyos del detalle van en filas; en el ordenador, la tabla', async () => {
+    await abrirPagina();
+    fireEvent.click(await screen.findByText('ver Campo Pendiente'));
+    const filas = screen.getByRole('list', { name: 'form.holes' });
+
+    expect(filas).toHaveClass('md:hidden');
+    expect(screen.getByRole('table').parentElement).toHaveClass('hidden', 'md:block');
+    expect(within(filas).getAllByRole('listitem').map((f) => f.textContent)).toEqual([
+      'form.holeRow {"hole":1,"par":4,"strokeIndex":7}',
+      'form.holeRow {"hole":2,"par":3,"strokeIndex":15}',
+      'form.totalPar 72',
+    ]);
   });
 
   it('el rechazo se anuncia con su título y Escape lo descarta sin rechazar', async () => {

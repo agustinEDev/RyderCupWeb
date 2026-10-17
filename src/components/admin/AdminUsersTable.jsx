@@ -1,12 +1,21 @@
-import { Edit, UserX, UserCheck, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Edit, UserX, UserCheck, Trash2, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import FichaDeFila from './FichaDeFila';
+
+const PILDORA = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border';
+const PILDORA_ADMIN = `${PILDORA} bg-amber-100 text-amber-800 border-amber-200`;
+const PILDORA_INACTIVA = `${PILDORA} bg-gray-200 text-gray-700 border-gray-300`;
 
 /**
  * AdminUsersTable Component
  * Table of users for the admin panel with role/status pills and row actions.
+ * En el móvil, filas a todo el ancho y una ficha por usuario con sus datos y
+ * sus acciones (17 oct 2026, entrega 5): la tabla pedía scroll lateral.
  */
 const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
   const { t, i18n } = useTranslation('admin');
+  const [abierto, setAbierto] = useState(null);
 
   if (!users || users.length === 0) {
     return (
@@ -18,9 +27,66 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
 
   const initials = (user) =>
     `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
+  const fecha = (valor) => new Date(valor).toLocaleDateString(i18n.language);
+  // Se cierra la ficha y se hace lo de siempre: lo que abre cada acción es otro modal
+  const desdeLaFicha = (accion) => () => {
+    setAbierto(null);
+    accion(abierto);
+  };
 
   return (
-    <div className="overflow-x-auto">
+    <>
+    <ul aria-label={t('users.listLabel')} className="md:hidden divide-y divide-gray-100">
+      {users.map((user) => (
+        <li key={user.id}>
+          <button
+            type="button"
+            onClick={() => setAbierto(user)}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-gray-900 truncate">
+                {user.firstName} {user.lastName}
+                {user.alias && <span className="ml-2 font-normal text-gray-500">«{user.alias}»</span>}
+              </p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+            {user.isAdmin && <span className={PILDORA_ADMIN}>{t('users.roleAdmin')}</span>}
+            {!user.isActive && <span className={PILDORA_INACTIVA}>{t('users.statusInactive')}</span>}
+            <ChevronRight aria-hidden="true" className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+        </li>
+      ))}
+    </ul>
+    {abierto && (
+      <FichaDeFila
+        titulo={`${abierto.firstName} ${abierto.lastName}${abierto.alias ? ` «${abierto.alias}»` : ''}`}
+        subtitulo={abierto.email}
+        datos={[
+          { etiqueta: t('users.columnHandicap'), valor: abierto.handicap ?? '—' },
+          { etiqueta: t('users.columnRole'), valor: abierto.isAdmin ? t('users.roleAdmin') : t('users.rolePlayer') },
+          { etiqueta: t('users.columnStatus'), valor: abierto.isActive ? t('users.statusActive') : t('users.statusInactive') },
+          { etiqueta: t('users.filterVerified'), valor: abierto.emailVerified ? t('users.filterVerifiedYes') : t('users.filterVerifiedNo') },
+          { etiqueta: t('users.columnJoined'), valor: abierto.createdAt ? fecha(abierto.createdAt) : '—' },
+          { etiqueta: t('users.columnLastLogin'), valor: abierto.lastLoginAt ? fecha(abierto.lastLoginAt) : t('users.lastLoginNever') },
+        ]}
+        onClose={() => setAbierto(null)}
+      >
+        <button type="button" onClick={desdeLaFicha(onEdit)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <Edit aria-hidden="true" className="w-4 h-4" />
+          {t('users.editTooltip')}
+        </button>
+        <button type="button" onClick={desdeLaFicha(onToggleActive)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-50">
+          {abierto.isActive ? <UserX aria-hidden="true" className="w-4 h-4" /> : <UserCheck aria-hidden="true" className="w-4 h-4" />}
+          {abierto.isActive ? t('users.deactivateTooltip') : t('users.reactivateTooltip')}
+        </button>
+        <button type="button" onClick={desdeLaFicha(onManageDelete)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
+          <Trash2 aria-hidden="true" className="w-4 h-4" />
+          {t('users.deleteTooltip')}
+        </button>
+      </FichaDeFila>
+    )}
+    <div className="hidden md:block overflow-x-auto">
       <table className="w-full text-sm min-w-[720px]">
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr>
@@ -58,7 +124,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
               <td className="py-3 px-4 text-gray-700">{user.handicap ?? '—'}</td>
               <td className="py-3 px-4">
                 {user.isAdmin ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                  <span className={PILDORA_ADMIN}>
                     {t('users.roleAdmin')}
                   </span>
                 ) : (
@@ -73,16 +139,16 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
                     {t('users.statusActive')}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700 border border-gray-300">
+                  <span className={PILDORA_INACTIVA}>
                     {t('users.statusInactive')}
                   </span>
                 )}
               </td>
               <td className="py-3 px-4 text-gray-500">
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString(i18n.language) : '—'}
+                {user.createdAt ? fecha(user.createdAt) : '—'}
               </td>
               <td className="py-3 px-4 text-gray-500">
-                {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString(i18n.language) : t('users.lastLoginNever')}
+                {user.lastLoginAt ? fecha(user.lastLoginAt) : t('users.lastLoginNever')}
               </td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
@@ -121,6 +187,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
         </tbody>
       </table>
     </div>
+    </>
   );
 };
 

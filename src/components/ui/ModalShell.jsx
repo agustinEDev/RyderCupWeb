@@ -43,6 +43,9 @@ import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
  *   valor por defecto es el de siempre, así que ningún diálogo cambia; lo pasa
  *   quien enseña algo que no cabe en una columna estrecha, como la tarjeta de
  *   18 hoyos del detalle de un campo
+ * @param {boolean} [props.hojaInferior=false] En el móvil, la caja va pegada
+ *   abajo, como una hoja que sube; en el ordenador, al centro como siempre. Para
+ *   las fichas de las filas del panel de admin (17 oct 2026)
  * @param {string} [props.boxClassName] La caja entera, en vez de la de siempre.
  *   Para los modales que traen la suya —con cabecera de borde, animada o sin
  *   relleno— y pasaron a este armazón sin cambiar de aspecto (4 oct 2026). Si se
@@ -77,6 +80,7 @@ const ModalShell = ({
   busy = false,
   maxWidthClass = 'max-w-md',
   scrollableBackdrop = false,
+  hojaInferior = false,
   boxClassName,
   children,
 }) => {
@@ -200,7 +204,7 @@ const ModalShell = ({
     <div
       data-testid={testId}
       className={`fixed inset-0 z-50 flex justify-center bg-black/50 ${
-        scrollableBackdrop ? 'items-start overflow-y-auto py-8' : 'items-center'
+        scrollableBackdrop ? 'items-start overflow-y-auto py-8' : hojaInferior ? 'items-end md:items-center' : 'items-center'
       }`}
       role="dialog"
       aria-modal="true"

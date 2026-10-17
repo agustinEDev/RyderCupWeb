@@ -64,7 +64,8 @@
       "PINK": "Pink",
       "GOLD": "Gold",
       "OTHER": "Other"
-    }
+    },
+    "holeRow": "Hole {{hole}} · Par {{par}} · Stroke index {{strokeIndex}}"
   },
   "table": {
     "name": "Name",

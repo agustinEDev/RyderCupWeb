@@ -125,6 +125,9 @@ const competitionsResponse = [
   },
 ];
 
+// En la tabla del ordenador: en el móvil el mismo nombre sale también en su fila
+const enLaTabla = async (texto) => within(await screen.findByRole('table')).findByText(texto);
+
 describe('AdminPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -150,7 +153,7 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
 
     await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalled());
-    expect(await screen.findByText('Agus Estevez')).toBeInTheDocument();
+    expect(await enLaTabla('Agus Estevez')).toBeInTheDocument();
   });
 
   it('renders the embedded GolfCourses tab', async () => {
@@ -177,7 +180,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    await screen.findByText('Agus Estevez');
+    await enLaTabla('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
     fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
@@ -190,7 +193,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    await screen.findByText('Agus Estevez');
+    await enLaTabla('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
     fireEvent.click(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' }));
@@ -203,7 +206,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    await screen.findByText('Agus Estevez');
+    await enLaTabla('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
     fireEvent.click(screen.getByRole('radio', { name: /manageModal.deleteOption/ }));
@@ -224,7 +227,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    await screen.findByText('Agus Estevez');
+    await enLaTabla('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
     fireEvent.click(screen.getByRole('radio', { name: /manageModal.deleteOption/ }));
@@ -235,7 +238,7 @@ describe('AdminPanel', () => {
 
     expect(await screen.findByText('manageModal.deleteBlockedTitle')).toBeInTheDocument();
     // The user is still present in the table — nothing was deleted
-    expect(screen.getByText('Agus Estevez')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Agus Estevez')).toBeInTheDocument();
   });
 
   it('loads and renders the competitions table when switching to the Competitions tab', async () => {
@@ -245,8 +248,8 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
 
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
-    expect(await screen.findByText('Ryder Cup Local')).toBeInTheDocument();
-    expect(screen.getByText('Stuck Tournament')).toBeInTheDocument();
+    expect(await enLaTabla('Ryder Cup Local')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Stuck Tournament')).toBeInTheDocument();
   });
 
   it('only allows editing DRAFT competitions and saves via adminUpdateCompetitionUseCase', async () => {
@@ -254,7 +257,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
-    await screen.findByText('Ryder Cup Local');
+    await enLaTabla('Ryder Cup Local');
 
     const editButtons = screen.getAllByRole('button', { name: 'competitions.editTooltip' });
     expect(editButtons).toHaveLength(1); // only the DRAFT competition has an enabled edit button
@@ -270,7 +273,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
-    await screen.findByText('Ryder Cup Local');
+    await enLaTabla('Ryder Cup Local');
 
     fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
 
@@ -293,7 +296,7 @@ describe('AdminPanel', () => {
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
 
     // 21 fetched (limit 20 + 1) means there's a next page; only 20 are shown.
-    expect(screen.getByText('Competition 19')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Competition 19')).toBeInTheDocument();
     expect(screen.queryByText('Competition 20')).not.toBeInTheDocument();
 
     const nextButton = screen.getByRole('button', { name: 'competitions.next' });
@@ -315,7 +318,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
-    await screen.findByText('Ryder Cup Local');
+    await enLaTabla('Ryder Cup Local');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
     expect(mockCancelCompetition).not.toHaveBeenCalled();
@@ -331,7 +334,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
-    await screen.findByText('Ryder Cup Local');
+    await enLaTabla('Ryder Cup Local');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
 
@@ -352,7 +355,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
-    await screen.findByText('Agus Estevez');
+    await enLaTabla('Agus Estevez');
     fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
     expect(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' })).toBeInTheDocument();
 
