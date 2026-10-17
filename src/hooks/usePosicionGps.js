@@ -11,11 +11,13 @@ const PERMISO_DENEGADO = 1;
  * La pide el mapa del hoyo al abrirse y la deja de seguir al cerrarse (batería).
  *
  * @returns {{ estado: 'inactivo'|'buscando'|'listo'|'denegado'|'no-disponible',
- *             posicion: {lat:number, lon:number}|null }}
+ *             posicion: {lat:number, lon:number}|null, precision: number|null }}
+ *   `precision`: el error de la posición, en metros (17 oct: marcar la salida y
+ *   medir desde ti piden 20 m o menos)
  */
 export function usePosicionGps({ activo }) {
   const geolocation = globalThis.navigator?.geolocation;
-  const [lectura, setLectura] = useState({ estado: 'buscando', posicion: null });
+  const [lectura, setLectura] = useState({ estado: 'buscando', posicion: null, precision: null });
 
   useEffect(() => {
     if (!activo || !geolocation) return undefined;
@@ -28,8 +30,8 @@ export function usePosicionGps({ activo }) {
         const posicion = { lat: coords.latitude, lon: coords.longitude };
         setLectura(
           coords.accuracy <= PRECISION_MAXIMA_M && esPosicionValida(posicion)
-            ? { estado: 'listo', posicion }
-            : { estado: 'buscando', posicion: null }
+            ? { estado: 'listo', posicion, precision: coords.accuracy }
+            : { estado: 'buscando', posicion: null, precision: null }
         );
       },
       (error) => {
@@ -37,7 +39,7 @@ export function usePosicionGps({ activo }) {
           // Sin insistir: el jugador lo cambia en su navegador si quiere
           denegado = true;
           if (id !== null) geolocation.clearWatch(id);
-          setLectura({ estado: 'denegado', posicion: null });
+          setLectura({ estado: 'denegado', posicion: null, precision: null });
         }
         // Sin señal o tiempo agotado: se sigue buscando
       },
@@ -47,11 +49,11 @@ export function usePosicionGps({ activo }) {
     return () => {
       geolocation.clearWatch(id);
       // Al volver a activarse, nada de la posición de antes
-      setLectura({ estado: 'buscando', posicion: null });
+      setLectura({ estado: 'buscando', posicion: null, precision: null });
     };
   }, [activo, geolocation]);
 
-  if (!activo) return { estado: 'inactivo', posicion: null };
-  if (!geolocation) return { estado: 'no-disponible', posicion: null };
+  if (!activo) return { estado: 'inactivo', posicion: null, precision: null };
+  if (!geolocation) return { estado: 'no-disponible', posicion: null, precision: null };
   return lectura;
 }

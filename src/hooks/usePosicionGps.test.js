@@ -44,6 +44,18 @@ describe('usePosicionGps', () => {
     expect(result.current.posicion).toEqual({ lat: 36.28, lon: -5.33 });
   });
 
+  // Agustín, 17 oct: para marcar la salida y medir desde ti, el error en metros
+  it('G6: con la posición, su error en metros; sin posición, ninguno', () => {
+    const { result } = renderHook(() => usePosicionGps({ activo: true }));
+    expect(result.current.precision).toBeNull();
+
+    act(() => gps.exito(posicion(36.28, -5.33, 12)));
+    expect(result.current.precision).toBe(12);
+
+    act(() => gps.exito(posicion(36.28, -5.33, 45)));
+    expect(result.current.precision).toBeNull();
+  });
+
   it('G2: al salir de la anotación deja de seguirla', () => {
     const { unmount } = renderHook(() => usePosicionGps({ activo: true }));
 
@@ -92,7 +104,7 @@ describe('usePosicionGps', () => {
     rerender({ activo: false });
     rerender({ activo: true });
 
-    expect(result.current).toEqual({ estado: 'buscando', posicion: null });
+    expect(result.current).toEqual({ estado: 'buscando', posicion: null, precision: null });
   });
 
   it('G4: una lectura con coordenadas rotas (NaN) se descarta', () => {
@@ -100,7 +112,7 @@ describe('usePosicionGps', () => {
 
     act(() => gps.exito(posicion(Number.NaN, -5.33, 5)));
 
-    expect(result.current).toEqual({ estado: 'buscando', posicion: null });
+    expect(result.current).toEqual({ estado: 'buscando', posicion: null, precision: null });
   });
 
   it('G5: un permiso denegado al instante (dentro de la propia llamada) no rompe la pantalla', () => {

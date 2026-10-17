@@ -5,7 +5,7 @@ import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
 import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
-import { distanciasDelHoyo } from '../../../domain/services/distanciasDelHoyo';
+import { PRECISION_PARA_MEDIR_M, distanciasDelHoyo, distanciasDesdeLaPosicion } from '../../../domain/services/distanciasDelHoyo';
 import { encuadreGirado, limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
 import {
   MAX_CODOS,
@@ -15,8 +15,10 @@ import {
   estaLejosDelCampo,
   hoyoDeUnaMarca,
   salidaGreenFueraDeLimites,
+  salidaPorMetros,
 } from '../../../domain/services/hoyoMarcado';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
+import { TESELAS_PNOA } from './teselas';
 import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
 import { captureError } from '../../../utils/sentryHelpers';
 import ModalShell from '../../ui/ModalShell';
@@ -24,10 +26,6 @@ import ModalShell from '../../ui/ModalShell';
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
 
-// Ortofoto del PNOA (IGN), la de más detalle de España; sus teselas permiten CORS
-export const TESELAS_PNOA =
-  'https://www.ign.es/wmts/pnoa-ma?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=OI.OrthoimageCoverage' +
-  '&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg';
 const LICENCIA_OSM = 'https://www.openstreetmap.org/copyright';
 
 const ESTILO = {
@@ -94,9 +92,14 @@ const geojsonDeLaLinea = (linea) => ({
 const mismoPunto = (a, b) => Boolean(a && b) && a.lat === b.lat && a.lon === b.lon;
 // La línea de un hoyo con salida y green, con los codos de su par para moverlos.
 // Acaba en el centro del green: la de OSM acaba donde termina el hoyo, cerca
-// pero no en él, y así se mide como la medida oficial (al centro del green)
+// pero no en él, y así se mide como la medida oficial (al centro del green). Y
+// con los codos de SU par, donde de verdad gira el hoyo (Agustín, 16 oct): OSM
+// dibuja vértices que no son codos, y un par 3 salía con uno; la línea guardada
+// no cambia, solo cómo se ve
 const lineaParaMover = (hoyo, par) =>
-  hoyo?.green && (hoyo.playLine?.length ?? 0) > 1 ? conCodosDelPar([...hoyo.playLine.slice(0, -1), hoyo.green.center], par) : null;
+  hoyo?.green && (hoyo.playLine?.length ?? 0) > 1
+    ? conCodosDelPar(aCodosDelPar([...hoyo.playLine.slice(0, -1), hoyo.green.center], par), par)
+    : null;
 // Lo que se envía al cerrar: una línea que el servidor puede guardar (hasta dos
 // codos, el green a 40-750 m y, si se sabe dónde está el campo, nada a más de 3 km)
 const muestraValida = (linea, campo) =>
@@ -162,8 +165,12 @@ const PLACA = 'rounded-xl bg-gray-950/85 text-white shadow-lg';
  * El GPS va mientras el mapa está abierto, ni antes ni después.
  *
  * La línea del hoyo (la salida, sus codos y el green) se puede mover siempre,
- * para medir; en un hoyo sin línea se marca tocando la salida y el green, y los
- * codos salen ya según el par. Al cerrar, si el jugador la hizo o la movió y el
+ * para medir. En un hoyo sin línea (17 oct) se pregunta «¿Estás en la salida?»:
+ * con un sí y buen GPS, la salida es tu posición (y con un green ya puesto, la
+ * línea sale sola); con mal GPS, se toca; con un no, se marca solo el green y
+ * se mide desde ti. Lejos del campo o sin permiso de ubicación, sin pregunta: se
+ * tocan la salida y el green. Los codos salen ya según el par. El recuadro mide
+ * desde ti si el GPS es bueno y estás en el hoyo; si no, con la tarjeta. Al cerrar, si el jugador la hizo o la movió y el
  * hoyo aún recoge muestras (`recoge`), se envía con `onMuestra`, sin decírselo:
  * todo esto es transparente para él (Agustín, 16 oct).
  */
@@ -179,16 +186,20 @@ const MapaDelHoyo = ({
   recoge = false,
   onMuestra = null,
   onEmpezar = null,
+  colocarSalida = true,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
   const gps = usePosicionGps({ activo: true });
   const posicion = gps.estado === 'listo' ? gps.posicion : null;
+  const precision = gps.estado === 'listo' ? (gps.precision ?? null) : null;
+  // Sin permiso o sin GPS en el móvil, no hay posición que preguntar
+  const sinUbicacion = gps.estado === 'denegado' || gps.estado === 'no-disponible';
   const centroSinMapa = useCentroSinMapa({ golfCourseId, activo: !conMapa });
   // Si estás en el campo: si el hoyo tiene salida (aunque no tenga green), se
   // mide desde ella; si no, desde la ubicación del campo (sin ninguna de las
   // dos, se da por hecho que sí)
-  const referenciaDelCampo = hoyo?.playLine?.[0] ?? centroSinMapa;
+  const referenciaDelCampo = hoyo?.playLine?.[0] ?? centroSinMapa ?? hoyo?.green?.center ?? null;
   // Lejos (no estás jugando): el mapa no se va a tu casa, no se mide desde ti
   // y «Céntrame» no se puede pulsar (16 oct)
   const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
@@ -211,26 +222,47 @@ const MapaDelHoyo = ({
   const marcaTocada = useRef(null);
   const centradoEnGps = useRef(false);
   const movidoPorElJugador = useRef(false);
-  // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto
-  const inicio = useRef({ hoyo, conMapa, centroSinMapa, soloGreen: porMarcar === 'green', metros });
+  // La línea al abrir, con la salida llevada a los metros de mi tarjeta (V2, 17
+  // oct): la línea es una por hoyo, de la barra que sea. La mía (la que marqué
+  // desde este móvil) no se mueve
+  const [lineaInicial] = useState(() => {
+    const deLaReferencia = lineaParaMover(hoyo, par);
+    return colocarSalida ? salidaPorMetros(deLaReferencia, metros) : deLaReferencia;
+  });
+  // Lo de la primera vez, sin rehacer el mapa si cambia mientras está abierto.
+  // El hoyo, con la salida que se ve: el encuadre la tiene que coger
+  const inicio = useRef({
+    hoyo: lineaInicial && hoyo ? { ...hoyo, playLine: lineaInicial } : hoyo,
+    conMapa,
+    centroSinMapa,
+    soloGreen: porMarcar === 'green',
+    metros,
+  });
 
-  // Marcar el hoyo: sin salida, se piden la salida y el centro del green; con
-  // salida, el green. «Ahora no» deja medir como siempre
-  const [marca, setMarca] = useState({ fase: porMarcar ? 'pidiendo' : null, tee: null });
+  // Marcar el hoyo: sin salida, primero se pregunta si estás en ella (17 oct);
+  // con salida, se pide el green. «Ahora no» deja medir como siempre
+  const preguntaPrimero = porMarcar === 'salida' || porMarcar === 'salidaAlGreen';
+  const [marca, setMarca] = useState({ fase: preguntaPrimero ? 'pregunta' : porMarcar ? 'pidiendo' : null, tee: null });
   const [avisoDeMarca, setAvisoDeMarca] = useState(null);
-  const marcandoSalida = porMarcar === 'salida';
-  const pidiendo = marca.fase === 'pidiendo';
-  // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió
-  const [edicion, setEdicion] = useState(() => ({ linea: lineaParaMover(hoyo, par), cambiada: false, version: 0 }));
+  const marcandoSalida = preguntaPrimero;
+  // El green que ya trae el hoyo (de una muestra solo green): con la salida basta
+  const greenConocido = porMarcar === 'salidaAlGreen' ? (hoyo?.green?.center ?? null) : null;
+  // Lejos del campo o sin ubicación no se pregunta: se toca la salida (L1, 17 oct)
+  const fase = marca.fase === 'pregunta' && (lejos || sinUbicacion) ? 'pidiendo' : marca.fase;
+  const pidiendo = fase === 'pidiendo';
+  // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió.
+  // `green`: el que marcó quien no está en la salida (solo green, sin línea)
+  const [edicion, setEdicion] = useState(() => ({ linea: lineaInicial, green: null, cambiada: false, version: 0 }));
   const [conAyudaDeCodos, setConAyudaDeCodos] = useState(false);
   const linea = edicion.linea;
   // El hoyo tal y como está ahora: con la línea movida y, si el green no se
   // movió, el suyo (con su contorno); si no, delante y fondo a 10 m
+  const greenMarcado = edicion.green;
   const hoyoAhora = useMemo(() => {
-    if (!linea) return hoyo;
+    if (!linea) return greenMarcado ? { playLine: [], green: { center: greenMarcado } } : hoyo;
     if (hoyo?.green && mismoPunto(hoyo.green.center, linea.at(-1))) return { ...hoyo, playLine: linea };
     return hoyoDeUnaMarca({ tee: linea[0], bends: linea.slice(1, -1), greenCenter: linea.at(-1) });
-  }, [hoyo, linea]);
+  }, [hoyo, linea, greenMarcado]);
   const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(linea ?? []), [linea]);
   const ultimaLinea = useRef(datosDeLaLinea);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
@@ -257,6 +289,12 @@ const MapaDelHoyo = ({
   // El toque: mientras se marca, marca; si no, mide. Por ref, porque el mapa
   // se monta una vez y su oyente vería el estado de entonces
   const alTocar = useRef(null);
+  const hacerLineaAhora = useRef(null);
+  const hacerLinea = (desde, hasta) => hacerLineaAhora.current?.(desde, hasta) ?? false;
+  // Se aleja (sin girar) la mitad que los metros de la tarjeta, para buscar el
+  // green (16 oct: antes, a los metros enteros, con un anillo)
+  const alejarAhora = useRef(null);
+  const alejarDesde = (salida) => alejarAhora.current?.(salida);
   // El doble toque son dos `click` seguidos: el segundo no puede ser el green
   const ultimoToque = useRef(0);
   // La salida del último toque, por si un doble toque corta su alejamiento
@@ -264,17 +302,29 @@ const MapaDelHoyo = ({
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
     alCerrar.current = { edicion, recoge, onMuestra, campo: referenciaDelCampo };
+    // De la salida al green, con los codos de su par puestos sobre la recta
+    hacerLineaAhora.current = (desde, hasta) => {
+      if (salidaGreenFueraDeLimites(desde, hasta)) {
+        setAvisoDeMarca(t('mapa.fueraDeLimites'));
+        return false;
+      }
+      const nueva = conCodosDelPar([desde, hasta], par);
+      setEdicion((e) => ({ linea: nueva, green: null, cambiada: true, version: e.version + 1 }));
+      setConAyudaDeCodos(nueva.length > 2);
+      setMarca({ fase: null, tee: null });
+      return true;
+    };
+    alejarAhora.current = (salida) => {
+      if (!metros) return;
+      mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(salida, metros / 2) }), {
+        bearing: mapaRef.current.getBearing(),
+        padding: margen(),
+      });
+    };
     alTocar.current = (p) => {
+      // Mientras se pregunta si estás en la salida, el mapa no marca ni mide
+      if (fase === 'pregunta') return;
       if (pidiendo) {
-        // Se aleja (sin girar) la mitad que los metros de la tarjeta, para
-        // buscar el green (16 oct: antes, a los metros enteros, con un anillo)
-        const alejarDesde = (salidaTocada) => {
-          if (!metros) return;
-          mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: circuloAlrededor(salidaTocada, metros / 2) }), {
-            bearing: mapaRef.current.getBearing(),
-            padding: margen(),
-          });
-        };
         const ahora = globalThis.performance.now();
         if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) {
           // El segundo toque no marca, pero corta el alejamiento: se rehace (QA)
@@ -285,8 +335,25 @@ const MapaDelHoyo = ({
         salidaRecienTocada.current = null;
         setAvisoDeMarca(null);
         empezar();
+        // No estás en la salida: el green que tocas, solo (17 oct)
+        if (marca.soloGreen) {
+          // A más de lo que mide un hoyo de donde estás, no es el green de este
+          // hoyo: será de cada jugador que venga después (revisión, 17 oct)
+          if (posicionEnElCampo && salidaGreenFueraDeLimites(posicionEnElCampo, p) === 'lejos') {
+            setAvisoDeMarca(t('mapa.fueraDeLimites'));
+            return;
+          }
+          setEdicion((e) => ({ linea: null, green: p, cambiada: true, version: e.version + 1 }));
+          setMarca({ fase: null, tee: null });
+          return;
+        }
         if (marcandoSalida && !marca.tee) {
-          setMarca((m) => ({ ...m, tee: p }));
+          // Con el green ya puesto, la salida basta
+          if (greenConocido) {
+            hacerLinea(p, greenConocido);
+            return;
+          }
+          setMarca((m) => ({ ...m, fase: 'pidiendo', tee: p }));
           salidaRecienTocada.current = p;
           alejarDesde(p);
           return;
@@ -302,7 +369,7 @@ const MapaDelHoyo = ({
         // línea de OSM con muchos puntos se queda con los de su par (QA, 16 oct)
         const reducida = aCodosDelPar([...desde, p], par);
         const nueva = conCodosDelPar(reducida, par);
-        setEdicion((e) => ({ linea: nueva, cambiada: true, version: e.version + 1 }));
+        setEdicion((e) => ({ linea: nueva, green: null, cambiada: true, version: e.version + 1 }));
         // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
         setConAyudaDeCodos(nueva.length > reducida.length);
         setMarca({ fase: null, tee: null });
@@ -326,11 +393,16 @@ const MapaDelHoyo = ({
   // no. Nada de esto se le dice al jugador
   useEffect(() => {
     const enviarSiHace = () => {
-      const { edicion: { linea: ultima, cambiada, version }, recoge: recogiendo, onMuestra: enviar, campo } = alCerrar.current;
-      if (!cambiada || !recogiendo || !enviar || !ultima || !muestraValida(ultima, campo)) return;
+      const { edicion: { linea: ultima, green: soloGreen, cambiada, version }, recoge: recogiendo, onMuestra: enviar, campo } = alCerrar.current;
+      if (!cambiada || !recogiendo || !enviar) return;
+      // Una línea que vale, o (17 oct) un green solo que no esté lejos del campo
+      const muestra = ultima
+        ? muestraValida(ultima, campo) && { tee: ultima[0], bends: ultima.slice(1, -1), greenCenter: ultima.at(-1) }
+        : soloGreen && !estaLejosDelCampo(soloGreen, campo) && { tee: null, bends: [], greenCenter: soloGreen };
+      if (!muestra) return;
       if (enviada.current.version === version) return;
       enviada.current = { version, id: enviada.current.id ?? globalThis.crypto.randomUUID() };
-      enviar({ id: enviada.current.id, tee: ultima[0], bends: ultima.slice(1, -1), greenCenter: ultima.at(-1) });
+      enviar({ id: enviada.current.id, ...muestra });
     };
     // Si se cierra la app (o el móvil la mata) con el mapa abierto, lo hecho no
     // se pierde: sale al ocultarse (Agustín, 16 oct)
@@ -377,7 +449,7 @@ const MapaDelHoyo = ({
     contenedor.current = nodo;
     const { hoyo: h, conMapa: orientado, centroSinMapa: delCampo } = inicio.current;
     // Sin la ubicación del campo, la salida del hoyo si la tiene (no España entera)
-    const centro = delCampo ?? h?.playLine?.[0] ?? null;
+    const centro = delCampo ?? h?.playLine?.[0] ?? h?.green?.center ?? null;
     let mapa;
     try {
       mapa = new MapaDeMapLibre({
@@ -557,7 +629,10 @@ const MapaDelHoyo = ({
   }, [ponerCifrasDeLaLinea, empezar]);
   // La línea discontinua del hoyo, del mismo hoyo que sus cifras; con la línea
   // que se mueve, solo su green (la línea va aparte, entera)
-  const hoyoQueSeDibuja = useMemo(() => (linea ? { playLine: [], green: hoyoAhora?.green ?? null } : hoyo), [linea, hoyo, hoyoAhora]);
+  const hoyoQueSeDibuja = useMemo(
+    () => (linea ? { playLine: [], green: hoyoAhora?.green ?? null } : greenMarcado ? hoyoAhora : hoyo),
+    [linea, hoyo, hoyoAhora, greenMarcado],
+  );
   useEffect(() => {
     hoyoActual.current = hoyoQueSeDibuja;
     mapaRef.current?.getSource('hoyo')?.setData(geojsonDelHoyo(hoyoQueSeDibuja));
@@ -576,6 +651,31 @@ const MapaDelHoyo = ({
     centradoEnGps.current = false;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
   }, [centroSinMapa, lejos]);
+
+
+  const responder = (enLaSalida) => {
+    setAvisoDeMarca(null);
+    // Contestar ya es empezar: lo que se ve no se rehace mientras se marca
+    empezar();
+    if (!enLaSalida) {
+      // A mitad de hoyo: si ya hay green, nada que pedir (M6); si no, el green (M5)
+      setMarca(greenConocido ? { fase: null, tee: null } : { fase: 'pidiendo', tee: null, soloGreen: true });
+      return;
+    }
+    const aqui = posicionEnElCampo && precision !== null && precision <= PRECISION_PARA_MEDIR_M ? posicionEnElCampo : null;
+    if (!aqui) {
+      // No te localizamos bien: la salida se toca (M4)
+      setMarca({ fase: 'pidiendo', tee: null, malGps: true });
+      return;
+    }
+    if (greenConocido) {
+      // Si tu posición y ese green no hacen un hoyo, se avisa y se toca la salida
+      if (!hacerLinea(aqui, greenConocido)) setMarca({ fase: 'pidiendo', tee: null });
+      return;
+    }
+    setMarca({ fase: 'pidiendo', tee: aqui });
+    alejarDesde(aqui);
+  };
 
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
   useEffect(() => {
@@ -601,20 +701,36 @@ const MapaDelHoyo = ({
     mapa.getSource('marcado')?.setData(datosDeLaLinea);
     for (const m of puntosDeLaLinea.current) m.remove();
     puntosDeLaLinea.current = [];
-    if (!linea) return;
     const aqui = (e) => {
       const { lat, lng } = e.target.getLngLat();
       return { lat, lon: lng };
     };
+    // El green que marcó quien no está en la salida, también se corrige
+    // arrastrándolo: será el de los que vengan detrás (revisión, 17 oct)
+    if (!linea && greenMarcado) {
+      try {
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO.green), draggable: true });
+        puntosDeLaLinea.current.push(m);
+        m.setLngLat(lngLat(greenMarcado)).addTo(mapa);
+        m.on('dragend', (e) => {
+          const movido = aqui(e);
+          setEdicion((ed) => ({ linea: null, green: movido, cambiada: true, version: ed.version + 1 }));
+        });
+        m.getElement().addEventListener('click', (e) => e.stopPropagation());
+      } catch (error) {
+        for (const x of puntosDeLaLinea.current) x.remove();
+        puntosDeLaLinea.current = [];
+        captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
+      }
+      return;
+    }
+    if (!linea) return;
     const con = (i, p) => linea.map((q, j) => (j === i ? p : q));
-    // Una línea con más puntos que codos se guardan (las de OSM, con muchos):
-    // se mueven la salida y el green; los de en medio siguen en la línea, sin punto
-    const muchos = linea.length - 2 > MAX_CODOS;
+    // La línea ya viene con los codos de su par (como mucho dos): todos se mueven
     // Si la librería cambia y algo de esto falla, el mapa sigue (sin puntos que
     // mover) en vez de caerse entero; el fallo queda apuntado
     try {
       linea.forEach((p, i) => {
-        if (muchos && i > 0 && i < linea.length - 1) return;
         // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
         const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
         puntosDeLaLinea.current.push(m);
@@ -627,7 +743,7 @@ const MapaDelHoyo = ({
         });
         m.on('dragend', (e) => {
           const movida = con(i, aqui(e));
-          setEdicion((ed) => ({ linea: movida, cambiada: true, version: ed.version + 1 }));
+          setEdicion((ed) => ({ linea: movida, green: null, cambiada: true, version: ed.version + 1 }));
           setConAyudaDeCodos(false);
           empezarAlArrastrar.current();
         });
@@ -640,13 +756,15 @@ const MapaDelHoyo = ({
       puntosDeLaLinea.current = [];
       captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
     }
-  }, [linea, datosDeLaLinea]);
+  }, [linea, datosDeLaLinea, greenMarcado]);
 
   const empezarAMarcar = () => {
     salidaRecienTocada.current = null;
     setAvisoDeMarca(null);
     setTocado(null);
-    setMarca({ fase: 'pidiendo', tee: null });
+    // Sin salida, otra vez la pregunta: si no, el «No» se perdía y el primer
+    // toque se tomaba por la salida (revisión, 17 oct)
+    setMarca({ fase: preguntaPrimero ? 'pregunta' : 'pidiendo', tee: null });
   };
 
   const fraseDeLaLinea = useMemo(() => {
@@ -656,9 +774,16 @@ const MapaDelHoyo = ({
     if (!clave) return null;
     return t(clave, lista.length > 3 ? { lista: lista.join(' · ') } : { a, b, c });
   }, [lineaVisible, t]);
-  // Fijo, con los metros oficiales desde la salida: no mira el GPS (Agustín,
-  // 16 oct). Sin metros en la tarjeta, se mide la línea como está ahora
-  const distancias = useMemo(() => distanciasDelHoyo({ metros, hoyo: hoyoAhora }), [metros, hoyoAhora]);
+  // Desde ti, si el GPS es bueno y estás en el hoyo (Agustín, 17 oct); si no,
+  // con los metros de tu barra (sin ellos, la línea como está ahora)
+  const desdeAqui = useMemo(
+    () => distanciasDesdeLaPosicion({ posicion: posicionEnElCampo, precision, green: hoyoAhora?.green ?? null }),
+    [posicionEnElCampo, precision, hoyoAhora],
+  );
+  const deLaTarjeta = useMemo(() => distanciasDelHoyo({ metros, hoyo: hoyoAhora }), [metros, hoyoAhora]);
+  const distancias = desdeAqui ?? deLaTarjeta;
+  // De dónde salen las cifras: tu posición, tu barra (la tarjeta) o la salida (la línea)
+  const origenDelRecuadro = t(desdeAqui ? 'mapa.desdeTuPosicion' : metros ? 'mapa.desdeTuBarra' : 'mapa.desdeLaSalida');
   const hastaAhi = tocado && posicionEnElCampo ? distanciaEnMetros(posicionEnElCampo, tocado) : null;
   const deAhiAlGreen = tocado && green ? distanciaEnMetros(tocado, green.center) : null;
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
@@ -691,9 +816,23 @@ const MapaDelHoyo = ({
 
         {avisoDeMarca && <p role="alert" className={`${PLACA} self-start px-3.5 py-2 text-sm text-yellow-300`}>{avisoDeMarca}</p>}
 
-        {sinMapa ? null : pidiendo ? (
+        {sinMapa ? null : fase === 'pregunta' ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
-            <span aria-live="polite" className="text-base font-semibold">{t(marcandoSalida && !marca.tee ? 'mapa.pideSalida' : 'mapa.pideGreen')}</span>
+            <span aria-live="polite" className="text-base font-semibold">{t('mapa.preguntaSalida')}</span>
+            <span className="flex gap-2">
+              <button type="button" onClick={() => responder(true)} className="min-h-11 rounded-xl bg-white px-4 text-[15px] font-semibold text-gray-900">
+                {t('mapa.si')}
+              </button>
+              <button type="button" onClick={() => responder(false)} className="min-h-11 rounded-xl bg-white/15 px-4 text-[15px] font-semibold text-white">
+                {t('mapa.no')}
+              </button>
+            </span>
+          </div>
+        ) : pidiendo ? (
+          <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
+            <span aria-live="polite" className="text-base font-semibold">
+              {t(marca.soloGreen ? 'mapa.pideGreen' : marcandoSalida && !marca.tee ? (marca.malGps ? 'mapa.malGps' : 'mapa.pideSalida') : 'mapa.pideGreen')}
+            </span>
             <button type="button" onClick={() => {
                 salidaRecienTocada.current = null;
                 setMarca({ fase: 'pausado', tee: null });
@@ -732,8 +871,14 @@ const MapaDelHoyo = ({
           </span>
         )}
         {distancias && (
+          // Se lee en la frase del recuadro, con las cifras (CodeRabbit, 17 oct)
+          <p aria-hidden="true" className="self-start text-[11px] font-semibold text-white/90 [text-shadow:0_1px_2px_#000]">
+            {origenDelRecuadro}
+          </p>
+        )}
+        {distancias && (
           <div className="grid grid-cols-[1fr_1.35fr_1fr] overflow-hidden rounded-2xl bg-white/95 text-gray-900 shadow-xl">
-            <span className="sr-only">{t('mapa.etiqueta', distancias)}</span>
+            <span className="sr-only">{t('mapa.etiqueta', { ...distancias, origen: origenDelRecuadro })}</span>
             {[
               ['delante', distancias.front, ''],
               ['centro', distancias.center, 'bg-green-700 text-white'],

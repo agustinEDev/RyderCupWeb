@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.44.0] - 2026-10-17
+
+**Una línea de referencia por hoyo.** Al abrir un hoyo sin línea, el mapa
+pregunta «¿Estás en la salida?» y, con buen GPS, tu posición es la salida; si
+no estás, marcas solo el green. El recuadro DELANTE·CENTRO·FONDO mide desde tu
+posición con buen GPS. La línea que guarda el admin se ve antes que nada, con tu
+salida colocada por los metros de tu tarjeta, y el admin la revisa en la nueva
+pestaña «Hoyos por revisar». La Ryder marca y envía muestras como las demás
+anotaciones. Va con el backend **2.30.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.30.0**
+(la pantalla del admin, la línea guardada y el género de la barra en la Ryder):
+backend, `/health` y este frontend justo después. La copia local de las
+muestras pasa a la clave `muestrasDeHoyos:v3`.
+
+### Added
+
+- **«¿Estás en la salida?»** al marcar un hoyo sin línea (#890):
+  - **Sí, con GPS de 20 m o mejor**: tu posición es la salida y marcas el green;
+  - **Sí, con GPS malo**: tocas la salida;
+  - **No**: marcas solo el green, a 750 m o menos de ti, y se envía una
+    muestra solo de green;
+  - lejos del campo o sin permiso de ubicación, como antes: salida y green.
+- **El recuadro desde tu posición** con GPS de 20 m o mejor a 750 m o menos
+  del green; si no, desde la tarjeta de tu barra. Sin green no hay recuadro
+  (#890).
+- **La línea del admin, lo primero**, y tu salida colocada sobre el primer
+  tramo según los metros de tu tarjeta; con ella no se pregunta ni se envía
+  nada (#891).
+- **«Hoyos por revisar»** en el panel de admin, junto a «Pendientes»: los
+  campos con muestras o línea guardada y, por hoyo, un mapa con todas las
+  muestras en el color de su barra, la tarjeta de cada barra, «Empezar desde
+  esta», «Borrar», «Guardar línea» y «Reabrir hoyo» (#892).
+- **La Ryder envía muestras de los hoyos** como stroke play y la partida
+  rápida, con la barra de cada jugador; quien no juega el partido solo mide
+  (#889, cierra #880).
+
+### Changed
+
+- Las muestras se leen por hoyo: la línea del admin, el mapa aprobado, la
+  primera muestra completa, el green suelto y tu propia línea, por ese orden
+  (#890, #891).
+
+### Fixed
+
+- **Las líneas aprobadas de OSM se ven con los codos de su par**, donde de
+  verdad gira el hoyo: un campo de pares 3 (Torre de Hércules) salía con codo
+  (#888).
+
 ## [2.43.0] - 2026-10-16
 
 **El mapa del hoyo.** Desde la anotación (Ryder, stroke play y partida rápida)

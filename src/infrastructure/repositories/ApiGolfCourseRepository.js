@@ -1,5 +1,6 @@
 import GolfCourse from '../../domain/entities/GolfCourse.js';
 import HoleMapMapper from '../mappers/HoleMapMapper';
+import HoleReviewMapper from '../mappers/HoleReviewMapper';
 import HoleSampleMapper from '../mappers/HoleSampleMapper';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
@@ -99,6 +100,34 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async getHoleSamples(id) {
     return HoleSampleMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples`, { topeMs: TOPE_DE_ANOTAR_MS }));
+  }
+
+  /** @override */
+  async listHoleReviews() {
+    return HoleReviewMapper.listToDomain(await apiRequest('/api/v1/golf-courses/admin/hole-reviews'));
+  }
+
+  /** @override */
+  async getHoleReview(id) {
+    return HoleReviewMapper.reviewToDomain(await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reviews`));
+  }
+
+  /** @override */
+  async saveHoleLine(id, holeNumber, linea) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-lines/${holeNumber}`, {
+      method: 'PUT',
+      body: JSON.stringify(HoleReviewMapper.lineToApi(linea)),
+    });
+  }
+
+  /** @override */
+  async reopenHole(id, holeNumber) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-lines/${holeNumber}`, { method: 'DELETE' });
+  }
+
+  /** @override */
+  async deleteHoleSample(id, sampleId) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-samples/${sampleId}`, { method: 'DELETE' });
   }
 
   /**

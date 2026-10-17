@@ -466,6 +466,23 @@ describe('ScoringMapper', () => {
       expect(dto.matchComplete).toBe(false);
     });
   });
+
+  // RyderCupWeb #880: con el color, el mapa del hoyo envía las muestras por barra
+  describe('el sexo de la barra de cada jugador', () => {
+    const vista = (players) => ScoringMapper.toScoringViewDTO({ players });
+
+    it.each([
+      ['MALE', 'MALE'],
+      ['FEMALE', 'FEMALE'],
+      [null, null],
+      [undefined, null],
+    ])('tee_gender %s → teeGender %s', (deLaApi, esperado) => {
+      const [jugador] = vista([{ user_id: 'u1', tee_color: 'YELLOW', tee_gender: deLaApi }]).players;
+
+      expect(jugador.teeGender).toBe(esperado);
+    });
+  });
+
   /**
    * El backend resuelve la tarjeta de cada barra y la manda por jugador
    * (RyderCupAm#213) «para que el cliente no tenga que volver a resolverlo — y

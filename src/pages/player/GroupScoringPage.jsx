@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -161,7 +162,7 @@ const GroupScoringPage = () => {
   const parDe = (jugador) => hoyoDeLaTarjetaDe(jugador)?.par ?? null;
   // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra
   const yo = scoringView.players.find((p) => p.userId === userId);
-  const miBarra = yo?.color ? { color: yo.color, gender: yo.teeGender ?? null } : null;
+  const miBarra = barraDe(yo);
   const golpesDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);

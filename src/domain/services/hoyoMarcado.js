@@ -62,6 +62,9 @@ export const hoyoDeUnaMarca = (marca) => {
 export const longitudDeLaLinea = (linea) =>
   linea.slice(1).reduce((total, punto, i) => total + distanciaEnMetros(linea[i], punto), 0);
 
+/** Lo mismo, sin redondear cada tramo: para comparar con otros metros. */
+const longitudExacta = (linea) => linea.slice(1).reduce((total, punto, i) => total + distanciaExacta(linea[i], punto), 0);
+
 /** Si la posición está a más de 3 km del campo; sin una de las dos, no se sabe y no. */
 export const estaLejosDelCampo = (posicion, campo) =>
   Boolean(posicion && campo) && distanciaEnMetros(posicion, campo) > MAX_DISTANCIA_AL_CAMPO_M;
@@ -89,7 +92,7 @@ export const codosDelPar = (par) => {
  * que su longitud no cambia, y el jugador los arrastra a la calle. En la recta,
  * a partes iguales (en un par 5, a un tercio y a dos tercios); con un codo ya
  * puesto, el que falta en mitad del último tramo. Una línea con los suyos (o con
- * más, como las de un mapa aprobado) se queda como está.
+ * más) se queda como está: para quedarse con los de su par, `aCodosDelPar`.
  */
 export const conCodosDelPar = (linea, par) => {
   const faltan = codosDelPar(par) - Math.max(0, linea.length - 2);
@@ -102,12 +105,29 @@ export const conCodosDelPar = (linea, par) => {
   return [...linea.slice(0, -1), ...nuevos, green];
 };
 
+// Lo que tiene que separarse un punto de la línea para contar como codo: los
+// vértices que OSM dibuja casi en línea recta no lo son
+export const MIN_DESVIO_DE_UN_CODO_M = 15;
+
+// Metros de `p` al tramo de `a` a `b`, en un plano local (pocos cientos de metros)
+const distanciaAlTramo = (p, a, b) => {
+  const coseno = Math.cos(radianes(a.lat));
+  const xy = (q) => [radianes(q.lon - a.lon) * RADIO_TERRESTRE_M * coseno, radianes(q.lat - a.lat) * RADIO_TERRESTRE_M];
+  const [px, py] = xy(p);
+  const [bx, by] = xy(b);
+  const largo2 = bx * bx + by * by;
+  const t = largo2 > 0 ? Math.min(1, Math.max(0, (px * bx + py * by) / largo2)) : 0;
+  return Math.hypot(px - t * bx, py - t * by);
+};
+
 /**
  * Una línea con más puntos en medio de los codos de su par (las de OSM) se queda
- * con los de su par: la salida, el green y, de los de en medio, los más
- * cercanos a partes iguales del recorrido (en un par 5, a un tercio y a dos
- * tercios), sin repetir ninguno. Así cabe en una muestra (QA del 16 oct). Una
- * línea que ya cabe se queda como está.
+ * con los de su par, DONDE DE VERDAD GIRA (Agustín, 16 oct): la salida, el green
+ * y, como mucho, tantos codos como su par, eligiendo cada vez el punto que más
+ * se separa de la línea ya elegida (al estilo de Douglas-Peucker), y solo si se
+ * separa al menos 15 m. Así conserva la esquina de un dogleg (a partes iguales
+ * del recorrido la cortaba) y los vértices casi en línea no cuentan. Un par 3,
+ * recto. Una línea que ya cabe se queda como está.
  */
 export const aCodosDelPar = (lineaEntera, par) => {
   const codos = codosDelPar(par);
@@ -115,21 +135,21 @@ export const aCodosDelPar = (lineaEntera, par) => {
   const sinRepetidos = lineaEntera.filter((p, i) => i === 0 || p.lat !== lineaEntera[i - 1].lat || p.lon !== lineaEntera[i - 1].lon);
   const linea = sinRepetidos.length === lineaEntera.length ? lineaEntera : sinRepetidos;
   if (linea.length - 2 <= codos) return linea;
-  const recorrido = [0];
-  // Sin redondear cada tramo: en una línea con nodos muy juntos sumarían 0
-  for (let i = 1; i < linea.length; i += 1) recorrido.push(recorrido[i - 1] + distanciaExacta(linea[i - 1], linea[i]));
-  const total = recorrido.at(-1);
-  const elegidos = [];
-  for (let k = 1; k <= codos; k += 1) {
-    const objetivo = (total * k) / (codos + 1);
+  const elegidos = [0, linea.length - 1];
+  while (elegidos.length - 2 < codos) {
     let mejor = null;
-    for (let i = 1; i < linea.length - 1; i += 1) {
-      if (elegidos.includes(i)) continue;
-      if (mejor === null || Math.abs(recorrido[i] - objetivo) < Math.abs(recorrido[mejor] - objetivo)) mejor = i;
+    for (let k = 0; k < elegidos.length - 1; k += 1) {
+      const [desde, hasta] = [elegidos[k], elegidos[k + 1]];
+      for (let i = desde + 1; i < hasta; i += 1) {
+        const desvio = distanciaAlTramo(linea[i], linea[desde], linea[hasta]);
+        if (desvio >= MIN_DESVIO_DE_UN_CODO_M && (mejor === null || desvio > mejor.desvio)) mejor = { i, desvio };
+      }
     }
-    elegidos.push(mejor);
+    if (mejor === null) break;
+    elegidos.push(mejor.i);
+    elegidos.sort((x, y) => x - y);
   }
-  return [linea[0], ...elegidos.sort((a, b) => a - b).map((i) => linea[i]), linea.at(-1)];
+  return elegidos.map((i) => linea[i]);
 };
 
 /** Un anillo cerrado de puntos a `metros` de `centro` (el arco de la tarjeta). */
@@ -137,3 +157,31 @@ export const circuloAlrededor = (centro, metros, lados = 64) => {
   const anillo = Array.from({ length: lados }, (_, i) => puntoDesde(centro, (360 / lados) * i, metros));
   return [...anillo, anillo[0]];
 };
+
+/**
+ * La línea con la salida del jugador (V2, Agustín, 17 oct): hay una referencia
+ * por hoyo, de la barra que sea, y cada uno la ve desde la suya. Su salida se
+ * lleva sobre el primer tramo lo que va de lo que mide la línea (siguiendo los
+ * codos) a los metros de su tarjeta: hacia delante si la tarjeta es más corta,
+ * hacia atrás (en la misma dirección) si es más larga. No se mueve sin metros,
+ * si la diferencia es más que lo que mide el primer tramo (adelantarla pasaría
+ * del primer codo), ni si deja el green a menos de 40 o más de 750 m en recta.
+ */
+export const salidaPorMetros = (linea, metros) => {
+  if (!Array.isArray(linea) || linea.length < 2 || !Number.isFinite(metros)) return linea;
+  const largo = longitudExacta(linea);
+  // Un punto roto (NaN) no se arrastra a la salida
+  if (!Number.isFinite(largo)) return linea;
+  const diferencia = largo - metros;
+  if (Math.abs(diferencia) < 0.5) return linea;
+  const [salida, siguiente] = linea;
+  const primerTramo = distanciaExacta(salida, siguiente);
+  if (Math.abs(diferencia) >= primerTramo) return linea;
+  // Hacia el primer codo; con la diferencia negativa, hacia atrás
+  const nueva = puntoDesde(salida, rumbo(salida, siguiente), diferencia);
+  if (salidaGreenFueraDeLimites(nueva, linea.at(-1))) return linea;
+  return [nueva, ...linea.slice(1)];
+};
+
+/** Los puntos de una línea `{ tee, bends, greenCenter }`, en orden: salida, codos y green. */
+export const puntosDeLaLinea = (linea) => [linea.tee, ...(linea.bends ?? []), linea.greenCenter];

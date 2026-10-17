@@ -290,34 +290,36 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props).toMatchObject({ porMarcar: null, onMuestra: null });
   });
 
-  it('V8: sin barra (la Ryder, hasta la FE #880), se ve y se mide, pero ni se marca ni se envía', async () => {
+  it('V8: sin barra (quien no juega el partido), se ve y se mide, pero ni se marca ni se envía', async () => {
     abrirEn({ holes: {} }, { barra: null });
     await screen.findByTestId('mapa-del-hoyo');
 
     expect(carga.props).toMatchObject({ porMarcar: null, onMuestra: null });
   });
 
-  it('V10: sin muestra de su barra, la de otra barra (no se le pide marcar de cero)', async () => {
-    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
+  // 17 oct (BE #575): una referencia por hoyo, y el green de una muestra solo green
+  it('V10: con solo el green de una muestra solo green, se ve ese green y se pide la salida hasta él', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
 
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
-    expect(carga.props.hoyo.playLine).toEqual([T, C, G]);
-    expect(carga.props.porMarcar).toBeNull();
+    expect(carga.props.hoyo).toEqual({ playLine: [], green: { center: G } });
+    expect(carga.props.porMarcar).toBe('salidaAlGreen');
   });
 
-  it('V10: la de su barra va antes que la de otra', async () => {
-    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, deOtra: PRIMERA, recoge: true } };
+  it('V10: la primera completa va antes que el green suelto', async () => {
+    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, green: G, recoge: true } };
 
     abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
 
     expect(carga.props.hoyo.green.center).toEqual(C);
+    expect(carga.props.porMarcar).toBeNull();
   });
 
-  it('V10: la de otra barra va antes que la pendiente del jugador', async () => {
-    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
+  it('V10: el green suelto va antes que la línea pendiente del jugador', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
     lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
 
     abrirEn({ holes: {} });
@@ -326,13 +328,87 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.hoyo.green.center).toEqual(G);
   });
 
-  it('V12: si cambia QUÉ muestra se ve (llega la de mi barra tras la de otra), el mapa se rehace', async () => {
-    lasMuestras.muestras = { 3: { primera: null, deOtra: PRIMERA, recoge: true } };
+  it('V10: un green solo del propio jugador (pendiente) se ve, y se pide la salida hasta él', async () => {
+    lasMuestras.pendientes = { 3: { tee: null, bends: [], greenCenter: C } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo).toEqual({ playLine: [], green: { center: C } });
+    expect(carga.props.porMarcar).toBe('salidaAlGreen');
+  });
+
+  // V1 (17 oct): la línea que guardó el admin, antes que nada
+  it('V1: la línea guardada por el admin va antes que el hoyo aprobado y que las muestras', async () => {
+    lasMuestras.muestras = { 3: { guardada: { tee: T, bends: [], greenCenter: C }, primera: PRIMERA, green: G, recoge: false } };
+
+    abrirEn({ holes: { 3: { playLine: [T, G], green: { front: G, center: G, back: G } } } });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.green.center).toEqual(C);
+    expect(carga.props.porMarcar).toBeNull();
+    expect(carga.props.atribucion).toBeNull();
+  });
+
+  it('V1: con la línea del admin no se envía nada, aunque el resumen diga que recoge', async () => {
+    lasMuestras.muestras = { 3: { guardada: { tee: T, bends: [], greenCenter: C }, primera: null, green: null, recoge: true } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.recoge).toBe(false);
+    expect(carga.props.colocarSalida).toBe(true);
+  });
+
+  it('V2: mi propia línea pendiente no se coloca por metros', async () => {
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.colocarSalida).toBe(false);
+  });
+
+  it('V2: si cambian los metros con el mapa abierto (sin empezar), se rehace con ellos', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: true } };
     const { rerender } = abrirEn({ holes: {} });
     await screen.findByTestId('mapa-del-hoyo');
     const antes = carga.montajes;
 
-    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, deOtra: PRIMERA, recoge: true } };
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={320} userId="u-1" barra={BARRA} />);
+
+    expect(carga.montajes).toBe(antes + 1);
+  });
+
+  // Revisión del 17 oct (decidido sin Agustín, lo más conservador; a confirmar)
+  it('V10: con la salida del mapa aprobado, se sigue pidiendo el green desde ella (el green suelto no la tapa)', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
+
+    abrirEn({ holes: { 3: { playLine: [T], green: null } } });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine).toEqual([T]);
+    expect(carga.props.porMarcar).toBe('green');
+  });
+
+  it('V10: mi línea completa que acaba en ese green suelto va antes que él (es la que lo completa)', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: G } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.playLine).toEqual([T, G]);
+    expect(carga.props.porMarcar).toBeNull();
+  });
+
+  it('V12: si cambia QUÉ se ve (llega una completa tras el green suelto), el mapa se rehace', async () => {
+    lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
+    const { rerender } = abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+    const antes = carga.montajes;
+
+    lasMuestras.muestras = { 3: { primera: { tee: T, bends: [], greenCenter: C }, green: G, recoge: true } };
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
 
     expect(carga.montajes).toBe(antes + 1);
@@ -345,7 +421,7 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     act(() => carga.props.onEmpezar());
     const antes = carga.montajes;
 
-    lasMuestras.muestras = { 3: { primera: PRIMERA, deOtra: null, recoge: true } };
+    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: true } };
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
 
     expect(carga.montajes).toBe(antes);
@@ -357,7 +433,7 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     await screen.findByTestId('mapa-del-hoyo');
     act(() => carga.props.onEmpezar());
 
-    lasMuestras.muestras = { 3: { primera: PRIMERA, deOtra: null, recoge: false } };
+    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: false } };
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
 
     expect(carga.props.recoge).toBe(false);

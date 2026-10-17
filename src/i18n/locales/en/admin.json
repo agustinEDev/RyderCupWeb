@@ -6,7 +6,8 @@
     "users": "Users",
     "golfCourses": "Golf Courses",
     "pending": "Pending",
-    "competitions": "Competitions"
+    "competitions": "Competitions",
+    "holeReviews": "Holes to review"
   },
   "overview": {
     "totalUsers": "Registered users",
@@ -140,5 +141,47 @@
     "deleteBlockedTitle": "Cannot permanently delete",
     "deleteBlockedHint": "You can deactivate the account instead (reversible, no data is touched).",
     "genericError": "Something went wrong"
+  },
+  "holeReviews": {
+    "intro": "The samples players send, hole by hole. Save one line per hole: everyone sees it and the hole stops collecting samples.",
+    "empty": "There are no holes to review.",
+    "error": "It could not be loaded. Try again.",
+    "retry": "Retry",
+    "hole": "Hole {{numero}}",
+    "samples_one": "{{count}} sample",
+    "samples_other": "{{count}} samples",
+    "saved": "saved",
+    "title": "{{nombre}} · Hole {{numero}}",
+    "close": "Close",
+    "line": "The hole's line",
+    "lineMetres": "{{metros}} m along the bends",
+    "noLine": "No line yet: start from a sample.",
+    "save": "Save line",
+    "reopen": "Reopen hole",
+    "savedOk": "Line saved",
+    "reopenedOk": "Hole reopened",
+    "deletedOk": "Sample deleted",
+    "invalidLine": "The line is not valid: at most two bends, the green 40-750 m from the tee and no point more than 3 km from the course.",
+    "actionError": "It could not be done. Try again.",
+    "cards": "Each tee's card",
+    "card": "par {{par}}, {{metros}} m",
+    "samplesTitle": "Samples",
+    "noSamples": "This hole has no samples.",
+    "metres": "{{metros}} m",
+    "greenOnly": "green only",
+    "useThis": "Start from this one",
+    "delete": "Delete",
+    "confirmDelete": "Yes, delete",
+    "genders": {
+      "MALE": "men",
+      "FEMALE": "women"
+    },
+    "unsaved": "You have unsaved changes to the line.",
+    "closeWithoutSaving": "Close without saving",
+    "cardNoMetres": "par {{par}}, —",
+    "onlyGreens": "There are only green-only samples: wait for a complete one to start from it.",
+    "pointTee": "Tee",
+    "pointBend": "Bend",
+    "pointGreen": "Green"
   }
 }
