@@ -1,13 +1,15 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { LocateFixed, X } from 'lucide-react';
 import {
   deleteHoleSampleUseCase,
   getHoleReviewUseCase,
   reopenHoleUseCase,
   saveHoleLineUseCase,
 } from '../../../composition';
-import { longitudDeLaLinea, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
+import { conCodosDelPar, longitudDeLaLinea, puntosDeLaLinea, salidaGreenFueraDeLimites } from '../../../domain/services/hoyoMarcado';
+import { tarjetaDelHoyo } from '../../../domain/services/tarjetaDelHoyo';
+import { usePosicionGps } from '../../../hooks/usePosicionGps';
 import customToast from '../../../utils/toast';
 import ModalShell from '../../ui/ModalShell';
 import BlockLoader from '../../ui/BlockLoader';
@@ -30,6 +32,7 @@ const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-5
 const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const { t, i18n } = useTranslation(['admin', 'golfCourses']);
   const [hoyo, setHoyo] = useState(null);
+  const [ubicacion, setUbicacion] = useState(null);
   const [linea, setLinea] = useState(null);
   const [fallo, setFallo] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -38,6 +41,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   // Si la línea se movió o se cambió y no se ha guardado (para no perderla al cerrar)
   const [editada, setEditada] = useState(false);
   const [avisoAlCerrar, setAvisoAlCerrar] = useState(false);
+  // «Mi posición» (E14): el GPS solo se pide al tocarlo, y cada toque recentra
+  const [centrarEnMi, setCentrarEnMi] = useState(0);
+  const gps = usePosicionGps({ activo: centrarEnMi > 0 });
+  // Marcar desde cero (17 oct): null, o el paso y la salida ya tocada
+  const [marcando, setMarcando] = useState(null);
 
   // `conservarLinea`: tras borrar una muestra, la que se edita no se toca
   const cargar = useCallback(
@@ -46,6 +54,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         const campo = await getHoleReviewUseCase.execute(golfCourseId);
         const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [] };
         setHoyo(este);
+        setUbicacion(campo.ubicacion ?? null);
         const deLoQueHay = este.guardada ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         if (!conservarLinea) setEditada(false);
@@ -117,6 +126,39 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     return Number.isNaN(fecha.getTime()) ? iso : fecha.toLocaleDateString(i18n?.language, { day: 'numeric', month: 'short', year: 'numeric' });
   };
   const hayCompletas = Boolean(hoyo?.muestras.some((m) => m.tee));
+  const tarjeta = tarjetaDelHoyo(hoyo?.barras);
+  // Con solo un green suelto, se toca la salida y la línea acaba en él (E3)
+  const greenSuelto = hoyo && !hayCompletas ? (hoyo.muestras.find((m) => !m.tee)?.greenCenter ?? null) : null;
+
+  // La línea de la salida al green con los codos del par de la barra más larga,
+  // sobre la recta; sin par, uno (E2, E7, E11)
+  const lineaMarcada = (salida, green) => {
+    const puntos = conCodosDelPar([salida, green], tarjeta?.parDeLaMasLarga);
+    return { tee: puntos[0], bends: puntos.slice(1, -1), greenCenter: puntos.at(-1) };
+  };
+  // Un green imposible (a menos de 40 m o a más de 750 m) no se coloca (E5)
+  const fueraDeLimites = (salida, green) => {
+    const problema = salidaGreenFueraDeLimites(salida, green);
+    if (problema) customToast.error(t(problema === 'cerca' ? 'holeReviews.greenTooClose' : 'holeReviews.greenTooFar'));
+    return Boolean(problema);
+  };
+  const alTocar = (punto) => {
+    if (marcando.paso === 'green') {
+      if (fueraDeLimites(marcando.salida, punto)) return;
+      setMarcando(null);
+      elegirLinea(lineaMarcada(marcando.salida, punto));
+      return;
+    }
+    if (!greenSuelto) {
+      setMarcando({ paso: 'green', salida: punto });
+      return;
+    }
+    if (fueraDeLimites(punto, greenSuelto)) return;
+    setMarcando(null);
+    elegirLinea(lineaMarcada(punto, greenSuelto));
+  };
+  const instruccion = !marcando ? null : marcando.paso === 'green' ? 'holeReviews.tapGreen' : greenSuelto ? 'holeReviews.tapTeeToGreen' : 'holeReviews.tapTee';
+  const parDeLaTarjeta = tarjeta && (tarjeta.parMinimo === tarjeta.parMaximo ? String(tarjeta.parMinimo) : `${tarjeta.parMinimo}–${tarjeta.parMaximo}`);
 
   return (
     <ModalShell
@@ -130,9 +172,44 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     >
       {/* En el móvil, el mapa no encoge aunque haya muchas muestras: el panel se desplaza */}
       <div className="relative h-[55dvh] w-full shrink-0 md:h-full md:flex-1">
+        {instruccion && (
+          // Encima del mapa, que es donde se toca
+          <div role="status" className="absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-2 rounded-lg bg-white/95 p-2 text-sm font-semibold text-gray-900 shadow">
+            <span>{t(instruccion)}</span>
+            <button type="button" onClick={() => setMarcando(null)} className={`${BOTON} bg-gray-100 text-gray-900`}>
+              {t('holeReviews.cancelMarking')}
+            </button>
+          </div>
+        )}
+        <div className="absolute bottom-2 right-2 z-10 flex flex-col items-end gap-1">
+          {gps.estado === 'denegado' && (
+            <p role="status" className="rounded bg-white/95 px-2 py-1 text-xs text-gray-900 shadow">
+              {t('holeReviews.positionDenied')}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={gps.estado === 'buscando'}
+            onClick={() => setCentrarEnMi((n) => n + 1)}
+            className={`${BOTON} inline-flex items-center gap-1 bg-white text-gray-900 shadow`}
+          >
+            <LocateFixed className="h-4 w-4" aria-hidden="true" />
+            {t(gps.estado === 'buscando' ? 'holeReviews.findingPosition' : 'holeReviews.myPosition')}
+          </button>
+        </div>
         {hoyo && (
           <Suspense fallback={<BlockLoader />}>
-            <MapaDeRevision muestras={hoyo.muestras} guardada={hoyo.guardada} linea={linea} onLinea={elegirLinea} />
+            <MapaDeRevision
+              muestras={hoyo.muestras}
+              guardada={hoyo.guardada}
+              linea={linea}
+              onLinea={elegirLinea}
+              onToque={marcando ? alTocar : undefined}
+              marcados={marcando?.salida ? [marcando.salida] : []}
+              centro={ubicacion}
+              posicion={gps.posicion}
+              centrarEnMi={centrarEnMi}
+            />
           </Suspense>
         )}
       </div>
@@ -170,11 +247,20 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={!linea || ocupado}
+                  disabled={!linea || ocupado || Boolean(marcando)}
                   onClick={guardar}
                   className={`${BOTON} bg-primary text-white`}
                 >
                   {t('holeReviews.save')}
+                </button>
+                {/* El admin marca su propia línea en cualquier hoyo (Agustín, 17 oct) */}
+                <button
+                  type="button"
+                  disabled={ocupado || Boolean(marcando)}
+                  onClick={() => setMarcando({ paso: 'salida', salida: null })}
+                  className={`${BOTON} bg-gray-100 text-gray-900`}
+                >
+                  {t('holeReviews.markFromScratch')}
                 </button>
                 {hoyo.guardada && (
                   <button
@@ -189,17 +275,19 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               </div>
             </section>
 
-            <section aria-labelledby="las-barras">
-              <h3 id="las-barras" className="text-sm font-semibold text-gray-700">{t('holeReviews.cards')}</h3>
-              <ul className="text-sm text-gray-900">
-                {hoyo.barras.map((barra) => (
-                  <li key={`${barra.color}-${barra.gender}-${barra.identifier}`}>
-                    {barraDeTexto(barra)}:{' '}
-                    {barra.metros === null ? t('holeReviews.cardNoMetres', { par: barra.par }) : t('holeReviews.card', { par: barra.par, metros: barra.metros })}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {tarjeta && (
+              <section aria-labelledby="las-barras">
+                <h3 id="las-barras" className="text-sm font-semibold text-gray-700">{t('holeReviews.cards')}</h3>
+                {/* De la barra más corta a la más larga, en una línea (Agustín, 17 oct) */}
+                <p className="text-sm text-gray-900">
+                  {tarjeta.metrosMinimo === null
+                    ? t('holeReviews.cardNoMetres', { par: parDeLaTarjeta })
+                    : tarjeta.metrosMinimo === tarjeta.metrosMaximo
+                      ? t('holeReviews.cardSame', { par: parDeLaTarjeta, metros: tarjeta.metrosMinimo })
+                      : t('holeReviews.cardRange', { par: parDeLaTarjeta, desde: tarjeta.metrosMinimo, hasta: tarjeta.metrosMaximo })}
+                </p>
+              </section>
+            )}
 
             <section aria-labelledby="las-muestras">
               <h3 id="las-muestras" className="text-sm font-semibold text-gray-700">{t('holeReviews.samplesTitle')}</h3>
