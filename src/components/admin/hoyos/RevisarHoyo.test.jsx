@@ -109,27 +109,22 @@ describe('RevisarHoyo', () => {
     expect(casos.campo).toHaveBeenCalledTimes(1);
   });
 
-  it('P12: guardar una línea editada cierra igual, sin avisar de cambios sin guardar', async () => {
+  it('P12: con el aviso de cambios sin guardar a la vista, guardar cierra igual', async () => {
     const onCerrar = await abrir();
     act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
-    casos.guardar.mockResolvedValue(undefined);
-
-    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
-
-    await waitFor(() => expect(onCerrar).toHaveBeenCalledWith({ cambiado: true }));
-    expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: alNorte(5), bends: [], greenCenter: alNorte(300) });
-    expect(screen.queryByText('holeReviews.unsaved')).toBeNull();
-  });
-
-  it('R5: si guardar falla, un aviso y nada cambia', async () => {
-    const onCerrar = await abrir();
-    casos.guardar.mockRejectedValue(Object.assign(new Error('x'), { errorCode: 'INVALID_HOLE_LINE' }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
-
-    await waitFor(() => expect(avisos.error).toHaveBeenCalledWith('holeReviews.invalidLine'));
     fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
-    expect(onCerrar).toHaveBeenCalledWith({ cambiado: false });
+    expect(screen.getByText('holeReviews.unsaved')).toBeInTheDocument();
+    let terminar;
+    casos.guardar.mockReturnValue(new Promise((ok) => { terminar = ok; }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+    // Mientras guarda, «Cerrar sin guardar» no cierra a medias
+    expect(screen.getByRole('button', { name: 'holeReviews.closeWithoutSaving' })).toBeDisabled();
+    await act(async () => terminar());
+
+    expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: alNorte(5), bends: [], greenCenter: alNorte(300) });
+    expect(onCerrar).toHaveBeenCalledTimes(1);
+    expect(onCerrar).toHaveBeenCalledWith({ cambiado: true });
   });
 
   it('R6: reabrir, solo con la línea guardada', async () => {

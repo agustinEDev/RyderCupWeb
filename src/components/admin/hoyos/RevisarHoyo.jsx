@@ -24,7 +24,8 @@ const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-5
  * ortofoto, todas sus muestras (cada una con el color de su barra) y la línea
  * guardada; el admin parte de una muestra (o de lo guardado), la ajusta
  * arrastrando la salida, los codos y el green, y la guarda. También puede
- * reabrir el hoyo y borrar una muestra mala. Al cerrar, dice si cambió algo.
+ * reabrir el hoyo y borrar una muestra mala. Al guardar se cierra sola (el hoyo
+ * deja de estar pendiente); al cerrar, dice si cambió algo.
  */
 const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const { t, i18n } = useTranslation(['admin', 'golfCourses']);
@@ -66,13 +67,14 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     try {
       await accion();
       setCambiado(true);
-      // Guardada (o quitada) la línea, ya no hay cambios que perder, aunque la
-      // recarga de después falle (CodeRabbit, 17 oct)
+      // Quitada la línea (reabrir), ya no hay cambios que perder, aunque la
+      // recarga de después falle (CodeRabbit, 17 oct). Borrar una muestra la
+      // conserva
       if (!conservarLinea) setEditada(false);
       if (ok) customToast.success(t(ok));
       await cargar({ conservarLinea });
-    } catch (error) {
-      customToast.error(t(error?.errorCode === 'INVALID_HOLE_LINE' ? 'holeReviews.invalidLine' : 'holeReviews.actionError'));
+    } catch {
+      customToast.error(t('holeReviews.actionError'));
     } finally {
       setOcupado(false);
       setPorBorrar(null);
@@ -146,7 +148,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         {avisoAlCerrar && (
           <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-900">
             <span>{t('holeReviews.unsaved')}</span>
-            <button type="button" onClick={() => onCerrar({ cambiado })} className={`${BOTON} bg-white text-amber-900 ring-1 ring-amber-300`}>
+            <button type="button" disabled={ocupado} onClick={() => onCerrar({ cambiado })} className={`${BOTON} bg-white text-amber-900 ring-1 ring-amber-300`}>
               {t('holeReviews.closeWithoutSaving')}
             </button>
           </div>

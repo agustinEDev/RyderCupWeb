@@ -36,7 +36,7 @@ vi.mock('../../components/admin/hoyos/RevisarHoyo', () => ({
 const { default: HoleReviews } = await import('./HoleReviews');
 
 const LISTA = [
-  { golfCourseId: 'gc-1', name: 'Alcanada', holes: [{ holeNumber: 1, samples: 2, saved: false }, { holeNumber: 7, samples: 1, saved: false }] },
+  { golfCourseId: 'gc-1', name: 'Alcanada', holes: [{ holeNumber: 1, samples: 2 }, { holeNumber: 7, samples: 1 }] },
 ];
 
 describe('HoleReviews', () => {
