@@ -20,7 +20,7 @@ describe('HoleReviewMapper', () => {
       courses: [{ golf_course_id: 'gc-1', name: 'Valderrama', holes: [{ hole_number: 1, samples: 2, saved: false }] }],
     });
 
-    expect(lista).toEqual([{ golfCourseId: 'gc-1', name: 'Valderrama', holes: [{ holeNumber: 1, samples: 2, saved: false }] }]);
+    expect(lista).toEqual([{ golfCourseId: 'gc-1', name: 'Valderrama', holes: [{ holeNumber: 1, samples: 2 }] }]);
   });
 
   it('L1: sin lista, vacío', () => {

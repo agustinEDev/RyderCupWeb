@@ -55,8 +55,8 @@ class IGolfCourseRepository {
   }
 
   /**
-   * Los campos con hoyos por revisar (BE #575, admin)
-   * @returns {Promise<{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number, saved: boolean}[]}[]>}
+   * Los campos con hoyos pendientes de revisar (BE #575, admin)
+   * @returns {Promise<{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number}[]}[]>}
    */
   async listHoleReviews() {
     throw new Error('Method not implemented: listHoleReviews');

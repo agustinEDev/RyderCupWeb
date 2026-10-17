@@ -24,7 +24,8 @@ const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-5
  * ortofoto, todas sus muestras (cada una con el color de su barra) y la línea
  * guardada; el admin parte de una muestra (o de lo guardado), la ajusta
  * arrastrando la salida, los codos y el green, y la guarda. También puede
- * reabrir el hoyo y borrar una muestra mala. Al cerrar, dice si cambió algo.
+ * reabrir el hoyo y borrar una muestra mala. Al guardar se cierra sola (el hoyo
+ * deja de estar pendiente); al cerrar, dice si cambió algo.
  */
 const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const { t, i18n } = useTranslation(['admin', 'golfCourses']);
@@ -61,13 +62,22 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     alAbrir();
   }, [cargar]);
 
-  const hacer = async (accion, ok, { conservarLinea = false } = {}) => {
+  // `cerrar`: al acabar bien, la revisión se cierra en vez de recargarse (guardar)
+  const hacer = async (accion, ok, { conservarLinea = false, cerrar: cerrarAlAcabar = null } = {}) => {
     setOcupado(true);
     try {
       await accion();
+      if (cerrarAlAcabar) {
+        customToast.success(ok);
+        // El `finally` la desbloquea igual, por si quien la abrió no la desmonta:
+        // de un modal se sale siempre
+        cerrarAlAcabar();
+        return;
+      }
       setCambiado(true);
-      // Guardada (o quitada) la línea, ya no hay cambios que perder, aunque la
-      // recarga de después falle (CodeRabbit, 17 oct)
+      // Quitada la línea (reabrir), ya no hay cambios que perder, aunque la
+      // recarga de después falle (CodeRabbit, 17 oct). Borrar una muestra la
+      // conserva
       if (!conservarLinea) setEditada(false);
       if (ok) customToast.success(t(ok));
       await cargar({ conservarLinea });
@@ -78,6 +88,13 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
       setPorBorrar(null);
     }
   };
+
+  // Guardado el hoyo, deja de estar pendiente: la revisión se cierra sola y la
+  // lista lo quita (Agustín, 17 oct)
+  const guardar = () =>
+    hacer(() => saveHoleLineUseCase.execute(golfCourseId, numeroDeHoyo, linea), t('holeReviews.savedOk', { numero: numeroDeHoyo }), {
+      cerrar: () => onCerrar({ cambiado: true, guardado: true }),
+    });
 
   const barraDeTexto = (barra) =>
     [t(`golfCourses:form.teeColors.${barra.color}`), barra.gender ? t(`holeReviews.genders.${barra.gender}`) : null].filter(Boolean).join(' · ');
@@ -132,7 +149,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         {avisoAlCerrar && (
           <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-900">
             <span>{t('holeReviews.unsaved')}</span>
-            <button type="button" onClick={() => onCerrar({ cambiado })} className={`${BOTON} bg-white text-amber-900 ring-1 ring-amber-300`}>
+            <button type="button" disabled={ocupado} onClick={() => onCerrar({ cambiado })} className={`${BOTON} bg-white text-amber-900 ring-1 ring-amber-300`}>
               {t('holeReviews.closeWithoutSaving')}
             </button>
           </div>
@@ -154,7 +171,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 <button
                   type="button"
                   disabled={!linea || ocupado}
-                  onClick={() => hacer(() => saveHoleLineUseCase.execute(golfCourseId, numeroDeHoyo, linea), 'holeReviews.savedOk')}
+                  onClick={guardar}
                   className={`${BOTON} bg-primary text-white`}
                 >
                   {t('holeReviews.save')}

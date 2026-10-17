@@ -11,12 +11,13 @@ const lineaADominio = (linea) =>
   linea ? { tee: aDominio(linea.tee), bends: (linea.bends ?? []).map(aDominio), greenCenter: aDominio(linea.green_center) } : null;
 
 class HoleReviewMapper {
-  /** @returns {{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number, saved: boolean}[]}[]} */
+  /** @returns {{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number}[]}[]} */
   static listToDomain(api) {
     return (api?.courses ?? []).map((curso) => ({
       golfCourseId: curso.golf_course_id,
       name: curso.name,
-      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples, saved: h.saved })),
+      // Solo llegan los pendientes: el `saved` de la API es siempre false (17 oct)
+      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples })),
     }));
   }
 
