@@ -10,7 +10,7 @@ import { crearRecienEnviadas } from './recienEnviadas';
  * como la ubicación del campo: `guardadas` lo da al momento (con mala
  * cobertura la petición no falla, se queda colgada); `execute` lo pide al
  * servidor y lo guarda. Si el servidor falla, el del móvil. Por hoyo,
- * `{ primera, green, recoge }`.
+ * `{ guardada, primera, green, recoge }`.
  *
  * `pendientes` son las del jugador en ese campo y con esa barra que aún no han
  * salido, por hoyo: una hecha sin cobertura se sigue dibujando. También las

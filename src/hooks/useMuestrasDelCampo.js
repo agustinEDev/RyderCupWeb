@@ -6,10 +6,11 @@ import { MUESTRA_PENDIENTE, MUESTRAS_CAMBIADAS } from './useEnvioDeMuestras';
  * Las muestras del campo para el mapa del hoyo (BE #575, 17 oct: una
  * referencia por hoyo), y cómo enviar una con la barra del jugador.
  *
- * - `muestras`: por hoyo, `{ primera, green, recoge }`: su primera muestra
- *   completa, el green de su primera solo green, y si aún recoge. La copia del
- *   móvil al momento y la red la refresca. Un hoyo que no está es
- *   `{ primera: null, green: null, recoge: true }`.
+ * - `muestras`: por hoyo, `{ guardada, primera, green, recoge }`: la línea
+ *   que guardó el admin, su primera muestra completa, el green de su primera
+ *   solo green, y si aún recoge. La copia del móvil al momento y la red la
+ *   refresca. Un hoyo que no está es
+ *   `{ guardada: null, primera: null, green: null, recoge: true }`.
  * - `pendientes`: por hoyo, la última línea del jugador con su barra desde este
  *   móvil (`{ tee, bends, greenCenter }`): la que espera en la cola o, si no, la
  *   última ya enviada. Una hecha sin cobertura se sigue viendo, y la enviada

@@ -110,7 +110,8 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
       ? `green:${greenSuelto.lat},${greenSuelto.lon}`
       : '';
   const ahora = {
-    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${hoyo ? 'con' : 'sin'}-${!completo && deCualMuestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
+    // Con los metros: la salida se coloca con ellos al abrir (V2)
+    clave: `${numeroDeHoyo}-${mapaDelCampo?.version ?? 'sin-mapa'}-${metros ?? 'sin-metros'}-${hoyo ? 'con' : 'sin'}-${!completo && deCualMuestra ? `muestra:${deCualMuestra}` : (porMarcar ?? '')}`,
     hoyo,
     porMarcar,
     atribucion: usaElMapa ? (mapaDelCampo?.attribution ?? null) : null,
@@ -144,7 +145,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           metros={metros}
           porMarcar={visto.porMarcar}
           // Transparente para el jugador: se envía sin avisar de nada (16 oct)
-          recoge={delHoyo.recoge}
+          recoge={delHoyo.recoge && !guardada}
+          // Mi propia línea (de este móvil) no se mueve a mis metros: ya es mía
+          colocarSalida={!(muestra && muestra === mia)}
           onMuestra={puedeEnviar ? (datos) => enviar(numeroDeHoyo, datos) : null}
           onEmpezar={() => setCongelado((c) => c ?? ahora)}
         />

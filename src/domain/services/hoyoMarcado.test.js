@@ -303,6 +303,23 @@ describe('salidaPorMetros', () => {
     expect(distanciaEnMetros(SALIDA, salidaPorMetros(recta, 280)[0])).toBe(20);
   });
 
+  it.each([[0], [-50]])('con %i metros, no se mueve', (metros) => {
+    expect(salidaPorMetros(linea, metros)).toBe(linea);
+  });
+
+  it('atrasarla no deja el green a más de 750 m', () => {
+    const larga = [SALIDA, alNorte(400), alNorte(720)];
+
+    expect(salidaPorMetros(larga, 770)).toBe(larga);
+    expect(distanciaEnMetros(salidaPorMetros(larga, 740)[0], alNorte(720))).toBe(740);
+  });
+
+  it('una línea con un punto roto no se mueve', () => {
+    const rota = [SALIDA, { lat: Number.NaN, lon: -5.33 }, GREEN];
+
+    expect(salidaPorMetros(rota, 250)).toBe(rota);
+  });
+
   it('sin línea (un punto o nada), nada', () => {
     expect(salidaPorMetros([GREEN], 300)).toEqual([GREEN]);
     expect(salidaPorMetros(null, 300)).toBeNull();

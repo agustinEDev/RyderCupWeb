@@ -2102,6 +2102,25 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(lineaDibujada()[0]).toEqual([T.lon, T.lat]);
   });
 
+  it('V2: el hoyo se encuadra con mi salida (la atrasada, también)', () => {
+    const hoyo = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } };
+    abrir({ hoyo, metros: 340, par: 3 });
+
+    const conMiSalida = { ...hoyo, playLine: [alNorte(-40), alNorte(300)] };
+    const bearing = orientacionDelHoyo(conMiSalida);
+    const { center, zoom } = encuadreGirado(conMiSalida, bearing, { ancho: 360, alto: 640, padding: { top: 90, bottom: 288, left: 40, right: 40 } });
+    const [ultima] = mapa().jumpTo.mock.calls.at(-1);
+    expect(ultima.center[1]).toBeCloseTo(center.lat, 6);
+    expect(ultima.zoom).toBeCloseTo(zoom, 6);
+  });
+
+  it('V2: mi propia línea (colocarSalida apagado) no se mueve', () => {
+    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3, colocarSalida: false });
+    act(() => mapa().oyentes.load());
+
+    expect(lineaDibujada()[0]).toEqual([T.lon, T.lat]);
+  });
+
   it('V2: abrirla con mis metros no envía nada (no la he movido)', () => {
     const onMuestra = vi.fn();
     const { unmount } = abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3, recoge: true, onMuestra });

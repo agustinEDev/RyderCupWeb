@@ -350,6 +350,36 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.atribucion).toBeNull();
   });
 
+  it('V1: con la línea del admin no se envía nada, aunque el resumen diga que recoge', async () => {
+    lasMuestras.muestras = { 3: { guardada: { tee: T, bends: [], greenCenter: C }, primera: null, green: null, recoge: true } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.recoge).toBe(false);
+    expect(carga.props.colocarSalida).toBe(true);
+  });
+
+  it('V2: mi propia línea pendiente no se coloca por metros', async () => {
+    lasMuestras.pendientes = { 3: { tee: T, bends: [], greenCenter: C } };
+
+    abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.colocarSalida).toBe(false);
+  });
+
+  it('V2: si cambian los metros con el mapa abierto (sin empezar), se rehace con ellos', async () => {
+    lasMuestras.muestras = { 3: { primera: PRIMERA, green: null, recoge: true } };
+    const { rerender } = abrirEn({ holes: {} });
+    await screen.findByTestId('mapa-del-hoyo');
+    const antes = carga.montajes;
+
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={320} userId="u-1" barra={BARRA} />);
+
+    expect(carga.montajes).toBe(antes + 1);
+  });
+
   // Revisión del 17 oct (decidido sin Agustín, lo más conservador; a confirmar)
   it('V10: con la salida del mapa aprobado, se sigue pidiendo el green desde ella (el green suelto no la tapa)', async () => {
     lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
