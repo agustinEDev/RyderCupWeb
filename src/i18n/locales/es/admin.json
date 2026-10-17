@@ -48,7 +48,8 @@
     "deleteTooltip": "Gestionar cuenta",
     "previous": "Anterior",
     "next": "Siguiente",
-    "pageInfo": "Página {{current}} de {{total}}"
+    "pageInfo": "Página {{current}} de {{total}}",
+    "listLabel": "Usuarios"
   },
   "competitions": {
     "searchPlaceholder": "Buscar por nombre o creador…",
@@ -95,7 +96,8 @@
     "confirmCancel": "Sí, cancelar",
     "confirmCancelDismiss": "No cancelar",
     "transitionSuccess": "Estado actualizado",
-    "transitionError": "Error al cambiar el estado"
+    "transitionError": "Error al cambiar el estado",
+    "listLabel": "Competiciones"
   },
   "editModal": {
     "title": "Editar usuario",

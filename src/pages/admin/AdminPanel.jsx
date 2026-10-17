@@ -404,7 +404,7 @@ const AdminPanel = () => {
                     className="space-y-4"
                   >
                     <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
-                      <div className="flex-1 min-w-[220px]">
+                      <div className="basis-full md:basis-auto md:flex-1 md:min-w-[220px]">
                         <div className="relative">
                           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
@@ -512,7 +512,7 @@ const AdminPanel = () => {
                     className="space-y-4"
                   >
                     <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
-                      <div className="flex-1 min-w-[220px]">
+                      <div className="basis-full md:basis-auto md:flex-1 md:min-w-[220px]">
                         <div className="relative">
                           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           <input

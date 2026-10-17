@@ -48,7 +48,8 @@
     "deleteTooltip": "Manage account",
     "previous": "Previous",
     "next": "Next",
-    "pageInfo": "Page {{current}} of {{total}}"
+    "pageInfo": "Page {{current}} of {{total}}",
+    "listLabel": "Users"
   },
   "competitions": {
     "searchPlaceholder": "Search by name or creator…",
@@ -95,7 +96,8 @@
     "confirmCancel": "Yes, cancel",
     "confirmCancelDismiss": "No, keep it",
     "transitionSuccess": "Status updated",
-    "transitionError": "Failed to update status"
+    "transitionError": "Failed to update status",
+    "listLabel": "Competitions"
   },
   "editModal": {
     "title": "Edit user",

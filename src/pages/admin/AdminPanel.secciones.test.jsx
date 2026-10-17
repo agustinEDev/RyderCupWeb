@@ -228,4 +228,17 @@ describe('AdminPanel · secciones', () => {
     expect(screen.queryByTestId('golf-courses-tab')).not.toBeInTheDocument();
     expect(screen.queryByText('25')).not.toBeInTheDocument();
   });
+
+  it.each([
+    ['/admin/usuarios', 'users.searchPlaceholder', mockListAdminUsers],
+    ['/admin/competiciones', 'competitions.searchPlaceholder', mockAdminListCompetitions],
+  ])('F3: en %s el buscador va a todo el ancho del móvil y lo demás baja de línea', async (ruta, texto, carga) => {
+    abrir(ruta);
+    await waitFor(() => expect(carga).toHaveBeenCalled());
+    const caja = screen.getByPlaceholderText(texto).closest('form > div');
+
+    expect(caja).toHaveClass('basis-full', 'md:basis-auto', 'md:flex-1');
+    expect(caja).not.toHaveClass('min-w-[220px]');
+    expect(caja.parentElement).toHaveClass('flex-wrap');
+  });
 });

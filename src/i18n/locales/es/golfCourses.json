@@ -64,7 +64,8 @@
       "PINK": "Rosas",
       "GOLD": "Doradas",
       "OTHER": "Otro"
-    }
+    },
+    "holeRow": "Hoyo {{hole}} · Par {{par}} · Hándicap {{strokeIndex}}"
   },
   "table": {
     "name": "Nombre",
