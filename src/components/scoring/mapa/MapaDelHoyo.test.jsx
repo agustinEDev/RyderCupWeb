@@ -1602,7 +1602,8 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       // La línea acaba en su centro, y el recuadro usa su contorno (15 m), no ±10
       expect(lineaDibujada().at(-1)).toEqual([T.lon, alNorte(320).lat]);
       expect(screen.getByTestId('distancia-delante')).toHaveTextContent('327');
-      expect(textos()).toEqual(['mapa.tramo {"metros":320}']);
+      // V2 (17 oct): la salida se lleva a los 342 m de mi tarjeta
+      expect(textos()).toEqual(['mapa.tramo {"metros":342}']);
     });
 
     it('CR4: toda la apertura es una muestra con un solo id (oculta y luego cerrada tras moverla, el mismo)', () => {
@@ -2083,6 +2084,32 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     unmount();
     expect(onMuestra.mock.calls.at(-1)[0].greenCenter).toEqual({ lat: alNorte(320).lat, lon: T.lon });
+  });
+
+  // V2 (17 oct): una referencia por hoyo, vista desde mi barra
+  it('V2: la salida de la línea se lleva a mis metros, sobre el primer tramo', () => {
+    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3 });
+    act(() => mapa().oyentes.load());
+
+    expect(lineaDibujada()[0][1]).toBeCloseTo(alNorte(30).lat, 9);
+    expect(screen.getByTestId('tramos-de-la-linea')).toHaveTextContent('{"a":270}');
+  });
+
+  it('V2: sin metros en la tarjeta, la salida de la línea tal cual', () => {
+    abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: null, par: 3 });
+    act(() => mapa().oyentes.load());
+
+    expect(lineaDibujada()[0]).toEqual([T.lon, T.lat]);
+  });
+
+  it('V2: abrirla con mis metros no envía nada (no la he movido)', () => {
+    const onMuestra = vi.fn();
+    const { unmount } = abrir({ hoyo: { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, metros: 270, par: 3, recoge: true, onMuestra });
+    act(() => mapa().oyentes.load());
+
+    unmount();
+
+    expect(onMuestra).not.toHaveBeenCalled();
   });
 
   describe('el recuadro', () => {

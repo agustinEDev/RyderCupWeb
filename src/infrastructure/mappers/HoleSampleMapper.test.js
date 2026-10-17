@@ -19,7 +19,7 @@ import HoleSampleMapper from './HoleSampleMapper';
 const P = (latitude, longitude) => ({ latitude, longitude });
 const PRIMERA = { tee: P(36.28, -5.33), bends: [P(36.2815, -5.331)], green_center: P(36.2827, -5.33) };
 const PRIMERA_DOMINIO = { tee: { lat: 36.28, lon: -5.33 }, bends: [{ lat: 36.2815, lon: -5.331 }], greenCenter: { lat: 36.2827, lon: -5.33 } };
-const VACIO = { primera: null, green: null, recoge: true };
+const VACIO = { guardada: null, primera: null, green: null, recoge: true };
 
 describe('HoleSampleMapper', () => {
   it('S1: de la API al dominio, por hoyo: su primera completa, su green suelto y si recoge', () => {
@@ -29,7 +29,7 @@ describe('HoleSampleMapper', () => {
     const resumen = HoleSampleMapper.toDomain(api);
 
     expect(Object.keys(resumen)).toHaveLength(18);
-    expect(resumen[3]).toEqual({ primera: PRIMERA_DOMINIO, green: { lat: 36.283, lon: -5.33 }, recoge: false });
+    expect(resumen[3]).toEqual({ guardada: null, primera: PRIMERA_DOMINIO, green: { lat: 36.283, lon: -5.33 }, recoge: false });
     expect(resumen[1]).toEqual(VACIO);
   });
 
@@ -42,6 +42,12 @@ describe('HoleSampleMapper', () => {
     ]);
 
     expect(resumen).toEqual({ 1: VACIO, 2: VACIO, 3: VACIO, 4: { ...VACIO, primera: { ...PRIMERA_DOMINIO, bends: [] } } });
+  });
+
+  it('S1 (V1): la línea que guardó el admin, como una muestra completa', () => {
+    const resumen = HoleSampleMapper.toDomain([{ hole_number: 1, saved_line: PRIMERA, collecting: false }]);
+
+    expect(resumen[1]).toEqual({ ...VACIO, guardada: PRIMERA_DOMINIO, recoge: false });
   });
 
   it('S2: un hoyo sin número válido se salta, y lo que no es lista es vacío', () => {

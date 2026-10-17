@@ -194,7 +194,10 @@ describe('ApiGolfCourseRepository — muestras de hoyo', () => {
     const resumen = await new ApiGolfCourseRepository().getHoleSamples('gc-1');
 
     expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/samples', { topeMs: 15000 });
-    expect(resumen).toEqual({ 1: { primera: null, green: null, recoge: true }, 3: { primera: PUNTOS, green: null, recoge: false } });
+    expect(resumen).toEqual({
+      1: { guardada: null, primera: null, green: null, recoge: true },
+      3: { guardada: null, primera: PUNTOS, green: null, recoge: false },
+    });
   });
 
   it('S5: enviar es un POST al hoyo con el id, la barra y los puntos, y el 204 se resuelve', async () => {

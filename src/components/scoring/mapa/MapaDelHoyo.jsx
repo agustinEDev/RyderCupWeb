@@ -15,6 +15,7 @@ import {
   estaLejosDelCampo,
   hoyoDeUnaMarca,
   salidaGreenFueraDeLimites,
+  salidaPorMetros,
 } from '../../../domain/services/hoyoMarcado';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
 import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
@@ -239,7 +240,9 @@ const MapaDelHoyo = ({
   const pidiendo = fase === 'pidiendo';
   // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió.
   // `green`: el que marcó quien no está en la salida (solo green, sin línea)
-  const [edicion, setEdicion] = useState(() => ({ linea: lineaParaMover(hoyo, par), green: null, cambiada: false, version: 0 }));
+  // Con la salida llevada a los metros de mi tarjeta (V2, 17 oct): la línea es
+  // una por hoyo, de la barra que sea
+  const [edicion, setEdicion] = useState(() => ({ linea: salidaPorMetros(lineaParaMover(hoyo, par), metros), green: null, cambiada: false, version: 0 }));
   const [conAyudaDeCodos, setConAyudaDeCodos] = useState(false);
   const linea = edicion.linea;
   // El hoyo tal y como está ahora: con la línea movida y, si el green no se

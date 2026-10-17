@@ -29,13 +29,15 @@ const primeraADominio = (muestra) => {
 };
 
 const hoyoADominio = (hoyo) => ({
+  // La que guardó el admin (BE #575): la referencia del hoyo, antes que nada
+  guardada: primeraADominio(hoyo.saved_line),
   primera: primeraADominio(hoyo.first_sample),
   green: esPunto(hoyo.first_green) ? aDominio(hoyo.first_green) : null,
   recoge: hoyo.collecting !== false,
 });
 
 class HoleSampleMapper {
-  /** @returns {Object<number, {primera: Object|null, green: Object|null, recoge: boolean}>} por número de hoyo */
+  /** @returns {Object<number, {guardada: Object|null, primera: Object|null, green: Object|null, recoge: boolean}>} por número de hoyo */
   static toDomain(api) {
     if (!Array.isArray(api)) return {};
     return Object.fromEntries(

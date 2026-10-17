@@ -338,6 +338,18 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     expect(carga.props.porMarcar).toBe('salidaAlGreen');
   });
 
+  // V1 (17 oct): la línea que guardó el admin, antes que nada
+  it('V1: la línea guardada por el admin va antes que el hoyo aprobado y que las muestras', async () => {
+    lasMuestras.muestras = { 3: { guardada: { tee: T, bends: [], greenCenter: C }, primera: PRIMERA, green: G, recoge: false } };
+
+    abrirEn({ holes: { 3: { playLine: [T, G], green: { front: G, center: G, back: G } } } });
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.hoyo.green.center).toEqual(C);
+    expect(carga.props.porMarcar).toBeNull();
+    expect(carga.props.atribucion).toBeNull();
+  });
+
   // Revisión del 17 oct (decidido sin Agustín, lo más conservador; a confirmar)
   it('V10: con la salida del mapa aprobado, se sigue pidiendo el green desde ella (el green suelto no la tapa)', async () => {
     lasMuestras.muestras = { 3: { primera: null, green: G, recoge: true } };
