@@ -25,6 +25,8 @@ class HoleReviewMapper {
     return {
       golfCourseId: api.golf_course_id,
       name: api.name,
+      // Para marcar un hoyo sin nada, el mapa parte del campo (17 oct)
+      ubicacion: api.location ? aDominio(api.location) : null,
       holes: (api.holes ?? []).map((h) => ({
         holeNumber: h.hole_number,
         guardada: lineaADominio(h.saved_line),

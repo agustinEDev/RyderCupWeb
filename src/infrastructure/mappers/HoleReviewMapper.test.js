@@ -67,4 +67,9 @@ describe('HoleReviewMapper', () => {
       green_center: P(5, 6),
     });
   });
+  it('la ubicación del campo, para marcar un hoyo sin nada; sin ella, null (17 oct)', () => {
+    expect(HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', location: P(36.28, -5.33), holes: [] }).ubicacion).toEqual({ lat: 36.28, lon: -5.33 });
+    expect(HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', location: null, holes: [] }).ubicacion).toBeNull();
+    expect(HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', holes: [] }).ubicacion).toBeNull();
+  });
 });

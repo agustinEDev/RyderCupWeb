@@ -22,6 +22,7 @@ vi.mock('maplibre-gl', () => {
       this.fuentes = {};
       this.capas = [];
       this.fitBounds = vi.fn();
+      this.easeTo = vi.fn();
       this.remove = vi.fn();
       mapas.push(this);
     }
@@ -46,6 +47,10 @@ vi.mock('maplibre-gl', () => {
     }
     setLngLat(p) {
       this.p = p;
+      return this;
+    }
+    setDraggable(si) {
+      this.opciones.draggable = si;
       return this;
     }
     getLngLat() {
@@ -148,5 +153,77 @@ describe('MapaDeRevision', () => {
     const [salida, codo, green] = vivas().filter((m) => m.opciones.draggable).map((m) => m.opciones.element);
     expect([salida, codo, green].map((e) => e.getAttribute('aria-label'))).toEqual(['holeReviews.pointTee', 'holeReviews.pointBend', 'holeReviews.pointGreen']);
     expect(salida.className).toContain('h-11');
+  });
+  describe('marcar desde cero (17 oct)', () => {
+    it('con onToque, tocar el mapa da el punto; sin él, no', () => {
+      const onToque = vi.fn();
+      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} onToque={onToque} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      act(() => mapa.oyentes.click({ lngLat: { lng: -5.33, lat: 36.28 } }));
+      expect(onToque).toHaveBeenCalledWith({ lat: 36.28, lon: -5.33 });
+
+      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} />);
+      act(() => mapa.oyentes.click({ lngLat: { lng: -5.32, lat: 36.29 } }));
+      expect(onToque).toHaveBeenCalledTimes(1);
+    });
+
+    it('la salida ya tocada se ve en el mapa, y se quita al acabar', () => {
+      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} onToque={() => {}} marcados={[T]} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.fuentes.marcados.data.features.map((f) => f.geometry.coordinates)).toEqual([[T.lon, T.lat]]);
+      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} marcados={[]} />);
+      expect(mapa.fuentes.marcados.data.features).toEqual([]);
+    });
+
+    it('sin nada que encuadrar, el mapa parte del campo', () => {
+      render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} centro={T} />);
+      const mapa = mapas.at(-1);
+
+      expect(mapa.opciones.center).toEqual([T.lon, T.lat]);
+      expect(mapa.opciones.zoom).toBeGreaterThanOrEqual(15);
+    });
+
+    it('E14: tu posición se ve, y el mapa se centra en ella cada vez que se pide', () => {
+      const props = { muestras: [], guardada: null, linea: null, onLinea: () => {} };
+      const { rerender } = render(<MapaDeRevision {...props} posicion={null} centrarEnMi={0} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+      expect(mapa.fuentes.yo.data.features).toEqual([]);
+
+      // Pedido, pero aún sin posición: se espera a que llegue
+      rerender(<MapaDeRevision {...props} posicion={null} centrarEnMi={1} />);
+      expect(mapa.easeTo).not.toHaveBeenCalled();
+      rerender(<MapaDeRevision {...props} posicion={T} centrarEnMi={1} />);
+      expect(mapa.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [T.lon, T.lat] }));
+      expect(mapa.fuentes.yo.data.features[0].geometry.coordinates).toEqual([T.lon, T.lat]);
+
+      // Moverse no lo recentra; pedirlo otra vez, sí
+      rerender(<MapaDeRevision {...props} posicion={G} centrarEnMi={1} />);
+      expect(mapa.easeTo).toHaveBeenCalledTimes(1);
+      rerender(<MapaDeRevision {...props} posicion={G} centrarEnMi={2} />);
+      expect(mapa.easeTo).toHaveBeenLastCalledWith(expect.objectContaining({ center: [G.lon, G.lat] }));
+    });
+
+    it('bloqueada (mientras se marca), sus puntos no se arrastran; al acabar, sí', () => {
+      const props = { muestras: [], guardada: null, linea: LINEA, onLinea: () => {} };
+      const { rerender } = render(<MapaDeRevision {...props} bloqueada />);
+      act(() => mapas.at(-1).oyentes.load());
+      expect(vivas().every((m) => m.opciones.draggable === false)).toBe(true);
+
+      rerender(<MapaDeRevision {...props} bloqueada={false} />);
+      expect(vivas().every((m) => m.opciones.draggable === true)).toBe(true);
+    });
+
+    it('E14: si la posición llega antes de que cargue el mapa, se centra al cargar', () => {
+      render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} posicion={T} centrarEnMi={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [T.lon, T.lat] }));
+    });
   });
 });
