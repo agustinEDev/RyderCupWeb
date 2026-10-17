@@ -183,5 +183,17 @@
     "pointTee": "Salida",
     "pointBend": "Codo",
     "pointGreen": "Green"
+  },
+  "menu": {
+    "label": "Secciones del panel",
+    "requests_one": "{{count}} solicitud",
+    "requests_other": "{{count}} solicitudes"
+  },
+  "sections": {
+    "holes": "Hoyos"
+  },
+  "golfTabs": {
+    "approved": "Aprobados",
+    "requests": "Solicitudes"
   }
 }

@@ -183,5 +183,17 @@
     "pointTee": "Tee",
     "pointBend": "Bend",
     "pointGreen": "Green"
+  },
+  "menu": {
+    "label": "Panel sections",
+    "requests_one": "{{count}} request",
+    "requests_other": "{{count}} requests"
+  },
+  "sections": {
+    "holes": "Holes"
+  },
+  "golfTabs": {
+    "approved": "Approved",
+    "requests": "Requests"
   }
 }

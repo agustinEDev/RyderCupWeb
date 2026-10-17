@@ -1,6 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import AdminPanel from './AdminPanel';
+
+// El panel va por rutas desde el 17 oct: se abre en /admin y cada sección se
+// toca en el menú
+const renderPanel = () =>
+  render(
+    <MemoryRouter initialEntries={['/admin']}>
+      <Routes>
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/admin/:seccion" element={<AdminPanel />} />
+      </Routes>
+    </MemoryRouter>
+  );
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -117,46 +130,49 @@ describe('AdminPanel', () => {
   });
 
   it('loads and renders the overview stats on mount', async () => {
-    render(<AdminPanel />);
+    renderPanel();
 
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    expect(await screen.findByText('9')).toBeInTheDocument();
-    expect(screen.getByText('25')).toBeInTheDocument();
+    // El 9 sale también en el menú, junto a Usuarios: se mira en la sección
+    const seccion = await screen.findByTestId('seccion-del-panel');
+    await waitFor(() => expect(within(seccion).getByText('9')).toBeInTheDocument());
+    expect(within(seccion).getByText('25')).toBeInTheDocument();
   });
 
   it('loads and renders the users table when switching to the Usuarios tab', async () => {
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
 
     await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalled());
     expect(await screen.findByText('Agus Estevez')).toBeInTheDocument();
   });
 
   it('renders the embedded GolfCourses tab', async () => {
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
 
     expect(await screen.findByTestId('golf-courses-tab')).toBeInTheDocument();
   });
 
   it('renders the embedded PendingGolfCourses tab', async () => {
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.pending/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
 
     expect(await screen.findByTestId('pending-golf-courses-tab')).toBeInTheDocument();
   });
 
   it('opens the edit modal and calls updateAdminUserUseCase on save', async () => {
     mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], firstName: 'Renamed' });
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
@@ -167,9 +183,9 @@ describe('AdminPanel', () => {
 
   it('opens the manage modal and calls setAdminUserActiveUseCase on confirm', async () => {
     mockSetAdminUserActive.mockResolvedValue();
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
@@ -180,9 +196,9 @@ describe('AdminPanel', () => {
 
   it('permanently deletes a user once the confirmation word is typed', async () => {
     mockDeleteAdminUser.mockResolvedValue();
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
@@ -201,9 +217,9 @@ describe('AdminPanel', () => {
     const error = new Error('has created one or more quick matches');
     error.status = 409;
     mockDeleteAdminUser.mockRejectedValue(error);
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
@@ -219,10 +235,10 @@ describe('AdminPanel', () => {
   });
 
   it('loads and renders the competitions table when switching to the Competitions tab', async () => {
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
 
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
     expect(await screen.findByText('Ryder Cup Local')).toBeInTheDocument();
@@ -231,9 +247,9 @@ describe('AdminPanel', () => {
 
   it('only allows editing DRAFT competitions and saves via adminUpdateCompetitionUseCase', async () => {
     mockAdminUpdateCompetition.mockResolvedValue({ id: 'c1', name: 'Renamed' });
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     const editButtons = screen.getAllByRole('button', { name: 'competitions.editTooltip' });
@@ -247,9 +263,9 @@ describe('AdminPanel', () => {
 
   it('runs a non-destructive transition immediately', async () => {
     mockActivateCompetition.mockResolvedValue({ id: 'c1', status: 'ACTIVE' });
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
@@ -267,9 +283,9 @@ describe('AdminPanel', () => {
       creator: { firstName: 'Ana', lastName: 'Ruiz' },
     }));
     mockAdminListCompetitions.mockResolvedValue(fullPage);
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
 
     // 21 fetched (limit 20 + 1) means there's a next page; only 20 are shown.
@@ -292,9 +308,9 @@ describe('AdminPanel', () => {
 
   it('requires confirmation before cancelling a competition', async () => {
     mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
@@ -308,9 +324,9 @@ describe('AdminPanel', () => {
   // Pasó a ModalShell el 4 oct 2026: se anuncia con su título, y Escape la
   // descarta como su botón de no cancelar
   it('la confirmación de cancelar se anuncia y se descarta con Escape', async () => {
-    render(<AdminPanel />);
+    renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);

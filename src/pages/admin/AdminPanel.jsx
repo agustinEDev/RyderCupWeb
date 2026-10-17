@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { NavLink, Navigate, useParams } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
-import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search, Trophy, AlertTriangle, X, MapPin } from 'lucide-react';
+import { Loader, Users as UsersIcon, BarChart3, Flag, Search, Trophy, AlertTriangle, X, MapPin, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -47,6 +48,18 @@ const TRANSITION_USE_CASES = {
 
 const PAGE_SIZE = 20;
 
+// Las cinco secciones del panel, cada una en su ruta (Agustín, 17 oct): en el
+// móvil, un menú y cada sección en su pantalla; en el ordenador, el menú a la
+// izquierda. Campos de golf junta los aprobados y las solicitudes, y Hoyos lo de
+// revisar los hoyos.
+const SECCIONES = [
+  { ruta: 'resumen', id: 'overview', label: 'tabs.overview', icon: BarChart3 },
+  { ruta: 'usuarios', id: 'users', label: 'tabs.users', icon: UsersIcon },
+  { ruta: 'competiciones', id: 'competitions', label: 'tabs.competitions', icon: Trophy },
+  { ruta: 'campos', id: 'golfCourses', label: 'tabs.golfCourses', icon: Flag },
+  { ruta: 'hoyos', id: 'holes', label: 'sections.holes', icon: MapPin },
+];
+
 /**
  * AdminPanel Page
  * Consolidated admin panel: Overview stats, Users (list/edit/deactivate/delete),
@@ -56,7 +69,11 @@ const AdminPanel = () => {
   const { t } = useTranslation('admin');
   const { user, loading: isLoadingUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const { seccion } = useParams();
+  const abierta = SECCIONES.find((s) => s.ruta === seccion);
+  // Sin sección (`/admin`), el ordenador enseña el resumen junto al menú
+  const activeTab = abierta?.id ?? 'overview';
+  const [pestañaDeCampos, setPestañaDeCampos] = useState('approved');
 
   // Overview
   const [stats, setStats] = useState(null);
@@ -240,15 +257,15 @@ const AdminPanel = () => {
     return null;
   }
 
-  const tabs = [
-    { id: 'overview', label: t('tabs.overview'), icon: BarChart3 },
-    { id: 'users', label: t('tabs.users'), icon: UsersIcon },
-    { id: 'competitions', label: t('tabs.competitions'), icon: Trophy },
-    { id: 'golfCourses', label: t('tabs.golfCourses'), icon: Flag },
-    { id: 'pending', label: t('tabs.pending'), icon: Clock },
-    // Junto a los pendientes: revisar las muestras de los hoyos (BE #575)
-    { id: 'holeReviews', label: t('tabs.holeReviews'), icon: MapPin },
-  ];
+  if (seccion && !abierta) return <Navigate to="/admin" replace />;
+
+  // Lo que dice cada fila del menú con lo que ya trae el resumen
+  const numeroDe = {
+    users: stats?.totalUsers,
+    competitions: stats?.totalCompetitions,
+    golfCourses: stats?.totalGolfCoursesPending ? t('menu.requests', { count: stats.totalGolfCoursesPending }) : null,
+  };
+
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
@@ -263,7 +280,7 @@ const AdminPanel = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="p-4"
+              className={`p-4 ${abierta ? 'hidden md:block' : ''}`}
             >
               <h1 className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                 {t('title')}
@@ -271,34 +288,36 @@ const AdminPanel = () => {
               <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="px-4"
-            >
-              {/* Con seis pestañas, en el móvil bajan de línea: nunca scroll lateral */}
-              <div role="tablist" className="flex flex-wrap gap-x-2 border-b border-gray-200">
-                {tabs.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    role="tab"
-                    aria-selected={activeTab === id}
-                    onClick={() => setActiveTab(id)}
-                    className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${
-                      activeTab === id
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+            <div className="md:flex md:items-start md:gap-6 px-4">
+              {/* En el móvil, con una sección abierta, el menú se esconde */}
+              <nav
+                aria-label={t('menu.label')}
+                className={`${abierta ? 'hidden md:block' : ''} md:w-64 md:shrink-0`}
+              >
+                <ul className="divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white">
+                  {SECCIONES.map(({ ruta, id, label, icon: Icon }) => {
+                    const actual = abierta?.ruta === ruta;
+                    const numero = numeroDe[id];
+                    return (
+                      <li key={ruta}>
+                        <NavLink
+                          to={`/admin/${ruta}`}
+                          className={`flex min-h-12 items-center gap-3 px-4 py-3 text-gray-900 ${
+                            actual || (!abierta && ruta === 'resumen') ? 'md:bg-primary-50 md:text-primary' : ''
+                          } ${actual ? 'bg-primary-50 text-primary' : ''}`}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                          <span className="flex-1 font-medium">{t(label)}</span>
+                          {numero != null && <span className="text-sm text-gray-500">{numero}</span>}
+                          <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
 
-            <div className="p-4">
+            <div data-testid="seccion-del-panel" className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}>
               {activeTab === 'overview' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -510,9 +529,29 @@ const AdminPanel = () => {
                 </motion.div>
               )}
 
-              {activeTab === 'golfCourses' && <GolfCourses embedded />}
-              {activeTab === 'pending' && <PendingGolfCourses embedded />}
-              {activeTab === 'holeReviews' && <HoleReviews />}
+              {activeTab === 'golfCourses' && (
+                <>
+                  <div role="tablist" className="mb-4 flex border-b border-gray-200">
+                    {['approved', 'requests'].map((pestaña) => (
+                      <button
+                        key={pestaña}
+                        type="button"
+                        role="tab"
+                        aria-selected={pestañaDeCampos === pestaña}
+                        onClick={() => setPestañaDeCampos(pestaña)}
+                        className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-medium ${
+                          pestañaDeCampos === pestaña ? 'border-primary text-primary' : 'border-transparent text-gray-500'
+                        }`}
+                      >
+                        {t(`golfTabs.${pestaña}`)}
+                      </button>
+                    ))}
+                  </div>
+                  {pestañaDeCampos === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded />}
+                </>
+              )}
+              {activeTab === 'holes' && <HoleReviews />}
+            </div>
             </div>
           </div>
         </div>

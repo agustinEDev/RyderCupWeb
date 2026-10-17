@@ -314,6 +314,14 @@ function AppContent() {
             </RoleGuard>
           </ProtectedRoute>
         } />
+        {/* Cada sección del panel en su ruta (17 oct): resumen, usuarios, competiciones, campos y hoyos */}
+        <Route path="/admin/:seccion" element={
+          <ProtectedRoute>
+            <RoleGuard allowedRoles="ADMIN">
+              <AdminPanel />
+            </RoleGuard>
+          </ProtectedRoute>
+        } />
 
         {/* Invitation routes (Sprint 3) */}
         <Route path="/creator/competitions/:id/invitations" element={
