@@ -5,9 +5,7 @@
     "overview": "Overview",
     "users": "Users",
     "golfCourses": "Golf Courses",
-    "pending": "Pending",
-    "competitions": "Competitions",
-    "holeReviews": "Holes to review"
+    "competitions": "Competitions"
   },
   "overview": {
     "totalUsers": "Registered users",

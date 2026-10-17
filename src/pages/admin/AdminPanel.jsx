@@ -63,7 +63,8 @@ const SECCIONES = [
 /**
  * AdminPanel Page
  * Consolidated admin panel: Overview stats, Users (list/edit/deactivate/delete),
- * and Golf Courses (approved + pending) as tabs.
+ * Competitions, Golf Courses (approved + requests) and Holes, as five sections
+ * with their own routes (`/admin/:seccion`).
  */
 const AdminPanel = () => {
   const { t } = useTranslation('admin');
@@ -103,6 +104,19 @@ const AdminPanel = () => {
   const [editingCompetition, setEditingCompetition] = useState(null);
   const [cancelingCompetition, setCancelingCompetition] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // El panel no se desmonta al cambiar de sección (las dos rutas pintan este
+  // mismo componente): lo abierto en una no sigue encima de la otra, y campos de
+  // golf vuelve a abrir los aprobados. Se ajusta al pintar, no en un efecto
+  const [seccionAnterior, setSeccionAnterior] = useState(seccion);
+  if (seccion !== seccionAnterior) {
+    setSeccionAnterior(seccion);
+    setEditingUser(null);
+    setManagingUser(null);
+    setEditingCompetition(null);
+    setCancelingCompetition(null);
+    setPestañaDeCampos('approved');
+  }
 
   const loadStats = useCallback(async () => {
     setIsLoadingStats(true);
@@ -163,8 +177,9 @@ const AdminPanel = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       loadStats();
     }
+    // Al cambiar de sección también: los números del menú siguen a la vista
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, seccion]);
 
   useEffect(() => {
     if (user && activeTab === 'users') {
@@ -266,7 +281,6 @@ const AdminPanel = () => {
     golfCourses: stats?.totalGolfCoursesPending ? t('menu.requests', { count: stats.totalGolfCoursesPending }) : null,
   };
 
-
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
@@ -302,9 +316,14 @@ const AdminPanel = () => {
                       <li key={ruta}>
                         <NavLink
                           to={`/admin/${ruta}`}
-                          className={`flex min-h-12 items-center gap-3 px-4 py-3 text-gray-900 ${
-                            actual || (!abierta && ruta === 'resumen') ? 'md:bg-primary-50 md:text-primary' : ''
-                          } ${actual ? 'bg-primary-50 text-primary' : ''}`}
+                          // En /admin el ordenador enseña el resumen: se marca, solo a la vista
+                          className={`flex min-h-12 items-center gap-3 px-4 py-3 ${
+                            actual
+                              ? 'bg-primary-50 text-primary'
+                              : !abierta && ruta === 'resumen'
+                                ? 'text-gray-900 md:bg-primary-50 md:text-primary'
+                                : 'text-gray-900'
+                          }`}
                         >
                           <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                           <span className="flex-1 font-medium">{t(label)}</span>
@@ -317,241 +336,247 @@ const AdminPanel = () => {
                 </ul>
               </nav>
 
-            <div data-testid="seccion-del-panel" className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}>
-              {activeTab === 'overview' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {isLoadingStats ? (
-                    <BlockLoader />
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalUsers')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalUsers ?? 0}</p>
-                      </div>
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalCompetitions')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCompetitions ?? 0}</p>
-                      </div>
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalQuickMatches')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalQuickMatches ?? 0}</p>
-                      </div>
-                      <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesApproved')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesApproved ?? 0}</p>
-                      </div>
-                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesPending')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesPending ?? 0}</p>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === 'users' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="space-y-4"
-                >
-                  <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={searchInput}
-                          onChange={(e) => setSearchInput(e.target.value)}
-                          placeholder={t('users.searchPlaceholder')}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <select
-                        value={roleFilter}
-                        onChange={(e) => { setOffset(0); setRoleFilter(e.target.value); }}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      >
-                        <option value="">{t('users.filterRoleAll')}</option>
-                        <option value="admin">{t('users.filterRoleAdmin')}</option>
-                        <option value="player">{t('users.filterRolePlayer')}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => { setOffset(0); setStatusFilter(e.target.value); }}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      >
-                        <option value="">{t('users.filterStatusAll')}</option>
-                        <option value="active">{t('users.filterStatusActive')}</option>
-                        <option value="inactive">{t('users.filterStatusInactive')}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <select
-                        value={verifiedFilter}
-                        onChange={(e) => { setOffset(0); setVerifiedFilter(e.target.value); }}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      >
-                        <option value="">{t('users.filterVerifiedAll')}</option>
-                        <option value="verified">{t('users.filterVerifiedYes')}</option>
-                        <option value="unverified">{t('users.filterVerifiedNo')}</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      {t('users.searchButton')}
-                    </button>
-                  </form>
-
-                  <p className="text-sm text-gray-500">
-                    {t('users.totalCount', { count: totalCount })}
-                  </p>
-
-                  {isLoadingUsers ? (
-                    <BlockLoader />
-                  ) : (
-                    <>
-                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                        <AdminUsersTable
-                          users={users}
-                          onEdit={setEditingUser}
-                          onToggleActive={setManagingUser}
-                          onManageDelete={setManagingUser}
-                        />
-                      </div>
-
-                      {totalCount > PAGE_SIZE && (
-                        <div className="flex items-center justify-between pt-2">
-                          <button
-                            onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-                            disabled={offset === 0}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('users.previous')}
-                          </button>
-                          <span className="text-sm text-gray-500">
-                            {t('users.pageInfo', { current: currentPage, total: totalPages })}
-                          </span>
-                          <button
-                            onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-                            disabled={offset + PAGE_SIZE >= totalCount}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('users.next')}
-                          </button>
+              <div data-testid="seccion-del-panel" className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}>
+                {/* En el móvil el título lo pone la cabecera: un solo h1 */}
+                <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
+                {activeTab === 'overview' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {isLoadingStats ? (
+                      <BlockLoader />
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalUsers')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalUsers ?? 0}</p>
                         </div>
-                      )}
-                    </>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === 'competitions' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="space-y-4"
-                >
-                  <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={competitionSearchInput}
-                          onChange={(e) => setCompetitionSearchInput(e.target.value)}
-                          placeholder={t('competitions.searchPlaceholder')}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      {t('competitions.searchButton')}
-                    </button>
-                  </form>
-
-                  <p className="text-sm text-gray-500">
-                    {t('competitions.totalCount', { count: competitions.length })}
-                  </p>
-
-                  {isLoadingCompetitions ? (
-                    <BlockLoader />
-                  ) : (
-                    <>
-                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                        <AdminCompetitionsTable
-                          competitions={competitions}
-                          onEdit={setEditingCompetition}
-                          onTransition={handleTransition}
-                          disabled={isTransitioning}
-                        />
-                      </div>
-
-                      {(competitionOffset > 0 || hasMoreCompetitions) && (
-                        <div className="flex items-center justify-between pt-2">
-                          <button
-                            onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-                            disabled={competitionOffset === 0}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('competitions.previous')}
-                          </button>
-                          <button
-                            onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
-                            disabled={!hasMoreCompetitions}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('competitions.next')}
-                          </button>
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalCompetitions')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCompetitions ?? 0}</p>
                         </div>
-                      )}
-                    </>
-                  )}
-                </motion.div>
-              )}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalQuickMatches')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalQuickMatches ?? 0}</p>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesApproved')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesApproved ?? 0}</p>
+                        </div>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesPending')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesPending ?? 0}</p>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
 
-              {activeTab === 'golfCourses' && (
-                <>
-                  <div role="tablist" className="mb-4 flex border-b border-gray-200">
-                    {['approved', 'requests'].map((pestaña) => (
+                {activeTab === 'users' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-4"
+                  >
+                    <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                      <div className="flex-1 min-w-[220px]">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            placeholder={t('users.searchPlaceholder')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <select
+                          value={roleFilter}
+                          onChange={(e) => { setOffset(0); setRoleFilter(e.target.value); }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        >
+                          <option value="">{t('users.filterRoleAll')}</option>
+                          <option value="admin">{t('users.filterRoleAdmin')}</option>
+                          <option value="player">{t('users.filterRolePlayer')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => { setOffset(0); setStatusFilter(e.target.value); }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        >
+                          <option value="">{t('users.filterStatusAll')}</option>
+                          <option value="active">{t('users.filterStatusActive')}</option>
+                          <option value="inactive">{t('users.filterStatusInactive')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <select
+                          value={verifiedFilter}
+                          onChange={(e) => { setOffset(0); setVerifiedFilter(e.target.value); }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        >
+                          <option value="">{t('users.filterVerifiedAll')}</option>
+                          <option value="verified">{t('users.filterVerifiedYes')}</option>
+                          <option value="unverified">{t('users.filterVerifiedNo')}</option>
+                        </select>
+                      </div>
+
                       <button
-                        key={pestaña}
-                        type="button"
-                        role="tab"
-                        aria-selected={pestañaDeCampos === pestaña}
-                        onClick={() => setPestañaDeCampos(pestaña)}
-                        className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-medium ${
-                          pestañaDeCampos === pestaña ? 'border-primary text-primary' : 'border-transparent text-gray-500'
-                        }`}
+                        type="submit"
+                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
                       >
-                        {t(`golfTabs.${pestaña}`)}
+                        {t('users.searchButton')}
                       </button>
-                    ))}
-                  </div>
-                  {pestañaDeCampos === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded />}
-                </>
-              )}
-              {activeTab === 'holes' && <HoleReviews />}
-            </div>
+                    </form>
+
+                    <p className="text-sm text-gray-500">
+                      {t('users.totalCount', { count: totalCount })}
+                    </p>
+
+                    {isLoadingUsers ? (
+                      <BlockLoader />
+                    ) : (
+                      <>
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                          <AdminUsersTable
+                            users={users}
+                            onEdit={setEditingUser}
+                            onToggleActive={setManagingUser}
+                            onManageDelete={setManagingUser}
+                          />
+                        </div>
+
+                        {totalCount > PAGE_SIZE && (
+                          <div className="flex items-center justify-between pt-2">
+                            <button
+                              onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                              disabled={offset === 0}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('users.previous')}
+                            </button>
+                            <span className="text-sm text-gray-500">
+                              {t('users.pageInfo', { current: currentPage, total: totalPages })}
+                            </span>
+                            <button
+                              onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                              disabled={offset + PAGE_SIZE >= totalCount}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('users.next')}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'competitions' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-4"
+                  >
+                    <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                      <div className="flex-1 min-w-[220px]">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={competitionSearchInput}
+                            onChange={(e) => setCompetitionSearchInput(e.target.value)}
+                            placeholder={t('competitions.searchPlaceholder')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        {t('competitions.searchButton')}
+                      </button>
+                    </form>
+
+                    <p className="text-sm text-gray-500">
+                      {t('competitions.totalCount', { count: competitions.length })}
+                    </p>
+
+                    {isLoadingCompetitions ? (
+                      <BlockLoader />
+                    ) : (
+                      <>
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                          <AdminCompetitionsTable
+                            competitions={competitions}
+                            onEdit={setEditingCompetition}
+                            onTransition={handleTransition}
+                            disabled={isTransitioning}
+                          />
+                        </div>
+
+                        {(competitionOffset > 0 || hasMoreCompetitions) && (
+                          <div className="flex items-center justify-between pt-2">
+                            <button
+                              onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                              disabled={competitionOffset === 0}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('competitions.previous')}
+                            </button>
+                            <button
+                              onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
+                              disabled={!hasMoreCompetitions}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('competitions.next')}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'golfCourses' && (
+                  <>
+                    <div role="tablist" className="mb-4 flex border-b border-gray-200">
+                      {['approved', 'requests'].map((pestaña) => (
+                        <button
+                          key={pestaña}
+                          id={`pestana-campos-${pestaña}`}
+                          type="button"
+                          role="tab"
+                          aria-controls="panel-campos"
+                          aria-selected={pestañaDeCampos === pestaña}
+                          onClick={() => setPestañaDeCampos(pestaña)}
+                          className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-medium ${
+                            pestañaDeCampos === pestaña ? 'border-primary text-primary' : 'border-transparent text-gray-500'
+                          }`}
+                        >
+                          {t(`golfTabs.${pestaña}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <div id="panel-campos" role="tabpanel" aria-labelledby={`pestana-campos-${pestañaDeCampos}`}>
+                      {pestañaDeCampos === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded />}
+                    </div>
+                  </>
+                )}
+                {activeTab === 'holes' && <HoleReviews />}
+              </div>
             </div>
           </div>
         </div>

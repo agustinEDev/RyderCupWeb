@@ -5,9 +5,7 @@
     "overview": "Resumen",
     "users": "Usuarios",
     "golfCourses": "Campos de golf",
-    "pending": "Pendientes",
-    "competitions": "Competiciones",
-    "holeReviews": "Hoyos por revisar"
+    "competitions": "Competiciones"
   },
   "overview": {
     "totalUsers": "Usuarios registrados",

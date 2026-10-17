@@ -22,11 +22,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// El mismo `user` en cada pintado, como el de verdad: uno nuevo cada vez
+// repetiría los efectos que dependen de él
+const { ADMIN } = vi.hoisted(() => ({ ADMIN: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true } }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'admin-1', first_name: 'Admin', last_name: 'User', is_admin: true },
-    loading: false,
-  }),
+  useAuth: () => ({ user: ADMIN, loading: false }),
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
@@ -342,6 +342,55 @@ describe('AdminPanel', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(mockCancelCompetition).not.toHaveBeenCalled();
+  });
+  // Revisión del 17 oct: el panel no se desmonta al cambiar de sección
+  it('cambiar de sección cierra el modal que estaba abierto', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    await screen.findByText('Agus Estevez');
+    fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
+    expect(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    expect(screen.queryByRole('button', { name: 'manageModal.confirmDeactivate' })).not.toBeInTheDocument();
+  });
+
+  it('volver a campos de golf abre otra vez los aprobados', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    expect(screen.getByRole('tab', { name: 'golfTabs.approved' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('los números del menú se piden otra vez al cambiar de sección', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
+  });
+
+  it('en el ordenador, la sección lleva su título y su panel de pestañas', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    expect(screen.getByRole('heading', { level: 2, name: 'tabs.golfCourses' })).toHaveClass('hidden', 'md:block');
+    const pestaña = screen.getByRole('tab', { name: 'golfTabs.approved' });
+    const panel = screen.getByRole('tabpanel');
+    expect(pestaña).toHaveAttribute('aria-controls', panel.id);
+    expect(panel).toHaveAttribute('aria-labelledby', pestaña.id);
+  });
+
+  it('en /admin, el ordenador marca el resumen y solo el resumen', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    const nav = screen.getByRole('navigation');
+    const filas = within(nav).getAllByRole('link');
+    expect(filas[0]).toHaveClass('md:bg-primary-50');
+    for (const fila of filas.slice(1)) expect(fila).not.toHaveClass('md:bg-primary-50');
   });
 });
 
