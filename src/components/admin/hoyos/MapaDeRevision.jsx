@@ -52,7 +52,8 @@ const CLASE_DE_LA_BOLA = 'h-5 w-5 rounded-full border-[3px] border-white bg-fuch
 const COLOR_DE_LO_GUARDADO = '#06b6d4';
 const COLOR_DE_LA_LINEA = '#d946ef';
 // La del mapa de OSM aprobado (17 oct)
-const COLOR_DE_OSM = '#22c55e';
+// Ninguna barra lo tiene: el verde es de las barras verdes
+const COLOR_DE_OSM = '#84cc16';
 const comoLineaDeOsm = (puntos) =>
   puntos?.length > 1 ? coleccion([{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: puntos.map(lngLat) } }]) : coleccion([]);
 

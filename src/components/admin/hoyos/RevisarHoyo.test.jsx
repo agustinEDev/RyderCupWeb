@@ -606,6 +606,22 @@ describe('RevisarHoyo', () => {
       expect(mapa.props.linea).toBeNull();
     });
 
+    it('/code-review: «Empezar desde OpenStreetMap» vuelve a la línea de OSM tras moverla', async () => {
+      await abrir({ muestras: [], osm: OSM, barras: PAR3 });
+      const deOsm = mapa.props.linea;
+      act(() => mapa.props.onLinea({ tee: alNorte(10), bends: [], greenCenter: alNorte(150) }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.useOsm' }));
+
+      expect(mapa.props.linea).toEqual(deOsm);
+    });
+
+    it('/code-review: sin línea de OSM con green, no hay «Empezar desde OpenStreetMap»', async () => {
+      await abrir({ muestras: [], osm: { puntos: OSM.puntos, green: null }, barras: PAR3 });
+
+      expect(screen.queryByRole('button', { name: 'holeReviews.useOsm' })).toBeNull();
+    });
+
     it('T9: reabrir un hoyo guardado cierra la revisión con el cambio', async () => {
       const onCerrar = await abrir({ guardada: { tee: T, bends: [], greenCenter: alNorte(300) } });
       casos.reabrir.mockResolvedValue(undefined);

@@ -103,7 +103,14 @@ const TodosLosCampos = () => {
         {t('allCourses.changeCourse')}
       </button>
       {!cargado && <BlockLoader />}
-      {cargado?.fallo && <p role="alert" className="text-sm text-red-700">{t('allCourses.error')}</p>}
+      {cargado?.fallo && (
+        <div className="flex flex-col items-start gap-2">
+          <p role="alert" className="text-sm text-red-700">{t('allCourses.error')}</p>
+          <button type="button" onClick={() => pedir(idDelCampo)} className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-white">
+            {t('allCourses.retry')}
+          </button>
+        </div>
+      )}
       {cargado?.campo && (
         <section aria-labelledby="todos-los-campos-nombre" className="rounded-xl border border-gray-200 bg-white">
           <header className="border-b border-gray-200 px-4 py-3">

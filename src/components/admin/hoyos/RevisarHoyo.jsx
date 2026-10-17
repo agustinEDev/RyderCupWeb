@@ -25,6 +25,12 @@ import BlockLoader from '../../ui/BlockLoader';
 // Aparte: MapLibre pesa, y el panel de admin no lo necesita hasta aquí
 const MapaDeRevision = lazy(() => import('./MapaDeRevision'));
 
+// La línea de OSM del hoyo (con los codos de su par), si trae green
+const lineaDeOsmDe = (hoyo) => {
+  const puntos = lineaDeOsm(hoyo?.osm?.puntos, hoyo?.osm?.green, tarjetaDelHoyo(hoyo?.barras)?.parDeLaMasLarga);
+  return puntos ? lineaDePuntos(puntos) : null;
+};
+
 const lineaDe = (muestra) => (muestra?.tee ? { tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter } : null);
 
 const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-50';
@@ -85,8 +91,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         setUbicacion(campo.ubicacion ?? null);
         // Se parte de la guardada, de la de OSM (con los codos de su par) o de la
         // primera muestra completa
-        const deOsm = lineaDeOsm(este.osm?.puntos, este.osm?.green, tarjetaDelHoyo(este.barras)?.parDeLaMasLarga);
-        const deLoQueHay = este.guardada ?? (deOsm ? lineaDePuntos(deOsm) : null) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
+        const deLoQueHay = este.guardada ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         if (!conservarLinea) setEditada(false);
         setFallo(false);
@@ -303,6 +308,17 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 >
                   {t('holeReviews.markFromScratch')}
                 </button>
+                {/* Como «Empezar desde esta» de una muestra, pero desde la de OSM */}
+                {lineaDeOsmDe(hoyo) && (
+                  <button
+                    type="button"
+                    disabled={ocupado || Boolean(marcando)}
+                    onClick={() => elegirLinea(lineaDeOsmDe(hoyo))}
+                    className={`${BOTON} bg-gray-100 text-gray-900`}
+                  >
+                    {t('holeReviews.useOsm')}
+                  </button>
+                )}
                 {hoyo.guardada && (
                   <button
                     type="button"

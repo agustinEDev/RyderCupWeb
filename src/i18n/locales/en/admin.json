@@ -188,7 +188,8 @@
     "findingPosition": "Finding your position…",
     "positionDenied": "No location permission",
     "tooFarFromCourse": "That point is more than 3 km from the course: tap again",
-    "positionUnavailable": "This browser does not give your position"
+    "positionUnavailable": "This browser does not give your position",
+    "useOsm": "Start from OpenStreetMap"
   },
   "menu": {
     "label": "Panel sections",
@@ -208,7 +209,8 @@
     "changeCourse": "Change course",
     "error": "The course could not be loaded.",
     "osmWithoutGreen": "OpenStreetMap · no green",
-    "reloadError": "The course could not be reloaded."
+    "reloadError": "The course could not be reloaded.",
+    "retry": "Retry"
   },
   "holeTabs": {
     "pending": "Pending",

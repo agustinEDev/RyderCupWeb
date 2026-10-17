@@ -188,7 +188,8 @@
     "findingPosition": "Buscando tu posición…",
     "positionDenied": "Sin permiso de ubicación",
     "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez",
-    "positionUnavailable": "Este navegador no da tu posición"
+    "positionUnavailable": "Este navegador no da tu posición",
+    "useOsm": "Empezar desde OpenStreetMap"
   },
   "menu": {
     "label": "Secciones del panel",
@@ -208,7 +209,8 @@
     "changeCourse": "Cambiar de campo",
     "error": "No se ha podido cargar el campo.",
     "osmWithoutGreen": "OpenStreetMap · sin green",
-    "reloadError": "No se ha podido recargar el campo."
+    "reloadError": "No se ha podido recargar el campo.",
+    "retry": "Reintentar"
   },
   "holeTabs": {
     "pending": "Pendientes",

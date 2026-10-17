@@ -146,6 +146,10 @@ describe('TodosLosCampos', () => {
 
     expect(await screen.findByText('allCourses.error')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'allCourses.changeCourse' })).toBeInTheDocument();
+    // /code-review: se puede reintentar sin volver a buscarlo
+    casos.campo.mockResolvedValue(CAMPO);
+    fireEvent.click(screen.getByRole('button', { name: 'allCourses.retry' }));
+    expect(await screen.findByRole('region', { name: 'Alcanada' })).toBeInTheDocument();
   });
   it('si dos recargas del campo se cruzan, manda la última que se pidió', async () => {
     const guardado2 = { ...CAMPO, holes: CAMPO.holes.map((h) => (h.holeNumber === 2 ? { ...h, guardada: LINEA } : h)) };
