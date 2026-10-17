@@ -25,6 +25,7 @@ vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div data-
 vi.mock('./GolfCourses', () => ({ default: () => <div data-testid="golf-courses-tab" /> }));
 vi.mock('./PendingGolfCourses', () => ({ default: () => <div data-testid="pending-golf-courses-tab" /> }));
 vi.mock('./HoleReviews', () => ({ default: () => <div data-testid="hole-reviews" /> }));
+vi.mock('../../components/admin/hoyos/TodosLosCampos', () => ({ default: () => <div data-testid="todos-los-campos" /> }));
 
 const mockGetAdminStats = vi.fn();
 const mockListAdminUsers = vi.fn();
@@ -57,7 +58,10 @@ const STATS = {
   totalGolfCoursesPending: 2,
 };
 
-const DondeEstoy = () => <p data-testid="ruta">{useLocation().pathname}</p>;
+const DondeEstoy = () => {
+  const { pathname, search } = useLocation();
+  return <p data-testid="ruta">{pathname + search}</p>;
+};
 
 const abrir = (ruta) =>
   render(
@@ -185,10 +189,37 @@ describe('AdminPanel · secciones', () => {
     expect(screen.getByTestId('golf-courses-tab')).toBeInTheDocument();
   });
 
-  it('A8: hoyos, con su lista y sin pestañas por ahora', async () => {
+  it('T1: hoyos, con dos pestañas: pendientes y todos los campos', async () => {
     abrir('/admin/hoyos');
-    expect(await screen.findByTestId('hole-reviews')).toBeInTheDocument();
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    const pestañas = await screen.findAllByRole('tab');
+    expect(pestañas.map((p) => p.textContent)).toEqual(['holeTabs.pending', 'holeTabs.allCourses']);
+    expect(pestañas[0]).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('hole-reviews')).toBeInTheDocument();
+
+    fireEvent.click(pestañas[1]);
+    expect(screen.getByTestId('todos-los-campos')).toBeInTheDocument();
+    expect(screen.queryByTestId('hole-reviews')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos\?ver=campos$/);
+    fireEvent.click(pestañas[0]);
+    expect(screen.getByTestId('ruta')).toHaveTextContent(/^\/admin\/hoyos$/);
+    // Las pestañas tienen nombre: el de su sección
+    expect(screen.getByRole('tablist')).toHaveAccessibleName('common:screens.adminHoles');
+  });
+
+  it('T6: todos los campos tiene su URL y se abre directo', async () => {
+    abrir('/admin/hoyos?ver=campos&campo=gc-1');
+
+    expect(await screen.findByTestId('todos-los-campos')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'holeTabs.allCourses' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('T1: las pestañas de hoyos también van con las flechas', async () => {
+    abrir('/admin/hoyos');
+    const [pendientes, todos] = await screen.findAllByRole('tab');
+    fireEvent.keyDown(pendientes, { key: 'ArrowRight' });
+
+    expect(todos).toHaveAttribute('aria-selected', 'true');
+    expect(todos).toHaveFocus();
   });
 
   it('A10: cada sección enseña solo lo suyo', async () => {

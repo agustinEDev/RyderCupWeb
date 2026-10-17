@@ -10,6 +10,7 @@ import {
 import {
   conCodosDelPar,
   estaLejosDelCampo,
+  lineaDeOsm,
   lineaDePuntos,
   longitudDeLaLinea,
   puntosDeLaLinea,
@@ -23,6 +24,12 @@ import BlockLoader from '../../ui/BlockLoader';
 
 // Aparte: MapLibre pesa, y el panel de admin no lo necesita hasta aquí
 const MapaDeRevision = lazy(() => import('./MapaDeRevision'));
+
+// La línea de OSM del hoyo (con los codos de su par), si trae green
+const lineaDeOsmDe = (hoyo) => {
+  const puntos = lineaDeOsm(hoyo?.osm?.puntos, hoyo?.osm?.green, tarjetaDelHoyo(hoyo?.barras)?.parDeLaMasLarga);
+  return puntos ? lineaDePuntos(puntos) : null;
+};
 
 const lineaDe = (muestra) => (muestra?.tee ? { tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter } : null);
 
@@ -82,7 +89,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [] };
         setHoyo(este);
         setUbicacion(campo.ubicacion ?? null);
-        const deLoQueHay = este.guardada ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
+        // Se parte de la guardada, de la de OSM (con los codos de su par) o de la
+        // primera muestra completa
+        const deLoQueHay = este.guardada ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         if (!conservarLinea) setEditada(false);
         setFallo(false);
@@ -242,6 +251,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               marcados={marcando?.salida ? [marcando.salida] : SIN_MARCAR}
               bloqueada={Boolean(marcando)}
               centro={ubicacion}
+              osm={hoyo.osm?.puntos ?? null}
               posicion={gps.posicion}
               centrarEnMi={centrarEnMi}
             />
@@ -298,11 +308,27 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 >
                   {t('holeReviews.markFromScratch')}
                 </button>
+                {/* Como «Empezar desde esta» de una muestra, pero desde la de OSM */}
+                {lineaDeOsmDe(hoyo) && (
+                  <button
+                    type="button"
+                    disabled={ocupado || Boolean(marcando)}
+                    onClick={() => elegirLinea(lineaDeOsmDe(hoyo))}
+                    className={`${BOTON} bg-gray-100 text-gray-900`}
+                  >
+                    {t('holeReviews.useOsm')}
+                  </button>
+                )}
                 {hoyo.guardada && (
                   <button
                     type="button"
                     disabled={ocupado || Boolean(marcando)}
-                    onClick={() => hacer(() => reopenHoleUseCase.execute(golfCourseId, numeroDeHoyo), 'holeReviews.reopenedOk')}
+                    onClick={() =>
+                      // Reabierto, la revisión se cierra y la lista lo pone al día (T9)
+                      hacer(() => reopenHoleUseCase.execute(golfCourseId, numeroDeHoyo), t('holeReviews.reopenedOk', { numero: numeroDeHoyo }), {
+                        cerrar: () => onCerrar({ cambiado: true }),
+                      })
+                    }
                     className={`${BOTON} bg-gray-100 text-gray-900`}
                   >
                     {t('holeReviews.reopen')}

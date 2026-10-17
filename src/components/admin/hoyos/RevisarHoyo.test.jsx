@@ -580,5 +580,57 @@ describe('RevisarHoyo', () => {
         expect(screen.getByRole('button', { name: 'holeReviews.markFromScratch' })).toHaveFocus();
       });
     });
+
+  describe('T: desde «Todos los campos» (17 oct)', () => {
+    const PAR3 = [{ color: 'YELLOW', gender: 'MALE', identifier: null, par: 3, metros: 150 }];
+    const OSM = { puntos: [T, alNorte(80), alNorte(148)], green: alNorte(150) };
+
+    it('T7: la línea de OSM se ve, y sin línea guardada es la de partida, con los codos de su par', async () => {
+      await abrir({ muestras: [], osm: OSM, barras: PAR3 });
+
+      expect(mapa.props.osm).toEqual(OSM.puntos);
+      expect(mapa.props.linea).toEqual({ tee: T, bends: [], greenCenter: alNorte(150) });
+    });
+
+    it('T7: con línea guardada, se parte de la guardada', async () => {
+      const guardada = { tee: alNorte(5), bends: [], greenCenter: alNorte(150) };
+      await abrir({ muestras: [], osm: OSM, guardada, barras: PAR3 });
+
+      expect(mapa.props.linea).toEqual(guardada);
+    });
+
+    it('T7: una línea de OSM sin green se ve, pero no es la de partida', async () => {
+      await abrir({ muestras: [], osm: { puntos: OSM.puntos, green: null }, barras: PAR3 });
+
+      expect(mapa.props.osm).toEqual(OSM.puntos);
+      expect(mapa.props.linea).toBeNull();
+    });
+
+    it('/code-review: «Empezar desde OpenStreetMap» vuelve a la línea de OSM tras moverla', async () => {
+      await abrir({ muestras: [], osm: OSM, barras: PAR3 });
+      const deOsm = mapa.props.linea;
+      act(() => mapa.props.onLinea({ tee: alNorte(10), bends: [], greenCenter: alNorte(150) }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.useOsm' }));
+
+      expect(mapa.props.linea).toEqual(deOsm);
+    });
+
+    it('/code-review: sin línea de OSM con green, no hay «Empezar desde OpenStreetMap»', async () => {
+      await abrir({ muestras: [], osm: { puntos: OSM.puntos, green: null }, barras: PAR3 });
+
+      expect(screen.queryByRole('button', { name: 'holeReviews.useOsm' })).toBeNull();
+    });
+
+    it('T9: reabrir un hoyo guardado cierra la revisión con el cambio', async () => {
+      const onCerrar = await abrir({ guardada: { tee: T, bends: [], greenCenter: alNorte(300) } });
+      casos.reabrir.mockResolvedValue(undefined);
+
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.reopen' }));
+
+      await waitFor(() => expect(onCerrar).toHaveBeenCalledWith({ cambiado: true }));
+      expect(avisos.success).toHaveBeenCalledWith('holeReviews.reopenedOk {"numero":1}');
+    });
+  });
   });
 });

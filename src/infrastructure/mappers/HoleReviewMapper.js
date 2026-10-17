@@ -30,6 +30,8 @@ class HoleReviewMapper {
       holes: (api.holes ?? []).map((h) => ({
         holeNumber: h.hole_number,
         guardada: lineaADominio(h.saved_line),
+        // La del mapa de OSM aprobado, entera (17 oct): se ve y se parte de ella
+        osm: h.osm_line ? { puntos: (h.osm_line.points ?? []).map(aDominio), green: h.osm_line.green_center ? aDominio(h.osm_line.green_center) : null } : null,
         muestras: (h.samples ?? []).map((m) => ({
           id: m.id,
           barra: { color: m.tee_color, gender: m.tee_gender ?? null },

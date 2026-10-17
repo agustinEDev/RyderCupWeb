@@ -16,6 +16,7 @@ import {
   estaLejosDelCampo,
   MAX_DISTANCIA_AL_CAMPO_M,
   lineaDePuntos,
+  lineaDeOsm,
   puntosDeLaLinea,
 } from './hoyoMarcado';
 import { distanciaEnMetros } from './distanciasAlGreen';
@@ -333,5 +334,32 @@ describe('lineaDePuntos (17 oct)', () => {
     const linea = { tee: { lat: 1, lon: 1 }, bends: [{ lat: 2, lon: 2 }, { lat: 3, lon: 3 }], greenCenter: { lat: 4, lon: 4 } };
     expect(lineaDePuntos(puntosDeLaLinea(linea))).toEqual(linea);
     expect(lineaDePuntos([linea.tee, linea.greenCenter])).toEqual({ tee: linea.tee, bends: [], greenCenter: linea.greenCenter });
+  });
+});
+
+describe('lineaDeOsm (17 oct: la usan el jugador y el admin)', () => {
+  const S = { lat: 36.28, lon: -5.33 };
+  const V = { lat: 36.2815, lon: -5.3300001 };
+  const FIN = { lat: 36.2826, lon: -5.33 };
+  const G = { lat: 36.2827, lon: -5.33 };
+
+  it('acaba en el centro del green, no donde termina la línea de OSM', () => {
+    expect(lineaDeOsm([S, FIN], G, 3)).toEqual([S, G]);
+  });
+
+  it('se queda con los codos de su par: un vértice casi en línea en un par 3 no es un codo', () => {
+    expect(lineaDeOsm([S, V, FIN], G, 3)).toEqual([S, G]);
+  });
+
+  it('en un par 4 recto, el codo que le toca sobre la recta', () => {
+    const linea = lineaDeOsm([S, FIN], G, 4);
+    expect(linea).toHaveLength(3);
+    expect([linea[0], linea[2]]).toEqual([S, G]);
+  });
+
+  it('sin green, o sin línea, nada', () => {
+    expect(lineaDeOsm([S, FIN], null, 4)).toBeNull();
+    expect(lineaDeOsm([S], G, 4)).toBeNull();
+    expect(lineaDeOsm(undefined, G, 4)).toBeNull();
   });
 });

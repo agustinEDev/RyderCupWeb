@@ -150,7 +150,7 @@
     "save": "Guardar línea",
     "reopen": "Reabrir hoyo",
     "savedOk": "Hoyo {{numero}} guardado",
-    "reopenedOk": "Hoyo reabierto",
+    "reopenedOk": "Hoyo {{numero}} reabierto",
     "deletedOk": "Muestra borrada",
     "invalidLine": "La línea no vale: como mucho dos codos, el green a 40-750 m de la salida y ningún punto a más de 3 km del campo.",
     "actionError": "No se ha podido hacer. Inténtalo de nuevo.",
@@ -188,7 +188,8 @@
     "findingPosition": "Buscando tu posición…",
     "positionDenied": "Sin permiso de ubicación",
     "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez",
-    "positionUnavailable": "Este navegador no da tu posición"
+    "positionUnavailable": "Este navegador no da tu posición",
+    "useOsm": "Empezar desde OpenStreetMap"
   },
   "menu": {
     "label": "Secciones del panel",
@@ -198,5 +199,21 @@
   "golfTabs": {
     "approved": "Aprobados",
     "requests": "Solicitudes"
+  },
+  "allCourses": {
+    "intro": "Busca un campo para ver sus 18 hoyos: corrige los que tienen línea o márcalos desde cero.",
+    "hole": "Hoyo {{numero}}",
+    "saved": "Guardado",
+    "osm": "OpenStreetMap",
+    "empty": "Sin datos",
+    "changeCourse": "Cambiar de campo",
+    "error": "No se ha podido cargar el campo.",
+    "osmWithoutGreen": "OpenStreetMap · sin green",
+    "reloadError": "No se ha podido recargar el campo.",
+    "retry": "Reintentar"
+  },
+  "holeTabs": {
+    "pending": "Pendientes",
+    "allCourses": "Todos los campos"
   }
 }

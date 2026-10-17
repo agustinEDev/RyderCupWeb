@@ -152,6 +152,18 @@ export const aCodosDelPar = (lineaEntera, par) => {
   return elegidos.map((i) => linea[i]);
 };
 
+/**
+ * La línea de un hoyo de OSM con su green, lista para verla y moverla: acaba en
+ * el centro del green (la de OSM acaba donde termina el hoyo, cerca pero no en
+ * él, y así se mide como la medida oficial) y con los codos de SU par, donde de
+ * verdad gira (Agustín, 16 oct). La usan el mapa del jugador y la revisión del
+ * admin (17 oct). Sin green o sin línea, null.
+ */
+export const lineaDeOsm = (lineaDeJuego, centroDelGreen, par) =>
+  centroDelGreen && (lineaDeJuego?.length ?? 0) > 1
+    ? conCodosDelPar(aCodosDelPar([...lineaDeJuego.slice(0, -1), centroDelGreen], par), par)
+    : null;
+
 /** Un anillo cerrado de puntos a `metros` de `centro` (el arco de la tarjeta). */
 export const circuloAlrededor = (centro, metros, lados = 64) => {
   const anillo = Array.from({ length: lados }, (_, i) => puntoDesde(centro, (360 / lados) * i, metros));

@@ -51,6 +51,11 @@ const CLASE_DE_LA_BOLA = 'h-5 w-5 rounded-full border-[3px] border-white bg-fuch
 // Lo guardado y lo que se edita, en colores que no lleva ninguna barra
 const COLOR_DE_LO_GUARDADO = '#06b6d4';
 const COLOR_DE_LA_LINEA = '#d946ef';
+// La del mapa de OSM aprobado (17 oct)
+// Ninguna barra lo tiene: el verde es de las barras verdes
+const COLOR_DE_OSM = '#84cc16';
+const comoLineaDeOsm = (puntos) =>
+  puntos?.length > 1 ? coleccion([{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: puntos.map(lngLat) } }]) : coleccion([]);
 
 /**
  * El mapa de revisar un hoyo (BE #575, 17 oct 2026), sobre la ortofoto del
@@ -71,6 +76,7 @@ const MapaDeRevision = ({
   posicion = null,
   centrarEnMi = 0,
   bloqueada = false,
+  osm = null,
 }) => {
   const { t } = useTranslation('admin');
   const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
@@ -79,11 +85,11 @@ const MapaDeRevision = ({
   const cargado = useRef(false);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
-  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada });
+  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm });
   // Hasta qué pedido de «Mi posición» se ha centrado ya el mapa
   const centradoPara = useRef(0);
   useLayoutEffect(() => {
-    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada };
+    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm };
   });
 
   // La línea que se edita y sus puntos. Con los mismos puntos, se mueven (no
@@ -150,6 +156,8 @@ const MapaDeRevision = ({
       mapa.addSource('muestras', { type: 'geojson', data: deLasMuestras(todas) });
       mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': ['get', 'color'], 'line-width': 3, 'line-opacity': 0.85 } });
       mapa.addLayer({ id: 'muestras-greens', type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#000', 'circle-stroke-width': 1 } });
+      mapa.addSource('osm', { type: 'geojson', data: comoLineaDeOsm(datos.current.osm) });
+      mapa.addLayer({ id: 'osm', type: 'line', source: 'osm', paint: { 'line-color': COLOR_DE_OSM, 'line-width': 3, 'line-dasharray': [1, 1] } });
       mapa.addSource('guardada', { type: 'geojson', data: coleccion(comoLinea(lo)) });
       mapa.addLayer({ id: 'guardada', type: 'line', source: 'guardada', paint: { 'line-color': COLOR_DE_LO_GUARDADO, 'line-width': 3, 'line-dasharray': [2, 2] } });
       mapa.addSource('linea', { type: 'geojson', data: coleccion(comoLinea(actual)) });
@@ -161,7 +169,7 @@ const MapaDeRevision = ({
       mapa.addLayer({ id: 'marcados', type: 'circle', source: 'marcados', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
       cargado.current = true;
       // Todo a la vista: las muestras, lo guardado y la línea
-      const todos = [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : [])];
+      const todos = [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(datos.current.osm ?? [])];
       if (todos.length) {
         const lats = todos.map((p) => p.lat);
         const lons = todos.map((p) => p.lon);
@@ -193,7 +201,8 @@ const MapaDeRevision = ({
     if (!mapa || !cargado.current) return;
     mapa.getSource('muestras')?.setData(deLasMuestras(muestras));
     mapa.getSource('guardada')?.setData(coleccion(comoLinea(guardada)));
-  }, [muestras, guardada]);
+    mapa.getSource('osm')?.setData(comoLineaDeOsm(osm));
+  }, [muestras, guardada, osm]);
 
   useEffect(() => pintar.current(), [linea]);
 

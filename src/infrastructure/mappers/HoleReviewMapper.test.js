@@ -57,7 +57,7 @@ describe('HoleReviewMapper', () => {
   it('C1: un hoyo sin nada', () => {
     const { holes } = HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', holes: [{ hole_number: 2, saved_line: null, samples: [], tees: [] }] });
 
-    expect(holes[0]).toEqual({ holeNumber: 2, guardada: null, muestras: [], barras: [] });
+    expect(holes[0]).toEqual({ holeNumber: 2, guardada: null, osm: null, muestras: [], barras: [] });
   });
 
   it('G1: la línea que se guarda, al cuerpo del PUT', () => {
@@ -71,5 +71,22 @@ describe('HoleReviewMapper', () => {
     expect(HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', location: P(36.28, -5.33), holes: [] }).ubicacion).toEqual({ lat: 36.28, lon: -5.33 });
     expect(HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', location: null, holes: [] }).ubicacion).toBeNull();
     expect(HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', holes: [] }).ubicacion).toBeNull();
+  });
+  it('T10: la línea de OSM aprobada de cada hoyo, con su green o sin él', () => {
+    const { holes } = HoleReviewMapper.reviewToDomain({
+      golf_course_id: 'gc-1',
+      name: 'X',
+      holes: [
+        { hole_number: 1, saved_line: null, osm_line: { points: [P(1, 2), P(3, 4)], green_center: P(3, 4) }, samples: [], tees: [] },
+        { hole_number: 2, saved_line: null, osm_line: { points: [P(5, 6), P(7, 8)], green_center: null }, samples: [], tees: [] },
+        { hole_number: 3, saved_line: null, osm_line: null, samples: [], tees: [] },
+      ],
+    });
+
+    expect(holes.map((h) => h.osm)).toEqual([
+      { puntos: [{ lat: 1, lon: 2 }, { lat: 3, lon: 4 }], green: { lat: 3, lon: 4 } },
+      { puntos: [{ lat: 5, lon: 6 }, { lat: 7, lon: 8 }], green: null },
+      null,
+    ]);
   });
 });

@@ -225,5 +225,33 @@ describe('MapaDeRevision', () => {
 
       expect(mapa.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [T.lon, T.lat] }));
     });
+
+    it('T7: la línea de OSM, en su color; sin ella, nada', () => {
+      const props = { muestras: [], guardada: null, linea: null, onLinea: () => {} };
+      const { rerender } = render(<MapaDeRevision {...props} osm={[T, C, G]} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.fuentes.osm.data.features[0].geometry.coordinates).toEqual([[T.lon, T.lat], [C.lon, C.lat], [G.lon, G.lat]]);
+      expect(mapa.capas.find((c) => c.id === 'osm').paint['line-color']).toBe('#84cc16');
+      expect(mapa.fitBounds).toHaveBeenCalled();
+      rerender(<MapaDeRevision {...props} osm={null} />);
+      expect(mapa.fuentes.osm.data.features).toEqual([]);
+    });
+
+    it('/code-review: el color de OSM no es el de ninguna barra ni el de lo guardado o la línea', () => {
+      const colores = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'BLACK', 'GREEN', 'ORANGE', 'PINK', 'GOLD', 'OTHER'];
+      const muestras = colores.map((color, i) => ({ id: `s-${i}`, barra: { color }, tee: T, bends: [], greenCenter: G }));
+      render(<MapaDeRevision muestras={muestras} guardada={LINEA} linea={LINEA} onLinea={() => {}} osm={[T, G]} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      const usados = new Set([
+        ...mapa.fuentes.muestras.data.features.map((f) => f.properties.color),
+        mapa.capas.find((c) => c.id === 'guardada').paint['line-color'],
+        mapa.capas.find((c) => c.id === 'linea').paint['line-color'],
+      ]);
+      expect(usados.has(mapa.capas.find((c) => c.id === 'osm').paint['line-color'])).toBe(false);
+    });
   });
 });
