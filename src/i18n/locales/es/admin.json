@@ -135,14 +135,13 @@
     "genericError": "Ha ocurrido un error"
   },
   "holeReviews": {
-    "intro": "Las muestras que mandan los jugadores, hoyo a hoyo. Guarda una línea por hoyo: la ven todos y el hoyo deja de recoger muestras.",
-    "empty": "No hay hoyos por revisar.",
+    "intro": "Hoyos con muestras de los jugadores y sin línea guardada. Abre uno, compara las muestras sobre el mapa y guarda la línea: el hoyo desaparece de esta lista.",
+    "empty": "No hay hoyos pendientes de revisar.",
     "error": "No se ha podido cargar. Inténtalo de nuevo.",
     "retry": "Reintentar",
     "hole": "Hoyo {{numero}}",
     "samples_one": "{{count}} muestra",
     "samples_other": "{{count}} muestras",
-    "saved": "guardado",
     "title": "{{nombre}} · Hoyo {{numero}}",
     "close": "Cerrar",
     "line": "La línea del hoyo",
@@ -150,7 +149,7 @@
     "noLine": "Aún no hay línea: parte de una muestra.",
     "save": "Guardar línea",
     "reopen": "Reabrir hoyo",
-    "savedOk": "Línea guardada",
+    "savedOk": "Hoyo {{numero}} guardado",
     "reopenedOk": "Hoyo reabierto",
     "deletedOk": "Muestra borrada",
     "invalidLine": "La línea no vale: como mucho dos codos, el green a 40-750 m de la salida y ningún punto a más de 3 km del campo.",
@@ -174,7 +173,9 @@
     "onlyGreens": "Solo hay muestras de solo green: espera a que llegue una completa para partir de ella.",
     "pointTee": "Salida",
     "pointBend": "Codo",
-    "pointGreen": "Green"
+    "pointGreen": "Green",
+    "pendingHoles_one": "{{count}} hoyo pendiente",
+    "pendingHoles_other": "{{count}} hoyos pendientes"
   },
   "menu": {
     "label": "Secciones del panel",

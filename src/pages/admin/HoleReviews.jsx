@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2 } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { listHoleReviewsUseCase } from '../../composition';
 import customToast from '../../utils/toast';
 import BlockLoader from '../../components/ui/BlockLoader';
 import RevisarHoyo from '../../components/admin/hoyos/RevisarHoyo';
 
 /**
- * «Hoyos por revisar» del panel de admin (BE #575, 17 oct 2026): los campos con
- * muestras o con su línea guardada, y de cada hoyo cuántas muestras tiene y si
- * ya está guardado. Tocar un hoyo abre su revisión, sobre el mapa.
+ * Los hoyos pendientes del panel de admin (BE #575, 17 oct 2026): un bloque por
+ * campo y, debajo, una fila a todo el ancho por hoyo, en el orden del backend (de
+ * menor a mayor), con cuántas muestras tiene. Tocar un hoyo abre su revisión,
+ * sobre el mapa; al guardarlo, desaparece de aquí (Agustín, 17 oct).
  */
 const HoleReviews = () => {
   const { t } = useTranslation('admin');
@@ -63,34 +64,31 @@ const HoleReviews = () => {
   return (
     <div className="flex flex-col gap-4 py-2">
       <p className="text-sm text-gray-500">{t('holeReviews.intro')}</p>
-      <ul className="flex flex-col gap-3">
-        {estado.cursos.map((curso) => (
-          <li key={curso.golfCourseId} className="rounded-xl border border-gray-200 p-3">
-            <h3 className="font-semibold text-gray-900">{curso.name}</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {curso.holes.map((hoyo) => (
+      {estado.cursos.map((curso) => (
+        <section key={curso.golfCourseId} aria-labelledby={`campo-${curso.golfCourseId}`} className="rounded-xl border border-gray-200 bg-white">
+          <header className="border-b border-gray-200 px-4 py-3">
+            <h3 id={`campo-${curso.golfCourseId}`} className="font-semibold text-gray-900">
+              {curso.name}
+            </h3>
+            <p className="text-sm text-gray-500">{t('holeReviews.pendingHoles', { count: curso.holes.length })}</p>
+          </header>
+          <ul className="divide-y divide-gray-200">
+            {curso.holes.map((hoyo) => (
+              <li key={hoyo.holeNumber}>
                 <button
-                  key={hoyo.holeNumber}
                   type="button"
                   onClick={() => setAbierto({ golfCourseId: curso.golfCourseId, nombre: curso.name, numeroDeHoyo: hoyo.holeNumber })}
-                  className={`min-h-11 inline-flex items-center gap-1.5 rounded-lg border px-3 text-sm ${
-                    hoyo.saved ? 'border-green-300 bg-green-50 text-green-800' : 'border-gray-300 bg-white text-gray-800'
-                  }`}
+                  className="flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left text-gray-900"
                 >
-                  <span className="font-semibold">{t('holeReviews.hole', { numero: hoyo.holeNumber })}</span>
-                  <span>{t('holeReviews.samples', { count: hoyo.samples })}</span>
-                  {hoyo.saved && (
-                    <span className="inline-flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                      {t('holeReviews.saved')}
-                    </span>
-                  )}
+                  <span className="flex-1 font-medium">{t('holeReviews.hole', { numero: hoyo.holeNumber })}</span>
+                  <span className="text-sm text-gray-500">{t('holeReviews.samples', { count: hoyo.samples })}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
                 </button>
-              ))}
-            </div>
-          </li>
-        ))}
-      </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
       {abierto && <RevisarHoyo {...abierto} onCerrar={alCerrar} />}
     </div>
   );

@@ -79,6 +79,20 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     }
   };
 
+  // Guardado el hoyo, deja de estar pendiente: la revisión se cierra sola y la
+  // lista se recarga sin él (Agustín, 17 oct)
+  const guardar = async () => {
+    setOcupado(true);
+    try {
+      await saveHoleLineUseCase.execute(golfCourseId, numeroDeHoyo, linea);
+      customToast.success(t('holeReviews.savedOk', { numero: numeroDeHoyo }));
+      onCerrar({ cambiado: true });
+    } catch (error) {
+      customToast.error(t(error?.errorCode === 'INVALID_HOLE_LINE' ? 'holeReviews.invalidLine' : 'holeReviews.actionError'));
+      setOcupado(false);
+    }
+  };
+
   const barraDeTexto = (barra) =>
     [t(`golfCourses:form.teeColors.${barra.color}`), barra.gender ? t(`holeReviews.genders.${barra.gender}`) : null].filter(Boolean).join(' · ');
   const cerrar = () => {
@@ -154,7 +168,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 <button
                   type="button"
                   disabled={!linea || ocupado}
-                  onClick={() => hacer(() => saveHoleLineUseCase.execute(golfCourseId, numeroDeHoyo, linea), 'holeReviews.savedOk')}
+                  onClick={guardar}
                   className={`${BOTON} bg-primary text-white`}
                 >
                   {t('holeReviews.save')}

@@ -11,7 +11,7 @@ import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
  * | R2   | la tarjeta de cada barra                  | su par y sus metros                                   |
  * | R3   | «Partir de esta»                          | la línea pasa a ser esa muestra                       |
  * | R4   | mover la línea en el mapa                 | lo que mide se actualiza                              |
- * | R5   | «Guardar línea»                           | se guarda la línea, se recarga y al cerrar avisa del cambio |
+ * | R5   | «Guardar línea» (P12, 17 oct)             | se guarda, «Hoyo N guardado» y la revisión se cierra sola con el cambio: el hoyo sale de pendientes |
  * | R5   | si falla                                  | un aviso, y nada cambia                               |
  * | R6   | «Reabrir hoyo» (solo si está guardado)    | se quita la línea                                     |
  * | R7   | «Borrar» una muestra                      | pide confirmar; al confirmar, se borra                |
@@ -97,17 +97,28 @@ describe('RevisarHoyo', () => {
     expect(screen.getByTestId('lo-que-mide')).toHaveTextContent('holeReviews.lineMetres {"metros":340}');
   });
 
-  it('R5: guardar la línea, recargar y avisar del cambio al cerrar', async () => {
+  it('R5/P12: guardar avisa con el número del hoyo y cierra la revisión, sin recargarla', async () => {
     const onCerrar = await abrir();
     casos.guardar.mockResolvedValue(undefined);
 
     fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
 
-    await waitFor(() => expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: T, bends: [], greenCenter: alNorte(300) }));
-    expect(avisos.success).toHaveBeenCalled();
-    await waitFor(() => expect(casos.campo).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
-    expect(onCerrar).toHaveBeenCalledWith({ cambiado: true });
+    await waitFor(() => expect(onCerrar).toHaveBeenCalledWith({ cambiado: true }));
+    expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: T, bends: [], greenCenter: alNorte(300) });
+    expect(avisos.success).toHaveBeenCalledWith('holeReviews.savedOk {"numero":1}');
+    expect(casos.campo).toHaveBeenCalledTimes(1);
+  });
+
+  it('P12: guardar una línea editada cierra igual, sin avisar de cambios sin guardar', async () => {
+    const onCerrar = await abrir();
+    act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
+    casos.guardar.mockResolvedValue(undefined);
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+
+    await waitFor(() => expect(onCerrar).toHaveBeenCalledWith({ cambiado: true }));
+    expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: alNorte(5), bends: [], greenCenter: alNorte(300) });
+    expect(screen.queryByText('holeReviews.unsaved')).toBeNull();
   });
 
   it('R5: si guardar falla, un aviso y nada cambia', async () => {
@@ -160,18 +171,6 @@ describe('RevisarHoyo', () => {
     expect(mapa.props.linea.tee).toEqual(alNorte(5));
   });
 
-  it('R5: tras guardar, la línea es la guardada (la de la recarga)', async () => {
-    await abrir();
-    const guardada = { tee: alNorte(5), bends: [], greenCenter: alNorte(300) };
-    casos.guardar.mockResolvedValue(undefined);
-    casos.campo.mockResolvedValue(campo({ guardada }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
-
-    await waitFor(() => expect(mapa.props.guardada).toEqual(guardada));
-    expect(mapa.props.linea).toEqual(guardada);
-  });
-
   it('R9: con cambios sin guardar, cerrar avisa antes; «Cerrar sin guardar» cierra', async () => {
     const onCerrar = await abrir();
     act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
@@ -218,20 +217,6 @@ describe('RevisarHoyo', () => {
     expect(mapa.props.linea).toBeNull();
     expect(screen.getByText('holeReviews.onlyGreens')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'holeReviews.save' })).toBeDisabled();
-  });
-
-  it('R5 (CodeRabbit): guardada la línea, aunque la recarga falle, cerrar no avisa de cambios sin guardar', async () => {
-    const onCerrar = await abrir();
-    act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
-    casos.guardar.mockResolvedValue(undefined);
-    casos.campo.mockRejectedValue(new Error('sin red'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
-    await waitFor(() => expect(avisos.success).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByRole('button', { name: 'holeReviews.close' })).not.toBeDisabled());
-    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
-
-    expect(onCerrar).toHaveBeenCalledWith({ cambiado: true });
   });
 
   it('R8: cerrar sin cambios', async () => {
