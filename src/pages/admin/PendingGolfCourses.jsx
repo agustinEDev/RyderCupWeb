@@ -401,8 +401,8 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
                       {t('form.holeRow', { hole: hole.holeNumber, par: hole.par, strokeIndex: hole.strokeIndex })}
                     </li>
                   ))}
-                  <li className="py-2 font-bold text-gray-900">{t('form.totalPar')} {courseToView.totalPar}</li>
                 </ul>
+                <p className="md:hidden border-t border-gray-200 py-2 text-sm font-bold text-gray-900">{t('form.totalPar')} {courseToView.totalPar}</p>
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-100 border-b border-gray-200">

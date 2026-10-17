@@ -74,13 +74,13 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
             onClick={() => setAbierta(competition)}
             className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
           >
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-gray-900 truncate">{competition.name}</p>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+            <span className="block min-w-0 flex-1">
+              <span className="block font-semibold text-gray-900 truncate">{competition.name}</span>
+              <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 {insignia(competition)}
                 <span>{fechas(competition)}</span>
-              </p>
-            </div>
+              </span>
+            </span>
             <ChevronRight aria-hidden="true" className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </button>
         </li>

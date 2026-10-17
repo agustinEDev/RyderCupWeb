@@ -117,8 +117,10 @@ describe('PendingGolfCourses · sus modales', () => {
     expect(within(filas).getAllByRole('listitem').map((f) => f.textContent)).toEqual([
       'form.holeRow {"hole":1,"par":4,"strokeIndex":7}',
       'form.holeRow {"hole":2,"par":3,"strokeIndex":15}',
-      'form.totalPar 72',
     ]);
+    // El total, fuera de la lista: un lector no cuenta 19 hoyos
+    expect(filas.nextElementSibling).toHaveTextContent('form.totalPar 72');
+    expect(filas.nextElementSibling).toHaveClass('md:hidden');
   });
 
   it('el rechazo se anuncia con su título y Escape lo descarta sin rechazar', async () => {

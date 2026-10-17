@@ -14,11 +14,16 @@ const renderPanel = () =>
     </MemoryRouter>
   );
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
+// El mismo `t` en cada pintado, como el de i18next: uno nuevo cada vez cambia
+// `loadCompetitions` y la lista se recargaba sin parar, desmontando lo abierto
+const { TRADUCCION } = vi.hoisted(() => ({
+  TRADUCCION: {
     t: (key, params) => (params?.count !== undefined ? `${key}_${params.count}` : key),
     i18n: { language: 'en' },
-  }),
+  },
+}));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => TRADUCCION,
 }));
 
 // El mismo `user` en cada pintado, como el de verdad: uno nuevo cada vez
@@ -326,6 +331,35 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'competitions.confirmCancel' }));
 
     await waitFor(() => expect(mockCancelCompetition).toHaveBeenCalledWith('c1'));
+  });
+
+  it('F6: en el móvil, cancelar desde la ficha también pide la confirmación', async () => {
+    mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    await enLaTabla('Ryder Cup Local');
+    const filas = within(screen.getByRole('list', { name: 'competitions.listLabel' }));
+    fireEvent.click(filas.getByRole('button', { name: /Ryder Cup Local/ }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'competitions.actions.cancel' }));
+
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('competitions.confirmCancelTitle');
+    expect(mockCancelCompetition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'competitions.confirmCancel' }));
+    await waitFor(() => expect(mockCancelCompetition).toHaveBeenCalledWith('c1'));
+  });
+
+  it('F2: en el móvil, editar desde la ficha abre el editor de siempre', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
+    await enLaTabla('Agus Estevez');
+    const filas = within(screen.getByRole('list', { name: 'users.listLabel' }));
+    fireEvent.click(filas.getByRole('button', { name: /Agus Estevez/ }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'users.editTooltip' }));
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'editModal.save' })).toBeInTheDocument();
   });
 
   // Pasó a ModalShell el 4 oct 2026: se anuncia con su título, y Escape la

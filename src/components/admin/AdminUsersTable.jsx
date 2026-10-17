@@ -44,13 +44,13 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
             onClick={() => setAbierto(user)}
             className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
           >
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-gray-900 truncate">
+            <span className="block min-w-0 flex-1">
+              <span className="block font-semibold text-gray-900 truncate">
                 {user.firstName} {user.lastName}
                 {user.alias && <span className="ml-2 font-normal text-gray-500">«{user.alias}»</span>}
-              </p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
-            </div>
+              </span>
+              <span className="block text-xs text-gray-500 truncate">{user.email}</span>
+            </span>
             {user.isAdmin && <span className={PILDORA_ADMIN}>{t('users.roleAdmin')}</span>}
             {!user.isActive && <span className={PILDORA_INACTIVA}>{t('users.statusInactive')}</span>}
             <ChevronRight aria-hidden="true" className="w-4 h-4 text-gray-400 flex-shrink-0" />
