@@ -147,6 +147,79 @@ describe('RevisarHoyo', () => {
     await waitFor(() => expect(casos.borrar).toHaveBeenCalledWith('gc-1', 's-2'));
   });
 
+  // Revisión del 17 oct
+  it('R7: borrar una muestra no tira la línea que estaba editando', async () => {
+    await abrir();
+    casos.borrar.mockResolvedValue(undefined);
+    act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+
+    await waitFor(() => expect(casos.campo).toHaveBeenCalledTimes(2));
+    expect(mapa.props.linea.tee).toEqual(alNorte(5));
+  });
+
+  it('R5: tras guardar, la línea es la guardada (la de la recarga)', async () => {
+    await abrir();
+    const guardada = { tee: alNorte(5), bends: [], greenCenter: alNorte(300) };
+    casos.guardar.mockResolvedValue(undefined);
+    casos.campo.mockResolvedValue(campo({ guardada }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+
+    await waitFor(() => expect(mapa.props.guardada).toEqual(guardada));
+    expect(mapa.props.linea).toEqual(guardada);
+  });
+
+  it('R9: con cambios sin guardar, cerrar avisa antes; «Cerrar sin guardar» cierra', async () => {
+    const onCerrar = await abrir();
+    act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.getByText('holeReviews.unsaved')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.closeWithoutSaving' }));
+    expect(onCerrar).toHaveBeenCalledWith({ cambiado: false });
+  });
+
+  it('R10: mientras se guarda, no se cierra ni se elige otra muestra', async () => {
+    await abrir();
+    casos.guardar.mockReturnValue(new Promise(() => {}));
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+
+    expect(screen.getByRole('button', { name: 'holeReviews.close' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'holeReviews.useThis' })).toBeDisabled();
+    expect(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]).toBeDisabled();
+  });
+
+  it('R10: mientras se guarda, Escape tampoco cierra', async () => {
+    const onCerrar = await abrir();
+    casos.guardar.mockReturnValue(new Promise(() => {}));
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+  });
+
+  it('R11: una tarjeta sin metros dice «—»; el día, en el formato del idioma', async () => {
+    await abrir({ barras: [{ color: 'YELLOW', gender: 'MALE', identifier: null, par: 4, metros: null }] });
+
+    expect(screen.getByText(/holeReviews.cardNoMetres {"par":4}/)).toBeInTheDocument();
+    expect(screen.queryByText(/2026-10-17/)).toBeNull();
+  });
+
+  it('R12: un hoyo con solo greens sueltos: no hay línea de la que partir, y se dice', async () => {
+    await abrir({ muestras: [SOLO_GREEN] });
+
+    expect(mapa.props.linea).toBeNull();
+    expect(screen.getByText('holeReviews.onlyGreens')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'holeReviews.save' })).toBeDisabled();
+  });
+
   it('R8: cerrar sin cambios', async () => {
     const onCerrar = await abrir();
 

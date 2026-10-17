@@ -59,6 +59,8 @@ vi.mock('maplibre-gl', () => {
 });
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?url', () => ({ default: 'worker.js' }));
 
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
+
 const { default: MapaDeRevision } = await import('./MapaDeRevision');
 
 const T = { lat: 36.28, lon: -5.33 };
@@ -122,5 +124,29 @@ describe('MapaDeRevision', () => {
     unmount();
 
     expect(mapas.at(-1).remove).toHaveBeenCalled();
+  });
+
+  it('al cambiar las muestras o lo guardado, se repintan; al cambiar la línea, sus puntos se mueven (no se rehacen)', () => {
+    const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} />);
+    const mapa = mapas.at(-1);
+    act(() => mapa.oyentes.load());
+    const antes = vivas().filter((m) => m.opciones.draggable);
+
+    rerender(<MapaDeRevision muestras={MUESTRAS} guardada={LINEA} linea={{ ...LINEA, greenCenter: C }} onLinea={() => {}} />);
+
+    expect(mapa.fuentes.muestras.data.features).toHaveLength(2);
+    expect(mapa.fuentes.guardada.data.features).toHaveLength(1);
+    const despues = vivas().filter((m) => m.opciones.draggable);
+    expect(despues).toEqual(antes);
+    expect(despues[2].p).toEqual([C.lon, C.lat]);
+  });
+
+  it('los puntos que se arrastran tienen nombre y 44 px donde tocar', () => {
+    render(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} />);
+    act(() => mapas.at(-1).oyentes.load());
+
+    const [salida, codo, green] = vivas().filter((m) => m.opciones.draggable).map((m) => m.opciones.element);
+    expect([salida, codo, green].map((e) => e.getAttribute('aria-label'))).toEqual(['holeReviews.pointTee', 'holeReviews.pointBend', 'holeReviews.pointGreen']);
+    expect(salida.className).toContain('h-11');
   });
 });

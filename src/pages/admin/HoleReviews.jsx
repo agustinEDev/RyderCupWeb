@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2 } from 'lucide-react';
 import { listHoleReviewsUseCase } from '../../composition';
+import customToast from '../../utils/toast';
 import BlockLoader from '../../components/ui/BlockLoader';
 import RevisarHoyo from '../../components/admin/hoyos/RevisarHoyo';
 
@@ -14,18 +15,26 @@ const HoleReviews = () => {
   const { t } = useTranslation('admin');
   const [estado, setEstado] = useState({ cargando: true, fallo: false, cursos: [] });
   const [abierto, setAbierto] = useState(null);
+  const hayLista = useRef(false);
+  useEffect(() => {
+    hayLista.current = estado.cursos.length > 0;
+  }, [estado.cursos]);
 
-  // Pedir la lista; el estado cambia solo cuando contesta
+  // Pedir la lista; el estado cambia solo cuando contesta. Si falla con la lista
+  // ya a la vista, se queda (y quien la pidió avisa); sin ella, el fallo
   const pedir = useCallback(async () => {
     try {
       setEstado({ cargando: false, fallo: false, cursos: await listHoleReviewsUseCase.execute() });
+      return true;
     } catch {
-      setEstado((e) => ({ ...e, cargando: false, fallo: true }));
+      setEstado((e) => ({ ...e, cargando: false, fallo: !hayLista.current }));
+      return false;
     }
   }, []);
-  const cargar = () => {
+  const cargar = async () => {
     setEstado((e) => ({ ...e, cargando: true, fallo: false }));
-    pedir();
+    const bien = await pedir();
+    if (!bien && hayLista.current) customToast.error(t('holeReviews.error'));
   };
 
   useEffect(() => {

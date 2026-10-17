@@ -161,7 +161,7 @@
     "savedOk": "Línea guardada",
     "reopenedOk": "Hoyo reabierto",
     "deletedOk": "Muestra borrada",
-    "invalidLine": "La línea no vale: como mucho dos codos y el green a 40-750 m de la salida.",
+    "invalidLine": "La línea no vale: como mucho dos codos, el green a 40-750 m de la salida y ningún punto a más de 3 km del campo.",
     "actionError": "No se ha podido hacer. Inténtalo de nuevo.",
     "cards": "La tarjeta de cada barra",
     "card": "par {{par}}, {{metros}} m",
@@ -175,6 +175,13 @@
     "genders": {
       "MALE": "hombre",
       "FEMALE": "mujer"
-    }
+    },
+    "unsaved": "Tienes cambios sin guardar en la línea.",
+    "closeWithoutSaving": "Cerrar sin guardar",
+    "cardNoMetres": "par {{par}}, —",
+    "onlyGreens": "Solo hay muestras de solo green: espera a que llegue una completa para partir de ella.",
+    "pointTee": "Salida",
+    "pointBend": "Codo",
+    "pointGreen": "Green"
   }
 }

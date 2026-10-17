@@ -277,7 +277,8 @@ const AdminPanel = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="px-4"
             >
-              <div role="tablist" className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+              {/* Con seis pestañas, en el móvil bajan de línea: nunca scroll lateral */}
+              <div role="tablist" className="flex flex-wrap gap-x-2 border-b border-gray-200">
                 {tabs.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}

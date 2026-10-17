@@ -161,7 +161,7 @@
     "savedOk": "Line saved",
     "reopenedOk": "Hole reopened",
     "deletedOk": "Sample deleted",
-    "invalidLine": "The line is not valid: at most two bends and the green 40-750 m from the tee.",
+    "invalidLine": "The line is not valid: at most two bends, the green 40-750 m from the tee and no point more than 3 km from the course.",
     "actionError": "It could not be done. Try again.",
     "cards": "Each tee's card",
     "card": "par {{par}}, {{metros}} m",
@@ -175,6 +175,13 @@
     "genders": {
       "MALE": "men",
       "FEMALE": "women"
-    }
+    },
+    "unsaved": "You have unsaved changes to the line.",
+    "closeWithoutSaving": "Close without saving",
+    "cardNoMetres": "par {{par}}, —",
+    "onlyGreens": "There are only green-only samples: wait for a complete one to start from it.",
+    "pointTee": "Tee",
+    "pointBend": "Bend",
+    "pointGreen": "Green"
   }
 }

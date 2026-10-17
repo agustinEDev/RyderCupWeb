@@ -18,6 +18,8 @@ vi.mock('react-i18next', () => ({
 
 const casos = vi.hoisted(() => ({ lista: vi.fn() }));
 vi.mock('../../composition', () => ({ listHoleReviewsUseCase: { execute: casos.lista } }));
+const avisos = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('../../utils/toast', () => ({ default: avisos }));
 
 const revision = vi.hoisted(() => ({ props: null }));
 vi.mock('../../components/admin/hoyos/RevisarHoyo', () => ({
@@ -79,5 +81,18 @@ describe('HoleReviews', () => {
     await act(async () => revision.props.onCerrar({ cambiado: true }));
     expect(screen.queryByTestId('revisar-hoyo')).toBeNull();
     expect(casos.lista).toHaveBeenCalledTimes(2);
+  });
+
+  it('L4: si la recarga falla, la lista se queda y se avisa', async () => {
+    casos.lista.mockResolvedValueOnce(LISTA);
+    casos.lista.mockRejectedValueOnce(new Error('x'));
+    render(<HoleReviews />);
+    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+
+    const { act } = await import('react');
+    await act(async () => revision.props.onCerrar({ cambiado: true }));
+
+    expect(screen.getByText('Alcanada')).toBeInTheDocument();
+    expect(avisos.error).toHaveBeenCalledWith('holeReviews.error');
   });
 });
