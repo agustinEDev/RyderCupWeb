@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { NavLink, Navigate, useParams } from 'react-router';
+import { NavLink, Navigate, useParams, useSearchParams } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
 import { Loader, Users as UsersIcon, BarChart3, Flag, Search, Trophy, AlertTriangle, X, MapPin, ChevronRight } from 'lucide-react';
@@ -53,12 +53,17 @@ const PAGE_SIZE = 20;
 // izquierda. Campos de golf junta los aprobados y las solicitudes, y Hoyos lo de
 // revisar los hoyos.
 const SECCIONES = [
-  { ruta: 'resumen', id: 'overview', label: 'tabs.overview', icon: BarChart3 },
-  { ruta: 'usuarios', id: 'users', label: 'tabs.users', icon: UsersIcon },
-  { ruta: 'competiciones', id: 'competitions', label: 'tabs.competitions', icon: Trophy },
-  { ruta: 'campos', id: 'golfCourses', label: 'tabs.golfCourses', icon: Flag },
-  { ruta: 'hoyos', id: 'holes', label: 'sections.holes', icon: MapPin },
+  // El nombre es el mismo título que pone la cabecera del móvil
+  { ruta: 'resumen', id: 'overview', label: 'common:screens.adminOverview', icon: BarChart3 },
+  { ruta: 'usuarios', id: 'users', label: 'common:screens.adminUsers', icon: UsersIcon },
+  { ruta: 'competiciones', id: 'competitions', label: 'common:screens.adminCompetitions', icon: Trophy },
+  { ruta: 'campos', id: 'golfCourses', label: 'common:screens.adminGolfCourses', icon: Flag },
+  { ruta: 'hoyos', id: 'holes', label: 'common:screens.adminHoles', icon: MapPin },
 ];
+
+// Las dos pestañas de campos de golf; la de solicitudes va en la URL
+// (`?ver=solicitudes`) para poder enlazarla y que sobreviva a recargar
+const PESTAÑAS_DE_CAMPOS = ['approved', 'requests'];
 
 /**
  * AdminPanel Page
@@ -74,7 +79,10 @@ const AdminPanel = () => {
   const abierta = SECCIONES.find((s) => s.ruta === seccion);
   // Sin sección (`/admin`), el ordenador enseña el resumen junto al menú
   const activeTab = abierta?.id ?? 'overview';
-  const [pestañaDeCampos, setPestañaDeCampos] = useState('approved');
+  const [parametros, setParametros] = useSearchParams();
+  const pestañaDeCampos = parametros.get('ver') === 'solicitudes' ? 'requests' : 'approved';
+  const elegirPestañaDeCampos = (pestaña) =>
+    setParametros(pestaña === 'requests' ? { ver: 'solicitudes' } : {}, { replace: true });
 
   // Overview
   const [stats, setStats] = useState(null);
@@ -107,7 +115,8 @@ const AdminPanel = () => {
 
   // El panel no se desmonta al cambiar de sección (las dos rutas pintan este
   // mismo componente): lo abierto en una no sigue encima de la otra, y campos de
-  // golf vuelve a abrir los aprobados. Se ajusta al pintar, no en un efecto
+  // golf vuelve a abrir los aprobados (la otra sección no lleva `?ver`). Se
+  // ajusta al pintar, no en un efecto
   const [seccionAnterior, setSeccionAnterior] = useState(seccion);
   if (seccion !== seccionAnterior) {
     setSeccionAnterior(seccion);
@@ -115,7 +124,6 @@ const AdminPanel = () => {
     setManagingUser(null);
     setEditingCompetition(null);
     setCancelingCompetition(null);
-    setPestañaDeCampos('approved');
   }
 
   const loadStats = useCallback(async () => {
@@ -177,9 +185,8 @@ const AdminPanel = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
       loadStats();
     }
-    // Al cambiar de sección también: los números del menú siguen a la vista
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, seccion]);
+  }, [user]);
 
   useEffect(() => {
     if (user && activeTab === 'users') {
@@ -252,6 +259,17 @@ const AdminPanel = () => {
       setIsTransitioning(false);
       setCancelingCompetition(null);
     }
+  };
+
+  // Las flechas mueven entre las dos pestañas, como pide el patrón de pestañas
+  const alPulsarEnLasPestañas = (evento) => {
+    if (evento.key !== 'ArrowRight' && evento.key !== 'ArrowLeft') return;
+    evento.preventDefault();
+    const paso = evento.key === 'ArrowRight' ? 1 : -1;
+    const actual = PESTAÑAS_DE_CAMPOS.indexOf(pestañaDeCampos);
+    const siguiente = PESTAÑAS_DE_CAMPOS[(actual + paso + PESTAÑAS_DE_CAMPOS.length) % PESTAÑAS_DE_CAMPOS.length];
+    elegirPestañaDeCampos(siguiente);
+    globalThis.document.getElementById(`pestana-campos-${siguiente}`)?.focus();
   };
 
   const handleTransition = (competition, action) => {
@@ -553,7 +571,7 @@ const AdminPanel = () => {
                 {activeTab === 'golfCourses' && (
                   <>
                     <div role="tablist" className="mb-4 flex border-b border-gray-200">
-                      {['approved', 'requests'].map((pestaña) => (
+                      {PESTAÑAS_DE_CAMPOS.map((pestaña) => (
                         <button
                           key={pestaña}
                           id={`pestana-campos-${pestaña}`}
@@ -561,7 +579,9 @@ const AdminPanel = () => {
                           role="tab"
                           aria-controls="panel-campos"
                           aria-selected={pestañaDeCampos === pestaña}
-                          onClick={() => setPestañaDeCampos(pestaña)}
+                          tabIndex={pestañaDeCampos === pestaña ? 0 : -1}
+                          onClick={() => elegirPestañaDeCampos(pestaña)}
+                          onKeyDown={alPulsarEnLasPestañas}
                           className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-medium ${
                             pestañaDeCampos === pestaña ? 'border-primary text-primary' : 'border-transparent text-gray-500'
                           }`}
@@ -571,7 +591,7 @@ const AdminPanel = () => {
                       ))}
                     </div>
                     <div id="panel-campos" role="tabpanel" aria-labelledby={`pestana-campos-${pestañaDeCampos}`}>
-                      {pestañaDeCampos === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded />}
+                      {pestañaDeCampos === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={loadStats} />}
                     </div>
                   </>
                 )}

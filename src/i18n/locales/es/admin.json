@@ -1,12 +1,6 @@
 {
   "title": "Panel de Administración",
   "subtitle": "Usuarios, estadísticas y campos de golf",
-  "tabs": {
-    "overview": "Resumen",
-    "users": "Usuarios",
-    "golfCourses": "Campos de golf",
-    "competitions": "Competiciones"
-  },
   "overview": {
     "totalUsers": "Usuarios registrados",
     "totalCompetitions": "Torneos creados",
@@ -186,9 +180,6 @@
     "label": "Secciones del panel",
     "requests_one": "{{count}} solicitud",
     "requests_other": "{{count}} solicitudes"
-  },
-  "sections": {
-    "holes": "Hoyos"
   },
   "golfTabs": {
     "approved": "Aprobados",

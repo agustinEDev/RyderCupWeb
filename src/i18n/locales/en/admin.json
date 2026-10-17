@@ -1,12 +1,6 @@
 {
   "title": "Admin Panel",
   "subtitle": "Users, statistics, and golf courses",
-  "tabs": {
-    "overview": "Overview",
-    "users": "Users",
-    "golfCourses": "Golf Courses",
-    "competitions": "Competitions"
-  },
   "overview": {
     "totalUsers": "Registered users",
     "totalCompetitions": "Tournaments created",
@@ -186,9 +180,6 @@
     "label": "Panel sections",
     "requests_one": "{{count}} request",
     "requests_other": "{{count}} requests"
-  },
-  "sections": {
-    "holes": "Holes"
   },
   "golfTabs": {
     "approved": "Approved",

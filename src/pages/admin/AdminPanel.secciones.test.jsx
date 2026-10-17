@@ -63,8 +63,7 @@ const abrir = (ruta) =>
   render(
     <MemoryRouter initialEntries={[ruta]}>
       <Routes>
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/admin/:seccion" element={<AdminPanel />} />
+        <Route path="/admin/:seccion?" element={<AdminPanel />} />
       </Routes>
       <DondeEstoy />
     </MemoryRouter>
@@ -93,11 +92,11 @@ describe('AdminPanel · secciones', () => {
       '/admin/hoyos',
     ]);
     expect(enlaces.map((a) => a.textContent)).toEqual([
-      expect.stringContaining('tabs.overview'),
-      expect.stringContaining('tabs.users'),
-      expect.stringContaining('tabs.competitions'),
-      expect.stringContaining('tabs.golfCourses'),
-      expect.stringContaining('sections.holes'),
+      expect.stringContaining('screens.adminOverview'),
+      expect.stringContaining('screens.adminUsers'),
+      expect.stringContaining('screens.adminCompetitions'),
+      expect.stringContaining('screens.adminGolfCourses'),
+      expect.stringContaining('screens.adminHoles'),
     ]);
     // Se acabaron las seis pestañas
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
@@ -105,11 +104,11 @@ describe('AdminPanel · secciones', () => {
 
   it('A2: los números que ya trae el resumen, sin más llamadas', async () => {
     abrir('/admin');
-    await waitFor(() => expect(fila('tabs.users')).toHaveTextContent('128'));
-    expect(fila('tabs.competitions')).toHaveTextContent('14');
-    expect(fila('tabs.golfCourses')).toHaveTextContent('menu.requests_2');
+    await waitFor(() => expect(fila('screens.adminUsers')).toHaveTextContent('128'));
+    expect(fila('screens.adminCompetitions')).toHaveTextContent('14');
+    expect(fila('screens.adminGolfCourses')).toHaveTextContent('menu.requests_2');
     // El de hoyos llega con su lista nueva (entrega 2)
-    expect(fila('sections.holes').textContent).not.toMatch(/\d/);
+    expect(fila('screens.adminHoles').textContent).not.toMatch(/\d/);
     expect(mockListAdminUsers).not.toHaveBeenCalled();
     expect(mockAdminListCompetitions).not.toHaveBeenCalled();
   });
@@ -117,14 +116,14 @@ describe('AdminPanel · secciones', () => {
   it('A2: sin solicitudes pendientes no se dice nada en campos', async () => {
     mockGetAdminStats.mockResolvedValue({ ...STATS, totalGolfCoursesPending: 0 });
     abrir('/admin');
-    await waitFor(() => expect(fila('tabs.users')).toHaveTextContent('128'));
-    expect(fila('tabs.golfCourses')).not.toHaveTextContent('menu.requests');
+    await waitFor(() => expect(fila('screens.adminUsers')).toHaveTextContent('128'));
+    expect(fila('screens.adminGolfCourses')).not.toHaveTextContent('menu.requests');
   });
 
   it('A3: tocar una sección la abre en su ruta y, en el móvil, sin el menú', async () => {
     abrir('/admin');
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(fila('tabs.users'));
+    fireEvent.click(fila('screens.adminUsers'));
     expect(screen.getByTestId('ruta')).toHaveTextContent('/admin/usuarios');
     await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalled());
     // En el móvil el menú se esconde; en el ordenador se queda a la izquierda
@@ -135,8 +134,8 @@ describe('AdminPanel · secciones', () => {
   it('A3: la sección abierta queda marcada en el menú', async () => {
     abrir('/admin/competiciones');
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
-    expect(fila('tabs.competitions')).toHaveAttribute('aria-current', 'page');
-    expect(fila('tabs.users')).not.toHaveAttribute('aria-current');
+    expect(fila('screens.adminCompetitions')).toHaveAttribute('aria-current', 'page');
+    expect(fila('screens.adminUsers')).not.toHaveAttribute('aria-current');
   });
 
   it('A4: entrar directo por la URL abre esa sección', async () => {
@@ -162,7 +161,7 @@ describe('AdminPanel · secciones', () => {
     abrir('/admin/resumen');
     expect(await screen.findByText('25')).toBeInTheDocument();
     expect(screen.getByTestId('seccion-del-panel')).not.toHaveClass('hidden');
-    expect(fila('tabs.overview')).toHaveAttribute('aria-current', 'page');
+    expect(fila('screens.adminOverview')).toHaveAttribute('aria-current', 'page');
   });
 
   it('A7: campos de golf, con dos pestañas: aprobados y solicitudes', async () => {
@@ -176,6 +175,14 @@ describe('AdminPanel · secciones', () => {
     expect(screen.getByTestId('pending-golf-courses-tab')).toBeInTheDocument();
     expect(screen.queryByTestId('golf-courses-tab')).not.toBeInTheDocument();
     expect(pestañas[1]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('A7: las solicitudes tienen su URL y se abren directas', async () => {
+    abrir('/admin/campos?ver=solicitudes');
+    expect(await screen.findByTestId('pending-golf-courses-tab')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'golfTabs.requests' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.approved' }));
+    expect(screen.getByTestId('golf-courses-tab')).toBeInTheDocument();
   });
 
   it('A8: hoyos, con su lista y sin pestañas por ahora', async () => {

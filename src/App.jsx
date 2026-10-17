@@ -306,16 +306,8 @@ function AppContent() {
         <Route path="/competitions/:id/rounds/:roundId/envelope" element={<ProtectedRoute><EnvelopePage /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 
-        {/* Admin routes (v2.4.0) - Protected by ADMIN role */}
-        <Route path="/admin" element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles="ADMIN">
-              <AdminPanel />
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        {/* Cada sección del panel en su ruta (17 oct): resumen, usuarios, competiciones, campos y hoyos */}
-        <Route path="/admin/:seccion" element={
+        {/* Admin (v2.4.0), protegido por el rol ADMIN; cada sección del panel en su ruta (17 oct): resumen, usuarios, competiciones, campos y hoyos */}
+        <Route path="/admin/:seccion?" element={
           <ProtectedRoute>
             <RoleGuard allowedRoles="ADMIN">
               <AdminPanel />

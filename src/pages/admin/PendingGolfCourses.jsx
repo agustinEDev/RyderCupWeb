@@ -28,8 +28,10 @@ import BlockLoader from '../../components/ui/BlockLoader';
  *
  * @param {boolean} [embedded=false] - When true, renders just the content
  *   (no HeaderAuth/page shell) so it can be used as a tab inside AdminPanel.
+ * @param {Function} [onCambio] - Tras aprobar o rechazar: el panel vuelve a
+ *   pedir el número de solicitudes de su menú.
  */
-const PendingGolfCourses = ({ embedded = false }) => {
+const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   const { t, i18n } = useTranslation('golfCourses');
   const { user, loading: isLoadingUser } = useAuth();
 
@@ -97,6 +99,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await approveGolfCourseUseCase.execute(course.id);
       customToast.success(t('pages.pending.approveSuccess'));
+      onCambio?.();
       await loadPendingCourses();
     } catch (error) {
       console.error('Error approving golf course:', error);
@@ -129,6 +132,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await rejectGolfCourseUseCase.execute(courseToReject.id, rejectReason.trim());
       customToast.success(t('pages.pending.rejectSuccess'));
+      onCambio?.();
       setShowRejectModal(false);
       setCourseToReject(null);
       setRejectReason('');
@@ -148,6 +152,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await approveGolfCourseUpdateUseCase.execute(clone.id);
       customToast.success(t('pages.pending.approveUpdateSuccess'));
+      onCambio?.();
       await loadPendingCourses();
     } catch (error) {
       console.error('Error approving update:', error);
@@ -164,6 +169,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await rejectGolfCourseUpdateUseCase.execute(clone.id);
       customToast.success(t('pages.pending.rejectUpdateSuccess'));
+      onCambio?.();
       await loadPendingCourses();
     } catch (error) {
       console.error('Error rejecting update:', error);

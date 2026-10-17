@@ -9,8 +9,7 @@ const renderPanel = () =>
   render(
     <MemoryRouter initialEntries={['/admin']}>
       <Routes>
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/admin/:seccion" element={<AdminPanel />} />
+        <Route path="/admin/:seccion?" element={<AdminPanel />} />
       </Routes>
     </MemoryRouter>
   );
@@ -38,7 +37,12 @@ vi.mock('./GolfCourses', () => ({
 }));
 
 vi.mock('./PendingGolfCourses', () => ({
-  default: () => <div data-testid="pending-golf-courses-tab">Pending</div>,
+  default: ({ onCambio }) => (
+    <div data-testid="pending-golf-courses-tab">
+      Pending
+      <button type="button" onClick={onCambio}>aprobar-una</button>
+    </div>
+  ),
 }));
 
 const mockGetAdminStats = vi.fn();
@@ -143,7 +147,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
 
     await waitFor(() => expect(mockListAdminUsers).toHaveBeenCalled());
     expect(await screen.findByText('Agus Estevez')).toBeInTheDocument();
@@ -153,7 +157,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
 
     expect(await screen.findByTestId('golf-courses-tab')).toBeInTheDocument();
   });
@@ -162,7 +166,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
     fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
 
     expect(await screen.findByTestId('pending-golf-courses-tab')).toBeInTheDocument();
@@ -172,7 +176,7 @@ describe('AdminPanel', () => {
     mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], firstName: 'Renamed' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
@@ -185,7 +189,7 @@ describe('AdminPanel', () => {
     mockSetAdminUserActive.mockResolvedValue();
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
@@ -198,7 +202,7 @@ describe('AdminPanel', () => {
     mockDeleteAdminUser.mockResolvedValue();
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
@@ -219,7 +223,7 @@ describe('AdminPanel', () => {
     mockDeleteAdminUser.mockRejectedValue(error);
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await screen.findByText('Agus Estevez');
 
     fireEvent.click(screen.getByRole('button', { name: 'users.deleteTooltip' }));
@@ -238,7 +242,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
 
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
     expect(await screen.findByText('Ryder Cup Local')).toBeInTheDocument();
@@ -249,7 +253,7 @@ describe('AdminPanel', () => {
     mockAdminUpdateCompetition.mockResolvedValue({ id: 'c1', name: 'Renamed' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     const editButtons = screen.getAllByRole('button', { name: 'competitions.editTooltip' });
@@ -265,7 +269,7 @@ describe('AdminPanel', () => {
     mockActivateCompetition.mockResolvedValue({ id: 'c1', status: 'ACTIVE' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     fireEvent.click(screen.getByRole('button', { name: 'competitions.actions.activate' }));
@@ -285,7 +289,7 @@ describe('AdminPanel', () => {
     mockAdminListCompetitions.mockResolvedValue(fullPage);
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
     await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
 
     // 21 fetched (limit 20 + 1) means there's a next page; only 20 are shown.
@@ -310,7 +314,7 @@ describe('AdminPanel', () => {
     mockCancelCompetition.mockResolvedValue({ id: 'c1', status: 'CANCELLED' });
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
@@ -326,7 +330,7 @@ describe('AdminPanel', () => {
   it('la confirmación de cancelar se anuncia y se descarta con Escape', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
     await screen.findByText('Ryder Cup Local');
 
     fireEvent.click(screen.getAllByRole('button', { name: 'competitions.actions.cancel' })[0]);
@@ -347,37 +351,65 @@ describe('AdminPanel', () => {
   it('cambiar de sección cierra el modal que estaba abierto', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
     await screen.findByText('Agus Estevez');
     fireEvent.click(screen.getByRole('button', { name: 'users.deactivateTooltip' }));
     expect(screen.getByRole('button', { name: 'manageModal.confirmDeactivate' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: /tabs.competitions/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
     expect(screen.queryByRole('button', { name: 'manageModal.confirmDeactivate' })).not.toBeInTheDocument();
   });
 
   it('volver a campos de golf abre otra vez los aprobados', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
     fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
-    fireEvent.click(screen.getByRole('link', { name: /tabs.users/ }));
-    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
     expect(screen.getByRole('tab', { name: 'golfTabs.approved' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('los números del menú se piden otra vez al cambiar de sección', async () => {
+  it('los números del menú no se piden otra vez solo por cambiar de sección', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminCompetitions/ }));
+    await waitFor(() => expect(mockAdminListCompetitions).toHaveBeenCalled());
+    expect(mockGetAdminStats).toHaveBeenCalledTimes(1);
+  });
+
+  it('aprobar o rechazar una solicitud vuelve a pedir los números del menú', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    fireEvent.click(screen.getByRole('tab', { name: 'golfTabs.requests' }));
+    fireEvent.click(screen.getByRole('button', { name: 'aprobar-una' }));
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalledTimes(2));
+  });
+
+  it('las pestañas de campos se mueven con las flechas, con una sola en el orden del tabulador', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    const [aprobados, solicitudes] = screen.getAllByRole('tab');
+    expect(aprobados).toHaveAttribute('tabindex', '0');
+    expect(solicitudes).toHaveAttribute('tabindex', '-1');
+    fireEvent.keyDown(aprobados, { key: 'ArrowRight' });
+    expect(solicitudes).toHaveAttribute('aria-selected', 'true');
+    expect(solicitudes).toHaveFocus();
+    expect(solicitudes).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(solicitudes, { key: 'ArrowRight' });
+    expect(aprobados).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(aprobados, { key: 'ArrowLeft' });
+    expect(solicitudes).toHaveAttribute('aria-selected', 'true');
   });
 
   it('en el ordenador, la sección lleva su título y su panel de pestañas', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('link', { name: /tabs.golfCourses/ }));
-    expect(screen.getByRole('heading', { level: 2, name: 'tabs.golfCourses' })).toHaveClass('hidden', 'md:block');
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    expect(screen.getByRole('heading', { level: 2, name: 'common:screens.adminGolfCourses' })).toHaveClass('hidden', 'md:block');
     const pestaña = screen.getByRole('tab', { name: 'golfTabs.approved' });
     const panel = screen.getByRole('tabpanel');
     expect(pestaña).toHaveAttribute('aria-controls', panel.id);
