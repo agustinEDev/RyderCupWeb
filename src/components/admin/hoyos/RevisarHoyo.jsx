@@ -62,10 +62,18 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     alAbrir();
   }, [cargar]);
 
-  const hacer = async (accion, ok, { conservarLinea = false } = {}) => {
+  // `cerrar`: al acabar bien, la revisión se cierra en vez de recargarse (guardar)
+  const hacer = async (accion, ok, { conservarLinea = false, cerrar: cerrarAlAcabar = null } = {}) => {
     setOcupado(true);
     try {
       await accion();
+      if (cerrarAlAcabar) {
+        customToast.success(ok);
+        // El `finally` la desbloquea igual, por si quien la abrió no la desmonta:
+        // de un modal se sale siempre
+        cerrarAlAcabar();
+        return;
+      }
       setCambiado(true);
       // Quitada la línea (reabrir), ya no hay cambios que perder, aunque la
       // recarga de después falle (CodeRabbit, 17 oct). Borrar una muestra la
@@ -73,8 +81,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
       if (!conservarLinea) setEditada(false);
       if (ok) customToast.success(t(ok));
       await cargar({ conservarLinea });
-    } catch {
-      customToast.error(t('holeReviews.actionError'));
+    } catch (error) {
+      customToast.error(t(error?.errorCode === 'INVALID_HOLE_LINE' ? 'holeReviews.invalidLine' : 'holeReviews.actionError'));
     } finally {
       setOcupado(false);
       setPorBorrar(null);
@@ -82,18 +90,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   };
 
   // Guardado el hoyo, deja de estar pendiente: la revisión se cierra sola y la
-  // lista se recarga sin él (Agustín, 17 oct)
-  const guardar = async () => {
-    setOcupado(true);
-    try {
-      await saveHoleLineUseCase.execute(golfCourseId, numeroDeHoyo, linea);
-      customToast.success(t('holeReviews.savedOk', { numero: numeroDeHoyo }));
-      onCerrar({ cambiado: true });
-    } catch (error) {
-      customToast.error(t(error?.errorCode === 'INVALID_HOLE_LINE' ? 'holeReviews.invalidLine' : 'holeReviews.actionError'));
-      setOcupado(false);
-    }
-  };
+  // lista lo quita (Agustín, 17 oct)
+  const guardar = () =>
+    hacer(() => saveHoleLineUseCase.execute(golfCourseId, numeroDeHoyo, linea), t('holeReviews.savedOk', { numero: numeroDeHoyo }), {
+      cerrar: () => onCerrar({ cambiado: true, guardado: true }),
+    });
 
   const barraDeTexto = (barra) =>
     [t(`golfCourses:form.teeColors.${barra.color}`), barra.gender ? t(`holeReviews.genders.${barra.gender}`) : null].filter(Boolean).join(' · ');

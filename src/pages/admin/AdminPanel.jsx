@@ -356,8 +356,7 @@ const AdminPanel = () => {
 
               <div data-testid="seccion-del-panel" className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}>
                 {/* En el móvil el título lo pone la cabecera: un solo h1 */}
-                {/* En el móvil la cabecera ya lo dice: aquí, solo para lectores (sin él, los h3 de dentro colgarían del h1) */}
-                <h2 className="sr-only md:not-sr-only md:mb-4 md:text-xl md:font-bold md:text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
+                <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
                 {activeTab === 'overview' && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}

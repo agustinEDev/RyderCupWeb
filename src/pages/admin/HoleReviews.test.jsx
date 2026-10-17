@@ -78,7 +78,6 @@ describe('HoleReviews', () => {
     ]);
     // A todo el ancho, una debajo de otra: nada de etiquetas de distintos anchos
     for (const fila of filas) expect(fila).toHaveClass('w-full');
-    expect(screen.queryByText(/holeReviews.saved/)).not.toBeInTheDocument();
   });
 
   it('P8: arriba se explica qué es esto y que guardar un hoyo lo quita de aquí', async () => {
@@ -114,5 +113,30 @@ describe('HoleReviews', () => {
 
     expect(screen.getByText('Alcanada')).toBeInTheDocument();
     expect(avisos.error).toHaveBeenCalledWith('holeReviews.error');
+  });
+  it('P12: el hoyo guardado sale de la lista aunque la recarga falle', async () => {
+    casos.lista.mockResolvedValueOnce(LISTA);
+    casos.lista.mockRejectedValueOnce(new Error('sin red'));
+    render(<HoleReviews />);
+    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+
+    const { act } = await import('react');
+    await act(async () => revision.props.onCerrar({ cambiado: true, guardado: true }));
+
+    const filas = within(screen.getByRole('region', { name: 'Alcanada' })).getAllByRole('button');
+    expect(filas.map((f) => f.textContent)).toEqual([expect.stringContaining('"numero":7')]);
+    expect(screen.getByText('holeReviews.pendingHoles {"count":1}')).toBeInTheDocument();
+  });
+
+  it('P12: guardado el último hoyo de un campo, el campo desaparece', async () => {
+    casos.lista.mockResolvedValueOnce([{ ...LISTA[0], holes: [LISTA[0].holes[0]] }]);
+    casos.lista.mockReturnValueOnce(new Promise(() => {}));
+    render(<HoleReviews />);
+    fireEvent.click(await screen.findByRole('button', { name: /holeReviews.hole {"numero":1}/ }));
+
+    const { act } = await import('react');
+    await act(async () => revision.props.onCerrar({ cambiado: true, guardado: true }));
+
+    expect(screen.queryByRole('region', { name: 'Alcanada' })).toBeNull();
   });
 });

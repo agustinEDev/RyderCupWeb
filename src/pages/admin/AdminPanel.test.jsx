@@ -409,7 +409,7 @@ describe('AdminPanel', () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
-    expect(screen.getByRole('heading', { level: 2, name: 'common:screens.adminGolfCourses' })).toHaveClass('sr-only', 'md:not-sr-only');
+    expect(screen.getByRole('heading', { level: 2, name: 'common:screens.adminGolfCourses' })).toHaveClass('hidden', 'md:block');
     const pestaña = screen.getByRole('tab', { name: 'golfTabs.approved' });
     const panel = screen.getByRole('tabpanel');
     expect(pestaña).toHaveAttribute('aria-controls', panel.id);

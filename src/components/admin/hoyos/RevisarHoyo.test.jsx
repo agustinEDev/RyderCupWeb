@@ -103,7 +103,7 @@ describe('RevisarHoyo', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
 
-    await waitFor(() => expect(onCerrar).toHaveBeenCalledWith({ cambiado: true }));
+    await waitFor(() => expect(onCerrar).toHaveBeenCalledWith({ cambiado: true, guardado: true }));
     expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: T, bends: [], greenCenter: alNorte(300) });
     expect(avisos.success).toHaveBeenCalledWith('holeReviews.savedOk {"numero":1}');
     expect(casos.campo).toHaveBeenCalledTimes(1);
@@ -124,7 +124,7 @@ describe('RevisarHoyo', () => {
 
     expect(casos.guardar).toHaveBeenCalledWith('gc-1', 1, { tee: alNorte(5), bends: [], greenCenter: alNorte(300) });
     expect(onCerrar).toHaveBeenCalledTimes(1);
-    expect(onCerrar).toHaveBeenCalledWith({ cambiado: true });
+    expect(onCerrar).toHaveBeenCalledWith({ cambiado: true, guardado: true });
   });
 
   it('R6: reabrir, solo con la línea guardada', async () => {
@@ -220,5 +220,13 @@ describe('RevisarHoyo', () => {
     fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
 
     expect(onCerrar).toHaveBeenCalledWith({ cambiado: false });
+  });
+  it('P12: si quien la abrió no la cierra, la revisión no se queda bloqueada', async () => {
+    await abrir({}, vi.fn());
+    casos.guardar.mockResolvedValue(undefined);
+
+    fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'holeReviews.close' })).not.toBeDisabled());
   });
 });

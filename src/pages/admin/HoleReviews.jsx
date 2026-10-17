@@ -43,7 +43,18 @@ const HoleReviews = () => {
     alAbrir();
   }, [pedir]);
 
-  const alCerrar = ({ cambiado } = {}) => {
+  // Un hoyo guardado sale de la lista ya, sin esperar a la recarga: si esta
+  // fallara, no seguiría ahí como pendiente
+  const alCerrar = ({ cambiado, guardado } = {}) => {
+    if (guardado && abierto) {
+      const { golfCourseId, numeroDeHoyo } = abierto;
+      setEstado((e) => ({
+        ...e,
+        cursos: e.cursos
+          .map((c) => (c.golfCourseId === golfCourseId ? { ...c, holes: c.holes.filter((h) => h.holeNumber !== numeroDeHoyo) } : c))
+          .filter((c) => c.holes.length > 0),
+      }));
+    }
     setAbierto(null);
     if (cambiado) cargar();
   };
