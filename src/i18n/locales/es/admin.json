@@ -187,7 +187,8 @@
     "myPosition": "Mi posición",
     "findingPosition": "Buscando tu posición…",
     "positionDenied": "Sin permiso de ubicación",
-    "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez"
+    "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez",
+    "positionUnavailable": "Este navegador no da tu posición"
   },
   "menu": {
     "label": "Secciones del panel",

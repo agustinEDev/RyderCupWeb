@@ -29,6 +29,12 @@ const lineaDe = (muestra) => (muestra?.tee ? { tee: muestra.tee, bends: muestra.
 const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-50';
 // Sin nada tocado, siempre la misma lista: el mapa no repinta por nada
 const SIN_MARCAR = [];
+// Lo que se dice junto a «Mi posición» según el GPS
+const AVISO_DEL_GPS = {
+  buscando: 'holeReviews.findingPosition',
+  denegado: 'holeReviews.positionDenied',
+  'no-disponible': 'holeReviews.positionUnavailable',
+};
 
 /**
  * Revisar un hoyo (BE #575, 17 oct 2026: una referencia por hoyo). Sobre la
@@ -56,12 +62,17 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const gps = usePosicionGps({ activo: centrarEnMi > 0, precisionMaxima: Infinity });
   // Marcar desde cero (17 oct): null, o el paso y la salida ya tocada
   const [marcando, setMarcando] = useState(null);
-  // Al empezar a marcar, el foco va a Cancelar: el botón que lo empezó se desactiva
+  // Al empezar a marcar, el foco va a Cancelar (el botón que lo empezó se
+  // desactiva); al acabar, vuelve a ese botón
   const botonDeCancelar = useRef(null);
-  const empezoAMarcar = Boolean(marcando);
+  const botonDeMarcar = useRef(null);
+  const haMarcado = useRef(false);
+  const estaMarcando = Boolean(marcando);
   useEffect(() => {
-    if (empezoAMarcar) botonDeCancelar.current?.focus();
-  }, [empezoAMarcar]);
+    if (estaMarcando) botonDeCancelar.current?.focus();
+    else if (haMarcado.current) botonDeMarcar.current?.focus();
+    haMarcado.current = estaMarcando;
+  }, [estaMarcando]);
 
   // `conservarLinea`: tras borrar una muestra, la que se edita no se toca
   const cargar = useCallback(
@@ -124,11 +135,6 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const barraDeTexto = (barra) =>
     [t(`golfCourses:form.teeColors.${barra.color}`), barra.gender ? t(`holeReviews.genders.${barra.gender}`) : null].filter(Boolean).join(' · ');
   const cerrar = () => {
-    // Escape mientras se marca cancela el marcado, no cierra
-    if (marcando) {
-      setMarcando(null);
-      return;
-    }
     // Con cambios sin guardar, primero se avisa (de un modal se sale siempre,
     // pero no perdiendo lo hecho por un descuido)
     if (editada && !avisoAlCerrar) {
@@ -137,6 +143,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     }
     onCerrar({ cambiado });
   };
+  // Escape mientras se marca cancela el marcado; «Cerrar» cierra siempre
+  const alEscape = () => (marcando ? setMarcando(null) : cerrar());
   const elegirLinea = (nueva) => {
     setLinea(nueva);
     setEditada(true);
@@ -149,7 +157,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const hayCompletas = Boolean(hoyo?.muestras.some((m) => m.tee));
   const tarjeta = tarjetaDelHoyo(hoyo?.barras);
   // Con solo un green suelto, se toca la salida y la línea acaba en él (E3)
-  const greenSuelto = hoyo && !hayCompletas ? (hoyo.muestras.find((m) => !m.tee)?.greenCenter ?? null) : null;
+  const greenSuelto = hoyo && !hayCompletas && !hoyo.guardada ? (hoyo.muestras.find((m) => !m.tee)?.greenCenter ?? null) : null;
 
   // La línea de la salida al green con los codos del par de la barra más larga,
   // sobre la recta; sin par, uno (E2, E7, E11)
@@ -188,7 +196,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   return (
     <ModalShell
       isOpen
-      onClose={cerrar}
+      onClose={alEscape}
       closeOnBackdrop={false}
       closeOnEscape={!ocupado}
       busy={ocupado}
@@ -207,9 +215,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
           </div>
         )}
         <div className="absolute bottom-2 right-2 z-10 flex flex-col items-end gap-1">
-          {(gps.estado === 'denegado' || gps.estado === 'buscando') && (
+          {AVISO_DEL_GPS[gps.estado] && (
             <p role="status" className="rounded bg-white/95 px-2 py-1 text-xs text-gray-900 shadow">
-              {t(gps.estado === 'denegado' ? 'holeReviews.positionDenied' : 'holeReviews.findingPosition')}
+              {t(AVISO_DEL_GPS[gps.estado])}
             </p>
           )}
           {/* Sin desactivarse mientras busca, para no perder el foco: lo dice arriba */}
@@ -282,6 +290,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 </button>
                 {/* El admin marca su propia línea en cualquier hoyo (Agustín, 17 oct) */}
                 <button
+                  ref={botonDeMarcar}
                   type="button"
                   disabled={ocupado || Boolean(marcando)}
                   onClick={() => setMarcando({ paso: 'salida', salida: null })}

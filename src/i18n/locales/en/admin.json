@@ -187,7 +187,8 @@
     "myPosition": "My position",
     "findingPosition": "Finding your position…",
     "positionDenied": "No location permission",
-    "tooFarFromCourse": "That point is more than 3 km from the course: tap again"
+    "tooFarFromCourse": "That point is more than 3 km from the course: tap again",
+    "positionUnavailable": "This browser does not give your position"
   },
   "menu": {
     "label": "Panel sections",

@@ -545,6 +545,40 @@ describe('RevisarHoyo', () => {
 
         expect(mapa.props.marcados).toBe(antes);
       });
+
+      it('/code-review: mientras se marca, «Cerrar» cierra (de un modal se sale siempre)', async () => {
+        const onCerrar = vi.fn();
+        await abrir({ barras: PAR4 }, onCerrar);
+        marcar();
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
+
+        expect(onCerrar).toHaveBeenCalledWith({ cambiado: false });
+      });
+
+      it('/code-review: sin GPS en el navegador, «Mi posición» lo dice', async () => {
+        gps.lectura = { estado: 'no-disponible', posicion: null, precision: null };
+        await abrir({ barras: PAR4 });
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.myPosition' }));
+
+        expect(screen.getByText('holeReviews.positionUnavailable')).toBeInTheDocument();
+      });
+
+      it('/code-review: con línea guardada y un green suelto, se marcan la salida y el green', async () => {
+        await abrir({ guardada: { tee: T, bends: [], greenCenter: alNorte(300) }, muestras: [SOLO_GREEN], barras: PAR4 });
+        marcar();
+
+        expect(screen.getByText('holeReviews.tapTee')).toBeInTheDocument();
+        tocar(alNorte(5));
+        expect(screen.getByText('holeReviews.tapGreen')).toBeInTheDocument();
+      });
+
+      it('/code-review: al acabar de marcar, el foco vuelve a «Marcar desde cero»', async () => {
+        await abrir({ barras: PAR4 });
+        marcar();
+        fireEvent.click(screen.getByRole('button', { name: 'holeReviews.cancelMarking' }));
+
+        expect(screen.getByRole('button', { name: 'holeReviews.markFromScratch' })).toHaveFocus();
+      });
     });
   });
 });
