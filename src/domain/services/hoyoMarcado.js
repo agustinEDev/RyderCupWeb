@@ -182,3 +182,6 @@ export const salidaPorMetros = (linea, metros) => {
   if (salidaGreenFueraDeLimites(nueva, linea.at(-1))) return linea;
   return [nueva, ...linea.slice(1)];
 };
+
+/** Los puntos de una línea `{ tee, bends, greenCenter }`, en orden: salida, codos y green. */
+export const puntosDeLaLinea = (linea) => [linea.tee, ...(linea.bends ?? []), linea.greenCenter];
