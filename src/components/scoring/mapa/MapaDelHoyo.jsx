@@ -25,10 +25,9 @@ import ModalShell from '../../ui/ModalShell';
 // Empaquetado, MapLibre no encuentra solo su worker: va como fichero aparte
 setWorkerUrl(urlDelWorker);
 
-// Ortofoto del PNOA (IGN), la de más detalle de España; sus teselas permiten CORS
-export const TESELAS_PNOA =
-  'https://www.ign.es/wmts/pnoa-ma?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=OI.OrthoimageCoverage' +
-  '&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg';
+import { TESELAS_PNOA } from './teselas';
+
+export { TESELAS_PNOA };
 const LICENCIA_OSM = 'https://www.openstreetmap.org/copyright';
 
 const ESTILO = {

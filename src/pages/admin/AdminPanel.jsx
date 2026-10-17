@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
-import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search, Trophy, AlertTriangle, X } from 'lucide-react';
+import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search, Trophy, AlertTriangle, X, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -13,6 +13,7 @@ import AdminCompetitionsTable from '../../components/admin/AdminCompetitionsTabl
 import AdminEditCompetitionModal from '../../components/admin/AdminEditCompetitionModal';
 import GolfCourses from './GolfCourses';
 import PendingGolfCourses from './PendingGolfCourses';
+import HoleReviews from './HoleReviews';
 import {
   getAdminStatsUseCase,
   listAdminUsersUseCase,
@@ -245,6 +246,8 @@ const AdminPanel = () => {
     { id: 'competitions', label: t('tabs.competitions'), icon: Trophy },
     { id: 'golfCourses', label: t('tabs.golfCourses'), icon: Flag },
     { id: 'pending', label: t('tabs.pending'), icon: Clock },
+    // Junto a los pendientes: revisar las muestras de los hoyos (BE #575)
+    { id: 'holeReviews', label: t('tabs.holeReviews'), icon: MapPin },
   ];
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -508,6 +511,7 @@ const AdminPanel = () => {
 
               {activeTab === 'golfCourses' && <GolfCourses embedded />}
               {activeTab === 'pending' && <PendingGolfCourses embedded />}
+              {activeTab === 'holeReviews' && <HoleReviews />}
             </div>
           </div>
         </div>

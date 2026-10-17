@@ -240,3 +240,36 @@ describe('ApiGolfCourseRepository — muestras de hoyo', () => {
     await expect(new ApiGolfCourseRepository().getHoleSamples('gc-1')).rejects.toThrow('Failed to fetch');
   });
 });
+
+
+describe('ApiGolfCourseRepository — revisar hoyos (admin, BE #575)', () => {
+  beforeEach(() => apiRequest.mockReset());
+
+  it('la lista y un campo, de sus rutas de admin', async () => {
+    apiRequest.mockResolvedValueOnce({ courses: [{ golf_course_id: 'gc-1', name: 'V', holes: [] }] });
+    apiRequest.mockResolvedValueOnce({ golf_course_id: 'gc-1', name: 'V', holes: [] });
+    const repo = new ApiGolfCourseRepository();
+
+    expect(await repo.listHoleReviews()).toEqual([{ golfCourseId: 'gc-1', name: 'V', holes: [] }]);
+    expect(await repo.getHoleReview('gc-1')).toEqual({ golfCourseId: 'gc-1', name: 'V', holes: [] });
+    expect(apiRequest.mock.calls.map((c) => c[0])).toEqual([
+      '/api/v1/golf-courses/admin/hole-reviews',
+      '/api/v1/golf-courses/admin/gc-1/hole-reviews',
+    ]);
+  });
+
+  it('guardar es un PUT con la línea; reabrir y borrar, DELETE', async () => {
+    apiRequest.mockResolvedValue(null);
+    const repo = new ApiGolfCourseRepository();
+
+    await repo.saveHoleLine('gc-1', 3, { tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 3, lon: 4 } });
+    await repo.reopenHole('gc-1', 3);
+    await repo.deleteHoleSample('gc-1', 's-1');
+
+    const [[guardar, opciones], [reabrir, deReabrir], [borrar, deBorrar]] = apiRequest.mock.calls;
+    expect([guardar, opciones.method]).toEqual(['/api/v1/golf-courses/admin/gc-1/hole-lines/3', 'PUT']);
+    expect(JSON.parse(opciones.body)).toEqual({ tee: { latitude: 1, longitude: 2 }, bends: [], green_center: { latitude: 3, longitude: 4 } });
+    expect([reabrir, deReabrir.method]).toEqual(['/api/v1/golf-courses/admin/gc-1/hole-lines/3', 'DELETE']);
+    expect([borrar, deBorrar.method]).toEqual(['/api/v1/golf-courses/admin/gc-1/hole-samples/s-1', 'DELETE']);
+  });
+});

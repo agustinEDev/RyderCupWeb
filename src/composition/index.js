@@ -34,6 +34,13 @@ import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCours
 import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGolfCoursesUseCase';
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
+import {
+  DeleteHoleSampleUseCase,
+  GetHoleReviewUseCase,
+  ListHoleReviewsUseCase,
+  ReopenHoleUseCase,
+  SaveHoleLineUseCase,
+} from '../application/use_cases/golf_course/HoleReviewUseCases';
 import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
 import LocalStorageHoleSampleStore from '../infrastructure/repositories/LocalStorageHoleSampleStore';
 import LocalStorageCourseLocationCache from '../infrastructure/repositories/LocalStorageCourseLocationCache';
@@ -454,6 +461,13 @@ const getCourseLocationUseCase = new GetCourseLocationUseCase({
   courseLocationCache: new LocalStorageCourseLocationCache(),
 });
 // El mapa de hoyos para la anotación, con su copia para jugar sin cobertura (BE #532)
+// Revisar los hoyos (admin, BE #575)
+const listHoleReviewsUseCase = new ListHoleReviewsUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const getHoleReviewUseCase = new GetHoleReviewUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const saveHoleLineUseCase = new SaveHoleLineUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const reopenHoleUseCase = new ReopenHoleUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const deleteHoleSampleUseCase = new DeleteHoleSampleUseCase({ golfCourseRepository: apiGolfCourseRepository });
+
 const getHoleMapUseCase = new GetHoleMapUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeMapCache: new LocalStorageHoleMapCache(),
@@ -569,6 +583,11 @@ export {
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
   getHoleMapUseCase,
+  listHoleReviewsUseCase,
+  getHoleReviewUseCase,
+  saveHoleLineUseCase,
+  reopenHoleUseCase,
+  deleteHoleSampleUseCase,
   getCourseLocationUseCase,
   sendHoleSampleUseCase,
   sendPendingHoleSamplesUseCase,

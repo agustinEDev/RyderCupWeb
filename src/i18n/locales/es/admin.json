@@ -6,7 +6,8 @@
     "users": "Usuarios",
     "golfCourses": "Campos de golf",
     "pending": "Pendientes",
-    "competitions": "Competiciones"
+    "competitions": "Competiciones",
+    "holeReviews": "Hoyos por revisar"
   },
   "overview": {
     "totalUsers": "Usuarios registrados",
@@ -140,5 +141,40 @@
     "deleteBlockedTitle": "No se puede eliminar definitivamente",
     "deleteBlockedHint": "Puedes desactivar la cuenta en su lugar (reversible, no toca ningún dato).",
     "genericError": "Ha ocurrido un error"
+  },
+  "holeReviews": {
+    "intro": "Las muestras que mandan los jugadores, hoyo a hoyo. Guarda una línea por hoyo: la ven todos y el hoyo deja de recoger muestras.",
+    "empty": "No hay hoyos por revisar.",
+    "error": "No se ha podido cargar. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "hole": "Hoyo {{numero}}",
+    "samples_one": "{{count}} muestra",
+    "samples_other": "{{count}} muestras",
+    "saved": "guardado",
+    "title": "{{nombre}} · Hoyo {{numero}}",
+    "close": "Cerrar",
+    "line": "La línea del hoyo",
+    "lineMetres": "Mide {{metros}} m siguiendo los codos",
+    "noLine": "Aún no hay línea: parte de una muestra.",
+    "save": "Guardar línea",
+    "reopen": "Reabrir hoyo",
+    "savedOk": "Línea guardada",
+    "reopenedOk": "Hoyo reabierto",
+    "deletedOk": "Muestra borrada",
+    "invalidLine": "La línea no vale: como mucho dos codos y el green a 40-750 m de la salida.",
+    "actionError": "No se ha podido hacer. Inténtalo de nuevo.",
+    "cards": "La tarjeta de cada barra",
+    "card": "par {{par}}, {{metros}} m",
+    "samplesTitle": "Muestras",
+    "noSamples": "Este hoyo no tiene muestras.",
+    "metres": "{{metros}} m",
+    "greenOnly": "solo green",
+    "useThis": "Partir de esta",
+    "delete": "Borrar",
+    "confirmDelete": "Sí, borrar",
+    "genders": {
+      "MALE": "hombre",
+      "FEMALE": "mujer"
+    }
   }
 }
