@@ -6,7 +6,7 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
 import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
 import { PRECISION_PARA_MEDIR_M, distanciasDelHoyo, distanciasDesdeLaPosicion } from '../../../domain/services/distanciasDelHoyo';
-import { encuadreGirado, limitesDelHoyo, orientacionDelHoyo, rumbo, rumboDeLaLinea, siguientePuntoDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
+import { camaraGirada, limitesDelHoyo, orientacionDelHoyo, rumbo, rumboDeLaLinea, siguientePuntoDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 import {
   MAX_CODOS,
   aCodosDelPar,
@@ -507,17 +507,17 @@ const MapaDelHoyo = ({
   const encuadrar = useCallback(
     (h, orientacion, animar) => {
       const mapa = mapaRef.current;
+      if (!mapa) return;
       // Sin rumbo no hay hoyo orientado que encuadrar (el mapa va con el norte arriba)
-      if (!mapa || orientacion === null) return;
-      const encuadre = encuadreGirado(h, orientacion, {
+      const girada = camaraGirada(h, orientacion, {
         ancho: contenedor.current?.clientWidth || 360,
         alto: contenedor.current?.clientHeight || 640,
         padding: margen(),
       });
-      if (!encuadre) return;
+      if (!girada) return;
       // Sin `padding`: MapLibre lo guardaría y lo sumaría a todo lo de después
       // (medir, «Céntrame»); el centro ya viene desplazado al medio del hueco
-      const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion };
+      const camara = { ...girada, center: lngLat(girada.center) };
       if (animar) mapa.easeTo(camara);
       else mapa.jumpTo(camara);
     },
