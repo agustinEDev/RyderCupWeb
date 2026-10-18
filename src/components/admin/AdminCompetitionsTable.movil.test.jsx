@@ -140,5 +140,13 @@ describe('AdminCompetitionsTable · móvil', () => {
     fireEvent.click(fila('Copa b'));
 
     expect(within(ficha()).queryByText('competitions.editDisabledTooltip')).toBeNull();
+    expect(ficha()).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('/code-review: el aviso es la descripción de la ficha, para quien no la ve', () => {
+    pintar();
+    fireEvent.click(fila('Copa c'));
+
+    expect(ficha()).toHaveAccessibleDescription('competitions.editDisabledTooltip');
   });
 });
