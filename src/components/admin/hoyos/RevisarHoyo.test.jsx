@@ -85,8 +85,8 @@ const { default: RevisarHoyo } = await import('./RevisarHoyo');
 const M = 6371008.8 * (Math.PI / 180);
 const T = { lat: 36.28, lon: -5.33 };
 const alNorte = (m) => ({ lat: T.lat + m / M, lon: T.lon });
-const COMPLETA = { id: 's-1', barra: { color: 'YELLOW', gender: 'MALE' }, tee: T, bends: [], greenCenter: alNorte(300), llego: '2026-10-17' };
-const SOLO_GREEN = { id: 's-2', barra: { color: 'RED', gender: 'FEMALE' }, tee: null, bends: [], greenCenter: alNorte(305), llego: '2026-10-17' };
+const COMPLETA = { id: 's-1', tee: T, bends: [], greenCenter: alNorte(300), llego: '2026-10-17' };
+const SOLO_GREEN = { id: 's-2', tee: null, bends: [], greenCenter: alNorte(305), llego: '2026-10-17' };
 const campo = (hoyo) => ({ golfCourseId: 'gc-1', name: 'Alcanada', holes: [{ holeNumber: 1, guardada: null, muestras: [COMPLETA, SOLO_GREEN], barras: [{ color: 'YELLOW', gender: 'MALE', identifier: null, par: 4, metros: 350 }], ...hoyo }] });
 
 // Las filas de muestras y reportes: se tocan para editar su línea (S3)
@@ -920,14 +920,89 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       expect(screen.getByText('holeReviews.unsaved')).toBeInTheDocument();
     });
 
-    it('S5: tocar la seleccionada no cambia nada, ni lo movido', async () => {
+    it('S5: tocar la fila seleccionada con la línea movida la devuelve a la original', async () => {
+      await abrir();
+      act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
+
+      fireEvent.click(filas()[0]);
+
+      expect(mapa.props.linea).toEqual({ tee: T, bends: [], greenCenter: alNorte(300) });
+      expect(seleccionadas()).toEqual([filas()[0]]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
+      expect(screen.getByText('holeReviews.unsaved')).toBeInTheDocument();
+    });
+
+    it('S5b: sin haber movido nada, tocarla no cambia nada', async () => {
+      await abrir();
+
+      fireEvent.click(filas()[0]);
+
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.close' }));
+      expect(screen.queryByText('holeReviews.unsaved')).toBeNull();
+    });
+
+    it('S5c: tocar el solo green seleccionado no cambia la línea', async () => {
+      await abrir();
+      fireEvent.click(filas()[1]);
+      const movida = { tee: alNorte(5), bends: [], greenCenter: alNorte(300) };
+      act(() => mapa.props.onLinea(movida));
+
+      fireEvent.click(filas()[1]);
+
+      expect(mapa.props.linea).toEqual(movida);
+      expect(mapa.props.destacado).toEqual(SOLO_GREEN.greenCenter);
+    });
+
+    it('M1/M5: elegir una muestra en el mapa es como tocar su fila, y la lista la enseña', async () => {
+      const verla = vi.fn();
+      globalThis.Element.prototype.scrollIntoView = verla;
+      await abrir({ muestras: [COMPLETA, OTRA] });
+
+      act(() => mapa.props.onElegir('s-3'));
+
+      expect(mapa.props.linea).toEqual({ tee: alNorte(30), bends: [], greenCenter: alNorte(330) });
+      expect(seleccionadas()).toEqual([filas()[1]]);
+      expect(verla).toHaveBeenCalledTimes(1);
+      expect(verla.mock.contexts[0]).toBe(filas()[1].closest('li'));
+      delete globalThis.Element.prototype.scrollIntoView;
+    });
+
+    it('M2: un solo green en el mapa, como su fila', async () => {
+      await abrir();
+
+      act(() => mapa.props.onElegir('s-2'));
+
+      expect(mapa.props.destacado).toEqual(SOLO_GREEN.greenCenter);
+    });
+
+    it('M1: un reporte en el mapa, como su fila', async () => {
+      await abrir({ reportes: [REPORTE, { ...REPORTE, id: 'r-2', tee: alNorte(40) }] });
+
+      act(() => mapa.props.onElegir('r-2'));
+
+      expect(mapa.props.linea.tee).toEqual(alNorte(40));
+    });
+
+    it('M6: elegir en el mapa la ya seleccionada no deshace lo movido', async () => {
       await abrir();
       const movida = { tee: alNorte(5), bends: [], greenCenter: alNorte(300) };
       act(() => mapa.props.onLinea(movida));
 
-      fireEvent.click(filas()[0]);
+      act(() => mapa.props.onElegir('s-1'));
 
       expect(mapa.props.linea).toEqual(movida);
+    });
+
+    it('M8/M9: marcando o guardando, el mapa no elige', async () => {
+      await abrir();
+      expect(mapa.props.onElegir).toBeInstanceOf(Function);
+
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.markFromScratch' }));
+      expect(mapa.props.onElegir).toBeUndefined();
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.cancelMarking' }));
+      casos.guardar.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+      expect(mapa.props.onElegir).toBeUndefined();
     });
 
     it('S6: tocar un solo green lo pone en rojo y lo selecciona; la línea no cambia', async () => {

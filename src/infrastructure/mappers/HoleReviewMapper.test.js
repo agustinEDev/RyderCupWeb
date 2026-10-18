@@ -7,7 +7,7 @@ import HoleReviewMapper from './HoleReviewMapper';
  * | Caso | Qué                                   | Qué sale                                          |
  * |------|---------------------------------------|---------------------------------------------------|
  * | L1   | la lista                              | por campo, sus hoyos con cuántas muestras y si está guardado |
- * | C1   | un campo                              | sus hoyos: línea guardada, muestras (con id, barra y puntos en {lat, lon}) y la tarjeta de cada barra |
+ * | C1   | un campo                              | sus hoyos: línea guardada, muestras (con id y puntos en {lat, lon}, sin barra: 18 oct) y la tarjeta de cada barra |
  * | C1   | una muestra solo green                | `tee: null`                                       |
  * | G1   | la línea que se guarda                | el cuerpo del PUT                                 |
  */
@@ -76,8 +76,8 @@ describe('HoleReviewMapper', () => {
     const [uno] = campo.holes;
     expect(uno.guardada).toEqual({ tee: { lat: 1, lon: 2 }, bends: [{ lat: 3, lon: 4 }], greenCenter: { lat: 5, lon: 6 } });
     expect(uno.muestras).toEqual([
-      { id: 's-1', barra: { color: 'YELLOW', gender: 'MALE' }, tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 5, lon: 6 }, llego: '2026-10-17' },
-      { id: 's-2', barra: { color: 'RED', gender: null }, tee: null, bends: [], greenCenter: { lat: 5, lon: 7 }, llego: '2026-10-17' },
+      { id: 's-1', tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 5, lon: 6 }, llego: '2026-10-17' },
+      { id: 's-2', tee: null, bends: [], greenCenter: { lat: 5, lon: 7 }, llego: '2026-10-17' },
     ]);
     expect(uno.barras).toEqual([{ color: 'YELLOW', gender: 'MALE', identifier: null, par: 4, metros: 350 }]);
   });

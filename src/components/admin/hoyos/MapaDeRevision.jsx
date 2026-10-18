@@ -17,8 +17,16 @@ const coleccion = (features) => ({ type: 'FeatureCollection', features });
 const comoPuntos = (puntos) => coleccion(puntos.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: lngLat(p) } })));
 const comoLinea = (linea, properties = {}) =>
   linea ? [{ type: 'Feature', properties, geometry: { type: 'LineString', coordinates: puntosDeLaLinea(linea).map(lngLat) } }] : [];
+// Con su id y su sitio en la lista: tocada en el mapa, se elige (M1-M4)
 const deLasMuestras = (muestras) =>
-  coleccion(muestras.map((m) => (m.tee ? comoLinea(m)[0] : { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: lngLat(m.greenCenter) } })));
+  coleccion(
+    muestras.map((m, orden) => {
+      const properties = { id: m.id, orden };
+      return m.tee ? comoLinea(m, properties)[0] : { type: 'Feature', properties, geometry: { type: 'Point', coordinates: lngLat(m.greenCenter) } };
+    }),
+  );
+// Para acertar con el dedo, una franja invisible más ancha que lo que se ve (M3)
+const CAPAS_DE_TOQUE = ['muestras-toque-lineas', 'muestras-toque-greens'];
 
 const ESTILO = {
   version: 8,
@@ -64,6 +72,7 @@ const MapaDeRevision = ({
   bloqueada = false,
   osm = null,
   destacado = null,
+  onElegir,
 }) => {
   const { t } = useTranslation('admin');
   const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
@@ -72,11 +81,11 @@ const MapaDeRevision = ({
   const cargado = useRef(false);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
-  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado });
+  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir });
   // Hasta qué pedido de «Mi posición» se ha centrado ya el mapa
   const centradoPara = useRef(0);
   useLayoutEffect(() => {
-    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado };
+    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir };
   });
 
   // La línea que se edita y sus puntos. Con los mismos puntos, se mueven (no
@@ -143,6 +152,8 @@ const MapaDeRevision = ({
       mapa.addSource('muestras', { type: 'geojson', data: deLasMuestras(todas) });
       mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 2, 'line-opacity': 0.6 } });
       mapa.addLayer({ id: 'muestras-greens', type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 6, 'circle-color': COLOR_DE_LAS_MUESTRAS, 'circle-opacity': 0.6, 'circle-stroke-color': '#000', 'circle-stroke-width': 1 } });
+      mapa.addLayer({ id: CAPAS_DE_TOQUE[0], type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 22, 'line-opacity': 0 } });
+      mapa.addLayer({ id: CAPAS_DE_TOQUE[1], type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 11, 'circle-color': COLOR_DE_LAS_MUESTRAS, 'circle-opacity': 0 } });
       mapa.addSource('osm', { type: 'geojson', data: comoLineaDeOsm(datos.current.osm) });
       mapa.addLayer({ id: 'osm', type: 'line', source: 'osm', paint: { 'line-color': COLOR_DE_OSM, 'line-width': 3, 'line-dasharray': [1, 1] } });
       mapa.addSource('guardada', { type: 'geojson', data: coleccion(comoLinea(lo)) });
@@ -175,8 +186,20 @@ const MapaDeRevision = ({
       // La posición pudo llegar antes de que cargara
       centrar.current();
     });
-    // Tocar el mapa solo cuenta mientras se marca
-    mapa.on('click', (e) => datos.current.onToque?.({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
+    // Marcando, el toque es para marcar (M8); si no, elige la muestra o el
+    // reporte que haya debajo: el primero de la lista (M4)
+    mapa.on('click', (e) => {
+      const { onToque: marcar, onElegir: elegir } = datos.current;
+      if (marcar) {
+        marcar({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+        return;
+      }
+      if (!elegir) return;
+      const debajo = mapa.queryRenderedFeatures(e.point, { layers: CAPAS_DE_TOQUE });
+      if (!debajo.length) return;
+      const primera = debajo.reduce((a, b) => (b.properties.orden < a.properties.orden ? b : a));
+      elegir(primera.properties.id);
+    });
     return () => {
       for (const m of puntos.current) m.remove();
       puntos.current = [];

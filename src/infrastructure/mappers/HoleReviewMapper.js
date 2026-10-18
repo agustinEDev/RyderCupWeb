@@ -35,7 +35,6 @@ class HoleReviewMapper {
         osm: h.osm_line ? { puntos: (h.osm_line.points ?? []).map(aDominio), green: h.osm_line.green_center ? aDominio(h.osm_line.green_center) : null } : null,
         muestras: (h.samples ?? []).map((m) => ({
           id: m.id,
-          barra: { color: m.tee_color, gender: m.tee_gender ?? null },
           tee: aDominio(m.tee),
           bends: (m.bends ?? []).map(aDominio),
           greenCenter: aDominio(m.green_center),

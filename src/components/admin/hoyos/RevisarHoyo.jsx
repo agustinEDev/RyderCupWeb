@@ -102,12 +102,17 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         // Se parte de la guardada, de la del primer reporte (quien reporta dice
         // que la que hay está mal: Agustín, 18 oct), de la de OSM (con los codos
         // de su par) o de la primera muestra completa
+        // Con la fila de la que sale, si es un reporte o una muestra (S2)
         const primerReporte = este.reportes?.find((r) => r.tee);
         const primeraCompleta = este.muestras.find((m) => m.tee);
         const osm = lineaDeOsmDe(este);
-        const deLoQueHay = este.guardada ?? lineaDe(primerReporte) ?? osm ?? lineaDe(primeraCompleta) ?? null;
-        // Su fila, si sale de un reporte o de una muestra (S2)
-        const deDonde = este.guardada || (!primerReporte && osm) ? null : (primerReporte ?? primeraCompleta)?.id ?? null;
+        const [deLoQueHay, deDonde] = este.guardada
+          ? [este.guardada, null]
+          : primerReporte
+            ? [lineaDe(primerReporte), primerReporte.id]
+            : osm
+              ? [osm, null]
+              : [lineaDe(primeraCompleta), primeraCompleta?.id ?? null];
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         // Conservada la línea, también su fila (S10: si se borró, ya no está).
         // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
@@ -182,9 +187,16 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     setPorDescartar(null);
   };
   // Tocar una fila (S3–S6): una completa o un reporte pasa a ser la línea que
-  // se edita; un solo green se ve en rojo y la línea se queda
-  const elegirFila = (fila) => {
-    if (seleccion === fila.id) return;
+  // se edita; un solo green se ve en rojo y la línea se queda. La ya elegida,
+  // movida, vuelve a su original (S5); desde el mapa no, que se tocaría sin
+  // querer al mover la roja (M6)
+  const elegirFila = (fila, { desdeElMapa = false } = {}) => {
+    if (seleccion === fila.id) {
+      const original = lineaDe(fila);
+      if (desdeElMapa || !original || JSON.stringify(original) === JSON.stringify(linea)) return;
+      elegirLinea(original);
+      return;
+    }
     setSeleccion(fila.id);
     if (fila.tee) {
       elegirLinea(lineaDe(fila));
@@ -196,6 +208,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const destacado = hoyo?.muestras.find((m) => m.id === seleccion && !m.tee)?.greenCenter ?? null;
   // En el mapa, los reportes y las muestras (S1); la misma lista mientras no cambien
   const enElMapa = useMemo(() => (hoyo ? [...(hoyo.reportes ?? []).filter((r) => r.tee), ...hoyo.muestras] : []), [hoyo]);
+  // Elegida en el mapa: como su fila, y la lista la enseña sin mover el mapa (M1, M5)
+  const elegirEnElMapa = (id) => {
+    elegirFila(enElMapa.find((x) => x.id === id), { desdeElMapa: true });
+    globalThis.document.getElementById(`fila-${id}`)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  };
   const dia = (iso) => {
     const fecha = new Date(`${iso}T12:00:00`);
     return Number.isNaN(fecha.getTime()) ? iso : fecha.toLocaleDateString(i18n?.language, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -284,6 +301,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
             <MapaDeRevision
               muestras={enElMapa}
               destacado={destacado}
+              onElegir={ocupado || marcando ? undefined : elegirEnElMapa}
               guardada={hoyo.guardada}
               linea={linea}
               onLinea={elegirLinea}
@@ -401,7 +419,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                 <h3 id="los-reportes" className="text-sm font-semibold text-gray-700">{t('holeReviews.reportsTitle')}</h3>
                 <ul className="flex flex-col gap-2">
                   {hoyo.reportes.map((reporte) => (
-                    <li key={reporte.id} className={`rounded-lg border-2 bg-amber-50 p-2 text-sm ${seleccion === reporte.id ? 'border-red-600' : 'border-amber-200'}`}>
+                    <li key={reporte.id} id={`fila-${reporte.id}`} className={`rounded-lg border-2 bg-amber-50 p-2 text-sm ${seleccion === reporte.id ? 'border-red-600' : 'border-amber-200'}`}>
                       <button
                         type="button"
                         aria-pressed={seleccion === reporte.id}
@@ -441,7 +459,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               {!hoyo.muestras.length && <p className="text-sm text-gray-500">{t('holeReviews.noSamples')}</p>}
               <ul className="flex flex-col gap-2">
                 {hoyo.muestras.map((muestra) => (
-                  <li key={muestra.id} className={`rounded-lg border-2 p-2 text-sm ${seleccion === muestra.id ? 'border-red-600' : 'border-gray-200'}`}>
+                  <li key={muestra.id} id={`fila-${muestra.id}`} className={`rounded-lg border-2 p-2 text-sm ${seleccion === muestra.id ? 'border-red-600' : 'border-gray-200'}`}>
                     <button
                       type="button"
                       aria-pressed={seleccion === muestra.id}
