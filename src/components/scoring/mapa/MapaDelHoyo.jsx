@@ -109,7 +109,7 @@ const tramosDeLaMedida = (posicion, tocado, green) =>
 // Sin estar en la salida, de ti al green: directa, o con el codo si lo hay
 const tramosDesdeMi = (posicion, codo, green) => {
   if (!posicion || !green) return [];
-  return codo ? [[posicion, codo], [codo, green.center]] : [[posicion, green.center]];
+  return codo ? tramosDeLaMedida(posicion, codo, green) : [[posicion, green.center]];
 };
 // A partir de aquí, la línea desde ti sale con un codo en medio (Agustín, 18 oct)
 const CODO_DESDE_M = 200;
@@ -266,6 +266,7 @@ const MapaDelHoyo = ({
   // «Ver hoyo» (H1, H3). Se decide una vez, con el primer GPS bueno (H4, H5)
   const [lineaOculta, setLineaOculta] = useState(false);
   const [mitadDecidida, setMitadDecidida] = useState(false);
+  const [hastaLaSalida, setHastaLaSalida] = useState(false);
   const [contestadoNo, setContestadoNo] = useState(0);
   const [pedidoEntero, setPedidoEntero] = useState(0);
   const loQueSePide = useRef(null);
@@ -443,7 +444,8 @@ const MapaDelHoyo = ({
       setTocado(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
       // oct); lejos del campo no, que alejaría a kilómetros
-      if (posicionEnElCampo) {
+      // Desde ti el punto es el codo: se mueve sin girar el mapa (D3d)
+      if (posicionEnElCampo && !desdeMi) {
         mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionEnElCampo, p] }), {
           bearing: rumbo(posicionEnElCampo, p),
           padding: margen(),
@@ -651,15 +653,17 @@ const MapaDelHoyo = ({
     if (!mapa) return;
     // Midiendo desde ti, el punto es el codo y se arrastra (D3): si cambia eso,
     // se rehace
-    if (!tocado || (marcaTocada.current && marcaTocada.current.arrastrable !== desdeMi)) {
+    // Con el menú de motivos abierto, quieto como los puntos de la línea (H9b)
+    const arrastrable = desdeMi && !menuDeMotivos;
+    if (!tocado || (marcaTocada.current && marcaTocada.current.arrastrable !== arrastrable)) {
       marcaTocada.current?.remove();
       marcaTocada.current = null;
     }
     if (!tocado) return;
     if (!marcaTocada.current) {
-      const m = new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow'), draggable: desdeMi });
-      m.arrastrable = desdeMi;
-      if (desdeMi) {
+      const m = new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow'), draggable: arrastrable });
+      m.arrastrable = arrastrable;
+      if (arrastrable) {
         // La línea y sus metros siguen al dedo (D3b)
         const moverElCodo = (e) => {
           const { lng, lat } = e.target.getLngLat();
@@ -672,7 +676,7 @@ const MapaDelHoyo = ({
       marcaTocada.current = m.setLngLat(lngLat(tocado)).addTo(mapa);
     }
     marcaTocada.current.setLngLat(lngLat(tocado));
-  }, [tocado, desdeMi]);
+  }, [tocado, desdeMi, menuDeMotivos]);
 
   // Las líneas de la medida y sus metros. Las etiquetas se mueven, no se
   // rehacen, con cada lectura del GPS
@@ -682,30 +686,40 @@ const MapaDelHoyo = ({
   // Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que se propone (revisor, 18 oct)
   if (!mitadDecidida && !reporte && green && (hoyo?.playLine?.length ?? 0) >= 2 && salidaDeMiBarra && posicionBuena) {
     setMitadDecidida(true);
-    if (distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M) {
+    // Con la línea ya movida se queda el hoyo entero, con lo editado (H13)
+    if (!edicion.cambiada && distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M) {
       setLineaOculta(true);
       setDesdeMi(true);
       setCodoPendiente(true);
+      setHastaLaSalida(true);
       // Un punto tocado antes para medir no se queda de codo
       setTocado(null);
     }
+  }
+  // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
+  if (hastaLaSalida && posicionBuena && distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M) {
+    setHastaLaSalida(false);
+    setLineaOculta(false);
+    setDesdeMi(false);
+    setTocado(null);
   }
   // El codo, una vez: con el primer GPS bueno, en medio si pasa de 200 m. Luego
   // no se mueve, ni vuelve si se quita (D2, D4, D10). Durante el render, como
   // se ajusta un estado a otro en React
   if (codoPendiente && desdeMi && posicionBuena && green) {
     setCodoPendiente(false);
-    if (distanciaEnMetros(posicionBuena, green.center) > CODO_DESDE_M) setTocado(enMedio(posicionBuena, green.center));
+    // Un punto que ya tocaste es el codo (D2b)
+    if (!tocado && distanciaEnMetros(posicionBuena, green.center) > CODO_DESDE_M) setTocado(enMedio(posicionBuena, green.center));
   }
   const textoDeTramo = useCallback((metros) => t('mapa.tramo', { metros }), [t]);
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    const tramos = desdeMi && !reporte ? tramosDesdeMi(posicionBuena, tocado, green) : tramosDeLaMedida(posicionEnElCampo, tocado, green);
+    const tramos = desdeMi && (!reporte || menuDeMotivos) ? tramosDesdeMi(posicionBuena, tocado, green) : tramosDeLaMedida(posicionEnElCampo, tocado, green);
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
     sincronizarCifras(mapa, etiquetasDeLaMedida.current, tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo });
-  }, [desdeMi, reporte, posicionBuena, posicionEnElCampo, tocado, green, textoDeTramo]);
+  }, [desdeMi, reporte, menuDeMotivos, posicionBuena, posicionEnElCampo, tocado, green, textoDeTramo]);
 
 
   // Los metros de cada tramo de la línea que se ve (Agustín, 16 oct: siempre que
@@ -1096,6 +1110,15 @@ const MapaDelHoyo = ({
               {t('mapa.ahoraNo')}
             </button>
           </div>
+        ) : desdeMi && !posicionBuena ? (
+          // Sin un GPS bueno no hay línea desde ti: sale en cuanto lo sea (D5), también con
+          // codo (D5b).
+          // Si el GPS ya tiene su aviso, ese basta (revisor, 18 oct)
+          aviso ? null : (
+            <p aria-live="polite" className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
+              {t('mapa.buscando')}
+            </p>
+          )
         ) : tocado ? (
           <div className="flex items-center">
             {/* Los metros van en el mapa, junto a cada línea; aquí, para quien no lo ve */}
@@ -1107,14 +1130,6 @@ const MapaDelHoyo = ({
               {t('mapa.quitarPunto')}
             </button>
           </div>
-        ) : desdeMi && !posicionBuena ? (
-          // Sin un GPS bueno no hay línea desde ti: sale en cuanto lo sea (D5).
-          // Si el GPS ya tiene su aviso, ese basta (revisor, 18 oct)
-          aviso ? null : (
-            <p aria-live="polite" className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
-              {t('mapa.buscando')}
-            </p>
-          )
         ) : conAyudaDeCodos ? (
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaCodo')}</p>
         ) : (

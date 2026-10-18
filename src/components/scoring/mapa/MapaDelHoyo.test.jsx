@@ -410,10 +410,11 @@ describe('MapaDelHoyo', () => {
 
     it('M3: también en un hoyo con mapa (que no se gira con los dedos)', () => {
       abrir();
-      act(() => gps.exito(lectura(36.2888, -5.332)));
+      // En la salida: a mitad de hoyo se mide desde ti (H1)
+      act(() => gps.exito(lectura(36.2801, -5.33)));
       mapa().fitBounds.mockClear();
 
-      tocar(36.2893, -5.332);
+      tocar(36.2893, -5.33);
 
       expect(mapa().fitBounds.mock.calls[0][1].bearing).toBeCloseTo(0, 6);
     });
@@ -754,7 +755,8 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
   it('con mapa, lo de lejos se mide desde la salida del hoyo: a menos de 3 km de ella, se mide desde ti', () => {
     abrir();
     act(() => mapa().oyentes.load());
-    act(() => gps.exito(lectura(36.2888, -5.332)));
+    // En la salida: a mitad de hoyo se mide desde ti (H1)
+    act(() => gps.exito(lectura(36.2801, -5.33)));
     mapa().fitBounds.mockClear();
 
     tocar(36.2893, -5.332);
@@ -2249,6 +2251,30 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(document.activeElement).toHaveTextContent('mapa.pideSalida');
   });
 
+  it('D2b: un punto tocado tras el «No» y antes del GPS bueno se queda de codo', () => {
+    conGreenSuelto();
+    desde(0, 25);
+    no();
+    tocar(alNorte(100));
+
+    desde(0);
+
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
+    expect(medida()[0][1]).toEqual([T.lon, alNorte(100).lat]);
+  });
+
+  it('D5b: desde ti con codo, si el GPS se vuelve flojo se dice que se busca y no hay metros', () => {
+    conGreenSuelto();
+    desde(0);
+    no();
+
+    desde(0, 25);
+
+    expect(screen.getByText('mapa.buscando')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    expect(screen.queryByText(/mapa\.hastaAhi/)).toBeNull();
+  });
+
   it('D6: en un hoyo sin nada, «No» pide el green; al tocarlo sale la línea desde mí y solo el green como muestra', () => {
     const { unmount, onMuestra } = abrirSinLinea();
     desde(0);
@@ -2580,14 +2606,98 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(medida()).toEqual([]);
     });
 
-    it('H4: decidida la línea desde ti, volver a la salida no la cambia', () => {
+    it('H4: decidida la línea desde ti, andando sin llegar a la salida no cambia', () => {
       abrirConLinea();
       desde(150);
 
-      desde(10);
+      desde(41);
 
       expect(lineaDibujada()).toBeUndefined();
-      expect(medida()).toEqual([[en(alNorte(10)), en(G300)]]);
+      expect(medida()).toEqual([[en(alNorte(41)), en(G300)]]);
+    });
+
+    // | H12  | desde ti y llegas a ≤ 40 m de tu salida        | el hoyo entero, una vez; la amarilla y su codo se van     |
+    // | H13  | la línea movida antes del primer GPS bueno      | se queda el hoyo entero, con lo editado                   |
+    // | H9b  | el menú de motivos abierto                      | la línea desde ti no cambia; el codo no se arrastra       |
+    // | D3d  | tocar otro sitio desde ti                       | el codo va allí y el mapa no gira ni se encuadra          |
+    it('H12: llegando a la salida vuelve el hoyo entero, y ya no cambia', () => {
+      abrirConLinea();
+      desde(50);
+      expect(elCodo()).toHaveLength(1);
+
+      desde(40);
+      conLaLinea();
+      expect(medida()).toEqual([]);
+      expect(elCodo()).toEqual([]);
+
+      desde(150);
+      conLaLinea();
+      expect(medida()).toEqual([]);
+    });
+
+    it('H12: también tras «Ver hoyo»', () => {
+      abrirConLinea();
+      desde(150);
+      fireEvent.click(screen.getByRole('button', { name: /mapa\.verHoyo/ }));
+
+      desde(10);
+
+      conLaLinea();
+      expect(medida()).toEqual([]);
+    });
+
+    it('H12: a mitad de un reporte no se cambia nada', () => {
+      abrirConLinea({ onReporte: vi.fn() });
+      desde(50);
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+
+      desde(10);
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+      // Al cancelar, se ve y luego se decide: el hoyo entero
+      conLaLinea();
+      expect(elCodo()).toEqual([]);
+    });
+
+    it('H13: con la línea ya movida, el primer GPS bueno lejos de la salida no la oculta', () => {
+      abrirConLinea();
+      desde(150, 25);
+      const [salida] = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable);
+      act(() => {
+        salida.setLngLat([T.lon, alNorte(5).lat]);
+        salida.oyentes.dragend({ target: salida });
+      });
+
+      desde(150);
+
+      expect(lineaDibujada()).toBeDefined();
+      expect(medida()).toEqual([]);
+    });
+
+    it('H9b: con el menú de motivos abierto y el GPS flojo, la línea desde ti no aparece y el codo no se arrastra', () => {
+      abrirConLinea({ onReporte: vi.fn() });
+      desde(50);
+      desde(50, 25);
+      expect(medida()).toEqual([]);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+
+      expect(medida()).toEqual([]);
+      expect(elCodo()[0].opciones.draggable).toBeFalsy();
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+      expect(elCodo()[0].opciones.draggable).toBe(true);
+    });
+
+    it('D3d: tocando otro sitio desde ti, el codo va allí y el mapa no gira', () => {
+      abrirConLinea();
+      desde(50);
+      mapa().fitBounds.mockClear();
+
+      act(() => mapa().oyentes.click({ lngLat: { lat: alNorte(100).lat, lng: T.lon + 0.0005 } }));
+
+      expect(elCodo()[0].p[0]).toBeCloseTo(T.lon + 0.0005, 9);
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
     });
 
     it('H5: con el GPS flojo, el hoyo entero; al ser bueno, se decide', () => {
