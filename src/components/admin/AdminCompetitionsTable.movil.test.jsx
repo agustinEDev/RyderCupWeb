@@ -124,4 +124,29 @@ describe('AdminCompetitionsTable · móvil', () => {
     rerender(<AdminCompetitionsTable competitions={[CERRADA]} {...manos} />);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it.each(['ACTIVE', 'CLOSED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])('G1: fuera de borrador (%s), la ficha dice por qué no se edita, antes de los botones', (estado) => {
+    render(<AdminCompetitionsTable competitions={[competicion('x', estado)]} onEdit={vi.fn()} onTransition={vi.fn()} />);
+    fireEvent.click(fila('Copa x'));
+
+    const aviso = within(ficha()).getByText('competitions.editDisabledTooltip');
+    expect(aviso).toHaveClass('text-gray-500');
+    const primerBoton = within(ficha()).getAllByRole('button')[0];
+    expect(aviso.compareDocumentPosition(primerBoton) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('G2: en borrador no hay aviso, porque se puede editar', () => {
+    pintar();
+    fireEvent.click(fila('Copa b'));
+
+    expect(within(ficha()).queryByText('competitions.editDisabledTooltip')).toBeNull();
+    expect(ficha()).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('/code-review: el aviso es la descripción de la ficha, para quien no la ve', () => {
+    pintar();
+    fireEvent.click(fila('Copa c'));
+
+    expect(ficha()).toHaveAccessibleDescription('competitions.editDisabledTooltip');
+  });
 });

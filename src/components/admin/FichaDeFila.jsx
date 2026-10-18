@@ -11,10 +11,11 @@ import ModalShell from '../ui/ModalShell';
  * @param {string} props.titulo
  * @param {string} [props.subtitulo]
  * @param {Array<{etiqueta: string, valor: React.ReactNode}>} props.datos
+ * @param {string} [props.describedBy] id del texto que explica la ficha
  * @param {Function} props.onClose
  * @param {React.ReactNode} props.children Las acciones
  */
-const FichaDeFila = ({ titulo, subtitulo, datos, onClose, children }) => {
+const FichaDeFila = ({ titulo, subtitulo, datos, describedBy, onClose, children }) => {
   const { t } = useTranslation('admin');
   const idDelTitulo = useId();
 
@@ -23,6 +24,7 @@ const FichaDeFila = ({ titulo, subtitulo, datos, onClose, children }) => {
       isOpen
       onClose={onClose}
       labelledBy={idDelTitulo}
+      describedBy={describedBy}
       hojaInferior
       boxClassName="bg-white w-full md:max-w-md md:mx-4 rounded-t-2xl md:rounded-2xl shadow-xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-h-[85dvh] overflow-y-auto"
     >

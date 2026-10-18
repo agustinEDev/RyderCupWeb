@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Edit, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import FichaDeFila from './FichaDeFila';
@@ -11,6 +11,9 @@ const STATUS_BADGE_CLASSES = {
   DRAFT: 'bg-gray-100 text-gray-800',
   CANCELLED: 'bg-red-100 text-red-800',
 };
+
+// Solo se edita en borrador: la tabla y la ficha del móvil lo leen de aquí
+const seEdita = (competition) => competition?.status === 'DRAFT';
 
 // Actions available per current status, matching the backend state machine
 // (DRAFT -> ACTIVE -> CLOSED -> IN_PROGRESS -> COMPLETED, + CANCELLED from any non-final state).
@@ -35,6 +38,8 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
   // abierta, las acciones son las de ahora
   const [idAbierta, setIdAbierta] = useState(null);
   const abierta = competitions?.find((c) => c.id === idAbierta) ?? null;
+  const abiertaEsBorrador = seEdita(abierta);
+  const idDelAviso = useId();
 
   if (!competitions || competitions.length === 0) {
     return (
@@ -97,9 +102,12 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
           { etiqueta: t('competitions.columnStatus'), valor: insignia(abierta) },
           { etiqueta: t('competitions.columnDates'), valor: fechas(abierta) },
         ]}
+        describedBy={abiertaEsBorrador ? undefined : idDelAviso}
         onClose={() => setIdAbierta(null)}
       >
-        {abierta.status === 'DRAFT' && (
+        {/* En borrador se edita; si no, la ficha dice por qué, como el lápiz
+            desactivado del ordenador, y es su descripción para quien no la ve */}
+        {abiertaEsBorrador ? (
           <button
             type="button"
             onClick={desdeLaFicha(() => onEdit(abierta))}
@@ -109,6 +117,8 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
             <Edit aria-hidden="true" className="w-4 h-4" />
             {t('competitions.editTooltip')}
           </button>
+        ) : (
+          <p id={idDelAviso} className="text-sm text-gray-500">{t('competitions.editDisabledTooltip')}</p>
         )}
         {(TRANSITIONS_BY_STATUS[abierta.status] || []).map((action) => (
           <button
@@ -140,7 +150,7 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
         </thead>
         <tbody>
           {competitions.map((competition) => {
-            const isDraft = competition.status === 'DRAFT';
+            const isDraft = seEdita(competition);
             const availableTransitions = TRANSITIONS_BY_STATUS[competition.status] || [];
 
             return (
