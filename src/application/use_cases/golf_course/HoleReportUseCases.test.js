@@ -247,6 +247,12 @@ describe('reportes de hoyo — casos de uso', () => {
     expect(store.cola('yo')).toEqual([]);
   });
 
+  it('D14: un codo roto llega a Sentry como tal, no como «sin línea» (/code-review)', async () => {
+    await enviar({ bends: [null] });
+
+    expect(reportarFallo.mock.calls[0][0].message).toBe('Reporte de hoyo con un codo roto');
+  });
+
   it.each([
     ['un codo roto', [null]],
     ['un codo sin lon', [{ lat: 42.3 }]],
