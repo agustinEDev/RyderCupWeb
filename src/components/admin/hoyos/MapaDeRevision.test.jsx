@@ -384,6 +384,8 @@ describe('MapaDeRevision', () => {
   // | A2/A4 | `orientar` cambia                | gira y encuadra la línea de ahora, con animación        |
   // | A5   | la línea cambia sin `orientar`    | no gira                                                 |
   describe('A: orientar', () => {
+    // Abajo, «Mi posición» y «Orientar»; arriba, la instrucción al marcar (revisor)
+    const HUECO = { top: 64, bottom: 120, left: 40, right: 40 };
     const SALIDA = T;
     const CODO = { lat: 36.2815, lon: -5.328 };
     const VERDE = { lat: 36.2827, lon: -5.33 };
@@ -396,7 +398,7 @@ describe('MapaDeRevision', () => {
 
       expect(mapa.jumpTo).toHaveBeenCalledTimes(1);
       expect(mapa.jumpTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(SALIDA, CODO), 6);
-      const entera = encuadreGirado({ playLine: [SALIDA, CODO, VERDE], green: null }, rumbo(SALIDA, CODO), { ancho: 360, alto: 640, padding: { top: 40, bottom: 40, left: 40, right: 40 } });
+      const entera = encuadreGirado({ playLine: [SALIDA, CODO, VERDE], green: null }, rumbo(SALIDA, CODO), { ancho: 360, alto: 640, padding: HUECO });
       expect(mapa.jumpTo.mock.calls[0][0].zoom).toBeCloseTo(entera.zoom, 9);
       expect(mapa.fitBounds).not.toHaveBeenCalled();
     });
@@ -428,6 +430,9 @@ describe('MapaDeRevision', () => {
 
       expect(mapa.easeTo).toHaveBeenCalledTimes(1);
       expect(mapa.easeTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(VERDE, SALIDA), 6);
+      const encuadre = encuadreGirado({ playLine: [VERDE, SALIDA], green: null }, rumbo(VERDE, SALIDA), { ancho: 360, alto: 640, padding: HUECO });
+      expect(mapa.easeTo.mock.calls[0][0].zoom).toBeCloseTo(encuadre.zoom, 9);
+      expect(mapa.easeTo.mock.calls[0][0].center).toEqual([encuadre.center.lon, encuadre.center.lat]);
     });
 
     it('A1: pedir orientar sin línea no hace nada', () => {

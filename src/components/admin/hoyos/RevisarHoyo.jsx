@@ -75,6 +75,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const [centrarEnMi, setCentrarEnMi] = useState(0);
   // Cada vez que se pide, el mapa se orienta con la línea roja (A1, A2, A4, A6)
   const [orientar, setOrientar] = useState(0);
+  // La línea que se ve, para no reorientar al recargar si sigue siendo la misma (revisor)
+  const lineaQueSeVe = useRef(null);
+  useEffect(() => {
+    lineaQueSeVe.current = linea;
+  });
   // Para centrar el mapa vale cualquier posición: un ordenador va por Wi-Fi
   const gps = usePosicionGps({ activo: centrarEnMi > 0, precisionMaxima: Infinity });
   // Marcar desde cero (17 oct): null, o el paso y la salida ya tocada
@@ -116,8 +121,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               ? [osm, null]
               : [lineaDe(primeraCompleta), primeraCompleta?.id ?? null];
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
-        // Una línea de partida nueva, orientada (A1)
-        if (!conservarLinea && deLoQueHay) setOrientar((n) => n + 1);
+        // Una línea de partida nueva, orientada (A1); la misma de antes, no
+        // (borrar una muestra no le quita al admin el zoom ni el giro: revisor)
+        if (!conservarLinea && deLoQueHay && JSON.stringify(deLoQueHay) !== JSON.stringify(lineaQueSeVe.current)) setOrientar((n) => n + 1);
         // Conservada la línea, también su fila (S10: si se borró, ya no está).
         // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
         // un solo green no toca la línea)
@@ -217,7 +223,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const destacado = hoyo?.muestras.find((m) => m.id === seleccion && !m.tee)?.greenCenter ?? null;
   // En el mapa, los reportes y las muestras (S1); la misma lista mientras no cambien
   const enElMapa = useMemo(() => (hoyo ? [...(hoyo.reportes ?? []).filter((r) => r.tee), ...hoyo.muestras] : []), [hoyo]);
-  // Elegida en el mapa: como su fila, y la lista la enseña sin mover el mapa (M1, M5)
+  // Elegida en el mapa: como su fila, y la lista la enseña (M1, M5); el mapa se orienta con ella (A2)
   const elegirEnElMapa = (id) => {
     elegirFila(enElMapa.find((x) => x.id === id), { desdeElMapa: true });
     globalThis.document.getElementById(`fila-${id}`)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });

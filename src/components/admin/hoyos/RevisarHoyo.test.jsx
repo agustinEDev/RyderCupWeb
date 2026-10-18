@@ -1180,6 +1180,31 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       expect(mapa.props.orientar).toBe(1);
     });
 
+    it('Revisor: borrar sin haber editado, con la misma línea de partida, no reorienta', async () => {
+      const guardada = { tee: alNorte(10), bends: [], greenCenter: alNorte(300) };
+      await abrir({ guardada, muestras: [COMPLETA, OTRA] });
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ guardada, muestras: [COMPLETA] }));
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[1]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+      await waitFor(() => expect(casos.campo).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'holeReviews.delete' })).toHaveLength(1));
+      expect(mapa.props.orientar).toBe(1);
+    });
+
+    it('Revisor: borrada la muestra de la que salía la línea, la nueva de partida se orienta', async () => {
+      await abrir({ muestras: [COMPLETA, OTRA] });
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ muestras: [OTRA] }));
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+
+      await waitFor(() => expect(mapa.props.linea.greenCenter).toEqual(alNorte(330)));
+      expect(mapa.props.orientar).toBe(2);
+    });
+
     it('A4: «Partir de OSM» orienta', async () => {
       await abrir({ osm: { puntos: [T, alNorte(80), alNorte(148)], green: alNorte(150) } });
       const antes = mapa.props.orientar;

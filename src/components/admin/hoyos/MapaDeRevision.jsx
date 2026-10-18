@@ -150,7 +150,8 @@ const MapaDeRevision = ({
     const encuadre = encuadreGirado({ playLine: puntosDeAhora, green: null }, orientacion, {
       ancho: contenedor.current?.clientWidth || 360,
       alto: contenedor.current?.clientHeight || 640,
-      padding: { top: 40, bottom: 40, left: 40, right: 40 },
+      // Abajo, «Mi posición» y «Orientar»; arriba, la instrucción al marcar (revisor)
+      padding: { top: 64, bottom: 120, left: 40, right: 40 },
     });
     if (!encuadre) return;
     const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion };
