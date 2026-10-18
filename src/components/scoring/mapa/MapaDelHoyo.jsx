@@ -300,7 +300,9 @@ const MapaDelHoyo = ({
     if (hoyo?.green && mismoPunto(hoyo.green.center, linea.at(-1))) return { ...hoyo, playLine: linea };
     return hoyoDeUnaMarca({ tee: linea[0], bends: linea.slice(1, -1), greenCenter: linea.at(-1) });
   }, [hoyo, linea, greenMarcado]);
-  const lineaQueSePinta = lineaOculta && !reporte ? null : linea;
+  // Sin un GPS bueno no hay línea desde ti: mientras dure, la del hoyo (H14)
+  const ocultaAhora = lineaOculta && !reporte && !!posicionBuena;
+  const lineaQueSePinta = ocultaAhora ? null : linea;
   const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(lineaQueSePinta ?? []), [lineaQueSePinta]);
   const ultimaLinea = useRef(datosDeLaLinea);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
@@ -726,8 +728,8 @@ const MapaDelHoyo = ({
   // se pinta una línea). No dependen del GPS: valen lejos del campo y sin señal
   // Reportando, la de siempre no se ve: solo la que se propone
   const lineaVisible = useMemo(
-    () => lineaQueSePinta ?? (reporte || lineaOculta ? [] : (hoyo?.playLine ?? [])),
-    [lineaQueSePinta, hoyo, reporte, lineaOculta],
+    () => lineaQueSePinta ?? (reporte || ocultaAhora ? [] : (hoyo?.playLine ?? [])),
+    [lineaQueSePinta, hoyo, reporte, ocultaAhora],
   );
   // Como las de medir, se mueven y se reescriben, no se rehacen; también
   // mientras se arrastra, antes de soltar

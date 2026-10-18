@@ -2831,6 +2831,33 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
     });
 
+    // | H14  | oculta y el GPS se vuelve flojo o se pierde      | la línea del hoyo entera mientras dure; al volver, la amarilla |
+    it('H14/H14c: con el GPS flojo vuelve la línea del hoyo; al ser bueno, otra vez la amarilla con su codo', () => {
+      abrirConLinea();
+      desde(50);
+      tocar(alNorte(100));
+
+      desde(50, 25);
+      conLaLinea();
+      expect(screen.queryByTestId('tramos-de-la-linea')).not.toBeNull();
+      expect(screen.getByText('mapa.buscando')).toBeInTheDocument();
+
+      desde(50);
+      expect(lineaDibujada()).toBeUndefined();
+      expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
+      expect(medida()).toHaveLength(2);
+    });
+
+    it('H14b: sin ubicación, la línea del hoyo entera', () => {
+      abrirConLinea();
+      desde(150);
+
+      act(() => gps.error({ code: 1 }));
+
+      conLaLinea();
+      expect(screen.getByText('mapa.denegado')).toBeInTheDocument();
+    });
+
     it('H10: nada de la línea desde ti se envía', () => {
       const onMuestra = vi.fn();
       const { unmount } = abrirConLinea({ onMuestra });
