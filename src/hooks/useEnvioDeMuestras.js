@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { sendPendingHoleSamplesUseCase } from '../composition';
+import { sendPendingHoleReportsUseCase, sendPendingHoleSamplesUseCase } from '../composition';
 
 // Si queda algo en la cola con la aplicación abierta (el wifi de un club tras
 // su portal, un tope de peticiones), se reintenta así, como la cola de golpes,
@@ -20,6 +20,9 @@ export const MUESTRAS_CAMBIADAS = 'rydercup:muestras-de-hoyos';
  *
  * Sin un solo aviso: el jugador no sabe que hay muestras, ni que se envían ni
  * que alguna no entra (esas van a Sentry desde el caso de uso).
+ *
+ * Con ellas salen los reportes de hoyo que esperan en la cola (entrega 7, R5),
+ * con la misma escalera: un fallo de los reportes no frena las muestras.
  */
 export const useEnvioDeMuestras = ({ activo, userId = null }) => {
   useEffect(() => {
@@ -31,11 +34,15 @@ export const useEnvioDeMuestras = ({ activo, userId = null }) => {
       if (!vigente || globalThis.navigator?.onLine === false) return;
       globalThis.clearTimeout(reintento);
       reintento = null;
+      const sigue = () => vigente;
+      const deReportes = sendPendingHoleReportsUseCase.execute(userId, { sigue }).catch(() => ({ pendientes: 0 }));
       sendPendingHoleSamplesUseCase
-        .execute(userId, { sigue: () => vigente })
-        .then(({ enviadas, descartadas, pendientes }) => {
+        .execute(userId, { sigue })
+        .then(async ({ enviadas, descartadas, pendientes: deMuestras }) => {
           if (!vigente) return;
           if (enviadas || descartadas) globalThis.dispatchEvent(new globalThis.CustomEvent(MUESTRAS_CAMBIADAS));
+          const pendientes = deMuestras + (await deReportes).pendientes;
+          if (!vigente) return;
           if (!pendientes) {
             fallos = 0;
             return;

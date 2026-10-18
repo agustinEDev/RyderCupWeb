@@ -47,6 +47,9 @@ import LocalStorageCourseLocationCache from '../infrastructure/repositories/Loca
 import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCourseLocationUseCase';
 import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHoleSampleUseCase';
 import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
+import SendHoleReportUseCase from '../application/use_cases/golf_course/SendHoleReportUseCase';
+import SendPendingHoleReportsUseCase from '../application/use_cases/golf_course/SendPendingHoleReportsUseCase';
+import LocalStorageHoleReportStore from '../infrastructure/repositories/LocalStorageHoleReportStore';
 import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
 import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
 import { captureError } from '../utils/sentryHelpers';
@@ -496,6 +499,22 @@ const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
   enVuelo: muestrasEnVuelo,
   recienEnviadas: muestrasRecienEnviadas,
 });
+// Los reportes de hoyo (entrega 7): la misma cola en el móvil, aparte de las muestras
+const holeReportStore = new LocalStorageHoleReportStore();
+const reportarFalloDeReporte = (error, contexto) => captureError(error, { tags: { modulo: 'reportes-de-hoyos' }, extra: contexto });
+const reportesEnVuelo = new Set();
+const sendHoleReportUseCase = new SendHoleReportUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeReportStore,
+  reportarFallo: reportarFalloDeReporte,
+  enVuelo: reportesEnVuelo,
+});
+const sendPendingHoleReportsUseCase = new SendPendingHoleReportsUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeReportStore,
+  reportarFallo: reportarFalloDeReporte,
+  enVuelo: reportesEnVuelo,
+});
 const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
   golfCourseRepository: apiGolfCourseRepository,
   holeSampleStore,
@@ -591,6 +610,8 @@ export {
   getCourseLocationUseCase,
   sendHoleSampleUseCase,
   sendPendingHoleSamplesUseCase,
+  sendHoleReportUseCase,
+  sendPendingHoleReportsUseCase,
   getHoleSamplesUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,

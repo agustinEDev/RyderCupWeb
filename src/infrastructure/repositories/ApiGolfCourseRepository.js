@@ -153,6 +153,23 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
   /**
    * @override
    */
+  async sendHoleReport(id, holeNumber, reporte) {
+    try {
+      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/reports/${holeNumber}`, {
+        method: 'POST',
+        body: JSON.stringify(HoleSampleMapper.reportToApi(reporte)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return;
+      throw error;
+    }
+  }
+
+  /**
+   * @override
+   */
   async create(golfCourseData) {
     const payload = this._mapToApiPayload(golfCourseData);
 

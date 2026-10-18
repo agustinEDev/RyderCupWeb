@@ -242,6 +242,42 @@ describe('ApiGolfCourseRepository — muestras de hoyo', () => {
 });
 
 
+describe('ApiGolfCourseRepository — reportar un hoyo (entrega 7)', () => {
+  beforeEach(() => vi.clearAllMocks());
+  const REPORTE = { id: 'r-1', reason: 'HOLE_CHANGED', tee: { lat: 36.28, lon: -5.33 }, bends: [{ lat: 36.2815, lon: -5.331 }], greenCenter: { lat: 36.2827, lon: -5.33 } };
+
+  it('es un POST al hoyo con el id, el motivo y la línea propuesta, y el 204 se resuelve', async () => {
+    apiRequest.mockResolvedValue(null);
+
+    await expect(new ApiGolfCourseRepository().sendHoleReport('gc-1', 3, REPORTE)).resolves.toBeUndefined();
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/gc-1/hole-map/reports/3', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: 'r-1',
+        reason: 'HOLE_CHANGED',
+        tee: { latitude: 36.28, longitude: -5.33 },
+        bends: [{ latitude: 36.2815, longitude: -5.331 }],
+        green_center: { latitude: 36.2827, longitude: -5.33 },
+      }),
+      topeMs: 15000,
+    });
+  });
+
+  it('un 2xx con un cuerpo que no es JSON también llegó', async () => {
+    apiRequest.mockRejectedValue(new SyntaxError('Unexpected token'));
+
+    await expect(new ApiGolfCourseRepository().sendHoleReport('gc-1', 3, REPORTE)).resolves.toBeUndefined();
+  });
+
+  it('un 422 se propaga', async () => {
+    apiRequest.mockRejectedValue(Object.assign(new Error('x'), { status: 422, errorCode: 'HOLE_NOT_IN_COURSE' }));
+
+    await expect(new ApiGolfCourseRepository().sendHoleReport('gc-1', 3, REPORTE)).rejects.toMatchObject({ errorCode: 'HOLE_NOT_IN_COURSE' });
+  });
+});
+
+
 describe('ApiGolfCourseRepository — revisar hoyos (admin, BE #575)', () => {
   beforeEach(() => apiRequest.mockReset());
 

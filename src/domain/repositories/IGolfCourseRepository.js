@@ -55,6 +55,18 @@ class IGolfCourseRepository {
   }
 
   /**
+   * Reporta un hoyo con un motivo y la línea que propone el jugador (entrega
+   * 7): se resuelve si llegó, lo guarde el servidor o no
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   * @param {Object} reporte - { id, reason, tee, bends, greenCenter }
+   * @returns {Promise<void>}
+   */
+  async sendHoleReport(id, holeNumber, reporte) {
+    throw new Error('Method not implemented: sendHoleReport');
+  }
+
+  /**
    * Los campos con hoyos pendientes de revisar (BE #575, admin)
    * @returns {Promise<{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number}[]}[]>}
    */
