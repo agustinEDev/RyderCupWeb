@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.45.0] - 2026-10-18
+
+**El panel de admin, por secciones y hecho para el móvil.** El panel pasa a
+cinco secciones con su propia ruta; en el móvil, las tablas anchas son filas
+con una ficha que sube desde abajo. El admin revisa los hoyos pendientes por
+campo, marca la línea de cualquier hoyo desde cero y entra a cualquier campo
+desde «Todos los campos». Y al contestar «No» a «¿Estás en la salida?», el
+jugador elige entre ver la distancia al green o marcar el hoyo entero. Va con
+el backend **2.31.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.31.0**
+(la ubicación del campo y la línea de OSM en la revisión): backend, `/health`
+y este frontend justo después. Sin esos campos, la revisión sigue funcionando,
+pero sin encuadre ni línea de OSM.
+
+### Added
+
+- **«No» a «¿Estás en la salida?» deja elegir**, con dos botones uno al lado
+  del otro (#901):
+  - **«Solo ver la distancia al green»**: lo de antes; si el hoyo ya tiene
+    green no se pide nada, y si no, se toca el green y se envía solo él;
+  - **«Marcar el hoyo entero»**: se toca la salida y el green, con los codos
+    del par y los límites de 40-750 m; con el green ya puesto basta la salida;
+  - mientras se elige, el mapa no marca ni mide; lejos del campo o sin
+    ubicación, como siempre.
+- **El admin marca la línea de un hoyo desde cero**: toca la salida y el
+  green, con los codos del par; «Cancelar» devuelve la de antes y se avisa si
+  la salida y el green no hacen un hoyo. La tarjeta del hoyo cabe en una línea
+  («Par 5 · Distancia del hoyo: 430 a 500 m») (#897).
+- **«Todos los campos»** en la sección de hoyos: se busca un campo, se ven sus
+  18 hoyos con su estado (guardado, OpenStreetMap, sin green, muestras o sin
+  datos) y cualquiera se abre en la misma revisión, que dibuja la línea de OSM
+  y parte de ella si no hay guardada (#898).
+
+### Changed
+
+- **El panel de admin en cinco secciones** (resumen, usuarios, competiciones,
+  campos y hoyos), cada una con su ruta `/admin/<sección>`; en el móvil, un
+  menú de filas y el botón atrás del teléfono funciona; en el ordenador, el
+  menú en una columna a la izquierda (#895).
+- **Hoyos pendientes por campo**: un bloque por campo con una fila por hoyo y
+  sus muestras; guardar la línea cierra la revisión y saca el hoyo de la lista
+  (#896).
+- **En el móvil, filas y ficha en lugar de tablas anchas** en usuarios,
+  competiciones y los hoyos de un campo pendiente; la ficha trae los datos y
+  las acciones, y la búsqueda ocupa todo el ancho (#899).
+- **La ficha de una competición que no está en borrador dice por qué no se
+  edita**, como el lápiz desactivado del ordenador (#900).
+
 ## [2.44.0] - 2026-10-17
 
 **Una línea de referencia por hoyo.** Al abrir un hoyo sin línea, el mapa
