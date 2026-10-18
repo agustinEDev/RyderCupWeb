@@ -2109,6 +2109,45 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(ultimoGiro()).toBeCloseTo(rumbo(T, CODO), 6);
     });
 
+    it('CodeRabbit: marcar orienta aunque el jugador haya movido el mapa para buscar el green', () => {
+      abrirSinLinea({ par: 3 });
+      enLaSalida();
+      si();
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+
+      tocar(alEste(150));
+
+      expect(ultimoGiro()).toBeCloseTo(rumbo(T, alEste(150)), 6);
+      expect(mapa().dragRotate.disable).toHaveBeenCalled();
+    });
+
+    it('CodeRabbit: con el green conocido, marcar la salida también orienta tras mover el mapa', () => {
+      conGreenSuelto({ par: 3, hoyo: { playLine: [], green: { center: alEste(300) } } });
+      enLaSalida();
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+
+      si();
+
+      expect(ultimoGiro()).toBeCloseTo(rumbo(T, alEste(300)), 6);
+    });
+
+    it('CodeRabbit: tras «Ver hoyo», que crezca el panel encuadra el hoyo, no «desde ti»', () => {
+      const observados = [];
+      vi.stubGlobal('ResizeObserver', class {
+        constructor(fn) { this.fn = fn; observados.push(this); }
+        observe() {}
+        disconnect() {}
+      });
+      abrirCon();
+      desde(alEste(100, CODO));
+      fireEvent.click(screen.getByRole('button', { name: /mapa\.verHoyo/ }));
+      mapa().jumpTo.mockClear();
+
+      act(() => observados.at(-1).fn());
+
+      expect(mapa().jumpTo.mock.calls.at(-1)[0].bearing).toBeCloseTo(rumbo(T, CODO), 6);
+    });
+
     it('O5: par 3 marcado, de la salida al green', () => {
       abrirSinLinea({ par: 3 });
       enLaSalida();

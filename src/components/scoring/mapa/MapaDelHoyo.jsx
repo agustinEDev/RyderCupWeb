@@ -367,8 +367,8 @@ const MapaDelHoyo = ({
       setEdicion((e) => ({ linea: nueva, green: null, cambiada: true, version: e.version + 1 }));
       setConAyudaDeCodos(nueva.length > 2);
       setMarca({ fase: null, tee: null });
-      // Marcado, el mapa se orienta como se juega (O5)
-      setVista({ tipo: 'hoyo' });
+      // Marcado, el mapa se orienta como se juega (O5); lo pidió el jugador
+      setVista({ tipo: 'hoyo', porElJugador: true });
       return true;
     };
     alejarAhora.current = (salida) => {
@@ -455,7 +455,7 @@ const MapaDelHoyo = ({
         // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
         setConAyudaDeCodos(nueva.length > reducida.length);
         setMarca({ fase: null, tee: null });
-        setVista({ tipo: 'hoyo' });
+        setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
       setGracias(false);
@@ -542,10 +542,11 @@ const MapaDelHoyo = ({
     [encuadrar, encuadrarHoyo],
   );
   // Orientado después de abrir, ya no se gira con los dedos, como un hoyo con
-  // mapa (O6). Si el jugador ya movió el mapa, no se le quita (/code-review)
+  // mapa (O6). Si el jugador ya movió el mapa, lo que llega solo (el GPS) no
+  // se lo quita (/code-review); lo que pide él, marcar, sí (CodeRabbit)
   useEffect(() => {
     const mapa = mapaRef.current;
-    if (!vista || !mapa || movidoPorElJugador.current) return;
+    if (!vista || !mapa || (movidoPorElJugador.current && !vista.porElJugador)) return;
     conVista.current = true;
     ultimaVista.current = vista;
     mapa.dragRotate?.disable();
@@ -1250,8 +1251,10 @@ const MapaDelHoyo = ({
             <button
               type="button"
               onClick={() => {
-                // A mitad de hoyo, vuelve también su línea (H3)
+                // A mitad de hoyo, vuelve también su línea (H3); y lo último
+                // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
                 setLineaOculta(false);
+                ultimaVista.current = { tipo: 'hoyo' };
                 encuadrarHoyo(true);
               }}
               className={`${BOTON} pointer-events-auto`}
