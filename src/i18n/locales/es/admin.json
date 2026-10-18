@@ -161,13 +161,8 @@
     "noSamples": "Este hoyo no tiene muestras.",
     "metres": "{{metros}} m",
     "greenOnly": "solo green",
-    "useThis": "Partir de esta",
     "delete": "Borrar",
     "confirmDelete": "Sí, borrar",
-    "genders": {
-      "MALE": "hombre",
-      "FEMALE": "mujer"
-    },
     "unsaved": "Tienes cambios sin guardar en la línea.",
     "closeWithoutSaving": "Cerrar sin guardar",
     "cardNoMetres": "Par {{par}} · sin metros en la tarjeta",

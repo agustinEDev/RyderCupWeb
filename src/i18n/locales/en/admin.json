@@ -161,13 +161,8 @@
     "noSamples": "This hole has no samples.",
     "metres": "{{metros}} m",
     "greenOnly": "green only",
-    "useThis": "Start from this one",
     "delete": "Delete",
     "confirmDelete": "Yes, delete",
-    "genders": {
-      "MALE": "men",
-      "FEMALE": "women"
-    },
     "unsaved": "You have unsaved changes to the line.",
     "closeWithoutSaving": "Close without saving",
     "cardNoMetres": "Par {{par}} · no metres on the card",

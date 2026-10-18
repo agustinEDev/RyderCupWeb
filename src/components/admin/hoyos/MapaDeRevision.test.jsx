@@ -4,6 +4,18 @@ import { act, render } from '@testing-library/react';
 /**
  * El mapa de revisar un hoyo (BE #575): las muestras con el color de su barra,
  * lo guardado discontinuo y la línea que se edita, con sus puntos arrastrables.
+ *
+ * Agustín, 18 oct: ninguna distinción de barras en los mapas.
+ *
+ * | Caso | Qué                                  | Qué pasa                                              |
+ * |------|--------------------------------------|-------------------------------------------------------|
+ * | S1   | las muestras y los reportes          | todas en blanco semitransparente, finas; la solo green, un punto blanco |
+ * | S6   | un green suelto seleccionado         | su punto en rojo, encima                              |
+ * | S11  | la línea que se edita y sus puntos   | siempre en rojo (también lo ya tocado al marcar)      |
+ * | S12  | la guardada y la de OSM              | cian y lima, debajo de la roja                        |
+ * | M1-M4 | tocar una muestra en el mapa        | `onElegir` con su id; con varias, la primera de la lista; franja de 22 px |
+ * | M7   | tocar donde no hay ninguna           | nada                                                  |
+ * | M8   | marcando (con onToque)               | el toque es para marcar                               |
  */
 
 const mapas = vi.hoisted(() => []);
@@ -23,6 +35,8 @@ vi.mock('maplibre-gl', () => {
       this.capas = [];
       this.fitBounds = vi.fn();
       this.easeTo = vi.fn();
+      // Lo que hay bajo el dedo: cada test pone lo suyo
+      this.queryRenderedFeatures = vi.fn(() => []);
       this.remove = vi.fn();
       mapas.push(this);
     }
@@ -73,8 +87,8 @@ const C = { lat: 36.2815, lon: -5.331 };
 const G = { lat: 36.2827, lon: -5.33 };
 const LINEA = { tee: T, bends: [C], greenCenter: G };
 const MUESTRAS = [
-  { id: 's-1', barra: { color: 'YELLOW', gender: 'MALE' }, tee: T, bends: [], greenCenter: G },
-  { id: 's-2', barra: { color: 'RED', gender: null }, tee: null, bends: [], greenCenter: C },
+  { id: 's-1', tee: T, bends: [], greenCenter: G },
+  { id: 's-2', tee: null, bends: [], greenCenter: C },
 ];
 const vivas = () => (mapas.marcas ?? []).filter((m) => !m.quitada);
 
@@ -84,7 +98,7 @@ describe('MapaDeRevision', () => {
     mapas.marcas = [];
   });
 
-  it('al cargar, las muestras con el color de su barra (la solo green, como un punto), lo guardado y la línea; encuadra todo', () => {
+  it('S1: al cargar, las muestras todas en blanco, finas (la solo green, un punto blanco), lo guardado y la línea; encuadra todo', () => {
     render(<MapaDeRevision muestras={MUESTRAS} guardada={LINEA} linea={LINEA} onLinea={() => {}} />);
     const mapa = mapas.at(-1);
 
@@ -92,9 +106,14 @@ describe('MapaDeRevision', () => {
 
     const [completa, soloGreen] = mapa.fuentes.muestras.data.features;
     expect(completa.geometry.type).toBe('LineString');
-    expect(completa.properties.color).toBe('#facc15');
+    expect(completa.properties).toEqual({ id: 's-1', orden: 0 });
     expect(soloGreen.geometry).toEqual({ type: 'Point', coordinates: [C.lon, C.lat] });
-    expect(soloGreen.properties.color).toBe('#ef4444');
+    expect(soloGreen.properties).toEqual({ id: 's-2', orden: 1 });
+    const lineas = mapa.capas.find((c) => c.id === 'muestras-lineas').paint;
+    expect(lineas['line-color']).toBe('#ffffff');
+    expect(lineas['line-opacity']).toBeLessThan(1);
+    expect(lineas['line-width']).toBeLessThan(mapa.capas.find((c) => c.id === 'linea').paint['line-width']);
+    expect(mapa.capas.find((c) => c.id === 'muestras-greens').paint['circle-color']).toBe('#ffffff');
     expect(mapa.fuentes.guardada.data.features[0].geometry.coordinates).toHaveLength(3);
     expect(mapa.fuentes.linea.data.features[0].geometry.coordinates[0]).toEqual([T.lon, T.lat]);
     expect(mapa.fitBounds).toHaveBeenCalled();
@@ -239,19 +258,118 @@ describe('MapaDeRevision', () => {
       expect(mapa.fuentes.osm.data.features).toEqual([]);
     });
 
-    it('/code-review: el color de OSM no es el de ninguna barra ni el de lo guardado o la línea', () => {
-      const colores = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'BLACK', 'GREEN', 'ORANGE', 'PINK', 'GOLD', 'OTHER'];
-      const muestras = colores.map((color, i) => ({ id: `s-${i}`, barra: { color }, tee: T, bends: [], greenCenter: G }));
-      render(<MapaDeRevision muestras={muestras} guardada={LINEA} linea={LINEA} onLinea={() => {}} osm={[T, G]} />);
+    it('S12: las muestras, OSM, lo guardado y la línea, cada uno de su color; la roja, encima', () => {
+      render(<MapaDeRevision muestras={MUESTRAS} guardada={LINEA} linea={LINEA} onLinea={() => {}} osm={[T, G]} />);
       const mapa = mapas.at(-1);
       act(() => mapa.oyentes.load());
 
-      const usados = new Set([
-        ...mapa.fuentes.muestras.data.features.map((f) => f.properties.color),
-        mapa.capas.find((c) => c.id === 'guardada').paint['line-color'],
-        mapa.capas.find((c) => c.id === 'linea').paint['line-color'],
-      ]);
-      expect(usados.has(mapa.capas.find((c) => c.id === 'osm').paint['line-color'])).toBe(false);
+      const color = (id) => mapa.capas.find((c) => c.id === id).paint['line-color'];
+      expect([color('muestras-lineas'), color('osm'), color('guardada'), color('linea')]).toEqual(['#ffffff', '#84cc16', '#06b6d4', '#dc2626']);
+      const orden = mapa.capas.map((c) => c.id);
+      expect(orden.indexOf('linea')).toBeGreaterThan(orden.indexOf('guardada'));
+      expect(orden.indexOf('linea')).toBeGreaterThan(orden.indexOf('osm'));
+      expect(orden.indexOf('linea')).toBeGreaterThan(orden.indexOf('muestras-lineas'));
+    });
+
+    it('S11: los puntos de la línea y lo ya tocado al marcar, en rojo', () => {
+      render(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} marcados={[T]} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      for (const m of vivas()) expect(m.opciones.element.firstChild.className).toContain('bg-red-600');
+      expect(mapa.capas.find((c) => c.id === 'marcados').paint['circle-color']).toBe('#dc2626');
+    });
+
+    it('S6: un green suelto seleccionado, en rojo y encima de las muestras; al quitarlo, nada', () => {
+      const { rerender } = render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={C} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.fuentes.destacado.data.features.map((f) => f.geometry.coordinates)).toEqual([[C.lon, C.lat]]);
+      const capa = mapa.capas.find((c) => c.id === 'destacado');
+      expect(capa.paint['circle-color']).toBe('#dc2626');
+      const orden = mapa.capas.map((c) => c.id);
+      expect(orden.indexOf('destacado')).toBeGreaterThan(orden.indexOf('muestras-greens'));
+      for (const id of ['osm', 'guardada', 'linea', 'marcados']) expect(orden.indexOf('destacado')).toBeGreaterThan(orden.indexOf(id));
+
+      rerender(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={null} />);
+      expect(mapa.fuentes.destacado.data.features).toEqual([]);
+      rerender(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={G} />);
+      expect(mapa.fuentes.destacado.data.features.map((f) => f.geometry.coordinates)).toEqual([[G.lon, G.lat]]);
+    });
+  });
+  describe('M: elegir en el mapa', () => {
+    const cargar = (props) => {
+      render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} {...props} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+      return mapa;
+    };
+    const toque = { lngLat: { lat: 36.28, lng: -5.33 }, point: { x: 10, y: 20 } };
+
+    it('M3: cada muestra lleva su id y una franja de 22 px donde tocar, invisible', () => {
+      const mapa = cargar({ onElegir: vi.fn() });
+
+      expect(mapa.fuentes.muestras.data.features.map((f) => f.properties)).toEqual([{ id: 's-1', orden: 0 }, { id: 's-2', orden: 1 }]);
+      const franja = mapa.capas.find((c) => c.id === 'muestras-toque-lineas');
+      expect(franja.paint['line-width']).toBe(22);
+      expect(franja.paint['line-opacity']).toBe(0);
+      const deLosGreens = mapa.capas.find((c) => c.id === 'muestras-toque-greens');
+      expect(deLosGreens.paint['circle-radius']).toBe(11);
+      expect(deLosGreens.paint['circle-opacity']).toBe(0);
+    });
+
+    it('M1/M2/M4: tocar una muestra da su id; con varias, la primera de la lista', () => {
+      const onElegir = vi.fn();
+      const mapa = cargar({ onElegir });
+      mapa.queryRenderedFeatures.mockReturnValue([{ properties: { id: 's-2', orden: 1 } }, { properties: { id: 's-1', orden: 0 } }]);
+
+      act(() => mapa.oyentes.click(toque));
+
+      expect(mapa.queryRenderedFeatures).toHaveBeenCalledWith(toque.point, { layers: ['muestras-toque-lineas', 'muestras-toque-greens'] });
+      expect(onElegir).toHaveBeenCalledWith('s-1');
+    });
+
+    it('CodeRabbit: tocar un punto de la línea roja no elige lo que haya debajo', () => {
+      const onElegir = vi.fn();
+      const mapa = cargar({ onElegir });
+      mapa.queryRenderedFeatures.mockReturnValue([{ properties: { id: 's-1', orden: 0 } }]);
+      const marca = globalThis.document.createElement('div');
+      marca.className = 'maplibregl-marker';
+      const bola = globalThis.document.createElement('div');
+      marca.appendChild(bola);
+
+      act(() => mapa.oyentes.click({ ...toque, originalEvent: { target: bola } }));
+
+      expect(onElegir).not.toHaveBeenCalled();
+    });
+
+    it('M7: donde no hay ninguna, nada', () => {
+      const onElegir = vi.fn();
+      const mapa = cargar({ onElegir });
+
+      act(() => mapa.oyentes.click(toque));
+
+      expect(onElegir).not.toHaveBeenCalled();
+    });
+
+    it('M8: marcando, el toque es para marcar y no elige', () => {
+      const onElegir = vi.fn();
+      const onToque = vi.fn();
+      const mapa = cargar({ onElegir, onToque });
+      mapa.queryRenderedFeatures.mockReturnValue([{ properties: { id: 's-1', orden: 0 } }]);
+
+      act(() => mapa.oyentes.click(toque));
+
+      expect(onToque).toHaveBeenCalled();
+      expect(onElegir).not.toHaveBeenCalled();
+    });
+
+    it('sin onElegir, tocar no hace nada', () => {
+      const mapa = cargar({});
+      mapa.queryRenderedFeatures.mockReturnValue([{ properties: { id: 's-1', orden: 0 } }]);
+
+      expect(() => act(() => mapa.oyentes.click(toque))).not.toThrow();
     });
   });
 });
