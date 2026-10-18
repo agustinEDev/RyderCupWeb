@@ -99,6 +99,9 @@ const AdminCompetitionsTable = ({ competitions, onEdit, onTransition, disabled =
         ]}
         onClose={() => setIdAbierta(null)}
       >
+        {/* Fuera de borrador, la ficha dice por qué no se edita, como el lápiz
+            desactivado del ordenador */}
+        {abierta.status !== 'DRAFT' && <p className="text-sm text-gray-500">{t('competitions.editDisabledTooltip')}</p>}
         {abierta.status === 'DRAFT' && (
           <button
             type="button"
