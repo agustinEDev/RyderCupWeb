@@ -410,9 +410,11 @@ const MapaDelHoyo = ({
           return;
         }
         if (marcandoSalida && !marca.tee) {
-          // Con el green ya puesto, la salida basta
-          if (greenConocido) {
-            hacerLinea(p, greenConocido);
+          // Con el green ya puesto, la salida basta: también el que se acaba de
+          // tocar tras el «No», y la muestra sale completa (D8b, D8c)
+          const greenYaPuesto = greenConocido ?? edicion.green;
+          if (greenYaPuesto) {
+            hacerLinea(p, greenYaPuesto);
             return;
           }
           setMarca((m) => ({ ...m, fase: 'pidiendo', tee: p }));
@@ -658,10 +660,13 @@ const MapaDelHoyo = ({
       const m = new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow'), draggable: desdeMi });
       m.arrastrable = desdeMi;
       if (desdeMi) {
-        m.on('dragend', (e) => {
+        // La línea y sus metros siguen al dedo (D3b)
+        const moverElCodo = (e) => {
           const { lng, lat } = e.target.getLngLat();
           setTocado({ lat, lon: lng });
-        });
+        };
+        m.on('drag', moverElCodo);
+        m.on('dragend', moverElCodo);
         m.getElement().addEventListener('click', (e) => e.stopPropagation());
       }
       marcaTocada.current = m.setLngLat(lngLat(tocado)).addTo(mapa);

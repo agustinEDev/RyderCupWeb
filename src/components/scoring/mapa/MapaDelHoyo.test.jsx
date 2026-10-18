@@ -2382,6 +2382,88 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(onMuestra).not.toHaveBeenCalled();
   });
 
+  // Agustín, 18 oct (tras el revisor)
+  //
+  // | Caso | Situación                                          | Qué pasa                                                  |
+  // |------|----------------------------------------------------|-----------------------------------------------------------|
+  // | D8b  | «No», tocas el green y «Marcar el hoyo entero»     | solo la salida; la línea va a ese green, con el codo del par |
+  // | D8c  | y se cierra el mapa                                | una sola muestra, completa; no la de solo green           |
+  // | D8d  | con la salida a < 40 m de ese green                | se avisa y se sigue pidiendo la salida                    |
+  // | D8e  | y «Ahora no»                                       | sale la de solo green que ya había                        |
+  // | D3b  | arrastrando el codo                                | la línea y los metros siguen al dedo                      |
+  // | D3c  | arrastrar y soltar                                 | nada se envía                                             |
+  const conGreenTocado = (props) => {
+    const r = abrirSinLinea(props);
+    desde(150);
+    no();
+    tocar(G300);
+    hoyoEntero();
+    return r;
+  };
+
+  it('D8b/D8c: con el green recién tocado, «Marcar el hoyo entero» pide solo la salida y sale una muestra completa', () => {
+    const { unmount, onMuestra } = conGreenTocado();
+
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+    tocar(alNorte(10));
+
+    expect(screen.queryByText('mapa.pideGreen')).toBeNull();
+    expect(lineaDibujada()[0]).toEqual([T.lon, alNorte(10).lat]);
+    expect(lineaDibujada().at(-1)).toEqual(en(G300));
+    expect(lineaDibujada()).toHaveLength(3);
+    unmount();
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), greenCenter: G300 });
+    expect(onMuestra.mock.calls[0][0].bends).toHaveLength(1);
+  });
+
+  it('D8b: en un par 3, sin codos', () => {
+    const { unmount, onMuestra } = conGreenTocado({ par: 3 });
+    tocar(alNorte(10));
+
+    unmount();
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), bends: [], greenCenter: G300 });
+  });
+
+  it('D8d: una salida a menos de 40 m de ese green no vale: se avisa y se sigue pidiendo', () => {
+    conGreenTocado();
+
+    tocar(alNorte(280));
+
+    expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+  });
+
+  it('D8e: «Ahora no» deja la muestra de solo green', () => {
+    const { unmount, onMuestra } = conGreenTocado();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+
+    unmount();
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+    expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: null, bends: [], greenCenter: G300 });
+  });
+
+  it('D3b/D3c: arrastrando el codo, la línea y los metros siguen al dedo; nada se envía', () => {
+    const { unmount, onMuestra } = conGreenSuelto();
+    desde(0);
+    no();
+
+    const [codo] = elCodo();
+    act(() => {
+      codo.setLngLat([T.lon, alNorte(250).lat]);
+      codo.oyentes.drag({ target: codo });
+    });
+
+    expect(medida()[0][1]).toEqual([T.lon, alNorte(250).lat]);
+    expect(medida()[1][0]).toEqual([T.lon, alNorte(250).lat]);
+    expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida').map((m) => m.opciones.element.textContent)).toEqual(['mapa.tramo {"metros":250}', 'mapa.tramo {"metros":50}']);
+    act(() => codo.oyentes.dragend({ target: codo }));
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(250).lat, 9);
+    unmount();
+    expect(onMuestra).not.toHaveBeenCalled();
+  });
+
   it('D8: tras «Marcar hoyo», volver a decir «No» vuelve a poner el codo', () => {
     conGreenSuelto();
     desde(0);
