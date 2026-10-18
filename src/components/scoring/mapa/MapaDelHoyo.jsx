@@ -6,7 +6,7 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
 import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
 import { PRECISION_PARA_MEDIR_M, distanciasDelHoyo, distanciasDesdeLaPosicion } from '../../../domain/services/distanciasDelHoyo';
-import { encuadreGirado, limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
+import { encuadreGirado, limitesDelHoyo, orientacionDelHoyo, rumbo, rumboDeLaLinea, siguientePuntoDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 import {
   MAX_CODOS,
   aCodosDelPar,
@@ -165,7 +165,8 @@ const MOTIVOS_DEL_REPORTE = ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED'];
 /**
  * El mapa del hoyo a pantalla completa (BE #532), sobre la ortofoto del PNOA.
  *
- * Con mapa del hoyo: la salida abajo y el green arriba, sin giro. El recuadro
+ * Con mapa del hoyo: como se juega (la salida abajo, hacia el green o, en un
+ * par 4 o 5, hacia el primer codo) y sin giro con los dedos. El recuadro
  * de delante, centro y fondo es fijo, con los metros oficiales desde la
  * salida (16 oct). Sin mapa: norte arriba, giro libre. Siempre se mide tocando.
  * El GPS va mientras el mapa está abierto, ni antes ni después.
@@ -218,6 +219,10 @@ const MapaDelHoyo = ({
   // La que vale para medir desde ti: en el campo y con el GPS bueno
   const posicionBuena = posicionEnElCampo && precision !== null && precision <= PRECISION_PARA_MEDIR_M ? posicionEnElCampo : null;
   const [tocado, setTocado] = useState(null);
+  // Hacia dónde se ha orientado el mapa después de abrir (O2-O5): `{ tipo:
+  // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
+  const [vista, setVista] = useState(null);
+  const conVista = useRef(false);
   const tocadoAhora = useRef(null);
   useLayoutEffect(() => {
     tocadoAhora.current = tocado;
@@ -246,6 +251,8 @@ const MapaDelHoyo = ({
   // El hoyo, con la salida que se ve: el encuadre la tiene que coger
   const inicio = useRef({
     hoyo: lineaInicial && hoyo ? { ...hoyo, playLine: lineaInicial } : hoyo,
+    // Como se juega: par 3 al green, par 4 o 5 al primer codo (O1)
+    rumbo: rumboDeLaLinea(lineaInicial, par) ?? orientacionDelHoyo(hoyo),
     conMapa,
     centroSinMapa,
     soloGreen: porMarcar === 'green',
@@ -300,6 +307,12 @@ const MapaDelHoyo = ({
     if (hoyo?.green && mismoPunto(hoyo.green.center, linea.at(-1))) return { ...hoyo, playLine: linea };
     return hoyoDeUnaMarca({ tee: linea[0], bends: linea.slice(1, -1), greenCenter: linea.at(-1) });
   }, [hoyo, linea, greenMarcado]);
+  // Lo que encuadra «Ver hoyo»: la línea de ahora con su rumbo (O5, O7)
+  const delEncuadre = useRef(null);
+  useLayoutEffect(() => {
+    // Proponiendo un reporte, la de al abrir, no la propuesta (O9)
+    delEncuadre.current = linea && hoyoAhora && !reporte ? { hoyo: hoyoAhora, rumbo: rumboDeLaLinea(linea, par) } : null;
+  });
   // Sin un GPS bueno no hay línea desde ti: mientras dure, la del hoyo (H14)
   const ocultaAhora = lineaOculta && !reporte && !!posicionBuena;
   const lineaQueSePinta = ocultaAhora ? null : linea;
@@ -354,6 +367,8 @@ const MapaDelHoyo = ({
       setEdicion((e) => ({ linea: nueva, green: null, cambiada: true, version: e.version + 1 }));
       setConAyudaDeCodos(nueva.length > 2);
       setMarca({ fase: null, tee: null });
+      // Marcado, el mapa se orienta como se juega (O5); lo pidió el jugador
+      setVista({ tipo: 'hoyo', porElJugador: true });
       return true;
     };
     alejarAhora.current = (salida) => {
@@ -440,6 +455,7 @@ const MapaDelHoyo = ({
         // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
         setConAyudaDeCodos(nueva.length > reducida.length);
         setMarca({ fase: null, tee: null });
+        setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
       setGracias(false);
@@ -485,21 +501,18 @@ const MapaDelHoyo = ({
     };
   }, []);
 
-  // El hoyo entero, girado como se juega y lo más grande que quepa: el centro y
-  // el zoom se calculan con el hoyo girado (`fitBounds` encuadra su caja
+  // Unos puntos, girados a `orientacion` y lo más grandes que quepan: el centro
+  // y el zoom se calculan con ellos girados (`fitBounds` encuadra su caja
   // norte-sur, que girada ocupa mucho más, y el hoyo salía pequeño; 16 oct)
-  const encuadrarHoyo = useCallback(
-    (animar) => {
-      const { hoyo: h } = inicio.current;
-      const orientacion = orientacionDelHoyo(h);
+  const encuadrar = useCallback(
+    (h, orientacion, animar) => {
       const mapa = mapaRef.current;
       // Sin rumbo no hay hoyo orientado que encuadrar (el mapa va con el norte arriba)
       if (!mapa || orientacion === null) return;
-      const padding = margen();
       const encuadre = encuadreGirado(h, orientacion, {
         ancho: contenedor.current?.clientWidth || 360,
         alto: contenedor.current?.clientHeight || 640,
-        padding,
+        padding: margen(),
       });
       if (!encuadre) return;
       // Sin `padding`: MapLibre lo guardaría y lo sumaría a todo lo de después
@@ -510,6 +523,37 @@ const MapaDelHoyo = ({
     },
     [margen],
   );
+  // El hoyo entero: la línea de ahora (la marcada o movida, O7); al montar, la de al abrir
+  const encuadrarHoyo = useCallback(
+    (animar) => {
+      const { hoyo: h, rumbo: orientacion } = delEncuadre.current ?? inicio.current;
+      encuadrar(h, orientacion, animar);
+    },
+    [encuadrar],
+  );
+  // Lo que se orientó después de abrir (O2-O5): el hoyo, o de ti hacia un punto
+  // con ese punto y el green a la vista (/code-review)
+  const ultimaVista = useRef(null);
+  const aplicarVista = useCallback(
+    (v, animar) => {
+      if (v.tipo === 'hoyo') encuadrarHoyo(animar);
+      else encuadrar({ playLine: [v.desde, v.hacia, v.green], green: null }, rumbo(v.desde, v.hacia), animar);
+    },
+    [encuadrar, encuadrarHoyo],
+  );
+  // Orientado después de abrir, ya no se gira con los dedos, como un hoyo con
+  // mapa (O6). Si el jugador ya movió el mapa, lo que llega solo (el GPS) no
+  // se lo quita (/code-review); lo que pide él, marcar, sí (CodeRabbit)
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!vista || !mapa || (movidoPorElJugador.current && !vista.porElJugador)) return;
+    conVista.current = true;
+    ultimaVista.current = vista;
+    mapa.dragRotate?.disable();
+    mapa.touchZoomRotate?.disableRotation();
+    mapa.keyboard?.disableRotation();
+    aplicarVista(vista, true);
+  }, [vista, aplicarVista]);
 
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
   // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
@@ -525,7 +569,7 @@ const MapaDelHoyo = ({
         container: nodo,
         style: ESTILO,
         attributionControl: false,
-        bearing: orientado ? orientacionDelHoyo(h) : 0,
+        bearing: orientado ? inicio.current.rumbo : 0,
         // Un hoyo con mapa se ve como se juega: sin giro ni inclinación
         dragRotate: !orientado,
         pitchWithRotate: false,
@@ -625,11 +669,13 @@ const MapaDelHoyo = ({
     if (!panel || !Observador || !inicio.current.conMapa) return undefined;
     const observador = new Observador(() => {
       if (movidoPorElJugador.current || yaEmpezo.current || tocadoAhora.current) return;
-      encuadrarHoyo(false);
+      // Orientado después de abrir, lo de entonces; si no, el hoyo (/code-review)
+      if (ultimaVista.current) aplicarVista(ultimaVista.current, false);
+      else encuadrarHoyo(false);
     });
     observador.observe(panel);
     return () => observador.disconnect();
-  }, [encuadrarHoyo]);
+  }, [encuadrarHoyo, aplicarVista]);
 
   // Mi posición: el punto azul, y la primera vez sin mapa, el mapa va a ella
   useEffect(() => {
@@ -644,7 +690,8 @@ const MapaDelHoyo = ({
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     // Lejos no; y si mientras tanto el jugador movió el mapa, tampoco al llegar
-    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current) {
+    // Ya orientado (O4, O5), tampoco: el salto cortaría el giro o deshace el encuadre (revisor)
+    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current && !conVista.current) {
       centradoEnGps.current = true;
       mapa.jumpTo({ center: lngLat(posicion), zoom: ZOOM_SIN_MAPA });
     }
@@ -699,17 +746,22 @@ const MapaDelHoyo = ({
     }
   }
   // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
-  if (hastaLaSalida && posicionBuena && distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M) {
+  // Proponiendo un reporte se espera a acabarlo: no gira (O9)
+  if (hastaLaSalida && !reporte && posicionBuena && distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M) {
     setHastaLaSalida(false);
     setLineaOculta(false);
     setDesdeMi(false);
     setTocado(null);
+    setVista({ tipo: 'hoyo' });
   }
   // El codo, una vez: con el primer GPS bueno, en medio si pasa de 200 m. Luego
   // no se mueve, ni vuelve si se quita (D2, D4, D10). Durante el render, como
   // se ajusta un estado a otro en React
   if (codoPendiente && desdeMi && posicionBuena && green) {
     setCodoPendiente(false);
+    // Hacia el siguiente punto de la línea del hoyo, o al green sin ella (O2, O4)
+    const hacia = (lineaOculta && siguientePuntoDeLaLinea(posicionBuena, lineaInicial)) || green.center;
+    setVista({ tipo: 'desdeMi', desde: posicionBuena, hacia, green: green.center });
     // Un punto que ya tocaste es el codo (D2b)
     if (!tocado && distanciaEnMetros(posicionBuena, green.center) > CODO_DESDE_M) setTocado(enMedio(posicionBuena, green.center));
   }
@@ -770,7 +822,7 @@ const MapaDelHoyo = ({
     const mapa = mapaRef.current;
     if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
     inicio.current.centroSinMapa = centroSinMapa;
-    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current) return;
+    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current || conVista.current) return;
     centradoEnGps.current = false;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
   }, [centroSinMapa, lejos]);
@@ -1195,12 +1247,14 @@ const MapaDelHoyo = ({
               </>
             )}
           </span>
-          {sinMapa ? null : conMapa ? (
+          {sinMapa ? null : conMapa || linea ? (
             <button
               type="button"
               onClick={() => {
-                // A mitad de hoyo, vuelve también su línea (H3)
+                // A mitad de hoyo, vuelve también su línea (H3); y lo último
+                // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
                 setLineaOculta(false);
+                ultimaVista.current = { tipo: 'hoyo' };
                 encuadrarHoyo(true);
               }}
               className={`${BOTON} pointer-events-auto`}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado } from './geometriaDelHoyo';
+import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado, rumboDeLaLinea, siguientePuntoDeLaLinea, proyeccionEnElTramo } from './geometriaDelHoyo';
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
 const GREEN = {
@@ -172,5 +172,126 @@ describe('encuadreGirado', () => {
 
     const mPorPx = (2 * Math.PI * 6378137 * Math.cos((S.lat * Math.PI) / 180)) / (512 * 2 ** zoom);
     expect(500 / mPorPx).toBeCloseTo(300, 0);
+  });
+});
+
+// Agustín, 17-18 oct: el hoyo se ve como se juega
+//
+// | Caso | Situación                     | Hacia dónde                                         |
+// |------|-------------------------------|-----------------------------------------------------|
+// | O1   | par 3                         | de la salida al green                               |
+// | O1   | par 4 o 5 con codos           | de la salida al primer codo                         |
+// | O1   | sin codos o sin par           | de la salida al green                               |
+// | O2   | a mitad de hoyo               | de ti al siguiente punto de la línea que tengas delante |
+describe('rumboDeLaLinea (O1)', () => {
+  const CODO = { lat: 36.285, lon: -5.325 };
+  const FIN = { lat: 36.29, lon: -5.332 };
+  const CON_CODO = [SALIDA, CODO, FIN];
+
+  it('par 3: de la salida al green, aunque tenga codos', () => {
+    expect(rumboDeLaLinea(CON_CODO, 3)).toBeCloseTo(rumbo(SALIDA, FIN), 6);
+  });
+
+  it('par 4 y 5: de la salida al primer codo', () => {
+    expect(rumboDeLaLinea(CON_CODO, 4)).toBeCloseTo(rumbo(SALIDA, CODO), 6);
+    expect(rumboDeLaLinea([SALIDA, CODO, { lat: 36.288, lon: -5.33 }, FIN], 5)).toBeCloseTo(rumbo(SALIDA, CODO), 6);
+  });
+
+  it('sin codos o sin par: al green', () => {
+    expect(rumboDeLaLinea([SALIDA, FIN], 4)).toBeCloseTo(rumbo(SALIDA, FIN), 6);
+    expect(rumboDeLaLinea(CON_CODO, null)).toBeCloseTo(rumbo(SALIDA, FIN), 6);
+  });
+
+  it('sin línea o con un solo punto, sin rumbo', () => {
+    expect(rumboDeLaLinea(null, 4)).toBeNull();
+    expect(rumboDeLaLinea([SALIDA], 4)).toBeNull();
+  });
+});
+
+describe('siguientePuntoDeLaLinea (O2)', () => {
+  // Salida al sur, un codo al norte y el green al este del codo
+  const S = { lat: 36.28, lon: -5.33 };
+  const C = { lat: 36.283, lon: -5.33 };
+  const G = { lat: 36.283, lon: -5.326 };
+  const L = [S, C, G];
+
+  it('antes del codo, el codo', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.281, lon: -5.3301 }, L)).toEqual(C);
+  });
+
+  it('pasado el codo, el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.328 }, L)).toEqual(G);
+  });
+
+  it('detrás de la salida, el primer punto tras ella', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.279, lon: -5.33 }, L)).toEqual(C);
+  });
+
+  it('lo más cerca de un tramo es entre sus dos puntos, no en su prolongación', () => {
+    // Al oeste de la calle hacia el codo, casi en la prolongación del tramo al green
+    expect(siguientePuntoDeLaLinea({ lat: 36.2825, lon: -5.335 }, L)).toEqual(C);
+  });
+
+  it('pasado el codo por fuera de la esquina (empate en el codo), el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2835, lon: -5.3305 }, L)).toEqual(G);
+  });
+
+  it('a menos de 20 m del codo (lo que yerra el GPS), el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3301 }, L)).toEqual(G);
+  });
+
+  it('lejos del ecuador, la longitud cuenta menos (en metros)', () => {
+    const linea = [{ lat: 60, lon: 0 }, { lat: 60.02, lon: 0 }, { lat: 60.02, lon: 0.03 }];
+
+    // 0,01° de longitud a 60° son 0,005° de latitud: más cerca del primer tramo
+    expect(siguientePuntoDeLaLinea({ lat: 60.013, lon: 0.01 }, linea)).toEqual(linea[1]);
+  });
+
+  it('a 21 m del codo, contando lo que mide la longitud, aún el codo', () => {
+    // 18 m al oeste y 11 m al sur del codo
+    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3302 }, L)).toEqual(C);
+  });
+
+  it('pasados dos codos seguidos a menos de 20 m, el green', () => {
+    // El primero 10 m detrás y el segundo 15 m delante
+    const M = (6371008.8 * Math.PI) / 180;
+    const norte = (m) => ({ lat: 36.28 + m / M, lon: -5.33 });
+    const linea = [norte(0), norte(100), norte(125), norte(300)];
+
+    expect(siguientePuntoDeLaLinea(norte(110), linea)).toEqual(norte(300));
+  });
+
+  it('en el green o pasado él, el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.3261 }, L)).toEqual(G);
+    expect(siguientePuntoDeLaLinea({ lat: 36.283, lon: -5.32 }, L)).toEqual(G);
+  });
+
+  it('sin línea, nada', () => {
+    expect(siguientePuntoDeLaLinea(S, null)).toBeNull();
+    expect(siguientePuntoDeLaLinea(S, [S])).toBeNull();
+  });
+});
+
+describe('proyeccionEnElTramo', () => {
+  const M = (6371008.8 * Math.PI) / 180;
+  const A = { lat: 36.28, lon: -5.33 };
+  const B = { lat: 36.28 + 100 / M, lon: -5.33 };
+
+  it('a mitad del tramo: t y los metros de lado', () => {
+    const p = { lat: 36.28 + 50 / M, lon: -5.33 + 30 / (M * Math.cos((36.28 * Math.PI) / 180)) };
+    const { t, metros } = proyeccionEnElTramo(p, A, B);
+
+    expect(t).toBeCloseTo(0.5, 3);
+    expect(metros).toBeCloseTo(30, 0);
+  });
+
+  it('fuera del tramo, hasta su punto más cercano (t entre 0 y 1)', () => {
+    const p = { lat: 36.28 + 130 / M, lon: -5.33 };
+
+    expect(proyeccionEnElTramo(p, A, B)).toEqual({ t: 1, metros: expect.closeTo(30, 0) });
+  });
+
+  it('un tramo de largo cero es su punto', () => {
+    expect(proyeccionEnElTramo(B, A, A)).toEqual({ t: 0, metros: expect.closeTo(100, 0) });
   });
 });
