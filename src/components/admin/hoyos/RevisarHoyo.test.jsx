@@ -679,6 +679,12 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
     });
 
+    it('V1: un primer reporte sin salida no cuenta: se parte del siguiente (/code-review)', async () => {
+      await abrir({ muestras: [], osm: OSM, barras: PAR3, reportes: [{ ...REPORTE, id: 'r-0', tee: null }, SEGUNDO] });
+
+      expect(mapa.props.linea).toEqual(deLaLinea(SEGUNDO));
+    });
+
     it('V2: con línea guardada, abre con ella aunque haya reportes', async () => {
       const guardada = { tee: alNorte(10), bends: [], greenCenter: alNorte(300) };
       await abrir({ guardada, osm: OSM, barras: PAR3, reportes: [REPORTE] });

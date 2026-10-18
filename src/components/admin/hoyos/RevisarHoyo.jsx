@@ -96,7 +96,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         // que la que hay está mal: Agustín, 18 oct), de la de OSM (con los codos
         // de su par) o de la primera muestra completa
         const deLoQueHay =
-          este.guardada ?? lineaDe(este.reportes?.[0]) ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
+          este.guardada ?? lineaDe(este.reportes?.find((r) => r.tee)) ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         if (!conservarLinea) setEditada(false);
         setFallo(false);
