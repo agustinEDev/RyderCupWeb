@@ -229,6 +229,9 @@ describe('reportes de hoyo — casos de uso', () => {
     ['sin green', { greenCenter: undefined }],
     ['con un codo roto', { bends: [null] }],
     ['con los codos que no son una lista', { bends: 'x' }],
+    ['con un codo a medias', { bends: [{ lat: 42.3 }] }],
+    ['con la salida a medias', { tee: { lat: 42.3 } }],
+    ['con el green sin número', { greenCenter: { lat: Number.NaN, lon: -8.7 } }],
   ])('D14: %s, nada y a Sentry', async (_caso, extra) => {
     const { estado } = await enviar(extra);
 
