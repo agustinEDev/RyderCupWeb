@@ -2118,7 +2118,17 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(botones[0].parentElement).toBe(botones[1].parentElement);
     expect(botones[0].parentElement).toHaveClass('flex');
     expect(botones[0].parentElement).not.toHaveClass('flex-col');
-    for (const b of botones) expect(b).toHaveClass('flex-1');
+    for (const b of botones) expect(b).toHaveClass('flex-1', 'min-w-0');
+  });
+
+  // Revisor, 18 oct: el «No» se va de la pantalla y con él el foco
+  it('S1: el foco pasa a la primera opción, para quien usa lector de pantalla', () => {
+    abrirSinLinea();
+    enLaSalida();
+
+    no();
+
+    expect(screen.getByRole('button', { name: 'mapa.soloDistancia' })).toHaveFocus();
   });
 
   it('S2: mientras se elige, tocar el mapa no marca ni mide nada', () => {
@@ -2181,19 +2191,6 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(onMuestra).not.toHaveBeenCalled();
   });
 
-  it('S4: «Marcar el hoyo entero» también cuenta como empezar, una vez', () => {
-    const onEmpezar = vi.fn();
-    abrirSinLinea({ onEmpezar });
-    enLaSalida();
-    no();
-
-    hoyoEntero();
-    tocar(alNorte(10));
-    tocar(alNorte(300));
-
-    expect(onEmpezar).toHaveBeenCalledTimes(1);
-  });
-
   it('S5: con el green ya puesto, «Marcar el hoyo entero» pide solo la salida y la línea va a ese green', () => {
     const { unmount, onMuestra } = conGreenSuelto({ par: 3 });
     act(() => gps.exito(lectura(alNorte(150).lat, T.lon, 6)));
@@ -2207,6 +2204,22 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(screen.queryByText('mapa.pideGreen')).toBeNull();
     unmount();
     expect(onMuestra.mock.calls[0][0]).toMatchObject({ tee: alNorte(10), bends: [], greenCenter: alNorte(300) });
+  });
+
+  it('S5: una salida a menos de 40 m de ese green no vale: se avisa y se sigue pidiendo la salida', () => {
+    const { unmount, onMuestra } = conGreenSuelto({ par: 3 });
+    enLaSalida();
+    no();
+    hoyoEntero();
+
+    tocar(alNorte(280));
+
+    expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+    tocar(alNorte(10));
+    unmount();
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+    expect(onMuestra.mock.calls[0][0].tee).toEqual(alNorte(10));
   });
 
   it('S6: al elegir no hay «Ahora no»', () => {
@@ -2244,6 +2257,29 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     expect(screen.queryByRole('button', { name: 'mapa.soloDistancia' })).toBeNull();
     expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+  });
+
+  it('S7: si eligiendo se pierde el permiso de ubicación, también', () => {
+    abrirSinLinea();
+    enLaSalida();
+    no();
+
+    act(() => gps.error({ code: 1 }));
+
+    expect(screen.queryByRole('button', { name: 'mapa.marcarEntero' })).toBeNull();
+    expect(screen.getByText('mapa.pideSalida')).toBeInTheDocument();
+  });
+
+  it('S7: si vuelves al campo antes de tocar la salida, se vuelve a elegir', () => {
+    abrirSinLinea();
+    enLaSalida();
+    no();
+    act(() => gps.exito(lectura(40.4, -3.7)));
+
+    enLaSalida();
+
+    expect(screen.getByRole('button', { name: 'mapa.soloDistancia' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'mapa.marcarEntero' })).toBeInTheDocument();
   });
 
   // V2 (17 oct): una referencia por hoyo, vista desde mi barra

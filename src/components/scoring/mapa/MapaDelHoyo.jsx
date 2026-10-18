@@ -296,6 +296,7 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   // La salida del último toque, por si un doble toque corta su alejamiento
   const salidaRecienTocada = useRef(null);
+  const primeraOpcion = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
     alCerrar.current = { edicion, recoge, onMuestra, campo: referenciaDelCampo };
@@ -684,6 +685,12 @@ const MapaDelHoyo = ({
     else setMarca(greenConocido ? { fase: null, tee: null } : { fase: 'pidiendo', tee: null, soloGreen: true });
   };
 
+  // El «No» se va de la pantalla y con él el foco: pasa a la primera opción,
+  // para que el lector de pantalla diga lo que hay (revisor, 18 oct)
+  useEffect(() => {
+    if (fase === 'eligiendo') primeraOpcion.current?.focus();
+  }, [fase]);
+
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
   useEffect(() => {
     const zoom = mapaRef.current?.doubleClickZoom;
@@ -837,10 +844,10 @@ const MapaDelHoyo = ({
           </div>
         ) : fase === 'eligiendo' ? (
           <div className={`${PLACA} pointer-events-auto flex gap-2 p-2`}>
-            <button type="button" onClick={() => elegir(false)} className="min-h-11 flex-1 rounded-xl bg-white/15 px-3 py-2 text-[15px] font-semibold leading-tight text-white">
+            <button ref={primeraOpcion} type="button" onClick={() => elegir(false)} className="min-h-11 min-w-0 flex-1 rounded-xl bg-white/15 px-3 py-2 text-[15px] font-semibold leading-tight text-white">
               {t('mapa.soloDistancia')}
             </button>
-            <button type="button" onClick={() => elegir(true)} className="min-h-11 flex-1 rounded-xl bg-white/15 px-3 py-2 text-[15px] font-semibold leading-tight text-white">
+            <button type="button" onClick={() => elegir(true)} className="min-h-11 min-w-0 flex-1 rounded-xl bg-white/15 px-3 py-2 text-[15px] font-semibold leading-tight text-white">
               {t('mapa.marcarEntero')}
             </button>
           </div>
