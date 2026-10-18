@@ -2392,3 +2392,208 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     });
   });
 });
+
+
+// Agustín, 18 oct (entrega 7): reportar un hoyo con línea. El motivo y la línea
+// que propone el jugador; los jugadores siguen viendo la de siempre
+//
+// | Caso | Situación                                         | Qué pasa                                                    |
+// |------|---------------------------------------------------|-------------------------------------------------------------|
+// | P1   | hoyo con línea y con quien reciba el reporte      | «⋮» (Reportar un problema) junto a «Cerrar»                 |
+// | P2   | hoyo sin línea, o sin quien lo reciba             | sin «⋮»                                                     |
+// | P3   | «⋮»                                               | «¿Qué le pasa a este hoyo?», los tres motivos y «Cancelar»; el mapa no mide |
+// | P4   | un motivo                                         | la línea de siempre se oculta; salida buena, green bueno, codos del par |
+// | P5   | green a menos de 40 o más de 750 m de la salida   | se avisa y se sigue pidiendo el green                       |
+// | P6   | «Enviar reporte»                                  | sale una vez (id, motivo, línea); gracias; vuelve la de siempre |
+// | P7   | «Cancelar» a mitad                                | nada sale; vuelve la de siempre                              |
+// | P8   | cerrar el mapa a mitad                            | ni reporte ni muestra con la línea propuesta                |
+// | P9   | había movido la línea y luego reporta y cierra    | sale la muestra de lo que movió, no la propuesta            |
+// | P10  | arrastra un codo de la propuesta                  | sale con el codo movido                                     |
+// | P11  | se pregunta o se marca el hoyo                    | sin «⋮» mientras tanto                                      |
+describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
+  const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
+  const T = { lat: 36.28, lon: -5.33 };
+  const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
+  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const lineaDibujada = () => mapa().fuentes.marcado?.data.features.find((f) => f.properties.tipo === 'linea')?.geometry.coordinates;
+  const LINEA = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } };
+  const menu = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+  const motivo = (clave) => fireEvent.click(screen.getByRole('button', { name: `mapa.motivos.${clave}` }));
+  const abrirConLinea = (props = {}) => {
+    const onReporte = props.onReporte ?? vi.fn();
+    const onMuestra = props.onMuestra ?? vi.fn();
+    const r = abrir({ hoyo: LINEA, par: 4, metros: null, recoge: true, onReporte, onMuestra, ...props });
+    act(() => mapa().oyentes.load());
+    return { ...r, onReporte, onMuestra };
+  };
+  // Del menú a la propuesta lista: salida a 20 m de la de siempre, green a 280 m
+  const proponer = (clave = 'WRONG_LINE') => {
+    menu();
+    motivo(clave);
+    tocar(alNorte(20));
+    tocar(alNorte(280));
+  };
+
+  let gps;
+  let reloj;
+  beforeEach(() => {
+    mapas.length = 0;
+    mapas.marcas = [];
+    mapas.sinWebgl = false;
+    centro.valor = null;
+    gps = gpsFalso();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+    let ahora = 0;
+    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
+  });
+  afterEach(() => {
+    reloj.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('P1: en un hoyo con línea, «⋮» junto a «Cerrar»', () => {
+    abrirConLinea();
+
+    const boton = screen.getByRole('button', { name: 'mapa.reportar' });
+    expect(boton.parentElement).toBe(screen.getByRole('button', { name: /mapa\.cerrar/ }).parentElement);
+  });
+
+  it.each([
+    ['sin línea', { hoyo: null, porMarcar: 'salida' }],
+    ['solo con el green, sin nada que marcar', { hoyo: { playLine: [], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } }, porMarcar: null }],
+    ['sin quien reciba el reporte', { onReporte: null }],
+  ])('P2: %s, sin «⋮»', (_caso, props) => {
+    abrirConLinea(props);
+
+    expect(screen.queryByRole('button', { name: 'mapa.reportar' })).toBeNull();
+  });
+
+  it('P3: «⋮» abre los motivos; «Cancelar» lo cierra y mientras tanto el mapa no mide', () => {
+    abrirConLinea();
+    const deSiempre = lineaDibujada();
+
+    menu();
+    expect(screen.getByText('mapa.reporteTitulo')).toBeInTheDocument();
+    for (const clave of ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED']) {
+      expect(screen.getByRole('button', { name: `mapa.motivos.${clave}` })).toBeInTheDocument();
+    }
+    tocar(alNorte(150));
+    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+    expect(screen.queryByText('mapa.reporteTitulo')).toBeNull();
+    expect(lineaDibujada()).toEqual(deSiempre);
+  });
+
+  it('P4: con un motivo, la de siempre se oculta y se marca la propuesta con los codos del par', () => {
+    abrirConLinea();
+    menu();
+    motivo('WRONG_LINE');
+
+    // Ni la línea que se mueve, ni la del hoyo debajo, ni sus cifras
+    expect(lineaDibujada()).toBeUndefined();
+    expect(mapa().fuentes.hoyo.data.features).toEqual([]);
+    expect(screen.queryByTestId('tramos-de-la-linea')).toBeNull();
+    expect(screen.getByText('mapa.reporteSalida')).toBeInTheDocument();
+    tocar(alNorte(20));
+    expect(screen.getByText('mapa.reporteGreen')).toBeInTheDocument();
+    tocar(alNorte(280));
+
+    expect(lineaDibujada()).toHaveLength(3);
+    expect(lineaDibujada()[0]).toEqual([T.lon, alNorte(20).lat]);
+    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+  });
+
+  it('P5: un green a más de 750 m de la salida no vale: se avisa y se sigue pidiendo', () => {
+    abrirConLinea();
+    menu();
+    motivo('WRONG_HOLE');
+    tocar(alNorte(20));
+
+    tocar(alNorte(900));
+
+    expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
+    expect(screen.getByText('mapa.reporteGreen')).toBeInTheDocument();
+    expect(lineaDibujada()).toBeUndefined();
+  });
+
+  it('P6: «Enviar reporte» lo manda una vez, da las gracias y vuelve la de siempre', () => {
+    const { onReporte, unmount, onMuestra } = abrirConLinea();
+    const deSiempre = lineaDibujada();
+    proponer('HOLE_CHANGED');
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+
+    expect(onReporte).toHaveBeenCalledTimes(1);
+    const enviado = onReporte.mock.calls[0][0];
+    expect(enviado).toMatchObject({ reason: 'HOLE_CHANGED', tee: alNorte(20), greenCenter: alNorte(280) });
+    expect(enviado.bends).toHaveLength(1);
+    expect(typeof enviado.id).toBe('string');
+    expect(screen.getByRole('status')).toHaveTextContent('mapa.reporteGracias');
+    expect(lineaDibujada()).toEqual(deSiempre);
+    unmount();
+    expect(onMuestra).not.toHaveBeenCalled();
+  });
+
+  it('P7: «Cancelar» a mitad no manda nada y vuelve la de siempre', () => {
+    const { onReporte } = abrirConLinea();
+    const deSiempre = lineaDibujada();
+    menu();
+    motivo('WRONG_LINE');
+    tocar(alNorte(20));
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+    expect(onReporte).not.toHaveBeenCalled();
+    expect(lineaDibujada()).toEqual(deSiempre);
+    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toBeInTheDocument();
+  });
+
+  it('P8: cerrar el mapa a mitad no manda el reporte ni la propuesta como muestra', () => {
+    const { onReporte, onMuestra, unmount } = abrirConLinea();
+    proponer();
+
+    unmount();
+
+    expect(onReporte).not.toHaveBeenCalled();
+    expect(onMuestra).not.toHaveBeenCalled();
+  });
+
+  it('P9: si antes movió la línea, al cerrar a mitad del reporte sale lo que movió', () => {
+    const { onMuestra, unmount } = abrirConLinea();
+    const salida = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable)[0];
+    act(() => {
+      salida.setLngLat([T.lon, alNorte(10).lat]);
+      salida.oyentes.dragend({ target: salida });
+    });
+    proponer();
+
+    unmount();
+
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+    expect(onMuestra.mock.calls[0][0].tee).toEqual({ lat: alNorte(10).lat, lon: T.lon });
+  });
+
+  it('P10: arrastrar un codo de la propuesta lo mueve en el reporte', () => {
+    const { onReporte } = abrirConLinea();
+    proponer();
+    const codo = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable)[1];
+    act(() => {
+      codo.setLngLat([-5.331, alNorte(150).lat]);
+      codo.oyentes.dragend({ target: codo });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+
+    expect(onReporte.mock.calls[0][0].bends).toEqual([{ lat: alNorte(150).lat, lon: -5.331 }]);
+  });
+
+  it('P11: mientras se marca el green de un hoyo con salida, sin «⋮»; con «Ahora no», vuelve', () => {
+    abrirConLinea({ hoyo: { playLine: [T, alNorte(200)], green: null }, porMarcar: 'green' });
+
+    expect(screen.getByText('mapa.pideGreen')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'mapa.reportar' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toBeInTheDocument();
+  });
+});

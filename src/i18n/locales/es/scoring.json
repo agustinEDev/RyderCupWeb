@@ -410,6 +410,18 @@
     "malGps": "No te localizamos bien: toca dónde está la salida",
     "desdeTuPosicion": "Desde tu posición",
     "desdeTuBarra": "Desde tu barra",
-    "desdeLaSalida": "Desde la salida"
+    "desdeLaSalida": "Desde la salida",
+    "reportar": "Reportar un problema",
+    "reporteTitulo": "¿Qué le pasa a este hoyo?",
+    "cancelar": "Cancelar",
+    "reporteSalida": "Toca dónde está la salida buena",
+    "reporteGreen": "Toca el centro del green bueno",
+    "enviarReporte": "Enviar reporte",
+    "reporteGracias": "Gracias: lo revisará un admin",
+    "motivos": {
+      "WRONG_HOLE": "No es el hoyo correcto",
+      "WRONG_LINE": "La línea es incorrecta",
+      "HOLE_CHANGED": "El hoyo ha cambiado"
+    }
   }
 }
