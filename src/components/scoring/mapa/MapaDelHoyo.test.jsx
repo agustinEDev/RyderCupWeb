@@ -2002,6 +2002,75 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(screen.queryByRole('button', { name: /mapa\.norte/ })).toBeNull();
     });
 
+    it('Revisor: si el primer GPS llega tras el «No», centrarlo no corta el giro', () => {
+      const green = alEste(150);
+      conGreenSuelto({ hoyo: { playLine: [], green: { center: green } } });
+      no();
+
+      desde(T);
+
+      const giro = mapa().easeTo.mock.calls.findIndex(([c]) => c.bearing !== undefined);
+      expect(giro).toBeGreaterThanOrEqual(0);
+      const despues = mapa().jumpTo.mock.invocationCallOrder.filter((n) => n > mapa().easeTo.mock.invocationCallOrder[giro]);
+      expect(despues).toEqual([]);
+    });
+
+    it('Revisor: marcado sin GPS, el primer GPS no deshace el encuadre', () => {
+      abrirSinLinea({ par: 3 });
+      act(() => gps.error({ code: 1 }));
+      tocar(T);
+      tocar(alEste(150));
+      expect(ultimoGiro()).toBeCloseTo(rumbo(T, alEste(150)), 6);
+      mapa().jumpTo.mockClear();
+
+      desde(T);
+
+      expect(mapa().jumpTo).not.toHaveBeenCalled();
+    });
+
+    it('Revisor: orientado, que llegue tarde el centro del campo tampoco mueve el mapa', () => {
+      centro.valor = null;
+      abrirSinLinea({ par: 3 });
+      act(() => gps.error({ code: 1 }));
+      tocar(T);
+      tocar(alEste(150));
+      mapa().jumpTo.mockClear();
+
+      centro.valor = alEste(10);
+      desde(T, 25);
+
+      expect(mapa().jumpTo).not.toHaveBeenCalled();
+    });
+
+    it('Revisor: proponiendo un reporte, llegar a la salida no gira; al cancelar, sí', () => {
+      abrirCon({ onReporte: vi.fn() });
+      desde(alEste(40, alNorte(100)));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      tocar(alEste(60));
+      tocar(VERDE);
+      const giradas = mapa().easeTo.mock.calls.length;
+
+      desde(alNorte(10));
+      expect(mapa().easeTo.mock.calls.length).toBe(giradas);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+      expect(ultimoGiro()).toBeCloseTo(rumbo(T, CODO), 6);
+    });
+
+    it('Revisor: «Ver hoyo» proponiendo un reporte encuadra el hoyo de al abrir, no la propuesta', () => {
+      abrirCon({ onReporte: vi.fn() });
+      desde(alNorte(10));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      tocar(alEste(60));
+      tocar(VERDE);
+
+      fireEvent.click(screen.getByRole('button', { name: /mapa\.verHoyo/ }));
+
+      expect(ultimoGiro()).toBeCloseTo(rumbo(T, CODO), 6);
+    });
+
     it('O5: par 3 marcado, de la salida al green', () => {
       abrirSinLinea({ par: 3 });
       enLaSalida();

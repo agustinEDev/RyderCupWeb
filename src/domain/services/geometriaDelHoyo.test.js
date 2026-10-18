@@ -228,8 +228,16 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
   });
 
   it('lo más cerca de un tramo es entre sus dos puntos, no en su prolongación', () => {
-    // Al oeste del codo, en la recta del tramo al green pero lejos de él
-    expect(siguientePuntoDeLaLinea({ lat: 36.283, lon: -5.335 }, L)).toEqual(C);
+    // Al oeste de la calle hacia el codo, casi en la prolongación del tramo al green
+    expect(siguientePuntoDeLaLinea({ lat: 36.2825, lon: -5.335 }, L)).toEqual(C);
+  });
+
+  it('pasado el codo por fuera de la esquina (empate en el codo), el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2835, lon: -5.3305 }, L)).toEqual(G);
+  });
+
+  it('a menos de 20 m del codo (lo que yerra el GPS), el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3301 }, L)).toEqual(G);
   });
 
   it('lejos del ecuador, la longitud cuenta menos (en metros)', () => {
@@ -237,6 +245,16 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
 
     // 0,01° de longitud a 60° son 0,005° de latitud: más cerca del primer tramo
     expect(siguientePuntoDeLaLinea({ lat: 60.013, lon: 0.01 }, linea)).toEqual(linea[1]);
+  });
+
+  it('a 21 m del codo, contando lo que mide la longitud, aún el codo', () => {
+    // 18 m al oeste y 11 m al sur del codo
+    expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3302 }, L)).toEqual(C);
+  });
+
+  it('en el green o pasado él, el green', () => {
+    expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.3261 }, L)).toEqual(G);
+    expect(siguientePuntoDeLaLinea({ lat: 36.283, lon: -5.32 }, L)).toEqual(G);
   });
 
   it('sin línea, nada', () => {

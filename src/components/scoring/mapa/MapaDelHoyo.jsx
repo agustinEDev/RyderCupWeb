@@ -309,7 +309,8 @@ const MapaDelHoyo = ({
   // Lo que encuadra «Ver hoyo»: la línea de ahora con su rumbo (O5, O7)
   const delEncuadre = useRef(null);
   useLayoutEffect(() => {
-    delEncuadre.current = linea && hoyoAhora ? { hoyo: hoyoAhora, rumbo: rumboDeLaLinea(linea, par) } : null;
+    // Proponiendo un reporte, la de al abrir, no la propuesta (O9)
+    delEncuadre.current = linea && hoyoAhora && !reporte ? { hoyo: hoyoAhora, rumbo: rumboDeLaLinea(linea, par) } : null;
   });
   // Sin un GPS bueno no hay línea desde ti: mientras dure, la del hoyo (H14)
   const ocultaAhora = lineaOculta && !reporte && !!posicionBuena;
@@ -685,7 +686,8 @@ const MapaDelHoyo = ({
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     // Lejos no; y si mientras tanto el jugador movió el mapa, tampoco al llegar
-    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current) {
+    // Ya orientado (O4, O5), tampoco: el salto cortaría el giro o deshace el encuadre (revisor)
+    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current && !conVista.current) {
       centradoEnGps.current = true;
       mapa.jumpTo({ center: lngLat(posicion), zoom: ZOOM_SIN_MAPA });
     }
@@ -740,7 +742,8 @@ const MapaDelHoyo = ({
     }
   }
   // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
-  if (hastaLaSalida && posicionBuena && distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M) {
+  // Proponiendo un reporte se espera a acabarlo: no gira (O9)
+  if (hastaLaSalida && !reporte && posicionBuena && distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M) {
     setHastaLaSalida(false);
     setLineaOculta(false);
     setDesdeMi(false);
@@ -815,7 +818,7 @@ const MapaDelHoyo = ({
     const mapa = mapaRef.current;
     if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
     inicio.current.centroSinMapa = centroSinMapa;
-    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current) return;
+    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current || conVista.current) return;
     centradoEnGps.current = false;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
   }, [centroSinMapa, lejos]);

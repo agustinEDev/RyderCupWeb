@@ -32,6 +32,10 @@ export const orientacionDelHoyo = (hoyo) => {
   return rumbo(linea[0], destino);
 };
 
+// Los metros de un grado de latitud, y lo que yerra un GPS bueno (20 m)
+const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
+const CERCA_DEL_PUNTO_M = 20;
+
 /**
  * El giro del mapa para una línea de la salida al green (Agustín, 17 oct): en
  * un par 4 o 5, de la salida al primer codo (lo que se ve desde la salida); en
@@ -46,12 +50,16 @@ export const rumboDeLaLinea = (linea, par) => {
 /**
  * A mitad de hoyo, el siguiente punto de la línea que hay delante (Agustín,
  * 18 oct): el final del tramo más cercano a `posicion` (el siguiente codo o el
- * green). En metros sobre el plano, que para un hoyo basta. `null` sin línea.
+ * green). En metros sobre el plano, que para un hoyo basta. Si lo más cerca
+ * del tramo es su final, ese punto ya quedó atrás (por fuera de la esquina de
+ * un dogleg); y a menos de lo que yerra el GPS de un punto, tampoco es
+ * «delante»: en los dos casos, el siguiente (revisor, 18 oct). `null` sin línea.
  */
 export const siguientePuntoDeLaLinea = (posicion, linea) => {
   if (!linea || linea.length < 2) return null;
   const coseno = Math.cos(radianes(posicion.lat));
-  const enMetros = (p) => ({ x: (p.lon - posicion.lon) * coseno, y: p.lat - posicion.lat });
+  // En metros (de grados de latitud a metros, con la esfera de `rumbo`)
+  const enMetros = (p) => ({ x: (p.lon - posicion.lon) * coseno * M_POR_GRADO, y: (p.lat - posicion.lat) * M_POR_GRADO });
   let mejor = null;
   for (let i = 0; i < linea.length - 1; i += 1) {
     const a = enMetros(linea[i]);
@@ -62,9 +70,11 @@ export const siguientePuntoDeLaLinea = (posicion, linea) => {
     // La posición está en el origen: lo más cerca del tramo, entre sus dos puntos
     const t = largo ? Math.min(1, Math.max(0, -(a.x * dx + a.y * dy) / largo)) : 0;
     const distancia = (a.x + t * dx) ** 2 + (a.y + t * dy) ** 2;
-    if (!mejor || distancia < mejor.distancia) mejor = { distancia, punto: linea[i + 1] };
+    if (!mejor || distancia < mejor.distancia) mejor = { distancia, i: i + 1, pasado: t === 1 };
   }
-  return mejor.punto;
+  const { x, y } = enMetros(linea[mejor.i]);
+  const siguiente = mejor.pasado || x * x + y * y < CERCA_DEL_PUNTO_M ** 2;
+  return linea[Math.min(siguiente ? mejor.i + 1 : mejor.i, linea.length - 1)];
 };
 
 /** Los puntos que forman el hoyo: su línea de juego y su green (delante, centro y fondo). */
