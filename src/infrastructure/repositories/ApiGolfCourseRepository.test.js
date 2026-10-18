@@ -281,6 +281,14 @@ describe('ApiGolfCourseRepository — reportar un hoyo (entrega 7)', () => {
 describe('ApiGolfCourseRepository — revisar hoyos (admin, BE #575)', () => {
   beforeEach(() => apiRequest.mockReset());
 
+  it('descartar un reporte es un DELETE a su ruta de admin (entrega 7)', async () => {
+    apiRequest.mockResolvedValue(null);
+
+    await new ApiGolfCourseRepository().discardHoleReport('gc-1', 'r-1');
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/golf-courses/admin/gc-1/hole-reports/r-1', { method: 'DELETE' });
+  });
+
   it('la lista y un campo, de sus rutas de admin', async () => {
     apiRequest.mockResolvedValueOnce({ courses: [{ golf_course_id: 'gc-1', name: 'V', holes: [] }] });
     apiRequest.mockResolvedValueOnce({ golf_course_id: 'gc-1', name: 'V', holes: [] });

@@ -36,6 +36,7 @@ import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCo
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
 import {
   DeleteHoleSampleUseCase,
+  DiscardHoleReportUseCase,
   GetHoleReviewUseCase,
   ListHoleReviewsUseCase,
   ReopenHoleUseCase,
@@ -470,6 +471,7 @@ const getHoleReviewUseCase = new GetHoleReviewUseCase({ golfCourseRepository: ap
 const saveHoleLineUseCase = new SaveHoleLineUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const reopenHoleUseCase = new ReopenHoleUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const deleteHoleSampleUseCase = new DeleteHoleSampleUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const discardHoleReportUseCase = new DiscardHoleReportUseCase({ golfCourseRepository: apiGolfCourseRepository });
 
 const getHoleMapUseCase = new GetHoleMapUseCase({
   golfCourseRepository: apiGolfCourseRepository,
@@ -607,6 +609,7 @@ export {
   saveHoleLineUseCase,
   reopenHoleUseCase,
   deleteHoleSampleUseCase,
+  discardHoleReportUseCase,
   getCourseLocationUseCase,
   sendHoleSampleUseCase,
   sendPendingHoleSamplesUseCase,

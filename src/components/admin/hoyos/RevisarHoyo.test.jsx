@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 /**
  * Revisar un hoyo (BE #575, 17 oct: una referencia por hoyo).
@@ -25,6 +25,9 @@ import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
  * | E7   | sin par                                   | un codo                                               |
  * | E8–E11 | la tarjeta                              | «Par 5 · Distancia del hoyo: 430 a 500 m» (corta a larga), «Par 4 · 350 m», sin metros, «Par 4–5» |
  * | E12  | lo que mide la línea                      | sigue debajo                                          |
+ * | Q3   | un hoyo con reportes (entrega 7)          | «Reportes»: motivo y día de cada uno; sin reportes, no hay sección |
+ * | Q4   | «Partir de esta» en un reporte            | la línea pasa a ser la que propuso                    |
+ * | Q5   | «Descartar» un reporte                    | pide confirmar; al confirmar, se descarta y la línea que se edita no se toca |
  */
 
 vi.mock('react-i18next', () => ({
@@ -33,12 +36,13 @@ vi.mock('react-i18next', () => ({
 const avisos = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('../../../utils/toast', () => ({ default: avisos }));
 
-const casos = vi.hoisted(() => ({ campo: vi.fn(), guardar: vi.fn(), reabrir: vi.fn(), borrar: vi.fn() }));
+const casos = vi.hoisted(() => ({ campo: vi.fn(), guardar: vi.fn(), reabrir: vi.fn(), borrar: vi.fn(), descartar: vi.fn() }));
 vi.mock('../../../composition', () => ({
   getHoleReviewUseCase: { execute: casos.campo },
   saveHoleLineUseCase: { execute: casos.guardar },
   reopenHoleUseCase: { execute: casos.reabrir },
   deleteHoleSampleUseCase: { execute: casos.borrar },
+  discardHoleReportUseCase: { execute: casos.descartar },
 }));
 const gps = vi.hoisted(() => ({ lectura: { estado: 'inactivo', posicion: null, precision: null }, activo: [] }));
 vi.mock('../../../hooks/usePosicionGps', () => ({
@@ -634,3 +638,55 @@ describe('RevisarHoyo', () => {
   });
   });
 });
+
+
+describe('RevisarHoyo — reportes (entrega 7)', () => {
+  const REPORTE = { id: 'r-1', motivo: 'WRONG_LINE', tee: alNorte(20), bends: [alNorte(150)], greenCenter: alNorte(310), llego: '2026-10-18' };
+
+  beforeEach(() => {
+    for (const f of Object.values(casos)) f.mockReset();
+    avisos.success.mockReset();
+    avisos.error.mockReset();
+    mapa.props = null;
+  });
+
+  it('Q3: cada reporte con su motivo y su día', async () => {
+    await abrir({ reportes: [REPORTE, { ...REPORTE, id: 'r-2', motivo: 'HOLE_CHANGED' }] });
+
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+    expect(seccion).toHaveTextContent('holeReviews.reasons.WRONG_LINE');
+    expect(seccion).toHaveTextContent('holeReviews.reasons.HOLE_CHANGED');
+    expect(seccion).toHaveTextContent('2026');
+  });
+
+  it('Q3: sin reportes, no hay sección', async () => {
+    await abrir({ reportes: [] });
+
+    expect(screen.queryByRole('region', { name: 'holeReviews.reportsTitle' })).toBeNull();
+  });
+
+  it('Q4: «Partir de esta» en un reporte pone su línea', async () => {
+    await abrir({ reportes: [REPORTE] });
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.useThis' }));
+
+    expect(mapa.props.linea).toEqual({ tee: alNorte(20), bends: [alNorte(150)], greenCenter: alNorte(310) });
+  });
+
+  it('Q5: «Descartar» pide confirmar; al confirmar se descarta y la línea que se edita se queda', async () => {
+    await abrir({ reportes: [REPORTE] });
+    act(() => mapa.props.onLinea({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) }));
+    casos.descartar.mockResolvedValue(undefined);
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.discard' }));
+    expect(casos.descartar).not.toHaveBeenCalled();
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.confirmDiscard' }));
+
+    await waitFor(() => expect(casos.descartar).toHaveBeenCalledWith('gc-1', 'r-1'));
+    await waitFor(() => expect(avisos.success).toHaveBeenCalledWith('holeReviews.discardedOk'));
+    expect(mapa.props.linea).toEqual({ tee: alNorte(5), bends: [], greenCenter: alNorte(300) });
+  });
+});
+

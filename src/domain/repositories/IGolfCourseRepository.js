@@ -111,6 +111,15 @@ class IGolfCourseRepository {
   }
 
   /**
+   * Descarta un reporte de un jugador (entrega 7, admin)
+   * @param {string} id - Golf course ID
+   * @param {string} reportId
+   */
+  async discardHoleReport(id, reportId) {
+    throw new Error('Method not implemented: discardHoleReport');
+  }
+
+  /**
    * Create a new golf course request (any user)
    * Creates a golf course in PENDING_APPROVAL status
    * @param {Object} golfCourseData - Golf course data

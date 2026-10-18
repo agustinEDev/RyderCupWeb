@@ -132,6 +132,13 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
 
   /**
    * @override
+   */
+  async discardHoleReport(id, reportId) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reports/${reportId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * @override
    * El servidor contesta 204 tanto si la guarda como si ya no la quiere (el
    * hoyo tiene bastantes): para el móvil, las dos cosas son «llegó». Con el
    * tope de anotar, para que con mala cobertura la muestra se quede en la cola

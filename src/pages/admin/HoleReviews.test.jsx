@@ -53,6 +53,20 @@ describe('HoleReviews', () => {
     expect(await screen.findByText('holeReviews.empty')).toBeInTheDocument();
   });
 
+  it('Q2: la fila dice también cuántos reportes tiene; sin muestras, solo los reportes (entrega 7)', async () => {
+    casos.lista.mockResolvedValue([
+      { golfCourseId: 'gc-1', name: 'Alcanada', holes: [{ holeNumber: 1, samples: 2, reports: 1 }, { holeNumber: 7, samples: 0, reports: 2 }] },
+    ]);
+
+    render(<HoleReviews />);
+
+    const campo = await screen.findByRole('region', { name: 'Alcanada' });
+    expect(within(campo).getAllByRole('button').map((f) => f.textContent)).toEqual([
+      'holeReviews.hole {"numero":1}holeReviews.samples {"count":2} · holeReviews.reports {"count":1}',
+      'holeReviews.hole {"numero":7}holeReviews.reports {"count":2}',
+    ]);
+  });
+
   it('L1: si falla, lo dice y se puede reintentar', async () => {
     casos.lista.mockRejectedValueOnce(new Error('x'));
     casos.lista.mockResolvedValueOnce(LISTA);
