@@ -91,9 +91,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [], reportes: [] };
         setHoyo(este);
         setUbicacion(campo.ubicacion ?? null);
-        // Se parte de la guardada, de la de OSM (con los codos de su par) o de la
-        // primera muestra completa
-        const deLoQueHay = este.guardada ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
+        // Se parte de la guardada, de la del primer reporte (quien reporta dice
+        // que la que hay está mal: Agustín, 18 oct), de la de OSM (con los codos
+        // de su par) o de la primera muestra completa
+        const deLoQueHay =
+          este.guardada ?? lineaDe(este.reportes?.[0]) ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         if (!conservarLinea) setEditada(false);
         setFallo(false);

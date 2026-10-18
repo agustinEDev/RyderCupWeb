@@ -28,6 +28,11 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
  * | Q3   | un hoyo con reportes (entrega 7)          | «Reportes»: motivo y día de cada uno; sin reportes, no hay sección |
  * | Q4   | «Partir de esta» en un reporte            | la línea pasa a ser la que propuso                    |
  * | Q5   | «Descartar» un reporte                    | pide confirmar; al confirmar, se descarta y la línea que se edita no se toca |
+ * | V1   | sin guardada y con reportes               | abre con la línea del primer reporte, aunque haya OSM o muestras |
+ * | V2   | con guardada y con reportes               | abre con la guardada                                  |
+ * | V3   | sin reportes                              | como antes: OSM y, si no, la primera muestra completa |
+ * | V4   | descartar el primer reporte               | la línea que se edita no cambia                       |
+ * | V5   | el primer reporte sin codos               | su salida y su green                                  |
  */
 
 vi.mock('react-i18next', () => ({
@@ -648,6 +653,61 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
     avisos.success.mockReset();
     avisos.error.mockReset();
     mapa.props = null;
+  });
+
+  describe('V: con qué línea abre un hoyo reportado (18 oct)', () => {
+    const OSM = { puntos: [T, alNorte(80), alNorte(148)], green: alNorte(150) };
+    const PAR3 = [{ color: 'YELLOW', gender: 'MALE', identifier: null, par: 3, metros: 150 }];
+    const SEGUNDO = { ...REPORTE, id: 'r-2', tee: alNorte(40), bends: [], greenCenter: alNorte(320), llego: '2026-10-18' };
+    const deLaLinea = (r) => ({ tee: r.tee, bends: r.bends, greenCenter: r.greenCenter });
+
+    it('V1: sin guardada, abre con la línea del primer reporte (solo reportes)', async () => {
+      await abrir({ muestras: [], reportes: [REPORTE, SEGUNDO] });
+
+      expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
+    });
+
+    it('V1: el primer reporte gana a la línea de OSM', async () => {
+      await abrir({ muestras: [], osm: OSM, barras: PAR3, reportes: [REPORTE] });
+
+      expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
+    });
+
+    it('V1: el primer reporte gana a las muestras', async () => {
+      await abrir({ reportes: [REPORTE] });
+
+      expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
+    });
+
+    it('V2: con línea guardada, abre con ella aunque haya reportes', async () => {
+      const guardada = { tee: alNorte(10), bends: [], greenCenter: alNorte(300) };
+      await abrir({ guardada, osm: OSM, barras: PAR3, reportes: [REPORTE] });
+
+      expect(mapa.props.linea).toEqual(guardada);
+    });
+
+    it('V3: sin reportes, como antes: OSM y, sin OSM, la primera muestra completa', async () => {
+      await abrir({ reportes: [] });
+      expect(mapa.props.linea).toEqual({ tee: T, bends: [], greenCenter: alNorte(300) });
+    });
+
+    it('V5: un primer reporte sin codos abre con su salida y su green', async () => {
+      await abrir({ muestras: [], reportes: [SEGUNDO, REPORTE] });
+
+      expect(mapa.props.linea).toEqual({ tee: alNorte(40), bends: [], greenCenter: alNorte(320) });
+    });
+
+    it('V4: descartar el primer reporte no cambia la línea que se edita', async () => {
+      await abrir({ muestras: [], reportes: [REPORTE, SEGUNDO] });
+      casos.descartar.mockResolvedValue(undefined);
+      const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+
+      fireEvent.click(within(seccion).getAllByRole('button', { name: 'holeReviews.discard' })[0]);
+      fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.confirmDiscard' }));
+
+      await waitFor(() => expect(avisos.success).toHaveBeenCalledWith('holeReviews.discardedOk'));
+      expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
+    });
   });
 
   it('Q3: cada reporte con su motivo y su día', async () => {
