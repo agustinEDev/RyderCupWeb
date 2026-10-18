@@ -14,7 +14,9 @@ const esEntrada = (e) =>
   Boolean(e.reason) &&
   Boolean(e.enCola) &&
   esPunto(e.tee) &&
-  esPunto(e.greenCenter);
+  esPunto(e.greenCenter) &&
+  // Un codo roto haría fallar el envío antes de pedir y pararía la tanda (CodeRabbit)
+  (e.bends == null || (Array.isArray(e.bends) && e.bends.every(esPunto)));
 const misma = (a, b) => a.id === b.id && a.enCola === b.enCola;
 
 /** La cola de los reportes de hoyo en localStorage (entrega 7, 18 oct 2026). */

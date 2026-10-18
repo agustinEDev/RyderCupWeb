@@ -161,6 +161,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     setLinea(nueva);
     setEditada(true);
     setAvisoAlCerrar(false);
+    // Elegida otra línea, ninguna confirmación de borrar o descartar sigue abierta (CodeRabbit)
+    setPorBorrar(null);
+    setPorDescartar(null);
   };
   const dia = (iso) => {
     const fecha = new Date(`${iso}T12:00:00`);
@@ -365,11 +368,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                         {t(`holeReviews.reasons.${reporte.motivo}`, { defaultValue: reporte.motivo })} · {dia(reporte.llego)}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-2">
-                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
-                            setPorBorrar(null);
-                            setPorDescartar(null);
-                            elegirLinea(lineaDe(reporte));
-                          }} className={`${BOTON} bg-white text-gray-900 ring-1 ring-gray-200`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => elegirLinea(lineaDe(reporte))} className={`${BOTON} bg-white text-gray-900 ring-1 ring-gray-200`}>
                           {t('holeReviews.useThis')}
                         </button>
                         {porDescartar === reporte.id ? (

@@ -227,6 +227,8 @@ describe('reportes de hoyo — casos de uso', () => {
   it.each([
     ['sin salida', { tee: null }],
     ['sin green', { greenCenter: undefined }],
+    ['con un codo roto', { bends: [null] }],
+    ['con los codos que no son una lista', { bends: 'x' }],
   ])('D14: %s, nada y a Sentry', async (_caso, extra) => {
     const { estado } = await enviar(extra);
 
@@ -240,6 +242,22 @@ describe('reportes de hoyo — casos de uso', () => {
     guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: null, greenCenter: GREEN, enCola: AHORA }]));
 
     expect(store.cola('yo')).toEqual([]);
+  });
+
+  it.each([
+    ['un codo roto', [null]],
+    ['un codo sin lon', [{ lat: 42.3 }]],
+    ['codos que no son una lista', 'x'],
+  ])('D14: una entrada de la cola con %s no cuenta (CodeRabbit)', async (_caso, bends) => {
+    guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: GREEN, bends, greenCenter: GREEN, enCola: AHORA }]));
+
+    expect(store.cola('yo')).toEqual([]);
+  });
+
+  it('D14: una entrada de la cola sin codos sí cuenta', async () => {
+    guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: GREEN, greenCenter: GREEN, enCola: AHORA }]));
+
+    expect(store.cola('yo')).toHaveLength(1);
   });
 
   it('D13: con localStorage lleno la cola sigue en memoria; lo ilegible no cuenta', async () => {

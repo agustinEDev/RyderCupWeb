@@ -682,6 +682,27 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
     expect(within(seccion).queryByRole('button', { name: 'holeReviews.confirmDiscard' })).toBeNull();
   });
 
+  it('Q5: «Partir de esta» en una muestra también cierra la confirmación de descartar (CodeRabbit)', async () => {
+    await abrir({ reportes: [REPORTE] });
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.discard' }));
+
+    const deLasMuestras = screen.getAllByRole('button', { name: 'holeReviews.useThis' }).filter((b) => !seccion.contains(b));
+    fireEvent.click(deLasMuestras[0]);
+
+    expect(within(seccion).queryByRole('button', { name: 'holeReviews.confirmDiscard' })).toBeNull();
+  });
+
+  it('Q5: «Partir de esta» en una muestra cierra la confirmación de borrarla', async () => {
+    await abrir({ reportes: [REPORTE] });
+    fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.useThis' }).filter((b) => !seccion.contains(b))[0]);
+
+    expect(screen.queryByRole('button', { name: 'holeReviews.confirmDelete' })).toBeNull();
+  });
+
   it('Q3: sin reportes, no hay sección', async () => {
     await abrir({ reportes: [] });
 
