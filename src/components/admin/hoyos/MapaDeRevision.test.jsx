@@ -4,6 +4,15 @@ import { act, render } from '@testing-library/react';
 /**
  * El mapa de revisar un hoyo (BE #575): las muestras con el color de su barra,
  * lo guardado discontinuo y la línea que se edita, con sus puntos arrastrables.
+ *
+ * Agustín, 18 oct: ninguna distinción de barras en los mapas.
+ *
+ * | Caso | Qué                                  | Qué pasa                                              |
+ * |------|--------------------------------------|-------------------------------------------------------|
+ * | S1   | las muestras y los reportes          | todas en blanco semitransparente, finas; la solo green, un punto blanco |
+ * | S6   | un green suelto seleccionado         | su punto en rojo, encima                              |
+ * | S11  | la línea que se edita y sus puntos   | siempre en rojo (también lo ya tocado al marcar)      |
+ * | S12  | la guardada y la de OSM              | cian y lima, debajo de la roja                        |
  */
 
 const mapas = vi.hoisted(() => []);
@@ -84,7 +93,7 @@ describe('MapaDeRevision', () => {
     mapas.marcas = [];
   });
 
-  it('al cargar, las muestras con el color de su barra (la solo green, como un punto), lo guardado y la línea; encuadra todo', () => {
+  it('S1: al cargar, las muestras todas en blanco, finas (la solo green, un punto blanco), lo guardado y la línea; encuadra todo', () => {
     render(<MapaDeRevision muestras={MUESTRAS} guardada={LINEA} linea={LINEA} onLinea={() => {}} />);
     const mapa = mapas.at(-1);
 
@@ -92,9 +101,14 @@ describe('MapaDeRevision', () => {
 
     const [completa, soloGreen] = mapa.fuentes.muestras.data.features;
     expect(completa.geometry.type).toBe('LineString');
-    expect(completa.properties.color).toBe('#facc15');
+    expect(completa.properties).toEqual({});
     expect(soloGreen.geometry).toEqual({ type: 'Point', coordinates: [C.lon, C.lat] });
-    expect(soloGreen.properties.color).toBe('#ef4444');
+    expect(soloGreen.properties).toEqual({});
+    const lineas = mapa.capas.find((c) => c.id === 'muestras-lineas').paint;
+    expect(lineas['line-color']).toBe('#ffffff');
+    expect(lineas['line-opacity']).toBeLessThan(1);
+    expect(lineas['line-width']).toBeLessThan(mapa.capas.find((c) => c.id === 'linea').paint['line-width']);
+    expect(mapa.capas.find((c) => c.id === 'muestras-greens').paint['circle-color']).toBe('#ffffff');
     expect(mapa.fuentes.guardada.data.features[0].geometry.coordinates).toHaveLength(3);
     expect(mapa.fuentes.linea.data.features[0].geometry.coordinates[0]).toEqual([T.lon, T.lat]);
     expect(mapa.fitBounds).toHaveBeenCalled();
@@ -239,19 +253,43 @@ describe('MapaDeRevision', () => {
       expect(mapa.fuentes.osm.data.features).toEqual([]);
     });
 
-    it('/code-review: el color de OSM no es el de ninguna barra ni el de lo guardado o la línea', () => {
-      const colores = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'BLACK', 'GREEN', 'ORANGE', 'PINK', 'GOLD', 'OTHER'];
-      const muestras = colores.map((color, i) => ({ id: `s-${i}`, barra: { color }, tee: T, bends: [], greenCenter: G }));
-      render(<MapaDeRevision muestras={muestras} guardada={LINEA} linea={LINEA} onLinea={() => {}} osm={[T, G]} />);
+    it('S12: las muestras, OSM, lo guardado y la línea, cada uno de su color; la roja, encima', () => {
+      render(<MapaDeRevision muestras={MUESTRAS} guardada={LINEA} linea={LINEA} onLinea={() => {}} osm={[T, G]} />);
       const mapa = mapas.at(-1);
       act(() => mapa.oyentes.load());
 
-      const usados = new Set([
-        ...mapa.fuentes.muestras.data.features.map((f) => f.properties.color),
-        mapa.capas.find((c) => c.id === 'guardada').paint['line-color'],
-        mapa.capas.find((c) => c.id === 'linea').paint['line-color'],
-      ]);
-      expect(usados.has(mapa.capas.find((c) => c.id === 'osm').paint['line-color'])).toBe(false);
+      const color = (id) => mapa.capas.find((c) => c.id === id).paint['line-color'];
+      expect([color('muestras-lineas'), color('osm'), color('guardada'), color('linea')]).toEqual(['#ffffff', '#84cc16', '#06b6d4', '#dc2626']);
+      const orden = mapa.capas.map((c) => c.id);
+      expect(orden.indexOf('linea')).toBeGreaterThan(orden.indexOf('guardada'));
+      expect(orden.indexOf('linea')).toBeGreaterThan(orden.indexOf('osm'));
+      expect(orden.indexOf('linea')).toBeGreaterThan(orden.indexOf('muestras-lineas'));
+    });
+
+    it('S11: los puntos de la línea y lo ya tocado al marcar, en rojo', () => {
+      render(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} marcados={[T]} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      for (const m of vivas()) expect(m.opciones.element.firstChild.className).toContain('bg-red-600');
+      expect(mapa.capas.find((c) => c.id === 'marcados').paint['circle-color']).toBe('#dc2626');
+    });
+
+    it('S6: un green suelto seleccionado, en rojo y encima de las muestras; al quitarlo, nada', () => {
+      const { rerender } = render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={C} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.fuentes.destacado.data.features.map((f) => f.geometry.coordinates)).toEqual([[C.lon, C.lat]]);
+      const capa = mapa.capas.find((c) => c.id === 'destacado');
+      expect(capa.paint['circle-color']).toBe('#dc2626');
+      const orden = mapa.capas.map((c) => c.id);
+      expect(orden.indexOf('destacado')).toBeGreaterThan(orden.indexOf('muestras-greens'));
+
+      rerender(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={null} />);
+      expect(mapa.fuentes.destacado.data.features).toEqual([]);
+      rerender(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={G} />);
+      expect(mapa.fuentes.destacado.data.features.map((f) => f.geometry.coordinates)).toEqual([[G.lon, G.lat]]);
     });
   });
 });
