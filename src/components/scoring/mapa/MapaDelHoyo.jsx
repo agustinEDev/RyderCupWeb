@@ -165,7 +165,8 @@ const MOTIVOS_DEL_REPORTE = ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED'];
 /**
  * El mapa del hoyo a pantalla completa (BE #532), sobre la ortofoto del PNOA.
  *
- * Con mapa del hoyo: la salida abajo y el green arriba, sin giro. El recuadro
+ * Con mapa del hoyo: como se juega (la salida abajo, hacia el green o, en un
+ * par 4 o 5, hacia el primer codo) y sin giro con los dedos. El recuadro
  * de delante, centro y fondo es fijo, con los metros oficiales desde la
  * salida (16 oct). Sin mapa: norte arriba, giro libre. Siempre se mide tocando.
  * El GPS va mientras el mapa está abierto, ni antes ni después.
@@ -500,21 +501,18 @@ const MapaDelHoyo = ({
     };
   }, []);
 
-  // El hoyo entero, girado como se juega y lo más grande que quepa: el centro y
-  // el zoom se calculan con el hoyo girado (`fitBounds` encuadra su caja
+  // Unos puntos, girados a `orientacion` y lo más grandes que quepan: el centro
+  // y el zoom se calculan con ellos girados (`fitBounds` encuadra su caja
   // norte-sur, que girada ocupa mucho más, y el hoyo salía pequeño; 16 oct)
-  const encuadrarHoyo = useCallback(
-    (animar) => {
-      // La línea de ahora (la marcada o movida, O7); al montar, la de al abrir
-      const { hoyo: h, rumbo: orientacion } = delEncuadre.current ?? inicio.current;
+  const encuadrar = useCallback(
+    (h, orientacion, animar) => {
       const mapa = mapaRef.current;
       // Sin rumbo no hay hoyo orientado que encuadrar (el mapa va con el norte arriba)
       if (!mapa || orientacion === null) return;
-      const padding = margen();
       const encuadre = encuadreGirado(h, orientacion, {
         ancho: contenedor.current?.clientWidth || 360,
         alto: contenedor.current?.clientHeight || 640,
-        padding,
+        padding: margen(),
       });
       if (!encuadre) return;
       // Sin `padding`: MapLibre lo guardaría y lo sumaría a todo lo de después
@@ -525,33 +523,36 @@ const MapaDelHoyo = ({
     },
     [margen],
   );
-
-  // De ti hacia un punto (O2, O4): girado hacia él, con el green a la vista
-  const encuadrarDesdeMi = useCallback(
-    ({ desde, hacia, green: alGreen }) => {
-      const mapa = mapaRef.current;
-      if (!mapa) return;
-      const orientacion = rumbo(desde, hacia);
-      const encuadre = encuadreGirado({ playLine: [desde, alGreen], green: null }, orientacion, {
-        ancho: contenedor.current?.clientWidth || 360,
-        alto: contenedor.current?.clientHeight || 640,
-        padding: margen(),
-      });
-      if (encuadre) mapa.easeTo({ center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion });
+  // El hoyo entero: la línea de ahora (la marcada o movida, O7); al montar, la de al abrir
+  const encuadrarHoyo = useCallback(
+    (animar) => {
+      const { hoyo: h, rumbo: orientacion } = delEncuadre.current ?? inicio.current;
+      encuadrar(h, orientacion, animar);
     },
-    [margen],
+    [encuadrar],
   );
-  // Orientado después de abrir, ya no se gira con los dedos, como un hoyo con mapa (O6)
+  // Lo que se orientó después de abrir (O2-O5): el hoyo, o de ti hacia un punto
+  // con ese punto y el green a la vista (/code-review)
+  const ultimaVista = useRef(null);
+  const aplicarVista = useCallback(
+    (v, animar) => {
+      if (v.tipo === 'hoyo') encuadrarHoyo(animar);
+      else encuadrar({ playLine: [v.desde, v.hacia, v.green], green: null }, rumbo(v.desde, v.hacia), animar);
+    },
+    [encuadrar, encuadrarHoyo],
+  );
+  // Orientado después de abrir, ya no se gira con los dedos, como un hoyo con
+  // mapa (O6). Si el jugador ya movió el mapa, no se le quita (/code-review)
   useEffect(() => {
     const mapa = mapaRef.current;
-    if (!vista || !mapa) return;
+    if (!vista || !mapa || movidoPorElJugador.current) return;
     conVista.current = true;
+    ultimaVista.current = vista;
     mapa.dragRotate?.disable();
     mapa.touchZoomRotate?.disableRotation();
     mapa.keyboard?.disableRotation();
-    if (vista.tipo === 'hoyo') encuadrarHoyo(true);
-    else encuadrarDesdeMi(vista);
-  }, [vista, encuadrarHoyo, encuadrarDesdeMi]);
+    aplicarVista(vista, true);
+  }, [vista, aplicarVista]);
 
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
   // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
@@ -666,12 +667,14 @@ const MapaDelHoyo = ({
     const Observador = globalThis.ResizeObserver;
     if (!panel || !Observador || !inicio.current.conMapa) return undefined;
     const observador = new Observador(() => {
-      if (movidoPorElJugador.current || yaEmpezo.current || tocadoAhora.current || conVista.current) return;
-      encuadrarHoyo(false);
+      if (movidoPorElJugador.current || yaEmpezo.current || tocadoAhora.current) return;
+      // Orientado después de abrir, lo de entonces; si no, el hoyo (/code-review)
+      if (ultimaVista.current) aplicarVista(ultimaVista.current, false);
+      else encuadrarHoyo(false);
     });
     observador.observe(panel);
     return () => observador.disconnect();
-  }, [encuadrarHoyo]);
+  }, [encuadrarHoyo, aplicarVista]);
 
   // Mi posición: el punto azul, y la primera vez sin mapa, el mapa va a ella
   useEffect(() => {

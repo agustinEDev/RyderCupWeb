@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado, rumboDeLaLinea, siguientePuntoDeLaLinea } from './geometriaDelHoyo';
+import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado, rumboDeLaLinea, siguientePuntoDeLaLinea, proyeccionEnElTramo } from './geometriaDelHoyo';
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
 const GREEN = {
@@ -252,6 +252,15 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
     expect(siguientePuntoDeLaLinea({ lat: 36.2829, lon: -5.3302 }, L)).toEqual(C);
   });
 
+  it('pasados dos codos seguidos a menos de 20 m, el green', () => {
+    // El primero 10 m detrás y el segundo 15 m delante
+    const M = (6371008.8 * Math.PI) / 180;
+    const norte = (m) => ({ lat: 36.28 + m / M, lon: -5.33 });
+    const linea = [norte(0), norte(100), norte(125), norte(300)];
+
+    expect(siguientePuntoDeLaLinea(norte(110), linea)).toEqual(norte(300));
+  });
+
   it('en el green o pasado él, el green', () => {
     expect(siguientePuntoDeLaLinea({ lat: 36.2831, lon: -5.3261 }, L)).toEqual(G);
     expect(siguientePuntoDeLaLinea({ lat: 36.283, lon: -5.32 }, L)).toEqual(G);
@@ -260,5 +269,29 @@ describe('siguientePuntoDeLaLinea (O2)', () => {
   it('sin línea, nada', () => {
     expect(siguientePuntoDeLaLinea(S, null)).toBeNull();
     expect(siguientePuntoDeLaLinea(S, [S])).toBeNull();
+  });
+});
+
+describe('proyeccionEnElTramo', () => {
+  const M = (6371008.8 * Math.PI) / 180;
+  const A = { lat: 36.28, lon: -5.33 };
+  const B = { lat: 36.28 + 100 / M, lon: -5.33 };
+
+  it('a mitad del tramo: t y los metros de lado', () => {
+    const p = { lat: 36.28 + 50 / M, lon: -5.33 + 30 / (M * Math.cos((36.28 * Math.PI) / 180)) };
+    const { t, metros } = proyeccionEnElTramo(p, A, B);
+
+    expect(t).toBeCloseTo(0.5, 3);
+    expect(metros).toBeCloseTo(30, 0);
+  });
+
+  it('fuera del tramo, hasta su punto más cercano (t entre 0 y 1)', () => {
+    const p = { lat: 36.28 + 130 / M, lon: -5.33 };
+
+    expect(proyeccionEnElTramo(p, A, B)).toEqual({ t: 1, metros: expect.closeTo(30, 0) });
+  });
+
+  it('un tramo de largo cero es su punto', () => {
+    expect(proyeccionEnElTramo(B, A, A)).toEqual({ t: 0, metros: expect.closeTo(100, 0) });
   });
 });

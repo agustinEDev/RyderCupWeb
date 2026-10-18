@@ -32,8 +32,8 @@ export const orientacionDelHoyo = (hoyo) => {
   return rumbo(linea[0], destino);
 };
 
-// Los metros de un grado de latitud, y lo que yerra un GPS bueno (20 m)
-const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
+// El radio de la Tierra de las distancias del campo, y lo que yerra un GPS bueno
+const RADIO_TERRESTRE_M = 6371008.8;
 const CERCA_DEL_PUNTO_M = 20;
 
 /**
@@ -48,33 +48,38 @@ export const rumboDeLaLinea = (linea, par) => {
 };
 
 /**
+ * Dónde cae `p` en el tramo de `a` a `b`: `t` (0 en `a`, 1 en `b`) y a cuántos
+ * metros queda de él. En un plano local, que para un hoyo basta; un tramo de
+ * largo cero es su punto.
+ */
+export const proyeccionEnElTramo = (p, a, b) => {
+  const coseno = Math.cos(radianes(a.lat));
+  const xy = (q) => [radianes(q.lon - a.lon) * RADIO_TERRESTRE_M * coseno, radianes(q.lat - a.lat) * RADIO_TERRESTRE_M];
+  const [px, py] = xy(p);
+  const [bx, by] = xy(b);
+  const largo2 = bx * bx + by * by;
+  const t = largo2 > 0 ? Math.min(1, Math.max(0, (px * bx + py * by) / largo2)) : 0;
+  return { t, metros: Math.hypot(px - t * bx, py - t * by) };
+};
+
+/**
  * A mitad de hoyo, el siguiente punto de la línea que hay delante (Agustín,
  * 18 oct): el final del tramo más cercano a `posicion` (el siguiente codo o el
- * green). En metros sobre el plano, que para un hoyo basta. Si lo más cerca
- * del tramo es su final, ese punto ya quedó atrás (por fuera de la esquina de
- * un dogleg); y a menos de lo que yerra el GPS de un punto, tampoco es
- * «delante»: en los dos casos, el siguiente (revisor, 18 oct). `null` sin línea.
+ * green). Si lo más cerca del tramo es su final, ese punto ya quedó atrás (por
+ * fuera de la esquina de un dogleg); y a menos de lo que yerra el GPS de un
+ * punto, tampoco es «delante»: en los dos casos, el siguiente (revisor,
+ * 18 oct). `null` sin línea.
  */
 export const siguientePuntoDeLaLinea = (posicion, linea) => {
   if (!linea || linea.length < 2) return null;
-  const coseno = Math.cos(radianes(posicion.lat));
-  // En metros (de grados de latitud a metros, con la esfera de `rumbo`)
-  const enMetros = (p) => ({ x: (p.lon - posicion.lon) * coseno * M_POR_GRADO, y: (p.lat - posicion.lat) * M_POR_GRADO });
   let mejor = null;
   for (let i = 0; i < linea.length - 1; i += 1) {
-    const a = enMetros(linea[i]);
-    const b = enMetros(linea[i + 1]);
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const largo = dx * dx + dy * dy;
-    // La posición está en el origen: lo más cerca del tramo, entre sus dos puntos
-    const t = largo ? Math.min(1, Math.max(0, -(a.x * dx + a.y * dy) / largo)) : 0;
-    const distancia = (a.x + t * dx) ** 2 + (a.y + t * dy) ** 2;
-    if (!mejor || distancia < mejor.distancia) mejor = { distancia, i: i + 1, pasado: t === 1 };
+    const { t, metros } = proyeccionEnElTramo(posicion, linea[i], linea[i + 1]);
+    if (!mejor || metros < mejor.metros) mejor = { metros, i: t === 1 ? i + 2 : i + 1 };
   }
-  const { x, y } = enMetros(linea[mejor.i]);
-  const siguiente = mejor.pasado || x * x + y * y < CERCA_DEL_PUNTO_M ** 2;
-  return linea[Math.min(siguiente ? mejor.i + 1 : mejor.i, linea.length - 1)];
+  let i = Math.min(mejor.i, linea.length - 1);
+  while (i < linea.length - 1 && proyeccionEnElTramo(posicion, linea[i], linea[i]).metros < CERCA_DEL_PUNTO_M) i += 1;
+  return linea[i];
 };
 
 /** Los puntos que forman el hoyo: su línea de juego y su green (delante, centro y fondo). */

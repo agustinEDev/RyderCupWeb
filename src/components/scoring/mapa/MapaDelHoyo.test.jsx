@@ -1969,7 +1969,7 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(mapa().keyboard.disableRotation).toHaveBeenCalled();
     });
 
-    it('O2: orientado desde ti, que crezca el panel no vuelve a encuadrar el hoyo', () => {
+    it('O2: orientado desde ti, que crezca el panel vuelve a encuadrar desde ti, no el hoyo', () => {
       const observados = [];
       vi.stubGlobal('ResizeObserver', class {
         constructor(fn) { this.fn = fn; observados.push(this); }
@@ -1978,12 +1978,50 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       });
       abrirCon();
       // A menos de 200 m del green: sin codo (que ya contaría como tocar)
-      desde(alEste(100, CODO));
+      const aqui = alEste(100, CODO);
+      desde(aqui);
       mapa().jumpTo.mockClear();
 
       act(() => observados.at(-1).fn());
 
-      expect(mapa().jumpTo).not.toHaveBeenCalled();
+      expect(mapa().jumpTo).toHaveBeenCalledTimes(1);
+      expect(mapa().jumpTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(aqui, VERDE), 6);
+    });
+
+    it('O2: el encuadre desde ti incluye el punto hacia el que mira', () => {
+      // Un codo más allá del green (en lo que se mira): fuera de la caja de ti al green
+      const lejano = alNorte(300);
+      const verde = alEste(150, alNorte(220));
+      abrirCon({ hoyo: { playLine: [T, lejano, verde], green: { front: verde, center: verde, back: verde } } });
+      const aqui = alNorte(100);
+
+      desde(aqui);
+
+      const padding = { top: 90, bottom: 288, left: 40, right: 40 };
+      const conCodo = encuadreGirado({ playLine: [aqui, lejano, verde], green: null }, rumbo(aqui, lejano), { ancho: 360, alto: 640, padding });
+      const sinCodo = encuadreGirado({ playLine: [aqui, verde], green: null }, rumbo(aqui, lejano), { ancho: 360, alto: 640, padding });
+      expect(conCodo.zoom).not.toBeCloseTo(sinCodo.zoom, 3);
+      expect(mapa().easeTo.mock.calls.at(-1)[0].zoom).toBeCloseTo(conCodo.zoom, 6);
+    });
+
+    it('O2: si el jugador ya movió el mapa, el primer GPS bueno no se lo quita', () => {
+      abrirCon();
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+
+      desde(alNorte(100));
+
+      expect(mapa().easeTo).not.toHaveBeenCalled();
+    });
+
+    it('O3: llegando a la salida con el mapa movido, tampoco', () => {
+      abrirCon();
+      desde(alEste(40, alNorte(100)));
+      act(() => mapa().oyentes.movestart({ originalEvent: {} }));
+      const giradas = mapa().easeTo.mock.calls.length;
+
+      desde(alNorte(10));
+
+      expect(mapa().easeTo.mock.calls.length).toBe(giradas);
     });
 
     it('O5/O6: marcando la salida y el green, gira hacia el codo del par y encuadra; sale «Ver hoyo»', () => {
