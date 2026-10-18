@@ -113,6 +113,8 @@ const tramosDesdeMi = (posicion, codo, green) => {
 };
 // A partir de aquí, la línea desde ti sale con un codo en medio (Agustín, 18 oct)
 const CODO_DESDE_M = 200;
+// Más lejos que esto de la salida de tu barra, estás a mitad de hoyo (Agustín, 18 oct)
+const FUERA_DE_LA_SALIDA_M = 40;
 const geojsonDeLaMedida = (tramos) => ({
   type: 'FeatureCollection',
   features: tramos.map(([a, b]) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [lngLat(a), lngLat(b)] } })),
@@ -260,6 +262,10 @@ const MapaDelHoyo = ({
   // es una muestra
   const [desdeMi, setDesdeMi] = useState(false);
   const [codoPendiente, setCodoPendiente] = useState(false);
+  // En un hoyo con línea, abierto a mitad de hoyo: la línea se oculta hasta
+  // «Ver hoyo» (H1, H3). Se decide una vez, con el primer GPS bueno (H4, H5)
+  const [lineaOculta, setLineaOculta] = useState(false);
+  const [mitadDecidida, setMitadDecidida] = useState(false);
   const [contestadoNo, setContestadoNo] = useState(0);
   // El reporte en curso (entrega 7): eligiendo el motivo, tocando la salida, el
   // green, o con la propuesta lista. Lo que había antes se guarda para volver a
@@ -290,7 +296,8 @@ const MapaDelHoyo = ({
     if (hoyo?.green && mismoPunto(hoyo.green.center, linea.at(-1))) return { ...hoyo, playLine: linea };
     return hoyoDeUnaMarca({ tee: linea[0], bends: linea.slice(1, -1), greenCenter: linea.at(-1) });
   }, [hoyo, linea, greenMarcado]);
-  const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(linea ?? []), [linea]);
+  const lineaQueSePinta = lineaOculta && !reporte ? null : linea;
+  const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(lineaQueSePinta ?? []), [lineaQueSePinta]);
   const ultimaLinea = useRef(datosDeLaLinea);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedida = useRef([]);
@@ -662,6 +669,16 @@ const MapaDelHoyo = ({
   // Las líneas de la medida y sus metros. Las etiquetas se mueven, no se
   // rehacen, con cada lectura del GPS
   const green = hoyoAhora?.green ?? null;
+  // A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2)
+  const salidaDeMiBarra = lineaInicial?.[0] ?? null;
+  if (!mitadDecidida && green && (hoyo?.playLine?.length ?? 0) >= 2 && salidaDeMiBarra && posicionBuena) {
+    setMitadDecidida(true);
+    if (distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M) {
+      setLineaOculta(true);
+      setDesdeMi(true);
+      setCodoPendiente(true);
+    }
+  }
   // El codo, una vez: con el primer GPS bueno, en medio si pasa de 200 m. Luego
   // no se mueve, ni vuelve si se quita (D2, D4, D10). Durante el render, como
   // se ajusta un estado a otro en React
@@ -673,17 +690,20 @@ const MapaDelHoyo = ({
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    const tramos = desdeMi ? tramosDesdeMi(posicionBuena, tocado, green) : tramosDeLaMedida(posicionEnElCampo, tocado, green);
+    const tramos = desdeMi && !reporte ? tramosDesdeMi(posicionBuena, tocado, green) : tramosDeLaMedida(posicionEnElCampo, tocado, green);
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
     sincronizarCifras(mapa, etiquetasDeLaMedida.current, tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo });
-  }, [desdeMi, posicionBuena, posicionEnElCampo, tocado, green, textoDeTramo]);
+  }, [desdeMi, reporte, posicionBuena, posicionEnElCampo, tocado, green, textoDeTramo]);
 
 
   // Los metros de cada tramo de la línea que se ve (Agustín, 16 oct: siempre que
   // se pinta una línea). No dependen del GPS: valen lejos del campo y sin señal
   // Reportando, la de siempre no se ve: solo la que se propone
-  const lineaVisible = useMemo(() => linea ?? (reporte ? [] : (hoyo?.playLine ?? [])), [linea, hoyo, reporte]);
+  const lineaVisible = useMemo(
+    () => lineaQueSePinta ?? (reporte || lineaOculta ? [] : (hoyo?.playLine ?? [])),
+    [lineaQueSePinta, hoyo, reporte, lineaOculta],
+  );
   // Como las de medir, se mueven y se reescriben, no se rehacen; también
   // mientras se arrastra, antes de soltar
   const ponerCifrasDeLaLinea = useCallback(
@@ -833,17 +853,17 @@ const MapaDelHoyo = ({
       }
       return;
     }
-    if (!linea) return;
-    const con = (i, p) => linea.map((q, j) => (j === i ? p : q));
+    if (!lineaQueSePinta) return;
+    const con = (i, p) => lineaQueSePinta.map((q, j) => (j === i ? p : q));
     // La línea ya viene con los codos de su par (como mucho dos): todos se mueven
     // Si la librería cambia y algo de esto falla, el mapa sigue (sin puntos que
     // mover) en vez de caerse entero; el fallo queda apuntado
     try {
-      linea.forEach((p, i) => {
+      lineaQueSePinta.forEach((p, i) => {
         // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
         // Con el menú de motivos abierto no se mueve: lo que se moviera se
         // perdería al elegir o cancelar (/code-review)
-        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: !menuDeMotivos });
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, lineaQueSePinta)]), draggable: !menuDeMotivos });
         puntosDeLaLinea.current.push(m);
         m.setLngLat(lngLat(p)).addTo(mapa);
         // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
@@ -867,7 +887,7 @@ const MapaDelHoyo = ({
       puntosDeLaLinea.current = [];
       captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
     }
-  }, [linea, datosDeLaLinea, greenMarcado, menuDeMotivos]);
+  }, [lineaQueSePinta, linea, datosDeLaLinea, greenMarcado, menuDeMotivos]);
 
   // Lo de antes, desde que se abre el menú: si el mapa se cierra o se oculta
   // con él abierto, se envía eso (revisor, 18 oct)
@@ -891,6 +911,8 @@ const MapaDelHoyo = ({
     setReporte(null);
     // Tal cual, con su versión: si ya salió al ocultarse, no vuelve a salir
     if (antes) setEdicion(antes);
+    // Midiendo desde ti, vuelve también el codo (H9)
+    if (desdeMi) setCodoPendiente(true);
   };
   const enviarReporte = () => {
     // Arrastrando se puede salir de los límites: se dice, y no se manda algo
@@ -1079,7 +1101,7 @@ const MapaDelHoyo = ({
         )}
 
         {/* Tras el «No», por si quiere marcarlo igualmente (D1, D6, D8) */}
-        {(desdeMi || (pidiendo && marca.soloGreen)) && !reporte && (
+        {((desdeMi && preguntaPrimero) || (pidiendo && marca.soloGreen)) && !reporte && (
           <button ref={enlaceEntero} type="button" onClick={marcarEntero} className="pointer-events-auto min-h-11 self-end px-2 text-sm font-semibold text-white underline [text-shadow:0_1px_2px_#000]">
             {t('mapa.marcarEntero')}
           </button>
@@ -1136,7 +1158,15 @@ const MapaDelHoyo = ({
             )}
           </span>
           {sinMapa ? null : conMapa ? (
-            <button type="button" onClick={() => encuadrarHoyo(true)} className={`${BOTON} pointer-events-auto`}>
+            <button
+              type="button"
+              onClick={() => {
+                // A mitad de hoyo, vuelve también su línea (H3)
+                setLineaOculta(false);
+                encuadrarHoyo(true);
+              }}
+              className={`${BOTON} pointer-events-auto`}
+            >
               <Maximize2 className="h-4 w-4" aria-hidden="true" />
               {t('mapa.verHoyo')}
             </button>
