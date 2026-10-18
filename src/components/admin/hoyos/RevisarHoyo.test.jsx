@@ -1193,6 +1193,48 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       expect(mapa.props.orientar).toBe(1);
     });
 
+    it('/code-review: la misma línea con sus campos en otro orden tampoco reorienta', async () => {
+      const guardada = { tee: alNorte(10), bends: [], greenCenter: alNorte(300) };
+      await abrir({ guardada, muestras: [COMPLETA, OTRA] });
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ guardada: { greenCenter: alNorte(300), bends: [], tee: alNorte(10) }, muestras: [COMPLETA] }));
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[1]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'holeReviews.delete' })).toHaveLength(1));
+
+      expect(mapa.props.orientar).toBe(1);
+    });
+
+    it('/code-review: una guardada distinta solo en la longitud, o con un codo más, sí reorienta', async () => {
+      const guardada = { tee: alNorte(10), bends: [], greenCenter: alNorte(300) };
+      await abrir({ guardada, muestras: [COMPLETA, OTRA] });
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ guardada: { ...guardada, greenCenter: { ...alNorte(300), lon: -5.331 } }, muestras: [COMPLETA] }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[1]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+      await waitFor(() => expect(mapa.props.orientar).toBe(2));
+
+      // Empieza igual que la de antes y sigue: su green es ahora un codo
+      casos.campo.mockResolvedValue(campo({ guardada: { tee: alNorte(10), bends: [{ ...alNorte(300), lon: -5.331 }], greenCenter: alNorte(400) }, muestras: [] }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+
+      await waitFor(() => expect(mapa.props.orientar).toBe(3));
+    });
+
+    it('/code-review: marcando o guardando, «Orientar» no se puede pulsar', async () => {
+      await abrir();
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.markFromScratch' }));
+      expect(screen.getByRole('button', { name: 'holeReviews.orient' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.cancelMarking' }));
+      expect(screen.getByRole('button', { name: 'holeReviews.orient' })).toBeEnabled();
+
+      casos.guardar.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.save' }));
+      expect(screen.getByRole('button', { name: 'holeReviews.orient' })).toBeDisabled();
+    });
+
     it('Revisor: borrada la muestra de la que salía la línea, la nueva de partida se orienta', async () => {
       await abrir({ muestras: [COMPLETA, OTRA] });
       casos.borrar.mockResolvedValue(undefined);

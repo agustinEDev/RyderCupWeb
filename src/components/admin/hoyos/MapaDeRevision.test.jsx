@@ -391,14 +391,18 @@ describe('MapaDeRevision', () => {
     const VERDE = { lat: 36.2827, lon: -5.33 };
     const CON_CODO = { tee: SALIDA, bends: [CODO], greenCenter: VERDE };
 
-    it('A1: al abrir con línea, par 4: de la salida al primer codo, encuadrándola y sin fitBounds', () => {
-      render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+    it('A1/A1b: al abrir con línea, par 4: de la salida al primer codo, encuadrando todo, y sin fitBounds', () => {
+      // Una muestra muy desviada, al oeste: también a la vista
+      const LEJANA = { id: 's-9', tee: { lat: 36.28, lon: -5.336 }, bends: [], greenCenter: { lat: 36.2827, lon: -5.336 } };
+      render(<MapaDeRevision muestras={[...MUESTRAS, LEJANA]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
       const mapa = mapas.at(-1);
       act(() => mapa.oyentes.load());
 
       expect(mapa.jumpTo).toHaveBeenCalledTimes(1);
       expect(mapa.jumpTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(SALIDA, CODO), 6);
-      const entera = encuadreGirado({ playLine: [SALIDA, CODO, VERDE], green: null }, rumbo(SALIDA, CODO), { ancho: 360, alto: 640, padding: HUECO });
+      // Las muestras (una completa y un green) y la roja
+      const todo = [T, G, C, LEJANA.tee, LEJANA.greenCenter, SALIDA, CODO, VERDE];
+      const entera = encuadreGirado({ playLine: todo, green: null }, rumbo(SALIDA, CODO), { ancho: 360, alto: 640, padding: HUECO });
       expect(mapa.jumpTo.mock.calls[0][0].zoom).toBeCloseTo(entera.zoom, 9);
       expect(mapa.fitBounds).not.toHaveBeenCalled();
     });

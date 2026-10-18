@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado, rumboDeLaLinea, siguientePuntoDeLaLinea, proyeccionEnElTramo } from './geometriaDelHoyo';
+import { rumbo, orientacionDelHoyo, limitesDelHoyo, esPosicionValida, encuadreGirado, rumboDeLaLinea, siguientePuntoDeLaLinea, proyeccionEnElTramo, camaraGirada } from './geometriaDelHoyo';
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
 const GREEN = {
@@ -293,5 +293,22 @@ describe('proyeccionEnElTramo', () => {
 
   it('un tramo de largo cero es su punto', () => {
     expect(proyeccionEnElTramo(B, A, A)).toEqual({ t: 0, metros: expect.closeTo(100, 0) });
+  });
+});
+
+describe('camaraGirada', () => {
+  const pantalla = { ancho: 360, alto: 640, padding: { top: 40, bottom: 40, left: 40, right: 40 } };
+  const hoyo = { playLine: [SALIDA, GREEN.center], green: null };
+
+  it('el centro, el zoom y el rumbo del encuadre girado', () => {
+    const r = rumbo(SALIDA, GREEN.center);
+    const { center, zoom } = encuadreGirado(hoyo, r, pantalla);
+
+    expect(camaraGirada(hoyo, r, pantalla)).toEqual({ center, zoom, bearing: r });
+  });
+
+  it('sin rumbo o sin puntos, ninguna', () => {
+    expect(camaraGirada(hoyo, null, pantalla)).toBeNull();
+    expect(camaraGirada({ playLine: [], green: null }, 10, pantalla)).toBeNull();
   });
 });

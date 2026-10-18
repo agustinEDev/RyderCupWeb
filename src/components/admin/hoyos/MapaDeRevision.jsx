@@ -5,7 +5,7 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
 import { TESELAS_PNOA } from '../../scoring/mapa/teselas';
 import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
-import { encuadreGirado, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
+import { camaraGirada, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 
 setWorkerUrl(urlDelWorker);
 
@@ -136,25 +136,27 @@ const MapaDeRevision = ({
     }
   };
 
+  // Todo lo que hay: las muestras y los reportes, lo guardado, la línea y OSM
+  const todosLosPuntos = () => {
+    const { muestras: todas, guardada: lo, linea: actual, osm: deOsm } = datos.current;
+    return [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(deOsm ?? [])];
+  };
   // Como el mapa del jugador (Agustín, 18 oct): girado como se juega la línea
-  // roja (par 3 al green, 4 o 5 al primer codo) y encuadrándola, una vez por
-  // cada vez que se pide (A1, A2, A4, A6). Sin línea, nada. Se puede girar
-  // con los dedos (A6)
+  // roja (par 3 al green, 4 o 5 al primer codo), una vez por cada vez que se
+  // pide (A1, A2, A4, A6), con todo a la vista (A1b). Sin línea, nada. Se
+  // puede girar con los dedos (A6)
   const orientarLaLinea = (animar) => {
     const mapa = mapaRef.current;
     const { linea: actual, par: delHoyo } = datos.current;
-    if (!mapa || !cargado.current) return;
-    // Sin línea no hay puntos: ni rumbo ni encuadre
-    const puntosDeAhora = actual ? puntosDeLaLinea(actual) : [];
-    const orientacion = rumboDeLaLinea(puntosDeAhora, delHoyo);
-    const encuadre = encuadreGirado({ playLine: puntosDeAhora, green: null }, orientacion, {
+    if (!mapa || !cargado.current || !actual) return;
+    const girada = camaraGirada({ playLine: todosLosPuntos(), green: null }, rumboDeLaLinea(puntosDeLaLinea(actual), delHoyo), {
       ancho: contenedor.current?.clientWidth || 360,
       alto: contenedor.current?.clientHeight || 640,
       // Abajo, «Mi posición» y «Orientar»; arriba, la instrucción al marcar (revisor)
       padding: { top: 64, bottom: 120, left: 40, right: 40 },
     });
-    if (!encuadre) return;
-    const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion };
+    // Con línea siempre hay rumbo y puntos
+    const camara = { ...girada, center: lngLat(girada.center) };
     if (animar) mapa.easeTo(camara);
     else mapa.jumpTo(camara);
   };
@@ -198,7 +200,7 @@ const MapaDeRevision = ({
       mapa.addLayer({ id: 'destacado', type: 'circle', source: 'destacado', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
       cargado.current = true;
       // Todo a la vista: las muestras, lo guardado y la línea
-      const todos = [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(datos.current.osm ?? [])];
+      const todos = todosLosPuntos();
       // Con la línea roja, orientado con ella (A1); sin ella, todo y norte arriba
       if (datos.current.orientar > 0 && actual) orientarAhora.current(false);
       else if (todos.length) {

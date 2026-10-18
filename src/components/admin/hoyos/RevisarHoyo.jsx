@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Compass, LocateFixed, X } from 'lucide-react';
 import {
@@ -30,6 +30,14 @@ const MapaDeRevision = lazy(() => import('./MapaDeRevision'));
 const lineaDeOsmDe = (hoyo) => {
   const puntos = lineaDeOsm(hoyo?.osm?.puntos, hoyo?.osm?.green, tarjetaDelHoyo(hoyo?.barras)?.parDeLaMasLarga);
   return puntos ? lineaDePuntos(puntos) : null;
+};
+
+// Los mismos puntos, vengan de donde vengan (sus campos, en cualquier orden)
+const mismaLinea = (a, b) => {
+  if (!a || !b) return false;
+  const pa = puntosDeLaLinea(a);
+  const pb = puntosDeLaLinea(b);
+  return pa.length === pb.length && pa.every((p, i) => p.lat === pb[i].lat && p.lon === pb[i].lon);
 };
 
 const lineaDe = (muestra) => (muestra?.tee ? { tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter } : null);
@@ -77,7 +85,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const [orientar, setOrientar] = useState(0);
   // La línea que se ve, para no reorientar al recargar si sigue siendo la misma (revisor)
   const lineaQueSeVe = useRef(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     lineaQueSeVe.current = linea;
   });
   // Para centrar el mapa vale cualquier posición: un ordenador va por Wi-Fi
@@ -121,9 +129,10 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               ? [osm, null]
               : [lineaDe(primeraCompleta), primeraCompleta?.id ?? null];
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
-        // Una línea de partida nueva, orientada (A1); la misma de antes, no
+        // Una línea nueva a la vista, orientada (A1); la misma de antes, no
         // (borrar una muestra no le quita al admin el zoom ni el giro: revisor)
-        if (!conservarLinea && deLoQueHay && JSON.stringify(deLoQueHay) !== JSON.stringify(lineaQueSeVe.current)) setOrientar((n) => n + 1);
+        const seVera = conservarLinea && lineaQueSeVe.current ? lineaQueSeVe.current : deLoQueHay;
+        if (seVera && !mismaLinea(seVera, lineaQueSeVe.current)) setOrientar((n) => n + 1);
         // Conservada la línea, también su fila (S10: si se borró, ya no está).
         // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
         // un solo green no toca la línea)
@@ -313,7 +322,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
           {/* Girado con los dedos, vuelve a como se juega la línea roja (A6) */}
           <button
             type="button"
-            disabled={!linea}
+            disabled={!linea || ocupado || Boolean(marcando)}
             onClick={() => setOrientar((n) => n + 1)}
             className={`${BOTON} inline-flex items-center gap-1 bg-white text-gray-900 shadow`}
           >

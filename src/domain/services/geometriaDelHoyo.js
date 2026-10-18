@@ -160,3 +160,14 @@ export const esPosicionValida = (posicion) =>
   Number.isFinite(posicion?.lon) &&
   Math.abs(posicion.lat) <= 90 &&
   Math.abs(posicion.lon) <= 180;
+
+/**
+ * La cámara de un encuadre girado: el centro, el zoom y el rumbo, para el mapa
+ * del jugador y el de revisar (/code-review, 18 oct). `null` sin rumbo o sin
+ * puntos: entonces no se mueve.
+ */
+export const camaraGirada = (hoyo, rumboGrados, pantalla) => {
+  if (rumboGrados === null) return null;
+  const encuadre = encuadreGirado(hoyo, rumboGrados, pantalla);
+  return encuadre ? { center: encuadre.center, zoom: encuadre.zoom, bearing: rumboGrados } : null;
+};
