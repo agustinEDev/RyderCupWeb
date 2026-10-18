@@ -672,6 +672,16 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
     expect(within(seccion).queryByRole('button', { name: 'holeReviews.confirmDiscard' })).toBeNull();
   });
 
+  it('Q5: «Partir de esta» cierra una confirmación de descartar abierta', async () => {
+    await abrir({ reportes: [REPORTE] });
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.discard' }));
+
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.useThis' }));
+
+    expect(within(seccion).queryByRole('button', { name: 'holeReviews.confirmDiscard' })).toBeNull();
+  });
+
   it('Q3: sin reportes, no hay sección', async () => {
     await abrir({ reportes: [] });
 

@@ -251,6 +251,7 @@ const MapaDelHoyo = ({
   // ello: la propuesta no es una muestra
   const [reporte, setReporte] = useState(null);
   const [gracias, setGracias] = useState(false);
+  const menuDeMotivos = reporte?.fase === 'motivos';
   const antesDelReporte = useRef(null);
   const botonDeReportar = useRef(null);
   const primerMotivo = useRef(null);
@@ -339,6 +340,11 @@ const MapaDelHoyo = ({
     alTocar.current = (p) => {
       // Reportando, el mapa no mide: marca la salida y el green que se proponen
       if (reporte) {
+        // El segundo toque de un doble toque no es el green (/code-review)
+        const ahora = globalThis.performance.now();
+        const dobleToque = ahora - ultimoToque.current < DOBLE_TOQUE_MS;
+        ultimoToque.current = ahora;
+        if (dobleToque) return;
         if (reporte.fase === 'salida') {
           setReporte({ ...reporte, fase: 'green', tee: p });
         } else if (reporte.fase === 'green') {
@@ -792,7 +798,9 @@ const MapaDelHoyo = ({
     try {
       linea.forEach((p, i) => {
         // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
-        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
+        // Con el menú de motivos abierto no se mueve: lo que se moviera se
+        // perdería al elegir o cancelar (/code-review)
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: !menuDeMotivos });
         puntosDeLaLinea.current.push(m);
         m.setLngLat(lngLat(p)).addTo(mapa);
         // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
@@ -816,7 +824,7 @@ const MapaDelHoyo = ({
       puntosDeLaLinea.current = [];
       captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
     }
-  }, [linea, datosDeLaLinea, greenMarcado]);
+  }, [linea, datosDeLaLinea, greenMarcado, menuDeMotivos]);
 
   // Lo de antes, desde que se abre el menú: si el mapa se cierra o se oculta
   // con él abierto, se envía eso (revisor, 18 oct)
@@ -842,6 +850,12 @@ const MapaDelHoyo = ({
     if (antes) setEdicion(antes);
   };
   const enviarReporte = () => {
+    // Arrastrando se puede salir de los límites: se dice, y no se manda algo
+    // que el servidor tiraría tras darle las gracias (/code-review)
+    if (salidaGreenFueraDeLimites(linea[0], linea.at(-1))) {
+      setAvisoDeMarca(t('mapa.fueraDeLimites'));
+      return;
+    }
     onReporte?.({
       id: globalThis.crypto.randomUUID(),
       reason: reporte.motivo,

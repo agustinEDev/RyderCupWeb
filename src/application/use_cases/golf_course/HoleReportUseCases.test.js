@@ -24,6 +24,7 @@ import LocalStorageHoleReportStore from '../../../infrastructure/repositories/Lo
  * | D11  | `sigue()` deja de ser cierto                         | lo que queda no sale                                    |
  * | D12  | la tanda encuentra uno que ya se está enviando       | no lo manda dos veces                                   |
  * | D13  | localStorage roto o lleno                            | la cola sigue en memoria; lo ilegible no cuenta         |
+ * | D14  | sin salida o sin green (un fallo nuestro)            | ni a la cola ni al servidor, y a Sentry; en la cola, no cuenta |
  */
 
 const SALIDA = { lat: 36.28, lon: -5.33 };
@@ -221,6 +222,24 @@ describe('reportes de hoyo — casos de uso', () => {
 
     expect(repo.sendHoleReport).toHaveBeenCalledTimes(1);
     expect(cuenta).toEqual({ enviados: 0, descartados: 0, pendientes: 0 });
+  });
+
+  it.each([
+    ['sin salida', { tee: null }],
+    ['sin green', { greenCenter: undefined }],
+  ])('D14: %s, nada y a Sentry', async (_caso, extra) => {
+    const { estado } = await enviar(extra);
+
+    expect(estado).toBe('ignorado');
+    expect(store.cola('yo')).toEqual([]);
+    expect(repo.sendHoleReport).not.toHaveBeenCalled();
+    expect(reportarFallo).toHaveBeenCalledTimes(1);
+  });
+
+  it('D14: una entrada de la cola sin salida no cuenta (no atasca las demás)', async () => {
+    guardado.set('reportesDeHoyosPendientes:v1:yo', JSON.stringify([{ id: 'r-0', golfCourseId: 'gc-1', holeNumber: 3, reason: 'WRONG_LINE', tee: null, greenCenter: GREEN, enCola: AHORA }]));
+
+    expect(store.cola('yo')).toEqual([]);
   });
 
   it('D13: con localStorage lleno la cola sigue en memoria; lo ilegible no cuenta', async () => {

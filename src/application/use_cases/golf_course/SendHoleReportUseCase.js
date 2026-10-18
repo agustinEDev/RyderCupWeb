@@ -27,9 +27,10 @@ class SendHoleReportUseCase {
    */
   async execute({ userId, golfCourseId, holeNumber, id, reason, tee, bends, greenCenter }) {
     if (!userId || !golfCourseId) return { estado: 'ignorado' };
-    if (!id) {
-      // El mapa siempre lo pone: si falta, es un fallo nuestro
-      this.dependencias.reportarFallo(new Error('Reporte de hoyo sin id'), { golfCourseId, holeNumber });
+    // El mapa siempre pone el id, la salida y el green: si falta algo, es un
+    // fallo nuestro, y en la cola atascaría a los demás
+    if (!id || !tee || !greenCenter) {
+      this.dependencias.reportarFallo(new Error(id ? 'Reporte de hoyo sin línea' : 'Reporte de hoyo sin id'), { golfCourseId, holeNumber });
       return { estado: 'ignorado' };
     }
     const entrada = { id, golfCourseId, holeNumber, reason, tee, bends: bends ?? [], greenCenter, enCola: this.ahora() };

@@ -362,10 +362,14 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                   {hoyo.reportes.map((reporte) => (
                     <li key={reporte.id} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-sm">
                       <p className="text-gray-900">
-                        {t(`holeReviews.reasons.${reporte.motivo}`)} · {dia(reporte.llego)}
+                        {t(`holeReviews.reasons.${reporte.motivo}`, { defaultValue: reporte.motivo })} · {dia(reporte.llego)}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-2">
-                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => elegirLinea(lineaDe(reporte))} className={`${BOTON} bg-white text-gray-900 ring-1 ring-gray-200`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                            setPorBorrar(null);
+                            setPorDescartar(null);
+                            elegirLinea(lineaDe(reporte));
+                          }} className={`${BOTON} bg-white text-gray-900 ring-1 ring-gray-200`}>
                           {t('holeReviews.useThis')}
                         </button>
                         {porDescartar === reporte.id ? (

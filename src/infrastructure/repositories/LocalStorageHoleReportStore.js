@@ -2,8 +2,19 @@ import IHoleReportStore from '../../domain/repositories/IHoleReportStore';
 
 const claveDeLaCola = (userId) => `reportesDeHoyosPendientes:v1:${userId}`;
 
+const esPunto = (p) => Boolean(p) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
+// Sin salida o sin green no se puede enviar: no cuenta, para que no atasque la
+// cola entera (/code-review, 18 oct)
 const esEntrada = (e) =>
-  Boolean(e) && typeof e === 'object' && Boolean(e.id) && Boolean(e.golfCourseId) && Number.isInteger(e.holeNumber) && Boolean(e.reason) && Boolean(e.enCola);
+  Boolean(e) &&
+  typeof e === 'object' &&
+  Boolean(e.id) &&
+  Boolean(e.golfCourseId) &&
+  Number.isInteger(e.holeNumber) &&
+  Boolean(e.reason) &&
+  Boolean(e.enCola) &&
+  esPunto(e.tee) &&
+  esPunto(e.greenCenter);
 const misma = (a, b) => a.id === b.id && a.enCola === b.enCola;
 
 /** La cola de los reportes de hoyo en localStorage (entrega 7, 18 oct 2026). */

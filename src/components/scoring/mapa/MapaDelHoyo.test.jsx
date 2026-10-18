@@ -2704,6 +2704,47 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(onMuestra).toHaveBeenCalledTimes(1);
   });
 
+  // /code-review, 18 oct
+  it('C2: si arrastrando la propuesta se sale de 40-750 m, no se envía: se avisa', () => {
+    const { onReporte } = abrirConLinea();
+    proponer();
+    const green = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable).at(-1);
+    act(() => {
+      green.setLngLat([T.lon, alNorte(30).lat]);
+      green.oyentes.dragend({ target: green });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+
+    expect(onReporte).not.toHaveBeenCalled();
+    expect(screen.getByText('mapa.fueraDeLimites')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+  });
+
+  it('C3: un doble toque al marcar la salida no pone también el green', () => {
+    abrirConLinea();
+    menu();
+    motivo('WRONG_LINE');
+    // El reloj quieto: los dos toques, en el mismo instante
+    reloj.mockImplementation(() => 10_000);
+
+    tocar(alNorte(20));
+    tocar(alNorte(21));
+
+    expect(screen.getByText('mapa.reporteGreen')).toBeInTheDocument();
+    expect(screen.queryByText('mapa.fueraDeLimites')).toBeNull();
+  });
+
+  it('C4: con el menú de motivos abierto, los puntos de la línea no se arrastran', () => {
+    abrirConLinea();
+
+    menu();
+
+    const puntos = mapas.marcas.filter((m) => !m.quitada && m.mapa);
+    expect(puntos.length).toBeGreaterThan(0);
+    expect(puntos.every((m) => !m.opciones.draggable)).toBe(true);
+  });
+
   it('P11: mientras se marca el green de un hoyo con salida, sin «⋮»; con «Ahora no», vuelve', () => {
     abrirConLinea({ hoyo: { playLine: [T, alNorte(200)], green: null }, porMarcar: 'green' });
 
