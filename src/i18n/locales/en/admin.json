@@ -182,6 +182,7 @@
     "greenTooClose": "The tee and the green are less than 40 m apart: tap again",
     "greenTooFar": "The tee and the green are more than 750 m apart: tap again",
     "myPosition": "My position",
+    "orient": "Orient",
     "findingPosition": "Finding your position…",
     "positionDenied": "No location permission",
     "tooFarFromCourse": "That point is more than 3 km from the course: tap again",

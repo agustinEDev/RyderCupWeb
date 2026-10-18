@@ -5,6 +5,7 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
 import { TESELAS_PNOA } from '../../scoring/mapa/teselas';
 import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
+import { encuadreGirado, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 
 setWorkerUrl(urlDelWorker);
 
@@ -73,6 +74,8 @@ const MapaDeRevision = ({
   osm = null,
   destacado = null,
   onElegir,
+  par = null,
+  orientar = 0,
 }) => {
   const { t } = useTranslation('admin');
   const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
@@ -81,11 +84,11 @@ const MapaDeRevision = ({
   const cargado = useRef(false);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
-  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir });
+  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar });
   // Hasta qué pedido de «Mi posición» se ha centrado ya el mapa
   const centradoPara = useRef(0);
   useLayoutEffect(() => {
-    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir };
+    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar };
   });
 
   // La línea que se edita y sus puntos. Con los mismos puntos, se mueven (no
@@ -133,12 +136,36 @@ const MapaDeRevision = ({
     }
   };
 
+  // Como el mapa del jugador (Agustín, 18 oct): girado como se juega la línea
+  // roja (par 3 al green, 4 o 5 al primer codo) y encuadrándola, una vez por
+  // cada vez que se pide (A1, A2, A4, A6). Sin línea, nada. Se puede girar
+  // con los dedos (A6)
+  const orientarLaLinea = (animar) => {
+    const mapa = mapaRef.current;
+    const { linea: actual, par: delHoyo } = datos.current;
+    if (!mapa || !cargado.current) return;
+    // Sin línea no hay puntos: ni rumbo ni encuadre
+    const puntosDeAhora = actual ? puntosDeLaLinea(actual) : [];
+    const orientacion = rumboDeLaLinea(puntosDeAhora, delHoyo);
+    const encuadre = encuadreGirado({ playLine: puntosDeAhora, green: null }, orientacion, {
+      ancho: contenedor.current?.clientWidth || 360,
+      alto: contenedor.current?.clientHeight || 640,
+      padding: { top: 40, bottom: 40, left: 40, right: 40 },
+    });
+    if (!encuadre) return;
+    const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion };
+    if (animar) mapa.easeTo(camara);
+    else mapa.jumpTo(camara);
+  };
+
   // La de ahora, por ref: el mapa se monta una vez y sus oyentes la llaman
+  const orientarAhora = useRef(orientarLaLinea);
   const pintar = useRef(pintarLinea);
   const centrar = useRef(centrarEnLaPosicion);
   useLayoutEffect(() => {
     pintar.current = pintarLinea;
     centrar.current = centrarEnLaPosicion;
+    orientarAhora.current = orientarLaLinea;
   });
 
   useEffect(() => {
@@ -171,7 +198,9 @@ const MapaDeRevision = ({
       cargado.current = true;
       // Todo a la vista: las muestras, lo guardado y la línea
       const todos = [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(datos.current.osm ?? [])];
-      if (todos.length) {
+      // Con la línea roja, orientado con ella (A1); sin ella, todo y norte arriba
+      if (datos.current.orientar > 0 && actual) orientarAhora.current(false);
+      else if (todos.length) {
         const lats = todos.map((p) => p.lat);
         const lons = todos.map((p) => p.lon);
         mapa.fitBounds(
@@ -220,6 +249,8 @@ const MapaDeRevision = ({
   }, [muestras, guardada, osm]);
 
   useEffect(() => pintar.current(), [linea]);
+
+  useEffect(() => orientarAhora.current(true), [orientar]);
 
   useEffect(() => {
     if (cargado.current) mapaRef.current?.getSource('destacado')?.setData(comoPuntos(destacado ? [destacado] : []));

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LocateFixed, X } from 'lucide-react';
+import { Compass, LocateFixed, X } from 'lucide-react';
 import {
   deleteHoleSampleUseCase,
   discardHoleReportUseCase,
@@ -73,6 +73,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const [avisoAlCerrar, setAvisoAlCerrar] = useState(false);
   // «Mi posición» (E14): el GPS solo se pide al tocarlo, y cada toque recentra
   const [centrarEnMi, setCentrarEnMi] = useState(0);
+  // Cada vez que se pide, el mapa se orienta con la línea roja (A1, A2, A4, A6)
+  const [orientar, setOrientar] = useState(0);
   // Para centrar el mapa vale cualquier posición: un ordenador va por Wi-Fi
   const gps = usePosicionGps({ activo: centrarEnMi > 0, precisionMaxima: Infinity });
   // Marcar desde cero (17 oct): null, o el paso y la salida ya tocada
@@ -114,6 +116,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               ? [osm, null]
               : [lineaDe(primeraCompleta), primeraCompleta?.id ?? null];
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
+        // Una línea de partida nueva, orientada (A1)
+        if (!conservarLinea && deLoQueHay) setOrientar((n) => n + 1);
         // Conservada la línea, también su fila (S10: si se borró, ya no está).
         // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
         // un solo green no toca la línea)
@@ -190,16 +194,21 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   // se edita; un solo green se ve en rojo y la línea se queda. La ya elegida,
   // movida, vuelve a su original (S5); desde el mapa no, que se tocaría sin
   // querer al mover la roja (M6)
+  // Elegida (no arrastrada: A5), el mapa se orienta con ella (A2, A4)
+  const elegirYOrientar = (nueva) => {
+    elegirLinea(nueva);
+    setOrientar((n) => n + 1);
+  };
   const elegirFila = (fila, { desdeElMapa = false } = {}) => {
     if (seleccion === fila.id) {
       const original = lineaDe(fila);
       if (desdeElMapa || !original || JSON.stringify(original) === JSON.stringify(linea)) return;
-      elegirLinea(original);
+      elegirYOrientar(original);
       return;
     }
     setSeleccion(fila.id);
     if (fila.tee) {
-      elegirLinea(lineaDe(fila));
+      elegirYOrientar(lineaDe(fila));
       return;
     }
     setPorBorrar(null);
@@ -243,7 +252,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
       if (fueraDeLimites(marcando.salida, punto)) return;
       setMarcando(null);
       setSeleccion(null);
-      elegirLinea(lineaMarcada(marcando.salida, punto));
+      elegirYOrientar(lineaMarcada(marcando.salida, punto));
       return;
     }
     if (!greenSuelto) {
@@ -253,7 +262,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     if (fueraDeLimites(punto, greenSuelto)) return;
     setMarcando(null);
     setSeleccion(null);
-    elegirLinea(lineaMarcada(punto, greenSuelto));
+    elegirYOrientar(lineaMarcada(punto, greenSuelto));
   };
   const instruccion = !marcando ? null : marcando.paso === 'green' ? 'holeReviews.tapGreen' : greenSuelto ? 'holeReviews.tapTeeToGreen' : 'holeReviews.tapTee';
   const parDeLaTarjeta = tarjeta && (tarjeta.parMinimo === tarjeta.parMaximo ? String(tarjeta.parMinimo) : `${tarjeta.parMinimo}–${tarjeta.parMaximo}`);
@@ -295,6 +304,16 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
             {t('holeReviews.myPosition')}
           </button>
+          {/* Girado con los dedos, vuelve a como se juega la línea roja (A6) */}
+          <button
+            type="button"
+            disabled={!linea}
+            onClick={() => setOrientar((n) => n + 1)}
+            className={`${BOTON} inline-flex items-center gap-1 bg-white text-gray-900 shadow`}
+          >
+            <Compass className="h-4 w-4" aria-hidden="true" />
+            {t('holeReviews.orient')}
+          </button>
         </div>
         {hoyo && (
           <Suspense fallback={<BlockLoader />}>
@@ -309,6 +328,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               marcados={marcando?.salida ? [marcando.salida] : SIN_MARCAR}
               bloqueada={Boolean(marcando)}
               centro={ubicacion}
+              par={tarjeta?.parDeLaMasLarga ?? null}
+              orientar={orientar}
               osm={hoyo.osm?.puntos ?? null}
               posicion={gps.posicion}
               centrarEnMi={centrarEnMi}
@@ -374,7 +395,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                     onClick={() => {
                       // La de OSM no es de ninguna fila (S14)
                       setSeleccion(null);
-                      elegirLinea(lineaDeOsmDe(hoyo));
+                      elegirYOrientar(lineaDeOsmDe(hoyo));
                     }}
                     className={`${BOTON} bg-gray-100 text-gray-900`}
                   >

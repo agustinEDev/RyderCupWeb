@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render } from '@testing-library/react';
+import { encuadreGirado } from '../../../domain/services/geometriaDelHoyo';
 
 /**
  * El mapa de revisar un hoyo (BE #575): las muestras con el color de su barra,
@@ -35,6 +36,7 @@ vi.mock('maplibre-gl', () => {
       this.capas = [];
       this.fitBounds = vi.fn();
       this.easeTo = vi.fn();
+      this.jumpTo = vi.fn();
       // Lo que hay bajo el dedo: cada test pone lo suyo
       this.queryRenderedFeatures = vi.fn(() => []);
       this.remove = vi.fn();
@@ -81,6 +83,7 @@ vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?url', () => ({ default: 'worker
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 
 const { default: MapaDeRevision } = await import('./MapaDeRevision');
+const { rumbo } = await import('../../../domain/services/geometriaDelHoyo');
 
 const T = { lat: 36.28, lon: -5.33 };
 const C = { lat: 36.2815, lon: -5.331 };
@@ -370,6 +373,92 @@ describe('MapaDeRevision', () => {
       mapa.queryRenderedFeatures.mockReturnValue([{ properties: { id: 's-1', orden: 0 } }]);
 
       expect(() => act(() => mapa.oyentes.click(toque))).not.toThrow();
+    });
+  });
+  // Agustín, 18 oct: como el del jugador
+  //
+  // | Caso | Situación                         | Qué hace el mapa                                        |
+  // |------|-----------------------------------|---------------------------------------------------------|
+  // | A1   | al abrir, con línea roja          | orientado con ella (par 3 al green, 4/5 al primer codo) y encuadrándola |
+  // | A1   | sin línea                         | norte arriba, todo a la vista                           |
+  // | A2/A4 | `orientar` cambia                | gira y encuadra la línea de ahora, con animación        |
+  // | A5   | la línea cambia sin `orientar`    | no gira                                                 |
+  describe('A: orientar', () => {
+    const SALIDA = T;
+    const CODO = { lat: 36.2815, lon: -5.328 };
+    const VERDE = { lat: 36.2827, lon: -5.33 };
+    const CON_CODO = { tee: SALIDA, bends: [CODO], greenCenter: VERDE };
+
+    it('A1: al abrir con línea, par 4: de la salida al primer codo, encuadrándola y sin fitBounds', () => {
+      render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.jumpTo).toHaveBeenCalledTimes(1);
+      expect(mapa.jumpTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(SALIDA, CODO), 6);
+      const entera = encuadreGirado({ playLine: [SALIDA, CODO, VERDE], green: null }, rumbo(SALIDA, CODO), { ancho: 360, alto: 640, padding: { top: 40, bottom: 40, left: 40, right: 40 } });
+      expect(mapa.jumpTo.mock.calls[0][0].zoom).toBeCloseTo(entera.zoom, 9);
+      expect(mapa.fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('A1: par 3, de la salida al green', () => {
+      render(<MapaDeRevision muestras={[]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={3} orientar={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.jumpTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(SALIDA, VERDE), 6);
+    });
+
+    it('A1: sin línea, norte arriba y todo a la vista', () => {
+      render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} par={4} orientar={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.jumpTo).not.toHaveBeenCalled();
+      expect(mapa.fitBounds).toHaveBeenCalled();
+    });
+
+    it('A2/A4: al pedir orientar otra vez, gira y encuadra la línea de ahora, con animación', () => {
+      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+      const otra = { tee: VERDE, bends: [], greenCenter: SALIDA };
+
+      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={otra} onLinea={() => {}} par={4} orientar={2} />);
+
+      expect(mapa.easeTo).toHaveBeenCalledTimes(1);
+      expect(mapa.easeTo.mock.calls[0][0].bearing).toBeCloseTo(rumbo(VERDE, SALIDA), 6);
+    });
+
+    it('A1: pedir orientar sin línea no hace nada', () => {
+      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} par={4} orientar={2} />);
+
+      expect(mapa.easeTo).not.toHaveBeenCalled();
+    });
+
+    it('A5: la línea cambia (arrastrando) sin pedir orientar: no gira', () => {
+      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+      const mapa = mapas.at(-1);
+      act(() => mapa.oyentes.load());
+
+      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={{ ...CON_CODO, tee: C }} onLinea={() => {}} par={4} orientar={1} />);
+
+      expect(mapa.easeTo).not.toHaveBeenCalled();
+    });
+
+    it('A1: si se pide antes de que cargue, se orienta al cargar (una vez)', () => {
+      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} par={4} orientar={0} />);
+      const mapa = mapas.at(-1);
+      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+
+      act(() => mapa.oyentes.load());
+
+      expect(mapa.jumpTo).toHaveBeenCalledTimes(1);
+      expect(mapa.easeTo).not.toHaveBeenCalled();
     });
   });
 });
