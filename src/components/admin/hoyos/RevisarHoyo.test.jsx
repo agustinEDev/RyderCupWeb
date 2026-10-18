@@ -700,12 +700,16 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
     it('V4: descartar el primer reporte no cambia la línea que se edita', async () => {
       await abrir({ muestras: [], reportes: [REPORTE, SEGUNDO] });
       casos.descartar.mockResolvedValue(undefined);
+      // Tras descartar, el hoyo vuelve sin ese reporte: el primero pasa a ser otro
+      casos.campo.mockResolvedValue(campo({ muestras: [], reportes: [SEGUNDO] }));
       const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
 
       fireEvent.click(within(seccion).getAllByRole('button', { name: 'holeReviews.discard' })[0]);
       fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.confirmDiscard' }));
 
       await waitFor(() => expect(avisos.success).toHaveBeenCalledWith('holeReviews.discardedOk'));
+      await waitFor(() => expect(casos.campo).toHaveBeenCalledTimes(2));
+      expect(screen.getAllByRole('button', { name: 'holeReviews.discard' })).toHaveLength(1);
       expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
     });
   });

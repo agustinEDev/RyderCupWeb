@@ -47,7 +47,8 @@ const AVISO_DEL_GPS = {
 /**
  * Revisar un hoyo (BE #575, 17 oct 2026: una referencia por hoyo). Sobre la
  * ortofoto, todas sus muestras (cada una con el color de su barra) y la línea
- * guardada; el admin parte de una muestra (o de lo guardado), la ajusta
+ * guardada; el admin parte de lo guardado, del primer reporte, de OSM o de
+ * una muestra, la ajusta
  * arrastrando la salida, los codos y el green, y la guarda. También puede
  * reabrir el hoyo y borrar una muestra mala. Al guardar se cierra sola (el hoyo
  * deja de estar pendiente); al cerrar, dice si cambió algo.
