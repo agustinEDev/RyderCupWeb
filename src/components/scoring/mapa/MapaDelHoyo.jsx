@@ -267,6 +267,8 @@ const MapaDelHoyo = ({
   const [lineaOculta, setLineaOculta] = useState(false);
   const [mitadDecidida, setMitadDecidida] = useState(false);
   const [contestadoNo, setContestadoNo] = useState(0);
+  const [pedidoEntero, setPedidoEntero] = useState(0);
+  const loQueSePide = useRef(null);
   // El reporte en curso (entrega 7): eligiendo el motivo, tocando la salida, el
   // green, o con la propuesta lista. Lo que había antes se guarda para volver a
   // ello: la propuesta no es una muestra
@@ -274,6 +276,7 @@ const MapaDelHoyo = ({
   const [gracias, setGracias] = useState(false);
   const menuDeMotivos = reporte?.fase === 'motivos';
   const antesDelReporte = useRef(null);
+  const codoAntesDelReporte = useRef(null);
   const botonDeReportar = useRef(null);
   const primerMotivo = useRef(null);
   const reportaba = useRef(false);
@@ -671,12 +674,15 @@ const MapaDelHoyo = ({
   const green = hoyoAhora?.green ?? null;
   // A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2)
   const salidaDeMiBarra = lineaInicial?.[0] ?? null;
-  if (!mitadDecidida && green && (hoyo?.playLine?.length ?? 0) >= 2 && salidaDeMiBarra && posicionBuena) {
+  // Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que se propone (revisor, 18 oct)
+  if (!mitadDecidida && !reporte && green && (hoyo?.playLine?.length ?? 0) >= 2 && salidaDeMiBarra && posicionBuena) {
     setMitadDecidida(true);
     if (distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M) {
       setLineaOculta(true);
       setDesdeMi(true);
       setCodoPendiente(true);
+      // Un punto tocado antes para medir no se queda de codo
+      setTocado(null);
     }
   }
   // El codo, una vez: con el primer GPS bueno, en medio si pasa de 200 m. Luego
@@ -784,6 +790,7 @@ const MapaDelHoyo = ({
   // El hoyo entero: se toca la salida y el green, como lejos del campo; con el
   // green ya puesto, la salida basta (D8). La medida desde ti se va
   const marcarEntero = () => {
+    setPedidoEntero((n) => n + 1);
     setDesdeMi(false);
     setTocado(null);
     setMarca({ fase: 'pidiendo', tee: null });
@@ -795,6 +802,10 @@ const MapaDelHoyo = ({
   useEffect(() => {
     if (contestadoNo) enlaceEntero.current?.focus();
   }, [contestadoNo]);
+  // El enlace se va con el foco: pasa a lo que se pide (revisor, 18 oct)
+  useEffect(() => {
+    if (pedidoEntero) loQueSePide.current?.focus();
+  }, [pedidoEntero]);
 
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
   // (y al proponer la línea de un reporte, igual)
@@ -893,6 +904,7 @@ const MapaDelHoyo = ({
   // con él abierto, se envía eso (revisor, 18 oct)
   const abrirElMenu = () => {
     antesDelReporte.current = edicion;
+    codoAntesDelReporte.current = tocado;
     setGracias(false);
     setReporte({ fase: 'motivos' });
   };
@@ -911,8 +923,9 @@ const MapaDelHoyo = ({
     setReporte(null);
     // Tal cual, con su versión: si ya salió al ocultarse, no vuelve a salir
     if (antes) setEdicion(antes);
-    // Midiendo desde ti, vuelve también el codo (H9)
-    if (desdeMi) setCodoPendiente(true);
+    // Midiendo desde ti, vuelve también el codo, donde estaba o sin él si se
+    // quitó (H9, revisor)
+    if (desdeMi) setTocado(codoAntesDelReporte.current);
   };
   const enviarReporte = () => {
     // Arrastrando se puede salir de los límites: se dice, y no se manda algo
@@ -1068,7 +1081,7 @@ const MapaDelHoyo = ({
           </div>
         ) : pidiendo ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
-            <span aria-live="polite" className="text-base font-semibold">
+            <span ref={loQueSePide} tabIndex={-1} aria-live="polite" className="text-base font-semibold">
               {t(marca.soloGreen ? 'mapa.pideGreen' : marcandoSalida && !marca.tee ? (marca.malGps ? 'mapa.malGps' : 'mapa.pideSalida') : 'mapa.pideGreen')}
             </span>
             <button type="button" onClick={() => {
@@ -1090,10 +1103,13 @@ const MapaDelHoyo = ({
             </button>
           </div>
         ) : desdeMi && !posicionBuena ? (
-          // Sin un GPS bueno no hay línea desde ti: sale en cuanto lo sea (D5)
-          <p aria-live="polite" className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
-            {t('mapa.buscando')}
-          </p>
+          // Sin un GPS bueno no hay línea desde ti: sale en cuanto lo sea (D5).
+          // Si el GPS ya tiene su aviso, ese basta (revisor, 18 oct)
+          aviso ? null : (
+            <p aria-live="polite" className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
+              {t('mapa.buscando')}
+            </p>
+          )
         ) : conAyudaDeCodos ? (
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaCodo')}</p>
         ) : (

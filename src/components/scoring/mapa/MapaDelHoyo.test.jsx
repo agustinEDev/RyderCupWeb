@@ -2227,6 +2227,28 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(screen.queryByText('mapa.buscando')).toBeNull();
   });
 
+  it('Revisor: si el GPS se pierde tras el «No», solo sale su aviso, no también «Buscando»', () => {
+    conGreenSuelto();
+    desde(150);
+    no();
+
+    act(() => gps.error({ code: 1 }));
+
+    expect(screen.getByText('mapa.denegado')).toBeInTheDocument();
+    expect(screen.queryByText('mapa.buscando')).toBeNull();
+  });
+
+  it('Revisor: «Marcar el hoyo entero» lleva el foco a lo que se pide', () => {
+    conGreenSuelto();
+    desde(0);
+    no();
+
+    hoyoEntero();
+
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toHaveTextContent('mapa.pideSalida');
+  });
+
   it('D6: en un hoyo sin nada, «No» pide el green; al tocarlo sale la línea desde mí y solo el green como muestra', () => {
     const { unmount, onMuestra } = abrirSinLinea();
     desde(0);
@@ -2553,6 +2575,68 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(lineaDibujada()).toBeUndefined();
       expect(elCodo()).toHaveLength(1);
       expect(medida()).toHaveLength(2);
+    });
+
+    it('Revisor: con el «⋮» abierto no se decide: al cancelar, la línea desde ti y su codo', () => {
+      abrirConLinea({ onReporte: vi.fn() });
+      desde(50, 25);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      desde(50);
+      expect(medida()).toEqual([]);
+      expect(elCodo()).toEqual([]);
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+      expect(lineaDibujada()).toBeUndefined();
+      expect(elCodo()).toHaveLength(1);
+      expect(medida()).toHaveLength(2);
+    });
+
+    it('Revisor: un punto tocado antes de decidir no se queda como codo', () => {
+      abrirConLinea();
+      desde(150, 25);
+      tocar(alNorte(200));
+
+      desde(150);
+
+      expect(medida()).toEqual([[en(alNorte(150)), en(G300)]]);
+      expect(elCodo()).toEqual([]);
+    });
+
+    it('Revisor: cancelar desde los motivos deja el codo donde se arrastró', () => {
+      abrirConLinea({ onReporte: vi.fn() });
+      desde(50);
+      tocar(alNorte(100));
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+      expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
+    });
+
+    it('Revisor: cancelar desde los motivos tras «Quitar» no trae el codo', () => {
+      abrirConLinea({ onReporte: vi.fn() });
+      desde(50);
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+      expect(elCodo()).toEqual([]);
+      expect(medida()).toEqual([[en(alNorte(50)), en(G300)]]);
+    });
+
+    it('Revisor: tras elegir motivo y cancelar, el codo vuelve donde estaba', () => {
+      abrirConLinea({ onReporte: vi.fn() });
+      desde(50);
+      tocar(alNorte(100));
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+      expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
     });
 
     it('H10: nada de la línea desde ti se envía', () => {
