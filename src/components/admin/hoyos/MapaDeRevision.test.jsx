@@ -330,6 +330,20 @@ describe('MapaDeRevision', () => {
       expect(onElegir).toHaveBeenCalledWith('s-1');
     });
 
+    it('CodeRabbit: tocar un punto de la línea roja no elige lo que haya debajo', () => {
+      const onElegir = vi.fn();
+      const mapa = cargar({ onElegir });
+      mapa.queryRenderedFeatures.mockReturnValue([{ properties: { id: 's-1', orden: 0 } }]);
+      const marca = globalThis.document.createElement('div');
+      marca.className = 'maplibregl-marker';
+      const bola = globalThis.document.createElement('div');
+      marca.appendChild(bola);
+
+      act(() => mapa.oyentes.click({ ...toque, originalEvent: { target: bola } }));
+
+      expect(onElegir).not.toHaveBeenCalled();
+    });
+
     it('M7: donde no hay ninguna, nada', () => {
       const onElegir = vi.fn();
       const mapa = cargar({ onElegir });

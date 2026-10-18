@@ -195,6 +195,8 @@ const MapaDeRevision = ({
         return;
       }
       if (!elegir) return;
+      // Un toque en un punto de la roja (sin llegar a arrastrarlo) no es elegir otra (CodeRabbit)
+      if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return;
       const debajo = mapa.queryRenderedFeatures(e.point, { layers: CAPAS_DE_TOQUE });
       if (!debajo.length) return;
       const primera = debajo.reduce((a, b) => (b.properties.orden < a.properties.orden ? b : a));
