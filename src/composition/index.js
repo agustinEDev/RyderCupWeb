@@ -36,6 +36,7 @@ import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCo
 import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
 import {
   DeleteHoleSampleUseCase,
+  DiscardHoleReportUseCase,
   GetHoleReviewUseCase,
   ListHoleReviewsUseCase,
   ReopenHoleUseCase,
@@ -47,6 +48,9 @@ import LocalStorageCourseLocationCache from '../infrastructure/repositories/Loca
 import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCourseLocationUseCase';
 import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHoleSampleUseCase';
 import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
+import SendHoleReportUseCase from '../application/use_cases/golf_course/SendHoleReportUseCase';
+import SendPendingHoleReportsUseCase from '../application/use_cases/golf_course/SendPendingHoleReportsUseCase';
+import LocalStorageHoleReportStore from '../infrastructure/repositories/LocalStorageHoleReportStore';
 import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
 import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
 import { captureError } from '../utils/sentryHelpers';
@@ -467,6 +471,7 @@ const getHoleReviewUseCase = new GetHoleReviewUseCase({ golfCourseRepository: ap
 const saveHoleLineUseCase = new SaveHoleLineUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const reopenHoleUseCase = new ReopenHoleUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const deleteHoleSampleUseCase = new DeleteHoleSampleUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const discardHoleReportUseCase = new DiscardHoleReportUseCase({ golfCourseRepository: apiGolfCourseRepository });
 
 const getHoleMapUseCase = new GetHoleMapUseCase({
   golfCourseRepository: apiGolfCourseRepository,
@@ -495,6 +500,22 @@ const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
   reportarFallo: reportarFalloDeMuestra,
   enVuelo: muestrasEnVuelo,
   recienEnviadas: muestrasRecienEnviadas,
+});
+// Los reportes de hoyo (entrega 7): la misma cola en el móvil, aparte de las muestras
+const holeReportStore = new LocalStorageHoleReportStore();
+const reportarFalloDeReporte = (error, contexto) => captureError(error, { tags: { modulo: 'reportes-de-hoyos' }, extra: contexto });
+const reportesEnVuelo = new Set();
+const sendHoleReportUseCase = new SendHoleReportUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeReportStore,
+  reportarFallo: reportarFalloDeReporte,
+  enVuelo: reportesEnVuelo,
+});
+const sendPendingHoleReportsUseCase = new SendPendingHoleReportsUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeReportStore,
+  reportarFallo: reportarFalloDeReporte,
+  enVuelo: reportesEnVuelo,
 });
 const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
   golfCourseRepository: apiGolfCourseRepository,
@@ -588,9 +609,12 @@ export {
   saveHoleLineUseCase,
   reopenHoleUseCase,
   deleteHoleSampleUseCase,
+  discardHoleReportUseCase,
   getCourseLocationUseCase,
   sendHoleSampleUseCase,
   sendPendingHoleSamplesUseCase,
+  sendHoleReportUseCase,
+  sendPendingHoleReportsUseCase,
   getHoleSamplesUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,

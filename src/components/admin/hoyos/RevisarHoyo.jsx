@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { LocateFixed, X } from 'lucide-react';
 import {
   deleteHoleSampleUseCase,
+  discardHoleReportUseCase,
   getHoleReviewUseCase,
   reopenHoleUseCase,
   saveHoleLineUseCase,
@@ -46,7 +47,8 @@ const AVISO_DEL_GPS = {
 /**
  * Revisar un hoyo (BE #575, 17 oct 2026: una referencia por hoyo). Sobre la
  * ortofoto, todas sus muestras (cada una con el color de su barra) y la línea
- * guardada; el admin parte de una muestra (o de lo guardado), la ajusta
+ * guardada; el admin parte de lo guardado, del primer reporte, de OSM o de
+ * una muestra, la ajusta
  * arrastrando la salida, los codos y el green, y la guarda. También puede
  * reabrir el hoyo y borrar una muestra mala. Al guardar se cierra sola (el hoyo
  * deja de estar pendiente); al cerrar, dice si cambió algo.
@@ -60,6 +62,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const [ocupado, setOcupado] = useState(false);
   const [cambiado, setCambiado] = useState(false);
   const [porBorrar, setPorBorrar] = useState(null);
+  const [porDescartar, setPorDescartar] = useState(null);
   // Si la línea se movió o se cambió y no se ha guardado (para no perderla al cerrar)
   const [editada, setEditada] = useState(false);
   const [avisoAlCerrar, setAvisoAlCerrar] = useState(false);
@@ -81,17 +84,21 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     haMarcado.current = estaMarcando;
   }, [estaMarcando]);
 
-  // `conservarLinea`: tras borrar una muestra, la que se edita no se toca
+  // `conservarLinea`: tras borrar una muestra o descartar un reporte, la línea
+  // que el admin ha movido no se toca; sin moverla, se vuelve a partir de lo
+  // que quede (Agustín, 18 oct)
   const cargar = useCallback(
     async ({ conservarLinea = false } = {}) => {
       try {
         const campo = await getHoleReviewUseCase.execute(golfCourseId);
-        const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [] };
+        const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [], reportes: [] };
         setHoyo(este);
         setUbicacion(campo.ubicacion ?? null);
-        // Se parte de la guardada, de la de OSM (con los codos de su par) o de la
-        // primera muestra completa
-        const deLoQueHay = este.guardada ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
+        // Se parte de la guardada, de la del primer reporte (quien reporta dice
+        // que la que hay está mal: Agustín, 18 oct), de la de OSM (con los codos
+        // de su par) o de la primera muestra completa
+        const deLoQueHay =
+          este.guardada ?? lineaDe(este.reportes?.find((r) => r.tee)) ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
         if (!conservarLinea) setEditada(false);
         setFallo(false);
@@ -131,6 +138,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     } finally {
       setOcupado(false);
       setPorBorrar(null);
+      setPorDescartar(null);
     }
   };
 
@@ -158,6 +166,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     setLinea(nueva);
     setEditada(true);
     setAvisoAlCerrar(false);
+    // Elegida otra línea, ninguna confirmación de borrar o descartar sigue abierta (CodeRabbit)
+    setPorBorrar(null);
+    setPorDescartar(null);
   };
   const dia = (iso) => {
     const fecha = new Date(`${iso}T12:00:00`);
@@ -351,6 +362,44 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               </section>
             )}
 
+            {/* Lo que reportan los jugadores (entrega 7): se parte de su línea o se descarta */}
+            {Boolean(hoyo.reportes?.length) && (
+              <section aria-labelledby="los-reportes">
+                <h3 id="los-reportes" className="text-sm font-semibold text-gray-700">{t('holeReviews.reportsTitle')}</h3>
+                <ul className="flex flex-col gap-2">
+                  {hoyo.reportes.map((reporte) => (
+                    <li key={reporte.id} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-sm">
+                      <p className="text-gray-900">
+                        {t(`holeReviews.reasons.${reporte.motivo}`, { defaultValue: reporte.motivo })} · {dia(reporte.llego)}
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => elegirLinea(lineaDe(reporte))} className={`${BOTON} bg-white text-gray-900 ring-1 ring-gray-200`}>
+                          {t('holeReviews.useThis')}
+                        </button>
+                        {porDescartar === reporte.id ? (
+                          <button
+                            type="button"
+                            disabled={ocupado || Boolean(marcando)}
+                            onClick={() => hacer(() => discardHoleReportUseCase.execute(golfCourseId, reporte.id), 'holeReviews.discardedOk', { conservarLinea: editada })}
+                            className={`${BOTON} bg-red-600 text-white`}
+                          >
+                            {t('holeReviews.confirmDiscard')}
+                          </button>
+                        ) : (
+                          <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                              setPorBorrar(null);
+                              setPorDescartar(reporte.id);
+                            }} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                            {t('holeReviews.discard')}
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <section aria-labelledby="las-muestras">
               <h3 id="las-muestras" className="text-sm font-semibold text-gray-700">{t('holeReviews.samplesTitle')}</h3>
               {!hoyo.muestras.length && <p className="text-sm text-gray-500">{t('holeReviews.noSamples')}</p>}
@@ -371,13 +420,16 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                         <button
                           type="button"
                           disabled={ocupado || Boolean(marcando)}
-                          onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: true })}
+                          onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: editada })}
                           className={`${BOTON} bg-red-600 text-white`}
                         >
                           {t('holeReviews.confirmDelete')}
                         </button>
                       ) : (
-                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => setPorBorrar(muestra.id)} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                            setPorDescartar(null);
+                            setPorBorrar(muestra.id);
+                          }} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
                           {t('holeReviews.delete')}
                         </button>
                       )}

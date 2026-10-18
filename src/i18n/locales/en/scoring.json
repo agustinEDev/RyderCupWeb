@@ -400,6 +400,19 @@
     "malGps": "We can't locate you well: tap where the tee is",
     "desdeTuPosicion": "From your position",
     "desdeTuBarra": "From your tee",
-    "desdeLaSalida": "From the tee"
+    "desdeLaSalida": "From the tee",
+    "reportar": "Report a problem",
+    "reporteTitulo": "What's wrong with this hole?",
+    "cancelar": "Cancel",
+    "reporteSalida": "Tap where the right tee is",
+    "reporteGreen": "Tap the centre of the right green",
+    "enviarReporte": "Send report",
+    "reporteGracias": "Thanks: an admin will review it",
+    "motivos": {
+      "WRONG_HOLE": "It's not the right hole",
+      "WRONG_LINE": "The line is wrong",
+      "HOLE_CHANGED": "The hole has changed"
+    },
+    "reporteSinCodos": "Move the tee or the green if needed"
   }
 }

@@ -5,6 +5,7 @@ import ModalShell from '../../ui/ModalShell';
 import { captureError } from '../../../utils/sentryHelpers';
 import { hoyoDeUnaMarca } from '../../../domain/services/hoyoMarcado';
 import { useMuestrasDelCampo } from '../../../hooks/useMuestrasDelCampo';
+import { useReportarHoyo } from '../../../hooks/useReportarHoyo';
 
 // Aparte: MapLibre pesa, y la anotación no tiene por qué cargarlo hasta que se
 // abre. Una carga nueva en cada apertura: React guarda la que falló, y con una
@@ -61,6 +62,8 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const [MapaDelHoyo] = useState(cargarMapa);
   const { mapaDelCampo, cerrar } = mapaDelHoyo;
   const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
+  // Reportar un hoyo (entrega 7): basta la sesión, no hace falta la barra
+  const reportar = useReportarHoyo({ golfCourseId, userId });
 
   // Lo que se ve, por orden (17 oct, una referencia por hoyo): la línea que
   // guardó el admin; si no, el hoyo aprobado con su green; si no, la primera
@@ -150,6 +153,7 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
           colocarSalida={!(muestra && muestra === mia)}
           onMuestra={puedeEnviar ? (datos) => enviar(numeroDeHoyo, datos) : null}
           onEmpezar={() => setCongelado((c) => c ?? ahora)}
+          onReporte={reportar ? (datos) => reportar(numeroDeHoyo, datos) : null}
         />
       </Suspense>
     </SiNoCarga>

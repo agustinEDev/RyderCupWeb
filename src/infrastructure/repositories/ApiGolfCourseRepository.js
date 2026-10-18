@@ -132,6 +132,13 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
 
   /**
    * @override
+   */
+  async discardHoleReport(id, reportId) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reports/${reportId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * @override
    * El servidor contesta 204 tanto si la guarda como si ya no la quiere (el
    * hoyo tiene bastantes): para el móvil, las dos cosas son «llegó». Con el
    * tope de anotar, para que con mala cobertura la muestra se quede en la cola
@@ -141,6 +148,23 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
       await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples/${holeNumber}`, {
         method: 'POST',
         body: JSON.stringify(HoleSampleMapper.toApi(muestra)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return;
+      throw error;
+    }
+  }
+
+  /**
+   * @override
+   */
+  async sendHoleReport(id, holeNumber, reporte) {
+    try {
+      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/reports/${holeNumber}`, {
+        method: 'POST',
+        body: JSON.stringify(HoleSampleMapper.reportToApi(reporte)),
         topeMs: TOPE_DE_ANOTAR_MS,
       });
     } catch (error) {

@@ -14,10 +14,12 @@ import { renderHook } from '@testing-library/react';
  * | S16  | una muestra se queda en la cola (aviso del mapa)     | arma el reintento a los 30 s, uno solo                |
  * | S16  | envió o descartó algo                               | avisa al mapa abierto; NUNCA un toast                 |
  * | S16  | cambia la sesión / se desmonta                      | la tanda en marcha deja de seguir; nada armado        |
+ * | R5   | los reportes de hoyo (entrega 7)                    | salen con las muestras, con la misma escalera         |
  */
 
 const envio = vi.hoisted(() => ({ execute: vi.fn(async () => ({ pendientes: 0 })) }));
-vi.mock('../composition', () => ({ sendPendingHoleSamplesUseCase: envio }));
+const reportes = vi.hoisted(() => ({ execute: vi.fn(async () => ({ pendientes: 0 })) }));
+vi.mock('../composition', () => ({ sendPendingHoleSamplesUseCase: envio, sendPendingHoleReportsUseCase: reportes }));
 const toastFalso = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
@@ -27,6 +29,7 @@ describe('useEnvioDeMuestras', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     envio.execute.mockResolvedValue({ enviadas: 0, descartadas: 0, pendientes: 0 });
+    reportes.execute.mockResolvedValue({ enviados: 0, descartados: 0, pendientes: 0 });
     vi.stubGlobal('navigator', { onLine: true });
   });
 
@@ -42,6 +45,60 @@ describe('useEnvioDeMuestras', () => {
     renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
 
     expect(envio.execute).toHaveBeenCalledWith('u1', { sigue: expect.any(Function) });
+  });
+
+  it('R5: al arrancar envía también los reportes del jugador, cortándose igual', () => {
+    const { unmount } = renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+
+    expect(reportes.execute).toHaveBeenCalledWith('u1', { sigue: expect.any(Function) });
+    const { sigue } = reportes.execute.mock.calls[0][1];
+    expect(sigue()).toBe(true);
+    unmount();
+    expect(sigue()).toBe(false);
+  });
+
+  it('R5: un reporte que se queda en la cola arma el reintento a los 30 s', async () => {
+    vi.useFakeTimers();
+    try {
+      reportes.execute.mockResolvedValueOnce({ enviados: 0, descartados: 0, pendientes: 1 });
+      renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[0]);
+
+      expect(reportes.execute).toHaveBeenCalledTimes(2);
+      expect(toastFalso).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('R5: si los reportes fallan, las muestras se envían igual y avisan al mapa', async () => {
+    reportes.execute.mockRejectedValueOnce(new Error('roto'));
+    envio.execute.mockResolvedValueOnce({ enviadas: 1, descartadas: 0, pendientes: 0 });
+    const aviso = vi.fn();
+    globalThis.addEventListener(MUESTRAS_CAMBIADAS, aviso);
+
+    renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+    await vi.waitFor(() => expect(aviso).toHaveBeenCalledTimes(1));
+
+    globalThis.removeEventListener(MUESTRAS_CAMBIADAS, aviso);
+  });
+
+  it('R5: si las muestras fallan, un reporte pendiente arma igual el reintento', async () => {
+    vi.useFakeTimers();
+    try {
+      envio.execute.mockRejectedValueOnce(new Error('roto'));
+      reportes.execute.mockResolvedValueOnce({ enviados: 0, descartados: 0, pendientes: 1 });
+      renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[0]);
+
+      expect(reportes.execute).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sin sesión o sin usuario, nada', () => {

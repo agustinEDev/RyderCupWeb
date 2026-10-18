@@ -102,7 +102,11 @@ const HoleReviews = () => {
                   className="flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left text-gray-900"
                 >
                   <span className="flex-1 font-medium">{t('holeReviews.hole', { numero: hoyo.holeNumber })}</span>
-                  <span className="text-sm text-gray-500">{t('holeReviews.samples', { count: hoyo.samples })}</span>
+                  <span className="text-sm text-gray-500">
+                    {[hoyo.samples ? t('holeReviews.samples', { count: hoyo.samples }) : null, hoyo.reports ? t('holeReviews.reports', { count: hoyo.reports }) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
                 </button>
               </li>

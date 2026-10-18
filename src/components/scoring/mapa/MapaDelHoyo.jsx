@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Compass, LocateFixed, Maximize2, MapPin, X } from 'lucide-react';
+import { Compass, LocateFixed, Maximize2, MapPin, MoreVertical, X } from 'lucide-react';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
@@ -150,6 +150,8 @@ const tipoDelPunto = (i, linea) => (i === 0 ? 'salida' : i === linea.length - 1 
 const BOTON =
   'min-h-11 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 text-[15px] font-semibold text-gray-900 shadow-lg disabled:opacity-50';
 const PLACA = 'rounded-xl bg-gray-950/85 text-white shadow-lg';
+// Los motivos de un reporte, en el orden del menú (entrega 7, 18 oct)
+const MOTIVOS_DEL_REPORTE = ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED'];
 
 /**
  * El mapa del hoyo a pantalla completa (BE #532), sobre la ortofoto del PNOA.
@@ -168,6 +170,10 @@ const PLACA = 'rounded-xl bg-gray-950/85 text-white shadow-lg';
  * desde ti si el GPS es bueno y estás en el hoyo; si no, con la tarjeta. Al cerrar, si el jugador la hizo o la movió y el
  * hoyo aún recoge muestras (`recoge`), se envía con `onMuestra`, sin decírselo:
  * todo esto es transparente para él (Agustín, 16 oct).
+ *
+ * En un hoyo con línea, «⋮» reporta un problema (entrega 7, 18 oct): un motivo y
+ * la línea que el jugador propone, que se manda con `onReporte`. Mientras, la
+ * línea de siempre no se toca: es la que siguen viendo todos.
  */
 const MapaDelHoyo = ({
   golfCourseId,
@@ -182,6 +188,7 @@ const MapaDelHoyo = ({
   onMuestra = null,
   onEmpezar = null,
   colocarSalida = true,
+  onReporte = null,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -239,6 +246,16 @@ const MapaDelHoyo = ({
   const preguntaPrimero = porMarcar === 'salida' || porMarcar === 'salidaAlGreen';
   const [marca, setMarca] = useState({ fase: preguntaPrimero ? 'pregunta' : porMarcar ? 'pidiendo' : null, tee: null });
   const [avisoDeMarca, setAvisoDeMarca] = useState(null);
+  // El reporte en curso (entrega 7): eligiendo el motivo, tocando la salida, el
+  // green, o con la propuesta lista. Lo que había antes se guarda para volver a
+  // ello: la propuesta no es una muestra
+  const [reporte, setReporte] = useState(null);
+  const [gracias, setGracias] = useState(false);
+  const menuDeMotivos = reporte?.fase === 'motivos';
+  const antesDelReporte = useRef(null);
+  const botonDeReportar = useRef(null);
+  const primerMotivo = useRef(null);
+  const reportaba = useRef(false);
   const marcandoSalida = preguntaPrimero;
   // El green que ya trae el hoyo (de una muestra solo green): con la salida basta
   const greenConocido = porMarcar === 'salidaAlGreen' ? (hoyo?.green?.center ?? null) : null;
@@ -299,7 +316,8 @@ const MapaDelHoyo = ({
   const primeraOpcion = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
-    alCerrar.current = { edicion, recoge, onMuestra, campo: referenciaDelCampo };
+    // A mitad de un reporte, lo que se enviaría al cerrar es lo de antes de él
+    alCerrar.current = { edicion: reporte ? antesDelReporte.current : edicion, recoge, onMuestra, campo: referenciaDelCampo };
     // De la salida al green, con los codos de su par puestos sobre la recta
     hacerLineaAhora.current = (desde, hasta) => {
       if (salidaGreenFueraDeLimites(desde, hasta)) {
@@ -320,6 +338,26 @@ const MapaDelHoyo = ({
       });
     };
     alTocar.current = (p) => {
+      // Reportando, el mapa no mide: marca la salida y el green que se proponen
+      if (reporte) {
+        // El segundo toque de un doble toque no es el green (/code-review)
+        const ahora = globalThis.performance.now();
+        const dobleToque = ahora - ultimoToque.current < DOBLE_TOQUE_MS;
+        ultimoToque.current = ahora;
+        if (dobleToque) return;
+        if (reporte.fase === 'salida') {
+          setReporte({ ...reporte, fase: 'green', tee: p });
+        } else if (reporte.fase === 'green') {
+          if (salidaGreenFueraDeLimites(reporte.tee, p)) {
+            setAvisoDeMarca(t('mapa.fueraDeLimites'));
+            return;
+          }
+          setAvisoDeMarca(null);
+          setEdicion((e) => ({ ...e, linea: conCodosDelPar([reporte.tee, p], par), green: null, version: e.version + 1 }));
+          setReporte({ fase: 'lista', motivo: reporte.motivo });
+        }
+        return;
+      }
       // Mientras se pregunta si estás en la salida, o se elige tras el «No», el
       // mapa no marca ni mide
       if (fase === 'pregunta' || fase === 'eligiendo') return;
@@ -374,6 +412,7 @@ const MapaDelHoyo = ({
         setMarca({ fase: null, tee: null });
         return;
       }
+      setGracias(false);
       setTocado(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
       // oct); lejos del campo no, que alejaría a kilómetros
@@ -607,7 +646,8 @@ const MapaDelHoyo = ({
 
   // Los metros de cada tramo de la línea que se ve (Agustín, 16 oct: siempre que
   // se pinta una línea). No dependen del GPS: valen lejos del campo y sin señal
-  const lineaVisible = useMemo(() => linea ?? hoyo?.playLine ?? [], [linea, hoyo]);
+  // Reportando, la de siempre no se ve: solo la que se propone
+  const lineaVisible = useMemo(() => linea ?? (reporte ? [] : (hoyo?.playLine ?? [])), [linea, hoyo, reporte]);
   // Como las de medir, se mueven y se reescriben, no se rehacen; también
   // mientras se arrastra, antes de soltar
   const ponerCifrasDeLaLinea = useCallback(
@@ -628,10 +668,11 @@ const MapaDelHoyo = ({
   }, [ponerCifrasDeLaLinea, empezar]);
   // La línea discontinua del hoyo, del mismo hoyo que sus cifras; con la línea
   // que se mueve, solo su green (la línea va aparte, entera)
-  const hoyoQueSeDibuja = useMemo(
-    () => (linea ? { playLine: [], green: hoyoAhora?.green ?? null } : greenMarcado ? hoyoAhora : hoyo),
-    [linea, hoyo, hoyoAhora, greenMarcado],
-  );
+  const hoyoQueSeDibuja = useMemo(() => {
+    if (linea) return { playLine: [], green: hoyoAhora?.green ?? null };
+    if (reporte) return { playLine: [], green: null };
+    return greenMarcado ? hoyoAhora : hoyo;
+  }, [linea, hoyo, hoyoAhora, greenMarcado, reporte]);
   useEffect(() => {
     hoyoActual.current = hoyoQueSeDibuja;
     mapaRef.current?.getSource('hoyo')?.setData(geojsonDelHoyo(hoyoQueSeDibuja));
@@ -693,14 +734,24 @@ const MapaDelHoyo = ({
   }, [marca.fase]);
 
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
+  // (y al proponer la línea de un reporte, igual)
+  const marcandoElReporte = reporte?.fase === 'salida' || reporte?.fase === 'green';
   useEffect(() => {
     const zoom = mapaRef.current?.doubleClickZoom;
-    if (pidiendo) zoom?.disable();
+    if (pidiendo || marcandoElReporte) zoom?.disable();
     else zoom?.enable();
-  }, [pidiendo]);
+  }, [pidiendo, marcandoElReporte]);
+  // El foco: al primer motivo al abrir el menú, y a «⋮» al acabar el reporte
+  // (revisor, 18 oct: el botón que se pulsó desaparece)
+  const faseDelReporte = reporte?.fase ?? null;
+  useEffect(() => {
+    if (faseDelReporte === 'motivos') primerMotivo.current?.focus();
+    else if (!faseDelReporte && reportaba.current) botonDeReportar.current?.focus();
+    reportaba.current = Boolean(faseDelReporte);
+  }, [faseDelReporte]);
   // La salida mientras se pide el green: la recién tocada o, pidiendo solo el
   // green, la aprobada (para ver desde dónde se mide)
-  const salidaQueSePinta = pidiendo ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null))) : null;
+  const salidaQueSePinta = reporte?.fase === 'green' ? reporte.tee : pidiendo ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null))) : null;
   useEffect(() => {
     const mapa = mapaRef.current;
     marcaDeLaSalida.current?.remove();
@@ -747,7 +798,9 @@ const MapaDelHoyo = ({
     try {
       linea.forEach((p, i) => {
         // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
-        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
+        // Con el menú de motivos abierto no se mueve: lo que se moviera se
+        // perdería al elegir o cancelar (/code-review)
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: !menuDeMotivos });
         puntosDeLaLinea.current.push(m);
         m.setLngLat(lngLat(p)).addTo(mapa);
         // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
@@ -771,7 +824,51 @@ const MapaDelHoyo = ({
       puntosDeLaLinea.current = [];
       captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
     }
-  }, [linea, datosDeLaLinea, greenMarcado]);
+  }, [linea, datosDeLaLinea, greenMarcado, menuDeMotivos]);
+
+  // Lo de antes, desde que se abre el menú: si el mapa se cierra o se oculta
+  // con él abierto, se envía eso (revisor, 18 oct)
+  const abrirElMenu = () => {
+    antesDelReporte.current = edicion;
+    setGracias(false);
+    setReporte({ fase: 'motivos' });
+  };
+  const elegirMotivo = (motivo) => {
+    // Lo que se ve no se rehace mientras se propone
+    empezar();
+    setAvisoDeMarca(null);
+    setTocado(null);
+    setEdicion((e) => ({ ...e, linea: null, green: null, version: e.version + 1 }));
+    setReporte({ fase: 'salida', motivo });
+  };
+  const acabarElReporte = () => {
+    const antes = antesDelReporte.current;
+    antesDelReporte.current = null;
+    setAvisoDeMarca(null);
+    setReporte(null);
+    // Tal cual, con su versión: si ya salió al ocultarse, no vuelve a salir
+    if (antes) setEdicion(antes);
+  };
+  const enviarReporte = () => {
+    // Arrastrando se puede salir de los límites: se dice, y no se manda algo
+    // que el servidor tiraría tras darle las gracias (/code-review)
+    if (salidaGreenFueraDeLimites(linea[0], linea.at(-1))) {
+      setAvisoDeMarca(t('mapa.fueraDeLimites'));
+      return;
+    }
+    onReporte?.({
+      id: globalThis.crypto.randomUUID(),
+      reason: reporte.motivo,
+      tee: linea[0],
+      bends: linea.slice(1, -1),
+      greenCenter: linea.at(-1),
+    });
+    acabarElReporte();
+    setGracias(true);
+  };
+  // «⋮», solo en un hoyo con línea y sin marcar otra cosa (la pregunta de la
+  // salida solo sale en un hoyo sin línea)
+  const sePuedeReportar = Boolean(onReporte) && !sinMapa && (hoyo?.playLine?.length ?? 0) >= 2 && !reporte && !pidiendo;
 
   const empezarAMarcar = () => {
     salidaRecienTocada.current = null;
@@ -813,10 +910,24 @@ const MapaDelHoyo = ({
         className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 pt-[calc(1rem+env(safe-area-inset-top))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
       >
         <h2 id="titulo-del-mapa" className={`${PLACA} px-3.5 py-2 text-lg font-extrabold`}>{t('mapa.titulo', { numero: numeroDeHoyo, par })}</h2>
-        <button type="button" onClick={onCerrar} className={`${BOTON} pointer-events-auto`}>
-          <X className="h-4 w-4" aria-hidden="true" />
-          {t('mapa.cerrar')}
-        </button>
+        <span className="flex gap-2">
+          {sePuedeReportar && (
+            <button
+              ref={botonDeReportar}
+              type="button"
+              onClick={abrirElMenu}
+              aria-label={t('mapa.reportar')}
+              aria-haspopup="true"
+              className={`${BOTON} pointer-events-auto px-3`}
+            >
+              <MoreVertical className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" onClick={onCerrar} className={`${BOTON} pointer-events-auto`}>
+            <X className="h-4 w-4" aria-hidden="true" />
+            {t('mapa.cerrar')}
+          </button>
+        </span>
       </div>
 
       <div ref={montarMapa} className="absolute inset-0" />
@@ -831,7 +942,53 @@ const MapaDelHoyo = ({
 
         {avisoDeMarca && <p role="alert" className={`${PLACA} self-start px-3.5 py-2 text-sm text-yellow-300`}>{avisoDeMarca}</p>}
 
-        {sinMapa ? null : fase === 'pregunta' ? (
+        {/* Siempre montado, para que el lector de pantalla diga las gracias */}
+        <div aria-live="polite" className="contents">
+          {gracias && !reporte && <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.reporteGracias')}</p>}
+        </div>
+
+        {sinMapa ? null : reporte?.fase === 'motivos' ? (
+          <div role="group" aria-labelledby="titulo-del-reporte" className={`${PLACA} pointer-events-auto flex flex-col gap-2 p-3`}>
+            <span id="titulo-del-reporte" className="text-base font-semibold">{t('mapa.reporteTitulo')}</span>
+            {MOTIVOS_DEL_REPORTE.map((clave, i) => (
+              <button key={clave} ref={i === 0 ? primerMotivo : undefined} type="button" onClick={() => elegirMotivo(clave)} className="min-h-11 rounded-xl bg-white/15 px-3 py-2 text-left text-[15px] font-semibold text-white">
+                {t(`mapa.motivos.${clave}`)}
+              </button>
+            ))}
+            <button type="button" onClick={acabarElReporte} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+              {t('mapa.cancelar')}
+            </button>
+          </div>
+        ) : reporte ? (
+          // Con la propuesta lista, el texto arriba y los botones debajo: a 360 px
+          // no caben al lado sin que el texto ocupe medio mapa (revisor, 18 oct)
+          <div
+            data-testid="barra-del-reporte"
+            className={`${PLACA} pointer-events-auto flex gap-2 px-3.5 py-2 ${reporte.fase === 'lista' ? 'flex-col' : 'items-center justify-between'}`}
+          >
+            <span aria-live="polite" className="text-base font-semibold">
+              {t(
+                reporte.fase === 'salida'
+                  ? 'mapa.reporteSalida'
+                  : reporte.fase === 'green'
+                    ? 'mapa.reporteGreen'
+                    : (linea?.length ?? 0) > 2
+                      ? 'mapa.ayudaCodo'
+                      : 'mapa.reporteSinCodos',
+              )}
+            </span>
+            <span className={`flex shrink-0 gap-2 ${reporte.fase === 'lista' ? 'justify-end' : ''}`}>
+              {reporte.fase === 'lista' && (
+                <button type="button" onClick={enviarReporte} className="min-h-11 rounded-xl bg-white px-3 text-[15px] font-semibold text-gray-900">
+                  {t('mapa.enviarReporte')}
+                </button>
+              )}
+              <button type="button" onClick={acabarElReporte} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+                {t('mapa.cancelar')}
+              </button>
+            </span>
+          </div>
+        ) : fase === 'pregunta' ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
             <span aria-live="polite" className="text-base font-semibold">{t('mapa.preguntaSalida')}</span>
             <span className="flex gap-2">
@@ -881,7 +1038,7 @@ const MapaDelHoyo = ({
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaMedir')}</p>
         )}
 
-        {marca.fase === 'pausado' && !sinMapa && (
+        {marca.fase === 'pausado' && !sinMapa && !reporte && (
           <button type="button" onClick={empezarAMarcar} className={`${BOTON} pointer-events-auto self-end`}>
             <MapPin className="h-4 w-4" aria-hidden="true" />
             {t('mapa.marcarHoyo')}
