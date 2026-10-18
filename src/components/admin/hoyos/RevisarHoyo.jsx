@@ -84,7 +84,9 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     haMarcado.current = estaMarcando;
   }, [estaMarcando]);
 
-  // `conservarLinea`: tras borrar una muestra, la que se edita no se toca
+  // `conservarLinea`: tras borrar una muestra o descartar un reporte, la línea
+  // que el admin ha movido no se toca; sin moverla, se vuelve a partir de lo
+  // que quede (Agustín, 18 oct)
   const cargar = useCallback(
     async ({ conservarLinea = false } = {}) => {
       try {
@@ -378,7 +380,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                           <button
                             type="button"
                             disabled={ocupado || Boolean(marcando)}
-                            onClick={() => hacer(() => discardHoleReportUseCase.execute(golfCourseId, reporte.id), 'holeReviews.discardedOk', { conservarLinea: true })}
+                            onClick={() => hacer(() => discardHoleReportUseCase.execute(golfCourseId, reporte.id), 'holeReviews.discardedOk', { conservarLinea: editada })}
                             className={`${BOTON} bg-red-600 text-white`}
                           >
                             {t('holeReviews.confirmDiscard')}
@@ -418,7 +420,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                         <button
                           type="button"
                           disabled={ocupado || Boolean(marcando)}
-                          onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: true })}
+                          onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: editada })}
                           className={`${BOTON} bg-red-600 text-white`}
                         >
                           {t('holeReviews.confirmDelete')}

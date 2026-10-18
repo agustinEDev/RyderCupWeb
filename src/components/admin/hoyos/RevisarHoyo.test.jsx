@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 /**
  * Revisar un hoyo (BE #575, 17 oct: una referencia por hoyo).
@@ -31,7 +31,7 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
  * | V1   | sin guardada y con reportes               | abre con la línea del primer reporte, aunque haya OSM o muestras |
  * | V2   | con guardada y con reportes               | abre con la guardada                                  |
  * | V3   | sin reportes                              | como antes: OSM y, si no, la primera muestra completa |
- * | V4   | descartar el primer reporte               | la línea que se edita no cambia                       |
+ * | V4   | descartar un reporte o borrar una muestra | con la línea movida, se queda; sin moverla, se parte de lo que quede |
  * | V5   | el primer reporte sin codos               | su salida y su green                                  |
  */
 
@@ -703,7 +703,7 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       expect(mapa.props.linea).toEqual({ tee: alNorte(40), bends: [], greenCenter: alNorte(320) });
     });
 
-    it('V4: descartar el primer reporte no cambia la línea que se edita', async () => {
+    it('V4: descartar el primer reporte sin haber tocado su línea pasa a la del siguiente (Agustín, 18 oct)', async () => {
       await abrir({ muestras: [], reportes: [REPORTE, SEGUNDO] });
       casos.descartar.mockResolvedValue(undefined);
       // Tras descartar, el hoyo vuelve sin ese reporte: el primero pasa a ser otro
@@ -716,7 +716,50 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       await waitFor(() => expect(avisos.success).toHaveBeenCalledWith('holeReviews.discardedOk'));
       await waitFor(() => expect(casos.campo).toHaveBeenCalledTimes(2));
       expect(screen.getAllByRole('button', { name: 'holeReviews.discard' })).toHaveLength(1);
-      expect(mapa.props.linea).toEqual(deLaLinea(REPORTE));
+      expect(mapa.props.linea).toEqual(deLaLinea(SEGUNDO));
+    });
+
+    it('V4: descartado el último reporte sin tocar su línea, se parte de OSM', async () => {
+      await abrir({ muestras: [], osm: OSM, barras: PAR3, reportes: [] });
+      const deOsm = mapa.props.linea;
+      cleanup();
+      await abrir({ muestras: [], osm: OSM, barras: PAR3, reportes: [REPORTE] });
+      casos.descartar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ muestras: [], osm: OSM, barras: PAR3, reportes: [] }));
+      const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+
+      fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.discard' }));
+      fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.confirmDiscard' }));
+
+      await waitFor(() => expect(mapa.props.linea).toEqual(deOsm));
+      expect(deOsm).not.toBeNull();
+    });
+
+    it('V4: borrar sin tocarla la muestra de la que se partía pasa a la siguiente', async () => {
+      const otra = { ...COMPLETA, id: 's-3', tee: alNorte(30), greenCenter: alNorte(330) };
+      await abrir({ muestras: [COMPLETA, otra], reportes: [] });
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ muestras: [otra], reportes: [] }));
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+
+      await waitFor(() => expect(mapa.props.linea).toEqual({ tee: alNorte(30), bends: [], greenCenter: alNorte(330) }));
+    });
+
+    it('V4: con la línea movida, descartar el reporte la conserva', async () => {
+      await abrir({ muestras: [], reportes: [REPORTE, SEGUNDO] });
+      const movida = { tee: alNorte(5), bends: [], greenCenter: alNorte(300) };
+      act(() => mapa.props.onLinea(movida));
+      casos.descartar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ muestras: [], reportes: [SEGUNDO] }));
+      const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+
+      fireEvent.click(within(seccion).getAllByRole('button', { name: 'holeReviews.discard' })[0]);
+      fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.confirmDiscard' }));
+
+      await waitFor(() => expect(casos.campo).toHaveBeenCalledTimes(2));
+      expect(mapa.props.linea).toEqual(movida);
     });
   });
 
