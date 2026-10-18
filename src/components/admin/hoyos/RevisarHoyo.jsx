@@ -132,7 +132,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         // Una línea nueva a la vista, orientada (A1); la misma de antes, no
         // (borrar una muestra no le quita al admin el zoom ni el giro: revisor)
         const seVera = conservarLinea && lineaQueSeVe.current ? lineaQueSeVe.current : deLoQueHay;
-        if (seVera && !mismaLinea(seVera, lineaQueSeVe.current)) setOrientar((n) => n + 1);
+        // Y si se queda sin ninguna, de vuelta al norte (CodeRabbit)
+        if (seVera ? !mismaLinea(seVera, lineaQueSeVe.current) : Boolean(lineaQueSeVe.current)) setOrientar((n) => n + 1);
         // Conservada la línea, también su fila (S10: si se borró, ya no está).
         // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
         // un solo green no toca la línea)

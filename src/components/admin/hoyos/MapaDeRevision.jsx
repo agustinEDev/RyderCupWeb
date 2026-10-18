@@ -145,10 +145,29 @@ const MapaDeRevision = ({
   // roja (par 3 al green, 4 o 5 al primer codo), una vez por cada vez que se
   // pide (A1, A2, A4, A6), con todo a la vista (A1b). Sin línea, nada. Se
   // puede girar con los dedos (A6)
+  // Sin línea, todo a la vista y el norte arriba (A1c)
+  const verTodoAlNorte = () => {
+    const todos = todosLosPuntos();
+    if (!todos.length) return;
+    const lats = todos.map((p) => p.lat);
+    const lons = todos.map((p) => p.lon);
+    mapaRef.current.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding: 40, maxZoom: 18, animate: false, bearing: 0 },
+    );
+  };
   const orientarLaLinea = (animar) => {
     const mapa = mapaRef.current;
     const { linea: actual, par: delHoyo } = datos.current;
-    if (!mapa || !cargado.current || !actual) return;
+    if (!mapa || !cargado.current) return;
+    // Quitada la línea (al recargar), de vuelta al norte (CodeRabbit)
+    if (!actual) {
+      verTodoAlNorte();
+      return;
+    }
     const girada = camaraGirada({ playLine: todosLosPuntos(), green: null }, rumboDeLaLinea(puntosDeLaLinea(actual), delHoyo), {
       ancho: contenedor.current?.clientWidth || 360,
       alto: contenedor.current?.clientHeight || 640,
@@ -163,12 +182,14 @@ const MapaDeRevision = ({
 
   // La de ahora, por ref: el mapa se monta una vez y sus oyentes la llaman
   const orientarAhora = useRef(orientarLaLinea);
+  const verTodo = useRef(verTodoAlNorte);
   const pintar = useRef(pintarLinea);
   const centrar = useRef(centrarEnLaPosicion);
   useLayoutEffect(() => {
     pintar.current = pintarLinea;
     centrar.current = centrarEnLaPosicion;
     orientarAhora.current = orientarLaLinea;
+    verTodo.current = verTodoAlNorte;
   });
 
   useEffect(() => {
@@ -199,21 +220,9 @@ const MapaDeRevision = ({
       mapa.addSource('destacado', { type: 'geojson', data: comoPuntos(datos.current.destacado ? [datos.current.destacado] : []) });
       mapa.addLayer({ id: 'destacado', type: 'circle', source: 'destacado', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
       cargado.current = true;
-      // Todo a la vista: las muestras, lo guardado y la línea
-      const todos = todosLosPuntos();
       // Con la línea roja, orientado con ella (A1); sin ella, todo y norte arriba
       if (datos.current.orientar > 0 && actual) orientarAhora.current(false);
-      else if (todos.length) {
-        const lats = todos.map((p) => p.lat);
-        const lons = todos.map((p) => p.lon);
-        mapa.fitBounds(
-          [
-            [Math.min(...lons), Math.min(...lats)],
-            [Math.max(...lons), Math.max(...lats)],
-          ],
-          { padding: 40, maxZoom: 18, animate: false },
-        );
-      }
+      else verTodo.current();
       pintar.current();
       // La posición pudo llegar antes de que cargara
       centrar.current();

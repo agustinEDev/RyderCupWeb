@@ -1223,6 +1223,18 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       await waitFor(() => expect(mapa.props.orientar).toBe(3));
     });
 
+    it('CodeRabbit: si la recarga deja el hoyo sin línea, se pide orientar (al norte)', async () => {
+      await abrir({ muestras: [COMPLETA, SOLO_GREEN] });
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ muestras: [SOLO_GREEN] }));
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+
+      await waitFor(() => expect(mapa.props.linea).toBeNull());
+      expect(mapa.props.orientar).toBe(2);
+    });
+
     it('/code-review: marcando o guardando, «Orientar» no se puede pulsar', async () => {
       await abrir();
       fireEvent.click(screen.getByRole('button', { name: 'holeReviews.markFromScratch' }));

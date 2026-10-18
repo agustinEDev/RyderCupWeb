@@ -207,6 +207,8 @@ describe('MapaDeRevision', () => {
 
       expect(mapa.opciones.center).toEqual([T.lon, T.lat]);
       expect(mapa.opciones.zoom).toBeGreaterThanOrEqual(15);
+      act(() => mapa.oyentes.load());
+      expect(mapa.fitBounds).not.toHaveBeenCalled();
     });
 
     it('E14: tu posición se ve, y el mapa se centra en ella cada vez que se pide', () => {
@@ -439,14 +441,16 @@ describe('MapaDeRevision', () => {
       expect(mapa.easeTo.mock.calls[0][0].center).toEqual([encuadre.center.lon, encuadre.center.lat]);
     });
 
-    it('A1: pedir orientar sin línea no hace nada', () => {
-      const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
+    it('A1c (CodeRabbit): pedir orientar sin línea vuelve al norte con todo a la vista', () => {
+      const { rerender } = render(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={CON_CODO} onLinea={() => {}} par={4} orientar={1} />);
       const mapa = mapas.at(-1);
       act(() => mapa.oyentes.load());
 
-      rerender(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} par={4} orientar={2} />);
+      rerender(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} par={4} orientar={2} />);
 
       expect(mapa.easeTo).not.toHaveBeenCalled();
+      expect(mapa.fitBounds).toHaveBeenCalledTimes(1);
+      expect(mapa.fitBounds.mock.calls[0][1]).toMatchObject({ bearing: 0 });
     });
 
     it('A5: la línea cambia (arrastrando) sin pedir orientar: no gira', () => {
