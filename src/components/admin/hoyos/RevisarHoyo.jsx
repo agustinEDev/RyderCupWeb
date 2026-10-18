@@ -109,8 +109,10 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
         // Su fila, si sale de un reporte o de una muestra (S2)
         const deDonde = este.guardada || (!primerReporte && osm) ? null : (primerReporte ?? primeraCompleta)?.id ?? null;
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
-        // Conservada la línea, también su fila (S10: si se borró, ya no está)
-        if (!conservarLinea) setSeleccion(deDonde);
+        // Conservada la línea, también su fila (S10: si se borró, ya no está).
+        // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
+        // un solo green no toca la línea)
+        if (!conservarLinea) setSeleccion((sel) => (este.muestras.some((m) => m.id === sel) ? sel : deDonde));
         if (!conservarLinea) setEditada(false);
         setFallo(false);
       } catch {
@@ -351,7 +353,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                   <button
                     type="button"
                     disabled={ocupado || Boolean(marcando)}
-                    onClick={() => elegirLinea(lineaDeOsmDe(hoyo))}
+                    onClick={() => {
+                      // La de OSM no es de ninguna fila (S14)
+                      setSeleccion(null);
+                      elegirLinea(lineaDeOsmDe(hoyo));
+                    }}
                     className={`${BOTON} bg-gray-100 text-gray-900`}
                   >
                     {t('holeReviews.useOsm')}

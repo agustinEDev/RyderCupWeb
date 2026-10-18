@@ -986,6 +986,32 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
       expect(mapa.props.destacado).toBeNull();
     });
 
+    it('S14: «Partir de OSM» quita la selección, y volver a tocar la fila pone su línea', async () => {
+      await abrir({ osm: { puntos: [T, alNorte(80), alNorte(148)], green: alNorte(150) }, muestras: [COMPLETA, OTRA] });
+      fireEvent.click(filas()[1]);
+
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.useOsm' }));
+      expect(mapa.props.linea.greenCenter).toEqual(alNorte(150));
+      expect(seleccionadas()).toEqual([]);
+
+      fireEvent.click(filas()[1]);
+      expect(mapa.props.linea.greenCenter).toEqual(alNorte(330));
+    });
+
+    it('S10b: borrando otra fila, el solo green seleccionado sigue en rojo', async () => {
+      await abrir({ muestras: [COMPLETA, SOLO_GREEN, OTRA] });
+      fireEvent.click(filas()[1]);
+      casos.borrar.mockResolvedValue(undefined);
+      casos.campo.mockResolvedValue(campo({ muestras: [SOLO_GREEN, OTRA] }));
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'holeReviews.confirmDelete' }));
+
+      await waitFor(() => expect(mapa.props.linea.greenCenter).toEqual(alNorte(330)));
+      expect(mapa.props.destacado).toEqual(SOLO_GREEN.greenCenter);
+      expect(seleccionadas()).toEqual([filas()[0]]);
+    });
+
     it('S10: «Borrar» va aparte de la fila: pulsarlo no la selecciona', async () => {
       await abrir({ muestras: [COMPLETA, OTRA] });
 

@@ -285,6 +285,7 @@ describe('MapaDeRevision', () => {
       expect(capa.paint['circle-color']).toBe('#dc2626');
       const orden = mapa.capas.map((c) => c.id);
       expect(orden.indexOf('destacado')).toBeGreaterThan(orden.indexOf('muestras-greens'));
+      for (const id of ['osm', 'guardada', 'linea', 'marcados']) expect(orden.indexOf('destacado')).toBeGreaterThan(orden.indexOf(id));
 
       rerender(<MapaDeRevision muestras={MUESTRAS} guardada={null} linea={null} onLinea={() => {}} destacado={null} />);
       expect(mapa.fuentes.destacado.data.features).toEqual([]);
