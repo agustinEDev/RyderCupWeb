@@ -85,6 +85,22 @@ describe('useEnvioDeMuestras', () => {
     globalThis.removeEventListener(MUESTRAS_CAMBIADAS, aviso);
   });
 
+  it('R5: si las muestras fallan, un reporte pendiente arma igual el reintento', async () => {
+    vi.useFakeTimers();
+    try {
+      envio.execute.mockRejectedValueOnce(new Error('roto'));
+      reportes.execute.mockResolvedValueOnce({ enviados: 0, descartados: 0, pendientes: 1 });
+      renderHook(() => useEnvioDeMuestras({ activo: true, userId: 'u1' }));
+      await vi.advanceTimersByTimeAsync(0);
+
+      await vi.advanceTimersByTimeAsync(ESPERAS_MS[0]);
+
+      expect(reportes.execute).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('sin sesión o sin usuario, nada', () => {
     renderHook(() => useEnvioDeMuestras({ activo: false, userId: 'u1' }));
     renderHook(() => useEnvioDeMuestras({ activo: true, userId: null }));

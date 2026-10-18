@@ -252,6 +252,9 @@ const MapaDelHoyo = ({
   const [reporte, setReporte] = useState(null);
   const [gracias, setGracias] = useState(false);
   const antesDelReporte = useRef(null);
+  const botonDeReportar = useRef(null);
+  const primerMotivo = useRef(null);
+  const reportaba = useRef(false);
   const marcandoSalida = preguntaPrimero;
   // El green que ya trae el hoyo (de una muestra solo green): con la salida basta
   const greenConocido = porMarcar === 'salidaAlGreen' ? (hoyo?.green?.center ?? null) : null;
@@ -403,6 +406,7 @@ const MapaDelHoyo = ({
         setMarca({ fase: null, tee: null });
         return;
       }
+      setGracias(false);
       setTocado(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
       // oct); lejos del campo no, que alejaría a kilómetros
@@ -724,11 +728,21 @@ const MapaDelHoyo = ({
   }, [marca.fase]);
 
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
+  // (y al proponer la línea de un reporte, igual)
+  const marcandoElReporte = reporte?.fase === 'salida' || reporte?.fase === 'green';
   useEffect(() => {
     const zoom = mapaRef.current?.doubleClickZoom;
-    if (pidiendo) zoom?.disable();
+    if (pidiendo || marcandoElReporte) zoom?.disable();
     else zoom?.enable();
-  }, [pidiendo]);
+  }, [pidiendo, marcandoElReporte]);
+  // El foco: al primer motivo al abrir el menú, y a «⋮» al acabar el reporte
+  // (revisor, 18 oct: el botón que se pulsó desaparece)
+  const faseDelReporte = reporte?.fase ?? null;
+  useEffect(() => {
+    if (faseDelReporte === 'motivos') primerMotivo.current?.focus();
+    else if (!faseDelReporte && reportaba.current) botonDeReportar.current?.focus();
+    reportaba.current = Boolean(faseDelReporte);
+  }, [faseDelReporte]);
   // La salida mientras se pide el green: la recién tocada o, pidiendo solo el
   // green, la aprobada (para ver desde dónde se mide)
   const salidaQueSePinta = reporte?.fase === 'green' ? reporte.tee : pidiendo ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null))) : null;
@@ -804,10 +818,17 @@ const MapaDelHoyo = ({
     }
   }, [linea, datosDeLaLinea, greenMarcado]);
 
-  const elegirMotivo = (motivo) => {
-    // Lo que se ve no se rehace mientras se propone; lo de antes, para volver
-    empezar();
+  // Lo de antes, desde que se abre el menú: si el mapa se cierra o se oculta
+  // con él abierto, se envía eso (revisor, 18 oct)
+  const abrirElMenu = () => {
     antesDelReporte.current = edicion;
+    setGracias(false);
+    setReporte({ fase: 'motivos' });
+  };
+  const elegirMotivo = (motivo) => {
+    // Lo que se ve no se rehace mientras se propone
+    empezar();
+    setAvisoDeMarca(null);
     setTocado(null);
     setEdicion((e) => ({ ...e, linea: null, green: null, version: e.version + 1 }));
     setReporte({ fase: 'salida', motivo });
@@ -817,7 +838,8 @@ const MapaDelHoyo = ({
     antesDelReporte.current = null;
     setAvisoDeMarca(null);
     setReporte(null);
-    if (antes) setEdicion((e) => ({ ...antes, version: e.version + 1 }));
+    // Tal cual, con su versión: si ya salió al ocultarse, no vuelve a salir
+    if (antes) setEdicion(antes);
   };
   const enviarReporte = () => {
     onReporte?.({
@@ -832,7 +854,7 @@ const MapaDelHoyo = ({
   };
   // «⋮», solo en un hoyo con línea y sin marcar otra cosa (la pregunta de la
   // salida solo sale en un hoyo sin línea)
-  const sePuedeReportar = Boolean(onReporte) && (hoyo?.playLine?.length ?? 0) >= 2 && !reporte && !pidiendo;
+  const sePuedeReportar = Boolean(onReporte) && !sinMapa && (hoyo?.playLine?.length ?? 0) >= 2 && !reporte && !pidiendo;
 
   const empezarAMarcar = () => {
     salidaRecienTocada.current = null;
@@ -877,12 +899,11 @@ const MapaDelHoyo = ({
         <span className="flex gap-2">
           {sePuedeReportar && (
             <button
+              ref={botonDeReportar}
               type="button"
-              onClick={() => {
-                setGracias(false);
-                setReporte({ fase: 'motivos' });
-              }}
+              onClick={abrirElMenu}
               aria-label={t('mapa.reportar')}
+              aria-haspopup="true"
               className={`${BOTON} pointer-events-auto px-3`}
             >
               <MoreVertical className="h-5 w-5" aria-hidden="true" />
@@ -907,30 +928,42 @@ const MapaDelHoyo = ({
 
         {avisoDeMarca && <p role="alert" className={`${PLACA} self-start px-3.5 py-2 text-sm text-yellow-300`}>{avisoDeMarca}</p>}
 
-        {gracias && !reporte && (
-          <p role="status" className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
-            {t('mapa.reporteGracias')}
-          </p>
-        )}
+        {/* Siempre montado, para que el lector de pantalla diga las gracias */}
+        <div aria-live="polite" className="contents">
+          {gracias && !reporte && <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.reporteGracias')}</p>}
+        </div>
 
         {sinMapa ? null : reporte?.fase === 'motivos' ? (
-          <div className={`${PLACA} pointer-events-auto flex flex-col gap-2 p-3`}>
-            <span className="text-base font-semibold">{t('mapa.reporteTitulo')}</span>
-            {MOTIVOS_DEL_REPORTE.map((clave) => (
-              <button key={clave} type="button" onClick={() => elegirMotivo(clave)} className="min-h-11 rounded-xl bg-white/15 px-3 py-2 text-left text-[15px] font-semibold text-white">
+          <div role="group" aria-labelledby="titulo-del-reporte" className={`${PLACA} pointer-events-auto flex flex-col gap-2 p-3`}>
+            <span id="titulo-del-reporte" className="text-base font-semibold">{t('mapa.reporteTitulo')}</span>
+            {MOTIVOS_DEL_REPORTE.map((clave, i) => (
+              <button key={clave} ref={i === 0 ? primerMotivo : undefined} type="button" onClick={() => elegirMotivo(clave)} className="min-h-11 rounded-xl bg-white/15 px-3 py-2 text-left text-[15px] font-semibold text-white">
                 {t(`mapa.motivos.${clave}`)}
               </button>
             ))}
-            <button type="button" onClick={() => setReporte(null)} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+            <button type="button" onClick={acabarElReporte} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
               {t('mapa.cancelar')}
             </button>
           </div>
         ) : reporte ? (
-          <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
+          // Con la propuesta lista, el texto arriba y los botones debajo: a 360 px
+          // no caben al lado sin que el texto ocupe medio mapa (revisor, 18 oct)
+          <div
+            data-testid="barra-del-reporte"
+            className={`${PLACA} pointer-events-auto flex gap-2 px-3.5 py-2 ${reporte.fase === 'lista' ? 'flex-col' : 'items-center justify-between'}`}
+          >
             <span aria-live="polite" className="text-base font-semibold">
-              {t(reporte.fase === 'salida' ? 'mapa.reporteSalida' : reporte.fase === 'green' ? 'mapa.reporteGreen' : 'mapa.ayudaCodo')}
+              {t(
+                reporte.fase === 'salida'
+                  ? 'mapa.reporteSalida'
+                  : reporte.fase === 'green'
+                    ? 'mapa.reporteGreen'
+                    : (linea?.length ?? 0) > 2
+                      ? 'mapa.ayudaCodo'
+                      : 'mapa.reporteSinCodos',
+              )}
             </span>
-            <span className="flex shrink-0 gap-2">
+            <span className={`flex shrink-0 gap-2 ${reporte.fase === 'lista' ? 'justify-end' : ''}`}>
               {reporte.fase === 'lista' && (
                 <button type="button" onClick={enviarReporte} className="min-h-11 rounded-xl bg-white px-3 text-[15px] font-semibold text-gray-900">
                   {t('mapa.enviarReporte')}
@@ -991,7 +1024,7 @@ const MapaDelHoyo = ({
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaMedir')}</p>
         )}
 
-        {marca.fase === 'pausado' && !sinMapa && (
+        {marca.fase === 'pausado' && !sinMapa && !reporte && (
           <button type="button" onClick={empezarAMarcar} className={`${BOTON} pointer-events-auto self-end`}>
             <MapPin className="h-4 w-4" aria-hidden="true" />
             {t('mapa.marcarHoyo')}

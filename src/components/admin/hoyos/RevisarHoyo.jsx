@@ -378,7 +378,10 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                             {t('holeReviews.confirmDiscard')}
                           </button>
                         ) : (
-                          <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => setPorDescartar(reporte.id)} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                          <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                              setPorBorrar(null);
+                              setPorDescartar(reporte.id);
+                            }} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
                             {t('holeReviews.discard')}
                           </button>
                         )}
@@ -415,7 +418,10 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                           {t('holeReviews.confirmDelete')}
                         </button>
                       ) : (
-                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => setPorBorrar(muestra.id)} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                            setPorDescartar(null);
+                            setPorBorrar(muestra.id);
+                          }} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
                           {t('holeReviews.delete')}
                         </button>
                       )}

@@ -412,6 +412,7 @@
       "WRONG_HOLE": "It's not the right hole",
       "WRONG_LINE": "The line is wrong",
       "HOLE_CHANGED": "The hole has changed"
-    }
+    },
+    "reporteSinCodos": "Move the tee or the green if needed"
   }
 }

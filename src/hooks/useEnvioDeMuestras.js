@@ -36,8 +36,11 @@ export const useEnvioDeMuestras = ({ activo, userId = null }) => {
       reintento = null;
       const sigue = () => vigente;
       const deReportes = sendPendingHoleReportsUseCase.execute(userId, { sigue }).catch(() => ({ pendientes: 0 }));
+      // Un fallo de las muestras tampoco frena los reportes: sus pendientes
+      // arman el reintento igual (revisor, 18 oct)
       sendPendingHoleSamplesUseCase
         .execute(userId, { sigue })
+        .catch(() => ({ enviadas: 0, descartadas: 0, pendientes: 0 }))
         .then(async ({ enviadas, descartadas, pendientes: deMuestras }) => {
           if (!vigente) return;
           if (enviadas || descartadas) globalThis.dispatchEvent(new globalThis.CustomEvent(MUESTRAS_CAMBIADAS));

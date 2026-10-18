@@ -2529,7 +2529,7 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(enviado).toMatchObject({ reason: 'HOLE_CHANGED', tee: alNorte(20), greenCenter: alNorte(280) });
     expect(enviado.bends).toHaveLength(1);
     expect(typeof enviado.id).toBe('string');
-    expect(screen.getByRole('status')).toHaveTextContent('mapa.reporteGracias');
+    expect(screen.getByText('mapa.reporteGracias')).toBeInTheDocument();
     expect(lineaDibujada()).toEqual(deSiempre);
     unmount();
     expect(onMuestra).not.toHaveBeenCalled();
@@ -2586,6 +2586,122 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
 
     expect(onReporte.mock.calls[0][0].bends).toEqual([{ lat: alNorte(150).lat, lon: -5.331 }]);
+  });
+
+  // Revisor, 18 oct
+  const moverLaSalida = () => {
+    const salida = mapas.marcas.filter((m) => !m.quitada && m.opciones.draggable)[0];
+    act(() => {
+      salida.setLngLat([T.lon, alNorte(10).lat]);
+      salida.oyentes.dragend({ target: salida });
+    });
+  };
+  const ocultar = () =>
+    act(() => {
+      Object.defineProperty(globalThis.document, 'visibilityState', { value: 'hidden', configurable: true });
+      globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+    });
+
+  it('R-1: con el menú abierto, cerrar el mapa manda lo que se movió, sin romper nada', () => {
+    const { onMuestra, unmount } = abrirConLinea();
+    moverLaSalida();
+    menu();
+
+    expect(() => unmount()).not.toThrow();
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+    expect(onMuestra.mock.calls[0][0].tee).toEqual({ lat: alNorte(10).lat, lon: T.lon });
+  });
+
+  it('R-1: con el menú abierto, ocultar la app manda lo que se movió', () => {
+    const { onMuestra } = abrirConLinea();
+    moverLaSalida();
+    menu();
+
+    ocultar();
+
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+  });
+
+  it('R-2: sin mapa (sin WebGL), sin «⋮»', () => {
+    mapas.sinWebgl = true;
+    abrir({ hoyo: LINEA, par: 4, onReporte: vi.fn() });
+
+    expect(screen.queryByRole('button', { name: 'mapa.reportar' })).toBeNull();
+  });
+
+  it('R-3: marcando la propuesta, el doble toque no acerca; al acabar, sí', () => {
+    abrirConLinea();
+    menu();
+    motivo('WRONG_LINE');
+    expect(mapa().doubleClickZoom.disable).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+    expect(mapa().doubleClickZoom.enable).toHaveBeenCalled();
+  });
+
+  it('R-4: en un par 3 (sin codos), la propuesta no habla de codos', () => {
+    abrirConLinea({ par: 3 });
+    proponer();
+
+    expect(screen.queryByText('mapa.ayudaCodo')).toBeNull();
+    expect(screen.getByText('mapa.reporteSinCodos')).toBeInTheDocument();
+  });
+
+  it('R-5: con la propuesta lista, el texto arriba y los botones debajo', () => {
+    abrirConLinea();
+    proponer();
+
+    const enviar = screen.getByRole('button', { name: 'mapa.enviarReporte' });
+    expect(enviar.closest('[data-testid="barra-del-reporte"]')).toHaveClass('flex-col');
+  });
+
+  it('R-6: el foco va al primer motivo, y al acabar vuelve a «⋮»', () => {
+    abrirConLinea();
+
+    menu();
+    expect(screen.getByRole('button', { name: 'mapa.motivos.WRONG_HOLE' })).toHaveFocus();
+    expect(screen.getByRole('group', { name: 'mapa.reporteTitulo' })).toBeInTheDocument();
+    motivo('WRONG_HOLE');
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
+  });
+
+  it('R-7: las gracias se anuncian y se van al tocar el mapa', () => {
+    abrirConLinea();
+    proponer();
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+
+    const gracias = screen.getByText('mapa.reporteGracias');
+    expect(gracias.closest('[aria-live="polite"]')).not.toBeNull();
+    tocar(alNorte(100));
+
+    expect(screen.queryByText('mapa.reporteGracias')).toBeNull();
+  });
+
+  it('R-8: reportando, «Marcar hoyo» no está', () => {
+    abrirConLinea({ hoyo: { playLine: [T, alNorte(200)], green: null }, porMarcar: 'green' });
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
+    expect(screen.getByRole('button', { name: /mapa\.marcarHoyo/ })).toBeInTheDocument();
+
+    menu();
+
+    expect(screen.queryByRole('button', { name: /mapa\.marcarHoyo/ })).toBeNull();
+  });
+
+  it('R-10: lo que ya salió al ocultarse no se vuelve a mandar tras un reporte', () => {
+    const { onMuestra, unmount } = abrirConLinea();
+    moverLaSalida();
+    ocultar();
+    expect(onMuestra).toHaveBeenCalledTimes(1);
+    menu();
+    motivo('WRONG_LINE');
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+    unmount();
+
+    expect(onMuestra).toHaveBeenCalledTimes(1);
   });
 
   it('P11: mientras se marca el green de un hoyo con salida, sin «⋮»; con «Ahora no», vuelve', () => {

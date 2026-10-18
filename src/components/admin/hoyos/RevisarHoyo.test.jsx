@@ -659,6 +659,19 @@ describe('RevisarHoyo — reportes (entrega 7)', () => {
     expect(seccion).toHaveTextContent('2026');
   });
 
+  it('Q5: pedir descartar cierra la confirmación de borrar una muestra, y al revés', async () => {
+    await abrir({ reportes: [REPORTE] });
+    const seccion = screen.getByRole('region', { name: 'holeReviews.reportsTitle' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+    expect(screen.getByRole('button', { name: 'holeReviews.confirmDelete' })).toBeInTheDocument();
+
+    fireEvent.click(within(seccion).getByRole('button', { name: 'holeReviews.discard' }));
+    expect(screen.queryByRole('button', { name: 'holeReviews.confirmDelete' })).toBeNull();
+    fireEvent.click(screen.getAllByRole('button', { name: 'holeReviews.delete' })[0]);
+
+    expect(within(seccion).queryByRole('button', { name: 'holeReviews.confirmDiscard' })).toBeNull();
+  });
+
   it('Q3: sin reportes, no hay sección', async () => {
     await abrir({ reportes: [] });
 

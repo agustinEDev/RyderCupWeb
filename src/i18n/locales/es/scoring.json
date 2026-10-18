@@ -422,6 +422,7 @@
       "WRONG_HOLE": "No es el hoyo correcto",
       "WRONG_LINE": "La línea es incorrecta",
       "HOLE_CHANGED": "El hoyo ha cambiado"
-    }
+    },
+    "reporteSinCodos": "Mueve la salida o el green si hace falta"
   }
 }
