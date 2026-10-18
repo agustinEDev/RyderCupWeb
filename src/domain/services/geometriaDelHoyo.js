@@ -32,6 +32,41 @@ export const orientacionDelHoyo = (hoyo) => {
   return rumbo(linea[0], destino);
 };
 
+/**
+ * El giro del mapa para una línea de la salida al green (Agustín, 17 oct): en
+ * un par 4 o 5, de la salida al primer codo (lo que se ve desde la salida); en
+ * un par 3, sin codos o sin par, de la salida al green. `null` sin línea.
+ */
+export const rumboDeLaLinea = (linea, par) => {
+  if (!linea || linea.length < 2) return null;
+  const hacia = par === 4 || par === 5 ? linea[1] : linea.at(-1);
+  return rumbo(linea[0], hacia);
+};
+
+/**
+ * A mitad de hoyo, el siguiente punto de la línea que hay delante (Agustín,
+ * 18 oct): el final del tramo más cercano a `posicion` (el siguiente codo o el
+ * green). En metros sobre el plano, que para un hoyo basta. `null` sin línea.
+ */
+export const siguientePuntoDeLaLinea = (posicion, linea) => {
+  if (!linea || linea.length < 2) return null;
+  const coseno = Math.cos(radianes(posicion.lat));
+  const enMetros = (p) => ({ x: (p.lon - posicion.lon) * coseno, y: p.lat - posicion.lat });
+  let mejor = null;
+  for (let i = 0; i < linea.length - 1; i += 1) {
+    const a = enMetros(linea[i]);
+    const b = enMetros(linea[i + 1]);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const largo = dx * dx + dy * dy;
+    // La posición está en el origen: lo más cerca del tramo, entre sus dos puntos
+    const t = largo ? Math.min(1, Math.max(0, -(a.x * dx + a.y * dy) / largo)) : 0;
+    const distancia = (a.x + t * dx) ** 2 + (a.y + t * dy) ** 2;
+    if (!mejor || distancia < mejor.distancia) mejor = { distancia, punto: linea[i + 1] };
+  }
+  return mejor.punto;
+};
+
 /** Los puntos que forman el hoyo: su línea de juego y su green (delante, centro y fondo). */
 const puntosDelHoyo = (hoyo) => {
   const green = hoyo?.green;
