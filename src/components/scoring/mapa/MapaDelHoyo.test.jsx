@@ -2131,6 +2131,19 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(screen.getByRole('button', { name: 'mapa.soloDistancia' })).toHaveFocus();
   });
 
+  // /code-review, 18 oct: el foco va una vez, al contestar; no cada vez que el GPS vuelve
+  it('S1: si el GPS va y viene mientras eliges, el foco no vuelve a saltar a la opción', () => {
+    abrirSinLinea();
+    enLaSalida();
+    no();
+    screen.getByRole('button', { name: 'mapa.soloDistancia' }).blur();
+
+    act(() => gps.exito(lectura(40.4, -3.7)));
+    enLaSalida();
+
+    expect(screen.getByRole('button', { name: 'mapa.soloDistancia' })).not.toHaveFocus();
+  });
+
   it('S2: mientras se elige, tocar el mapa no marca ni mide nada', () => {
     const { unmount, onMuestra } = abrirSinLinea();
     enLaSalida();

@@ -686,10 +686,11 @@ const MapaDelHoyo = ({
   };
 
   // El «No» se va de la pantalla y con él el foco: pasa a la primera opción,
-  // para que el lector de pantalla diga lo que hay (revisor, 18 oct)
+  // para que el lector de pantalla diga lo que hay (revisor, 18 oct). Al
+  // contestar, una vez: no cada vez que el GPS va y viene (/code-review)
   useEffect(() => {
-    if (fase === 'eligiendo') primeraOpcion.current?.focus();
-  }, [fase]);
+    if (marca.fase === 'eligiendo') primeraOpcion.current?.focus();
+  }, [marca.fase]);
 
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
   useEffect(() => {
