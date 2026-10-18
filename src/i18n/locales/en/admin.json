@@ -1,14 +1,6 @@
 {
   "title": "Admin Panel",
   "subtitle": "Users, statistics, and golf courses",
-  "tabs": {
-    "overview": "Overview",
-    "users": "Users",
-    "golfCourses": "Golf Courses",
-    "pending": "Pending",
-    "competitions": "Competitions",
-    "holeReviews": "Holes to review"
-  },
   "overview": {
     "totalUsers": "Registered users",
     "totalCompetitions": "Tournaments created",
@@ -56,7 +48,8 @@
     "deleteTooltip": "Manage account",
     "previous": "Previous",
     "next": "Next",
-    "pageInfo": "Page {{current}} of {{total}}"
+    "pageInfo": "Page {{current}} of {{total}}",
+    "listLabel": "Users"
   },
   "competitions": {
     "searchPlaceholder": "Search by name or creator…",
@@ -103,7 +96,8 @@
     "confirmCancel": "Yes, cancel",
     "confirmCancelDismiss": "No, keep it",
     "transitionSuccess": "Status updated",
-    "transitionError": "Failed to update status"
+    "transitionError": "Failed to update status",
+    "listLabel": "Competitions"
   },
   "editModal": {
     "title": "Edit user",
@@ -143,14 +137,13 @@
     "genericError": "Something went wrong"
   },
   "holeReviews": {
-    "intro": "The samples players send, hole by hole. Save one line per hole: everyone sees it and the hole stops collecting samples.",
-    "empty": "There are no holes to review.",
+    "intro": "Holes with player samples and no saved line. Open one, compare the samples on the map and save the line: the hole leaves this list.",
+    "empty": "There are no holes pending review.",
     "error": "It could not be loaded. Try again.",
     "retry": "Retry",
     "hole": "Hole {{numero}}",
     "samples_one": "{{count}} sample",
     "samples_other": "{{count}} samples",
-    "saved": "saved",
     "title": "{{nombre}} · Hole {{numero}}",
     "close": "Close",
     "line": "The hole's line",
@@ -158,13 +151,12 @@
     "noLine": "No line yet: start from a sample.",
     "save": "Save line",
     "reopen": "Reopen hole",
-    "savedOk": "Line saved",
-    "reopenedOk": "Hole reopened",
+    "savedOk": "Hole {{numero}} saved",
+    "reopenedOk": "Hole {{numero}} reopened",
     "deletedOk": "Sample deleted",
     "invalidLine": "The line is not valid: at most two bends, the green 40-750 m from the tee and no point more than 3 km from the course.",
     "actionError": "It could not be done. Try again.",
-    "cards": "Each tee's card",
-    "card": "par {{par}}, {{metros}} m",
+    "cards": "The card",
     "samplesTitle": "Samples",
     "noSamples": "This hole has no samples.",
     "metres": "{{metros}} m",
@@ -178,10 +170,52 @@
     },
     "unsaved": "You have unsaved changes to the line.",
     "closeWithoutSaving": "Close without saving",
-    "cardNoMetres": "par {{par}}, —",
+    "cardNoMetres": "Par {{par}} · no metres on the card",
     "onlyGreens": "There are only green-only samples: wait for a complete one to start from it.",
     "pointTee": "Tee",
     "pointBend": "Bend",
-    "pointGreen": "Green"
+    "pointGreen": "Green",
+    "pendingHoles_one": "{{count}} pending hole",
+    "pendingHoles_other": "{{count}} pending holes",
+    "cardRange": "Par {{par}} · Hole length: {{desde}} to {{hasta}} m",
+    "cardSame": "Par {{par}} · {{metros}} m",
+    "markFromScratch": "Mark from scratch",
+    "tapTee": "Tap where the tee is",
+    "tapGreen": "Tap the centre of the green",
+    "tapTeeToGreen": "Tap where the tee is: the green is already marked",
+    "cancelMarking": "Cancel",
+    "greenTooClose": "The tee and the green are less than 40 m apart: tap again",
+    "greenTooFar": "The tee and the green are more than 750 m apart: tap again",
+    "myPosition": "My position",
+    "findingPosition": "Finding your position…",
+    "positionDenied": "No location permission",
+    "tooFarFromCourse": "That point is more than 3 km from the course: tap again",
+    "positionUnavailable": "This browser does not give your position",
+    "useOsm": "Start from OpenStreetMap"
+  },
+  "menu": {
+    "label": "Panel sections",
+    "requests_one": "{{count}} request",
+    "requests_other": "{{count}} requests"
+  },
+  "golfTabs": {
+    "approved": "Approved",
+    "requests": "Requests"
+  },
+  "allCourses": {
+    "intro": "Search for a course to see its 18 holes: fix the ones with a line or mark them from scratch.",
+    "hole": "Hole {{numero}}",
+    "saved": "Saved",
+    "osm": "OpenStreetMap",
+    "empty": "No data",
+    "changeCourse": "Change course",
+    "error": "The course could not be loaded.",
+    "osmWithoutGreen": "OpenStreetMap · no green",
+    "reloadError": "The course could not be reloaded.",
+    "retry": "Retry"
+  },
+  "holeTabs": {
+    "pending": "Pending",
+    "allCourses": "All courses"
   }
 }

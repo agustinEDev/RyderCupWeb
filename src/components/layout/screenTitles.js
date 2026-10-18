@@ -29,6 +29,11 @@ const SCREENS = [
   { pattern: '/profile/edit', titleKey: 'screens.editProfile', parent: '/profile' },
   { pattern: '/profile/devices', titleKey: 'screens.devices', parent: '/profile' },
   { pattern: '/admin', titleKey: 'screens.admin', parent: '/profile' },
+  { pattern: '/admin/resumen', titleKey: 'screens.adminOverview', parent: '/admin' },
+  { pattern: '/admin/usuarios', titleKey: 'screens.adminUsers', parent: '/admin' },
+  { pattern: '/admin/competiciones', titleKey: 'screens.adminCompetitions', parent: '/admin' },
+  { pattern: '/admin/campos', titleKey: 'screens.adminGolfCourses', parent: '/admin' },
+  { pattern: '/admin/hoyos', titleKey: 'screens.adminHoles', parent: '/admin' },
 
   { pattern: '/competitions/create', titleKey: 'screens.createCompetition', parent: '/competitions' },
   { pattern: '/competitions/:id', titleKey: 'screens.competition', parent: '/competitions' },

@@ -1,14 +1,6 @@
 {
   "title": "Panel de Administración",
   "subtitle": "Usuarios, estadísticas y campos de golf",
-  "tabs": {
-    "overview": "Resumen",
-    "users": "Usuarios",
-    "golfCourses": "Campos de golf",
-    "pending": "Pendientes",
-    "competitions": "Competiciones",
-    "holeReviews": "Hoyos por revisar"
-  },
   "overview": {
     "totalUsers": "Usuarios registrados",
     "totalCompetitions": "Torneos creados",
@@ -56,7 +48,8 @@
     "deleteTooltip": "Gestionar cuenta",
     "previous": "Anterior",
     "next": "Siguiente",
-    "pageInfo": "Página {{current}} de {{total}}"
+    "pageInfo": "Página {{current}} de {{total}}",
+    "listLabel": "Usuarios"
   },
   "competitions": {
     "searchPlaceholder": "Buscar por nombre o creador…",
@@ -103,7 +96,8 @@
     "confirmCancel": "Sí, cancelar",
     "confirmCancelDismiss": "No cancelar",
     "transitionSuccess": "Estado actualizado",
-    "transitionError": "Error al cambiar el estado"
+    "transitionError": "Error al cambiar el estado",
+    "listLabel": "Competiciones"
   },
   "editModal": {
     "title": "Editar usuario",
@@ -143,14 +137,13 @@
     "genericError": "Ha ocurrido un error"
   },
   "holeReviews": {
-    "intro": "Las muestras que mandan los jugadores, hoyo a hoyo. Guarda una línea por hoyo: la ven todos y el hoyo deja de recoger muestras.",
-    "empty": "No hay hoyos por revisar.",
+    "intro": "Hoyos con muestras de los jugadores y sin línea guardada. Abre uno, compara las muestras sobre el mapa y guarda la línea: el hoyo desaparece de esta lista.",
+    "empty": "No hay hoyos pendientes de revisar.",
     "error": "No se ha podido cargar. Inténtalo de nuevo.",
     "retry": "Reintentar",
     "hole": "Hoyo {{numero}}",
     "samples_one": "{{count}} muestra",
     "samples_other": "{{count}} muestras",
-    "saved": "guardado",
     "title": "{{nombre}} · Hoyo {{numero}}",
     "close": "Cerrar",
     "line": "La línea del hoyo",
@@ -158,13 +151,12 @@
     "noLine": "Aún no hay línea: parte de una muestra.",
     "save": "Guardar línea",
     "reopen": "Reabrir hoyo",
-    "savedOk": "Línea guardada",
-    "reopenedOk": "Hoyo reabierto",
+    "savedOk": "Hoyo {{numero}} guardado",
+    "reopenedOk": "Hoyo {{numero}} reabierto",
     "deletedOk": "Muestra borrada",
     "invalidLine": "La línea no vale: como mucho dos codos, el green a 40-750 m de la salida y ningún punto a más de 3 km del campo.",
     "actionError": "No se ha podido hacer. Inténtalo de nuevo.",
-    "cards": "La tarjeta de cada barra",
-    "card": "par {{par}}, {{metros}} m",
+    "cards": "La tarjeta",
     "samplesTitle": "Muestras",
     "noSamples": "Este hoyo no tiene muestras.",
     "metres": "{{metros}} m",
@@ -178,10 +170,52 @@
     },
     "unsaved": "Tienes cambios sin guardar en la línea.",
     "closeWithoutSaving": "Cerrar sin guardar",
-    "cardNoMetres": "par {{par}}, —",
+    "cardNoMetres": "Par {{par}} · sin metros en la tarjeta",
     "onlyGreens": "Solo hay muestras de solo green: espera a que llegue una completa para partir de ella.",
     "pointTee": "Salida",
     "pointBend": "Codo",
-    "pointGreen": "Green"
+    "pointGreen": "Green",
+    "pendingHoles_one": "{{count}} hoyo pendiente",
+    "pendingHoles_other": "{{count}} hoyos pendientes",
+    "cardRange": "Par {{par}} · Distancia del hoyo: {{desde}} a {{hasta}} m",
+    "cardSame": "Par {{par}} · {{metros}} m",
+    "markFromScratch": "Marcar desde cero",
+    "tapTee": "Toca dónde está la salida",
+    "tapGreen": "Toca el centro del green",
+    "tapTeeToGreen": "Toca dónde está la salida: el green ya está marcado",
+    "cancelMarking": "Cancelar",
+    "greenTooClose": "La salida y el green están a menos de 40 m: toca otra vez",
+    "greenTooFar": "La salida y el green están a más de 750 m: toca otra vez",
+    "myPosition": "Mi posición",
+    "findingPosition": "Buscando tu posición…",
+    "positionDenied": "Sin permiso de ubicación",
+    "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez",
+    "positionUnavailable": "Este navegador no da tu posición",
+    "useOsm": "Empezar desde OpenStreetMap"
+  },
+  "menu": {
+    "label": "Secciones del panel",
+    "requests_one": "{{count}} solicitud",
+    "requests_other": "{{count}} solicitudes"
+  },
+  "golfTabs": {
+    "approved": "Aprobados",
+    "requests": "Solicitudes"
+  },
+  "allCourses": {
+    "intro": "Busca un campo para ver sus 18 hoyos: corrige los que tienen línea o márcalos desde cero.",
+    "hole": "Hoyo {{numero}}",
+    "saved": "Guardado",
+    "osm": "OpenStreetMap",
+    "empty": "Sin datos",
+    "changeCourse": "Cambiar de campo",
+    "error": "No se ha podido cargar el campo.",
+    "osmWithoutGreen": "OpenStreetMap · sin green",
+    "reloadError": "No se ha podido recargar el campo.",
+    "retry": "Reintentar"
+  },
+  "holeTabs": {
+    "pending": "Pendientes",
+    "allCourses": "Todos los campos"
   }
 }

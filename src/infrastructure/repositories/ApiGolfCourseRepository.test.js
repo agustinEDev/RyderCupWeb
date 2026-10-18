@@ -251,7 +251,7 @@ describe('ApiGolfCourseRepository — revisar hoyos (admin, BE #575)', () => {
     const repo = new ApiGolfCourseRepository();
 
     expect(await repo.listHoleReviews()).toEqual([{ golfCourseId: 'gc-1', name: 'V', holes: [] }]);
-    expect(await repo.getHoleReview('gc-1')).toEqual({ golfCourseId: 'gc-1', name: 'V', holes: [] });
+    expect(await repo.getHoleReview('gc-1')).toEqual({ golfCourseId: 'gc-1', name: 'V', ubicacion: null, holes: [] });
     expect(apiRequest.mock.calls.map((c) => c[0])).toEqual([
       '/api/v1/golf-courses/admin/hole-reviews',
       '/api/v1/golf-courses/admin/gc-1/hole-reviews',

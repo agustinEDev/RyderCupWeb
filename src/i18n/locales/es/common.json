@@ -100,7 +100,12 @@
     "myMatches": "Mis Partidos",
     "myQuickMatches": "Partidas Rápidas",
     "myStats": "Mis estadísticas",
-    "playerProfile": "Perfil del jugador"
+    "playerProfile": "Perfil del jugador",
+    "adminOverview": "Resumen",
+    "adminUsers": "Usuarios",
+    "adminCompetitions": "Competiciones",
+    "adminGolfCourses": "Campos de golf",
+    "adminHoles": "Hoyos"
   },
   "footer": {
     "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",

@@ -135,4 +135,13 @@ describe('usePosicionGps', () => {
 
     expect(result.current.estado).toBe('no-disponible');
   });
+  // Revisión del admin (17 oct): para centrar su mapa vale una posición de
+  // ordenador, que por Wi-Fi suele ir de 40 a 150 m
+  it('con otra precisión máxima, acepta las que caben en ella', () => {
+    const { result } = renderHook(() => usePosicionGps({ activo: true, precisionMaxima: Infinity }));
+
+    act(() => gps.exito(posicion(36.28, -5.33, 120)));
+
+    expect(result.current).toEqual({ estado: 'listo', posicion: { lat: 36.28, lon: -5.33 }, precision: 120 });
+  });
 });

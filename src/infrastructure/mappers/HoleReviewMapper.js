@@ -11,12 +11,13 @@ const lineaADominio = (linea) =>
   linea ? { tee: aDominio(linea.tee), bends: (linea.bends ?? []).map(aDominio), greenCenter: aDominio(linea.green_center) } : null;
 
 class HoleReviewMapper {
-  /** @returns {{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number, saved: boolean}[]}[]} */
+  /** @returns {{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number}[]}[]} */
   static listToDomain(api) {
     return (api?.courses ?? []).map((curso) => ({
       golfCourseId: curso.golf_course_id,
       name: curso.name,
-      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples, saved: h.saved })),
+      // Solo llegan los pendientes: el `saved` de la API es siempre false (17 oct)
+      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples })),
     }));
   }
 
@@ -24,9 +25,13 @@ class HoleReviewMapper {
     return {
       golfCourseId: api.golf_course_id,
       name: api.name,
+      // Para marcar un hoyo sin nada, el mapa parte del campo (17 oct)
+      ubicacion: api.location ? aDominio(api.location) : null,
       holes: (api.holes ?? []).map((h) => ({
         holeNumber: h.hole_number,
         guardada: lineaADominio(h.saved_line),
+        // La del mapa de OSM aprobado, entera (17 oct): se ve y se parte de ella
+        osm: h.osm_line ? { puntos: (h.osm_line.points ?? []).map(aDominio), green: h.osm_line.green_center ? aDominio(h.osm_line.green_center) : null } : null,
         muestras: (h.samples ?? []).map((m) => ({
           id: m.id,
           barra: { color: m.tee_color, gender: m.tee_gender ?? null },

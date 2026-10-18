@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import AdminUsersTable from './AdminUsersTable';
 
 vi.mock('react-i18next', () => ({
@@ -20,6 +20,9 @@ const baseUser = {
   createdAt: '2026-07-27T00:00:00Z',
 };
 
+// La tabla del ordenador; en el móvil van las filas (AdminUsersTable.movil.test.jsx)
+const tabla = () => within(screen.getByRole('table'));
+
 describe('AdminUsersTable', () => {
   it('renders the empty state when there are no users', () => {
     render(<AdminUsersTable users={[]} onEdit={vi.fn()} onToggleActive={vi.fn()} onManageDelete={vi.fn()} />);
@@ -37,9 +40,9 @@ describe('AdminUsersTable', () => {
       />
     );
 
-    expect(screen.getByText('Agus Estevez')).toBeInTheDocument();
-    expect(screen.getByText('agus@test.com')).toBeInTheDocument();
-    expect(screen.getByText('17.7')).toBeInTheDocument();
+    expect(tabla().getByText('Agus Estevez')).toBeInTheDocument();
+    expect(tabla().getByText('agus@test.com')).toBeInTheDocument();
+    expect(tabla().getByText('17.7')).toBeInTheDocument();
   });
 
   it('shows a dash when handicap is null', () => {
@@ -52,7 +55,7 @@ describe('AdminUsersTable', () => {
       />
     );
 
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(tabla().getByText('—')).toBeInTheDocument();
   });
 
   it('shows the admin role pill for admins and player pill otherwise', () => {
@@ -64,7 +67,7 @@ describe('AdminUsersTable', () => {
         onManageDelete={vi.fn()}
       />
     );
-    expect(screen.getByText('users.rolePlayer')).toBeInTheDocument();
+    expect(tabla().getByText('users.rolePlayer')).toBeInTheDocument();
 
     rerender(
       <AdminUsersTable
@@ -74,7 +77,7 @@ describe('AdminUsersTable', () => {
         onManageDelete={vi.fn()}
       />
     );
-    expect(screen.getByText('users.roleAdmin')).toBeInTheDocument();
+    expect(tabla().getByText('users.roleAdmin')).toBeInTheDocument();
   });
 
   it('shows the deactivated status pill for inactive users', () => {
@@ -87,7 +90,7 @@ describe('AdminUsersTable', () => {
       />
     );
 
-    expect(screen.getByText('users.statusInactive')).toBeInTheDocument();
+    expect(tabla().getByText('users.statusInactive')).toBeInTheDocument();
   });
 
   it('calls onEdit with the user when the edit button is clicked', () => {
@@ -140,7 +143,7 @@ describe('AdminUsersTable', () => {
     );
 
     expect(
-      screen.getByText(new Date('2026-07-30T10:00:00Z').toLocaleDateString('en'))
+      tabla().getByText(new Date('2026-07-30T10:00:00Z').toLocaleDateString('en'))
     ).toBeInTheDocument();
   });
 
@@ -154,7 +157,7 @@ describe('AdminUsersTable', () => {
       />
     );
 
-    expect(screen.getByText('users.lastLoginNever')).toBeInTheDocument();
+    expect(tabla().getByText('users.lastLoginNever')).toBeInTheDocument();
   });
 
   it('calls onManageDelete with the user when the manage button is clicked', () => {

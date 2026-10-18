@@ -14,8 +14,10 @@ const PERMISO_DENEGADO = 1;
  *             posicion: {lat:number, lon:number}|null, precision: number|null }}
  *   `precision`: el error de la posición, en metros (17 oct: marcar la salida y
  *   medir desde ti piden 20 m o menos)
+ * @param {number} [precisionMaxima] peor que esto, se sigue buscando (30 m; el
+ *   admin, para centrar su mapa, acepta cualquiera: un ordenador va por Wi-Fi)
  */
-export function usePosicionGps({ activo }) {
+export function usePosicionGps({ activo, precisionMaxima = PRECISION_MAXIMA_M }) {
   const geolocation = globalThis.navigator?.geolocation;
   const [lectura, setLectura] = useState({ estado: 'buscando', posicion: null, precision: null });
 
@@ -29,7 +31,7 @@ export function usePosicionGps({ activo }) {
       ({ coords }) => {
         const posicion = { lat: coords.latitude, lon: coords.longitude };
         setLectura(
-          coords.accuracy <= PRECISION_MAXIMA_M && esPosicionValida(posicion)
+          coords.accuracy <= precisionMaxima && esPosicionValida(posicion)
             ? { estado: 'listo', posicion, precision: coords.accuracy }
             : { estado: 'buscando', posicion: null, precision: null }
         );
@@ -51,7 +53,7 @@ export function usePosicionGps({ activo }) {
       // Al volver a activarse, nada de la posición de antes
       setLectura({ estado: 'buscando', posicion: null, precision: null });
     };
-  }, [activo, geolocation]);
+  }, [activo, geolocation, precisionMaxima]);
 
   if (!activo) return { estado: 'inactivo', posicion: null, precision: null };
   if (!geolocation) return { estado: 'no-disponible', posicion: null, precision: null };
