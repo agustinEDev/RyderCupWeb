@@ -7,7 +7,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import BotonMapa from '../../components/scoring/mapa/BotonMapa';
-import { hayMapaEnElPais } from '../../domain/services/coberturaDelMapa';
 import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
@@ -272,6 +271,8 @@ const ScoringPage = () => {
   const mapaDelHoyo = useMapaDelHoyo({
     golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
     cerrarSi: isSessionBlocked,
+    // Su país: solo hay imagen en España (19 oct)
+    pais: scoringView?.roundInfo?.golfCourseCountryCode ?? null,
   });
   // La hora del CAMPO, que es la que el servidor va a aplicar, no la del móvil:
   // `Intl` sin `timeZone` formatea en el huso del aparato, y un torneo canario
@@ -675,7 +676,7 @@ const ScoringPage = () => {
               </button>
               {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
               {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
-              {currentHoleData && !aunNoAbre && !cerradoSinJugar && hayMapaEnElPais(scoringView?.roundInfo?.golfCourseCountryCode) && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+              {currentHoleData && !aunNoAbre && !cerradoSinJugar && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
               <button
                 onClick={handleNextHole}
                 disabled={currentHole >= totalHoles}

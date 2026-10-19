@@ -92,6 +92,51 @@ describe('useMapaDelHoyo', () => {
   });
 });
 
+describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
+  const conPais = (pais) => {
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    return renderHook(
+      () => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }), location: useLocation() }),
+      { wrapper }
+    );
+  };
+
+  it('en un campo de otro país no está disponible: ni se pide su mapa ni se abre', () => {
+    const { result } = conPais('PT');
+
+    act(() => result.current.mapa.abrir());
+
+    expect(result.current.mapa.disponible).toBe(false);
+    expect(result.current.mapa.mapaDelCampo).toBeNull();
+    expect(result.current.mapa.abierto).toBe(false);
+    expect(result.current.location.hash).toBe('');
+  });
+
+  it('abierto sin saber el país, se cierra al saber que es otro', () => {
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const { result, rerender } = renderHook(
+      ({ pais }) => useMapaDelHoyo({ golfCourseId: 'gc-1', pais }),
+      { wrapper, initialProps: { pais: null } }
+    );
+    act(() => result.current.abrir());
+    expect(result.current.abierto).toBe(true);
+
+    rerender({ pais: 'PT' });
+
+    expect(result.current.abierto).toBe(false);
+  });
+
+  it('en España, o sin saber el país, sí', () => {
+    for (const pais of ['ES', null]) {
+      const { result, unmount } = conPais(pais);
+
+      expect(result.current.mapa.disponible).toBe(true);
+      expect(result.current.mapa.mapaDelCampo).toEqual({ golfCourseId: 'gc-1', holes: {} });
+      unmount();
+    }
+  });
+});
+
 describe('useMapaDelHoyo — recargar y sesión tomada', () => {
   it('recargando, el navegador repone el estado del historial: aun así no se abre solo', () => {
     const wrapper = ({ children }) => (

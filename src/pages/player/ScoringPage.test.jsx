@@ -76,7 +76,7 @@ const mockUseScoring = {
 const mapaHoyo = vi.hoisted(() => ({
   args: null,
   ventana: null,
-  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null, disponible: true },
 }));
 vi.mock('../../hooks/useMapaDelHoyo', () => ({
   useMapaDelHoyo: (args) => {
@@ -1607,14 +1607,14 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
   });
   beforeEach(() => {
     mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1' } };
-    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null, disponible: true };
     mapaHoyo.ventana = null;
   });
 
   it('pide el mapa del campo de lo que se anota', () => {
     render(<ScoringPage />);
 
-    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false, pais: null });
   });
 
   it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
@@ -1627,21 +1627,14 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
-  it('19 oct: en un campo de fuera de España, sin «Mapa»; en España o sin saberlo, con él', () => {
-    const conPais = (pais) => {
-      mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1', golfCourseCountryCode: pais } };
-    };
-    conPais('PT');
-    const { unmount } = render(<ScoringPage />);
-    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
-    unmount();
+  it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
+    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1', golfCourseCountryCode: 'PT' } };
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };
 
-    for (const pais of ['ES', null]) {
-      conPais(pais);
-      const { unmount: fuera } = render(<ScoringPage />);
-      expect(screen.getByRole('button', { name: 'mapa.abrir' })).toBeInTheDocument();
-      fuera();
-    }
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args.pais).toBe('PT');
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

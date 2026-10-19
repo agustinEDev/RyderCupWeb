@@ -8,7 +8,6 @@ import { useUserRoles } from '../../hooks/useUserRoles';
 import { useScoring } from '../../hooks/useScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import BotonMapa from '../../components/scoring/mapa/BotonMapa';
-import { hayMapaEnElPais } from '../../domain/services/coberturaDelMapa';
 import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
 import { retireFromTeeGroupUseCase } from '../../composition';
@@ -101,6 +100,8 @@ const GroupScoringPage = () => {
   const mapaDelHoyo = useMapaDelHoyo({
     golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
     cerrarSi: isSessionBlocked,
+    // Su país: solo hay imagen en España (19 oct)
+    pais: scoringView?.roundInfo?.golfCourseCountryCode ?? null,
   });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
@@ -403,7 +404,7 @@ const GroupScoringPage = () => {
                 </button>
                 {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
                 {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
-                {!aunNoAbre && hayMapaEnElPais(scoringView?.roundInfo?.golfCourseCountryCode) && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                {!aunNoAbre && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                 <button
                   type="button"
                   onClick={() => setCurrentHole(currentHole + 1)}

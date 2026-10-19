@@ -14,7 +14,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import BotonMapa from '../../components/scoring/mapa/BotonMapa';
-import { hayMapaEnElPais } from '../../domain/services/coberturaDelMapa';
 import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
@@ -126,7 +125,7 @@ const QuickMatchScoringPage = () => {
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
-  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: quickMatch?.golfCourseId ?? null });
+  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: quickMatch?.golfCourseId ?? null, pais: courseCountryCode ?? null });
 
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla
@@ -652,7 +651,7 @@ const QuickMatchScoringPage = () => {
                   </button>
                   {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
                   {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
-                  {currentHoleData && hayMapaEnElPais(courseCountryCode) && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                  {currentHoleData && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                   <button
                     onClick={handleNextHole}
                     disabled={currentHole >= totalHoles}

@@ -9,6 +9,9 @@ import { hayMapaEnElPais } from './coberturaDelMapa';
 describe('hayMapaEnElPais', () => {
   it('en España, sí', () => {
     expect(hayMapaEnElPais('ES')).toBe(true);
+    // Escrito de otra forma, también (/code-review)
+    expect(hayMapaEnElPais('es')).toBe(true);
+    expect(hayMapaEnElPais(' ES ')).toBe(true);
   });
 
   it('en otro país, no', () => {
