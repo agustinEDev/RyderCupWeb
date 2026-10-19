@@ -19,7 +19,9 @@ export function useBarrasNegras() {
     return () => {
       html.style.backgroundColor = antes.html;
       body.style.backgroundColor = antes.body;
-      tema?.setAttribute('content', antes.tema);
+      // Sin contenido antes, sin él ahora: escribirle null le dejaba «null» (/code-review)
+      if (antes.tema === null) tema?.removeAttribute('content');
+      else tema?.setAttribute('content', antes.tema);
     };
   }, []);
 }

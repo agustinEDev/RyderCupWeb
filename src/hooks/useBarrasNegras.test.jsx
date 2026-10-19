@@ -14,7 +14,7 @@ describe('useBarrasNegras', () => {
   beforeEach(() => {
     const meta = document.createElement('meta');
     meta.name = 'theme-color';
-    meta.content = '#15803d';
+    meta.content = '#123456';
     document.head.appendChild(meta);
   });
   afterEach(() => {
@@ -36,7 +36,7 @@ describe('useBarrasNegras', () => {
 
     expect(document.documentElement.style.backgroundColor).toBe('rgb(62, 134, 66)');
     expect(document.body.style.backgroundColor).toBe('rgb(250, 250, 250)');
-    expect(tema().content).toBe('#15803d');
+    expect(tema().content).toBe('#123456');
   });
 
   it('en StrictMode (efecto dos veces) también vuelve a lo de antes', () => {
@@ -45,8 +45,17 @@ describe('useBarrasNegras', () => {
 
     unmount();
 
-    expect(tema().content).toBe('#15803d');
+    expect(tema().content).toBe('#123456');
     expect(document.body.style.backgroundColor).toBe('');
+  });
+
+  it('/code-review: un theme-color sin contenido se queda sin él (no «null»)', () => {
+    tema().removeAttribute('content');
+
+    const { unmount } = renderHook(() => useBarrasNegras());
+    unmount();
+
+    expect(tema().hasAttribute('content')).toBe(false);
   });
 
   it('sin theme-color en la página, no se rompe ni lo crea', () => {

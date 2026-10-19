@@ -37,6 +37,9 @@ vi.mock('../../../hooks/useReportarHoyo', () => ({
   },
 }));
 const { default: VentanaDelMapa } = await import('./VentanaDelMapa');
+const { readFileSync } = await import('node:fs');
+const { resolve } = await import('node:path');
+const indexCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
 const { default: BotonMapa } = await import('./BotonMapa');
 
 const GREEN = { front: {}, center: {}, back: {} };
@@ -99,16 +102,31 @@ describe('VentanaDelMapa', () => {
 
   it('M1 (19 oct): las barras en negro desde que se abre, también mientras carga y si no carga; al cerrar, lo de antes', async () => {
     carga.suspende = true;
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = '#15803d';
+    document.head.appendChild(meta);
     const { rerender, unmount } = render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
     // Cargando: la caja de la espera, negra como el mapa
     expect(document.body.style.backgroundColor).toBe('rgb(0, 0, 0)');
-    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+    expect(document.documentElement.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    expect(meta.content).toBe('#000000');
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black', 'espera-sobre-oscuro');
+    // La espera, en blanco: la verde no se ve sobre el negro (/code-review)
+    expect(screen.getByRole('status').querySelector('img').getAttribute('src')).toContain('monogram-white');
     // «Cerrar», que se vea sobre el negro
     expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toHaveClass('bg-white', 'text-gray-900');
 
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ abierto: false })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
     expect(document.body.style.backgroundColor).toBe('');
+    expect(document.documentElement.style.backgroundColor).toBe('');
+    expect(meta.content).toBe('#15803d');
     unmount();
+    meta.remove();
+  });
+
+  it('/code-review: sobre el negro, el anillo de la espera en claro', () => {
+    expect(indexCss.replace(/\s+/g, ' ')).toContain('.espera-sobre-oscuro .espera-anillo { border-color: rgba(255, 255, 255, 0.28); border-top-color: #ffffff; }');
   });
 
   it('M1: si no carga, su aviso también en negro', async () => {

@@ -23,7 +23,7 @@ const CAPA = 'fixed inset-x-0 inset-y-0 flex flex-col items-center justify-cente
 const SalidaDelMapa = ({ onCerrar, children }) => {
   const { t } = useTranslation('scoring');
   return (
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} boxClassName={`${CAPA} bg-black text-white`}>
+    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} boxClassName={`${CAPA} espera-sobre-oscuro bg-black text-white`}>
       <button type="button" onClick={onCerrar} className="min-h-11 order-last rounded-xl bg-white px-5 font-semibold text-gray-900">
         {t('mapa.cerrar')}
       </button>
@@ -137,7 +137,7 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
       <Suspense
         fallback={
           <SalidaDelMapa onCerrar={cerrar}>
-            <BlockLoader />
+            <BlockLoader tinta="blanco" />
           </SalidaDelMapa>
         }
       >
