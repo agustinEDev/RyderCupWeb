@@ -1077,7 +1077,7 @@ const MapaDelHoyo = ({
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
     // cerrar, no se sale con el tabulador, Escape cierra y debajo no se desplaza
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-gray-700">
+    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-black">
       <div
         ref={arriba}
         data-testid="mapa-arriba"

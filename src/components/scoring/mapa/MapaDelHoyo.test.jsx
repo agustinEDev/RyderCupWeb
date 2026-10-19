@@ -167,6 +167,12 @@ describe('MapaDelHoyo', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('M3 (19 oct): la caja del mapa, en negro', () => {
+    abrir();
+
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+  });
+
   describe('abrir y cerrar', () => {
     it('A1: a pantalla completa, como diálogo con su título', () => {
       abrir();
