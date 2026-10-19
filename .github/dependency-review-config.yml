@@ -26,6 +26,10 @@ allow-licenses:
   - Unlicense
   - Zlib
 
-# Excepciones, paquete a paquete y con su motivo (formato purl: pkg:npm/<nombre>).
-# Ninguna hoy.
-allow-dependencies-licenses: []
+# Excepciones, paquete a paquete y con su motivo, en formato purl y sin versión:
+# pkg:npm/<nombre> o pkg:githubactions/<org>/<acción>. License Compliance solo
+# mira las pkg:npm/; las de acciones solo cuentan en Dependency Review.
+allow-dependencies-licenses:
+  # AGPL-3.0: la acción que busca secretos en el CI. Corre en el runner y no se
+  # distribuye con el frontend, así que su copyleft no alcanza a este código (#857).
+  - pkg:githubactions/trufflesecurity/trufflehog
