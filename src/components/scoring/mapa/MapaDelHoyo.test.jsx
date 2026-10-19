@@ -3835,9 +3835,12 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
     tocar(P);
     expect(cifras('linea')).toEqual([]);
+    // Ni su resumen para lectores de pantalla (/code-review)
+    expect(screen.queryByTestId('tramos-de-la-linea')).toBeNull();
 
     quitar();
     expect(cifras('linea')).toHaveLength(1);
+    expect(screen.getByTestId('tramos-de-la-linea')).toBeInTheDocument();
     expect(medida()).toEqual([]);
     expect(elPunto()).toEqual([]);
   });
@@ -3869,7 +3872,8 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     tocar(P);
 
     expect(medida()).toEqual([[en(T), en(P)]]);
-    expect(screen.getByRole('status')).toHaveTextContent(/mapa\.hastaAhi/);
+    // Se dice desde dónde, para quien no ve el mapa (/code-review)
+    expect(screen.getByRole('status')).toHaveTextContent(/mapa\.hastaAhiDesdeLaSalida/);
   });
 
   it('T4/T8: sin posición ni salida, del punto al green', () => {
@@ -3994,6 +3998,29 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     unmount();
 
     expect(punto.quitada).toBe(true);
+  });
+
+  it('T6 (/code-review): lejos de la salida sin la línea desde ti (hoyo sin green), tampoco gira', () => {
+    abrir({ hoyo: { playLine: [T, G300], green: null }, porMarcar: null });
+    act(() => mapa().oyentes.load());
+    desde(150);
+    mapa().fitBounds.mockClear();
+
+    tocar(P);
+
+    expect(mapa().fitBounds).not.toHaveBeenCalled();
+  });
+
+  it('T6: tras el «No» en un hoyo sin salida (línea desde ti), no gira', () => {
+    abrir({ hoyo: { playLine: [], green: { center: G300 } }, porMarcar: 'salidaAlGreen', recoge: true, onMuestra: vi.fn(), par: 4, metros: 300 });
+    act(() => mapa().oyentes.load());
+    desde(0);
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
+    mapa().fitBounds.mockClear();
+
+    tocar(P);
+
+    expect(mapa().fitBounds).not.toHaveBeenCalled();
   });
 
   it('T6: lejos del campo, no gira', () => {

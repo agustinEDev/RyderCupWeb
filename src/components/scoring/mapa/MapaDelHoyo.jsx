@@ -310,6 +310,9 @@ const MapaDelHoyo = ({
   const [edicion, setEdicion] = useState(() => ({ linea: lineaInicial, green: null, cambiada: false, version: 0 }));
   const [conAyudaDeCodos, setConAyudaDeCodos] = useState(false);
   const linea = edicion.linea;
+  // La salida de la línea que se ve (la de mi barra, o la editada), o la del hoyo:
+  // desde ella se mide sin tu posición (T4), y cerca de ella el mapa gira (T6)
+  const salidaDelHoyo = (linea ?? hoyo?.playLine)?.[0] ?? null;
   // El hoyo tal y como está ahora: con la línea movida y, si el green no se
   // movió, el suyo (con su contorno); si no, delante y fondo a 10 m
   const greenMarcado = edicion.green;
@@ -474,7 +477,8 @@ const MapaDelHoyo = ({
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
       // oct): con tu posición y en la salida. A mitad de hoyo ya va orientado, y
       // sin posición (o lejos) alejaría a kilómetros (T6, 19 oct)
-      if (posicionBuena && !desdeMi) {
+      const enLaSalida = !salidaDelHoyo || distanciaEnMetros(posicionBuena ?? salidaDelHoyo, salidaDelHoyo) <= FUERA_DE_LA_SALIDA_M;
+      if (posicionBuena && !desdeMi && enLaSalida) {
         mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionBuena, p] }), {
           bearing: rumbo(posicionBuena, p),
           padding: margen(),
@@ -808,7 +812,7 @@ const MapaDelHoyo = ({
   const textoDeTramo = useCallback((metros) => t('mapa.tramo', { metros }), [t]);
   // Desde dónde se mide el punto tocado: tu posición si es buena; si no, la
   // salida del hoyo; sin ninguna, del punto al green (T4, 19 oct)
-  const origenDeLaMedida = posicionBuena ?? (linea ?? hoyo?.playLine)?.[0] ?? null;
+  const origenDeLaMedida = posicionBuena ?? salidaDelHoyo;
   const tramosDelToque = useMemo(() => {
     if (!medido) return [];
     if (origenDeLaMedida) return [[origenDeLaMedida, medido]];
@@ -1111,7 +1115,8 @@ const MapaDelHoyo = ({
   const quitarYSusMetros = (alQuitar) => (
     <div className="flex items-center">
       <span role="status" className="sr-only">
-        {hastaAhi !== null && <span>{t('mapa.hastaAhi', { metros: hastaAhi })}</span>}
+        {/* Sin tu posición se mide desde la salida, y se dice (/code-review) */}
+        {hastaAhi !== null && <span>{t(medido && !posicionBuena ? 'mapa.hastaAhiDesdeLaSalida' : 'mapa.hastaAhi', { metros: hastaAhi })}</span>}
         {deAhiAlGreen !== null && <span>{t('mapa.deAhiAlGreen', { metros: deAhiAlGreen })}</span>}
       </span>
       <button type="button" onClick={alQuitar} className={`${PLACA} pointer-events-auto min-h-11 px-4 text-sm font-semibold text-yellow-300`}>
@@ -1268,7 +1273,8 @@ const MapaDelHoyo = ({
         )}
 
         {/* Las cifras de la línea, en una frase, para quien no ve el mapa */}
-        {fraseDeLaLinea && (
+        {/* Con un punto tocado, como sus cifras en el mapa: fuera (T2) */}
+        {fraseDeLaLinea && !medido && (
           <span data-testid="tramos-de-la-linea" className="sr-only">
             {fraseDeLaLinea}
           </span>

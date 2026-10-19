@@ -374,6 +374,7 @@
     "metros": "m",
     "etiqueta": "{{origen}}: front {{front}} metres, centre {{center}} metres, back {{back}} metres",
     "hastaAhi": "To there {{metros}} m",
+    "hastaAhiDesdeLaSalida": "From the tee to there {{metros}} m",
     "deAhiAlGreen": "From there to the centre of the green {{metros}} m",
     "quitarPunto": "Remove",
     "ayudaMedir": "Tap the map to measure",

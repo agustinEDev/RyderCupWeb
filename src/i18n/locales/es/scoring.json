@@ -384,6 +384,7 @@
     "metros": "m",
     "etiqueta": "{{origen}}: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
     "hastaAhi": "Hasta ahí {{metros}} m",
+    "hastaAhiDesdeLaSalida": "Desde la salida hasta ahí {{metros}} m",
     "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
     "quitarPunto": "Quitar",
     "ayudaMedir": "Toca el mapa para medir",
