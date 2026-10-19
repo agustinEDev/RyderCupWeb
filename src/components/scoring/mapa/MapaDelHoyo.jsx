@@ -240,6 +240,25 @@ const MapaDelHoyo = ({
   // la tarjeta sigue, que no lo necesita
   const [sinMapa, setSinMapa] = useState(false);
 
+  // Las barras del sistema, neutras mientras está abierto (19 oct): el iPhone
+  // pinta la franja de la hora con el fondo de la página y Android su barra con
+  // el theme-color; en negro, como un marco. Al cerrar, lo que había. Safari
+  // sin instalar no se entera (toma sus colores al cargar la página)
+  useEffect(() => {
+    const html = document.documentElement;
+    const { body } = document;
+    const tema = document.head.querySelector('meta[name="theme-color"]');
+    const antes = { html: html.style.backgroundColor, body: body.style.backgroundColor, tema: tema?.getAttribute('content') };
+    html.style.backgroundColor = '#000000';
+    body.style.backgroundColor = '#000000';
+    tema?.setAttribute('content', '#000000');
+    return () => {
+      html.style.backgroundColor = antes.html;
+      body.style.backgroundColor = antes.body;
+      tema?.setAttribute('content', antes.tema);
+    };
+  }, []);
+
   const contenedor = useRef(null);
   const arriba = useRef(null);
   const abajo = useRef(null);
@@ -1077,7 +1096,7 @@ const MapaDelHoyo = ({
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
     // cerrar, no se sale con el tabulador, Escape cierra y debajo no se desplaza
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-gray-700">
+    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-black">
       <div
         ref={arriba}
         data-testid="mapa-arriba"

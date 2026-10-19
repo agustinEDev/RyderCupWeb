@@ -167,6 +167,49 @@ describe('MapaDelHoyo', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  describe('las barras del sistema, neutras (19 oct)', () => {
+    const tema = () => document.head.querySelector('meta[name="theme-color"]');
+    beforeEach(() => {
+      tema()?.remove();
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = '#15803d';
+      document.head.appendChild(meta);
+      document.documentElement.style.backgroundColor = '';
+      document.body.style.backgroundColor = '';
+    });
+
+    it('M1/M2: abierto, la página y el theme-color en negro (la franja de la hora y la barra de Android); cerrado, lo de antes', () => {
+      document.body.style.backgroundColor = 'rgb(250, 250, 250)';
+      const { unmount } = abrir();
+
+      expect(document.documentElement.style.backgroundColor).toBe('rgb(0, 0, 0)');
+      expect(document.body.style.backgroundColor).toBe('rgb(0, 0, 0)');
+      expect(tema().content).toBe('#000000');
+
+      unmount();
+
+      expect(document.documentElement.style.backgroundColor).toBe('');
+      expect(document.body.style.backgroundColor).toBe('rgb(250, 250, 250)');
+      expect(tema().content).toBe('#15803d');
+    });
+
+    it('sin theme-color en la página, no se rompe', () => {
+      tema().remove();
+
+      const { unmount } = abrir();
+      unmount();
+
+      expect(document.documentElement.style.backgroundColor).toBe('');
+    });
+
+    it('M3: la caja del mapa, en negro', () => {
+      abrir();
+
+      expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+    });
+  });
+
   describe('abrir y cerrar', () => {
     it('A1: a pantalla completa, como diálogo con su título', () => {
       abrir();
