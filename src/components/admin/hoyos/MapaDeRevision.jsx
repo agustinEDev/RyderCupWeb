@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
-import { TESELAS_PNOA } from '../../scoring/mapa/teselas';
+import { TESELAS_PNOA, atribucionDeLaOrtofoto, ponerOrtofoto } from '../../scoring/mapa/teselas';
+import { comunidadDelPunto } from '../../../domain/services/comunidadDelCampo';
 import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
 import { camaraGirada, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 
@@ -78,10 +79,22 @@ const MapaDeRevision = ({
   orientar = 0,
 }) => {
   const { t } = useTranslation('admin');
+  const { t: tMapa } = useTranslation('scoring');
   const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
   const contenedor = useRef(null);
   const mapaRef = useRef(null);
   const cargado = useRef(false);
+  // La ortofoto de la comunidad del campo, como la ve el jugador (O9, 19 oct):
+  // por su ubicación o, sin ella, por la salida de la línea
+  // Solo cuando cambia ese punto, no en cada arrastre de la salida (/code-review)
+  const delCampo = centro ?? linea?.tee ?? null;
+  const latDelCampo = delCampo?.lat ?? null;
+  const lonDelCampo = delCampo?.lon ?? null;
+  const comunidad = useMemo(
+    () => comunidadDelPunto(latDelCampo === null || lonDelCampo === null ? null : { lat: latDelCampo, lon: lonDelCampo }),
+    [latDelCampo, lonDelCampo],
+  );
+  const comunidadAhora = useRef(comunidad);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
   const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar });
@@ -199,6 +212,8 @@ const MapaDeRevision = ({
     const mapa = new MapaDeMapLibre({ container: contenedor.current, style: ESTILO, attributionControl: false, ...inicio });
     mapaRef.current = mapa;
     mapa.on('load', () => {
+      // Antes que lo demás: justo encima de la PNOA, debajo de las líneas
+      ponerOrtofoto(mapa, comunidadAhora.current);
       const { muestras: todas, guardada: lo, linea: actual } = datos.current;
       mapa.addSource('muestras', { type: 'geojson', data: deLasMuestras(todas) });
       mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 2, 'line-opacity': 0.6 } });
@@ -272,13 +287,28 @@ const MapaDeRevision = ({
     if (cargado.current) mapaRef.current?.getSource('marcados')?.setData(comoPuntos(marcados));
   }, [marcados]);
 
+  useEffect(() => {
+    comunidadAhora.current = comunidad;
+    if (cargado.current && mapaRef.current) ponerOrtofoto(mapaRef.current, comunidad);
+  }, [comunidad]);
+
   useEffect(() => centrar.current(), [posicion, centrarEnMi]);
 
   useEffect(() => {
     for (const m of puntos.current) m.setDraggable(!bloqueada);
   }, [bloqueada]);
 
-  return <div ref={contenedor} className="absolute inset-0" />;
+  // Quién firma la imagen, como en el mapa del jugador: sus licencias lo piden (/code-review)
+  const atribucion = atribucionDeLaOrtofoto(comunidad);
+  return (
+    <>
+      <div ref={contenedor} className="absolute inset-0" />
+      <p data-testid="atribucion-del-mapa" className="pointer-events-none absolute bottom-1 left-2 z-10 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
+        {tMapa('mapa.atribucionPnoa')}
+        {atribucion && ` · ${tMapa(atribucion)}`}
+      </p>
+    </>
+  );
 };
 
 export default MapaDeRevision;
