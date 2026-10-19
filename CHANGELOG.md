@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.47.0] - 2026-10-19
+
+**El mapa del hoyo, mejor imagen y mejor para medir.** En Cataluña, País Vasco y
+Navarra se ve la ortofoto de 2025 de la comunidad; fuera de España no se ofrece
+el mapa. Tocar mide de ti al punto, y con la app instalada las barras del
+sistema van en negro mientras el mapa está abierto. Va con el backend
+**2.33.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.33.0**
+(el país del campo): backend, `/health` y este frontend. La CSP de Render ya
+lleva los tres servidores de las ortofotos en `connect-src` (puesta el 19 oct).
+
+### Added
+
+- **Ortofoto de 2025 de la comunidad** en el mapa del hoyo y en el del admin
+  (#913, #915): Cataluña (ICGC), País Vasco (geoEuskadi) y Navarra (IDENA),
+  encima de la PNOA, que se sigue viendo mientras carga, si falla y fuera de la
+  comunidad. La comunidad se decide por la posición del campo, con su firma en
+  los créditos. Madrid se queda con la PNOA: su 2025 se veía peor.
+
+### Changed
+
+- **Fuera de España, sin botón «Mapa»** en las tres anotaciones (#911): la
+  imagen solo cubre España. Sin saber el país, el botón sigue.
+- **Tocar mide de ti a ese punto** (#916), sin el tramo al green: a un búnker,
+  al agua o a la bandera. Sin buena posición, desde la salida, que queda
+  marcada; mientras hay un punto, la línea del hoyo se oculta y «Quitar» la
+  devuelve. A mitad de hoyo el codo de la línea al green se mueve arrastrándolo.
+  Las dos etiquetas de metros ya no se pisan.
+- **Barras del sistema en negro con el mapa abierto** (#914): con la app
+  instalada, la franja de la hora (iPhone) y la barra de Android, también
+  mientras carga. En Safari sin instalar no se pueden teñir.
+
 ## [2.46.0] - 2026-10-19
 
 **El mapa del hoyo, como se juega.** El mapa gira para enseñar el hoyo desde

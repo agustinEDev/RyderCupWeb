@@ -92,6 +92,74 @@ describe('useMapaDelHoyo', () => {
   });
 });
 
+describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
+  const conPais = (pais) => {
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    return renderHook(
+      () => ({ mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }), location: useLocation() }),
+      { wrapper }
+    );
+  };
+
+  it('en un campo de otro país no está disponible: ni se pide su mapa ni se abre', () => {
+    const vistos = [];
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const { result } = renderHook(
+      () => {
+        const r = { mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais: 'PT' }), location: useLocation() };
+        vistos.push(r.location.hash);
+        return r;
+      },
+      { wrapper }
+    );
+
+    act(() => result.current.mapa.abrir());
+
+    // Ni un instante con la entrada del mapa en el historial
+    expect(vistos).not.toContain('#mapa');
+
+    expect(result.current.mapa.disponible).toBe(false);
+    expect(result.current.mapa.mapaDelCampo).toBeNull();
+    expect(result.current.mapa.abierto).toBe(false);
+    expect(result.current.location.hash).toBe('');
+  });
+
+  it('abierto sin saber el país, se cierra al saber que es otro', () => {
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const abiertos = [];
+    const { result, rerender } = renderHook(
+      ({ pais }) => {
+        const r = { mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }), location: useLocation() };
+        abiertos.push(r.mapa.abierto);
+        return r;
+      },
+      { wrapper, initialProps: { pais: null } }
+    );
+    act(() => result.current.mapa.abrir());
+    expect(result.current.mapa.abierto).toBe(true);
+    abiertos.length = 0;
+
+    rerender({ pais: 'PT' });
+
+    // Ni un instante abierto ya sabiendo que no hay imagen
+    expect(abiertos).not.toContain(true);
+    expect(result.current.mapa.abierto).toBe(false);
+    // Sin la entrada del mapa en el historial: atrás no se gasta en ella (CodeRabbit)
+    expect(result.current.location.hash).toBe('');
+    expect(result.current.location.state?.mapaAbiertoAqui).toBeUndefined();
+  });
+
+  it('en España, o sin saber el país, sí', () => {
+    for (const pais of ['ES', null]) {
+      const { result, unmount } = conPais(pais);
+
+      expect(result.current.mapa.disponible).toBe(true);
+      expect(result.current.mapa.mapaDelCampo).toEqual({ golfCourseId: 'gc-1', holes: {} });
+      unmount();
+    }
+  });
+});
+
 describe('useMapaDelHoyo — recargar y sesión tomada', () => {
   it('recargando, el navegador repone el estado del historial: aun así no se abre solo', () => {
     const wrapper = ({ children }) => (

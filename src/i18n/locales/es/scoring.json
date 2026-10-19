@@ -384,12 +384,18 @@
     "metros": "m",
     "etiqueta": "{{origen}}: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
     "hastaAhi": "Hasta ahí {{metros}} m",
+    "hastaAhiDesdeLaSalida": "Desde la salida hasta ahí {{metros}} m",
     "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
     "quitarPunto": "Quitar",
     "ayudaMedir": "Toca el mapa para medir",
     "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
     "atribucionPnoa": "PNOA © IGN",
     "atribucionOsm": "© OSM",
+    "ortofoto": {
+      "ES-CT": "Ortofoto © ICGC (CC BY 4.0)",
+      "ES-PV": "Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi",
+      "ES-NC": "Servicio proporcionado por el Gobierno de Navarra (CC BY 4.0)"
+    },
     "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen.",
     "pideSalida": "Toca dónde está la salida",
     "pideGreen": "Toca el centro del green",

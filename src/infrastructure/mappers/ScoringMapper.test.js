@@ -93,6 +93,12 @@ describe('ScoringMapper', () => {
       scorecard_submitted_by: [],
     };
 
+    it('el país del campo: el mapa solo tiene imagen en España (19 oct); sin él, null', () => {
+      const conPais = { ...fullApiResponse, round_info: { ...fullApiResponse.round_info, golf_course_country_code: 'PT' } };
+      expect(ScoringMapper.toScoringViewDTO(conPais).roundInfo.golfCourseCountryCode).toBe('PT');
+      expect(ScoringMapper.toScoringViewDTO(fullApiResponse).roundInfo.golfCourseCountryCode).toBeNull();
+    });
+
     it('should map full scoring view response to camelCase DTO', () => {
       const dto = ScoringMapper.toScoringViewDTO(fullApiResponse);
 

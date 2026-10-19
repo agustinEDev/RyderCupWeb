@@ -302,6 +302,13 @@
   border-top-color: var(--color-primary-600);
 }
 
+/* Una espera sobre fondo oscuro (la del mapa del hoyo, 19 oct): el anillo
+   claro, como sobre el verde del arranque; el verde no se ve sobre el negro */
+.espera-sobre-oscuro .espera-anillo {
+  border-color: rgba(255, 255, 255, 0.28);
+  border-top-color: #ffffff;
+}
+
 @media (display-mode: standalone) {
   /* La franja del reloj, la bateria y la cobertura NO la pinta esta pantalla:
      la pinta el fondo del documento. Sin esta regla el `html` se quedaba en su
