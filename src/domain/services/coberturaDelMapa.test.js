@@ -22,5 +22,7 @@ describe('hayMapaEnElPais', () => {
   it('sin saber el país, sí', () => {
     expect(hayMapaEnElPais(null)).toBe(true);
     expect(hayMapaEnElPais(undefined)).toBe(true);
+    // Solo espacios tampoco es un país (CodeRabbit)
+    expect(hayMapaEnElPais('  ')).toBe(true);
   });
 });

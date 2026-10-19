@@ -1836,6 +1836,14 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
+  it('CodeRabbit: hasta que llega el campo (con su país), no se pide su mapa', () => {
+    mockUseQuickMatchScoring.mockReturnValue({ ...mockUseQuickMatchScoring(), holes: [] });
+
+    renderPage();
+
+    expect(mapaHoyo.args.golfCourseId).toBeNull();
+  });
+
   it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
     mockUseQuickMatchScoring.mockReturnValue({ ...mockUseQuickMatchScoring(), courseCountryCode: 'PT' });
     mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };

@@ -54,6 +54,14 @@ export function useMapaDelHoyo({ golfCourseId, cerrarSi = false, pais = null }) 
     navigate(-1);
   }, [navigate, abierto]);
 
+  // Abierto sin saber el país, y resulta que es otro: se cierra quitando su
+  // entrada, o el botón atrás se gastaría en un mapa que ya no se ve (CodeRabbit)
+  useEffect(() => {
+    if (disponible || location.hash !== ANCLA || !abiertoAqui || navegando.current) return;
+    navegando.current = true;
+    navigate(-1);
+  }, [disponible, location.hash, abiertoAqui, navigate]);
+
   // Con la sesión tomada desde otro móvil: el «Volver» de su aviso navega atrás,
   // y con el mapa abierto solo lo cerraba
   useEffect(() => {

@@ -125,7 +125,12 @@ const QuickMatchScoringPage = () => {
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
-  const mapaDelHoyo = useMapaDelHoyo({ golfCourseId: quickMatch?.golfCourseId ?? null, pais: courseCountryCode ?? null });
+  // El mapa, cuando ya llegó el campo (sus hoyos) y con él su país: antes,
+  // fuera de España se pedía para nada (CodeRabbit)
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: holes.length > 0 ? (quickMatch?.golfCourseId ?? null) : null,
+    pais: courseCountryCode ?? null,
+  });
 
   // De una en una: dos avisos superpuestos no se pueden usar, y la siguiente
   // no se pierde porque el hook la mantiene en la lista hasta resolverla

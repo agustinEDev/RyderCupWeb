@@ -102,9 +102,21 @@ describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
   };
 
   it('en un campo de otro país no está disponible: ni se pide su mapa ni se abre', () => {
-    const { result } = conPais('PT');
+    const vistos = [];
+    const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const { result } = renderHook(
+      () => {
+        const r = { mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais: 'PT' }), location: useLocation() };
+        vistos.push(r.location.hash);
+        return r;
+      },
+      { wrapper }
+    );
 
     act(() => result.current.mapa.abrir());
+
+    // Ni un instante con la entrada del mapa en el historial
+    expect(vistos).not.toContain('#mapa');
 
     expect(result.current.mapa.disponible).toBe(false);
     expect(result.current.mapa.mapaDelCampo).toBeNull();
@@ -114,16 +126,27 @@ describe('useMapaDelHoyo — solo hay imagen en España (19 oct)', () => {
 
   it('abierto sin saber el país, se cierra al saber que es otro', () => {
     const wrapper = ({ children }) => <MemoryRouter initialEntries={['/scoring/m-1']}>{children}</MemoryRouter>;
+    const abiertos = [];
     const { result, rerender } = renderHook(
-      ({ pais }) => useMapaDelHoyo({ golfCourseId: 'gc-1', pais }),
+      ({ pais }) => {
+        const r = { mapa: useMapaDelHoyo({ golfCourseId: 'gc-1', pais }), location: useLocation() };
+        abiertos.push(r.mapa.abierto);
+        return r;
+      },
       { wrapper, initialProps: { pais: null } }
     );
-    act(() => result.current.abrir());
-    expect(result.current.abierto).toBe(true);
+    act(() => result.current.mapa.abrir());
+    expect(result.current.mapa.abierto).toBe(true);
+    abiertos.length = 0;
 
     rerender({ pais: 'PT' });
 
-    expect(result.current.abierto).toBe(false);
+    // Ni un instante abierto ya sabiendo que no hay imagen
+    expect(abiertos).not.toContain(true);
+    expect(result.current.mapa.abierto).toBe(false);
+    // Sin la entrada del mapa en el historial: atrás no se gasta en ella (CodeRabbit)
+    expect(result.current.location.hash).toBe('');
+    expect(result.current.location.state?.mapaAbiertoAqui).toBeUndefined();
   });
 
   it('en España, o sin saber el país, sí', () => {
