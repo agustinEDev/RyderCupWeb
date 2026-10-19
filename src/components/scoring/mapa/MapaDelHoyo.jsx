@@ -19,7 +19,8 @@ import {
   salidaPorMetros,
 } from '../../../domain/services/hoyoMarcado';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
-import { TESELAS_PNOA } from './teselas';
+import { ORTOFOTOS, TESELAS_PNOA, ponerOrtofoto } from './teselas';
+import { comunidadDelPunto } from '../../../domain/services/comunidadDelCampo';
 import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
 import { captureError } from '../../../utils/sentryHelpers';
 import ModalShell from '../../ui/ModalShell';
@@ -214,6 +215,8 @@ const MapaDelHoyo = ({
   const referenciaDelCampo = hoyo?.playLine?.[0] ?? centroSinMapa ?? hoyo?.green?.center ?? null;
   // Lejos (no estás jugando): el mapa no se va a tu casa, no se mide desde ti
   // y «Céntrame» no se puede pulsar (16 oct)
+  // Con ortofoto de su comunidad, más reciente que la PNOA, si la hay (19 oct)
+  const comunidad = comunidadDelPunto(referenciaDelCampo);
   const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
   const posicionEnElCampo = lejos ? null : posicion;
   // La que vale para medir desde ti: en el campo y con el GPS bueno
@@ -555,6 +558,15 @@ const MapaDelHoyo = ({
     aplicarVista(vista, true);
   }, [vista, aplicarVista]);
 
+  // La comunidad de ahora, para el `load`; si cambia después (la ubicación del
+  // campo llega tarde), se pone entonces. Antes de cargar, MapLibre no deja
+  const comunidadAhora = useRef(comunidad);
+  const estiloCargado = useRef(false);
+  useEffect(() => {
+    comunidadAhora.current = comunidad;
+    if (estiloCargado.current && mapaRef.current) ponerOrtofoto(mapaRef.current, comunidad);
+  }, [comunidad]);
+
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
   // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
   const montarMapa = useCallback((nodo) => {
@@ -589,6 +601,9 @@ const MapaDelHoyo = ({
       encuadrarHoyo(false);
     }
     mapa.on('load', () => {
+      // Antes que lo demás: va justo encima de la PNOA, debajo de las líneas
+      ponerOrtofoto(mapa, comunidadAhora.current);
+      estiloCargado.current = true;
       // El hoyo de ahora, no el de al abrir: pudo cambiar antes de que cargara
       mapa.addSource('hoyo', { type: 'geojson', data: geojsonDelHoyo(hoyoActual.current) });
       mapa.addLayer({
@@ -637,6 +652,7 @@ const MapaDelHoyo = ({
       marcaDeLaSalida.current = null;
       marcaGps.current = null;
       marcaTocada.current = null;
+      estiloCargado.current = false;
       mapa.remove();
       mapaRef.current = null;
     };
@@ -1238,6 +1254,7 @@ const MapaDelHoyo = ({
         <div className="flex items-center gap-2">
           <span className="pointer-events-auto flex-1 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
             <span>{t('mapa.atribucionPnoa')}</span>
+            {comunidad && ORTOFOTOS[comunidad] && <span>{` · ${ORTOFOTOS[comunidad].atribucion}`}</span>}
             {atribucion && (
               <>
                 {' · '}

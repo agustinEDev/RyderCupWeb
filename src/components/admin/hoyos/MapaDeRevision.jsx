@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
-import { TESELAS_PNOA } from '../../scoring/mapa/teselas';
+import { TESELAS_PNOA, ponerOrtofoto } from '../../scoring/mapa/teselas';
+import { comunidadDelPunto } from '../../../domain/services/comunidadDelCampo';
 import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
 import { camaraGirada, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 
@@ -82,6 +83,10 @@ const MapaDeRevision = ({
   const contenedor = useRef(null);
   const mapaRef = useRef(null);
   const cargado = useRef(false);
+  // La ortofoto de la comunidad del campo, como la ve el jugador (O9, 19 oct):
+  // por su ubicación o, sin ella, por la salida de la línea
+  const comunidad = comunidadDelPunto(centro ?? linea?.tee ?? null);
+  const comunidadAhora = useRef(comunidad);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
   const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar });
@@ -199,6 +204,8 @@ const MapaDeRevision = ({
     const mapa = new MapaDeMapLibre({ container: contenedor.current, style: ESTILO, attributionControl: false, ...inicio });
     mapaRef.current = mapa;
     mapa.on('load', () => {
+      // Antes que lo demás: justo encima de la PNOA, debajo de las líneas
+      ponerOrtofoto(mapa, comunidadAhora.current);
       const { muestras: todas, guardada: lo, linea: actual } = datos.current;
       mapa.addSource('muestras', { type: 'geojson', data: deLasMuestras(todas) });
       mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 2, 'line-opacity': 0.6 } });
@@ -271,6 +278,11 @@ const MapaDeRevision = ({
   useEffect(() => {
     if (cargado.current) mapaRef.current?.getSource('marcados')?.setData(comoPuntos(marcados));
   }, [marcados]);
+
+  useEffect(() => {
+    comunidadAhora.current = comunidad;
+    if (cargado.current && mapaRef.current) ponerOrtofoto(mapaRef.current, comunidad);
+  }, [comunidad]);
 
   useEffect(() => centrar.current(), [posicion, centrarEnMi]);
 

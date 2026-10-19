@@ -56,6 +56,16 @@ vi.mock('maplibre-gl', () => {
     addSource(id, fuente) {
       this.fuentes[id] = fuente;
     }
+    removeSource(id) {
+      delete this.fuentes[id];
+    }
+    getLayer() {
+      return undefined;
+    }
+    removeLayer() {}
+    getStyle() {
+      return { layers: this.opciones.style.layers };
+    }
     getSource(id) {
       return this.fuentes[id] ? { setData: (d) => { this.fuentes[id].data = d; } } : undefined;
     }
@@ -111,6 +121,7 @@ vi.mock('../../../hooks/useCentroSinMapa', () => ({
 }));
 
 const { default: MapaDelHoyo } = await import('./MapaDelHoyo');
+const { ORTOFOTOS } = await import('./teselas');
 const leer = (ruta) => readFileSync(resolve(process.cwd(), ruta), 'utf8');
 const indexCss = leer('src/index.css');
 const mapaCss = leer('src/components/scoring/mapa/mapa.css');
@@ -507,6 +518,57 @@ describe('MapaDelHoyo', () => {
       expect(screen.getByText('mapa.noDisponible')).toBeInTheDocument();
     });
 
+  });
+
+  describe('la ortofoto de la comunidad (19 oct)', () => {
+    // La salida del hoyo, en El Prat (Cataluña)
+    const EN_CATALUNYA = { playLine: [{ lat: 41.5735, lon: 2.0539 }, { lat: 41.5765, lon: 2.0545 }], green: null };
+
+    it('O1/O6: un hoyo en Cataluña lleva la del ICGC encima de la PNOA, y su firma', () => {
+      abrir({ hoyo: EN_CATALUNYA });
+      act(() => mapa().oyentes.load());
+
+      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-CT'].tiles);
+      expect(mapa().addLayer).toHaveBeenCalledWith({ id: 'ortofoto', type: 'raster', source: 'ortofoto' }, undefined);
+      expect(screen.getByText(ORTOFOTOS['ES-CT'].atribucion, { exact: false })).toBeInTheDocument();
+    });
+
+    it('O5: en el resto de España, solo la PNOA', () => {
+      abrir();
+      act(() => mapa().oyentes.load());
+
+      expect(mapa().fuentes.ortofoto).toBeUndefined();
+      expect(screen.queryByText(/ICGC|Gobierno|Comunidad de Madrid/)).toBeNull();
+    });
+
+    it('O6: si dónde está el campo llega tarde, se pone entonces', () => {
+      const { rerender } = abrir({ hoyo: null });
+      act(() => mapa().oyentes.load());
+      expect(mapa().fuentes.ortofoto).toBeUndefined();
+
+      // La ubicación del campo (Centro Nacional de Golf, Madrid)
+      centro.valor = { lat: 40.487, lon: -3.7383 };
+      rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+
+      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-MD'].tiles);
+    });
+
+    it('O6: si llega antes de que cargue el mapa, se pone al cargar', () => {
+      const { rerender } = abrir({ hoyo: null });
+      centro.valor = { lat: 40.487, lon: -3.7383 };
+      rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
+      expect(mapa().fuentes.ortofoto).toBeUndefined();
+
+      act(() => mapa().oyentes.load());
+
+      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-MD'].tiles);
+    });
+
+    it('antes de cargar el mapa no se toca (MapLibre no deja añadir nada aún)', () => {
+      abrir({ hoyo: EN_CATALUNYA });
+
+      expect(mapa().fuentes.ortofoto).toBeUndefined();
+    });
   });
 
   describe('licencias y tamaño', () => {

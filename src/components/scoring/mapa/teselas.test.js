@@ -1,0 +1,91 @@
+import { describe, it, expect, vi } from 'vitest';
+import { ORTOFOTOS, ponerOrtofoto } from './teselas';
+import { limitesDeLaComunidad } from '../../../domain/services/comunidadDelCampo';
+
+// Un mapa con las capas que tiene ya cargado: fondo, PNOA y lo de encima
+const mapaFalso = (capas = ['fondo', 'pnoa', 'linea']) => {
+  const fuentes = {};
+  const lista = capas.map((id) => ({ id }));
+  return {
+    fuentes,
+    lista,
+    getStyle: () => ({ layers: lista }),
+    getSource: (id) => fuentes[id],
+    getLayer: (id) => lista.find((c) => c.id === id),
+    addSource: vi.fn((id, f) => { fuentes[id] = f; }),
+    removeSource: vi.fn((id) => { delete fuentes[id]; }),
+    addLayer: vi.fn((capa, antes) => {
+      const i = antes ? lista.findIndex((c) => c.id === antes) : lista.length;
+      lista.splice(i, 0, capa);
+    }),
+    removeLayer: vi.fn((id) => { lista.splice(lista.findIndex((c) => c.id === id), 1); }),
+  };
+};
+
+describe('ORTOFOTOS (19 oct)', () => {
+  it.each([
+    ['ES-CT', 'geoserveis.icgc.cat', 'ICGC'],
+    ['ES-PV', 'www.geo.euskadi.eus', 'Gobierno Vasco'],
+    ['ES-NC', 'idena.navarra.es', 'Gobierno de Navarra'],
+    ['ES-MD', 'idem.comunidad.madrid', 'Comunidad de Madrid'],
+  ])('%s: sus teselas y quién la firma', (codigo, servidor, firma) => {
+    const ortofoto = ORTOFOTOS[codigo];
+
+    expect(new globalThis.URL(ortofoto.tiles[0].replace(/[{}]/g, '')).host).toBe(servidor);
+    expect(ortofoto.atribucion).toContain(firma);
+  });
+
+  it('las de WMS piden la tesela en 3857 por su caja', () => {
+    expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('BBOX={bbox-epsg-3857}');
+    expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('CRS=EPSG:3857');
+  });
+});
+
+describe('ponerOrtofoto', () => {
+  it('O1/O8: la de la comunidad, encima de la PNOA y debajo de lo demás, solo dentro de su caja', () => {
+    const mapa = mapaFalso();
+
+    ponerOrtofoto(mapa, 'ES-CT');
+
+    expect(mapa.fuentes.ortofoto).toEqual({
+      type: 'raster',
+      tiles: ORTOFOTOS['ES-CT'].tiles,
+      tileSize: 256,
+      maxzoom: 19,
+      bounds: limitesDeLaComunidad('ES-CT'),
+    });
+    expect(mapa.lista.map((c) => c.id)).toEqual(['fondo', 'pnoa', 'ortofoto', 'linea']);
+  });
+
+  it('con el mapa aún sin nada encima de la PNOA, va justo detrás', () => {
+    const mapa = mapaFalso(['fondo', 'pnoa']);
+
+    ponerOrtofoto(mapa, 'ES-MD');
+
+    expect(mapa.lista.map((c) => c.id)).toEqual(['fondo', 'pnoa', 'ortofoto']);
+  });
+
+  it('O5: sin comunidad, nada; y si había una, se quita', () => {
+    const mapa = mapaFalso();
+    ponerOrtofoto(mapa, null);
+    expect(mapa.addSource).not.toHaveBeenCalled();
+
+    ponerOrtofoto(mapa, 'ES-CT');
+    ponerOrtofoto(mapa, null);
+
+    expect(mapa.fuentes.ortofoto).toBeUndefined();
+    expect(mapa.lista.map((c) => c.id)).toEqual(['fondo', 'pnoa', 'linea']);
+  });
+
+  it('la misma otra vez no la rehace; otra distinta la cambia', () => {
+    const mapa = mapaFalso();
+    ponerOrtofoto(mapa, 'ES-CT');
+    ponerOrtofoto(mapa, 'ES-CT');
+    expect(mapa.addSource).toHaveBeenCalledTimes(1);
+
+    ponerOrtofoto(mapa, 'ES-PV');
+
+    expect(mapa.fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-PV'].tiles);
+    expect(mapa.lista.filter((c) => c.id === 'ortofoto')).toHaveLength(1);
+  });
+});
