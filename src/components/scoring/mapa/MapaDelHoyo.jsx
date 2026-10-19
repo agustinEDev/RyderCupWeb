@@ -103,14 +103,11 @@ const muestraValida = (linea, campo) =>
   !salidaGreenFueraDeLimites(linea[0], linea.at(-1)) &&
   !linea.some((p) => estaLejosDelCampo(p, campo));
 
-// Medir tocando: de ti al punto y del punto al centro del green, cada tramo
-// con sus metros al lado (Agustín, 16 oct: mejor que un cuadro aparte)
-const tramosDeLaMedida = (posicion, tocado, green) =>
-  [posicion && tocado ? [posicion, tocado] : null, tocado && green ? [tocado, green.center] : null].filter(Boolean);
-// Sin estar en la salida, de ti al green: directa, o con el codo si lo hay
+// Sin estar en la salida, de ti al green: directa, o con el codo si lo hay, cada
+// tramo con sus metros al lado (Agustín, 16 oct: mejor que un cuadro aparte)
 const tramosDesdeMi = (posicion, codo, green) => {
   if (!posicion || !green) return [];
-  return codo ? tramosDeLaMedida(posicion, codo, green) : [[posicion, green.center]];
+  return codo ? [[posicion, codo], [codo, green.center]] : [[posicion, green.center]];
 };
 // A partir de aquí, la línea desde ti sale con un codo en medio (Agustín, 18 oct)
 const CODO_DESDE_M = 200;
@@ -227,15 +224,19 @@ const MapaDelHoyo = ({
   const posicionEnElCampo = lejos ? null : posicion;
   // La que vale para medir desde ti: en el campo y con el GPS bueno
   const posicionBuena = posicionEnElCampo && precision !== null && precision <= PRECISION_PARA_MEDIR_M ? posicionEnElCampo : null;
+  // A mitad de hoyo, el codo de la línea de ti al green (D2); se mueve arrastrándolo
   const [tocado, setTocado] = useState(null);
+  // Lo que se toca para medir (Agustín, 19 oct): de ti a ese punto, sin el tramo
+  // al green; a un búnker, al agua o a la bandera de hoy
+  const [medido, setMedido] = useState(null);
   // Hacia dónde se ha orientado el mapa después de abrir (O2-O5): `{ tipo:
   // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
   const [vista, setVista] = useState(null);
   const conVista = useRef(false);
   const tocadoAhora = useRef(null);
   useLayoutEffect(() => {
-    tocadoAhora.current = tocado;
-  }, [tocado]);
+    tocadoAhora.current = medido ?? tocado;
+  }, [medido, tocado]);
   // Sin WebGL (móviles viejos, o desactivado) no hay mapa, pero el recuadro de
   // la tarjeta sigue, que no lo necesita
   const [sinMapa, setSinMapa] = useState(false);
@@ -247,6 +248,7 @@ const MapaDelHoyo = ({
   const mapaRef = useRef(null);
   const marcaGps = useRef(null);
   const marcaTocada = useRef(null);
+  const marcaMedida = useRef(null);
   const centradoEnGps = useRef(false);
   const movidoPorElJugador = useRef(false);
   // La línea al abrir, con la salida llevada a los metros de mi tarjeta (V2, 17
@@ -468,13 +470,13 @@ const MapaDelHoyo = ({
         return;
       }
       setGracias(false);
-      setTocado(p);
+      setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
-      // oct); lejos del campo no, que alejaría a kilómetros
-      // Desde ti el punto es el codo: se mueve sin girar el mapa (D3d)
-      if (posicionEnElCampo && !desdeMi) {
-        mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionEnElCampo, p] }), {
-          bearing: rumbo(posicionEnElCampo, p),
+      // oct): con tu posición y en la salida. A mitad de hoyo ya va orientado, y
+      // sin posición (o lejos) alejaría a kilómetros (T6, 19 oct)
+      if (posicionBuena && !desdeMi) {
+        mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionBuena, p] }), {
+          bearing: rumbo(posicionBuena, p),
           padding: margen(),
           maxZoom: 18,
         });
@@ -651,13 +653,14 @@ const MapaDelHoyo = ({
     return () => {
       // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
       // en desarrollo) pone los suyos, no mueve los de este
-      for (const m of [...etiquetasDeLaLinea.current, ...etiquetasDeLaMedida.current, ...puntosDeLaLinea.current, marcaDeLaSalida.current, marcaGps.current, marcaTocada.current]) m?.remove();
+      for (const m of [...etiquetasDeLaLinea.current, ...etiquetasDeLaMedida.current, ...puntosDeLaLinea.current, marcaDeLaSalida.current, marcaGps.current, marcaTocada.current, marcaMedida.current]) m?.remove();
       etiquetasDeLaLinea.current = [];
       etiquetasDeLaMedida.current = [];
       puntosDeLaLinea.current = [];
       marcaDeLaSalida.current = null;
       marcaGps.current = null;
       marcaTocada.current = null;
+      marcaMedida.current = null;
       estiloCargado.current = false;
       mapa.remove();
       mapaRef.current = null;
@@ -749,6 +752,23 @@ const MapaDelHoyo = ({
     marcaTocada.current.setLngLat(lngLat(tocado));
   }, [tocado, desdeMi, menuDeMotivos]);
 
+  // El punto que se mide (19 oct): quieto, se cambia tocando otro
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa) return;
+    if (!medido) {
+      marcaMedida.current?.remove();
+      marcaMedida.current = null;
+      return;
+    }
+    if (!marcaMedida.current) {
+      const elemento = punto('h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow');
+      elemento.dataset.punto = 'medido';
+      marcaMedida.current = new Marker({ element: elemento }).setLngLat(lngLat(medido)).addTo(mapa);
+    }
+    marcaMedida.current.setLngLat(lngLat(medido));
+  }, [medido]);
+
   // Las líneas de la medida y sus metros. Las etiquetas se mueven, no se
   // rehacen, con cada lectura del GPS
   const green = hoyoAhora?.green ?? null;
@@ -788,14 +808,24 @@ const MapaDelHoyo = ({
     if (!tocado && distanciaEnMetros(posicionBuena, green.center) > CODO_DESDE_M) setTocado(enMedio(posicionBuena, green.center));
   }
   const textoDeTramo = useCallback((metros) => t('mapa.tramo', { metros }), [t]);
+  // Desde dónde se mide el punto tocado: tu posición si es buena; si no, la
+  // salida del hoyo; sin ninguna, del punto al green (T4, 19 oct)
+  const origenDeLaMedida = posicionBuena ?? (linea ?? hoyo?.playLine)?.[0] ?? null;
+  const tramosDelToque = useMemo(() => {
+    if (!medido) return [];
+    if (origenDeLaMedida) return [[origenDeLaMedida, medido]];
+    return green ? [[medido, green.center]] : [];
+  }, [medido, origenDeLaMedida, green]);
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    const tramos = desdeMi && (!reporte || menuDeMotivos) ? tramosDesdeMi(posicionBuena, tocado, green) : tramosDeLaMedida(posicionEnElCampo, tocado, green);
+    const deMiAlGreen = desdeMi && (!reporte || menuDeMotivos) ? tramosDesdeMi(posicionBuena, tocado, green) : [];
+    const tramos = [...deMiAlGreen, ...tramosDelToque];
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
-    sincronizarCifras(mapa, etiquetasDeLaMedida.current, tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo });
-  }, [desdeMi, reporte, menuDeMotivos, posicionBuena, posicionEnElCampo, tocado, green, textoDeTramo]);
+    // Con un punto tocado, solo sus metros: los de la línea al green se pisarían (T3)
+    sincronizarCifras(mapa, etiquetasDeLaMedida.current, medido ? tramosDelToque : tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo });
+  }, [desdeMi, reporte, menuDeMotivos, posicionBuena, tocado, medido, tramosDelToque, green, textoDeTramo]);
 
 
   // Los metros de cada tramo de la línea que se ve (Agustín, 16 oct: siempre que
@@ -811,9 +841,10 @@ const MapaDelHoyo = ({
     (puntos) => {
       const mapa = mapaRef.current;
       if (!mapa) return;
-      sincronizarCifras(mapa, etiquetasDeLaLinea.current, tramosDeLaLinea(puntos), { tipo: 'linea', color: 'text-white', texto: textoDeTramo });
+      // Con un punto tocado, la línea sin sus metros: se pisarían con los suyos (T2)
+      sincronizarCifras(mapa, etiquetasDeLaLinea.current, medido ? [] : tramosDeLaLinea(puntos), { tipo: 'linea', color: 'text-white', texto: textoDeTramo });
     },
-    [textoDeTramo],
+    [textoDeTramo, medido],
   );
   useEffect(() => ponerCifrasDeLaLinea(lineaVisible), [lineaVisible, ponerCifrasDeLaLinea]);
   // Para el arrastre, las de ahora: los puntos no se rehacen si solo cambian ellas
@@ -888,6 +919,7 @@ const MapaDelHoyo = ({
     setPedidoEntero((n) => n + 1);
     setDesdeMi(false);
     setTocado(null);
+    setMedido(null);
     setMarca({ fase: 'pidiendo', tee: null });
   };
 
@@ -1000,6 +1032,8 @@ const MapaDelHoyo = ({
   const abrirElMenu = () => {
     antesDelReporte.current = edicion;
     codoAntesDelReporte.current = tocado;
+    // El punto medido no se queda debajo de lo que se propone (T7)
+    setMedido(null);
     setGracias(false);
     setReporte({ fase: 'motivos' });
   };
@@ -1047,6 +1081,7 @@ const MapaDelHoyo = ({
     salidaRecienTocada.current = null;
     setAvisoDeMarca(null);
     setTocado(null);
+    setMedido(null);
     setDesdeMi(false);
     // Sin salida, otra vez la pregunta: si no, el «No» se perdía y el primer
     // toque se tomaba por la salida (revisión, 17 oct)
@@ -1070,8 +1105,22 @@ const MapaDelHoyo = ({
   const distancias = desdeAqui ?? deLaTarjeta;
   // De dónde salen las cifras: tu posición, tu barra (la tarjeta) o la salida (la línea)
   const origenDelRecuadro = t(desdeAqui ? 'mapa.desdeTuPosicion' : metros ? 'mapa.desdeTuBarra' : 'mapa.desdeLaSalida');
-  const hastaAhi = tocado && posicionEnElCampo ? distanciaEnMetros(posicionEnElCampo, tocado) : null;
-  const deAhiAlGreen = tocado && green ? distanciaEnMetros(tocado, green.center) : null;
+  // Lo que se anuncia: del punto tocado (T8) o, sin él, del codo de la línea al green
+  const [haciaAhi, deDondeAhi] = medido ? [medido, origenDeLaMedida] : [tocado, posicionEnElCampo];
+  const hastaAhi = haciaAhi && deDondeAhi ? distanciaEnMetros(deDondeAhi, haciaAhi) : null;
+  const deAhiAlGreen = haciaAhi && green && !(medido && origenDeLaMedida) ? distanciaEnMetros(haciaAhi, green.center) : null;
+  // «Quitar» y, para quien no ve el mapa, los metros (en el mapa van junto a cada línea)
+  const quitarYSusMetros = (alQuitar) => (
+    <div className="flex items-center">
+      <span role="status" className="sr-only">
+        {hastaAhi !== null && <span>{t('mapa.hastaAhi', { metros: hastaAhi })}</span>}
+        {deAhiAlGreen !== null && <span>{t('mapa.deAhiAlGreen', { metros: deAhiAlGreen })}</span>}
+      </span>
+      <button type="button" onClick={alQuitar} className={`${PLACA} pointer-events-auto min-h-11 px-4 text-sm font-semibold text-yellow-300`}>
+        {t('mapa.quitarPunto')}
+      </button>
+    </div>
+  );
   const aviso = { buscando: t('mapa.buscando'), denegado: t('mapa.denegado'), 'no-disponible': t('mapa.noDisponible') }[gps.estado];
 
   return (
@@ -1186,6 +1235,9 @@ const MapaDelHoyo = ({
               {t('mapa.ahoraNo')}
             </button>
           </div>
+        ) : medido ? (
+          // Primero el punto tocado; a mitad de hoyo, luego el codo (T5)
+          quitarYSusMetros(() => setMedido(null))
         ) : desdeMi && !posicionBuena ? (
           // Sin un GPS bueno no hay línea desde ti: sale en cuanto lo sea (D5), también con
           // codo (D5b).
@@ -1196,16 +1248,7 @@ const MapaDelHoyo = ({
             </p>
           )
         ) : tocado ? (
-          <div className="flex items-center">
-            {/* Los metros van en el mapa, junto a cada línea; aquí, para quien no lo ve */}
-            <span role="status" className="sr-only">
-              {hastaAhi !== null && <span>{t('mapa.hastaAhi', { metros: hastaAhi })}</span>}
-              {deAhiAlGreen !== null && <span>{t('mapa.deAhiAlGreen', { metros: deAhiAlGreen })}</span>}
-            </span>
-            <button type="button" onClick={() => setTocado(null)} className={`${PLACA} pointer-events-auto min-h-11 px-4 text-sm font-semibold text-yellow-300`}>
-              {t('mapa.quitarPunto')}
-            </button>
-          </div>
+          quitarYSusMetros(() => setTocado(null))
         ) : conAyudaDeCodos ? (
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaCodo')}</p>
         ) : (
