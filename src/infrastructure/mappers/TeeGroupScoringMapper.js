@@ -48,6 +48,8 @@ class TeeGroupScoringMapper {
         // Su nombre, bajo el título de la anotación (BE #573)
         golfCourseName: api.golf_course_name ?? null,
         golfCourseId: api.golf_course_id ?? null,
+        // Su país: el mapa solo tiene imagen en España (19 oct)
+        golfCourseCountryCode: api.golf_course_country_code ?? null,
       },
       competitionId: null,
       teamAName: null,

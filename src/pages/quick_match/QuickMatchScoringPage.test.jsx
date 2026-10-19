@@ -25,7 +25,7 @@ const mockUseQuickMatchScoring = vi.fn();
 const mapaHoyo = vi.hoisted(() => ({
   args: null,
   ventana: null,
-  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null, disponible: true },
 }));
 vi.mock('../../hooks/useMapaDelHoyo', () => ({
   useMapaDelHoyo: (args) => {
@@ -1816,14 +1816,14 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
       cancelMatch: vi.fn(),
       refetch: vi.fn(),
     });
-    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null, disponible: true };
     mapaHoyo.ventana = null;
   });
 
   it('pide el mapa del campo de lo que se anota', () => {
     renderPage();
 
-    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1' });
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', pais: null });
   });
 
   it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
@@ -1834,6 +1834,24 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(boton.nextElementSibling).toBe(screen.getByTestId('quick-match-next-hole'));
     fireEvent.click(boton);
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('CodeRabbit: hasta que llega el campo (con su país), no se pide su mapa', () => {
+    mockUseQuickMatchScoring.mockReturnValue({ ...mockUseQuickMatchScoring(), holes: [] });
+
+    renderPage();
+
+    expect(mapaHoyo.args.golfCourseId).toBeNull();
+  });
+
+  it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
+    mockUseQuickMatchScoring.mockReturnValue({ ...mockUseQuickMatchScoring(), courseCountryCode: 'PT' });
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };
+
+    renderPage();
+
+    expect(mapaHoyo.args.pais).toBe('PT');
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {
