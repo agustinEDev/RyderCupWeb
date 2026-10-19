@@ -329,7 +329,9 @@ const MapaDelHoyo = ({
   });
   // Sin un GPS bueno no hay línea desde ti: mientras dure, la del hoyo (H14)
   const ocultaAhora = lineaOculta && !reporte && !!posicionBuena;
-  const lineaQueSePinta = ocultaAhora ? null : linea;
+  // Con un punto tocado, la línea del hoyo se va entera: solo la tuya al punto
+  // (Agustín, 19 oct, en el móvil: las dos a la vez se pisaban); «Quitar» la trae
+  const lineaQueSePinta = ocultaAhora || medido ? null : linea;
   const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(lineaQueSePinta ?? []), [lineaQueSePinta]);
   const ultimaLinea = useRef(datosDeLaLinea);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
@@ -834,8 +836,8 @@ const MapaDelHoyo = ({
   // se pinta una línea). No dependen del GPS: valen lejos del campo y sin señal
   // Reportando, la de siempre no se ve: solo la que se propone
   const lineaVisible = useMemo(
-    () => lineaQueSePinta ?? (reporte || ocultaAhora ? [] : (hoyo?.playLine ?? [])),
-    [lineaQueSePinta, hoyo, reporte, ocultaAhora],
+    () => lineaQueSePinta ?? (reporte || ocultaAhora || medido ? [] : (hoyo?.playLine ?? [])),
+    [lineaQueSePinta, hoyo, reporte, ocultaAhora, medido],
   );
   // Como las de medir, se mueven y se reescriben, no se rehacen; también
   // mientras se arrastra, antes de soltar
@@ -843,10 +845,9 @@ const MapaDelHoyo = ({
     (puntos) => {
       const mapa = mapaRef.current;
       if (!mapa) return;
-      // Con un punto tocado, la línea sin sus metros: se pisarían con los suyos (T2)
-      sincronizarCifras(mapa, etiquetasDeLaLinea.current, medido ? [] : tramosDeLaLinea(puntos), { tipo: 'linea', color: 'text-white', texto: textoDeTramo });
+      sincronizarCifras(mapa, etiquetasDeLaLinea.current, tramosDeLaLinea(puntos), { tipo: 'linea', color: 'text-white', texto: textoDeTramo });
     },
-    [textoDeTramo, medido],
+    [textoDeTramo],
   );
   useEffect(() => ponerCifrasDeLaLinea(lineaVisible), [lineaVisible, ponerCifrasDeLaLinea]);
   // Para el arrastre, las de ahora: los puntos no se rehacen si solo cambian ellas
@@ -861,8 +862,10 @@ const MapaDelHoyo = ({
   const hoyoQueSeDibuja = useMemo(() => {
     if (linea) return { playLine: [], green: hoyoAhora?.green ?? null };
     if (reporte) return { playLine: [], green: null };
+    // Midiendo un punto, del hoyo solo su green (T2)
+    if (medido) return { playLine: [], green: hoyoAhora?.green ?? null };
     return greenMarcado ? hoyoAhora : hoyo;
-  }, [linea, hoyo, hoyoAhora, greenMarcado, reporte]);
+  }, [linea, hoyo, hoyoAhora, greenMarcado, reporte, medido]);
   useEffect(() => {
     hoyoActual.current = hoyoQueSeDibuja;
     mapaRef.current?.getSource('hoyo')?.setData(geojsonDelHoyo(hoyoQueSeDibuja));
@@ -1273,8 +1276,7 @@ const MapaDelHoyo = ({
         )}
 
         {/* Las cifras de la línea, en una frase, para quien no ve el mapa */}
-        {/* Con un punto tocado, como sus cifras en el mapa: fuera (T2) */}
-        {fraseDeLaLinea && !medido && (
+        {fraseDeLaLinea && (
           <span data-testid="tramos-de-la-linea" className="sr-only">
             {fraseDeLaLinea}
           </span>

@@ -1258,6 +1258,9 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       tocar(alNorte(150));
 
       expect(screen.getByRole('button', { name: 'mapa.quitarPunto' })).toBeInTheDocument();
+      // Midiendo, la marcada no se ve (T2, 19 oct); con «Quitar» vuelve tal cual
+      expect(lineaDibujada()).toBeUndefined();
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
       expect(lineaDibujada()).toHaveLength(3);
     });
   });
@@ -3828,21 +3831,42 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     expect(screen.getByTestId('distancia-centro')).toHaveTextContent('300');
   });
 
-  it('T2: con el punto, la línea del hoyo sin sus metros; con «Quitar», vuelven', () => {
+  it('T2 (19 oct, en el móvil): con el punto, la línea del hoyo se va entera (con sus metros y sus puntos), el green se queda; con «Quitar», vuelve', () => {
     abrirConLinea();
     desde(0);
+    const lineaDelHoyo = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea');
+    const puntosParaMover = () => vivas().filter((m) => m.opciones.draggable);
+    expect(lineaDelHoyo()).toBeDefined();
+    expect(puntosParaMover().length).toBeGreaterThan(0);
     expect(cifras('linea')).toHaveLength(1);
 
     tocar(P);
+    expect(lineaDelHoyo()).toBeUndefined();
+    expect(puntosParaMover()).toEqual([]);
+    expect(mapa().fuentes.hoyo.data.features.some((f) => f.properties.tipo === 'green')).toBe(true);
     expect(cifras('linea')).toEqual([]);
     // Ni su resumen para lectores de pantalla (/code-review)
     expect(screen.queryByTestId('tramos-de-la-linea')).toBeNull();
 
     quitar();
+    expect(lineaDelHoyo()).toBeDefined();
+    expect(puntosParaMover().length).toBeGreaterThan(0);
     expect(cifras('linea')).toHaveLength(1);
     expect(screen.getByTestId('tramos-de-la-linea')).toBeInTheDocument();
     expect(medida()).toEqual([]);
     expect(elPunto()).toEqual([]);
+  });
+
+  it('T2: también la línea de un hoyo sin green (que no se mueve)', () => {
+    abrir({ hoyo: { playLine: [T, G300], green: null }, porMarcar: null });
+    act(() => mapa().oyentes.load());
+    desde(0);
+    const lineaDelHoyo = () => mapa().fuentes.hoyo.data.features.find((f) => f.properties.tipo === 'linea');
+    expect(lineaDelHoyo()).toBeDefined();
+
+    tocar(P);
+
+    expect(lineaDelHoyo()).toBeUndefined();
   });
 
   it('T3: a mitad de hoyo mide de ti al punto; la línea al green y su codo siguen, sin sus metros', () => {
