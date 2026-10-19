@@ -45,6 +45,17 @@ class HoleSampleMapper {
     );
   }
 
+  /** Un reporte de hoyo (entrega 7): el motivo y la línea que propone el jugador. */
+  static reportToApi(reporte) {
+    return {
+      id: reporte.id,
+      reason: reporte.reason,
+      tee: aApi(reporte.tee),
+      bends: (reporte.bends ?? []).map(aApi),
+      green_center: aApi(reporte.greenCenter),
+    };
+  }
+
   static toApi(muestra) {
     return {
       id: muestra.id,

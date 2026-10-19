@@ -29,6 +29,13 @@ vi.mock('../../../hooks/useMuestrasDelCampo', () => ({
   },
 }));
 
+const elReporte = vi.hoisted(() => ({ reportar: vi.fn(), args: null }));
+vi.mock('../../../hooks/useReportarHoyo', () => ({
+  useReportarHoyo: (args) => {
+    elReporte.args = args;
+    return args.userId && args.golfCourseId ? elReporte.reportar : null;
+  },
+}));
 const { default: VentanaDelMapa } = await import('./VentanaDelMapa');
 const { default: BotonMapa } = await import('./BotonMapa');
 
@@ -460,5 +467,33 @@ describe('VentanaDelMapa — muestras del hoyo', () => {
     rerender(<VentanaDelMapa mapaDelHoyo={estado({ mapaDelCampo: { holes: {} } })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} metros={300} userId="u-1" barra={BARRA} />);
 
     expect(carga.montajes).toBe(antes);
+  });
+});
+
+
+// Entrega 7 (18 oct): el reporte de un hoyo sale con el jugador, el campo y el hoyo
+describe('VentanaDelMapa — reportar un hoyo', () => {
+  beforeEach(() => {
+    carga.falla = false;
+    carga.suspende = false;
+    carga.props = null;
+    elReporte.reportar.mockReset();
+  });
+
+  it('con sesión, el mapa puede reportar y el reporte lleva el número de hoyo', async () => {
+    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} userId="yo" />);
+    await screen.findByTestId('mapa-del-hoyo');
+
+    carga.props.onReporte({ id: 'r-1', reason: 'WRONG_LINE' });
+
+    expect(elReporte.args).toEqual({ golfCourseId: 'gc-1', userId: 'yo' });
+    expect(elReporte.reportar).toHaveBeenCalledWith(3, { id: 'r-1', reason: 'WRONG_LINE' });
+  });
+
+  it('sin sesión, el mapa no ofrece reportar', async () => {
+    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    await screen.findByTestId('mapa-del-hoyo');
+
+    expect(carga.props.onReporte).toBeNull();
   });
 });

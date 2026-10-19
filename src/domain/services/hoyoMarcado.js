@@ -12,7 +12,7 @@
  */
 
 import { distanciaEnMetros, distanciaExacta } from './distanciasAlGreen';
-import { radianes, rumbo } from './geometriaDelHoyo';
+import { proyeccionEnElTramo, radianes, rumbo } from './geometriaDelHoyo';
 
 export const METROS_AL_BORDE_DEL_GREEN = 10;
 export const MAX_CODOS = 2;
@@ -110,15 +110,7 @@ export const conCodosDelPar = (linea, par) => {
 export const MIN_DESVIO_DE_UN_CODO_M = 15;
 
 // Metros de `p` al tramo de `a` a `b`, en un plano local (pocos cientos de metros)
-const distanciaAlTramo = (p, a, b) => {
-  const coseno = Math.cos(radianes(a.lat));
-  const xy = (q) => [radianes(q.lon - a.lon) * RADIO_TERRESTRE_M * coseno, radianes(q.lat - a.lat) * RADIO_TERRESTRE_M];
-  const [px, py] = xy(p);
-  const [bx, by] = xy(b);
-  const largo2 = bx * bx + by * by;
-  const t = largo2 > 0 ? Math.min(1, Math.max(0, (px * bx + py * by) / largo2)) : 0;
-  return Math.hypot(px - t * bx, py - t * by);
-};
+const distanciaAlTramo = (p, a, b) => proyeccionEnElTramo(p, a, b).metros;
 
 /**
  * Una línea con más puntos en medio de los codos de su par (las de OSM) se queda

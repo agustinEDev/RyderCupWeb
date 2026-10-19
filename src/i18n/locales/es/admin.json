@@ -161,13 +161,8 @@
     "noSamples": "Este hoyo no tiene muestras.",
     "metres": "{{metros}} m",
     "greenOnly": "solo green",
-    "useThis": "Partir de esta",
     "delete": "Borrar",
     "confirmDelete": "Sí, borrar",
-    "genders": {
-      "MALE": "hombre",
-      "FEMALE": "mujer"
-    },
     "unsaved": "Tienes cambios sin guardar en la línea.",
     "closeWithoutSaving": "Cerrar sin guardar",
     "cardNoMetres": "Par {{par}} · sin metros en la tarjeta",
@@ -187,11 +182,23 @@
     "greenTooClose": "La salida y el green están a menos de 40 m: toca otra vez",
     "greenTooFar": "La salida y el green están a más de 750 m: toca otra vez",
     "myPosition": "Mi posición",
+    "orient": "Orientar",
     "findingPosition": "Buscando tu posición…",
     "positionDenied": "Sin permiso de ubicación",
     "tooFarFromCourse": "Ese punto está a más de 3 km del campo: toca otra vez",
     "positionUnavailable": "Este navegador no da tu posición",
-    "useOsm": "Empezar desde OpenStreetMap"
+    "useOsm": "Empezar desde OpenStreetMap",
+    "reports_one": "{{count}} reporte",
+    "reports_other": "{{count}} reportes",
+    "reportsTitle": "Reportes",
+    "discard": "Descartar",
+    "confirmDiscard": "Sí, descartar",
+    "discardedOk": "Reporte descartado",
+    "reasons": {
+      "WRONG_HOLE": "No es el hoyo correcto",
+      "WRONG_LINE": "La línea es incorrecta",
+      "HOLE_CHANGED": "El hoyo ha cambiado"
+    }
   },
   "menu": {
     "label": "Secciones del panel",

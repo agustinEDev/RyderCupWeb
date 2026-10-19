@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   DeleteHoleSampleUseCase,
+  DiscardHoleReportUseCase,
   GetHoleReviewUseCase,
   ListHoleReviewsUseCase,
   ReopenHoleUseCase,
@@ -37,11 +38,20 @@ describe('casos de uso del admin con los hoyos (BE #575)', () => {
     expect(r.deleteHoleSample).toHaveBeenCalledWith('gc-1', 's-1');
   });
 
+  it('descartar un reporte (entrega 7) pasa el campo y el reporte', async () => {
+    const r = { ...repo(), discardHoleReport: vi.fn(async () => undefined) };
+
+    await new DiscardHoleReportUseCase({ golfCourseRepository: r }).execute('gc-1', 'r-1');
+
+    expect(r.discardHoleReport).toHaveBeenCalledWith('gc-1', 'r-1');
+  });
+
   it.each([
     ['un campo sin id', () => new GetHoleReviewUseCase({ golfCourseRepository: repo() }).execute(null)],
     ['una línea sin green', () => new SaveHoleLineUseCase({ golfCourseRepository: repo() }).execute('gc-1', 1, { tee: LINEA.tee })],
     ['reabrir sin campo', () => new ReopenHoleUseCase({ golfCourseRepository: repo() }).execute(null, 1)],
     ['borrar sin muestra', () => new DeleteHoleSampleUseCase({ golfCourseRepository: repo() }).execute('gc-1', null)],
+    ['descartar sin reporte', () => new DiscardHoleReportUseCase({ golfCourseRepository: repo() }).execute('gc-1', null)],
   ])('%s, error sin llamar al repositorio', async (_caso, llamar) => {
     await expect(llamar()).rejects.toThrow(/required/);
   });

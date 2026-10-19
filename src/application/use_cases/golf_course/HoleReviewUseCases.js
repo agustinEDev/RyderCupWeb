@@ -8,6 +8,7 @@
  * - SaveHoleLineUseCase / ReopenHoleUseCase: guardar la línea de un hoyo, o
  *   quitarla para que vuelva a recoger.
  * - DeleteHoleSampleUseCase: borrar una muestra mala.
+ * - DiscardHoleReportUseCase: descartar un reporte de un jugador (entrega 7).
  *
  * @param {Object} dependencies
  * @param {IGolfCourseRepository} dependencies.golfCourseRepository
@@ -70,5 +71,17 @@ export class DeleteHoleSampleUseCase {
     exigir(golfCourseId, 'Golf course ID');
     exigir(sampleId, 'Sample ID');
     return this.golfCourseRepository.deleteHoleSample(golfCourseId, sampleId);
+  }
+}
+
+export class DiscardHoleReportUseCase {
+  constructor({ golfCourseRepository }) {
+    this.golfCourseRepository = golfCourseRepository;
+  }
+
+  async execute(golfCourseId, reportId) {
+    exigir(golfCourseId, 'Golf course ID');
+    exigir(reportId, 'Report ID');
+    return this.golfCourseRepository.discardHoleReport(golfCourseId, reportId);
   }
 }

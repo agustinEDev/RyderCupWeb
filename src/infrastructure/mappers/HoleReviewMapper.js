@@ -17,7 +17,8 @@ class HoleReviewMapper {
       golfCourseId: curso.golf_course_id,
       name: curso.name,
       // Solo llegan los pendientes: el `saved` de la API es siempre false (17 oct)
-      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples })),
+      // Con reportes abiertos, un hoyo también está pendiente (entrega 7)
+      holes: (curso.holes ?? []).map((h) => ({ holeNumber: h.hole_number, samples: h.samples, reports: h.reports ?? 0 })),
     }));
   }
 
@@ -34,7 +35,6 @@ class HoleReviewMapper {
         osm: h.osm_line ? { puntos: (h.osm_line.points ?? []).map(aDominio), green: h.osm_line.green_center ? aDominio(h.osm_line.green_center) : null } : null,
         muestras: (h.samples ?? []).map((m) => ({
           id: m.id,
-          barra: { color: m.tee_color, gender: m.tee_gender ?? null },
           tee: aDominio(m.tee),
           bends: (m.bends ?? []).map(aDominio),
           greenCenter: aDominio(m.green_center),
@@ -46,6 +46,15 @@ class HoleReviewMapper {
           identifier: t.identifier ?? null,
           par: t.par,
           metros: t.meters ?? null,
+        })),
+        // Los reportes de los jugadores (entrega 7): el motivo y la línea que proponen
+        reportes: (h.reports ?? []).map((r) => ({
+          id: r.id,
+          motivo: r.reason,
+          tee: aDominio(r.tee),
+          bends: (r.bends ?? []).map(aDominio),
+          greenCenter: aDominio(r.green_center),
+          llego: r.received_on,
         })),
       })),
     };

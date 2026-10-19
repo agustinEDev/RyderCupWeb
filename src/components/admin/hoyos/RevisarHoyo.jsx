@@ -1,8 +1,9 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LocateFixed, X } from 'lucide-react';
+import { Compass, LocateFixed, X } from 'lucide-react';
 import {
   deleteHoleSampleUseCase,
+  discardHoleReportUseCase,
   getHoleReviewUseCase,
   reopenHoleUseCase,
   saveHoleLineUseCase,
@@ -31,9 +32,19 @@ const lineaDeOsmDe = (hoyo) => {
   return puntos ? lineaDePuntos(puntos) : null;
 };
 
+// Los mismos puntos, vengan de donde vengan (sus campos, en cualquier orden)
+const mismaLinea = (a, b) => {
+  if (!a || !b) return false;
+  const pa = puntosDeLaLinea(a);
+  const pb = puntosDeLaLinea(b);
+  return pa.length === pb.length && pa.every((p, i) => p.lat === pb[i].lat && p.lon === pb[i].lon);
+};
+
 const lineaDe = (muestra) => (muestra?.tee ? { tee: muestra.tee, bends: muestra.bends, greenCenter: muestra.greenCenter } : null);
 
 const BOTON = 'min-h-11 rounded-lg px-3 text-sm font-semibold disabled:opacity-50';
+// Toda la fila se toca para elegirla (S3); «Borrar» y «Descartar», aparte
+const FILA = 'min-h-11 w-full rounded-md px-1 text-left disabled:opacity-50';
 // Sin nada tocado, siempre la misma lista: el mapa no repinta por nada
 const SIN_MARCAR = [];
 // Lo que se dice junto a «Mi posición» según el GPS
@@ -45,14 +56,15 @@ const AVISO_DEL_GPS = {
 
 /**
  * Revisar un hoyo (BE #575, 17 oct 2026: una referencia por hoyo). Sobre la
- * ortofoto, todas sus muestras (cada una con el color de su barra) y la línea
- * guardada; el admin parte de una muestra (o de lo guardado), la ajusta
+ * ortofoto, todas sus muestras y reportes (del mismo color: ninguna distinción
+ * de barras) y la línea guardada; el admin parte de lo guardado, del primer
+ * reporte, de OSM o de una muestra (tocar su fila la elige: Agustín, 18 oct), la ajusta
  * arrastrando la salida, los codos y el green, y la guarda. También puede
  * reabrir el hoyo y borrar una muestra mala. Al guardar se cierra sola (el hoyo
  * deja de estar pendiente); al cerrar, dice si cambió algo.
  */
 const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
-  const { t, i18n } = useTranslation(['admin', 'golfCourses']);
+  const { t, i18n } = useTranslation('admin');
   const [hoyo, setHoyo] = useState(null);
   const [ubicacion, setUbicacion] = useState(null);
   const [linea, setLinea] = useState(null);
@@ -60,11 +72,22 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
   const [ocupado, setOcupado] = useState(false);
   const [cambiado, setCambiado] = useState(false);
   const [porBorrar, setPorBorrar] = useState(null);
+  const [porDescartar, setPorDescartar] = useState(null);
+  // El id de la fila de la que sale la línea que se edita (o del green suelto
+  // que se ve en rojo), o ninguna (S2, S3, S6)
+  const [seleccion, setSeleccion] = useState(null);
   // Si la línea se movió o se cambió y no se ha guardado (para no perderla al cerrar)
   const [editada, setEditada] = useState(false);
   const [avisoAlCerrar, setAvisoAlCerrar] = useState(false);
   // «Mi posición» (E14): el GPS solo se pide al tocarlo, y cada toque recentra
   const [centrarEnMi, setCentrarEnMi] = useState(0);
+  // Cada vez que se pide, el mapa se orienta con la línea roja (A1, A2, A4, A6)
+  const [orientar, setOrientar] = useState(0);
+  // La línea que se ve, para no reorientar al recargar si sigue siendo la misma (revisor)
+  const lineaQueSeVe = useRef(null);
+  useLayoutEffect(() => {
+    lineaQueSeVe.current = linea;
+  });
   // Para centrar el mapa vale cualquier posición: un ordenador va por Wi-Fi
   const gps = usePosicionGps({ activo: centrarEnMi > 0, precisionMaxima: Infinity });
   // Marcar desde cero (17 oct): null, o el paso y la salida ya tocada
@@ -81,18 +104,40 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     haMarcado.current = estaMarcando;
   }, [estaMarcando]);
 
-  // `conservarLinea`: tras borrar una muestra, la que se edita no se toca
+  // `conservarLinea`: tras borrar una muestra o descartar un reporte, la línea
+  // que el admin ha movido no se toca; sin moverla, se vuelve a partir de lo
+  // que quede (Agustín, 18 oct)
   const cargar = useCallback(
     async ({ conservarLinea = false } = {}) => {
       try {
         const campo = await getHoleReviewUseCase.execute(golfCourseId);
-        const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [] };
+        const este = campo.holes.find((h) => h.holeNumber === numeroDeHoyo) ?? { holeNumber: numeroDeHoyo, guardada: null, muestras: [], barras: [], reportes: [] };
         setHoyo(este);
         setUbicacion(campo.ubicacion ?? null);
-        // Se parte de la guardada, de la de OSM (con los codos de su par) o de la
-        // primera muestra completa
-        const deLoQueHay = este.guardada ?? lineaDeOsmDe(este) ?? lineaDe(este.muestras.find((m) => m.tee)) ?? null;
+        // Se parte de la guardada, de la del primer reporte (quien reporta dice
+        // que la que hay está mal: Agustín, 18 oct), de la de OSM (con los codos
+        // de su par) o de la primera muestra completa
+        // Con la fila de la que sale, si es un reporte o una muestra (S2)
+        const primerReporte = este.reportes?.find((r) => r.tee);
+        const primeraCompleta = este.muestras.find((m) => m.tee);
+        const osm = lineaDeOsmDe(este);
+        const [deLoQueHay, deDonde] = este.guardada
+          ? [este.guardada, null]
+          : primerReporte
+            ? [lineaDe(primerReporte), primerReporte.id]
+            : osm
+              ? [osm, null]
+              : [lineaDe(primeraCompleta), primeraCompleta?.id ?? null];
         setLinea((actual) => (conservarLinea && actual ? actual : deLoQueHay));
+        // Una línea nueva a la vista, orientada (A1); la misma de antes, no
+        // (borrar una muestra no le quita al admin el zoom ni el giro: revisor)
+        const seVera = conservarLinea && lineaQueSeVe.current ? lineaQueSeVe.current : deLoQueHay;
+        // Y si se queda sin ninguna, de vuelta al norte (CodeRabbit)
+        if (seVera ? !mismaLinea(seVera, lineaQueSeVe.current) : Boolean(lineaQueSeVe.current)) setOrientar((n) => n + 1);
+        // Conservada la línea, también su fila (S10: si se borró, ya no está).
+        // Si no, la de partida, salvo una muestra seleccionada que sigue ahí (S10b:
+        // un solo green no toca la línea)
+        if (!conservarLinea) setSeleccion((sel) => (este.muestras.some((m) => m.id === sel) ? sel : deDonde));
         if (!conservarLinea) setEditada(false);
         setFallo(false);
       } catch {
@@ -131,6 +176,7 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     } finally {
       setOcupado(false);
       setPorBorrar(null);
+      setPorDescartar(null);
     }
   };
 
@@ -141,8 +187,6 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
       cerrar: () => onCerrar({ cambiado: true, guardado: true }),
     });
 
-  const barraDeTexto = (barra) =>
-    [t(`golfCourses:form.teeColors.${barra.color}`), barra.gender ? t(`holeReviews.genders.${barra.gender}`) : null].filter(Boolean).join(' · ');
   const cerrar = () => {
     // Con cambios sin guardar, primero se avisa (de un modal se sale siempre,
     // pero no perdiendo lo hecho por un descuido)
@@ -158,6 +202,41 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     setLinea(nueva);
     setEditada(true);
     setAvisoAlCerrar(false);
+    // Elegida otra línea, ninguna confirmación de borrar o descartar sigue abierta (CodeRabbit)
+    setPorBorrar(null);
+    setPorDescartar(null);
+  };
+  // Tocar una fila (S3–S6): una completa o un reporte pasa a ser la línea que
+  // se edita; un solo green se ve en rojo y la línea se queda. La ya elegida,
+  // movida, vuelve a su original (S5); desde el mapa no, que se tocaría sin
+  // querer al mover la roja (M6)
+  // Elegida (no arrastrada: A5), el mapa se orienta con ella (A2, A4)
+  const elegirYOrientar = (nueva) => {
+    elegirLinea(nueva);
+    setOrientar((n) => n + 1);
+  };
+  const elegirFila = (fila, { desdeElMapa = false } = {}) => {
+    if (seleccion === fila.id) {
+      const original = lineaDe(fila);
+      if (desdeElMapa || !original || JSON.stringify(original) === JSON.stringify(linea)) return;
+      elegirYOrientar(original);
+      return;
+    }
+    setSeleccion(fila.id);
+    if (fila.tee) {
+      elegirYOrientar(lineaDe(fila));
+      return;
+    }
+    setPorBorrar(null);
+    setPorDescartar(null);
+  };
+  const destacado = hoyo?.muestras.find((m) => m.id === seleccion && !m.tee)?.greenCenter ?? null;
+  // En el mapa, los reportes y las muestras (S1); la misma lista mientras no cambien
+  const enElMapa = useMemo(() => (hoyo ? [...(hoyo.reportes ?? []).filter((r) => r.tee), ...hoyo.muestras] : []), [hoyo]);
+  // Elegida en el mapa: como su fila, y la lista la enseña (M1, M5); el mapa se orienta con ella (A2)
+  const elegirEnElMapa = (id) => {
+    elegirFila(enElMapa.find((x) => x.id === id), { desdeElMapa: true });
+    globalThis.document.getElementById(`fila-${id}`)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
   };
   const dia = (iso) => {
     const fecha = new Date(`${iso}T12:00:00`);
@@ -188,7 +267,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     if (marcando.paso === 'green') {
       if (fueraDeLimites(marcando.salida, punto)) return;
       setMarcando(null);
-      elegirLinea(lineaMarcada(marcando.salida, punto));
+      setSeleccion(null);
+      elegirYOrientar(lineaMarcada(marcando.salida, punto));
       return;
     }
     if (!greenSuelto) {
@@ -197,7 +277,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
     }
     if (fueraDeLimites(punto, greenSuelto)) return;
     setMarcando(null);
-    elegirLinea(lineaMarcada(punto, greenSuelto));
+    setSeleccion(null);
+    elegirYOrientar(lineaMarcada(punto, greenSuelto));
   };
   const instruccion = !marcando ? null : marcando.paso === 'green' ? 'holeReviews.tapGreen' : greenSuelto ? 'holeReviews.tapTeeToGreen' : 'holeReviews.tapTee';
   const parDeLaTarjeta = tarjeta && (tarjeta.parMinimo === tarjeta.parMaximo ? String(tarjeta.parMinimo) : `${tarjeta.parMinimo}–${tarjeta.parMaximo}`);
@@ -239,11 +320,23 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
             {t('holeReviews.myPosition')}
           </button>
+          {/* Girado con los dedos, vuelve a como se juega la línea roja (A6) */}
+          <button
+            type="button"
+            disabled={!linea || ocupado || Boolean(marcando)}
+            onClick={() => setOrientar((n) => n + 1)}
+            className={`${BOTON} inline-flex items-center gap-1 bg-white text-gray-900 shadow`}
+          >
+            <Compass className="h-4 w-4" aria-hidden="true" />
+            {t('holeReviews.orient')}
+          </button>
         </div>
         {hoyo && (
           <Suspense fallback={<BlockLoader />}>
             <MapaDeRevision
-              muestras={hoyo.muestras}
+              muestras={enElMapa}
+              destacado={destacado}
+              onElegir={ocupado || marcando ? undefined : elegirEnElMapa}
               guardada={hoyo.guardada}
               linea={linea}
               onLinea={elegirLinea}
@@ -251,6 +344,8 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               marcados={marcando?.salida ? [marcando.salida] : SIN_MARCAR}
               bloqueada={Boolean(marcando)}
               centro={ubicacion}
+              par={tarjeta?.parDeLaMasLarga ?? null}
+              orientar={orientar}
               osm={hoyo.osm?.puntos ?? null}
               posicion={gps.posicion}
               centrarEnMi={centrarEnMi}
@@ -313,7 +408,11 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
                   <button
                     type="button"
                     disabled={ocupado || Boolean(marcando)}
-                    onClick={() => elegirLinea(lineaDeOsmDe(hoyo))}
+                    onClick={() => {
+                      // La de OSM no es de ninguna fila (S14)
+                      setSeleccion(null);
+                      elegirYOrientar(lineaDeOsmDe(hoyo));
+                    }}
                     className={`${BOTON} bg-gray-100 text-gray-900`}
                   >
                     {t('holeReviews.useOsm')}
@@ -351,33 +450,78 @@ const RevisarHoyo = ({ golfCourseId, nombre, numeroDeHoyo, onCerrar }) => {
               </section>
             )}
 
+            {/* Lo que reportan los jugadores (entrega 7): se parte de su línea o se descarta */}
+            {Boolean(hoyo.reportes?.length) && (
+              <section aria-labelledby="los-reportes">
+                <h3 id="los-reportes" className="text-sm font-semibold text-gray-700">{t('holeReviews.reportsTitle')}</h3>
+                <ul className="flex flex-col gap-2">
+                  {hoyo.reportes.map((reporte) => (
+                    <li key={reporte.id} id={`fila-${reporte.id}`} className={`rounded-lg border-2 bg-amber-50 p-2 text-sm ${seleccion === reporte.id ? 'border-red-600' : 'border-amber-200'}`}>
+                      <button
+                        type="button"
+                        aria-pressed={seleccion === reporte.id}
+                        disabled={ocupado || Boolean(marcando)}
+                        onClick={() => elegirFila(reporte)}
+                        className={`${FILA} text-gray-900`}
+                      >
+                        {t(`holeReviews.reasons.${reporte.motivo}`, { defaultValue: reporte.motivo })} · {dia(reporte.llego)}
+                      </button>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {porDescartar === reporte.id ? (
+                          <button
+                            type="button"
+                            disabled={ocupado || Boolean(marcando)}
+                            onClick={() => hacer(() => discardHoleReportUseCase.execute(golfCourseId, reporte.id), 'holeReviews.discardedOk', { conservarLinea: editada })}
+                            className={`${BOTON} bg-red-600 text-white`}
+                          >
+                            {t('holeReviews.confirmDiscard')}
+                          </button>
+                        ) : (
+                          <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                              setPorBorrar(null);
+                              setPorDescartar(reporte.id);
+                            }} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                            {t('holeReviews.discard')}
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <section aria-labelledby="las-muestras">
               <h3 id="las-muestras" className="text-sm font-semibold text-gray-700">{t('holeReviews.samplesTitle')}</h3>
               {!hoyo.muestras.length && <p className="text-sm text-gray-500">{t('holeReviews.noSamples')}</p>}
               <ul className="flex flex-col gap-2">
                 {hoyo.muestras.map((muestra) => (
-                  <li key={muestra.id} className="rounded-lg border border-gray-200 p-2 text-sm">
-                    <p className="text-gray-900">
-                      {barraDeTexto(muestra.barra)} · {dia(muestra.llego)} ·{' '}
+                  <li key={muestra.id} id={`fila-${muestra.id}`} className={`rounded-lg border-2 p-2 text-sm ${seleccion === muestra.id ? 'border-red-600' : 'border-gray-200'}`}>
+                    <button
+                      type="button"
+                      aria-pressed={seleccion === muestra.id}
+                      disabled={ocupado || Boolean(marcando)}
+                      onClick={() => elegirFila(muestra)}
+                      className={`${FILA} text-gray-900`}
+                    >
+                      {dia(muestra.llego)} ·{' '}
                       {muestra.tee ? t('holeReviews.metres', { metros: longitudDeLaLinea(puntosDeLaLinea(lineaDe(muestra))) }) : t('holeReviews.greenOnly')}
-                    </p>
+                    </button>
                     <div className="mt-1 flex flex-wrap gap-2">
-                      {muestra.tee && (
-                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => elegirLinea(lineaDe(muestra))} className={`${BOTON} bg-gray-100 text-gray-900`}>
-                          {t('holeReviews.useThis')}
-                        </button>
-                      )}
                       {porBorrar === muestra.id ? (
                         <button
                           type="button"
                           disabled={ocupado || Boolean(marcando)}
-                          onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: true })}
+                          onClick={() => hacer(() => deleteHoleSampleUseCase.execute(golfCourseId, muestra.id), 'holeReviews.deletedOk', { conservarLinea: editada })}
                           className={`${BOTON} bg-red-600 text-white`}
                         >
                           {t('holeReviews.confirmDelete')}
                         </button>
                       ) : (
-                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => setPorBorrar(muestra.id)} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
+                        <button type="button" disabled={ocupado || Boolean(marcando)} onClick={() => {
+                            setPorDescartar(null);
+                            setPorBorrar(muestra.id);
+                          }} className={`${BOTON} bg-white text-red-700 ring-1 ring-red-200`}>
                           {t('holeReviews.delete')}
                         </button>
                       )}

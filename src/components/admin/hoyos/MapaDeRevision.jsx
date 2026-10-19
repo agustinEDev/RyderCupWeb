@@ -5,36 +5,29 @@ import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import '../../scoring/mapa/mapa.css';
 import { TESELAS_PNOA } from '../../scoring/mapa/teselas';
 import { lineaDePuntos, puntosDeLaLinea } from '../../../domain/services/hoyoMarcado';
+import { camaraGirada, rumboDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 
 setWorkerUrl(urlDelWorker);
 
-// El color de cada barra en el mapa (las OTHER y las que no se conocen, morado)
-const COLOR_DE_LA_BARRA = {
-  WHITE: '#ffffff',
-  YELLOW: '#facc15',
-  BLUE: '#3b82f6',
-  RED: '#ef4444',
-  BLACK: '#111827',
-  GREEN: '#22c55e',
-  ORANGE: '#f97316',
-  PINK: '#ec4899',
-  GOLD: '#ca8a04',
-};
-const colorDe = (barra) => COLOR_DE_LA_BARRA[barra?.color] ?? '#a855f7';
+// Todas las muestras y reportes del mismo color: ninguna distinción de barras
+// en los mapas (Agustín, 18 oct)
+const COLOR_DE_LAS_MUESTRAS = '#ffffff';
 
 const lngLat = (p) => [p.lon, p.lat];
 const coleccion = (features) => ({ type: 'FeatureCollection', features });
 const comoPuntos = (puntos) => coleccion(puntos.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: lngLat(p) } })));
 const comoLinea = (linea, properties = {}) =>
   linea ? [{ type: 'Feature', properties, geometry: { type: 'LineString', coordinates: puntosDeLaLinea(linea).map(lngLat) } }] : [];
+// Con su id y su sitio en la lista: tocada en el mapa, se elige (M1-M4)
 const deLasMuestras = (muestras) =>
   coleccion(
-    muestras.map((m) =>
-      m.tee
-        ? comoLinea(m, { color: colorDe(m.barra) })[0]
-        : { type: 'Feature', properties: { color: colorDe(m.barra) }, geometry: { type: 'Point', coordinates: lngLat(m.greenCenter) } },
-    ),
+    muestras.map((m, orden) => {
+      const properties = { id: m.id, orden };
+      return m.tee ? comoLinea(m, properties)[0] : { type: 'Feature', properties, geometry: { type: 'Point', coordinates: lngLat(m.greenCenter) } };
+    }),
   );
+// Para acertar con el dedo, una franja invisible más ancha que lo que se ve (M3)
+const CAPAS_DE_TOQUE = ['muestras-toque-lineas', 'muestras-toque-greens'];
 
 const ESTILO = {
   version: 8,
@@ -47,21 +40,23 @@ const ESTILO = {
 
 // 44 px donde tocar (con el dedo, en el móvil) y el punto de 20 px dentro
 const CLASE_DEL_PUNTO = 'h-11 w-11 flex items-center justify-center';
-const CLASE_DE_LA_BOLA = 'h-5 w-5 rounded-full border-[3px] border-white bg-fuchsia-600 shadow';
-// Lo guardado y lo que se edita, en colores que no lleva ninguna barra
+const CLASE_DE_LA_BOLA = 'h-5 w-5 rounded-full border-[3px] border-white bg-red-600 shadow';
+// Lo guardado en cian; lo que se edita (y un green suelto seleccionado),
+// siempre en rojo (Agustín, 18 oct)
 const COLOR_DE_LO_GUARDADO = '#06b6d4';
-const COLOR_DE_LA_LINEA = '#d946ef';
+const COLOR_DE_LA_LINEA = '#dc2626';
 // La del mapa de OSM aprobado (17 oct)
-// Ninguna barra lo tiene: el verde es de las barras verdes
 const COLOR_DE_OSM = '#84cc16';
 const comoLineaDeOsm = (puntos) =>
   puntos?.length > 1 ? coleccion([{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: puntos.map(lngLat) } }]) : coleccion([]);
 
 /**
  * El mapa de revisar un hoyo (BE #575, 17 oct 2026), sobre la ortofoto del
- * PNOA: cada muestra con el color de su barra (una solo green, un punto), la
- * línea guardada en cian discontinuo y la que el admin edita en magenta (colores
- * que no lleva ninguna barra), con su salida, sus codos y su green arrastrables. Al soltar un punto, `onLinea` recibe la línea movida.
+ * PNOA: las muestras y los reportes, todos en blanco y finos (una solo green,
+ * un punto), la línea guardada en cian discontinuo y la que el admin edita en
+ * rojo, con su salida, sus codos y su green arrastrables. Al soltar un punto,
+ * `onLinea` recibe la línea movida. `destacado`: el green suelto seleccionado,
+ * en rojo.
  */
 const SIN_MARCAR = [];
 
@@ -77,6 +72,10 @@ const MapaDeRevision = ({
   centrarEnMi = 0,
   bloqueada = false,
   osm = null,
+  destacado = null,
+  onElegir,
+  par = null,
+  orientar = 0,
 }) => {
   const { t } = useTranslation('admin');
   const nombreDe = (i, total) => t(i === 0 ? 'holeReviews.pointTee' : i === total - 1 ? 'holeReviews.pointGreen' : 'holeReviews.pointBend');
@@ -85,11 +84,11 @@ const MapaDeRevision = ({
   const cargado = useRef(false);
   const puntos = useRef([]);
   // El centro de partida solo cuenta al montar: va con lo demás
-  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm });
+  const datos = useRef({ muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar });
   // Hasta qué pedido de «Mi posición» se ha centrado ya el mapa
   const centradoPara = useRef(0);
   useLayoutEffect(() => {
-    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm };
+    datos.current = { muestras, guardada, linea, onLinea, onToque, marcados, centro, posicion, centrarEnMi, bloqueada, osm, destacado, onElegir, par, orientar };
   });
 
   // La línea que se edita y sus puntos. Con los mismos puntos, se mueven (no
@@ -137,12 +136,60 @@ const MapaDeRevision = ({
     }
   };
 
+  // Todo lo que hay: las muestras y los reportes, lo guardado, la línea y OSM
+  const todosLosPuntos = () => {
+    const { muestras: todas, guardada: lo, linea: actual, osm: deOsm } = datos.current;
+    return [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(deOsm ?? [])];
+  };
+  // Como el mapa del jugador (Agustín, 18 oct): girado como se juega la línea
+  // roja (par 3 al green, 4 o 5 al primer codo), una vez por cada vez que se
+  // pide (A1, A2, A4, A6), con todo a la vista (A1b). Sin línea, nada. Se
+  // puede girar con los dedos (A6)
+  // Sin línea, todo a la vista y el norte arriba (A1c)
+  const verTodoAlNorte = () => {
+    const todos = todosLosPuntos();
+    if (!todos.length) return;
+    const lats = todos.map((p) => p.lat);
+    const lons = todos.map((p) => p.lon);
+    mapaRef.current.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding: 40, maxZoom: 18, animate: false, bearing: 0 },
+    );
+  };
+  const orientarLaLinea = (animar) => {
+    const mapa = mapaRef.current;
+    const { linea: actual, par: delHoyo } = datos.current;
+    if (!mapa || !cargado.current) return;
+    // Quitada la línea (al recargar), de vuelta al norte (CodeRabbit)
+    if (!actual) {
+      verTodoAlNorte();
+      return;
+    }
+    const girada = camaraGirada({ playLine: todosLosPuntos(), green: null }, rumboDeLaLinea(puntosDeLaLinea(actual), delHoyo), {
+      ancho: contenedor.current?.clientWidth || 360,
+      alto: contenedor.current?.clientHeight || 640,
+      // Abajo, «Mi posición» y «Orientar»; arriba, la instrucción al marcar (revisor)
+      padding: { top: 64, bottom: 120, left: 40, right: 40 },
+    });
+    // Con línea siempre hay rumbo y puntos
+    const camara = { ...girada, center: lngLat(girada.center) };
+    if (animar) mapa.easeTo(camara);
+    else mapa.jumpTo(camara);
+  };
+
   // La de ahora, por ref: el mapa se monta una vez y sus oyentes la llaman
+  const orientarAhora = useRef(orientarLaLinea);
+  const verTodo = useRef(verTodoAlNorte);
   const pintar = useRef(pintarLinea);
   const centrar = useRef(centrarEnLaPosicion);
   useLayoutEffect(() => {
     pintar.current = pintarLinea;
     centrar.current = centrarEnLaPosicion;
+    orientarAhora.current = orientarLaLinea;
+    verTodo.current = verTodoAlNorte;
   });
 
   useEffect(() => {
@@ -154,8 +201,10 @@ const MapaDeRevision = ({
     mapa.on('load', () => {
       const { muestras: todas, guardada: lo, linea: actual } = datos.current;
       mapa.addSource('muestras', { type: 'geojson', data: deLasMuestras(todas) });
-      mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': ['get', 'color'], 'line-width': 3, 'line-opacity': 0.85 } });
-      mapa.addLayer({ id: 'muestras-greens', type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#000', 'circle-stroke-width': 1 } });
+      mapa.addLayer({ id: 'muestras-lineas', type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 2, 'line-opacity': 0.6 } });
+      mapa.addLayer({ id: 'muestras-greens', type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 6, 'circle-color': COLOR_DE_LAS_MUESTRAS, 'circle-opacity': 0.6, 'circle-stroke-color': '#000', 'circle-stroke-width': 1 } });
+      mapa.addLayer({ id: CAPAS_DE_TOQUE[0], type: 'line', source: 'muestras', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': COLOR_DE_LAS_MUESTRAS, 'line-width': 22, 'line-opacity': 0 } });
+      mapa.addLayer({ id: CAPAS_DE_TOQUE[1], type: 'circle', source: 'muestras', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 11, 'circle-color': COLOR_DE_LAS_MUESTRAS, 'circle-opacity': 0 } });
       mapa.addSource('osm', { type: 'geojson', data: comoLineaDeOsm(datos.current.osm) });
       mapa.addLayer({ id: 'osm', type: 'line', source: 'osm', paint: { 'line-color': COLOR_DE_OSM, 'line-width': 3, 'line-dasharray': [1, 1] } });
       mapa.addSource('guardada', { type: 'geojson', data: coleccion(comoLinea(lo)) });
@@ -167,26 +216,33 @@ const MapaDeRevision = ({
       mapa.addSource('yo', { type: 'geojson', data: comoPuntos(datos.current.posicion ? [datos.current.posicion] : []) });
       mapa.addLayer({ id: 'yo', type: 'circle', source: 'yo', paint: { 'circle-radius': 7, 'circle-color': '#2563eb', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
       mapa.addLayer({ id: 'marcados', type: 'circle', source: 'marcados', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
+      // El green suelto seleccionado, encima de todo: ninguna línea lo tapa (S6b)
+      mapa.addSource('destacado', { type: 'geojson', data: comoPuntos(datos.current.destacado ? [datos.current.destacado] : []) });
+      mapa.addLayer({ id: 'destacado', type: 'circle', source: 'destacado', paint: { 'circle-radius': 8, 'circle-color': COLOR_DE_LA_LINEA, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
       cargado.current = true;
-      // Todo a la vista: las muestras, lo guardado y la línea
-      const todos = [...todas.flatMap((m) => (m.tee ? puntosDeLaLinea(m) : [m.greenCenter])), ...(lo ? puntosDeLaLinea(lo) : []), ...(actual ? puntosDeLaLinea(actual) : []), ...(datos.current.osm ?? [])];
-      if (todos.length) {
-        const lats = todos.map((p) => p.lat);
-        const lons = todos.map((p) => p.lon);
-        mapa.fitBounds(
-          [
-            [Math.min(...lons), Math.min(...lats)],
-            [Math.max(...lons), Math.max(...lats)],
-          ],
-          { padding: 40, maxZoom: 18, animate: false },
-        );
-      }
+      // Con la línea roja, orientado con ella (A1); sin ella, todo y norte arriba
+      if (datos.current.orientar > 0 && actual) orientarAhora.current(false);
+      else verTodo.current();
       pintar.current();
       // La posición pudo llegar antes de que cargara
       centrar.current();
     });
-    // Tocar el mapa solo cuenta mientras se marca
-    mapa.on('click', (e) => datos.current.onToque?.({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
+    // Marcando, el toque es para marcar (M8); si no, elige la muestra o el
+    // reporte que haya debajo: el primero de la lista (M4)
+    mapa.on('click', (e) => {
+      const { onToque: marcar, onElegir: elegir } = datos.current;
+      if (marcar) {
+        marcar({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+        return;
+      }
+      if (!elegir) return;
+      // Un toque en un punto de la roja (sin llegar a arrastrarlo) no es elegir otra (CodeRabbit)
+      if (e.originalEvent?.target?.closest?.('.maplibregl-marker')) return;
+      const debajo = mapa.queryRenderedFeatures(e.point, { layers: CAPAS_DE_TOQUE });
+      if (!debajo.length) return;
+      const primera = debajo.reduce((a, b) => (b.properties.orden < a.properties.orden ? b : a));
+      elegir(primera.properties.id);
+    });
     return () => {
       for (const m of puntos.current) m.remove();
       puntos.current = [];
@@ -205,6 +261,12 @@ const MapaDeRevision = ({
   }, [muestras, guardada, osm]);
 
   useEffect(() => pintar.current(), [linea]);
+
+  useEffect(() => orientarAhora.current(true), [orientar]);
+
+  useEffect(() => {
+    if (cargado.current) mapaRef.current?.getSource('destacado')?.setData(comoPuntos(destacado ? [destacado] : []));
+  }, [destacado]);
 
   useEffect(() => {
     if (cargado.current) mapaRef.current?.getSource('marcados')?.setData(comoPuntos(marcados));

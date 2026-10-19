@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Compass, LocateFixed, Maximize2, MapPin, X } from 'lucide-react';
+import { Compass, LocateFixed, Maximize2, MapPin, MoreVertical, X } from 'lucide-react';
 import { Map as MapaDeMapLibre, Marker, setWorkerUrl } from 'maplibre-gl';
 import urlDelWorker from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import './mapa.css';
 import { distanciaEnMetros } from '../../../domain/services/distanciasAlGreen';
 import { PRECISION_PARA_MEDIR_M, distanciasDelHoyo, distanciasDesdeLaPosicion } from '../../../domain/services/distanciasDelHoyo';
-import { encuadreGirado, limitesDelHoyo, orientacionDelHoyo, rumbo } from '../../../domain/services/geometriaDelHoyo';
+import { camaraGirada, limitesDelHoyo, orientacionDelHoyo, rumbo, rumboDeLaLinea, siguientePuntoDeLaLinea } from '../../../domain/services/geometriaDelHoyo';
 import {
   MAX_CODOS,
   aCodosDelPar,
@@ -106,6 +106,15 @@ const muestraValida = (linea, campo) =>
 // con sus metros al lado (Agustín, 16 oct: mejor que un cuadro aparte)
 const tramosDeLaMedida = (posicion, tocado, green) =>
   [posicion && tocado ? [posicion, tocado] : null, tocado && green ? [tocado, green.center] : null].filter(Boolean);
+// Sin estar en la salida, de ti al green: directa, o con el codo si lo hay
+const tramosDesdeMi = (posicion, codo, green) => {
+  if (!posicion || !green) return [];
+  return codo ? tramosDeLaMedida(posicion, codo, green) : [[posicion, green.center]];
+};
+// A partir de aquí, la línea desde ti sale con un codo en medio (Agustín, 18 oct)
+const CODO_DESDE_M = 200;
+// Más lejos que esto de la salida de tu barra, estás a mitad de hoyo (Agustín, 18 oct)
+const FUERA_DE_LA_SALIDA_M = 40;
 const geojsonDeLaMedida = (tramos) => ({
   type: 'FeatureCollection',
   features: tramos.map(([a, b]) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [lngLat(a), lngLat(b)] } })),
@@ -150,11 +159,14 @@ const tipoDelPunto = (i, linea) => (i === 0 ? 'salida' : i === linea.length - 1 
 const BOTON =
   'min-h-11 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 text-[15px] font-semibold text-gray-900 shadow-lg disabled:opacity-50';
 const PLACA = 'rounded-xl bg-gray-950/85 text-white shadow-lg';
+// Los motivos de un reporte, en el orden del menú (entrega 7, 18 oct)
+const MOTIVOS_DEL_REPORTE = ['WRONG_HOLE', 'WRONG_LINE', 'HOLE_CHANGED'];
 
 /**
  * El mapa del hoyo a pantalla completa (BE #532), sobre la ortofoto del PNOA.
  *
- * Con mapa del hoyo: la salida abajo y el green arriba, sin giro. El recuadro
+ * Con mapa del hoyo: como se juega (la salida abajo, hacia el green o, en un
+ * par 4 o 5, hacia el primer codo) y sin giro con los dedos. El recuadro
  * de delante, centro y fondo es fijo, con los metros oficiales desde la
  * salida (16 oct). Sin mapa: norte arriba, giro libre. Siempre se mide tocando.
  * El GPS va mientras el mapa está abierto, ni antes ni después.
@@ -168,6 +180,10 @@ const PLACA = 'rounded-xl bg-gray-950/85 text-white shadow-lg';
  * desde ti si el GPS es bueno y estás en el hoyo; si no, con la tarjeta. Al cerrar, si el jugador la hizo o la movió y el
  * hoyo aún recoge muestras (`recoge`), se envía con `onMuestra`, sin decírselo:
  * todo esto es transparente para él (Agustín, 16 oct).
+ *
+ * En un hoyo con línea, «⋮» reporta un problema (entrega 7, 18 oct): un motivo y
+ * la línea que el jugador propone, que se manda con `onReporte`. Mientras, la
+ * línea de siempre no se toca: es la que siguen viendo todos.
  */
 const MapaDelHoyo = ({
   golfCourseId,
@@ -182,6 +198,7 @@ const MapaDelHoyo = ({
   onMuestra = null,
   onEmpezar = null,
   colocarSalida = true,
+  onReporte = null,
 }) => {
   const { t } = useTranslation('scoring');
   const conMapa = orientacionDelHoyo(hoyo) !== null;
@@ -199,7 +216,13 @@ const MapaDelHoyo = ({
   // y «Céntrame» no se puede pulsar (16 oct)
   const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
   const posicionEnElCampo = lejos ? null : posicion;
+  // La que vale para medir desde ti: en el campo y con el GPS bueno
+  const posicionBuena = posicionEnElCampo && precision !== null && precision <= PRECISION_PARA_MEDIR_M ? posicionEnElCampo : null;
   const [tocado, setTocado] = useState(null);
+  // Hacia dónde se ha orientado el mapa después de abrir (O2-O5): `{ tipo:
+  // 'hoyo' }`, o de ti a un punto. Cada cambio gira el mapa una vez
+  const [vista, setVista] = useState(null);
+  const conVista = useRef(false);
   const tocadoAhora = useRef(null);
   useLayoutEffect(() => {
     tocadoAhora.current = tocado;
@@ -228,6 +251,8 @@ const MapaDelHoyo = ({
   // El hoyo, con la salida que se ve: el encuadre la tiene que coger
   const inicio = useRef({
     hoyo: lineaInicial && hoyo ? { ...hoyo, playLine: lineaInicial } : hoyo,
+    // Como se juega: par 3 al green, par 4 o 5 al primer codo (O1)
+    rumbo: rumboDeLaLinea(lineaInicial, par) ?? orientacionDelHoyo(hoyo),
     conMapa,
     centroSinMapa,
     soloGreen: porMarcar === 'green',
@@ -239,13 +264,35 @@ const MapaDelHoyo = ({
   const preguntaPrimero = porMarcar === 'salida' || porMarcar === 'salidaAlGreen';
   const [marca, setMarca] = useState({ fase: preguntaPrimero ? 'pregunta' : porMarcar ? 'pidiendo' : null, tee: null });
   const [avisoDeMarca, setAvisoDeMarca] = useState(null);
+  // «No» a «¿Estás en la salida?»: de ti al green, con el codo (`tocado`)
+  // puesto una vez, en medio, si pasa de 200 m (Agustín, 18 oct). Nada de esto
+  // es una muestra
+  const [desdeMi, setDesdeMi] = useState(false);
+  const [codoPendiente, setCodoPendiente] = useState(false);
+  // En un hoyo con línea, abierto a mitad de hoyo: la línea se oculta hasta
+  // «Ver hoyo» (H1, H3). Se decide una vez, con el primer GPS bueno (H4, H5)
+  const [lineaOculta, setLineaOculta] = useState(false);
+  const [mitadDecidida, setMitadDecidida] = useState(false);
+  const [hastaLaSalida, setHastaLaSalida] = useState(false);
+  const [contestadoNo, setContestadoNo] = useState(0);
+  const [pedidoEntero, setPedidoEntero] = useState(0);
+  const loQueSePide = useRef(null);
+  // El reporte en curso (entrega 7): eligiendo el motivo, tocando la salida, el
+  // green, o con la propuesta lista. Lo que había antes se guarda para volver a
+  // ello: la propuesta no es una muestra
+  const [reporte, setReporte] = useState(null);
+  const [gracias, setGracias] = useState(false);
+  const menuDeMotivos = reporte?.fase === 'motivos';
+  const antesDelReporte = useRef(null);
+  const codoAntesDelReporte = useRef(null);
+  const botonDeReportar = useRef(null);
+  const primerMotivo = useRef(null);
+  const reportaba = useRef(false);
   const marcandoSalida = preguntaPrimero;
   // El green que ya trae el hoyo (de una muestra solo green): con la salida basta
   const greenConocido = porMarcar === 'salidaAlGreen' ? (hoyo?.green?.center ?? null) : null;
-  // Lejos del campo o sin ubicación no se pregunta: se toca la salida (L1, 17
-  // oct). Ni se elige tras el «No» (S7, 18 oct)
-  const preguntando = marca.fase === 'pregunta' || marca.fase === 'eligiendo';
-  const fase = preguntando && (lejos || sinUbicacion) ? 'pidiendo' : marca.fase;
+  // Lejos del campo o sin ubicación no se pregunta: se toca la salida (L1, 17 oct)
+  const fase = marca.fase === 'pregunta' && (lejos || sinUbicacion) ? 'pidiendo' : marca.fase;
   const pidiendo = fase === 'pidiendo';
   // La línea que se ve y se mueve; `cambiada`, si el jugador la hizo o la movió.
   // `green`: el que marcó quien no está en la salida (solo green, sin línea)
@@ -260,7 +307,16 @@ const MapaDelHoyo = ({
     if (hoyo?.green && mismoPunto(hoyo.green.center, linea.at(-1))) return { ...hoyo, playLine: linea };
     return hoyoDeUnaMarca({ tee: linea[0], bends: linea.slice(1, -1), greenCenter: linea.at(-1) });
   }, [hoyo, linea, greenMarcado]);
-  const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(linea ?? []), [linea]);
+  // Lo que encuadra «Ver hoyo»: la línea de ahora con su rumbo (O5, O7)
+  const delEncuadre = useRef(null);
+  useLayoutEffect(() => {
+    // Proponiendo un reporte, la de al abrir, no la propuesta (O9)
+    delEncuadre.current = linea && hoyoAhora && !reporte ? { hoyo: hoyoAhora, rumbo: rumboDeLaLinea(linea, par) } : null;
+  });
+  // Sin un GPS bueno no hay línea desde ti: mientras dure, la del hoyo (H14)
+  const ocultaAhora = lineaOculta && !reporte && !!posicionBuena;
+  const lineaQueSePinta = ocultaAhora ? null : linea;
+  const datosDeLaLinea = useMemo(() => geojsonDeLaLinea(lineaQueSePinta ?? []), [lineaQueSePinta]);
   const ultimaLinea = useRef(datosDeLaLinea);
   const ultimaMedida = useRef(geojsonDeLaMedida([]));
   const etiquetasDeLaMedida = useRef([]);
@@ -296,10 +352,11 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   // La salida del último toque, por si un doble toque corta su alejamiento
   const salidaRecienTocada = useRef(null);
-  const primeraOpcion = useRef(null);
+  const enlaceEntero = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
-    alCerrar.current = { edicion, recoge, onMuestra, campo: referenciaDelCampo };
+    // A mitad de un reporte, lo que se enviaría al cerrar es lo de antes de él
+    alCerrar.current = { edicion: reporte ? antesDelReporte.current : edicion, recoge, onMuestra, campo: referenciaDelCampo };
     // De la salida al green, con los codos de su par puestos sobre la recta
     hacerLineaAhora.current = (desde, hasta) => {
       if (salidaGreenFueraDeLimites(desde, hasta)) {
@@ -310,6 +367,8 @@ const MapaDelHoyo = ({
       setEdicion((e) => ({ linea: nueva, green: null, cambiada: true, version: e.version + 1 }));
       setConAyudaDeCodos(nueva.length > 2);
       setMarca({ fase: null, tee: null });
+      // Marcado, el mapa se orienta como se juega (O5); lo pidió el jugador
+      setVista({ tipo: 'hoyo', porElJugador: true });
       return true;
     };
     alejarAhora.current = (salida) => {
@@ -320,9 +379,28 @@ const MapaDelHoyo = ({
       });
     };
     alTocar.current = (p) => {
-      // Mientras se pregunta si estás en la salida, o se elige tras el «No», el
-      // mapa no marca ni mide
-      if (fase === 'pregunta' || fase === 'eligiendo') return;
+      // Reportando, el mapa no mide: marca la salida y el green que se proponen
+      if (reporte) {
+        // El segundo toque de un doble toque no es el green (/code-review)
+        const ahora = globalThis.performance.now();
+        const dobleToque = ahora - ultimoToque.current < DOBLE_TOQUE_MS;
+        ultimoToque.current = ahora;
+        if (dobleToque) return;
+        if (reporte.fase === 'salida') {
+          setReporte({ ...reporte, fase: 'green', tee: p });
+        } else if (reporte.fase === 'green') {
+          if (salidaGreenFueraDeLimites(reporte.tee, p)) {
+            setAvisoDeMarca(t('mapa.fueraDeLimites'));
+            return;
+          }
+          setAvisoDeMarca(null);
+          setEdicion((e) => ({ ...e, linea: conCodosDelPar([reporte.tee, p], par), green: null, version: e.version + 1 }));
+          setReporte({ fase: 'lista', motivo: reporte.motivo });
+        }
+        return;
+      }
+      // Mientras se pregunta si estás en la salida, el mapa no marca ni mide
+      if (fase === 'pregunta') return;
       if (pidiendo) {
         const ahora = globalThis.performance.now();
         if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) {
@@ -344,12 +422,17 @@ const MapaDelHoyo = ({
           }
           setEdicion((e) => ({ linea: null, green: p, cambiada: true, version: e.version + 1 }));
           setMarca({ fase: null, tee: null });
+          // Con el green puesto, de ti a él (D6)
+          setDesdeMi(true);
+          setCodoPendiente(true);
           return;
         }
         if (marcandoSalida && !marca.tee) {
-          // Con el green ya puesto, la salida basta
-          if (greenConocido) {
-            hacerLinea(p, greenConocido);
+          // Con el green ya puesto, la salida basta: también el que se acaba de
+          // tocar tras el «No», y la muestra sale completa (D8b, D8c)
+          const greenYaPuesto = greenConocido ?? edicion.green;
+          if (greenYaPuesto) {
+            hacerLinea(p, greenYaPuesto);
             return;
           }
           setMarca((m) => ({ ...m, fase: 'pidiendo', tee: p }));
@@ -372,12 +455,15 @@ const MapaDelHoyo = ({
         // La ayuda, solo si se pusieron codos (no si la línea ya traía los suyos)
         setConAyudaDeCodos(nueva.length > reducida.length);
         setMarca({ fase: null, tee: null });
+        setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
+      setGracias(false);
       setTocado(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
       // oct); lejos del campo no, que alejaría a kilómetros
-      if (posicionEnElCampo) {
+      // Desde ti el punto es el codo: se mueve sin girar el mapa (D3d)
+      if (posicionEnElCampo && !desdeMi) {
         mapaRef.current?.fitBounds(limitesDelHoyo({ playLine: [posicionEnElCampo, p] }), {
           bearing: rumbo(posicionEnElCampo, p),
           padding: margen(),
@@ -415,31 +501,59 @@ const MapaDelHoyo = ({
     };
   }, []);
 
-  // El hoyo entero, girado como se juega y lo más grande que quepa: el centro y
-  // el zoom se calculan con el hoyo girado (`fitBounds` encuadra su caja
+  // Unos puntos, girados a `orientacion` y lo más grandes que quepan: el centro
+  // y el zoom se calculan con ellos girados (`fitBounds` encuadra su caja
   // norte-sur, que girada ocupa mucho más, y el hoyo salía pequeño; 16 oct)
-  const encuadrarHoyo = useCallback(
-    (animar) => {
-      const { hoyo: h } = inicio.current;
-      const orientacion = orientacionDelHoyo(h);
+  const encuadrar = useCallback(
+    (h, orientacion, animar) => {
       const mapa = mapaRef.current;
+      if (!mapa) return;
       // Sin rumbo no hay hoyo orientado que encuadrar (el mapa va con el norte arriba)
-      if (!mapa || orientacion === null) return;
-      const padding = margen();
-      const encuadre = encuadreGirado(h, orientacion, {
+      const girada = camaraGirada(h, orientacion, {
         ancho: contenedor.current?.clientWidth || 360,
         alto: contenedor.current?.clientHeight || 640,
-        padding,
+        padding: margen(),
       });
-      if (!encuadre) return;
+      if (!girada) return;
       // Sin `padding`: MapLibre lo guardaría y lo sumaría a todo lo de después
       // (medir, «Céntrame»); el centro ya viene desplazado al medio del hueco
-      const camara = { center: lngLat(encuadre.center), zoom: encuadre.zoom, bearing: orientacion };
+      const camara = { ...girada, center: lngLat(girada.center) };
       if (animar) mapa.easeTo(camara);
       else mapa.jumpTo(camara);
     },
     [margen],
   );
+  // El hoyo entero: la línea de ahora (la marcada o movida, O7); al montar, la de al abrir
+  const encuadrarHoyo = useCallback(
+    (animar) => {
+      const { hoyo: h, rumbo: orientacion } = delEncuadre.current ?? inicio.current;
+      encuadrar(h, orientacion, animar);
+    },
+    [encuadrar],
+  );
+  // Lo que se orientó después de abrir (O2-O5): el hoyo, o de ti hacia un punto
+  // con ese punto y el green a la vista (/code-review)
+  const ultimaVista = useRef(null);
+  const aplicarVista = useCallback(
+    (v, animar) => {
+      if (v.tipo === 'hoyo') encuadrarHoyo(animar);
+      else encuadrar({ playLine: [v.desde, v.hacia, v.green], green: null }, rumbo(v.desde, v.hacia), animar);
+    },
+    [encuadrar, encuadrarHoyo],
+  );
+  // Orientado después de abrir, ya no se gira con los dedos, como un hoyo con
+  // mapa (O6). Si el jugador ya movió el mapa, lo que llega solo (el GPS) no
+  // se lo quita (/code-review); lo que pide él, marcar, sí (CodeRabbit)
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!vista || !mapa || (movidoPorElJugador.current && !vista.porElJugador)) return;
+    conVista.current = true;
+    ultimaVista.current = vista;
+    mapa.dragRotate?.disable();
+    mapa.touchZoomRotate?.disableRotation();
+    mapa.keyboard?.disableRotation();
+    aplicarVista(vista, true);
+  }, [vista, aplicarVista]);
 
   // El mapa se crea en la ref del contenedor, que corre antes que los efectos de
   // abajo (que ya lo encuentran hecho) y devuelve su limpieza (React 19)
@@ -455,7 +569,7 @@ const MapaDelHoyo = ({
         container: nodo,
         style: ESTILO,
         attributionControl: false,
-        bearing: orientado ? orientacionDelHoyo(h) : 0,
+        bearing: orientado ? inicio.current.rumbo : 0,
         // Un hoyo con mapa se ve como se juega: sin giro ni inclinación
         dragRotate: !orientado,
         pitchWithRotate: false,
@@ -555,11 +669,13 @@ const MapaDelHoyo = ({
     if (!panel || !Observador || !inicio.current.conMapa) return undefined;
     const observador = new Observador(() => {
       if (movidoPorElJugador.current || yaEmpezo.current || tocadoAhora.current) return;
-      encuadrarHoyo(false);
+      // Orientado después de abrir, lo de entonces; si no, el hoyo (/code-review)
+      if (ultimaVista.current) aplicarVista(ultimaVista.current, false);
+      else encuadrarHoyo(false);
     });
     observador.observe(panel);
     return () => observador.disconnect();
-  }, [encuadrarHoyo]);
+  }, [encuadrarHoyo, aplicarVista]);
 
   // Mi posición: el punto azul, y la primera vez sin mapa, el mapa va a ella
   useEffect(() => {
@@ -574,7 +690,8 @@ const MapaDelHoyo = ({
     marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     // Lejos no; y si mientras tanto el jugador movió el mapa, tampoco al llegar
-    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current) {
+    // Ya orientado (O4, O5), tampoco: el salto cortaría el giro o deshace el encuadre (revisor)
+    if (!inicio.current.conMapa && !centradoEnGps.current && !lejos && !movidoPorElJugador.current && !conVista.current) {
       centradoEnGps.current = true;
       mapa.jumpTo({ center: lngLat(posicion), zoom: ZOOM_SIN_MAPA });
     }
@@ -583,31 +700,89 @@ const MapaDelHoyo = ({
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    if (!tocado) {
+    // Midiendo desde ti, el punto es el codo y se arrastra (D3): si cambia eso,
+    // se rehace
+    // Con el menú de motivos abierto, quieto como los puntos de la línea (H9b)
+    const arrastrable = desdeMi && !menuDeMotivos;
+    if (!tocado || (marcaTocada.current && marcaTocada.current.arrastrable !== arrastrable)) {
       marcaTocada.current?.remove();
       marcaTocada.current = null;
-      return;
     }
-    marcaTocada.current ??= new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow') }).setLngLat(lngLat(tocado)).addTo(mapa);
+    if (!tocado) return;
+    if (!marcaTocada.current) {
+      const m = new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow'), draggable: arrastrable });
+      m.arrastrable = arrastrable;
+      if (arrastrable) {
+        // La línea y sus metros siguen al dedo (D3b)
+        const moverElCodo = (e) => {
+          const { lng, lat } = e.target.getLngLat();
+          setTocado({ lat, lon: lng });
+        };
+        m.on('drag', moverElCodo);
+        m.on('dragend', moverElCodo);
+        m.getElement().addEventListener('click', (e) => e.stopPropagation());
+      }
+      marcaTocada.current = m.setLngLat(lngLat(tocado)).addTo(mapa);
+    }
     marcaTocada.current.setLngLat(lngLat(tocado));
-  }, [tocado]);
+  }, [tocado, desdeMi, menuDeMotivos]);
 
   // Las líneas de la medida y sus metros. Las etiquetas se mueven, no se
   // rehacen, con cada lectura del GPS
   const green = hoyoAhora?.green ?? null;
+  // A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2)
+  const salidaDeMiBarra = lineaInicial?.[0] ?? null;
+  // Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que se propone (revisor, 18 oct)
+  if (!mitadDecidida && !reporte && green && (hoyo?.playLine?.length ?? 0) >= 2 && salidaDeMiBarra && posicionBuena) {
+    setMitadDecidida(true);
+    // Con la línea ya movida se queda el hoyo entero, con lo editado (H13)
+    if (!edicion.cambiada && distanciaEnMetros(posicionBuena, salidaDeMiBarra) > FUERA_DE_LA_SALIDA_M) {
+      setLineaOculta(true);
+      setDesdeMi(true);
+      setCodoPendiente(true);
+      setHastaLaSalida(true);
+      // Un punto tocado antes para medir no se queda de codo
+      setTocado(null);
+    }
+  }
+  // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
+  // Proponiendo un reporte se espera a acabarlo: no gira (O9)
+  if (hastaLaSalida && !reporte && posicionBuena && distanciaEnMetros(posicionBuena, salidaDeMiBarra) <= FUERA_DE_LA_SALIDA_M) {
+    setHastaLaSalida(false);
+    setLineaOculta(false);
+    setDesdeMi(false);
+    setTocado(null);
+    setVista({ tipo: 'hoyo' });
+  }
+  // El codo, una vez: con el primer GPS bueno, en medio si pasa de 200 m. Luego
+  // no se mueve, ni vuelve si se quita (D2, D4, D10). Durante el render, como
+  // se ajusta un estado a otro en React
+  if (codoPendiente && desdeMi && posicionBuena && green) {
+    setCodoPendiente(false);
+    // Hacia el siguiente punto de la línea del hoyo, o al green sin ella (O2, O4)
+    const hacia = (lineaOculta && siguientePuntoDeLaLinea(posicionBuena, lineaInicial)) || green.center;
+    setVista({ tipo: 'desdeMi', desde: posicionBuena, hacia, green: green.center });
+    // Un punto que ya tocaste es el codo (D2b)
+    if (!tocado && distanciaEnMetros(posicionBuena, green.center) > CODO_DESDE_M) setTocado(enMedio(posicionBuena, green.center));
+  }
   const textoDeTramo = useCallback((metros) => t('mapa.tramo', { metros }), [t]);
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    const tramos = tramosDeLaMedida(posicionEnElCampo, tocado, green);
+    const tramos = desdeMi && (!reporte || menuDeMotivos) ? tramosDesdeMi(posicionBuena, tocado, green) : tramosDeLaMedida(posicionEnElCampo, tocado, green);
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
     sincronizarCifras(mapa, etiquetasDeLaMedida.current, tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo });
-  }, [posicionEnElCampo, tocado, green, textoDeTramo]);
+  }, [desdeMi, reporte, menuDeMotivos, posicionBuena, posicionEnElCampo, tocado, green, textoDeTramo]);
+
 
   // Los metros de cada tramo de la línea que se ve (Agustín, 16 oct: siempre que
   // se pinta una línea). No dependen del GPS: valen lejos del campo y sin señal
-  const lineaVisible = useMemo(() => linea ?? hoyo?.playLine ?? [], [linea, hoyo]);
+  // Reportando, la de siempre no se ve: solo la que se propone
+  const lineaVisible = useMemo(
+    () => lineaQueSePinta ?? (reporte || ocultaAhora ? [] : (hoyo?.playLine ?? [])),
+    [lineaQueSePinta, hoyo, reporte, ocultaAhora],
+  );
   // Como las de medir, se mueven y se reescriben, no se rehacen; también
   // mientras se arrastra, antes de soltar
   const ponerCifrasDeLaLinea = useCallback(
@@ -628,10 +803,11 @@ const MapaDelHoyo = ({
   }, [ponerCifrasDeLaLinea, empezar]);
   // La línea discontinua del hoyo, del mismo hoyo que sus cifras; con la línea
   // que se mueve, solo su green (la línea va aparte, entera)
-  const hoyoQueSeDibuja = useMemo(
-    () => (linea ? { playLine: [], green: hoyoAhora?.green ?? null } : greenMarcado ? hoyoAhora : hoyo),
-    [linea, hoyo, hoyoAhora, greenMarcado],
-  );
+  const hoyoQueSeDibuja = useMemo(() => {
+    if (linea) return { playLine: [], green: hoyoAhora?.green ?? null };
+    if (reporte) return { playLine: [], green: null };
+    return greenMarcado ? hoyoAhora : hoyo;
+  }, [linea, hoyo, hoyoAhora, greenMarcado, reporte]);
   useEffect(() => {
     hoyoActual.current = hoyoQueSeDibuja;
     mapaRef.current?.getSource('hoyo')?.setData(geojsonDelHoyo(hoyoQueSeDibuja));
@@ -646,7 +822,7 @@ const MapaDelHoyo = ({
     const mapa = mapaRef.current;
     if (!mapa || !centroSinMapa || inicio.current.conMapa || inicio.current.centroSinMapa) return;
     inicio.current.centroSinMapa = centroSinMapa;
-    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current) return;
+    if ((centradoEnGps.current && !lejos) || movidoPorElJugador.current || conVista.current) return;
     centradoEnGps.current = false;
     mapa.jumpTo({ center: lngLat(centroSinMapa), zoom: ZOOM_SIN_MAPA });
   }, [centroSinMapa, lejos]);
@@ -657,12 +833,19 @@ const MapaDelHoyo = ({
     // Contestar ya es empezar: lo que se ve no se rehace mientras se marca
     empezar();
     if (!enLaSalida) {
-      // A mitad de hoyo se elige: ver la distancia al green o marcar el hoyo
-      // entero (S1, 18 oct)
-      setMarca({ fase: 'eligiendo', tee: null });
+      // A mitad de hoyo, la distancia de ti al green ya (D1, D2); sin green,
+      // primero se toca (D6)
+      setContestadoNo((n) => n + 1);
+      if (greenConocido) {
+        setMarca({ fase: null, tee: null });
+        setDesdeMi(true);
+        setCodoPendiente(true);
+      } else {
+        setMarca({ fase: 'pidiendo', tee: null, soloGreen: true });
+      }
       return;
     }
-    const aqui = posicionEnElCampo && precision !== null && precision <= PRECISION_PARA_MEDIR_M ? posicionEnElCampo : null;
+    const aqui = posicionBuena;
     if (!aqui) {
       // No te localizamos bien: la salida se toca (M4)
       setMarca({ fase: 'pidiendo', tee: null, malGps: true });
@@ -677,30 +860,45 @@ const MapaDelHoyo = ({
     alejarDesde(aqui);
   };
 
-  const elegir = (entero) => {
-    // El hoyo entero: se toca la salida y el green, como lejos del campo; con el
-    // green ya puesto, la salida basta (S4, S5). Si no, el «No» de antes: si ya
-    // hay green, nada que pedir (M6); si no, el green (M5)
-    if (entero) setMarca({ fase: 'pidiendo', tee: null });
-    else setMarca(greenConocido ? { fase: null, tee: null } : { fase: 'pidiendo', tee: null, soloGreen: true });
+  // El hoyo entero: se toca la salida y el green, como lejos del campo; con el
+  // green ya puesto, la salida basta (D8). La medida desde ti se va
+  const marcarEntero = () => {
+    setPedidoEntero((n) => n + 1);
+    setDesdeMi(false);
+    setTocado(null);
+    setMarca({ fase: 'pidiendo', tee: null });
   };
 
-  // El «No» se va de la pantalla y con él el foco: pasa a la primera opción,
-  // para que el lector de pantalla diga lo que hay (revisor, 18 oct). Al
-  // contestar, una vez: no cada vez que el GPS va y viene (/code-review)
+  // El «No» se va de la pantalla y con él el foco: pasa al enlace, para que el
+  // lector de pantalla diga lo que hay (revisor, 18 oct). Al contestar, una
+  // vez: no cada vez que el GPS va y viene (/code-review)
   useEffect(() => {
-    if (marca.fase === 'eligiendo') primeraOpcion.current?.focus();
-  }, [marca.fase]);
+    if (contestadoNo) enlaceEntero.current?.focus();
+  }, [contestadoNo]);
+  // El enlace se va con el foco: pasa a lo que se pide (revisor, 18 oct)
+  useEffect(() => {
+    if (pedidoEntero) loQueSePide.current?.focus();
+  }, [pedidoEntero]);
 
   // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
+  // (y al proponer la línea de un reporte, igual)
+  const marcandoElReporte = reporte?.fase === 'salida' || reporte?.fase === 'green';
   useEffect(() => {
     const zoom = mapaRef.current?.doubleClickZoom;
-    if (pidiendo) zoom?.disable();
+    if (pidiendo || marcandoElReporte) zoom?.disable();
     else zoom?.enable();
-  }, [pidiendo]);
+  }, [pidiendo, marcandoElReporte]);
+  // El foco: al primer motivo al abrir el menú, y a «⋮» al acabar el reporte
+  // (revisor, 18 oct: el botón que se pulsó desaparece)
+  const faseDelReporte = reporte?.fase ?? null;
+  useEffect(() => {
+    if (faseDelReporte === 'motivos') primerMotivo.current?.focus();
+    else if (!faseDelReporte && reportaba.current) botonDeReportar.current?.focus();
+    reportaba.current = Boolean(faseDelReporte);
+  }, [faseDelReporte]);
   // La salida mientras se pide el green: la recién tocada o, pidiendo solo el
   // green, la aprobada (para ver desde dónde se mide)
-  const salidaQueSePinta = pidiendo ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null))) : null;
+  const salidaQueSePinta = reporte?.fase === 'green' ? reporte.tee : pidiendo ? (marca.tee ?? (marcandoSalida ? null : (hoyo?.playLine?.[0] ?? null))) : null;
   useEffect(() => {
     const mapa = mapaRef.current;
     marcaDeLaSalida.current?.remove();
@@ -739,15 +937,17 @@ const MapaDelHoyo = ({
       }
       return;
     }
-    if (!linea) return;
-    const con = (i, p) => linea.map((q, j) => (j === i ? p : q));
+    if (!lineaQueSePinta) return;
+    const con = (i, p) => lineaQueSePinta.map((q, j) => (j === i ? p : q));
     // La línea ya viene con los codos de su par (como mucho dos): todos se mueven
     // Si la librería cambia y algo de esto falla, el mapa sigue (sin puntos que
     // mover) en vez de caerse entero; el fallo queda apuntado
     try {
-      linea.forEach((p, i) => {
+      lineaQueSePinta.forEach((p, i) => {
         // Apuntado antes de ponerlo en el mapa: si algo falla después, se quita
-        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, linea)]), draggable: true });
+        // Con el menú de motivos abierto no se mueve: lo que se moviera se
+        // perdería al elegir o cancelar (/code-review)
+        const m = new Marker({ element: punto(CLASE_DEL_PUNTO[tipoDelPunto(i, lineaQueSePinta)]), draggable: !menuDeMotivos });
         puntosDeLaLinea.current.push(m);
         m.setLngLat(lngLat(p)).addTo(mapa);
         // Cada `on` aparte: en MapLibre 6 devuelve una suscripción, no el marcador
@@ -771,12 +971,61 @@ const MapaDelHoyo = ({
       puntosDeLaLinea.current = [];
       captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
     }
-  }, [linea, datosDeLaLinea, greenMarcado]);
+  }, [lineaQueSePinta, linea, datosDeLaLinea, greenMarcado, menuDeMotivos]);
+
+  // Lo de antes, desde que se abre el menú: si el mapa se cierra o se oculta
+  // con él abierto, se envía eso (revisor, 18 oct)
+  const abrirElMenu = () => {
+    antesDelReporte.current = edicion;
+    codoAntesDelReporte.current = tocado;
+    setGracias(false);
+    setReporte({ fase: 'motivos' });
+  };
+  const elegirMotivo = (motivo) => {
+    // Lo que se ve no se rehace mientras se propone
+    empezar();
+    setAvisoDeMarca(null);
+    setTocado(null);
+    setEdicion((e) => ({ ...e, linea: null, green: null, version: e.version + 1 }));
+    setReporte({ fase: 'salida', motivo });
+  };
+  const acabarElReporte = () => {
+    const antes = antesDelReporte.current;
+    antesDelReporte.current = null;
+    setAvisoDeMarca(null);
+    setReporte(null);
+    // Tal cual, con su versión: si ya salió al ocultarse, no vuelve a salir
+    if (antes) setEdicion(antes);
+    // Midiendo desde ti, vuelve también el codo, donde estaba o sin él si se
+    // quitó (H9, revisor)
+    if (desdeMi) setTocado(codoAntesDelReporte.current);
+  };
+  const enviarReporte = () => {
+    // Arrastrando se puede salir de los límites: se dice, y no se manda algo
+    // que el servidor tiraría tras darle las gracias (/code-review)
+    if (salidaGreenFueraDeLimites(linea[0], linea.at(-1))) {
+      setAvisoDeMarca(t('mapa.fueraDeLimites'));
+      return;
+    }
+    onReporte?.({
+      id: globalThis.crypto.randomUUID(),
+      reason: reporte.motivo,
+      tee: linea[0],
+      bends: linea.slice(1, -1),
+      greenCenter: linea.at(-1),
+    });
+    acabarElReporte();
+    setGracias(true);
+  };
+  // «⋮», solo en un hoyo con línea y sin marcar otra cosa (la pregunta de la
+  // salida solo sale en un hoyo sin línea)
+  const sePuedeReportar = Boolean(onReporte) && !sinMapa && (hoyo?.playLine?.length ?? 0) >= 2 && !reporte && !pidiendo;
 
   const empezarAMarcar = () => {
     salidaRecienTocada.current = null;
     setAvisoDeMarca(null);
     setTocado(null);
+    setDesdeMi(false);
     // Sin salida, otra vez la pregunta: si no, el «No» se perdía y el primer
     // toque se tomaba por la salida (revisión, 17 oct)
     setMarca({ fase: preguntaPrimero ? 'pregunta' : 'pidiendo', tee: null });
@@ -813,10 +1062,24 @@ const MapaDelHoyo = ({
         className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 pt-[calc(1rem+env(safe-area-inset-top))] pr-[calc(1rem+env(safe-area-inset-right))] pl-[calc(1rem+env(safe-area-inset-left))]"
       >
         <h2 id="titulo-del-mapa" className={`${PLACA} px-3.5 py-2 text-lg font-extrabold`}>{t('mapa.titulo', { numero: numeroDeHoyo, par })}</h2>
-        <button type="button" onClick={onCerrar} className={`${BOTON} pointer-events-auto`}>
-          <X className="h-4 w-4" aria-hidden="true" />
-          {t('mapa.cerrar')}
-        </button>
+        <span className="flex gap-2">
+          {sePuedeReportar && (
+            <button
+              ref={botonDeReportar}
+              type="button"
+              onClick={abrirElMenu}
+              aria-label={t('mapa.reportar')}
+              aria-haspopup="true"
+              className={`${BOTON} pointer-events-auto px-3`}
+            >
+              <MoreVertical className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" onClick={onCerrar} className={`${BOTON} pointer-events-auto`}>
+            <X className="h-4 w-4" aria-hidden="true" />
+            {t('mapa.cerrar')}
+          </button>
+        </span>
       </div>
 
       <div ref={montarMapa} className="absolute inset-0" />
@@ -831,7 +1094,53 @@ const MapaDelHoyo = ({
 
         {avisoDeMarca && <p role="alert" className={`${PLACA} self-start px-3.5 py-2 text-sm text-yellow-300`}>{avisoDeMarca}</p>}
 
-        {sinMapa ? null : fase === 'pregunta' ? (
+        {/* Siempre montado, para que el lector de pantalla diga las gracias */}
+        <div aria-live="polite" className="contents">
+          {gracias && !reporte && <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.reporteGracias')}</p>}
+        </div>
+
+        {sinMapa ? null : reporte?.fase === 'motivos' ? (
+          <div role="group" aria-labelledby="titulo-del-reporte" className={`${PLACA} pointer-events-auto flex flex-col gap-2 p-3`}>
+            <span id="titulo-del-reporte" className="text-base font-semibold">{t('mapa.reporteTitulo')}</span>
+            {MOTIVOS_DEL_REPORTE.map((clave, i) => (
+              <button key={clave} ref={i === 0 ? primerMotivo : undefined} type="button" onClick={() => elegirMotivo(clave)} className="min-h-11 rounded-xl bg-white/15 px-3 py-2 text-left text-[15px] font-semibold text-white">
+                {t(`mapa.motivos.${clave}`)}
+              </button>
+            ))}
+            <button type="button" onClick={acabarElReporte} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+              {t('mapa.cancelar')}
+            </button>
+          </div>
+        ) : reporte ? (
+          // Con la propuesta lista, el texto arriba y los botones debajo: a 360 px
+          // no caben al lado sin que el texto ocupe medio mapa (revisor, 18 oct)
+          <div
+            data-testid="barra-del-reporte"
+            className={`${PLACA} pointer-events-auto flex gap-2 px-3.5 py-2 ${reporte.fase === 'lista' ? 'flex-col' : 'items-center justify-between'}`}
+          >
+            <span aria-live="polite" className="text-base font-semibold">
+              {t(
+                reporte.fase === 'salida'
+                  ? 'mapa.reporteSalida'
+                  : reporte.fase === 'green'
+                    ? 'mapa.reporteGreen'
+                    : (linea?.length ?? 0) > 2
+                      ? 'mapa.ayudaCodo'
+                      : 'mapa.reporteSinCodos',
+              )}
+            </span>
+            <span className={`flex shrink-0 gap-2 ${reporte.fase === 'lista' ? 'justify-end' : ''}`}>
+              {reporte.fase === 'lista' && (
+                <button type="button" onClick={enviarReporte} className="min-h-11 rounded-xl bg-white px-3 text-[15px] font-semibold text-gray-900">
+                  {t('mapa.enviarReporte')}
+                </button>
+              )}
+              <button type="button" onClick={acabarElReporte} className="min-h-11 px-2 text-sm font-semibold text-yellow-300 underline">
+                {t('mapa.cancelar')}
+              </button>
+            </span>
+          </div>
+        ) : fase === 'pregunta' ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
             <span aria-live="polite" className="text-base font-semibold">{t('mapa.preguntaSalida')}</span>
             <span className="flex gap-2">
@@ -843,18 +1152,9 @@ const MapaDelHoyo = ({
               </button>
             </span>
           </div>
-        ) : fase === 'eligiendo' ? (
-          <div className={`${PLACA} pointer-events-auto flex gap-2 p-2`}>
-            <button ref={primeraOpcion} type="button" onClick={() => elegir(false)} className="min-h-11 min-w-0 flex-1 rounded-xl bg-white/15 px-3 py-2 text-[15px] font-semibold leading-tight text-white">
-              {t('mapa.soloDistancia')}
-            </button>
-            <button type="button" onClick={() => elegir(true)} className="min-h-11 min-w-0 flex-1 rounded-xl bg-white/15 px-3 py-2 text-[15px] font-semibold leading-tight text-white">
-              {t('mapa.marcarEntero')}
-            </button>
-          </div>
         ) : pidiendo ? (
           <div className={`${PLACA} pointer-events-auto flex items-center justify-between gap-2 px-3.5 py-2`}>
-            <span aria-live="polite" className="text-base font-semibold">
+            <span ref={loQueSePide} tabIndex={-1} aria-live="polite" className="text-base font-semibold">
               {t(marca.soloGreen ? 'mapa.pideGreen' : marcandoSalida && !marca.tee ? (marca.malGps ? 'mapa.malGps' : 'mapa.pideSalida') : 'mapa.pideGreen')}
             </span>
             <button type="button" onClick={() => {
@@ -864,6 +1164,15 @@ const MapaDelHoyo = ({
               {t('mapa.ahoraNo')}
             </button>
           </div>
+        ) : desdeMi && !posicionBuena ? (
+          // Sin un GPS bueno no hay línea desde ti: sale en cuanto lo sea (D5), también con
+          // codo (D5b).
+          // Si el GPS ya tiene su aviso, ese basta (revisor, 18 oct)
+          aviso ? null : (
+            <p aria-live="polite" className={`${PLACA} self-start px-3.5 py-2 text-sm`}>
+              {t('mapa.buscando')}
+            </p>
+          )
         ) : tocado ? (
           <div className="flex items-center">
             {/* Los metros van en el mapa, junto a cada línea; aquí, para quien no lo ve */}
@@ -881,7 +1190,14 @@ const MapaDelHoyo = ({
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaMedir')}</p>
         )}
 
-        {marca.fase === 'pausado' && !sinMapa && (
+        {/* Tras el «No», por si quiere marcarlo igualmente (D1, D6, D8) */}
+        {((desdeMi && preguntaPrimero) || (pidiendo && marca.soloGreen)) && !reporte && (
+          <button ref={enlaceEntero} type="button" onClick={marcarEntero} className="pointer-events-auto min-h-11 self-end px-2 text-sm font-semibold text-white underline [text-shadow:0_1px_2px_#000]">
+            {t('mapa.marcarEntero')}
+          </button>
+        )}
+
+        {marca.fase === 'pausado' && !sinMapa && !reporte && (
           <button type="button" onClick={empezarAMarcar} className={`${BOTON} pointer-events-auto self-end`}>
             <MapPin className="h-4 w-4" aria-hidden="true" />
             {t('mapa.marcarHoyo')}
@@ -931,8 +1247,18 @@ const MapaDelHoyo = ({
               </>
             )}
           </span>
-          {sinMapa ? null : conMapa ? (
-            <button type="button" onClick={() => encuadrarHoyo(true)} className={`${BOTON} pointer-events-auto`}>
+          {sinMapa ? null : conMapa || linea ? (
+            <button
+              type="button"
+              onClick={() => {
+                // A mitad de hoyo, vuelve también su línea (H3); y lo último
+                // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
+                setLineaOculta(false);
+                ultimaVista.current = { tipo: 'hoyo' };
+                encuadrarHoyo(true);
+              }}
+              className={`${BOTON} pointer-events-auto`}
+            >
               <Maximize2 className="h-4 w-4" aria-hidden="true" />
               {t('mapa.verHoyo')}
             </button>

@@ -7,7 +7,7 @@ import HoleReviewMapper from './HoleReviewMapper';
  * | Caso | Qué                                   | Qué sale                                          |
  * |------|---------------------------------------|---------------------------------------------------|
  * | L1   | la lista                              | por campo, sus hoyos con cuántas muestras y si está guardado |
- * | C1   | un campo                              | sus hoyos: línea guardada, muestras (con id, barra y puntos en {lat, lon}) y la tarjeta de cada barra |
+ * | C1   | un campo                              | sus hoyos: línea guardada, muestras (con id y puntos en {lat, lon}, sin barra: 18 oct) y la tarjeta de cada barra |
  * | C1   | una muestra solo green                | `tee: null`                                       |
  * | G1   | la línea que se guarda                | el cuerpo del PUT                                 |
  */
@@ -20,7 +20,35 @@ describe('HoleReviewMapper', () => {
       courses: [{ golf_course_id: 'gc-1', name: 'Valderrama', holes: [{ hole_number: 1, samples: 2, saved: false }] }],
     });
 
-    expect(lista).toEqual([{ golfCourseId: 'gc-1', name: 'Valderrama', holes: [{ holeNumber: 1, samples: 2 }] }]);
+    expect(lista).toEqual([{ golfCourseId: 'gc-1', name: 'Valderrama', holes: [{ holeNumber: 1, samples: 2, reports: 0 }] }]);
+  });
+
+  it('Q1: cuántos reportes tiene cada hoyo (entrega 7)', () => {
+    const [campo] = HoleReviewMapper.listToDomain({
+      courses: [{ golf_course_id: 'gc-1', name: 'V', holes: [{ hole_number: 4, samples: 0, reports: 2, saved: false }] }],
+    });
+
+    expect(campo.holes).toEqual([{ holeNumber: 4, samples: 0, reports: 2 }]);
+  });
+
+  it('Q1: los reportes de un hoyo, con su motivo, su línea y su día', () => {
+    const { holes } = HoleReviewMapper.reviewToDomain({
+      golf_course_id: 'gc-1',
+      name: 'X',
+      holes: [
+        {
+          hole_number: 4,
+          saved_line: null,
+          samples: [],
+          tees: [],
+          reports: [{ id: 'r-1', reason: 'HOLE_CHANGED', tee: P(1, 2), bends: [P(3, 4)], green_center: P(5, 6), received_on: '2026-10-18' }],
+        },
+      ],
+    });
+
+    expect(holes[0].reportes).toEqual([
+      { id: 'r-1', motivo: 'HOLE_CHANGED', tee: { lat: 1, lon: 2 }, bends: [{ lat: 3, lon: 4 }], greenCenter: { lat: 5, lon: 6 }, llego: '2026-10-18' },
+    ]);
   });
 
   it('L1: sin lista, vacío', () => {
@@ -48,8 +76,8 @@ describe('HoleReviewMapper', () => {
     const [uno] = campo.holes;
     expect(uno.guardada).toEqual({ tee: { lat: 1, lon: 2 }, bends: [{ lat: 3, lon: 4 }], greenCenter: { lat: 5, lon: 6 } });
     expect(uno.muestras).toEqual([
-      { id: 's-1', barra: { color: 'YELLOW', gender: 'MALE' }, tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 5, lon: 6 }, llego: '2026-10-17' },
-      { id: 's-2', barra: { color: 'RED', gender: null }, tee: null, bends: [], greenCenter: { lat: 5, lon: 7 }, llego: '2026-10-17' },
+      { id: 's-1', tee: { lat: 1, lon: 2 }, bends: [], greenCenter: { lat: 5, lon: 6 }, llego: '2026-10-17' },
+      { id: 's-2', tee: null, bends: [], greenCenter: { lat: 5, lon: 7 }, llego: '2026-10-17' },
     ]);
     expect(uno.barras).toEqual([{ color: 'YELLOW', gender: 'MALE', identifier: null, par: 4, metros: 350 }]);
   });
@@ -57,7 +85,7 @@ describe('HoleReviewMapper', () => {
   it('C1: un hoyo sin nada', () => {
     const { holes } = HoleReviewMapper.reviewToDomain({ golf_course_id: 'gc-1', name: 'X', holes: [{ hole_number: 2, saved_line: null, samples: [], tees: [] }] });
 
-    expect(holes[0]).toEqual({ holeNumber: 2, guardada: null, osm: null, muestras: [], barras: [] });
+    expect(holes[0]).toEqual({ holeNumber: 2, guardada: null, osm: null, muestras: [], barras: [], reportes: [] });
   });
 
   it('G1: la línea que se guarda, al cuerpo del PUT', () => {
