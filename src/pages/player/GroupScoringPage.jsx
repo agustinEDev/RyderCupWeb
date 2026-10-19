@@ -100,6 +100,8 @@ const GroupScoringPage = () => {
   const mapaDelHoyo = useMapaDelHoyo({
     golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
     cerrarSi: isSessionBlocked,
+    // Su país: solo hay imagen en España (19 oct)
+    pais: scoringView?.roundInfo?.golfCourseCountryCode ?? null,
   });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
@@ -401,8 +403,8 @@ const GroupScoringPage = () => {
                   {t('input.prevHole')}
                 </button>
                 {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
-                {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
-                {!aunNoAbre && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
+                {!aunNoAbre && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                 <button
                   type="button"
                   onClick={() => setCurrentHole(currentHole + 1)}

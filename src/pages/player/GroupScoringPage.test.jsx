@@ -61,7 +61,7 @@ vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> })
 const mapaHoyo = vi.hoisted(() => ({
   args: null,
   ventana: null,
-  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null },
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null, disponible: true },
 }));
 vi.mock('../../hooks/useMapaDelHoyo', () => ({
   useMapaDelHoyo: (args) => {
@@ -579,14 +579,14 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     mockBusqueda = new URLSearchParams('competition=c-1');
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
-    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null };
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null, disponible: true };
     mapaHoyo.ventana = null;
   });
 
   it('pide el mapa del campo de lo que se anota', () => {
     render(<GroupScoringPage />);
 
-    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false });
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false, pais: null });
   });
 
   it('16 oct: antes de abrir, dice a quién vas a marcar', () => {
@@ -624,6 +624,16 @@ describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
     fireEvent.click(boton);
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_country_code: 'PT' }) });
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args.pais).toBe('PT');
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
   });
 
   it('la ventana del mapa recibe el hoyo que se anota', () => {

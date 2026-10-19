@@ -41,6 +41,8 @@ class ScoringMapper {
           golfCourseName: apiData.round_info.golf_course_name,
           // Para pedir el mapa de hoyos del campo (BE #532)
           golfCourseId: apiData.round_info.golf_course_id ?? null,
+          // Su país: el mapa solo tiene imagen en España (19 oct)
+          golfCourseCountryCode: apiData.round_info.golf_course_country_code ?? null,
         }
         : null,
       competitionId: apiData.competition_id,

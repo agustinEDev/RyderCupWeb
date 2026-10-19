@@ -21,19 +21,25 @@ activa sin serlo; se eliminaron para que nadie los vuelva a confundir con la rea
 Con `Request Path` = `/*`, para que cubra también `/assets/`:
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;
 Strict-Transport-Security: max-age=31536000; includeSubDomains
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=()
 ```
 
-## Por qué `connect-src` lleva `https://www.ign.es`
+## Por qué `connect-src` lleva `https://www.ign.es` y las ortofotos de comunidad
 
 El mapa del hoyo (BE #532) pinta la ortofoto del PNOA, y MapLibre pide sus teselas
 con `fetch`, no con `<img>`: sin el IGN en `connect-src` el mapa sale gris. Al
 desplegarlo hay que **añadirlo también en el dashboard de Render**, que no lee este
-repositorio. `geolocation=(self)` en `Permissions-Policy` es lo que deja usar el GPS.
+repositorio.
+
+Desde el 19 oct 2026, en Cataluña, País Vasco y Navarra va encima la ortofoto de la
+comunidad, más reciente (2025): `geoserveis.icgc.cat`, `www.geo.euskadi.eus` e
+`idena.navarra.es`. Madrid se quedó con la PNOA: su 2025 se veía peor. Sin ellos en
+`connect-src` (también en Render) no se rompe nada: se sigue viendo la PNOA de debajo.
+`geolocation=(self)` en `Permissions-Policy` es lo que deja usar el GPS.
 
 ## Por qué `style-src` lleva `'unsafe-inline'`
 

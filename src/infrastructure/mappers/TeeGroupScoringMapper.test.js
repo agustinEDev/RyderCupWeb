@@ -25,6 +25,11 @@ describe('TeeGroupScoringMapper.toScoringViewDTO', () => {
     expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseName).toBeNull();
   });
 
+  it('el país del campo: el mapa solo tiene imagen en España (19 oct); sin él, null', () => {
+    expect(TeeGroupScoringMapper.toScoringViewDTO({ ...VISTA, golf_course_country_code: 'PT' }).roundInfo.golfCourseCountryCode).toBe('PT');
+    expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseCountryCode).toBeNull();
+  });
+
   it('F12 (BE #574): los metros de cada hoyo desde la barra de cada jugador; sin ellos, null', () => {
     const hoyo = (n, meters) => ({ hole: n, par: 4, strokes_received: 0, own_score: null, own_submitted: false, marker_score: null, marker_submitted: false, status: 'PENDING', ...(meters === undefined ? {} : { meters }) });
     const jugador = (id, metros) => ({ user_id: id, name: id, playing_handicap: 0, tee_color: 'YELLOW', holes: Array.from({ length: 18 }, (_, i) => hoyo(i + 1, metros(i))) });

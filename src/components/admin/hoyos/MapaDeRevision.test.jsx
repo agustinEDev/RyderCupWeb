@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { encuadreGirado } from '../../../domain/services/geometriaDelHoyo';
 
 /**
@@ -45,8 +45,21 @@ vi.mock('maplibre-gl', () => {
     addSource(id, fuente) {
       this.fuentes[id] = fuente;
     }
-    addLayer(capa) {
+    addLayer(capa, antes) {
       this.capas.push(capa);
+      this.antesDe = { ...this.antesDe, [capa.id]: antes };
+    }
+    removeLayer(id) {
+      this.capas = this.capas.filter((c) => c.id !== id);
+    }
+    removeSource(id) {
+      delete this.fuentes[id];
+    }
+    getLayer(id) {
+      return this.capas.find((c) => c.id === id);
+    }
+    getStyle() {
+      return { layers: [...this.opciones.style.layers, ...this.capas] };
     }
     getSource(id) {
       return this.fuentes[id] ? { setData: (d) => { this.fuentes[id].data = d; } } : undefined;
@@ -82,6 +95,7 @@ vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?url', () => ({ default: 'worker
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 
+const { ORTOFOTOS } = await import('../../scoring/mapa/teselas');
 const { default: MapaDeRevision } = await import('./MapaDeRevision');
 const { rumbo } = await import('../../../domain/services/geometriaDelHoyo');
 
@@ -99,6 +113,57 @@ describe('MapaDeRevision', () => {
   beforeEach(() => {
     mapas.length = 0;
     mapas.marcas = [];
+  });
+
+  it('O9 (19 oct): un campo en Navarra, con la ortofoto de Navarra encima de la PNOA y debajo de las líneas', () => {
+    render(<MapaDeRevision muestras={[]} guardada={null} linea={null} centro={{ lat: 42.9617, lon: -1.667 }} onLinea={() => {}} />);
+    const mapa = mapas.at(-1);
+
+    act(() => mapa.oyentes.load());
+
+    expect(mapa.fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-NC'].tiles);
+    expect(mapa.capas[0].id).toBe('ortofoto');
+    // Su licencia (CC BY) pide decir de quién es, también aquí (/code-review)
+    expect(screen.getByTestId('atribucion-del-mapa')).toHaveTextContent('mapa.atribucionPnoa · mapa.ortofoto.ES-NC');
+  });
+
+  it('/code-review: fuera de esas comunidades, la atribución de la PNOA sola', () => {
+    render(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} />);
+
+    expect(screen.getByTestId('atribucion-del-mapa')).toHaveTextContent(/^mapa\.atribucionPnoa$/);
+  });
+
+  it('O9: sin ubicación del campo, la de la línea del hoyo (País Vasco)', () => {
+    const enNeguri = { tee: { lat: 43.3737, lon: -3.028 }, bends: [], greenCenter: { lat: 43.377, lon: -3.027 } };
+    render(<MapaDeRevision muestras={[]} guardada={null} linea={enNeguri} onLinea={() => {}} />);
+    const mapa = mapas.at(-1);
+
+    act(() => mapa.oyentes.load());
+
+    expect(mapa.fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-PV'].tiles);
+  });
+
+  it('O9: si la línea llega antes de que cargue el mapa, se pone al cargar', () => {
+    const enNeguri = { tee: { lat: 43.3737, lon: -3.028 }, bends: [], greenCenter: { lat: 43.377, lon: -3.027 } };
+    const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={null} onLinea={() => {}} />);
+    const mapa = mapas.at(-1);
+    rerender(<MapaDeRevision muestras={[]} guardada={null} linea={enNeguri} onLinea={() => {}} />);
+
+    act(() => mapa.oyentes.load());
+
+    expect(mapa.fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-PV'].tiles);
+  });
+
+  it('O9: si cambia la línea a otra comunidad (ya cargado), cambia la ortofoto; fuera de ellas, se quita', () => {
+    const enNeguri = { tee: { lat: 43.3737, lon: -3.028 }, bends: [], greenCenter: { lat: 43.377, lon: -3.027 } };
+    const { rerender } = render(<MapaDeRevision muestras={[]} guardada={null} linea={enNeguri} onLinea={() => {}} />);
+    const mapa = mapas.at(-1);
+    act(() => mapa.oyentes.load());
+
+    rerender(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} />);
+
+    expect(mapa.fuentes.ortofoto).toBeUndefined();
+    expect(mapa.capas.some((c) => c.id === 'ortofoto')).toBe(false);
   });
 
   it('S1: al cargar, las muestras todas en blanco, finas (la solo green, un punto blanco), lo guardado y la línea; encuadra todo', () => {
