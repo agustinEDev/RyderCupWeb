@@ -37,8 +37,9 @@ repositorio.
 
 Desde el 19 oct 2026, en Cataluña, País Vasco y Navarra va encima la ortofoto de la
 comunidad, más reciente (2025): `geoserveis.icgc.cat`, `www.geo.euskadi.eus` e
-`idena.navarra.es`. Madrid se quedó con la PNOA: su 2025 se veía peor. Sin ellos en `connect-src` (también en
-Render) no se rompe nada: se sigue viendo la PNOA de debajo. `geolocation=(self)` en `Permissions-Policy` es lo que deja usar el GPS.
+`idena.navarra.es`. Madrid se quedó con la PNOA: su 2025 se veía peor. Sin ellos en
+`connect-src` (también en Render) no se rompe nada: se sigue viendo la PNOA de debajo.
+`geolocation=(self)` en `Permissions-Policy` es lo que deja usar el GPS.
 
 ## Por qué `style-src` lleva `'unsafe-inline'`
 

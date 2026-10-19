@@ -7,6 +7,7 @@ vi.mock('../../../utils/sentryHelpers', () => sentry);
 
 const { ORTOFOTOS, atribucionDeLaOrtofoto, ponerOrtofoto } = await import('./teselas');
 const { limitesDeLaComunidad } = await import('../../../domain/services/comunidadDelCampo');
+const { CONTORNOS } = await import('../../../domain/services/contornosDeComunidades');
 
 // Un mapa con las capas que tiene ya cargado: fondo, PNOA y lo de encima
 const mapaFalso = (capas = ['fondo', 'pnoa', 'linea']) => {
@@ -44,9 +45,15 @@ describe('ORTOFOTOS (19 oct)', () => {
   });
 
   it('Madrid, con la PNOA: su 2025 se ve peor que la PNOA (19 oct)', () => {
-    expect(Object.keys(ORTOFOTOS)).toEqual(['ES-CT', 'ES-PV', 'ES-NC']);
+    expect(ORTOFOTOS['ES-MD']).toBeUndefined();
     expect(es.mapa.ortofoto['ES-MD']).toBeUndefined();
     expect(en.mapa.ortofoto['ES-MD']).toBeUndefined();
+  });
+
+  it('/code-review: las comunidades con contorno son las de ortofoto (ni contorno que no pinte nada, ni ortofoto sin contorno)', () => {
+    expect(Object.keys(CONTORNOS).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
+    expect(Object.keys(es.mapa.ortofoto).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
+    expect(Object.keys(en.mapa.ortofoto).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
   });
 
   it('sin ortofoto de comunidad, sin atribución', () => {
