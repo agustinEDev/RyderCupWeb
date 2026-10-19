@@ -3900,6 +3900,29 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/mapa\.hastaAhiDesdeLaSalida/);
   });
 
+  it('T4 (19 oct, en el móvil): sin buena posición, la salida queda marcada como origen; con «Quitar», se va', () => {
+    abrirConLinea();
+    act(() => gps.exito(lectura(40.4, -3.7)));
+    const origen = () => vivas().filter((m) => m.opciones.element?.dataset?.punto === 'origen');
+
+    tocar(P);
+
+    expect(origen()).toHaveLength(1);
+    expect(origen()[0].p).toEqual(en(T));
+    expect(origen()[0].opciones.draggable).toBeFalsy();
+    quitar();
+    expect(origen()).toEqual([]);
+  });
+
+  it('T4: con buen GPS el origen es tu punto azul: sin marca de salida', () => {
+    abrirConLinea();
+    desde(0);
+
+    tocar(P);
+
+    expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'origen')).toEqual([]);
+  });
+
   it('T4/T8: sin posición ni salida, del punto al green', () => {
     abrir({ hoyo: { playLine: [], green: { center: G300 } }, porMarcar: null });
     act(() => mapa().oyentes.load());

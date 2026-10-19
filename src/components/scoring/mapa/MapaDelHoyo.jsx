@@ -249,6 +249,7 @@ const MapaDelHoyo = ({
   const marcaGps = useRef(null);
   const marcaTocada = useRef(null);
   const marcaMedida = useRef(null);
+  const marcaDelOrigen = useRef(null);
   const centradoEnGps = useRef(false);
   const movidoPorElJugador = useRef(false);
   // La línea al abrir, con la salida llevada a los metros de mi tarjeta (V2, 17
@@ -659,7 +660,7 @@ const MapaDelHoyo = ({
     return () => {
       // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
       // en desarrollo) pone los suyos, no mueve los de este
-      for (const m of [...etiquetasDeLaLinea.current, ...etiquetasDeLaMedida.current, ...puntosDeLaLinea.current, marcaDeLaSalida.current, marcaGps.current, marcaTocada.current, marcaMedida.current]) m?.remove();
+      for (const m of [...etiquetasDeLaLinea.current, ...etiquetasDeLaMedida.current, ...puntosDeLaLinea.current, marcaDeLaSalida.current, marcaGps.current, marcaTocada.current, marcaMedida.current, marcaDelOrigen.current]) m?.remove();
       etiquetasDeLaLinea.current = [];
       etiquetasDeLaMedida.current = [];
       puntosDeLaLinea.current = [];
@@ -667,6 +668,7 @@ const MapaDelHoyo = ({
       marcaGps.current = null;
       marcaTocada.current = null;
       marcaMedida.current = null;
+      marcaDelOrigen.current = null;
       estiloCargado.current = false;
       mapa.remove();
       mapaRef.current = null;
@@ -820,6 +822,27 @@ const MapaDelHoyo = ({
     if (origenDeLaMedida) return [[origenDeLaMedida, medido]];
     return green ? [[medido, green.center]] : [];
   }, [medido, origenDeLaMedida, green]);
+  // Sin tu posición se mide desde la salida, y con la línea del hoyo oculta, su
+  // punto se iba: se marca, quieto, para ver de dónde sale el golpe (19 oct, en
+  // el móvil). Con buen GPS el origen ya es tu punto azul
+  const origenMarcado = medido && !posicionBuena ? origenDeLaMedida : null;
+  const latDelOrigen = origenMarcado?.lat ?? null;
+  const lonDelOrigen = origenMarcado?.lon ?? null;
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa) return;
+    if (latDelOrigen === null || lonDelOrigen === null) {
+      marcaDelOrigen.current?.remove();
+      marcaDelOrigen.current = null;
+      return;
+    }
+    if (!marcaDelOrigen.current) {
+      const elemento = punto(CLASE_DEL_PUNTO.salida);
+      elemento.dataset.punto = 'origen';
+      marcaDelOrigen.current = new Marker({ element: elemento }).setLngLat([lonDelOrigen, latDelOrigen]).addTo(mapa);
+    }
+    marcaDelOrigen.current.setLngLat([lonDelOrigen, latDelOrigen]);
+  }, [latDelOrigen, lonDelOrigen]);
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
