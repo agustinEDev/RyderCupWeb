@@ -21,9 +21,10 @@ const wms = (base, capa, formato) =>
  * y León, cuando se aclare su licencia.
  */
 export const ORTOFOTOS = {
-  // ICGC: dice .png y sirve JPEG; pedir .jpeg da 400
+  // La vigente del ICGC (2025) en su mixto, como Navarra: su XYZ era JPEG y
+  // fuera de Cataluña rellenaba con otra imagen (CodeRabbit)
   'ES-CT': {
-    tiles: ['https://geoserveis.icgc.cat/servei/catalunya/mapa-base/wmts/orto/MON3857NW/{z}/{x}/{y}.png'],
+    tiles: [wms('https://geoserveis.icgc.cat/servei/catalunya/orto-territorial/wms', 'ortofoto_color_vigent', 'image/vnd.jpeg-png')],
   },
   // La caché de ArcGIS va con la fila antes que la columna
   'ES-PV': {

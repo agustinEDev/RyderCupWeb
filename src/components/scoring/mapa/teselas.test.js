@@ -55,6 +55,9 @@ describe('ORTOFOTOS (19 oct)', () => {
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('TRANSPARENT=TRUE');
     // WebP: transparente fuera y, dentro, la mitad que el JPEG
     expect(ORTOFOTOS['ES-MD'].tiles[0]).toContain('FORMAT=image/webp');
+    // Cataluña, igual (CodeRabbit): su XYZ en JPEG rellenaba fuera con otra imagen
+    expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain('LAYERS=ortofoto_color_vigent');
+    expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain('FORMAT=image/vnd.jpeg-png');
   });
 
   it('las de WMS piden la tesela en 3857 por su caja', () => {
