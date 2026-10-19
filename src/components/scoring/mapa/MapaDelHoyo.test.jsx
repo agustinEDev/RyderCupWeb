@@ -3920,6 +3920,82 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     expect(mapa().fitBounds).not.toHaveBeenCalled();
   });
 
+  it('T6 (revisor): en el campo con GPS flojo, tampoco gira', () => {
+    abrirConLinea();
+    desde(0, 25);
+    mapa().fitBounds.mockClear();
+
+    tocar(P);
+
+    expect(mapa().fitBounds).not.toHaveBeenCalled();
+  });
+
+  it('T3 (revisor): arrastrar el codo con un punto: el punto y su única cifra se quedan', () => {
+    abrirConLinea();
+    desde(50);
+    tocar(P);
+    const [codo] = elCodo();
+
+    act(() => {
+      codo.setLngLat([T.lon, alNorte(120).lat]);
+      codo.oyentes.dragend({ target: codo });
+    });
+
+    expect(elPunto()).toHaveLength(1);
+    expect(cifras('medida')).toHaveLength(1);
+    expect(medida()).toContainEqual([en(alNorte(50)), en(P)]);
+    expect(medida()).toContainEqual([en(alNorte(50)), [T.lon, alNorte(120).lat]]);
+  });
+
+  it('T3 (revisor): un punto tocado antes de decidir la mitad del hoyo se mide luego desde ti', () => {
+    abrirConLinea();
+    desde(150, 25);
+    tocar(P);
+    expect(medida()).toEqual([[en(T), en(P)]]);
+
+    desde(150);
+
+    expect(medida()).toContainEqual([en(alNorte(150)), en(P)]);
+  });
+
+  it('T7 (revisor): al cancelar un reporte vuelve el codo, no el punto', () => {
+    abrirConLinea({ onReporte: vi.fn() });
+    desde(50);
+    tocar(P);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
+
+    expect(elCodo()).toHaveLength(1);
+    expect(elPunto()).toEqual([]);
+  });
+
+  it('revisor: el punto no va en el reporte; se manda la línea propuesta', () => {
+    const onReporte = vi.fn();
+    abrirConLinea({ onReporte });
+    desde(0);
+    tocar(P);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.motivos.WRONG_LINE' }));
+    tocar(alNorte(20));
+    tocar(alNorte(280));
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+
+    expect(onReporte).toHaveBeenCalledWith(expect.objectContaining({ tee: alNorte(20), bends: [], greenCenter: alNorte(280) }));
+  });
+
+  it('revisor: al cerrar el mapa, el punto se va con él', () => {
+    const { unmount } = abrirConLinea();
+    desde(0);
+    tocar(P);
+    const [punto] = elPunto();
+
+    unmount();
+
+    expect(punto.quitada).toBe(true);
+  });
+
   it('T6: lejos del campo, no gira', () => {
     abrirConLinea();
     act(() => gps.exito(lectura(40.4, -3.7)));

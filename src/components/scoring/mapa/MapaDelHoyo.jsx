@@ -783,8 +783,6 @@ const MapaDelHoyo = ({
       setDesdeMi(true);
       setCodoPendiente(true);
       setHastaLaSalida(true);
-      // Un punto tocado antes para medir no se queda de codo
-      setTocado(null);
     }
   }
   // Ibas hacia la salida: al llegar, el hoyo entero, una vez (H12)
@@ -804,7 +802,7 @@ const MapaDelHoyo = ({
     // Hacia el siguiente punto de la línea del hoyo, o al green sin ella (O2, O4)
     const hacia = (lineaOculta && siguientePuntoDeLaLinea(posicionBuena, lineaInicial)) || green.center;
     setVista({ tipo: 'desdeMi', desde: posicionBuena, hacia, green: green.center });
-    // Un punto que ya tocaste es el codo (D2b)
+    // Tocar mide (19 oct): el codo sale siempre en medio, y uno que ya hubiera se queda
     if (!tocado && distanciaEnMetros(posicionBuena, green.center) > CODO_DESDE_M) setTocado(enMedio(posicionBuena, green.center));
   }
   const textoDeTramo = useCallback((metros) => t('mapa.tramo', { metros }), [t]);
