@@ -7,6 +7,7 @@ vi.mock('../../../utils/sentryHelpers', () => sentry);
 
 const { ORTOFOTOS, atribucionDeLaOrtofoto, ponerOrtofoto } = await import('./teselas');
 const { limitesDeLaComunidad } = await import('../../../domain/services/comunidadDelCampo');
+const { CONTORNOS } = await import('../../../domain/services/contornosDeComunidades');
 
 // Un mapa con las capas que tiene ya cargado: fondo, PNOA y lo de encima
 const mapaFalso = (capas = ['fondo', 'pnoa', 'linea']) => {
@@ -33,7 +34,6 @@ describe('ORTOFOTOS (19 oct)', () => {
     ['ES-CT', 'geoserveis.icgc.cat', 'ICGC'],
     ['ES-PV', 'www.geo.euskadi.eus', 'Gobierno Vasco'],
     ['ES-NC', 'idena.navarra.es', 'Gobierno de Navarra'],
-    ['ES-MD', 'idem.comunidad.madrid', 'Comunidad de Madrid'],
   ])('%s: sus teselas y quién la firma, en español y en inglés (/code-review: por t())', (codigo, servidor, firma) => {
     const ortofoto = ORTOFOTOS[codigo];
 
@@ -44,17 +44,27 @@ describe('ORTOFOTOS (19 oct)', () => {
     expect(en.mapa.ortofoto[codigo]).toBeTruthy();
   });
 
+  it('Madrid, con la PNOA: su 2025 se ve peor que la PNOA (19 oct)', () => {
+    expect(ORTOFOTOS['ES-MD']).toBeUndefined();
+    expect(es.mapa.ortofoto['ES-MD']).toBeUndefined();
+    expect(en.mapa.ortofoto['ES-MD']).toBeUndefined();
+  });
+
+  it('/code-review: las comunidades con contorno son las de ortofoto (ni contorno que no pinte nada, ni ortofoto sin contorno)', () => {
+    expect(Object.keys(CONTORNOS).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
+    expect(Object.keys(es.mapa.ortofoto).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
+    expect(Object.keys(en.mapa.ortofoto).sort()).toEqual(Object.keys(ORTOFOTOS).sort());
+  });
+
   it('sin ortofoto de comunidad, sin atribución', () => {
     expect(atribucionDeLaOrtofoto(null)).toBeNull();
     expect(atribucionDeLaOrtofoto('ES-AN')).toBeNull();
   });
 
-  it('revisor: Navarra y Madrid, transparentes fuera de su comunidad (en JPEG llegaban en blanco y tapaban la PNOA)', () => {
+  it('revisor: Navarra y Cataluña, transparentes fuera de su comunidad (en JPEG llegaban en blanco y tapaban la PNOA)', () => {
     // El mixto de IDENA: JPEG dentro, PNG transparente fuera
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('FORMAT=image/vnd.jpeg-png');
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('TRANSPARENT=TRUE');
-    // WebP: transparente fuera y, dentro, la mitad que el JPEG
-    expect(ORTOFOTOS['ES-MD'].tiles[0]).toContain('FORMAT=image/webp');
     // Cataluña, igual (CodeRabbit): su XYZ en JPEG rellenaba fuera con otra imagen
     expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain('LAYERS=ortofoto_color_vigent');
     expect(ORTOFOTOS['ES-CT'].tiles[0]).toContain('FORMAT=image/vnd.jpeg-png');
@@ -85,7 +95,7 @@ describe('ponerOrtofoto', () => {
   it('con el mapa aún sin nada encima de la PNOA, va justo detrás', () => {
     const mapa = mapaFalso(['fondo', 'pnoa']);
 
-    ponerOrtofoto(mapa, 'ES-MD');
+    ponerOrtofoto(mapa, 'ES-NC');
 
     expect(mapa.lista.map((c) => c.id)).toEqual(['fondo', 'pnoa', 'ortofoto']);
   });

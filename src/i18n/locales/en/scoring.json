@@ -383,8 +383,7 @@
     "ortofoto": {
       "ES-CT": "Orthophoto © ICGC (CC BY 4.0)",
       "ES-PV": "Eusko Jaurlaritza / Basque Government. geoEuskadi",
-      "ES-NC": "Service provided by the Government of Navarre (CC BY 4.0)",
-      "ES-MD": "© Comunidad de Madrid (CC BY 4.0)"
+      "ES-NC": "Service provided by the Government of Navarre (CC BY 4.0)"
     },
     "sinMapaEnEsteMovil": "This phone cannot draw the map; the distances to the green still work.",
     "pideSalida": "Tap where the tee is",
