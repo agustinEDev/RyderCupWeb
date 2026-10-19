@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useScoring } from '../../hooks/useScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import { hayMapaEnElPais } from '../../domain/services/coberturaDelMapa';
 import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
@@ -673,8 +674,8 @@ const ScoringPage = () => {
                 {t('input.prevHole')}
               </button>
               {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
-              {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
-              {currentHoleData && !aunNoAbre && !cerradoSinJugar && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+              {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
+              {currentHoleData && !aunNoAbre && !cerradoSinJugar && hayMapaEnElPais(scoringView?.roundInfo?.golfCourseCountryCode) && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
               <button
                 onClick={handleNextHole}
                 disabled={currentHole >= totalHoles}

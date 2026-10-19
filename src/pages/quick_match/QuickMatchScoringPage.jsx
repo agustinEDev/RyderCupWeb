@@ -14,6 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useQuickMatchScoring } from '../../hooks/useQuickMatchScoring';
 import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
 import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import { hayMapaEnElPais } from '../../domain/services/coberturaDelMapa';
 import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
@@ -100,6 +101,7 @@ const QuickMatchScoringPage = () => {
     holes,
     tees,
     courseName,
+    courseCountryCode,
     currentHole,
     isLoading,
     loadError,
@@ -649,8 +651,8 @@ const QuickMatchScoringPage = () => {
                     {t('scoring.navigation.previous')}
                   </button>
                   {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
-                  {/* Solo con el hoyo a la vista: la ventana del mapa va con él */}
-                  {currentHoleData && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                  {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
+                  {currentHoleData && hayMapaEnElPais(courseCountryCode) && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
                   <button
                     onClick={handleNextHole}
                     disabled={currentHole >= totalHoles}

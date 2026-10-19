@@ -1836,6 +1836,23 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
+  it('19 oct: en un campo de fuera de España, sin «Mapa»; en España o sin saberlo, con él', () => {
+    // Lo del beforeEach, con el país del campo encima
+    const base = mockUseQuickMatchScoring();
+    const conPais = (pais) => mockUseQuickMatchScoring.mockReturnValue({ ...base, courseCountryCode: pais });
+    conPais('PT');
+    const { unmount } = renderPage();
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+    unmount();
+
+    for (const pais of ['ES', null]) {
+      conPais(pais);
+      const { unmount: fuera } = renderPage();
+      expect(screen.getByRole('button', { name: 'mapa.abrir' })).toBeInTheDocument();
+      fuera();
+    }
+  });
+
   it('la ventana del mapa recibe el hoyo que se anota', () => {
     renderPage();
 

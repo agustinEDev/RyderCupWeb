@@ -1627,6 +1627,23 @@ describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
     expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
   });
 
+  it('19 oct: en un campo de fuera de España, sin «Mapa»; en España o sin saberlo, con él', () => {
+    const conPais = (pais) => {
+      mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1', golfCourseCountryCode: pais } };
+    };
+    conPais('PT');
+    const { unmount } = render(<ScoringPage />);
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+    unmount();
+
+    for (const pais of ['ES', null]) {
+      conPais(pais);
+      const { unmount: fuera } = render(<ScoringPage />);
+      expect(screen.getByRole('button', { name: 'mapa.abrir' })).toBeInTheDocument();
+      fuera();
+    }
+  });
+
   it('la ventana del mapa recibe el hoyo que se anota', () => {
     render(<ScoringPage />);
 
