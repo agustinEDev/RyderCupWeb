@@ -240,25 +240,6 @@ const MapaDelHoyo = ({
   // la tarjeta sigue, que no lo necesita
   const [sinMapa, setSinMapa] = useState(false);
 
-  // Las barras del sistema, neutras mientras está abierto (19 oct): el iPhone
-  // pinta la franja de la hora con el fondo de la página y Android su barra con
-  // el theme-color; en negro, como un marco. Al cerrar, lo que había. Safari
-  // sin instalar no se entera (toma sus colores al cargar la página)
-  useEffect(() => {
-    const html = document.documentElement;
-    const { body } = document;
-    const tema = document.head.querySelector('meta[name="theme-color"]');
-    const antes = { html: html.style.backgroundColor, body: body.style.backgroundColor, tema: tema?.getAttribute('content') };
-    html.style.backgroundColor = '#000000';
-    body.style.backgroundColor = '#000000';
-    tema?.setAttribute('content', '#000000');
-    return () => {
-      html.style.backgroundColor = antes.html;
-      body.style.backgroundColor = antes.body;
-      tema?.setAttribute('content', antes.tema);
-    };
-  }, []);
-
   const contenedor = useRef(null);
   const arriba = useRef(null);
   const abajo = useRef(null);

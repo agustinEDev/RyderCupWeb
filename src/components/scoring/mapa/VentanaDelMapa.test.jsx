@@ -96,6 +96,32 @@ describe('VentanaDelMapa', () => {
     expect(mapaDelHoyo.cerrar).toHaveBeenCalled();
     globalThis.console.error.mockRestore();
   });
+
+  it('M1 (19 oct): las barras en negro desde que se abre, también mientras carga y si no carga; al cerrar, lo de antes', async () => {
+    carga.suspende = true;
+    const { rerender, unmount } = render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    // Cargando: la caja de la espera, negra como el mapa
+    expect(document.body.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+    // «Cerrar», que se vea sobre el negro
+    expect(screen.getByRole('button', { name: 'mapa.cerrar' })).toHaveClass('bg-white', 'text-gray-900');
+
+    rerender(<VentanaDelMapa mapaDelHoyo={estado({ abierto: false })} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+    expect(document.body.style.backgroundColor).toBe('');
+    unmount();
+  });
+
+  it('M1: si no carga, su aviso también en negro', async () => {
+    carga.falla = true;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+
+    await screen.findByText('mapa.noCarga');
+    expect(screen.getByRole('dialog').firstElementChild).toHaveClass('bg-black');
+    expect(document.body.style.backgroundColor).toBe('rgb(0, 0, 0)');
+    globalThis.console.error.mockRestore();
+  });
 });
 
 describe('BotonMapa', () => {

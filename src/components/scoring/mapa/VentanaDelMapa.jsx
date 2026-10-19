@@ -6,6 +6,7 @@ import { captureError } from '../../../utils/sentryHelpers';
 import { hoyoDeUnaMarca } from '../../../domain/services/hoyoMarcado';
 import { useMuestrasDelCampo } from '../../../hooks/useMuestrasDelCampo';
 import { useReportarHoyo } from '../../../hooks/useReportarHoyo';
+import { useBarrasNegras } from '../../../hooks/useBarrasNegras';
 
 // Aparte: MapLibre pesa, y la anotación no tiene por qué cargarlo hasta que se
 // abre. Una carga nueva en cada apertura: React guarda la que falló, y con una
@@ -15,12 +16,15 @@ const cargarMapa = () => lazy(() => import('./MapaDelHoyo'));
 // La caja de `ModalShell` (que ya se anuncia como diálogo), a toda la pantalla
 const CAPA = 'fixed inset-x-0 inset-y-0 flex flex-col items-center justify-center gap-4 p-6 text-center';
 
-/** De un modal se sale siempre: también mientras carga y si no carga. */
-const SalidaDelMapa = ({ onCerrar, children, oscuro = false }) => {
+/**
+ * De un modal se sale siempre: también mientras carga y si no carga. En negro,
+ * como el mapa y las barras del sistema (19 oct), con «Cerrar» en blanco.
+ */
+const SalidaDelMapa = ({ onCerrar, children }) => {
   const { t } = useTranslation('scoring');
   return (
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} boxClassName={`${CAPA} ${oscuro ? 'bg-gray-900 text-white' : 'bg-white'}`}>
-      <button type="button" onClick={onCerrar} className="min-h-11 order-last rounded-xl bg-gray-900 px-5 font-semibold text-white">
+    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} boxClassName={`${CAPA} bg-black text-white`}>
+      <button type="button" onClick={onCerrar} className="min-h-11 order-last rounded-xl bg-white px-5 font-semibold text-gray-900">
         {t('mapa.cerrar')}
       </button>
       {children}
@@ -45,7 +49,7 @@ class SiNoCarga extends Component {
   render() {
     if (!this.state.fallo) return this.props.children;
     return (
-      <SalidaDelMapa onCerrar={this.props.onCerrar} oscuro>
+      <SalidaDelMapa onCerrar={this.props.onCerrar}>
         <p>{this.props.texto}</p>
       </SalidaDelMapa>
     );
@@ -64,6 +68,9 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const { muestras, pendientes, enviar } = useMuestrasDelCampo({ golfCourseId, userId, barra });
   // Reportar un hoyo (entrega 7): basta la sesión, no hace falta la barra
   const reportar = useReportarHoyo({ golfCourseId, userId });
+  // Las barras del sistema en negro desde que se abre: también mientras carga
+  // el mapa y si no carga (19 oct)
+  useBarrasNegras();
 
   // Lo que se ve, por orden (17 oct, una referencia por hoyo): la línea que
   // guardó el admin; si no, el hoyo aprobado con su green; si no, la primera
