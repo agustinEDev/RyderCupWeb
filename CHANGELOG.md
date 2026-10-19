@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.46.0] - 2026-10-19
+
+**El mapa del hoyo, como se juega.** El mapa gira para enseñar el hoyo desde
+la salida, y a mitad de hoyo da la distancia desde el jugador al green. El
+jugador puede reportar un hoyo mal con la línea que propone, y el admin revisa
+las muestras de un solo color, elige la que edita en la lista o en el mapa y
+lo ve orientado como el jugador. Va con el backend **2.32.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.32.0**
+(los reportes de hoyo): backend, `/health` y este frontend justo después.
+
+### Added
+
+- **Reportar un hoyo desde su mapa** (#904): en un hoyo con línea, «⋮» abre
+  «¿Qué le pasa a este hoyo?» con tres motivos; el jugador toca la salida y el
+  green que propone, mueve los codos y envía. Va por la cola del móvil, como
+  las muestras, y nunca se envía como muestra.
+- **Reportes en la revisión del admin** (#904): la fila dice «N muestras · N
+  reportes», y el hoyo trae sus reportes con «Partir de esta» y «Descartar».
+- **Distancia desde el jugador cuando no está en la salida** (#905):
+  - **Hoyo sin mapa, tras «No»**: una línea de ti al green con sus metros y,
+    a más de 200 m, un codo que se arrastra; sin green, se toca primero. «Marcar
+    el hoyo entero» pide solo la salida si el green ya está.
+  - **Hoyo con mapa abierto a mitad de hoyo**: con buen GPS a más de 40 m de la
+    salida de tu barra, la línea desde ti en vez de la del hoyo; «Ver hoyo» la
+    devuelve, y al llegar a la salida vuelve el hoyo entero. Con mal GPS, lejos
+    o con la línea ya movida, el hoyo entero.
+- **Botón «Orientar» en la revisión del admin** (#908): vuelve a girar el mapa
+  con la línea roja.
+
+### Changed
+
+- **El mapa del jugador se orienta como se juega** (#907): par 3 de la salida
+  al green, par 4 y 5 al primer codo; a mitad de hoyo, de ti al siguiente punto
+  de la línea; tras «No», de ti al green. Al marcar la salida y el green, por
+  cualquier camino, gira y encuadra la línea. El primer GPS ya no deshace el
+  giro.
+- **La revisión del admin, de un solo color** (#906): todas las muestras y
+  reportes en blanco fino, sin distinción de barra (ni en el mapa ni en la
+  lista). **Seleccionar = editar**: tocar una fila, o su línea en el mapa, la
+  pone en rojo con los puntos para mover; tocarla otra vez tras moverla vuelve
+  a su línea. Sustituye a «Usar esta».
+- **El mapa del admin se orienta como el del jugador** (#908) al abrir, al
+  elegir otra muestra, con «Usar OSM» y al marcar desde cero, encuadrando todo.
+
 ## [2.45.0] - 2026-10-18
 
 **El panel de admin, por secciones y hecho para el móvil.** El panel pasa a
