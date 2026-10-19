@@ -11,12 +11,13 @@ describe('comunidadDelPunto', () => {
     ['PGA Catalunya', 41.8524, 2.7674, 'ES-CT'],
     ['Neguri', 43.3737, -3.028, 'ES-PV'],
     ['Ulzama', 42.9617, -1.667, 'ES-NC'],
-    ['Centro Nacional', 40.487, -3.7383, 'ES-MD'],
   ])('%s cae en %s', (_, lat, lon, comunidad) => {
     expect(comunidadDelPunto({ lat, lon })).toBe(comunidad);
   });
 
   it.each([
+    // Madrid, con la PNOA: su ortofoto de 2025 se ve peor (19 oct)
+    ['Centro Nacional (Madrid)', 40.487, -3.7383],
     ['La Faisanera (Segovia)', 40.9155, -4.0564],
     ['Málaga', 36.72, -4.42],
     ['Zaragoza', 41.65, -0.88],

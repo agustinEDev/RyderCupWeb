@@ -393,8 +393,7 @@
     "ortofoto": {
       "ES-CT": "Ortofoto © ICGC (CC BY 4.0)",
       "ES-PV": "Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi",
-      "ES-NC": "Servicio proporcionado por el Gobierno de Navarra (CC BY 4.0)",
-      "ES-MD": "© Comunidad de Madrid (CC BY 4.0)"
+      "ES-NC": "Servicio proporcionado por el Gobierno de Navarra (CC BY 4.0)"
     },
     "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen.",
     "pideSalida": "Toca dónde está la salida",

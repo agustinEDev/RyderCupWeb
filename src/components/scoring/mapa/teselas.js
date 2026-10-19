@@ -18,7 +18,8 @@ const wms = (base, capa, formato) =>
  * Las ortofotos de comunidad más recientes que la PNOA (19 oct 2026, todas de
  * 2025 y 25 cm, con CORS y licencia que deja guardarlas): por código ISO de la
  * comunidad, sus teselas. Quién la firma, en `mapa.ortofoto.<código>`. Castilla
- * y León, cuando se aclare su licencia.
+ * y León, cuando se aclare su licencia. Madrid no: su 2025 se ve más lavada y
+ * blanda que la PNOA de 2023 (comparado tesela a tesela, 19 oct).
  */
 export const ORTOFOTOS = {
   // La vigente del ICGC (2025) en su mixto, como Navarra: su XYZ era JPEG y
@@ -34,14 +35,6 @@ export const ORTOFOTOS = {
   // pesaba ocho veces más
   'ES-NC': {
     tiles: [wms('https://idena.navarra.es/ogc/ows', 'ortofoto_maxima_actualidad', 'image/vnd.jpeg-png')],
-  },
-  // WebP: transparente fuera y, dentro, la mitad que el JPEG (que fuera llega en blanco)
-  'ES-MD': {
-    tiles: [
-      'https://idem.comunidad.madrid/srvimagenes2/ogc/wmts/visorcartografia2?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
-        '&LAYER=fotosAereas_2025-CT-25cm-ov-mos-rgb&STYLE=default&FORMAT=image/webp&TILEMATRIXSET=EPSG3857' +
-        '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    ],
   },
 };
 

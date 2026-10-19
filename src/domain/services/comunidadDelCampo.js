@@ -3,7 +3,7 @@ import { CONTORNOS } from './contornosDeComunidades';
 /**
  * Las comunidades con ortofoto propia más reciente que la PNOA (19 oct): el
  * mapa del hoyo elige la de la comunidad donde cae el campo. Código ISO
- * 3166-2 (`ES-CT`, `ES-PV`, `ES-NC`, `ES-MD`), o null si no cae en ninguna.
+ * 3166-2 (`ES-CT`, `ES-PV`, `ES-NC`), o null si no cae en ninguna.
  */
 
 // Par/impar del rayo hacia el este: cruzar un número impar de bordes es estar dentro

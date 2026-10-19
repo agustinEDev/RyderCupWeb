@@ -552,22 +552,22 @@ describe('MapaDelHoyo', () => {
       act(() => mapa().oyentes.load());
       expect(mapa().fuentes.ortofoto).toBeUndefined();
 
-      // La ubicación del campo (Centro Nacional de Golf, Madrid)
-      centro.valor = { lat: 40.487, lon: -3.7383 };
+      // La ubicación del campo (Ulzama, Navarra)
+      centro.valor = { lat: 42.9617, lon: -1.667 };
       rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
 
-      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-MD'].tiles);
+      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-NC'].tiles);
     });
 
     it('O6: si llega antes de que cargue el mapa, se pone al cargar', () => {
       const { rerender } = abrir({ hoyo: null });
-      centro.valor = { lat: 40.487, lon: -3.7383 };
+      centro.valor = { lat: 42.9617, lon: -1.667 };
       rerender(<MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={null} atribucion={null} onCerrar={() => {}} />);
       expect(mapa().fuentes.ortofoto).toBeUndefined();
 
       act(() => mapa().oyentes.load());
 
-      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-MD'].tiles);
+      expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-NC'].tiles);
     });
 
     it('antes de cargar el mapa no se toca (MapLibre no deja añadir nada aún)', () => {
