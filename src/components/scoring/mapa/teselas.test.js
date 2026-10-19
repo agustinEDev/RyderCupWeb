@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ORTOFOTOS, ponerOrtofoto } from './teselas';
-import { limitesDeLaComunidad } from '../../../domain/services/comunidadDelCampo';
+import es from '../../../i18n/locales/es/scoring.json';
+import en from '../../../i18n/locales/en/scoring.json';
+
+const sentry = vi.hoisted(() => ({ captureError: vi.fn() }));
+vi.mock('../../../utils/sentryHelpers', () => sentry);
+
+const { ORTOFOTOS, atribucionDeLaOrtofoto, ponerOrtofoto } = await import('./teselas');
+const { limitesDeLaComunidad } = await import('../../../domain/services/comunidadDelCampo');
 
 // Un mapa con las capas que tiene ya cargado: fondo, PNOA y lo de encima
 const mapaFalso = (capas = ['fondo', 'pnoa', 'linea']) => {
@@ -28,11 +34,19 @@ describe('ORTOFOTOS (19 oct)', () => {
     ['ES-PV', 'www.geo.euskadi.eus', 'Gobierno Vasco'],
     ['ES-NC', 'idena.navarra.es', 'Gobierno de Navarra'],
     ['ES-MD', 'idem.comunidad.madrid', 'Comunidad de Madrid'],
-  ])('%s: sus teselas y quién la firma', (codigo, servidor, firma) => {
+  ])('%s: sus teselas y quién la firma, en español y en inglés (/code-review: por t())', (codigo, servidor, firma) => {
     const ortofoto = ORTOFOTOS[codigo];
 
     expect(new globalThis.URL(ortofoto.tiles[0].replace(/[{}]/g, '')).host).toBe(servidor);
-    expect(ortofoto.atribucion).toContain(firma);
+    const clave = atribucionDeLaOrtofoto(codigo);
+    expect(clave).toBe(`mapa.ortofoto.${codigo}`);
+    expect(es.mapa.ortofoto[codigo]).toContain(firma);
+    expect(en.mapa.ortofoto[codigo]).toBeTruthy();
+  });
+
+  it('sin ortofoto de comunidad, sin atribución', () => {
+    expect(atribucionDeLaOrtofoto(null)).toBeNull();
+    expect(atribucionDeLaOrtofoto('ES-AN')).toBeNull();
   });
 
   it('revisor: Navarra y Madrid, transparentes fuera de su comunidad (en JPEG llegaban en blanco y tapaban la PNOA)', () => {
@@ -75,14 +89,37 @@ describe('ponerOrtofoto', () => {
 
   it('O5: sin comunidad, nada; y si había una, se quita', () => {
     const mapa = mapaFalso();
+    sentry.captureError.mockClear();
     ponerOrtofoto(mapa, null);
     expect(mapa.addSource).not.toHaveBeenCalled();
+    // Sin comunidad no hay nada que fallar
+    expect(sentry.captureError).not.toHaveBeenCalled();
 
     ponerOrtofoto(mapa, 'ES-CT');
     ponerOrtofoto(mapa, null);
 
     expect(mapa.fuentes.ortofoto).toBeUndefined();
     expect(mapa.lista.map((c) => c.id)).toEqual(['fondo', 'pnoa', 'linea']);
+  });
+
+  it('/code-review: si MapLibre falla al ponerla, no rompe el mapa (se apunta y sigue)', () => {
+    const mapa = mapaFalso();
+    mapa.addSource = vi.fn(() => { throw new Error('bounds'); });
+
+    expect(() => ponerOrtofoto(mapa, 'ES-CT')).not.toThrow();
+    expect(sentry.captureError).toHaveBeenCalledWith(expect.any(Error), { tags: { modulo: 'mapa-de-hoyos' } });
+  });
+
+  it('/code-review: la misma recién puesta no se rehace aunque MapLibre aún no diga sus teselas', () => {
+    const mapa = mapaFalso();
+    ponerOrtofoto(mapa, 'ES-CT');
+    // La fuente de verdad de MapLibre rellena `tiles` un fotograma después
+    mapa.getSource = (id) => (mapa.fuentes[id] ? {} : undefined);
+
+    ponerOrtofoto(mapa, 'ES-CT');
+
+    expect(mapa.addSource).toHaveBeenCalledTimes(1);
+    expect(mapa.removeSource).not.toHaveBeenCalled();
   });
 
   it('la misma otra vez no la rehace; otra distinta la cambia', () => {

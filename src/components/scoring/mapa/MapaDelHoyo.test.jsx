@@ -530,7 +530,7 @@ describe('MapaDelHoyo', () => {
 
       expect(mapa().fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-CT'].tiles);
       expect(mapa().addLayer).toHaveBeenCalledWith({ id: 'ortofoto', type: 'raster', source: 'ortofoto' }, undefined);
-      expect(screen.getByText(ORTOFOTOS['ES-CT'].atribucion, { exact: false })).toBeInTheDocument();
+      expect(screen.getByText('mapa.ortofoto.ES-CT', { exact: false })).toBeInTheDocument();
     });
 
     it('O5: en el resto de España, solo la PNOA', () => {
@@ -538,7 +538,7 @@ describe('MapaDelHoyo', () => {
       act(() => mapa().oyentes.load());
 
       expect(mapa().fuentes.ortofoto).toBeUndefined();
-      expect(screen.queryByText(/ICGC|Gobierno|Comunidad de Madrid/)).toBeNull();
+      expect(screen.queryByText(/mapa\.ortofoto/)).toBeNull();
     });
 
     it('O6: si dónde está el campo llega tarde, se pone entonces', () => {

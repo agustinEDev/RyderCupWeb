@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { encuadreGirado } from '../../../domain/services/geometriaDelHoyo';
 
 /**
@@ -123,6 +123,14 @@ describe('MapaDeRevision', () => {
 
     expect(mapa.fuentes.ortofoto.tiles).toEqual(ORTOFOTOS['ES-NC'].tiles);
     expect(mapa.capas[0].id).toBe('ortofoto');
+    // Su licencia (CC BY) pide decir de quién es, también aquí (/code-review)
+    expect(screen.getByTestId('atribucion-del-mapa')).toHaveTextContent('mapa.atribucionPnoa · mapa.ortofoto.ES-NC');
+  });
+
+  it('/code-review: fuera de esas comunidades, la atribución de la PNOA sola', () => {
+    render(<MapaDeRevision muestras={[]} guardada={null} linea={LINEA} onLinea={() => {}} />);
+
+    expect(screen.getByTestId('atribucion-del-mapa')).toHaveTextContent(/^mapa\.atribucionPnoa$/);
   });
 
   it('O9: sin ubicación del campo, la de la línea del hoyo (País Vasco)', () => {

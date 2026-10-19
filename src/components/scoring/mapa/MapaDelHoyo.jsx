@@ -19,7 +19,7 @@ import {
   salidaPorMetros,
 } from '../../../domain/services/hoyoMarcado';
 import { usePosicionGps } from '../../../hooks/usePosicionGps';
-import { ORTOFOTOS, TESELAS_PNOA, ponerOrtofoto } from './teselas';
+import { TESELAS_PNOA, atribucionDeLaOrtofoto, ponerOrtofoto } from './teselas';
 import { comunidadDelPunto } from '../../../domain/services/comunidadDelCampo';
 import { useCentroSinMapa } from '../../../hooks/useCentroSinMapa';
 import { captureError } from '../../../utils/sentryHelpers';
@@ -216,7 +216,13 @@ const MapaDelHoyo = ({
   // Lejos (no estás jugando): el mapa no se va a tu casa, no se mide desde ti
   // y «Céntrame» no se puede pulsar (16 oct)
   // Con ortofoto de su comunidad, más reciente que la PNOA, si la hay (19 oct)
-  const comunidad = comunidadDelPunto(referenciaDelCampo);
+  // Solo cuando cambia la posición, no en cada aviso del GPS (/code-review)
+  const latDelCampo = referenciaDelCampo?.lat ?? null;
+  const lonDelCampo = referenciaDelCampo?.lon ?? null;
+  const comunidad = useMemo(
+    () => comunidadDelPunto(latDelCampo === null || lonDelCampo === null ? null : { lat: latDelCampo, lon: lonDelCampo }),
+    [latDelCampo, lonDelCampo],
+  );
   const lejos = estaLejosDelCampo(posicion, referenciaDelCampo);
   const posicionEnElCampo = lejos ? null : posicion;
   // La que vale para medir desde ti: en el campo y con el GPS bueno
@@ -1254,7 +1260,7 @@ const MapaDelHoyo = ({
         <div className="flex items-center gap-2">
           <span className="pointer-events-auto flex-1 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
             <span>{t('mapa.atribucionPnoa')}</span>
-            {comunidad && ORTOFOTOS[comunidad] && <span>{` · ${ORTOFOTOS[comunidad].atribucion}`}</span>}
+            {atribucionDeLaOrtofoto(comunidad) && <span>{` · ${t(atribucionDeLaOrtofoto(comunidad))}`}</span>}
             {atribucion && (
               <>
                 {' · '}
