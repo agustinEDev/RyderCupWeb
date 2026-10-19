@@ -51,7 +51,7 @@ const VISTA = {
         ...Array.from({ length: 16 }, (_, i) => hoyo(i + 3)),
       ],
     }),
-    jugador('bea', 'Bea Blanco', 'ana', 'ana', { card_status: 'ENTREGADA', brought_in: true, tee_color: 'RED' }),
+    jugador('bea', 'Bea Blanco', 'ana', 'ana', { card_status: 'ENTREGADA', brought_in: true, tee_color: 'RED', played: true }),
   ],
 };
 
@@ -75,7 +75,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     expect(v.matchStatus).toBe('IN_PROGRESS');
     expect(v.scoringOpensAt).toBe('2030-10-12T06:00:00Z');
     expect(v.isDecided).toBe(false);
-    expect(v.roundInfo).toEqual({ id: 'r-1', date: null, sessionType: null, golfCourseName: null });
+    expect(v.roundInfo).toEqual({ id: 'r-1', date: null, sessionType: null, golfCourseName: null, golfCourseId: null, golfCourseCountryCode: null });
     expect(v.markerAssignments).toEqual([
       { scorerUserId: 'ana', scorerName: 'Ana Alba', marksUserId: 'bea', marksName: 'Bea Blanco', markedByUserId: 'bea', markedByName: 'Bea Blanco' },
       { scorerUserId: 'bea', scorerName: 'Bea Blanco', marksUserId: 'ana', marksName: 'Ana Alba', markedByUserId: 'ana', markedByName: 'Ana Alba' },
@@ -128,6 +128,8 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           marksUserId: 'bea',
           markedByUserId: 'bea',
           broughtIn: false,
+          // Si jugó: «Retirar» y no «No presentado» (RyderCupAm#553)
+          played: false,
           totals: { thru: 1, points: 3, grossPoints: 2, gross: 4, net: 3, toParNet: -1, toParGross: 0, complete: false },
         },
         {
@@ -139,6 +141,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
           markedByUserId: 'ana',
           // Vino de otra partida (BE #539)
           broughtIn: true,
+          played: true,
           totals: { thru: 1, points: 3, grossPoints: 2, gross: 4, net: 3, toParNet: -1, toParGross: 0, complete: false },
         },
       ],
@@ -170,10 +173,22 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     ['no presentado', (r) => r.markNoShow('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/no-show'],
     // QA del 11 oct 2026: quien juega sin marcador (BE #539)
     ['validar lo anotado', (r) => r.validateScored('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/validate-scored'],
+    // El organizador retira a quien ya jugó (RyderCupAm#553)
+    ['retirar a un jugador', (r) => r.retirePlayer('g-1', 'ana'), '/api/v1/competitions/groups/g-1/players/ana/retire'],
   ])('%s: POST y devuelve la vista', async (_caso, hacer, url) => {
     const v = await hacer(repo);
 
     expect(api).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+    expect(v.matchId).toBe('g-1');
+  });
+
+  it('borrar lo anotado en un hoyo (organizador): DELETE con el lado (RyderCupAm#553)', async () => {
+    const v = await repo.deleteHole('g-1', 'ana', 7, 'marker');
+
+    expect(api).toHaveBeenCalledWith(
+      '/api/v1/competitions/groups/g-1/players/ana/holes/7?side=marker',
+      expect.objectContaining({ method: 'DELETE' })
+    );
     expect(v.matchId).toBe('g-1');
   });
 
@@ -191,7 +206,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
     const vista = await repo.closeWindow('r-1');
 
     expect(api).toHaveBeenCalledWith('/api/v1/competitions/rounds/r-1/groups/close', { method: 'POST' });
-    expect(vista).toEqual({ roundId: 'r-1', editable: false, unassignedPlayers: [], groups: [] });
+    expect(vista).toEqual({ roundId: 'r-1', editable: false, canAddGroup: false, unassignedPlayers: [], groups: [] });
   });
 
   it('la clasificación de la franja, con o sin categoría', async () => {
@@ -200,7 +215,7 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       scale: 'NETA',
       rule: 'ACCUMULATED',
       category: 2,
-      rows: [{ position: 3, tied: true, user_id: 'ana', name: 'Ana', category: 2, handicap: '12.3', value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true }],
+      rows: [{ position: 3, tied: true, user_id: 'ana', name: 'Ana', category: 2, handicap: '12.3', value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true, tee_gender: 'FEMALE' }],
       me: null,
     });
 
@@ -212,12 +227,24 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
       scale: 'NETA',
       rule: 'ACCUMULATED',
       category: 2,
-      rows: [{ position: 3, tied: true, userId: 'ana', name: 'Ana', category: 2, handicap: 12.3, value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true }],
+      rows: [{ position: 3, tied: true, userId: 'ana', name: 'Ana', category: 2, handicap: 12.3, value: -2, cards: 1, thru: 18, status: 'CLASIFICADO', retired: true, teeGender: 'FEMALE' }],
       me: null,
     });
 
     await repo.getWindowStandings('r-1');
     expect(api).toHaveBeenLastCalledWith('/api/v1/competitions/rounds/r-1/standings');
+  });
+
+  it('FE #856: sin el género de la fila (servidor anterior), null', async () => {
+    api.mockResolvedValue({
+      tournament_type: 'MEDAL', scale: 'NETA', rule: 'ACCUMULATED', category: null,
+      rows: [{ position: null, tied: false, user_id: 'ana', name: 'Ana', category: 1, handicap: '1', value: null, cards: 0, thru: 0, status: 'NP' }],
+      me: null,
+    });
+
+    const c = await repo.getWindowStandings('r-1');
+
+    expect(c.rows[0].teeGender).toBeNull();
   });
 
   it('la general de la competición, con o sin categoría (PR 8)', async () => {
@@ -246,6 +273,6 @@ describe('ApiTeeGroupScoringRepository (FE #824, PR 7)', () => {
 
     const c = await repo.getWindowStandings('r-1');
 
-    expect(c.me).toEqual({ position: null, tied: false, userId: 'yo', name: 'Yo', category: null, handicap: -1.2, value: null, cards: 0, thru: 0, status: 'NP', retired: false });
+    expect(c.me).toEqual({ position: null, tied: false, userId: 'yo', name: 'Yo', category: null, handicap: -1.2, value: null, cards: 0, thru: 0, status: 'NP', retired: false, teeGender: null });
   });
 });

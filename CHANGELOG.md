@@ -5,6 +5,310 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.47.0] - 2026-10-19
+
+**El mapa del hoyo, mejor imagen y mejor para medir.** En Cataluña, País Vasco y
+Navarra se ve la ortofoto de 2025 de la comunidad; fuera de España no se ofrece
+el mapa. Tocar mide de ti al punto, y con la app instalada las barras del
+sistema van en negro mientras el mapa está abierto. Va con el backend
+**2.33.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.33.0**
+(el país del campo): backend, `/health` y este frontend. La CSP de Render ya
+lleva los tres servidores de las ortofotos en `connect-src` (puesta el 19 oct).
+
+### Added
+
+- **Ortofoto de 2025 de la comunidad** en el mapa del hoyo y en el del admin
+  (#913, #915): Cataluña (ICGC), País Vasco (geoEuskadi) y Navarra (IDENA),
+  encima de la PNOA, que se sigue viendo mientras carga, si falla y fuera de la
+  comunidad. La comunidad se decide por la posición del campo, con su firma en
+  los créditos. Madrid se queda con la PNOA: su 2025 se veía peor.
+
+### Changed
+
+- **Fuera de España, sin botón «Mapa»** en las tres anotaciones (#911): la
+  imagen solo cubre España. Sin saber el país, el botón sigue.
+- **Tocar mide de ti a ese punto** (#916), sin el tramo al green: a un búnker,
+  al agua o a la bandera. Sin buena posición, desde la salida, que queda
+  marcada; mientras hay un punto, la línea del hoyo se oculta y «Quitar» la
+  devuelve. A mitad de hoyo el codo de la línea al green se mueve arrastrándolo.
+  Las dos etiquetas de metros ya no se pisan.
+- **Barras del sistema en negro con el mapa abierto** (#914): con la app
+  instalada, la franja de la hora (iPhone) y la barra de Android, también
+  mientras carga. En Safari sin instalar no se pueden teñir.
+
+## [2.46.0] - 2026-10-19
+
+**El mapa del hoyo, como se juega.** El mapa gira para enseñar el hoyo desde
+la salida, y a mitad de hoyo da la distancia desde el jugador al green. El
+jugador puede reportar un hoyo mal con la línea que propone, y el admin revisa
+las muestras de un solo color, elige la que edita en la lista o en el mapa y
+lo ve orientado como el jugador. Va con el backend **2.32.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.32.0**
+(los reportes de hoyo): backend, `/health` y este frontend justo después.
+
+### Added
+
+- **Reportar un hoyo desde su mapa** (#904): en un hoyo con línea, «⋮» abre
+  «¿Qué le pasa a este hoyo?» con tres motivos; el jugador toca la salida y el
+  green que propone, mueve los codos y envía. Va por la cola del móvil, como
+  las muestras, y nunca se envía como muestra.
+- **Reportes en la revisión del admin** (#904): la fila dice «N muestras · N
+  reportes», y el hoyo trae sus reportes con «Partir de esta» y «Descartar».
+- **Distancia desde el jugador cuando no está en la salida** (#905):
+  - **Hoyo sin mapa, tras «No»**: una línea de ti al green con sus metros y,
+    a más de 200 m, un codo que se arrastra; sin green, se toca primero. «Marcar
+    el hoyo entero» pide solo la salida si el green ya está.
+  - **Hoyo con mapa abierto a mitad de hoyo**: con buen GPS a más de 40 m de la
+    salida de tu barra, la línea desde ti en vez de la del hoyo; «Ver hoyo» la
+    devuelve, y al llegar a la salida vuelve el hoyo entero. Con mal GPS, lejos
+    o con la línea ya movida, el hoyo entero.
+- **Botón «Orientar» en la revisión del admin** (#908): vuelve a girar el mapa
+  con la línea roja.
+
+### Changed
+
+- **El mapa del jugador se orienta como se juega** (#907): par 3 de la salida
+  al green, par 4 y 5 al primer codo; a mitad de hoyo, de ti al siguiente punto
+  de la línea; tras «No», de ti al green. Al marcar la salida y el green, por
+  cualquier camino, gira y encuadra la línea. El primer GPS ya no deshace el
+  giro.
+- **La revisión del admin, de un solo color** (#906): todas las muestras y
+  reportes en blanco fino, sin distinción de barra (ni en el mapa ni en la
+  lista). **Seleccionar = editar**: tocar una fila, o su línea en el mapa, la
+  pone en rojo con los puntos para mover; tocarla otra vez tras moverla vuelve
+  a su línea. Sustituye a «Usar esta».
+- **El mapa del admin se orienta como el del jugador** (#908) al abrir, al
+  elegir otra muestra, con «Usar OSM» y al marcar desde cero, encuadrando todo.
+
+## [2.45.0] - 2026-10-18
+
+**El panel de admin, por secciones y hecho para el móvil.** El panel pasa a
+cinco secciones con su propia ruta; en el móvil, las tablas anchas son filas
+con una ficha que sube desde abajo. El admin revisa los hoyos pendientes por
+campo, marca la línea de cualquier hoyo desde cero y entra a cualquier campo
+desde «Todos los campos». Y al contestar «No» a «¿Estás en la salida?», el
+jugador elige entre ver la distancia al green o marcar el hoyo entero. Va con
+el backend **2.31.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.31.0**
+(la ubicación del campo y la línea de OSM en la revisión): backend, `/health`
+y este frontend justo después. Sin esos campos, la revisión sigue funcionando,
+pero sin encuadre ni línea de OSM.
+
+### Added
+
+- **«No» a «¿Estás en la salida?» deja elegir**, con dos botones uno al lado
+  del otro (#901):
+  - **«Solo ver la distancia al green»**: lo de antes; si el hoyo ya tiene
+    green no se pide nada, y si no, se toca el green y se envía solo él;
+  - **«Marcar el hoyo entero»**: se toca la salida y el green, con los codos
+    del par y los límites de 40-750 m; con el green ya puesto basta la salida;
+  - mientras se elige, el mapa no marca ni mide; lejos del campo o sin
+    ubicación, como siempre.
+- **El admin marca la línea de un hoyo desde cero**: toca la salida y el
+  green, con los codos del par; «Cancelar» devuelve la de antes y se avisa si
+  la salida y el green no hacen un hoyo. La tarjeta del hoyo cabe en una línea
+  («Par 5 · Distancia del hoyo: 430 a 500 m») (#897).
+- **«Todos los campos»** en la sección de hoyos: se busca un campo, se ven sus
+  18 hoyos con su estado (guardado, OpenStreetMap, sin green, muestras o sin
+  datos) y cualquiera se abre en la misma revisión, que dibuja la línea de OSM
+  y parte de ella si no hay guardada (#898).
+
+### Changed
+
+- **El panel de admin en cinco secciones** (resumen, usuarios, competiciones,
+  campos y hoyos), cada una con su ruta `/admin/<sección>`; en el móvil, un
+  menú de filas y el botón atrás del teléfono funciona; en el ordenador, el
+  menú en una columna a la izquierda (#895).
+- **Hoyos pendientes por campo**: un bloque por campo con una fila por hoyo y
+  sus muestras; guardar la línea cierra la revisión y saca el hoyo de la lista
+  (#896).
+- **En el móvil, filas y ficha en lugar de tablas anchas** en usuarios,
+  competiciones y los hoyos de un campo pendiente; la ficha trae los datos y
+  las acciones, y la búsqueda ocupa todo el ancho (#899).
+- **La ficha de una competición que no está en borrador dice por qué no se
+  edita**, como el lápiz desactivado del ordenador (#900).
+
+## [2.44.0] - 2026-10-17
+
+**Una línea de referencia por hoyo.** Al abrir un hoyo sin línea, el mapa
+pregunta «¿Estás en la salida?» y, con buen GPS, tu posición es la salida; si
+no estás, marcas solo el green. El recuadro DELANTE·CENTRO·FONDO mide desde tu
+posición con buen GPS. La línea que guarda el admin se ve antes que nada, con tu
+salida colocada por los metros de tu tarjeta, y el admin la revisa en la nueva
+pestaña «Hoyos por revisar». La Ryder marca y envía muestras como las demás
+anotaciones. Va con el backend **2.30.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.30.0**
+(la pantalla del admin, la línea guardada y el género de la barra en la Ryder):
+backend, `/health` y este frontend justo después. La copia local de las
+muestras pasa a la clave `muestrasDeHoyos:v3`.
+
+### Added
+
+- **«¿Estás en la salida?»** al marcar un hoyo sin línea (#890):
+  - **Sí, con GPS de 20 m o mejor**: tu posición es la salida y marcas el green;
+  - **Sí, con GPS malo**: tocas la salida;
+  - **No**: marcas solo el green, a 750 m o menos de ti, y se envía una
+    muestra solo de green;
+  - lejos del campo o sin permiso de ubicación, como antes: salida y green.
+- **El recuadro desde tu posición** con GPS de 20 m o mejor a 750 m o menos
+  del green; si no, desde la tarjeta de tu barra. Sin green no hay recuadro
+  (#890).
+- **La línea del admin, lo primero**, y tu salida colocada sobre el primer
+  tramo según los metros de tu tarjeta; con ella no se pregunta ni se envía
+  nada (#891).
+- **«Hoyos por revisar»** en el panel de admin, junto a «Pendientes»: los
+  campos con muestras o línea guardada y, por hoyo, un mapa con todas las
+  muestras en el color de su barra, la tarjeta de cada barra, «Empezar desde
+  esta», «Borrar», «Guardar línea» y «Reabrir hoyo» (#892).
+- **La Ryder envía muestras de los hoyos** como stroke play y la partida
+  rápida, con la barra de cada jugador; quien no juega el partido solo mide
+  (#889, cierra #880).
+
+### Changed
+
+- Las muestras se leen por hoyo: la línea del admin, el mapa aprobado, la
+  primera muestra completa, el green suelto y tu propia línea, por ese orden
+  (#890, #891).
+
+### Fixed
+
+- **Las líneas aprobadas de OSM se ven con los codos de su par**, donde de
+  verdad gira el hoyo: un campo de pares 3 (Torre de Hércules) salía con codo
+  (#888).
+
+## [2.43.0] - 2026-10-16
+
+**El mapa del hoyo.** Desde la anotación (Ryder, stroke play y partida rápida)
+se abre el mapa del hoyo sobre la ortofoto del PNOA: el hoyo girado como se
+juega y lo más grande que cabe, los metros oficiales de la tarjeta (delante,
+centro y fondo), los metros de cada tramo de la línea, medir tocando y, en los
+hoyos sin datos, marcar la salida y el green con los codos de su par, que se
+envían como muestra anónima de la barra del jugador sin decirle nada. Además,
+la anotación compacta y el campo a la vista. Va con el backend **2.29.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.29.0**
+(las muestras y los metros de stroke play): backend, `/health` y este frontend
+justo después. La CSP de producción ya permite `https://www.ign.es` (teselas
+del PNOA). MapLibre va en su propio chunk, que solo se descarga al abrir el
+mapa. Probado en el Kind con dos pasadas de QA sin contexto, en WebKit con
+toques y en un iPhone real.
+
+### Added
+
+- **Mapa del hoyo** desde «Mapa», entre «Anterior» y «Siguiente», en las tres
+  anotaciones (#871, #873):
+  - el hoyo girado como se juega (salida abajo, green arriba) y encuadrado lo
+    más grande que cabe entre la cabecera y el panel de abajo, medidos (#884,
+    #885);
+  - el recuadro **DELANTE · CENTRO · FONDO** fijo con los metros oficiales de la
+    tarjeta de tu barra (con el contorno del green dibujado; ±10 m sin él); sin
+    metros, medido en el mapa siguiendo los codos (#878);
+  - los **metros de cada tramo** de la línea, que siguen al dedo al arrastrar
+    (#878);
+  - medir tocando: de ti al punto y del punto al green, girando el mapa hacia
+    el punto; lejos del campo (más de 3 km), solo del punto al green, sin girar,
+    sin recuadro desde ti y sin «Céntrame» (#874, #875);
+  - sin conexión, la ubicación del campo guardada en el móvil (#875).
+- **Marcar un hoyo sin datos** (#874, #881): tocar la salida (el mapa se aleja
+  a la mitad de la tarjeta) y el green (de 40 a 750 m), y la línea sale con los
+  **codos de su par** (par 3: ninguno; par 4: uno; par 5: dos) para llevarlos a
+  la calle. Cualquier línea se puede mover para medir. Al cerrar el mapa o al
+  pasar la app a segundo plano, lo que el jugador hizo o movió se envía como
+  **muestra anónima de su barra**, en silencio y con cola sin conexión. Se ve,
+  por orden, el hoyo aprobado, la primera muestra de su barra (o de otra) y la
+  suya del móvil. En la Ryder solo se mide hasta que traiga el sexo de la barra
+  (#880).
+- **El campo a la vista**: su nombre bajo el título de las tres anotaciones y en
+  cada tarjeta de «Mis Próximos Partidos» (#876).
+
+### Changed
+
+- **Anotación compacta** (#876): sin la tarjeta «Info del Partido»; «Anterior ·
+  Mapa · Siguiente» en una fila de 44 px con contraste; «Bola rival · A / B» en
+  foursomes; «Anotarás a…» antes de abrir; el formato traducido. Con los 18
+  hoyos anotados sin validar y sin decidir, ni «Conceder Partido» ni «Partido
+  terminado»: «Todos los hoyos anotados».
+- Stroke play pasa al mapa los metros y la barra del jugador (#881).
+
+### Fixed
+
+- El mapa salía en gris en el build de producción: la hoja de MapLibre pisaba
+  las utilidades de Tailwind; ahora va en su capa (#873).
+- El mapa dejaba de abrir con una línea que se podía mover: en MapLibre 6 `on`
+  devuelve una suscripción y no se puede encadenar (#882).
+- Marcar solo el green sobre una línea larga de OSM: se queda con los codos de
+  su par y se envía; sin puntos sueltos si algo falla; el doble toque en la
+  salida ya no corta el alejamiento (#883).
+
+## [2.42.0] - 2026-10-15
+
+**La clasificación de un Stableford o un Medal en su propia página, partida
+rápida sin «Pendientes» a medias y lo que salió de las pasadas de QA.** La
+general deja la ficha (con 200 jugadores no cabía) y tiene su página, que te
+lleva a tu fila; la partida rápida es un borrador local hasta «Confirmar e
+iniciar»; tarjetas compactas en el panel y en «Mis competiciones»; y arreglos
+del cierre de sesión entre pestañas. Va con el backend **2.28.0**.
+
+**Notas de despliegue.** Sin variables nuevas. **Necesita el backend 2.28.0, que
+trae un cambio incompatible** (`match_format` nulo en las franjas de stroke
+play): desplegar el backend, comprobar `/health` y este frontend justo después.
+El presupuesto del bundle sube a 2250 KB (#864). Probado en el Kind a 360 px con
+dos pasadas de QA (21 y 50 casos), en Chrome con dos pestañas y en un iPhone real.
+
+### Added
+
+- **La clasificación de un Stableford o un Medal tiene su propia página**
+  (`/competitions/:id/leaderboard`, General y Scratch) y el botón de la ficha
+  lleva a ella; si juegas, te lleva a tu fila, centrada y con el foco. En la
+  anotación, la pestaña de la franja también (#864).
+- **Partida rápida como borrador local** (#861, #848): nada llega al servidor
+  hasta «Confirmar e iniciar», que la crea e inicia en una sola petición con
+  reintentos seguros; el resumen enseña los hándicaps sin crear nada.
+- **Tarjetas compactas** de los próximos partidos (Ryder y partidas de stroke
+  play juntas) y de «Mis competiciones», con tipo, campos, jornadas y próxima
+  sesión; la búsqueda también encuentra por campo (#860, #845, #846).
+- **Acciones del organizador en las tarjetas**: retirar a quien ya jugó en vez
+  de darlo por no presentado y borrar lo anotado en un hoyo; mover jugadores y
+  reordenar las partidas que aún no han salido (#859).
+- «¿Juegas tú?» al crear un Stableford o un Medal, y los motivos de la
+  actualización de hándicaps traducidos (#860).
+
+### Changed
+
+- **La ficha de un stroke play en juego o acabado** pliega «Configuración» y
+  «Jugadores aprobados»; la clasificación ya no está dentro (#864).
+- **Tabla de clasificación más fina**: sin marco propio, con más aire, la
+  cabecera más ligera, tu fila marcada con una barra verde y esquinas
+  redondeadas; en su página usa todo el ancho, y a 360 px ningún nombre ocupa
+  más de dos líneas (#864, #867).
+- El contador del panel suma las partidas de stroke play, y una partida con tu
+  tarjeta entregada deja de ser «próxima»; un compañero retirado se nombra
+  («Con Bea (retirada)») (#862).
+- Textos neutros y en femenino según la barra de salida (NP, Retirada) (#860, #856).
+
+### Fixed
+
+- **Cerrar sesión con dos pestañas abiertas** mandaba miles de
+  `POST /auth/logout` (un eco entre pestañas): ahora uno solo, y la otra pestaña
+  sale sola a `/login` (#866).
+- Al salir recargando ya no se vuelve a preguntar por la sesión (una petición
+  cortada por pestaña), y una página que vuelve desde la caché del historial se
+  recarga en vez de quedarse en «Cargando…» (#868).
+- Un enlace a `/competitions/:id/leaderboard` de un stroke play mostraba el
+  error del servidor (#863, #864).
+- La tarjeta de hándicaps ya no programa en la hora del dispositivo si no puede
+  leer la zona del campo: lo dice y ofrece reintentar (#863).
+- «Marcas a …» desaparece al entregar la tarjeta o con la partida cerrada (#863).
+- Tarjeta de no presentado, «Tu partida» de un retirado, la hoja «Otro…» a
+  360 px y los hoyos sin anotar en gris (#859, #847, #853, #854, #855).
+- Un invitado de partida rápida con nombre en blanco ya no se ignora en
+  silencio (#862).
+
 ## [2.41.0] - 2026-10-12
 
 **Torneos Stableford y Medal** (FE #791, #824): crear y editar, franjas de

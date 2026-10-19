@@ -10,6 +10,7 @@ import RoleGuard from './components/auth/RoleGuard';
 import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
+import { useEnvioDeMuestras } from './hooks/useEnvioDeMuestras';
 import { setUserContext } from './utils/sentryHelpers';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
@@ -21,6 +22,7 @@ import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
 import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
+import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
@@ -120,6 +122,10 @@ function AppContent() {
   // de una pantalla concreta, eran las 24
   useVolverArriba();
 
+  // Una página que vuelve desde la caché del historial del navegador se recarga:
+  // volvía congelada, en «Loading...» tras salir o con la cuenta de antes (FE #865)
+  useRecargaAlVolverDeLaCache();
+
   // La cortina del arranque: se queda puesta hasta que la pantalla de destino
   // avisa de que no le queda nada cargando (FE #485)
   useCortinaDeArranque(location.pathname);
@@ -134,6 +140,8 @@ function AppContent() {
   // pantalla dependería de que el usuario volviera a ella, que es justo lo que
   // no pasa
   useVaciadoDeLaCola({ activo: isAuthenticated, userId: usuarioActualId });
+  // Las muestras de hoyo que se quedaron en la cola (BE #532, marcado por par)
+  useEnvioDeMuestras({ activo: isAuthenticated, userId: usuarioActualId });
 
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
   const showBottomNav = isAuthenticated && !isPublicRoute && !isScoringRoute;
@@ -173,7 +181,8 @@ function AppContent() {
    */
   const handleLogoutFromOtherTab = useCallback(async () => {
     setIsAuthenticated(false);
-    await logout();
+    // Sin eco: ni se vuelve a avisar ni se llama al backend (FE #865)
+    await logout({ desdeOtraPestana: true });
   }, [logout]);
 
   /**
@@ -297,8 +306,8 @@ function AppContent() {
         <Route path="/competitions/:id/rounds/:roundId/envelope" element={<ProtectedRoute><EnvelopePage /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 
-        {/* Admin routes (v2.4.0) - Protected by ADMIN role */}
-        <Route path="/admin" element={
+        {/* Admin (v2.4.0), protegido por el rol ADMIN; cada sección del panel en su ruta (17 oct): resumen, usuarios, competiciones, campos y hoyos */}
+        <Route path="/admin/:seccion?" element={
           <ProtectedRoute>
             <RoleGuard allowedRoles="ADMIN">
               <AdminPanel />

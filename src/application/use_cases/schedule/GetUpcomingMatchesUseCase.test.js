@@ -75,6 +75,23 @@ describe('GetUpcomingMatchesUseCase', () => {
     expect(result.map((m) => m.id)).toEqual(['mine']);
   });
 
+  it('carries the competition\'s tournament type, for the card badge (FE #845)', async () => {
+    const { useCase } = buildUseCase({
+      competitions: [{ id: 'c1', name: 'Cup', status: 'CLOSED', tournamentType: 'RYDER_CUP' }],
+      schedules: {
+        c1: {
+          rounds: [
+            round([{ id: 'mine', status: 'SCHEDULED', teamAPlayers: [{ userId: USER }], teamBPlayers: [{ userId: RIVAL }] }]),
+          ],
+        },
+      },
+    });
+
+    const [partido] = await useCase.execute(USER);
+
+    expect(partido.tournamentType).toBe('RYDER_CUP');
+  });
+
   it('carries the round\'s opening hour onto each match', async () => {
     // El servidor la manda en la RONDA (BE #305) y quien decide si se ofrece
     // anotar mira el PARTIDO, así que tiene que viajar con él

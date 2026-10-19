@@ -39,6 +39,14 @@ class ITeeGroupScoringRepository {
     throw new Error('ITeeGroupScoringRepository.markNoShow must be implemented');
   }
 
+  async retirePlayer(groupId, userId) {
+    throw new Error('ITeeGroupScoringRepository.retirePlayer must be implemented');
+  }
+
+  async deleteHole(groupId, userId, holeNumber, side) {
+    throw new Error('ITeeGroupScoringRepository.deleteHole must be implemented');
+  }
+
   async validateScored(groupId, userId) {
     throw new Error('ITeeGroupScoringRepository.validateScored must be implemented');
   }

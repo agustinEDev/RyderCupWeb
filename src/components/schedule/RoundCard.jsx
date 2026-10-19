@@ -78,8 +78,13 @@ const RoundCard = ({
             <span className="truncate max-w-[200px] sm:max-w-none">{golfCourseName}</span>
             <span className="text-gray-300 hidden sm:inline">|</span>
             <span>{t(`sessions.${round.sessionType}`)}</span>
-            <span className="text-gray-300 hidden sm:inline">|</span>
-            <span>{t(`formats.${round.matchFormat}`)}</span>
+            {/* Sin formato no se pinta «formats.null» (RyderCupAm#541) */}
+            {round.matchFormat && (
+              <>
+                <span className="text-gray-300 hidden sm:inline">|</span>
+                <span>{t(`formats.${round.matchFormat}`)}</span>
+              </>
+            )}
             {matches.length > 0 && (
               <>
                 <span className="text-gray-300 hidden sm:inline">|</span>

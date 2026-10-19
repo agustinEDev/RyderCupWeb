@@ -33,6 +33,27 @@ import GetAdjacentCountriesUseCase from '../application/use_cases/country/GetAdj
 import ApiGolfCourseRepository from '../infrastructure/repositories/ApiGolfCourseRepository';
 import ListGolfCoursesUseCase from '../application/use_cases/golf_course/ListGolfCoursesUseCase';
 import GetGolfCourseUseCase from '../application/use_cases/golf_course/GetGolfCourseUseCase';
+import GetHoleMapUseCase from '../application/use_cases/golf_course/GetHoleMapUseCase';
+import {
+  DeleteHoleSampleUseCase,
+  DiscardHoleReportUseCase,
+  GetHoleReviewUseCase,
+  ListHoleReviewsUseCase,
+  ReopenHoleUseCase,
+  SaveHoleLineUseCase,
+} from '../application/use_cases/golf_course/HoleReviewUseCases';
+import LocalStorageHoleMapCache from '../infrastructure/repositories/LocalStorageHoleMapCache';
+import LocalStorageHoleSampleStore from '../infrastructure/repositories/LocalStorageHoleSampleStore';
+import LocalStorageCourseLocationCache from '../infrastructure/repositories/LocalStorageCourseLocationCache';
+import GetCourseLocationUseCase from '../application/use_cases/golf_course/GetCourseLocationUseCase';
+import SendHoleSampleUseCase from '../application/use_cases/golf_course/SendHoleSampleUseCase';
+import SendPendingHoleSamplesUseCase from '../application/use_cases/golf_course/SendPendingHoleSamplesUseCase';
+import SendHoleReportUseCase from '../application/use_cases/golf_course/SendHoleReportUseCase';
+import SendPendingHoleReportsUseCase from '../application/use_cases/golf_course/SendPendingHoleReportsUseCase';
+import LocalStorageHoleReportStore from '../infrastructure/repositories/LocalStorageHoleReportStore';
+import GetHoleSamplesUseCase from '../application/use_cases/golf_course/GetHoleSamplesUseCase';
+import { crearRecienEnviadas } from '../application/use_cases/golf_course/recienEnviadas';
+import { captureError } from '../utils/sentryHelpers';
 import CreateGolfCourseAdminUseCase from '../application/use_cases/golf_course/CreateGolfCourseAdminUseCase';
 import CreateGolfCourseRequestUseCase from '../application/use_cases/golf_course/CreateGolfCourseRequestUseCase';
 import UpdateGolfCourseUseCase from '../application/use_cases/golf_course/UpdateGolfCourseUseCase';
@@ -184,6 +205,8 @@ import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFr
 import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
 import ReopenTeeGroupCardUseCase from '../application/use_cases/scoring/ReopenTeeGroupCardUseCase';
 import MarkTeeGroupNoShowUseCase from '../application/use_cases/scoring/MarkTeeGroupNoShowUseCase';
+import RetireTeeGroupPlayerUseCase from '../application/use_cases/scoring/RetireTeeGroupPlayerUseCase';
+import DeleteTeeGroupHoleUseCase from '../application/use_cases/scoring/DeleteTeeGroupHoleUseCase';
 import ValidateTeeGroupScoredHolesUseCase from '../application/use_cases/scoring/ValidateTeeGroupScoredHolesUseCase';
 import CloseTeeWindowUseCase from '../application/use_cases/scoring/CloseTeeWindowUseCase';
 import GetTeeWindowStandingsUseCase from '../application/use_cases/scoring/GetTeeWindowStandingsUseCase';
@@ -204,12 +227,7 @@ import DirectEnrollUseCase from '../application/use_cases/enrollment/DirectEnrol
 
 // Quick Match Use Cases (FE #236)
 import ApiQuickMatchRepository from '../infrastructure/repositories/ApiQuickMatchRepository';
-import CreateQuickMatchUseCase from '../application/use_cases/quick_match/CreateQuickMatchUseCase';
-import AddFriendParticipantUseCase from '../application/use_cases/quick_match/AddFriendParticipantUseCase';
-import AddGuestParticipantUseCase from '../application/use_cases/quick_match/AddGuestParticipantUseCase';
-import RemoveQuickMatchParticipantUseCase from '../application/use_cases/quick_match/RemoveQuickMatchParticipantUseCase';
-import SetQuickMatchParticipantHandicapUseCase from '../application/use_cases/quick_match/SetQuickMatchParticipantHandicapUseCase';
-import StartQuickMatchUseCase from '../application/use_cases/quick_match/StartQuickMatchUseCase';
+import CreateAndStartQuickMatchUseCase from '../application/use_cases/quick_match/CreateAndStartQuickMatchUseCase';
 import CompleteQuickMatchUseCase from '../application/use_cases/quick_match/CompleteQuickMatchUseCase';
 import CancelQuickMatchUseCase from '../application/use_cases/quick_match/CancelQuickMatchUseCase';
 import HideQuickMatchUseCase from '../application/use_cases/quick_match/HideQuickMatchUseCase';
@@ -390,6 +408,8 @@ const retireFromTeeGroupUseCase = new RetireFromTeeGroupUseCase({ teeGroupScorin
 const correctTeeGroupHoleUseCase = new CorrectTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const reopenTeeGroupCardUseCase = new ReopenTeeGroupCardUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const markTeeGroupNoShowUseCase = new MarkTeeGroupNoShowUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const retireTeeGroupPlayerUseCase = new RetireTeeGroupPlayerUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
+const deleteTeeGroupHoleUseCase = new DeleteTeeGroupHoleUseCase({ teeGroupScoringRepository: apiTeeGroupScoringRepository });
 const validateTeeGroupScoredHolesUseCase = new ValidateTeeGroupScoredHolesUseCase({
   teeGroupScoringRepository: apiTeeGroupScoringRepository,
 });
@@ -421,12 +441,7 @@ const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepos
 const directEnrollUseCase = new DirectEnrollUseCase(apiEnrollmentRepository);
 
 // Quick Match Use Cases (FE #236)
-const createQuickMatchUseCase = new CreateQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const addFriendParticipantUseCase = new AddFriendParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const addGuestParticipantUseCase = new AddGuestParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const removeQuickMatchParticipantUseCase = new RemoveQuickMatchParticipantUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const setQuickMatchParticipantHandicapUseCase = new SetQuickMatchParticipantHandicapUseCase({ quickMatchRepository: apiQuickMatchRepository });
-const startQuickMatchUseCase = new StartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const createAndStartQuickMatchUseCase = new CreateAndStartQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const completeQuickMatchUseCase = new CompleteQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const cancelQuickMatchUseCase = new CancelQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -444,6 +459,69 @@ const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDevic
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
 const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const getGolfCourseUseCase = new GetGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
+// Dónde está cada campo, con su copia en el móvil para el mapa sin cobertura (BE #532)
+const getCourseLocationUseCase = new GetCourseLocationUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  courseLocationCache: new LocalStorageCourseLocationCache(),
+});
+// El mapa de hoyos para la anotación, con su copia para jugar sin cobertura (BE #532)
+// Revisar los hoyos (admin, BE #575)
+const listHoleReviewsUseCase = new ListHoleReviewsUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const getHoleReviewUseCase = new GetHoleReviewUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const saveHoleLineUseCase = new SaveHoleLineUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const reopenHoleUseCase = new ReopenHoleUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const deleteHoleSampleUseCase = new DeleteHoleSampleUseCase({ golfCourseRepository: apiGolfCourseRepository });
+const discardHoleReportUseCase = new DiscardHoleReportUseCase({ golfCourseRepository: apiGolfCourseRepository });
+
+const getHoleMapUseCase = new GetHoleMapUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeMapCache: new LocalStorageHoleMapCache(),
+  reportarFallo: (error, contexto) => captureError(error, { tags: { modulo: 'mapa-de-hoyos' }, extra: contexto }),
+});
+// Las muestras de hoyo, anónimas (BE #532, marcado por par): a la cola del
+// móvil antes de nada y se envían cuando haya cobertura, sin decir nada al
+// jugador. Lo que el servidor no quiere es un fallo nuestro: a Sentry
+const holeSampleStore = new LocalStorageHoleSampleStore();
+const reportarFalloDeMuestra = (error, contexto) => captureError(error, { tags: { modulo: 'muestras-de-hoyos' }, extra: contexto });
+// Las que van de camino, compartidas: la cola de fondo no manda otra vez la que está saliendo
+const muestrasEnVuelo = new Set();
+// Las que llegaron y el resumen aún no trae: se siguen viendo en el mapa
+const muestrasRecienEnviadas = crearRecienEnviadas();
+const sendHoleSampleUseCase = new SendHoleSampleUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  reportarFallo: reportarFalloDeMuestra,
+  enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
+});
+const sendPendingHoleSamplesUseCase = new SendPendingHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  reportarFallo: reportarFalloDeMuestra,
+  enVuelo: muestrasEnVuelo,
+  recienEnviadas: muestrasRecienEnviadas,
+});
+// Los reportes de hoyo (entrega 7): la misma cola en el móvil, aparte de las muestras
+const holeReportStore = new LocalStorageHoleReportStore();
+const reportarFalloDeReporte = (error, contexto) => captureError(error, { tags: { modulo: 'reportes-de-hoyos' }, extra: contexto });
+const reportesEnVuelo = new Set();
+const sendHoleReportUseCase = new SendHoleReportUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeReportStore,
+  reportarFallo: reportarFalloDeReporte,
+  enVuelo: reportesEnVuelo,
+});
+const sendPendingHoleReportsUseCase = new SendPendingHoleReportsUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeReportStore,
+  reportarFallo: reportarFalloDeReporte,
+  enVuelo: reportesEnVuelo,
+});
+const getHoleSamplesUseCase = new GetHoleSamplesUseCase({
+  golfCourseRepository: apiGolfCourseRepository,
+  holeSampleStore,
+  recienEnviadas: muestrasRecienEnviadas,
+});
 const createGolfCourseAdminUseCase = new CreateGolfCourseAdminUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const createGolfCourseRequestUseCase = new CreateGolfCourseRequestUseCase({ golfCourseRepository: apiGolfCourseRepository });
 const updateGolfCourseUseCase = new UpdateGolfCourseUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -525,6 +603,19 @@ export {
   // Golf Course Use Cases (v2.1.0 - Sprint 1)
   listGolfCoursesUseCase,
   getGolfCourseUseCase,
+  getHoleMapUseCase,
+  listHoleReviewsUseCase,
+  getHoleReviewUseCase,
+  saveHoleLineUseCase,
+  reopenHoleUseCase,
+  deleteHoleSampleUseCase,
+  discardHoleReportUseCase,
+  getCourseLocationUseCase,
+  sendHoleSampleUseCase,
+  sendPendingHoleSamplesUseCase,
+  sendHoleReportUseCase,
+  sendPendingHoleReportsUseCase,
+  getHoleSamplesUseCase,
   createGolfCourseAdminUseCase,
   createGolfCourseRequestUseCase,
   updateGolfCourseUseCase,
@@ -617,18 +708,15 @@ export {
   correctTeeGroupHoleUseCase,
   reopenTeeGroupCardUseCase,
   markTeeGroupNoShowUseCase,
+  retireTeeGroupPlayerUseCase,
+  deleteTeeGroupHoleUseCase,
   validateTeeGroupScoredHolesUseCase,
   closeTeeWindowUseCase,
   getTeeWindowStandingsUseCase,
   getCompetitionStandingsUseCase,
   getScratchStandingsUseCase,
   // Quick Match Use Cases (FE #236)
-  createQuickMatchUseCase,
-  addFriendParticipantUseCase,
-  addGuestParticipantUseCase,
-  removeQuickMatchParticipantUseCase,
-  setQuickMatchParticipantHandicapUseCase,
-  startQuickMatchUseCase,
+  createAndStartQuickMatchUseCase,
   completeQuickMatchUseCase,
   cancelQuickMatchUseCase,
   hideQuickMatchUseCase,

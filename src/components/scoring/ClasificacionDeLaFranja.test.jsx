@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 
 /**
@@ -143,3 +143,32 @@ describe('ClasificacionDeLaFranja (FE #824, PR 7)', () => {
     expect(await screen.findByTestId('fila-ana')).toBeInTheDocument();
   });
 });
+
+describe('ClasificacionDeLaFranja · me lleva a mi fila (14 oct 2026)', () => {
+  let centra;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    centra = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = centra;
+    mockLeer.mockResolvedValue(clasificacion([fila('ana'), fila('yo', { position: 2 })]));
+  });
+  afterEach(() => delete globalThis.Element.prototype.scrollIntoView);
+
+  it('A2: cada vez que se abre la pestaña, si juego, me lleva a mi fila', async () => {
+    const { rerender } = render(<ClasificacionDeLaFranja roundId="r1" userId="yo" activa />);
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+
+    rerender(<ClasificacionDeLaFranja roundId="r1" userId="yo" activa={false} />);
+    rerender(<ClasificacionDeLaFranja roundId="r1" userId="yo" activa />);
+
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(2));
+  });
+
+  it('A3: quien mira sin jugar no se mueve', async () => {
+    render(<ClasificacionDeLaFranja roundId="r1" userId="organizador" activa />);
+    await screen.findByTestId('fila-yo');
+
+    expect(centra).not.toHaveBeenCalled();
+  });
+});
+

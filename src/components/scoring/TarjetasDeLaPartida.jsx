@@ -5,6 +5,8 @@ import {
   correctTeeGroupHoleUseCase,
   reopenTeeGroupCardUseCase,
   markTeeGroupNoShowUseCase,
+  retireTeeGroupPlayerUseCase,
+  deleteTeeGroupHoleUseCase,
   validateTeeGroupScoredHolesUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
@@ -22,6 +24,10 @@ const TRAMOS_DE_NUEVE = { desde: [0, 9], largo: 9, columnas: 'grid-cols-9' };
 const TRAMOS_DE_SEIS = { desde: [0, 6, 12], largo: 6, columnas: 'grid-cols-6' };
 // Las tarjetas cerradas se reabren; la que se juega, no
 const CERRADAS = ['ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'];
+// Fallos que dicen que lo que se ve está viejo: se relee (RyderCupAm#553).
+// La tarjeta que ya estaba abierta no es un error: alguien se adelantó
+const RELEER_TRAS_FALLO = ['SCORECARD_ALREADY_OPEN', 'PLAYER_HAS_STROKES'];
+const SOLO_AVISO = ['SCORECARD_ALREADY_OPEN'];
 
 /**
  * Las tarjetas de una partida de stroke play, hoyo a hoyo (FE #824, PR 7;
@@ -29,8 +35,9 @@ const CERRADAS = ['ENTREGADA', 'RETIRADO', 'NO_PRESENTADO'];
  * para que quepan a 360 px.
  *
  * El organizador, además: corregir un hoyo de una tarjeta que se juega (el lado
- * del jugador, el del marcador o los dos), reabrir una cerrada y marcar como no
- * presentado a quien no salió; las dos últimas, con confirmación. Lo que el
+ * del jugador, el del marcador o los dos) o borrar lo anotado en él, reabrir una
+ * cerrada, y marcar como no presentado a quien no salió o retirar a quien ya
+ * jugó (RyderCupAm#553); todo menos corregir, con confirmación. Lo que el
  * servidor contesta lo pide el padre de nuevo (`onCambio`).
  *
  * @param {Object} props
@@ -43,9 +50,11 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const { t } = useTranslation('scoring');
   const [corrigiendo, setCorrigiendo] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
-  // Adónde vuelve el foco tras un fallo: cuando el botón deja de estar
-  // desactivado, que es al acabar la acción (CodeRabbit en la #844)
-  const focoTrasFallo = useRef(null);
+  // Adónde va el foco al acabar una acción: cuando el botón deja de estar
+  // desactivado (CodeRabbit en la #844)
+  const focoPendiente = useRef(null);
+  // Cada tarjeta, para llevarle el foco si el botón que lo tenía desaparece
+  const secciones = useRef(new Map());
   const [ocupado, setOcupado] = useState(false);
 
   const { strokePlay } = scoringView;
@@ -66,9 +75,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   };
 
   useEffect(() => {
-    if (ocupado || !focoTrasFallo.current) return;
-    focoTrasFallo.current.focus();
-    focoTrasFallo.current = null;
+    if (ocupado || !focoPendiente.current) return;
+    focoPendiente.current.focus();
+    focoPendiente.current = null;
   }, [ocupado]);
 
   const hacer = async (accion, aviso, alAcabar, despues, alFallar) => {
@@ -77,9 +86,12 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     try {
       respuesta = await accion();
     } catch (error) {
-      customToast.error(mensajeDeErrorDePartida(t, error));
+      const codigo = error?.errorCode;
+      if (SOLO_AVISO.includes(codigo)) customToast.info(mensajeDeErrorDePartida(t, error));
+      else customToast.error(mensajeDeErrorDePartida(t, error));
       // Una confirmación no se queda abierta tras el error (QA 3)
-      alFallar?.();
+      alFallar?.(codigo);
+      if (RELEER_TRAS_FALLO.includes(codigo)) onCambio?.();
       return;
     } finally {
       setOcupado(false);
@@ -101,7 +113,32 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
     const propio = aValor(golpe?.ownScore, golpe?.ownSubmitted);
     const marcador = aValor(golpe?.markerScore, golpe?.markerSubmitted);
     setConfirmando(null);
-    setCorrigiendo({ jugador, hoyo, propio, marcador, propioAntes: propio, marcadorAntes: marcador });
+    setCorrigiendo({ jugador, hoyo, propio, marcador, propioAntes: propio, marcadorAntes: marcador, borrar: null });
+  };
+  // Qué lados se pueden borrar: los que tienen algo anotado ahora, aunque haya
+  // llegado con la hoja abierta (RyderCupAm#553; revisor)
+  const ladosParaBorrar = ({ jugador, hoyo }) => {
+    const golpe = golpeDe(jugador, hoyo);
+    const lados = [];
+    if (golpe?.ownSubmitted) lados.push('own');
+    if (golpe?.markerSubmitted) lados.push('marker');
+    if (lados.length === 2) lados.push('both');
+    return lados;
+  };
+  const borrarHoyo = () => {
+    const { jugador, hoyo, borrar } = corrigiendo;
+    hacer(
+      () => deleteTeeGroupHoleUseCase.execute(scoringView.matchId, jugador, hoyo, borrar),
+      'partida.deleted',
+      () => {
+        setCorrigiendo(null);
+        // La hoja se cierra: el foco, a la celda del hoyo (revisor)
+        focoPendiente.current = document.querySelector(`[data-testid="hoyo-${jugador}-${hoyo}"]`);
+      },
+      undefined,
+      // Si falla, la hoja sigue con lo que había
+      () => setCorrigiendo((c) => (c ? { ...c, borrar: null } : c))
+    );
   };
   const golpeAEnviar = (valor) => (valor === RECOGIDA ? null : Number(valor));
   // Lo que se manda: los lados que cambian y tienen golpe. Una sola regla para
@@ -179,10 +216,21 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
         const sinMarcador = organiza && sinMarcadorEnJuego(strokePlay.cards, jugador);
         // Sin ningún hoyo solo suyo no hay nada que validar de una vez (revisor)
         const cuantosPorValidar = sinMarcador ? porValidar(jugador) : 0;
+        // Si el lado elegido para borrar ya no está (llegó un cambio), se vuelve a elegir (/code-review)
+        const enEsta = corrigiendo?.jugador === jugador ? corrigiendo : null;
+        const pasoDeBorrar =
+          enEsta && ['own', 'marker', 'both'].includes(enEsta.borrar) && !ladosParaBorrar(enEsta).includes(enEsta.borrar)
+            ? 'eligiendo'
+            : enEsta?.borrar ?? null;
         return (
           <section
             key={jugador}
             data-testid={`tarjeta-${jugador}`}
+            tabIndex={-1}
+            ref={(el) => {
+              if (el) secciones.current.set(jugador, el);
+              else secciones.current.delete(jugador);
+            }}
             className={`rounded-lg border bg-white p-3 ${jugador === userId ? 'border-green-300' : 'border-gray-200'}`}
           >
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -190,8 +238,15 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                 {t(`partida.cardStatus.${cardStatus}`, conGenero(teeGender))}
               </span>
-              <span className="ml-auto text-sm font-bold text-gray-900">{total(tarjeta)}</span>
-              <span className="text-xs text-gray-500">{t('partida.thru', { count: tarjeta.totals.thru })}</span>
+              {cardStatus === 'NO_PRESENTADO' ? (
+                // Sin «PAR · tras 0 hoyos»: no jugó (#854)
+                <span className="ml-auto text-sm font-bold text-gray-500">{t('partida.noShowTotal')}</span>
+              ) : (
+                <>
+                  <span className="ml-auto text-sm font-bold text-gray-900">{total(tarjeta)}</span>
+                  <span className="text-xs text-gray-500">{t('partida.thru', { count: tarjeta.totals.thru })}</span>
+                </>
+              )}
             </div>
 
             {/* La de un no presentado no enseña golpes: los que metiera su
@@ -242,11 +297,77 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                   <Pencil className="h-3 w-3" />
                   {t('partida.correctingHole', { hoyo: corrigiendo.hoyo })}
                 </p>
+                {/* Mientras se elige qué borrar, no se corrige a la vez (revisor) */}
+                {pasoDeBorrar == null && (
                 <div className="flex flex-wrap gap-2">
                   {selectorDeGolpe('partida.ownSide', corrigiendo.propio, (v) => setCorrigiendo((c) => ({ ...c, propio: v })))}
                   {selectorDeGolpe('partida.markerSide', corrigiendo.marcador, (v) => setCorrigiendo((c) => ({ ...c, marcador: v })))}
                 </div>
-                {quiereBorrar && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
+                )}
+                {quiereBorrar && pasoDeBorrar == null && <p className="text-xs text-amber-800">{t('partida.cannotClear')}</p>}
+                {/* Borrar lo anotado, por lados y con confirmación (RyderCupAm#553) */}
+                {ladosParaBorrar(corrigiendo).length > 0 && pasoDeBorrar == null && (
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    // Al volver de «Cancelar», el foco aquí (/code-review)
+                    autoFocus={corrigiendo.focoEnBorrar}
+                    onClick={() => setCorrigiendo((c) => ({ ...c, borrar: 'eligiendo' }))}
+                    className="min-h-11 rounded-lg border border-red-200 px-3 text-sm text-red-600"
+                  >
+                    {t('partida.deleteScored')}
+                  </button>
+                )}
+                {pasoDeBorrar === 'eligiendo' && (
+                  <div className="flex flex-wrap gap-2">
+                    {ladosParaBorrar(corrigiendo).map((lado, i) => (
+                      <button
+                        key={lado}
+                        type="button"
+                        disabled={ocupado}
+                        // Cada paso deja el foco en el siguiente (/code-review)
+                        autoFocus={i === 0}
+                        onClick={() => setCorrigiendo((c) => ({ ...c, borrar: lado }))}
+                        className="min-h-11 rounded-lg border border-red-200 px-3 text-sm text-red-600"
+                      >
+                        {t(`partida.deleteSide.${lado}`)}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      onClick={() => setCorrigiendo((c) => ({ ...c, borrar: null, focoEnBorrar: true }))}
+                      className="min-h-11 rounded-lg px-3 text-sm text-gray-600"
+                    >
+                      {t('partida.cancel')}
+                    </button>
+                  </div>
+                )}
+                {['own', 'marker', 'both'].includes(pasoDeBorrar) && (
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+                    <span className="w-full">
+                      {t(`partida.deleteConfirm.${corrigiendo.borrar}`, { hoyo: corrigiendo.hoyo, jugador: name })}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      onClick={borrarHoyo}
+                      className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white"
+                    >
+                      {t('partida.yes')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      autoFocus
+                      onClick={() => setCorrigiendo((c) => ({ ...c, borrar: 'eligiendo' }))}
+                      className="min-h-11 rounded-md px-3"
+                    >
+                      {t('partida.no')}
+                    </button>
+                  </div>
+                )}
+                {pasoDeBorrar == null && (
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -260,6 +381,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     {t('partida.cancel')}
                   </button>
                 </div>
+                )}
               </div>
             )}
 
@@ -288,7 +410,19 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     {t('partida.reopenShort')}
                   </button>
                 )}
-                {seJuega && (
+                {/* Si ya jugó, no es un no presentado: se le retira (RyderCupAm#553) */}
+                {seJuega && tarjeta.played && (
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    aria-label={t('partida.retirePlayer', conGenero(teeGender, { jugador: name }))}
+                    onClick={(e) => setConfirmando({ jugador, accion: 'retirar', origen: e.currentTarget })}
+                    className="min-h-11 rounded-lg border border-gray-300 px-3 text-sm text-gray-700"
+                  >
+                    {t('partida.retirePlayerShort')}
+                  </button>
+                )}
+                {seJuega && !tarjeta.played && (
                   <button
                     type="button"
                     disabled={ocupado}
@@ -310,17 +444,24 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                     ? t('partida.validateScoredConfirm', { jugador: name, count: confirmaEsta.cuantos })
                     : confirmaEsta.accion === 'reabrir'
                       ? t('partida.reopenConfirm', { jugador: name })
-                      : t('partida.noShowConfirm', conGenero(teeGender, { jugador: name }))}
+                      : confirmaEsta.accion === 'retirar'
+                        ? t('partida.retirePlayerConfirm', conGenero(teeGender, { jugador: name }))
+                        : t('partida.noShowConfirm', conGenero(teeGender, { jugador: name }))}
                 </span>
                 <button
                   type="button"
                   disabled={ocupado}
                   onClick={() => {
-                    const cerrar = () => setConfirmando(null);
-                    // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
-                    const alFallar = () => {
+                    // Con éxito, el botón que la abrió suele desaparecer: a la tarjeta (/code-review)
+                    const cerrar = () => {
                       setConfirmando(null);
-                      focoTrasFallo.current = confirmaEsta.origen;
+                      focoPendiente.current = secciones.current.get(jugador);
+                    };
+                    // Tras un fallo, el foco vuelve al botón que la abrió (revisor)
+                    // Si se relee, su botón puede desaparecer: a la tarjeta (revisor)
+                    const alFallar = (codigo) => {
+                      setConfirmando(null);
+                      focoPendiente.current = RELEER_TRAS_FALLO.includes(codigo) ? secciones.current.get(jugador) : confirmaEsta.origen;
                     };
                     if (confirmaEsta.accion === 'reabrir') {
                       hacer(() => reopenTeeGroupCardUseCase.execute(scoringView.matchId, jugador), 'partida.reopened', cerrar, undefined, alFallar);
@@ -328,6 +469,14 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
                       hacer(
                         () => validateTeeGroupScoredHolesUseCase.execute(scoringView.matchId, jugador),
                         { clave: 'partida.scoredValidated', params: { count: confirmaEsta.cuantos } },
+                        cerrar,
+                        undefined,
+                        alFallar
+                      );
+                    } else if (confirmaEsta.accion === 'retirar') {
+                      hacer(
+                        () => retireTeeGroupPlayerUseCase.execute(scoringView.matchId, jugador),
+                        { clave: 'partida.retiredByOrganiser', params: conGenero(teeGender) },
                         cerrar,
                         undefined,
                         alFallar

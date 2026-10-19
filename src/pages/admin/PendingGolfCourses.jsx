@@ -28,8 +28,10 @@ import BlockLoader from '../../components/ui/BlockLoader';
  *
  * @param {boolean} [embedded=false] - When true, renders just the content
  *   (no HeaderAuth/page shell) so it can be used as a tab inside AdminPanel.
+ * @param {Function} [onCambio] - Tras aprobar o rechazar: el panel vuelve a
+ *   pedir el número de solicitudes de su menú.
  */
-const PendingGolfCourses = ({ embedded = false }) => {
+const PendingGolfCourses = ({ embedded = false, onCambio }) => {
   const { t, i18n } = useTranslation('golfCourses');
   const { user, loading: isLoadingUser } = useAuth();
 
@@ -97,6 +99,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await approveGolfCourseUseCase.execute(course.id);
       customToast.success(t('pages.pending.approveSuccess'));
+      onCambio?.();
       await loadPendingCourses();
     } catch (error) {
       console.error('Error approving golf course:', error);
@@ -129,6 +132,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await rejectGolfCourseUseCase.execute(courseToReject.id, rejectReason.trim());
       customToast.success(t('pages.pending.rejectSuccess'));
+      onCambio?.();
       setShowRejectModal(false);
       setCourseToReject(null);
       setRejectReason('');
@@ -148,6 +152,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await approveGolfCourseUpdateUseCase.execute(clone.id);
       customToast.success(t('pages.pending.approveUpdateSuccess'));
+      onCambio?.();
       await loadPendingCourses();
     } catch (error) {
       console.error('Error approving update:', error);
@@ -164,6 +169,7 @@ const PendingGolfCourses = ({ embedded = false }) => {
     try {
       await rejectGolfCourseUpdateUseCase.execute(clone.id);
       customToast.success(t('pages.pending.rejectUpdateSuccess'));
+      onCambio?.();
       await loadPendingCourses();
     } catch (error) {
       console.error('Error rejecting update:', error);
@@ -388,7 +394,16 @@ const PendingGolfCourses = ({ embedded = false }) => {
               {/* Holes */}
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-3">{t('form.holes')}</h3>
-                <div className="overflow-x-auto">
+                {/* En el móvil, una fila por hoyo (17 oct 2026, entrega 5) */}
+                <ul aria-label={t('form.holes')} className="md:hidden divide-y divide-gray-100 text-sm">
+                  {(courseToView?.holes || []).map((hole, index) => (
+                    <li key={index} className="py-2 text-gray-900">
+                      {t('form.holeRow', { hole: hole.holeNumber, par: hole.par, strokeIndex: hole.strokeIndex })}
+                    </li>
+                  ))}
+                </ul>
+                <p className="md:hidden border-t border-gray-200 py-2 text-sm font-bold text-gray-900">{t('form.totalPar')} {courseToView?.totalPar}</p>
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-100 border-b border-gray-200">
                       <tr>

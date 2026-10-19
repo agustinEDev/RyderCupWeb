@@ -1,4 +1,8 @@
 import GolfCourse from '../../domain/entities/GolfCourse.js';
+import HoleMapMapper from '../mappers/HoleMapMapper';
+import HoleReviewMapper from '../mappers/HoleReviewMapper';
+import HoleSampleMapper from '../mappers/HoleSampleMapper';
+import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../../services/api.js';
 
@@ -73,6 +77,101 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
   async getById(id) {
     const data = await apiRequest(`/api/v1/golf-courses/${id}`);
     return new GolfCourse(data);
+  }
+
+  /**
+   * @override
+   * El mapa de hoyos APROBADO del campo, o `null` si no tiene (404
+   * HOLE_MAP_NOT_FOUND): sin mapa no es un error, es un campo sin mapear.
+   */
+  async getHoleMap(id) {
+    try {
+      return HoleMapMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map`));
+    } catch (error) {
+      if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND') return null;
+      throw error;
+    }
+  }
+
+  /**
+   * @override
+   * El resumen de las muestras del campo, por hoyo. Con el tope de anotar: con
+   * mala cobertura la petición no falla, se queda colgada
+   */
+  async getHoleSamples(id) {
+    return HoleSampleMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples`, { topeMs: TOPE_DE_ANOTAR_MS }));
+  }
+
+  /** @override */
+  async listHoleReviews() {
+    return HoleReviewMapper.listToDomain(await apiRequest('/api/v1/golf-courses/admin/hole-reviews'));
+  }
+
+  /** @override */
+  async getHoleReview(id) {
+    return HoleReviewMapper.reviewToDomain(await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reviews`));
+  }
+
+  /** @override */
+  async saveHoleLine(id, holeNumber, linea) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-lines/${holeNumber}`, {
+      method: 'PUT',
+      body: JSON.stringify(HoleReviewMapper.lineToApi(linea)),
+    });
+  }
+
+  /** @override */
+  async reopenHole(id, holeNumber) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-lines/${holeNumber}`, { method: 'DELETE' });
+  }
+
+  /** @override */
+  async deleteHoleSample(id, sampleId) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-samples/${sampleId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * @override
+   */
+  async discardHoleReport(id, reportId) {
+    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reports/${reportId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * @override
+   * El servidor contesta 204 tanto si la guarda como si ya no la quiere (el
+   * hoyo tiene bastantes): para el móvil, las dos cosas son «llegó». Con el
+   * tope de anotar, para que con mala cobertura la muestra se quede en la cola
+   */
+  async sendHoleSample(id, holeNumber, muestra) {
+    try {
+      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples/${holeNumber}`, {
+        method: 'POST',
+        body: JSON.stringify(HoleSampleMapper.toApi(muestra)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return;
+      throw error;
+    }
+  }
+
+  /**
+   * @override
+   */
+  async sendHoleReport(id, holeNumber, reporte) {
+    try {
+      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/reports/${holeNumber}`, {
+        method: 'POST',
+        body: JSON.stringify(HoleSampleMapper.reportToApi(reporte)),
+        topeMs: TOPE_DE_ANOTAR_MS,
+      });
+    } catch (error) {
+      // Un 2xx con un cuerpo que no es JSON (un proxy, un portal): llegó
+      if (error instanceof SyntaxError) return;
+      throw error;
+    }
   }
 
   /**

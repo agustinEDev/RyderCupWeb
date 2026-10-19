@@ -19,10 +19,8 @@ import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
-import { leeLosProximosPartidos, precargaElProximoDia } from '../services/partidosSinCobertura';
+import { leeLasProximasPartidas, leeLosProximosPartidos } from '../services/partidosSinCobertura';
 import { elMasCercano } from '../utils/elMasCercano';
-import { fechaLocal } from '../utils/fechaLocal';
-import { lasUltimasPartidas, olvidaLoDeEstaCuenta, recuerdaLasPartidas } from '../services/loUltimoConocido';
 import {
   elPanelYaSePinto,
   anotaQueElPanelSePinto,
@@ -345,28 +343,16 @@ const Dashboard = () => {
       // los partidos, pero con SU vista
       // Sin cobertura, las guardadas de hoy en adelante: son la puerta a su
       // pantalla, que sabe pintarse con la vista precargada (/code-review). La
-      // lista se guarda solo entera, como la de los partidos
-      const lasGuardadas = () => ({
-        partidas: (lasUltimasPartidas() ?? []).filter((p) => p.roundDate >= fechaLocal()),
-        desdeMemoria: true,
-      });
-      const leeLasPartidas = async () => {
-        if (competitionsError) return lasGuardadas();
-        try {
-          const { matches, complete } = await getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, competitions);
-          if (complete) recuerdaLasPartidas(matches);
-          precargaElProximoDia({ partidos: matches, userId: user.id, pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id) });
-          return { partidas: matches, desdeMemoria: false };
-        } catch (err) {
-          // Un 401 o un 403 desmienten lo guardado, como con los partidos: se
-          // borra lo de esta cuenta y no se ofrece nada de memoria (CodeRabbit)
-          if (err?.status === 401 || err?.status === 403) {
-            olvidaLoDeEstaCuenta();
-            return { partidas: [], desdeMemoria: false };
-          }
-          return lasGuardadas();
-        }
-      };
+      // lista se guarda solo entera, como la de los partidos. La regla vive en
+      // el servicio, que comparte con «Mis próximos partidos» (FE #845)
+      const leeLasPartidas = () =>
+        leeLasProximasPartidas({
+          lee: () => (competitionsError
+            ? Promise.reject(competitionsError)
+            : getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, competitions)),
+          userId: user.id,
+          pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id),
+        });
       // Las dos a la vez, y el banner espera a ambas: sin eso, quien solo
       // juega stroke play veía un momento «crea una partida rápida» y podía
       // pulsarlo (/code-review). Sin cobertura la de las partidas falla deprisa
@@ -642,7 +628,9 @@ const Dashboard = () => {
                 setHandicapAlAbrir(user?.handicap ?? null);
                 setShowHandicapModal(true);
               }}
-              upcomingMatches={upcomingMatches.length}
+              // Los de la Ryder y las partidas de stroke play: quien solo
+              // juega stroke play no veía la tarjeta (QA de la release)
+              upcomingMatches={upcomingMatches.length + proximasPartidas.partidas.length}
             />
 
             {/* Statistics Cards */}

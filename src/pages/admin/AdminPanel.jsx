@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { NavLink, Navigate, useParams, useSearchParams } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../../components/ui/ModalShell';
 import { motion } from 'framer-motion';
-import { Loader, Users as UsersIcon, BarChart3, Flag, Clock, Search, Trophy, AlertTriangle, X } from 'lucide-react';
+import { Loader, Users as UsersIcon, BarChart3, Flag, Search, Trophy, AlertTriangle, X, MapPin, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -13,6 +14,9 @@ import AdminCompetitionsTable from '../../components/admin/AdminCompetitionsTabl
 import AdminEditCompetitionModal from '../../components/admin/AdminEditCompetitionModal';
 import GolfCourses from './GolfCourses';
 import PendingGolfCourses from './PendingGolfCourses';
+import HoleReviews from './HoleReviews';
+import TodosLosCampos from '../../components/admin/hoyos/TodosLosCampos';
+import PestanasDeSeccion from '../../components/admin/PestanasDeSeccion';
 import {
   getAdminStatsUseCase,
   listAdminUsersUseCase,
@@ -46,16 +50,54 @@ const TRANSITION_USE_CASES = {
 
 const PAGE_SIZE = 20;
 
+// Las cinco secciones del panel, cada una en su ruta (Agustín, 17 oct): en el
+// móvil, un menú y cada sección en su pantalla; en el ordenador, el menú a la
+// izquierda. Campos de golf junta los aprobados y las solicitudes, y Hoyos lo de
+// revisar los hoyos.
+const SECCIONES = [
+  // El nombre es el mismo título que pone la cabecera del móvil
+  { ruta: 'resumen', id: 'overview', label: 'common:screens.adminOverview', icon: BarChart3 },
+  { ruta: 'usuarios', id: 'users', label: 'common:screens.adminUsers', icon: UsersIcon },
+  { ruta: 'competiciones', id: 'competitions', label: 'common:screens.adminCompetitions', icon: Trophy },
+  { ruta: 'campos', id: 'golfCourses', label: 'common:screens.adminGolfCourses', icon: Flag },
+  { ruta: 'hoyos', id: 'holes', label: 'common:screens.adminHoles', icon: MapPin },
+];
+
+// Las pestañas de las secciones que las tienen; todas menos la primera llevan
+// su `ver` en la URL, para enlazarlas y que sobrevivan a recargar (17 oct)
+const PESTAÑAS = {
+  golfCourses: [
+    { id: 'approved', ver: null, label: 'golfTabs.approved' },
+    { id: 'requests', ver: 'solicitudes', label: 'golfTabs.requests' },
+  ],
+  holes: [
+    { id: 'pending', ver: null, label: 'holeTabs.pending' },
+    { id: 'allCourses', ver: 'campos', label: 'holeTabs.allCourses' },
+  ],
+};
+
 /**
  * AdminPanel Page
  * Consolidated admin panel: Overview stats, Users (list/edit/deactivate/delete),
- * and Golf Courses (approved + pending) as tabs.
+ * Competitions, Golf Courses (approved + requests) and Holes, as five sections
+ * with their own routes (`/admin/:seccion`).
  */
 const AdminPanel = () => {
   const { t } = useTranslation('admin');
   const { user, loading: isLoadingUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const { seccion } = useParams();
+  const abierta = SECCIONES.find((s) => s.ruta === seccion);
+  // Sin sección (`/admin`), el ordenador enseña el resumen junto al menú
+  const activeTab = abierta?.id ?? 'overview';
+  const [parametros, setParametros] = useSearchParams();
+  const deLaSeccion = PESTAÑAS[activeTab] ?? [];
+  const pestañaAbierta = (deLaSeccion.find((p) => p.ver === parametros.get('ver')) ?? deLaSeccion[0])?.id;
+  const pestanasDe = (id) => PESTAÑAS[id].map((p) => ({ id: p.id, label: t(p.label) }));
+  const elegirPestaña = (id) => {
+    const { ver } = deLaSeccion.find((p) => p.id === id);
+    setParametros(ver ? { ver } : {}, { replace: true });
+  };
 
   // Overview
   const [stats, setStats] = useState(null);
@@ -85,6 +127,19 @@ const AdminPanel = () => {
   const [editingCompetition, setEditingCompetition] = useState(null);
   const [cancelingCompetition, setCancelingCompetition] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // El panel no se desmonta al cambiar de sección (las dos rutas pintan este
+  // mismo componente): lo abierto en una no sigue encima de la otra, y campos de
+  // golf vuelve a abrir los aprobados (la otra sección no lleva `?ver`). Se
+  // ajusta al pintar, no en un efecto
+  const [seccionAnterior, setSeccionAnterior] = useState(seccion);
+  if (seccion !== seccionAnterior) {
+    setSeccionAnterior(seccion);
+    setEditingUser(null);
+    setManagingUser(null);
+    setEditingCompetition(null);
+    setCancelingCompetition(null);
+  }
 
   const loadStats = useCallback(async () => {
     setIsLoadingStats(true);
@@ -239,13 +294,14 @@ const AdminPanel = () => {
     return null;
   }
 
-  const tabs = [
-    { id: 'overview', label: t('tabs.overview'), icon: BarChart3 },
-    { id: 'users', label: t('tabs.users'), icon: UsersIcon },
-    { id: 'competitions', label: t('tabs.competitions'), icon: Trophy },
-    { id: 'golfCourses', label: t('tabs.golfCourses'), icon: Flag },
-    { id: 'pending', label: t('tabs.pending'), icon: Clock },
-  ];
+  if (seccion && !abierta) return <Navigate to="/admin" replace />;
+
+  // Lo que dice cada fila del menú con lo que ya trae el resumen
+  const numeroDe = {
+    users: stats?.totalUsers,
+    competitions: stats?.totalCompetitions,
+    golfCourses: stats?.totalGolfCoursesPending ? t('menu.requests', { count: stats.totalGolfCoursesPending }) : null,
+  };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
@@ -260,7 +316,7 @@ const AdminPanel = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="p-4"
+              className={`p-4 ${abierta ? 'hidden md:block' : ''}`}
             >
               <h1 className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                 {t('title')}
@@ -268,246 +324,265 @@ const AdminPanel = () => {
               <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="px-4"
-            >
-              <div role="tablist" className="flex gap-2 border-b border-gray-200 overflow-x-auto">
-                {tabs.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    role="tab"
-                    aria-selected={activeTab === id}
-                    onClick={() => setActiveTab(id)}
-                    className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 whitespace-nowrap transition-colors ${
-                      activeTab === id
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+            <div className="md:flex md:items-start md:gap-6 px-4">
+              {/* En el móvil, con una sección abierta, el menú se esconde */}
+              <nav
+                aria-label={t('menu.label')}
+                className={`${abierta ? 'hidden md:block' : ''} md:w-64 md:shrink-0`}
+              >
+                <ul className="divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white">
+                  {SECCIONES.map(({ ruta, id, label, icon: Icon }) => {
+                    const actual = abierta?.ruta === ruta;
+                    const numero = numeroDe[id];
+                    return (
+                      <li key={ruta}>
+                        <NavLink
+                          to={`/admin/${ruta}`}
+                          // En /admin el ordenador enseña el resumen: se marca, solo a la vista
+                          className={`flex min-h-12 items-center gap-3 px-4 py-3 ${
+                            actual
+                              ? 'bg-primary-50 text-primary'
+                              : !abierta && ruta === 'resumen'
+                                ? 'text-gray-900 md:bg-primary-50 md:text-primary'
+                                : 'text-gray-900'
+                          }`}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                          <span className="flex-1 font-medium">{t(label)}</span>
+                          {numero != null && <span className="text-sm text-gray-500">{numero}</span>}
+                          <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+
+              <div data-testid="seccion-del-panel" className={`${abierta ? '' : 'hidden md:block'} min-w-0 flex-1 py-4 md:py-0`}>
+                {/* En el móvil el título lo pone la cabecera: un solo h1 */}
+                <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
+                {activeTab === 'overview' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
+                    {isLoadingStats ? (
+                      <BlockLoader />
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalUsers')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalUsers ?? 0}</p>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalCompetitions')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCompetitions ?? 0}</p>
+                        </div>
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalQuickMatches')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalQuickMatches ?? 0}</p>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesApproved')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesApproved ?? 0}</p>
+                        </div>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                          <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesPending')}</p>
+                          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesPending ?? 0}</p>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'users' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-4"
+                  >
+                    <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                      <div className="basis-full md:basis-auto md:flex-1 md:min-w-[220px]">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            placeholder={t('users.searchPlaceholder')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <select
+                          value={roleFilter}
+                          onChange={(e) => { setOffset(0); setRoleFilter(e.target.value); }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        >
+                          <option value="">{t('users.filterRoleAll')}</option>
+                          <option value="admin">{t('users.filterRoleAdmin')}</option>
+                          <option value="player">{t('users.filterRolePlayer')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => { setOffset(0); setStatusFilter(e.target.value); }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        >
+                          <option value="">{t('users.filterStatusAll')}</option>
+                          <option value="active">{t('users.filterStatusActive')}</option>
+                          <option value="inactive">{t('users.filterStatusInactive')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <select
+                          value={verifiedFilter}
+                          onChange={(e) => { setOffset(0); setVerifiedFilter(e.target.value); }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                        >
+                          <option value="">{t('users.filterVerifiedAll')}</option>
+                          <option value="verified">{t('users.filterVerifiedYes')}</option>
+                          <option value="unverified">{t('users.filterVerifiedNo')}</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        {t('users.searchButton')}
+                      </button>
+                    </form>
+
+                    <p className="text-sm text-gray-500">
+                      {t('users.totalCount', { count: totalCount })}
+                    </p>
+
+                    {isLoadingUsers ? (
+                      <BlockLoader />
+                    ) : (
+                      <>
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                          <AdminUsersTable
+                            users={users}
+                            onEdit={setEditingUser}
+                            onToggleActive={setManagingUser}
+                            onManageDelete={setManagingUser}
+                          />
+                        </div>
+
+                        {totalCount > PAGE_SIZE && (
+                          <div className="flex items-center justify-between pt-2">
+                            <button
+                              onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                              disabled={offset === 0}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('users.previous')}
+                            </button>
+                            <span className="text-sm text-gray-500">
+                              {t('users.pageInfo', { current: currentPage, total: totalPages })}
+                            </span>
+                            <button
+                              onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                              disabled={offset + PAGE_SIZE >= totalCount}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('users.next')}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'competitions' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-4"
+                  >
+                    <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
+                      <div className="basis-full md:basis-auto md:flex-1 md:min-w-[220px]">
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={competitionSearchInput}
+                            onChange={(e) => setCompetitionSearchInput(e.target.value)}
+                            placeholder={t('competitions.searchPlaceholder')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        {t('competitions.searchButton')}
+                      </button>
+                    </form>
+
+                    <p className="text-sm text-gray-500">
+                      {t('competitions.totalCount', { count: competitions.length })}
+                    </p>
+
+                    {isLoadingCompetitions ? (
+                      <BlockLoader />
+                    ) : (
+                      <>
+                        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                          <AdminCompetitionsTable
+                            competitions={competitions}
+                            onEdit={setEditingCompetition}
+                            onTransition={handleTransition}
+                            disabled={isTransitioning}
+                          />
+                        </div>
+
+                        {(competitionOffset > 0 || hasMoreCompetitions) && (
+                          <div className="flex items-center justify-between pt-2">
+                            <button
+                              onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                              disabled={competitionOffset === 0}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('competitions.previous')}
+                            </button>
+                            <button
+                              onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
+                              disabled={!hasMoreCompetitions}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {t('competitions.next')}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'golfCourses' && (
+                  <PestanasDeSeccion nombre="campos" etiqueta={t(abierta.label)} pestanas={pestanasDe('golfCourses')} actual={pestañaAbierta} onElegir={elegirPestaña}>
+                    {pestañaAbierta === 'approved' ? <GolfCourses embedded /> : <PendingGolfCourses embedded onCambio={loadStats} />}
+                  </PestanasDeSeccion>
+                )}
+                {activeTab === 'holes' && (
+                  <PestanasDeSeccion nombre="hoyos" etiqueta={t(abierta.label)} pestanas={pestanasDe('holes')} actual={pestañaAbierta} onElegir={elegirPestaña}>
+                    {pestañaAbierta === 'pending' ? <HoleReviews /> : <TodosLosCampos />}
+                  </PestanasDeSeccion>
+                )}
               </div>
-            </motion.div>
-
-            <div className="p-4">
-              {activeTab === 'overview' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {isLoadingStats ? (
-                    <BlockLoader />
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div className="bg-primary-50 border border-primary-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalUsers')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalUsers ?? 0}</p>
-                      </div>
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalCompetitions')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCompetitions ?? 0}</p>
-                      </div>
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalQuickMatches')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalQuickMatches ?? 0}</p>
-                      </div>
-                      <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesApproved')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesApproved ?? 0}</p>
-                      </div>
-                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                        <p className="text-sm text-gray-600">{t('overview.totalGolfCoursesPending')}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalGolfCoursesPending ?? 0}</p>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === 'users' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="space-y-4"
-                >
-                  <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={searchInput}
-                          onChange={(e) => setSearchInput(e.target.value)}
-                          placeholder={t('users.searchPlaceholder')}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <select
-                        value={roleFilter}
-                        onChange={(e) => { setOffset(0); setRoleFilter(e.target.value); }}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      >
-                        <option value="">{t('users.filterRoleAll')}</option>
-                        <option value="admin">{t('users.filterRoleAdmin')}</option>
-                        <option value="player">{t('users.filterRolePlayer')}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => { setOffset(0); setStatusFilter(e.target.value); }}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      >
-                        <option value="">{t('users.filterStatusAll')}</option>
-                        <option value="active">{t('users.filterStatusActive')}</option>
-                        <option value="inactive">{t('users.filterStatusInactive')}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <select
-                        value={verifiedFilter}
-                        onChange={(e) => { setOffset(0); setVerifiedFilter(e.target.value); }}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      >
-                        <option value="">{t('users.filterVerifiedAll')}</option>
-                        <option value="verified">{t('users.filterVerifiedYes')}</option>
-                        <option value="unverified">{t('users.filterVerifiedNo')}</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      {t('users.searchButton')}
-                    </button>
-                  </form>
-
-                  <p className="text-sm text-gray-500">
-                    {t('users.totalCount', { count: totalCount })}
-                  </p>
-
-                  {isLoadingUsers ? (
-                    <BlockLoader />
-                  ) : (
-                    <>
-                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                        <AdminUsersTable
-                          users={users}
-                          onEdit={setEditingUser}
-                          onToggleActive={setManagingUser}
-                          onManageDelete={setManagingUser}
-                        />
-                      </div>
-
-                      {totalCount > PAGE_SIZE && (
-                        <div className="flex items-center justify-between pt-2">
-                          <button
-                            onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-                            disabled={offset === 0}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('users.previous')}
-                          </button>
-                          <span className="text-sm text-gray-500">
-                            {t('users.pageInfo', { current: currentPage, total: totalPages })}
-                          </span>
-                          <button
-                            onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-                            disabled={offset + PAGE_SIZE >= totalCount}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('users.next')}
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === 'competitions' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="space-y-4"
-                >
-                  <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={competitionSearchInput}
-                          onChange={(e) => setCompetitionSearchInput(e.target.value)}
-                          placeholder={t('competitions.searchPlaceholder')}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      {t('competitions.searchButton')}
-                    </button>
-                  </form>
-
-                  <p className="text-sm text-gray-500">
-                    {t('competitions.totalCount', { count: competitions.length })}
-                  </p>
-
-                  {isLoadingCompetitions ? (
-                    <BlockLoader />
-                  ) : (
-                    <>
-                      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                        <AdminCompetitionsTable
-                          competitions={competitions}
-                          onEdit={setEditingCompetition}
-                          onTransition={handleTransition}
-                          disabled={isTransitioning}
-                        />
-                      </div>
-
-                      {(competitionOffset > 0 || hasMoreCompetitions) && (
-                        <div className="flex items-center justify-between pt-2">
-                          <button
-                            onClick={() => setCompetitionOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-                            disabled={competitionOffset === 0}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('competitions.previous')}
-                          </button>
-                          <button
-                            onClick={() => setCompetitionOffset((prev) => prev + PAGE_SIZE)}
-                            disabled={!hasMoreCompetitions}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {t('competitions.next')}
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === 'golfCourses' && <GolfCourses embedded />}
-              {activeTab === 'pending' && <PendingGolfCourses embedded />}
             </div>
           </div>
         </div>

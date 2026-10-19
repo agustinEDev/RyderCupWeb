@@ -30,6 +30,16 @@ export const anotaSuTarjeta = (partida, userId) => {
 export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p.userId !== userId);
 
 /**
+ * Se retiró: sigue siendo de la partida, y se dice al nombrarlo —«Con Bea
+ * (retirada)»— en vez de esconderlo, que dejaba «de momento sin compañeros»
+ * junto a «marcas a Bea» (QA de la release, 14 oct).
+ */
+export const seRetiro = (jugador) => jugador?.cardStatus === 'RETIRADO';
+
+/** Si una partida aún se puede tocar: no ha salido (#544). Sin el campo, sí. */
+export const seCambia = (partida) => partida.canChange !== false;
+
+/**
  * Adónde puede mover el organizador a un jugador.
  *
  *   - `conSitio`: otras partidas con sitio.
@@ -41,16 +51,20 @@ export const companerosDe = (partida, userId) => juegan(partida).filter((p) => p
  * una partida de dos solo se intercambia. De una de uno se va a otra con sitio
  * (la suya desaparece), pero no a una nueva al final: sería la misma.
  *
- * @param {{groups: Array, unassignedPlayers: Array}} vista
+ * Con la franja empezada (#544), solo cuentan las que no han salido
+ * (`canChange`), y una nueva solo si el servidor dice que cabe (`canAddGroup`).
+ * Sin esos campos (un backend de antes), todas.
+ *
+ * @param {{groups: Array, unassignedPlayers: Array, canAddGroup?: boolean}} vista
  * @param {string} userId
  * @param {{tamano: number, salidas: number}} hoja - Jugadores por partida y salidas de la franja
  */
 export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
   const origen = vista.groups.find((g) => enLaPartida(g, userId)) ?? null;
-  if (esNoPresentado(origen?.players.find((p) => p.userId === userId))) {
-    return { conSitio: [], intercambios: [], nueva: false };
-  }
-  const otras = vista.groups.filter((g) => g !== origen);
+  const sinDestinos = { conSitio: [], intercambios: [], nueva: false };
+  if (esNoPresentado(origen?.players.find((p) => p.userId === userId))) return sinDestinos;
+  if (origen && !seCambia(origen)) return sinDestinos;
+  const otras = vista.groups.filter((g) => g !== origen && seCambia(g));
   // Solo cuentan los que juegan: dejar a uno solo junto a no presentados
   // tampoco vale, y dejar solo no presentados sí (12 oct 2026)
   const sinQuedarSolo = !origen || juegan(origen).length - 1 !== 1;
@@ -63,7 +77,7 @@ export const destinosDelJugador = (vista, userId, { tamano, salidas }) => {
     intercambios: origen
       ? otras.filter((g) => juegan(g).length >= tamano).flatMap((g) => juegan(g).map((con) => ({ partida: g, con })))
       : [],
-    nueva: sinQuedarSolo && unoDeVarios && vista.groups.length < salidas,
+    nueva: sinQuedarSolo && unoDeVarios && vista.canAddGroup !== false && vista.groups.length < salidas,
   };
 };
 

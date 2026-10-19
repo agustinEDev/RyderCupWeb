@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
+import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserRoles } from '../../hooks/useUserRoles';
 import { useScoring } from '../../hooks/useScoring';
+import { useMapaDelHoyo } from '../../hooks/useMapaDelHoyo';
+import BotonMapa from '../../components/scoring/mapa/BotonMapa';
+import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { ORIGEN_PARTIDA_DE_FRANJA } from '../../hooks/origenesDeAnotacion';
 import { retireFromTeeGroupUseCase } from '../../composition';
 import customToast from '../../utils/toast';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
+import { conGenero } from '../../utils/genero';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { abreMasTarde, horaDelCampo } from '../../services/partidosSinCobertura';
 import HoleInput from '../../components/scoring/HoleInput';
+import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import HoleSelector from '../../components/scoring/HoleSelector';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
@@ -90,6 +96,13 @@ const GroupScoringPage = () => {
   } = useScoring(groupId, user?.id, user?.is_admin ?? false, ORIGEN_PARTIDA_DE_FRANJA);
 
   const aunNoAbre = abreMasTarde({ status: scoringView?.matchStatus, scoringOpensAt: scoringView?.scoringOpensAt });
+  // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
+  const mapaDelHoyo = useMapaDelHoyo({
+    golfCourseId: scoringView?.roundInfo?.golfCourseId ?? null,
+    cerrarSi: isSessionBlocked,
+    // Su país: solo hay imagen en España (19 oct)
+    pais: scoringView?.roundInfo?.golfCourseCountryCode ?? null,
+  });
   // Que el aviso caduque solo: sin cobertura el sondeo no corre
   useEffect(() => {
     if (!aunNoAbre) return undefined;
@@ -144,9 +157,14 @@ const GroupScoringPage = () => {
   // entregada ya la bloquea `useScoring`
   const seJuega = (jugador) => strokePlay.cards.find((c) => c.userId === jugador)?.cardStatus === 'JUGANDO';
   const cerradaSinEntregar = Boolean(miTarjeta) && !seJuega(userId) && miTarjeta.cardStatus !== 'ENTREGADA';
+  const noPresentado = miTarjeta?.cardStatus === 'NO_PRESENTADO';
 
-  const parDe = (jugador) =>
-    scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole)?.par ?? null;
+  const hoyoDeLaTarjetaDe = (jugador) =>
+    scoringView.players.find((p) => p.userId === jugador)?.holeCard.find((h) => h.holeNumber === currentHole);
+  const parDe = (jugador) => hoyoDeLaTarjetaDe(jugador)?.par ?? null;
+  // Mi barra (color y sexo): las muestras del mapa de hoyos van por barra
+  const yo = scoringView.players.find((p) => p.userId === userId);
+  const miBarra = barraDe(yo);
   const golpesDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
   const miGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === userId);
   const suGolpe = golpesDelHoyo?.playerScores.find((p) => p.userId === marcoA);
@@ -221,19 +239,19 @@ const GroupScoringPage = () => {
   // jugó no son verdes para él (3.ª pasada del QA)
   const delSelector = isMatchPlayer && !siguen.has(userId) ? new Set([userId]) : siguen;
   const golpesDelSelector = scoresVisibles
-    .map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }))
-    // Lo que no jugó quien ya no sigue sale vacío, no «por validar» (revisor)
-    .filter((s) => delSelector === siguen || s.playerScores.some((p) => p.ownSubmitted || p.markerSubmitted));
+    // Lo que nadie anotó sale vacío en el selector (#847)
+    .map((s) => ({ ...s, playerScores: s.playerScores.filter((p) => delSelector.has(p.userId)) }));
 
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth user={user} />
       {/* Solo quien anota (también un administrador): al organizador que no juega no le vale «lo que anotes se guarda» */}
-      {isOffline && canScore && <AnotarSinConexion pendingCount={pendingQueueSize} />}
-      {!isOffline && !avisoDelVaciado && <PendientesASalvo count={pendingQueueSize} />}
+      {/* Ni al no presentado: ya no anota (revisor) */}
+      {isOffline && canScore && !noPresentado && <AnotarSinConexion pendingCount={pendingQueueSize} />}
+      {!isOffline && !avisoDelVaciado && !noPresentado && <PendientesASalvo count={pendingQueueSize} />}
 
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-4">
-        {hoyosNoGuardados.length > 0 && (
+        {hoyosNoGuardados.length > 0 && !noPresentado && (
           <p data-testid="no-guardados" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {t('offline.noGuardados', { count: hoyosNoGuardados.length, holes: hoyosNoGuardados.join(', ') })}
           </p>
@@ -272,6 +290,7 @@ const GroupScoringPage = () => {
             {t('partida.header', { numero: scoringView.matchNumber, hora: strokePlay.teeTime })}
           </h1>
           <p className="text-sm text-gray-500">{t(`partida.type.${strokePlay.tournamentType}`)}</p>
+          <CampoDeLaPartida nombre={scoringView.roundInfo?.golfCourseName} />
         </div>
 
         <div className="flex border-b border-gray-200" role="tablist">
@@ -296,99 +315,129 @@ const GroupScoringPage = () => {
 
         {activa === 'input' && (
           <div id="panel-input" role="tabpanel" aria-labelledby="tab-input" className="space-y-4">
-            {/* Sin nadie en juego que le marque (se fue o ya entregó): sus hoyos
-                los valida el organizador (QA del 11 oct 2026, BE #539) */}
-            {sinMarcador && (
-              <p data-testid="sin-marcador" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                {t('partida.organiserValidates')}
+            {/* El no presentado no anota: se le dice por qué (#854) */}
+            {noPresentado ? (
+              <p data-testid="no-presentado" className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                {t('partida.youAreNoShowHere', conGenero(miTarjeta?.teeGender))}
               </p>
-            )}
-            {marcoA && (
-              <p className="text-sm text-gray-700">
-                {t('partida.youMark', { jugador: scoringView.players.find((p) => p.userId === marcoA)?.userName ?? '' })}
-              </p>
-            )}
-            <HoleSelector
-              currentHole={currentHole}
-              onSelect={setCurrentHole}
-              scores={golpesDelSelector}
-              totalHoles={totalHoles}
-              noGuardados={hoyosNoGuardados}
-            />
-            {aunNoAbre && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                <p className="font-medium text-amber-900">{t('partida.notOpenYet')}</p>
-                <p className="mt-1 text-amber-800">
-                  {t('notOpenYet.opensAt', { hora: horaDelCampo(scoringView.scoringOpensAt, i18n.language) })}
+            ) : (
+              <>
+              {/* Sin nadie en juego que le marque (se fue o ya entregó): sus hoyos
+                  los valida el organizador (QA del 11 oct 2026, BE #539) */}
+              {sinMarcador && (
+                <p data-testid="sin-marcador" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  {t('partida.organiserValidates')}
                 </p>
-              </div>
-            )}
-            {!aunNoAbre && (
-              <HoleInput
-                key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
-                holeNumber={currentHole}
-                par={parDe(userId)}
-                markedPar={parDe(marcoA)}
-                markedName={nombreDe(marcoA)}
-                markerName={meAnoto}
-                marksSomeone={Boolean(marcoA)}
-                hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
-                markedScoredBy={loPusoOtro}
-                strokeIndex={null}
-                playerScore={miGolpe}
-                markedPlayerScore={suGolpe}
-                validationStatus={miGolpe?.validationStatus}
-                markedValidationStatus={suGolpe?.validationStatus}
-                strokesReceived={miGolpe?.strokesReceivedThisHole}
-                // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
-                isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
-                isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
-                // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
-                isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
-                onScoreChange={anotar}
-                allowPickedUp={strokePlay.pickedUpAllowed}
+              )}
+              {marcoA && (
+                <p className="text-sm text-gray-700">
+                  {t('partida.youMark', { jugador: scoringView.players.find((p) => p.userId === marcoA)?.userName ?? '' })}
+                </p>
+              )}
+              <HoleSelector
+                currentHole={currentHole}
+                onSelect={setCurrentHole}
+                scores={golpesDelSelector}
+                totalHoles={totalHoles}
+                noGuardados={hoyosNoGuardados}
               />
-            )}
-            <div className="flex justify-between">
-              <button
-                type="button"
-                onClick={() => setCurrentHole(currentHole - 1)}
-                disabled={currentHole <= 1}
-                className="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 disabled:opacity-50"
-              >
-                {t('input.prevHole')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentHole(currentHole + 1)}
-                disabled={currentHole >= totalHoles}
-                className="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700 disabled:opacity-50"
-              >
-                {t('input.nextHole')}
-              </button>
-            </div>
-
-            {/* Antes de abrir no hay de qué retirarse: el servidor lo rechaza */}
-            {miTarjeta?.cardStatus === 'JUGANDO' && !aunNoAbre &&
-              (retirandose ? (
-                <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                  <span className="min-w-0 flex-1">{t('partida.retireConfirm')}</span>
-                  <button type="button" disabled={ocupado} onClick={retirarse} className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white">
-                    {t('partida.retireYes')}
-                  </button>
-                  <button type="button" onClick={() => setRetirandose(false)} className="min-h-11 rounded-md px-3">
-                    {t('partida.no')}
-                  </button>
+              {aunNoAbre && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+                  <p className="font-medium text-amber-900">{t('partida.notOpenYet')}</p>
+                  <p className="mt-1 text-amber-800">
+                    {t('notOpenYet.opensAt', { hora: horaDelCampo(scoringView.scoringOpensAt, i18n.language) })}
+                  </p>
+                  {/* A quién vas a marcar, como en la Ryder (16 oct) */}
+                  {nombreDe(marcoA) && (
+                    <p data-testid="anotaras-a" className="mt-1 font-medium text-amber-900">
+                      {t('notOpenYet.youWillMark', { nombre: nombreDe(marcoA) })}
+                    </p>
+                  )}
                 </div>
-              ) : (
+              )}
+              {!aunNoAbre && (
+                <>
+                  <HoleInput
+                    key={`${currentHole}-${noGuardados[currentHole]?.turno ?? ''}`}
+                    holeNumber={currentHole}
+                    par={parDe(userId)}
+                    markedPar={parDe(marcoA)}
+                    markedName={nombreDe(marcoA)}
+                    markerName={meAnoto}
+                    marksSomeone={Boolean(marcoA)}
+                    hasMarker={sigueMarcandome || Boolean(miGolpe?.markerSubmitted)}
+                    markedScoredBy={loPusoOtro}
+                    strokeIndex={null}
+                    playerScore={miGolpe}
+                    markedPlayerScore={suGolpe}
+                    validationStatus={miGolpe?.validationStatus}
+                    markedValidationStatus={suGolpe?.validationStatus}
+                    strokesReceived={miGolpe?.strokesReceivedThisHole}
+                    // Su tarjeta cerrada sin entregar se lee: así ve quién le anotó (QA 3)
+                    isReadOnly={!canScore || isFullyLocked || isSessionBlocked || cerradaSinEntregar}
+                    isOwnScoreLocked={isOwnScoreLocked || cerradaSinEntregar || !canScore || isSessionBlocked}
+                    // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
+                    isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
+                    onScoreChange={anotar}
+                    allowPickedUp={strokePlay.pickedUpAllowed}
+                  />
+                  <VentanaDelMapa
+                    mapaDelHoyo={mapaDelHoyo}
+                    golfCourseId={scoringView?.roundInfo?.golfCourseId ?? null}
+                    numeroDeHoyo={currentHole}
+                    par={parDe(userId)}
+                    // Los metros desde mi barra, para el recuadro del mapa (16 oct)
+                    metros={hoyoDeLaTarjetaDe(userId)?.meters ?? null}
+                    userId={userId ?? null}
+                    barra={miBarra}
+                  />
+                </>
+              )}
+              <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => setRetirandose(true)}
-                  className="min-h-11 w-full rounded-lg border border-red-200 text-sm font-medium text-red-600"
+                  onClick={() => setCurrentHole(currentHole - 1)}
+                  disabled={currentHole <= 1}
+                  className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                 >
-                  {t('partida.retire')}
+                  {t('input.prevHole')}
                 </button>
-              ))}
+                {/* «Mapa», entre Anterior y Siguiente (Agustín, 16 oct): ni dentro de la tarjeta del hoyo ni en una fila más, que empujaba la navegación fuera de la pantalla */}
+                {/* Solo con el hoyo a la vista: la ventana del mapa va con él. Y en España, la única con imagen (19 oct) */}
+                {!aunNoAbre && mapaDelHoyo.disponible && <BotonMapa onAbrir={mapaDelHoyo.abrir} />}
+                <button
+                  type="button"
+                  onClick={() => setCurrentHole(currentHole + 1)}
+                  disabled={currentHole >= totalHoles}
+                  className="min-h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  {t('input.nextHole')}
+                </button>
+              </div>
+
+              {/* Antes de abrir no hay de qué retirarse: el servidor lo rechaza */}
+              {miTarjeta?.cardStatus === 'JUGANDO' && !aunNoAbre &&
+                (retirandose ? (
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                    <span className="min-w-0 flex-1">{t('partida.retireConfirm')}</span>
+                    <button type="button" disabled={ocupado} onClick={retirarse} className="min-h-11 rounded-md bg-amber-600 px-3 font-semibold text-white">
+                      {t('partida.retireYes')}
+                    </button>
+                    <button type="button" onClick={() => setRetirandose(false)} className="min-h-11 rounded-md px-3">
+                      {t('partida.no')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setRetirandose(true)}
+                    className="min-h-11 w-full rounded-lg border border-red-200 text-sm font-medium text-red-600"
+                  >
+                    {t('partida.retire')}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         )}
 

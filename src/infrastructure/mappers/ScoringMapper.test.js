@@ -15,6 +15,7 @@ describe('ScoringMapper', () => {
         date: '2026-03-01',
         session_type: 'MORNING',
         golf_course_name: 'Club de Golf Madrid',
+        golf_course_id: 'gc-madrid',
       },
       competition_id: 'comp-1',
       team_a_name: 'Equipo Rojo',
@@ -92,6 +93,12 @@ describe('ScoringMapper', () => {
       scorecard_submitted_by: [],
     };
 
+    it('el país del campo: el mapa solo tiene imagen en España (19 oct); sin él, null', () => {
+      const conPais = { ...fullApiResponse, round_info: { ...fullApiResponse.round_info, golf_course_country_code: 'PT' } };
+      expect(ScoringMapper.toScoringViewDTO(conPais).roundInfo.golfCourseCountryCode).toBe('PT');
+      expect(ScoringMapper.toScoringViewDTO(fullApiResponse).roundInfo.golfCourseCountryCode).toBeNull();
+    });
+
     it('should map full scoring view response to camelCase DTO', () => {
       const dto = ScoringMapper.toScoringViewDTO(fullApiResponse);
 
@@ -112,6 +119,8 @@ describe('ScoringMapper', () => {
       expect(dto.roundInfo.id).toBe('round-1');
       expect(dto.roundInfo.date).toBe('2026-03-01');
       expect(dto.roundInfo.sessionType).toBe('MORNING');
+      // El campo de la ronda, para pedir su mapa de hoyos (FE, mapas)
+      expect(dto.roundInfo.golfCourseId).toBe('gc-madrid');
       expect(dto.roundInfo.golfCourseName).toBe('Club de Golf Madrid');
     });
 
@@ -463,6 +472,23 @@ describe('ScoringMapper', () => {
       expect(dto.matchComplete).toBe(false);
     });
   });
+
+  // RyderCupWeb #880: con el color, el mapa del hoyo envía las muestras por barra
+  describe('el sexo de la barra de cada jugador', () => {
+    const vista = (players) => ScoringMapper.toScoringViewDTO({ players });
+
+    it.each([
+      ['MALE', 'MALE'],
+      ['FEMALE', 'FEMALE'],
+      [null, null],
+      [undefined, null],
+    ])('tee_gender %s → teeGender %s', (deLaApi, esperado) => {
+      const [jugador] = vista([{ user_id: 'u1', tee_color: 'YELLOW', tee_gender: deLaApi }]).players;
+
+      expect(jugador.teeGender).toBe(esperado);
+    });
+  });
+
   /**
    * El backend resuelve la tarjeta de cada barra y la manda por jugador
    * (RyderCupAm#213) «para que el cliente no tenga que volver a resolverlo — y

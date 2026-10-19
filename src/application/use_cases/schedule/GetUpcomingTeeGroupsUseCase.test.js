@@ -53,11 +53,28 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
       roundId: 'r1',
       roundDate: '2030-10-12',
       sessionType: 'AFTERNOON',
+      golfCourseName: null,
       teeTime: '12:10',
       matchNumber: 2,
       partnerNames: ['Ana', 'Bea'],
+      partners: [
+        { name: 'Ana', withdrawn: false, teeGender: null },
+        { name: 'Bea', withdrawn: false, teeGender: null },
+      ],
       broughtIn: false,
     });
+  });
+
+  it('lleva el nombre del campo de la franja, para su tarjeta (BE #573)', async () => {
+    const uc = new GetUpcomingTeeGroupsUseCase(
+      casos({ a: [{ ...mia('r1', '2030-10-12', 'AFTERNOON', partida('g2', 2, '12:10')), golfCourseName: 'Golf de Meis' }] }),
+    );
+
+    const {
+      matches: [unica],
+    } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(unica.golfCourseName).toBe('Golf de Meis');
   });
 
   it('12 (QA del 11 oct 2026): si le pasaron a esa partida, lo lleva', async () => {
@@ -78,6 +95,31 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
     const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
 
     expect(matches[0].partnerNames).toEqual(['Bea']);
+  });
+
+  it('QA de la release: un compañero retirado sigue, marcado, con su barra', async () => {
+    const conRetirada = partida('g2', 2, '12:10');
+    conRetirada.players = conRetirada.players.map((p) =>
+      p.userId === 'ana' ? { ...p, cardStatus: 'RETIRADO', teeGender: 'FEMALE' } : p
+    );
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', conRetirada)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches[0].partners).toEqual([
+      { name: 'Ana', withdrawn: true, teeGender: 'FEMALE' },
+      { name: 'Bea', withdrawn: false, teeGender: null },
+    ]);
+  });
+
+  it.each(['ENTREGADA', 'RETIRADO'])('QA de la release: con mi tarjeta %s ya no es mi próxima partida', async (estado) => {
+    const yaAcabe = partida('g2', 2, '12:10', 'IN_PROGRESS');
+    yaAcabe.players = yaAcabe.players.map((p) => (p.userId === 'yo' ? { ...p, cardStatus: estado } : p));
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'AFTERNOON', yaAcabe)] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a')]);
+
+    expect(matches).toEqual([]);
   });
 
   it('revisor (12 oct 2026): si yo soy el no presentado, no sale como próxima', async () => {
@@ -140,6 +182,14 @@ describe('GetUpcomingTeeGroupsUseCase (FE #824, PR 7)', () => {
 
     expect(await new GetUpcomingTeeGroupsUseCase(c).executeWithCompleteness('yo')).toEqual({ matches: [], complete: true });
     expect(c.listUserCompetitionsUseCase.execute).toHaveBeenCalledWith('yo');
+  });
+
+  it('lleva el tipo de torneo de su competición, para la etiqueta de la tarjeta (FE #845)', async () => {
+    const uc = new GetUpcomingTeeGroupsUseCase(casos({ a: [mia('r1', '2030-10-12', 'MORNING', partida('g1', 1, '08:00'))] }));
+
+    const { matches } = await uc.executeWithCompleteness('yo', [competicion('a', { tournamentType: 'MEDAL' })], new Date(2030, 9, 1));
+
+    expect(matches[0].tournamentType).toBe('MEDAL');
   });
 
   it('sin usuario, falla', async () => {

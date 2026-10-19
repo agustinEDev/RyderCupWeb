@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
+import { useCentrarEnMiFila } from '../../hooks/useCentrarEnMiFila';
+import { conGenero } from '../../utils/genero';
 
 const HOYOS = 18;
 
@@ -24,6 +26,7 @@ const HOYOS = 18;
  * @param {boolean} [props.conRegla] - La regla del torneo arriba (la general)
  * @param {string} [props.vacia] - Qué decir sin nadie todavía
  * @param {boolean} [props.filtrable] - Con filtro de categoría (la scratch no lo tiene)
+ * @param {'una'|'alAbrir'} [props.centraEnMi] - Si participo, llevarme a mi fila
  */
 const Clasificacion = ({
   pedir,
@@ -34,6 +37,7 @@ const Clasificacion = ({
   conRegla = false,
   vacia = 'partida.standingsEmpty',
   filtrable = true,
+  centraEnMi = null,
 }) => {
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
@@ -45,6 +49,9 @@ const Clasificacion = ({
   // bajo la categoría nueva (/code-review)
   const [cambiandoDeFiltro, setCambiandoDeFiltro] = useState(false);
   const lecturas = useLaMasNueva();
+  // Cada lectura que responde, bien o mal: con ella se decide si llevarme a
+  // mi fila (ver useCentrarEnMiFila)
+  const [respuestas, setRespuestas] = useState(0);
 
   const leer = useCallback(async () => {
     const turno = lecturas.turno();
@@ -52,13 +59,16 @@ const Clasificacion = ({
       const leida = await pedir(categoria ?? undefined);
       if (!lecturas.aplicar(turno)) return;
       setClasificacion(leida);
+      setRespuestas((n) => n + 1);
       setSinCargar(false);
       setCambiandoDeFiltro(false);
       if (categoria == null) {
         setCategorias([...new Set(leida.rows.map((r) => r.category).filter((c) => c != null))].sort((a, b) => a - b));
       }
     } catch {
-      if (lecturas.aplicar(turno)) setSinCargar(true);
+      if (!lecturas.aplicar(turno)) return;
+      setSinCargar(true);
+      setRespuestas((n) => n + 1);
     }
   }, [pedir, categoria, lecturas]);
 
@@ -70,6 +80,7 @@ const Clasificacion = ({
     leer();
   }, [activa, leer, cada, version]);
   useSondeoMientras(activa && cada != null, leer, cada ?? 0);
+  const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
 
   if (!activa) return null;
 
@@ -93,10 +104,15 @@ const Clasificacion = ({
   // (NR, NP) con su nombre entero al pasar por encima (pasada, FE #824)
   // Un retirado en Stableford conserva su puesto con lo jugado, pero sus hoyos
   // decían que seguía en el campo: «R» (QA del 11 oct 2026)
-  const codigo = (estado) => ({ texto: t(`partida.statusShort.${estado}`), titulo: t(`partida.status.${estado}`) });
+  // El nombre entero, en femenino si la fila es de una jugadora: «No
+  // presentada», «Retirada» (FE #856)
+  const codigo = (estado, genero) => ({
+    texto: t(`partida.statusShort.${estado}`),
+    titulo: t(`partida.status.${estado}`, conGenero(genero)),
+  });
   const thru = (fila) => {
-    if (fila.status !== 'CLASIFICADO') return codigo(fila.status);
-    if (fila.retired) return codigo('RETIRADO');
+    if (fila.status !== 'CLASIFICADO') return codigo(fila.status, fila.teeGender);
+    if (fila.retired) return codigo('RETIRADO', fila.teeGender);
     return { texto: fila.thru >= HOYOS ? t('partida.thruFinished') : String(fila.thru), titulo: undefined };
   };
 
@@ -106,14 +122,31 @@ const Clasificacion = ({
     const yo = fila.userId === userId;
     const { texto, titulo } = thru(fila);
     return (
-      <tr key={testId} data-testid={testId} data-yo={String(yo)} className={yo ? 'bg-green-50 font-semibold' : ''}>
+      <tr
+        key={testId}
+        data-testid={testId}
+        data-yo={String(yo)}
+        // Enfocable a mano: al llevarme a ella, el foco viene con la vista
+        tabIndex={yo ? -1 : undefined}
+        className={yo ? 'bg-green-50/70 outline-none' : ''}
+      >
         {/* «T22» no cabía en w-10 y se pegaba al nombre (QA del 11 oct 2026) */}
-        <td className="w-12 py-2 pr-2 pl-3 text-gray-500 tabular-nums">{puesto(fila)}</td>
+        {/* La marca de mi fila, en su primera celda: Safari no pinta sombras
+            en una fila de tabla (revisor) */}
+        <td
+          className={`w-12 py-2.5 pr-2 pl-3 text-xs font-medium text-gray-400 tabular-nums ${
+            yo ? 'shadow-[inset_3px_0_0_var(--color-primary-500)]' : ''
+          }`}
+        >
+          {puesto(fila)}
+        </td>
         {/* El nombre entero, en dos líneas si no cabe: cortado a 360 px se leía
             «Helena Pru…» (2.ª pasada del QA, 12 oct 2026) */}
-        <td title={fila.name} className="break-words py-2 pr-2 text-gray-900">{fila.name}</td>
-        <td className="w-14 py-2 text-right font-bold text-gray-900 tabular-nums">{valor(fila)}</td>
-        <td data-columna="thru" className="w-14 py-2 pr-3 text-right text-xs text-gray-500 tabular-nums">
+        <td title={fila.name} className={`break-words py-2.5 pr-2 leading-snug ${yo ? 'font-semibold text-gray-900' : 'text-gray-800'}`}>
+          {fila.name}
+        </td>
+        <td className="w-12 py-2.5 text-right text-[15px] font-semibold text-gray-900 tabular-nums">{valor(fila)}</td>
+        <td data-columna="thru" className="w-12 py-2.5 pr-3 text-right text-[11px] text-gray-400 tabular-nums">
           {/* NR, NP: abreviatura con su nombre entero, que los lectores de pantalla sí dicen (revisor) */}
           {titulo ? <abbr title={titulo} className="no-underline">{texto}</abbr> : texto}
         </td>
@@ -124,21 +157,21 @@ const Clasificacion = ({
   const tabla = (filas, conCabecera, nombre) => (
     <table aria-label={nombre} className="w-full table-fixed border-collapse text-sm">
       {conCabecera && (
-        <thead className="border-b border-gray-200 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        <thead className="border-b border-gray-100 text-left text-[10px] font-medium uppercase tracking-wider text-gray-400">
           <tr>
-            <th scope="col" className="w-12 py-2 pr-2 pl-3 font-semibold">{t('partida.colPos')}</th>
-            <th scope="col" className="py-2 pr-2 font-semibold">{t('partida.colPlayer')}</th>
-            <th scope="col" className="w-14 py-2 text-right font-semibold">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
-            <th scope="col" className="w-14 py-2 pr-3 text-right font-semibold">{t('partida.colThru')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 pr-2 pl-3 font-medium">{t('partida.colPos')}</th>
+            <th scope="col" className="pt-1 pb-1.5 pr-2 font-medium">{t('partida.colPlayer')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 text-right font-medium">{t(esMedal ? 'partida.colToPar' : 'partida.colPoints')}</th>
+            <th scope="col" className="w-12 pt-1 pb-1.5 pr-3 text-right font-medium">{t('partida.colThru')}</th>
           </tr>
         </thead>
       )}
-      <tbody className="divide-y divide-gray-100">{filas}</tbody>
+      <tbody className="divide-y divide-gray-50">{filas}</tbody>
     </table>
   );
 
   return (
-    <div className="space-y-3">
+    <div ref={bloqueRef} className="space-y-3">
       {conRegla && <p className="text-xs text-gray-500">{t(`partida.rule.${clasificacion.rule}`)}</p>}
       {/* Solo donde hay categorías: las filas de la scratch traen la suya,
           pero la scratch no se filtra (revisor) */}
@@ -179,7 +212,9 @@ const Clasificacion = ({
       ) : clasificacion.rows.length === 0 ? (
         <p className="text-sm text-gray-500">{t(vacia)}</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        // Redondeada: sobre el fondo gris (su página, la anotación) no queda un
+        // rectángulo blanco plano, y casa con «Tu posición» de debajo (revisor)
+        <div className="overflow-hidden rounded-lg bg-white">
           {tabla(
             clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)),
             true,

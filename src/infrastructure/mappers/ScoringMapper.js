@@ -39,6 +39,10 @@ class ScoringMapper {
           date: apiData.round_info.date,
           sessionType: apiData.round_info.session_type,
           golfCourseName: apiData.round_info.golf_course_name,
+          // Para pedir el mapa de hoyos del campo (BE #532)
+          golfCourseId: apiData.round_info.golf_course_id ?? null,
+          // Su país: el mapa solo tiene imagen en España (19 oct)
+          golfCourseCountryCode: apiData.round_info.golf_course_country_code ?? null,
         }
         : null,
       competitionId: apiData.competition_id,
@@ -58,6 +62,8 @@ class ScoringMapper {
         team: p.team,
         // El DTO manda `tee_color`; leer `p.color` dejaba el color en undefined
         color: p.tee_color ?? p.color ?? null,
+        // El sexo de su barra: con el color, el mapa envía las muestras por barra (#880)
+        teeGender: p.tee_gender ?? null,
         playingHandicap: p.playing_handicap,
         strokesReceived: p.strokes_received || [],
         // La tarjeta de SU barra: par, índice y metros. El backend la resuelve y

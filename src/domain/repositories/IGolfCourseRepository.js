@@ -25,6 +25,101 @@ class IGolfCourseRepository {
   }
 
   /**
+   * El mapa de hoyos aprobado del campo (BE #532)
+   * @param {string} id - Golf course ID
+   * @returns {Promise<Object|null>} El mapa, o null si no tiene
+   */
+  async getHoleMap(id) {
+    throw new Error('Method not implemented: getHoleMap');
+  }
+
+  /**
+   * El resumen de las muestras (anónimas) de cada hoyo, por barra (BE #532, marcado por par)
+   * @param {string} id - Golf course ID
+   * @returns {Promise<Object<number, {color: string, gender: string|null, primera: Object|null, recoge: boolean}[]>>} por número de hoyo
+   */
+  async getHoleSamples(id) {
+    throw new Error('Method not implemented: getHoleSamples');
+  }
+
+  /**
+   * Envía una muestra de un hoyo (BE #532, marcado por par). Se resuelve si
+   * llegó, la guarde el servidor o no
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   * @param {Object} muestra - { id, barra: { color, gender }, tee, bends, greenCenter }
+   * @returns {Promise<void>}
+   */
+  async sendHoleSample(id, holeNumber, muestra) {
+    throw new Error('Method not implemented: sendHoleSample');
+  }
+
+  /**
+   * Reporta un hoyo con un motivo y la línea que propone el jugador (entrega
+   * 7): se resuelve si llegó, lo guarde el servidor o no
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   * @param {Object} reporte - { id, reason, tee, bends, greenCenter }
+   * @returns {Promise<void>}
+   */
+  async sendHoleReport(id, holeNumber, reporte) {
+    throw new Error('Method not implemented: sendHoleReport');
+  }
+
+  /**
+   * Los campos con hoyos pendientes de revisar (BE #575, admin)
+   * @returns {Promise<{golfCourseId: string, name: string, holes: {holeNumber: number, samples: number}[]}[]>}
+   */
+  async listHoleReviews() {
+    throw new Error('Method not implemented: listHoleReviews');
+  }
+
+  /**
+   * Los 18 hoyos de un campo para revisarlos: línea guardada, muestras y tarjeta de cada barra (BE #575, admin)
+   * @param {string} id - Golf course ID
+   */
+  async getHoleReview(id) {
+    throw new Error('Method not implemented: getHoleReview');
+  }
+
+  /**
+   * Guarda la línea de referencia de un hoyo (BE #575, admin)
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   * @param {{tee: Object, bends: Object[], greenCenter: Object}} linea
+   */
+  async saveHoleLine(id, holeNumber, linea) {
+    throw new Error('Method not implemented: saveHoleLine');
+  }
+
+  /**
+   * Reabre un hoyo: quita su línea y vuelve a recoger muestras (BE #575, admin)
+   * @param {string} id - Golf course ID
+   * @param {number} holeNumber - 1 a 18
+   */
+  async reopenHole(id, holeNumber) {
+    throw new Error('Method not implemented: reopenHole');
+  }
+
+  /**
+   * Borra una muestra mala (BE #575, admin)
+   * @param {string} id - Golf course ID
+   * @param {string} sampleId
+   */
+  async deleteHoleSample(id, sampleId) {
+    throw new Error('Method not implemented: deleteHoleSample');
+  }
+
+  /**
+   * Descarta un reporte de un jugador (entrega 7, admin)
+   * @param {string} id - Golf course ID
+   * @param {string} reportId
+   */
+  async discardHoleReport(id, reportId) {
+    throw new Error('Method not implemented: discardHoleReport');
+  }
+
+  /**
    * Create a new golf course request (any user)
    * Creates a golf course in PENDING_APPROVAL status
    * @param {Object} golfCourseData - Golf course data

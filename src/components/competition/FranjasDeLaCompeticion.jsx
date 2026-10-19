@@ -195,6 +195,7 @@ const CamposDeLaHoja = ({ hoja, dia, primeraAntes, onCambio, resumenId }) => {
  * @param {boolean} [props.puedeVerPartidas] - Quien organiza las ve aunque no juegue
  * @param {boolean} [props.organizaPartidas] - Y las cambia (el servidor dice hasta cuándo)
  * @param {() => void} [props.onCambioEnPartidas] - Tras cerrar una franja (la ficha relee su clasificación)
+ * @param {boolean} [props.inscripcionesAbiertas] - Si aún se apunta gente: si no, «caben N de los M» ya no dice nada (FE #856)
  */
 const FranjasDeLaCompeticion = ({
   competitionId,
@@ -219,6 +220,7 @@ const FranjasDeLaCompeticion = ({
   puedeVerPartidas = false,
   organizaPartidas = false,
   onCambioEnPartidas,
+  inscripcionesAbiertas = true,
 }) => {
   const { t, i18n } = useTranslation('schedule');
   const [agenda, setAgenda] = useState(null);
@@ -510,7 +512,10 @@ const FranjasDeLaCompeticion = ({
 
   const cupoTotal = agenda?.teeSheetCapacity ?? null;
   // Booleano: con `maxPlayers` a 0, un `&&` pintaba un «0» suelto (revisor)
-  const cupoCorto = franjas.length > 0 && cupoTotal !== null && maxPlayers > 0 && cupoTotal < maxPlayers;
+  // Solo mientras se apunta gente: con las inscripciones cerradas, los que no
+  // caben ya no van a llegar (FE #856)
+  const cupoCorto =
+    inscripcionesAbiertas && franjas.length > 0 && cupoTotal !== null && maxPlayers > 0 && cupoTotal < maxPlayers;
   // Por qué no se puede añadir, si no se puede
   const porQueNoSeAnade = camposSinCargar
     ? 'franjas.coursesNotLoaded'

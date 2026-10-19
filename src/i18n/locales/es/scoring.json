@@ -13,20 +13,12 @@
     "scorecard": "Tarjeta",
     "leaderboard": "Clasificación"
   },
-  "preMatch": {
-    "title": "Info del Partido",
-    "youMark": "Tú marcas a",
-    "markedBy": "Te marca",
-    "color": "Color de barras",
-    "handicap": "Hándicap",
-    "format": "Formato",
-    "ready": "Listo para Jugar",
-    "youMarkPair": "Marcáis a"
-  },
   "notOpenYet": {
     "title": "La anotación de este partido aún no ha abierto",
     "opensAt": "Abre a las {{hora}}, hora del campo.",
-    "meanwhile": "Hasta entonces, solo se puede anotar si alguien arranca el partido."
+    "meanwhile": "Hasta entonces, solo se puede anotar si alguien arranca el partido.",
+    "youWillMark": "Anotarás a {{nombre}}",
+    "youWillMarkPair": "Anotaréis a {{nombre}}"
   },
   "input": {
     "hole": "Hoyo",
@@ -48,6 +40,7 @@
     "scoreBogey": "Bogey",
     "scoreDouble": "Doble",
     "scoreTriple": "Triple",
+    "customScoreRange": "Escribe un número de 1 a {{max}} golpes.",
     "customScore": "Otro...",
     "enterCustomScore": "Introduce el número de golpes (máx. 15)",
     "close": "Cerrar panel de puntuación",
@@ -71,7 +64,8 @@
     "strokesReceived_other": "{{count}} golpes recibidos",
     "strokesGiven_one": "Da {{count}} golpe",
     "strokesGiven_other": "Da {{count}} golpes",
-    "rivalPair": "La pareja rival"
+    "rivalPair": "La pareja rival",
+    "rivalBallOf": "Bola rival · {{nombre}}"
   },
   "scorecard": {
     "title": "Tarjeta",
@@ -139,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} hoyos validados",
     "notReady": "No todos los hoyos están validados",
     "groupOver": "Partida terminada",
-    "groupCompleted": "Partida completada"
+    "groupCompleted": "Partida completada",
+    "allHolesScored": "Todos los hoyos anotados"
   },
   "summary": {
     "title": "Resumen del Partido",
@@ -264,7 +259,9 @@
       "SIN_EMPEZAR": "Sin empezar",
       "NR": "NR (no termina)",
       "NP": "NP (no presentado)",
-      "RETIRADO": "Retirado"
+      "RETIRADO": "Retirado",
+      "NP_female": "NP (no presentada)",
+      "RETIRADO_female": "Retirada"
     },
     "cardStatus": {
       "JUGANDO": "Jugando",
@@ -289,6 +286,9 @@
     "reopened": "Tarjeta reabierta.",
     "noShow": "Marcar a {{jugador}} como no presentado",
     "noShow_female": "Marcar a {{jugador}} como no presentada",
+    "youAreNoShowHere": "El organizador te ha marcado como no presentado: no puedes anotar en esta partida.",
+    "youAreNoShowHere_female": "El organizador te ha marcado como no presentada: no puedes anotar en esta partida.",
+    "noShowTotal": "NP",
     "noShowShort": "No presentado",
     "noShowShort_female": "No presentada",
     "noShowConfirm": "¿Marcar a {{jugador}} como no presentado? Su tarjeta queda cerrada sin hoyos.",
@@ -309,6 +309,8 @@
       "SCORECARD_NOT_READY_holes_one": "Falta por validar el hoyo {{hoyos}} para entregar la tarjeta.",
       "SCORECARD_NOT_READY_holes_other": "Faltan por validar los hoyos {{hoyos}} para entregar la tarjeta.",
       "PLAYER_HAS_MARKER": "Ese jugador tiene marcador en juego: sus hoyos los valida él.",
+      "SCORECARD_ALREADY_OPEN": "Esa tarjeta ya estaba abierta: se ha actualizado la partida.",
+      "PLAYER_HAS_STROKES": "Ese jugador ya ha anotado: no es un no presentado. Retíralo si no sigue.",
       "GROUP_FULL": "La partida ya está completa: no se puede reabrir esta tarjeta.",
       "NOT_ORGANIZER": "Solo el organizador puede hacer esto.",
       "generic": "No se pudo hacer."
@@ -345,8 +347,87 @@
     "scoredValidated_one": "{{count}} hoyo validado",
     "scoredValidated_other": "{{count}} hoyos validados",
     "broughtInToast": "{{viene}} pasa a esta partida para acompañar a {{jugador}}",
-    "cannotClear": "Un golpe anotado no se borra: elige otro número.",
+    "retirePlayer": "Retirar a {{jugador}}",
+    "retirePlayerShort": "Retirar",
+    "retirePlayerConfirm": "¿Retirar a {{jugador}}? Su tarjeta queda cerrada con lo que lleva anotado.",
+    "retiredByOrganiser": "Retirado.",
+    "retiredByOrganiser_female": "Retirada.",
+    "deleteScored": "Borrar lo anotado",
+    "deleted": "Borrado lo anotado.",
+    "deleteSide": {
+      "own": "Lo del jugador",
+      "marker": "Lo del marcador",
+      "both": "Los dos"
+    },
+    "deleteConfirm": {
+      "own": "¿Borrar lo que anotó {{jugador}} en el hoyo {{hoyo}}?",
+      "marker": "¿Borrar lo que anotó el marcador de {{jugador}} en el hoyo {{hoyo}}?",
+      "both": "¿Borrar todo lo anotado de {{jugador}} en el hoyo {{hoyo}}?"
+    },
+    "cannotClear": "Un número no se deja en blanco: para quitarlo, «Borrar lo anotado».",
     "notOpenYet": "La anotación de esta partida aún no ha abierto",
     "organiserValidates": "Nadie en juego te marca: tus hoyos los valida el organizador. Sigue anotando tus golpes."
+  },
+  "mapa": {
+    "abrir": "Mapa",
+    "titulo": "Hoyo {{numero}} · Par {{par}}",
+    "cerrar": "Cerrar",
+    "centrame": "Céntrame",
+    "verHoyo": "Ver hoyo",
+    "norte": "Norte",
+    "buscando": "Buscando señal GPS…",
+    "denegado": "Ubicación no permitida",
+    "noDisponible": "Este móvil no da la ubicación",
+    "delante": "Delante",
+    "centro": "Centro",
+    "fondo": "Fondo",
+    "metros": "m",
+    "etiqueta": "{{origen}}: delante {{front}} metros, centro {{center}} metros, fondo {{back}} metros",
+    "hastaAhi": "Hasta ahí {{metros}} m",
+    "hastaAhiDesdeLaSalida": "Desde la salida hasta ahí {{metros}} m",
+    "deAhiAlGreen": "De ahí al centro del green {{metros}} m",
+    "quitarPunto": "Quitar",
+    "ayudaMedir": "Toca el mapa para medir",
+    "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
+    "atribucionPnoa": "PNOA © IGN",
+    "atribucionOsm": "© OSM",
+    "ortofoto": {
+      "ES-CT": "Ortofoto © ICGC (CC BY 4.0)",
+      "ES-PV": "Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi",
+      "ES-NC": "Servicio proporcionado por el Gobierno de Navarra (CC BY 4.0)"
+    },
+    "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen.",
+    "pideSalida": "Toca dónde está la salida",
+    "pideGreen": "Toca el centro del green",
+    "ahoraNo": "Ahora no",
+    "marcarHoyo": "Marcar hoyo",
+    "ayudaCodo": "Arrastra los codos al centro de la calle",
+    "fueraDeLimites": "La salida y el green tienen que estar a entre 40 y 750 m",
+    "tramo": "{{metros}} m",
+    "lineaUnTramo": "De la salida al green: {{a}} metros",
+    "lineaDosTramos": "De la salida al codo: {{a}} metros; del codo al green: {{b}} metros",
+    "lineaTresTramos": "De la salida al primer codo: {{a}} metros; del primer al segundo codo: {{b}} metros; del segundo codo al green: {{c}} metros",
+    "lineaVariosTramos": "Tramos de la línea, de la salida al green: {{lista}} metros",
+    "preguntaSalida": "¿Estás en la salida?",
+    "si": "Sí",
+    "no": "No",
+    "marcarEntero": "Marcar el hoyo entero",
+    "malGps": "No te localizamos bien: toca dónde está la salida",
+    "desdeTuPosicion": "Desde tu posición",
+    "desdeTuBarra": "Desde tu barra",
+    "desdeLaSalida": "Desde la salida",
+    "reportar": "Reportar un problema",
+    "reporteTitulo": "¿Qué le pasa a este hoyo?",
+    "cancelar": "Cancelar",
+    "reporteSalida": "Toca dónde está la salida buena",
+    "reporteGreen": "Toca el centro del green bueno",
+    "enviarReporte": "Enviar reporte",
+    "reporteGracias": "Gracias: lo revisará un admin",
+    "motivos": {
+      "WRONG_HOLE": "No es el hoyo correcto",
+      "WRONG_LINE": "La línea es incorrecta",
+      "HOLE_CHANGED": "El hoyo ha cambiado"
+    },
+    "reporteSinCodos": "Mueve la salida o el green si hace falta"
   }
 }

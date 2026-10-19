@@ -16,10 +16,11 @@ import { respaldoDeCarga } from './textoDeEspera';
  * No ocupa la pantalla entera a proposito: lo que rodea al bloque ya esta en
  * pantalla, y vaciarlo para enseñar una espera seria peor que la espera.
  *
- * Siempre en la tinta verde: estas esperas viven sobre el fondo claro de la
- * aplicacion, nunca sobre el verde del arranque.
+ * En la tinta verde: estas esperas viven sobre el fondo claro de la aplicacion,
+ * nunca sobre el verde del arranque. `tinta="blanco"` para un fondo oscuro, como
+ * la espera del mapa del hoyo (19 oct), con su anillo en `.espera-sobre-oscuro`.
  */
-const BlockLoader = ({ texto, sinRelleno = false, silencioso = false }) => {
+const BlockLoader = ({ texto, sinRelleno = false, silencioso = false, tinta = 'verde' }) => {
   const { t, i18n } = useTranslation('common');
 
   return (
@@ -27,7 +28,7 @@ const BlockLoader = ({ texto, sinRelleno = false, silencioso = false }) => {
     {...(silencioso ? {} : { role: 'status', 'aria-live': 'polite' })}
     className={`flex flex-col items-center justify-center gap-3 ${sinRelleno ? '' : 'py-12'}`}
   >
-    <LoadingMark tamano="pequeno" tinta="verde" />
+    <LoadingMark tamano="pequeno" tinta={tinta} />
     {/* Sin texto visible, la region seguiria anunciandose VACIA: el anillo va
         `aria-hidden` y el monograma es decorativo. Un lector de pantalla se
         encontraba con que algo cambia y nada que leer. */}

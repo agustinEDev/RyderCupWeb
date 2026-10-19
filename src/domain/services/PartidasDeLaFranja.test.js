@@ -33,6 +33,47 @@ describe('PartidasDeLaFranja · adónde se mueve a un jugador (FE #824, PR 6)', 
     expect(d.nueva).toBe(true);
   });
 
+  // #544: con la franja empezada, solo las que no han salido (RyderCupAm#557)
+  describe('las que ya salieron', () => {
+    const fija = (g) => ({ ...g, canChange: false });
+    const empezada = (extra = {}) => ({
+      ...vista([fija(partida('g1', 1, ['a', 'b', 'c'])), partida('g2', 2, ['d', 'e', 'f', 'g']), partida('g3', 3, ['h', 'i', 'j'])]),
+      canAddGroup: true,
+      ...extra,
+    });
+
+    it('de una que salió no se mueve a nadie', () => {
+      expect(destinosDelJugador(empezada(), 'a', HOJA)).toEqual({ conSitio: [], intercambios: [], nueva: false });
+    });
+
+    it('a una que salió no se lleva a nadie, ni a intercambiar', () => {
+      const v2 = empezada({ groups: [partida('g1', 1, ['a', 'b', 'c']), fija(partida('g2', 2, ['d', 'e', 'f', 'g'])), fija(partida('g3', 3, ['h']))] });
+
+      const d = destinosDelJugador(v2, 'a', HOJA);
+
+      expect(d.conSitio).toEqual([]);
+      expect(d.intercambios).toEqual([]);
+    });
+
+    it('entre las que no han salido, como siempre', () => {
+      const d = destinosDelJugador(empezada(), 'h', HOJA);
+
+      expect(d.conSitio).toEqual([]);
+      expect(d.intercambios.map(({ con }) => con.userId)).toEqual(['d', 'e', 'f', 'g']);
+      expect(d.nueva).toBe(true);
+    });
+
+    it('sin sitio para una nueva (lo dice el servidor), no hay nueva aunque cuadren las salidas', () => {
+      expect(destinosDelJugador(empezada({ canAddGroup: false }), 'h', HOJA).nueva).toBe(false);
+    });
+
+    it('uno sin partida, solo a las que no han salido', () => {
+      const d = destinosDelJugador({ ...empezada(), unassignedPlayers: [jugador('z')] }, 'z', HOJA);
+
+      expect(d.conSitio.map((g) => g.id)).toEqual(['g3']);
+    });
+  });
+
   it('sin salidas libres, no hay partida nueva', () => {
     expect(destinosDelJugador(v, 'a', { tamano: 4, salidas: 3 }).nueva).toBe(false);
   });
@@ -232,5 +273,17 @@ describe('PartidasDeLaFranja · los no presentados (QA 2, 12 oct 2026)', () => {
 
   it('los compañeros, sin el NP ni uno mismo', () => {
     expect(companerosDe(conNP('g1', 1, ['x'], ['a', 'b']), 'a').map((p) => p.userId)).toEqual(['b']);
+  });
+
+  it('el que se retiró sigue siendo compañero: se marca como retirado al pintarlo (QA de la release)', () => {
+    const g = { id: 'g1', number: 1, players: [jugador('a'), { ...jugador('b'), cardStatus: 'RETIRADO' }, jugador('c')] };
+
+    expect(companerosDe(g, 'a').map((p) => p.userId)).toEqual(['b', 'c']);
+  });
+
+  it('el que entregó su tarjeta sí sigue siendo compañero', () => {
+    const g = { id: 'g1', number: 1, players: [jugador('a'), { ...jugador('b'), cardStatus: 'ENTREGADA' }] };
+
+    expect(companerosDe(g, 'a').map((p) => p.userId)).toEqual(['b']);
   });
 });

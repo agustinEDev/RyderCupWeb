@@ -13,20 +13,12 @@
     "scorecard": "Scorecard",
     "leaderboard": "Leaderboard"
   },
-  "preMatch": {
-    "title": "Match Info",
-    "youMark": "You mark",
-    "markedBy": "Marked by",
-    "color": "Tee colour",
-    "handicap": "Handicap",
-    "format": "Format",
-    "ready": "Ready to Play",
-    "youMarkPair": "You mark"
-  },
   "notOpenYet": {
     "title": "Scoring for this match has not opened yet",
     "opensAt": "It opens at {{hora}}, the course’s local time.",
-    "meanwhile": "Until then, scoring only works if someone starts the match."
+    "meanwhile": "Until then, scoring only works if someone starts the match.",
+    "youWillMark": "You will mark {{nombre}}",
+    "youWillMarkPair": "You will mark {{nombre}}"
   },
   "input": {
     "hole": "Hole",
@@ -48,6 +40,7 @@
     "scoreBogey": "Bogey",
     "scoreDouble": "Dbl. Bogey",
     "scoreTriple": "Triple",
+    "customScoreRange": "Enter a number of strokes from 1 to {{max}}.",
     "customScore": "Other...",
     "enterCustomScore": "Enter number of strokes (max. 15)",
     "close": "Close score panel",
@@ -71,7 +64,8 @@
     "strokesReceived_other": "{{count}} strokes received",
     "strokesGiven_one": "Gives {{count}} stroke",
     "strokesGiven_other": "Gives {{count}} strokes",
-    "rivalPair": "The rival pair"
+    "rivalPair": "The rival pair",
+    "rivalBallOf": "Rival ball · {{nombre}}"
   },
   "scorecard": {
     "title": "Scorecard",
@@ -139,7 +133,8 @@
     "allValidated": "{{count}}/{{total}} holes validated",
     "notReady": "Not all holes are validated yet",
     "groupOver": "Group finished",
-    "groupCompleted": "Group completed"
+    "groupCompleted": "Group completed",
+    "allHolesScored": "All holes scored"
   },
   "summary": {
     "title": "Match Summary",
@@ -286,6 +281,8 @@
     "reopenConfirm": "Reopen {{jugador}}'s card? It can be scored and corrected again.",
     "reopened": "Card reopened.",
     "noShow": "Mark {{jugador}} as no show",
+    "youAreNoShowHere": "The organiser has marked you as a no-show: you cannot score in this group.",
+    "noShowTotal": "NS",
     "noShowShort": "No show",
     "noShowConfirm": "Mark {{jugador}} as no show? Their card is closed with no holes.",
     "markedNoShow": "Marked as no show.",
@@ -303,6 +300,8 @@
       "SCORECARD_NOT_READY_holes_one": "Hole {{hoyos}} still needs validating before the card can be submitted.",
       "SCORECARD_NOT_READY_holes_other": "Holes {{hoyos}} still need validating before the card can be submitted.",
       "PLAYER_HAS_MARKER": "That player has a marker in play: their holes are validated by the marker.",
+      "SCORECARD_ALREADY_OPEN": "That card was already open: the group has been refreshed.",
+      "PLAYER_HAS_STROKES": "That player has already scored, so they are not a no-show. Retire them if they are not carrying on.",
       "GROUP_FULL": "The group is already full: this card cannot be reopened.",
       "NOT_ORGANIZER": "Only the organiser can do this.",
       "generic": "It could not be done."
@@ -339,8 +338,86 @@
     "scoredValidated_one": "{{count}} hole validated",
     "scoredValidated_other": "{{count}} holes validated",
     "broughtInToast": "{{viene}} joins this group to keep {{jugador}} company",
-    "cannotClear": "A scored stroke cannot be cleared: pick another number.",
+    "retirePlayer": "Retire {{jugador}}",
+    "retirePlayerShort": "Retire",
+    "retirePlayerConfirm": "Retire {{jugador}}? Their card is closed with what has been scored so far.",
+    "retiredByOrganiser": "Retired.",
+    "deleteScored": "Delete what was scored",
+    "deleted": "Score deleted.",
+    "deleteSide": {
+      "own": "The player's",
+      "marker": "The marker's",
+      "both": "Both"
+    },
+    "deleteConfirm": {
+      "own": "Delete what {{jugador}} scored on hole {{hoyo}}?",
+      "marker": "Delete what {{jugador}}'s marker scored on hole {{hoyo}}?",
+      "both": "Delete everything scored for {{jugador}} on hole {{hoyo}}?"
+    },
+    "cannotClear": "A stroke cannot be left blank: to remove it, use \"Delete what was scored\".",
     "notOpenYet": "Scoring for this group has not opened yet",
     "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes."
+  },
+  "mapa": {
+    "abrir": "Map",
+    "titulo": "Hole {{numero}} · Par {{par}}",
+    "cerrar": "Close",
+    "centrame": "Centre me",
+    "verHoyo": "Whole hole",
+    "norte": "North",
+    "buscando": "Looking for GPS signal…",
+    "denegado": "Location not allowed",
+    "noDisponible": "This phone does not share its location",
+    "delante": "Front",
+    "centro": "Centre",
+    "fondo": "Back",
+    "metros": "m",
+    "etiqueta": "{{origen}}: front {{front}} metres, centre {{center}} metres, back {{back}} metres",
+    "hastaAhi": "To there {{metros}} m",
+    "hastaAhiDesdeLaSalida": "From the tee to there {{metros}} m",
+    "deAhiAlGreen": "From there to the centre of the green {{metros}} m",
+    "quitarPunto": "Remove",
+    "ayudaMedir": "Tap the map to measure",
+    "noCarga": "The map could not be opened. Check the connection and try again.",
+    "atribucionPnoa": "PNOA © IGN",
+    "atribucionOsm": "© OSM",
+    "ortofoto": {
+      "ES-CT": "Orthophoto © ICGC (CC BY 4.0)",
+      "ES-PV": "Eusko Jaurlaritza / Basque Government. geoEuskadi",
+      "ES-NC": "Service provided by the Government of Navarre (CC BY 4.0)"
+    },
+    "sinMapaEnEsteMovil": "This phone cannot draw the map; the distances to the green still work.",
+    "pideSalida": "Tap where the tee is",
+    "pideGreen": "Tap the centre of the green",
+    "ahoraNo": "Not now",
+    "marcarHoyo": "Mark hole",
+    "ayudaCodo": "Drag the bends to the middle of the fairway",
+    "fueraDeLimites": "The tee and the green must be 40 to 750 m apart",
+    "tramo": "{{metros}} m",
+    "lineaUnTramo": "Tee to green: {{a}} metres",
+    "lineaDosTramos": "Tee to the bend: {{a}} metres; bend to green: {{b}} metres",
+    "lineaTresTramos": "Tee to the first bend: {{a}} metres; first to second bend: {{b}} metres; second bend to green: {{c}} metres",
+    "lineaVariosTramos": "Segments of the line, tee to green: {{lista}} metres",
+    "preguntaSalida": "Are you on the tee?",
+    "si": "Yes",
+    "no": "No",
+    "marcarEntero": "Mark the whole hole",
+    "malGps": "We can't locate you well: tap where the tee is",
+    "desdeTuPosicion": "From your position",
+    "desdeTuBarra": "From your tee",
+    "desdeLaSalida": "From the tee",
+    "reportar": "Report a problem",
+    "reporteTitulo": "What's wrong with this hole?",
+    "cancelar": "Cancel",
+    "reporteSalida": "Tap where the right tee is",
+    "reporteGreen": "Tap the centre of the right green",
+    "enviarReporte": "Send report",
+    "reporteGracias": "Thanks: an admin will review it",
+    "motivos": {
+      "WRONG_HOLE": "It's not the right hole",
+      "WRONG_LINE": "The line is wrong",
+      "HOLE_CHANGED": "The hole has changed"
+    },
+    "reporteSinCodos": "Move the tee or the green if needed"
   }
 }

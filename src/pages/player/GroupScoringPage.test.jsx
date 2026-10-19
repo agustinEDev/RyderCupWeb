@@ -58,6 +58,24 @@ vi.mock('../../hooks/useScoring', () => ({
   },
 }));
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => <div /> }));
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null, disponible: true },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
+
 vi.mock('../../components/scoring/HoleInput', () => ({
   default: (props) => {
     llamadas.casilla = props;
@@ -221,6 +239,39 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(screen.queryByTestId('estado-de-entrega')).toBeNull();
   });
 
+  it('#854: el no presentado ve por qué no anota y no tiene casilla', () => {
+    llamadas.casilla = null;
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO', tee_gender: 'FEMALE' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('no-presentado')).toHaveTextContent('partida.youAreNoShowHere {"context":"female"}');
+    expect(llamadas.casilla).toBeNull();
+    // Ni la tira, ni pasar de hoyo, ni «Retirarme» (revisor)
+    expect(screen.queryByTestId('hole-selector')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'input.nextHole' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'partida.retire' })).toBeNull();
+  });
+
+  it('revisor: el no presentado no ve los avisos de anotar sin conexión ni de hoyos sin guardar', async () => {
+    const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+    mockHook = hook({
+      isOffline: true,
+      noGuardados: { 3: { turno: 1 } },
+      scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO' }), jugador('bea', 'ana')]),
+    });
+    render(<><AvisoSinConexion /><GroupScoringPage /></>);
+
+    expect(screen.queryByTestId('no-guardados')).toBeNull();
+    expect(screen.queryByText(/sinConexion.anotando/)).toBeNull();
+  });
+
+  it('/code-review: ni «a salvo» con su cola: el servidor ya no se la va a guardar', () => {
+    mockHook = hook({ pendingQueueSize: 2, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'NO_PRESENTADO' }), jugador('bea', 'ana')]) });
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('pendientes-a-salvo')).toBeNull();
+  });
+
   it('entregada, la barra lo dice (la tarjeta entregada no cuenta como retirada)', () => {
     mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });
     render(<GroupScoringPage />);
@@ -268,7 +319,10 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     mockHook = hook({ scoringView: vista({}, [jugador('ana', 'cris', { card_status: 'RETIRADO', holes: [jugado, ...Array.from({ length: 17 }, (_, i) => hoyo(i + 2))] }), jugador('bea', 'cris'), jugador('cris', 'bea')]) });
     render(<GroupScoringPage />);
 
-    expect(llamadas.selector.scores.map((s) => s.holeNumber)).toEqual([1]);
+    // Solo la suya, y solo el 1 con algo: la tira pinta vacío lo demás (#847)
+    expect(llamadas.selector.scores.every((s) => s.playerScores.every((p) => p.userId === 'ana'))).toBe(true);
+    const conAlgo = llamadas.selector.scores.filter((s) => s.playerScores.some((p) => p.ownSubmitted || p.markerSubmitted));
+    expect(conAlgo.map((s) => s.holeNumber)).toEqual([1]);
   });
 
   it('revisor: un hoyo que nadie le anotó no lleva nombre de marcador', () => {
@@ -517,5 +571,129 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'partida.retireYes' }));
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('partida.errors.GROUP_NOT_SCORING'));
+  });
+});
+
+describe('GroupScoringPage — el mapa del hoyo (BE #532)', () => {
+  beforeEach(() => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook({ scoringView: vista({ golf_course_id: 'gc-1' }) });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null, disponible: true };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false, pais: null });
+  });
+
+  it('16 oct: antes de abrir, dice a quién vas a marcar', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00' }) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMark');
+  });
+
+  it('16 oct: antes de abrir y sin a quién marcar, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ status: 'SCHEDULED', scoring_opens_at: '2999-01-01T08:00:00+01:00', i_mark_user_id: null }, [jugador('ana', null)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(screen.queryByTestId('anotaras-a')).toBeNull();
+  });
+
+  it('16 oct: el campo de la partida, bajo el título; sin nombre, ni la línea', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_name: 'Golf de Meis - Par 72' }) });
+    const { unmount } = render(<GroupScoringPage />);
+    expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Golf de Meis - Par 72');
+    unmount();
+
+    mockHook = hook();
+    render(<GroupScoringPage />);
+    expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
+  });
+
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
+    render(<GroupScoringPage />);
+
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(boton.previousElementSibling).toHaveTextContent('input.prevHole');
+    expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
+    mockHook = hook({ scoringView: vista({ golf_course_country_code: 'PT' }) });
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args.pais).toBe('PT');
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  it('F12 (16 oct): el mapa recibe los metros del hoyo desde MI barra', () => {
+    const conMetros = (id, marks, base) =>
+      jugador(id, marks, { holes: Array.from({ length: 18 }, (_, i) => ({ ...hoyo(i + 1), meters: base + i })) });
+    mockHook = hook({ scoringView: vista({}, [conMetros('ana', 'bea', 300), conMetros('bea', 'ana', 250)]) });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.metros).toBe(300);
+  });
+
+  it('16 oct: el mapa recibe mi barra (color y sexo), para las muestras', () => {
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { tee_color: 'RED', tee_gender: 'FEMALE' }), jugador('bea', 'ana')]) });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'RED', gender: 'FEMALE' });
+  });
+
+  it('16 oct: una barra sin sexo va con null', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: null });
+  });
+
+  it('F12: sin metros en la vista, el mapa recibe null', () => {
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.ventana.metros).toBeNull();
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      render(<GroupScoringPage />);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('GroupScoringPage — sesión tomada con el mapa abierto', () => {
+  it('el mapa se cierra para que «Volver» salga de la anotación', () => {
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook({ isSessionBlocked: true });
+
+    render(<GroupScoringPage />);
+
+    expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });

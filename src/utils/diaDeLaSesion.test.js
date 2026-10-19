@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diaDeLaSesion } from './diaDeLaSesion';
+import { diaCorto, diaDeLaSesion } from './diaDeLaSesion';
 
 /**
  * Una fecha sin hora, como el día de una sesión, es ese día EN CASA.
@@ -21,5 +21,35 @@ describe('diaDeLaSesion', () => {
     expect(diaDeLaSesion('')).toBeNull();
     expect(diaDeLaSesion(undefined)).toBeNull();
     expect(diaDeLaSesion('26/09/2026')).toBeNull();
+  });
+});
+
+/**
+ * El día de una tarjeta, corto y sin comas: «Jue 24 sept» (FE #845, #846).
+ *
+ *   #   caso                    | sale
+ *   ----|-------------------------|------------------
+ *   1   en español              | Jue 24 sept
+ *   2   en inglés               | Thu Sep 24
+ *   3   sin fecha o mal escrita | null
+ */
+describe('diaCorto (FE #845)', () => {
+  it('1 · en español, con mayúscula y sin coma', () => {
+    // «sep» o «sept»: ICU ha cambiado esa abreviatura entre versiones (CodeRabbit)
+    expect(diaCorto('2026-09-24', 'es')).toMatch(/^Jue 24 sept?$/);
+  });
+
+  it('2 · en inglés, en su orden', () => {
+    expect(diaCorto('2026-09-24', 'en')).toBe('Thu Sep 24');
+  });
+
+  it('3 · sin fecha válida, nada', () => {
+    expect(diaCorto(null, 'es')).toBeNull();
+    expect(diaCorto('24/09/2026', 'es')).toBeNull();
+  });
+
+  it('4 · un idioma mal escrito no tumba la pantalla: sale en el de por defecto', () => {
+    expect(() => diaCorto('2026-09-24', 'es_ES')).not.toThrow();
+    expect(diaCorto('2026-09-24', 'es_ES')).toMatch(/24/);
   });
 });

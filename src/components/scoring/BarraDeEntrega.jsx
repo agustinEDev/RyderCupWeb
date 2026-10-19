@@ -20,6 +20,9 @@ import { useTranslation } from 'react-i18next';
  *   hoyos que anote después
  * @param {boolean} [dePartida] - Una partida de stroke play: «partida», no
  *   «partido» (QA del 11 oct 2026)
+ * @param {boolean} [soloAnotado] - Todos los hoyos tienen golpe pero falta
+ *   validarlos y nada lo ha decidido: no está terminado, y decirlo engañaba
+ *   (Agustín, 16 oct)
  */
 const BarraDeEntrega = ({
   estado,
@@ -31,9 +34,10 @@ const BarraDeEntrega = ({
   completado = false,
   sePuedeSeguir = false,
   dePartida = false,
+  soloAnotado = false,
 }) => {
   const { t } = useTranslation('scoring');
-  const acabado = t(dePartida ? 'submit.groupOver' : 'submit.matchOver');
+  const acabado = t(soloAnotado ? 'submit.allHolesScored' : dePartida ? 'submit.groupOver' : 'submit.matchOver');
 
   return (
     <div

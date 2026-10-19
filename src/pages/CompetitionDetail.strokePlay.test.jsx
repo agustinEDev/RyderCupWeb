@@ -314,49 +314,41 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     expect(screen.queryByRole('button', { name: /partidas.show/ })).toBeNull();
   });
 
-  it.each(['IN_PROGRESS', 'COMPLETED'])('1 (PR 8): %s, la ficha tiene su clasificación', async (status) => {
-    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
-    renderPage();
-
-    expect(await screen.findByTestId('clasificaciones')).toBeInTheDocument();
-  });
-
-  it.each([
-    ['IN_PROGRESS', 2],
-    ['COMPLETED', 1],
-  ])('6 (PR 8): %s, la general se relee cada 60 s solo en juego', async (status, lecturas) => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+  it.each(['IN_PROGRESS', 'COMPLETED'])('F1: %s, la general ya no está en la ficha (tiene su página)', async (status) => {
     const { getCompetitionStandingsUseCase } = await import('../composition');
     mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
     renderPage();
-    await screen.findByTestId('clasificaciones');
-    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(1));
-    await act(async () => {});
+    await screen.findByText('detail.actions.leaderboard');
 
-    await act(async () => vi.advanceTimersByTime(60000));
-
-    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(lecturas));
+    expect(screen.queryByTestId('clasificaciones')).toBeNull();
+    expect(getCompetitionStandingsUseCase.execute).not.toHaveBeenCalled();
   });
 
-  it('pasada: al cerrar una franja, la clasificación de la ficha se relee (lo sin acabar pasa a NR/NP)', async () => {
-    const { getScheduleUseCase, getTeeGroupsUseCase, closeTeeWindowUseCase, getCompetitionStandingsUseCase } = await import('../composition');
-    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
-    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
-    const grupo = { id: 'g1', number: 1, teeTime: '08:00', status: 'IN_PROGRESS', incomplete: false, players: [{ userId: 'ana', name: 'Ana', handicap: 5, playingHandicap: 5, marksUserId: null }] };
-    getTeeGroupsUseCase.execute.mockResolvedValue({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [grupo] });
-    closeTeeWindowUseCase.execute.mockResolvedValueOnce({ roundId: 'r1', editable: false, unassignedPlayers: [], groups: [{ ...grupo, status: 'COMPLETED' }] });
+  it.each([
+    ['IN_PROGRESS', false],
+    ['COMPLETED', false],
+    ['ACTIVE', true],
+    ['CLOSED', true],
+  ])('F6: %s, configuración y jugadores aprobados abiertos: %s', async (status, abiertos) => {
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status }));
+    renderPage();
+    const titulo = await screen.findByText('detail.settings.title');
+
+    expect(titulo.closest('details')).toHaveProperty('open', abiertos);
+    expect(screen.getByText('detail.approvedPlayers').closest('details')).toHaveProperty('open', abiertos);
+  });
+
+  it('F6b/F7: plegados se abren tocando el título, que sigue diciendo cuántos jugadores hay', async () => {
     mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'IN_PROGRESS' }));
     renderPage();
-    await screen.findByTestId('clasificaciones');
-    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(1));
+    const jugadores = (await screen.findByText('detail.approvedPlayers')).closest('details');
+    const resumen = jugadores.querySelector('summary');
+    expect(resumen.tagName).toBe('SUMMARY');
+    expect(within(resumen).getByText(/^\d+$/)).toBeInTheDocument();
 
-    const franja = within(await screen.findByTestId('franja-r1'));
-    fireEvent.click(franja.getByRole('button', { name: /partidas.show/ }));
-    fireEvent.click(await franja.findByRole('button', { name: 'partidas.closeWindow' }));
-    fireEvent.click(franja.getByRole('button', { name: 'partidas.closeWindowYes' }));
+    fireEvent.click(resumen);
 
-    await waitFor(() => expect(closeTeeWindowUseCase.execute).toHaveBeenCalledWith('r1'));
-    await waitFor(() => expect(getCompetitionStandingsUseCase.execute).toHaveBeenCalledTimes(2));
+    expect(jugadores.open).toBe(true);
   });
 
   it.each(['ACTIVE', 'CLOSED'])('1 (PR 8): %s, todavía no hay clasificación', async (status) => {

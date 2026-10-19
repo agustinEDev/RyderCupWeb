@@ -63,6 +63,7 @@ describe('CompetitionAssembler · actualizaciones de hándicap (FE #824)', () =>
       open: true,
       closesAt: '2030-10-12T05:40:00Z',
       reason: null,
+      reasonCode: null,
       scheduledAt: '2030-10-12T01:00:00Z',
     });
   });

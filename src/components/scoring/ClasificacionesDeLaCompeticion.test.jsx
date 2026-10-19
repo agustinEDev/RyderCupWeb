@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 /**
@@ -86,5 +86,47 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('ClasificacionesDeLaCompeticion · me lleva a mi fila (14 oct 2026)', () => {
+  let centra;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    centra = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = centra;
+    mockGeneral.mockResolvedValue(clasificacion([fila('ana'), fila('yo', { position: 2 })]));
+    mockScratch.mockResolvedValue(clasificacion([fila('yo', { position: 1 }), fila('ana', { position: 2 })], { scale: 'SCRATCH' }));
+  });
+  afterEach(() => delete globalThis.Element.prototype.scrollIntoView);
+
+  it('G4: la general me centra al abrir la página, la scratch la primera vez que se abre, y volver a la general no', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="yo" enJuego={false} />);
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'partida.scratch' }));
+    await waitFor(() => expect(centra).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('tab', { name: 'partida.overall' }));
+    await act(async () => {});
+
+    expect(centra).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('ClasificacionesDeLaCompeticion · en su propia página (14 oct 2026, FE #865)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGeneral.mockResolvedValue(clasificacion([fila('ana')]));
+  });
+
+  it('N1: sin tarjeta ni título propios: la tabla usa todo el ancho de su página (a 360 px los nombres no caben en 125 px)', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="yo" enJuego={false} />);
+    await screen.findByTestId('fila-ana');
+
+    const seccion = screen.getByTestId('clasificaciones');
+    // Nada que la estreche otra vez: tarjeta, rellenos, márgenes, anchos máximos o fondo propio
+    expect(seccion.className).not.toMatch(/\b(border|shadow|rounded|ring|bg-|max-w-|[pm][xytblr]?-(\d|\[))/);
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: 'partida.standingsTitle' })).toBeInTheDocument();
   });
 });

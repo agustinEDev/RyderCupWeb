@@ -50,3 +50,14 @@ describe('los demás textos nuevos de la PR 5 (revisor)', () => {
   it.each(RUTAS)('%s existe en español', (ruta) => expect(existeRuta(es, ruta)).toBe(true));
   it.each(RUTAS)('%s existe en inglés', (ruta) => expect(existeRuta(en, ruta)).toBe(true));
 });
+
+describe('los motivos de la ventana, por código (RyderCupAm#541)', () => {
+  const CODIGOS = ['STATUS', 'NO_WINDOWS', 'RYDER', 'DAY_IN_PLAY', 'NO_DAYS_LEFT', 'TOO_CLOSE', 'NO_TIMEZONE', 'DISABLED', 'RUNNING', 'IN_THE_PAST', 'TOO_TIGHT'];
+
+  it.each(CODIGOS)('handicaps.reasons.%s existe en español', (codigo) => expect(typeof es.handicaps?.reasons?.[codigo]).toBe('string'));
+  it.each(CODIGOS)('handicaps.reasons.%s existe en inglés', (codigo) => expect(typeof en.handicaps?.reasons?.[codigo]).toBe('string'));
+  it('y no sobra ninguno', () => {
+    expect(Object.keys(es.handicaps.reasons).sort()).toEqual([...CODIGOS].sort());
+    expect(Object.keys(en.handicaps.reasons).sort()).toEqual([...CODIGOS].sort());
+  });
+});

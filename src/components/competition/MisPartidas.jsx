@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { getMyTeeGroupsUseCase } from '../../composition';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
-import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan } from '../../domain/services/PartidasDeLaFranja';
+import { anotaSuTarjeta, companerosDe, esNoPresentado, juegan, seRetiro } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
+import { nombreDeCompanero } from '../../utils/nombreDeCompanero';
 
 /**
  * «Tu partida» de cada jornada, arriba de las franjas (FE #824, PR 6; caso 5,
@@ -44,9 +45,14 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
       {mias.map(({ roundId, roundDate, sessionType, group }) => {
         const yo = group.players.find((p) => p.userId === userId);
         // Sin los no presentados: siguen en la partida, pero no juegan (QA 2)
-        const companeros = companerosDe(group, userId).map((p) => p.name);
-        // Retirado, ya no marca a nadie (/code-review)
-        const marcado = yo?.cardStatus === 'RETIRADO' ? null : juegan(group).find((p) => p.userId === yo?.marksUserId);
+        // Quien se retiró sigue, dicho: «con Bea (retirada)» (QA de la release)
+        const companeros = companerosDe(group, userId).map((p) =>
+          nombreDeCompanero(t, 'partidas.withdrawnPartner', { name: p.name, withdrawn: seRetiro(p), teeGender: p.teeGender })
+        );
+        // Solo mientras anota: retirado (/code-review), con su tarjeta ya
+        // entregada o la partida cerrada (QA de la release), no marca a nadie
+        const anota = anotaSuTarjeta(group, userId);
+        const marcado = anota ? juegan(group).find((p) => p.userId === yo?.marksUserId) : null;
         const datos = {
           franja: t(`sessions.${sessionType}`),
           dia: fecha(roundDate),
@@ -61,11 +67,18 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
             </li>
           );
         }
+        // Retirado: con quién jugó y su estado, no «de momento sin compañeros» (#853)
+        const retirado = yo?.cardStatus === 'RETIRADO';
+        const linea = retirado
+          ? companeros.length > 0
+            ? t('partidas.youRetired', conGenero(yo.teeGender, { ...datos, companeros: companeros.join(', ') }))
+            : t('partidas.youRetiredAlone', conGenero(yo.teeGender, datos))
+          : companeros.length > 0
+            ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
+            : t('partidas.mineAlone', datos);
         return (
           <li key={roundId} data-testid={`mi-partida-${roundId}`}>
-            {companeros.length > 0
-              ? t('partidas.mine', { ...datos, companeros: companeros.join(', ') })
-              : t('partidas.mineAlone', datos)}
+            {linea}
             {marcado && <span> · {t('partidas.youMark', { jugador: marcado.name })}</span>}
             {/* Le pasaron de otra partida para que alguien no se quedara solo
                 (QA del 11 oct 2026, BE #539): su hora puede haber cambiado */}
@@ -79,7 +92,7 @@ const MisPartidas = ({ competitionId, userId, version, fecha, categoria = null }
               to={`/player/groups/${group.id}/scoring?competition=${competitionId}`}
               className="ml-2 inline-flex min-h-11 items-center font-semibold text-primary underline"
             >
-              {t(anotaSuTarjeta(group, userId) ? 'partidas.score' : 'partidas.viewCard')}
+              {t(anota ? 'partidas.score' : 'partidas.viewCard')}
             </Link>
           </li>
         );

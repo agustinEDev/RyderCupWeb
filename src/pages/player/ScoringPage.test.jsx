@@ -73,6 +73,23 @@ const mockUseScoring = {
   refetch: vi.fn(),
 };
 
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null, disponible: true },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
 vi.mock('../../hooks/useScoring', () => ({
   useScoring: () => mockUseScoring,
 }));
@@ -118,9 +135,6 @@ vi.mock('../../components/scoring/ScorecardTable', () => ({
 }));
 vi.mock('../../components/scoring/LeaderboardView', () => ({
   default: () => <div data-testid="leaderboard-view">LeaderboardView</div>,
-}));
-vi.mock('../../components/scoring/PreMatchInfo', () => ({
-  default: () => <div data-testid="pre-match-info">PreMatchInfo</div>,
 }));
 vi.mock('../../components/scoring/MatchSummaryCard', () => ({
   default: ({ winnerName }) => (
@@ -190,6 +204,49 @@ describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve 
 
     expect(screen.queryByTestId('hole-input')).not.toBeInTheDocument();
     expect(screen.getByText(/notOpenYet.title|no ha abierto/i)).toBeInTheDocument();
+  });
+
+  it('C1 · antes de abrir, dice a quién vas a marcar (16 oct: lo decía «Info del Partido»)', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMark');
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('Player B');
+  });
+
+  it('C1 · antes de abrir, en foursomes, a la pareja rival', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({
+      matchStatus: 'SCHEDULED',
+      scoringOpensAt: dentroDeUnaHora,
+      matchFormat: 'FOURSOMES',
+      players: [...vistaOriginal.players, { userId: 'u3', userName: 'Player C', team: 'A' }, { userId: 'u4', userName: 'Player D', team: 'B' }],
+    });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('notOpenYet.youWillMarkPair');
+    expect(screen.getByTestId('anotaras-a')).toHaveTextContent('Player B / Player D');
+  });
+
+  it('C1 · antes de abrir no hay «Mapa» (su ventana va con el hoyo)', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+  });
+
+  it('C1 · antes de abrir, sin a quién marcar, ni la línea', () => {
+    const dentroDeUnaHora = new Date(Date.now() + 3600 * 1000).toISOString();
+    conVista({ matchStatus: 'SCHEDULED', scoringOpensAt: dentroDeUnaHora, markerAssignments: [] });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('anotaras-a')).toBeNull();
   });
 
   it('C2 · programado pero su hora ya pasó: casillas, que el primer golpe lo abre', () => {
@@ -268,9 +325,45 @@ describe('ScoringPage', () => {
     expect(screen.getByTestId('hole-selector')).toBeInTheDocument();
   });
 
-  it('should show pre-match info on hole 1', () => {
+  it('16 oct: sin «Info del Partido» (para que la navegación se vea sin desplazar)', () => {
     render(<ScoringPage />);
-    expect(screen.getByTestId('pre-match-info')).toBeInTheDocument();
+    expect(screen.queryByTestId('pre-match-info')).toBeNull();
+  });
+
+  it('16 oct: «Anotas a …» del hoyo dice a quién marco', () => {
+    render(<ScoringPage />);
+    expect(casilla.props.markedName).toBe('Player B');
+  });
+
+  it('16 oct: en foursomes, «Anotas a …» dice la pareja rival (#710)', () => {
+    const vista = mockUseScoring.scoringView;
+    mockUseScoring.scoringView = {
+      ...vista,
+      matchFormat: 'FOURSOMES',
+      players: [...vista.players, { userId: 'u3', userName: 'Player C', team: 'A' }, { userId: 'u4', userName: 'Player D', team: 'B' }],
+    };
+    try {
+      render(<ScoringPage />);
+      expect(casilla.props.markedName).toBe('Player B / Player D');
+    } finally {
+      mockUseScoring.scoringView = vista;
+    }
+  });
+
+  it('16 oct: el campo de la partida, bajo el título', () => {
+    const vista = mockUseScoring.scoringView;
+    mockUseScoring.scoringView = { ...vista, roundInfo: { ...vista.roundInfo, golfCourseName: 'Golf de Meis - Par 72' } };
+    try {
+      render(<ScoringPage />);
+      expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Golf de Meis - Par 72');
+    } finally {
+      mockUseScoring.scoringView = vista;
+    }
+  });
+
+  it('16 oct: sin nombre del campo, ni la línea', () => {
+    render(<ScoringPage />);
+    expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
   });
 
   it('should switch to scorecard tab', () => {
@@ -288,7 +381,8 @@ describe('ScoringPage', () => {
   it('should show match header info', () => {
     render(<ScoringPage />);
     expect(screen.getByText(/matchHeader/)).toBeInTheDocument();
-    expect(screen.getByText('SINGLES')).toBeInTheDocument();
+    // El formato, traducido (16 oct: salía «SINGLES» tal cual)
+    expect(screen.getByText('formats.SINGLES')).toBeInTheDocument();
   });
 
   it('should render header', () => {
@@ -1038,6 +1132,36 @@ describe('ScoringPage · el recuadro rojo cuenta lo que falló (FE #626)', () =>
       expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
     });
 
+    it('K3 (16 oct): con los 18 anotados y sin validar, ni conceder ni «Partido terminado»', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = false;
+      mockUseScoring.partidoAcabado = true;
+      mockUseScoring.canSubmitScorecard = false;
+      try {
+        render(<ScoringPage />);
+
+        expect(screen.queryByText('concede.button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('barra-de-entrega')).toHaveTextContent('submit.allHolesScored');
+        expect(screen.getByTestId('barra-de-entrega')).not.toHaveTextContent('submit.matchOver');
+      } finally {
+        mockUseScoring.partidoAcabado = false;
+      }
+    });
+
+    it('K4: decidido y sin validar, sí es «Partido terminado»', () => {
+      mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
+      mockUseScoring.scoringView.isDecided = true;
+      mockUseScoring.partidoAcabado = true;
+      mockUseScoring.canSubmitScorecard = false;
+      try {
+        render(<ScoringPage />);
+
+        expect(screen.getByTestId('barra-de-entrega')).toHaveTextContent('submit.matchOver');
+      } finally {
+        mockUseScoring.partidoAcabado = false;
+      }
+    });
+
     it('K2: sin decidir, sí', () => {
       mockUseScoring.scoringView.matchStatus = 'IN_PROGRESS';
       mockUseScoring.scoringView.isDecided = false;
@@ -1473,5 +1597,134 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
     rerender(<ScoringPage />);
 
     expect(casilla.montajes).toBe(antes);
+  });
+});
+
+describe('ScoringPage — el mapa del hoyo (BE #532)', () => {
+  const vistaOriginal = mockUseScoring.scoringView;
+  afterEach(() => {
+    mockUseScoring.scoringView = vistaOriginal;
+  });
+  beforeEach(() => {
+    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1' } };
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null, disponible: true };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', cerrarSi: false, pais: null });
+  });
+
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
+    render(<ScoringPage />);
+
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(boton.previousElementSibling).toHaveTextContent('input.prevHole');
+    expect(boton.nextElementSibling).toHaveTextContent('input.nextHole');
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
+    mockUseScoring.scoringView = { ...vistaOriginal, roundInfo: { ...vistaOriginal.roundInfo, golfCourseId: 'gc-1', golfCourseCountryCode: 'PT' } };
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args.pais).toBe('PT');
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  // RyderCupWeb #880: la Ryder marca y envía muestras como el resto
+  const conJugadores = (players) => {
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, players };
+  };
+
+  it('F2: a la ventana le llega mi barra (color y sexo)', () => {
+    conJugadores([
+      { userId: 'u1', userName: 'Yo', team: 'A', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u2', userName: 'Rival', team: 'B', color: 'RED', teeGender: 'FEMALE', holeCard: [] },
+    ]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: 'MALE' });
+    expect(mapaHoyo.ventana.userId).toBe('u1');
+  });
+
+  it('F2: mi barra sin sexo va con gender null', () => {
+    conJugadores([{ userId: 'u1', userName: 'Yo', team: 'A', color: 'YELLOW', teeGender: null, holeCard: [] }]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'YELLOW', gender: null });
+  });
+
+  it('F3: si no juego en el partido (el organizador), no hay barra', () => {
+    conJugadores([
+      { userId: 'u2', userName: 'A', team: 'A', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u3', userName: 'B', team: 'B', color: 'RED', teeGender: 'FEMALE', holeCard: [] },
+    ]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toBeNull();
+  });
+
+  it('F3: mi barra sin color, no hay barra', () => {
+    conJugadores([{ userId: 'u1', userName: 'Yo', team: 'A', color: null, teeGender: 'MALE', holeCard: [] }]);
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toBeNull();
+  });
+
+  it('F4: en foursomes cada uno envía con SU barra (no la del compañero)', () => {
+    conJugadores([
+      { userId: 'u4', userName: 'Compañera', team: 'A', color: 'RED', teeGender: 'FEMALE', holeCard: [] },
+      { userId: 'u1', userName: 'Yo', team: 'A', color: 'WHITE', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u2', userName: 'R1', team: 'B', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+      { userId: 'u3', userName: 'R2', team: 'B', color: 'YELLOW', teeGender: 'MALE', holeCard: [] },
+    ]);
+    mockUseScoring.scoringView = { ...mockUseScoring.scoringView, matchFormat: 'FOURSOMES' };
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'WHITE', gender: 'MALE' });
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      render(<ScoringPage />);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+describe('ScoringPage — sesión tomada con el mapa abierto', () => {
+  afterEach(() => {
+    mockUseScoring.isSessionBlocked = false;
+  });
+
+  it('el mapa se cierra para que «Volver» salga de la anotación', () => {
+    mockUseScoring.isSessionBlocked = true;
+
+    render(<ScoringPage />);
+
+    expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });

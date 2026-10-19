@@ -63,6 +63,18 @@ class ApiTeeGroupScoringRepository extends ITeeGroupScoringRepository {
     return TeeGroupScoringMapper.toScoringViewDTO(data);
   }
 
+  /** El organizador retira a quien ya jugó (RyderCupAm#553). */
+  async retirePlayer(groupId, userId) {
+    const data = await apiRequest(`${BASE}/groups/${groupId}/players/${userId}/retire`, { method: 'POST' });
+    return TeeGroupScoringMapper.toScoringViewDTO(data);
+  }
+
+  /** Borra lo anotado en un hoyo: `own`, `marker` o `both` (RyderCupAm#553). */
+  async deleteHole(groupId, userId, holeNumber, side) {
+    const data = await apiRequest(`${BASE}/groups/${groupId}/players/${userId}/holes/${holeNumber}?side=${side}`, { method: 'DELETE' });
+    return TeeGroupScoringMapper.toScoringViewDTO(data);
+  }
+
   /** Valida de una vez lo anotado por quien juega sin marcador (BE #539). */
   async validateScored(groupId, userId) {
     const data = await apiRequest(`${BASE}/groups/${groupId}/players/${userId}/validate-scored`, { method: 'POST' });

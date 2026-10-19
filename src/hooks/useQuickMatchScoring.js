@@ -84,6 +84,8 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
   const [holes, setHoles] = useState([]);
   const [tees, setTees] = useState([]);
   const [courseName, setCourseName] = useState(null);
+  // El país del campo: el mapa solo tiene imagen en España (19 oct)
+  const [courseCountryCode, setCourseCountryCode] = useState(null);
   const [currentHole, setCurrentHole] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   // Dos errores y no uno: el mismo status significa cosas distintas según de
@@ -213,6 +215,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           setHoles(course.holes || []);
           setTees(course.tees || []);
           setCourseName(course.name ?? null);
+          setCourseCountryCode(course.countryCode ?? null);
           // La partida Y su campo: sin hoyos no hay par ni índice, y la
           // pantalla no se puede dibujar aunque se sepa quién juega
           campoRef.current = course;
@@ -289,6 +292,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
           setHoles(recordado.campo.holes || []);
           setTees(recordado.campo.tees || []);
           setCourseName(recordado.campo.name ?? null);
+          setCourseCountryCode(recordado.campo.countryCode ?? null);
           holesLoadedRef.current = true;
         }
       }
@@ -335,6 +339,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     setHoles([]);
     setTees([]);
     setCourseName(null);
+    setCourseCountryCode(null);
     setPintadoDeMemoria(false);
     setIsLoading(true);
     setLoadError(null);
@@ -943,6 +948,7 @@ export const useQuickMatchScoring = (quickMatchId, currentUserId) => {
     holes,
     tees,
     courseName,
+    courseCountryCode,
     currentHole,
     isLoading,
     loadError,
