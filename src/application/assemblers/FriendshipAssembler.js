@@ -44,6 +44,10 @@ class FriendshipAssembler {
       const isRequester = friendship.requesterId === currentUserId;
       simpleDTO.otherUserId = friendship.otherUserId(currentUserId);
       simpleDTO.otherUserName = isRequester ? simpleDTO.addresseeName : simpleDTO.requesterName;
+      // El del otro lado, para el resumen de la partida rápida antes de crear
+      // nada (FE #848). Solo lo trae la lista de amigos; si no, null
+      simpleDTO.otherUserHandicap =
+        (isRequester ? apiData?.addressee_handicap : apiData?.requester_handicap) ?? null;
       simpleDTO.isSentByMe = isRequester;
     }
 

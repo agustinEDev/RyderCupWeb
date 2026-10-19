@@ -113,6 +113,8 @@ class GetUpcomingMatchesUseCase {
           ...match,
           competitionId: competition.id,
           competitionName: competition.name,
+          // Para la etiqueta de su tarjeta (FE #845)
+          tournamentType: competition.tournamentType,
           roundDate: round.roundDate,
           // La hora a la que abre la anotación la manda el servidor en la RONDA
           // (BE #305) y quien decide si se ofrece anotar mira el PARTIDO, así

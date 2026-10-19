@@ -312,9 +312,35 @@ describe('Competition', () => {
 
     it('should throw error for invalid maxPlayers during update', () => {
       const competition = Competition.create(createValidCompetitionProps());
-      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow('maxPlayers must be a number between 2 and 100.');
-      expect(() => competition.updateInfo({ maxPlayers: 101 })).toThrow('maxPlayers must be a number between 2 and 100.');
-      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow('maxPlayers must be a number between 2 and 100.');
+      expect(() => competition.updateInfo({ maxPlayers: 1 })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => competition.updateInfo({ maxPlayers: 201 })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => competition.updateInfo({ maxPlayers: 'invalid' })).toThrow('maxPlayers must be a number between 2 and 200.');
+    });
+
+    it('accepts up to 200 players, the API limit since BE #314', () => {
+      const competition = Competition.create(createValidCompetitionProps());
+      expect(competition.updateInfo({ maxPlayers: 200 }).maxPlayers).toBe(200);
+      expect(competition.updateInfo({ maxPlayers: 2 }).maxPlayers).toBe(2);
+    });
+
+    it('creating checks the same range as updating', () => {
+      // Solo lo miraba `updateInfo`: crear con 500 daba una competición imposible
+      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: 201 })).toThrow(
+        'maxPlayers must be a number between 2 and 200.'
+      );
+      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: 1 })).toThrow(
+        'maxPlayers must be a number between 2 and 200.'
+      );
+      expect(Competition.create({ ...createValidCompetitionProps(), maxPlayers: 200 }).maxPlayers).toBe(200);
+    });
+
+    it.each([2.5, Number.NaN, Infinity])('a non-whole count (%s) is not a count either', (cupo) => {
+      // `typeof NaN` es 'number' y no es ni < 2 ni > 200: pasaba (CodeRabbit en la #833)
+      const competition = Competition.create(createValidCompetitionProps());
+      expect(() => competition.updateInfo({ maxPlayers: cupo })).toThrow('maxPlayers must be a number between 2 and 200.');
+      expect(() => Competition.create({ ...createValidCompetitionProps(), maxPlayers: cupo })).toThrow(
+        'maxPlayers must be a number between 2 and 200.'
+      );
     });
   });
 

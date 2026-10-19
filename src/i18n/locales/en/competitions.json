@@ -18,16 +18,19 @@
     "inProgress": "In Progress",
     "completed": "Completed",
     "cancelled": "Cancelled",
-    "youAreTheCreator": "You are the creator",
     "pendingRequest": "pending request",
     "pendingRequests": "pending requests",
     "enrollmentStatus": "Enrollment: {{status}}",
     "players": "{{count}} / {{max}} players",
-    "golfCoursesCount_one": "{{count}} golf course",
-    "golfCoursesCount_other": "{{count}} golf courses",
     "countriesCount_one": "{{count}} country",
     "countriesCount_other": "{{count}} countries",
-    "sinCoberturaDetalle": "The list could not be fetched. Whatever you have is still there: check again when you have coverage."
+    "sinCoberturaDetalle": "The list could not be fetched. Whatever you have is still there: check again when you have coverage.",
+    "youOrganise": "You organise",
+    "youPlay": "You play",
+    "nextSession": "Your next round: {{cuando}}",
+    "severalCourses": "Several courses",
+    "playingDays_one": "{{count}} playing day",
+    "playingDays_other": "{{count}} playing days"
   },
   "create": {
     "title": "Create Competition",
@@ -104,11 +107,24 @@
       "golfCourseRequired": "Please select a golf course",
       "golfCoursesRequired": "Please select golf courses for: {{countries}}",
       "playersMinimum": "Number of players must be at least 2",
-      "playersMaximum": "Number of players cannot exceed 100",
+      "playersMaximum": "Number of players cannot exceed {{max}}",
       "teamNamesTooShort": "Team names need at least 3 characters",
       "teamNamesTooLong": "Team names cannot exceed 50 characters",
       "handicapLimitRange": "The handicap limit must be between 1 and 54",
-      "playersInvalid": "The number of players must be a whole number"
+      "playersInvalid": "The number of players must be a whole number",
+      "categoryLimitsTooMany": "At most 4 limits: 5 categories.",
+      "categoryLimitRange": "Each limit is a handicap between -10.0 and 54.0.",
+      "categoryLimitOneDecimal": "Limits have one decimal at most.",
+      "categoryLimitsOrder": "Limits go from lowest to highest, with no repeats.",
+      "categoryCountRange": "Equal categories are between 2 and 5.",
+      "matchdaysRange": "Each player must be able to play at least one day.",
+      "matchdaysMoreThanDays_one": "The tournament lasts {{count}} day: no more days per player fit.",
+      "matchdaysMoreThanDays_other": "The tournament lasts {{count}} days: no more days per player fit.",
+      "categoryLimitEmpty": "Type the limit or remove it.",
+      "nameTooShort": "The name needs at least 3 characters.",
+      "nameTooLong": "The name cannot be longer than 100 characters.",
+      "nameUnreadable": "The name needs at least one letter or digit.",
+      "nameTaken": "You already have a competition with that name: choose another."
     },
     "success": "Competition created successfully!",
     "partialSuccess": "Competition created, but {{failed}} course(s) could not be added: {{courses}}. {{success}} course(s) were added successfully.",
@@ -144,7 +160,47 @@
       "MATCH_PLAY": "Match play",
       "STROKE_PLAY": "Stroke play"
     },
-    "moreOptionsSummaryNoTeams": "{{handicap}}"
+    "moreOptionsSummaryNoTeams": "{{handicap}}",
+    "strokePlay": {
+      "title": "{{tipo}} settings",
+      "categories": "Categories",
+      "mode": {
+        "LIMITES": "Set the limits",
+        "IGUALES": "Equal categories"
+      },
+      "limitsHint": "Each limit is the highest handicap in its category: \"up to 12.0\" includes 12.0. With no limits, there is one category.",
+      "limitLabel": "Limit {{numero}}",
+      "addLimit": "Add a limit",
+      "removeLimit": "Remove limit {{numero}}",
+      "preview": {
+        "single": "One category for everyone",
+        "upTo": "Category {{numero}}: up to {{hasta}}",
+        "between": "Category {{numero}}: {{desde}} to {{hasta}}",
+        "above": "Category {{numero}}: over {{masDe}}"
+      },
+      "equalCount": "How many categories",
+      "equalHint": "They are split when enrollments close, using the fixed handicaps, into groups as even as possible. Players tied on a boundary stay together.",
+      "sixRule": "A category needs at least 6 players: with fewer, it joins the one with lower handicaps.",
+      "matchdays": "Days per player",
+      "matchdaysHint": "On how many days each player can play, one slot per day.",
+      "overall": {
+        "title": "Overall standings",
+        "ACCUMULATED": {
+          "label": "Accumulated",
+          "STABLEFORD": "Adds up the points of all their rounds.",
+          "MEDAL": "Adds up the net strokes of all their rounds."
+        },
+        "BEST_CARD": {
+          "label": "Best card",
+          "hint": "Only their best round counts."
+        }
+      }
+    },
+    "competitionNamePlaceholderFor": {
+      "STABLEFORD": "E.g. Sunday Stableford",
+      "MEDAL": "E.g. Spring Medal"
+    },
+    "organizerPlays": "Are you playing? If not, you do not take a place."
   },
   "edit": {
     "title": "Edit Competition",
@@ -155,7 +211,9 @@
     "error": "Failed to update competition",
     "errorLoading": "Failed to load competition",
     "notEditable": "This competition can no longer be edited: it can only be edited while enrolment is open.",
-    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates."
+    "datesLeaveSessionsOut": "Those dates leave these sessions out: {{sesiones}}. Move or delete them before changing the dates.",
+    "strokePlayNotSaved": "The general details were saved, but not the tournament settings: {{motivo}}",
+    "generalNotSaved": "The tournament settings were saved, but not the general details: {{motivo}}"
   },
   "detail": {
     "loadingCompetition": "Loading competition...",
@@ -258,6 +316,13 @@
         "body": "It goes back to in progress so you can, for example, add another round. Completed matches do not change.",
         "confirm": "Yes, reopen it",
         "keep": "No, keep it finished"
+      },
+      "closeWithoutTeeWindow": {
+        "title": "Players without a tee window",
+        "body_one": "{{jugadores}} has no tee window: place them before closing enrollments.",
+        "body_other": "{{count}} players have no tee window ({{jugadores}}): place them before closing enrollments.",
+        "confirm": "Go and place them",
+        "keep": "Not now"
       }
     },
     "errors": {
@@ -268,7 +333,13 @@
       "golfCoursesRejected": "Cannot activate: These courses were rejected: {{courses}}",
       "noGolfCourses": "Cannot activate: No golf courses selected",
       "golfCoursesFetchFailed": "Failed to verify golf courses. Please try again.",
-      "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually."
+      "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually.",
+      "playersWithoutTeeWindow_one": "{{jugadores}} still needs a tee time window.",
+      "playersWithoutTeeWindow_other": "{{count}} players still need a tee time window: {{jugadores}}.",
+      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window».",
+      "playersWithoutHandicap_one": "{{jugadores}} has no handicap: set a custom one and close again.",
+      "playersWithoutHandicap_other": "{{count}} players have no handicap ({{jugadores}}): set a custom one and close again.",
+      "playersWithoutHandicapUnnamed": "Some players have no handicap: set a custom one and close again."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
@@ -294,7 +365,26 @@
         "DRAFT": "Captains' draft",
         "PENDING": "Not split yet"
       },
-      "tournamentType": "Type:"
+      "tournamentType": "Type:",
+      "categories": "Categories",
+      "equalCategories_one": "{{count}} equal category",
+      "equalCategories_other": "{{count}} equal categories (split when enrollments close)",
+      "categoryLimits": "Limits: {{limites}}",
+      "noCategories": "One category",
+      "matchdaysLabel": "Days per player",
+      "matchdays_one": "{{count}} day",
+      "matchdays_other": "{{count}} days",
+      "overallLabel": "Overall standings",
+      "overall": {
+        "ACCUMULATED": "Accumulated",
+        "BEST_CARD": "Best card"
+      },
+      "equalCategoriesSplit_one": "{{count}} equal category: {{limites}}",
+      "equalCategoriesSplit_other": "{{count}} equal categories, split: {{limites}}",
+      "categoriesCameOut_one": "{{salen}} of {{count}} requested came out",
+      "categoriesCameOut_other": "{{salen}} of the {{count}} requested came out",
+      "categoriesCameOutWithLimits_one": "{{salen}} of {{count}} requested came out · limits: {{limites}}",
+      "categoriesCameOutWithLimits_other": "{{salen}} of the {{count}} requested came out · limits: {{limites}}"
     },
     "approvedPlayers": "Approved players",
     "noApprovedPlayers": "No approved players yet",
@@ -390,7 +480,17 @@
       "captainOf": "{{team}} captain",
       "viceCaptainOf": "{{team}} vice-captain",
       "playersUnavailable": "The list of enrolled players could not be loaded. Open the competition again to retry."
-    }
+    },
+    "fixedHandicap": "{{handicap}} · category {{categoria}}",
+    "fixedHandicapNoCategory": "{{handicap}}",
+    "missingHandicapBadge": "No handicap",
+    "fewerCategories": {
+      "REPETIDOS_one": "{{pedidas}} categories were set and {{count}} comes out: repeated handicaps at the boundaries merged those categories.",
+      "REPETIDOS_other": "{{pedidas}} categories were set and {{count}} come out: repeated handicaps at the boundaries merged those categories.",
+      "MENOS_DE_SEIS_one": "{{pedidas}} categories were set and {{count}} comes out: some had fewer than 6 players and were merged with the next one.",
+      "MENOS_DE_SEIS_other": "{{pedidas}} categories were set and {{count}} come out: some had fewer than 6 players and were merged with the next one."
+    },
+    "allWindowsClosed": "All tee windows are closed: once you have checked the standings, finish the competition."
   },
   "browse": {
     "title": "Browse Competitions",
@@ -447,7 +547,9 @@
     "colorHint": "Used to assign the right tees in matches",
     "noPreference": "No preference",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "needsHandicap": "To join a Stableford or a Medal you need your handicap in your profile.",
+    "addHandicap": "Add it"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",
@@ -532,5 +634,47 @@
     "turnLost": "Your minute ran out and the app picked for you. It is the other captain's turn now.",
     "turnLostDraftOver": "Your minute ran out and the app picked for you. That finished the draft.",
     "open": "Go to the draft room"
+  },
+  "handicaps": {
+    "title": "Handicaps",
+    "update": "Update handicaps",
+    "launched": "Handicaps are being updated with the RFEG.",
+    "resumed": "Finishing the update that was left halfway.",
+    "inProgress_one": "Updating with the RFEG: {{count}} player left.",
+    "inProgress_other": "Updating with the RFEG: {{count}} players left.",
+    "completed": "Updated with the RFEG on {{cuando}}.",
+    "incomplete": "The last update ({{cuando}}) was left halfway.",
+    "pending": "Not updated: {{jugadores}}.",
+    "stopped": "The last update was stopped: the competition started or the window closed.",
+    "openUntil": "Available until {{cuando}} (course time).",
+    "openUntilStart": "Available until the competition starts.",
+    "scheduled": "Scheduled: {{cuando}}, course time ({{zona}}).",
+    "cancelSchedule": "Cancel it",
+    "schedule": "Schedule…",
+    "scheduleAt": "Date and time, in course time ({{zona}})",
+    "scheduleSave": "Schedule",
+    "cancel": "Cancel",
+    "error": "It could not be done. Try again.",
+    "scheduledDevice": "Scheduled: {{cuando}}, this device's time (the course has no time zone).",
+    "scheduleAtDevice": "Date and time, in this device's time (the course has no time zone)",
+    "openUntilDevice": "Available until {{cuando}} (this device's time).",
+    "timeDoesNotExist": "That time does not exist at the course because of the clock change: pick another.",
+    "notAtThatTime": "It would not be possible at that time: {{motivo}}",
+    "reasons": {
+      "STATUS": "Handicaps are updated from the close of enrolment until the competition ends.",
+      "NO_WINDOWS": "With no tee windows, they are updated until the competition starts.",
+      "RYDER": "In a Ryder Cup they are updated until the competition starts.",
+      "DAY_IN_PLAY": "A playing day is under way: it will be possible when the day ends.",
+      "NO_DAYS_LEFT": "There are no playing days left.",
+      "TOO_CLOSE": "The next tee time is too close: there would not be time to check everyone.",
+      "NO_TIMEZONE": "The local time of one of the competition courses is unknown.",
+      "DISABLED": "Updating with the RFEG is only switched on in production.",
+      "RUNNING": "Handicaps are already being updated.",
+      "IN_THE_PAST": "Schedule it for a moment in the future.",
+      "TOO_TIGHT": "Too tight: schedule it at least 2 minutes before the window closes."
+    },
+    "zoneUnreadable": "The course time zone could not be read.",
+    "retryZone": "Try again",
+    "scheduledUnknownZone": "Scheduled: {{cuando}}, this device's time."
   }
 }

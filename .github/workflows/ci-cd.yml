@@ -816,8 +816,16 @@ jobs:
           # any size would have turned the check red. Removing RoundFormModal already
           # took back what it could. Sentry (328 KB) is still the one real lever, and
           # trimming it is still tracked separately.
-          MAX_BUNDLE_SIZE_KB=2200
-          WARNING_THRESHOLD_KB=2100
+          # 14 Oct 2026: the stroke play standings got their own page (the
+          # leaderboard route) and the player is taken to their row; with the
+          # review fixes develop reached 2200.5 KB. Raised to 2250 so the next
+          # change does not trip it at once; Sentry is still the real lever.
+          # 15 Oct 2026: the hole map (BE #532) brings MapLibre, about 1 MB in a
+          # chunk of its own that only loads when the map is opened (its worker
+          # is a separate .mjs, not counted here). develop reached 3230 KB.
+          # Raised to 3400 so the next change does not trip it at once.
+          MAX_BUNDLE_SIZE_KB=3400
+          WARNING_THRESHOLD_KB=3300
           { echo "budget_kb=$MAX_BUNDLE_SIZE_KB"; echo "warning_kb=$WARNING_THRESHOLD_KB"; } >> "$GITHUB_OUTPUT"
 
           # List all bundles with sizes

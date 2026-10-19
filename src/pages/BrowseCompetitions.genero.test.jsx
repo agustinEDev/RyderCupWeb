@@ -199,3 +199,29 @@ describe('BrowseCompetitions · el género al pedir plaza', () => {
     expect(screen.getByText('competitions:enrollment.confirm')).toBeInTheDocument();
   });
 });
+
+describe('BrowseCompetitions · sin hándicap en un Stableford (FE #824, PR 5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    faltaGenero = false;
+  });
+
+  it('H1: el modal avisa y lleva al perfil (la sesión no trae hándicap)', async () => {
+    mockUnirse.mockResolvedValue([{ ...COMPETICION, hasTeams: false, tournamentType: 'STABLEFORD' }]);
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+
+    expect(await screen.findByTestId('falta-handicap')).toBeInTheDocument();
+  });
+
+  it('H2: en una Ryder no se pide', async () => {
+    mockUnirse.mockResolvedValue([{ ...COMPETICION, hasTeams: true }]);
+    pintar();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+
+    await screen.findByText('competitions:enrollment.confirm');
+    expect(screen.queryByTestId('falta-handicap')).toBeNull();
+  });
+});

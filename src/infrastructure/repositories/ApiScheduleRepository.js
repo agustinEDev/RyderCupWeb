@@ -71,6 +71,122 @@ class ApiScheduleRepository extends IScheduleRepository {
   }
 
   /**
+   * Plaza en una franja de stroke play (FE #824, RyderCupAm#511). Sin
+   * `userId`, para uno mismo; con él, el organizador coloca a otro. Con
+   * `insteadOfRoundId`, se cambia desde esa en un solo paso.
+   * POST /api/v1/competitions/rounds/{roundId}/places
+   */
+  async takePlace(roundId, { userId, insteadOfRoundId } = {}) {
+    return apiRequest(`/api/v1/competitions/rounds/${roundId}/places`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(userId ? { user_id: userId } : {}),
+        ...(insteadOfRoundId ? { instead_of_round_id: insteadOfRoundId } : {}),
+      }),
+    });
+  }
+
+  /** DELETE /api/v1/competitions/rounds/{roundId}/places/{userId} */
+  async releasePlace(roundId, userId) {
+    await apiRequest(`/api/v1/competitions/rounds/${roundId}/places/${userId}`, { method: 'DELETE' });
+  }
+
+  /** Esperar en una franja llena, uno mismo (RyderCupAm#512). */
+  async joinWaitingList(roundId) {
+    return apiRequest(`/api/v1/competitions/rounds/${roundId}/waiting-list`, { method: 'POST' });
+  }
+
+  /** DELETE /api/v1/competitions/rounds/{roundId}/waiting-list/{userId} */
+  async leaveWaitingList(roundId, userId) {
+    await apiRequest(`/api/v1/competitions/rounds/${roundId}/waiting-list/${userId}`, { method: 'DELETE' });
+  }
+
+  /** Las plazas que me asignaron desde la espera y aún no he visto. */
+  async getMyAssignedPlaces() {
+    const data = await apiRequest('/api/v1/competitions/me/assigned-places');
+    return (data || []).map((p) => ({
+      competitionId: p.competition_id,
+      competitionName: p.competition_name,
+      roundId: p.round_id,
+      roundDate: p.round_date,
+      sessionType: p.session_type,
+      firstTeeTime: typeof p.first_tee_time === 'string' ? p.first_tee_time.slice(0, 5) : p.first_tee_time,
+      assignedAt: p.assigned_at,
+    }));
+  }
+
+  /** «Entendido»: ya la he visto. */
+  async acknowledgeAssignedPlace(roundId) {
+    await apiRequest(`/api/v1/competitions/me/assigned-places/${roundId}/acknowledge`, { method: 'POST' });
+  }
+
+  // --- Partidas de las franjas (FE #824, PR 6; RyderCupAm#534) ---
+  // Toda escritura contesta con la vista de la franja
+
+  /** GET /api/v1/competitions/rounds/{roundId}/groups */
+  async getTeeGroups(roundId) {
+    return ScheduleMapper.toTeeGroupsDTO(await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups`));
+  }
+
+  /** Las mías, por jornada: GET /api/v1/competitions/{competitionId}/groups/me */
+  async getMyTeeGroups(competitionId) {
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/groups/me`);
+    return (data?.groups || []).map((m) => ({
+      roundId: m.round_id,
+      roundDate: m.round_date,
+      sessionType: m.session_type,
+      // El nombre del campo de la franja, para «Mis Próximos Partidos» (BE #573)
+      golfCourseName: m.golf_course_name ?? null,
+      group: ScheduleMapper.toTeeGroupDTO(m.group),
+    }));
+  }
+
+  /** Por hándicap fijado, en ese orden: sustituye las que hubiera. */
+  async generateTeeGroups(roundId, order) {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ order }),
+    });
+    return ScheduleMapper.toTeeGroupsDTO(data);
+  }
+
+  /** Sin `groupId`, a una partida nueva al final; con `swapWithUserId`, intercambiando. */
+  async moveTeeGroupPlayer(roundId, { userId, groupId, swapWithUserId }) {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups/players`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        ...(groupId ? { group_id: groupId } : {}),
+        ...(swapWithUserId ? { swap_with_user_id: swapWithUserId } : {}),
+      }),
+    });
+    return ScheduleMapper.toTeeGroupsDTO(data);
+  }
+
+  /** PUT .../groups/order: todas, una vez cada una. */
+  async reorderTeeGroups(roundId, groupIds) {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups/order`, {
+      method: 'PUT',
+      body: JSON.stringify({ group_ids: groupIds }),
+    });
+    return ScheduleMapper.toTeeGroupsDTO(data);
+  }
+
+  /** PUT /api/v1/competitions/groups/{groupId}/markers: la partida entera. */
+  async setTeeGroupMarkers(groupId, markers) {
+    const data = await apiRequest(`/api/v1/competitions/groups/${groupId}/markers`, {
+      method: 'PUT',
+      body: JSON.stringify({ markers: markers.map((m) => ({ user_id: m.userId, marks_user_id: m.marksUserId })) }),
+    });
+    return ScheduleMapper.toTeeGroupsDTO(data);
+  }
+
+  /** DELETE /api/v1/competitions/rounds/{roundId}/groups */
+  async deleteTeeGroups(roundId) {
+    await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups`, { method: 'DELETE' });
+  }
+
+  /**
    * POST /api/v1/competitions/rounds/{roundId}/matches/generate
    */
   async generateMatches(roundId, pairings) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
+import { passwordErrorMessage, validatePassword } from '../utils/validation';
 
 import {
   updateUserProfileUseCase,
@@ -19,7 +20,7 @@ import { useAuth } from './useAuth';
 const CONFLICTO = 409;
 
 export const useEditProfile = () => {
-  const { t } = useTranslation('profile');
+  const { t } = useTranslation(['profile', 'auth']);
   const { user: authUser, refetch: refetchUser } = useAuth();
 
   const [user, setUser] = useState(null);
@@ -325,8 +326,13 @@ export const useEditProfile = () => {
     }
 
     if (isPasswordChanged) {
-      if (formData.newPassword.length < 12) {
-        customToast.error(t('toasts.passwordTooShort'));
+      // La misma política que el registro, el reset y el backend: aquí solo se
+      // miraba la longitud, y una contraseña sin símbolo acababa en un 500
+      const passwordValidation = validatePassword(formData.newPassword);
+      if (!passwordValidation.isValid) {
+        customToast.error(
+          t(`auth:${passwordValidation.messageKey}`, passwordValidation.messageOptions)
+        );
         return;
       }
 
@@ -371,8 +377,10 @@ export const useEditProfile = () => {
     } catch (error) {
       console.error('Error updating security:', error);
 
-      // v1.13.0: Handle Password History error
-      if (error.message && error.message.includes('last 5 passwords')) {
+      const contrasena = passwordErrorMessage(error, t);
+      if (error.errorCode === 'PASSWORD_REUSED') {
+        // v1.13.0, por su código desde la BE #519: antes se buscaba el texto en
+        // inglés del backend, que se rompía en cuanto cambiara una palabra
         customToast.error(
           t('toasts.passwordReused'),
           {
@@ -380,6 +388,9 @@ export const useEditProfile = () => {
             icon: '🔑',
           }
         );
+      } else if (contrasena) {
+        // El backend la rechaza con un código (BE #519): en el idioma de la app
+        customToast.error(contrasena);
       } else {
         customToast.error(
           error.message || t('toasts.failedToUpdateSecurity'),

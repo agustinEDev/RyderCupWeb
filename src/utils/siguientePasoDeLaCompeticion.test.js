@@ -28,14 +28,14 @@ describe('siguientePasoDeLaCompeticion', () => {
       );
     });
 
-    it('N2: abierto y lleno, nada de capitanes', () => {
-      expect(
-        siguientePasoDeLaCompeticion(stableford({ maxPlayers: 12 }), { inscritos: 12 })
-      ).not.toBe('nameCaptains');
+    it('N2: abierto y lleno, cerrar las inscripciones (FE #824)', () => {
+      expect(siguientePasoDeLaCompeticion(stableford({ maxPlayers: 12 }), { inscritos: 12 })).toBe(
+        'close-enrollments'
+      );
     });
 
-    it('N3: cerrado, la agenda', () => {
-      expect(siguientePasoDeLaCompeticion(stableford({ status: 'CLOSED' }))).toBe('manageSchedule');
+    it('N3: cerrado, iniciar: las franjas ya se ven en la ficha (FE #824)', () => {
+      expect(siguientePasoDeLaCompeticion(stableford({ status: 'CLOSED' }))).toBe('start-competition');
     });
   });
 

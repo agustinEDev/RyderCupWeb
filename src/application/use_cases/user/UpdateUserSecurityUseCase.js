@@ -32,9 +32,13 @@ class UpdateUserSecurityUseCase {
       dataToUpdate.new_email = new Email(dataToUpdate.new_email);
     }
 
-    // 2. Si existe current_password, convertirlo a Password Value Object
+    // 2. Si existe current_password, convertirlo a Password Value Object.
+    // Sin validar su fortaleza, como en el login: es la que ya tiene, y quien la
+    // puso antes de la política actual no podría cambiarla nunca
     if (dataToUpdate.current_password) {
-      dataToUpdate.current_password = new Password(dataToUpdate.current_password);
+      dataToUpdate.current_password = new Password(dataToUpdate.current_password, {
+        validateStrength: false,
+      });
     }
 
     // 3. Si existe new_password, convertirlo a Password Value Object

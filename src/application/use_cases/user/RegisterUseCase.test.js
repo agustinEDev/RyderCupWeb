@@ -27,7 +27,7 @@ describe('RegisterUseCase', () => {
       firstName: 'Jane',
       lastName: 'Doe',
       email: 'jane.doe@example.com',
-      password: 'StrongPassword123'
+      password: 'StrongPassword123!'
     };
     const mockNewUserEntity = new User({
       id: '456',
@@ -65,14 +65,14 @@ describe('RegisterUseCase', () => {
     await expect(registerUseCase.execute({
       lastName: 'Doe',
       email: 'jane.doe@example.com',
-      password: 'StrongPassword123'
+      password: 'StrongPassword123!'
     })).rejects.toThrow('All user data fields are required for registration');
 
     // Test case 2: Missing email
     await expect(registerUseCase.execute({
       firstName: 'Jane',
       lastName: 'Doe',
-      password: 'StrongPassword123'
+      password: 'StrongPassword123!'
     })).rejects.toThrow('All user data fields are required for registration');
 
     // Add more test cases for other missing fields as needed
@@ -84,7 +84,7 @@ describe('RegisterUseCase', () => {
       firstName: 'Jane',
       lastName: 'Doe',
       email: 'jane.doe@example.com',
-      password: 'StrongPassword123',
+      password: 'StrongPassword123!',
       gender: 'FEMALE'
     };
     const mockNewUserEntity = new User({
@@ -113,7 +113,7 @@ describe('RegisterUseCase', () => {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      password: 'StrongPassword123',
+      password: 'StrongPassword123!',
     };
     const mockNewUserEntity = new User({
       id: '790',
@@ -138,7 +138,7 @@ describe('RegisterUseCase', () => {
       firstName: 'Jane',
       lastName: 'Doe',
       email: 'jane@example.com',
-      password: 'StrongPassword123',
+      password: 'StrongPassword123!',
       gender: 'OTHER'
     };
 
@@ -152,7 +152,7 @@ describe('RegisterUseCase', () => {
       firstName: 'Jane',
       lastName: 'Doe',
       email: 'existing@example.com',
-      password: 'StrongPassword123'
+      password: 'StrongPassword123!'
     };
     const mockError = new Error('Email already registered');
 

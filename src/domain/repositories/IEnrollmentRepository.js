@@ -137,18 +137,6 @@ class IEnrollmentRepository {
   }
 
   /**
-   * Retirar enrollment (transición APPROVED → WITHDRAWN)
-   *
-   * @param {string} competitionId - UUID de la competición
-   * @param {string} enrollmentId - UUID del enrollment
-   * @returns {Promise<Enrollment>} Enrollment retirado
-   * @throws {Error} Si falla la operación
-   */
-  async withdraw(competitionId, enrollmentId) {
-    throw new Error('Method withdraw() must be implemented');
-  }
-
-  /**
    * Establecer handicap personalizado para enrollment
    *
    * @param {string} competitionId - UUID de la competición

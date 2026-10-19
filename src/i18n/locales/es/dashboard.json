@@ -20,7 +20,7 @@
   "quickActions": {
     "title": "Acciones Rápidas",
     "createTournament": "Crear Torneo",
-    "createTournamentDesc": "Comenzar un nuevo torneo Ryder Cup",
+    "createTournamentDesc": "Comenzar un nuevo torneo",
     "quickMatch": "Partida Rápida",
     "quickMatchDesc": "Juega una ronda con amigos sin crear un torneo"
   },
@@ -52,23 +52,33 @@
       "STABLEFORD": "Stableford"
     },
     "envelopePending": "Tienes un sobre sin entregar",
-    "sessionWithoutMatches": "Una sesión se ha quedado sin partidos"
+    "sessionWithoutMatches": "Una sesión se ha quedado sin partidos",
+    "placeAssigned": "Tienes plaza: te tocó desde la lista de espera",
+    "placeAssignedOk": "Entendido",
+    "placeAssignedOkFailed": "No se ha podido marcar como vista. Inténtalo otra vez."
   },
   "upcomingMatches": {
     "title": "Mis Próximos Partidos",
-    "subtitle": "Tus partidos programados y en progreso en todas las competiciones",
+    "subtitle": "Tus partidos y partidas de todas las competiciones",
     "noMatches": "No tienes próximos partidos",
     "noMatchesDesc": "Cuando estés inscrito en competiciones activas con partidos programados, aparecerán aquí.",
     "scoreMatch": "Anotar",
-    "viewSchedule": "Ver Calendario",
-    "matchNumber": "Partido #{{number}}",
-    "round": "Ronda",
     "loading": "Cargando partidos...",
-    "teamA": "Equipo A",
-    "teamB": "Equipo B",
     "desdeMemoria": "No se ha podido actualizar: estos son los últimos partidos que se vieron y puede que no estén al día.",
     "sinRespuesta": "No se han podido consultar tus partidos",
-    "sinRespuestaDesc": "Vuelve a intentarlo en un rato."
+    "sinRespuestaDesc": "Vuelve a intentarlo en un rato.",
+    "viewCard": "Ver tarjeta",
+    "inPlay": "En juego",
+    "teeGroup": "{{numero}}.ª partida",
+    "you": "Tú",
+    "versus": "{{nosotros}} vs {{ellos}}",
+    "with": "Con {{companeros}}",
+    "alone": "De momento sin compañeros",
+    "desdeMemoriaParcial": "No se ha podido actualizar todo: algunos son los últimos que se vieron y puede que no estén al día.",
+    "incompleta": "No se han podido cargar todos tus partidos; puede faltar alguno.",
+    "toBeDecided": "por decidir",
+    "withdrawnPartner": "{{nombre}} (retirado)",
+    "withdrawnPartner_female": "{{nombre}} (retirada)"
   },
   "nextMatch": {
     "label": "Tu próximo partido",
@@ -91,7 +101,10 @@
     },
     "sinRespuestaTitle": "No se ha podido comprobar tu próximo partido",
     "sinRespuestaDesc": "Vuelve a intentarlo en un rato.",
-    "desdeMemoria": "No se ha podido actualizar: puede no estar al día."
+    "desdeMemoria": "No se ha podido actualizar: puede no estar al día.",
+    "teeGroup": "Partida {{numero}}.ª",
+    "labelTeeGroup": "Tu próxima partida",
+    "broughtIn": "Te han pasado a la {{numero}}.ª partida"
   },
   "recentMatches": {
     "title": "Últimas partidas",
@@ -156,6 +169,7 @@
     "partidaSinNombre": "una partida anterior",
     "partidaConNumero": "Partido {{numero}} · {{campo}}",
     "soloNumero": "Partido {{numero}}",
+    "partidaDeFranja": "Partida {{numero}}.ª",
     "perdidos_one": "Un hoyo de {{partida}} no se pudo guardar:",
     "perdidos_other": "{{count}} hoyos de {{partida}} no se pudieron guardar:",
     "perdido": "Hoyo {{hoyo}} — el servidor no lo aceptó",

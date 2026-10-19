@@ -16,10 +16,6 @@ import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
  * - El usuario solo puede cancelar sus propias solicitudes
  * - CANCELLED es un estado final (no hay vuelta atrás)
  *
- * Diferencia con withdraw:
- * - cancel: Usuario cancela ANTES de estar aprobado (REQUESTED → CANCELLED)
- * - withdraw: Usuario se retira DESPUÉS de estar aprobado (APPROVED → WITHDRAWN)
- *
  * @example
  * const useCase = new CancelEnrollmentUseCase(enrollmentRepository);
  * const enrollment = await useCase.execute('comp-123', 'enroll-456');

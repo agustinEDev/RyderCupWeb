@@ -36,29 +36,39 @@ vi.mock('../golf_course/GolfCourseSearchBox', () => ({
   ),
 }));
 
-const mockCreate = vi.fn();
+const mockIniciar = vi.fn();
 const mockListFriends = vi.fn();
-const mockAddFriend = vi.fn();
-const mockAddGuest = vi.fn();
-const mockRemoveParticipant = vi.fn();
-const mockSetHandicap = vi.fn();
-const mockStart = vi.fn();
-const mockCancel = vi.fn();
 const mockGetGolfCourse = vi.fn();
 
 vi.mock('../../composition', () => ({
-  createQuickMatchUseCase: { execute: (...args) => mockCreate(...args) },
-  addFriendParticipantUseCase: { execute: (...args) => mockAddFriend(...args) },
-  addGuestParticipantUseCase: { execute: (...args) => mockAddGuest(...args) },
-  removeQuickMatchParticipantUseCase: { execute: (...args) => mockRemoveParticipant(...args) },
-  setQuickMatchParticipantHandicapUseCase: { execute: (...args) => mockSetHandicap(...args) },
-  startQuickMatchUseCase: { execute: (...args) => mockStart(...args) },
-  cancelQuickMatchUseCase: { execute: (...args) => mockCancel(...args) },
+  createAndStartQuickMatchUseCase: { execute: (...args) => mockIniciar(...args) },
   listFriendsUseCase: { execute: (...args) => mockListFriends(...args) },
   getGolfCourseUseCase: { execute: (...args) => mockGetGolfCourse(...args) },
 }));
 
-const currentUser = { id: 'user-1', country_code: 'ES' };
+const currentUser = { id: 'user-1', country_code: 'ES', display_name: 'Me', handicap: 10 };
+
+// Desde FE #848 nada llega al servidor hasta «Confirmar e iniciar»: lo que se
+// eligió en cada paso se comprueba en la petición que sale al final
+const peticion = () => mockIniciar.mock.calls.at(-1)[0];
+
+const addGuest = (firstName = 'Jane', lastName = 'Doe') => {
+  fireEvent.click(screen.getByTestId('quick-match-tab-guest'));
+  fireEvent.change(screen.getByTestId('quick-match-guest-first-name'), { target: { value: firstName } });
+  fireEvent.change(screen.getByTestId('quick-match-guest-last-name'), { target: { value: lastName } });
+  fireEvent.click(screen.getByTestId('quick-match-add-guest'));
+};
+
+/** Del paso 2 al final: rellena con invitados lo que falte y confirma. */
+const finishFromParticipants = async (huecos = 0) => {
+  await screen.findByTestId('quick-match-participants-next');
+  for (let i = 0; i < huecos; i += 1) addGuest(`Guest${i}`, 'Doe');
+  await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+  fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+  fireEvent.click(await screen.findByTestId('quick-match-scorers-next'));
+  fireEvent.click(await screen.findByTestId('quick-match-start'));
+  await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+};
 
 const renderModal = (props = {}) => {
   return render(
@@ -91,15 +101,10 @@ describe('CreateQuickMatchModal', () => {
     vi.clearAllMocks();
     mockListFriends.mockResolvedValue({ friendships: [], totalCount: 0 });
     mockGetGolfCourse.mockResolvedValue({ tees: [] });
+    mockIniciar.mockResolvedValue({ id: 'qm-1' });
   });
 
-  it('should create the quick match with the entered name when moving past step 1', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-
+  it('should send the entered name, trimmed, only when confirming', async () => {
     renderModal();
 
     fireEvent.change(screen.getByTestId('quick-match-name-input'), {
@@ -110,24 +115,22 @@ describe('CreateQuickMatchModal', () => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
     });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    expect(mockIniciar).not.toHaveBeenCalled();
+    await finishFromParticipants(1);
 
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, 'Viernes con Rafa', {
-        allowancePercentage: 100,
-        playMode: 'HANDICAP',
-        creatorTeeColor: null,
-        creatorTeeGender: null,
-      });
+    expect(peticion()).toMatchObject({
+      golfCourseId: 'course-1',
+      matchFormat: 'SINGLES',
+      scoringFormat: null,
+      name: 'Viernes con Rafa',
+      allowancePercentage: 100,
+      playMode: 'HANDICAP',
+      creatorTeeColor: null,
+      creatorTeeGender: null,
     });
   });
 
   it('should send null when no name is entered', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -135,24 +138,12 @@ describe('CreateQuickMatchModal', () => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
     });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await finishFromParticipants(1);
 
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
-        allowancePercentage: 100,
-        playMode: 'HANDICAP',
-        creatorTeeColor: null,
-        creatorTeeGender: null,
-      });
-    });
+    expect(peticion().name).toBeNull();
   });
 
   it('should create a free-play quick match with the selected scoring format', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-
     renderModal();
 
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
@@ -162,23 +153,16 @@ describe('CreateQuickMatchModal', () => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
     });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await finishFromParticipants();
 
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', null, 'MEDAL', null, {
-        allowancePercentage: 95,
-        playMode: 'HANDICAP',
-        creatorTeeColor: null,
-        creatorTeeGender: null,
-      });
+    expect(peticion()).toMatchObject({
+      matchFormat: null,
+      scoringFormat: 'MEDAL',
+      allowancePercentage: 95,
     });
   });
 
   it('should allow moving past the participants step with only the creator in free play', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
 
     renderModal();
 
@@ -195,12 +179,6 @@ describe('CreateQuickMatchModal', () => {
   });
 
   it('should default the allowance to the WHS value for the selected format and let it be overridden', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-
     renderModal();
 
     fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
@@ -212,15 +190,12 @@ describe('CreateQuickMatchModal', () => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
     });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await screen.findByTestId('quick-match-participants-next');
+    addGuest('Ana', 'A');
+    fireEvent.click(screen.getByTestId('quick-match-team-B'));
+    await finishFromParticipants(2);
 
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', 'FOURBALL', null, null, {
-        allowancePercentage: 50,
-        playMode: 'HANDICAP',
-        creatorTeeColor: null,
-        creatorTeeGender: null,
-      });
-    });
+    expect(peticion()).toMatchObject({ matchFormat: 'FOURBALL', allowancePercentage: 50 });
   });
 
   it('should only offer 90/95/100 allowance options in free play', async () => {
@@ -240,14 +215,10 @@ describe('CreateQuickMatchModal', () => {
         { color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 },
       ],
     });
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
 
     renderModal();
 
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
@@ -255,34 +226,15 @@ describe('CreateQuickMatchModal', () => {
     });
     pickCreatorTee('YELLOW|MALE');
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await finishFromParticipants();
 
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('course-1', 'SINGLES', null, null, {
-        allowancePercentage: 100,
-        playMode: 'HANDICAP',
-        creatorTeeColor: 'YELLOW',
-        creatorTeeGender: 'MALE',
-      });
-    });
+    expect(peticion()).toMatchObject({ creatorTeeColor: 'YELLOW', creatorTeeGender: 'MALE' });
   });
 
   it('should let a guest tee be selected and sent when adding them', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [
         { color: 'RED', gender: 'FEMALE', identifier: 'Red', courseRating: 68, slopeRating: 118 },
-      ],
-    });
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-    mockAddGuest.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [
-        { participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false },
-        { participantId: 'guest-1', userId: null, name: 'Jane Doe', isGuest: true },
       ],
     });
 
@@ -308,17 +260,19 @@ describe('CreateQuickMatchModal', () => {
       target: { value: 'Doe' },
     });
     fireEvent.click(screen.getByText('create.participants.addGuest'));
+    await finishFromParticipants();
 
-    await waitFor(() => {
-      expect(mockAddGuest).toHaveBeenCalledWith('qm-1', {
+    expect(peticion().participants).toEqual([
+      {
+        kind: 'GUEST',
         firstName: 'Jane',
         lastName: 'Doe',
         handicap: null,
         team: null,
-        color: 'RED',
+        teeColor: 'RED',
         teeGender: 'FEMALE',
-      });
-    });
+      },
+    ]);
   });
 
   it('should ignore a stale course-tees response from a previously selected course', async () => {
@@ -330,11 +284,6 @@ describe('CreateQuickMatchModal', () => {
       });
     });
     mockGetGolfCourse.mockImplementation((id) => deferred[id].promise);
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
 
     renderModal();
 
@@ -387,7 +336,7 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
     expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
-    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   it('should let each friend be added with their own, independently selected tee', async () => {
@@ -403,19 +352,6 @@ describe('CreateQuickMatchModal', () => {
         { id: 'f-2', otherUserId: 'user-3', otherUserName: 'Bob' },
       ],
       totalCount: 2,
-    });
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-    mockAddFriend.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [
-        { participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false },
-        { participantId: 'user-2', userId: 'user-2', name: 'Alice', isGuest: false },
-      ],
     });
 
     renderModal();
@@ -437,23 +373,15 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-add-friend-f-1'));
     fireEvent.click(screen.getByTestId('quick-match-tee-panel-option-YELLOW|MALE'));
 
-    await waitFor(() => {
-      expect(mockAddFriend).toHaveBeenCalledWith('qm-1', 'user-2', null, {
-        color: 'YELLOW',
-        teeGender: 'MALE',
-      });
-    });
-
     // El panel del siguiente amigo empieza limpio: la salida de Alice no arrastra
-    fireEvent.click(screen.getByTestId('quick-match-add-friend-f-2'));
+    fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-2'));
     fireEvent.click(screen.getByTestId('quick-match-tee-panel-option-RED|FEMALE'));
+    await finishFromParticipants();
 
-    await waitFor(() => {
-      expect(mockAddFriend).toHaveBeenLastCalledWith('qm-1', 'user-3', null, {
-        color: 'RED',
-        teeGender: 'FEMALE',
-      });
-    });
+    expect(peticion().participants.map((p) => [p.friendUserId, p.teeColor, p.teeGender])).toEqual([
+      ['user-2', 'YELLOW', 'MALE'],
+      ['user-3', 'RED', 'FEMALE'],
+    ]);
   });
 
   it('should not pre-select any tee option', async () => {
@@ -497,7 +425,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
     expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
-    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   it('should require a tee selection before adding a friend when the course has tees', async () => {
@@ -507,11 +435,6 @@ describe('CreateQuickMatchModal', () => {
     mockListFriends.mockResolvedValue({
       friendships: [{ id: 'f-1', otherUserId: 'user-2', otherUserName: 'Alice' }],
       totalCount: 1,
-    });
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
     });
 
     renderModal();
@@ -531,17 +454,12 @@ describe('CreateQuickMatchModal', () => {
     // El + ya no añade: abre el panel de salidas. Así no hay forma de añadir a
     // nadie sin salida en un campo que las tiene, y no hace falta el error
     expect(screen.getByTestId('quick-match-tee-panel')).toBeInTheDocument();
-    expect(mockAddFriend).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   it('should require a tee selection before adding a guest when the course has tees', async () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
-    });
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
     });
 
     renderModal();
@@ -567,16 +485,10 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByText('create.participants.addGuest'));
 
     expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeeRequired');
-    expect(mockAddGuest).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
-  it('should cancel the pending match and return to step 1 when going back from participants', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
-
+  it('should return to step 1 when going back from participants, with nothing to cancel', async () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -591,18 +503,11 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('quick-match-participants-back'));
 
-    await waitFor(() => {
-      expect(mockCancel).toHaveBeenCalledWith('qm-1');
-      expect(screen.getByTestId('quick-match-course-next')).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('quick-match-course-next')).toBeInTheDocument();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   it('should return to the participants step without cancelling when going back from scorers', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', isGuest: false }],
-    });
 
     renderModal();
 
@@ -624,16 +529,11 @@ describe('CreateQuickMatchModal', () => {
 
     fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
 
-    expect(mockCancel).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
     expect(screen.getByTestId('quick-match-participants-next')).toBeInTheDocument();
   });
 
   it('should move to the summary step after choosing scorers', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: null, isGuest: false }],
-    });
 
     renderModal();
 
@@ -658,22 +558,11 @@ describe('CreateQuickMatchModal', () => {
       expect(screen.getByTestId('quick-match-start')).toBeInTheDocument();
       expect(screen.getByTestId('quick-match-handicap-button-user-1')).toBeInTheDocument();
     });
-    expect(mockStart).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   it('should set a participant handicap via the keypad panel in the summary step', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: null, isGuest: false }],
-    });
-    mockSetHandicap.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 16.4, isGuest: false }],
-    });
-
-    renderModal();
+    renderModal({ currentUser: { ...currentUser, handicap: null } });
 
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -692,18 +581,13 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(within(panel).getByText('4'));
     fireEvent.click(within(panel).getByTestId('handicap-panel-confirm'));
 
-    await waitFor(() => {
-      expect(mockSetHandicap).toHaveBeenCalledWith('qm-1', 'user-1', 16.4);
-    });
+    expect(screen.getByTestId('quick-match-handicap-button-user-1')).toHaveTextContent('16.4');
+    fireEvent.click(screen.getByTestId('quick-match-start'));
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(peticion().creatorHandicap).toBe(16.4);
   });
 
-  it('should not call setHandicap when confirming without changing the value', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 10, isGuest: false }],
-    });
-
+  it('should not send an override when confirming without changing the value', async () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
@@ -718,18 +602,14 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(await screen.findByTestId('quick-match-handicap-button-user-1'));
     const panel = await screen.findByRole('dialog', { name: 'Me' });
     fireEvent.click(within(panel).getByTestId('handicap-panel-confirm'));
+    fireEvent.click(screen.getByTestId('quick-match-start'));
 
-    expect(mockSetHandicap).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(peticion().creatorHandicap).toBeNull();
   });
 
   it('should start the match when confirming from the summary step', async () => {
     const onStarted = vi.fn();
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 10, isGuest: false }],
-    });
-    mockStart.mockResolvedValue({ id: 'qm-1' });
 
     renderModal({ onStarted });
 
@@ -737,26 +617,13 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
-    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
-    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
-    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+    await finishFromParticipants();
 
-    await screen.findByTestId('quick-match-start');
-    fireEvent.click(screen.getByTestId('quick-match-start'));
-
-    await waitFor(() => {
-      expect(mockStart).toHaveBeenCalledWith('qm-1', ['user-1']);
-      expect(onStarted).toHaveBeenCalledWith('qm-1');
-    });
+    await waitFor(() => expect(onStarted).toHaveBeenCalledWith('qm-1'));
+    expect(peticion().scorerUserIds).toEqual(['user-1']);
   });
 
   it('should return to the scorers step when going back from the summary', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 10, isGuest: false }],
-    });
 
     renderModal();
 
@@ -773,7 +640,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-summary-back'));
 
     expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument();
-    expect(mockCancel).not.toHaveBeenCalled();
+    expect(mockIniciar).not.toHaveBeenCalled();
   });
 
   /**
@@ -795,11 +662,6 @@ describe('CreateQuickMatchModal', () => {
   };
 
   it('should recap a scratch match without an allowance percentage', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false }],
-    });
 
     renderModal();
 
@@ -817,11 +679,6 @@ describe('CreateQuickMatchModal', () => {
   });
 
   it('should recap the allowance and the handicap mode on a non-scratch match', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false }],
-    });
 
     renderModal();
 
@@ -836,26 +693,16 @@ describe('CreateQuickMatchModal', () => {
   });
 
   it('should show each player tee in the summary, where a wrong one is still cheap to fix', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [
-        {
-          participantId: 'user-1',
-          userId: 'user-1',
-          name: 'Me',
-          handicap: 18,
-          isGuest: false,
-          color: 'YELLOW',
-          teeGender: 'FEMALE',
-        },
-      ],
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [{ color: 'YELLOW', gender: 'FEMALE', courseRating: 70, slopeRating: 120 }],
     });
 
     renderModal();
 
     fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument());
+    pickCreatorTee('YELLOW|FEMALE');
     await goToSummary();
 
     const summary = screen.getByTestId('quick-match-start').closest('div.p-4');
@@ -871,13 +718,6 @@ describe('CreateQuickMatchModal', () => {
    * vacía, así que todos se crean con `color: null`.
    */
   it('avisa cuando un jugador se queda sin barras, en vez de no enseñar nada', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [
-        { participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false },
-      ],
-    });
 
     renderModal();
 
@@ -896,13 +736,6 @@ describe('CreateQuickMatchModal', () => {
    * ese modo no tiene.
    */
   it('no avisa de la falta de barras en una partida scratch, donde no cambia nada', async () => {
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [
-        { participantId: 'user-1', userId: 'user-1', name: 'Me', handicap: 18, isGuest: false },
-      ],
-    });
 
     renderModal();
 
@@ -920,21 +753,6 @@ describe('CreateQuickMatchModal', () => {
     mockGetGolfCourse.mockResolvedValue({
       tees: [
         { color: 'YELLOW', gender: 'FEMALE', identifier: 'Amarillas Campeonato', courseRating: 72, slopeRating: 113 },
-      ],
-    });
-    mockCreate.mockResolvedValue({
-      id: 'qm-1',
-      isPending: true,
-      participants: [
-        {
-          participantId: 'user-1',
-          userId: 'user-1',
-          name: 'Me',
-          handicap: 18,
-          isGuest: false,
-          color: 'YELLOW',
-          teeGender: 'FEMALE',
-        },
       ],
     });
 
@@ -969,10 +787,19 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
     mockGetGolfCourse.mockResolvedValue({ tees: [] });
   });
 
-  const goToScorersStep = async (participants) => {
-    mockCreate.mockResolvedValue({ id: 'qm-1', isPending: true, participants });
+  // El roster se monta en el asistente, como lo haría quien juega: amigos
+  // registrados (Socio, Rival Uno) e invitados, cada uno en su pareja
+  const goToScorersStep = async (roster) => {
+    mockListFriends.mockResolvedValue({
+      friendships: [
+        { id: 'f-2', otherUserId: 'user-2', otherUserName: 'Socio' },
+        { id: 'f-3', otherUserId: 'user-3', otherUserName: 'Rival Uno' },
+      ],
+      totalCount: 2,
+    });
+    mockIniciar.mockResolvedValue({ id: 'qm-1' });
 
-    renderModal();
+    renderModal({ currentUser: { ...currentUser, display_name: 'Yo' } });
 
     fireEvent.click(screen.getByTestId('format-option-FOURSOMES'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -980,6 +807,17 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
     });
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await screen.findByTestId('quick-match-participants-next');
+
+    for (const jugador of roster) {
+      fireEvent.click(screen.getByTestId(`quick-match-team-${jugador.team}`));
+      if (jugador.friend) {
+        fireEvent.click(screen.getByTestId('quick-match-tab-friends'));
+        fireEvent.click(await screen.findByTestId(`quick-match-add-friend-${jugador.friend}`));
+      } else {
+        addGuest(jugador.guest, 'Doe');
+      }
+    }
 
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled();
@@ -991,12 +829,9 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
     });
   };
 
-  const withRegisteredRival = [
-    { participantId: 'p-1', userId: 'user-1', name: 'Yo', team: 'A', isGuest: false },
-    { participantId: 'p-2', userId: 'user-2', name: 'Socio', team: 'A', isGuest: false },
-    { participantId: 'p-3', userId: 'user-3', name: 'Rival Uno', team: 'B', isGuest: false },
-    { participantId: 'p-4', name: 'Rival Dos', team: 'B', isGuest: true },
-  ];
+  const SOCIO = { friend: 'f-2', team: 'A' };
+  const RIVAL_UNO = { friend: 'f-3', team: 'B' };
+  const withRegisteredRival = [SOCIO, RIVAL_UNO, { guest: 'Rival Dos', team: 'B' }];
 
   it('llega al paso con las dos parejas ya elegidas', async () => {
     await goToScorersStep(withRegisteredRival);
@@ -1028,12 +863,7 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
   });
 
   it('con la pareja de enfrente toda invitada, ni la ofrece ni la deja elegida', async () => {
-    await goToScorersStep([
-      withRegisteredRival[0],
-      withRegisteredRival[1],
-      { participantId: 'p-3', name: 'Rival Uno', team: 'B', isGuest: true },
-      withRegisteredRival[3],
-    ]);
+    await goToScorersStep([SOCIO, { guest: 'Rival Uno', team: 'B' }, { guest: 'Rival Dos', team: 'B' }]);
 
     expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
     expect(screen.getByTestId('quick-match-scorers-my-pair')).toHaveAttribute(
@@ -1043,53 +873,20 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
   });
 
   /**
-   * Un registrado sin equipo no es un rival. Escrita aparte, la rama de
-   * `goToScorers` lo contaba como tal —cualquiera que no fuese de mi bando— y
-   * dejaba el paso ofreciendo una cosa y seleccionando otra: sin el botón de
-   * las dos parejas y con el único visible sin marcar.
+   * Con «las dos parejas», anotan los registrados de las dos, y nadie más: un
+   * invitado no tiene cuenta con la que anotar. Por su UserId (FE #848).
    */
-  it('no toma por rival a un registrado sin equipo', async () => {
-    await goToScorersStep([
-      withRegisteredRival[0],
-      withRegisteredRival[1],
-      { participantId: 'p-3', userId: 'user-3', name: 'Suelto', team: null, isGuest: false },
-      withRegisteredRival[3],
-    ]);
-
-    expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
-    expect(screen.getByTestId('quick-match-scorers-my-pair')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
-  });
-
-  /**
-   * Solo anotan las dos PAREJAS. Un registrado sin equipo no juega en ninguna
-   * de las dos, y con «las dos parejas» elegido se colaba en los anotadores que
-   * se mandan al arrancar.
-   */
-  it('no manda como anotador a un registrado que no está en ninguna pareja', async () => {
-    const roster = [
-      withRegisteredRival[0],
-      withRegisteredRival[1],
-      withRegisteredRival[2],
-      { participantId: 'p-loose', userId: 'user-9', name: 'Suelto', team: null, isGuest: false },
-    ];
-    await goToScorersStep(roster);
-
-    // Enfrente hay una cuenta registrada, así que anotan las dos parejas.
-    expect(screen.getByTestId('quick-match-scorers-both-pairs')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
+  it('manda como anotadores a los registrados de las dos parejas', async () => {
+    await goToScorersStep(withRegisteredRival);
 
     fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
     await waitFor(() => expect(screen.getByTestId('quick-match-start')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('quick-match-start'));
 
     await waitFor(() => {
-      expect(mockStart).toHaveBeenCalledWith('qm-1', ['p-1', 'p-2', 'p-3']);
+      expect(mockIniciar).toHaveBeenCalled();
     });
+    expect(peticion().scorerUserIds).toEqual(['user-1', 'user-2', 'user-3']);
   });
 
   /**
@@ -1098,12 +895,7 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
    * anota es quien crea la partida.
    */
   it('no promete que apunte el compañero cuando es un invitado', async () => {
-    await goToScorersStep([
-      withRegisteredRival[0],
-      { participantId: 'p-2', name: 'Socio', team: 'A', isGuest: true },
-      withRegisteredRival[2],
-      withRegisteredRival[3],
-    ]);
+    await goToScorersStep([{ guest: 'Socio', team: 'A' }, RIVAL_UNO, { guest: 'Rival Dos', team: 'B' }]);
 
     expect(screen.getByText('create.scorers.foursomesDescriptionAlone')).toBeInTheDocument();
     expect(screen.getByText('create.scorers.onlyMyPairHintAlone')).toBeInTheDocument();

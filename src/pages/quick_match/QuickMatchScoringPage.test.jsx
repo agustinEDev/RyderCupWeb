@@ -22,6 +22,23 @@ vi.mock('../../components/layout/HeaderAuth', () => ({
 }));
 
 const mockUseQuickMatchScoring = vi.fn();
+const mapaHoyo = vi.hoisted(() => ({
+  args: null,
+  ventana: null,
+  valor: { abierto: false, abrir: () => {}, cerrar: () => {}, mapaDelCampo: null, disponible: true },
+}));
+vi.mock('../../hooks/useMapaDelHoyo', () => ({
+  useMapaDelHoyo: (args) => {
+    mapaHoyo.args = args;
+    return mapaHoyo.valor;
+  },
+}));
+vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
+  default: (props) => {
+    mapaHoyo.ventana = props;
+    return null;
+  },
+}));
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
   useQuickMatchScoring: (...args) => {
     const estado = mockUseQuickMatchScoring(...args);
@@ -53,16 +70,15 @@ const baseQuickMatch = {
   effectiveAllowance: 100,
 };
 
-const renderPage = () => {
-  return render(
-    <MemoryRouter initialEntries={['/quick-matches/qm-1/scoring']}>
-      <Routes>
-        <Route path="/quick-matches/:quickMatchId/scoring" element={<QuickMatchScoringPage />} />
-        <Route path="/quick-matches" element={<div data-testid="my-quick-matches-page" />} />
-      </Routes>
-    </MemoryRouter>
-  );
-};
+const renderTree = () => (
+  <MemoryRouter initialEntries={['/quick-matches/qm-1/scoring']}>
+    <Routes>
+      <Route path="/quick-matches/:quickMatchId/scoring" element={<QuickMatchScoringPage />} />
+      <Route path="/quick-matches" element={<div data-testid="my-quick-matches-page" />} />
+    </Routes>
+  </MemoryRouter>
+);
+const renderPage = () => render(renderTree());
 
 const baseHookState = {
   quickMatch: baseQuickMatch,
@@ -111,7 +127,7 @@ describe('QuickMatchScoringPage', () => {
   it('should show the golf course the match was played on', () => {
     renderPage();
 
-    expect(screen.getByTestId('quick-match-course-name')).toHaveTextContent('Real Club de Golf');
+    expect(screen.getByTestId('campo-de-la-partida')).toHaveTextContent('Real Club de Golf');
   });
 
   it('should not show the course line while the course has not been loaded yet', () => {
@@ -126,7 +142,7 @@ describe('QuickMatchScoringPage', () => {
 
     renderPage();
 
-    expect(screen.queryByTestId('quick-match-course-name')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('campo-de-la-partida')).not.toBeInTheDocument();
   });
 
   it('should navigate back to the quick matches list, not the dashboard', async () => {
@@ -1221,6 +1237,47 @@ describe('QuickMatchScoringPage · lo que quedó sin enviar (FE #515, tabla D)',
     expect(aviso.className).not.toContain('red');
   });
 
+  it('revisor: sin red y sin pendientes, quien anota ya ve el aviso de anotar, y uno solo', async () => {
+    const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    try {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+        isScorer: true, coveredParticipantIds: ['user-1'], setCurrentHole: vi.fn(), submitScore: vi.fn(),
+        completeMatch: vi.fn(), cancelMatch: vi.fn(), refetch: vi.fn(),
+        pendientes: 0, perdidos: [], discrepancias: [], resuelveDiscrepancia,
+        loadError: { message: 'sin red' },
+      });
+      render(<><AvisoSinConexion />{renderTree()}</>);
+
+      expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+      expect(screen.queryByTestId('quick-match-sin-conexion')).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+    }
+  });
+
+  it('regresión (12 oct 2026): sin red, las pendientes van en el aviso de arriba, no en otro recuadro', async () => {
+    const { default: AvisoSinConexion } = await import('../../components/ui/AvisoSinConexion');
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    try {
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...baseHookState,
+        quickMatch: { ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false },
+        isScorer: true, coveredParticipantIds: ['user-1'], setCurrentHole: vi.fn(), submitScore: vi.fn(),
+        completeMatch: vi.fn(), cancelMatch: vi.fn(), refetch: vi.fn(),
+        pendientes: 2, perdidos: [], discrepancias: [], resuelveDiscrepancia,
+      });
+      render(<><AvisoSinConexion />{renderTree()}</>);
+
+      expect(screen.queryByTestId('quick-match-pendientes')).toBeNull();
+      expect(screen.getByTestId('aviso-sin-conexion')).toHaveTextContent('sinConexion.anotando');
+    } finally {
+      Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
+    }
+  });
+
   it('con varios jugadores, cada hoyo se nombra una vez', () => {
     // El caso real: el creador termina la partida mientras un anotador está
     // sin cobertura cubriendo a tres invitados. Todo lo suyo se rechaza, y
@@ -1741,5 +1798,101 @@ describe('QuickMatchScoringPage · los avisos, tras probarlo en el campo (FE #51
     verClasificacion();
 
     expect(screen.getByTestId('quick-match-resultado-atrasado')).toBeInTheDocument();
+  });
+});
+
+describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [baseHookState.myParticipant] },
+      // La tarjeta del hoyo solo se pinta a quien anota
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      cancelMatch: vi.fn(),
+      refetch: vi.fn(),
+    });
+    mapaHoyo.valor = { abierto: false, abrir: vi.fn(), cerrar: vi.fn(), mapaDelCampo: null, disponible: true };
+    mapaHoyo.ventana = null;
+  });
+
+  it('pide el mapa del campo de lo que se anota', () => {
+    renderPage();
+
+    expect(mapaHoyo.args).toEqual({ golfCourseId: 'gc-1', pais: null });
+  });
+
+  it('T2 (16 oct): «Mapa» va entre Anterior y Siguiente, y lo abre', () => {
+    renderPage();
+
+    const boton = screen.getByRole('button', { name: 'mapa.abrir' });
+    expect(screen.getByTestId('quick-match-prev-hole').nextElementSibling).toBe(boton);
+    expect(boton.nextElementSibling).toBe(screen.getByTestId('quick-match-next-hole'));
+    fireEvent.click(boton);
+    expect(mapaHoyo.valor.abrir).toHaveBeenCalled();
+  });
+
+  it('CodeRabbit: hasta que llega el campo (con su país), no se pide su mapa', () => {
+    mockUseQuickMatchScoring.mockReturnValue({ ...mockUseQuickMatchScoring(), holes: [] });
+
+    renderPage();
+
+    expect(mapaHoyo.args.golfCourseId).toBeNull();
+  });
+
+  it('19 oct: el mapa recibe el país del campo; si no hay mapa en él, sin «Mapa»', () => {
+    mockUseQuickMatchScoring.mockReturnValue({ ...mockUseQuickMatchScoring(), courseCountryCode: 'PT' });
+    mapaHoyo.valor = { ...mapaHoyo.valor, disponible: false };
+
+    renderPage();
+
+    expect(mapaHoyo.args.pais).toBe('PT');
+    expect(screen.queryByRole('button', { name: 'mapa.abrir' })).toBeNull();
+  });
+
+  it('la ventana del mapa recibe el hoyo que se anota', () => {
+    renderPage();
+
+    expect(mapaHoyo.ventana).toMatchObject({ golfCourseId: 'gc-1', numeroDeHoyo: 1, par: 4 });
+    expect(mapaHoyo.ventana.mapaDelHoyo).toBe(mapaHoyo.valor);
+  });
+
+  it('16 oct: el mapa recibe mi barra (color y sexo), para las muestras', () => {
+    const yo = { ...baseHookState.myParticipant, userId: 'user-1', color: 'RED', teeGender: 'FEMALE' };
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...mockUseQuickMatchScoring(),
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [yo] },
+    });
+
+    renderPage();
+
+    expect(mapaHoyo.ventana.barra).toEqual({ color: 'RED', gender: 'FEMALE' });
+  });
+
+  it('16 oct: sin mi barra (sin color), el mapa no recibe barra', () => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...mockUseQuickMatchScoring(),
+      quickMatch: { ...baseQuickMatch, golfCourseId: 'gc-1', participants: [{ ...baseHookState.myParticipant, userId: 'user-1', color: null }] },
+    });
+
+    renderPage();
+
+    expect(mapaHoyo.ventana.barra).toBeNull();
+  });
+
+  it('T1: en la tarjeta no se pide el GPS', () => {
+    const watchPosition = vi.fn();
+    vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: { watchPosition, clearWatch: vi.fn() } });
+    try {
+      renderPage();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(watchPosition).not.toHaveBeenCalled();
   });
 });

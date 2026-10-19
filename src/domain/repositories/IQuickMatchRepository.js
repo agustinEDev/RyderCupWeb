@@ -10,82 +10,18 @@
 
 class IQuickMatchRepository {
   /**
-   * Create a quick match (current user becomes creator/first participant).
-   * Exactly one of matchFormat/scoringFormat must be provided.
+   * Create the quick match with the wizard's whole draft and start it, in one
+   * request (FE #848). Participants go in the order they were added; the id
+   * comes from the client so a retry returns the same match.
    *
-   * @param {string} golfCourseId - UUID of an APPROVED golf course
-   * @param {string|null} matchFormat - 'SINGLES' | 'FOURBALL' | 'FOURSOMES' (Ryder Cup match play), or null for free play
-   * @param {string|null} scoringFormat - 'MEDAL' | 'STABLEFORD' (free play), or null for match play
-   * @param {string|null} name - Optional free-text name to tell matches apart
-   * @param {{allowancePercentage?: number|null, creatorTeeColor?: string|null, creatorTeeGender?: string|null}} options
-   * @returns {Promise<QuickMatch>} Created quick match
+   * @param {Object} peticion - quickMatchId, golfCourseId, matchFormat, scoringFormat,
+   *   name, allowancePercentage, playMode, creatorTeeColor, creatorTeeGender,
+   *   creatorHandicap, participants (FRIEND | GUEST) and scorerUserIds
+   * @returns {Promise<QuickMatch>} The started quick match
    * @throws {Error} If operation fails
    */
-  async create(golfCourseId, matchFormat, scoringFormat, name = null, options = {}) {
-    throw new Error('Method create() must be implemented');
-  }
-
-  /**
-   * Add an accepted friend as a participant.
-   *
-   * @param {string} quickMatchId
-   * @param {string} friendUserId
-   * @param {'A'|'B'|null} team
-   * @param {{color?: string|null, teeGender?: string|null}} options
-   * @returns {Promise<QuickMatch>} Updated quick match
-   * @throws {Error} If operation fails
-   */
-  async addFriendParticipant(quickMatchId, friendUserId, team = null, options = {}) {
-    throw new Error('Method addFriendParticipant() must be implemented');
-  }
-
-  /**
-   * Add a guest participant (no account) by hand.
-   *
-   * @param {string} quickMatchId
-   * @param {{firstName: string, lastName: string, handicap: number|null, team: 'A'|'B'|null}} guest
-   * @returns {Promise<QuickMatch>} Updated quick match
-   * @throws {Error} If operation fails
-   */
-  async addGuestParticipant(quickMatchId, guest) {
-    throw new Error('Method addGuestParticipant() must be implemented');
-  }
-
-  /**
-   * Remove a participant (self-leave or creator kick).
-   *
-   * @param {string} quickMatchId
-   * @param {string} participantId
-   * @returns {Promise<QuickMatch>} Updated quick match
-   * @throws {Error} If operation fails
-   */
-  async removeParticipant(quickMatchId, participantId) {
-    throw new Error('Method removeParticipant() must be implemented');
-  }
-
-  /**
-   * Set/override a participant's handicap (creator only, while PENDING).
-   *
-   * @param {string} quickMatchId
-   * @param {string} participantId
-   * @param {number|null} handicap
-   * @returns {Promise<QuickMatch>} Updated quick match
-   * @throws {Error} If operation fails
-   */
-  async setParticipantHandicap(quickMatchId, participantId, handicap) {
-    throw new Error('Method setParticipantHandicap() must be implemented');
-  }
-
-  /**
-   * Start the quick match, choosing 1 to 4 scorers (creator always included).
-   *
-   * @param {string} quickMatchId
-   * @param {string[]} scorerIds - Participant ids
-   * @returns {Promise<QuickMatch>} Updated quick match
-   * @throws {Error} If operation fails
-   */
-  async start(quickMatchId, scorerIds) {
-    throw new Error('Method start() must be implemented');
+  async createAndStart(peticion) {
+    throw new Error('Method createAndStart() must be implemented');
   }
 
   /**

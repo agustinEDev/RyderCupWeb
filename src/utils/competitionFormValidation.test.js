@@ -62,6 +62,32 @@ describe('validateCompetitionForm', () => {
     expect(result).toEqual({ key: 'nameRequired' });
   });
 
+  /**
+   * FE de RyderCupAm#540: lo que el servidor rechazaría con un 400 sin código
+   * se avisa antes, junto al campo y en el idioma de la app. Las mismas
+   * medidas que la API (3 a 100, ya sin espacios de sobra) y alguna letra o
+   * cifra: «...» o «---» no son un nombre.
+   */
+  it('returns nameTooShort below 3 characters, counted without spare spaces', () => {
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'ab' })).toEqual({ key: 'nameTooShort' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '  ab   ' })).toEqual({ key: 'nameTooShort' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'abc' })).toBeNull();
+  });
+
+  it('returns nameTooLong above 100 characters', () => {
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'a'.repeat(101) })).toEqual({ key: 'nameTooLong' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'a'.repeat(100) })).toBeNull();
+    // Los espacios de sobra no cuentan: la API los junta antes de medir
+    expect(validateCompetitionForm({ ...validFormData, competitionName: `a${' '.repeat(120)}b` })).toBeNull();
+  });
+
+  it('returns nameUnreadable without any letter or digit', () => {
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '...' })).toEqual({ key: 'nameUnreadable' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '- - -' })).toEqual({ key: 'nameUnreadable' });
+    expect(validateCompetitionForm({ ...validFormData, competitionName: 'Ñu 2' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, competitionName: '2026' })).toBeNull();
+  });
+
   it('returns teamNamesRequired when teamOneName is empty', () => {
     const result = validateCompetitionForm({ ...validFormData, teamOneName: '' });
     expect(result).toEqual({ key: 'teamNamesRequired' });
@@ -138,14 +164,15 @@ describe('validateCompetitionForm', () => {
     expect(result).toBeNull();
   });
 
-  it('returns playersMaximum when numberOfPlayers is above 100', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '101' });
-    expect(result).toEqual({ key: 'playersMaximum' });
+  it('returns playersMaximum when numberOfPlayers is above 200', () => {
+    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '201' });
+    expect(result).toEqual({ key: 'playersMaximum', max: 200 });
   });
 
-  it('accepts numberOfPlayers at the maximum boundary (100)', () => {
-    const result = validateCompetitionForm({ ...validFormData, numberOfPlayers: '100' });
-    expect(result).toBeNull();
+  it('accepts numberOfPlayers at the maximum boundary (200)', () => {
+    // La API sube a 200 con la BE #314: 150 ya no es un error
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '200' })).toBeNull();
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toBeNull();
   });
 
   it('short-circuits on the first failing rule (name before team names)', () => {
@@ -165,7 +192,7 @@ describe('validateCompetitionForm', () => {
    *   #    caso                                   | qué pasa
    *   -----|-----------------------------------------|---------------------
    *   5    nº de jugadores vacío                     | vale: son 12
-   *   6    nº de jugadores 150                       | error: el tope es 100
+   *   6    nº de jugadores 250                       | error: el tope es 200 (BE #314)
    *   7    un nombre de equipo en blanco             | error, como hasta ahora
    */
   it('5: sin número de jugadores es válido — serán 12', () => {
@@ -177,9 +204,9 @@ describe('validateCompetitionForm', () => {
   });
 
   it('6: pero un número imposible sigue siendo un error', () => {
-    // El tope de 100 no es del formulario: lo pone la API (`le=100`), así que
+    // El tope de 200 no es del formulario: lo pone la API (`le=200`), así que
     // saltárselo aquí solo cambia un aviso claro por un 422 del servidor
-    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '150' })).toEqual({ key: 'playersMaximum' });
+    expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '250' })).toEqual({ key: 'playersMaximum', max: 200 });
     expect(validateCompetitionForm({ ...validFormData, numberOfPlayers: '1' })).toEqual({ key: 'playersMinimum' });
     // «doce» no es un número pequeño: no es un número. Decir «mínimo 2» era
     // contestar a otra cosa
@@ -271,3 +298,47 @@ describe('validateCompetitionForm · el mínimo general manda (FE #662, revisió
   });
 });
 
+
+describe('validateCompetitionForm · los ajustes del stroke play (FE #824)', () => {
+  const stableford = (strokePlay) => ({
+    ...validFormData,
+    tournamentType: 'STABLEFORD',
+    strokePlay: {
+      modo: 'LIMITES',
+      limites: [],
+      categoriasIguales: '3',
+      jornadas: '1',
+      general: 'ACCUMULATED',
+      ...strokePlay,
+    },
+  });
+
+  it('SP1: con los de por defecto, nada que decir', () => {
+    expect(validateCompetitionForm(stableford({}))).toBeNull();
+  });
+
+  it('SP2: unos límites desordenados no se envían', () => {
+    expect(validateCompetitionForm(stableford({ limites: ['26,0', '12,0'] }))).toEqual({
+      key: 'categoryLimitsOrder',
+    });
+  });
+
+  it('SP3 (caso 12): más jornadas que días del torneo (3)', () => {
+    expect(validateCompetitionForm(stableford({ jornadas: '4' }))).toEqual({
+      key: 'matchdaysMoreThanDays',
+      count: 3,
+    });
+  });
+
+  it('SP4: una Ryder no mira los ajustes del stroke play', () => {
+    expect(
+      validateCompetitionForm({ ...stableford({ jornadas: '9' }), tournamentType: 'RYDER_CUP' })
+    ).toBeNull();
+  });
+
+  it('SP5: sin fechas manda el error de las fechas', () => {
+    expect(validateCompetitionForm({ ...stableford({ jornadas: '9' }), endDate: '' })).toEqual({
+      key: 'datesRequired',
+    });
+  });
+});

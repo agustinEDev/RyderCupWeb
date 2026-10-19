@@ -74,4 +74,21 @@ describe('InvitationBadge · retirada (FE #724)', () => {
       expect(textos.errors.competitionFull, idioma).toBeTruthy();
     }
   });
+
+  // Probado en el Kind (5 oct): «sin plaza» decía «al cerrarse la inscripción»
+  // también cuando lo que pasó es que se llenó. Vale para los dos casos
+  it('«sin plaza» no da por hecho que se cerrara la inscripción', async () => {
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      expect(textos.errors.noRoom, idioma).not.toMatch(/cerr|clos/i);
+    }
+  });
+
+  it('el freno por hora tiene sus textos con el número, en los dos idiomas', async () => {
+    for (const idioma of ['es', 'en']) {
+      const textos = (await import(`../../i18n/locales/${idioma}/invitations.json`)).default;
+      expect(textos.errors.rateLimited_one, idioma).toContain('{{count}}');
+      expect(textos.errors.rateLimited_other, idioma).toContain('{{count}}');
+    }
+  });
 });

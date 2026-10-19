@@ -20,7 +20,7 @@
   "quickActions": {
     "title": "Quick Actions",
     "createTournament": "Create Tournament",
-    "createTournamentDesc": "Start a new Ryder Cup tournament",
+    "createTournamentDesc": "Start a new tournament",
     "quickMatch": "Quick Match",
     "quickMatchDesc": "Play a round with friends without creating a tournament"
   },
@@ -52,23 +52,32 @@
       "STABLEFORD": "Stableford"
     },
     "envelopePending": "You have an envelope to hand in",
-    "sessionWithoutMatches": "A session was left without matches"
+    "sessionWithoutMatches": "A session was left without matches",
+    "placeAssigned": "You got a place from the waiting list",
+    "placeAssignedOk": "Got it",
+    "placeAssignedOkFailed": "Could not mark it as seen. Try again."
   },
   "upcomingMatches": {
     "title": "My Upcoming Matches",
-    "subtitle": "Your scheduled and in-progress matches across all competitions",
+    "subtitle": "Your matches and groups across all competitions",
     "noMatches": "You have no upcoming matches",
     "noMatchesDesc": "When you're enrolled in active competitions with scheduled matches, they'll appear here.",
     "scoreMatch": "Score",
-    "viewSchedule": "View Schedule",
-    "matchNumber": "Match #{{number}}",
-    "round": "Round",
     "loading": "Loading matches...",
-    "teamA": "Team A",
-    "teamB": "Team B",
     "desdeMemoria": "Could not refresh: these are the last matches seen, and they may be out of date.",
     "sinRespuesta": "Your matches could not be checked",
-    "sinRespuestaDesc": "Try again in a while."
+    "sinRespuestaDesc": "Try again in a while.",
+    "viewCard": "View card",
+    "inPlay": "In play",
+    "teeGroup": "Group {{numero}}",
+    "you": "You",
+    "versus": "{{nosotros}} vs {{ellos}}",
+    "with": "With {{companeros}}",
+    "alone": "No playing partners yet",
+    "desdeMemoriaParcial": "Could not refresh everything: some are the last ones seen and may be out of date.",
+    "incompleta": "Not all your matches could be loaded; some may be missing.",
+    "toBeDecided": "TBD",
+    "withdrawnPartner": "{{nombre}} (withdrawn)"
   },
   "nextMatch": {
     "label": "Your next match",
@@ -91,7 +100,10 @@
     },
     "sinRespuestaTitle": "Your next match could not be checked",
     "sinRespuestaDesc": "Try again in a while.",
-    "desdeMemoria": "Could not refresh: it may be out of date."
+    "desdeMemoria": "Could not refresh: it may be out of date.",
+    "teeGroup": "Group {{numero}}",
+    "labelTeeGroup": "Your next group",
+    "broughtIn": "You were moved to group {{numero}}"
   },
   "recentMatches": {
     "title": "Recent matches",
@@ -156,6 +168,7 @@
     "partidaSinNombre": "an earlier match",
     "partidaConNumero": "Match {{numero}} · {{campo}}",
     "soloNumero": "Match {{numero}}",
+    "partidaDeFranja": "Group {{numero}}",
     "perdidos_one": "One hole from {{partida}} could not be saved:",
     "perdidos_other": "{{count}} holes from {{partida}} could not be saved:",
     "perdido": "Hole {{hoyo}} — the server did not accept it",

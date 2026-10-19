@@ -86,7 +86,10 @@ describe('useEditProfile - Password History', () => {
 
       // Mock password history error from backend
       composition.updateUserSecurityUseCase.execute.mockRejectedValue(
-        new Error('Cannot use one of the last 5 passwords')
+        // Por su código (BE #519): el texto ya no se mira
+        Object.assign(new Error('Cannot use one of the last 5 passwords'), {
+          errorCode: 'PASSWORD_REUSED',
+        })
       );
 
       // Set form data with password change
@@ -95,10 +98,10 @@ describe('useEditProfile - Password History', () => {
           target: { name: 'currentPassword', value: 'OldPassword123' },
         });
         result.current.handleInputChange({
-          target: { name: 'newPassword', value: 'ReusedPassword123' },
+          target: { name: 'newPassword', value: 'ReusedPassword123!' },
         });
         result.current.handleInputChange({
-          target: { name: 'confirmPassword', value: 'ReusedPassword123' },
+          target: { name: 'confirmPassword', value: 'ReusedPassword123!' },
         });
       });
 
@@ -126,7 +129,7 @@ describe('useEditProfile - Password History', () => {
 
       // Mock password history error with different message
       composition.updateUserSecurityUseCase.execute.mockRejectedValue(
-        new Error('Password cannot match any of the last 5 passwords')
+        Object.assign(new Error('Otro texto cualquiera'), { errorCode: 'PASSWORD_REUSED' })
       );
 
       act(() => {
@@ -134,10 +137,10 @@ describe('useEditProfile - Password History', () => {
           target: { name: 'currentPassword', value: 'CurrentPassword123' },
         });
         result.current.handleInputChange({
-          target: { name: 'newPassword', value: 'OldPassword123' },
+          target: { name: 'newPassword', value: 'OldPassword123!' },
         });
         result.current.handleInputChange({
-          target: { name: 'confirmPassword', value: 'OldPassword123' },
+          target: { name: 'confirmPassword', value: 'OldPassword123!' },
         });
       });
 
@@ -171,10 +174,10 @@ describe('useEditProfile - Password History', () => {
           target: { name: 'currentPassword', value: 'Wrong123' },
         });
         result.current.handleInputChange({
-          target: { name: 'newPassword', value: 'NewValidPass123' },
+          target: { name: 'newPassword', value: 'NewValidPass123!' },
         });
         result.current.handleInputChange({
-          target: { name: 'confirmPassword', value: 'NewValidPass123' },
+          target: { name: 'confirmPassword', value: 'NewValidPass123!' },
         });
       });
 
@@ -208,10 +211,10 @@ describe('useEditProfile - Password History', () => {
           target: { name: 'currentPassword', value: 'Current123' },
         });
         result.current.handleInputChange({
-          target: { name: 'newPassword', value: 'BrandNewPassword123' },
+          target: { name: 'newPassword', value: 'BrandNewPassword123!' },
         });
         result.current.handleInputChange({
-          target: { name: 'confirmPassword', value: 'BrandNewPassword123' },
+          target: { name: 'confirmPassword', value: 'BrandNewPassword123!' },
         });
       });
 

@@ -66,14 +66,16 @@
     "failedToLoad": "Error al cargar las invitaciones",
     "failedToSend": "Error al enviar la invitación",
     "failedToRespond": "Error al responder a la invitación",
-    "noRoom": "Esta invitación se quedó sin plaza al cerrarse la inscripción.",
+    "noRoom": "Esta invitación se quedó sin plaza.",
     "duplicateInvitation": "Ya se ha enviado una invitación a este email",
     "invalidEmail": "Por favor, introduce un email válido",
     "rolesCheckFailed": "No se ha podido comprobar si puedes gestionar esta competición",
     "retry": "Reintentar",
     "notPendingAnymore": "Esa invitación ya no estaba pendiente: la lista se ha actualizado.",
     "competitionFull": "La competición está completa: ya no quedan plazas para invitar.",
-    "failedToWithdraw": "No se pudo retirar la invitación."
+    "failedToWithdraw": "No se pudo retirar la invitación.",
+    "rateLimited_one": "Ya has enviado {{count}} invitación en la última hora en esta competición. Podrás enviar más en un rato.",
+    "rateLimited_other": "Ya has enviado {{count}} invitaciones en la última hora en esta competición. Podrás enviar más en un rato."
   },
   "creator": {
     "title": "Invitaciones",

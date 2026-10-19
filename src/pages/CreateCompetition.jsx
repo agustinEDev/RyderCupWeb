@@ -14,6 +14,7 @@ import {
   createCompetitionWithGolfCoursesUseCase,
   configureScheduleUseCase,
   updateCompetitionUseCase,
+  updateStrokePlaySettingsUseCase,
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
   fetchCountriesUseCase,
@@ -31,8 +32,19 @@ import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import CompetitionTypeChooser from '../components/competition/CompetitionTypeChooser';
 import SetupModeChooser from '../components/competition/SetupModeChooser';
+import StrokePlaySettings from '../components/competition/StrokePlaySettings';
+import {
+  formularioDeAjustes,
+  diasDelTorneo,
+  separadorDecimal,
+  ajustesParaCrear,
+  cambiosDeAjustes,
+  primeroLosAjustes,
+} from '../utils/ajustesDeStrokePlay';
 import { cupoDeJugadores, CUPO_POR_DEFECTO } from '../utils/cupoDeJugadores';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
+import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
 
 
@@ -49,7 +61,7 @@ const getMessageClassName = (type) => {
 // Para preguntar «¿vale lo que está plegado?» hay que dar por buenos los campos
 // de fuera: si no, el primer error de ellos taparía siempre al del plegable
 const FORMULARIO_MINIMO = {
-  competitionName: 'x',
+  competitionName: 'x'.repeat(CompetitionName.MIN_LENGTH),
   startDate: '2026-01-01',
   endDate: '2026-01-02',
   country: { code: 'ES' },
@@ -58,6 +70,10 @@ const FORMULARIO_MINIMO = {
   golfCourses: [{ countryCode: 'ES' }],
   numberOfPlayers: null,
 };
+
+// Los del nombre se dicen junto a su campo, no en el aviso de arriba
+// (RyderCupAm#540): «nameTaken» es el 409 del servidor
+const ERRORES_DEL_NOMBRE = new Set(['nameRequired', 'nameTooShort', 'nameTooLong', 'nameUnreadable', 'nameTaken']);
 
 const ERRORES_DE_LAS_OPCIONES = new Set([
   'teamNamesRequired',
@@ -83,7 +99,6 @@ const CreateCompetition = () => {
   const isEditMode = Boolean(competitionId);
   // El género del organizador, que juega: solo al crear y solo si le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
-  const pideGenero = !isEditMode && generoParaApuntarse.falta;
   const [genero, setGenero] = useState('');
   // El tipo se elige ANTES de rellenar nada (FE #639). Editando no se pregunta:
   // esa competición ya existe y su tipo no se cambia aquí
@@ -112,6 +127,9 @@ const CreateCompetition = () => {
     globalThis.scrollTo?.(0, 0);
   };
   const [message, setMessage] = useState({ type: '', text: '' });
+  // El aviso del nombre, junto a su campo: la clave de `create.errors`
+  const [errorDelNombre, setErrorDelNombre] = useState(null);
+  const campoDelNombre = useRef(null);
 
   // Ref para cleanup del timer de navegación (prevenir memory leak)
   const navigationTimerRef = useRef(null);
@@ -137,6 +155,9 @@ const CreateCompetition = () => {
   const [formData, setFormData] = useState({
     // Competition Details
     competitionName: '',
+    // Si el organizador de un Stableford o un Medal juega (RyderCupAm#552): si
+    // no, no queda inscrito. Lo normal es que sí
+    organizerPlays: true,
     // Nacen en el idioma de la app: son texto libre del organizador, así que
     // traducirlos al pintar le cambiaría el nombre a quien llame a su equipo
     // «USA» a propósito
@@ -165,16 +186,26 @@ const CreateCompetition = () => {
     // el reparto de equipos sale de él, así que ya no se pregunta aparte
     setupMode: null,
     tournamentType: null,
-    maxPlayingHandicap: undefined
+    maxPlayingHandicap: undefined,
+    // Categorías, jornadas por jugador y general de un Stableford o un Medal
+    // (FE #824); una Ryder no los usa ni los manda
+    strokePlay: formularioDeAjustes(null)
   });
   // Solo una Ryder tiene equipos y modo de montaje (FE #791). Sin tipo todavía,
   // la de siempre: así se cargaba y se creaba todo antes del tipo
   const conEquipos = tieneEquipos(formData.tournamentType);
+  // Y si no juega («¿Juegas tú?» desmarcada, solo en stroke play), ni se pide
+  // ni se guarda: el servidor tampoco lo exige (Agustín, 13 oct)
+  const pideGenero = !isEditMode && generoParaApuntarse.falta && (conEquipos || formData.organizerPlays);
 
   // El resumen del plegable no puede prometer un equipo que ya no está escrito
   // Vaciar el campo en edición no puede recortar el cupo de una competición con
   // gente ya aprobada: se conserva el que se cargó (`/code-review`)
   const cupoCargado = useRef(CUPO_POR_DEFECTO);
+  // Al editar un stroke play: los ajustes y los días guardados. De ellos sale qué
+  // ha cambiado (el PATCH lleva solo eso) y qué petición va primero (FE #824)
+  const ajustesCargados = useRef(null);
+  const diasCargados = useRef(null);
   // Cuántos hay ya dentro, al editar: el cupo no puede bajar de ahí (FE #662).
   // Con la competición de la que son: crear y editar montan este componente en
   // el mismo sitio, y al ir de editar una a crear otra se arrastraba el mínimo
@@ -334,12 +365,16 @@ const CreateCompetition = () => {
           // Solo una Ryder tiene modo de montaje: a un Stableford no se le pone
           setupMode:
             competition.setupMode || (competition.hasTeams ? 'RYDER_CUP' : null),
-          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined
+          maxPlayingHandicap: competition.maxPlayingHandicap ?? undefined,
+          // Con el decimal del idioma: «12,0» en español, «12.0» en inglés
+          strokePlay: formularioDeAjustes(competition.strokePlay ?? null, separadorDecimal(i18n.language))
         };
 
         if (!vigente) return;
         // Lo que había guardado: vaciar el campo no puede recortarlo
         cupoCargado.current = formDataToSet.numberOfPlayers;
+        ajustesCargados.current = competition.strokePlay ?? null;
+        diasCargados.current = diasDelTorneo(competition.startDate, competition.endDate);
         setInscritosDe({ de: competitionId, cuantos: competition.enrolledCount || 0 });
         setFormData(formDataToSet);
 
@@ -438,6 +473,7 @@ const CreateCompetition = () => {
     }));
 
     if (message.text) setMessage({ type: '', text: '' });
+    if (name === 'competitionName') setErrorDelNombre(null);
 
     if (name === 'playMode') {
       setFormData(prev => ({
@@ -610,6 +646,14 @@ const CreateCompetition = () => {
     return t('edit.datesLeaveSessionsOut', { sesiones });
   };
 
+  // El aviso del nombre, y el campo a la vista y con el foco: el botón queda
+  // abajo y en un teléfono no se vería qué falló (como el aviso de arriba)
+  const senalaElNombre = (clave) => {
+    setErrorDelNombre(clave);
+    campoDelNombre.current?.scrollIntoView?.({ block: 'center' });
+    campoDelNombre.current?.focus();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
@@ -617,6 +661,10 @@ const CreateCompetition = () => {
     // UI Validation
     // Los campos de golf solo se piden al crear: al editar los gestiona la ficha
     const validationError = validateCompetitionForm(formData, { exigirCampos: !isEditMode, inscritos });
+    if (validationError && ERRORES_DEL_NOMBRE.has(validationError.key)) {
+      senalaElNombre(validationError.key);
+      return;
+    }
     if (validationError) {
       if (validationError.key === 'golfCoursesRequired') {
         const countryNames = validationError.missingCourseCountryCodes.map(code => {
@@ -630,7 +678,7 @@ const CreateCompetition = () => {
           text: t(`create.errors.${validationError.key}`, { countries: countryNames })
         });
       } else {
-        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`, { count: validationError.count }) });
+        setMessage({ type: 'error', text: t(`create.errors.${validationError.key}`, { count: validationError.count, max: validationError.max }) });
       }
       // Si lo que falla vive dentro de «Más opciones», el aviso hablaba de un
       // campo que no estaba en pantalla (`/code-review`)
@@ -664,6 +712,9 @@ const CreateCompetition = () => {
     // tocar. Se cierra al terminar, en el `finally`
     setIsSubmitting(true);
     let generoGuardado = false;
+    // Solo el 409 de la propia competición es «ese nombre ya lo tienes»: el del
+    // perfil o el de los ajustes no tienen nada que ver con él (`/code-review`)
+    let enLaCompeticion = false;
 
     try {
       const numPlayers = cupoDeJugadores(formData.numberOfPlayers, cupoCargado.current);
@@ -676,7 +727,8 @@ const CreateCompetition = () => {
       }
 
       const payload = {
-        name: formData.competitionName.trim(),
+        // Como la guarda la API, que mide el texto en bruto (`/code-review`)
+        name: CompetitionName.normalize(formData.competitionName),
         start_date: formData.startDate,
         end_date: formData.endDate,
         main_country: formData.country?.code,
@@ -697,6 +749,12 @@ const CreateCompetition = () => {
         // El tipo, solo al crear: el de una competición que ya existe no se
         // cambia (FE #791, RyderCupAm#251)
         ...(!isEditMode && tipoElegido ? { tournament_type: tipoElegido } : {}),
+        // Los ajustes de un Stableford o un Medal van en el alta; al editar,
+        // por su propio PATCH y solo si cambian (FE #824)
+        ...(!isEditMode && !conEquipos ? { stroke_play: ajustesParaCrear(formData.strokePlay) } : {}),
+        // Si el organizador juega, solo al crear un Stableford o un Medal: en una
+        // Ryder siempre queda inscrito (RyderCupAm#552)
+        ...(!isEditMode && !conEquipos ? { organizer_plays: formData.organizerPlays } : {}),
         max_playing_handicap: formData.maxPlayingHandicap
           ? parseInt(formData.maxPlayingHandicap, 10)
           : null,
@@ -709,8 +767,46 @@ const CreateCompetition = () => {
       };
 
       if (isEditMode) {
-        // EDIT MODE: Update existing competition
-        await updateCompetitionUseCase.execute(competitionId, payload);
+        // EDIT MODE: lo general y, en un stroke play, los ajustes que cambien.
+        // Son dos peticiones: si la segunda falla, la primera ya está guardada
+        // y hay que decir qué se guardó y qué no, sin salir (FE #824)
+        const cambios =
+          !conEquipos && ajustesCargados.current
+            ? cambiosDeAjustes(ajustesCargados.current, formData.strokePlay)
+            : null;
+        const guardaLoGeneral = () => {
+          enLaCompeticion = true;
+          return updateCompetitionUseCase.execute(competitionId, payload);
+        };
+        const guardaLosAjustes = async () => {
+          enLaCompeticion = false;
+          // Lo guardado pasa a ser la referencia: reintentar no los reenvía
+          ajustesCargados.current = await updateStrokePlaySettingsUseCase.execute(competitionId, cambios);
+        };
+        const ajustesPrimero = cambios && primeroLosAjustes(cambios, diasCargados.current);
+        await (ajustesPrimero ? guardaLosAjustes : guardaLoGeneral)();
+        if (cambios) {
+          try {
+            await (ajustesPrimero ? guardaLoGeneral : guardaLosAjustes)();
+          } catch (error) {
+            console.error('Error updating competition (second request):', error);
+            // Lo general fue segundo y el nombre ya lo tiene otra: junto al
+            // campo, como si fuera la primera (revisión de la FE-B). Los
+            // ajustes ya quedaron guardados y al reintentar no se reenvían
+            if (enLaCompeticion && error?.status === 409) {
+              senalaElNombre('nameTaken');
+              return;
+            }
+            // El motivo como en cualquier otro fallo: las sesiones que se quedan
+            // fuera, con sus días, antes que el texto en bruto (revisor)
+            const texto = t(ajustesPrimero ? 'edit.generalNotSaved' : 'edit.strokePlayNotSaved', {
+              motivo: sesionesQueQuedanFuera(error) || error.message || t('edit.error'),
+            });
+            customToast.error(texto);
+            setMessage({ type: 'error', text: texto });
+            return;
+          }
+        }
 
         customToast.success(t('edit.success'));
 
@@ -731,6 +827,7 @@ const CreateCompetition = () => {
           id: gc.course.id,
           name: gc.course.name
         }));
+        enLaCompeticion = true;
         const { competition: createdCompetition, successCount, failedCourses } =
           await createCompetitionWithGolfCoursesUseCase.execute(payload, golfCourses);
 
@@ -772,6 +869,12 @@ const CreateCompetition = () => {
 
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} competition:`, error);
+      // Ya tiene otra con ese nombre: junto al campo y en el idioma de la app,
+      // no el texto del servidor (RyderCupAm#540)
+      if (enLaCompeticion && error?.status === 409) {
+        senalaElNombre('nameTaken');
+        return;
+      }
       const texto =
         sesionesQueQuedanFuera(error) ||
         error.message ||
@@ -941,16 +1044,43 @@ const CreateCompetition = () => {
                       {t('create.competitionName')}
                     </label>
                     <input
+                      ref={campoDelNombre}
                       id="competitionName"
                       data-testid="campo-nombre"
                       type="text"
                       name="competitionName"
                       value={formData.competitionName}
                       onChange={handleInputChange}
-                      placeholder={t('create.competitionNamePlaceholder')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      aria-invalid={errorDelNombre ? 'true' : undefined}
+                      aria-describedby={errorDelNombre ? 'error-del-nombre' : undefined}
+                      // El ejemplo, del tipo elegido: «Ryder Cup de amigos» en un Medal no (pasada)
+                      placeholder={t(
+                        formData.tournamentType && !conEquipos
+                          ? `create.competitionNamePlaceholderFor.${formData.tournamentType}`
+                          : 'create.competitionNamePlaceholder'
+                      )}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errorDelNombre ? 'border-red-400' : 'border-gray-300'}`}
                     />
+                    {errorDelNombre && (
+                      <p id="error-del-nombre" data-testid="error-del-nombre" className="mt-1 text-sm text-red-700">
+                        {t(`create.errors.${errorDelNombre}`)}
+                      </p>
+                    )}
                   </div>
+
+                  {/* ¿Juega el organizador? Solo al crear un Stableford o un
+                      Medal: si no, no queda inscrito (RyderCupAm#552) */}
+                  {!isEditMode && formData.tournamentType && !conEquipos && (
+                    <label className="flex min-h-11 items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={formData.organizerPlays}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, organizerPlays: e.target.checked }))}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      {t('create.organizerPlays')}
+                    </label>
+                  )}
 
                 {/* Los campos de fecha se salían de la tarjeta en el iPhone (FE #648).
                     Medido en un iPhone 14 real: con el mismo `w-full`, el campo de
@@ -1371,8 +1501,8 @@ const CreateCompetition = () => {
                         // callárselo es enterarse con el jugador 13 fuera
                         numberOfPlayers: cupoDeJugadores(prev.numberOfPlayers, cupoCargado.current),
                       }))}
-                      min={Math.max(2, inscritos)}
-                      max="100"
+                      min={Math.max(MIN_PLAYERS, inscritos)}
+                      max={MAX_PLAYERS}
                       aria-describedby={inscritos > 0 ? 'cupo-minimo' : undefined}
                       placeholder={t('create.numberOfPlayersPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1387,6 +1517,27 @@ const CreateCompetition = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Los ajustes de un Stableford o un Medal, a la vista: las
+                  categorías y las jornadas sí se deciden al crear (FE #824) */}
+              {!conEquipos && (
+                <div data-testid="ajustes-stroke-play" className="border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Settings className="w-4 h-4 text-primary" />
+                    </div>
+                    <h3 className="text-gray-900 font-bold text-base">
+                      {t('create.strokePlay.title', { tipo: t(`create.type.${formData.tournamentType}.title`) })}
+                    </h3>
+                  </div>
+                  <StrokePlaySettings
+                    valor={formData.strokePlay}
+                    onCambio={(strokePlay) => setFormData((prev) => ({ ...prev, strokePlay }))}
+                    tipo={formData.tournamentType}
+                    dias={diasDelTorneo(formData.startDate, formData.endDate)}
+                  />
+                </div>
+              )}
 
               {/* Lo que no hay que decidir para crear: se pliega, pero se dice
                   qué se acepta si nadie lo toca (FE #637) */}

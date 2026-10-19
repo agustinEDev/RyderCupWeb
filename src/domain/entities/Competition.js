@@ -3,6 +3,19 @@
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
 import { tieneEquipos } from '../value_objects/TournamentType';
 import { RyderCupSetup } from '../value_objects/RyderCupSetup';
+import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
+
+// Cuántos inscritos admite, el mismo rango que la API (`ge=2`, `le=200` desde
+// la BE #314: antes eran 100 por un límite oculto al leer inscripciones)
+export const MIN_PLAYERS = 2;
+export const MAX_PLAYERS = 200;
+
+const comprobarCupo = (maxPlayers) => {
+  // Entero: `typeof NaN` también es 'number', y 2,5 jugadores no es un cupo
+  if (!Number.isInteger(maxPlayers) || maxPlayers < MIN_PLAYERS || maxPlayers > MAX_PLAYERS) {
+    throw new Error(`maxPlayers must be a number between ${MIN_PLAYERS} and ${MAX_PLAYERS}.`);
+  }
+};
 
 /**
  * Custom error for invalid state transitions in a Competition.
@@ -24,6 +37,7 @@ export default class Competition {
   #maxPlayers;
   #visibility;
   #ryderCup;
+  #strokePlay;
   #tournamentType;
   #status;
   #createdAt;
@@ -46,6 +60,7 @@ export default class Competition {
     updatedAt = new Date(),
     tournamentType = 'RYDER_CUP',
     ryderCup,
+    strokePlay,
   }) {
     // Lo que solo tiene una Ryder Cup vive en su pieza, como en el backend
     // (FE #791, RyderCupAm#471): un Stableford no la tiene. Se recibe hecha
@@ -59,6 +74,8 @@ export default class Competition {
         ? new RyderCupSetup({ team1Name, team2Name, teamAssignment })
         : null;
     }
+    // Y lo que solo tiene un Stableford o un Medal, en la suya (FE #824)
+    this.#strokePlay = Competition.#piezaDeStrokePlay(tournamentType, strokePlay);
 
     this.#id = id;
     this.#creatorId = creatorId;
@@ -88,6 +105,8 @@ export default class Competition {
     teamAssignment,
     tournamentType = 'RYDER_CUP',
   }) {
+    // El mismo rango que al editar: solo lo miraba `updateInfo`
+    comprobarCupo(maxPlayers);
     return new Competition({
       id,
       creatorId,
@@ -126,6 +145,26 @@ export default class Competition {
     if (!tieneEquipos(tournamentType) && ryderCup !== null) {
       throw new Error(`Un ${tournamentType} no tiene equipos`);
     }
+  }
+
+  /**
+   * Un stroke play tiene su pieza (la de por defecto si no llega ninguna) y una
+   * Ryder no tiene ninguna, igual que al revés con los equipos.
+   */
+  static #piezaDeStrokePlay(tournamentType, strokePlay) {
+    if (strokePlay !== undefined && strokePlay !== null && !(strokePlay instanceof StrokePlaySetup)) {
+      throw new Error('strokePlay tiene que ser una StrokePlaySetup o null');
+    }
+    if (tieneEquipos(tournamentType)) {
+      if (strokePlay) throw new Error('Una Ryder Cup no tiene ajustes de stroke play');
+      return null;
+    }
+    return strokePlay ?? new StrokePlaySetup({});
+  }
+
+  /** Categorías, jornadas por jugador y general, o null en una Ryder. */
+  get strokePlay() {
+    return this.#strokePlay;
   }
 
   /** Los equipos y su reparto, o null si el torneo no los tiene. */
@@ -250,9 +289,7 @@ export default class Competition {
     
     // Validate maxPlayers range if updated
     if (updates.maxPlayers !== undefined) {
-      if (typeof updates.maxPlayers !== 'number' || updates.maxPlayers < 2 || updates.maxPlayers > 100) {
-        throw new Error("maxPlayers must be a number between 2 and 100.");
-      }
+      comprobarCupo(updates.maxPlayers);
     }
 
     return this._with({ ...newProps, updatedAt: new Date() });
@@ -274,6 +311,7 @@ export default class Competition {
       // lo convertía en una Ryder sin equipos y fallaba (FE #791)
       tournamentType: this.#tournamentType,
       ryderCup: this.#ryderCup,
+      strokePlay: this.#strokePlay,
       status: this.#status,
       createdAt: this.#createdAt,
       updatedAt: this.#updatedAt,

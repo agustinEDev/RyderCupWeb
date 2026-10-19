@@ -1,0 +1,4 @@
+/* La hoja de MapLibre en su capa (`maplibre`, declarada en index.css por debajo
+   de `utilities`): sin capa ganaba a todas las utilidades de Tailwind. Se carga
+   con el trozo del mapa, solo al abrirlo */
+@import 'maplibre-gl/dist/maplibre-gl.css' layer(maplibre);

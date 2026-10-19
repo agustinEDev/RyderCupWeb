@@ -103,6 +103,7 @@ const ParticipantsStep = ({
                 type="button"
                 onClick={() => onRemoveParticipant(p.participantId)}
                 disabled={isProcessing}
+                data-testid={`quick-match-remove-${p.participantId}`}
                 className="text-gray-400 hover:text-red-600 flex-shrink-0"
                 aria-label={t('create.participants.remove')}
               >
@@ -125,6 +126,7 @@ const ParticipantsStep = ({
             <button
               type="button"
               onClick={() => onSelectedTeamChange('A')}
+              data-testid="quick-match-team-A"
               className={`flex-1 px-3 py-1.5 rounded-md text-sm border transition-colors ${
                 selectedTeam === 'A' ? 'border-primary text-primary bg-primary/5' : 'border-gray-200 text-gray-600'
               }`}
@@ -134,6 +136,7 @@ const ParticipantsStep = ({
             <button
               type="button"
               onClick={() => onSelectedTeamChange('B')}
+              data-testid="quick-match-team-B"
               className={`flex-1 px-3 py-1.5 rounded-md text-sm border transition-colors ${
                 selectedTeam === 'B' ? 'border-primary text-primary bg-primary/5' : 'border-gray-200 text-gray-600'
               }`}
@@ -147,6 +150,7 @@ const ParticipantsStep = ({
           <button
             type="button"
             onClick={() => onParticipantTabChange('friends')}
+            data-testid="quick-match-tab-friends"
             className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
               participantTab === 'friends' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'
             }`}
@@ -156,6 +160,7 @@ const ParticipantsStep = ({
           <button
             type="button"
             onClick={() => onParticipantTabChange('guest')}
+            data-testid="quick-match-tab-guest"
             className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
               participantTab === 'guest' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'
             }`}
@@ -203,6 +208,7 @@ const ParticipantsStep = ({
                 required
                 value={guestForm.firstName}
                 onChange={(e) => onGuestFirstNameChange(e.target.value)}
+                data-testid="quick-match-guest-first-name"
                 placeholder={t('create.participants.guestFirstName')}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -211,6 +217,7 @@ const ParticipantsStep = ({
                 required
                 value={guestForm.lastName}
                 onChange={(e) => onGuestLastNameChange(e.target.value)}
+                data-testid="quick-match-guest-last-name"
                 placeholder={t('create.participants.guestLastName')}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -241,6 +248,7 @@ const ParticipantsStep = ({
             <button
               type="submit"
               disabled={isProcessing}
+              data-testid="quick-match-add-guest"
               className="w-full px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
             >
               {t('create.participants.addGuest')}

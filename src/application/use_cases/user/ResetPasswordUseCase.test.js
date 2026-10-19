@@ -19,7 +19,7 @@ describe('ResetPasswordUseCase', () => {
     it('should successfully reset password with valid token and password', async () => {
       // Arrange
       const token = 'valid_256_bit_token';
-      const newPassword = 'NewSecurePass123';
+      const newPassword = 'NewSecurePass123!';
       const mockResponse = {
         message: 'Password has been successfully reset. All sessions have been invalidated.',
       };
@@ -41,7 +41,7 @@ describe('ResetPasswordUseCase', () => {
     it('should return default message if repository returns no message', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockResponse = {}; // Sin message
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);
@@ -60,7 +60,7 @@ describe('ResetPasswordUseCase', () => {
   describe('Token validation', () => {
     it('should throw error if token is empty', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('', 'ValidPassword123')).rejects.toThrow(
+      await expect(resetPasswordUseCase.execute('', 'ValidPassword123!')).rejects.toThrow(
         'Reset token is required'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe('ResetPasswordUseCase', () => {
 
     it('should throw error if token is null', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(null, 'ValidPassword123')).rejects.toThrow(
+      await expect(resetPasswordUseCase.execute(null, 'ValidPassword123!')).rejects.toThrow(
         'Reset token is required'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
@@ -76,7 +76,7 @@ describe('ResetPasswordUseCase', () => {
 
     it('should throw error if token is undefined', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute(undefined, 'ValidPassword123')).rejects.toThrow(
+      await expect(resetPasswordUseCase.execute(undefined, 'ValidPassword123!')).rejects.toThrow(
         'Reset token is required'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe('ResetPasswordUseCase', () => {
 
     it('should throw error if token is only whitespace', async () => {
       // Act & Assert
-      await expect(resetPasswordUseCase.execute('   ', 'ValidPassword123')).rejects.toThrow(
+      await expect(resetPasswordUseCase.execute('   ', 'ValidPassword123!')).rejects.toThrow(
         'Reset token is required'
       );
       expect(authRepository.resetPassword).not.toHaveBeenCalled();
@@ -146,7 +146,7 @@ describe('ResetPasswordUseCase', () => {
     it('should accept password with exactly 12 characters (minimum)', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'ValidPass123'; // Exactamente 12 caracteres
+      const newPassword = 'ValidPass12!'; // Exactamente 12 caracteres
       const mockResponse = { message: 'Success' };
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);
@@ -162,7 +162,7 @@ describe('ResetPasswordUseCase', () => {
     it('should accept password with exactly 128 characters (maximum)', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'A'.repeat(126) + '1a'; // Exactamente 128 caracteres
+      const newPassword = 'A'.repeat(125) + '1a!'; // Exactamente 128 caracteres
       const mockResponse = { message: 'Success' };
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);
@@ -196,7 +196,7 @@ describe('ResetPasswordUseCase', () => {
     it('should propagate error when token is invalid', async () => {
       // Arrange
       const token = 'invalid_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockError = new Error('Invalid reset token');
 
       authRepository.resetPassword.mockRejectedValue(mockError);
@@ -211,7 +211,7 @@ describe('ResetPasswordUseCase', () => {
     it('should propagate error when token is expired', async () => {
       // Arrange
       const token = 'expired_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockError = new Error('Reset token has expired');
 
       authRepository.resetPassword.mockRejectedValue(mockError);
@@ -226,7 +226,7 @@ describe('ResetPasswordUseCase', () => {
     it('should propagate error when token has already been used', async () => {
       // Arrange
       const token = 'used_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockError = new Error('Reset token has already been used');
 
       authRepository.resetPassword.mockRejectedValue(mockError);
@@ -240,7 +240,7 @@ describe('ResetPasswordUseCase', () => {
     it('should propagate rate limiting errors (429)', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockError = new Error('Rate limit exceeded. Please wait 60 minutes.');
 
       authRepository.resetPassword.mockRejectedValue(mockError);
@@ -254,7 +254,7 @@ describe('ResetPasswordUseCase', () => {
     it('should propagate network errors', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockError = new Error('Network request failed');
 
       authRepository.resetPassword.mockRejectedValue(mockError);
@@ -268,7 +268,7 @@ describe('ResetPasswordUseCase', () => {
     it('should propagate server errors (500)', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'ValidPassword123';
+      const newPassword = 'ValidPassword123!';
       const mockError = new Error('Internal server error');
 
       authRepository.resetPassword.mockRejectedValue(mockError);
@@ -296,7 +296,7 @@ describe('ResetPasswordUseCase', () => {
     it('should call repository only with valid password', async () => {
       // Arrange
       const token = 'valid_token';
-      const strongPassword = 'StrongPassword123';
+      const strongPassword = 'StrongPassword123!';
       const mockResponse = { message: 'Success' };
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);
@@ -330,7 +330,7 @@ describe('ResetPasswordUseCase', () => {
     it('should handle password with unicode characters', async () => {
       // Arrange
       const token = 'valid_token';
-      const newPassword = 'Contraseña123🔒'; // 15 caracteres con emoji
+      const newPassword = 'Contraseña123🔒!'; // con emoji y un símbolo del backend
       const mockResponse = { message: 'Success' };
 
       authRepository.resetPassword.mockResolvedValue(mockResponse);

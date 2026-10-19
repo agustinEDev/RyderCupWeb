@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 
 /**
  * Los dos modales de los campos pendientes (detalle y rechazo) pasaron a
@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
  * —antes no— y pulsar fuera sigue sin cerrarlos.
  */
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
+  useTranslation: () => ({ t: (clave, o) => (o ? `${clave} ${JSON.stringify(o)}` : clave), i18n: { language: 'es' } }),
 }));
 vi.mock('framer-motion', () => ({
   motion: {
@@ -32,12 +32,13 @@ vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' 
 vi.mock('../../components/golf_course/TeeColorBadge', () => ({ default: () => null }));
 // La tabla, reducida a los dos botones que abren los modales
 vi.mock('../../components/golf_course/GolfCourseTable', () => ({
-  default: ({ courses, onView, onReject }) => (
+  default: ({ courses, onView, onReject, onApprove }) => (
     <div>
       {courses.map((c) => (
         <div key={c.id}>
           <button onClick={() => onView(c)}>ver {c.name}</button>
           <button onClick={() => onReject(c)}>rechazar {c.name}</button>
+          <button onClick={() => onApprove(c)}>aprobar {c.name}</button>
         </div>
       ))}
     </div>
@@ -55,7 +56,10 @@ vi.mock('../../composition', () => ({
         totalPar: 72,
         originalGolfCourseId: null,
         tees: [],
-        holes: [],
+        holes: [
+          { holeNumber: 1, par: 4, strokeIndex: 7 },
+          { holeNumber: 2, par: 3, strokeIndex: 15 },
+        ],
       },
     ]),
   },
@@ -72,8 +76,8 @@ const { fetchCountriesUseCase } = await import('../../composition');
 // La página carga la lista y los países por su cuenta. Si la carga de los
 // países llega en mitad de la prueba, su render cae fuera del `act` y se cruza
 // con el cierre: se espera a que la página haya terminado de cargar
-const abrirPagina = async () => {
-  render(<PendingGolfCourses embedded />);
+const abrirPagina = async (props = {}) => {
+  render(<PendingGolfCourses embedded {...props} />);
   await waitFor(() => expect(fetchCountriesUseCase.execute).toHaveBeenCalled());
   await act(async () => {});
 };
@@ -103,6 +107,22 @@ describe('PendingGolfCourses · sus modales', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('F7: en el móvil los hoyos del detalle van en filas; en el ordenador, la tabla', async () => {
+    await abrirPagina();
+    fireEvent.click(await screen.findByText('ver Campo Pendiente'));
+    const filas = screen.getByRole('list', { name: 'form.holes' });
+
+    expect(filas).toHaveClass('md:hidden');
+    expect(screen.getByRole('table').parentElement).toHaveClass('hidden', 'md:block');
+    expect(within(filas).getAllByRole('listitem').map((f) => f.textContent)).toEqual([
+      'form.holeRow {"hole":1,"par":4,"strokeIndex":7}',
+      'form.holeRow {"hole":2,"par":3,"strokeIndex":15}',
+    ]);
+    // El total, fuera de la lista: un lector no cuenta 19 hoyos
+    expect(filas.nextElementSibling).toHaveTextContent('form.totalPar 72');
+    expect(filas.nextElementSibling).toHaveClass('md:hidden');
+  });
+
   it('el rechazo se anuncia con su título y Escape lo descarta sin rechazar', async () => {
     await abrirPagina();
     fireEvent.click(await screen.findByText('rechazar Campo Pendiente'));
@@ -114,5 +134,33 @@ describe('PendingGolfCourses · sus modales', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(rechazar).not.toHaveBeenCalled();
+  });
+  // Panel de admin, 17 oct: el menú dice cuántas solicitudes quedan
+  it('aprobar o rechazar avisa al panel para que recuente las solicitudes', async () => {
+    const onCambio = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    await abrirPagina({ onCambio });
+    fireEvent.click(await screen.findByText('aprobar Campo Pendiente'));
+    await waitFor(() => expect(onCambio).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(await screen.findByText('rechazar Campo Pendiente'));
+    fireEvent.change(await screen.findByRole('textbox'), { target: { value: 'No es un campo de golf real' } });
+    rechazar.mockResolvedValue();
+    fireEvent.click(screen.getByRole('button', { name: 'pages.pending.confirmReject' }));
+    await waitFor(() => expect(onCambio).toHaveBeenCalledTimes(2));
+    vi.unstubAllGlobals();
+  });
+
+  it('si aprobar falla, no avisa', async () => {
+    const onCambio = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    const { approveGolfCourseUseCase } = await import('../../composition');
+    approveGolfCourseUseCase.execute.mockRejectedValueOnce(new Error('500'));
+    await abrirPagina({ onCambio });
+    fireEvent.click(await screen.findByText('aprobar Campo Pendiente'));
+    await waitFor(() => expect(approveGolfCourseUseCase.execute).toHaveBeenCalled());
+    await act(async () => {});
+    expect(onCambio).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });

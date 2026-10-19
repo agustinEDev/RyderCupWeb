@@ -365,4 +365,11 @@ describe('ModalShell · la escucha del teclado no se suelta al volver a pintar',
       globalThis.IS_REACT_ACT_ENVIRONMENT = anterior;
     }
   });
+
+  it('F2 · como hoja inferior, en el móvil va pegada abajo y en el ordenador al centro', () => {
+    abrir({ hojaInferior: true });
+
+    expect(screen.getByTestId('modal')).toHaveClass('items-end', 'md:items-center');
+    expect(screen.getByTestId('modal')).not.toHaveClass('items-center');
+  });
 });

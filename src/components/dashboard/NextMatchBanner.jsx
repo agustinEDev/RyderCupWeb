@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router';
 import { Calendar, Zap, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../ui/BlockLoader';
+import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
+import { nombresDeCompaneros } from '../../utils/nombreDeCompanero';
 
 /**
  * La pieza central del panel: cuándo juego y contra quién.
@@ -100,12 +102,20 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
     : null;
   const session = match.sessionType ? t(`nextMatch.session.${match.sessionType}`) : null;
   const opponents = (match.opponentNames || []).join(', ');
-  const partners = (match.partnerNames || []).join(', ');
+  // Como la tarjeta: quien se retiró, dicho (QA de la release)
+  const partners = nombresDeCompaneros(t, 'upcomingMatches.withdrawnPartner', match).join(', ');
+  // Una partida de stroke play (FE #824, PR 7): sin formato ni rivales, con su
+  // número, su hora y su pantalla
+  const esPartida = Boolean(match.esPartidaDeFranja);
+  const titulo = esPartida
+    ? [t('nextMatch.teeGroup', { numero: match.matchNumber }), match.competitionName]
+    : [match.matchFormat && t(`nextMatch.format.${match.matchFormat}`), match.competitionName];
+  const destino = rutaDeAnotacion(match);
 
   return (
     <button
       type="button"
-      onClick={() => navigate(`/player/matches/${match.id}/scoring`)}
+      onClick={() => navigate(destino)}
       data-testid="next-match-banner"
       className="flex w-full items-center gap-3 rounded-xl border-2 border-accent-200 bg-accent-50 p-4 text-left shadow-sm transition-shadow hover:shadow-md md:p-5"
     >
@@ -115,17 +125,25 @@ const NextMatchBanner = ({ match, isLoading = false, onCreateQuickMatch, sinResp
 
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">
-          {t('nextMatch.label')}
+          {t(esPartida ? 'nextMatch.labelTeeGroup' : 'nextMatch.label')}
         </span>
         <span className="block truncate text-base font-bold text-gray-900">
-          {[match.matchFormat && t(`nextMatch.format.${match.matchFormat}`), match.competitionName]
-            .filter(Boolean)
-            .join(' · ')}
+          {titulo.filter(Boolean).join(' · ')}
         </span>
+        {/* Le pasaron de otra partida: su hora puede ser otra (QA del 11 oct 2026) */}
+        {esPartida && match.broughtIn && (
+          <span className="block text-xs font-semibold text-amber-800">
+            {/* La hora ya va en la línea de abajo (revisor) */}
+            {t('nextMatch.broughtIn', { numero: match.matchNumber })}
+          </span>
+        )}
         {(when || session) && (
           <span className="block truncate text-xs text-amber-800">
-            {[when, session, match.golfCourseName].filter(Boolean).join(' · ')}
+            {[when, session, esPartida ? match.teeTime : match.golfCourseName].filter(Boolean).join(' · ')}
           </span>
+        )}
+        {esPartida && partners && (
+          <span className="mt-0.5 block truncate text-xs text-gray-600">{t('nextMatch.withPartners', { partners })}</span>
         )}
         {opponents && (
           <span className="mt-0.5 block truncate text-xs text-gray-600">

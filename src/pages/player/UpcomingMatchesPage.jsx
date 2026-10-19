@@ -1,12 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router';
-import { Flag, Calendar, Play } from 'lucide-react';
+import { Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { getScoringViewUseCase, getUpcomingMatchesUseCase } from '../../composition';
-import { laProximaApertura, leeLosProximosPartidos, sePuedeAnotar } from '../../services/partidosSinCobertura';
+import {
+  getScoringViewUseCase,
+  getTeeGroupScoringViewUseCase,
+  getUpcomingMatchesUseCase,
+  getUpcomingTeeGroupsUseCase,
+  listUserCompetitionsUseCase,
+} from '../../composition';
+import {
+  laProximaApertura,
+  leeLasProximasPartidas,
+  leeLosProximosPartidos,
+  sePuedeAnotar,
+} from '../../services/partidosSinCobertura';
+import { porCuandoSeJuega } from '../../utils/elMasCercano';
 import BlockLoader from '../../components/ui/BlockLoader';
+import TarjetaDeLoProximo from '../../components/schedule/TarjetaDeLoProximo';
 
 // `setTimeout` no aguanta más de 2^31-1 ms: por encima dispara INMEDIATAMENTE y
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
@@ -14,15 +26,19 @@ const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
 const UpcomingMatchesPage = () => {
   const { t } = useTranslation('dashboard');
-  const { t: tSchedule } = useTranslation('schedule');
   const { user, loading: isLoadingUser } = useAuth();
 
+  // Los partidos de la Ryder y las partidas de stroke play, juntos (FE #845)
   const [matches, setMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   // Lo que se enseña puede venir de lo guardado, o no venir de ningún sitio
-  // (FE #615). Vacío porque no se pudo preguntar no es «no tienes partidos»
-  const [desdeMemoria, setDesdeMemoria] = useState(false);
+  // (FE #615). Vacío porque no se pudo preguntar no es «no tienes partidos».
+  // De memoria se dice por lista: anotar sin red depende de de dónde vino
+  const [desdeMemoria, setDesdeMemoria] = useState({ partidos: false, partidas: false });
   const [sinRespuesta, setSinRespuesta] = useState(false);
+  // Una de las dos listas no contestó y la otra sí: se enseña lo que llegó,
+  // diciendo que puede faltar alguno (revisión de la FE-B, Agustín, 13 oct)
+  const [incompleta, setIncompleta] = useState(false);
 
   const loadMatches = useCallback(async () => {
     if (!user) {
@@ -34,14 +50,29 @@ const UpcomingMatchesPage = () => {
     // Mismo cálculo que usa el panel para su banner de próximo partido: si
     // cada pantalla lo hiciera por su cuenta, acabarían discrepando sobre
     // qué cuenta como "próximo". Y la misma lectura sin cobertura, por lo mismo
-    const leido = await leeLosProximosPartidos({
-      lee: () => getUpcomingMatchesUseCase.executeWithCompleteness(user.id),
-      userId: user.id,
-      pideLaVista: (id) => getScoringViewUseCase.execute(id),
-    });
-    setMatches(leido.partidos);
-    setDesdeMemoria(leido.desdeMemoria);
-    setSinRespuesta(leido.sinRespuesta);
+    // Las competiciones, una vez para las dos listas: cada petición sale del
+    // mismo cubo de límites que comparte todo el campo (ADR-038)
+    const competiciones = listUserCompetitionsUseCase.execute(user.id);
+    const [leido, partidas] = await Promise.all([
+      leeLosProximosPartidos({
+        lee: async () => getUpcomingMatchesUseCase.executeWithCompleteness(user.id, await competiciones),
+        userId: user.id,
+        pideLaVista: (id) => getScoringViewUseCase.execute(id),
+      }),
+      leeLasProximasPartidas({
+        lee: async () => getUpcomingTeeGroupsUseCase.executeWithCompleteness(user.id, await competiciones),
+        userId: user.id,
+        pideLaVista: (id) => getTeeGroupScoringViewUseCase.execute(id),
+      }),
+    ]);
+    const juntos = [...leido.partidos, ...partidas.partidas].sort(porCuandoSeJuega);
+    setMatches(juntos);
+    setDesdeMemoria({ partidos: leido.desdeMemoria, partidas: partidas.desdeMemoria });
+    // Sin nada que enseñar y alguna sin contestar: no se sabe si no hay nada
+    const algunaSinRespuesta = leido.sinRespuesta || partidas.sinRespuesta;
+    setSinRespuesta(juntos.length === 0 && algunaSinRespuesta);
+    // Y si alguna llegó a medias, también puede faltar alguno (`/code-review`)
+    setIncompleta(juntos.length > 0 && (algunaSinRespuesta || leido.incompleta || partidas.incompleta));
     setIsLoading(false);
   }, [user]);
 
@@ -66,17 +97,6 @@ const UpcomingMatchesPage = () => {
     return () => clearTimeout(aviso);
   }, [proximaApertura]);
 
-  const formatDate = useCallback((dateStr) => {
-      if (!dateStr) return '';
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  }, []);
-
   const isPageLoading = isLoadingUser || isLoading;
 
   if (isPageLoading) {
@@ -100,9 +120,16 @@ const UpcomingMatchesPage = () => {
           <p className="text-sm text-gray-500 mt-1">{t('upcomingMatches.subtitle')}</p>
         </div>
 
-        {desdeMemoria && (
+        {(desdeMemoria.partidos || desdeMemoria.partidas) && (
           <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-desde-memoria">
-            {t('upcomingMatches.desdeMemoria')}
+            {/* Solo una de las dos de memoria: «algunos de» los que se vieron */}
+            {t(desdeMemoria.partidos && desdeMemoria.partidas ? 'upcomingMatches.desdeMemoria' : 'upcomingMatches.desdeMemoriaParcial')}
+          </p>
+        )}
+
+        {incompleta && (
+          <p className="text-sm text-amber-800 mb-4" data-testid="upcoming-matches-incompleta">
+            {t('upcomingMatches.incompleta')}
           </p>
         )}
 
@@ -119,87 +146,15 @@ const UpcomingMatchesPage = () => {
             <p className="text-sm text-gray-400 mt-1">{t('upcomingMatches.noMatchesDesc')}</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {matches.map((match) => (
-              <div
-                key={match.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
-                data-testid="upcoming-match-card"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <Link
-                      to={`/competitions/${match.competitionId}`}
-                      className="text-sm font-semibold text-primary hover:underline"
-                    >
-                      {match.competitionName}
-                    </Link>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{formatDate(match.roundDate)}</span>
-                      <span className="text-gray-300">|</span>
-                      <span>{tSchedule(`sessions.${match.sessionType}`, match.sessionType)}</span>
-                      <span className="text-gray-300">|</span>
-                      <span>{tSchedule(`formats.${match.matchFormat}`, match.matchFormat)}</span>
-                    </div>
-                    {match.golfCourseName && (
-                      <p className="text-xs text-gray-400 mt-0.5">{match.golfCourseName}</p>
-                    )}
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      match.status === 'IN_PROGRESS'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}
-                  >
-                    {tSchedule(`status.${match.status}`, match.status)}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                  <div className="flex-1 text-center">
-                    <p className="text-xs text-gray-400 mb-1">{t('upcomingMatches.teamA')}</p>
-                    <div className="space-y-0.5">
-                      {match.teamAPlayerNames.map((name, i) => (
-                        <p key={i} className="text-sm font-medium text-gray-900">{name}</p>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="px-4 text-gray-400 font-bold text-sm">vs</div>
-                  <div className="flex-1 text-center">
-                    <p className="text-xs text-gray-400 mb-1">{t('upcomingMatches.teamB')}</p>
-                    <div className="space-y-0.5">
-                      {match.teamBPlayerNames.map((name, i) => (
-                        <p key={i} className="text-sm font-medium text-gray-900">{name}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-xs text-gray-400">
-                    {t('upcomingMatches.matchNumber', { number: match.matchNumber })}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to={`/competitions/${match.competitionId}/schedule`}
-                      className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {t('upcomingMatches.viewSchedule')}
-                    </Link>
-                    {sePuedeAnotar(match, { desdeMemoria }) && (
-                      <Link
-                        to={`/player/matches/${match.id}/scoring`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
-                      >
-                        <Play className="w-3 h-3" />
-                        {t('upcomingMatches.scoreMatch')}
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-2">
+            {matches.map((partido) => (
+              <TarjetaDeLoProximo
+                key={`${partido.esPartidaDeFranja ? 'partida' : 'partido'}-${partido.id}`}
+                partido={partido}
+                puedeAnotar={sePuedeAnotar(partido, {
+                  desdeMemoria: partido.esPartidaDeFranja ? desdeMemoria.partidas : desdeMemoria.partidos,
+                })}
+              />
             ))}
           </div>
         )}

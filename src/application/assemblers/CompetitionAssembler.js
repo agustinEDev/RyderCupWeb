@@ -9,6 +9,21 @@ import { getCountryFlag } from '../../utils/countryUtils';
  */
 class CompetitionAssembler {
   /**
+   * Los ajustes de un Stableford o un Medal, en plano (FE #824). Una sola
+   * conversión: la ficha y el PATCH devuelven la misma forma, y el formulario
+   * compara una con otra para saber qué cambió (/code-review).
+   * @param {import('../../domain/value_objects/StrokePlaySetup').StrokePlaySetup} ajustes
+   */
+  static toStrokePlayDTO(ajustes) {
+    return {
+      categoryLimits: [...ajustes.categoryLimits],
+      categoryCount: ajustes.categoryCount,
+      maxMatchdaysPerPlayer: ajustes.maxMatchdaysPerPlayer,
+      overallStanding: ajustes.overallStanding,
+    };
+  }
+
+  /**
    * Maps Competition entity to a simple DTO for UI presentation.
    *
    * @param {Competition} competition - Domain entity
@@ -70,6 +85,48 @@ class CompetitionAssembler {
       // Qué torneo es y su modalidad (FE #791, RyderCupAm#251). Una respuesta
       // de antes del tipo es una Ryder Cup: es lo que eran todas
       tournamentType: competition.tournamentType,
+      // Categorías, jornadas por jugador y general de un Stableford o un Medal
+      // (FE #824); null en una Ryder
+      strokePlay: competition.strokePlay ? CompetitionAssembler.toStrokePlayDTO(competition.strokePlay) : null,
+      // La última actualización de hándicaps y la ventana del botón (FE #824).
+      // Solo le llegan al organizador: a los demás, null
+      handicapUpdate: apiData?.handicap_update
+        ? {
+            status: apiData.handicap_update.status,
+            origin: apiData.handicap_update.origin,
+            startedAt: apiData.handicap_update.started_at,
+            finishedAt: apiData.handicap_update.finished_at ?? null,
+            pendingPlayers: (apiData.handicap_update.pending_players || []).map((p) => ({
+              userId: p.user_id,
+              name: p.name,
+            })),
+          }
+        : null,
+      handicapUpdateWindow: apiData?.handicap_update_window
+        ? {
+            open: apiData.handicap_update_window.open,
+            closesAt: apiData.handicap_update_window.closes_at ?? null,
+            reason: apiData.handicap_update_window.reason ?? null,
+            // El motivo como código, para decirlo en el idioma de la app (RyderCupAm#541)
+            reasonCode: apiData.handicap_update_window.reason_code ?? null,
+            scheduledAt: apiData.handicap_update_window.scheduled_at ?? null,
+          }
+        : null,
+      // Lo que pinta la tarjeta de «Mis competiciones» (FE #846, RyderCupAm#558).
+      // Sin el campo (un servidor anterior), null: no se sabe, que no es «ninguno»
+      golfCourses: Array.isArray(apiData?.golf_courses)
+        ? apiData.golf_courses.map((c) => ({ id: c.id, name: c.name, countryCode: c.country_code }))
+        : null,
+      // Cuántos días se juega en un stroke play; null en una Ryder
+      playingDays: apiData?.playing_days ?? null,
+      // Mi próxima salida, solo si juego en ella; la hora, si ya se sabe
+      myNextSession: apiData?.my_next_session
+        ? {
+            date: apiData.my_next_session.date,
+            sessionType: apiData.my_next_session.session_type,
+            teeTime: apiData.my_next_session.tee_time ?? null,
+          }
+        : null,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).

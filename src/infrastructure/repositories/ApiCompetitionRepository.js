@@ -217,6 +217,51 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
     return competition;
   }
+  /** POST /competitions/{id}/handicap-updates → 202 (RyderCupAM#509). */
+  async launchHandicapUpdate(competitionId) {
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates`, { method: 'POST' });
+    // HandicapUpdateLaunchedDTO: {id, status: IN_PROGRESS, origin, started_at, resumed}
+    return { status: data?.status, resumed: data?.resumed === true };
+  }
+
+  /** PUT /competitions/{id}/handicap-updates/schedule (RyderCupAM#510). */
+  async scheduleHandicapUpdate(competitionId, runAt) {
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates/schedule`, {
+      method: 'PUT',
+      body: JSON.stringify({ run_at: runAt }),
+    });
+    return { runAt: data?.run_at ?? runAt };
+  }
+
+  /** DELETE /competitions/{id}/handicap-updates/schedule → 204. */
+  async cancelScheduledHandicapUpdate(competitionId) {
+    await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates/schedule`, { method: 'DELETE' });
+  }
+
+  /**
+   * Cambia los ajustes del stroke play (FE #824, RyderCupAm#536). Un PATCH con
+   * SOLO lo que llega: mandar los límites, aunque vacíos, cambia de modo.
+   * @override
+   */
+  async updateStrokePlay(competitionId, cambios) {
+    const nombres = {
+      categoryLimits: 'category_limits',
+      categoryCount: 'category_count',
+      maxMatchdaysPerPlayer: 'max_matchdays_per_player',
+      overallStanding: 'overall_standing',
+    };
+    const cuerpo = Object.fromEntries(
+      Object.entries(cambios)
+        .filter(([campo, valor]) => nombres[campo] && valor !== undefined)
+        .map(([campo, valor]) => [nombres[campo], valor])
+    );
+    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}/stroke-play`, {
+      method: 'PATCH',
+      body: JSON.stringify(cuerpo),
+    });
+    return CompetitionMapper.ajustesDeStrokePlay({ stroke_play: apiData });
+  }
+
   /**
    * Activates a competition (DRAFT → ACTIVE).
    * @override

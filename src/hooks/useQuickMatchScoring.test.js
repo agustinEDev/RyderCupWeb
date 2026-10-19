@@ -1134,10 +1134,12 @@ describe('useQuickMatchScoring · lo que pasa mientras (FE #515, tabla F)', () =
     // quedaba la partida ANTERIOR con sus hoyos y su campo, lista para anotar
     // encima como si fuera esta
     offlineQueue.getByMatch.mockReturnValue([]);
+    // Un campo de fuera de España: su país tampoco puede quedarse (19 oct)
+    getGolfCourseUseCase.execute.mockResolvedValue({ holes: [], tees: [], name: 'Campo', countryCode: 'PT' });
     const { result, rerender } = renderHook(({ id }) => useQuickMatchScoring(id, 'user-1'), {
       initialProps: { id: 'qm-1' },
     });
-    await waitFor(() => expect(result.current.quickMatch).not.toBeNull());
+    await waitFor(() => expect(result.current.courseCountryCode).toBe('PT'));
 
     getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
     rerender({ id: 'qm-2' });
@@ -1145,6 +1147,7 @@ describe('useQuickMatchScoring · lo que pasa mientras (FE #515, tabla F)', () =
     await waitFor(() => expect(result.current.quickMatch).toBeNull());
     expect(result.current.holes).toEqual([]);
     expect(result.current.courseName).toBeNull();
+    expect(result.current.courseCountryCode).toBeNull();
   });
 
   it('el campo de la partida anterior no cae sobre la nueva', async () => {
@@ -1540,6 +1543,23 @@ describe('useQuickMatchScoring · volver a abrir sin cobertura (FE #524, tabla N
   };
 
   const sinSenal = () => getQuickMatchUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  it('el país del campo, para el botón del mapa (19 oct); antes de llegar, null', async () => {
+    getGolfCourseUseCase.execute.mockResolvedValue({ id: 'course-1', name: 'Ponte de Lima', countryCode: 'PT', holes: [{ holeNumber: 1, par: 4 }], tees: [] });
+    const { result } = renderHook(() => useQuickMatchScoring('qm-1', 'user-1'));
+    expect(result.current.courseCountryCode).toBeNull();
+
+    await waitFor(() => expect(result.current.courseCountryCode).toBe('PT'));
+  });
+
+  it('sin señal, el país del campo guardado', async () => {
+    recuerda('qm-1', { partida: mockQuickMatch, campo: { holes: [{ holeNumber: 1, par: 4 }], tees: [], name: 'Ponte de Lima', countryCode: 'PT' } });
+    sinSenal();
+
+    const result = await monta();
+
+    expect(result.current.courseCountryCode).toBe('PT');
+  });
 
   it('al cargarla se guarda la partida y su campo', async () => {
     await monta();

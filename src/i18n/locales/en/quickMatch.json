@@ -4,7 +4,11 @@
     "step": "Step {{current}} of {{total}}",
     "cancel": "Cancel",
     "errors": {
-      "generic": "Something went wrong. Please try again."
+      "generic": "Something went wrong. Please try again.",
+      "notFound": "The course or one of your friends can no longer be found. Check the match.",
+      "notFriends": "One of the players is no longer your friend. Remove them and try again.",
+      "conflict": "A player is repeated, or that match already exists. Check the roster.",
+      "invalid": "Something in the match is not valid: check the tees, the teams and who keeps score."
     },
     "course": {
       "heading": "Course and format",
@@ -59,7 +63,9 @@
       "creatorBadge": "You",
       "guestBadge": "Guest",
       "teePlaceholder": "Pick their tee",
-      "guestFallbackName": "the guest"
+      "guestFallbackName": "the guest",
+      "errorTeamFull": "That team is already full: pick the other one.",
+      "errorGuestName": "Enter the guest's first and last name."
     },
     "scorers": {
       "heading": "Choose scorers",
@@ -106,7 +112,8 @@
       "male": "Men's",
       "female": "Women's",
       "mixed": "Mixed"
-    }
+    },
+    "alreadyCreated": "The match had already been created with what you sent before; your changes were not applied."
   },
   "dashboard": {
     "ctaTitle": "Impromptu round?",

@@ -2,14 +2,14 @@
  * Value Object: HoleScore
  *
  * Validates a golf hole score entered by a player.
- * Valid values: integers 1-9, or null (picked up ball / dash).
+ * Valid values: integers 1-15 (como el backend y el teclado), or null (picked up ball / dash).
  *
  * Used by SubmitHoleScoreUseCase to validate player input before
  * sending to the backend.
  */
 class HoleScore {
   static MIN = 1;
-  static MAX = 9;
+  static MAX = 15;
 
   #value;
 

@@ -145,6 +145,8 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     matchNumber: entrada.matchNumber ?? null,
     holeNumber: entrada.holeNumber,
     participantId: entrada.participantId ?? null,
+    // De una partida de stroke play: el aviso la nombra como partida (PR 7)
+    ...(entrada.tipo ? { tipo: entrada.tipo } : {}),
     // Con a quién atribuir lo huérfano: un aviso sin dueño lo ve TODA cuenta
     // del móvil, y el primero que pulse «Entendido» se lo lleva antes de que
     // lo vea el suyo

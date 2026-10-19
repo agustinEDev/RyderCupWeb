@@ -4,10 +4,11 @@ import { Trophy, ListOrdered, Flag } from 'lucide-react';
 /**
  * Qué tipo de competición se va a crear (FE #639).
  *
- * Hoy solo existe la Ryder Cup. Stableford y Medal se enseñan igualmente, y a
- * propósito: la decisión de RyderCupAm#251 es que el tipo se pregunte primero, y
- * quien abre esta pantalla —un director deportivo, por ejemplo— tiene que ver
- * que la aplicación va hacia ahí. Cuando existan, esto es rellenar un hueco.
+ * Ryder Cup, Stableford y Medal se pueden elegir (Stableford y Medal desde la
+ * FE #824). Los tipos que vengan (parejas, scramble…) se enseñan antes de
+ * existir, y a propósito: la decisión de RyderCupAm#251 es que el tipo se
+ * pregunte primero, y quien abre esta pantalla tiene que ver hacia dónde va la
+ * aplicación. Cuando existan, esto es rellenar un hueco.
  *
  * Los que no están tienen que leerse como lo que son. Dos cuidados, los dos del
  * móvil:
@@ -19,11 +20,11 @@ import { Trophy, ListOrdered, Flag } from 'lucide-react';
  */
 const TIPOS = [
   { id: 'RYDER_CUP', icono: Trophy, disponible: true },
-  { id: 'STABLEFORD', icono: ListOrdered, disponible: false },
-  { id: 'MEDAL', icono: Flag, disponible: false },
+  { id: 'STABLEFORD', icono: ListOrdered, disponible: true },
+  { id: 'MEDAL', icono: Flag, disponible: true },
 ];
 
-const CompetitionTypeChooser = ({ onSelect }) => {
+const CompetitionTypeChooser = ({ onSelect, tipos = TIPOS }) => {
   const { t } = useTranslation('competitions');
 
   return (
@@ -36,7 +37,7 @@ const CompetitionTypeChooser = ({ onSelect }) => {
       {/* Apiladas en el móvil, en fila a partir de `sm`: en un teléfono la
           tarjeta ocupa el ancho entero y se toca sin apuntar */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {TIPOS.map(({ id, icono: Icono, disponible }) => (
+        {tipos.map(({ id, icono: Icono, disponible }) => (
           <button
             key={id}
             type="button"
