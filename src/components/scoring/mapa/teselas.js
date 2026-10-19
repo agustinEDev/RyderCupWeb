@@ -6,9 +6,11 @@ export const TESELAS_PNOA =
   'https://www.ign.es/wmts/pnoa-ma?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=OI.OrthoimageCoverage' +
   '&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg';
 
-// Una WMS en 3857 por la caja de cada tesela, como si fuera una de teselas
-const wms = (base, capa) =>
-  `${base}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${capa}&STYLES=&FORMAT=image/jpeg` +
+// Una WMS en 3857 por la caja de cada tesela, como si fuera una de teselas.
+// Fuera de su comunidad, la tesela tiene que llegar transparente: en JPEG llega
+// en blanco y tapa la PNOA de debajo (revisor)
+const wms = (base, capa, formato) =>
+  `${base}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${capa}&STYLES=&FORMAT=${formato}&TRANSPARENT=TRUE` +
   '&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256';
 
 /**
@@ -28,14 +30,17 @@ export const ORTOFOTOS = {
     tiles: ['https://www.geo.euskadi.eus/geoeuskadi/rest/services/U11/WMTS_ORTO/MapServer/tile/{z}/{y}/{x}'],
     atribucion: 'Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi',
   },
+  // El mixto de IDENA: JPEG dentro (14 KB), PNG transparente fuera; en PNG
+  // pesaba ocho veces más
   'ES-NC': {
-    tiles: [wms('https://idena.navarra.es/ogc/ows', 'ortofoto_maxima_actualidad')],
+    tiles: [wms('https://idena.navarra.es/ogc/ows', 'ortofoto_maxima_actualidad', 'image/vnd.jpeg-png')],
     atribucion: 'Servicio proporcionado por el Gobierno de Navarra (CC BY 4.0)',
   },
+  // WebP: transparente fuera y, dentro, la mitad que el JPEG (que fuera llega en blanco)
   'ES-MD': {
     tiles: [
       'https://idem.comunidad.madrid/srvimagenes2/ogc/wmts/visorcartografia2?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
-        '&LAYER=fotosAereas_2025-CT-25cm-ov-mos-rgb&STYLE=default&FORMAT=image/jpeg&TILEMATRIXSET=EPSG3857' +
+        '&LAYER=fotosAereas_2025-CT-25cm-ov-mos-rgb&STYLE=default&FORMAT=image/webp&TILEMATRIXSET=EPSG3857' +
         '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
     ],
     atribucion: '© Comunidad de Madrid (CC BY 4.0)',

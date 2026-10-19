@@ -35,6 +35,14 @@ describe('ORTOFOTOS (19 oct)', () => {
     expect(ortofoto.atribucion).toContain(firma);
   });
 
+  it('revisor: Navarra y Madrid, transparentes fuera de su comunidad (en JPEG llegaban en blanco y tapaban la PNOA)', () => {
+    // El mixto de IDENA: JPEG dentro, PNG transparente fuera
+    expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('FORMAT=image/vnd.jpeg-png');
+    expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('TRANSPARENT=TRUE');
+    // WebP: transparente fuera y, dentro, la mitad que el JPEG
+    expect(ORTOFOTOS['ES-MD'].tiles[0]).toContain('FORMAT=image/webp');
+  });
+
   it('las de WMS piden la tesela en 3857 por su caja', () => {
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('BBOX={bbox-epsg-3857}');
     expect(ORTOFOTOS['ES-NC'].tiles[0]).toContain('CRS=EPSG:3857');
