@@ -102,5 +102,67 @@
       "title": "5. Contact",
       "content": "If you have questions about our use of cookies, please contact us at support@rydercupfriends.com or through our Contact page."
     }
+  },
+  "legalNotice": {
+    "title": "Legal Notice",
+    "lastUpdated": "Last updated: 20 October 2026",
+    "section1": {
+      "title": "1. Website owner",
+      "content": "In accordance with article 10 of Spanish Law 34/2002 on information society services and electronic commerce (LSSI), these are the details of the owner of this website and of the RyderCupFriends application (\"the Service\"):\n\n- Owner: Agustín Estévez Domínguez (private individual)\n- Tax ID (NIF): 76826889N\n- Address: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain)\n- Email: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends is the name of the Service, not a company: it is provided by its owner as a private individual."
+    },
+    "section2": {
+      "title": "2. Purpose",
+      "content": "The Service is a web application to organise and play amateur golf competitions among friends (Ryder Cup format, stroke play and quick matches): enrolment, teams, pairings, score keeping, leaderboards, hole maps and handicap lookup.\n\nIts use is also governed by the Terms of Service, the Privacy Policy and the Cookie Policy, available from the page footer and from your profile."
+    },
+    "section3": {
+      "title": "3. Terms of use",
+      "content": "Anyone using the Service agrees to do so lawfully, in good faith and in line with these terms and, in particular, not to:\n\n- Enter false data, or another person's data without their consent\n- Publish unlawful or offensive content, or content that infringes the rights of others\n- Attempt unauthorised access to accounts, data or systems, or damage or overload the Service\n- Extract data from the Service in bulk or by automated means\n\nThe owner may remove content or suspend accounts that breach these terms, as set out in the Terms of Service."
+    },
+    "section4": {
+      "title": "4. Intellectual and industrial property",
+      "content": "The Service's software, its design and its own content (texts, graphics and logos) belong to its owner or are used under licence, and may not be reproduced, distributed or transformed without permission, except as allowed by law.\n\nThird-party data shown by the Service (course data, cartography and orthophotos) belongs to its respective owners and is used under their licences, listed under \"Data sources and licences\". Content contributed by users remains theirs."
+    },
+    "section5": {
+      "title": "5. Disclaimer and liability",
+      "content": "The owner strives to keep the Service running and its information accurate, but cannot guarantee it: there may be interruptions for maintenance or for reasons beyond the owner's control, and course data, handicaps, distances and maps partly come from third parties and may contain errors or be out of date. Distances and maps are for guidance only.\n\nThe owner is not liable for damage arising from such interruptions or errors, or from how each user uses the Service, except in cases of wilful misconduct or gross negligence and without prejudice to the rights the law grants consumers. Links to third-party websites are provided for reference only: the owner does not control their content."
+    },
+    "section6": {
+      "title": "6. Data sources and licences",
+      "intro": "The Service uses third-party data and software, credited here according to their licences:",
+      "sources": {
+        "rfeg": {
+          "name": "Royal Spanish Golf Federation (RFEG)",
+          "detail": "Data on federated courses (layouts, tees, par, stroke indexes and ratings) and handicap lookup, which only happens at the user's request."
+        },
+        "osm": {
+          "name": "OpenStreetMap",
+          "detail": "Geometry of courses and holes: © OpenStreetMap contributors, data available under the Open Database License (ODbL)."
+        },
+        "pnoa": {
+          "name": "PNOA – Spanish National Geographic Institute",
+          "detail": "Orthophotos of Spain: PNOA courtesy of © Instituto Geográfico Nacional (IGN), licensed under CC BY 4.0 (scne.es)."
+        },
+        "icgc": {
+          "name": "Institut Cartogràfic i Geològic de Catalunya (ICGC)",
+          "detail": "Orthophotos of Catalonia, licensed under CC BY 4.0."
+        },
+        "geoeuskadi": {
+          "name": "Eusko Jaurlaritza / Gobierno Vasco – geoEuskadi",
+          "detail": "Orthophotos of the Basque Country, under geoEuskadi's terms of use."
+        },
+        "idena": {
+          "name": "© Gobierno de Navarra – IDENA",
+          "detail": "Orthophotos of Navarre, licensed under CC BY 4.0."
+        },
+        "maplibre": {
+          "name": "MapLibre GL JS",
+          "detail": "Library used to draw the maps, licensed under BSD-3-Clause."
+        }
+      }
+    },
+    "section7": {
+      "title": "7. Governing law and contact",
+      "content": "This Legal Notice is governed by Spanish law. If you are a consumer living in another country, you keep the protection granted by the mandatory rules of your country of residence and may go to the courts where you live.\n\nFor any question or complaint, write to agustin.estevez.dominguez@gmail.com."
+    }
   }
 }

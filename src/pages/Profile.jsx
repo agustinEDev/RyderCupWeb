@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Mail, Shield, Calendar, TrendingUp, Award,
   CheckCircle, AlertCircle, Edit, LogOut, ArrowLeft, Globe, Clock, Smartphone,
-  FileText, Lock, Cookie, Users
+  FileText, Lock, Cookie, Users, Scale
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
@@ -333,6 +333,7 @@ const Profile = () => {
                   ahí este es el único acceso que queda */}
               <div className={isStandalone ? '' : 'md:hidden'}>
                 <SettingsGroup title={t('sections.legal')}>
+                  <SettingsRow icon={Scale} label={t('legal.legalNotice')} to="/legal" />
                   <SettingsRow icon={FileText} label={t('legal.terms')} to="/terms" />
                   <SettingsRow icon={Lock} label={t('legal.privacy')} to="/privacy" />
                   <SettingsRow icon={Cookie} label={t('legal.cookies')} to="/cookies" />

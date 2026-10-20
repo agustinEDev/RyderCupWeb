@@ -36,7 +36,7 @@ describe('Profile legal links', () => {
   it('keeps the three legal destinations', () => {
     const source = read('src/pages/Profile.jsx');
 
-    for (const route of ['/terms', '/privacy', '/cookies']) {
+    for (const route of ['/legal', '/terms', '/privacy', '/cookies']) {
       expect(source).toContain(`to="${route}"`);
     }
   });

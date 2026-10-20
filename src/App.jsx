@@ -86,6 +86,7 @@ const Contact = lazyWithRetry(() => import('./pages/public/Contact'));
 const Terms = lazyWithRetry(() => import('./pages/public/Terms'));
 const Privacy = lazyWithRetry(() => import('./pages/public/Privacy'));
 const Cookies = lazyWithRetry(() => import('./pages/public/Cookies'));
+const LegalNotice = lazyWithRetry(() => import('./pages/public/LegalNotice'));
 
 // Error pages
 const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
@@ -286,6 +287,7 @@ function AppContent() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
+        <Route path="/legal" element={<LegalNotice />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
 

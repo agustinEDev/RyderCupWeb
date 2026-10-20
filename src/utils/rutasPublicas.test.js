@@ -30,6 +30,10 @@ describe('rutas publicas', () => {
     expect(esRutaPublica('/competitions/1/leaderboard')).toBe(true);
   });
 
+  it('A2: el Aviso Legal se ve sin sesion, como los demas legales', () => {
+    expect(esRutaPublica('/legal')).toBe(true);
+  });
+
   it('el panel NO es publico', () => {
     expect(esRutaPublica('/dashboard')).toBe(false);
   });

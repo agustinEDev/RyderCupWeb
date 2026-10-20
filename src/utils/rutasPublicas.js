@@ -21,6 +21,7 @@ export const RUTAS_PUBLICAS = [
   '/terms',
   '/privacy',
   '/cookies',
+  '/legal',
   '/auth/google/callback',
 ];
 
