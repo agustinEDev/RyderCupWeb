@@ -10,6 +10,8 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('../../components/layout/Header', () => ({ default: () => null }));
 vi.mock('../../components/layout/Footer', () => ({ default: () => null }));
+// «Volver» tira el `user` de una sesion muerta, y vive bajo el AuthProvider
+vi.mock('../../hooks/useAuthContext', () => ({ useAuthContext: () => ({ clearAuth: vi.fn() }) }));
 
 const { default: Privacy } = await import('./Privacy');
 const { default: Terms } = await import('./Terms');

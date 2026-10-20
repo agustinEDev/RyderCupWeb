@@ -11,7 +11,8 @@ import { sinSesionEnRutaPublica } from './rutasPublicas';
  *   -----|----------------------------------------|------------
  *   R1   | /esto-no-existe, /dashboard/x, /admin/a/b | sí
  *   R2   | las de App.jsx, con parámetros y barra final | no
- *   R3   | la lista y las <Route> de App.jsx son las mismas
+ *   R3   | la lista y las <Route> de App.jsx son las mismas, sin ninguna que se
+ *        | escape a la lectura (en varias lineas o con `path={...}`)
  *   R4   | sin usuario guardado no se refresca: 401 esperable, sin «sesión expirada»
  *   R5   | con usuario guardado sí se refresca, como en la clasificación compartida
  */
@@ -44,11 +45,15 @@ describe('rutas de la aplicación', () => {
     // Dos copias que se separan: una ruta nueva olvidada aquí sería «no existe»
     // para el interceptor, que dejaría de refrescar en ella sin sesión guardada
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');
-    const enApp = [...app.matchAll(/<Route path="([^"]+)"/g)]
-      .map(([, ruta]) => ruta)
-      .filter((ruta) => ruta !== '*');
+    const conRuta = [...app.matchAll(/<Route path="([^"]+)"/g)].map(([, ruta]) => ruta);
+    const enApp = conRuta.filter((ruta) => ruta !== '*');
 
     expect([...RUTAS_DE_LA_APLICACION].sort()).toEqual([...enApp].sort());
+    // Y que no se escape ninguna: una <Route> partida en varias lineas o con
+    // `path={...}` no la ve la expresion de arriba, y faltaria en los dos lados
+    // sin que nada cantara. `<Router>` y `<Routes>` no cuentan
+    const etiquetas = app.match(/<Route[\s>/]/g) ?? [];
+    expect(etiquetas).toHaveLength(conRuta.length);
   });
 
   it('R4: en una dirección desconocida, sin usuario guardado, no se refresca', () => {

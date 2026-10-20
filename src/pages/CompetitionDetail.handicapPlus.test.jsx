@@ -7,11 +7,14 @@ import { MemoryRouter, Route, Routes } from 'react-router';
  *
  *   #    caso                              | qué se ve
  *   -----|---------------------------------|---------------------------
- *   H1a  aprobado con su hándicap -2       | «HCP: +2.0»
- *   H1b  aprobado con uno a medida -3.5    | «HCP: +3.5»
- *   H1c  pendiente con -2                  | «HCP: +2.0»
- *   H1d  fijado -2 (stroke play cerrado)   | «+2,0», con la coma del idioma
+ *   H1a  aprobado con su hándicap -2       | «HCP: +2,0»
+ *   H1b  aprobado con uno a medida -3.5    | «HCP: +3,5»
+ *   H1c  pendiente con -2                  | «HCP: +2,0»
+ *   H1d  fijado -2 (stroke play cerrado)   | «+2,0»
  *   H3   positivo                          | sin signo
+ *
+ * Todos con el separador decimal del idioma: el fijado ya lo llevaba y los
+ * demas, unas lineas mas abajo, salian con punto (revision del 20 oct)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -81,7 +84,7 @@ const pintar = () =>
   );
 
 describe('CompetitionDetail · hándicap plus (FE #797)', () => {
-  it('H1a, H1b, H3: los aprobados, el plus con «+» y el positivo sin signo', async () => {
+  it('H1a, H1b, H3: los aprobados, el plus con «+», el positivo sin signo y la coma del idioma', async () => {
     ficha = base;
     inscritos = [
       inscrito('ana', { userHandicap: -2 }),
@@ -91,18 +94,18 @@ describe('CompetitionDetail · hándicap plus (FE #797)', () => {
     pintar();
 
     const ana = await screen.findByTestId('aprobado-ana');
-    expect(ana).toHaveTextContent('detail.handicapLabel {"handicap":"+2.0"}');
-    expect(screen.getByTestId('aprobado-bea')).toHaveTextContent('detail.handicapLabel {"handicap":"+3.5"}');
-    expect(screen.getByTestId('aprobado-carla')).toHaveTextContent('detail.handicapLabel {"handicap":"12.4"}');
+    expect(ana).toHaveTextContent('detail.handicapLabel {"handicap":"+2,0"}');
+    expect(screen.getByTestId('aprobado-bea')).toHaveTextContent('detail.handicapLabel {"handicap":"+3,5"}');
+    expect(screen.getByTestId('aprobado-carla')).toHaveTextContent('detail.handicapLabel {"handicap":"12,4"}');
   });
 
-  it('H1c: el pendiente con un plus, con «+»', async () => {
+  it('H1c: el pendiente con un plus, con «+» y la coma del idioma', async () => {
     ficha = base;
     inscritos = [inscrito('ana', { status: 'REQUESTED', userHandicap: -2 })];
     pintar();
 
     const ana = await screen.findByTestId('pendiente-ana');
-    expect(within(ana).getByText('detail.handicapLabel {"handicap":"+2.0"}')).toBeInTheDocument();
+    expect(within(ana).getByText('detail.handicapLabel {"handicap":"+2,0"}')).toBeInTheDocument();
   });
 
   it('H1d: el fijado de un plus, con «+» y la coma del idioma', async () => {

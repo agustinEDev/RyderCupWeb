@@ -24,6 +24,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   R3  429                            | «demasiados intentos, espera un poco» + Reintentar; no pide otro
  *   R4  500                            | «no se ha podido comprobar» + Reintentar
  *   R4b un error sin status            | igual que R4
+ *   R6  404 / 422 / 400 (otro 4xx)     | «enlace no válido» y pedir otro: reintentar no lo arregla
  *   R5  Reintentar y ahora valid:true  | el MISMO token (del historial), «validando» y el formulario
  *   R5b Reintentar y ahora un 429      | el aviso del 429
  *   R5c Reintentar y ahora valid:false | «enlace no válido» y pedir otro
@@ -178,6 +179,48 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
 
     expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
     expect(screen.queryByText('resetPassword.checkNoConnection')).toBeNull();
+    noDiceQueElEnlaceEsteMal();
+  });
+
+  // Revision del 20 oct: un 4xx que no es 429 no se arregla reintentando, y
+  // ofrecerlo dejaba al usuario en un bucle sin salida
+  it.each([
+    [404, 'Not Found'],
+    [422, 'Unprocessable Entity'],
+    [400, 'Bad Request'],
+  ])('R6: un %i es «enlace no válido» y pide otro, sin Reintentar', async (status, mensaje) => {
+    repositorio.validateResetToken.mockRejectedValue(conEstado(status, mensaje));
+    abrir('a'.repeat(48));
+
+    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
+    expect(screen.getByText('resetPassword.tokenInvalidMessage')).toBeInTheDocument();
+    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'resetPassword.retry' })).toBeNull();
+    expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
+    expect(screen.queryByText(mensaje)).toBeNull();
+  });
+
+  it('R6c: sin conexión manda aunque el error traiga un 4xx', async () => {
+    // Lo que contesta la caché o el service worker sin red no es la API
+    const onLine = vi.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      repositorio.validateResetToken.mockRejectedValue(conEstado(404, 'Not Found'));
+      abrir('a'.repeat(48));
+
+      expect(await screen.findByText('resetPassword.checkNoConnection')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+      noDiceQueElEnlaceEsteMal();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+
+  it('R6b: un 503 sigue siendo «no se ha podido comprobar»', async () => {
+    repositorio.validateResetToken.mockRejectedValue(conEstado(503, 'Service Unavailable'));
+    abrir('a'.repeat(48));
+
+    expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
     noDiceQueElEnlaceEsteMal();
   });
 

@@ -1826,7 +1826,7 @@ const CompetitionDetail = () => {
                                     </span>
                                   ) : enrollment.hasCustomHandicap ? (
                                     <span className="text-amber-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.customHandicap) })}
+                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.customHandicap, i18n.language) })}
                                       {' '}
                                       <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">
                                         {t('detail.customHandicapBadge')}
@@ -1834,7 +1834,7 @@ const CompetitionDetail = () => {
                                     </span>
                                   ) : enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
                                     <span className="text-green-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap) })}
+                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
                                     </span>
                                   ) : (
                                     <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
@@ -1904,7 +1904,7 @@ const CompetitionDetail = () => {
                               </p>
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
                                 <p className="text-gray-500 text-sm mt-1">
-                                  {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap) })}
+                                  {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
                                 </p>
                               )}
                             </div>

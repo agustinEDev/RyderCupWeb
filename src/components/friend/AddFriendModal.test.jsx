@@ -79,6 +79,33 @@ describe('AddFriendModal', () => {
     });
   });
 
+  // Revision del 20 oct: con la lista en el flujo, cerrarla en el `mousedown`
+  // encogia la caja antes del `click`, y el clic caia en lo que subia a ocupar
+  // su sitio. Se cierra en el `click`, cuando el destino ya esta decidido
+  describe('la lista no se mueve bajo el dedo', () => {
+    it('M1a: pulsar la X con la lista abierta cierra el modal', async () => {
+      const { onClose } = pintar();
+      await buscar();
+      const cerrar = screen.getByRole('button', { name: 'cancel' });
+
+      fireEvent.mouseDown(cerrar);
+      expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+      fireEvent.click(cerrar);
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('M1b: un clic fuera de la lista la sigue cerrando, sin cerrar el modal', async () => {
+      const { onClose } = pintar();
+      await buscar();
+
+      fireEvent.click(screen.getByText('add.opensProfileHint'));
+
+      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
   it('opens the profile of the player you pick', async () => {
     const { onClose } = pintar();
     await buscar();

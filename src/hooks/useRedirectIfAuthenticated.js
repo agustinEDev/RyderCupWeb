@@ -14,9 +14,10 @@
  *    que es exactamente el caso de esta issue: la PWA abierta desde el icono
  *    horas después, con el access de 15 minutos caducado y el refresh vivo. Con
  *    esa negativa el usuario vería el formulario teniendo sesión renovable. Se
- *    pide el refresco a mano, que además no arrastra el logout ni la redirección
- *    del interceptor —justo lo que reintroduciría el bucle—, a cambio de tener
- *    que mirar aquí la revocación de dispositivo que el interceptor sí atiende.
+ *    pide el refresco a mano (`services/sondaDeSesion`), que además no arrastra
+ *    el logout ni la redirección del interceptor —justo lo que reintroduciría el
+ *    bucle—, a cambio de tener que atender aquí la revocación de dispositivo
+ *    que el interceptor sí atiende.
  *
  * Cuando no hay nada guardado no se toca la red: el visitante anónimo, que es
  * el caso común, ve el formulario de inmediato.
@@ -30,37 +31,20 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
-import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
-import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
+import { handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 // El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
 // copias de una comprobación de seguridad acaban divergiendo
 import { resolvePostAuthTarget } from '../utils/auth';
 import { anotaLaSesion } from '../services/sesionCompartida';
+// La pregunta sin interceptor, compartida con «Volver» de los documentos legales
+import { preguntaLaSesionSinInterceptor } from '../services/sondaDeSesion';
 import User from '../domain/entities/User.js';
-
-// Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
-// manda sobre la del build. Sin esto, `/current-user` y el refresco de aquí
-// abajo pueden acabar apuntando a hosts distintos en un despliegue en contenedor
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * Más allá de esto se enseña el formulario. Una instancia fría o una red mala no
  * pueden dejar la pantalla de acceso inalcanzable detrás de un "Cargando...".
  */
 const SESSION_CHECK_TIMEOUT_MS = 5000;
-
-const requestCurrentUser = (signal) =>
-  fetch(`${API_URL}/api/v1/auth/current-user`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-  });
-
-/** El backend ha contestado que no: la sesión está muerta, no es un tropiezo. */
-class SessionRejectedError extends Error {}
-
-const isSessionRejected = (error) =>
-  error instanceof SessionRejectedError || error?.response?.status === 401;
 
 /**
  * @returns {boolean} `true` mientras se resuelve la sesión: el formulario no
@@ -117,86 +101,77 @@ export const useRedirectIfAuthenticated = ({
       showForm();
     }, SESSION_CHECK_TIMEOUT_MS);
 
-    const verifySession = async () => {
-      try {
-        let response = await requestCurrentUser(controller.signal);
+    // Caída, corte de red o respuesta rara. El usuario guardado se queda donde
+    // está: borrarlo por un tropiezo inutilizaría esta redirección durante los
+    // 7 días que al refresh token le quedan de vida
+    const couldNotAsk = (error) => {
+      console.warn('[auth] no se pudo comprobar la sesión:', error);
 
-        if (response.status === 401) {
-          const errorData = await response
-            .clone()
-            .json()
-            .catch(() => ({}));
-
-          // Sin esto el dispositivo revocado desde otro navegador aterriza en un
-          // formulario pelado, sin el aviso que da el interceptor
-          if (isDeviceRevoked(response, errorData)) {
-            handleDeviceRevocationLogout(errorData);
-            if (cancelled || settled) return;
-            clearAuth();
-            showForm();
-            return;
-          }
-
-          // El access caduca a los 15 minutos; que esté caducado no dice nada
-          // sobre la sesión, solo que toca renovarlo
-          await refreshAccessToken();
-          response = await requestCurrentUser(controller.signal);
-        }
-
-        if (response.status === 401) {
-          throw new SessionRejectedError('La sesión ya no vale');
-        }
-
-        if (!response.ok) {
-          throw new Error(`current-user respondió ${response.status}`);
-        }
-
-        const datosDelBackend = await response.json();
-        const currentUser = new User(datosDelBackend);
-        if (cancelled || settled) return;
-
-        settled = true;
-        clearTimeout(deadline);
-        setUser(currentUser);
-        // DESPUES de `setUser`, y el orden importa: `setUser` invalida la
-        // consulta compartida —tiene que hacerlo, o un 401 guardado de antes
-        // sobrevive al login y deja al guardia mandando al formulario en
-        // bucle—, asi que sembrar antes no serviria de nada.
-        //
-        // Y se siembra con el DTO, no con la entidad: acabamos de preguntar y
-        // el backend ha dicho que si, de modo que el destino no tiene por que
-        // volver a preguntarlo. Sin esto, `ProtectedRoute` pintaba su espera
-        // gris a pantalla completa en cada arranque con sesion (FE #489)
-        anotaLaSesion(datosDelBackend);
+      if (entrarSinRed) {
+        // Quien arranca la aplicación instalada en el campo, sin cobertura, no
+        // puede quedarse ante un formulario que no hay forma de enviar: anotar
+        // sin conexión es el caso de uso, no un extra. La sesión no se ha
+        // rechazado —solo no se ha podido preguntar—, así que se entra con la
+        // que hay guardada.
         navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
-        // `isChecking` se queda arriba a propósito: la página se está yendo y
-        // bajarlo pintaría el formulario un instante
-      } catch (error) {
-        if (cancelled || settled) return;
-
-        if (isSessionRejected(error)) {
-          // Ahora sí: el `user` guardado es resto de una sesión anterior y se
-          // tira, o cada montaje repite el viaje a la red
-          clearAuth();
-        } else {
-          // Caída, corte de red o respuesta rara. El usuario guardado se queda
-          // donde está: borrarlo por un tropiezo inutilizaría esta redirección
-          // durante los 7 días que al refresh token le quedan de vida
-          console.warn('[auth] no se pudo comprobar la sesión:', error);
-
-          if (entrarSinRed) {
-            // Quien arranca la aplicación instalada en el campo, sin cobertura,
-            // no puede quedarse ante un formulario que no hay forma de enviar:
-            // anotar sin conexión es el caso de uso, no un extra. La sesión no
-            // se ha rechazado —solo no se ha podido preguntar—, así que se entra
-            // con la que hay guardada.
-            navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
-            return;
-          }
-        }
-
-        showForm();
+        return;
       }
+
+      showForm();
+    };
+
+    const verifySession = async () => {
+      const resultado = await preguntaLaSesionSinInterceptor(controller.signal);
+
+      if (resultado.estado === 'revocada') {
+        // Sin esto el dispositivo revocado desde otro navegador aterriza en un
+        // formulario pelado, sin el aviso que da el interceptor
+        handleDeviceRevocationLogout(resultado.detalle);
+        if (cancelled || settled) return;
+        clearAuth();
+        showForm();
+        return;
+      }
+
+      if (cancelled || settled) return;
+
+      if (resultado.estado === 'rechazada') {
+        // Ahora sí: el `user` guardado es resto de una sesión anterior y se
+        // tira, o cada montaje repite el viaje a la red
+        clearAuth();
+        showForm();
+        return;
+      }
+
+      if (resultado.estado === 'fallo') {
+        couldNotAsk(resultado.error);
+        return;
+      }
+
+      let currentUser;
+      try {
+        currentUser = new User(resultado.usuario);
+      } catch (error) {
+        couldNotAsk(error);
+        return;
+      }
+
+      settled = true;
+      clearTimeout(deadline);
+      setUser(currentUser);
+      // DESPUES de `setUser`, y el orden importa: `setUser` invalida la
+      // consulta compartida —tiene que hacerlo, o un 401 guardado de antes
+      // sobrevive al login y deja al guardia mandando al formulario en
+      // bucle—, asi que sembrar antes no serviria de nada.
+      //
+      // Y se siembra con el DTO, no con la entidad: acabamos de preguntar y
+      // el backend ha dicho que si, de modo que el destino no tiene por que
+      // volver a preguntarlo. Sin esto, `ProtectedRoute` pintaba su espera
+      // gris a pantalla completa en cada arranque con sesion (FE #489)
+      anotaLaSesion(resultado.usuario);
+      navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+      // `isChecking` se queda arriba a propósito: la página se está yendo y
+      // bajarlo pintaría el formulario un instante
     };
 
     verifySession();

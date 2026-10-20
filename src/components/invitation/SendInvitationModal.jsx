@@ -87,9 +87,9 @@ const SendInvitationModalContent = ({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        // Pulsar una pestana NO es descartar el desplegable: su `mousedown`
-        // llega antes que su `click`, asi que contarlo como tal impedia
-        // devolver los resultados al volver.
+        // Pulsar una pestana NO es descartar el desplegable: este cierre llega
+        // antes que su `click`, asi que contarlo como tal impedia devolver los
+        // resultados al volver.
         // Descartar es pulsar Escape o el fondo. Pinchar en el mensaje, en la
         // barra de pestanas o en cualquier otro sitio del propio formulario es
         // seguir usandolo: cierra el desplegable, pero no cuenta como que el
@@ -101,8 +101,12 @@ const SendInvitationModalContent = ({
         openDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // En el `click` y no en el `mousedown`, como en AddFriendModal: la lista
+    // va en el flujo y cerrarla al apretar subia el pie antes de soltar, y el
+    // clic caia en otro boton. En captura, para seguir cerrando antes que el
+    // manejador del destino: una pestana que restaura la lista lo hace despues
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdown]);
 
   // Keyboard navigation for dropdown (document-level to avoid focus issues)

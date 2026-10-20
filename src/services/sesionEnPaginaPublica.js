@@ -7,21 +7,31 @@
  * Por qué no `consultaLaSesion`: va por `fetchWithTokenRefresh`, y en `/terms`
  * con un `user` rancio guardado el interceptor SÍ refresca; si el refresco da
  * 401, cierra sesión y manda a `/login` con «tu sesión expiró». Es justo lo que
- * no puede pasarle a quien solo quería salir de un documento. Aquí se pide el
- * refresco a mano, como `useRedirectIfAuthenticated`, que no arrastra ni el
- * logout ni la redirección.
+ * no puede pasarle a quien solo quería salir de un documento. Se pregunta sin
+ * interceptor, con la misma pieza que `useRedirectIfAuthenticated`
+ * (`sondaDeSesion`), que no arrastra ni el logout ni la redirección.
  *
  * Y nada de decidir por el `user` guardado: sobrevive a las cookies. Solo sirve
  * para no tocar la red cuando no hay ni eso, que es el visitante de siempre.
  */
 
-import { refreshAccessToken } from '../utils/tokenRefreshInterceptor';
 import { anotaLaSesion } from './sesionCompartida';
-
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
+import { preguntaLaSesionSinInterceptor } from './sondaDeSesion';
 
 /** Más allá de esto se da por no sabido: quien pulsa no se queda esperando. */
 export const TOPE_DE_LA_COMPROBACION_MS = 5000;
+
+/**
+ * - `confirmada`: el backend dice que sí (y queda anotada para el panel).
+ * - `muerta`: el backend dice que no —rechazada o dispositivo revocado—, así
+ *   que el `user` guardado es resto de una sesión anterior.
+ * - `no-sabida`: no hay nada guardado, o no se pudo preguntar a tiempo.
+ */
+export const ESTADO_DE_LA_SESION = Object.freeze({
+  CONFIRMADA: 'confirmada',
+  MUERTA: 'muerta',
+  NO_SABIDA: 'no-sabida',
+});
 
 const hayUsuarioGuardado = () => {
   try {
@@ -31,19 +41,12 @@ const hayUsuarioGuardado = () => {
   }
 };
 
-const pideElUsuario = (signal) =>
-  fetch(`${API_URL}/api/v1/auth/current-user`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-  });
-
 /**
- * @returns {Promise<boolean>} `true` solo si el backend lo confirma. Un fallo,
- *   un rechazo o el plazo vencido dan `false`: en la duda, a la portada.
+ * @returns {Promise<'confirmada'|'muerta'|'no-sabida'>} Qué hacer con cada uno
+ *   lo decide quien llama; en la duda, a la portada.
  */
-export const haySesionConfirmada = async () => {
-  if (!hayUsuarioGuardado()) return false;
+export const estadoDeLaSesion = async () => {
+  if (!hayUsuarioGuardado()) return ESTADO_DE_LA_SESION.NO_SABIDA;
 
   const corte = new AbortController();
   let vencido = false;
@@ -53,31 +56,24 @@ export const haySesionConfirmada = async () => {
     temporizador = setTimeout(() => {
       vencido = true;
       corte.abort();
-      resolver(false);
+      resolver(ESTADO_DE_LA_SESION.NO_SABIDA);
     }, TOPE_DE_LA_COMPROBACION_MS);
   });
 
   const pregunta = async () => {
     try {
-      let respuesta = await pideElUsuario(corte.signal);
-
-      // El access dura 15 minutos: caducado no dice nada de la sesión
-      if (respuesta.status === 401) {
-        await refreshAccessToken();
-        respuesta = await pideElUsuario(corte.signal);
-      }
-
-      if (!respuesta.ok) return false;
-
-      const usuario = await respuesta.json();
+      const resultado = await preguntaLaSesionSinInterceptor(corte.signal);
       // Tarde no manda: la página ya se fue a la portada
-      if (vencido) return false;
+      if (vencido) return ESTADO_DE_LA_SESION.NO_SABIDA;
+
+      if (resultado.estado === 'rechazada' || resultado.estado === 'revocada') {
+        return ESTADO_DE_LA_SESION.MUERTA;
+      }
+      if (resultado.estado !== 'ok') return ESTADO_DE_LA_SESION.NO_SABIDA;
 
       // Ya se ha preguntado: el panel no tiene por qué volver a hacerlo
-      anotaLaSesion(usuario);
-      return true;
-    } catch {
-      return false;
+      anotaLaSesion(resultado.usuario);
+      return ESTADO_DE_LA_SESION.CONFIRMADA;
     } finally {
       clearTimeout(temporizador);
     }

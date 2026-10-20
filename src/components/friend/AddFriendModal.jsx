@@ -73,8 +73,12 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         openDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // En el `click` y no en el `mousedown`: la lista va en el flujo, y
+    // cerrarla al apretar encogia la caja antes de soltar, con lo que el clic
+    // caia en lo que subia a ocupar su sitio. En captura, para cerrar antes
+    // que el manejador del propio destino, como hacia el `mousedown`
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdown]);
 
   useEffect(() => {

@@ -526,6 +526,62 @@ describe('SendInvitationModal', () => {
     expect(screen.queryByTestId('search-result-u1')).not.toBeInTheDocument();
   });
 
+  // Revision del 20 oct: la lista va en el flujo; cerrarla en el `mousedown`
+  // subia el pie antes del `click` y el clic caia en otro boton
+  it('M1c: pulsar Cancelar con la lista abierta cierra el modal', async () => {
+    onSearchUsers.mockResolvedValue([
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ]);
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+    const cancelar = screen.getByRole('button', { name: 'cancel' });
+
+    fireEvent.mouseDown(cancelar);
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+    fireEvent.click(cancelar);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('M1d: un clic fuera de la lista la sigue cerrando, y elegir sigue eligiendo', async () => {
+    onSearchUsers.mockResolvedValue([
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ]);
+    renderModal();
+    const input = screen.getByTestId('user-search-input');
+    fireEvent.change(input, { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    fireEvent.click(screen.getByTestId('invitation-message-input'));
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: 'Joh' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+    fireEvent.click(screen.getByTestId('search-result-u1'));
+    expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+    expect(screen.getByTestId('selected-user-chip')).toBeInTheDocument();
+  });
+
+  it('M1e: el cierre por clic fuera va antes que el clic del destino', async () => {
+    // En captura: si fuera despues, cerraria la lista que el destino acaba de
+    // devolver. jsdom no vacia el render entre manejadores como el navegador,
+    // asi que se mira con la pestana ya montada: pulsar la de busqueda
+    // estando en ella devuelve la lista y nada la vuelve a cerrar detras
+    onSearchUsers.mockResolvedValue([
+      { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+    ]);
+    renderModal();
+    fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+    await act(async () => { vi.advanceTimersByTime(350); });
+
+    fireEvent.click(screen.getByTestId('invitation-message-input'));
+    fireEvent.click(screen.getByTestId('tab-search-user'));
+
+    expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+  });
+
   it('restores the dropdown even when the tab was clicked with a real mousedown', async () => {
     // El `mousedown` de la propia pestana llega antes que su `click`, asi que
     // cualquier intento de recordar «lo cerro el usuario» lo marcaba como
@@ -603,7 +659,7 @@ describe('SendInvitationModal', () => {
     fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
     await act(async () => { vi.advanceTimersByTime(350); });
 
-    fireEvent.mouseDown(screen.getByTestId('invitation-message-input'));
+    fireEvent.click(screen.getByTestId('invitation-message-input'));
     fireEvent.click(screen.getByTestId('tab-by-email'));
     fireEvent.click(screen.getByTestId('tab-search-user'));
 

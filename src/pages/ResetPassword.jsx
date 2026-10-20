@@ -26,7 +26,8 @@ import {
  * 2. Pre-validación automática del token (useEffect)
  * 3. Si token válido: muestra formulario
  * 4. Si token inválido/expirado: muestra error y link a /forgot-password
- *    Si no se pudo comprobar (sin conexión, 429, 5xx): «Reintentar» (FE #785)
+ *    Si no se pudo comprobar (sin conexión, 429, 5xx): «Reintentar» (FE #785);
+ *    otro 4xx es un enlace malo, como el valid:false
  * 5. Usuario ingresa nueva contraseña (2 inputs: nueva + confirmar)
  * 6. Validación OWASP: 12+ chars, complejidad
  * 7. Submit → resetPasswordUseCase → redirección a /login
@@ -111,9 +112,19 @@ const ResetPassword = () => {
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         }
       } catch (error) {
-        // Un token inválido llega como valid:false, nunca aquí: esto es que no
-        // se ha podido comprobar, y el enlace puede estar bien (FE #785)
+        // Un token inválido llega como valid:false. Lo que llega aquí sin
+        // respuesta (sin conexión, sin status), con un 429 o con un 5xx es que
+        // no se ha podido comprobar, y el enlace puede estar bien (FE #785).
+        // Cualquier otro 4xx no se arregla reintentando: es un enlace malo
         console.error('Token validation error:', error);
+        const status = error?.status;
+        const reintentable =
+          esFalloDeRed(error) || typeof status !== 'number' || status === 429 || status >= 500;
+        if (!reintentable) {
+          setTokenState('invalid');
+          setTokenMessage(t('resetPassword.tokenInvalidMessage'));
+          return;
+        }
         setTokenState('unchecked');
         if (esFalloDeRed(error)) {
           setCheckFailure('resetPassword.checkNoConnection');

@@ -19,6 +19,12 @@ vi.mock('../../services/sesionCompartida', () => ({
   anotaLaSesion: vi.fn(),
 }));
 
+// Como el de verdad en lo que aqui importa: tira el `user` guardado
+const clearAuth = vi.fn();
+vi.mock('../../hooks/useAuthContext', () => ({
+  useAuthContext: () => ({ clearAuth }),
+}));
+
 const { refreshAccessToken, fetchWithTokenRefresh } = await import('../../utils/tokenRefreshInterceptor');
 const { anotaLaSesion } = await import('../../services/sesionCompartida');
 const { default: VolverDeLoLegal } = await import('./VolverDeLoLegal');
@@ -28,7 +34,9 @@ const { TOPE_DE_LA_COMPROBACION_MS } = await import('../../services/sesionEnPagi
  * Salir de los documentos legales sin pasar por la portada (20 oct 2026).
  *
  * - L1: «Volver» arriba del contenido.
- * - L2: con página anterior dentro de la aplicación, a ella.
+ * - L2: con página anterior dentro de la aplicación, a ella. Lo dice el `idx`
+ *   que React Router guarda en el historial, no `location.key`: la primera
+ *   entrada de la aplicación puede tener otra web detrás.
  * - L3: sin ella, al panel con sesión confirmada por el backend y a la portada
  *   sin sesión, sin poder echar a un visitante al «tu sesión expiró».
  */
@@ -82,12 +90,22 @@ beforeEach(() => {
   refreshAccessToken.mockReset();
   anotaLaSesion.mockReset();
   fetchWithTokenRefresh.mockReset();
+  clearAuth.mockReset();
+  clearAuth.mockImplementation(() => {
+    delete almacen.user;
+  });
+  window.history.replaceState(null, '');
 });
 
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  window.history.replaceState(null, '');
 });
+
+// Lo que React Router deja en `history.state`: `idx` es la posicion dentro de
+// la aplicacion, 0 en su primera entrada
+const enLaPosicion = (idx) => window.history.replaceState({ usr: null, key: 'k', idx }, '');
 
 describe('L1 · el botón', () => {
   it('L1a: pinta «Volver»', () => {
@@ -112,12 +130,36 @@ describe('L1 · el botón', () => {
 describe('L2 · con página anterior dentro de la aplicación', () => {
   it('L2a: vuelve justo a ella, sin preguntar por la sesión', async () => {
     conUsuarioGuardado();
+    enLaPosicion(1);
     abrir(['/profile', '/terms']);
 
     await pulsar();
 
     expect(screen.getByText('perfil')).toBeInTheDocument();
     expect(fetchFalso).not.toHaveBeenCalled();
+  });
+});
+
+describe('L2 · sin página anterior DENTRO de la aplicación', () => {
+  // Revision del 20 oct: `location.key` no es `default` cuando la primera
+  // entrada se sustituyo con una redireccion, y `navigate(-1)` sacaba de la
+  // aplicacion a la web de antes
+  it('L2b: en la primera entrada de la aplicacion no retrocede, aunque haya historial', async () => {
+    enLaPosicion(0);
+    abrir(['/profile', '/terms']);
+
+    await pulsar();
+
+    expect(screen.getByText('portada')).toBeInTheDocument();
+    expect(screen.queryByText('perfil')).not.toBeInTheDocument();
+  });
+
+  it('L2c: sin `idx` en el historial tampoco retrocede', async () => {
+    abrir(['/profile', '/terms']);
+
+    await pulsar();
+
+    expect(screen.getByText('portada')).toBeInTheDocument();
   });
 });
 
@@ -170,6 +212,9 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     expect(screen.getByText('portada')).toBeInTheDocument();
     expect(anotaLaSesion).not.toHaveBeenCalled();
     expect(fetchWithTokenRefresh).not.toHaveBeenCalled();
+    // Como en la pantalla de acceso: el `user` guardado es resto de una sesion
+    // muerta, y sin tirarlo cada pulsacion volveria a la red
+    expect(clearAuth).toHaveBeenCalledTimes(1);
   });
 
   it('L3e: si tras refrescar sigue el 401, a la portada', async () => {
@@ -182,6 +227,38 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
 
     expect(screen.getByText('portada')).toBeInTheDocument();
     expect(anotaLaSesion).not.toHaveBeenCalled();
+    expect(clearAuth).toHaveBeenCalledTimes(1);
+  });
+
+  it('L3e2: tirada la sesion muerta, la siguiente pulsacion ya no toca la red', async () => {
+    conUsuarioGuardado();
+    fetchFalso.mockResolvedValue(respuesta(401));
+    refreshAccessToken.mockResolvedValue({});
+    const { unmount } = abrir();
+    await pulsar();
+    unmount();
+    fetchFalso.mockClear();
+
+    abrir();
+    await pulsar();
+
+    expect(screen.getByText('portada')).toBeInTheDocument();
+    expect(fetchFalso).not.toHaveBeenCalled();
+  });
+
+  it('L3e3: con el dispositivo revocado, a la portada y sin el `user` guardado', async () => {
+    conUsuarioGuardado();
+    fetchFalso.mockResolvedValueOnce(
+      respuesta(401, { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' })
+    );
+    abrir();
+
+    await pulsar();
+
+    expect(screen.getByText('portada')).toBeInTheDocument();
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(clearAuth).toHaveBeenCalledTimes(1);
+    expect(anotaLaSesion).not.toHaveBeenCalled();
   });
 
   it('L3f: sin red no se sabe, y en la duda a la portada', async () => {
@@ -192,6 +269,8 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     await pulsar();
 
     expect(screen.getByText('portada')).toBeInTheDocument();
+    // No poder preguntar no es un «no»: el `user` guardado se queda
+    expect(clearAuth).not.toHaveBeenCalled();
   });
 
   it('L3g: con un error del servidor, a la portada', async () => {
@@ -203,6 +282,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
 
     expect(screen.getByText('portada')).toBeInTheDocument();
     expect(anotaLaSesion).not.toHaveBeenCalled();
+    expect(clearAuth).not.toHaveBeenCalled();
   });
 
   it('L3h: si el backend no contesta, al vencer el plazo a la portada', async () => {
@@ -219,6 +299,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     });
 
     expect(screen.getByText('portada')).toBeInTheDocument();
+    expect(clearAuth).not.toHaveBeenCalled();
   });
 
   it('L3i: una respuesta que llega tras el plazo no siembra nada', async () => {

@@ -223,9 +223,9 @@ const HeaderAuth = ({ user, title, backTo }) => {
                 >
                   {t('header.viewProfile')}
                 </button>
-                {/* El idioma vive aqui y no en la barra: es un ajuste de la cuenta y
-                    ocupaba el sitio que les faltaba a los enlaces (FE #680). En la
-                    portada sigue en la barra, que alli no hay cuenta */}
+                {/* El idioma tambien aqui, con su nombre: es un ajuste de la cuenta
+                    (FE #680). Desde el 20 oct (Agustín) esta ademas en la barra,
+                    como globo de solo icono; esta fila se queda */}
                 <div
                   data-testid="idioma-en-desplegable"
                   className="flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-700"
