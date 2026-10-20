@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase } from '../composition';
 import customToast from '../utils/toast';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
+import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -20,6 +21,10 @@ const CompleteProfile = () => {
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  // Los usuarios nuevos de Google que entran desde /login o /start no han
+  // pasado por el registro: aquí aceptan los Términos y declaran la edad
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
 
   // Load countries on mount
   useEffect(() => {
@@ -43,9 +48,22 @@ const CompleteProfile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAcceptTermsChange = (marcada) => {
+    setAcceptedTerms(marcada);
+    if (marcada) setTermsError('');
+  };
+
+  // Sin la casilla no se entra, ni guardando ni omitiendo el resto
+  const exigirTerminos = () => {
+    if (acceptedTerms) return true;
+    setTermsError(t('register.acceptTermsRequired'));
+    return false;
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
 
+    if (!exigirTerminos()) return;
     if (!user) return;
 
     setIsSaving(true);
@@ -84,6 +102,7 @@ const CompleteProfile = () => {
   };
 
   const handleSkip = () => {
+    if (!exigirTerminos()) return;
     navigate('/dashboard', { replace: true });
   };
 
@@ -185,6 +204,15 @@ const CompleteProfile = () => {
                 {t('google.completeProfile.handicapHint')}
               </p>
             </div>
+
+            {/* Términos y edad mínima; la privacidad, solo informada */}
+            <AceptacionDeTerminos
+              id="acceptTerms"
+              checked={acceptedTerms}
+              onChange={handleAcceptTermsChange}
+              error={termsError}
+              disabled={isSaving}
+            />
 
             {/* Save Button */}
             <motion.button

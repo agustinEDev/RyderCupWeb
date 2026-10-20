@@ -18,6 +18,7 @@ import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import BrandMark from '../components/ui/BrandMark';
+import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 
 const Register = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -137,9 +138,9 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAcceptTermsChange = (e) => {
-    setAcceptedTerms(e.target.checked);
-    if (e.target.checked && errors.acceptTerms) {
+  const handleAcceptTermsChange = (marcada) => {
+    setAcceptedTerms(marcada);
+    if (marcada && errors.acceptTerms) {
       setErrors(prev => ({ ...prev, acceptTerms: '' }));
     }
   };
@@ -568,55 +569,14 @@ const Register = () => {
                   )}
                 </div>
 
-                {/* Términos: se aceptan con la casilla, que declara además la
-                    edad mínima. Los enlaces abren pestaña nueva para no perder
-                    lo escrito */}
-                <div className="pt-2">
-                  <div className="flex items-start gap-2">
-                    <input
-                      id="acceptTerms"
-                      type="checkbox"
-                      name="acceptTerms"
-                      checked={acceptedTerms}
-                      onChange={handleAcceptTermsChange}
-                      disabled={isLoading}
-                      aria-required="true"
-                      aria-invalid={errors.acceptTerms ? 'true' : undefined}
-                      aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <label htmlFor="acceptTerms" className="text-xs text-gray-700">
-                      {t('register.acceptTermsPrefix')}{' '}
-                      <a
-                        href="/terms"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:text-primary-600 font-semibold"
-                      >
-                        {t('register.termsLink')}
-                      </a>
-                      {' '}{t('register.acceptTermsSuffix')}
-                    </label>
-                  </div>
-                  {errors.acceptTerms && (
-                    <p id="acceptTerms-error" role="alert" className="text-red-500 text-xs mt-2">
-                      {errors.acceptTerms}
-                    </p>
-                  )}
-                  {/* La privacidad se informa, no se acepta: va fuera de la casilla */}
-                  <p className="text-xs text-gray-600 mt-3">
-                    {t('register.privacyNoticePrefix')}{' '}
-                    <a
-                      href="/privacy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:text-primary-600 font-semibold"
-                    >
-                      {t('register.privacyLink')}
-                    </a>
-                    {t('register.privacyNoticeSuffix')}
-                  </p>
-                </div>
+                {/* Términos y edad mínima; la privacidad, solo informada */}
+                <AceptacionDeTerminos
+                  id="acceptTerms"
+                  checked={acceptedTerms}
+                  onChange={handleAcceptTermsChange}
+                  error={errors.acceptTerms}
+                  disabled={isLoading}
+                />
 
                 {/* Submit Button */}
                 <motion.button
