@@ -412,6 +412,19 @@ describe('revisión de la release', () => {
     expect(texto).not.toMatch(dosCosas);
   });
 
+  // Línea a línea: la frase de los reportes repite «sin ningún dato de quién» y
+  // «solo el día», y tapaba a la de las muestras (mutación W2)
+  it.each([
+    ['es', es, /Mejorar los mapas/, /reportes de hoyo/i, /sin ningún dato de quién/i, /solo (con )?el día/i],
+    ['en', en, /Improving the hole maps/, /hole reports/i, /without any data on who/i, /only the day/i],
+  ])('A2 (%s): la muestra y los reportes dicen cada uno que no guardan quién ni la hora', (_i, textos, muestra, reportes, sinQuien, dia) => {
+    for (const patron of [muestra, reportes]) {
+      const l = linea(textos.privacy.section5.content, patron);
+      expect(l).toMatch(sinQuien);
+      expect(l).toMatch(dia);
+    }
+  });
+
   it.each([
     ['es', es, /mejorar los mapas/i, [/6\.1\.a/, /6\.1\.f/, /anónim/i]],
     ['en', en, /improve the maps/i, [/6\.1\.a/, /6\.1\.f/, /anonymous/i]],
