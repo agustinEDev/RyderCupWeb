@@ -10,6 +10,19 @@ import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
 // Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
 // antes de que React navegue a ningún sitio
 import './utils/appStartup';
+// Las fuentes se sirven desde la propia aplicación, no desde Google Fonts: así
+// la IP de quien visita no llega a Google y la CSP no abre dominios ajenos.
+// Inter variable (un fichero de 48 KB cubre todos los pesos; cinco estáticos
+// pesaban unos 118 KB) y Poppins con los pesos de siempre (unos 8 KB cada uno).
+// Cada hoja trae su `unicode-range`: el navegador solo baja el alfabeto que usa.
+// Van aquí y no con `@import` en index.css: Tailwind incrusta esa hoja sin
+// reescribir sus `url()`, y Vite no emitía los .woff2.
+import '@fontsource-variable/inter';
+import '@fontsource/poppins/400.css';
+import '@fontsource/poppins/500.css';
+import '@fontsource/poppins/600.css';
+import '@fontsource/poppins/700.css';
+import '@fontsource/poppins/800.css';
 import './index.css';
 import './i18n'; // Import i18n initialization
 import { AuthProviderWithGlobalSync } from './contexts/AuthContext'; // v1.13.0: CSRF Protection
