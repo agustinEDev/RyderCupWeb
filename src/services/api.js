@@ -141,19 +141,18 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       }
 
       // Términos sin aceptar (F4): a la pantalla de aceptarlos, una sola vez y
-      // recargando. La promesa no se resuelve a propósito, como la del
-      // dispositivo revocado: la página se va, y así ninguna pantalla enseña su
-      // error ni lo reintenta. Donde no se redirige —la propia pantalla, las
-      // rutas públicas— sigue abajo como un error marcado, que la cola de
-      // anotaciones guarda para después en vez de descartar el golpe
-      if (response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS && llevaAAceptarLosTerminos()) {
-        return new Promise(() => {});
-      }
+      // recargando. La llamada NO se queda colgada (ese patrón se retiró del
+      // interceptor): sigue abajo como un error marcado, que la cola guarda para
+      // después y que, mientras la página se va, ningún toast enseña
+      const terminosPendientes = response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS;
+      if (terminosPendientes) llevaAAceptarLosTerminos();
 
       // Extract error message with proper fallback chain
       let errorMessage = '';
 
-      if (response.status === 429) {
+      if (terminosPendientes) {
+        errorMessage = i18next.t('common:terminosPendientes');
+      } else if (response.status === 429) {
         // El del backend es técnico y en inglés («Rate limit exceeded: 10 per
         // 1 minute»): se dice el de la app. El `status` sigue en el error, que
         // es por lo que lo reconocen la cola y las pantallas (4 oct 2026)
