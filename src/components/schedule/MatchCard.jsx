@@ -1,4 +1,5 @@
 import { Play, CheckCircle, AlertTriangle, Eye, Users, ClipboardList } from 'lucide-react';
+import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const STATUS_COLORS = {
   SCHEDULED: 'bg-blue-100 text-blue-800',
@@ -50,17 +51,17 @@ const MatchCard = ({
           </p>
           <div className="flex items-center gap-1 shrink-0">
             {realHcp != null && (
-              <span className={`text-xs ${teamColor} font-medium`}>HCP {Number(realHcp).toFixed(1)}</span>
+              <span className={`text-xs ${teamColor} font-medium`}>HCP {formatoDeIndice(realHcp)}</span>
             )}
             {ph != null && (
               <>
                 {realHcp != null && <span className="text-xs text-gray-400">|</span>}
                 {isCapped ? (
                   <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
-                    PH: {ph} Lim.
+                    PH: {formatoDeHandicapDeJuego(ph)} Lim.
                   </span>
                 ) : (
-                  <span className={`text-xs ${teamColor} font-medium`}>PH: {ph}</span>
+                  <span className={`text-xs ${teamColor} font-medium`}>PH: {formatoDeHandicapDeJuego(ph)}</span>
                 )}
               </>
             )}

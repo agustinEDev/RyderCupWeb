@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { TrendingUp, TrendingDown, Trophy, Target, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
  * Las tres cifras que responden al "¿cómo voy?" del panel.
@@ -116,7 +117,7 @@ const PlayerStatsCards = ({
         // Sin gatear por isLoading: el hándicap del perfil ya está, y parpadear
         // de "--" a "18" cuando llegan las estadísticas es peor que enseñarlo
         // desde el principio
-        value={formatNumber(handicap)}
+        value={formatoDeIndice(handicap) ?? '--'}
         hint={
           trend !== null && trend !== undefined && !isLoading ? (
             <p

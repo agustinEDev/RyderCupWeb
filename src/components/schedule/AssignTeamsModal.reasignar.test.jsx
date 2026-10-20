@@ -119,3 +119,17 @@ describe('AssignTeamsModal · reasignar con equipos ya hechos (#710)', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });
+
+// Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+describe('AssignTeamsModal · hándicap plus (FE #797)', () => {
+  it('H1: en el reparto manual, el plus con «+» y el positivo sin signo', () => {
+    pintar({
+      hasTeams: true,
+      currentTeams: EQUIPOS,
+      enrollments: [{ ...INSCRITOS[0], userHandicap: -2 }, ...INSCRITOS.slice(1)],
+    });
+
+    expect(screen.getByText('HCP: +2.0')).toBeInTheDocument();
+    expect(screen.getByText('HCP: 12.0')).toBeInTheDocument();
+  });
+});

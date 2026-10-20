@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
 import { updateRfegHandicapUseCase, updateManualHandicapUseCase } from '../../composition';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
  * @param {number|null} [handicapActual] - El hándicap guardado cuando se abre.
@@ -105,7 +106,7 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
             <p className="text-sm text-amber-800">
               {handicapActual == null
                 ? t('handicapModal.subtitle')
-                : t('handicapModal.subtitleStale', { handicap: Number(handicapActual).toFixed(1) })}
+                : t('handicapModal.subtitleStale', { handicap: formatoDeIndice(handicapActual) })}
             </p>
           </div>
 

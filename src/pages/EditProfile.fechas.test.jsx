@@ -68,6 +68,24 @@ describe('EditProfile · la fecha del hándicap (FE #710)', () => {
   });
 });
 
+// Un hándicap plus se guarda negativo y se lee con «+» (FE #797). El campo
+// donde se escribe no cambia (H5): solo el hándicap actual que se enseña
+describe('EditProfile · hándicap plus (FE #797)', () => {
+  it('H1: el hándicap actual de un plus se lee con «+»', () => {
+    usuario = { handicap: -2, handicap_updated_at: '2026-09-24T10:00:00' };
+    pintar();
+
+    expect(screen.getByText('+2.0')).toBeInTheDocument();
+  });
+
+  it('H3: un positivo, sin signo', () => {
+    usuario = { handicap: 12.4, handicap_updated_at: '2026-09-24T10:00:00' };
+    pintar();
+
+    expect(screen.getByText('12.4')).toBeInTheDocument();
+  });
+});
+
 /**
  * Auditoría legal del 20 oct 2026 (F4): donde se trae el hándicap de la RFEG,
  * se dice de dónde sale.

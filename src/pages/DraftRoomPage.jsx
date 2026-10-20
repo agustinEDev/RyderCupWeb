@@ -7,6 +7,7 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { useAuth } from '../hooks/useAuth';
 import useDraftRoom from '../hooks/useDraftRoom';
 import { getCompetitionDetailUseCase } from '../composition';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 /**
  * La sala de draft en directo (FE #653).
@@ -270,7 +271,7 @@ const DraftRoomPage = () => {
                             elige, y cualquier otro dato convertiría la
                             elección en un informe */}
                         <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                          {jugador.handicap}
+                          {formatoDeIndice(jugador.handicap)}
                         </span>
                         {esMiTurno && (
                           <button

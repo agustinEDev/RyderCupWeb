@@ -216,6 +216,18 @@ describe('PlayerStatsCards', () => {
       expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('18.0');
     });
 
+    // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+    it('shows a plus handicap with its plus sign', () => {
+      render(
+      <MemoryRouter>
+        <PlayerStatsCards stats={null} fallbackHandicap={-2} />
+      </MemoryRouter>
+    );
+
+      expect(screen.getByTestId('stat-card-handicap')).toHaveTextContent('+2.0');
+      expect(screen.getByTestId('stat-card-handicap')).not.toHaveTextContent('-2.0');
+    });
+
     it('shows the competitions already loaded when stats are missing', () => {
       render(
       <MemoryRouter>

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { X, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
 import { getMatchDetailUseCase } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
+import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const MatchDetailModal = ({
   isOpen,
@@ -55,17 +56,17 @@ const MatchDetailModal = ({
     return (
       <span className="ml-2 inline-flex items-center gap-1">
         {realHcp != null && (
-          <span className="text-xs text-gray-600 font-medium">HCP {Number(realHcp).toFixed(1)}</span>
+          <span className="text-xs text-gray-600 font-medium">HCP {formatoDeIndice(realHcp)}</span>
         )}
         {ph != null && (
           <>
             {realHcp != null && <span className="text-xs text-gray-400">|</span>}
             {isCapped ? (
               <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
-                PH: {ph} Lim.
+                PH: {formatoDeHandicapDeJuego(ph)} Lim.
               </span>
             ) : (
-              <span className="text-xs text-gray-600 font-medium">PH: {ph}</span>
+              <span className="text-xs text-gray-600 font-medium">PH: {formatoDeHandicapDeJuego(ph)}</span>
             )}
           </>
         )}

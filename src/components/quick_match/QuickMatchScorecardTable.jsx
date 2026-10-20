@@ -17,6 +17,7 @@ const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
+import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const MAX_STROKE_DOTS = 2;
 
@@ -444,7 +445,7 @@ const QuickMatchScorecardTable = ({
               renderTeeLabel(card.teeParticipant),
               card.playingHandicap != null
                 ? t('scoring.scorecard.playingHandicap', {
-                    value: card.playingHandicap,
+                    value: formatoDeHandicapDeJuego(card.playingHandicap),
                   })
                 : null,
               describeStrokes(totalStrokesFor(card.strokesId)),

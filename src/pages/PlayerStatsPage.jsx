@@ -16,6 +16,7 @@ import {
 } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BlockLoader from '../components/ui/BlockLoader';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 /**
  * Las estadísticas completas del jugador (FE #306, fase 2).
@@ -315,7 +316,7 @@ const PlayerStatsPage = () => {
                         {t('playerStats.estimatedIndex')}
                       </span>
                       <span className="text-2xl font-bold text-gray-900">
-                        {format(shown.estimatedIndex)}
+                        {formatoDeIndice(shown.estimatedIndex) ?? '--'}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-gray-500">

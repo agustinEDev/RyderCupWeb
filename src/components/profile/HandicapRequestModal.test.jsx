@@ -45,6 +45,13 @@ describe('HandicapRequestModal · el texto dice por qué se abre (FE #677)', () 
     expect(screen.getByText('handicapModal.subtitleStale 18.0')).toBeInTheDocument();
     expect(screen.queryByText('handicapModal.subtitle')).not.toBeInTheDocument();
   });
+
+  // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+  it('H1: con un plus guardado, se dice con «+»', () => {
+    abrir({ handicapActual: -2 });
+
+    expect(screen.getByText('handicapModal.subtitleStale +2.0')).toBeInTheDocument();
+  });
 });
 
 /**

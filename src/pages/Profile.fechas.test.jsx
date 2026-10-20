@@ -74,3 +74,28 @@ describe('Profile · las fechas (FE #710)', () => {
     expect(screen.queryByText('handicapRegistered')).toBeNull();
   });
 });
+
+// Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+describe('Profile · hándicap plus (FE #797)', () => {
+  it('H1: el plus se lee con «+» y un decimal', async () => {
+    usuario = { ...base, handicap: -2, handicap_updated_at: '2026-09-24T10:00:00' };
+    pintar();
+
+    expect(await screen.findByText('+2.0')).toBeInTheDocument();
+    expect(screen.queryByText('-2')).toBeNull();
+  });
+
+  it('H3: un positivo, sin signo', async () => {
+    usuario = { ...base, handicap: 12.4, handicap_updated_at: '2026-09-24T10:00:00' };
+    pintar();
+
+    expect(await screen.findByText('12.4')).toBeInTheDocument();
+  });
+
+  it('H4: el cero, sin signo', async () => {
+    usuario = { ...base, handicap: 0, handicap_updated_at: '2026-09-24T10:00:00' };
+    pintar();
+
+    expect(await screen.findByText('0.0')).toBeInTheDocument();
+  });
+});

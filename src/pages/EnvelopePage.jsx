@@ -14,6 +14,7 @@ import {
   revealEnvelopesUseCase,
 } from '../composition';
 import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 /**
  * El sobre de un capitán (FE #655).
@@ -493,7 +494,7 @@ const EnvelopePage = () => {
                         </span>
                       </span>
                       <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                        {jugador.handicap}
+                        {formatoDeIndice(jugador.handicap)}
                       </span>
                     </button>
                   </li>

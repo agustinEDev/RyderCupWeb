@@ -1,5 +1,6 @@
 import TeeColorBadge from '../golf_course/TeeColorBadge';
 import { FORMAT_LABEL_KEY, SCORING_FORMAT_LABEL_KEY } from './createQuickMatchModalConstants';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
  * Wizard step 4: pre-start summary — course/format/play-mode recap,
@@ -146,7 +147,7 @@ const SummaryStep = ({
                 p.handicap != null ? 'text-gray-900' : 'text-gray-400'
               }`}
             >
-              {p.handicap != null ? p.handicap : t('create.summary.handicapPlaceholder')}
+              {p.handicap != null ? formatoDeIndice(p.handicap) : t('create.summary.handicapPlaceholder')}
             </button>
           </li>
         ))}

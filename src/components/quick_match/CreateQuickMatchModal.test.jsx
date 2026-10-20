@@ -588,6 +588,22 @@ describe('CreateQuickMatchModal', () => {
     expect(peticion().creatorHandicap).toBe(16.4);
   });
 
+  // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+  it('shows a plus handicap with its plus sign in the summary step', async () => {
+    renderModal({ currentUser: { ...currentUser, handicap: -2 } });
+
+    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-scorers-next')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('quick-match-scorers-next'));
+
+    expect(await screen.findByTestId('quick-match-handicap-button-user-1')).toHaveTextContent('+2.0');
+  });
+
   it('should not send an override when confirming without changing the value', async () => {
     renderModal();
 

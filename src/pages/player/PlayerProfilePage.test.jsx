@@ -186,6 +186,15 @@ describe('PlayerProfilePage', () => {
       );
     });
 
+    // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+    it('shows a plus handicap and a plus estimated index with their plus sign', async () => {
+      getProfile.mockResolvedValue(amigo({ handicap: -2, stats: estadisticas({ estimatedIndex: -0.4 }) }));
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('+2.0');
+      expect(screen.getByTestId('player-profile-stat-estimatedIndex')).toHaveTextContent('+0.4');
+    });
+
     it('says they publish nothing when the activity comes back forbidden', async () => {
       // Un 403 con amistad aceptada significa que no publica, no que algo falle:
       // el resto del perfil sigue siendo válido.

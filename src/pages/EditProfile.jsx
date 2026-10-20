@@ -10,6 +10,7 @@ import { canUseRFEG } from '../utils/countryUtils';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 const EditProfile = () => {
   const { t, i18n } = useTranslation('profile');
@@ -69,7 +70,7 @@ const EditProfile = () => {
   // En el idioma de la app y leída como UTC: salía en `en-US` fijo y con la
   // hora sin huso tomada por local (FE #710)
   const currentHandicap = user.handicap !== null && user.handicap !== undefined
-    ? user.handicap
+    ? formatoDeIndice(user.handicap)
     : t('edit.handicap.notSet');
   const handicapUpdated =
     instanteEnTexto(user.handicap_updated_at, i18n.language, {
