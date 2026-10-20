@@ -15,15 +15,18 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * forma de completar la entrada sin aceptar nada.
  */
 const actualizarPerfil = vi.fn();
+const aceptarTerminos = vi.fn();
+const toastError = vi.fn();
 const refetch = vi.fn();
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, refetch }) }));
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: (...a) => actualizarPerfil(...a) },
+  acceptTermsUseCase: { execute: (...a) => aceptarTerminos(...a) },
   updateManualHandicapUseCase: { execute: vi.fn() },
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
 }));
@@ -48,6 +51,8 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
   beforeEach(() => {
     vi.clearAllMocks();
     refetch.mockResolvedValue(undefined);
+    aceptarTerminos.mockResolvedValue({ termsAccepted: true });
+    actualizarPerfil.mockResolvedValue({});
   });
 
   it.each([
@@ -135,5 +140,83 @@ describe('CompleteProfile · el texto del error (revisión)', () => {
     expect(texto).toMatch(continuar);
     expect(texto).toMatch(/16/);
     expect(texto).not.toMatch(crear);
+  });
+});
+
+/**
+ * F2: el backend responde 403 a guardar el perfil mientras no se acepten los
+ * Términos, así que aquí se aceptan PRIMERO y se guarda DESPUÉS. Si aceptar
+ * falla, se dice y no se sigue.
+ */
+describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    refetch.mockResolvedValue(undefined);
+    aceptarTerminos.mockResolvedValue({ termsAccepted: true });
+    actualizarPerfil.mockResolvedValue({});
+  });
+
+  const elegirGenero = () =>
+    fireEvent.change(screen.getByLabelText('google.completeProfile.genderLabel'), { target: { name: 'gender', value: 'FEMALE' } });
+
+  it('guardar: primero accept-terms, después el perfil', async () => {
+    abrir();
+    elegirGenero();
+    fireEvent.click(casilla());
+
+    guardar();
+
+    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(aceptarTerminos).toHaveBeenCalledTimes(1);
+    expect(actualizarPerfil).toHaveBeenCalledTimes(1);
+    expect(aceptarTerminos.mock.invocationCallOrder[0]).toBeLessThan(actualizarPerfil.mock.invocationCallOrder[0]);
+  });
+
+  it('guardar: si accept-terms falla, error visible y ni perfil ni panel', async () => {
+    aceptarTerminos.mockRejectedValue(new Error('boom'));
+    abrir();
+    elegirGenero();
+    fireEvent.click(casilla());
+
+    guardar();
+
+    expect(await screen.findByText('acceptTermsPage.error')).toBeInTheDocument();
+    expect(toastError).toHaveBeenCalledWith('acceptTermsPage.error');
+    expect(actualizarPerfil).not.toHaveBeenCalled();
+    expect(screen.queryByText('panel')).toBeNull();
+  });
+
+  it('omitir: acepta, reconfirma la sesión y entra', async () => {
+    abrir();
+    fireEvent.click(casilla());
+
+    omitir();
+
+    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(aceptarTerminos).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalled();
+    expect(aceptarTerminos.mock.invocationCallOrder[0]).toBeLessThan(refetch.mock.invocationCallOrder[0]);
+    expect(actualizarPerfil).not.toHaveBeenCalled();
+  });
+
+  it('omitir: si accept-terms falla, se queda', async () => {
+    aceptarTerminos.mockRejectedValue(new Error('boom'));
+    abrir();
+    fireEvent.click(casilla());
+
+    omitir();
+
+    expect(await screen.findByText('acceptTermsPage.error')).toBeInTheDocument();
+    expect(screen.queryByText('panel')).toBeNull();
+  });
+
+  it('sin la casilla, ni se acepta ni se guarda', () => {
+    abrir();
+
+    guardar();
+    omitir();
+
+    expect(aceptarTerminos).not.toHaveBeenCalled();
+    expect(actualizarPerfil).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase } from '../composition';
+import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase, acceptTermsUseCase } from '../composition';
 import customToast from '../utils/toast';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
@@ -25,6 +25,7 @@ const CompleteProfile = () => {
   // pasado por el registro: aquí aceptan los Términos y declaran la edad
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState('');
+  const [acceptError, setAcceptError] = useState('');
 
   // Load countries on mount
   useEffect(() => {
@@ -60,6 +61,23 @@ const CompleteProfile = () => {
     return false;
   };
 
+  /**
+   * Acepta los Términos en el backend (F2). Va ANTES de todo lo demás: hasta
+   * aceptarlos, guardar el perfil responde 403. Si falla, se dice y no se sigue.
+   * @returns {Promise<boolean>} si se aceptaron
+   */
+  const aceptaLosTerminos = async () => {
+    setAcceptError('');
+    try {
+      await acceptTermsUseCase.execute();
+      return true;
+    } catch {
+      setAcceptError(t('acceptTermsPage.error'));
+      customToast.error(t('acceptTermsPage.error'));
+      return false;
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -67,6 +85,10 @@ const CompleteProfile = () => {
     if (!user) return;
 
     setIsSaving(true);
+    if (!(await aceptaLosTerminos())) {
+      setIsSaving(false);
+      return;
+    }
     try {
       const updateData = {};
 
@@ -101,9 +123,21 @@ const CompleteProfile = () => {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (!exigirTerminos()) return;
-    navigate('/dashboard', { replace: true });
+
+    setIsSaving(true);
+    if (!(await aceptaLosTerminos())) {
+      setIsSaving(false);
+      return;
+    }
+    // La sesión se reconfirma antes de entrar: con la vieja, el guardia vería
+    // los Términos aún pendientes y llevaría a la pantalla de aceptarlos
+    try {
+      await refetchUser();
+    } finally {
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   return (
@@ -213,6 +247,12 @@ const CompleteProfile = () => {
               error={termsError}
               disabled={isSaving}
             />
+
+            {acceptError && (
+              <p role="alert" className="text-red-600 text-sm">
+                {acceptError}
+              </p>
+            )}
 
             {/* Save Button */}
             <motion.button
