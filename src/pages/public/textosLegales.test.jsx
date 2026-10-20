@@ -350,3 +350,38 @@ describe('cuándo se consulta la RFEG, igual en todos los textos', () => {
     expect(texto).toMatch(aMano);
   });
 });
+
+// Decisión de Agustín (20 oct 2026): la prueba de aceptación de los Términos se
+// cuenta en los datos que tratamos (2), en finalidades y bases (3) y en la
+// conservación (9), sin contradecir el resto
+describe('prueba de aceptación de los Términos', () => {
+  const linea = (texto, patron) => texto.split('\n').find((l) => patron.test(l)) ?? '';
+
+  it.each([
+    ['es', es, /prueba de aceptación/i, [/versión/i, /fecha/i, /dirección IP/i, /navegador/i]],
+    ['en', en, /proof of acceptance/i, [/version/i, /date/i, /IP address/i, /browser/i]],
+  ])('%s (2): qué se guarda al aceptar', (_i, textos, prueba, datos) => {
+    const l = linea(textos.privacy.section2.content, prueba);
+
+    for (const patron of datos) expect(l).toMatch(patron);
+  });
+
+  it.each([
+    ['es', es, /prueba de aceptación/i, [/acreditar/i, /6\.1\.c/, /6\.1\.f/, /reclamaciones/i]],
+    ['en', en, /proof of acceptance/i, [/prove/i, /6\.1\.c/, /6\.1\.f/, /claims/i]],
+  ])('%s (3): para qué y con qué base', (_i, textos, prueba, patrones) => {
+    const l = linea(textos.privacy.section3.content, prueba);
+
+    for (const patron of patrones) expect(l).toMatch(patron);
+  });
+
+  it.each([
+    ['es', es, /prueba de aceptación/i, /3 años después de su borrado/i, /se borra por completo(?!, salvo)/i],
+    ['en', en, /proof of acceptance/i, /3 years after (it is|its) deleted|3 years after deletion/i, /deleted entirely(?!, except)/i],
+  ])('%s (9): se conserva mientras exista la cuenta y 3 años después, sin contradecir el borrado completo', (_i, textos, prueba, plazo, contradiccion) => {
+    const texto = textos.privacy.section9.content;
+
+    expect(linea(texto, prueba)).toMatch(plazo);
+    expect(texto).not.toMatch(contradiccion);
+  });
+});
