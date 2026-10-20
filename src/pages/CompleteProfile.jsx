@@ -7,6 +7,7 @@ import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUs
 import customToast from '../utils/toast';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
+import { anotaLaSesion } from '../services/sesionCompartida';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -69,11 +70,15 @@ const CompleteProfile = () => {
   const aceptaLosTerminos = async () => {
     setAcceptError('');
     try {
-      await acceptTermsUseCase.execute();
+      const { datosDelBackend } = await acceptTermsUseCase.execute();
+      // La sesión queda aceptada YA, con lo que responde el backend: aunque
+      // luego falle guardar el perfil o el hándicap, el guardia no devolverá
+      // a la pantalla de aceptar
+      anotaLaSesion(datosDelBackend);
       return true;
     } catch {
+      // Un solo aviso, junto a la casilla
       setAcceptError(t('acceptTermsPage.error'));
-      customToast.error(t('acceptTermsPage.error'));
       return false;
     }
   };
@@ -131,13 +136,8 @@ const CompleteProfile = () => {
       setIsSaving(false);
       return;
     }
-    // La sesión se reconfirma antes de entrar: con la vieja, el guardia vería
-    // los Términos aún pendientes y llevaría a la pantalla de aceptarlos
-    try {
-      await refetchUser();
-    } finally {
-      navigate('/dashboard', { replace: true });
-    }
+    // La sesión ya está sembrada con la aceptación: se entra sin más consultas
+    navigate('/dashboard', { replace: true });
   };
 
   return (

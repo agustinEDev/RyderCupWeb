@@ -111,7 +111,10 @@ class ApiUserRepository extends IUserRepository {
    */
   async acceptTerms() {
     const data = await apiRequest('/api/v1/users/me/accept-terms', { method: 'POST' });
-    return new User(data);
+    // Los dos: la entidad para quien la use, y el DTO tal cual para la sesión
+    // compartida, que guarda lo que dice el backend (con la entidad se perdería
+    // `is_admin`)
+    return { user: new User(data), datosDelBackend: data };
   }
 
   /**

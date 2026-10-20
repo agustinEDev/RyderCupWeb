@@ -440,17 +440,21 @@ describe('ApiUserRepository — el alias en la búsqueda (FE #435)', () => {
 describe('ApiUserRepository · acceptTerms', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('hace POST a /users/me/accept-terms y devuelve el usuario', async () => {
-    apiRequest.mockResolvedValue({
+  it('hace POST a /users/me/accept-terms y devuelve la entidad y el DTO tal cual', async () => {
+    const dto = {
       id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba',
-      terms_accepted: true, terms_version_required: '2026-10-20',
-    });
+      is_admin: true, terms_accepted: true, terms_version_required: '2026-10-20',
+    };
+    apiRequest.mockResolvedValue(dto);
 
-    const usuario = await new ApiUserRepository().acceptTerms();
+    const { user, datosDelBackend } = await new ApiUserRepository().acceptTerms();
 
     expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/me/accept-terms', { method: 'POST' });
-    expect(usuario).toBeInstanceOf(User);
-    expect(usuario.termsAccepted).toBe(true);
+    expect(user).toBeInstanceOf(User);
+    expect(user.termsAccepted).toBe(true);
+    // Para sembrar la sesión compartida, que guarda el DTO: con la entidad se
+    // perdería `is_admin`
+    expect(datosDelBackend).toBe(dto);
   });
 
   it('un fallo se propaga', async () => {

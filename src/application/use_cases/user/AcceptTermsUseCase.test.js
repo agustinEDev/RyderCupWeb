@@ -7,11 +7,11 @@ describe('AcceptTermsUseCase', () => {
     expect(() => new AcceptTermsUseCase({})).toThrow('userRepository is required');
   });
 
-  it('acepta y devuelve el usuario actualizado', async () => {
-    const usuario = { termsAccepted: true };
-    const userRepository = { acceptTerms: vi.fn().mockResolvedValue(usuario) };
+  it('acepta y devuelve el usuario y los datos del backend', async () => {
+    const resultado = { user: { termsAccepted: true }, datosDelBackend: { terms_accepted: true, is_admin: false } };
+    const userRepository = { acceptTerms: vi.fn().mockResolvedValue(resultado) };
 
-    await expect(new AcceptTermsUseCase({ userRepository }).execute()).resolves.toBe(usuario);
+    await expect(new AcceptTermsUseCase({ userRepository }).execute()).resolves.toEqual(resultado);
     expect(userRepository.acceptTerms).toHaveBeenCalledTimes(1);
   });
 

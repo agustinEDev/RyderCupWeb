@@ -24,6 +24,9 @@ vi.mock('react-i18next', () => ({
 vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, refetch }) }));
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
+const anotaLaSesion = vi.fn();
+vi.mock('../services/sesionCompartida', () => ({ anotaLaSesion: (...a) => anotaLaSesion(...a) }));
+const DTO = { id: 'u-1', is_admin: false, terms_accepted: true };
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: (...a) => actualizarPerfil(...a) },
   acceptTermsUseCase: { execute: (...a) => aceptarTerminos(...a) },
@@ -152,7 +155,7 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     refetch.mockResolvedValue(undefined);
-    aceptarTerminos.mockResolvedValue({ termsAccepted: true });
+    aceptarTerminos.mockResolvedValue({ user: { termsAccepted: true }, datosDelBackend: DTO });
     actualizarPerfil.mockResolvedValue({});
   });
 
@@ -180,13 +183,14 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     guardar();
 
-    expect(await screen.findByText('acceptTermsPage.error')).toBeInTheDocument();
-    expect(toastError).toHaveBeenCalledWith('acceptTermsPage.error');
+    expect(await screen.findByRole('alert')).toHaveTextContent('acceptTermsPage.error');
+    // Un solo aviso: el que va junto a la casilla, sin toast repetido
+    expect(toastError).not.toHaveBeenCalled();
     expect(actualizarPerfil).not.toHaveBeenCalled();
     expect(screen.queryByText('panel')).toBeNull();
   });
 
-  it('omitir: acepta, reconfirma la sesión y entra', async () => {
+  it('omitir: acepta, siembra la sesión con el DTO del backend y entra', async () => {
     abrir();
     fireEvent.click(casilla());
 
@@ -194,9 +198,32 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(aceptarTerminos).toHaveBeenCalledTimes(1);
-    expect(refetch).toHaveBeenCalled();
-    expect(aceptarTerminos.mock.invocationCallOrder[0]).toBeLessThan(refetch.mock.invocationCallOrder[0]);
+    expect(anotaLaSesion).toHaveBeenCalledWith(DTO);
     expect(actualizarPerfil).not.toHaveBeenCalled();
+  });
+
+  it('omitir: aunque falle reconfirmar la sesión, entra con la sembrada y sin rechazo sin atender', async () => {
+    refetch.mockRejectedValue(new Error('sin red'));
+    abrir();
+    fireEvent.click(casilla());
+
+    omitir();
+
+    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(anotaLaSesion).toHaveBeenCalledWith(DTO);
+  });
+
+  it('guardar: si accept-terms va bien y falla el perfil, la sesión queda ya como aceptada', async () => {
+    actualizarPerfil.mockRejectedValue(new Error('no se pudo guardar'));
+    abrir();
+    elegirGenero();
+    fireEvent.click(casilla());
+
+    guardar();
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('no se pudo guardar'));
+    expect(anotaLaSesion).toHaveBeenCalledWith(DTO);
+    expect(screen.queryByText('panel')).toBeNull();
   });
 
   it('omitir: si accept-terms falla, se queda', async () => {
@@ -206,7 +233,8 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     omitir();
 
-    expect(await screen.findByText('acceptTermsPage.error')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('acceptTermsPage.error');
+    expect(toastError).not.toHaveBeenCalled();
     expect(screen.queryByText('panel')).toBeNull();
   });
 

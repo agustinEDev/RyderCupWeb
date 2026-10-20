@@ -18,7 +18,9 @@ class AcceptTermsUseCase {
   }
 
   /**
-   * @returns {Promise<import('../../../domain/entities/User').default>} El usuario, ya con la aceptación
+   * @returns {Promise<{user: import('../../../domain/entities/User').default, datosDelBackend: Object}>}
+   *   El usuario ya con la aceptación, como entidad y tal como lo devuelve el
+   *   backend, para sembrar con ello la sesión compartida
    */
   async execute() {
     return this.userRepository.acceptTerms();

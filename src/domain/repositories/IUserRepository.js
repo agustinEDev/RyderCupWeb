@@ -56,7 +56,9 @@ class IUserRepository {
   /**
    * Acepta la versión vigente de los Términos para el usuario de la sesión.
    * Idempotente: aceptarla dos veces no falla.
-   * @returns {Promise<import('../entities/User').default>} El usuario, ya con la aceptación
+   * @returns {Promise<{user: import('../entities/User').default, datosDelBackend: Object}>}
+   *   El usuario ya con la aceptación, como entidad y como lo devuelve el backend
+   *   (lo segundo, para sembrar la sesión compartida, que guarda el DTO)
    */
   async acceptTerms() {
     throw new Error('Method not implemented: acceptTerms');
