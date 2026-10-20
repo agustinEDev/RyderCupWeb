@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import { RUTAS_CON_TERMINOS_PENDIENTES, sePuedeEstarConTerminosPendientes } from './rutasPublicas';
 import { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos } from './terminosPendientes';
 
@@ -17,6 +17,10 @@ vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loadin
 const { default: ProtectedRoute } = await import('../components/auth/ProtectedRoute');
 
 const variantes = RUTAS_CON_TERMINOS_PENDIENTES.flatMap((ruta) => [ruta, `${ruta}/`]);
+
+// Dice DÓNDE se ha quedado: con una ruta comodín, un rebote a /accept-terms
+// también pintaría «dentro» y el test no lo vería (mutación V5)
+const Dentro = () => <p>dentro de {useLocation().pathname}</p>;
 
 describe('rutas con los Términos pendientes: una sola lista para el guardia y la redirección', () => {
   afterEach(() => {
@@ -41,12 +45,12 @@ describe('rutas con los Términos pendientes: una sola lista para el guardia y l
     render(
       <MemoryRouter initialEntries={[ruta]}>
         <Routes>
-          <Route path="*" element={<ProtectedRoute><p>dentro</p></ProtectedRoute>} />
+          <Route path="*" element={<ProtectedRoute><Dentro /></ProtectedRoute>} />
         </Routes>
       </MemoryRouter>
     );
 
-    expect(screen.getByText('dentro')).toBeInTheDocument();
+    expect(screen.getByText(`dentro de ${ruta}`)).toBeInTheDocument();
   });
 
   it.each(variantes)('la redirección tras un 403 no se dispara en %s', (ruta) => {
