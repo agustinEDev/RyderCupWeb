@@ -8,6 +8,9 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * auditoría legal, M1). Todos los usuarios nuevos de Google aterrizan aquí
  * (`GoogleCallback`, `isNewUser`), y aquí se pide lo mismo que en el registro.
  *
+ * El error es propio y no el del registro: aquí la cuenta ya existe, así que
+ * no puede decir «para crear tu cuenta».
+ *
  * Saltar el formulario tampoco vale sin la casilla: «Omitir por ahora» era otra
  * forma de completar la entrada sin aceptar nada.
  */
@@ -74,9 +77,9 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
 
     guardar();
 
-    expect(await screen.findByText('register.acceptTermsRequired')).toBeInTheDocument();
+    expect(await screen.findByText('google.completeProfile.acceptTermsRequired')).toBeInTheDocument();
     expect(casilla()).toHaveAttribute('aria-invalid', 'true');
-    expect(casilla()).toHaveAccessibleDescription('register.acceptTermsRequired');
+    expect(casilla()).toHaveAccessibleDescription('google.completeProfile.acceptTermsRequired');
     expect(refetch).not.toHaveBeenCalled();
     expect(screen.queryByText('panel')).toBeNull();
   });
@@ -86,7 +89,7 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
 
     omitir();
 
-    expect(screen.getByText('register.acceptTermsRequired')).toBeInTheDocument();
+    expect(screen.getByText('google.completeProfile.acceptTermsRequired')).toBeInTheDocument();
     expect(screen.queryByText('panel')).toBeNull();
   });
 
@@ -112,11 +115,25 @@ describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M
   it('al marcarla, el error se va', async () => {
     abrir();
     guardar();
-    await screen.findByText('register.acceptTermsRequired');
+    await screen.findByText('google.completeProfile.acceptTermsRequired');
 
     fireEvent.click(casilla());
 
-    await waitFor(() => expect(screen.queryByText('register.acceptTermsRequired')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('google.completeProfile.acceptTermsRequired')).toBeNull());
     expect(casilla()).not.toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('CompleteProfile · el texto del error (revisión)', () => {
+  it.each([
+    ['es', /continuar/i, /crear/i],
+    ['en', /continue/i, /create/i],
+  ])('%s: pide aceptar para continuar, no para crear la cuenta', async (idioma, continuar, crear) => {
+    const { default: auth } = await import(`../i18n/locales/${idioma}/auth.json`);
+    const texto = auth.google.completeProfile.acceptTermsRequired;
+
+    expect(texto).toMatch(continuar);
+    expect(texto).toMatch(/16/);
+    expect(texto).not.toMatch(crear);
   });
 });

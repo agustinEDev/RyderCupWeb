@@ -56,7 +56,7 @@ const CompleteProfile = () => {
   // Sin la casilla no se entra, ni guardando ni omitiendo el resto
   const exigirTerminos = () => {
     if (acceptedTerms) return true;
-    setTermsError(t('register.acceptTermsRequired'));
+    setTermsError(t('google.completeProfile.acceptTermsRequired'));
     return false;
   };
 
