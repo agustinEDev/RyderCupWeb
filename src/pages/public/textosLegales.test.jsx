@@ -358,8 +358,8 @@ describe('prueba de aceptación de los Términos', () => {
   const linea = (texto, patron) => texto.split('\n').find((l) => patron.test(l)) ?? '';
 
   it.each([
-    ['es', es, /prueba de aceptación/i, [/versión/i, /fecha/i, /dirección IP/i, /navegador/i]],
-    ['en', en, /proof of acceptance/i, [/version/i, /date/i, /IP address/i, /browser/i]],
+    ['es', es, /prueba de aceptación/i, [/versión/i, /fecha/i, /correo electrónico/i, /dirección IP/i, /navegador/i]],
+    ['en', en, /proof of acceptance/i, [/version/i, /date/i, /email/i, /IP address/i, /browser/i]],
   ])('%s (2): qué se guarda al aceptar', (_i, textos, prueba, datos) => {
     const l = linea(textos.privacy.section2.content, prueba);
 
@@ -383,5 +383,12 @@ describe('prueba de aceptación de los Términos', () => {
 
     expect(linea(texto, prueba)).toMatch(plazo);
     expect(texto).not.toMatch(contradiccion);
+  });
+
+  it.each([
+    ['es', es, /prueba de aceptación/i, /correo electrónico/i],
+    ['en', en, /proof of acceptance/i, /email/i],
+  ])('%s (9): lo que se conserva tras el borrado incluye el email del momento de aceptar', (_i, textos, prueba, email) => {
+    expect(linea(textos.privacy.section9.content, prueba)).toMatch(email);
   });
 });
