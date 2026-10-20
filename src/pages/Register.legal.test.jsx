@@ -97,6 +97,8 @@ describe('Register · Términos, edad y privacidad', () => {
     expect(casilla()).not.toHaveAttribute('aria-invalid', 'true');
     enviar();
     await waitFor(() => expect(registrar).toHaveBeenCalledTimes(1));
+    // F1: el backend exige `accept_terms: true`
+    expect(registrar.mock.calls[0][0]).toMatchObject({ acceptTerms: true });
   });
 
   it('R3: la privacidad se informa fuera de la casilla, no se acepta', () => {

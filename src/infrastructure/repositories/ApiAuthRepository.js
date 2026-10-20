@@ -49,6 +49,8 @@ class ApiAuthRepository extends IAuthRepository {
       password: userData.password.getValue(),
       country_code: userData.countryCode ? userData.countryCode.value() : null,
       gender: userData.gender || null,
+      // Obligatorio y solo `true`: sin él, el backend responde 422 (F1)
+      accept_terms: userData.acceptTerms === true,
     };
 
     const data = await apiRequest('/api/v1/auth/register', {

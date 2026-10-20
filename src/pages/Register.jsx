@@ -161,7 +161,9 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
         countryCode: formData.countryCode || null, // Enviar countryCode si existe, sino null
-        gender: formData.gender || null // Enviar gender si existe, sino null
+        gender: formData.gender || null, // Enviar gender si existe, sino null
+        // La casilla ya es obligatoria en `validateForm`: aquí solo viaja
+        acceptTerms: acceptedTerms,
       });
 
       customToast.success(t('register.success'));
