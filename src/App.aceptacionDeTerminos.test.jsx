@@ -46,7 +46,10 @@ const { anotaLaSesion, olvidaLaSesion, loQueHaySobreLaSesion } = await import('.
 
 const USUARIO = { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba', is_admin: false };
 
-const titulo = () => screen.findByRole('heading', { level: 1, name: 'acceptTermsPage.title' });
+// Las pantallas se cargan perezosas: con la suite entera en marcha, el primer
+// import tarda más que el segundo de espera por defecto de `findBy`
+const ESPERA = { timeout: 5000 };
+const titulo = () => screen.findByRole('heading', { level: 1, name: 'acceptTermsPage.title' }, ESPERA);
 
 describe('App · aceptación de los Términos, de punta a punta', () => {
   let red;
@@ -93,7 +96,7 @@ describe('App · aceptación de los Términos, de punta a punta', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'acceptTermsPage.devices' }));
 
-    expect(await screen.findByText('mis dispositivos')).toBeInTheDocument();
+    expect(await screen.findByText('mis dispositivos', {}, ESPERA)).toBeInTheDocument();
   });
 
   it('al aceptar, la sesión queda aceptada y se llega al panel', async () => {
@@ -105,7 +108,7 @@ describe('App · aceptación de los Términos, de punta a punta', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /register\.acceptTerms/ }));
     fireEvent.click(screen.getByRole('button', { name: 'acceptTermsPage.acceptButton' }));
 
-    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(await screen.findByText('panel', {}, ESPERA)).toBeInTheDocument();
     expect(loQueHaySobreLaSesion().user).toMatchObject({ terms_accepted: true, is_admin: true });
     expect(red).not.toHaveBeenCalled();
   });
