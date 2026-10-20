@@ -52,7 +52,7 @@
     },
     "section2": {
       "title": "2. Data we process",
-      "content": "- Account: email, first and last name, alias, country and password, stored securely (hashed). If you sign in with Google, we receive your name, email and account identifier from Google.\n- Gender: required to enrol in competitions, because each player's tees and categories depend on it.\n- Golf: handicap (looked up with the RFEG at your request or entered manually) and chosen tees.\n- Profile photo, if you choose to upload one.\n- Friends: who you send or accept friend requests to or from.\n- Activity and results: competitions and matches you take part in, scores, scorecards and statistics.\n- Security: the devices you sign in from (browser and IP address) and sign-in attempts.\n- Location: only when you allow it in your browser (see section 5)."
+      "content": "- Account: email, first and last name, alias, country and password, stored securely (hashed). If you sign in with Google, we receive your name, email and account identifier from Google.\n- Gender: required to enrol in competitions, because each player's tees and categories depend on it.\n- Golf: handicap (looked up with the RFEG in the cases listed in section 4, or entered manually) and chosen tees.\n- Profile photo, if you choose to upload one.\n- Friends: who you send or accept friend requests to or from.\n- Activity and results: competitions and matches you take part in, scores, scorecards and statistics.\n- Security: the devices you sign in from (browser and IP address) and sign-in attempts.\n- Location: only when you allow it in your browser (see section 5)."
     },
     "section3": {
       "title": "3. Purposes and legal bases",
@@ -132,7 +132,7 @@
     },
     "section2": {
       "title": "2. Purpose",
-      "content": "The Service is a web application to organise and play amateur golf competitions among friends (Ryder Cup format, stroke play and quick matches): enrolment, teams, pairings, score keeping, leaderboards, hole maps and handicap lookup.\n\nIts use is also governed by the Terms of Service, the Privacy Policy and the Cookie Policy, available from the page footer and from your profile."
+      "content": "The Service is a web application to organise and play amateur golf competitions among friends (Ryder Cup format, stroke play and quick matches): enrolment, teams, pairings, score keeping, leaderboards, hole maps and handicap lookup with the RFEG for players from Spain: at the player's request, when an organiser launches or schedules an update, and automatically when enrolment closes for a competition or, in Ryder-format competitions, when the captains are named, unless the organiser has set a custom handicap for that enrolment.\n\nIts use is also governed by the Terms of Service, the Privacy Policy and the Cookie Policy, available from the page footer and from your profile."
     },
     "section3": {
       "title": "3. Terms of use",
@@ -152,7 +152,7 @@
       "sources": {
         "rfeg": {
           "name": "Royal Spanish Golf Federation (RFEG)",
-          "detail": "Data on federated courses (layouts, tees, par, stroke indexes and ratings) and handicap lookup, which only happens at the user's request."
+          "detail": "Data on federated courses (layouts, tees, par, stroke indexes and ratings) and handicap lookup for players from Spain: at the player's request, when an organiser launches or schedules an update, and automatically when enrolment closes for a competition or, in Ryder-format competitions, when the captains are named, unless the organiser has set a custom handicap for that enrolment."
         },
         "osm": {
           "name": "OpenStreetMap",

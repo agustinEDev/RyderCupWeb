@@ -52,7 +52,7 @@
     },
     "section2": {
       "title": "2. Datos que tratamos",
-      "content": "- Cuenta: correo electrónico, nombre y apellidos, alias, país y contraseña, guardada de forma segura (hash). Si entras con Google, recibimos de Google tu nombre, tu correo y tu identificador de cuenta.\n- Género: es obligatorio para inscribirte en competiciones, porque las barras de salida y las categorías de cada jugador dependen de él.\n- Golf: hándicap (consultado en la RFEG a tu petición o introducido a mano) y barras elegidas.\n- Foto de perfil, si decides subirla.\n- Amistades: a quién envías o aceptas solicitudes de amistad.\n- Actividad y resultados: competiciones y partidas en las que participas, puntuaciones, tarjetas y estadísticas.\n- Seguridad: dispositivos desde los que entras (navegador y dirección IP) e intentos de inicio de sesión.\n- Ubicación: solo cuando la autorizas en el navegador (ver el apartado 5)."
+      "content": "- Cuenta: correo electrónico, nombre y apellidos, alias, país y contraseña, guardada de forma segura (hash). Si entras con Google, recibimos de Google tu nombre, tu correo y tu identificador de cuenta.\n- Género: es obligatorio para inscribirte en competiciones, porque las barras de salida y las categorías de cada jugador dependen de él.\n- Golf: hándicap (consultado en la RFEG en los casos del apartado 4, o introducido a mano) y barras elegidas.\n- Foto de perfil, si decides subirla.\n- Amistades: a quién envías o aceptas solicitudes de amistad.\n- Actividad y resultados: competiciones y partidas en las que participas, puntuaciones, tarjetas y estadísticas.\n- Seguridad: dispositivos desde los que entras (navegador y dirección IP) e intentos de inicio de sesión.\n- Ubicación: solo cuando la autorizas en el navegador (ver el apartado 5)."
     },
     "section3": {
       "title": "3. Para qué y con qué base legal",
@@ -132,7 +132,7 @@
     },
     "section2": {
       "title": "2. Objeto",
-      "content": "El Servicio es una aplicación web para organizar y jugar competiciones de golf amateur entre amigos (formato Ryder Cup, stroke play y partidas rápidas): inscripciones, equipos, emparejamientos, anotación de resultados, clasificaciones, mapas de los hoyos y consulta del hándicap.\n\nSu uso se rige además por los Términos de Servicio, la Política de Privacidad y la Política de Cookies, accesibles desde el pie de página y desde el perfil."
+      "content": "El Servicio es una aplicación web para organizar y jugar competiciones de golf amateur entre amigos (formato Ryder Cup, stroke play y partidas rápidas): inscripciones, equipos, emparejamientos, anotación de resultados, clasificaciones, mapas de los hoyos y consulta del hándicap en la RFEG para los jugadores de España: a petición del jugador, cuando un organizador lanza o programa la actualización y automáticamente al cierre de las inscripciones de una competición o, en las de formato Ryder, al nombrar a los capitanes, salvo que el organizador haya fijado un hándicap personalizado en esa inscripción.\n\nSu uso se rige además por los Términos de Servicio, la Política de Privacidad y la Política de Cookies, accesibles desde el pie de página y desde el perfil."
     },
     "section3": {
       "title": "3. Condiciones de uso",
@@ -152,7 +152,7 @@
       "sources": {
         "rfeg": {
           "name": "Real Federación Española de Golf (RFEG)",
-          "detail": "Datos de los campos federados (recorridos, barras, par, índices y valoraciones) y consulta del hándicap, que se hace solo a petición del usuario."
+          "detail": "Datos de los campos federados (recorridos, barras, par, índices y valoraciones) y consulta del hándicap de los jugadores de España: a petición del jugador, cuando un organizador lanza o programa la actualización y automáticamente al cierre de las inscripciones de una competición o, en las de formato Ryder, al nombrar a los capitanes, salvo que el organizador haya fijado un hándicap personalizado en esa inscripción."
         },
         "osm": {
           "name": "OpenStreetMap",

@@ -324,3 +324,29 @@ describe('qué se borra al cerrar sesión, línea a línea', () => {
     }
   });
 });
+
+// CodeRabbit (PR #922): el Aviso Legal y el resumen de datos de la Privacidad
+// daban a entender que la RFEG solo se consulta a petición del jugador. Los
+// casos son los de `privacy.section4`
+describe('cuándo se consulta la RFEG, igual en todos los textos', () => {
+  it.each([
+    ['es', es, [/a petición del jugador/i, /organizador/i, /cierr\w* (de )?las inscripciones/i, /capitanes/i, /España/, /personalizado/i], /solo a petición/i],
+    ['en', en, [/at the player's request/i, /organiser/i, /enrolment closes/i, /captains/i, /Spain/, /custom handicap/i], /only (happens )?at/i],
+  ])('%s: el Aviso Legal (objeto y fuente RFEG) da los mismos casos', (_i, textos, patrones, soloAPeticion) => {
+    for (const texto of [textos.legalNotice.section2.content, textos.legalNotice.section6.sources.rfeg.detail]) {
+      for (const patron of patrones) expect(texto).toMatch(patron);
+      expect(texto).not.toMatch(soloAPeticion);
+    }
+  });
+
+  it.each([
+    ['es', es, /a tu petición o introducido a mano/i, /apartado 4/, /a mano/],
+    ['en', en, /at your request or entered manually/i, /section 4/, /manually/],
+  ])('%s: el resumen de datos de la Privacidad remite al apartado 4 y mantiene el hándicap a mano', (_i, textos, viejo, remite, aMano) => {
+    const texto = textos.privacy.section2.content;
+
+    expect(texto).not.toMatch(viejo);
+    expect(texto).toMatch(remite);
+    expect(texto).toMatch(aMano);
+  });
+});
