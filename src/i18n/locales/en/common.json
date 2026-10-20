@@ -147,5 +147,19 @@
     "generic": "The operation could not be completed. Please try again."
   },
   "terminosPendientes": "You must accept the Terms and Conditions to continue.",
-  "terminosNoDisponible": "This is not available right now. Please try again later."
+  "terminosNoDisponible": "This is not available right now. Please try again later.",
+  "notFound": {
+    "title": "This page does not exist",
+    "message": "This address does not lead anywhere. The link may be mistyped or the page may no longer exist.",
+    "goToDashboard": "Go to dashboard",
+    "goHome": "Go to home",
+    "login": "Log in"
+  },
+  "unauthorized": {
+    "title": "Access denied",
+    "message": "You do not have permission to view this page. If you think this is a mistake, contact an administrator.",
+    "attempted": "You tried to access",
+    "goToDashboard": "Go to dashboard",
+    "goBack": "Go back"
+  }
 }
