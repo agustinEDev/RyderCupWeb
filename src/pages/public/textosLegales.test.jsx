@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import { readFileSync } from 'node:fs';
 import es from '../../i18n/locales/es/legal.json';
 import en from '../../i18n/locales/en/legal.json';
 
@@ -390,5 +391,111 @@ describe('prueba de aceptación de los Términos', () => {
     ['en', en, /proof of acceptance/i, /email/i],
   ])('%s (9): lo que se conserva tras el borrado incluye el email del momento de aceptar', (_i, textos, prueba, email) => {
     expect(linea(textos.privacy.section9.content, prueba)).toMatch(email);
+  });
+});
+
+// Revisión a fondo de la release (20 oct 2026)
+describe('revisión de la release', () => {
+  const linea = (texto, patron) => texto.split('\n').find((l) => patron.test(l)) ?? '';
+
+  // A2: la posición de la salida, cuando se confirma que se está en ella, viaja
+  // como muestra anónima para mejorar los mapas (backend: golf_course_hole_samples,
+  // sin usuario y solo con el día). Los reportes llevan puntos tocados en el
+  // mapa, no la posición
+  it.each([
+    ['es', es, [/salida/i, /muestra/i, /sin ningún dato de quién/i, /solo el día/i, /reportes/i, /no tu posición/i], /para dos cosas/i],
+    ['en', en, [/tee/i, /sample/i, /without any data on who/i, /only the day/i, /reports/i, /not your position/i], /for two things/i],
+  ])('A2 (%s): la ubicación, con su tercer uso, en el apartado 5', (_i, textos, patrones, dosCosas) => {
+    const texto = textos.privacy.section5.content;
+
+    for (const patron of patrones) expect(texto).toMatch(patron);
+    expect(texto).not.toMatch(dosCosas);
+  });
+
+  it.each([
+    ['es', es, /mejorar los mapas/i, [/6\.1\.a/, /6\.1\.f/, /anónim/i]],
+    ['en', en, /improve the maps/i, [/6\.1\.a/, /6\.1\.f/, /anonymous/i]],
+  ])('A2 (%s): su base legal en el apartado 3', (_i, textos, uso, patrones) => {
+    const l = linea(textos.privacy.section3.content, uso);
+
+    for (const patron of patrones) expect(l).toMatch(patron);
+  });
+
+  it.each([
+    ['es', es, /Ubicación/, /mapas/i],
+    ['en', en, /Location/, /maps/i],
+  ])('A2 (%s): y en los datos que tratamos (apartado 2)', (_i, textos, ubicacion, mapas) => {
+    expect(linea(textos.privacy.section2.content, ubicacion)).toMatch(mapas);
+  });
+
+  // A3: la desactivación conserva todo y la supresión es manual: sin automatismos
+  it.each([
+    ['es', es, [/desactiv/i, /un mes/i, /manualmente/i, /se borra entera|se borra por completo/i, /3 años/i], /desactivamos tu cuenta (\([^)]*\) )?y suprimimos/i],
+    ['en', en, [/deactivat/i, /one month/i, /manually/i, /deleted entirely/i, /3 years/i], /we deactivate (it|your account) (\([^)]*\) )?and erase/i],
+  ])('A3 (%s): la baja dice lo que se hace, en Privacidad §9 y Términos §8', (_i, textos, patrones, automatico) => {
+    for (const texto of [textos.privacy.section9.content, textos.terms.section8.content]) {
+      for (const patron of patrones.slice(0, 3)) expect(texto).toMatch(patron);
+      expect(texto).not.toMatch(automatico);
+    }
+    for (const patron of patrones.slice(3)) expect(textos.privacy.section9.content).toMatch(patron);
+  });
+
+  // A4: la RFEG no tiene licencia: se cita como fuente
+  it.each([
+    ['es', es, /conforme a sus licencias/i, /RFEG[^.]*fuente|fuente[^.]*RFEG/i],
+    ['en', en, /under their licen[cs]es/i, /RFEG[^.]*source|source[^.]*RFEG/i],
+  ])('A4 (%s): el Aviso Legal distingue las licencias de la cita de la RFEG', (_i, textos, licencias, fuente) => {
+    const texto = textos.legalNotice.section4.content;
+    const conLicencia = texto.split(/(?<=\.)\s/).find((f) => licencias.test(f)) ?? '';
+
+    expect(texto).toMatch(fuente);
+    expect(conLicencia).not.toMatch(/RFEG|campos|course data/i);
+  });
+
+  // B2: el formulario de contacto acaba como issue en GitHub
+  it.each([
+    ['es', es, /formulario de contacto/i, [/nombre/i, /correo|email/i, /mensaje/i], /GitHub/, /EE\. UU\./, /interés legítimo|consentimiento/i],
+    ['en', en, /contact form/i, [/name/i, /email/i, /message/i], /GitHub/, /US/, /legitimate interest|consent/i],
+  ])('B2 (%s): contacto en datos (§2), proveedores (§7) y base (§3)', (_i, textos, contacto, datos, github, eeuu, base) => {
+    const enDatos = linea(textos.privacy.section2.content, contacto);
+    for (const patron of datos) expect(enDatos).toMatch(patron);
+
+    const enProveedores = linea(textos.privacy.section7.content, github);
+    expect(enProveedores).toMatch(contacto);
+    expect(enProveedores).toMatch(eeuu);
+
+    expect(linea(textos.privacy.section3.content, contacto)).toMatch(base);
+  });
+
+  // Cookies §1: todas las claves de sessionStorage
+  it.each([
+    ['es', es, [/Google/, /arranque/i, /bucle/i, /recarg/i]],
+    ['en', en, [/Google/, /start-up/i, /loop/i, /reload/i]],
+  ])('Cookies (%s): la lista de sessionStorage está completa', (_i, textos, patrones) => {
+    const l = linea(textos.cookies.section1.content, /sessionStorage,/);
+
+    for (const patron of patrones) expect(l).toMatch(patron);
+  });
+});
+
+describe('un solo nombre para los Términos', () => {
+  const todos = (idioma) =>
+    ['auth', 'common', 'legal', 'profile'].map((ns) => readFileSync(`src/i18n/locales/${idioma}/${ns}.json`, 'utf8')).join(' ');
+
+  it.each([
+    ['es', /Términos de Servicio/i, 'Términos y condiciones'],
+    ['en', /Terms of Service/i, 'Terms and Conditions'],
+  ])('%s: «%s» no aparece; el nombre es el de la casilla', (idioma, viejo, nuevo) => {
+    const texto = todos(idioma);
+
+    expect(texto).not.toMatch(viejo);
+    expect(texto).toContain(nuevo);
+  });
+
+  it.each([
+    ['es', es],
+    ['en', en],
+  ])('%s: el título de los Términos usa ese nombre', (_i, textos) => {
+    expect(textos.terms.title).toMatch(/Términos y condiciones|Terms and Conditions/);
   });
 });
