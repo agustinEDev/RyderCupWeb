@@ -33,3 +33,6 @@ allow-dependencies-licenses:
   # AGPL-3.0: la acción que busca secretos en el CI. Corre en el runner y no se
   # distribuye con el frontend, así que su copyleft no alcanza a este código (#857).
   - pkg:githubactions/trufflesecurity/trufflehog
+  # UNLICENSED: este mismo frontend (todos los derechos reservados desde el
+  # 20 oct 2026). license-checker incluye el paquete raíz en su informe.
+  - pkg:npm/rydercup-web

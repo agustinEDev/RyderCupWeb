@@ -71,7 +71,7 @@
     "tournament-management"
   ],
   "author": "Agustín Estévez",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "overrides": {
     "minimatch": "^10.2.1"
   }
