@@ -93,7 +93,22 @@ const CountryAutocomplete = ({
     );
   }, [searchQuery, sortedCountries]);
 
-  const visibleCountries = matchingCountries.slice(0, MAX_VISIBLE_OPTIONS);
+  // Sin búsqueda, la ventana de 50 se centra en el país elegido. Empezando
+  // siempre por la A, todo lo que pase del puesto 50 (España es el 59) no se
+  // pintaba, y sin opción pintada no hay a qué desplazarse: se abría en
+  // Afganistán. Se pegan los bordes para que la ventana vaya siempre llena.
+  const selectedIndex = searchQuery.trim()
+    ? -1
+    : matchingCountries.findIndex(c => c.code === value);
+  const windowStart = selectedIndex < 0
+    ? 0
+    : Math.max(0, Math.min(
+      selectedIndex - Math.floor(MAX_VISIBLE_OPTIONS / 2),
+      matchingCountries.length - MAX_VISIBLE_OPTIONS
+    ));
+  const visibleCountries = matchingCountries.slice(windowStart, windowStart + MAX_VISIBLE_OPTIONS);
+  // Posición del elegido dentro de lo pintado: de ahí parten las flechas
+  const selectedVisibleIndex = selectedIndex < 0 ? -1 : selectedIndex - windowStart;
   const hiddenCount = matchingCountries.length - visibleCountries.length;
 
   useEffect(() => {
@@ -181,7 +196,10 @@ const CountryAutocomplete = ({
   const moveActive = (delta) => {
     if (visibleCountries.length === 0) return;
     setActiveIndex((prev) => {
-      const next = prev + delta;
+      // Sin nada resaltado, las flechas siguen desde el elegido, como el
+      // <select>. Al abrir no se resalta para que Enter no elija por nadie.
+      const from = prev < 0 ? selectedVisibleIndex : prev;
+      const next = from + delta;
       if (next < 0) return visibleCountries.length - 1;
       if (next >= visibleCountries.length) return 0;
       return next;
