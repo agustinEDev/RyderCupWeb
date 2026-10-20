@@ -32,6 +32,8 @@ vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loadin
 vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout }) }));
 vi.mock('../services/sesionCompartida', () => ({ anotaLaSesion: (...a) => anotaLaSesion(...a) }));
 vi.mock('../composition', () => ({ acceptTermsUseCase: { execute: (...a) => aceptar(...a) } }));
+const pantallaLista = vi.fn();
+vi.mock('../utils/cortinaDeArranque', () => ({ laPantallaEstaLista: (...a) => pantallaLista(...a) }));
 
 const { default: AcceptTerms } = await import('./AcceptTerms');
 
@@ -187,5 +189,14 @@ describe('AcceptTerms (F3)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'acceptTermsPage.logout' }));
 
     expect(logout).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AcceptTerms · la cortina del arranque (revisión, punto 9)', () => {
+  it('al montarse avisa de que está lista, como el panel', () => {
+    sesion.user = { id: 'u-1', terms_accepted: false };
+    abrir();
+
+    expect(pantallaLista).toHaveBeenCalled();
   });
 });

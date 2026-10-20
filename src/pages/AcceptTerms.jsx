@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +7,7 @@ import { acceptTermsUseCase } from '../composition';
 import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
+import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 
 const PANEL = '/dashboard';
 
@@ -59,6 +60,13 @@ const AcceptTerms = () => {
   const [errorCasilla, setErrorCasilla] = useState('');
   const [errorAlAceptar, setErrorAlAceptar] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  // Con los Términos pendientes, el arranque acaba aquí: se avisa a la cortina,
+  // como hace el panel, para que no se quede puesta hasta agotar su plazo. No
+  // hay nada más que esperar: esta pantalla no pide nada
+  useEffect(() => {
+    laPantallaEstaLista();
+  }, []);
 
   const destino = destinoDe(location);
   // Se llega desde un 403 del servidor (`api.js` pone `?from=`) y no desde el
