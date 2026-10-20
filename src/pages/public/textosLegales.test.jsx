@@ -202,6 +202,19 @@ describe('lo que pasa al pedir la baja (B1)', () => {
     for (const patron of patrones) expect(todo).toMatch(patron);
   });
 
+  // Cada texto lo dice por sí mismo: quien lee los Términos no tiene por qué
+  // leer la Política de Privacidad (una mutación lo demostró: borrar la
+  // desactivación de la Privacidad pasaba porque los Términos la decían)
+  it.each([
+    ['es', es, /desactiv/i, /se conservan/i],
+    ['en', en, /deactivat/i, /kept/i],
+  ])('%s: la Privacidad y los Términos dicen cada uno que se desactiva y qué se conserva', (_i, textos, desactiva, conserva) => {
+    for (const bloque of [textos.privacy.section9.content, textos.terms.section8.content]) {
+      expect(bloque).toMatch(desactiva);
+      expect(bloque).toMatch(conserva);
+    }
+  });
+
   it.each([
     ['es', es, /anonimiz/i, /eliminamos tus datos personales en el plazo de un mes/i],
     ['en', en, /anonymi[sz]/i, /erase your personal data within one month/i],
