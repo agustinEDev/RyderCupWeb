@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.48.0] - 2026-10-20
+
+Una release sin nada nuevo para el usuario: pone al día las dependencias que
+Dependabot tenía pendientes. Va con el backend **2.34.0**, que también solo
+actualiza dependencias.
+
+**Notas de despliegue.** Sin variables nuevas y sin cambios de contrato con el
+backend: el orden de siempre (backend, `/health`, frontend) no es crítico. Probada
+en el Kind con una batería en navegador a 360 y 1280 px: sin errores de
+JavaScript, sin claves de traducción crudas, sin scroll lateral y sin iconos
+vacíos. Tras desplegar, **comprobar en Sentry** que siguen llegando eventos
+(@sentry/react 11.0 → 11.8).
+
+### Changed
+
+- **Dependencias al día** (#912): react y react-dom 19.3.0 → 19.3.1,
+  @sentry/react 11.0.0 → 11.8.0, lucide-react 1.48.0 → 1.58.0, i18next 26.4.7,
+  react-i18next 17.0.19, uuid 14.0.3, vite 8.3.1 → 8.3.4, vitest y
+  @vitest/coverage-v8 5.0.5, @vitejs/plugin-react 6.1.2, @playwright/test
+  1.64.1, dependency-cruiser 18.6.0, dotenv 18.0.8, jsdom 30.1.3 y postcss
+  8.5.30.
+- **CI**: actions/setup-node 6 → 7 (#819) y trufflehog 3.97.9 → 3.99.2 (#857).
+  La licencia AGPL-3.0 de trufflehog entra como excepción de un solo paquete en
+  `.github/dependency-review-config.yml`: la acción corre en el runner y no se
+  distribuye con el frontend.
+
 ## [2.47.0] - 2026-10-19
 
 **El mapa del hoyo, mejor imagen y mejor para medir.** En Cataluña, País Vasco y
