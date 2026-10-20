@@ -584,4 +584,43 @@ describe('GolfCourse', () => {
       });
     });
   });
+
+  // La API manda de dónde salen los datos de cada campo (auditoría del 20 oct
+  // 2026, F1): los federados se citan, los dados de alta a mano no
+  describe('procedencia', () => {
+    it('F1: la normaliza desde la API', () => {
+      const campo = new GolfCourse({
+        ...validGolfCourseData,
+        provenance: { source: 'RFEG', external_id: '123', imported_at: '2026-10-01T00:00:00Z' },
+      });
+
+      expect(campo.provenance).toEqual({ source: 'RFEG', externalId: '123', importedAt: '2026-10-01T00:00:00Z' });
+      expect(campo.isFromRfeg()).toBe(true);
+    });
+
+    it.each([
+      ['MANUAL', { source: 'MANUAL', external_id: null, imported_at: null }],
+      ['un origen que no conocemos', { source: 'OTRO' }],
+      ['sin procedencia', undefined],
+      ['con procedencia nula', null],
+    ])('F2: %s no es de la RFEG', (_caso, provenance) => {
+      const campo = new GolfCourse({ ...validGolfCourseData, provenance });
+
+      expect(campo.isFromRfeg()).toBe(false);
+    });
+
+    it('F2: sin procedencia se queda en null, no en un objeto vacío', () => {
+      expect(new GolfCourse(validGolfCourseData).provenance).toBeNull();
+    });
+
+    it('toDTO la devuelve, y un campo reconstruido sigue siendo de la RFEG', () => {
+      const campo = new GolfCourse({
+        ...validGolfCourseData,
+        provenance: { source: 'RFEG', external_id: '123', imported_at: null },
+      });
+
+      expect(campo.toDTO().provenance).toEqual({ source: 'RFEG', external_id: '123', imported_at: null });
+      expect(new GolfCourse(campo.toDTO()).isFromRfeg()).toBe(true);
+    });
+  });
 });

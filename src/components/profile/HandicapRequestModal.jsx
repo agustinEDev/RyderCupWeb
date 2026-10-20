@@ -145,6 +145,8 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
               >
                 {isSubmitting ? t('edit.handicap.updatingFromRFEG') : t('handicapModal.fetchRfeg')}
               </button>
+              {/* De dónde sale el hándicap que se trae (auditoría legal, F4) */}
+              <p className="text-xs text-gray-500">{t('handicapSource.rfeg')}</p>
             </div>
           )}
 

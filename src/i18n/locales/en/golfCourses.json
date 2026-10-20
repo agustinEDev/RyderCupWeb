@@ -184,5 +184,11 @@
     "strokeIndex": "Index",
     "meters": "Metres",
     "total": "Total"
+  },
+  "source": {
+    "courseData": "Course data:",
+    "rfegName": "Royal Spanish Golf Federation (RFEG)",
+    "federatedData": "Federated course data:",
+    "rfegShort": "RFEG"
   }
 }

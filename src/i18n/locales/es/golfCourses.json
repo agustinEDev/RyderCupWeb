@@ -184,5 +184,11 @@
     "strokeIndex": "Índice",
     "meters": "Metros",
     "total": "Total"
+  },
+  "source": {
+    "courseData": "Datos del recorrido:",
+    "rfegName": "Real Federación Española de Golf (RFEG)",
+    "federatedData": "Datos de campos federados:",
+    "rfegShort": "RFEG"
   }
 }

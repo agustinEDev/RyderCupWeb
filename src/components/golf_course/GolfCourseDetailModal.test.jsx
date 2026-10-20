@@ -218,4 +218,29 @@ describe('GolfCourseDetailModal', () => {
       expect(screen.queryByText('5100')).toBeNull();
     });
   });
+
+  // Auditoría del 20 oct 2026: los datos de un campo federado son de la RFEG,
+  // y la ficha lo dice. Los dados de alta a mano no llevan la cita
+  describe('fuente de los datos', () => {
+    it('F1: un campo de la RFEG la cita con su enlace', () => {
+      abrir(campo({ provenance: { source: 'RFEG', external_id: '42', imported_at: null } }));
+
+      expect(screen.getByText('source.courseData')).toBeInTheDocument();
+      const enlace = screen.getByRole('link', { name: 'source.rfegName' });
+      expect(enlace).toHaveAttribute('href', 'https://www.rfegolf.es');
+      expect(enlace).toHaveAttribute('target', '_blank');
+      expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    });
+
+    it.each([
+      ['MANUAL', { source: 'MANUAL', external_id: null, imported_at: null }],
+      ['sin procedencia', undefined],
+      ['de origen desconocido', { source: 'OTRO' }],
+    ])('F2: %s, sin cita', (_caso, provenance) => {
+      abrir(campo({ provenance }));
+
+      expect(screen.queryByText('source.courseData')).toBeNull();
+      expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
+    });
+  });
 });

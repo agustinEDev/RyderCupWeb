@@ -437,6 +437,8 @@ const EditProfile = () => {
                     <p className="text-xs text-gray-500 mt-2">
                       {t('edit.handicap.rfegHelp')}
                     </p>
+                    {/* De dónde sale el hándicap que se trae (auditoría legal, F4) */}
+                    <p className="text-xs text-gray-500 mt-1">{t('handicapSource.rfeg')}</p>
                   </div>
                 ) : (
                   <div className="mt-4 pt-4 border-t border-gray-200">
