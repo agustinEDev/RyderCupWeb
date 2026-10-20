@@ -954,6 +954,41 @@ describe('SendInvitationModal', () => {
     });
   });
 
+  // QA del 20 oct: gemelo de AddFriendModal. La lista flotaba (`absolute`) y
+  // asomaba por debajo de la caja. jsdom no mide: se vigila el contrato de clases
+  describe('la lista de resultados cabe en el modal', () => {
+    const abrirLista = async () => {
+      onSearchUsers.mockResolvedValue([
+        { id: 'u1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', countryCode: 'ES' },
+      ]);
+      renderModal();
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'Jo' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+    };
+
+    it('A2: va dentro de la caja y ocupa su sitio, sin flotar sobre el borde', async () => {
+      await abrirLista();
+
+      const lista = screen.getByTestId('search-results-dropdown');
+      expect(screen.getByTestId('caja-enviar-invitacion')).toContainElement(lista);
+      expect(lista).not.toHaveClass('absolute');
+    });
+
+    it('A2b: con muchos resultados la lista se desplaza dentro, con su alto maximo', async () => {
+      await abrirLista();
+
+      expect(screen.getByTestId('search-results-dropdown')).toHaveClass('max-h-48', 'overflow-y-auto');
+    });
+
+    it('A2c: la caja nunca pasa del alto de la pantalla: se desplaza por dentro', () => {
+      renderModal();
+
+      expect(screen.getByTestId('caja-enviar-invitacion')).toHaveClass('max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
+    });
+  });
+
   // Revisión de la PR de los modales (4 oct 2026): con el modal sobre
   // ModalShell, el Escape que cerraba la lista de resultados cerraba también
   // el modal entero, y se perdía la búsqueda y el mensaje

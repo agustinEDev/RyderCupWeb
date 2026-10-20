@@ -52,6 +52,33 @@ describe('AddFriendModal', () => {
     vi.clearAllMocks();
   });
 
+  // QA del 20 oct: la lista flotaba (`absolute`) y no ocupaba sitio, asi que
+  // asomaba por debajo de la caja. jsdom no mide: se vigila el contrato de
+  // clases, y que de verdad quepa se mira en el navegador a 360 px
+  describe('la lista de resultados cabe en el modal', () => {
+    it('A1: va dentro de la caja y ocupa su sitio, sin flotar sobre el borde', async () => {
+      pintar();
+      await buscar();
+
+      const lista = screen.getByTestId('search-results-dropdown');
+      expect(screen.getByRole('dialog')).toContainElement(lista);
+      expect(lista).not.toHaveClass('absolute');
+    });
+
+    it('A1b: con muchos resultados la lista se desplaza dentro, con su alto maximo', async () => {
+      pintar();
+      await buscar();
+
+      expect(screen.getByTestId('search-results-dropdown')).toHaveClass('max-h-48', 'overflow-y-auto');
+    });
+
+    it('A1c: la caja nunca pasa del alto de la pantalla: se desplaza por dentro', () => {
+      pintar();
+
+      expect(screen.getByRole('dialog')).toHaveClass('max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
+    });
+  });
+
   it('opens the profile of the player you pick', async () => {
     const { onClose } = pintar();
     await buscar();
