@@ -243,7 +243,9 @@ const MyQuickMatchesPage = () => {
       DETALLES_A_LA_VEZ,
       async (qm) => {
         const result = await loadResult(qm);
-        if (cancelled || !result) return;
+        if (cancelled) return;
+        // También el `null` de una que falla: si en una recarga falla la que
+        // ya tenía resultado, lo pierde, como antes; no se queda el viejo
         setResultsByMatchId((prev) => ({ ...prev, [qm.id]: result }));
       },
       { sigue: () => !cancelled }

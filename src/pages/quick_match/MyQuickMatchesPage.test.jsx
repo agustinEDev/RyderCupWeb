@@ -909,6 +909,8 @@ describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabl
  *   Q3 llega tarde la de una carga vieja   | no pisa la de la carga nueva
  *   Q4 una falla                           | las demás siguen; esa se queda
  *                                          | sin resultado, como hoy
+ *   Q4 falla en una recarga                | la que tenía resultado lo pierde,
+ *                                          | como hoy (no queda el viejo)
  */
 describe('MyQuickMatchesPage · resultados de cinco en cinco (FE #418)', () => {
   const terminadas = (n) =>
@@ -1036,5 +1038,24 @@ describe('MyQuickMatchesPage · resultados de cinco en cinco (FE #418)', () => {
     expect(await screen.findByTestId('quick-match-result-qm-6')).toHaveTextContent('-1');
     expect(screen.getByTestId('quick-match-result-qm-2')).toBeInTheDocument();
     expect(screen.queryByTestId('quick-match-result-qm-1')).not.toBeInTheDocument();
+  });
+
+  it('Q4 si falla en una recarga, la que tenía resultado lo pierde, como hoy', async () => {
+    mockListMyQuickMatches.mockResolvedValue(lista(3));
+    mockHideQuickMatch.mockResolvedValue({ id: 'qm-3' });
+
+    renderPage();
+    await llamadasA(3);
+    await act(async () => { llamadas[0].resolve(detalle(3)); });
+    expect(await screen.findByTestId('quick-match-result-qm-1')).toHaveTextContent('-1');
+
+    // Quitar una vuelve a cargar; esta vez el detalle de qm-1 falla
+    fireEvent.click(screen.getByTestId('quick-match-hide-qm-3'));
+    fireEvent.click(await screen.findByRole('button', { name: 'history.deleteConfirm' }));
+    await llamadasA(5);
+    const nuevaDeQm1 = llamadas.slice(3).find((l) => l.id === 'qm-1');
+    await act(async () => { nuevaDeQm1.reject(new Error('caída')); });
+
+    await waitFor(() => expect(screen.queryByTestId('quick-match-result-qm-1')).not.toBeInTheDocument());
   });
 });
