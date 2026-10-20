@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useAuthContext } from '../../hooks/useAuthContext';
 import { ESTADO_DE_LA_SESION, estadoDeLaSesion } from '../../services/sesionEnPaginaPublica';
+import { clearUserContext } from '../../utils/sentryHelpers';
 
 /**
  * «Volver» de los documentos legales (20 oct 2026). La aplicación instalada no
@@ -15,7 +16,8 @@ import { ESTADO_DE_LA_SESION, estadoDeLaSesion } from '../../services/sesionEnPa
  *   se pregunta al backend AL PULSAR: con sesión al panel, si no a la portada.
  *   Si el backend dice que la sesión está muerta, además se tira el `user`
  *   guardado, como en la pantalla de acceso: si no, cada pulsación volvería a
- *   la red.
+ *   la red. Con el dispositivo revocado se limpia como en su cierre
+ *   (`handleDeviceRevocationLogout`), pero sin su salida a /login.
  */
 const VolverDeLoLegal = () => {
   const { t } = useTranslation('legal');
@@ -35,7 +37,12 @@ const VolverDeLoLegal = () => {
 
     setComprobando(true);
     const estado = await estadoDeLaSesion();
-    if (estado === ESTADO_DE_LA_SESION.MUERTA) clearAuth();
+    if (estado === ESTADO_DE_LA_SESION.MUERTA || estado === ESTADO_DE_LA_SESION.REVOCADA) {
+      // Ya olvida lo guardado para anotar sin cobertura y el hándicap pendiente
+      clearAuth();
+    }
+    // Lo único que el cierre por revocación limpia y `clearAuth` no
+    if (estado === ESTADO_DE_LA_SESION.REVOCADA) clearUserContext();
     navigate(estado === ESTADO_DE_LA_SESION.CONFIRMADA ? '/dashboard' : '/', { replace: true });
   };
 

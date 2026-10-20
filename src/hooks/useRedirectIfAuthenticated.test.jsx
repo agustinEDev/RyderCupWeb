@@ -334,6 +334,83 @@ describe('useRedirectIfAuthenticated', () => {
       });
     });
 
+    // Revisión del 21 oct: al pasar a `sondaDeSesion` se perdió el try/catch de
+    // fuera. Si fallaba algo al ENTRAR, ya con la comprobación dada por cerrada,
+    // la promesa se rechazaba sin nadie que la recogiera y el formulario se
+    // quedaba oculto para siempre
+    describe('si falla algo al entrar con la sesión confirmada', () => {
+      it('E1: si setUser lanza, enseña el formulario como ante un tropiezo', async () => {
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+        setUser.mockImplementationOnce(() => {
+          throw new Error('setUser roto');
+        });
+
+        const { result } = renderHook(() => useRedirectIfAuthenticated());
+
+        await waitFor(() => expect(result.current).toBe(false));
+        expect(navigate).not.toHaveBeenCalled();
+        expect(clearAuth).not.toHaveBeenCalled();
+        expect(console.warn).toHaveBeenCalledWith('[auth] no se pudo comprobar la sesión:', expect.any(Error));
+      });
+
+      it('E2: con entrarSinRed entra con la sesión guardada, como cuando no se pudo preguntar', async () => {
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+        setUser.mockImplementationOnce(() => {
+          throw new Error('setUser roto');
+        });
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+        expect(clearAuth).not.toHaveBeenCalled();
+      });
+
+      it('E3: si navigate lanza también al reintentar, acaba enseñando el formulario', async () => {
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+        navigate.mockImplementation(() => {
+          throw new Error('navigate roto');
+        });
+
+        const { result } = renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(result.current).toBe(false));
+        expect(navigate).toHaveBeenCalledTimes(2);
+        navigate.mockReset();
+      });
+
+      it('E4: si navigate lanza sin entrarSinRed, enseña el formulario', async () => {
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+        navigate.mockImplementationOnce(() => {
+          throw new Error('navigate roto');
+        });
+
+        const { result } = renderHook(() => useRedirectIfAuthenticated());
+
+        await waitFor(() => expect(result.current).toBe(false));
+        expect(navigate).toHaveBeenCalledTimes(1);
+      });
+
+      it('E5: con la página ya desmontada, un fallo no entra por ella', async () => {
+        // El aviso de revocación se da aunque la página se haya ido; si lanza,
+        // no hay formulario que enseñar ni a dónde llevar a nadie
+        let contesta;
+        globalThis.fetch.mockReturnValue(new Promise((r) => { contesta = r; }));
+        isDeviceRevoked.mockReturnValue(true);
+        handleDeviceRevocationLogout.mockImplementationOnce(() => {
+          throw new Error('aviso roto');
+        });
+
+        const { unmount } = renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+        unmount();
+        await act(async () => {
+          contesta(errorResponse(401));
+        });
+
+        expect(handleDeviceRevocationLogout).toHaveBeenCalledTimes(1);
+        expect(navigate).not.toHaveBeenCalled();
+      });
+    });
+
     it('avisa de la revocación del dispositivo en vez de dejar un formulario mudo', async () => {
       globalThis.fetch.mockResolvedValue(errorResponse(401));
       isDeviceRevoked.mockReturnValue(true);

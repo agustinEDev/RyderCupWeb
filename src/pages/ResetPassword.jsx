@@ -26,7 +26,7 @@ import {
  * 2. Pre-validación automática del token (useEffect)
  * 3. Si token válido: muestra formulario
  * 4. Si token inválido/expirado: muestra error y link a /forgot-password
- *    Si no se pudo comprobar (sin conexión, 429, 5xx): «Reintentar» (FE #785);
+ *    Si no se pudo comprobar (sin conexión, 408, 429, 5xx): «Reintentar» (FE #785);
  *    otro 4xx es un enlace malo, como el valid:false
  * 5. Usuario ingresa nueva contraseña (2 inputs: nueva + confirmar)
  * 6. Validación OWASP: 12+ chars, complejidad
@@ -57,7 +57,7 @@ const ResetPassword = () => {
   }, []);
 
   // Estados del token
-  // 'unchecked': no hubo respuesta de la API (sin conexión, 429, 5xx), así que
+  // 'unchecked': no hubo respuesta de la API (sin conexión, 408, 429, 5xx), así que
   // no se sabe si el enlace vale; se ofrece reintentar, no pedir otro (FE #785)
   const [tokenState, setTokenState] = useState('validating'); // 'validating' | 'valid' | 'invalid' | 'unchecked'
   const [tokenMessage, setTokenMessage] = useState('');
@@ -113,13 +113,17 @@ const ResetPassword = () => {
         }
       } catch (error) {
         // Un token inválido llega como valid:false. Lo que llega aquí sin
-        // respuesta (sin conexión, sin status), con un 429 o con un 5xx es que
+        // respuesta (sin conexión, sin status), con un 408, un 429 o un 5xx es que
         // no se ha podido comprobar, y el enlace puede estar bien (FE #785).
         // Cualquier otro 4xx no se arregla reintentando: es un enlace malo
         console.error('Token validation error:', error);
         const status = error?.status;
         const reintentable =
-          esFalloDeRed(error) || typeof status !== 'number' || status === 429 || status >= 500;
+          esFalloDeRed(error) ||
+          typeof status !== 'number' ||
+          status === 408 ||
+          status === 429 ||
+          status >= 500;
         if (!reintentable) {
           setTokenState('invalid');
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));

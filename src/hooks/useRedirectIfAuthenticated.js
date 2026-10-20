@@ -73,6 +73,9 @@ export const useRedirectIfAuthenticated = ({
 
     let cancelled = false;
     let settled = false;
+    // Confirmada la sesión, `settled` ya está arriba mientras se entra: esto
+    // distingue un fallo AL ENTRAR de una respuesta que llega tras el plazo
+    let entrando = false;
     const controller = new AbortController();
 
     let deadline;
@@ -157,6 +160,7 @@ export const useRedirectIfAuthenticated = ({
       }
 
       settled = true;
+      entrando = true;
       clearTimeout(deadline);
       setUser(currentUser);
       // DESPUES de `setUser`, y el orden importa: `setUser` invalida la
@@ -174,7 +178,19 @@ export const useRedirectIfAuthenticated = ({
       // bajarlo pintaría el formulario un instante
     };
 
-    verifySession();
+    // Revisión del 21 oct: si algo falla al entrar —`setUser`, `anotaLaSesion`,
+    // `navigate`—, la promesa se rechazaba sin nadie que la recogiera y el
+    // formulario se quedaba oculto para siempre. Se trata como un tropiezo, y
+    // si el reintento de `couldNotAsk` también falla, al menos el formulario
+    verifySession().catch((error) => {
+      if (cancelled || (settled && !entrando)) return;
+      try {
+        couldNotAsk(error);
+      } catch (otro) {
+        console.warn('[auth] no se pudo entrar con la sesión guardada:', otro);
+        showForm();
+      }
+    });
 
     return () => {
       cancelled = true;

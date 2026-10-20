@@ -25,6 +25,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   R4  500                            | «no se ha podido comprobar» + Reintentar
  *   R4b un error sin status            | igual que R4
  *   R6  404 / 422 / 400 (otro 4xx)     | «enlace no válido» y pedir otro: reintentar no lo arregla
+ *   R6d 408                            | como R4: se agotó el tiempo, el enlace puede estar bien
  *   R5  Reintentar y ahora valid:true  | el MISMO token (del historial), «validando» y el formulario
  *   R5b Reintentar y ahora un 429      | el aviso del 429
  *   R5c Reintentar y ahora valid:false | «enlace no válido» y pedir otro
@@ -221,6 +222,17 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
 
     expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    noDiceQueElEnlaceEsteMal();
+  });
+
+  // Revisión del 21 oct: un 408 es que no dio tiempo a contestar, no un enlace malo
+  it('R6d: un 408 es «no se ha podido comprobar» y ofrece reintentar', async () => {
+    repositorio.validateResetToken.mockRejectedValue(conEstado(408, 'Request Timeout'));
+    abrir('a'.repeat(48));
+
+    expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    expect(screen.queryByText('Request Timeout')).toBeNull();
     noDiceQueElEnlaceEsteMal();
   });
 

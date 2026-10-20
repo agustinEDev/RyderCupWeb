@@ -88,7 +88,8 @@
     "in": "VUELTA",
     "total": "TOTAL",
     "standing": "Marcador",
-    "playingHandicap": "Hcp de juego {{value}}"
+    "playingHandicap": "Hcp de juego {{value}}",
+    "playingHandicapShort": "HCP {{value}}"
   },
   "leaderboard": {
     "title": "Clasificación",

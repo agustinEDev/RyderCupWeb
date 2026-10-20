@@ -19,6 +19,10 @@ vi.mock('../../services/sesionCompartida', () => ({
   anotaLaSesion: vi.fn(),
 }));
 
+vi.mock('../../utils/sentryHelpers', () => ({
+  clearUserContext: vi.fn(),
+}));
+
 // Como el de verdad en lo que aqui importa: tira el `user` guardado
 const clearAuth = vi.fn();
 vi.mock('../../hooks/useAuthContext', () => ({
@@ -27,6 +31,7 @@ vi.mock('../../hooks/useAuthContext', () => ({
 
 const { refreshAccessToken, fetchWithTokenRefresh } = await import('../../utils/tokenRefreshInterceptor');
 const { anotaLaSesion } = await import('../../services/sesionCompartida');
+const { clearUserContext } = await import('../../utils/sentryHelpers');
 const { default: VolverDeLoLegal } = await import('./VolverDeLoLegal');
 const { TOPE_DE_LA_COMPROBACION_MS } = await import('../../services/sesionEnPaginaPublica');
 
@@ -91,6 +96,7 @@ beforeEach(() => {
   anotaLaSesion.mockReset();
   fetchWithTokenRefresh.mockReset();
   clearAuth.mockReset();
+  clearUserContext.mockReset();
   clearAuth.mockImplementation(() => {
     delete almacen.user;
   });
@@ -104,7 +110,9 @@ afterEach(() => {
 });
 
 // Lo que React Router deja en `history.state`: `idx` es la posicion dentro de
-// la aplicacion, 0 en su primera entrada
+// la aplicacion, 0 en su primera entrada. MemoryRouter guarda su historial en
+// memoria y NO escribe `history.state.idx`, así que el test lo pone a mano para
+// recorrer esa rama; en la aplicación lo escribe el BrowserRouter de App.jsx
 const enLaPosicion = (idx) => window.history.replaceState({ usr: null, key: 'k', idx }, '');
 
 describe('L1 · el botón', () => {
@@ -215,6 +223,8 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     // Como en la pantalla de acceso: el `user` guardado es resto de una sesion
     // muerta, y sin tirarlo cada pulsacion volveria a la red
     expect(clearAuth).toHaveBeenCalledTimes(1);
+    // Lo de Sentry es solo del dispositivo revocado
+    expect(clearUserContext).not.toHaveBeenCalled();
   });
 
   it('L3e: si tras refrescar sigue el 401, a la portada', async () => {
@@ -259,6 +269,23 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     expect(refreshAccessToken).not.toHaveBeenCalled();
     expect(clearAuth).toHaveBeenCalledTimes(1);
     expect(anotaLaSesion).not.toHaveBeenCalled();
+  });
+
+  it('L3e4: con el dispositivo revocado limpia como su cierre, pero sin mandar a /login', async () => {
+    conUsuarioGuardado();
+    fetchFalso.mockResolvedValueOnce(
+      respuesta(401, { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' })
+    );
+    abrir();
+
+    await pulsar();
+
+    // Lo que `handleDeviceRevocationLogout` hace además de lo de `clearAuth`
+    expect(clearUserContext).toHaveBeenCalledTimes(1);
+    // Y no su salida: ni la marca que la evita repetir ni la recarga a /login
+    expect(almacen.device_revocation_handled).toBeUndefined();
+    expect(globalThis.location.pathname).not.toBe('/login');
+    expect(screen.getByText('portada')).toBeInTheDocument();
   });
 
   it('L3f: sin red no se sabe, y en la duda a la portada', async () => {

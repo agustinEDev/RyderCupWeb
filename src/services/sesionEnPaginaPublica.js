@@ -23,13 +23,16 @@ export const TOPE_DE_LA_COMPROBACION_MS = 5000;
 
 /**
  * - `confirmada`: el backend dice que sí (y queda anotada para el panel).
- * - `muerta`: el backend dice que no —rechazada o dispositivo revocado—, así
- *   que el `user` guardado es resto de una sesión anterior.
+ * - `muerta`: el backend dice que no, así que el `user` guardado es resto de
+ *   una sesión anterior.
+ * - `revocada`: también un «no», pero porque se revocó este dispositivo: quien
+ *   llama limpia además lo que limpia el cierre por revocación.
  * - `no-sabida`: no hay nada guardado, o no se pudo preguntar a tiempo.
  */
 export const ESTADO_DE_LA_SESION = Object.freeze({
   CONFIRMADA: 'confirmada',
   MUERTA: 'muerta',
+  REVOCADA: 'revocada',
   NO_SABIDA: 'no-sabida',
 });
 
@@ -42,7 +45,7 @@ const hayUsuarioGuardado = () => {
 };
 
 /**
- * @returns {Promise<'confirmada'|'muerta'|'no-sabida'>} Qué hacer con cada uno
+ * @returns {Promise<'confirmada'|'muerta'|'revocada'|'no-sabida'>} Qué hacer con cada uno
  *   lo decide quien llama; en la duda, a la portada.
  */
 export const estadoDeLaSesion = async () => {
@@ -66,9 +69,8 @@ export const estadoDeLaSesion = async () => {
       // Tarde no manda: la página ya se fue a la portada
       if (vencido) return ESTADO_DE_LA_SESION.NO_SABIDA;
 
-      if (resultado.estado === 'rechazada' || resultado.estado === 'revocada') {
-        return ESTADO_DE_LA_SESION.MUERTA;
-      }
+      if (resultado.estado === 'revocada') return ESTADO_DE_LA_SESION.REVOCADA;
+      if (resultado.estado === 'rechazada') return ESTADO_DE_LA_SESION.MUERTA;
       if (resultado.estado !== 'ok') return ESTADO_DE_LA_SESION.NO_SABIDA;
 
       // Ya se ha preguntado: el panel no tiene por qué volver a hacerlo

@@ -109,7 +109,10 @@ const CountryAutocomplete = ({
   const visibleCountries = matchingCountries.slice(windowStart, windowStart + MAX_VISIBLE_OPTIONS);
   // Posición del elegido dentro de lo pintado: de ahí parten las flechas
   const selectedVisibleIndex = selectedIndex < 0 ? -1 : selectedIndex - windowStart;
-  const hiddenCount = matchingCountries.length - visibleCountries.length;
+  // Centrada en el elegido, la ventana deja países por encima a los que no se
+  // llega desplazando: se avisa arriba de esos y abajo solo de los de después
+  const hiddenBeforeCount = windowStart;
+  const hiddenCount = matchingCountries.length - windowStart - visibleCountries.length;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -340,6 +343,19 @@ const CountryAutocomplete = ({
               />
             </div>
           </div>
+
+          {hiddenBeforeCount > 0 && (
+            <p
+              // Igual que el de abajo: un aviso sobre la lista, fuera del listbox
+              className="px-3 py-2 border-b border-gray-100 text-xs text-gray-500 text-center"
+              data-testid="country-autocomplete-earlier"
+            >
+              {t('countrySelect.earlierResults', {
+                defaultValue: '{{count}} before — type to find them',
+                count: hiddenBeforeCount,
+              })}
+            </p>
+          )}
 
           {/* Los botones cuelgan directos del listbox. Con <ul>/<li> de por
               medio, los <li> quedaban entre el role="listbox" y las

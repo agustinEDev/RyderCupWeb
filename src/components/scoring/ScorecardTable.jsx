@@ -62,12 +62,15 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // Va en la línea de su nombre y no en una propia: con otra línea la tarjeta
   // crecía. En el móvil, si no cabe, se corta el nombre y el valor se queda.
   // En foursomes cada miembro lleva el suyo, no el del bando.
+  // A la vista «HCP 12»: «Hcp de juego 12» partía en dos líneas la cabecera de
+  // la pareja en el móvil y ensanchaba la columna del nombre en el ordenador.
+  // El lector de pantalla oye el largo, que «HCP» deletreado no dice nada.
   const jugadorConHandicap = (p, cortaElNombre) => {
     const valor = formatoDeHandicapDeJuego(p.playingHandicap);
     return (
       <span
         data-testid={`jugador-${p.userId}`}
-        className={cortaElNombre ? 'inline-flex max-w-full items-baseline align-bottom' : undefined}
+        className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
       >
         <span className={cortaElNombre ? 'min-w-0 truncate' : undefined}>{p.userName}</span>
         {valor !== null && (
@@ -75,7 +78,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             data-testid={`hcp-de-juego-${p.userId}`}
             className="ml-1 shrink-0 whitespace-nowrap text-[10px] font-normal text-gray-500"
           >
-            {t('scorecard.playingHandicap', { value: valor })}
+            <span aria-hidden="true">{t('scorecard.playingHandicapShort', { value: valor })}</span>
+            <span className="sr-only">{t('scorecard.playingHandicap', { value: valor })}</span>
           </span>
         )}
       </span>
@@ -85,7 +89,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   const nombresConHandicap = (row, cortaElNombre = false) =>
     row.miembros.map((p, i) => (
       <Fragment key={p.userId}>
-        {i > 0 && ' / '}
+        {i > 0 && (cortaElNombre ? <span className="mx-1 shrink-0">/</span> : ' / ')}
         {jugadorConHandicap(p, cortaElNombre)}
       </Fragment>
     ));
@@ -245,7 +249,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
         conResultado
         cabecera={
           <>
-            <p className="text-sm font-bold text-gray-900 break-words">{nombresConHandicap(row, true)}</p>
+            {/* Una sola línea aunque sea la pareja de foursomes: se cortan los
+                nombres, no se parte la cabecera (la tarjeta crecía) */}
+            <p className="flex min-w-0 flex-nowrap items-baseline whitespace-nowrap text-sm font-bold text-gray-900">
+              {nombresConHandicap(row, true)}
+            </p>
             {nombreDelEquipo && <p className="text-[11px] text-gray-500">{nombreDelEquipo}</p>}
           </>
         }

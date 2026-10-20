@@ -133,7 +133,9 @@
     "empty": "No hay países disponibles",
     "clear": "Quitar el país elegido",
     "moreResults_one": "1 país más — sigue escribiendo para afinar",
-    "moreResults_other": "{{count}} países más — sigue escribiendo para afinar"
+    "moreResults_other": "{{count}} países más — sigue escribiendo para afinar",
+    "earlierResults_one": "1 país antes — escribe para buscarlo",
+    "earlierResults_other": "{{count}} países antes — escribe para buscarlos"
   },
   "brandMarkAlt": "Logo de RyderCupFriends",
   "demasiadasPeticiones": "Demasiados intentos seguidos. Espera un minuto y vuelve a intentarlo.",

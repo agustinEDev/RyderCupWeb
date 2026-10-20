@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import ScorecardTable from './ScorecardTable';
 
 vi.mock('react-i18next', () => ({
@@ -484,7 +484,10 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
  * línea la tarjeta crecía.
  */
 describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () => {
-  const hcp = (valor) => `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;
+  // Corto a la vista («HCP 12»): «Hcp de juego 12» ensanchaba la columna del
+  // nombre en el ordenador. El lector de pantalla oye el largo.
+  const hcp = (valor) => `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
+  const hcpLargo = (valor) => `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;
   const conHandicap = [
     { userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: -2 },
     { userId: 'u2', userName: 'Player B', team: 'B', playingHandicap: 14 },
@@ -495,6 +498,14 @@ describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () =>
 
     expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(hcp('+2'));
     expect(screen.getAllByTestId('hcp-de-juego-u2')[0]).toHaveTextContent(hcp('14'));
+  });
+
+  it('T1: a la vista la etiqueta corta; el lector de pantalla oye la larga', () => {
+    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+
+    const valor = screen.getAllByTestId('hcp-de-juego-u1')[0];
+    expect(within(valor).getByText(hcp('+2'))).toHaveAttribute('aria-hidden', 'true');
+    expect(within(valor).getByText(hcpLargo('+2')).className).toMatch(/\bsr-only\b/);
   });
 
   it('T1: el cero también se dice', () => {

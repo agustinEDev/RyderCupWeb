@@ -18,7 +18,13 @@ const i18nState = vi.hoisted(() => ({ language: 'es' }));
 // nombres en inglés
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, fallback) => (typeof fallback === 'string' ? fallback : key),
+    // Con opciones, su defaultValue con {{count}} ya sustituido: los avisos de
+    // «N países más / antes» se comprueban por la cifra que dicen
+    t: (key, fallback) => {
+      if (typeof fallback === 'string') return fallback;
+      if (fallback?.defaultValue) return fallback.defaultValue.replace('{{count}}', fallback.count);
+      return key;
+    },
     i18n: { language: i18nState.language },
   }),
 }));
@@ -680,6 +686,80 @@ describe('CountryAutocomplete con el catálogo real, más largo que el tope', ()
     press('ArrowDown');
 
     expect(search().getAttribute('aria-activedescendant')).toBe(primero.id);
+  });
+
+  // Centrada en el elegido, la ventana deja países por ENCIMA a los que no se
+  // llega desplazando: se avisa también arriba, y abajo solo cuentan los de
+  // después. España es el 59 (desde 0): ventana del 34 al 83 de 200.
+  const avisoDeAntes = () => screen.queryByTestId('country-autocomplete-earlier');
+  const avisoDeDespues = () => screen.queryByTestId('country-autocomplete-more');
+
+  it('con España elegida avisa arriba de los 34 países que quedan antes', () => {
+    renderCatalogo({ value: 'ES' });
+    open();
+
+    expect(avisoDeAntes()).toHaveTextContent(/^34 before — type to find them$/);
+    expect(visibleNames()[0]).toBe([...CATALOGO]
+      .sort((a, b) => a.name_es.localeCompare(b.name_es, 'es'))[34].name_es);
+  });
+
+  it('con España elegida el aviso de abajo cuenta solo los de después', () => {
+    renderCatalogo({ value: 'ES' });
+    open();
+
+    // 200 - 34 antes - 50 a la vista
+    expect(avisoDeDespues()).toHaveTextContent(/^116 more — keep typing to narrow it down$/);
+  });
+
+  it('el aviso de antes va encima de la lista y fuera del listbox', () => {
+    renderCatalogo({ value: 'ES' });
+    open();
+
+    const listbox = screen.getByRole('listbox');
+    expect(listbox.contains(avisoDeAntes())).toBe(false);
+    expect(avisoDeAntes().compareDocumentPosition(listbox) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('con el último elegido avisa arriba de todos los de antes y abajo de nada', () => {
+    renderCatalogo({ value: 'ZW' });
+    open();
+
+    expect(avisoDeAntes()).toHaveTextContent(/^150 before/);
+    expect(avisoDeDespues()).not.toBeInTheDocument();
+  });
+
+  it('sin nada antes de la ventana no hay aviso arriba', () => {
+    for (const code of ['DE', '']) {
+      const { unmount } = renderCatalogo({ value: code });
+      open();
+
+      expect(avisoDeAntes()).not.toBeInTheDocument();
+      expect(avisoDeDespues()).toHaveTextContent(/^150 more/);
+      unmount();
+    }
+  });
+
+  it('con un solo país antes de la ventana también se avisa', () => {
+    // El 27.º centra la ventana en el 1: queda fuera justo el primero
+    const setenta = Array.from({ length: 70 }, (_, i) => {
+      const n = i.toString().padStart(2, '0');
+      return { code: `X${n}`, name_en: `Country ${n}`, name_es: `País ${n}` };
+    });
+    render(<CountryAutocomplete countries={setenta} value="X26" onChange={vi.fn()} />);
+    open();
+
+    expect(visibleNames()[0]).toBe('País 01');
+    expect(avisoDeAntes()).toHaveTextContent(/^1 before/);
+    expect(avisoDeDespues()).toHaveTextContent(/^19 more/);
+  });
+
+  it('al buscar no hay aviso arriba, aunque haya elegido', () => {
+    renderCatalogo({ value: 'ES' });
+    open();
+    type('a');
+
+    expect(avisoDeAntes()).not.toBeInTheDocument();
+    expect(avisoDeDespues()).toHaveTextContent(/^128 more/);
   });
 
   it('al borrar la búsqueda vuelve a enseñar el elegido', () => {
