@@ -45,7 +45,7 @@ class GolfCourse {
       : null;
 
     // De dónde salen los datos del campo (`RFEG`, `MANUAL`...). El backend la
-    // manda siempre en la ficha; en los listados todavía no viaja, y entonces
+    // manda en la ficha y en los listados. Si falta —una respuesta antigua—,
     // queda en null, que se lee como «no lo sabemos», nunca como «es manual».
     const procedencia = data.provenance ?? null;
     this.provenance = procedencia
