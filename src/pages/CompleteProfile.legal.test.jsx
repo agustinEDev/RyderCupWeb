@@ -252,8 +252,9 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
   });
 });
 
-// Revisión (punto 3): si los Términos ya están aceptados —por ejemplo, quien se
-// registró con el formulario y llega aquí—, no se vuelve a llamar a accept-terms
+// Revisión (punto 3 y release): si los Términos ya están aceptados —por ejemplo,
+// quien se registró con el formulario y llega aquí—, ni se pinta la casilla ni
+// se exige, ni se vuelve a llamar a accept-terms
 describe('CompleteProfile · con los Términos ya aceptados', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -262,25 +263,51 @@ describe('CompleteProfile · con los Términos ya aceptados', () => {
     actualizarPerfil.mockResolvedValue({});
   });
 
-  it('guardar va directo al perfil, sin accept-terms', async () => {
+  it('no pinta la casilla', () => {
+    abrir();
+
+    expect(screen.queryByRole('checkbox', { name: /register\.acceptTerms/ })).toBeNull();
+  });
+
+  it('guardar va directo al perfil, sin casilla ni accept-terms', async () => {
     abrir();
     fireEvent.change(screen.getByLabelText('google.completeProfile.genderLabel'), { target: { name: 'gender', value: 'MALE' } });
-    fireEvent.click(casilla());
 
     guardar();
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(actualizarPerfil).toHaveBeenCalledTimes(1);
     expect(aceptarTerminos).not.toHaveBeenCalled();
+    expect(screen.queryByText('google.completeProfile.acceptTermsRequired')).toBeNull();
   });
 
-  it('omitir entra sin accept-terms', async () => {
+  it('omitir entra sin casilla ni accept-terms', async () => {
     abrir();
-    fireEvent.click(casilla());
 
     omitir();
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(aceptarTerminos).not.toHaveBeenCalled();
+  });
+});
+
+// Revisión M2: al aceptar se olvida la ruta apuntada contra los bucles
+describe('CompleteProfile · la marca contra los bucles', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sesion.user = { id: 'u-1', terms_accepted: false };
+    refetch.mockResolvedValue(undefined);
+    aceptarTerminos.mockResolvedValue(DTO);
+    globalThis.sessionStorage.setItem('rydercup-terminos-redirigido', JSON.stringify({ ruta: '/dashboard' }));
+  });
+
+  it('al aceptar (omitiendo), se borra', async () => {
+    abrir();
+    fireEvent.click(casilla());
+
+    omitir();
+
+    await screen.findByText('panel');
+    expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).toBeNull();
   });
 });
