@@ -361,6 +361,27 @@ class MatchPlayStrokeAllocator {
     return MatchPlayStrokeAllocator.allocate(localParams);
   }
 
+  /**
+   * Reparto de un hándicap de juego PROPIO por los índices de la barra del
+   * jugador, sin mirar a los demás: lo que recibe contra el campo.
+   *
+   * En match play el reparto del partido es la diferencia y el de hándicap más
+   * bajo no recibe nada; para medir su vuelta («Tu vuelta» al anotar) hacen
+   * falta sus propios golpes.
+   *
+   * @param {Object} participant
+   * @param {Array<Object>} holes Tarjeta de referencia del campo
+   * @param {Array<Object>} tees
+   * @param {number} playingHandicap Con signo: un plus cede golpes
+   * @returns {{playingHandicap: number, strokesByHole: Object<number, number>}}
+   */
+  static ownStrokes(participant, holes, tees, playingHandicap) {
+    return MatchPlayStrokeAllocator.#build(
+      playingHandicap,
+      MatchPlayStrokeAllocator.holesByDifficultyFor(participant, holes, tees)
+    );
+  }
+
   // ===========================================
   // Reparto por formato
   // ===========================================

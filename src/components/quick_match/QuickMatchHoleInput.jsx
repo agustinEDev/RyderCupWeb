@@ -22,7 +22,7 @@ import { clasesDelHueco } from '../scoring/clasesDelHueco';
  * Quien anota no necesita excepción: su hoyo y la cabecera salen de la misma
  * resolución, así que no difiere de sí mismo y no se le duplica nada.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, onScoreChange }) => {
+const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, myRound = null, onScoreChange }) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 
@@ -77,6 +77,33 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
 
   // El siguiente por anotar: el primero de la lista sin golpe (FE #725)
   const primerVacio = entries.find(isEmpty)?.participantId ?? null;
+
+  // «Tu vuelta» (21 oct): el acumulado neto de quien anota, ya calculado por
+  // `PersonalRoundCalculator.runningResult`. Sin hoyos anotados, un guion; en
+  // Stableford, el neto y los puntos.
+  const myRoundValue = () => {
+    if (myRound?.toParLabel == null) return '—';
+    if (myRound.stablefordPoints == null) return myRound.toParLabel;
+    return `${myRound.toParLabel} · ${t('input.myRoundPoints', { count: myRound.stablefordPoints })}`;
+  };
+
+  // Lo que oye un lector de pantalla: «+2» a secas no se entiende de oído
+  const myRoundSpoken = () => {
+    if (myRound?.toPar == null) return t('input.myRoundA11yNone');
+    const toPar =
+      myRound.toPar === 0
+        ? t('input.myRoundA11yPar')
+        : t(myRound.toPar > 0 ? 'input.myRoundA11yOver' : 'input.myRoundA11yUnder', {
+            count: Math.abs(myRound.toPar),
+          });
+    if (myRound.stablefordPoints == null) return toPar;
+    return `${toPar} ${t('input.myRoundA11yPoints', { count: myRound.stablefordPoints })}`;
+  };
+
+  // Con una sola casilla la de al lado queda libre y la vuelta va ahí: la
+  // tarjeta no crece. Anotando a más gente no hay hueco y va en una línea
+  const myRoundInCell = myRound != null && entries.length === 1;
+  const myRoundInLine = myRound != null && entries.length > 1;
 
   const handleSelect = (participantId, value) => {
     setOpenParticipantId(null);
@@ -149,7 +176,28 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
             )}
           </div>
         ))}
+        {myRoundInCell && (
+          <div data-testid="quick-match-my-round-cell" className="space-y-1 flex flex-col">
+            <span className="text-xs font-medium text-gray-500 truncate block" aria-hidden="true">
+              {t('input.myRound')}
+            </span>
+            <span
+              className="w-full h-14 mt-auto flex items-center justify-center text-lg font-bold text-gray-900 whitespace-nowrap"
+              aria-hidden="true"
+            >
+              {myRoundValue()}
+            </span>
+            <span className="sr-only">{myRoundSpoken()}</span>
+          </div>
+        )}
       </div>
+
+      {myRoundInLine && (
+        <p data-testid="quick-match-my-round-line" className="text-xs text-gray-500 whitespace-nowrap truncate">
+          <span aria-hidden="true">{t('input.myRound')}: {myRoundValue()}</span>
+          <span className="sr-only">{myRoundSpoken()}</span>
+        </p>
+      )}
 
       {openEntry && (
         <ScoreInputPanel

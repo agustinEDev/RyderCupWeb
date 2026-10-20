@@ -65,7 +65,18 @@
     "strokesGiven_one": "Gives {{count}} stroke",
     "strokesGiven_other": "Gives {{count}} strokes",
     "rivalPair": "The rival pair",
-    "rivalBallOf": "Rival ball · {{nombre}}"
+    "rivalBallOf": "Rival ball · {{nombre}}",
+    "myRound": "Your round",
+    "myRoundPoints_one": "{{count}} pt",
+    "myRoundPoints_other": "{{count}} pts",
+    "myRoundA11yNone": "Your round: no holes scored yet",
+    "myRoundA11yPar": "Your round: level par",
+    "myRoundA11yOver_one": "Your round: {{count}} over par",
+    "myRoundA11yOver_other": "Your round: {{count}} over par",
+    "myRoundA11yUnder_one": "Your round: {{count}} under par",
+    "myRoundA11yUnder_other": "Your round: {{count}} under par",
+    "myRoundA11yPoints_one": "{{count}} point",
+    "myRoundA11yPoints_other": "{{count}} points"
   },
   "scorecard": {
     "title": "Scorecard",

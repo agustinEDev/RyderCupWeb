@@ -229,6 +229,73 @@ class PersonalRoundCalculator {
       totalStrokes: personalTotals.totalStrokes,
     };
   }
+
+  /**
+   * «Tu vuelta» mientras se anota: el acumulado neto contra el par de quien
+   * anota, sobre los hoyos ya anotados.
+   *
+   * Se mide con su hándicap de juego PROPIO —el «Hcp de juego» de su tarjeta:
+   * su hándicap con el allowance del formato— repartido por los índices de SU
+   * barra. No con el reparto del partido: en match play ese es la diferencia y
+   * el de hándicap más bajo no recibiría ningún golpe. Tampoco con el 100% de
+   * `compute`: aquí se quiere el número del juego que se está jugando.
+   *
+   * El hándicap de juego sale de `resolve`, el mismo sitio del que lo lee la
+   * tarjeta: el del backend si lo hay, el local si no.
+   *
+   * @param {Object} params Los de `compute`, más `scoringFormat`
+   * @param {?string} params.scoringFormat MEDAL/STABLEFORD, o null en match play
+   * @returns {?{toPar: ?number, toParLabel: ?string, stablefordPoints: ?number, holesPlayed: number}}
+   *   null en foursomes —una bola por bando, no hay vuelta propia— o sin
+   *   jugador. Sin hoyos anotados, `toPar` y `toParLabel` son null.
+   *   `stablefordPoints` solo en Stableford.
+   */
+  static runningResult({
+    me = null,
+    participants = [],
+    holes = [],
+    holeScores = [],
+    tees = [],
+    participantStrokes = [],
+    matchFormat = null,
+    scoringFormat = null,
+    allowancePercentage = null,
+    playMode = 'HANDICAP',
+  }) {
+    if (!me || matchFormat === 'FOURSOMES') return null;
+
+    // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
+    const playingHandicap =
+      playMode === 'SCRATCH'
+        ? 0
+        : (MatchPlayStrokeAllocator.resolve({
+            participantStrokes,
+            participants,
+            holes,
+            tees,
+            matchFormat,
+            allowancePercentage: allowancePercentage ?? PERSONAL_ROUND_ALLOWANCE,
+            playMode,
+          })[me.participantId]?.playingHandicap ?? 0);
+
+    const totals = StablefordCalculator.computeParticipantTotals(
+      me,
+      holes,
+      holeScores,
+      {
+        [me.participantId]: MatchPlayStrokeAllocator.ownStrokes(me, holes, tees, playingHandicap),
+      },
+      tees
+    );
+
+    const toPar = totals.holesPlayed ? totals.netStrokes - totals.parPlayed : null;
+    return {
+      toPar,
+      toParLabel: toPar === null ? null : StablefordCalculator.formatToPar(toPar),
+      stablefordPoints: scoringFormat === 'STABLEFORD' ? totals.stablefordPoints : null,
+      holesPlayed: totals.holesPlayed,
+    };
+  }
 }
 
 export default PersonalRoundCalculator;

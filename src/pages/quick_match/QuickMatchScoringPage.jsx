@@ -23,6 +23,7 @@ import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import BlockLoader from '../../components/ui/BlockLoader';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import { useSinConexion } from '../../hooks/useSinConexion';
@@ -397,6 +398,22 @@ const QuickMatchScoringPage = () => {
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();
 
+  // «Tu vuelta» (21 oct): el acumulado neto de quien anota con SU hándicap de
+  // juego, sobre lo visible —lo pendiente de enviar incluido—. En foursomes
+  // sale null: una bola por bando, no hay vuelta propia.
+  const myRound = PersonalRoundCalculator.runningResult({
+    me: myParticipant,
+    participants: quickMatch?.participants ?? [],
+    holes,
+    holeScores: holeScoresVisibles,
+    tees,
+    participantStrokes: quickMatch?.participantStrokes ?? [],
+    matchFormat: quickMatch?.matchFormat ?? null,
+    scoringFormat: quickMatch?.scoringFormat ?? null,
+    allowancePercentage: quickMatch?.effectiveAllowance ?? null,
+    playMode: quickMatch?.playMode ?? 'HANDICAP',
+  });
+
   // `isCancelled` cuenta igual que `isCompleted`: la partida ya no admite
   // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
   // contra un 409 que se traduce como «vuelve a cargarla» —y recargar no la
@@ -630,6 +647,7 @@ const QuickMatchScoringPage = () => {
                       entries={entries}
                       isReadOnly={isReadOnly}
                       allowPickedUp={allowsPickedUp}
+                      myRound={myRound}
                       onScoreChange={handleScoreChange}
                     />
                     <VentanaDelMapa

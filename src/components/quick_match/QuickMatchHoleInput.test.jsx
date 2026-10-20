@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (clave) => clave }) }));
+// Con `count` se pega detrás: así se ve que el número llega a la frase
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (clave, opts) => (opts?.count != null ? `${clave}:${opts.count}` : clave),
+  }),
+}));
 vi.mock('../scoring/ScoreInputPanel', () => ({ default: () => null }));
 
 import QuickMatchHoleInput from './QuickMatchHoleInput';
@@ -77,4 +82,102 @@ describe('QuickMatchHoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
     expect(screen.queryByTestId('accion-del-hoyo')).toBeNull();
   });
 
+});
+
+/**
+ * «Tu vuelta» (21 oct): el acumulado neto de quien anota, en la casilla libre
+ * cuando solo se anota a sí mismo y en una línea bajo los botones si anota a
+ * más gente.
+ *
+ *   N1  solo se anota a sí mismo   | V1: casilla dentro de la rejilla, sin línea
+ *   N2  anota a más gente           | V2: una línea bajo los botones, sin casilla
+ *   N4  Stableford                  | V3: «+2 · 16 pts»
+ *   N5  sin vuelta (foursomes)      | V4: ni casilla ni línea
+ *   N9  sin hoyos anotados          | V5: «—», también en Stableford
+ *       solo lectura                | V6: se sigue viendo
+ *       lector de pantalla          | V7: oye la frase entera, no «+2»
+ *   N10 la tarjeta no crece         | V1 (en la rejilla) y V2 (una sola línea)
+ */
+describe('QuickMatchHoleInput · «Tu vuelta»', () => {
+  const vuelta = (extra = {}) => ({
+    toPar: 2,
+    toParLabel: '+2',
+    stablefordPoints: null,
+    holesPlayed: 3,
+    ...extra,
+  });
+
+  it('V1: con una sola casilla, la vuelta ocupa la libre de la rejilla', () => {
+    pintar([jugador('p1')], { myRound: vuelta() });
+
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(casilla.parentElement).toHaveClass('grid', 'grid-cols-2');
+    expect(casilla).toHaveTextContent('input.myRound');
+    expect(casilla).toHaveTextContent('+2');
+    expect(screen.queryByTestId('quick-match-my-round-line')).toBeNull();
+  });
+
+  it('V2: anotando a más gente, una sola línea bajo los botones', () => {
+    pintar([jugador('p1'), jugador('p2')], { myRound: vuelta() });
+
+    const linea = screen.getByTestId('quick-match-my-round-line');
+    expect(linea).toHaveTextContent('input.myRound: +2');
+    expect(linea).toHaveClass('whitespace-nowrap', 'truncate', 'text-xs');
+    // Debajo de la rejilla de botones, no dentro
+    const rejilla = boton('p1').closest('.grid');
+    expect(rejilla.contains(linea)).toBe(false);
+    expect(rejilla.compareDocumentPosition(linea) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
+  });
+
+  it('V3: en Stableford, el neto y los puntos', () => {
+    pintar([jugador('p1')], { myRound: vuelta({ stablefordPoints: 16 }) });
+
+    expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent(
+      '+2 · input.myRoundPoints:16'
+    );
+  });
+
+  it('V4: sin vuelta que enseñar no sale nada', () => {
+    pintar([jugador('p1')], { myRound: null });
+    expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
+
+    pintar([jugador('p2'), jugador('p3')]);
+    expect(screen.queryByTestId('quick-match-my-round-line')).toBeNull();
+  });
+
+  it('V5: sin hoyos anotados, un guion, también en Stableford', () => {
+    pintar([jugador('p1')], {
+      myRound: vuelta({ toPar: null, toParLabel: null, stablefordPoints: 0, holesPlayed: 0 }),
+    });
+
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(casilla).toHaveTextContent('—');
+    expect(casilla).not.toHaveTextContent('myRoundPoints');
+  });
+
+  it('V6: en solo lectura se sigue viendo', () => {
+    pintar([jugador('p1')], { myRound: vuelta(), isReadOnly: true });
+
+    expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent('+2');
+  });
+
+  it('V7: el lector de pantalla oye la frase, no el signo', () => {
+    const { unmount } = pintar([jugador('p1')], { myRound: vuelta({ stablefordPoints: 16 }) });
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(within(casilla).getByText('input.myRoundA11yOver:2 input.myRoundA11yPoints:16')).toHaveClass('sr-only');
+    unmount();
+
+    pintar([jugador('p1'), jugador('p2')], { myRound: vuelta({ toPar: -1, toParLabel: '-1' }) });
+    expect(within(screen.getByTestId('quick-match-my-round-line')).getByText('input.myRoundA11yUnder:1')).toHaveClass('sr-only');
+  });
+
+  it('V7b: al par, y sin hoyos, frases propias', () => {
+    const { unmount } = pintar([jugador('p1')], { myRound: vuelta({ toPar: 0, toParLabel: 'PAR' }) });
+    expect(screen.getByText('input.myRoundA11yPar')).toHaveClass('sr-only');
+    unmount();
+
+    pintar([jugador('p1')], { myRound: vuelta({ toPar: null, toParLabel: null, holesPlayed: 0 }) });
+    expect(screen.getByText('input.myRoundA11yNone')).toHaveClass('sr-only');
+  });
 });
