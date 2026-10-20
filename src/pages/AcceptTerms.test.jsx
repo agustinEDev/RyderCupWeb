@@ -129,6 +129,9 @@ describe('AcceptTerms (F3)', () => {
     ['//evil.com', 'panel'],
     ['/\\evil.com', 'panel'],
     ['/\t/evil.com', 'panel'],
+    // Un carácter de control dentro de una ruta propia: solo lo para el filtro
+    // de caracteres raros (la URL resuelta seguiría siendo del mismo origen)
+    ['/competitions/7\u0007', 'panel'],
     ['/accept-terms', 'panel'],
     ['/accept-terms?from=%2Fdashboard', 'panel'],
   ])('origen por la URL %j → %s', async (desde, destino) => {
