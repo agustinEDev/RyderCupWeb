@@ -134,7 +134,9 @@ describe('ScorecardTable', () => {
     it('las parejas se leen enteras: la celda parte en líneas, no corta (FE #727)', () => {
       // «Nacho Noche / …» no decía quién jugaba con quién
       render(<ScorecardTable holes={holes} players={foursomePlayers} currentUserId="u1" matchFormat="FOURSOMES" teamAName="Team Red" teamBName="Team Blue" />);
-      const celda = screen.getAllByText(/Player A1 \/ Player A2/)[0].closest('td');
+      // Cada nombre va en su propio elemento desde #414 (con su hándicap al lado)
+      const celda = screen.getAllByTestId('jugador-u1')[0].closest('td');
+      expect(celda).toHaveTextContent('Player A1 / Player A2');
       expect(celda.className).not.toContain('truncate');
       expect(celda.className).toContain('whitespace-normal');
     });
@@ -473,5 +475,77 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
     expect(filasDelJugador[0]).toEqual(filasDelEspectador[1]);
     expect(filasDelJugador[1]).toEqual(filasDelEspectador[0]);
     expect(filasDelJugador[0]).not.toEqual(filasDelJugador[1]);
+  });
+});
+
+/**
+ * FE #414 · el hándicap de juego de cada jugador, como en la tarjeta de partida
+ * rápida. Va en la misma línea que su nombre, en letra pequeña: con su propia
+ * línea la tarjeta crecía.
+ */
+describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () => {
+  const hcp = (valor) => `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;
+  const conHandicap = [
+    { userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: -2 },
+    { userId: 'u2', userName: 'Player B', team: 'B', playingHandicap: 14 },
+  ];
+
+  it('T1: cada fila dice su hándicap de juego, el plus con su signo', () => {
+    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+
+    expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(hcp('+2'));
+    expect(screen.getAllByTestId('hcp-de-juego-u2')[0]).toHaveTextContent(hcp('14'));
+  });
+
+  it('T1: el cero también se dice', () => {
+    const conCero = [{ userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: 0 }];
+    render(<ScorecardTable holes={holes} players={conCero} currentUserId="u1" matchFormat="SINGLES" />);
+
+    expect(screen.getAllByTestId('hcp-de-juego-u1')[0]).toHaveTextContent(hcp('0'));
+  });
+
+  it('T2: en foursomes, cada miembro del bando con el suyo, junto a su nombre', () => {
+    const foursomes = [
+      { userId: 'a1', userName: 'Nacho', team: 'A', playingHandicap: 8 },
+      { userId: 'a2', userName: 'Agustín', team: 'A', playingHandicap: -1 },
+      { userId: 'b1', userName: 'Luna', team: 'B', playingHandicap: 20 },
+      { userId: 'b2', userName: 'Óscar', team: 'B', playingHandicap: 3 },
+    ];
+    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+
+    const nacho = screen.getAllByTestId('jugador-a1')[0];
+    const agustin = screen.getAllByTestId('jugador-a2')[0];
+    expect(nacho).toHaveTextContent(`Nacho${hcp('8')}`);
+    expect(agustin).toHaveTextContent(`Agustín${hcp('+1')}`);
+    expect(nacho).not.toHaveTextContent('Agustín');
+    // Los dos en la fila de su bando
+    expect(nacho.closest('td')).toBe(agustin.closest('td'));
+    expect(screen.getAllByTestId('hcp-de-juego-b1')[0]).toHaveTextContent(hcp('20'));
+    expect(screen.getAllByTestId('hcp-de-juego-b2')[0]).toHaveTextContent(hcp('3'));
+  });
+
+  it('T3: en la misma línea que el nombre, nunca en una propia', () => {
+    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+
+    const jugador = screen.getAllByTestId('jugador-u1')[0];
+    const valor = screen.getAllByTestId('hcp-de-juego-u1')[0];
+    expect(valor.parentElement).toBe(jugador);
+    expect(valor.className).toContain('whitespace-nowrap');
+    expect(valor.className).not.toMatch(/\bblock\b/);
+    expect(jugador.className).not.toMatch(/\bblock\b|flex-col/);
+  });
+
+  it('T4: sin hándicap de juego no se pinta nada más que el nombre', () => {
+    const sinHandicap = [
+      { userId: 'u1', userName: 'Player A', team: 'A', playingHandicap: null },
+      { userId: 'u2', userName: 'Player B', team: 'B' },
+    ];
+    render(<ScorecardTable holes={holes} players={sinHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+
+    expect(screen.queryAllByTestId(/^hcp-de-juego-/)).toHaveLength(0);
+    expect(screen.getAllByTestId('jugador-u1')[0].textContent).toBe('Player A');
+    expect(screen.getAllByTestId('jugador-u2')[0].textContent).toBe('Player B');
+    expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent('undefined');
+    expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent('playingHandicap');
   });
 });

@@ -87,7 +87,8 @@
     "out": "OUT",
     "in": "IN",
     "total": "TOTAL",
-    "standing": "Standing"
+    "standing": "Standing",
+    "playingHandicap": "Playing handicap {{value}}"
   },
   "leaderboard": {
     "title": "Leaderboard",

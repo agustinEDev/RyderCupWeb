@@ -87,7 +87,8 @@
     "out": "IDA",
     "in": "VUELTA",
     "total": "TOTAL",
-    "standing": "Marcador"
+    "standing": "Marcador",
+    "playingHandicap": "Hcp de juego {{value}}"
   },
   "leaderboard": {
     "title": "Clasificación",
