@@ -307,3 +307,20 @@ describe('almacenamiento local, descrito con exactitud', () => {
     expect(textos.cookies.section2.content).not.toMatch(viejo);
   });
 });
+
+describe('qué se borra al cerrar sesión, línea a línea', () => {
+  // Una mutación demostró que buscarlo en todo el texto no basta: cambiar una
+  // sola línea a «se borran» pasaba porque otras seguían diciendo «no se borran»
+  const linea = (texto, patron) => texto.split('\n').find((l) => patron.test(l)) ?? '';
+
+  it.each([
+    ['es', es, /datos de tu usuario/i, /anotaciones pendientes de enviar/i, /^- .*Se borran al cerrar sesión/, /No se borran al cerrar sesión/],
+    ['en', en, /your user data/i, /scores waiting to be sent/i, /(It is|They are) deleted when you log out/, /not deleted when you log out/],
+  ])('%s: los datos del usuario se borran y las anotaciones pendientes no', (_i, textos, usuario, pendientes, seBorran, noSeBorran) => {
+    for (const texto of [textos.privacy.section8.content, textos.cookies.section1.content]) {
+      expect(linea(texto, usuario)).toMatch(seBorran);
+      expect(linea(texto, usuario)).not.toMatch(noSeBorran);
+      expect(linea(texto, pendientes)).toMatch(noSeBorran);
+    }
+  });
+});
