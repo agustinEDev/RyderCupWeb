@@ -200,3 +200,34 @@ describe('AcceptTerms · la cortina del arranque (revisión, punto 9)', () => {
     expect(pantallaLista).toHaveBeenCalled();
   });
 });
+
+// Revisión M2: al aceptar se olvida la ruta apuntada contra los bucles. Si no,
+// un 403 futuro por una versión nueva desde esa misma ruta se tomaría por un
+// desacuerdo del servidor y no llevaría a aceptar
+describe('AcceptTerms · la marca contra los bucles', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sesion.user = { id: 'u-1', terms_accepted: false };
+    aceptar.mockResolvedValue(DTO);
+    globalThis.sessionStorage.setItem('rydercup-terminos-redirigido', JSON.stringify({ ruta: '/competitions/7' }));
+  });
+
+  it('al aceptar, se borra', async () => {
+    abrir();
+
+    aceptarMarcando();
+
+    await screen.findByText('la competición');
+    expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).toBeNull();
+  });
+
+  it('si aceptar falla, se queda', async () => {
+    aceptar.mockRejectedValueOnce(new Error('boom'));
+    abrir();
+
+    aceptarMarcando();
+
+    await screen.findByRole('alert');
+    expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).not.toBeNull();
+  });
+});

@@ -9,6 +9,7 @@ import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
+import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -56,9 +57,13 @@ const CompleteProfile = () => {
     if (marcada) setTermsError('');
   };
 
+  // Ya aceptados (quien se registró con el formulario y llega aquí, o un
+  // backend que no lo dice): ni se pinta la casilla ni se exige
+  const terminosPendientes = debeAceptarLosTerminos(user);
+
   // Sin la casilla no se entra, ni guardando ni omitiendo el resto
   const exigirTerminos = () => {
-    if (acceptedTerms) return true;
+    if (!terminosPendientes || acceptedTerms) return true;
     setTermsError(t('google.completeProfile.acceptTermsRequired'));
     return false;
   };
@@ -78,6 +83,7 @@ const CompleteProfile = () => {
       // luego falle guardar el perfil o el hándicap, el guardia no devolverá
       // a la pantalla de aceptar
       anotaLaSesion(datosDelBackend);
+      olvidaLaMarcaDeTerminos();
       return true;
     } catch {
       // Un solo aviso, junto a la casilla
@@ -243,13 +249,15 @@ const CompleteProfile = () => {
             </div>
 
             {/* Términos y edad mínima; la privacidad, solo informada */}
-            <AceptacionDeTerminos
-              id="acceptTerms"
-              checked={acceptedTerms}
-              onChange={handleAcceptTermsChange}
-              error={termsError}
-              disabled={isSaving}
-            />
+            {terminosPendientes && (
+              <AceptacionDeTerminos
+                id="acceptTerms"
+                checked={acceptedTerms}
+                onChange={handleAcceptTermsChange}
+                error={termsError}
+                disabled={isSaving}
+              />
+            )}
 
             {acceptError && (
               <p role="alert" className="text-red-600 text-sm">

@@ -74,6 +74,19 @@ export const llevaAAceptarLosTerminos = () => {
   return true;
 };
 
+/**
+ * Se acaban de aceptar los Términos: se olvida la ruta apuntada contra los
+ * bucles. Si no, un 403 futuro por una versión nueva desde esa misma ruta se
+ * tomaría por un desacuerdo del servidor y ya no llevaría a aceptar.
+ */
+export const olvidaLaMarcaDeTerminos = () => {
+  try {
+    globalThis.sessionStorage.removeItem(CLAVE);
+  } catch {
+    // Sin sessionStorage no había marca que olvidar
+  }
+};
+
 /** El aviso de la llamada cortada por irse a aceptar: no se enseña. */
 export const silenciaElAviso = (mensaje) => {
   silenciados.add(mensaje);

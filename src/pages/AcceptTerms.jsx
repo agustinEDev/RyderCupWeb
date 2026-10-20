@@ -8,6 +8,7 @@ import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
+import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 
 const PANEL = '/dashboard';
 
@@ -98,6 +99,7 @@ const AcceptTerms = () => {
       // que current-user, `is_admin` incluido—, sin otra consulta que pueda
       // fallar: con la sesión vieja, el guardia devolvería aquí
       anotaLaSesion(datosDelBackend);
+      olvidaLaMarcaDeTerminos();
     } catch {
       // Un solo aviso, junto a la casilla, que sigue marcada para reintentar
       setErrorAlAceptar(t('acceptTermsPage.error'));
