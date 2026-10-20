@@ -52,6 +52,15 @@ class IUserRepository {
   async searchUsers(query) {
     throw new Error('Method not implemented: searchUsers');
   }
+
+  /**
+   * Acepta la versión vigente de los Términos para el usuario de la sesión.
+   * Idempotente: aceptarla dos veces no falla.
+   * @returns {Promise<import('../entities/User').default>} El usuario, ya con la aceptación
+   */
+  async acceptTerms() {
+    throw new Error('Method not implemented: acceptTerms');
+  }
 }
 
 export default IUserRepository;

@@ -435,3 +435,27 @@ describe('ApiUserRepository — el alias en la búsqueda (FE #435)', () => {
     expect(results[0].displayName).toBeNull();
   });
 });
+
+// F2/F3: aceptar los Términos. Sin cuerpo; el CSRF lo pone `apiRequest`
+describe('ApiUserRepository · acceptTerms', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('hace POST a /users/me/accept-terms y devuelve el usuario', async () => {
+    apiRequest.mockResolvedValue({
+      id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba',
+      terms_accepted: true, terms_version_required: '2026-10-20',
+    });
+
+    const usuario = await new ApiUserRepository().acceptTerms();
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/me/accept-terms', { method: 'POST' });
+    expect(usuario).toBeInstanceOf(User);
+    expect(usuario.termsAccepted).toBe(true);
+  });
+
+  it('un fallo se propaga', async () => {
+    apiRequest.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    await expect(new ApiUserRepository().acceptTerms()).rejects.toThrow('boom');
+  });
+});

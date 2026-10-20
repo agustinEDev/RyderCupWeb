@@ -106,6 +106,16 @@ class ApiUserRepository extends IUserRepository {
 
   /**
    * @override
+   * POST /api/v1/users/me/accept-terms, sin cuerpo. Devuelve el mismo usuario
+   * que /auth/current-user. Esta ruta está exenta del 403 de Términos.
+   */
+  async acceptTerms() {
+    const data = await apiRequest('/api/v1/users/me/accept-terms', { method: 'POST' });
+    return new User(data);
+  }
+
+  /**
+   * @override
    * Uses GET /api/v1/users/search-autocomplete?query=... for partial name matching.
    */
   async searchUsers(query) {
