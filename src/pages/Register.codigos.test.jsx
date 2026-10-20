@@ -32,6 +32,8 @@ const enviar = async () => {
   fireEvent.change(campo('email'), { target: { name: 'email', value: 'ana@example.com' } });
   fireEvent.change(campo('password'), { target: { name: 'password', value: 'Valida-Prueba123!' } });
   fireEvent.change(campo('confirmPassword'), { target: { name: 'confirmPassword', value: 'Valida-Prueba123!' } });
+  // Sin aceptar los Términos no se envía (Register.legal.test.jsx)
+  fireEvent.click(campo('acceptTerms'));
   fireEvent.submit(campo('password').closest('form'));
 };
 

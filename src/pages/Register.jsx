@@ -33,6 +33,8 @@ const Register = () => {
     gender: '' // Campo opcional para género
   });
   const [errors, setErrors] = useState({});
+  // Los Términos se aceptan con un gesto expreso, y con ellos la edad mínima
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
@@ -127,8 +129,26 @@ const Register = () => {
       newErrors.confirmPassword = t('validation.passwordsDoNotMatch');
     }
 
+    if (!acceptedTerms) {
+      newErrors.acceptTerms = t('register.acceptTermsRequired');
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAcceptTermsChange = (e) => {
+    setAcceptedTerms(e.target.checked);
+    if (e.target.checked && errors.acceptTerms) {
+      setErrors(prev => ({ ...prev, acceptTerms: '' }));
+    }
+  };
+
+  // Registrarse con Google también crea una cuenta: sin la casilla no se sale
+  const puedeIrAGoogle = () => {
+    if (acceptedTerms) return true;
+    setErrors(prev => ({ ...prev, acceptTerms: t('register.acceptTermsRequired') }));
+    return false;
   };
 
   const handleSubmit = async (e) => {
@@ -548,22 +568,53 @@ const Register = () => {
                   )}
                 </div>
 
-                {/* Terms & Conditions */}
-                <div className="flex items-start gap-2 pt-2">
-                  <div className="flex items-center h-5">
-                    <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
+                {/* Términos: se aceptan con la casilla, que declara además la
+                    edad mínima. Los enlaces abren pestaña nueva para no perder
+                    lo escrito */}
+                <div className="pt-2">
+                  <div className="flex items-start gap-2">
+                    <input
+                      id="acceptTerms"
+                      type="checkbox"
+                      name="acceptTerms"
+                      checked={acceptedTerms}
+                      onChange={handleAcceptTermsChange}
+                      disabled={isLoading}
+                      aria-required="true"
+                      aria-invalid={errors.acceptTerms ? 'true' : undefined}
+                      aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="acceptTerms" className="text-xs text-gray-700">
+                      {t('register.acceptTermsPrefix')}{' '}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary-600 font-semibold"
+                      >
+                        {t('register.termsLink')}
+                      </a>
+                      {' '}{t('register.acceptTermsSuffix')}
+                    </label>
                   </div>
-                  <p className="text-xs text-gray-600">
-                    {t('register.termsPrefix')}{' '}
-                    <a href="#terms" className="text-primary hover:text-primary-600 font-semibold">
-                      {t('register.termsLink')}
-                    </a>
-                    {' '}{t('register.termsAnd')}{' '}
-                    <a href="#privacy" className="text-primary hover:text-primary-600 font-semibold">
+                  {errors.acceptTerms && (
+                    <p id="acceptTerms-error" role="alert" className="text-red-500 text-xs mt-2">
+                      {errors.acceptTerms}
+                    </p>
+                  )}
+                  {/* La privacidad se informa, no se acepta: va fuera de la casilla */}
+                  <p className="text-xs text-gray-600 mt-3">
+                    {t('register.privacyNoticePrefix')}{' '}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary-600 font-semibold"
+                    >
                       {t('register.privacyLink')}
                     </a>
+                    {t('register.privacyNoticeSuffix')}
                   </p>
                 </div>
 
@@ -605,7 +656,12 @@ const Register = () => {
               </div>
 
               {/* Google Sign Up */}
-              <GoogleSignInButton flow="login" label={t('google.signUpWithGoogle', { ns: 'auth' })} disabled={isLoading} />
+              <GoogleSignInButton
+                flow="login"
+                label={t('google.signUpWithGoogle', { ns: 'auth' })}
+                disabled={isLoading}
+                antesDeSalir={puedeIrAGoogle}
+              />
 
               {/* Login Link */}
               <div className="text-center mt-6">

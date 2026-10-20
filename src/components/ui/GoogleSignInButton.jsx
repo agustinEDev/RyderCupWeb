@@ -3,7 +3,12 @@ import { motion } from 'framer-motion';
 import { buildGoogleOAuthUrl } from '../../utils/googleOAuth';
 import customToast from '../../utils/toast';
 
-const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
+/**
+ * @param {() => boolean} [antesDeSalir] - Se pregunta antes de ir a Google: con
+ *   `false` el botón no sale. El registro lo usa para exigir la casilla de los
+ *   Términos, porque entrar con Google también crea una cuenta.
+ */
+const GoogleSignInButton = ({ flow = 'login', label, disabled = false, antesDeSalir }) => {
   const { t } = useTranslation('auth');
 
   const defaultLabel = flow === 'login'
@@ -11,6 +16,7 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
     : t('google.signUpWithGoogle');
 
   const handleClick = () => {
+    if (antesDeSalir && !antesDeSalir()) return;
     try {
       window.location.href = buildGoogleOAuthUrl(flow);
     } catch (error) {
