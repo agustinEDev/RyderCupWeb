@@ -4,11 +4,12 @@ import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTermin
 
 /**
  * Donde se puede estar con los Términos pendientes (F3): la pantalla de
- * aceptarlos y la de completar el perfil, por la que pasa el usuario nuevo de
- * Google y donde ya los acepta. Llevarle de allí a la otra serían dos pantallas
- * de aceptación seguidas.
+ * aceptarlos; la de completar el perfil, por la que pasa el usuario nuevo de
+ * Google y donde ya los acepta (llevarle de allí a la otra serían dos pantallas
+ * de aceptación seguidas); y la gestión de dispositivos, para poder cerrar una
+ * sesión robada sin aceptar nada antes (el backend la exime del 403).
  */
-const SIN_TERMINOS_ACEPTADOS = ['/accept-terms', '/auth/complete-profile'];
+const SIN_TERMINOS_ACEPTADOS = ['/accept-terms', '/auth/complete-profile', '/profile/devices'];
 
 /**
  * Protected Route Component

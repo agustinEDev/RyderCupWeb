@@ -12,6 +12,7 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  *   /dashboard               | sin el campo   | el panel (backend antiguo)
  *   /accept-terms            | false          | la propia pantalla, sin rebotar
  *   /auth/complete-profile   | false          | completar perfil: allí acepta el usuario nuevo de Google
+ *   /profile/devices         | false          | los dispositivos: se pueden cerrar sin aceptar (decisión de Agustín)
  */
 const sesion = vi.hoisted(() => ({ user: null }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loading: false }) }));
@@ -30,6 +31,7 @@ const abrir = (ruta) =>
         <Route path="/dashboard" element={<ProtectedRoute><p>panel</p></ProtectedRoute>} />
         <Route path="/accept-terms" element={<ProtectedRoute><PantallaDeAceptar /></ProtectedRoute>} />
         <Route path="/auth/complete-profile" element={<ProtectedRoute><p>completar perfil</p></ProtectedRoute>} />
+        <Route path="/profile/devices" element={<ProtectedRoute><p>mis dispositivos</p></ProtectedRoute>} />
         <Route path="/login" element={<p>entrar</p>} />
       </Routes>
     </MemoryRouter>
@@ -66,6 +68,13 @@ describe('ProtectedRoute · Términos sin aceptar (F3)', () => {
     abrir('/auth/complete-profile');
 
     expect(screen.getByText('completar perfil')).toBeInTheDocument();
+  });
+
+  it('la gestión de dispositivos deja pasar: cerrar una sesión robada no espera a aceptar', () => {
+    sesion.user = { id: 'u-1', terms_accepted: false };
+    abrir('/profile/devices');
+
+    expect(screen.getByText('mis dispositivos')).toBeInTheDocument();
   });
 
   it('sin sesión, al formulario como siempre', () => {
