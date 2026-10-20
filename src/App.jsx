@@ -11,6 +11,7 @@ import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
 import { useEnvioDeMuestras } from './hooks/useEnvioDeMuestras';
+import { useTerminosPendientes } from './hooks/useTerminosPendientes';
 import { setUserContext } from './utils/sentryHelpers';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
@@ -140,12 +141,18 @@ function AppContent() {
   // que se esté mirando (FE #521). Va aquí arriba a propósito: colgado de una
   // pantalla dependería de que el usuario volviera a ella, que es justo lo que
   // no pasa
-  useVaciadoDeLaCola({ activo: isAuthenticated, userId: usuarioActualId });
+  //
+  // Con los Términos sin aceptar, el backend responde 403 a todo salvo
+  // current-user, accept-terms y logout (F3): nada que llame a la API arranca
+  // hasta aceptarlos, ni la barra inferior se pinta
+  const terminosPendientes = useTerminosPendientes();
+  const conApi = isAuthenticated && !terminosPendientes;
+  useVaciadoDeLaCola({ activo: conApi, userId: usuarioActualId });
   // Las muestras de hoyo que se quedaron en la cola (BE #532, marcado por par)
-  useEnvioDeMuestras({ activo: isAuthenticated, userId: usuarioActualId });
+  useEnvioDeMuestras({ activo: conApi, userId: usuarioActualId });
 
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
-  const showBottomNav = isAuthenticated && !isPublicRoute && !isScoringRoute;
+  const showBottomNav = conApi && !isPublicRoute && !isScoringRoute;
 
   // Limpiar flag de error de lazy loading tras navegación exitosa
   // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
@@ -211,7 +218,8 @@ function AppContent() {
   // Detecta cuando el dispositivo actual fue revocado desde otro navegador
   // Solo activo cuando hay usuario autenticado
   useDeviceRevocationMonitor({
-    enabled: isAuthenticated
+    // Pide /users/me/devices, que da 403 con los Términos pendientes
+    enabled: conApi
   });
 
   // Hook de refresh proactivo de token (v2.0.4)
