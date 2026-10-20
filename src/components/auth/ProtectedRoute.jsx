@@ -1,5 +1,14 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
+import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
+
+/**
+ * Donde se puede estar con los Términos pendientes (F3): la pantalla de
+ * aceptarlos y la de completar el perfil, por la que pasa el usuario nuevo de
+ * Google y donde ya los acepta. Llevarle de allí a la otra serían dos pantallas
+ * de aceptación seguidas.
+ */
+const SIN_TERMINOS_ACEPTADOS = ['/accept-terms', '/auth/complete-profile'];
 
 /**
  * Protected Route Component
@@ -36,6 +45,13 @@ const ProtectedRoute = ({ children }) => {
   // If no user, redirect to login
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Términos sin aceptar (solo con `false` estricto: un backend antiguo no
+  // manda el campo). Hasta aceptarlos el backend responde 403 a casi todo, así
+  // que la pantalla de destino ni se monta
+  if (debeAceptarLosTerminos(user) && !SIN_TERMINOS_ACEPTADOS.includes(location.pathname)) {
+    return <Navigate to="/accept-terms" state={{ from: location }} replace />;
   }
 
   return children;

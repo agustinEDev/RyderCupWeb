@@ -77,6 +77,7 @@ const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQui
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
 const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
+const AcceptTerms = lazyWithRetry(() => import('./pages/AcceptTerms'));
 
 // Public pages
 const LeaderboardPage = lazyWithRetry(() => import('./pages/public/LeaderboardPage'));
@@ -301,6 +302,7 @@ function AppContent() {
 
         {/* Protected routes */}
         <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
+        <Route path="/accept-terms" element={<ProtectedRoute><AcceptTerms /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
