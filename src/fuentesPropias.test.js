@@ -62,12 +62,19 @@ describe('fuentes servidas desde la propia aplicación', () => {
 describe('precache de las fuentes', () => {
   // El service worker precachea los .woff2 al instalarse. Con todos los
   // alfabetos eran 22 ficheros y unos 470 KB (cirílico, griego, vietnamita,
-  // devanagari, latín extendido) para una aplicación en español e inglés. Se
-  // precachean solo los de latín (unos 88 KB);
-  // el resto sigue disponible y el navegador lo pide si una página lo necesita
-  it('vite.config.js deja fuera del precache las fuentes que no son de latín', () => {
+  // devanagari...) para una aplicación en español e inglés. Se precachean latín
+  // y latín extendido: este último para que nombres con ł, ő, ș o č se vean
+  // bien sin conexión (revisión). El resto sigue disponible y el navegador lo
+  // pide si una página lo necesita
+  it('vite.config.js deja fuera del precache lo que no es latín ni latín extendido', () => {
     const config = leer('vite.config.js');
 
-    expect(config).toContain("globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari,latin-ext}-*.woff2']");
+    expect(config).toContain("globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari}-*.woff2']");
+  });
+
+  it('latín extendido entra en el precache: el patrón no lo nombra', () => {
+    const patron = leer('vite.config.js').match(/globIgnores: \[([^\]]*)\]/)[1];
+
+    expect(patron).not.toContain('latin-ext');
   });
 });

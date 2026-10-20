@@ -222,12 +222,13 @@ export default defineConfig(() => ({
         // `mjs`: el worker de MapLibre (mapa del hoyo, BE #532) va como fichero
         // aparte; sin él precacheado, el mapa no arranca sin cobertura
         globPatterns: ['**/*.{js,mjs,css,html,ico,png,svg,woff2}'],
-        // Las fuentes, solo las de latín (unos 88 KB): los demás alfabetos de
-        // Inter y Poppins (cirílico, griego, vietnamita, devanagari y latín
-        // extendido) sumaban unos 380 KB más que cada instalación bajaba sin
+        // Las fuentes, solo latín y latín extendido: este último para que
+        // nombres con ł, ő, ș o č se vean bien sin conexión. Los demás
+        // alfabetos de Inter y Poppins (cirílico, griego, vietnamita,
+        // devanagari) se quedan fuera: cada instalación los bajaría sin
         // usarlos. Siguen servidos: el navegador los pide por su
         // `unicode-range` si una página los necesita
-        globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari,latin-ext}-*.woff2'],
+        globIgnores: ['**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,devanagari}-*.woff2'],
         // Explicit cap so oversized assets fail the SW build loudly instead of silently
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
