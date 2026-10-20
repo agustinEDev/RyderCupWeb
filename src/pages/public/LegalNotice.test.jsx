@@ -49,6 +49,7 @@ describe('Aviso Legal · la página', () => {
     ['geoeuskadi', 'https://www.geo.euskadi.eus'],
     ['idena', 'https://idena.navarra.es'],
     ['maplibre', 'https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt'],
+    ['fonts', 'https://openfontlicense.org'],
   ])('F5: la fuente %s enlaza a %s en pestaña nueva', (fuente, url) => {
     abrir();
 
@@ -121,6 +122,11 @@ describe('Aviso Legal · los textos', () => {
     expect(fuentes).toContain('CC BY 4.0');
     expect(fuentes).toContain('MapLibre');
     expect(fuentes).toContain('BSD-3-Clause');
+    // Las tipografías, servidas desde la propia aplicación (revisión)
+    expect(fuentes).toContain('Inter');
+    expect(fuentes).toContain('Poppins');
+    expect(fuentes).toContain('SIL Open Font License 1.1');
+    expect(fuentes).toContain('OFL-1.1');
   });
 
   it.each([

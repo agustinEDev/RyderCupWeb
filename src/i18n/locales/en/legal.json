@@ -177,6 +177,10 @@
         "maplibre": {
           "name": "MapLibre GL JS",
           "detail": "Library used to draw the maps, licensed under BSD-3-Clause."
+        },
+        "fonts": {
+          "name": "Inter and Poppins",
+          "detail": "The application's typefaces, served from the application itself, licensed under the SIL Open Font License 1.1 (OFL-1.1)."
         }
       }
     },

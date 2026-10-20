@@ -20,6 +20,7 @@ const FUENTES = [
   ['geoeuskadi', 'https://www.geo.euskadi.eus'],
   ['idena', 'https://idena.navarra.es'],
   ['maplibre', 'https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt'],
+  ['fonts', 'https://openfontlicense.org'],
 ];
 
 const Seccion = ({ t, clave }) => (
