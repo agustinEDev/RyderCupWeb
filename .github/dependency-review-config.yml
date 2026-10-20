@@ -39,3 +39,6 @@ allow-dependencies-licenses:
   # sueltas. Por paquete y no en la lista general: es una licencia de fuentes.
   - pkg:npm/@fontsource-variable/inter
   - pkg:npm/@fontsource/poppins
+  # UNLICENSED: este mismo frontend (todos los derechos reservados desde el
+  # 20 oct 2026). license-checker incluye el paquete raíz en su informe.
+  - pkg:npm/rydercup-web
