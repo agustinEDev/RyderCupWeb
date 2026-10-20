@@ -247,3 +247,18 @@ describe('contraseña (B-3)', () => {
     expect(textos.privacy.section2.content).not.toMatch(cifrada);
   });
 });
+
+// Decisión de Agustín (20 oct 2026): la edad mínima es 16 años, la misma que
+// declara la casilla del registro, y no se pide consentimiento paterno a los
+// menores de 18
+describe('edad mínima en los Términos', () => {
+  it.each([
+    ['es', es, /16 años/, /padres|tutores|consentimiento paterno|menor de 18/i],
+    ['en', en, /\b16\b/, /parents|guardians|parental consent|under 18/i],
+  ])('%s: 16 años, sin consentimiento paterno para menores de 18', (_i, textos, dieciseis, paterno) => {
+    const t = texto(textos.terms);
+
+    expect(t).toMatch(dieciseis);
+    expect(t).not.toMatch(paterno);
+  });
+});
