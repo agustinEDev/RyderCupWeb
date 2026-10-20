@@ -577,7 +577,7 @@ describe('MapaDelHoyo', () => {
   });
 
   describe('licencias y tamaño', () => {
-    it('L2: «PNOA © IGN» siempre; «© OSM» como enlace a su licencia si el mapa es de OSM', () => {
+    it('L2: la PNOA siempre; «© OpenStreetMap» como enlace a su licencia si el mapa es de OSM', () => {
       abrir({ atribucion: '© OpenStreetMap contributors (ODbL)' });
 
       expect(screen.getByText('mapa.atribucionPnoa')).toBeInTheDocument();
