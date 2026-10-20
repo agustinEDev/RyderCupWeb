@@ -6,6 +6,8 @@
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
+import { llevaAAceptarLosTerminos } from '../utils/terminosPendientes';
+import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
 import i18next from 'i18next';
 
 /**
@@ -136,6 +138,16 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
         const csrfError = new Error('CSRF validation failed. Please log in again.');
         csrfError.errorCode = 'CSRF_VALIDATION_FAILED';
         throw csrfError;
+      }
+
+      // Términos sin aceptar (F4): a la pantalla de aceptarlos, una sola vez y
+      // recargando. La promesa no se resuelve a propósito, como la del
+      // dispositivo revocado: la página se va, y así ninguna pantalla enseña su
+      // error ni lo reintenta. Donde no se redirige —la propia pantalla, las
+      // rutas públicas— sigue abajo como un error marcado, que la cola de
+      // anotaciones guarda para después en vez de descartar el golpe
+      if (response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS && llevaAAceptarLosTerminos()) {
+        return new Promise(() => {});
       }
 
       // Extract error message with proper fallback chain
