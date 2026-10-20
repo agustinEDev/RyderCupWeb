@@ -8,9 +8,10 @@ Versions of this repository published before 20 October 2026 were made
 available under the MIT License; that licence still applies to those versions
 only, and not to any later change.
 
-Nothing in this notice limits the rights that the GitHub Terms of Service give
-GitHub users to view and fork this repository on GitHub; those rights do not
-include any licence to use the code.
+Nothing in this notice limits the rights that the GitHub Terms of Service
+(section D.5) give GitHub users to view and fork this repository on GitHub;
+those rights do not include any licence to use, copy or distribute the code
+outside GitHub.
 
 Third-party components keep their own licences.
 
@@ -30,8 +31,9 @@ ofrecieron bajo la licencia MIT; esa licencia sigue aplicándose solo a esas
 versiones, y no a ningún cambio posterior.
 
 Nada de este aviso limita los derechos que los Términos de servicio de GitHub
-dan a sus usuarios para ver este repositorio y hacer un fork en GitHub; esos
-derechos no incluyen ninguna licencia para usar el código.
+(sección D.5) dan a sus usuarios para ver este repositorio y hacer un fork en
+GitHub; esos derechos no incluyen ninguna licencia para usar, copiar ni
+distribuir el código fuera de GitHub.
 
 Los componentes de terceros conservan sus propias licencias.
 
