@@ -1,15 +1,8 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
 import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
+import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 
-/**
- * Donde se puede estar con los Términos pendientes (F3): la pantalla de
- * aceptarlos; la de completar el perfil, por la que pasa el usuario nuevo de
- * Google y donde ya los acepta (llevarle de allí a la otra serían dos pantallas
- * de aceptación seguidas); y la gestión de dispositivos, para poder cerrar una
- * sesión robada sin aceptar nada antes (el backend la exime del 403).
- */
-const SIN_TERMINOS_ACEPTADOS = ['/accept-terms', '/auth/complete-profile', '/profile/devices'];
 
 /**
  * Protected Route Component
@@ -50,8 +43,10 @@ const ProtectedRoute = ({ children }) => {
 
   // Términos sin aceptar (solo con `false` estricto: un backend antiguo no
   // manda el campo). Hasta aceptarlos el backend responde 403 a casi todo, así
-  // que la pantalla de destino ni se monta
-  if (debeAceptarLosTerminos(user) && !SIN_TERMINOS_ACEPTADOS.includes(location.pathname)) {
+  // que la pantalla de destino ni se monta. Las rutas donde se puede estar sin
+  // aceptar son las de `RUTAS_CON_TERMINOS_PENDIENTES`, la misma lista que usa
+  // la redirección tras un 403
+  if (debeAceptarLosTerminos(user) && !sePuedeEstarConTerminosPendientes(location.pathname)) {
     return <Navigate to="/accept-terms" state={{ from: location }} replace />;
   }
 

@@ -42,6 +42,26 @@ const PATRONES_PUBLICOS = [
  *  conserva tal cual. */
 const normalizar = (ruta) => (ruta.length > 1 ? ruta.replace(/\/+$/, '') || '/' : ruta);
 
+/** La misma normalización para quien compare rutas a mano. */
+export const normalizaLaRuta = normalizar;
+
+/**
+ * Donde se puede estar con los Términos pendientes (F3, F4). UNA lista para los
+ * dos que deciden: el guardia de rutas, que deja pasar, y la redirección tras
+ * un 403, que no salta. Dos copias acababan rebotando en bucle en cuanto una se
+ * quedaba atrás.
+ *
+ * - la pantalla de aceptarlos;
+ * - completar el perfil, por la que pasa el usuario nuevo de Google y donde ya
+ *   los acepta (de allí a la otra serían dos pantallas de aceptación seguidas);
+ * - la gestión de dispositivos, para cerrar una sesión robada sin aceptar nada
+ *   antes (el backend la exime del 403).
+ */
+export const RUTAS_CON_TERMINOS_PENDIENTES = Object.freeze(['/accept-terms', '/auth/complete-profile', '/profile/devices']);
+
+/** Si en esta ruta se puede estar con los Términos pendientes; con o sin barra final. */
+export const sePuedeEstarConTerminosPendientes = (ruta) => RUTAS_CON_TERMINOS_PENDIENTES.includes(normalizar(ruta));
+
 /** Si una ruta concreta es publica. */
 export const esRutaPublica = (ruta) => {
   const limpia = normalizar(ruta);

@@ -1,4 +1,4 @@
-import { esRutaPublica } from './rutasPublicas';
+import { esRutaPublica, normalizaLaRuta, sePuedeEstarConTerminosPendientes } from './rutasPublicas';
 
 /**
  * Llevar a aceptar los Términos tras un 403 `TERMS_NOT_ACCEPTED` (F4).
@@ -22,7 +22,6 @@ import { esRutaPublica } from './rutasPublicas';
  * se recargaría sin fin. La marca de la última redirección sobrevive a la
  * recarga en `sessionStorage`: la misma ruta no se redirige dos veces seguidas.
  */
-const DONDE_NO_SE_REDIRIGE = ['/accept-terms', '/auth/complete-profile', '/profile/devices'];
 
 /** Lo que dura la marca: si la página no se ha ido en este tiempo, no se va. */
 const PLAZO_MS = 30_000;
@@ -56,8 +55,9 @@ export const seVaAAceptarLosTerminos = () => redirigidoEn !== null && Date.now()
  */
 export const llevaAAceptarLosTerminos = () => {
   if (seVaAAceptarLosTerminos()) return true;
-  const { pathname = '/', search = '' } = globalThis.location ?? {};
-  if (DONDE_NO_SE_REDIRIGE.includes(pathname) || esRutaPublica(pathname)) return false;
+  const { pathname: tal = '/', search = '' } = globalThis.location ?? {};
+  const pathname = normalizaLaRuta(tal);
+  if (sePuedeEstarConTerminosPendientes(pathname) || esRutaPublica(pathname)) return false;
 
   const ruta = `${pathname}${search}`;
   const ahora = Date.now();
