@@ -145,13 +145,6 @@ const Register = () => {
     }
   };
 
-  // Registrarse con Google también crea una cuenta: sin la casilla no se sale
-  const puedeIrAGoogle = () => {
-    if (acceptedTerms) return true;
-    setErrors(prev => ({ ...prev, acceptTerms: t('register.acceptTermsRequired') }));
-    return false;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -615,12 +608,13 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Google Sign Up */}
+              {/* Google Sign Up. Sin la casilla de arriba a propósito: este botón
+                  también entra con cuentas que ya existen, y los usuarios nuevos
+                  de Google aceptan los Términos en /auth/complete-profile */}
               <GoogleSignInButton
                 flow="login"
                 label={t('google.signUpWithGoogle', { ns: 'auth' })}
                 disabled={isLoading}
-                antesDeSalir={puedeIrAGoogle}
               />
 
               {/* Login Link */}

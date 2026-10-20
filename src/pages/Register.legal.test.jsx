@@ -10,7 +10,8 @@ import { MemoryRouter } from 'react-router';
  *   mínima (16 años): sin marcarla no se crea la cuenta.
  * - La privacidad se INFORMA, no se acepta: el tratamiento se basa en el
  *   contrato, no en un consentimiento. Por eso va fuera de la casilla.
- * - Registrarse con Google también crea una cuenta, así que exige lo mismo.
+ * - Google no pasa por esta casilla: su botón también entra con cuentas que ya
+ *   existen, y los usuarios nuevos de Google aceptan en /auth/complete-profile.
  */
 const registrar = vi.fn();
 const urlDeGoogle = vi.fn(() => '#google');
@@ -107,22 +108,16 @@ describe('Register · Términos, edad y privacidad', () => {
     expect(privacidad.parentElement).toHaveTextContent('register.privacyNoticePrefix');
   });
 
-  it('R4: con Google tampoco se entra sin marcar la casilla', () => {
+  // R4 (revisión): el botón de Google de esta página también ENTRA con una
+  // cuenta que ya existe, así que no puede pedir la casilla de crear cuenta. Los
+  // usuarios nuevos de Google la aceptan en /auth/complete-profile
+  it('R4: Google no depende de la casilla', () => {
     abrir();
 
-    fireEvent.click(screen.getByRole('button', { name: 'google.signUpWithGoogle' }));
-
-    expect(urlDeGoogle).not.toHaveBeenCalled();
-    expect(screen.getByText('register.acceptTermsRequired')).toBeInTheDocument();
-    expect(casilla()).toHaveAttribute('aria-invalid', 'true');
-  });
-
-  it('R4: marcada, Google sigue su camino', () => {
-    abrir();
-
-    fireEvent.click(casilla());
     fireEvent.click(screen.getByRole('button', { name: 'google.signUpWithGoogle' }));
 
     expect(urlDeGoogle).toHaveBeenCalledWith('login');
+    expect(screen.queryByText('register.acceptTermsRequired')).toBeNull();
+    expect(casilla()).not.toHaveAttribute('aria-invalid', 'true');
   });
 });
