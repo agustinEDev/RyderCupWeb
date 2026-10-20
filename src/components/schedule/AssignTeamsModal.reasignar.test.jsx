@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import AssignTeamsModal from './AssignTeamsModal';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 /**
  * «Reasignar equipos» no deshace el draft de un clic (#710, e2e del 24 sep).
@@ -26,7 +27,9 @@ vi.mock('framer-motion', () => {
   return { motion: new Proxy({}, { get: () => Div }) };
 });
 
-const t = (clave, params) => (params?.count !== undefined ? `${clave}_${params.count}` : clave);
+const t = (clave, params) =>
+  abreviaturaDeHandicap(clave, params) ??
+  (params?.count !== undefined ? `${clave}_${params.count}` : clave);
 
 const INSCRITOS = [
   { userId: 'ana', userName: 'Ana Alba', status: 'APPROVED', userHandicap: 8 },

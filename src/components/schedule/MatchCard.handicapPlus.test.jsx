@@ -9,6 +9,7 @@ vi.mock('../../composition', () => ({
 
 import MatchCard from './MatchCard';
 import MatchDetailModal from './MatchDetailModal';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 /**
  * Un hándicap plus se guarda negativo y se lee con «+» (FE #797).
@@ -21,7 +22,7 @@ import MatchDetailModal from './MatchDetailModal';
  *   H4  cero                        | «HCP 0.0», «PH: 0»
  *   H6  el tope de juego no cambia  | «PH: 18 Lim.» con el tope en 18
  */
-const t = (clave) => clave;
+const t = (clave, params) => abreviaturaDeHandicap(clave, params) ?? clave;
 
 const partido = (jugadorA, jugadorB) => ({
   id: 'm1',

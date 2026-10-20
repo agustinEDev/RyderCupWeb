@@ -212,7 +212,7 @@ const AssignTeamsModalContent = ({
                         </span>
                         {player.userHandicap != null && (
                           <span className="text-xs text-gray-500 ml-2">
-                            HCP: {formatoDeIndice(player.userHandicap)}
+                            {t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })}
                           </span>
                         )}
                         {esCapitan(player.userId) && (

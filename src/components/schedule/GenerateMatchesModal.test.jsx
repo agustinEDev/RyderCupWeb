@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import GenerateMatchesModal from './GenerateMatchesModal';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
@@ -13,6 +14,8 @@ vi.mock('framer-motion', () => ({
 }));
 
 const mockT = (key, params) => {
+  const abreviatura = abreviaturaDeHandicap(key, params);
+  if (abreviatura) return abreviatura;
   if (params) {
     let result = key;
     Object.entries(params).forEach(([k, v]) => {

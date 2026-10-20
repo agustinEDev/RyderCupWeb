@@ -56,17 +56,17 @@ const MatchDetailModal = ({
     return (
       <span className="ml-2 inline-flex items-center gap-1">
         {realHcp != null && (
-          <span className="text-xs text-gray-600 font-medium">HCP {formatoDeIndice(realHcp)}</span>
+          <span className="text-xs text-gray-600 font-medium">{t('handicapLabels.index', { value: formatoDeIndice(realHcp) })}</span>
         )}
         {ph != null && (
           <>
             {realHcp != null && <span className="text-xs text-gray-400">|</span>}
             {isCapped ? (
               <span className="text-xs bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">
-                PH: {formatoDeHandicapDeJuego(ph)} Lim.
+                {t('handicapLabels.playingCapped', { value: formatoDeHandicapDeJuego(ph) })}
               </span>
             ) : (
-              <span className="text-xs text-gray-600 font-medium">PH: {formatoDeHandicapDeJuego(ph)}</span>
+              <span className="text-xs text-gray-600 font-medium">{t('handicapLabels.playing', { value: formatoDeHandicapDeJuego(ph) })}</span>
             )}
           </>
         )}

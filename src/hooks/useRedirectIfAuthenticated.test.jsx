@@ -411,6 +411,21 @@ describe('useRedirectIfAuthenticated', () => {
       });
     });
 
+    // Revisión del 21 oct: el 401 de /current-user es llano y la revocación la
+    // dice el 401 del refresco
+    it('avisa de la revocación también cuando la dice el refresco', async () => {
+      const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+      globalThis.fetch.mockResolvedValue(errorResponse(401));
+      isDeviceRevoked.mockImplementation((_respuesta, datos) => datos === detalle);
+      refreshAccessToken.mockRejectedValue(Object.assign(rejectedRefresh(), { errorData: detalle }));
+
+      const { result } = renderHook(() => useRedirectIfAuthenticated());
+
+      await waitFor(() => expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(detalle));
+      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(result.current).toBe(false);
+    });
+
     it('avisa de la revocación del dispositivo en vez de dejar un formulario mudo', async () => {
       globalThis.fetch.mockResolvedValue(errorResponse(401));
       isDeviceRevoked.mockReturnValue(true);

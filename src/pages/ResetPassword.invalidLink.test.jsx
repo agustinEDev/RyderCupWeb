@@ -23,7 +23,10 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   R2  sin conexión (TypeError)       | «no se ha podido comprobar: sin conexión» + Reintentar; no pide otro
  *   R3  429                            | «demasiados intentos, espera un poco» + Reintentar; no pide otro
  *   R4  500                            | «no se ha podido comprobar» + Reintentar
- *   R4b un error sin status            | igual que R4
+ *   R4b un error sin status            | «enlace no válido» y pedir otro: reintentar no lo arregla
+ *   R4c token en blanco (el caso de uso lanza) | como R4b
+ *   R4d cuerpo que no es JSON (SyntaxError)    | como R4b
+ *   R4e TypeError del código, con red          | como R4b: no se confunde con falta de cobertura
  *   R6  404 / 422 / 400 (otro 4xx)     | «enlace no válido» y pedir otro: reintentar no lo arregla
  *   R6d 408                            | como R4: se agotó el tiempo, el enlace puede estar bien
  *   R5  Reintentar y ahora valid:true  | el MISMO token (del historial), «validando» y el formulario
@@ -74,7 +77,9 @@ const abrirSoloConElHistorial = (token) => {
   );
 };
 
-const sinConexion = () => new TypeError('common:sinConexion.mensaje');
+// Como lo marca api.js: el TypeError de fetch, envuelto y guardado en `cause`
+const sinConexion = () =>
+  new TypeError('common:sinConexion.mensaje', { cause: new TypeError('Failed to fetch') });
 const conEstado = (status, mensaje) => Object.assign(new Error(mensaje), { status });
 
 const noDiceQueElEnlaceEsteMal = () => {
@@ -174,13 +179,46 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
     noDiceQueElEnlaceEsteMal();
   });
 
-  it('R4b: un error sin status es un fallo al comprobar, no un enlace malo', async () => {
+  const esEnlaceMalo = async () => {
+    expect(await screen.findByText('resetPassword.invalidTokenTitle')).toBeInTheDocument();
+    expect(screen.getByText('resetPassword.tokenInvalidMessage')).toBeInTheDocument();
+    expect(screen.getByText('resetPassword.requestNewLink')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'resetPassword.retry' })).toBeNull();
+    expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
+  };
+
+  // Revisión del 21 oct: sin status no es la API diciendo que no pudo; es un
+  // enlace o una respuesta que no sirven, y reintentar no lo arregla nunca
+  it('R4b: un error sin status es «enlace no válido», sin Reintentar', async () => {
     repositorio.validateResetToken.mockRejectedValue(new Error('algo'));
     abrir('a'.repeat(48));
 
-    expect(await screen.findByText('resetPassword.checkServerError')).toBeInTheDocument();
+    await esEnlaceMalo();
+  });
+
+  it('R4c: un token en blanco (el caso de uso lanza) es «enlace no válido»', async () => {
+    abrir('%20%20');
+
+    await esEnlaceMalo();
+    expect(repositorio.validateResetToken).not.toHaveBeenCalled();
+  });
+
+  it('R4d: un cuerpo que no es JSON (SyntaxError) es «enlace no válido»', async () => {
+    repositorio.validateResetToken.mockRejectedValue(new SyntaxError('Unexpected token <'));
+    abrir('a'.repeat(48));
+
+    await esEnlaceMalo();
+  });
+
+  it('R4e: un TypeError del código, con red, no pasa por falta de cobertura', async () => {
+    // Un 200 con cuerpo null: el repositorio lee `.valid` de null
+    repositorio.validateResetToken.mockRejectedValue(
+      new TypeError("Cannot read properties of null (reading 'valid')")
+    );
+    abrir('a'.repeat(48));
+
+    await esEnlaceMalo();
     expect(screen.queryByText('resetPassword.checkNoConnection')).toBeNull();
-    noDiceQueElEnlaceEsteMal();
   });
 
   // Revision del 20 oct: un 4xx que no es 429 no se arregla reintentando, y

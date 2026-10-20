@@ -21,6 +21,20 @@ export const esFalloDeRed = (err) =>
   err instanceof TypeError || globalThis.navigator?.onLine === false;
 
 /**
+ * La versión estricta, para las llamadas que pasan por `api.js`: solo el
+ * `TypeError` que él marca —el de `fetch`, envuelto y guardado en `cause`—, o
+ * el navegador sin red. Un `TypeError` del código (leer `.valid` de un cuerpo
+ * `null`) no trae `cause` y no se cuenta como falta de cobertura.
+ *
+ * Se usa donde confundirlos tiene coste: en el enlace de restablecer, ofrecer
+ * «Reintentar» a algo que no se arregla reintentando deja al usuario en un
+ * bucle. Lo que no pasa por `api.js` necesita `esFalloDeRed`.
+ */
+export const esFalloDeRedDeLaApi = (err) =>
+  (err instanceof TypeError && err.cause !== undefined) ||
+  globalThis.navigator?.onLine === false;
+
+/**
  * Lo que se le enseña a quien está mirando.
  *
  * Tres casos y no dos, que es donde estuvo el error al escribir esto: forzar

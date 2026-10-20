@@ -11,7 +11,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   S2   401, refresco bien, 200                      | ok
  *   S3   401 «dispositivo revocado»                   | revocada, sin refrescar
  *   S4   401, refresco bien, 401                      | rechazada
+ *   S4b  401, refresco bien, 401 «dispositivo revocado» | revocada, con su detalle
  *   S5   401, refresco con 401                        | rechazada
+ *   S5b  401, refresco con 401 «dispositivo revocado»  | revocada, con su detalle
  *   S6   401, refresco que falla por otra cosa        | fallo
  *   S7   500                                          | fallo
  *   S8   sin red (TypeError)                          | fallo
@@ -108,6 +110,35 @@ describe('preguntaLaSesionSinInterceptor', () => {
 
     expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
     expect(fetchFalso).toHaveBeenCalledTimes(1);
+  });
+
+  // Revisión del 21 oct: el 401 llano de /current-user no dice nada, pero el
+  // del refresco sí puede decir que se revocó el dispositivo
+  it('S5b: si el refresco contesta 401 «dispositivo revocado», es revocada', async () => {
+    const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
+    fetchFalso.mockResolvedValueOnce(respuesta(401));
+    refreshAccessToken.mockRejectedValueOnce(
+      Object.assign(new Error('revocado'), { response: { status: 401 }, errorData: detalle })
+    );
+
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'revocada', detalle });
+  });
+
+  it('S5c: un 401 del refresco sin cuerpo sigue siendo rechazada', async () => {
+    fetchFalso.mockResolvedValueOnce(respuesta(401));
+    refreshAccessToken.mockRejectedValueOnce(
+      Object.assign(new Error('caducada'), { response: { status: 401 }, errorData: { detail: 'Refresh token expired' } })
+    );
+
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
+  });
+
+  it('S4b: si tras refrescar el 401 dice «dispositivo revocado», es revocada', async () => {
+    const detalle = { detail: 'Device revoked. Please sign in again.' };
+    fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(401, detalle));
+    refreshAccessToken.mockResolvedValueOnce({});
+
+    expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'revocada', detalle });
   });
 
   it('S6: si el refresco falla por otra cosa, no se sabe: fallo', async () => {

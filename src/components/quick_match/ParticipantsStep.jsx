@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import TeeSelectField from './TeeSelectField';
 import TeeSelectPanel from './TeeSelectPanel';
 import TeeColorBadge from '../golf_course/TeeColorBadge';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
  * Wizard step 2: current roster + add participants (friends or guests).
@@ -230,7 +231,8 @@ const ParticipantsStep = ({
                 guestForm.handicap ? 'text-gray-900' : 'text-gray-400'
               }`}
             >
-              {guestForm.handicap || t('create.participants.guestHandicap')}
+              {/* Como en el resumen: un plus guardado «-2» se lee «+2.0» */}
+              {formatoDeIndice(guestForm.handicap) ?? t('create.participants.guestHandicap')}
             </button>
             {courseTees.length > 0 && (
               <TeeSelectField

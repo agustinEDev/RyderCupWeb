@@ -10,7 +10,7 @@ import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 import BrandMark from '../components/ui/BrandMark';
 import LoadingMark from '../components/ui/LoadingMark';
-import { esFalloDeRed } from '../utils/sinCobertura';
+import { esFalloDeRedDeLaApi } from '../utils/sinCobertura';
 import {
   validateResetTokenUseCase,
   resetPasswordUseCase,
@@ -112,25 +112,23 @@ const ResetPassword = () => {
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         }
       } catch (error) {
-        // Un token inválido llega como valid:false. Lo que llega aquí sin
-        // respuesta (sin conexión, sin status), con un 408, un 429 o un 5xx es que
-        // no se ha podido comprobar, y el enlace puede estar bien (FE #785).
-        // Cualquier otro 4xx no se arregla reintentando: es un enlace malo
+        // Un token inválido llega como valid:false. Solo es «no se ha podido
+        // comprobar» lo que de verdad no tuvo respuesta (sin conexión), un 408,
+        // un 429 o un 5xx: el enlace puede estar bien (FE #785). Todo lo demás
+        // —otro 4xx, o un error sin status: el token en blanco, un cuerpo que no
+        // es JSON, un fallo del código— no se arregla reintentando: enlace malo
         console.error('Token validation error:', error);
         const status = error?.status;
+        const sinRed = esFalloDeRedDeLaApi(error);
         const reintentable =
-          esFalloDeRed(error) ||
-          typeof status !== 'number' ||
-          status === 408 ||
-          status === 429 ||
-          status >= 500;
+          sinRed || status === 408 || status === 429 || status >= 500;
         if (!reintentable) {
           setTokenState('invalid');
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
           return;
         }
         setTokenState('unchecked');
-        if (esFalloDeRed(error)) {
+        if (sinRed) {
           setCheckFailure('resetPassword.checkNoConnection');
         } else if (error?.status === 429) {
           setCheckFailure('resetPassword.checkTooManyRequests');

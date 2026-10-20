@@ -15,7 +15,7 @@ vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfToken: () => 'csrf' }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRed, mensajeDeError } = await import('../utils/sinCobertura');
+const { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } = await import('../utils/sinCobertura');
 
 describe('apiRequest · sin conexión (FE #685)', () => {
   beforeEach(() => {
@@ -48,6 +48,7 @@ describe('apiRequest · sin conexión (FE #685)', () => {
     expect(error).toBeInstanceOf(TypeError);
     expect(esFalloDeRed(error)).toBe(true);
     expect(error.cause).toBe(original);
+    expect(esFalloDeRedDeLaApi(error)).toBe(true);
     expect(mensajeDeError(error, { sinConexion: 'sin red', generico: 'otro' })).toBe('sin red');
   });
 

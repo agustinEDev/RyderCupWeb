@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import TeamAssignmentSection from './TeamAssignmentSection';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 /**
  * Cómo se repartieron los equipos, escrito en cristiano.
@@ -18,6 +19,8 @@ const CLAVES = {
   'teams.draft': 'Draft de capitanes',
 };
 const t = (clave, params) => {
+  const abreviatura = abreviaturaDeHandicap(clave, params);
+  if (abreviatura) return abreviatura;
   if (params?.defaultValue !== undefined) return CLAVES[clave] ?? params.defaultValue;
   return CLAVES[clave] ?? clave;
 };
@@ -94,5 +97,29 @@ describe('TeamAssignmentSection · hándicap plus (FE #797)', () => {
 
     expect(screen.getByText('HCP +2.0')).toBeInTheDocument();
     expect(screen.getByText('HCP 12.4')).toBeInTheDocument();
+  });
+  // Revisión del 21 oct: el tope también pasa por t(), y se lee igual
+  it('H2: por encima del tope, «| 18 Lim.» tras el índice', () => {
+    render(
+      <TeamAssignmentSection
+        teamAssignment={{ ...REPARTO, mode: 'MANUAL' }}
+        onAssignTeams={() => {}}
+        onFillCaptain={() => {}}
+        canManage
+        playerNameMap={new Map([['ana', 'Ana Alba'], ['bea', 'Bea Blanco']])}
+        enrollments={[
+          { userId: 'ana', status: 'APPROVED', userHandicap: 24 },
+          { userId: 'bea', status: 'APPROVED', userHandicap: 12.4 },
+        ]}
+        teamNames={NOMBRES}
+        maxPlayingHandicap={18}
+        captains={{ teamA: null, teamB: null, viceTeamA: null, viceTeamB: null }}
+        status="CLOSED"
+        t={t}
+      />
+    );
+
+    expect(screen.getByText('HCP 24.0')).toBeInTheDocument();
+    expect(screen.getAllByText('| 18 Lim.')).toHaveLength(1);
   });
 });

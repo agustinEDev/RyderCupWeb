@@ -63,17 +63,30 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
       // sobre la sesión, solo que toca renovarlo
       await refreshAccessToken();
       respuesta = await pideElUsuario(signal);
+
+      // La revocación también puede llegar en la segunda pregunta
+      if (respuesta.status === 401) {
+        const detalleTrasRefrescar = await cuerpoDelRechazo(respuesta);
+        if (isDeviceRevoked(respuesta, detalleTrasRefrescar)) {
+          return { estado: 'revocada', detalle: detalleTrasRefrescar };
+        }
+        return { estado: 'rechazada' };
+      }
     }
 
-    if (respuesta.status === 401) return { estado: 'rechazada' };
     if (!respuesta.ok) {
       return { estado: 'fallo', error: new Error(`current-user respondió ${respuesta.status}`) };
     }
 
     return { estado: 'ok', usuario: await respuesta.json() };
   } catch (error) {
-    // El refresco contesta 401 cuando el refresh token ya no vale
-    if (error?.response?.status === 401) return { estado: 'rechazada' };
+    // El refresco contesta 401 cuando el refresh token ya no vale, y su
+    // detalle puede decir que lo que pasó es que se revocó el dispositivo
+    if (error?.response?.status === 401) {
+      const detalle = error.errorData ?? {};
+      if (isDeviceRevoked(error.response, detalle)) return { estado: 'revocada', detalle };
+      return { estado: 'rechazada' };
+    }
     return { estado: 'fallo', error };
   }
 };
