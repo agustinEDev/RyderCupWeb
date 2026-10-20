@@ -9,7 +9,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../../utils/tokenRefreshInterceptor', () => ({
-  refreshAccessToken: vi.fn(),
+  refrescoCompartido: vi.fn(),
   // Si alguien la usara, en una página pública con un `user` rancio acabaría en
   // «tu sesión expiró»: que conste que no se toca
   fetchWithTokenRefresh: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('../../hooks/useAuthContext', () => ({
   useAuthContext: () => ({ clearAuth }),
 }));
 
-const { refreshAccessToken, fetchWithTokenRefresh } = await import('../../utils/tokenRefreshInterceptor');
+const { refrescoCompartido, fetchWithTokenRefresh } = await import('../../utils/tokenRefreshInterceptor');
 const { anotaLaSesion } = await import('../../services/sesionCompartida');
 const { clearUserContext } = await import('../../utils/sentryHelpers');
 const { default: VolverDeLoLegal } = await import('./VolverDeLoLegal');
@@ -92,7 +92,7 @@ beforeEach(() => {
   });
   vi.stubGlobal('fetch', fetchFalso);
   fetchFalso.mockReset();
-  refreshAccessToken.mockReset();
+  refrescoCompartido.mockReset();
   anotaLaSesion.mockReset();
   fetchWithTokenRefresh.mockReset();
   clearAuth.mockReset();
@@ -193,26 +193,26 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     expect(fetchFalso.mock.calls[0][0]).toMatch(/\/api\/v1\/auth\/current-user$/);
     expect(fetchFalso.mock.calls[0][1]).toMatchObject({ credentials: 'include' });
     expect(anotaLaSesion).toHaveBeenCalledWith(USUARIO);
-    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(refrescoCompartido).not.toHaveBeenCalled();
   });
 
   it('L3c: con el access caducado y el refresh vivo refresca y va al panel', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(200, USUARIO));
-    refreshAccessToken.mockResolvedValueOnce({});
+    refrescoCompartido.mockResolvedValueOnce({});
     abrir();
 
     await pulsar();
 
     expect(screen.getByText('panel')).toBeInTheDocument();
-    expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(refrescoCompartido).toHaveBeenCalledTimes(1);
     expect(fetchFalso).toHaveBeenCalledTimes(2);
   });
 
   it('L3d: con la sesión muerta (el refresco rechazado) va a la portada sin el interceptor', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refreshAccessToken.mockRejectedValueOnce(Object.assign(new Error('caducada'), { response: { status: 401 } }));
+    refrescoCompartido.mockRejectedValueOnce(Object.assign(new Error('caducada'), { response: { status: 401 } }));
     abrir();
 
     await pulsar();
@@ -230,7 +230,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
   it('L3e: si tras refrescar sigue el 401, a la portada', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValue(respuesta(401));
-    refreshAccessToken.mockResolvedValueOnce({});
+    refrescoCompartido.mockResolvedValueOnce({});
     abrir();
 
     await pulsar();
@@ -243,7 +243,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
   it('L3e2: tirada la sesion muerta, la siguiente pulsacion ya no toca la red', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValue(respuesta(401));
-    refreshAccessToken.mockResolvedValue({});
+    refrescoCompartido.mockResolvedValue({});
     const { unmount } = abrir();
     await pulsar();
     unmount();
@@ -266,7 +266,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     await pulsar();
 
     expect(screen.getByText('portada')).toBeInTheDocument();
-    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(refrescoCompartido).not.toHaveBeenCalled();
     expect(clearAuth).toHaveBeenCalledTimes(1);
     expect(anotaLaSesion).not.toHaveBeenCalled();
   });

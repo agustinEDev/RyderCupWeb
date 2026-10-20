@@ -23,12 +23,13 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   R2  sin conexión (TypeError)       | «no se ha podido comprobar: sin conexión» + Reintentar; no pide otro
  *   R3  429                            | «demasiados intentos, espera un poco» + Reintentar; no pide otro
  *   R4  500                            | «no se ha podido comprobar» + Reintentar
- *   R4b un error sin status            | «enlace no válido» y pedir otro: reintentar no lo arregla
- *   R4c token en blanco (el caso de uso lanza) | como R4b
- *   R4d cuerpo que no es JSON (SyntaxError)    | como R4b
- *   R4e TypeError del código, con red          | como R4b: no se confunde con falta de cobertura
- *   R6  404 / 422 / 400 (otro 4xx)     | «enlace no válido» y pedir otro: reintentar no lo arregla
- *   R6d 408                            | como R4: se agotó el tiempo, el enlace puede estar bien
+ *   R4b un error sin status            | «no se ha podido comprobar» + Reintentar (regla del 21 oct)
+ *   R4c token vacío o en blanco        | «enlace no válido» SIN llamar al caso de uso ni a la API
+ *   R4d 200 que no es JSON (SyntaxError, portal cautivo) | «no se ha podido comprobar» (servidor)
+ *   R4e TypeError sin cause, con red   | «no se ha podido comprobar» (servidor), no «sin conexión»
+ *   R4f error marcado sin conexión por api.js | «sin conexión» + Reintentar
+ *   R6  404 / 422 / 400 / 403 (otro 4xx) | «enlace no válido» y pedir otro: reintentar no lo arregla
+ *   R6b 503 / R6d 408 / R3 429         | «no se ha podido comprobar» + Reintentar
  *   R5  Reintentar y ahora valid:true  | el MISMO token (del historial), «validando» y el formulario
  *   R5b Reintentar y ahora un 429      | el aviso del 429
  *   R5c Reintentar y ahora valid:false | «enlace no válido» y pedir otro
@@ -53,6 +54,7 @@ vi.mock('../composition', async () => {
 });
 
 const { default: ResetPassword } = await import('./ResetPassword');
+const { validateResetTokenUseCase } = await import('../composition');
 
 const abrir = (token) => {
   window.history.replaceState(null, '', `/reset-password/${token}`);
@@ -77,9 +79,12 @@ const abrirSoloConElHistorial = (token) => {
   );
 };
 
-// Como lo marca api.js: el TypeError de fetch, envuelto y guardado en `cause`
+// Como lo marca api.js: el TypeError de fetch, envuelto, con la marca explícita
 const sinConexion = () =>
-  new TypeError('common:sinConexion.mensaje', { cause: new TypeError('Failed to fetch') });
+  Object.assign(
+    new TypeError('common:sinConexion.mensaje', { cause: new TypeError('Failed to fetch') }),
+    { sinConexion: true }
+  );
 const conEstado = (status, mensaje) => Object.assign(new Error(mensaje), { status });
 
 const noDiceQueElEnlaceEsteMal = () => {
@@ -187,37 +192,81 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
     expect(screen.queryByText('resetPassword.checkFailedTitle')).toBeNull();
   };
 
-  // Revisión del 21 oct: sin status no es la API diciendo que no pudo; es un
-  // enlace o una respuesta que no sirven, y reintentar no lo arregla nunca
-  it('R4b: un error sin status es «enlace no válido», sin Reintentar', async () => {
+  const noSePudoComprobar = async (motivo) => {
+    expect(await screen.findByText('resetPassword.checkFailedTitle')).toBeInTheDocument();
+    expect(screen.getByText(motivo)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'resetPassword.retry' })).toBeInTheDocument();
+    noDiceQueElEnlaceEsteMal();
+  };
+
+  // Regla final (21 oct): «enlace no válido» SOLO con valid:false, un 4xx que no
+  // sea 408 ni 429, o el token vacío. Todo lo demás no dice nada del enlace
+  it('R4b: un error sin status es «no se ha podido comprobar», con Reintentar', async () => {
     repositorio.validateResetToken.mockRejectedValue(new Error('algo'));
     abrir('a'.repeat(48));
 
-    await esEnlaceMalo();
+    await noSePudoComprobar('resetPassword.checkServerError');
   });
 
-  it('R4c: un token en blanco (el caso de uso lanza) es «enlace no válido»', async () => {
-    abrir('%20%20');
+  it.each([
+    ['en blanco', '%20%20'],
+    ['con tabulador', '%20%09%20'],
+  ])('R4c: un token %s es «enlace no válido» sin llamar al caso de uso', async (_, token) => {
+    const execute = vi.spyOn(validateResetTokenUseCase, 'execute');
+    try {
+      abrir(token);
 
-    await esEnlaceMalo();
-    expect(repositorio.validateResetToken).not.toHaveBeenCalled();
+      await esEnlaceMalo();
+      expect(execute).not.toHaveBeenCalled();
+      expect(repositorio.validateResetToken).not.toHaveBeenCalled();
+    } finally {
+      execute.mockRestore();
+    }
   });
 
-  it('R4d: un cuerpo que no es JSON (SyntaxError) es «enlace no válido»', async () => {
+  it('R4c: sin token en la ruta ni en el historial es «enlace no válido»', async () => {
+    const execute = vi.spyOn(validateResetTokenUseCase, 'execute');
+    try {
+      window.history.replaceState(null, '', '/reset-password');
+      render(
+        <BrowserRouter>
+          <Routes>
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Routes>
+        </BrowserRouter>
+      );
+
+      await esEnlaceMalo();
+      expect(execute).not.toHaveBeenCalled();
+    } finally {
+      execute.mockRestore();
+    }
+  });
+
+  it('R4d: un 200 que no es JSON (SyntaxError, portal cautivo) es «no se ha podido comprobar»', async () => {
     repositorio.validateResetToken.mockRejectedValue(new SyntaxError('Unexpected token <'));
     abrir('a'.repeat(48));
 
-    await esEnlaceMalo();
+    await noSePudoComprobar('resetPassword.checkServerError');
   });
 
-  it('R4e: un TypeError del código, con red, no pasa por falta de cobertura', async () => {
-    // Un 200 con cuerpo null: el repositorio lee `.valid` de null
+  it('R4e: un TypeError sin cause, con red, es «no se ha podido comprobar» y no «sin conexión»', async () => {
     repositorio.validateResetToken.mockRejectedValue(
       new TypeError("Cannot read properties of null (reading 'valid')")
     );
     abrir('a'.repeat(48));
 
-    await esEnlaceMalo();
+    await noSePudoComprobar('resetPassword.checkServerError');
+    expect(screen.queryByText('resetPassword.checkNoConnection')).toBeNull();
+  });
+
+  it('R4f: un TypeError con cause pero SIN la marca de api.js no es «sin conexión»', async () => {
+    repositorio.validateResetToken.mockRejectedValue(
+      new TypeError('x', { cause: new TypeError('Failed to fetch') })
+    );
+    abrir('a'.repeat(48));
+
+    await noSePudoComprobar('resetPassword.checkServerError');
     expect(screen.queryByText('resetPassword.checkNoConnection')).toBeNull();
   });
 
@@ -227,6 +276,7 @@ describe('ResetPassword · no se ha podido comprobar el enlace (FE #785)', () =>
     [404, 'Not Found'],
     [422, 'Unprocessable Entity'],
     [400, 'Bad Request'],
+    [403, 'Forbidden'],
   ])('R6: un %i es «enlace no válido» y pide otro, sin Reintentar', async (status, mensaje) => {
     repositorio.validateResetToken.mockRejectedValue(conEstado(status, mensaje));
     abrir('a'.repeat(48));

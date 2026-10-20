@@ -58,7 +58,8 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     expect(error).toBeInstanceOf(TypeError);
     expect(error.message).toBe('t(common:sinConexion.mensaje)');
     expect(esFalloDeRed(error)).toBe(true);
-    // Lo marca con `cause`: es lo que mira la versión estricta
+    // La marca explícita: es lo que mira la versión estricta
+    expect(error.sinConexion).toBe(true);
     expect(esFalloDeRedDeLaApi(error)).toBe(true);
     expect(noLlegoAlServidor(error)).toBe(true);
     expect(seGuardaParaDespues(error)).toBe(true);

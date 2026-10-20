@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1930,7 +1931,7 @@ describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
       refetch: vi.fn(),
       ...estado,
     });
-    renderPage();
+    return renderPage();
   };
 
   it('M1: en match play cuenta con MIS golpes aunque el reparto sea del rival', () => {
@@ -2011,5 +2012,55 @@ describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
 
     expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
     expect(screen.queryByTestId('quick-match-my-round-line')).toBeNull();
+  });
+
+  // Lo que cambia la vuelta tiene que rehacerla: un useMemo al que le falta una
+  // dependencia se quedaría con el número viejo
+  it.each([
+    ['el allowance', { effectiveAllowance: 100 }, '-2'],
+    ['SCRATCH', { playMode: 'SCRATCH' }, 'input.myRoundPar'],
+    ['Stableford', { scoringFormat: 'STABLEFORD' }, '-1 · input.myRoundPoints 3'],
+  ])('M5b: si cambia %s, la vuelta se rehace', (_, cambio, esperado) => {
+    const veinte = { ...yo, handicap: 20 };
+    const { rerender } = montar({
+      quickMatch: { scoringFormat: 'MEDAL', effectiveAllowance: 50, participants: [veinte, rival] },
+      myParticipant: veinte,
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 4 }],
+    });
+    expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent('-1');
+
+    const estado = mockUseQuickMatchScoring.mock.results.at(-1).value;
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...estado,
+      quickMatch: { ...estado.quickMatch, ...cambio },
+    });
+    rerender(renderTree());
+
+    expect(screen.getByTestId('quick-match-my-round-value')).toHaveTextContent(esperado);
+  });
+
+  // Revisión final del 21 oct: el cálculo va en un useMemo. Un render que no
+  // cambia nada de lo que decide la vuelta no lo repite; un golpe nuevo, sí
+  it('M5: no recalcula la vuelta si no cambia lo que la decide', () => {
+    const espia = vi.spyOn(PersonalRoundCalculator, 'runningResult');
+    try {
+      const golpes = [{ holeNumber: 1, participantId: 'user-1', score: 6 }];
+      const { rerender } = montar({ holeScoresVisibles: golpes });
+      const antes = espia.mock.calls.length;
+      expect(antes).toBeGreaterThan(0);
+
+      rerender(renderTree());
+      expect(espia).toHaveBeenCalledTimes(antes);
+
+      const estado = mockUseQuickMatchScoring.mock.results.at(-1).value;
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...estado,
+        holeScoresVisibles: [...golpes, { holeNumber: 2, participantId: 'user-1', score: 3 }],
+      });
+      rerender(renderTree());
+      expect(espia.mock.calls.length).toBeGreaterThan(antes);
+    } finally {
+      espia.mockRestore();
+    }
   });
 });

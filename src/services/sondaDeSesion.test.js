@@ -22,11 +22,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
-  refreshAccessToken: vi.fn(),
+  refrescoCompartido: vi.fn(),
   fetchWithTokenRefresh: vi.fn(),
 }));
 
-const { refreshAccessToken, fetchWithTokenRefresh } = await import('../utils/tokenRefreshInterceptor');
+const { refrescoCompartido, fetchWithTokenRefresh } = await import('../utils/tokenRefreshInterceptor');
 const { preguntaLaSesionSinInterceptor } = await import('./sondaDeSesion');
 
 const USUARIO = { id: 'u1', email: 'a@b.es', first_name: 'Ana' };
@@ -50,7 +50,7 @@ const fetchFalso = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchFalso);
   fetchFalso.mockReset();
-  refreshAccessToken.mockReset();
+  refrescoCompartido.mockReset();
   fetchWithTokenRefresh.mockReset();
 });
 
@@ -69,19 +69,19 @@ describe('preguntaLaSesionSinInterceptor', () => {
     expect(fetchFalso).toHaveBeenCalledTimes(1);
     expect(fetchFalso.mock.calls[0][0]).toMatch(/\/api\/v1\/auth\/current-user$/);
     expect(fetchFalso.mock.calls[0][1]).toMatchObject({ credentials: 'include', signal: corte.signal });
-    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(refrescoCompartido).not.toHaveBeenCalled();
     expect(fetchWithTokenRefresh).not.toHaveBeenCalled();
   });
 
   it('S2: con el access caducado refresca a mano y repregunta con la misma senal', async () => {
     fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(200, USUARIO));
-    refreshAccessToken.mockResolvedValueOnce({});
+    refrescoCompartido.mockResolvedValueOnce({});
     const corte = new AbortController();
 
     const resultado = await preguntaLaSesionSinInterceptor(corte.signal);
 
     expect(resultado).toEqual({ estado: 'ok', usuario: USUARIO });
-    expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(refrescoCompartido).toHaveBeenCalledTimes(1);
     expect(fetchFalso).toHaveBeenCalledTimes(2);
     expect(fetchFalso.mock.calls[1][1]).toMatchObject({ signal: corte.signal });
   });
@@ -93,20 +93,20 @@ describe('preguntaLaSesionSinInterceptor', () => {
     const resultado = await preguntaLaSesionSinInterceptor();
 
     expect(resultado).toEqual({ estado: 'revocada', detalle });
-    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(refrescoCompartido).not.toHaveBeenCalled();
     expect(fetchFalso).toHaveBeenCalledTimes(1);
   });
 
   it('S4: si tras refrescar sigue el 401, la sesion esta rechazada', async () => {
     fetchFalso.mockResolvedValue(respuesta(401));
-    refreshAccessToken.mockResolvedValueOnce({});
+    refrescoCompartido.mockResolvedValueOnce({});
 
     expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
   });
 
   it('S5: si el refresco contesta 401, la sesion esta rechazada', async () => {
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refreshAccessToken.mockRejectedValueOnce(Object.assign(new Error('caducada'), { response: { status: 401 } }));
+    refrescoCompartido.mockRejectedValueOnce(Object.assign(new Error('caducada'), { response: { status: 401 } }));
 
     expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'rechazada' });
     expect(fetchFalso).toHaveBeenCalledTimes(1);
@@ -117,7 +117,7 @@ describe('preguntaLaSesionSinInterceptor', () => {
   it('S5b: si el refresco contesta 401 «dispositivo revocado», es revocada', async () => {
     const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refreshAccessToken.mockRejectedValueOnce(
+    refrescoCompartido.mockRejectedValueOnce(
       Object.assign(new Error('revocado'), { response: { status: 401 }, errorData: detalle })
     );
 
@@ -126,7 +126,7 @@ describe('preguntaLaSesionSinInterceptor', () => {
 
   it('S5c: un 401 del refresco sin cuerpo sigue siendo rechazada', async () => {
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refreshAccessToken.mockRejectedValueOnce(
+    refrescoCompartido.mockRejectedValueOnce(
       Object.assign(new Error('caducada'), { response: { status: 401 }, errorData: { detail: 'Refresh token expired' } })
     );
 
@@ -136,7 +136,7 @@ describe('preguntaLaSesionSinInterceptor', () => {
   it('S4b: si tras refrescar el 401 dice «dispositivo revocado», es revocada', async () => {
     const detalle = { detail: 'Device revoked. Please sign in again.' };
     fetchFalso.mockResolvedValueOnce(respuesta(401)).mockResolvedValueOnce(respuesta(401, detalle));
-    refreshAccessToken.mockResolvedValueOnce({});
+    refrescoCompartido.mockResolvedValueOnce({});
 
     expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'revocada', detalle });
   });
@@ -144,7 +144,7 @@ describe('preguntaLaSesionSinInterceptor', () => {
   it('S6: si el refresco falla por otra cosa, no se sabe: fallo', async () => {
     const error = new TypeError('Failed to fetch');
     fetchFalso.mockResolvedValueOnce(respuesta(401));
-    refreshAccessToken.mockRejectedValueOnce(error);
+    refrescoCompartido.mockRejectedValueOnce(error);
 
     expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'fallo', error });
   });
@@ -168,7 +168,7 @@ describe('preguntaLaSesionSinInterceptor', () => {
 
   it('S9: un 401 con un cuerpo que no es JSON se refresca igual', async () => {
     fetchFalso.mockResolvedValueOnce(sinJson(401)).mockResolvedValueOnce(respuesta(200, USUARIO));
-    refreshAccessToken.mockResolvedValueOnce({});
+    refrescoCompartido.mockResolvedValueOnce({});
 
     expect(await preguntaLaSesionSinInterceptor()).toEqual({ estado: 'ok', usuario: USUARIO });
   });

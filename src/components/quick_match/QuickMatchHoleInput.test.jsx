@@ -189,6 +189,59 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
     expect(within(screen.getByTestId('quick-match-my-round-line')).getByText('input.myRoundA11yUnder:1')).toHaveClass('sr-only');
   });
 
+  // Revisión final del 21 oct: un valor largo de Stableford no puede ensanchar
+  // la columna a 360 px, y la casilla no debe parecer el golpe de otro jugador
+  it('V8: la casilla no ensancha la rejilla: min-w-0 y el valor recortado', () => {
+    pintar([jugador('p1')], { myRound: vuelta({ toParLabel: '+12', toPar: 12, stablefordPoints: 36 }) });
+
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(casilla).toHaveClass('min-w-0');
+    const valor = screen.getByTestId('quick-match-my-round-value');
+    expect(casilla.contains(valor)).toBe(true);
+    expect(valor).toHaveClass('truncate', 'min-w-0');
+    expect(valor).toHaveTextContent('+12 · input.myRoundPoints:36');
+    // Con puntos, más pequeño; sin ellos, text-base. Nunca el text-lg del golpe
+    expect(valor).toHaveClass('text-sm');
+    expect(valor).not.toHaveClass('text-lg');
+  });
+
+  it('V8b: sin puntos el valor va en text-base', () => {
+    pintar([jugador('p1')], { myRound: vuelta() });
+
+    const valor = screen.getByTestId('quick-match-my-round-value');
+    expect(valor).toHaveClass('text-base', 'truncate');
+    expect(valor).not.toHaveClass('text-lg', 'text-sm');
+  });
+
+  it('V9: no se parece a la casilla de un golpe: sin fondo gris, borde discontinuo', () => {
+    pintar([jugador('p1')], { myRound: vuelta() });
+
+    const caja = screen.getByTestId('quick-match-my-round-value').parentElement;
+    expect(caja).toHaveClass('border-dashed');
+    const clasesDelGolpe = boton('p1').className.split(/\s+/);
+    expect(clasesDelGolpe.some((c) => c.startsWith('bg-'))).toBe(true);
+    expect(caja.className.split(/\s+/).some((c) => c.startsWith('bg-gray-1'))).toBe(false);
+    expect(caja.tagName).not.toBe('BUTTON');
+  });
+
+  it('V10: al par se dice con t(), no con el «PAR» fijo del cálculo', () => {
+    const { unmount } = pintar([jugador('p1')], { myRound: vuelta({ toPar: 0, toParLabel: 'PAR' }) });
+    expect(screen.getByTestId('quick-match-my-round-value')).toHaveTextContent('input.myRoundPar');
+    unmount();
+
+    pintar([jugador('p1'), jugador('p2')], {
+      myRound: vuelta({ toPar: 0, toParLabel: 'PAR', stablefordPoints: 18 }),
+    });
+    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent(
+      'input.myRound: input.myRoundPar · input.myRoundPoints:18'
+    );
+  });
+
+  it('V10b: los valores con signo siguen siendo números', () => {
+    pintar([jugador('p1')], { myRound: vuelta({ toPar: -1, toParLabel: '-1' }) });
+    expect(screen.getByTestId('quick-match-my-round-value')).toHaveTextContent(/^-1$/);
+  });
+
   it('V7b: al par, y sin hoyos, frases propias', () => {
     const { unmount } = pintar([jugador('p1')], { myRound: vuelta({ toPar: 0, toParLabel: 'PAR' }) });
     expect(screen.getByText('input.myRoundA11yPar')).toHaveClass('sr-only');

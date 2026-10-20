@@ -29,7 +29,7 @@ vi.mock('./useAuthContext', () => ({
 }));
 
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
-  refreshAccessToken: vi.fn(),
+  refrescoCompartido: vi.fn(),
 }));
 
 vi.mock('../utils/deviceRevocationLogout', () => ({
@@ -38,7 +38,7 @@ vi.mock('../utils/deviceRevocationLogout', () => ({
   clearDeviceRevocationFlag: vi.fn(),
 }));
 
-const { refreshAccessToken } = await import('../utils/tokenRefreshInterceptor');
+const { refrescoCompartido } = await import('../utils/tokenRefreshInterceptor');
 const { isDeviceRevoked, handleDeviceRevocationLogout } = await import(
   '../utils/deviceRevocationLogout'
 );
@@ -229,12 +229,12 @@ describe('useRedirectIfAuthenticated', () => {
       globalThis.fetch
         .mockResolvedValueOnce(errorResponse(401))
         .mockResolvedValueOnce(okResponse(BACKEND_USER));
-      refreshAccessToken.mockResolvedValue(true);
+      refrescoCompartido.mockResolvedValue(true);
 
       renderHook(() => useRedirectIfAuthenticated());
 
       await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
-      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(refrescoCompartido).toHaveBeenCalledTimes(1);
       expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     });
 
@@ -272,7 +272,7 @@ describe('useRedirectIfAuthenticated', () => {
     describe('cuando la comprobación no sale bien', () => {
       it('tira el usuario guardado si el backend rechaza el refresh', async () => {
         globalThis.fetch.mockResolvedValue(errorResponse(401));
-        refreshAccessToken.mockRejectedValue(rejectedRefresh());
+        refrescoCompartido.mockRejectedValue(rejectedRefresh());
 
         const { result } = renderHook(() => useRedirectIfAuthenticated());
 
@@ -286,12 +286,12 @@ describe('useRedirectIfAuthenticated', () => {
         // El refresco funciona pero la sesión ya no vale: es el único camino que
         // llega al 401 definitivo, y hasta ahora ningún test pasaba por él
         globalThis.fetch.mockResolvedValue(errorResponse(401));
-        refreshAccessToken.mockResolvedValue(true);
+        refrescoCompartido.mockResolvedValue(true);
 
         const { result } = renderHook(() => useRedirectIfAuthenticated());
 
         await waitFor(() => expect(result.current).toBe(false));
-        expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+        expect(refrescoCompartido).toHaveBeenCalledTimes(1);
         expect(globalThis.fetch).toHaveBeenCalledTimes(2);
         expect(clearAuth).toHaveBeenCalledTimes(1);
         expect(navigate).not.toHaveBeenCalled();
@@ -417,12 +417,12 @@ describe('useRedirectIfAuthenticated', () => {
       const detalle = { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' };
       globalThis.fetch.mockResolvedValue(errorResponse(401));
       isDeviceRevoked.mockImplementation((_respuesta, datos) => datos === detalle);
-      refreshAccessToken.mockRejectedValue(Object.assign(rejectedRefresh(), { errorData: detalle }));
+      refrescoCompartido.mockRejectedValue(Object.assign(rejectedRefresh(), { errorData: detalle }));
 
       const { result } = renderHook(() => useRedirectIfAuthenticated());
 
       await waitFor(() => expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(detalle));
-      expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(refrescoCompartido).toHaveBeenCalledTimes(1);
       expect(result.current).toBe(false);
     });
 
@@ -433,7 +433,7 @@ describe('useRedirectIfAuthenticated', () => {
       const { result } = renderHook(() => useRedirectIfAuthenticated());
 
       await waitFor(() => expect(handleDeviceRevocationLogout).toHaveBeenCalledTimes(1));
-      expect(refreshAccessToken).not.toHaveBeenCalled();
+      expect(refrescoCompartido).not.toHaveBeenCalled();
       expect(result.current).toBe(false);
     });
   });

@@ -81,10 +81,12 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
   // «Tu vuelta» (21 oct): el acumulado neto de quien anota, ya calculado por
   // `PersonalRoundCalculator.runningResult`. Sin hoyos anotados, un guion; en
   // Stableford, el neto y los puntos.
+  // Al par, por t(): el «PAR» de `formatToPar` va fijo. Con signo, el número.
   const myRoundValue = () => {
     if (myRound?.toParLabel == null) return '—';
-    if (myRound.stablefordPoints == null) return myRound.toParLabel;
-    return `${myRound.toParLabel} · ${t('input.myRoundPoints', { count: myRound.stablefordPoints })}`;
+    const toPar = myRound.toPar === 0 ? t('input.myRoundPar') : myRound.toParLabel;
+    if (myRound.stablefordPoints == null) return toPar;
+    return `${toPar} · ${t('input.myRoundPoints', { count: myRound.stablefordPoints })}`;
   };
 
   // Lo que oye un lector de pantalla: «+2» a secas no se entiende de oído
@@ -178,15 +180,24 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
           </div>
         ))}
         {myRoundInCell && (
-          <div data-testid="quick-match-my-round-cell" className="space-y-1 flex flex-col">
+          // `min-w-0`: un valor largo («+12 · 36 pts») no ensancha la columna a
+          // 360 px. Borde discontinuo y sin fondo: no se confunde con un golpe
+          <div data-testid="quick-match-my-round-cell" className="space-y-1 flex flex-col min-w-0">
             <span className="text-xs font-medium text-gray-500 truncate block" aria-hidden="true">
               {t('input.myRound')}
             </span>
             <span
-              className="w-full h-14 mt-auto flex items-center justify-center text-lg font-bold text-gray-900 whitespace-nowrap"
+              className="w-full h-14 mt-auto px-2 flex items-center justify-center rounded-xl border border-dashed border-gray-300"
               aria-hidden="true"
             >
-              {myRoundValue()}
+              <span
+                data-testid="quick-match-my-round-value"
+                className={`min-w-0 truncate font-semibold text-gray-700 ${
+                  myRound.stablefordPoints == null ? 'text-base' : 'text-sm'
+                }`}
+              >
+                {myRoundValue()}
+              </span>
             </span>
             <span className="sr-only">{myRoundSpoken()}</span>
           </div>

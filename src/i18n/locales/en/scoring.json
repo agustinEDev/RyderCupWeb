@@ -67,6 +67,7 @@
     "rivalPair": "The rival pair",
     "rivalBallOf": "Rival ball · {{nombre}}",
     "myRound": "Your round",
+    "myRoundPar": "PAR",
     "myRoundPoints_one": "{{count}} pt",
     "myRoundPoints_other": "{{count}} pts",
     "myRoundA11yNone": "Your round: no holes scored yet",

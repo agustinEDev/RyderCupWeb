@@ -465,4 +465,92 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
   it('R14: sin jugador no hay vuelta', () => {
     expect(running({ me: null })).toBeNull();
   });
+
+  it('R14b: lo que llega undefined toma su valor por defecto, como un parámetro', () => {
+    const result = PersonalRoundCalculator.runningResult({
+      me,
+      participants: undefined,
+      holes,
+      holeScores: undefined,
+      tees: undefined,
+      participantStrokes: undefined,
+      playMode: undefined,
+    });
+
+    expect(result).toEqual({ toPar: null, toParLabel: null, stablefordPoints: null, holesPlayed: 0 });
+    expect(
+      PersonalRoundCalculator.compute({ me, holes, holeScores: scores, tees: undefined, participants: undefined })
+    ).not.toBeNull();
+  });
+
+  // Revisión final del 21 oct. Una tarjeta de 18 hoyos de par 4 con índices
+  // 1..18 y un hándicap 20: cada golpe de diferencia en el hándicap de juego se
+  // ve en el resultado, así que el 95%, el 90% y el 100% dan números distintos
+  describe('el hándicap de juego que falta', () => {
+    const card = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: 4,
+      strokeIndex: i + 1,
+    }));
+    const alto = { participantId: 'p-1', name: 'Alice', handicap: 20 };
+    const todos = card.map((h) => ({ holeNumber: h.holeNumber, participantId: 'p-1', score: 4 }));
+    const deAlto = (overrides = {}) =>
+      running({ me: alto, participants: [alto, rival], holes: card, holeScores: todos, ...overrides });
+
+    it('R16: si el reparto del backend no trae a quien anota, usa su hándicap local, no 0', () => {
+      const result = deAlto({
+        matchFormat: 'SINGLES',
+        scoringFormat: null,
+        allowancePercentage: 100,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      // Hcp 20 al 100% = 20 golpes: 72 brutos son 52 netos sobre par 72
+      expect(result.toPar).toBe(-20);
+    });
+
+    it('R16b: y con el allowance del partido (fourball al 90%)', () => {
+      const result = deAlto({
+        matchFormat: 'FOURBALL',
+        scoringFormat: null,
+        allowancePercentage: 90,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      expect(result.toPar).toBe(-18);
+    });
+
+    it('R17: sin allowance, el de partido libre es el 95% del formato, no el 100%', () => {
+      const result = deAlto({ matchFormat: null, scoringFormat: 'STABLEFORD', allowancePercentage: null });
+
+      // 20 al 95% = 19
+      expect(result.toPar).toBe(-19);
+    });
+
+    it('R17b: sin allowance en fourball, su 90%', () => {
+      const result = deAlto({
+        matchFormat: 'FOURBALL',
+        scoringFormat: null,
+        allowancePercentage: undefined,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      expect(result.toPar).toBe(-18);
+    });
+
+    it('R17c: sin allowance en singles, su 100%', () => {
+      const result = deAlto({
+        matchFormat: 'SINGLES',
+        scoringFormat: null,
+        allowancePercentage: null,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      expect(result.toPar).toBe(-20);
+    });
+
+    it('R17d: un allowance explícito manda sobre el del formato', () => {
+      expect(deAlto({ matchFormat: null, allowancePercentage: 100 }).toPar).toBe(-20);
+    });
+  });
 });

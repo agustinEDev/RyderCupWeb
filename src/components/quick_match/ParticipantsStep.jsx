@@ -60,6 +60,10 @@ const ParticipantsStep = ({
     onAddFriend(friend, key);
   };
 
+  // Lo que enseña el botón decide también su color: con «-» o «2a» guardados no
+  // hay índice que leer, sale el texto de ayuda y va en su gris
+  const indiceDelInvitado = formatoDeIndice(guestForm.handicap);
+
   return (
   <div className="p-4 space-y-4">
     <div>
@@ -228,11 +232,11 @@ const ParticipantsStep = ({
               onClick={onOpenGuestHandicapPanel}
               data-testid="quick-match-guest-handicap-button"
               className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary ${
-                guestForm.handicap ? 'text-gray-900' : 'text-gray-400'
+                indiceDelInvitado == null ? 'text-gray-400' : 'text-gray-900'
               }`}
             >
               {/* Como en el resumen: un plus guardado «-2» se lee «+2.0» */}
-              {formatoDeIndice(guestForm.handicap) ?? t('create.participants.guestHandicap')}
+              {indiceDelInvitado ?? t('create.participants.guestHandicap')}
             </button>
             {courseTees.length > 0 && (
               <TeeSelectField

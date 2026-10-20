@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../../utils/tokenRefreshInterceptor', () => ({
-  refreshAccessToken: vi.fn(),
+  refrescoCompartido: vi.fn(),
   fetchWithTokenRefresh: vi.fn(),
 }));
 

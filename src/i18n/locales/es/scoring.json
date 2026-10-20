@@ -67,6 +67,7 @@
     "rivalPair": "La pareja rival",
     "rivalBallOf": "Bola rival · {{nombre}}",
     "myRound": "Tu vuelta",
+    "myRoundPar": "PAR",
     "myRoundPoints_one": "{{count}} pt",
     "myRoundPoints_other": "{{count}} pts",
     "myRoundA11yNone": "Tu vuelta: aún sin hoyos anotados",

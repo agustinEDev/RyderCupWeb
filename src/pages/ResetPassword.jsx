@@ -26,8 +26,8 @@ import {
  * 2. Pre-validación automática del token (useEffect)
  * 3. Si token válido: muestra formulario
  * 4. Si token inválido/expirado: muestra error y link a /forgot-password
- *    Si no se pudo comprobar (sin conexión, 408, 429, 5xx): «Reintentar» (FE #785);
- *    otro 4xx es un enlace malo, como el valid:false
+ *    Enlace malo SOLO con valid:false, un 4xx que no sea 408 ni 429, o el
+ *    token vacío; todo lo demás es «no se pudo comprobar» + «Reintentar» (FE #785)
  * 5. Usuario ingresa nueva contraseña (2 inputs: nueva + confirmar)
  * 6. Validación OWASP: 12+ chars, complejidad
  * 7. Submit → resetPasswordUseCase → redirección a /login
@@ -57,8 +57,8 @@ const ResetPassword = () => {
   }, []);
 
   // Estados del token
-  // 'unchecked': no hubo respuesta de la API (sin conexión, 408, 429, 5xx), así que
-  // no se sabe si el enlace vale; se ofrece reintentar, no pedir otro (FE #785)
+  // 'unchecked': la API no dijo que el enlace fuera malo (sin conexión, 408, 429,
+  // 5xx, una respuesta que no es JSON…); se ofrece reintentar, no pedir otro (FE #785)
   const [tokenState, setTokenState] = useState('validating'); // 'validating' | 'valid' | 'invalid' | 'unchecked'
   const [tokenMessage, setTokenMessage] = useState('');
   const [checkFailure, setCheckFailure] = useState(null); // clave i18n del motivo
@@ -94,7 +94,8 @@ const ResetPassword = () => {
    */
   useEffect(() => {
     const validateToken = async () => {
-      if (!token) {
+      // Vacío o en blanco: enlace malo sin preguntar a nadie
+      if (!token?.trim()) {
         setTokenState('invalid');
         setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         return;
@@ -112,17 +113,16 @@ const ResetPassword = () => {
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         }
       } catch (error) {
-        // Un token inválido llega como valid:false. Solo es «no se ha podido
-        // comprobar» lo que de verdad no tuvo respuesta (sin conexión), un 408,
-        // un 429 o un 5xx: el enlace puede estar bien (FE #785). Todo lo demás
-        // —otro 4xx, o un error sin status: el token en blanco, un cuerpo que no
-        // es JSON, un fallo del código— no se arregla reintentando: enlace malo
+        // Regla final (21 oct): el enlace es malo SOLO si la API lo dice —valid:false,
+        // o un 4xx que no sea 408 ni 429—. Todo lo demás no dice nada del enlace
+        // —sin conexión, 408, 429, 5xx, un 200 que no es JSON (el portal de una
+        // wifi), un error sin status— y se ofrece reintentar (FE #785)
         console.error('Token validation error:', error);
         const status = error?.status;
         const sinRed = esFalloDeRedDeLaApi(error);
-        const reintentable =
-          sinRed || status === 408 || status === 429 || status >= 500;
-        if (!reintentable) {
+        const enlaceMalo =
+          !sinRed && status >= 400 && status < 500 && status !== 408 && status !== 429;
+        if (enlaceMalo) {
           setTokenState('invalid');
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
           return;
@@ -130,7 +130,7 @@ const ResetPassword = () => {
         setTokenState('unchecked');
         if (sinRed) {
           setCheckFailure('resetPassword.checkNoConnection');
-        } else if (error?.status === 429) {
+        } else if (status === 429) {
           setCheckFailure('resetPassword.checkTooManyRequests');
         } else {
           setCheckFailure('resetPassword.checkServerError');
