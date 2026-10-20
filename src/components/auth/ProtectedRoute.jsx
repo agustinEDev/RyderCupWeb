@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
+import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
+import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 
 /**
  * Protected Route Component
@@ -36,6 +38,15 @@ const ProtectedRoute = ({ children }) => {
   // If no user, redirect to login
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Términos sin aceptar (solo con `false` estricto: un backend antiguo no
+  // manda el campo). Hasta aceptarlos el backend responde 403 a casi todo, así
+  // que la pantalla de destino ni se monta. Las rutas donde se puede estar sin
+  // aceptar son las de `RUTAS_CON_TERMINOS_PENDIENTES`, la misma lista que usa
+  // la redirección tras un 403
+  if (debeAceptarLosTerminos(user) && !sePuedeEstarConTerminosPendientes(location.pathname)) {
+    return <Navigate to="/accept-terms" state={{ from: location }} replace />;
   }
 
   return children;

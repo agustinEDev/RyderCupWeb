@@ -5,6 +5,7 @@ import AvatarPicker from '../components/profile/AvatarPicker';
 import { useEditProfile } from '../hooks/useEditProfile'; // <- ¡NUEVA IMPORTACIÓN!
 import { useAvatar } from '../hooks/useAvatar';
 import { ALIAS_MAX_LENGTH } from '../utils/alias';
+import FuenteRfeg from '../components/golf_course/FuenteRfeg';
 import { canUseRFEG } from '../utils/countryUtils';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -437,6 +438,8 @@ const EditProfile = () => {
                     <p className="text-xs text-gray-500 mt-2">
                       {t('edit.handicap.rfegHelp')}
                     </p>
+                    {/* De dónde sale el hándicap que se trae (auditoría legal, F4) */}
+                    <FuenteRfeg variante="handicap" className="mt-1" />
                   </div>
                 ) : (
                   <div className="mt-4 pt-4 border-t border-gray-200">

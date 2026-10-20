@@ -4,7 +4,7 @@
    cualquier elemento `.maplibregl-*` (el mapa del hoyo salía gris, BE #532) */
 @layer theme, base, components, maplibre, utilities;
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+/* Inter y Poppins se importan en main.jsx, desde la propia aplicación */
 
 @theme inline {
   --color-primary-50: #f0fdf4;
@@ -57,7 +57,7 @@
   }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter Variable', 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
@@ -151,7 +151,7 @@
   }
 
   .font-inter {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter Variable', 'Inter', sans-serif;
   }
 }
 

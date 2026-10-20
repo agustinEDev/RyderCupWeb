@@ -1,106 +1,192 @@
 {
   "terms": {
     "title": "Terms of Service",
-    "lastUpdated": "Last updated: February 2026",
+    "lastUpdated": "Last updated: 20 October 2026",
     "section1": {
-      "title": "1. Acceptance of Terms",
-      "content": "By accessing or using RyderCupFriends (\"the Service\"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.\n\nThe Service is operated by RyderCupFriends (\"we\", \"us\", or \"our\"). We reserve the right to modify these terms at any time, and such modifications will be effective immediately upon posting."
+      "title": "1. Provider and acceptance",
+      "content": "RyderCupFriends (\"the Service\") is provided by Agustín Estévez Domínguez, a private individual with tax ID (NIF) 76826889N and address at c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain), email agustin.estevez.dominguez@gmail.com. The full details are in the Legal Notice.\n\nBy signing up you accept these Terms of Service. If you do not agree with them, do not use the Service."
     },
     "section2": {
       "title": "2. Eligibility",
-      "content": "You must be at least 16 years of age to use this Service. By using the Service, you represent and warrant that you meet this age requirement.\n\nIf you are under 18, you must have parental or guardian consent to use the Service."
+      "content": "You must be at least 16 years old to use the Service. By signing up you declare that you meet this requirement."
     },
     "section3": {
-      "title": "3. User Accounts",
-      "content": "To access certain features of the Service, you must create an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.\n\nYou agree to provide accurate, current, and complete information during registration and to update such information to keep it accurate and complete."
+      "title": "3. User accounts",
+      "content": "You need an account to use most features of the Service. You are responsible for keeping your credentials confidential and for what is done from your account.\n\nYou agree to provide truthful information and to keep it up to date."
     },
     "section4": {
-      "title": "4. User Conduct",
-      "content": "You agree not to use the Service to:\n\n- Violate any applicable laws or regulations\n- Impersonate any person or entity\n- Harass, abuse, or harm other users\n- Upload malicious content or attempt to compromise the Service\n- Use automated systems to access the Service without permission\n- Interfere with the proper functioning of the Service"
+      "title": "4. Conduct and reporting content",
+      "content": "You agree not to use the Service to:\n\n- Break the law\n- Impersonate another person\n- Harass, insult or harm other users\n- Upload malicious content or try to compromise the Service\n- Access the Service with automated systems without permission\n- Interfere with its operation\n\nIf you see content that is unlawful or breaches these terms (for example, a name, an alias or a photo), you can report it by writing to agustin.estevez.dominguez@gmail.com. We will review it and, where appropriate, remove it."
     },
     "section5": {
-      "title": "5. Golf Competition Rules",
-      "content": "RyderCupFriends provides tools for organizing amateur golf competitions. All competitions are informal and for recreational purposes only.\n\nWe are not responsible for the accuracy of handicap calculations, scoring, or any disputes arising from competition results. Competition organizers are responsible for ensuring fair play among participants."
+      "title": "5. Golf competitions",
+      "content": "The Service provides tools to organise amateur golf competitions, which are informal and for recreational purposes.\n\nHandicaps, course data and maps partly come from third parties (such as the RFEG or OpenStreetMap) and may contain errors. Organisers are responsible for the rules of their competition and for ensuring fair play."
     },
     "section6": {
-      "title": "6. Intellectual Property",
-      "content": "The Service, including its design, features, and content, is owned by RyderCupFriends and is protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works based on the Service without our express written permission.\n\nContent you create through the Service (competition data, scores, etc.) remains yours, but you grant us a license to use it for providing and improving the Service."
+      "title": "6. Intellectual property",
+      "content": "The Service, its software, its design and its own content belong to its owner. You may not copy, modify, distribute or create derivative works from them without permission, except as allowed by law. Third-party data belongs to its owners (see \"Data sources and licences\" in the Legal Notice).\n\nWhat you create in the Service (competitions, results, photos) remains yours; you grant us the licence needed to display and use it for the sole purpose of providing the Service."
     },
     "section7": {
-      "title": "7. Limitation of Liability",
-      "content": "The Service is provided \"as is\" and \"as available\" without warranties of any kind. We do not guarantee that the Service will be uninterrupted, error-free, or secure.\n\nTo the maximum extent permitted by law, RyderCupFriends shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service."
+      "title": "7. Liability",
+      "content": "The Service is provided as is. We strive to keep it working well and continuously, but we cannot guarantee it will be free of interruptions or errors.\n\nWe are not liable for indirect damage arising from the use of the Service, except in cases of wilful misconduct or gross negligence. Nothing in these terms limits the rights the law grants to consumers and users."
     },
     "section8": {
-      "title": "8. Termination",
-      "content": "We may suspend or terminate your access to the Service at any time, with or without cause, and with or without notice. Upon termination, your right to use the Service will immediately cease.\n\nYou may delete your account at any time through the profile settings. Upon deletion, your personal data will be removed in accordance with our Privacy Policy."
+      "title": "8. Closing and suspending accounts",
+      "content": "You can stop using the Service whenever you want and ask to close your account by writing to agustin.estevez.dominguez@gmail.com from your account's address; we will reply to your request within one month. When you close it, we deactivate your account and erase the personal data that is not linked to other players' results or competitions; your results, your scorecards and the competitions you have created are kept for as long as those competitions need them, as explained in the Privacy Policy.\n\nWe may suspend or close an account that breaches these terms seriously or repeatedly. Except in urgent cases (for example, a risk to other users' security), we will give you notice beforehand and explain why."
     },
     "section9": {
-      "title": "9. Contact",
-      "content": "If you have any questions about these Terms of Service, please contact us at support@rydercupfriends.com or through our Contact page."
+      "title": "9. Changes to these terms",
+      "content": "If we change these terms, we will give you reasonable notice (by email or in the application) before they take effect. If you do not agree with the changes, you can close your account before that date."
+    },
+    "section10": {
+      "title": "10. Governing law and contact",
+      "content": "These terms are governed by Spanish law. If you are a consumer, this does not deprive you of the protection granted by the mandatory rules of your country of residence, and you may go to the courts where you live.\n\nFor any question about these terms, write to agustin.estevez.dominguez@gmail.com or use the Contact page."
     }
   },
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdated": "Last updated: February 2026",
+    "lastUpdated": "Last updated: 20 October 2026",
     "section1": {
-      "title": "1. Information We Collect",
-      "content": "We collect information you provide directly when creating an account and using the Service:\n\n- Account information: name, email address, country, gender (optional)\n- Golf profile: handicap index, tee category preferences\n- Competition data: scores, match results, team assignments\n- Device information: browser type, device fingerprint (for security)"
+      "title": "1. Data controller",
+      "content": "The controller of your data is:\n\n- Agustín Estévez Domínguez (private individual)\n- Tax ID (NIF): 76826889N\n- Address: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain)\n- Email: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends (\"the Service\") is the name of the application, not a company."
     },
     "section2": {
-      "title": "2. How We Use Your Information",
-      "content": "We use collected information to:\n\n- Provide and maintain the Service\n- Manage your account and competitions\n- Calculate handicaps and generate match pairings\n- Send important notifications about your competitions\n- Improve the Service and develop new features\n- Ensure security and prevent abuse"
+      "title": "2. Data we process",
+      "content": "- Account: email, first and last name, alias, country and password, stored securely (hashed). If you sign in with Google, we receive your name, email and account identifier from Google.\n- Gender: required to enrol in competitions, because each player's tees and categories depend on it.\n- Golf: handicap (looked up with the RFEG in the cases listed in section 4, or entered manually) and chosen tees.\n- Profile photo, if you choose to upload one.\n- Friends: who you send or accept friend requests to or from.\n- Activity and results: competitions and matches you take part in, scores, scorecards and statistics.\n- Proof of acceptance of the Terms: when you accept them (when signing up, when completing your profile or on the acceptance screen) we keep the accepted version, the date, the IP address and the browser.\n- Security: the devices you sign in from (browser and IP address) and sign-in attempts.\n- Location: only when you allow it in your browser (see section 5)."
     },
     "section3": {
-      "title": "3. Cookies and Local Storage",
-      "content": "We use the following storage mechanisms:\n\n- httpOnly cookies: Authentication tokens (access and refresh tokens) stored securely and not accessible via JavaScript\n- localStorage: Language preference (i18next), UI settings\n- Session cookies: CSRF protection tokens\n\nWe do not use third-party advertising cookies or tracking cookies."
+      "title": "3. Purposes and legal bases",
+      "content": "- Providing the Service (creating and managing your account, organising competitions and matches, calculating results, showing leaderboards and sending the emails it needs, such as account verification or password reset): performance of the contract you accept when you sign up (art. 6.1.b GDPR).\n- Protecting the Service and your account (device and sign-in attempt records, usage limits, abuse prevention) and detecting and fixing errors: legitimate interest in the security and proper operation of the Service (art. 6.1.f GDPR).\n- Using your location to find nearby courses and measure distances on the course: your consent, given when you allow it in your browser and which you can withdraw at any time in its settings (art. 6.1.a GDPR).\n- Keeping the proof of acceptance of the Terms, so that we can prove which Terms each user accepted and when: compliance with legal obligations and legitimate interest in defending against claims (art. 6.1.c and 6.1.f GDPR).\n- Complying with legal obligations, where they apply (art. 6.1.c GDPR).\n\nWe do not sell your data or use it for advertising."
     },
     "section4": {
-      "title": "4. Third-Party Services",
-      "content": "We use the following third-party services:\n\n- Sentry: Error tracking and performance monitoring. Collects anonymized error data and session replays to help us fix bugs.\n- Cloudflare: CDN and security. Processes requests to protect against malicious traffic.\n- Render: Hosting platform for the application.\n\nThese services have their own privacy policies governing their use of data."
+      "title": "4. Handicap and the RFEG",
+      "content": "If your country is Spain, the Service looks up your handicap with the Royal Spanish Golf Federation (RFEG), using your first and last name to find you, in these cases:\n\n- At your request, from your profile.\n- When the organiser of a competition you are enrolled in launches or schedules a handicap update.\n- Automatically when enrolment closes for a competition and, in Ryder-format competitions, when the captains are named.\n\nIt is not looked up for an enrolment where the organiser has set a custom handicap."
     },
     "section5": {
-      "title": "5. Data Retention",
-      "content": "We retain your data for as long as your account is active. If you delete your account, we will remove your personal data within 30 days, except where retention is required by law.\n\nCompetition results may be retained in anonymized form for statistical purposes."
+      "title": "5. Location",
+      "content": "The Service only accesses your location when you allow it in your browser, and for two things: finding courses near you and measuring distances on the course during a round. Distances are calculated on your own phone. Your location is not used to track you and no history of your positions is kept."
     },
     "section6": {
-      "title": "6. Your Rights",
-      "content": "You have the right to:\n\n- Access your personal data through your profile\n- Update or correct your information\n- Delete your account and associated data\n- Export your competition data\n- Object to certain processing of your data\n\nTo exercise these rights, contact us at support@rydercupfriends.com."
+      "title": "6. What other users see",
+      "content": "- Your friends see your name or alias, your photo and, if you turn it on, your achievements in their feed.\n- Participants in a competition or match see your name, handicap, tees and results.\n- In public competitions, the leaderboard and results can also be seen by people without an account, through the leaderboard link."
     },
     "section7": {
-      "title": "7. Children's Privacy",
-      "content": "The Service is not directed to children under 16. We do not knowingly collect personal information from children under 16. If you believe we have inadvertently collected such information, please contact us immediately."
+      "title": "7. Providers and international transfers",
+      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery (EU region).\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission.\n\nIn addition, when you view a hole map, your browser downloads the orthophotos directly from the public servers that publish them (IGN/PNOA, ICGC, geoEuskadi and IDENA), which receive your device's IP address, as with any website you visit."
     },
     "section8": {
-      "title": "8. Changes to This Policy",
-      "content": "We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the updated policy on this page and updating the \"Last updated\" date.\n\nYour continued use of the Service after changes are posted constitutes acceptance of the updated policy."
+      "title": "8. Cookies, local storage and Session Replay",
+      "content": "We only use technical cookies (session, CSRF protection and device identification). In your browser's local storage we keep, also for technical reasons:\n\n- Your user data, to show your session, and the matches you need to keep scoring offline. They are deleted when you log out.\n- Scores waiting to be sent when there is no coverage, warnings about strokes that could not be saved, and hole reports and samples waiting to be sent. They are not deleted when you log out, so that nothing is lost: they are sent, or you are warned about them, when the connection returns.\n- Caches of the hole map and of the location of courses, so that they work offline, and your preferences, such as the language. They are not deleted when you log out.\n\nThey are needed to provide the Service and do not require consent.\n\nWhen an error occurs, Sentry may keep a recording of the session (Session Replay) with text masked and without images, so that we can fix it; the legal basis is our legitimate interest in the security and proper operation of the Service. The Cookie Policy has the details."
     },
     "section9": {
-      "title": "9. Contact",
-      "content": "If you have questions or concerns about this Privacy Policy, please contact us at support@rydercupfriends.com or through our Contact page."
+      "title": "9. How long we keep data",
+      "content": "We keep your data while your account is active.\n\nIf you ask to close your account, we deactivate it (it can no longer be used or signed in to) and erase the personal data that is not linked to other players' results or competitions. Data that is linked to them (your results and scorecards, and the competitions and matches you have created) is kept for as long as those competitions need it, because deleting it would alter other players' leaderboards and matches. If your account has none of that, it is deleted entirely, except for what the next paragraph explains.\n\nThe proof of acceptance of the Terms (accepted version, date, IP address and browser) is kept while the account exists and for 3 years after it is deleted, so that we can prove which Terms were accepted and when; after that period, it is erased.\n\nWe also keep any data the law requires us to keep, for the period it sets."
+    },
+    "section10": {
+      "title": "10. Your rights",
+      "content": "You can exercise your rights of access, rectification, erasure, objection, restriction of processing and portability. You can view and correct much of your data yourself from your profile. Closing your account and portability (receiving your data in a structured format) are requested by email to agustin.estevez.dominguez@gmail.com, from your account's address. We reply to your request within one month; section 9 explains what is erased and what is kept when you close your account.\n\nIf you believe we have not handled your request properly, you have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD), at www.aepd.es."
+    },
+    "section11": {
+      "title": "11. Children",
+      "content": "The Service is not intended for children under 16 and signing up below that age is not allowed. If you believe a child under 16 has given us data, write to agustin.estevez.dominguez@gmail.com and we will delete it."
+    },
+    "section12": {
+      "title": "12. Changes to this policy",
+      "content": "If we change this policy in a significant way, we will give you notice in advance by email or in the application, and we will update the \"Last updated\" date."
     }
   },
   "cookies": {
     "title": "Cookie Policy",
-    "lastUpdated": "Last updated: February 2026",
+    "lastUpdated": "Last updated: 20 October 2026",
     "section1": {
-      "title": "1. What Are Cookies",
-      "content": "Cookies are small text files stored on your device when you visit a website. They are widely used to make websites work more efficiently and to provide information to site owners.\n\nWe also use similar technologies such as localStorage for storing preferences."
+      "title": "1. What cookies are",
+      "content": "Cookies are small text files that a website stores on your device. Besides cookies, the Service uses your browser's local storage (localStorage and sessionStorage). Everything it keeps there is technical and needed for the Service to work, so it does not require consent:\n\n- Your user data, to show your session without waiting for the server. It is deleted when you log out.\n- The matches and competitions you need to keep scoring offline, and pending notices about your handicap. They are deleted when you log out.\n- Scores waiting to be sent when there is no coverage and warnings about strokes that could not be saved. They are not deleted when you log out, so that no stroke is lost: scores are sent when the connection returns, and each warning is only shown to its owner.\n- Hole reports and samples waiting to be sent, kept per user. They are not deleted when you log out: they are sent when the connection returns.\n- Caches of the hole map and of the location of courses, so that they work offline. They are not deleted when you log out.\n- Preferences: the language, the order chosen in some lists and whether you dismissed the install prompt. They are not deleted when you log out.\n- Operational data: counters that limit repeated attempts in some forms and the scoring session lock. In sessionStorage, which is cleared when you close the tab, we only keep the security check for signing in with Google and start-up markers.\n\nThe service worker also stores the application's own files, so that it opens offline."
     },
     "section2": {
-      "title": "2. Cookies We Use",
-      "content": "Essential cookies (required for the Service to function):\n\n- Authentication cookies (httpOnly): Secure access and refresh tokens that keep you logged in. These cannot be accessed by JavaScript, protecting against XSS attacks.\n- CSRF token cookie: Protects against cross-site request forgery attacks.\n\nFunctional storage (localStorage):\n\n- Language preference: Remembers your selected language (English/Spanish).\n- UI preferences: Theme and display settings.\n- Session flags: Lazy loading error recovery."
+      "title": "2. Technical cookies we use",
+      "content": "We only use technical cookies, needed for the Service to work, which do not require consent:\n\n- Authentication cookies (httpOnly): access and refresh tokens that keep you signed in. They cannot be read from JavaScript.\n- CSRF token cookie: protects against cross-site request forgery attacks.\n- Device cookie (httpOnly, one year): identifies the device you sign in from, for device management and the security of your account.\n\nWhat we keep in your browser's local storage is detailed in section 1."
     },
     "section3": {
-      "title": "3. Managing Cookies",
-      "content": "You can control cookies through your browser settings. Note that disabling essential cookies will prevent you from logging in and using authenticated features of the Service.\n\nTo clear authentication cookies, use the \"Logout\" button in the application, which will properly invalidate your session."
+      "title": "3. Cloudflare",
+      "content": "Cloudflare, which protects the Service against attacks and automated traffic, may set the technical security cookie __cf_bm, which tells people apart from bots and expires after 30 minutes. It is not used to track you or for advertising."
     },
     "section4": {
-      "title": "4. Third-Party Cookies",
-      "content": "We do not use third-party advertising or tracking cookies.\n\nOur third-party services (Sentry for error tracking, Cloudflare for security) may set their own cookies for functionality purposes. These are governed by their respective privacy policies."
+      "title": "4. Sentry and Session Replay",
+      "content": "We use Sentry to detect and fix errors. When an error occurs, Sentry may keep a recording of the session (Session Replay): a recording of what happened on screen, with all text masked and without images, which helps us understand the failure. The data is hosted in the Germany region (EU). The legal basis is our legitimate interest in the security and proper operation of the Service. Sentry does not set advertising or tracking cookies."
     },
     "section5": {
-      "title": "5. Contact",
-      "content": "If you have questions about our use of cookies, please contact us at support@rydercupfriends.com or through our Contact page."
+      "title": "5. Managing cookies",
+      "content": "You can block or delete cookies in your browser settings. Bear in mind that without the technical cookies you will not be able to sign in or use the features that require it.\n\nTo delete the authentication cookies, use \"Log out\" in the application, which also invalidates your session."
+    },
+    "section6": {
+      "title": "6. Contact",
+      "content": "If you have questions about our use of cookies, write to agustin.estevez.dominguez@gmail.com or use the Contact page."
+    }
+  },
+  "legalNotice": {
+    "title": "Legal Notice",
+    "lastUpdated": "Last updated: 20 October 2026",
+    "section1": {
+      "title": "1. Website owner",
+      "content": "In accordance with article 10 of Spanish Law 34/2002 on information society services and electronic commerce (LSSI), these are the details of the owner of this website and of the RyderCupFriends application (\"the Service\"):\n\n- Owner: Agustín Estévez Domínguez (private individual)\n- Tax ID (NIF): 76826889N\n- Address: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain)\n- Email: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends is the name of the Service, not a company: it is provided by its owner as a private individual."
+    },
+    "section2": {
+      "title": "2. Purpose",
+      "content": "The Service is a web application to organise and play amateur golf competitions among friends (Ryder Cup format, stroke play and quick matches): enrolment, teams, pairings, score keeping, leaderboards, hole maps and handicap lookup with the RFEG for players from Spain: at the player's request, when an organiser launches or schedules an update, and automatically when enrolment closes for a competition or, in Ryder-format competitions, when the captains are named, unless the organiser has set a custom handicap for that enrolment.\n\nIts use is also governed by the Terms of Service, the Privacy Policy and the Cookie Policy, available from the page footer and from your profile."
+    },
+    "section3": {
+      "title": "3. Terms of use",
+      "content": "Anyone using the Service agrees to do so lawfully, in good faith and in line with these terms and, in particular, not to:\n\n- Enter false data, or another person's data without their consent\n- Publish unlawful or offensive content, or content that infringes the rights of others\n- Attempt unauthorised access to accounts, data or systems, or damage or overload the Service\n- Extract data from the Service in bulk or by automated means\n\nThe owner may remove content or suspend accounts that breach these terms, as set out in the Terms of Service."
+    },
+    "section4": {
+      "title": "4. Intellectual and industrial property",
+      "content": "The Service's software, its design and its own content (texts, graphics and logos) belong to its owner or are used under licence, and may not be reproduced, distributed or transformed without permission, except as allowed by law.\n\nThird-party data shown by the Service (course data, cartography and orthophotos) belongs to its respective owners and is used under their licences, listed under \"Data sources and licences\". Content contributed by users remains theirs."
+    },
+    "section5": {
+      "title": "5. Disclaimer and liability",
+      "content": "The owner strives to keep the Service running and its information accurate, but cannot guarantee it: there may be interruptions for maintenance or for reasons beyond the owner's control, and course data, handicaps, distances and maps partly come from third parties and may contain errors or be out of date. Distances and maps are for guidance only.\n\nThe owner is not liable for damage arising from such interruptions or errors, or from how each user uses the Service, except in cases of wilful misconduct or gross negligence and without prejudice to the rights the law grants consumers. Links to third-party websites are provided for reference only: the owner does not control their content."
+    },
+    "section6": {
+      "title": "6. Data sources and licences",
+      "intro": "The Service uses third-party data and software, credited here according to their licences:",
+      "sources": {
+        "rfeg": {
+          "name": "Royal Spanish Golf Federation (RFEG)",
+          "detail": "Data on federated courses (layouts, tees, par, stroke indexes and ratings) and handicap lookup for players from Spain: at the player's request, when an organiser launches or schedules an update, and automatically when enrolment closes for a competition or, in Ryder-format competitions, when the captains are named, unless the organiser has set a custom handicap for that enrolment."
+        },
+        "osm": {
+          "name": "OpenStreetMap",
+          "detail": "Geometry of courses and holes: © OpenStreetMap contributors, data available under the Open Database License (ODbL)."
+        },
+        "pnoa": {
+          "name": "PNOA – Spanish National Geographic Institute",
+          "detail": "Orthophotos of Spain: PNOA courtesy of © Instituto Geográfico Nacional (IGN), licensed under CC BY 4.0 (scne.es)."
+        },
+        "icgc": {
+          "name": "Institut Cartogràfic i Geològic de Catalunya (ICGC)",
+          "detail": "Orthophotos of Catalonia, licensed under CC BY 4.0."
+        },
+        "geoeuskadi": {
+          "name": "Eusko Jaurlaritza / Gobierno Vasco – geoEuskadi",
+          "detail": "Orthophotos of the Basque Country, under geoEuskadi's terms of use."
+        },
+        "idena": {
+          "name": "© Gobierno de Navarra – IDENA",
+          "detail": "Orthophotos of Navarre, licensed under CC BY 4.0."
+        },
+        "maplibre": {
+          "name": "MapLibre GL JS",
+          "detail": "Library used to draw the maps, licensed under BSD-3-Clause."
+        },
+        "fonts": {
+          "name": "Inter and Poppins",
+          "detail": "The application's typefaces, served from the application itself, licensed under the SIL Open Font License 1.1 (OFL-1.1)."
+        }
+      }
+    },
+    "section7": {
+      "title": "7. Governing law and contact",
+      "content": "This Legal Notice is governed by Spanish law. If you are a consumer living in another country, you keep the protection granted by the mandatory rules of your country of residence and may go to the courts where you live.\n\nFor any question or complaint, write to agustin.estevez.dominguez@gmail.com."
     }
   }
 }

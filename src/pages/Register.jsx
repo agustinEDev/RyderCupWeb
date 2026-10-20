@@ -18,6 +18,7 @@ import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import BrandMark from '../components/ui/BrandMark';
+import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 
 const Register = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -33,6 +34,8 @@ const Register = () => {
     gender: '' // Campo opcional para género
   });
   const [errors, setErrors] = useState({});
+  // Los Términos se aceptan con un gesto expreso, y con ellos la edad mínima
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
@@ -127,8 +130,19 @@ const Register = () => {
       newErrors.confirmPassword = t('validation.passwordsDoNotMatch');
     }
 
+    if (!acceptedTerms) {
+      newErrors.acceptTerms = t('register.acceptTermsRequired');
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAcceptTermsChange = (marcada) => {
+    setAcceptedTerms(marcada);
+    if (marcada && errors.acceptTerms) {
+      setErrors(prev => ({ ...prev, acceptTerms: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -147,7 +161,9 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
         countryCode: formData.countryCode || null, // Enviar countryCode si existe, sino null
-        gender: formData.gender || null // Enviar gender si existe, sino null
+        gender: formData.gender || null, // Enviar gender si existe, sino null
+        // La casilla ya es obligatoria en `validateForm`: aquí solo viaja
+        acceptTerms: acceptedTerms,
       });
 
       customToast.success(t('register.success'));
@@ -548,24 +564,14 @@ const Register = () => {
                   )}
                 </div>
 
-                {/* Terms & Conditions */}
-                <div className="flex items-start gap-2 pt-2">
-                  <div className="flex items-center h-5">
-                    <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    {t('register.termsPrefix')}{' '}
-                    <a href="#terms" className="text-primary hover:text-primary-600 font-semibold">
-                      {t('register.termsLink')}
-                    </a>
-                    {' '}{t('register.termsAnd')}{' '}
-                    <a href="#privacy" className="text-primary hover:text-primary-600 font-semibold">
-                      {t('register.privacyLink')}
-                    </a>
-                  </p>
-                </div>
+                {/* Términos y edad mínima; la privacidad, solo informada */}
+                <AceptacionDeTerminos
+                  id="acceptTerms"
+                  checked={acceptedTerms}
+                  onChange={handleAcceptTermsChange}
+                  error={errors.acceptTerms}
+                  disabled={isLoading}
+                />
 
                 {/* Submit Button */}
                 <motion.button
@@ -604,8 +610,14 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Google Sign Up */}
-              <GoogleSignInButton flow="login" label={t('google.signUpWithGoogle', { ns: 'auth' })} disabled={isLoading} />
+              {/* Google Sign Up. Sin la casilla de arriba a propósito: este botón
+                  también entra con cuentas que ya existen, y los usuarios nuevos
+                  de Google aceptan los Términos en /auth/complete-profile */}
+              <GoogleSignInButton
+                flow="login"
+                label={t('google.signUpWithGoogle', { ns: 'auth' })}
+                disabled={isLoading}
+              />
 
               {/* Login Link */}
               <div className="text-center mt-6">

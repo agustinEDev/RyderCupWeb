@@ -532,7 +532,7 @@
       "enrollmentRequested": "¡Solicitud de inscripción enviada! Revisa \"Mis Competiciones\" para seguir el estado."
     }
   },
-  "footer": "© {{year}} RyderCupFriends",
+  "footer": "© {{year}} Agustín Estévez Domínguez",
   "status": {
     "DRAFT": "BORRADOR",
     "ACTIVE": "ACTIVA",

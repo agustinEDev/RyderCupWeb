@@ -104,3 +104,22 @@ describe('noLlegoAlServidor · la petición abortada (FE #551)', () => {
     expect(noLlegoAlServidor(new Error('Marked player ID is required'))).toBe(false);
   });
 });
+
+// F4: el 403 de Términos sin aceptar no es culpa del golpe, sino de la sesión.
+// Descartarlo como un 403 cualquiera borraba anotaciones buenas
+describe('politicaDeLaCola · Términos sin aceptar', () => {
+  const terminos = Object.assign(new Error('Terms not accepted'), { status: 403, errorCode: 'TERMS_NOT_ACCEPTED' });
+
+  it('se guarda para después, no se descarta', () => {
+    expect(seGuardaParaDespues(terminos)).toBe(true);
+    expect(esRechazoDefinitivo(terminos)).toBe(false);
+  });
+
+  it('para el vaciado: es de toda la sesión', () => {
+    expect(esFalloDeTodaLaSesion(terminos)).toBe(true);
+  });
+
+  it('un 403 cualquiera se sigue descartando', () => {
+    expect(esRechazoDefinitivo(errorCon(403))).toBe(true);
+  });
+});

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import Footer from './Footer';
+import commonEs from '../../i18n/locales/es/common.json';
+import commonEn from '../../i18n/locales/en/common.json';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -84,5 +86,24 @@ describe('Footer', () => {
 
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
     expect(hrefs).toEqual(expect.arrayContaining(['/terms', '/privacy', '/cookies']));
+  });
+
+  it('A3: enlaza al Aviso Legal junto a los demas legales', () => {
+    mockMatchMedia(false);
+
+    renderFooter();
+
+    expect(screen.getByRole('link', { name: 'footer.legalNotice' })).toHaveAttribute('href', '/legal');
+  });
+
+  it.each([
+    ['es', commonEs],
+    ['en', commonEn],
+  ])('A4 (%s): el copyright nombra al titular, una persona fisica, y no a la marca', (_idioma, common) => {
+    for (const clave of ['copyright', 'copyrightShort']) {
+      expect(common.footer[clave]).toContain('© {{year}} Agustín Estévez Domínguez');
+      expect(common.footer[clave]).not.toContain('RCF');
+    }
+    expect(common.footer.legalNotice).toBeTruthy();
   });
 });

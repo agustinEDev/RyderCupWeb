@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase } from '../composition';
+import { updateUserProfileUseCase, updateManualHandicapUseCase, fetchCountriesUseCase, acceptTermsUseCase } from '../composition';
 import customToast from '../utils/toast';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
+import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
+import { anotaLaSesion } from '../services/sesionCompartida';
+import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -20,6 +23,11 @@ const CompleteProfile = () => {
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  // Los usuarios nuevos de Google que entran desde /login o /start no han
+  // pasado por el registro: aquí aceptan los Términos y declaran la edad
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
+  const [acceptError, setAcceptError] = useState('');
 
   // Load countries on mount
   useEffect(() => {
@@ -43,12 +51,52 @@ const CompleteProfile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAcceptTermsChange = (marcada) => {
+    setAcceptedTerms(marcada);
+    if (marcada) setTermsError('');
+  };
+
+  // Sin la casilla no se entra, ni guardando ni omitiendo el resto
+  const exigirTerminos = () => {
+    if (acceptedTerms) return true;
+    setTermsError(t('google.completeProfile.acceptTermsRequired'));
+    return false;
+  };
+
+  /**
+   * Acepta los Términos en el backend (F2). Va ANTES de todo lo demás: hasta
+   * aceptarlos, guardar el perfil responde 403. Si falla, se dice y no se sigue.
+   * @returns {Promise<boolean>} si se aceptaron
+   */
+  const aceptaLosTerminos = async () => {
+    setAcceptError('');
+    // Ya aceptados (o un backend que no lo dice): no hay nada que aceptar
+    if (!debeAceptarLosTerminos(user)) return true;
+    try {
+      const datosDelBackend = await acceptTermsUseCase.execute();
+      // La sesión queda aceptada YA, con lo que responde el backend: aunque
+      // luego falle guardar el perfil o el hándicap, el guardia no devolverá
+      // a la pantalla de aceptar
+      anotaLaSesion(datosDelBackend);
+      return true;
+    } catch {
+      // Un solo aviso, junto a la casilla
+      setAcceptError(t('acceptTermsPage.error'));
+      return false;
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
 
+    if (!exigirTerminos()) return;
     if (!user) return;
 
     setIsSaving(true);
+    if (!(await aceptaLosTerminos())) {
+      setIsSaving(false);
+      return;
+    }
     try {
       const updateData = {};
 
@@ -83,7 +131,15 @@ const CompleteProfile = () => {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    if (!exigirTerminos()) return;
+
+    setIsSaving(true);
+    if (!(await aceptaLosTerminos())) {
+      setIsSaving(false);
+      return;
+    }
+    // La sesión ya está sembrada con la aceptación: se entra sin más consultas
     navigate('/dashboard', { replace: true });
   };
 
@@ -185,6 +241,21 @@ const CompleteProfile = () => {
                 {t('google.completeProfile.handicapHint')}
               </p>
             </div>
+
+            {/* Términos y edad mínima; la privacidad, solo informada */}
+            <AceptacionDeTerminos
+              id="acceptTerms"
+              checked={acceptedTerms}
+              onChange={handleAcceptTermsChange}
+              error={termsError}
+              disabled={isSaving}
+            />
+
+            {acceptError && (
+              <p role="alert" className="text-red-600 text-sm">
+                {acceptError}
+              </p>
+            )}
 
             {/* Save Button */}
             <motion.button

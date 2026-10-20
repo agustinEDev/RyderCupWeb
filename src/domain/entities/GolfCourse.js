@@ -44,6 +44,18 @@ class GolfCourse {
         }
       : null;
 
+    // De dónde salen los datos del campo (`RFEG`, `MANUAL`...). El backend la
+    // manda siempre en la ficha; en los listados todavía no viaja, y entonces
+    // queda en null, que se lee como «no lo sabemos», nunca como «es manual».
+    const procedencia = data.provenance ?? null;
+    this.provenance = procedencia
+      ? {
+          source: procedencia.source ?? null,
+          externalId: procedencia.external_id ?? procedencia.externalId ?? null,
+          importedAt: procedencia.imported_at ?? procedencia.importedAt ?? null,
+        }
+      : null;
+
     // Value Objects
     this.tees = (data.tees || []).map(tee =>
       tee instanceof Tee ? tee : Tee.fromDTO(tee)
@@ -71,6 +83,15 @@ class GolfCourse {
     const tieneCoordenadas = latitude !== null && longitude !== null;
 
     return tieneCoordenadas || Boolean(address || city || province);
+  }
+
+  /**
+   * Si los datos del campo vienen de la Real Federación Española de Golf, que
+   * entonces hay que citar. Un origen desconocido o ausente no cuenta: citar a
+   * la RFEG por un campo que no es suyo sería atribuirle datos ajenos.
+   */
+  isFromRfeg() {
+    return this.provenance?.source === 'RFEG';
   }
 
   /**
@@ -145,6 +166,13 @@ class GolfCourse {
       // la ubicacion en silencio. En una edicion, un `location` a null significa
       // "no la toques" para el backend, asi que reenviarlo asi es seguro.
       location: this.location,
+      provenance: this.provenance
+        ? {
+            source: this.provenance.source,
+            external_id: this.provenance.externalId,
+            imported_at: this.provenance.importedAt,
+          }
+        : null,
       tees: this.tees.map(tee => tee.toDTO()),
       holes: this.holes.map(hole => hole.toDTO()),
     };

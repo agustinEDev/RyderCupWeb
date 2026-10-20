@@ -6,6 +6,8 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import { useDeviceManagement } from '../hooks/useDeviceManagement';
 import { useAuth } from '../hooks/useAuth';
 import { useLogout } from '../hooks/useLogout';
+import { useTerminosPendientes } from '../hooks/useTerminosPendientes';
+import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { formatDateTime } from '../utils/dateFormatters';
 import BlockLoader from '../components/ui/BlockLoader';
 
@@ -15,7 +17,14 @@ const DeviceManagement = () => {
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
   const { logout } = useLogout();
+  const terminosPendientes = useTerminosPendientes();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Con los Términos pendientes se llega aquí desde la pantalla de aceptarlos,
+  // que es donde acaba el arranque: se avisa a la cortina, como ella
+  useEffect(() => {
+    if (terminosPendientes) laPantallaEstaLista();
+  }, [terminosPendientes]);
   const [deviceToRevoke, setDeviceToRevoke] = useState(null);
 
   const {

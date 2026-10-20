@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
 import ScorersStep from './ScorersStep';
+import GolfCourse from '../../domain/entities/GolfCourse';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1011,5 +1012,62 @@ describe('CreateQuickMatchModal · quién lleva la tarjeta en foursomes', () => 
 
     expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
     expect(screen.getByText('Rival Uno')).toBeInTheDocument();
+  });
+
+  // Auditoría del 20 oct 2026 (F3): al elegir un campo federado, una línea
+  // discreta dice de dónde salen sus datos. Sin campo, o con uno manual, nada
+  describe('fuente de los datos del campo', () => {
+    const conProcedencia = (source) =>
+      new GolfCourse({ id: 'course-1', name: 'St Andrews', tees: [], provenance: source ? { source } : null });
+
+    it('F3: un campo de la RFEG la cita', async () => {
+      mockGetGolfCourse.mockResolvedValue(conProcedencia('RFEG'));
+      renderModal();
+
+      expect(screen.queryByText('source.federatedData')).toBeNull();
+      fireEvent.click(screen.getByTestId('select-course-stub'));
+
+      expect(await screen.findByText('source.federatedData')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'source.rfegShort' })).toHaveAttribute('href', 'https://www.rfegolf.es');
+    });
+
+    it.each([['MANUAL'], [null]])('F3: con procedencia %s, sin cita', async (source) => {
+      mockGetGolfCourse.mockResolvedValue(conProcedencia(source));
+      renderModal();
+
+      fireEvent.click(screen.getByTestId('select-course-stub'));
+      await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+      await act(async () => { await Promise.resolve(); });
+
+      expect(screen.queryByText('source.federatedData')).toBeNull();
+    });
+
+    it('F3: al cambiar a un campo cuya ficha no llega, la cita del anterior no se queda', async () => {
+      mockGetGolfCourse.mockImplementation((id) =>
+        id === 'course-1' ? Promise.resolve(conProcedencia('RFEG')) : Promise.reject(new Error('sin red'))
+      );
+      renderModal();
+
+      fireEvent.click(screen.getByTestId('select-course-stub'));
+      await screen.findByText('source.federatedData');
+      fireEvent.click(screen.getByTestId('select-course-stub-2'));
+
+      await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalledWith('course-2'));
+      await act(async () => { await Promise.resolve(); });
+      expect(screen.queryByText('source.federatedData')).toBeNull();
+    });
+
+    it('F3: al cambiar a un campo manual, la cita se va', async () => {
+      mockGetGolfCourse.mockImplementation((id) =>
+        Promise.resolve(id === 'course-1' ? conProcedencia('RFEG') : conProcedencia('MANUAL'))
+      );
+      renderModal();
+
+      fireEvent.click(screen.getByTestId('select-course-stub'));
+      await screen.findByText('source.federatedData');
+      fireEvent.click(screen.getByTestId('select-course-stub-2'));
+
+      await waitFor(() => expect(screen.queryByText('source.federatedData')).toBeNull());
+    });
   });
 });

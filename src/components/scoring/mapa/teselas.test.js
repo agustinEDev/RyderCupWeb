@@ -147,3 +147,16 @@ describe('ponerOrtofoto', () => {
     expect(mapa.lista.filter((c) => c.id === 'ortofoto')).toHaveLength(1);
   });
 });
+
+// Auditoría legal del 20 oct 2026: cada licencia pide citar a su titular con su
+// nombre, no con una abreviatura que el jugador no reconoce
+describe('atribuciones del mapa (F6, F7)', () => {
+  it.each([
+    ['es', es],
+    ['en', en],
+  ])('%s: OpenStreetMap con su nombre, la PNOA con su licencia y Navarra con IDENA', (_idioma, textos) => {
+    expect(textos.mapa.atribucionOsm).toBe('© OpenStreetMap');
+    expect(textos.mapa.atribucionPnoa).toBe('PNOA CC BY 4.0 scne.es');
+    expect(textos.mapa.ortofoto['ES-NC']).toBe('© Gobierno de Navarra – IDENA (CC BY 4.0)');
+  });
+});

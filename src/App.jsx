@@ -11,6 +11,7 @@ import LazyLoadErrorBoundary from './components/errors/LazyLoadErrorBoundary';
 import { getUserData } from './hooks/useAuth';
 import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
 import { useEnvioDeMuestras } from './hooks/useEnvioDeMuestras';
+import { useTerminosPendientes } from './hooks/useTerminosPendientes';
 import { setUserContext } from './utils/sentryHelpers';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
@@ -76,6 +77,7 @@ const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQui
 // Google OAuth pages
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
 const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
+const AcceptTerms = lazyWithRetry(() => import('./pages/AcceptTerms'));
 
 // Public pages
 const LeaderboardPage = lazyWithRetry(() => import('./pages/public/LeaderboardPage'));
@@ -86,6 +88,7 @@ const Contact = lazyWithRetry(() => import('./pages/public/Contact'));
 const Terms = lazyWithRetry(() => import('./pages/public/Terms'));
 const Privacy = lazyWithRetry(() => import('./pages/public/Privacy'));
 const Cookies = lazyWithRetry(() => import('./pages/public/Cookies'));
+const LegalNotice = lazyWithRetry(() => import('./pages/public/LegalNotice'));
 
 // Error pages
 const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
@@ -139,12 +142,18 @@ function AppContent() {
   // que se esté mirando (FE #521). Va aquí arriba a propósito: colgado de una
   // pantalla dependería de que el usuario volviera a ella, que es justo lo que
   // no pasa
-  useVaciadoDeLaCola({ activo: isAuthenticated, userId: usuarioActualId });
+  //
+  // Con los Términos sin aceptar, el backend responde 403 a todo salvo
+  // current-user, accept-terms y logout (F3): nada que llame a la API arranca
+  // hasta aceptarlos, ni la barra inferior se pinta
+  const terminosPendientes = useTerminosPendientes();
+  const conApi = isAuthenticated && !terminosPendientes;
+  useVaciadoDeLaCola({ activo: conApi, userId: usuarioActualId });
   // Las muestras de hoyo que se quedaron en la cola (BE #532, marcado por par)
-  useEnvioDeMuestras({ activo: isAuthenticated, userId: usuarioActualId });
+  useEnvioDeMuestras({ activo: conApi, userId: usuarioActualId });
 
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
-  const showBottomNav = isAuthenticated && !isPublicRoute && !isScoringRoute;
+  const showBottomNav = conApi && !isPublicRoute && !isScoringRoute;
 
   // Limpiar flag de error de lazy loading tras navegación exitosa
   // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
@@ -210,7 +219,8 @@ function AppContent() {
   // Detecta cuando el dispositivo actual fue revocado desde otro navegador
   // Solo activo cuando hay usuario autenticado
   useDeviceRevocationMonitor({
-    enabled: isAuthenticated
+    // Pide /users/me/devices, que da 403 con los Términos pendientes
+    enabled: conApi
   });
 
   // Hook de refresh proactivo de token (v2.0.4)
@@ -286,11 +296,13 @@ function AppContent() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
+        <Route path="/legal" element={<LegalNotice />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
 
         {/* Protected routes */}
         <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
+        <Route path="/accept-terms" element={<ProtectedRoute><AcceptTerms /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

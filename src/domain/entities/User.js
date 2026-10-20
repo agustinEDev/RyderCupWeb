@@ -1,6 +1,7 @@
 import Email from '../value_objects/Email';
 import Password from '../value_objects/Password'; // 1. Importar Password VO
 import { CountryCode } from '../value_objects/CountryCode';
+import { debeAceptarLosTerminos } from '../services/aceptacionDeTerminos';
 
 class User {
   constructor({
@@ -21,6 +22,10 @@ class User {
     gender = null, // Gender: 'MALE', 'FEMALE', or null
     auth_providers = [], // string[] - e.g. ['google']
     has_password = true, // boolean - false if OAuth-only user
+    // Aceptación de los Términos (F3). null = el backend no lo dice (anterior
+    // a la aceptación), que NO es lo mismo que «no aceptados»
+    terms_accepted = null,
+    terms_version_required = null,
     domain_events = [], // Array vacío por defecto para List
   }) {
     // Validaciones básicas de la entidad
@@ -58,7 +63,14 @@ class User {
     this.gender = gender;
     this.authProviders = auth_providers;
     this.hasPassword = has_password;
+    this.termsAccepted = terms_accepted;
+    this.termsVersionRequired = terms_version_required;
     this.domainEvents = domain_events;
+  }
+
+  /** Si tiene que aceptar los Términos antes de seguir (solo con `false`). */
+  mustAcceptTerms() {
+    return debeAceptarLosTerminos(this);
   }
 
   // Ejemplo de método de negocio que podría tener una entidad
@@ -103,6 +115,8 @@ class User {
       gender: this.gender,
       auth_providers: this.authProviders,
       has_password: this.hasPassword,
+      terms_accepted: this.termsAccepted,
+      terms_version_required: this.termsVersionRequired,
       // domain_events no se persistirían directamente
     };
   }

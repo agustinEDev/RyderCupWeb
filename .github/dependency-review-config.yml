@@ -33,6 +33,12 @@ allow-dependencies-licenses:
   # AGPL-3.0: la acción que busca secretos en el CI. Corre en el runner y no se
   # distribuye con el frontend, así que su copyleft no alcanza a este código (#857).
   - pkg:githubactions/trufflesecurity/trufflehog
+  # OFL-1.1: Inter y Poppins, servidas desde la propia aplicación en vez de
+  # Google Fonts (auditoría legal, 20 oct 2026). La OFL permite incrustar y
+  # redistribuir las fuentes con cualquier software; solo impide venderlas
+  # sueltas. Por paquete y no en la lista general: es una licencia de fuentes.
+  - pkg:npm/@fontsource-variable/inter
+  - pkg:npm/@fontsource/poppins
   # UNLICENSED: este mismo frontend (todos los derechos reservados desde el
   # 20 oct 2026). license-checker incluye el paquete raíz en su informe.
   - pkg:npm/rydercup-web

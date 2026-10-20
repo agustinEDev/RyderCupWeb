@@ -52,6 +52,16 @@ class IUserRepository {
   async searchUsers(query) {
     throw new Error('Method not implemented: searchUsers');
   }
+
+  /**
+   * Acepta la versión vigente de los Términos para el usuario de la sesión.
+   * Idempotente: aceptarla dos veces no falla.
+   * @returns {Promise<Object>} El usuario ya con la aceptación, tal como lo
+   *   devuelve el backend: es con lo que se siembra la sesión compartida
+   */
+  async acceptTerms() {
+    throw new Error('Method not implemented: acceptTerms');
+  }
 }
 
 export default IUserRepository;

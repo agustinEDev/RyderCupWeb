@@ -26,6 +26,7 @@ import { formatCountryName, sortCountriesByName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import GolfCourseSearchBox from '../components/golf_course/GolfCourseSearchBox';
+import FuenteRfeg from '../components/golf_course/FuenteRfeg';
 import GolfCourseRequestModal from '../components/golf_course/GolfCourseRequestModal';
 import EnrollmentOpeningModal from '../components/competition/EnrollmentOpeningModal';
 import customToast from '../utils/toast';
@@ -591,6 +592,9 @@ const CreateCompetition = () => {
       golfCourses: [...prev.golfCourses, { countryCode, course }],
     }));
   };
+
+  // Si alguno de los elegidos es federado, se cita a la RFEG
+  const hayCampoDeLaRfeg = formData.golfCourses.some(gc => gc.course?.isFromRfeg?.() === true);
 
   // Los que ya están, para que el buscador no vuelva a ofrecerlos
   const idsDeLosCamposElegidos = formData.golfCourses
@@ -1444,6 +1448,9 @@ const CreateCompetition = () => {
                     </div>
                   )}
                 </div>
+                {/* Solo si alguno de los elegidos es federado: los manuales no
+                    son de la RFEG */}
+                {hayCampoDeLaRfeg && <FuenteRfeg className="mt-3" />}
               </div>
               )}
 

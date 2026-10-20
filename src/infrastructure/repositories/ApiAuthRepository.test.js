@@ -129,3 +129,26 @@ describe('ApiAuthRepository - Account Lockout', () => {
     });
   });
 });
+
+// F1: el backend exige `accept_terms: true` en el registro (sin él, 422)
+describe('ApiAuthRepository · register con la aceptación de los Términos', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('envía accept_terms: true', async () => {
+    api.default.mockResolvedValue({ id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' });
+
+    await new ApiAuthRepository().register({
+      firstName: 'Ana',
+      lastName: 'Prueba',
+      email: new Email('ana@example.com'),
+      password: new Password('Valida-Prueba123!'),
+      countryCode: null,
+      gender: null,
+      acceptTerms: true,
+    });
+
+    const [ruta, opciones] = api.default.mock.calls[0];
+    expect(ruta).toBe('/api/v1/auth/register');
+    expect(JSON.parse(opciones.body)).toMatchObject({ accept_terms: true });
+  });
+});

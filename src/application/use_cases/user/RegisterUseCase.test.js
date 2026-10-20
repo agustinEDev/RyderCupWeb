@@ -27,7 +27,8 @@ describe('RegisterUseCase', () => {
       firstName: 'Jane',
       lastName: 'Doe',
       email: 'jane.doe@example.com',
-      password: 'StrongPassword123!'
+      password: 'StrongPassword123!',
+      acceptTerms: true,
     };
     const mockNewUserEntity = new User({
       id: '456',
@@ -65,14 +66,16 @@ describe('RegisterUseCase', () => {
     await expect(registerUseCase.execute({
       lastName: 'Doe',
       email: 'jane.doe@example.com',
-      password: 'StrongPassword123!'
+      password: 'StrongPassword123!',
+      acceptTerms: true,
     })).rejects.toThrow('All user data fields are required for registration');
 
     // Test case 2: Missing email
     await expect(registerUseCase.execute({
       firstName: 'Jane',
       lastName: 'Doe',
-      password: 'StrongPassword123!'
+      password: 'StrongPassword123!',
+      acceptTerms: true,
     })).rejects.toThrow('All user data fields are required for registration');
 
     // Add more test cases for other missing fields as needed
@@ -85,6 +88,7 @@ describe('RegisterUseCase', () => {
       lastName: 'Doe',
       email: 'jane.doe@example.com',
       password: 'StrongPassword123!',
+      acceptTerms: true,
       gender: 'FEMALE'
     };
     const mockNewUserEntity = new User({
@@ -114,6 +118,7 @@ describe('RegisterUseCase', () => {
       lastName: 'Doe',
       email: 'john.doe@example.com',
       password: 'StrongPassword123!',
+      acceptTerms: true,
     };
     const mockNewUserEntity = new User({
       id: '790',
@@ -139,6 +144,7 @@ describe('RegisterUseCase', () => {
       lastName: 'Doe',
       email: 'jane@example.com',
       password: 'StrongPassword123!',
+      acceptTerms: true,
       gender: 'OTHER'
     };
 
@@ -152,7 +158,8 @@ describe('RegisterUseCase', () => {
       firstName: 'Jane',
       lastName: 'Doe',
       email: 'existing@example.com',
-      password: 'StrongPassword123!'
+      password: 'StrongPassword123!',
+      acceptTerms: true,
     };
     const mockError = new Error('Email already registered');
 
@@ -168,5 +175,29 @@ describe('RegisterUseCase', () => {
     expect(callArg.password).toBeInstanceOf(Password);
     expect(callArg.password._value).toBe(userData.password);
     expect(callArg.countryCode === null || typeof callArg.countryCode === 'object').toBe(true);
+  });
+});
+
+// F1: sin aceptar los Términos no se registra; aceptados, viajan al repositorio
+describe('RegisterUseCase · aceptación de los Términos', () => {
+  const datos = { firstName: 'Ana', lastName: 'Prueba', email: 'ana@example.com', password: 'StrongPassword123!' };
+
+  it.each([
+    ['sin el campo', undefined],
+    ['con false', false],
+    ['con un valor que no es true', 'true'],
+  ])('%s no se registra ni llama al repositorio', async (_caso, acceptTerms) => {
+    const authRepository = { register: vi.fn() };
+
+    await expect(new RegisterUseCase({ authRepository }).execute({ ...datos, acceptTerms })).rejects.toThrow(/terms/i);
+    expect(authRepository.register).not.toHaveBeenCalled();
+  });
+
+  it('con true, el repositorio recibe acceptTerms: true', async () => {
+    const authRepository = { register: vi.fn().mockResolvedValue({}) };
+
+    await new RegisterUseCase({ authRepository }).execute({ ...datos, acceptTerms: true });
+
+    expect(authRepository.register.mock.calls[0][0]).toMatchObject({ acceptTerms: true });
   });
 });
