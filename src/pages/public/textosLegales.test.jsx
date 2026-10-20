@@ -275,3 +275,35 @@ describe('edad mínima en los Términos', () => {
     expect(t).not.toMatch(paterno);
   });
 });
+
+// Revisión: el almacenamiento local no guarda solo preferencias. Lo que guarda
+// de verdad (AuthContext, loUltimoConocido, scoringOfflineQueue, golpesPerdidos,
+// LocalStorageHole*Store, cachés del mapa y de la ubicación, i18n) y qué se
+// borra al cerrar sesión (clearAuth y las salidas forzadas)
+describe('almacenamiento local, descrito con exactitud', () => {
+  const casos = [
+    ['es', es, [/datos de tu usuario/i, /anotaciones pendientes de enviar/i, /mapa del hoyo/i, /ubicación de los campos/i, /reportes y muestras de hoyos/i, /idioma/i, /se borran al cerrar sesión/i, /no se borran al cerrar sesión/i, /no requiere\w* consentimiento/i], /para tus preferencias, como el idioma|para recordar preferencias/i],
+    ['en', en, [/your user data/i, /scores waiting to be sent/i, /hole map/i, /location of courses/i, /hole reports and samples/i, /language/i, /deleted when you log out/i, /not deleted when you log out/i, /do not require consent|does not require consent/i], /for your preferences, such as the language|to remember preferences/i],
+  ];
+
+  it.each(casos)('%s: la Política de Privacidad (apartado 8)', (_i, textos, patrones, soloPreferencias) => {
+    const texto = textos.privacy.section8.content;
+
+    for (const patron of patrones) expect(texto).toMatch(patron);
+    expect(texto).not.toMatch(soloPreferencias);
+  });
+
+  it.each(casos)('%s: la Política de Cookies (apartado 1)', (_i, textos, patrones, soloPreferencias) => {
+    const texto = textos.cookies.section1.content;
+
+    for (const patron of patrones) expect(texto).toMatch(patron);
+    expect(texto).not.toMatch(soloPreferencias);
+  });
+
+  it.each([
+    ['es', es, /guardamos tus preferencias \(idioma e interfaz\)/i],
+    ['en', en, /we keep your preferences \(language and interface\)/i],
+  ])('%s: el apartado 2 de Cookies no lo contradice', (_i, textos, viejo) => {
+    expect(textos.cookies.section2.content).not.toMatch(viejo);
+  });
+});
