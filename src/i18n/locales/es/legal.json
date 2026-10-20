@@ -32,7 +32,7 @@
     },
     "section8": {
       "title": "8. Baja y suspensión",
-      "content": "Puedes dejar de usar el Servicio cuando quieras y pedir que borremos tu cuenta escribiendo a agustin.estevez.dominguez@gmail.com desde la dirección de tu cuenta; lo atenderemos en el plazo de un mes, como explica la Política de Privacidad.\n\nPodemos suspender o cancelar una cuenta que incumpla estos términos de forma grave o reiterada. Salvo urgencia (por ejemplo, un riesgo para la seguridad de otros usuarios), te avisaremos antes y te explicaremos el motivo."
+      "content": "Puedes dejar de usar el Servicio cuando quieras y pedir la baja escribiendo a agustin.estevez.dominguez@gmail.com desde la dirección de tu cuenta; responderemos a tu solicitud en el plazo de un mes. Al darte de baja, desactivamos tu cuenta y suprimimos los datos personales que no estén ligados a resultados o competiciones de otros jugadores; tus resultados, tus tarjetas y las competiciones que has creado se conservan mientras sean necesarios para esas competiciones, como explica la Política de Privacidad.\n\nPodemos suspender o cancelar una cuenta que incumpla estos términos de forma grave o reiterada. Salvo urgencia (por ejemplo, un riesgo para la seguridad de otros usuarios), te avisaremos antes y te explicaremos el motivo."
     },
     "section9": {
       "title": "9. Cambios en estos términos",
@@ -52,7 +52,7 @@
     },
     "section2": {
       "title": "2. Datos que tratamos",
-      "content": "- Cuenta: correo electrónico, nombre y apellidos, alias, país y contraseña (guardada cifrada). Si entras con Google, recibimos de Google tu nombre, tu correo y tu identificador de cuenta.\n- Género: es obligatorio para inscribirte en competiciones, porque las barras de salida y las categorías de cada jugador dependen de él.\n- Golf: hándicap (consultado en la RFEG a tu petición o introducido a mano) y barras elegidas.\n- Foto de perfil, si decides subirla.\n- Amistades: a quién envías o aceptas solicitudes de amistad.\n- Actividad y resultados: competiciones y partidas en las que participas, puntuaciones, tarjetas y estadísticas.\n- Seguridad: dispositivos desde los que entras (navegador y dirección IP) e intentos de inicio de sesión.\n- Ubicación: solo cuando la autorizas en el navegador (ver el apartado 5)."
+      "content": "- Cuenta: correo electrónico, nombre y apellidos, alias, país y contraseña, guardada de forma segura (hash). Si entras con Google, recibimos de Google tu nombre, tu correo y tu identificador de cuenta.\n- Género: es obligatorio para inscribirte en competiciones, porque las barras de salida y las categorías de cada jugador dependen de él.\n- Golf: hándicap (consultado en la RFEG a tu petición o introducido a mano) y barras elegidas.\n- Foto de perfil, si decides subirla.\n- Amistades: a quién envías o aceptas solicitudes de amistad.\n- Actividad y resultados: competiciones y partidas en las que participas, puntuaciones, tarjetas y estadísticas.\n- Seguridad: dispositivos desde los que entras (navegador y dirección IP) e intentos de inicio de sesión.\n- Ubicación: solo cuando la autorizas en el navegador (ver el apartado 5)."
     },
     "section3": {
       "title": "3. Para qué y con qué base legal",
@@ -60,7 +60,7 @@
     },
     "section4": {
       "title": "4. Hándicap y la RFEG",
-      "content": "Si tu país es España, puedes pedir que el Servicio consulte tu hándicap en la Real Federación Española de Golf (RFEG). La consulta se hace solo a petición tuya (o del organizador de una competición en la que estás inscrito, para actualizar los hándicaps de los jugadores) y usa tu nombre y apellidos para buscarte. Si no quieres que se consulte, puedes introducir el hándicap a mano."
+      "content": "Si tu país es España, el Servicio consulta tu hándicap en la Real Federación Española de Golf (RFEG), usando tu nombre y apellidos para buscarte, en estos casos:\n\n- A petición tuya, desde tu perfil.\n- Cuando el organizador de una competición en la que estás inscrito lanza o programa la actualización de los hándicaps.\n- Automáticamente al cierre de las inscripciones de una competición y, en las de formato Ryder, al nombrar a los capitanes.\n\nNo se consulta para una inscripción en la que el organizador haya fijado un hándicap personalizado."
     },
     "section5": {
       "title": "5. Ubicación",
@@ -72,7 +72,7 @@
     },
     "section7": {
       "title": "7. Proveedores y transferencias internacionales",
-      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos (región de la UE).\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea."
+      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos (región de la UE).\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea.\n\nAdemás, al ver el mapa de un hoyo, tu navegador descarga las ortofotos directamente de los servidores públicos que las publican (IGN/PNOA, ICGC, geoEuskadi e IDENA), que reciben la dirección IP de tu dispositivo, como al visitar cualquier web."
     },
     "section8": {
       "title": "8. Cookies, almacenamiento local y Session Replay",
@@ -80,11 +80,11 @@
     },
     "section9": {
       "title": "9. Cuánto tiempo conservamos los datos",
-      "content": "Conservamos tus datos mientras tu cuenta esté activa. Si pides que la borremos, eliminamos tus datos personales en el plazo de un mes, salvo los que debamos conservar por obligación legal. Los resultados de las competiciones en las que participaste pueden conservarse de forma anonimizada, para no alterar las clasificaciones de los demás jugadores."
+      "content": "Conservamos tus datos mientras tu cuenta esté activa.\n\nSi pides la baja, desactivamos tu cuenta (ya no se puede usar ni iniciar sesión con ella) y suprimimos los datos personales que no estén ligados a resultados o competiciones de otros jugadores. Los que sí lo están —tus resultados y tus tarjetas, y las competiciones y partidas que has creado— se conservan mientras sean necesarios para esas competiciones, porque borrarlos alteraría las clasificaciones y los partidos de los demás. Si tu cuenta no tiene nada de eso, se borra por completo.\n\nAdemás, conservamos los datos que debamos guardar por obligación legal durante el plazo que esta fije."
     },
     "section10": {
       "title": "10. Tus derechos",
-      "content": "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad. Muchos datos puedes verlos y corregirlos tú mismo desde tu perfil. El borrado de la cuenta y la portabilidad (recibir tus datos en un formato estructurado) se piden por correo electrónico a agustin.estevez.dominguez@gmail.com, desde la dirección de tu cuenta, y se atienden en el plazo de un mes.\n\nSi consideras que no hemos atendido bien tu solicitud, tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD), en www.aepd.es."
+      "content": "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad. Muchos datos puedes verlos y corregirlos tú mismo desde tu perfil. La baja de la cuenta y la portabilidad (recibir tus datos en un formato estructurado) se piden por correo electrónico a agustin.estevez.dominguez@gmail.com, desde la dirección de tu cuenta. Respondemos a tu solicitud en el plazo de un mes; el apartado 9 explica qué se suprime y qué se conserva al darte de baja.\n\nSi consideras que no hemos atendido bien tu solicitud, tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD), en www.aepd.es."
     },
     "section11": {
       "title": "11. Menores",

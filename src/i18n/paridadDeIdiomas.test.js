@@ -62,3 +62,10 @@ describe('Los dos idiomas tienen los mismos textos', () => {
     expect(leer('en', 'legal.json').legalNotice).toBeTruthy();
   });
 });
+
+describe('textos sueltos de la revisión legal', () => {
+  it('B-2: la fuente del hándicap nombra a la RFEG por sus siglas en los dos idiomas', () => {
+    expect(leer('es', 'profile.json').handicapSource.rfeg).toBe('Fuente: Real Federación Española de Golf (RFEG)');
+    expect(leer('en', 'profile.json').handicapSource.rfeg).toContain('(RFEG)');
+  });
+});

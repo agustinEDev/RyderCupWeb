@@ -187,3 +187,63 @@ describe('Política de Cookies', () => {
     expect(c).not.toMatch(vago);
   });
 });
+
+// Revisión de la auditoría (decisiones de Agustín): los textos dicen lo que el
+// backend hace de verdad
+describe('lo que pasa al pedir la baja (B1)', () => {
+  const bloques = (textos) => [textos.privacy.section9.content, textos.privacy.section10.content, textos.terms.section8.content];
+
+  it.each([
+    ['es', es, /desactiv/i, /un mes/i, /resultados/i, /tarjetas/i, /competiciones que (has )?creado|competiciones creadas/i],
+    ['en', en, /deactivat/i, /one month/i, /results/i, /scorecards/i, /competitions you (have )?created/i],
+  ])('%s: se desactiva, se suprime lo no ligado a otros y se responde en un mes', (_i, textos, ...patrones) => {
+    const todo = bloques(textos).join(' ');
+
+    for (const patron of patrones) expect(todo).toMatch(patron);
+  });
+
+  it.each([
+    ['es', es, /anonimiz/i, /eliminamos tus datos personales en el plazo de un mes/i],
+    ['en', en, /anonymi[sz]/i, /erase your personal data within one month/i],
+  ])('%s: ni «anonimizados» ni «se borra todo en un mes»', (_i, textos, anonimo, todoEnUnMes) => {
+    const todo = bloques(textos).join(' ');
+
+    expect(todo).not.toMatch(anonimo);
+    expect(todo).not.toMatch(todoEnUnMes);
+  });
+});
+
+describe('cuándo se consulta la RFEG (M3)', () => {
+  it.each([
+    ['es', es, [/a petición/i, /organizador/i, /cierr\w* (de )?las inscripciones/i, /capitanes/i, /España/, /personalizado/i], /a mano/i],
+    ['en', en, [/at your request/i, /organiser/i, /enrolment closes|closing enrolment/i, /captains/i, /Spain/, /custom handicap/i], /manually/i],
+  ])('%s: a petición, por el organizador y al cerrar inscripciones o nombrar capitanes', (_i, textos, patrones, aMano) => {
+    const texto = textos.privacy.section4.content;
+
+    for (const patron of patrones) expect(texto).toMatch(patron);
+    expect(texto).not.toMatch(aMano);
+  });
+});
+
+describe('servidores de ortofotos como destinatarios (M4)', () => {
+  it.each([
+    ['es', es, /dirección IP/i, /mapa/i],
+    ['en', en, /IP address/i, /map/i],
+  ])('%s: reciben la IP al ver el mapa del hoyo', (_i, textos, ip, mapa) => {
+    const texto = textos.privacy.section7.content;
+
+    expect(texto).toMatch(ip);
+    expect(texto).toMatch(mapa);
+    for (const servidor of ['IGN', 'PNOA', 'ICGC', 'geoEuskadi', 'IDENA']) expect(texto).toContain(servidor);
+  });
+});
+
+describe('contraseña (B-3)', () => {
+  it.each([
+    ['es', es, /forma segura \(hash\)/, /cifrada/i],
+    ['en', en, /securely \(hashed\)/, /encrypted/i],
+  ])('%s: se guarda con hash, no «cifrada»', (_i, textos, hash, cifrada) => {
+    expect(textos.privacy.section2.content).toMatch(hash);
+    expect(textos.privacy.section2.content).not.toMatch(cifrada);
+  });
+});

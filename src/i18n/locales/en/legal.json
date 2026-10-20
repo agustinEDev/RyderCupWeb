@@ -32,7 +32,7 @@
     },
     "section8": {
       "title": "8. Closing and suspending accounts",
-      "content": "You can stop using the Service whenever you want and ask us to delete your account by writing to agustin.estevez.dominguez@gmail.com from your account's address; we will handle it within one month, as explained in the Privacy Policy.\n\nWe may suspend or close an account that breaches these terms seriously or repeatedly. Except in urgent cases (for example, a risk to other users' security), we will give you notice beforehand and explain why."
+      "content": "You can stop using the Service whenever you want and ask to close your account by writing to agustin.estevez.dominguez@gmail.com from your account's address; we will reply to your request within one month. When you close it, we deactivate your account and erase the personal data that is not linked to other players' results or competitions; your results, your scorecards and the competitions you have created are kept for as long as those competitions need them, as explained in the Privacy Policy.\n\nWe may suspend or close an account that breaches these terms seriously or repeatedly. Except in urgent cases (for example, a risk to other users' security), we will give you notice beforehand and explain why."
     },
     "section9": {
       "title": "9. Changes to these terms",
@@ -52,7 +52,7 @@
     },
     "section2": {
       "title": "2. Data we process",
-      "content": "- Account: email, first and last name, alias, country and password (stored encrypted). If you sign in with Google, we receive your name, email and account identifier from Google.\n- Gender: required to enrol in competitions, because each player's tees and categories depend on it.\n- Golf: handicap (looked up with the RFEG at your request or entered manually) and chosen tees.\n- Profile photo, if you choose to upload one.\n- Friends: who you send or accept friend requests to or from.\n- Activity and results: competitions and matches you take part in, scores, scorecards and statistics.\n- Security: the devices you sign in from (browser and IP address) and sign-in attempts.\n- Location: only when you allow it in your browser (see section 5)."
+      "content": "- Account: email, first and last name, alias, country and password, stored securely (hashed). If you sign in with Google, we receive your name, email and account identifier from Google.\n- Gender: required to enrol in competitions, because each player's tees and categories depend on it.\n- Golf: handicap (looked up with the RFEG at your request or entered manually) and chosen tees.\n- Profile photo, if you choose to upload one.\n- Friends: who you send or accept friend requests to or from.\n- Activity and results: competitions and matches you take part in, scores, scorecards and statistics.\n- Security: the devices you sign in from (browser and IP address) and sign-in attempts.\n- Location: only when you allow it in your browser (see section 5)."
     },
     "section3": {
       "title": "3. Purposes and legal bases",
@@ -60,7 +60,7 @@
     },
     "section4": {
       "title": "4. Handicap and the RFEG",
-      "content": "If your country is Spain, you can ask the Service to look up your handicap with the Royal Spanish Golf Federation (RFEG). The lookup only happens at your request (or at the request of the organiser of a competition you are enrolled in, to update players' handicaps) and uses your first and last name to find you. If you do not want it looked up, you can enter your handicap manually."
+      "content": "If your country is Spain, the Service looks up your handicap with the Royal Spanish Golf Federation (RFEG), using your first and last name to find you, in these cases:\n\n- At your request, from your profile.\n- When the organiser of a competition you are enrolled in launches or schedules a handicap update.\n- Automatically when enrolment closes for a competition and, in Ryder-format competitions, when the captains are named.\n\nIt is not looked up for an enrolment where the organiser has set a custom handicap."
     },
     "section5": {
       "title": "5. Location",
@@ -72,7 +72,7 @@
     },
     "section7": {
       "title": "7. Providers and international transfers",
-      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery (EU region).\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission."
+      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery (EU region).\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission.\n\nIn addition, when you view a hole map, your browser downloads the orthophotos directly from the public servers that publish them (IGN/PNOA, ICGC, geoEuskadi and IDENA), which receive your device's IP address, as with any website you visit."
     },
     "section8": {
       "title": "8. Cookies, local storage and Session Replay",
@@ -80,11 +80,11 @@
     },
     "section9": {
       "title": "9. How long we keep data",
-      "content": "We keep your data while your account is active. If you ask us to delete it, we erase your personal data within one month, except for data we must keep by law. Results of competitions you took part in may be kept in anonymised form, so as not to alter other players' leaderboards."
+      "content": "We keep your data while your account is active.\n\nIf you ask to close your account, we deactivate it (it can no longer be used or signed in to) and erase the personal data that is not linked to other players' results or competitions. Data that is linked to them (your results and scorecards, and the competitions and matches you have created) is kept for as long as those competitions need it, because deleting it would alter other players' leaderboards and matches. If your account has none of that, it is deleted entirely.\n\nWe also keep any data the law requires us to keep, for the period it sets."
     },
     "section10": {
       "title": "10. Your rights",
-      "content": "You can exercise your rights of access, rectification, erasure, objection, restriction of processing and portability. You can view and correct much of your data yourself from your profile. Account deletion and portability (receiving your data in a structured format) are requested by email to agustin.estevez.dominguez@gmail.com, from your account's address, and are handled within one month.\n\nIf you believe we have not handled your request properly, you have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD), at www.aepd.es."
+      "content": "You can exercise your rights of access, rectification, erasure, objection, restriction of processing and portability. You can view and correct much of your data yourself from your profile. Closing your account and portability (receiving your data in a structured format) are requested by email to agustin.estevez.dominguez@gmail.com, from your account's address. We reply to your request within one month; section 9 explains what is erased and what is kept when you close your account.\n\nIf you believe we have not handled your request properly, you have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD), at www.aepd.es."
     },
     "section11": {
       "title": "11. Children",
