@@ -21,12 +21,17 @@ activa sin serlo; se eliminaron para que nadie los vuelva a confundir con la rea
 Con `Request Path` = `/*`, para que cubra también `/assets/`:
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;
 Strict-Transport-Security: max-age=31536000; includeSubDomains
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=()
 ```
+
+Desde el 20 oct 2026 Inter y Poppins se sirven desde la propia aplicación, así que
+`style-src` y `font-src` ya no abren `fonts.googleapis.com` ni `fonts.gstatic.com`. Al
+desplegarlo hay que **quitarlos también del dashboard de Render**: dejarlos no rompe
+nada, pero la política seguiría permitiendo un origen que ya no se usa.
 
 ## Por qué `connect-src` lleva `https://www.ign.es` y las ortofotos de comunidad
 

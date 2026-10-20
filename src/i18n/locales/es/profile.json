@@ -34,7 +34,8 @@
     "privacy": "Privacidad"
   },
   "legal": {
-    "terms": "Términos de Servicio",
+    "legalNotice": "Aviso Legal",
+    "terms": "Términos y condiciones",
     "privacy": "Política de Privacidad",
     "cookies": "Política de Cookies"
   },

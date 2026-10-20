@@ -56,7 +56,9 @@ export const PLAZO_MAXIMO_MS = 3000;
  * ademas la pantalla de todos los dias en el navegador no estorba: la cortina
  * solo se sostiene con la aplicacion instalada.
  */
-const RUTAS_QUE_AVISAN = ['/', '/start', '/dashboard'];
+// `/accept-terms`, porque con los Términos pendientes el arranque acaba ahí: el
+// guardia redirige desde el panel, y la pantalla avisa al montarse
+const RUTAS_QUE_AVISAN = ['/', '/start', '/dashboard', '/accept-terms'];
 
 let plazo = null;
 let retirada = false;

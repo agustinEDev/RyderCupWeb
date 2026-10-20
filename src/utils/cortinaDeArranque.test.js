@@ -153,3 +153,12 @@ describe('la cortina del arranque', () => {
     expect(() => retiraLaCortina()).not.toThrow();
   });
 });
+
+// Revisión (punto 9): con los Términos pendientes, el arranque acaba en
+// /accept-terms. La cortina se sostiene allí hasta que la pantalla avisa, igual
+// que en el panel, y no se ve la carga perezosa de la pantalla por debajo
+describe('cortina · la pantalla de aceptar los Términos', () => {
+  it('/accept-terms es una ruta que avisa', () => {
+    expect(rutaQueAvisa('/accept-terms')).toBe(true);
+  });
+});

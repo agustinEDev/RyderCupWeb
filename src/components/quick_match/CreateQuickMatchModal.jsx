@@ -78,6 +78,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [scoringFormat, setScoringFormat] = useState('STABLEFORD');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseTees, setCourseTees] = useState([]);
+  // Lo dice la ficha completa del campo, que es la que trae su procedencia
+  const [courseFromRfeg, setCourseFromRfeg] = useState(false);
   const [teesLoading, setTeesLoading] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
   const [allowanceOverride, setAllowanceOverride] = useState(null);
@@ -124,6 +126,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset tee/tees state on every course change (including to none), mirrors useQuickMatchScoring's course-fetch pattern
     setCreatorTeeKey(NO_TEE_KEY);
+    setCourseFromRfeg(false);
     if (!selectedCourse?.id) {
       setCourseTees([]);
       return;
@@ -133,7 +136,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     getGolfCourseUseCase
       .execute(selectedCourse.id)
       .then((course) => {
-        if (!cancelled) setCourseTees(course.tees || []);
+        if (cancelled) return;
+        setCourseTees(course.tees || []);
+        setCourseFromRfeg(course.isFromRfeg?.() === true);
       })
       .catch(() => {
         if (!cancelled) setCourseTees([]);
@@ -550,6 +555,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
             onCourseSelect={setSelectedCourse}
             onRequestNewCourse={handleRequestNewCourse}
             courseTees={courseTees}
+            courseFromRfeg={courseFromRfeg}
             creatorTeeKey={creatorTeeKey}
             onCreatorTeeKeyChange={setCreatorTeeKey}
             allowancePercentage={allowancePercentage}

@@ -5,6 +5,7 @@ import { MapPin, X } from 'lucide-react';
 import ModalShell from '../ui/ModalShell';
 import { CountryFlag } from '../../utils/countryUtils';
 import TeeColorBadge from './TeeColorBadge';
+import FuenteRfeg from './FuenteRfeg';
 
 // Fuera del componente a proposito: definido dentro, React lo trata como un
 // tipo nuevo en cada render y desmonta y vuelve a montar lo que hay debajo.
@@ -79,6 +80,8 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
             {course.name}
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">{t('detail.subtitle')}</p>
+          {/* Solo los federados: un campo dado de alta a mano no es de la RFEG */}
+          {course.isFromRfeg?.() && <FuenteRfeg variante="ficha" className="mt-1" />}
         </div>
         <button
           type="button"

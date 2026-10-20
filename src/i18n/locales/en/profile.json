@@ -34,7 +34,8 @@
     "privacy": "Privacy"
   },
   "legal": {
-    "terms": "Terms of Service",
+    "legalNotice": "Legal Notice",
+    "terms": "Terms and Conditions",
     "privacy": "Privacy Policy",
     "cookies": "Cookie Policy"
   },

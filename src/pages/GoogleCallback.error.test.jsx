@@ -78,3 +78,44 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     expect(document.body.textContent).not.toContain('Error interno del servidor');
   });
 });
+
+/**
+ * La casilla de los Términos vive en `/auth/complete-profile` (M1): solo la ven
+ * los usuarios NUEVOS. Quien ya tenía cuenta sigue entrando directo al panel.
+ */
+describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+    window.history.replaceState(null, '', '/');
+  });
+
+  const abrirConRutas = () => {
+    window.history.replaceState(null, '', '/auth/google/callback?code=abc&state=ok');
+    render(
+      <BrowserRouter>
+        <Routes>
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
+          <Route path="/auth/complete-profile" element={<p>completar perfil</p>} />
+          <Route path="/dashboard" element={<p>panel</p>} />
+        </Routes>
+      </BrowserRouter>
+    );
+  };
+
+  it('un usuario que ya existía va al panel, sin pasar por la casilla', async () => {
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(screen.queryByText('completar perfil')).toBeNull();
+  });
+
+  it('un usuario nuevo va a completar el perfil, donde acepta los Términos', async () => {
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: true });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('completar perfil')).toBeInTheDocument();
+  });
+});

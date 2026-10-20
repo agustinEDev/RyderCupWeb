@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.49.0] - 2026-10-20
+
+**Aviso Legal, textos legales nuevos y aceptación de los Términos.** Tras la
+auditoría legal del 20 oct. **Todos los usuarios tendrán que aceptar los
+Términos y condiciones al entrar.** Va con el backend **2.36.0**.
+
+**Notas de despliegue.** **Este frontend sale ANTES que el backend 2.36.0**
+y el backend justo después, sin partidas en juego: funciona con el backend
+2.35.0 (sin el campo de aceptación no bloquea a nadie). Después de desplegar
+y cuando no queden aplicaciones viejas, quitar `fonts.googleapis.com` y
+`fonts.gstatic.com` de las cabeceras de seguridad del dashboard de Render.
+
+### Added
+
+- **Aviso Legal** en `/legal`, con el titular, y enlaces en el pie y el perfil
+  (#922).
+- **Aceptación de los Términos y condiciones** (#922): casilla obligatoria
+  (Términos y 16 años o más) en el registro y en completar perfil; pantalla
+  `/accept-terms` para quien no los tenga aceptados; gestión de dispositivos
+  sin aceptar; un 403 de Términos lleva a esa pantalla sin bucles y la cola de
+  anotaciones guarda los golpes en vez de descartarlos.
+- **Cita a la RFEG** como fuente de los datos de los campos y del hándicap
+  (#922).
+
+### Changed
+
+- Privacidad, Términos y condiciones y Cookies reescritos en español e inglés
+  (#922, #923, #924).
+- Fuentes Inter y Poppins servidas desde la propia aplicación, sin Google
+  Fonts (#922).
+- Atribuciones de los mapas: «© OpenStreetMap», PNOA e IDENA con su licencia
+  (#922).
+- Licencia: todos los derechos reservados desde el 20 oct 2026; lo anterior
+  sigue bajo MIT (#921).
+
 ## [2.48.0] - 2026-10-20
 
 Una release sin nada nuevo para el usuario: pone al día las dependencias que

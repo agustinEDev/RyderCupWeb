@@ -389,12 +389,12 @@
     "quitarPunto": "Quitar",
     "ayudaMedir": "Toca el mapa para medir",
     "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
-    "atribucionPnoa": "PNOA © IGN",
-    "atribucionOsm": "© OSM",
+    "atribucionPnoa": "PNOA CC BY 4.0 scne.es",
+    "atribucionOsm": "© OpenStreetMap",
     "ortofoto": {
       "ES-CT": "Ortofoto © ICGC (CC BY 4.0)",
       "ES-PV": "Eusko Jaurlaritza / Gobierno Vasco. geoEuskadi",
-      "ES-NC": "Servicio proporcionado por el Gobierno de Navarra (CC BY 4.0)"
+      "ES-NC": "© Gobierno de Navarra – IDENA (CC BY 4.0)"
     },
     "sinMapaEnEsteMovil": "Este móvil no puede dibujar el mapa; las distancias al green siguen.",
     "pideSalida": "Toca dónde está la salida",

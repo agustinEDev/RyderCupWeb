@@ -2,6 +2,7 @@ export { default as UserEntity } from '../domain/entities/User';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
+import AcceptTermsUseCase from '../application/use_cases/user/AcceptTermsUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
 import GetUserRolesUseCase from '../application/use_cases/user/GetUserRolesUseCase';
 import SearchUsersUseCase from '../application/use_cases/user/SearchUsersUseCase';
@@ -261,6 +262,7 @@ const apiQuickMatchRepository = new ApiQuickMatchRepository();
 
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
+const acceptTermsUseCase = new AcceptTermsUseCase({ userRepository: apiUserRepository });
 const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
 const getUserRolesUseCase = new GetUserRolesUseCase({ userRepository: apiUserRepository });
 const searchUsersUseCase = new SearchUsersUseCase({ userRepository: apiUserRepository });
@@ -541,6 +543,7 @@ const deleteAdminUserUseCase = new DeleteAdminUserUseCase({ adminRepository: api
 // Exportar los casos de uso y otros servicios que la capa de presentación necesite
 export {
   updateUserProfileUseCase,
+  acceptTermsUseCase,
   updateUserSecurityUseCase,
   getUserRolesUseCase,
   searchUsersUseCase,

@@ -115,12 +115,13 @@
     "support": "Support",
     "getStarted": "Get Started",
     "legal": "Legal",
-    "terms": "Terms of Service",
+    "legalNotice": "Legal Notice",
+    "terms": "Terms and Conditions",
     "privacy": "Privacy Policy",
     "cookies": "Cookie Policy",
     "contact": "Contact Us",
-    "copyright": "© {{year}} RyderCupFriends - RCF. All rights reserved.",
-    "copyrightShort": "© {{year}} RyderCupFriends - RCF",
+    "copyright": "© {{year}} Agustín Estévez Domínguez. All rights reserved.",
+    "copyrightShort": "© {{year}} Agustín Estévez Domínguez",
     "madeWith": "Made with",
     "forGolfers": "for golf enthusiasts"
   },
@@ -144,5 +145,7 @@
   },
   "errors": {
     "generic": "The operation could not be completed. Please try again."
-  }
+  },
+  "terminosPendientes": "You must accept the Terms and Conditions to continue.",
+  "terminosNoDisponible": "This is not available right now. Please try again later."
 }

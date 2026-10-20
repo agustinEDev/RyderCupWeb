@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { X, TrendingUp, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
+import FuenteRfeg from '../golf_course/FuenteRfeg';
 import { updateRfegHandicapUseCase, updateManualHandicapUseCase } from '../../composition';
 
 /**
@@ -145,6 +146,8 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
               >
                 {isSubmitting ? t('edit.handicap.updatingFromRFEG') : t('handicapModal.fetchRfeg')}
               </button>
+              {/* De dónde sale el hándicap que se trae (auditoría legal, F4) */}
+              <FuenteRfeg variante="handicap" />
             </div>
           )}
 

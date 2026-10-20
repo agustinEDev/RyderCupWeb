@@ -19,12 +19,18 @@ class RegisterUseCase {
    * @param {string} userData.email - El email del usuario (cadena de texto).
    * @param {string} userData.password - La contraseña del usuario (cadena de texto).
    * @param {string} [userData.countryCode] - El código de país del usuario (opcional, ISO 3166-1 alpha-2).
+   * @param {boolean} userData.acceptTerms - Que acepta los Términos y tiene 16 años o más. Solo
+   *   vale `true`: el backend rechaza el registro sin ello (422).
    * @returns {Promise<import('../../../domain/entities/User').default>} El objeto User recién creado.
    */
-  async execute({ firstName, lastName, email: emailString, password: passwordString, countryCode: countryCodeString, gender: genderValue = null }) {
+  async execute({ firstName, lastName, email: emailString, password: passwordString, countryCode: countryCodeString, gender: genderValue = null, acceptTerms }) {
     // Validar campos requeridos (country_code y gender son opcionales)
     if (!firstName || !lastName || !emailString || !passwordString) {
       throw new Error('All user data fields are required for registration');
+    }
+    // Sin aceptar los Términos no hay registro: el backend lo rechazaría igual
+    if (acceptTerms !== true) {
+      throw new Error('The terms must be accepted to register');
     }
 
     // Crear Value Objects para validación
@@ -48,6 +54,7 @@ class RegisterUseCase {
       password,
       countryCode, // Puede ser CountryCode VO o null
       gender,
+      acceptTerms: true,
     });
 
     return newUser;

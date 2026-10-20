@@ -1,106 +1,192 @@
 {
   "terms": {
-    "title": "Términos de Servicio",
-    "lastUpdated": "Última actualización: Febrero 2026",
+    "title": "Términos y condiciones",
+    "lastUpdated": "Última actualización: 20 de octubre de 2026",
     "section1": {
-      "title": "1. Aceptación de los Términos",
-      "content": "Al acceder o usar RyderCupFriends (\"el Servicio\"), aceptas estar sujeto a estos Términos de Servicio. Si no estás de acuerdo con estos términos, por favor no uses el Servicio.\n\nEl Servicio es operado por RyderCupFriends (\"nosotros\" o \"nuestro\"). Nos reservamos el derecho de modificar estos términos en cualquier momento, y dichas modificaciones serán efectivas inmediatamente tras su publicación."
+      "title": "1. Titular y aceptación",
+      "content": "RyderCupFriends (\"el Servicio\") lo presta Agustín Estévez Domínguez, persona física con NIF 76826889N y domicilio en c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (España), correo electrónico agustin.estevez.dominguez@gmail.com. Los datos completos están en el Aviso Legal.\n\nAl registrarte aceptas estos Términos y condiciones. Si no estás de acuerdo con ellos, no uses el Servicio."
     },
     "section2": {
       "title": "2. Elegibilidad",
-      "content": "Debes tener al menos 16 años para usar este Servicio. Al usar el Servicio, declaras y garantizas que cumples con este requisito de edad.\n\nSi eres menor de 18 años, debes contar con el consentimiento de tus padres o tutores para usar el Servicio."
+      "content": "Debes tener al menos 16 años para usar el Servicio. Al registrarte declaras que cumples este requisito."
     },
     "section3": {
-      "title": "3. Cuentas de Usuario",
-      "content": "Para acceder a ciertas funciones del Servicio, debes crear una cuenta. Eres responsable de mantener la confidencialidad de tus credenciales y de todas las actividades que ocurran bajo tu cuenta.\n\nTe comprometes a proporcionar información precisa, actual y completa durante el registro y a actualizar dicha información para mantenerla precisa y completa."
+      "title": "3. Cuentas de usuario",
+      "content": "Para usar la mayoría de las funciones del Servicio necesitas una cuenta. Eres responsable de mantener la confidencialidad de tus credenciales y de lo que se haga desde tu cuenta.\n\nTe comprometes a dar información veraz y a mantenerla actualizada."
     },
     "section4": {
-      "title": "4. Conducta del Usuario",
-      "content": "Aceptas no usar el Servicio para:\n\n- Violar leyes o regulaciones aplicables\n- Hacerse pasar por otra persona o entidad\n- Acosar, abusar o dañar a otros usuarios\n- Subir contenido malicioso o intentar comprometer el Servicio\n- Usar sistemas automatizados para acceder al Servicio sin permiso\n- Interferir con el funcionamiento adecuado del Servicio"
+      "title": "4. Conducta y denuncia de contenidos",
+      "content": "Te comprometes a no usar el Servicio para:\n\n- Infringir la ley\n- Hacerte pasar por otra persona\n- Acosar, insultar o perjudicar a otros usuarios\n- Subir contenido malicioso o intentar comprometer el Servicio\n- Acceder al Servicio con sistemas automatizados sin permiso\n- Interferir en su funcionamiento\n\nSi ves un contenido ilícito o que incumple estos términos (por ejemplo, un nombre, un alias o una foto), puedes denunciarlo escribiendo a agustin.estevez.dominguez@gmail.com. Lo revisaremos y, si procede, lo retiraremos."
     },
     "section5": {
-      "title": "5. Reglas de Competiciones de Golf",
-      "content": "RyderCupFriends proporciona herramientas para organizar competiciones de golf amateur. Todas las competiciones son informales y con fines recreativos únicamente.\n\nNo somos responsables de la precisión de los cálculos de handicap, puntuación o cualquier disputa derivada de los resultados de las competiciones. Los organizadores son responsables de garantizar el juego limpio entre los participantes."
+      "title": "5. Competiciones de golf",
+      "content": "El Servicio ofrece herramientas para organizar competiciones de golf amateur, informales y con fines recreativos.\n\nLos hándicaps, los datos de los campos y los mapas proceden en parte de terceros (como la RFEG u OpenStreetMap) y pueden contener errores. Los organizadores son responsables de las reglas de su competición y de velar por el juego limpio."
     },
     "section6": {
-      "title": "6. Propiedad Intelectual",
-      "content": "El Servicio, incluyendo su diseño, funciones y contenido, es propiedad de RyderCupFriends y está protegido por leyes de propiedad intelectual. No puedes copiar, modificar, distribuir ni crear obras derivadas basadas en el Servicio sin nuestro permiso expreso por escrito.\n\nEl contenido que crees a través del Servicio (datos de competiciones, puntuaciones, etc.) sigue siendo tuyo, pero nos otorgas una licencia para usarlo para proporcionar y mejorar el Servicio."
+      "title": "6. Propiedad intelectual",
+      "content": "El Servicio, su software, su diseño y sus contenidos propios pertenecen a su titular. No puedes copiarlos, modificarlos, distribuirlos ni crear obras derivadas sin permiso, salvo en lo que permita la ley. Los datos de terceros pertenecen a sus titulares (ver «Fuentes de datos y licencias» en el Aviso Legal).\n\nLo que creas en el Servicio (competiciones, resultados, fotos) sigue siendo tuyo; nos concedes la licencia necesaria para mostrarlo y usarlo con el único fin de prestar el Servicio."
     },
     "section7": {
-      "title": "7. Limitación de Responsabilidad",
-      "content": "El Servicio se proporciona \"tal cual\" y \"según disponibilidad\" sin garantías de ningún tipo. No garantizamos que el Servicio será ininterrumpido, libre de errores o seguro.\n\nEn la máxima medida permitida por la ley, RyderCupFriends no será responsable de ningún daño indirecto, incidental, especial o consecuente derivado de tu uso del Servicio."
+      "title": "7. Responsabilidad",
+      "content": "El Servicio se ofrece tal como está. Procuramos que funcione bien y de forma continua, pero no podemos garantizar que no tenga interrupciones o errores.\n\nNo respondemos de los daños indirectos derivados del uso del Servicio, salvo en caso de dolo o culpa grave. Nada de lo dispuesto en estos términos limita los derechos que la ley reconoce a los consumidores y usuarios."
     },
     "section8": {
-      "title": "8. Terminación",
-      "content": "Podemos suspender o terminar tu acceso al Servicio en cualquier momento, con o sin causa, y con o sin previo aviso. Tras la terminación, tu derecho a usar el Servicio cesará inmediatamente.\n\nPuedes eliminar tu cuenta en cualquier momento a través de la configuración del perfil. Tras la eliminación, tus datos personales serán eliminados de acuerdo con nuestra Política de Privacidad."
+      "title": "8. Baja y suspensión",
+      "content": "Puedes dejar de usar el Servicio cuando quieras y pedir la baja escribiendo a agustin.estevez.dominguez@gmail.com desde la dirección de tu cuenta. Al pedirla, desactivamos tu cuenta (ya no se puede usar) y, en el plazo de un mes, respondemos a tu solicitud y suprimimos manualmente los datos personales que no estén ligados a resultados o competiciones de otros jugadores; tus resultados, tus tarjetas y las competiciones que has creado se conservan mientras sean necesarios para esas competiciones, como explica la Política de Privacidad.\n\nPodemos suspender o cancelar una cuenta que incumpla estos términos de forma grave o reiterada. Salvo urgencia (por ejemplo, un riesgo para la seguridad de otros usuarios), te avisaremos antes y te explicaremos el motivo."
     },
     "section9": {
-      "title": "9. Contacto",
-      "content": "Si tienes preguntas sobre estos Términos de Servicio, contáctanos en support@rydercupfriends.com o a través de nuestra página de Contacto."
+      "title": "9. Cambios en estos términos",
+      "content": "Si cambiamos estos términos, te avisaremos con una antelación razonable (por correo electrónico o en la propia aplicación) antes de que entren en vigor. Si no estás de acuerdo con los cambios, puedes darte de baja antes de esa fecha."
+    },
+    "section10": {
+      "title": "10. Ley aplicable y contacto",
+      "content": "Estos términos se rigen por la ley española. Si eres consumidor, esto no te priva de la protección que te otorguen las normas imperativas de tu país de residencia, y puedes acudir a los tribunales de tu domicilio.\n\nPara cualquier duda sobre estos términos, escribe a agustin.estevez.dominguez@gmail.com o usa la página de Contacto."
     }
   },
   "privacy": {
     "title": "Política de Privacidad",
-    "lastUpdated": "Última actualización: Febrero 2026",
+    "lastUpdated": "Última actualización: 20 de octubre de 2026",
     "section1": {
-      "title": "1. Información que Recopilamos",
-      "content": "Recopilamos información que proporcionas directamente al crear una cuenta y usar el Servicio:\n\n- Información de cuenta: nombre, correo electrónico, país, género (opcional)\n- Perfil de golf: índice de handicap, preferencias de tee\n- Datos de competición: puntuaciones, resultados de partidos, asignaciones de equipo\n- Información del dispositivo: tipo de navegador, huella digital del dispositivo (por seguridad)"
+      "title": "1. Responsable del tratamiento",
+      "content": "El responsable del tratamiento de tus datos es:\n\n- Agustín Estévez Domínguez (persona física)\n- NIF: 76826889N\n- Domicilio: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (España)\n- Correo electrónico: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends (\"el Servicio\") es el nombre de la aplicación, no una sociedad."
     },
     "section2": {
-      "title": "2. Cómo Usamos tu Información",
-      "content": "Usamos la información recopilada para:\n\n- Proporcionar y mantener el Servicio\n- Gestionar tu cuenta y competiciones\n- Calcular handicaps y generar emparejamientos\n- Enviar notificaciones importantes sobre tus competiciones\n- Mejorar el Servicio y desarrollar nuevas funciones\n- Garantizar la seguridad y prevenir abusos"
+      "title": "2. Datos que tratamos",
+      "content": "- Cuenta: correo electrónico, nombre y apellidos, alias, país y contraseña, guardada de forma segura (hash). Si entras con Google, recibimos de Google tu nombre, tu correo y tu identificador de cuenta.\n- Género: es obligatorio para inscribirte en competiciones, porque las barras de salida y las categorías de cada jugador dependen de él.\n- Golf: hándicap (consultado en la RFEG en los casos del apartado 4, o introducido a mano) y barras elegidas.\n- Foto de perfil, si decides subirla.\n- Amistades: a quién envías o aceptas solicitudes de amistad.\n- Actividad y resultados: competiciones y partidas en las que participas, puntuaciones, tarjetas y estadísticas.\n- Prueba de aceptación de los Términos: al aceptarlos (en el registro, al completar tu perfil o en la pantalla de aceptación) guardamos la versión aceptada, la fecha, tu correo electrónico en ese momento, la dirección IP y el navegador.\n- Seguridad: dispositivos desde los que entras (navegador y dirección IP) e intentos de inicio de sesión.\n- Ubicación: solo cuando la autorizas en el navegador; la posición de la salida, si confirmas que estás en ella, se envía como muestra anónima para mejorar los mapas (ver el apartado 5).\n- Contacto: si nos escribes por el formulario de contacto, tu nombre, tu correo electrónico y tu mensaje."
     },
     "section3": {
-      "title": "3. Cookies y Almacenamiento Local",
-      "content": "Usamos los siguientes mecanismos de almacenamiento:\n\n- Cookies httpOnly: Tokens de autenticación (acceso y refresco) almacenados de forma segura y no accesibles vía JavaScript\n- localStorage: Preferencia de idioma (i18next), configuración de interfaz\n- Cookies de sesión: Tokens de protección CSRF\n\nNo usamos cookies de publicidad de terceros ni cookies de seguimiento."
+      "title": "3. Para qué y con qué base legal",
+      "content": "- Prestar el Servicio (crear y gestionar tu cuenta, organizar competiciones y partidas, calcular resultados, mostrar clasificaciones y enviarte los correos necesarios, como la verificación de la cuenta o el cambio de contraseña): ejecución del contrato que aceptas al registrarte (art. 6.1.b RGPD).\n- Proteger el Servicio y tu cuenta (registro de dispositivos e intentos de inicio de sesión, límites de uso, prevención de abusos) y detectar y corregir errores: interés legítimo en la seguridad y el buen funcionamiento del Servicio (art. 6.1.f RGPD).\n- Usar tu ubicación (geolocalización) para buscar campos cercanos y medir distancias en el campo: tu consentimiento, que das al permitirlo en el navegador y puedes retirar en cualquier momento desde sus ajustes (art. 6.1.a RGPD).\n- Enviar la posición de la salida para mejorar los mapas de los hoyos (apartado 5): tu consentimiento, que das al permitir la ubicación en el navegador y al confirmar que estás en la salida, y nuestro interés legítimo en mejorar los mapas; la muestra es anónima (art. 6.1.a y 6.1.f RGPD).\n- Atender lo que nos escribes por el formulario de contacto: tu consentimiento al enviarlo y nuestro interés legítimo en atender tu consulta (art. 6.1.a y 6.1.f RGPD).\n- Guardar la prueba de aceptación de los Términos, para poder acreditar qué Términos aceptó cada usuario y cuándo: cumplimiento de obligaciones legales e interés legítimo en la defensa frente a reclamaciones (art. 6.1.c y 6.1.f RGPD).\n- Cumplir obligaciones legales, cuando las haya (art. 6.1.c RGPD).\n\nNo vendemos tus datos ni los usamos para publicidad."
     },
     "section4": {
-      "title": "4. Servicios de Terceros",
-      "content": "Usamos los siguientes servicios de terceros:\n\n- Sentry: Seguimiento de errores y monitoreo de rendimiento. Recopila datos de errores anonimizados y repeticiones de sesión para ayudarnos a corregir fallos.\n- Cloudflare: CDN y seguridad. Procesa solicitudes para proteger contra tráfico malicioso.\n- Render: Plataforma de alojamiento de la aplicación.\n\nEstos servicios tienen sus propias políticas de privacidad que rigen el uso de datos."
+      "title": "4. Hándicap y la RFEG",
+      "content": "Si tu país es España, el Servicio consulta tu hándicap en la Real Federación Española de Golf (RFEG), usando tu nombre y apellidos para buscarte, en estos casos:\n\n- A petición tuya, desde tu perfil.\n- Cuando el organizador de una competición en la que estás inscrito lanza o programa la actualización de los hándicaps.\n- Automáticamente al cierre de las inscripciones de una competición y, en las de formato Ryder, al nombrar a los capitanes.\n\nNo se consulta para una inscripción en la que el organizador haya fijado un hándicap personalizado."
     },
     "section5": {
-      "title": "5. Retención de Datos",
-      "content": "Retenemos tus datos mientras tu cuenta esté activa. Si eliminas tu cuenta, eliminaremos tus datos personales en un plazo de 30 días, excepto cuando la retención sea requerida por ley.\n\nLos resultados de competiciones pueden conservarse de forma anonimizada con fines estadísticos."
+      "title": "5. Ubicación",
+      "content": "El Servicio solo accede a tu geolocalización cuando lo permites en el navegador, y para tres cosas:\n\n- Buscar campos cerca de ti.\n- Medir distancias en el campo durante una partida. La medición se calcula en tu propio móvil.\n- Mejorar los mapas de los hoyos: cuando en el mapa de un hoyo confirmas que estás en la salida, la posición de la salida se envía, junto con el centro del green, los codos de la línea y la barra, como una muestra para mejorar ese mapa. Se guarda sin ningún dato de quién la envió y, de cuándo llegó, solo el día.\n\nLos reportes de hoyo que envías llevan los puntos que marcas tú en el mapa, no tu posición, y se guardan igual: sin ningún dato de quién los envió y solo con el día.\n\nLa ubicación no se usa para seguirte ni se guarda un historial de tus posiciones."
     },
     "section6": {
-      "title": "6. Tus Derechos",
-      "content": "Tienes derecho a:\n\n- Acceder a tus datos personales a través de tu perfil\n- Actualizar o corregir tu información\n- Eliminar tu cuenta y datos asociados\n- Exportar tus datos de competiciones\n- Objetar ciertos procesamientos de tus datos\n\nPara ejercer estos derechos, contáctanos en support@rydercupfriends.com."
+      "title": "6. Qué ven otros usuarios",
+      "content": "- Tus amigos ven tu nombre o alias, tu foto y, si lo activas, tus logros en su feed.\n- Los participantes de una competición o partida ven tu nombre, tu hándicap, tus barras y tus resultados.\n- En las competiciones públicas, la clasificación y los resultados pueden verlos también personas sin cuenta, a través del enlace de la clasificación."
     },
     "section7": {
-      "title": "7. Privacidad de Menores",
-      "content": "El Servicio no está dirigido a menores de 16 años. No recopilamos intencionalmente información personal de menores de 16 años. Si crees que hemos recopilado inadvertidamente dicha información, contáctanos inmediatamente."
+      "title": "7. Proveedores y transferencias internacionales",
+      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos (región de la UE).\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n- GitHub: recepción de los mensajes del formulario de contacto (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea.\n\nAdemás, al ver el mapa de un hoyo, tu navegador descarga las ortofotos directamente de los servidores públicos que las publican (IGN/PNOA, ICGC, geoEuskadi e IDENA), que reciben la dirección IP de tu dispositivo, como al visitar cualquier web."
     },
     "section8": {
-      "title": "8. Cambios en esta Política",
-      "content": "Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos de cambios significativos publicando la política actualizada en esta página y actualizando la fecha de \"Última actualización\".\n\nTu uso continuado del Servicio después de la publicación de cambios constituye la aceptación de la política actualizada."
+      "title": "8. Cookies, almacenamiento local y Session Replay",
+      "content": "Solo usamos cookies técnicas (sesión, protección CSRF e identificación del dispositivo). En el almacenamiento local del navegador guardamos, también por motivos técnicos:\n\n- Los datos de tu usuario, para mostrar tu sesión, y las partidas que necesitas para anotar sin cobertura. Se borran al cerrar sesión.\n- Las anotaciones pendientes de enviar cuando no hay cobertura, los avisos de golpes que no se pudieron guardar y los reportes y muestras de hoyos pendientes de enviar. No se borran al cerrar sesión, para no perderlos: se envían, o se avisa de ellos, cuando vuelve la conexión.\n- Cachés del mapa del hoyo y de la ubicación de los campos, para que funcionen sin conexión, y tus preferencias, como el idioma. No se borran al cerrar sesión.\n\nSon necesarios para prestar el Servicio y no requieren consentimiento.\n\nCuando se produce un error, Sentry puede guardar una reproducción de la sesión (Session Replay) con el texto enmascarado y sin imágenes, para poder corregirlo; la base legal es nuestro interés legítimo en la seguridad y el buen funcionamiento del Servicio. Tienes el detalle en la Política de Cookies."
     },
     "section9": {
-      "title": "9. Contacto",
-      "content": "Si tienes preguntas o inquietudes sobre esta Política de Privacidad, contáctanos en support@rydercupfriends.com o a través de nuestra página de Contacto."
+      "title": "9. Cuánto tiempo conservamos los datos",
+      "content": "Conservamos tus datos mientras tu cuenta esté activa.\n\nSi pides la baja, desactivamos tu cuenta: ya no se puede usar ni iniciar sesión con ella, pero sus datos siguen guardados. En el plazo de un mes respondemos a tu solicitud y suprimimos manualmente los datos personales que no estén ligados a resultados o competiciones de otros jugadores. Los que sí lo están —tus resultados y tus tarjetas, y las competiciones y partidas que has creado— se conservan mientras sean necesarios para esas competiciones, porque borrarlos alteraría las clasificaciones y los partidos de los demás. Si tu cuenta no tiene actividad de ese tipo, se borra por completo, salvo lo que explica el párrafo siguiente.\n\nLa prueba de aceptación de los Términos (versión aceptada, fecha, correo electrónico, dirección IP y navegador) se conserva mientras exista la cuenta y 3 años después de su borrado, para poder acreditar qué Términos se aceptaron y cuándo; pasado ese plazo, se elimina.\n\nAdemás, conservamos los datos que debamos guardar por obligación legal durante el plazo que esta fije."
+    },
+    "section10": {
+      "title": "10. Tus derechos",
+      "content": "Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad. Muchos datos puedes verlos y corregirlos tú mismo desde tu perfil. La baja de la cuenta y la portabilidad (recibir tus datos en un formato estructurado) se piden por correo electrónico a agustin.estevez.dominguez@gmail.com, desde la dirección de tu cuenta. Respondemos a tu solicitud en el plazo de un mes; el apartado 9 explica qué se suprime y qué se conserva al darte de baja.\n\nSi consideras que no hemos atendido bien tu solicitud, tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD), en www.aepd.es."
+    },
+    "section11": {
+      "title": "11. Menores",
+      "content": "El Servicio no está dirigido a menores de 16 años y no se permite registrarse por debajo de esa edad. Si crees que un menor de 16 años nos ha facilitado datos, escríbenos a agustin.estevez.dominguez@gmail.com y los borraremos."
+    },
+    "section12": {
+      "title": "12. Cambios en esta política",
+      "content": "Si cambiamos esta política de forma relevante, te avisaremos con antelación por correo electrónico o en la propia aplicación, y actualizaremos la fecha de \"Última actualización\"."
     }
   },
   "cookies": {
     "title": "Política de Cookies",
-    "lastUpdated": "Última actualización: Febrero 2026",
+    "lastUpdated": "Última actualización: 20 de octubre de 2026",
     "section1": {
-      "title": "1. Qué son las Cookies",
-      "content": "Las cookies son pequeños archivos de texto almacenados en tu dispositivo cuando visitas un sitio web. Se usan ampliamente para que los sitios web funcionen de manera más eficiente y para proporcionar información a los propietarios del sitio.\n\nTambién usamos tecnologías similares como localStorage para almacenar preferencias."
+      "title": "1. Qué son las cookies",
+      "content": "Las cookies son pequeños archivos de texto que un sitio web guarda en tu dispositivo. Además de cookies, el Servicio usa el almacenamiento local del navegador (localStorage y sessionStorage). Todo lo que guarda ahí es técnico y necesario para que el Servicio funcione, por lo que no requiere consentimiento:\n\n- Los datos de tu usuario, para mostrar tu sesión sin esperar al servidor. Se borran al cerrar sesión.\n- Las partidas y competiciones que necesitas para anotar sin cobertura, y los avisos pendientes sobre tu hándicap. Se borran al cerrar sesión.\n- Las anotaciones pendientes de enviar cuando no hay cobertura y los avisos de golpes que no se pudieron guardar. No se borran al cerrar sesión, para no perder ningún golpe: las anotaciones se envían cuando vuelve la conexión, y cada aviso solo lo ve su dueño.\n- Los reportes y muestras de hoyos pendientes de enviar, guardados por usuario. No se borran al cerrar sesión: se envían cuando vuelve la conexión.\n- Cachés del mapa del hoyo y de la ubicación de los campos, para que funcionen sin conexión. No se borran al cerrar sesión.\n- Preferencias: el idioma, el orden elegido en algunas listas y si descartaste el aviso de instalar la aplicación. No se borran al cerrar sesión.\n- Datos de funcionamiento: contadores que limitan los intentos repetidos en algunos formularios y el bloqueo de la sesión de anotación. En sessionStorage, que se borra al cerrar la pestaña, solo se guardan: la comprobación de seguridad del inicio de sesión con Google, una marca de arranque, la última ruta desde la que se te llevó a aceptar los Términos (para evitar bucles) y una marca que evita recargar en bucle si falla la carga de una pantalla.\n\nEl service worker guarda además los ficheros de la propia aplicación, para que abra sin conexión."
     },
     "section2": {
-      "title": "2. Cookies que Usamos",
-      "content": "Cookies esenciales (necesarias para el funcionamiento del Servicio):\n\n- Cookies de autenticación (httpOnly): Tokens seguros de acceso y refresco que mantienen tu sesión iniciada. No son accesibles vía JavaScript, protegiéndote contra ataques XSS.\n- Cookie de token CSRF: Protege contra ataques de falsificación de solicitudes entre sitios.\n\nAlmacenamiento funcional (localStorage):\n\n- Preferencia de idioma: Recuerda tu idioma seleccionado (Inglés/Español).\n- Preferencias de interfaz: Tema y configuración de visualización.\n- Flags de sesión: Recuperación de errores de carga diferida."
+      "title": "2. Cookies técnicas que usamos",
+      "content": "Solo usamos cookies técnicas, necesarias para que el Servicio funcione, que no requieren consentimiento:\n\n- Cookies de autenticación (httpOnly): tokens de acceso y de refresco que mantienen tu sesión iniciada. No son accesibles desde JavaScript.\n- Cookie del token CSRF: protege frente a ataques de falsificación de peticiones entre sitios.\n- Cookie del dispositivo (httpOnly, un año): identifica el dispositivo desde el que entras, para la gestión de dispositivos y la seguridad de tu cuenta.\n\nLo que guardamos en el almacenamiento local del navegador se detalla en el apartado 1."
     },
     "section3": {
-      "title": "3. Gestión de Cookies",
-      "content": "Puedes controlar las cookies a través de la configuración de tu navegador. Ten en cuenta que deshabilitar las cookies esenciales impedirá que inicies sesión y uses las funciones autenticadas del Servicio.\n\nPara borrar las cookies de autenticación, usa el botón \"Cerrar Sesión\" en la aplicación, que invalidará correctamente tu sesión."
+      "title": "3. Cloudflare",
+      "content": "Cloudflare, que protege el Servicio frente a ataques y tráfico automatizado, puede instalar la cookie técnica de seguridad __cf_bm, que distingue a las personas de los bots y caduca a los 30 minutos. No se usa para seguirte ni para publicidad."
     },
     "section4": {
-      "title": "4. Cookies de Terceros",
-      "content": "No usamos cookies de publicidad o seguimiento de terceros.\n\nNuestros servicios de terceros (Sentry para seguimiento de errores, Cloudflare para seguridad) pueden establecer sus propias cookies con fines funcionales. Estas se rigen por sus respectivas políticas de privacidad."
+      "title": "4. Sentry y Session Replay",
+      "content": "Usamos Sentry para detectar y corregir errores. Cuando se produce un error, Sentry puede guardar una reproducción de la sesión (Session Replay): una grabación de lo que ocurrió en la pantalla, con todo el texto enmascarado y sin imágenes, que nos ayuda a entender el fallo. Los datos se alojan en la región de Alemania (UE). La base legal es nuestro interés legítimo en la seguridad y el buen funcionamiento del Servicio. Sentry no instala cookies de publicidad ni de seguimiento."
     },
     "section5": {
-      "title": "5. Contacto",
-      "content": "Si tienes preguntas sobre nuestro uso de cookies, contáctanos en support@rydercupfriends.com o a través de nuestra página de Contacto."
+      "title": "5. Gestión de las cookies",
+      "content": "Puedes bloquear o borrar las cookies desde la configuración de tu navegador. Ten en cuenta que, sin las cookies técnicas, no podrás iniciar sesión ni usar las funciones que la requieren.\n\nPara borrar las cookies de autenticación, usa \"Cerrar sesión\" en la aplicación, que además invalida tu sesión."
+    },
+    "section6": {
+      "title": "6. Contacto",
+      "content": "Si tienes preguntas sobre el uso de cookies, escribe a agustin.estevez.dominguez@gmail.com o usa la página de Contacto."
+    }
+  },
+  "legalNotice": {
+    "title": "Aviso Legal",
+    "lastUpdated": "Última actualización: 20 de octubre de 2026",
+    "section1": {
+      "title": "1. Titular del sitio web",
+      "content": "En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), estos son los datos del titular de este sitio web y de la aplicación RyderCupFriends (\"el Servicio\"):\n\n- Titular: Agustín Estévez Domínguez (persona física)\n- NIF: 76826889N\n- Domicilio: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (España)\n- Correo electrónico: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends es el nombre del Servicio, no una sociedad: lo presta su titular como persona física."
+    },
+    "section2": {
+      "title": "2. Objeto",
+      "content": "El Servicio es una aplicación web para organizar y jugar competiciones de golf amateur entre amigos (formato Ryder Cup, stroke play y partidas rápidas): inscripciones, equipos, emparejamientos, anotación de resultados, clasificaciones, mapas de los hoyos y consulta del hándicap en la RFEG para los jugadores de España: a petición del jugador, cuando un organizador lanza o programa la actualización y automáticamente al cierre de las inscripciones de una competición o, en las de formato Ryder, al nombrar a los capitanes, salvo que el organizador haya fijado un hándicap personalizado en esa inscripción.\n\nSu uso se rige además por los Términos y condiciones, la Política de Privacidad y la Política de Cookies, accesibles desde el pie de página y desde el perfil."
+    },
+    "section3": {
+      "title": "3. Condiciones de uso",
+      "content": "Quien usa el Servicio se compromete a hacerlo conforme a la ley, a la buena fe y a estas condiciones y, en particular, a no:\n\n- Introducir datos falsos, o datos de otra persona sin su consentimiento\n- Publicar contenidos ilícitos, ofensivos o que vulneren derechos de terceros\n- Intentar acceder sin autorización a cuentas, datos o sistemas, ni dañar o sobrecargar el Servicio\n- Extraer datos del Servicio de forma masiva o automatizada\n\nEl titular puede retirar contenidos o suspender cuentas que incumplan estas condiciones, según lo previsto en los Términos y condiciones."
+    },
+    "section4": {
+      "title": "4. Propiedad intelectual e industrial",
+      "content": "El software del Servicio, su diseño y sus contenidos propios (textos, gráficos y logotipos) pertenecen a su titular o se usan con licencia, y no pueden reproducirse, distribuirse ni transformarse sin su autorización, salvo en lo que permita la ley.\n\nLos datos de terceros que muestra el Servicio pertenecen a sus respectivos titulares. Los de OpenStreetMap, las ortofotos (IGN/PNOA, ICGC, geoEuskadi e IDENA) y el software de terceros se usan conforme a sus licencias, detalladas en el apartado «Fuentes de datos y licencias». Los datos de los campos federados se citan como procedentes de la Real Federación Española de Golf (RFEG), su fuente. Los contenidos que aportan los usuarios siguen siendo suyos."
+    },
+    "section5": {
+      "title": "5. Exclusión de garantías y responsabilidad",
+      "content": "El titular procura que el Servicio funcione de forma continua y que la información sea correcta, pero no puede garantizarlo: puede haber interrupciones por mantenimiento o por causas ajenas, y los datos de campos, hándicaps, distancias y mapas proceden en parte de terceros y pueden contener errores o estar desactualizados. Las distancias y los mapas son orientativos.\n\nEl titular no responde de los daños derivados de esas interrupciones o errores ni del uso que cada usuario haga del Servicio, salvo en caso de dolo o culpa grave y sin perjuicio de los derechos que la ley reconoce a los consumidores. Los enlaces a sitios de terceros se ofrecen solo como referencia: el titular no controla su contenido."
+    },
+    "section6": {
+      "title": "6. Fuentes de datos y licencias",
+      "intro": "El Servicio utiliza datos y software de terceros, que se citan aquí conforme a sus licencias:",
+      "sources": {
+        "rfeg": {
+          "name": "Real Federación Española de Golf (RFEG)",
+          "detail": "Datos de los campos federados (recorridos, barras, par, índices y valoraciones) y consulta del hándicap de los jugadores de España: a petición del jugador, cuando un organizador lanza o programa la actualización y automáticamente al cierre de las inscripciones de una competición o, en las de formato Ryder, al nombrar a los capitanes, salvo que el organizador haya fijado un hándicap personalizado en esa inscripción."
+        },
+        "osm": {
+          "name": "OpenStreetMap",
+          "detail": "Geometría de los campos y de los hoyos: © OpenStreetMap contributors, datos disponibles bajo la Open Database License (ODbL)."
+        },
+        "pnoa": {
+          "name": "PNOA – Instituto Geográfico Nacional",
+          "detail": "Ortofotos de España: PNOA cedido por © Instituto Geográfico Nacional (IGN), con licencia CC BY 4.0 (scne.es)."
+        },
+        "icgc": {
+          "name": "Institut Cartogràfic i Geològic de Catalunya (ICGC)",
+          "detail": "Ortofotos de Cataluña, con licencia CC BY 4.0."
+        },
+        "geoeuskadi": {
+          "name": "Eusko Jaurlaritza / Gobierno Vasco – geoEuskadi",
+          "detail": "Ortofotos del País Vasco, según las condiciones de uso de geoEuskadi."
+        },
+        "idena": {
+          "name": "© Gobierno de Navarra – IDENA",
+          "detail": "Ortofotos de Navarra, con licencia CC BY 4.0."
+        },
+        "maplibre": {
+          "name": "MapLibre GL JS",
+          "detail": "Biblioteca con la que se dibujan los mapas, con licencia BSD-3-Clause."
+        },
+        "fonts": {
+          "name": "Inter y Poppins",
+          "detail": "Tipografías de la aplicación, servidas desde ella misma, con licencia SIL Open Font License 1.1 (OFL-1.1)."
+        }
+      }
+    },
+    "section7": {
+      "title": "7. Ley aplicable y contacto",
+      "content": "Este Aviso Legal se rige por la ley española. Si eres consumidor y resides en otro país, conservas la protección que te otorguen las normas imperativas de tu país de residencia y puedes acudir a los tribunales de tu domicilio.\n\nPara cualquier duda o reclamación, escribe a agustin.estevez.dominguez@gmail.com."
     }
   }
 }

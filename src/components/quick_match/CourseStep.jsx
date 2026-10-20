@@ -1,4 +1,5 @@
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
+import FuenteRfeg from '../golf_course/FuenteRfeg';
 import TeeSelectField from './TeeSelectField';
 import {
   FORMAT_CAPACITY,
@@ -28,6 +29,7 @@ const CourseStep = ({
   onCourseSelect,
   onRequestNewCourse,
   courseTees,
+  courseFromRfeg = false,
   creatorTeeKey,
   onCreatorTeeKeyChange,
   allowancePercentage,
@@ -144,6 +146,7 @@ const CourseStep = ({
         onRequestNewCourse={onRequestNewCourse}
         allowOtherCountries
       />
+      {courseFromRfeg && <FuenteRfeg className="mt-1" />}
     </div>
 
     {courseTees.length > 0 && (

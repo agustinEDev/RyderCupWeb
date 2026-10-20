@@ -17,6 +17,8 @@
  * Nunca hay un tercer desenlace en el que el golpe desaparece sin más.
  */
 
+import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
+
 // Los 4xx que NO son culpa de la anotación: se arreglan solos con el tiempo.
 //
 // El 401 es la sesión —lo normal al abrir la aplicación días después con
@@ -35,6 +37,11 @@ const PRIMER_ERROR_DEL_SERVIDOR = 500;
 // dentro de `detail`, precisamente para que se pueda leer aquí
 const CODIGOS_QUE_SE_ARREGLAN_ESPERANDO = new Set(['SCORING_NOT_OPEN_YET']);
 
+// El 403 de Términos sin aceptar (F4): no es culpa del golpe, sino de la
+// sesión, y se arregla en cuanto se aceptan. Descartarlo como un 403 cualquiera
+// borraba anotaciones buenas
+const CODIGOS_DE_TODA_LA_SESION = new Set([TERMINOS_NO_ACEPTADOS]);
+
 /** El código HTTP de un error, mire donde mire quien lo lanzó. */
 const codigoDe = (error) => error?.status ?? error?.response?.status;
 
@@ -51,6 +58,7 @@ const codigoPropioDe = (error) => error?.errorCode ?? error?.response?.data?.err
 export const seGuardaParaDespues = (error) => {
   const codigo = codigoDe(error);
   if (codigo === undefined) return true;
+  if (CODIGOS_DE_TODA_LA_SESION.has(codigoPropioDe(error))) return true;
   if (SE_ARREGLA_SOLO.has(codigo)) return true;
   if (CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(codigoPropioDe(error))) return true;
   // El resto del rango 4xx es la petición en sí: reintentarla no cambia nada
@@ -91,6 +99,7 @@ export const esperaASuHora = (error) => CODIGOS_QUE_SE_ARREGLAN_ESPERANDO.has(co
  */
 export const esFalloDeTodaLaSesion = (error) => {
   if (error?.errorCode === 'CSRF_VALIDATION_FAILED') return true;
+  if (CODIGOS_DE_TODA_LA_SESION.has(codigoPropioDe(error))) return true;
   const codigo = codigoDe(error);
   if (codigo === undefined) return false;
   // «Aún no ha abierto» se guarda, pero es de ESA anotación y de ninguna otra:

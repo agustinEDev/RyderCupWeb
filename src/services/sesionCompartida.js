@@ -374,6 +374,12 @@ export const anotaLaSesion = (usuarioDelBackend) => {
   fallosSeguidos = 0;
   if (reintento !== null) clearTimeout(reintento);
   reintento = null;
+  // Y la copia del dispositivo, como en el camino de éxito de arriba: lo que se
+  // siembra lo acaba de confirmar el backend. Sin esto, tras aceptar los
+  // Términos el apunte seguía con `terms_accepted: false`, y abrir la
+  // aplicación sin cobertura arrancaba con él: a la pantalla de aceptar, con la
+  // cola de anotaciones apagada y sin red para aceptar
+  apunta(usuarioDelBackend);
   anota({ user: usuarioDelBackend, cargando: false, refrescando: false, error: null, resuelta: true });
 };
 

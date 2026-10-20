@@ -143,6 +143,8 @@ describe('User Entity', () => {
         gender: null,
         auth_providers: [],
         has_password: true,
+        terms_accepted: null,
+        terms_version_required: null,
       });
     });
 
@@ -477,5 +479,38 @@ describe('User — el alias (FE #435)', () => {
     const user = new User({ ...datos, alias: 'Chuchi', display_name: 'Chuchi' });
 
     expect(user.toPersistence()).not.toHaveProperty('display_name');
+  });
+});
+
+// F3: la aceptación de los Términos viaja en el usuario (terms_accepted y
+// terms_version_required). Sin el campo —backend antiguo— no se sabe, y no
+// se bloquea
+describe('User · aceptación de los Términos', () => {
+  const datos = { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' };
+
+  it('mapea los dos campos nuevos', () => {
+    const user = new User({ ...datos, terms_accepted: false, terms_version_required: '2026-10-20' });
+
+    expect(user.termsAccepted).toBe(false);
+    expect(user.termsVersionRequired).toBe('2026-10-20');
+    expect(user.mustAcceptTerms()).toBe(true);
+  });
+
+  it('aceptados, no hay que aceptar', () => {
+    expect(new User({ ...datos, terms_accepted: true }).mustAcceptTerms()).toBe(false);
+  });
+
+  it('sin el campo, null y sin bloquear', () => {
+    const user = new User(datos);
+
+    expect(user.termsAccepted).toBeNull();
+    expect(user.termsVersionRequired).toBeNull();
+    expect(user.mustAcceptTerms()).toBe(false);
+  });
+
+  it('toPersistence los conserva', () => {
+    const user = new User({ ...datos, terms_accepted: true, terms_version_required: '2026-10-20' });
+
+    expect(user.toPersistence()).toMatchObject({ terms_accepted: true, terms_version_required: '2026-10-20' });
   });
 });

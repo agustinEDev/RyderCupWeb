@@ -435,3 +435,38 @@ describe('ApiUserRepository — el alias en la búsqueda (FE #435)', () => {
     expect(results[0].displayName).toBeNull();
   });
 });
+
+// F2/F3: aceptar los Términos. Sin cuerpo; el CSRF lo pone `apiRequest`
+describe('ApiUserRepository · acceptTerms', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('hace POST a /users/me/accept-terms y devuelve el DTO tal cual', async () => {
+    const dto = {
+      id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba',
+      is_admin: true, terms_accepted: true, terms_version_required: '2026-10-20',
+    };
+    apiRequest.mockResolvedValue(dto);
+
+    const datos = await new ApiUserRepository().acceptTerms();
+
+    expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/me/accept-terms', { method: 'POST' });
+    // Para sembrar la sesión compartida, que guarda el DTO: con la entidad se
+    // perdería `is_admin`. Y sin construir la entidad, que nadie usa y cuyo
+    // constructor puede lanzar con una aceptación perfectamente buena
+    expect(datos).toBe(dto);
+  });
+
+  it('una respuesta que la entidad no aceptaría no convierte la aceptación en un error', async () => {
+    // Sin first_name ni last_name, `new User` lanzaría
+    const dto = { id: 'u-1', terms_accepted: true };
+    apiRequest.mockResolvedValue(dto);
+
+    await expect(new ApiUserRepository().acceptTerms()).resolves.toBe(dto);
+  });
+
+  it('un fallo se propaga', async () => {
+    apiRequest.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+
+    await expect(new ApiUserRepository().acceptTerms()).rejects.toThrow('boom');
+  });
+});
