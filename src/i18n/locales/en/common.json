@@ -146,5 +146,6 @@
   "errors": {
     "generic": "The operation could not be completed. Please try again."
   },
-  "terminosPendientes": "You must accept the Terms and Conditions to continue."
+  "terminosPendientes": "You must accept the Terms and Conditions to continue.",
+  "terminosNoDisponible": "This is not available right now. Please try again later."
 }

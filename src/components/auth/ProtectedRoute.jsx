@@ -3,7 +3,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
 import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 
-
 /**
  * Protected Route Component
  * Wraps routes that require authentication

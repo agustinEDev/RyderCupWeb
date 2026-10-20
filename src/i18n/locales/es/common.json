@@ -146,5 +146,6 @@
   "errors": {
     "generic": "No se ha podido completar la operación. Inténtalo de nuevo."
   },
-  "terminosPendientes": "Tienes que aceptar los Términos y condiciones para continuar."
+  "terminosPendientes": "Tienes que aceptar los Términos y condiciones para continuar.",
+  "terminosNoDisponible": "Esto no está disponible ahora mismo. Inténtalo de nuevo más tarde."
 }

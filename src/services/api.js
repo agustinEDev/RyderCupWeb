@@ -6,7 +6,7 @@
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
-import { llevaAAceptarLosTerminos } from '../utils/terminosPendientes';
+import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
 import i18next from 'i18next';
 
@@ -143,15 +143,20 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       // Términos sin aceptar (F4): a la pantalla de aceptarlos, una sola vez y
       // recargando. La llamada NO se queda colgada (ese patrón se retiró del
       // interceptor): sigue abajo como un error marcado, que la cola guarda para
-      // después y que, mientras la página se va, ningún toast enseña
+      // después. Si la página se va, su aviso se calla; si no se va —un
+      // desacuerdo del servidor, o una ruta desde la que no se redirige—, se
+      // enseña como «no disponible»
       const terminosPendientes = response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS;
-      if (terminosPendientes) llevaAAceptarLosTerminos();
+      const seVaAAceptar = terminosPendientes && llevaAAceptarLosTerminos();
 
       // Extract error message with proper fallback chain
       let errorMessage = '';
 
-      if (terminosPendientes) {
+      if (seVaAAceptar) {
         errorMessage = i18next.t('common:terminosPendientes');
+        silenciaElAviso(errorMessage);
+      } else if (terminosPendientes) {
+        errorMessage = i18next.t('common:terminosNoDisponible');
       } else if (response.status === 429) {
         // El del backend es técnico y en inglés («Rate limit exceeded: 10 per
         // 1 minute»): se dice el de la app. El `status` sigue en el error, que

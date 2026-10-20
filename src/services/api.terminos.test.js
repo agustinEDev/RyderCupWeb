@@ -4,23 +4,27 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * F4: un 403 `TERMS_NOT_ACCEPTED` de cualquier llamada lleva a la pantalla de
  * aceptar los Términos en vez de un error genérico, UNA sola vez.
  *
- *   caso                                              | qué pasa
- *   --------------------------------------------------|------------------------------------------
- *   una ruta protegida                                | redirige a /accept-terms?from=…, y la llamada FALLA con un error marcado (no se queda colgada)
- *   varias llamadas fallan a la vez                   | una sola redirección
- *   la misma ruta vuelve a dar 403 tras la recarga    | no redirige otra vez: sin bucle (revisión, punto 1)
- *   pasado el plazo sin que la página se descargue    | se puede volver a redirigir
- *   sessionStorage no se deja usar                    | redirige igual, sin romper
- *   /accept-terms, completar perfil, dispositivos     | no redirige
- *   una ruta pública (/terms…)                        | no redirige: se puede leer lo que se acepta
- *   otro 403                                          | el error de siempre
+ *   caso                                                  | qué pasa
+ *   ------------------------------------------------------|------------------------------------------
+ *   una ruta protegida                                    | redirige a /accept-terms?from=…; la llamada falla con el error marcado y su aviso silenciado
+ *   varias llamadas a la vez, o un sondeo con 403 seguidos| una sola redirección en esta carga, nunca dos
+ *   pasado el plazo sin que la página se descargue        | sigue sin segunda redirección; el error ya se enseña («no disponible»)
+ *   desacuerdo: tras la recarga, la MISMA ruta da 403     | no redirige más en esta carga (ni esa ni otra): error «no disponible» visible
+ *   otra ruta tras la recarga (sin desacuerdo)            | redirige
+ *   sessionStorage bloqueado                              | redirige una vez, y la memoria evita la segunda en la misma carga
+ *   rutas con Términos pendientes o públicas              | no redirige
+ *   otro 403                                              | el error de siempre
  */
 vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfToken: vi.fn(() => 'csrf') }));
 vi.mock('../utils/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
+vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { fetchWithTokenRefresh } = await import('../utils/tokenRefreshInterceptor');
 const { apiRequest } = await import('./api');
-const { olvidaLaRedireccionATerminos, seVaAAceptarLosTerminos } = await import('../utils/terminosPendientes');
+const { olvidaLaRedireccionATerminos, esUnAvisoSilenciado } = await import('../utils/terminosPendientes');
+
+const AVISO_DE_ACEPTAR = 't(common:terminosPendientes)';
+const NO_DISPONIBLE = 't(common:terminosNoDisponible)';
 
 const respuesta403 = (error_code) => ({
   ok: false,
@@ -29,14 +33,14 @@ const respuesta403 = (error_code) => ({
   json: async () => ({ detail: 'Terms not accepted', error_code }),
 });
 
-const enUna = (pathname, search = '') => {
-  const assign = vi.fn();
+const enUna = (pathname, search = '', assign = vi.fn()) => {
   vi.stubGlobal('location', { pathname, search, hash: '', origin: 'http://localhost', assign });
   return assign;
 };
 
-// Una recarga: la marca del módulo se pierde, sessionStorage no
+// Una recarga: lo del módulo se pierde, sessionStorage no
 const recarga = () => olvidaLaRedireccionATerminos();
+const falla = (ruta = '/api/v1/a') => apiRequest(ruta).catch((e) => e);
 
 describe('apiRequest · Términos sin aceptar (F4)', () => {
   beforeEach(() => {
@@ -51,14 +55,14 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     vi.useRealTimers();
   });
 
-  it('en una ruta protegida: redirige recordando dónde estaba, y la llamada falla con el error marcado', async () => {
+  it('en una ruta protegida: redirige recordando dónde estaba; la llamada falla marcada y su aviso no se enseña', async () => {
     const assign = enUna('/competitions/7', '?tab=agenda');
 
-    const error = await apiRequest('/api/v1/competitions/7').catch((e) => e);
+    const error = await falla('/api/v1/competitions/7');
 
     expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions%2F7%3Ftab%3Dagenda');
-    expect(error).toMatchObject({ status: 403, errorCode: 'TERMS_NOT_ACCEPTED' });
-    expect(seVaAAceptarLosTerminos()).toBe(true);
+    expect(error).toMatchObject({ status: 403, errorCode: 'TERMS_NOT_ACCEPTED', message: AVISO_DE_ACEPTAR });
+    expect(esUnAvisoSilenciado(error.message)).toBe(true);
   });
 
   it('varias llamadas a la vez: una sola redirección, y todas terminan', async () => {
@@ -70,42 +74,57 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     expect(resultados.every((r) => r.status === 'rejected')).toBe(true);
   });
 
-  it('la misma ruta vuelve a dar 403 tras la recarga: no redirige otra vez (sin bucle)', async () => {
+  it('un sondeo con 403 seguidos en la misma carga: una sola redirección', async () => {
     const assign = enUna('/dashboard');
-    await apiRequest('/api/v1/a').catch(() => {});
-    recarga();
 
-    const error = await apiRequest('/api/v1/a').catch((e) => e);
+    for (let i = 0; i < 5; i += 1) await falla();
 
     expect(assign).toHaveBeenCalledTimes(1);
-    expect(error).toMatchObject({ errorCode: 'TERMS_NOT_ACCEPTED' });
   });
 
-  it('otra ruta tras la recarga sí redirige', async () => {
-    const assign = enUna('/dashboard');
-    await apiRequest('/api/v1/a').catch(() => {});
-    recarga();
-    enUna('/profile').mockImplementation(assign);
-
-    await apiRequest('/api/v1/b').catch(() => {});
-
-    expect(assign).toHaveBeenCalledTimes(2);
-  });
-
-  it('si la página no llega a descargarse, la marca caduca', async () => {
+  it('pasado el plazo sin descargarse la página: nunca una segunda redirección, y el error ya se ve', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const assign = enUna('/dashboard');
-    await apiRequest('/api/v1/a').catch(() => {});
+    await falla();
     globalThis.sessionStorage.clear();
 
     vi.setSystemTime(Date.now() + 60_000);
+    const error = await falla();
 
-    expect(seVaAAceptarLosTerminos()).toBe(false);
-    await apiRequest('/api/v1/a').catch(() => {});
+    expect(assign).toHaveBeenCalledTimes(1);
+    expect(error.message).toBe(NO_DISPONIBLE);
+    expect(esUnAvisoSilenciado(error.message)).toBe(false);
+  });
+
+  it('desacuerdo: tras la recarga la misma ruta vuelve a dar 403 → no se redirige más en esta carga', async () => {
+    const assign = enUna('/dashboard');
+    await falla();
+    recarga();
+    // Se acepta (la sesión dice aceptado) y se vuelve a /dashboard, que sigue dando 403
+
+    const error = await falla();
+    enUna('/profile', '', assign);
+    const deOtraRuta = await falla();
+
+    expect(assign).toHaveBeenCalledTimes(1);
+    expect(error).toMatchObject({ errorCode: 'TERMS_NOT_ACCEPTED', message: NO_DISPONIBLE });
+    expect(esUnAvisoSilenciado(error.message)).toBe(false);
+    expect(deOtraRuta.message).toBe(NO_DISPONIBLE);
+  });
+
+  it('otra ruta tras la recarga, sin desacuerdo: redirige', async () => {
+    const assign = enUna('/dashboard');
+    await falla();
+    recarga();
+    enUna('/profile', '', assign);
+
+    await falla();
+
     expect(assign).toHaveBeenCalledTimes(2);
   });
 
-  it('sin sessionStorage utilizable, redirige igual sin romper', async () => {
+  it('sessionStorage bloqueado: redirige una vez y la memoria evita la segunda en la misma carga', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
     const assign = enUna('/dashboard');
     vi.stubGlobal('sessionStorage', {
       getItem: () => { throw new Error('bloqueado'); },
@@ -114,21 +133,24 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
       clear: () => {},
     });
 
-    const error = await apiRequest('/api/v1/a').catch((e) => e);
+    await falla();
+    vi.setSystemTime(Date.now() + 60_000);
+    enUna('/profile', '', assign);
+    await falla();
 
     expect(assign).toHaveBeenCalledTimes(1);
-    expect(error).toMatchObject({ errorCode: 'TERMS_NOT_ACCEPTED' });
   });
 
-  it.each([['/accept-terms'], ['/auth/complete-profile'], ['/profile/devices'], ['/terms'], ['/privacy'], ['/legal'], ['/']])(
-    'en %s no redirige: lanza el error marcado',
+  it.each([['/accept-terms'], ['/auth/complete-profile'], ['/profile/devices'], ['/profile/devices/'], ['/terms'], ['/privacy'], ['/legal'], ['/']])(
+    'en %s no redirige: lanza el error marcado, visible',
     async (ruta) => {
       const assign = enUna(ruta);
 
-      const error = await apiRequest('/api/v1/users/me/devices').catch((e) => e);
+      const error = await falla('/api/v1/users/me/devices');
 
       expect(assign).not.toHaveBeenCalled();
       expect(error).toMatchObject({ status: 403, errorCode: 'TERMS_NOT_ACCEPTED' });
+      expect(esUnAvisoSilenciado(error.message)).toBe(false);
     }
   );
 
@@ -136,7 +158,7 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     const assign = enUna('/dashboard');
     fetchWithTokenRefresh.mockResolvedValue(respuesta403('NOT_THE_CREATOR'));
 
-    const error = await apiRequest('/api/v1/x').catch((e) => e);
+    const error = await falla('/api/v1/x');
 
     expect(assign).not.toHaveBeenCalled();
     expect(error).toMatchObject({ status: 403, errorCode: 'NOT_THE_CREATOR' });

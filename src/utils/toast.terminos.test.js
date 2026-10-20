@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 /**
- * Mientras se va a la pantalla de aceptar los Términos, las pantallas que
- * pierden su llamada no enseñan su error: la página se está yendo (revisión,
- * punto 2). Pasado ese momento, los errores vuelven a verse.
+ * Revisión (punto 5): mientras se va a la pantalla de aceptar los Términos, solo
+ * se calla el aviso del error de Términos —el de la llamada cortada, que no dice
+ * nada útil—. Cualquier otro error se sigue viendo.
  */
 const custom = vi.fn();
 vi.mock('react-hot-toast', () => ({ default: { custom: (...a) => custom(...a), dismiss: vi.fn() } }));
 
 const { default: customToast } = await import('./toast');
-const { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos } = await import('./terminosPendientes');
+const { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos, silenciaElAviso } = await import('./terminosPendientes');
 
-describe('customToast · silencio mientras se va a aceptar los Términos', () => {
+describe('customToast · solo se calla el aviso de Términos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.sessionStorage.clear();
@@ -21,28 +21,27 @@ describe('customToast · silencio mientras se va a aceptar los Términos', () =>
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.useRealTimers();
   });
 
-  it('sin redirección en marcha, los errores se ven', () => {
-    customToast.error('algo falló');
-
-    expect(custom).toHaveBeenCalledTimes(1);
-  });
-
-  it('yéndose a aceptar los Términos, los errores no se enseñan', () => {
+  it('el aviso marcado de Términos no se enseña', () => {
     llevaAAceptarLosTerminos();
+    silenciaElAviso('Tienes que aceptar los Términos');
 
-    customToast.error('algo falló');
+    customToast.error('Tienes que aceptar los Términos');
 
     expect(custom).not.toHaveBeenCalled();
   });
 
-  it('pasado el plazo, vuelven a verse', () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
+  it('un error ajeno se enseña aunque haya una redirección en curso', () => {
     llevaAAceptarLosTerminos();
-    vi.setSystemTime(Date.now() + 60_000);
+    silenciaElAviso('Tienes que aceptar los Términos');
 
+    customToast.error('No se ha podido guardar el golpe');
+
+    expect(custom).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin redirección, los errores se ven', () => {
     customToast.error('algo falló');
 
     expect(custom).toHaveBeenCalledTimes(1);

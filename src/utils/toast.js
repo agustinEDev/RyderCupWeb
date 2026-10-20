@@ -1,7 +1,7 @@
 import toast from 'react-hot-toast';
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { createElement } from 'react';
-import { seVaAAceptarLosTerminos } from './terminosPendientes';
+import { esUnAvisoSilenciado } from './terminosPendientes';
 
 /**
  * Custom Toast Content Component
@@ -76,9 +76,9 @@ export const customToast = {
   },
 
   error: (message, options = {}) => {
-    // La página se va a la pantalla de aceptar los Términos: el error que
-    // enseñaría esta pantalla es el de su llamada cortada, y no dice nada útil
-    if (seVaAAceptarLosTerminos()) return undefined;
+    // El de una llamada cortada por irse a aceptar los Términos: la página se
+    // va y no dice nada útil. Solo ESE; cualquier otro error se sigue viendo
+    if (esUnAvisoSilenciado(message)) return undefined;
     const { icon, ...toastOptions } = options;
     return toast.custom(
       (t) => createElement(ToastContent, { message, type: 'error', toastId: t.id, icon }),
