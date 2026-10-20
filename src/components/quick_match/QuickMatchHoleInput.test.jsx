@@ -90,7 +90,8 @@ describe('QuickMatchHoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
  * más gente.
  *
  *   N1  solo se anota a sí mismo   | V1: casilla dentro de la rejilla, sin línea
- *   N2  anota a más gente           | V2: una línea bajo los botones, sin casilla
+ *   N1  impar (1, 3…): queda hueco  | V1, V1b: casilla dentro de la rejilla, sin línea
+ *   N2  par (2, 4…): no hay hueco   | V2, V2b: una línea bajo los botones, sin casilla
  *   N4  Stableford                  | V3: «+2 · 16 pts»
  *   N5  sin vuelta (foursomes)      | V4: ni casilla ni línea
  *   N9  sin hoyos anotados          | V5: «—», también en Stableford
@@ -127,6 +128,22 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
     const rejilla = boton('p1').closest('.grid');
     expect(rejilla.contains(linea)).toBe(false);
     expect(rejilla.compareDocumentPosition(linea) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
+  });
+
+  it('V1b: con tres casillas también queda una libre, y la vuelta va en ella (Agustín, 21 oct)', () => {
+    pintar([jugador('p1'), jugador('p2'), jugador('p3')], { myRound: vuelta() });
+
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(casilla.parentElement).toHaveClass('grid', 'grid-cols-2');
+    expect(casilla).toHaveTextContent('+2');
+    expect(screen.queryByTestId('quick-match-my-round-line')).toBeNull();
+  });
+
+  it('V2b: con cuatro no hay hueco: la línea', () => {
+    pintar([jugador('p1'), jugador('p2'), jugador('p3'), jugador('p4')], { myRound: vuelta() });
+
+    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent('input.myRound: +2');
     expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
   });
 

@@ -100,10 +100,11 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
     return `${toPar} ${t('input.myRoundA11yPoints', { count: myRound.stablefordPoints })}`;
   };
 
-  // Con una sola casilla la de al lado queda libre y la vuelta va ahí: la
-  // tarjeta no crece. Anotando a más gente no hay hueco y va en una línea
-  const myRoundInCell = myRound != null && entries.length === 1;
-  const myRoundInLine = myRound != null && entries.length > 1;
+  // Con un número impar de casillas queda un hueco en la rejilla de dos y la
+  // vuelta va ahí: la tarjeta no crece. Sin hueco, una línea debajo (21 oct)
+  const hayHueco = entries.length % 2 === 1;
+  const myRoundInCell = myRound != null && hayHueco;
+  const myRoundInLine = myRound != null && !hayHueco;
 
   const handleSelect = (participantId, value) => {
     setOpenParticipantId(null);
