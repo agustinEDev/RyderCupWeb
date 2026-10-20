@@ -895,3 +895,146 @@ describe('MyQuickMatchesPage · llegar a la partida sin cobertura (FE #524, tabl
     expect(screen.queryByText('Meis Foursomes')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * LA TABLA — el resultado de cada partida terminada, de cinco en cinco (FE #418).
+ *
+ *   caso                                   | qué pasa
+ *   ---------------------------------------|---------------------------------
+ *   Q1 doce terminadas                     | nunca más de cinco detalles en
+ *                                          | vuelo; al acabar uno entra otro
+ *   Q2 responde una                        | su tarjeta ya enseña el resultado,
+ *                                          | sin esperar a las demás
+ *   Q3 se sale de la página                | no se piden las que faltaban
+ *   Q3 llega tarde la de una carga vieja   | no pisa la de la carga nueva
+ *   Q4 una falla                           | las demás siguen; esa se queda
+ *                                          | sin resultado, como hoy
+ */
+describe('MyQuickMatchesPage · resultados de cinco en cinco (FE #418)', () => {
+  const terminadas = (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `qm-${i + 1}`,
+      golfCourseId: 'course-1',
+      matchFormat: 'SINGLES',
+      status: 'COMPLETED',
+      createdAt: '2026-07-20T10:00:00Z',
+    }));
+
+  // Un detalle con un solo hoyo de par 4: `golpes` 3 da -1, 5 da +1
+  const detalle = (golpes) => ({
+    participants: [{ participantId: 'user-1', userId: 'user-1', name: 'Test User', handicap: 0 }],
+    holeScores: [{ holeNumber: 1, participantId: 'user-1', score: golpes }],
+    effectiveAllowance: 100,
+  });
+
+  let llamadas;
+  let enVuelo;
+  let maximo;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    llamadas = [];
+    enVuelo = 0;
+    maximo = 0;
+    mockGetGolfCourse.mockResolvedValue({ holes: [{ holeNumber: 1, par: 4, strokeIndex: 1 }], tees: [] });
+    mockGetQuickMatch.mockImplementation(
+      (id) =>
+        new Promise((resolve, reject) => {
+          enVuelo += 1;
+          maximo = Math.max(maximo, enVuelo);
+          llamadas.push({
+            id,
+            resolve: (v) => { enVuelo -= 1; resolve(v); },
+            reject: (e) => { enVuelo -= 1; reject(e); },
+          });
+        })
+    );
+  });
+
+  const llamadasA = (n) => waitFor(() => expect(llamadas).toHaveLength(n));
+  const lista = (n) => ({ quickMatches: terminadas(n), totalCount: n, page: 1, limit: 50 });
+
+  it('Q1 nunca pide más de cinco detalles a la vez, y al acabar uno entra otro', async () => {
+    mockListMyQuickMatches.mockResolvedValue(lista(12));
+
+    renderPage();
+    await llamadasA(5);
+
+    // Se resuelven de una en una hasta acabar las doce
+    for (let i = 0; i < 12; i += 1) {
+      await act(async () => { llamadas[i].resolve(detalle(4)); });
+      if (i < 7) await llamadasA(6 + i);
+    }
+
+    expect(llamadas).toHaveLength(12);
+    expect(new Set(llamadas.map((l) => l.id)).size).toBe(12);
+    expect(maximo).toBe(5);
+  });
+
+  it('Q2 cada tarjeta enseña su resultado en cuanto llega el suyo', async () => {
+    mockListMyQuickMatches.mockResolvedValue(lista(12));
+
+    renderPage();
+    await llamadasA(5);
+
+    await act(async () => { llamadas[0].resolve(detalle(3)); });
+
+    expect(await screen.findByTestId('quick-match-result-qm-1')).toHaveTextContent('-1');
+    // Las demás siguen en vuelo y no hay nada que enseñar todavía
+    expect(screen.queryByTestId('quick-match-result-qm-2')).not.toBeInTheDocument();
+  });
+
+  it('Q3 al salir de la página no se piden las que faltaban', async () => {
+    mockListMyQuickMatches.mockResolvedValue(lista(12));
+
+    const { unmount } = renderPage();
+    await llamadasA(5);
+    unmount();
+
+    await act(async () => {
+      for (const l of llamadas.slice(0, 5)) l.resolve(detalle(4));
+    });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(llamadas).toHaveLength(5);
+  });
+
+  it('Q3 el resultado tardío de una carga vieja no pisa el de la nueva', async () => {
+    mockListMyQuickMatches.mockResolvedValue(lista(3));
+    mockHideQuickMatch.mockResolvedValue({ id: 'qm-3' });
+
+    renderPage();
+    await llamadasA(3);
+    const viejaDeQm1 = llamadas[0];
+
+    // Quitar una cambia la lista y vuelve a cargar los resultados
+    fireEvent.click(screen.getByTestId('quick-match-hide-qm-3'));
+    fireEvent.click(await screen.findByRole('button', { name: 'history.deleteConfirm' }));
+    await llamadasA(5);
+    const nuevaDeQm1 = llamadas.slice(3).find((l) => l.id === 'qm-1');
+
+    await act(async () => { nuevaDeQm1.resolve(detalle(3)); });
+    expect(await screen.findByTestId('quick-match-result-qm-1')).toHaveTextContent('-1');
+
+    await act(async () => { viejaDeQm1.resolve(detalle(5)); });
+    expect(screen.getByTestId('quick-match-result-qm-1')).toHaveTextContent('-1');
+    expect(screen.getByTestId('quick-match-result-qm-1')).not.toHaveTextContent('+1');
+  });
+
+  it('Q4 si una falla, las demás siguen y esa se queda sin resultado', async () => {
+    mockListMyQuickMatches.mockResolvedValue(lista(6));
+
+    renderPage();
+    await llamadasA(5);
+
+    await act(async () => { llamadas[0].reject(new Error('caída')); });
+    await llamadasA(6);
+    await act(async () => {
+      for (const l of llamadas.slice(1)) l.resolve(detalle(3));
+    });
+
+    expect(await screen.findByTestId('quick-match-result-qm-6')).toHaveTextContent('-1');
+    expect(screen.getByTestId('quick-match-result-qm-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-match-result-qm-1')).not.toBeInTheDocument();
+  });
+});

@@ -19,6 +19,10 @@ import { laUltimaLista, olvidaLoDeEstaCuenta, recuerdaLaLista } from '../../serv
 
 import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
+import { recorreConTope } from '../../utils/recorreConTope';
+
+// Cuántos detalles de partida terminada se piden a la vez (FE #418)
+const DETALLES_A_LA_VEZ = 5;
 
 const STATUS_STYLES = {
   PENDING: 'bg-amber-100 text-amber-800',
@@ -231,15 +235,18 @@ const MyQuickMatchesPage = () => {
       }
     };
 
-    Promise.all(completedMatches.map((qm) => loadResult(qm).then((result) => [qm.id, result]))).then(
-      (entries) => {
-        if (cancelled) return;
-        const next = {};
-        for (const [id, result] of entries) {
-          if (result) next[id] = result;
-        }
-        setResultsByMatchId(next);
-      }
+    // De cinco en cinco y no todas a la vez: con 30 terminadas salían 30
+    // detalles de golpe (FE #418). Cada tarjeta se pinta en cuanto llega el
+    // suyo, y al salir de la página no se piden las que faltaban
+    recorreConTope(
+      completedMatches,
+      DETALLES_A_LA_VEZ,
+      async (qm) => {
+        const result = await loadResult(qm);
+        if (cancelled || !result) return;
+        setResultsByMatchId((prev) => ({ ...prev, [qm.id]: result }));
+      },
+      { sigue: () => !cancelled }
     );
 
     return () => {
