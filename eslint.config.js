@@ -99,6 +99,8 @@ export default [
   // - tokenRefreshInterceptor.js: ES el interceptor
   // - useRedirectIfAuthenticated.js: sondea la sesión con timeout y SIN
   //   interceptor, para no entrar en un bucle de refresco en la pantalla de acceso
+  // - sesionEnPaginaPublica.js: lo mismo para «Volver» de los documentos legales,
+  //   o un `user` rancio acabaría en «tu sesión expiró» al pulsarlo
   // - ApiSupportRepository.js: el formulario de contacto es un endpoint público
   {
     files: ['src/**/*.{js,jsx}'],
@@ -107,6 +109,7 @@ export default [
       'src/setupTests.js',
       'src/utils/tokenRefreshInterceptor.js',
       'src/hooks/useRedirectIfAuthenticated.js',
+      'src/services/sesionEnPaginaPublica.js',
       'src/infrastructure/repositories/ApiSupportRepository.js',
     ],
     rules: {

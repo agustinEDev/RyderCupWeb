@@ -14,6 +14,7 @@ vi.mock('../../components/layout/Footer', () => ({ default: () => null }));
 const { default: Privacy } = await import('./Privacy');
 const { default: Terms } = await import('./Terms');
 const { default: Cookies } = await import('./Cookies');
+const { default: LegalNotice } = await import('./LegalNotice');
 
 /**
  * Privacidad, Términos y Cookies tras la auditoría legal del 20 oct 2026.
@@ -50,6 +51,28 @@ describe('cada página pinta todas las secciones de su texto', () => {
     const pintadas = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
 
     expect(pintadas).toEqual(secciones.map((s) => `${bloque}.${s}.title`));
+  });
+});
+
+describe('L1 · salir del documento sin pasar por la portada', () => {
+  // Desde el perfil de la aplicación instalada no hay botón atrás del navegador:
+  // sin esto, la única salida era el logo, que lleva a la portada
+  it.each([
+    ['privacy', Privacy],
+    ['terms', Terms],
+    ['cookies', Cookies],
+    ['legalNotice', LegalNotice],
+  ])('%s lleva «Volver» encima del título', (_bloque, Pagina) => {
+    render(
+      <MemoryRouter>
+        <Pagina />
+      </MemoryRouter>
+    );
+
+    const volver = screen.getByRole('button', { name: 'volver' });
+    const titulo = screen.getByRole('heading', { level: 1 });
+
+    expect(volver.compareDocumentPosition(titulo) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

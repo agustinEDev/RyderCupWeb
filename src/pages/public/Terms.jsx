@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
+import VolverDeLoLegal from '../../components/layout/VolverDeLoLegal';
 
 const SECTIONS = ['section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section9', 'section10'];
 
@@ -18,6 +19,7 @@ const Terms = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
+            <VolverDeLoLegal />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               {t('terms.title')}
             </h1>
