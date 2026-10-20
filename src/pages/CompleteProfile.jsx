@@ -70,7 +70,7 @@ const CompleteProfile = () => {
   const aceptaLosTerminos = async () => {
     setAcceptError('');
     try {
-      const { datosDelBackend } = await acceptTermsUseCase.execute();
+      const datosDelBackend = await acceptTermsUseCase.execute();
       // La sesión queda aceptada YA, con lo que responde el backend: aunque
       // luego falle guardar el perfil o el hándicap, el guardia no devolverá
       // a la pantalla de aceptar

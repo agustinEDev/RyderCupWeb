@@ -100,7 +100,7 @@ describe('App · aceptación de los Términos, de punta a punta', () => {
   });
 
   it('al aceptar, la sesión queda aceptada y se llega al panel', async () => {
-    aceptar.mockResolvedValue({ user: {}, datosDelBackend: { ...USUARIO, is_admin: true, terms_accepted: true } });
+    aceptar.mockResolvedValue({ ...USUARIO, is_admin: true, terms_accepted: true });
     window.history.pushState({}, '', '/dashboard');
     render(<App />);
     await titulo();

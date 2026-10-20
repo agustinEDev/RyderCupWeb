@@ -85,7 +85,7 @@ const AcceptTerms = () => {
     setEnviando(true);
     setErrorAlAceptar('');
     try {
-      const { datosDelBackend } = await acceptTermsUseCase.execute();
+      const datosDelBackend = await acceptTermsUseCase.execute();
       // Se siembra la sesión con lo que responde el backend —el mismo usuario
       // que current-user, `is_admin` incluido—, sin otra consulta que pueda
       // fallar: con la sesión vieja, el guardia devolvería aquí

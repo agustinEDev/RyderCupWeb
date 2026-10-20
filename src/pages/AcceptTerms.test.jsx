@@ -64,7 +64,7 @@ describe('AcceptTerms (F3)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sesion.user = { id: 'u-1', terms_accepted: false };
-    aceptar.mockResolvedValue({ user: { termsAccepted: true }, datosDelBackend: DTO });
+    aceptar.mockResolvedValue(DTO);
   });
 
   it('pinta el título, la casilla, la privacidad informada, aceptar, dispositivos y salir', () => {

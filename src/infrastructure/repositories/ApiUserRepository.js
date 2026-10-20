@@ -110,11 +110,11 @@ class ApiUserRepository extends IUserRepository {
    * que /auth/current-user. Esta ruta está exenta del 403 de Términos.
    */
   async acceptTerms() {
-    const data = await apiRequest('/api/v1/users/me/accept-terms', { method: 'POST' });
-    // Los dos: la entidad para quien la use, y el DTO tal cual para la sesión
-    // compartida, que guarda lo que dice el backend (con la entidad se perdería
-    // `is_admin`)
-    return { user: new User(data), datosDelBackend: data };
+    // El DTO tal cual, sin construir la entidad: lo usa la sesión compartida,
+    // que guarda lo que dice el backend (con la entidad se perdería
+    // `is_admin`), y el constructor de `User` podría lanzar con una aceptación
+    // perfectamente buena
+    return apiRequest('/api/v1/users/me/accept-terms', { method: 'POST' });
   }
 
   /**

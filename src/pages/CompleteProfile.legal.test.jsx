@@ -155,7 +155,7 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     refetch.mockResolvedValue(undefined);
-    aceptarTerminos.mockResolvedValue({ user: { termsAccepted: true }, datosDelBackend: DTO });
+    aceptarTerminos.mockResolvedValue(DTO);
     actualizarPerfil.mockResolvedValue({});
   });
 
