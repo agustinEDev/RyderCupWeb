@@ -22,7 +22,8 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
 vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u-1' }, refetch }) }));
+const sesion = vi.hoisted(() => ({ user: null }));
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, refetch }) }));
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 const anotaLaSesion = vi.fn();
 vi.mock('../services/sesionCompartida', () => ({ anotaLaSesion: (...a) => anotaLaSesion(...a) }));
@@ -53,6 +54,7 @@ const omitir = () => fireEvent.click(screen.getByRole('button', { name: 'google.
 describe('CompleteProfile · Términos y edad para el usuario nuevo de Google (M1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sesion.user = { id: 'u-1', terms_accepted: false };
     refetch.mockResolvedValue(undefined);
     aceptarTerminos.mockResolvedValue({ termsAccepted: true });
     actualizarPerfil.mockResolvedValue({});
@@ -154,6 +156,7 @@ describe('CompleteProfile · el texto del error (revisión)', () => {
 describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sesion.user = { id: 'u-1', terms_accepted: false };
     refetch.mockResolvedValue(undefined);
     aceptarTerminos.mockResolvedValue(DTO);
     actualizarPerfil.mockResolvedValue({});
@@ -246,5 +249,38 @@ describe('CompleteProfile · aceptar antes de guardar (F2)', () => {
 
     expect(aceptarTerminos).not.toHaveBeenCalled();
     expect(actualizarPerfil).not.toHaveBeenCalled();
+  });
+});
+
+// Revisión (punto 3): si los Términos ya están aceptados —por ejemplo, quien se
+// registró con el formulario y llega aquí—, no se vuelve a llamar a accept-terms
+describe('CompleteProfile · con los Términos ya aceptados', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sesion.user = { id: 'u-1', terms_accepted: true };
+    refetch.mockResolvedValue(undefined);
+    actualizarPerfil.mockResolvedValue({});
+  });
+
+  it('guardar va directo al perfil, sin accept-terms', async () => {
+    abrir();
+    fireEvent.change(screen.getByLabelText('google.completeProfile.genderLabel'), { target: { name: 'gender', value: 'MALE' } });
+    fireEvent.click(casilla());
+
+    guardar();
+
+    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(actualizarPerfil).toHaveBeenCalledTimes(1);
+    expect(aceptarTerminos).not.toHaveBeenCalled();
+  });
+
+  it('omitir entra sin accept-terms', async () => {
+    abrir();
+    fireEvent.click(casilla());
+
+    omitir();
+
+    expect(await screen.findByText('panel')).toBeInTheDocument();
+    expect(aceptarTerminos).not.toHaveBeenCalled();
   });
 });

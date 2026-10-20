@@ -8,6 +8,7 @@ import customToast from '../utils/toast';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { anotaLaSesion } from '../services/sesionCompartida';
+import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 
 const CompleteProfile = () => {
   const { t } = useTranslation('auth');
@@ -69,6 +70,8 @@ const CompleteProfile = () => {
    */
   const aceptaLosTerminos = async () => {
     setAcceptError('');
+    // Ya aceptados (o un backend que no lo dice): no hay nada que aceptar
+    if (!debeAceptarLosTerminos(user)) return true;
     try {
       const datosDelBackend = await acceptTermsUseCase.execute();
       // La sesión queda aceptada YA, con lo que responde el backend: aunque
