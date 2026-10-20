@@ -59,6 +59,13 @@ describe('Aviso Legal · la página', () => {
     expect(screen.getByText(`legalNotice.section6.sources.${fuente}.detail`)).toBeInTheDocument();
   });
 
+  it('F5 (revisión): la URL de la RFEG sale de la constante compartida, no de un literal', () => {
+    const pagina = readFileSync(resolve(process.cwd(), 'src/pages/public/LegalNotice.jsx'), 'utf8');
+
+    expect(pagina).toContain('URL_RFEG');
+    expect(pagina).not.toContain('https://www.rfegolf.es');
+  });
+
   it('A2: tiene su ruta en App.jsx', () => {
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');
 

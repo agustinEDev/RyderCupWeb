@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
+import { URL_RFEG } from '../../components/golf_course/FuenteRfeg';
 
 // La sexta es «Fuentes de datos y licencias», que lleva enlaces y se pinta aparte
 const ANTES_DE_LAS_FUENTES = ['section1', 'section2', 'section3', 'section4', 'section5'];
@@ -12,7 +13,7 @@ const DESPUES_DE_LAS_FUENTES = ['section7'];
  * fuente van por `t()`; las direcciones no se traducen, y por eso viven aquí.
  */
 const FUENTES = [
-  ['rfeg', 'https://www.rfegolf.es'],
+  ['rfeg', URL_RFEG],
   ['osm', 'https://www.openstreetmap.org/copyright'],
   ['pnoa', 'https://www.scne.es'],
   ['icgc', 'https://www.icgc.cat'],

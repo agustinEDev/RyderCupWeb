@@ -73,17 +73,18 @@ describe('EditProfile · la fecha del hándicap (FE #710)', () => {
  * se dice de dónde sale.
  */
 describe('EditProfile · fuente del hándicap (F4)', () => {
-  it('F4: con la RFEG disponible, se cita a la federación', () => {
+  it('F4: con la RFEG disponible, se cita a la federación, con su enlace', () => {
     usuario = { handicap: 18.2, handicap_updated_at: null, country_code: 'ES' };
     pintar();
 
-    expect(screen.getByText('handicapSource.rfeg')).toBeInTheDocument();
+    expect(screen.getByText(/source\.prefix/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'source.rfegName' })).toHaveAttribute('href', 'https://www.rfegolf.es');
   });
 
   it('F4: sin ella, no', () => {
     usuario = { handicap: 18.2, handicap_updated_at: null, country_code: 'FR' };
     pintar();
 
-    expect(screen.queryByText('handicapSource.rfeg')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
   });
 });

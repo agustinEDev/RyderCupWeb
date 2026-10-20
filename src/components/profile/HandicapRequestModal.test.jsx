@@ -55,10 +55,13 @@ describe('HandicapRequestModal · fuente del hándicap (F4)', () => {
   const abrir = (user) =>
     render(<HandicapRequestModal isOpen user={user} onClose={() => {}} onSaved={() => {}} />);
 
-  it('F4: en la pestaña de la RFEG se cita a la federación', () => {
+  it('F4: en la pestaña de la RFEG se cita a la federación, con su enlace', () => {
     abrir({ id: 'u-1', country_code: 'ES' });
 
-    expect(screen.getByText('handicapSource.rfeg')).toBeInTheDocument();
+    expect(screen.getByText(/source\.prefix/)).toBeInTheDocument();
+    const enlace = screen.getByRole('link', { name: 'source.rfegName' });
+    expect(enlace).toHaveAttribute('href', 'https://www.rfegolf.es');
+    expect(enlace).toHaveAttribute('target', '_blank');
   });
 
   it('F4: en la manual, no', () => {
@@ -66,12 +69,12 @@ describe('HandicapRequestModal · fuente del hándicap (F4)', () => {
 
     fireEvent.click(screen.getByText('handicapModal.manualTab'));
 
-    expect(screen.queryByText('handicapSource.rfeg')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
   });
 
   it('F4: sin la RFEG disponible (no español), no', () => {
     abrir({ id: 'u-1', country_code: 'FR' });
 
-    expect(screen.queryByText('handicapSource.rfeg')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
   });
 });
