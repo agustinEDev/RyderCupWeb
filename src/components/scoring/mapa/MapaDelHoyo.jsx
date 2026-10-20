@@ -122,7 +122,7 @@ const geojsonDeLaMedida = (tramos) => ({
   features: tramos.map(([a, b]) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [lngLat(a), lngLat(b)] } })),
 });
 const enMedio = (a, b) => ({ lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 });
-// La cifra de la línea de ti al green con el codo sin tocar: a 3/4, hacia el
+// La cifra de la línea de ti al green, sin el codo movido: a 3/4, hacia el
 // green, que en medio tapaba el codo (Agustín, 20 oct)
 const haciaElGreen = (a, b) => ({ lat: a.lat + ((b.lat - a.lat) * 3) / 4, lon: a.lon + ((b.lon - a.lon) * 3) / 4 });
 // Los tramos de una línea de juego: de la salida al codo, de codo a codo y al green
@@ -330,8 +330,9 @@ const MapaDelHoyo = ({
   }, [hoyo, linea, greenMarcado]);
   // El codo sin tocar, en medio de ti al green: sale a más de 200 m y se va al
   // bajar de 190 (Agustín, 20 oct). Solo midiendo desde ti. Sin GPS bueno, a la
-  // vista o no, se queda como estaba
-  const centroDelGreen = hoyoAhora?.green?.center ?? null;
+  // vista o no, se recuerda (el punto no se ve: no hay línea desde ti)
+  const green = hoyoAhora?.green ?? null;
+  const centroDelGreen = green?.center ?? null;
   const [codoALaVista, setCodoALaVista] = useState(false);
   const alGreen = posicionBuena && centroDelGreen ? distanciaEnMetros(posicionBuena, centroDelGreen) : null;
   const codoSeVe = alGreen !== null && (codoALaVista ? alGreen >= CODO_HASTA_M : alGreen > CODO_DESDE_M);
@@ -342,8 +343,10 @@ const MapaDelHoyo = ({
   );
   const codoAhora = tocado ?? codoEnMedio;
   useLayoutEffect(() => {
-    tocadoAhora.current = medido ?? codoAhora;
-  }, [medido, codoAhora]);
+    // El codo sin tocar cuenta mientras está a la vista, también con el GPS
+    // flojo, que no lo pinta (/code-review)
+    tocadoAhora.current = medido ?? tocado ?? ((desdeMi && codoSinTocar && codoALaVista) || null);
+  }, [medido, tocado, desdeMi, codoSinTocar, codoALaVista]);
   // Lo que encuadra «Ver hoyo»: la línea de ahora con su rumbo (O5, O7)
   const delEncuadre = useRef(null);
   useLayoutEffect(() => {
@@ -773,6 +776,8 @@ const MapaDelHoyo = ({
           const { lng, lat } = e.target.getLngLat();
           setTocado({ lat, lon: lng });
         };
+        // Desde que se coge: una lectura del GPS antes del primer «drag» lo movía (/code-review)
+        m.on('dragstart', moverElCodo);
         m.on('drag', moverElCodo);
         m.on('dragend', moverElCodo);
         m.getElement().addEventListener('click', (e) => e.stopPropagation());
@@ -801,7 +806,6 @@ const MapaDelHoyo = ({
 
   // Las líneas de la medida y sus metros. Las etiquetas se mueven, no se
   // rehacen, con cada lectura del GPS
-  const green = hoyoAhora?.green ?? null;
   // A mitad de un hoyo con línea y green: la línea desde ti, sin preguntar (H1, H2)
   const salidaDeMiBarra = lineaInicial?.[0] ?? null;
   // Con el «⋮» abierto se espera a cerrarlo: no se pinta nada sobre la línea que se propone (revisor, 18 oct)
@@ -874,10 +878,11 @@ const MapaDelHoyo = ({
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
     // Con un punto tocado, solo sus metros: los de la línea al green se pisarían (T3)
-    // Con el codo sin tocar, la cifra no lo tapa (C2)
-    const donde = codoEnMedio && !medido ? haciaElGreen : enMedio;
+    // Una línea de ti al green, su cifra a 3/4: no tapa el codo sin tocar ni
+    // salta al aparecer o irse (C2, C10)
+    const donde = !medido && !tocado ? haciaElGreen : enMedio;
     sincronizarCifras(mapa, etiquetasDeLaMedida.current, medido ? tramosDelToque : tramos, { tipo: 'medida', color: 'text-yellow-300', texto: textoDeTramo, donde });
-  }, [desdeMi, reporte, menuDeMotivos, posicionBuena, tocado, codoEnMedio, medido, tramosDelToque, green, textoDeTramo]);
+  }, [desdeMi, reporte, menuDeMotivos, posicionBuena, tocado, medido, tramosDelToque, green, textoDeTramo]);
 
 
   // Los metros de cada tramo de la línea que se ve (Agustín, 16 oct: siempre que
@@ -1307,11 +1312,9 @@ const MapaDelHoyo = ({
               {t('mapa.buscando')}
             </p>
           )
-        ) : codoAhora ? (
-          quitarYSusMetros(() => {
-            setTocado(null);
-            setCodoSinTocar(false);
-          })
+        ) : tocado ? (
+          // Solo con el codo movido: lo devuelve a sin tocar (C9, 20 oct)
+          quitarYSusMetros(() => setTocado(null))
         ) : conAyudaDeCodos ? (
           <p className={`${PLACA} self-start px-3.5 py-2 text-sm`}>{t('mapa.ayudaCodo')}</p>
         ) : (

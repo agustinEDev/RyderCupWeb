@@ -2580,7 +2580,8 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(elCodo()).toHaveLength(1);
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(150).lat, 9);
     expect(medida()).toEqual([[en(T), en(G300)]]);
-    expect(screen.getByRole('button', { name: 'mapa.quitarPunto' })).toBeInTheDocument();
+    // Sin tocar no hay «Quitar» (C9)
+    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
   });
 
   it('D10: a 200 m justos, sin codo', () => {
@@ -2621,15 +2622,20 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(medida()).toContainEqual([en(T), en(alNorte(200))]);
   });
 
-  it('D3: «Quitar» deja la línea directa, y el codo no vuelve aunque el GPS se mueva', () => {
+  it('D3 (C9, 20 oct): «Quitar» deja la línea directa, con el codo otra vez sin tocar', () => {
     conGreenSuelto();
     desde(0);
     no();
+    const [codo] = elCodo();
+    act(() => {
+      codo.setLngLat([T.lon, alNorte(250).lat]);
+      codo.oyentes.dragend({ target: codo });
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
     desde(10);
 
-    expect(elCodo()).toHaveLength(0);
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(155).lat, 9);
     expect(medida()).toEqual([[en(alNorte(10)), en(G300)]]);
   });
 
@@ -2668,6 +2674,8 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   // | C6   | cerrar y volver a abrir                | el codo, otra vez sin tocar (C2)                                  |
   // | C7   | tocar otro punto para medir            | como antes (T3): solo esa medida; al quitarla, vuelve lo de antes |
   // | C8   | lector de pantalla                     | sin tocar, solo la distancia al green (el recuadro); movido, los dos tramos |
+  // | C9   | «Quitar»                               | solo con el codo movido, y lo devuelve a sin tocar (C2)          |
+  // | C10  | la cifra de ti al green, una línea     | siempre a 3/4, haya codo o no: no salta al aparecer o irse        |
   const cifrasDeMedida = () => mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
   const textosDeMedida = () => cifrasDeMedida().map((m) => m.opciones.element.textContent);
   const arrastrarElCodo = (m) => {
@@ -2756,6 +2764,19 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     desde(99);
     expect(elCodo()).toHaveLength(1);
+  });
+
+  it('/code-review: al empezar a arrastrar el codo sin tocar, se queda: una lectura del GPS antes del primer «drag» no lo mueve', () => {
+    conGreenSuelto();
+    desde(0);
+    no();
+    const [codo] = elCodo();
+
+    act(() => codo.oyentes.dragstart({ target: codo }));
+    desde(10);
+
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(150).lat, 9);
+    expect(medida()).toHaveLength(2);
   });
 
   it('C3: con el GPS flojo en medio, el codo a la vista vuelve a la vista entre 190 y 200 m', () => {
@@ -2882,8 +2903,8 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     desde(0);
     no();
 
-    expect(screen.getByRole('status')).not.toHaveTextContent(/mapa\.hastaAhi/);
-    expect(screen.getByRole('status')).not.toHaveTextContent(/mapa\.deAhiAlGreen/);
+    expect(screen.queryByText(/mapa\.hastaAhi/)).toBeNull();
+    expect(screen.queryByText(/mapa\.deAhiAlGreen/)).toBeNull();
     expect(screen.getByTestId('distancia-centro')).toHaveTextContent('300');
   });
 
@@ -2898,17 +2919,40 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(screen.getByRole('status')).toHaveTextContent('mapa.deAhiAlGreen {"metros":50}');
   });
 
-  it('C3/D3: «Quitar» con el codo sin tocar lo quita, y no vuelve al alejarte', () => {
+  it('C9: con el codo sin tocar no hay «Quitar»', () => {
+    conGreenSuelto();
+    desde(0);
+
+    no();
+
+    expect(elCodo()).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+  });
+
+  it('C9: con el codo movido, «Quitar» lo devuelve a sin tocar: una distancia y el codo en medio, siguiéndote', () => {
     conGreenSuelto();
     desde(0);
     no();
+    arrastrarElCodo(250);
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
-    desde(100);
-    desde(0);
+
+    expect(medida()).toEqual([[en(T), en(G300)]]);
+    expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":300}']);
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(150).lat, 9);
+    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
+    desde(50);
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(175).lat, 9);
+  });
+
+  it('C10: sin codo (a ≤ 200 m), la cifra de ti al green también va a 3/4', () => {
+    conGreenSuelto();
+    desde(150);
+
+    no();
 
     expect(elCodo()).toEqual([]);
-    expect(medida()).toEqual([[en(T), en(G300)]]);
+    expect(cifrasDeMedida()[0].p[1]).toBeCloseTo(alNorte(262.5).lat, 9);
   });
 
   it('D5: con el GPS poco preciso no hay línea y se dice que se busca; sale al ser bueno', () => {
@@ -3550,15 +3594,16 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
     });
 
-    it('Revisor: cancelar desde los motivos tras «Quitar» no trae el codo', () => {
+    it('Revisor (C9, 20 oct): cancelar desde los motivos tras «Quitar» trae el codo sin tocar, no el movido', () => {
       abrirConLinea({ onReporte: vi.fn() });
       desde(50);
+      arrastrarCodo(alNorte(100));
       fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
 
       fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
       fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
-      expect(elCodo()).toEqual([]);
+      expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(175).lat, 9);
       expect(medida()).toEqual([[en(alNorte(50)), en(G300)]]);
     });
 
@@ -3603,6 +3648,23 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(lineaDibujada()).toBeUndefined();
       expect(elCodo()).toHaveLength(1);
       expect(medida()).toHaveLength(1);
+    });
+
+    it('/code-review: con el codo sin tocar a la vista y el GPS que se vuelve flojo, que crezca el panel no reencuadra', () => {
+      const observados = [];
+      vi.stubGlobal('ResizeObserver', class {
+        constructor(fn) { this.fn = fn; observados.push(this); }
+        observe() {}
+        disconnect() {}
+      });
+      abrirConLinea();
+      desde(50);
+      desde(50, 25);
+      mapa().jumpTo.mockClear();
+
+      act(() => observados.at(-1).fn());
+
+      expect(mapa().jumpTo).not.toHaveBeenCalled();
     });
 
     it('H14b: sin ubicación, la línea del hoyo entera', () => {
@@ -4265,19 +4327,25 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent(/mapa\.hastaAhi/);
   });
 
-  it('T5: a mitad de hoyo, «Quitar» quita primero el punto y luego el codo', () => {
+  it('T5: a mitad de hoyo, «Quitar» quita primero el punto y luego el codo movido (vuelve sin tocar, C9)', () => {
     abrirConLinea();
     desde(50);
+    const [codo] = elCodo();
+    act(() => {
+      codo.setLngLat([T.lon, alNorte(100).lat]);
+      codo.oyentes.dragend({ target: codo });
+    });
     tocar(P);
 
     quitar();
-    expect(medida()).toHaveLength(1);
-    expect(elCodo()).toHaveLength(1);
-    expect(cifras('medida')).toHaveLength(1);
+    expect(medida()).toHaveLength(2);
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(100).lat, 9);
+    expect(cifras('medida')).toHaveLength(2);
 
     quitar();
-    expect(elCodo()).toEqual([]);
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(175).lat, 9);
     expect(medida()).toEqual([[en(alNorte(50)), en(G300)]]);
+    expect(screen.queryByRole('button', { name: 'mapa.quitarPunto' })).toBeNull();
   });
 
   it('T6: en la salida con posición, gira hacia el punto', () => {
