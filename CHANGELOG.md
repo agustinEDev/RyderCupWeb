@@ -18,11 +18,13 @@ variables nuevas ni cambios de contrato; funciona con el backend 2.37.0.
   versión anterior, no se enteraba de que había Términos nuevos y no llevaba a
   aceptarlos. De fondo: sin pantalla de espera, sin tocar nada si la respuesta
   es la misma (no se pierde lo escrito en el perfil) y sin cerrar sesión si
-  falla la red.
-- **Aviso de Términos pendientes en las rutas públicas**, como la clasificación
-  compartida: «Tienes que aceptar los nuevos Términos de uso.» con
-  «Aceptarlos», que lleva a aceptarlos y vuelve a la clasificación. No bloquea,
-  y no sale sin sesión, con los Términos aceptados ni en las páginas legales.
+  falla la red. Si al volver en mitad de una vuelta resultan pendientes, la
+  aplicación lleva a aceptarlos; los golpes anotados sin cobertura siguen
+  guardados en el móvil y se envían al aceptarlos.
+- **Aviso de Términos pendientes en la clasificación compartida**, que es
+  pública y no lleva a aceptarlos: «Tienes que aceptar los nuevos Términos de
+  uso.» con «Aceptarlos», que lleva a aceptarlos y vuelve a la clasificación.
+  No bloquea, y no sale sin sesión ni con los Términos aceptados.
 - **Elegir qué franja dejar al cambiarse de franja**: si se pulsaba «Cambiar
   por esta» justo al pintarse la agenda, la elección se cerraba sola. Lo
   destapó un test intermitente en el CI.

@@ -174,69 +174,76 @@ const programaReintento = () => {
   }, espera);
 };
 
-const pideAlBackend = async (miGeneracion) => {
+/** Lo que contestó el servidor, cuando ya no manda o dice que no hay sesión. */
+const DESCARTADA = Symbol('descartada');
+const SIN_SESION = Symbol('sin sesión');
+
+/**
+ * La pregunta a current-user, la misma para la consulta y para la revalidación
+ * al volver (hotfix 2.50.1). Un fallo de red o una respuesta que no sea 200,
+ * 401 ni 404 se lanza: no es una respuesta sobre la sesión.
+ *
+ * @param {() => boolean} sigoValiendo Si la pregunta sigue siendo la actual
+ * @returns {Promise<Object|typeof DESCARTADA|typeof SIN_SESION>}
+ */
+const preguntaAlServidor = async (sigoValiendo) => {
+  const respuesta = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
   // Una respuesta de una consulta ya invalidada —porque entre medias se cerró la
   // sesión, o porque alguien forzó otra— no escribe nada
+  if (!sigoValiendo()) return DESCARTADA;
+
+  // El dispositivo revocado NO se atiende aqui: `fetchWithTokenRefresh` lo
+  // detecta antes, llama a `handleDeviceRevocationLogout` y se queda
+  // esperando una promesa que no resuelve, asi que ese 401 no llega
+  if (respuesta.status === 401 || respuesta.status === 404) return SIN_SESION;
+  if (!respuesta.ok) throw new Error(`Failed to fetch user: ${respuesta.status}`);
+
+  const usuario = await respuesta.json();
+  // Otra vez: en el `await` de arriba cabe un login o un cierre de sesión
+  return sigoValiendo() ? usuario : DESCARTADA;
+};
+
+/** El servidor dice que no hay sesión: sin usuario y sin la copia del dispositivo. */
+const publicaSinSesion = () => {
+  olvidaElApunte();
+  anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+};
+
+/**
+ * El servidor confirma la sesión. Se publica un objeto NUEVO: `useEditProfile`
+ * se re-sincroniza con `useEffect([user])`, y tras un `refetch` eso es lo que se
+ * espera. Quien no quiera re-sincronizar —la revalidación al volver— no llama
+ * a esto si la respuesta es la misma.
+ */
+const publicaConfirmada = (usuario) => {
+  clearDeviceRevocationFlag();
+  fallosSeguidos = 0;
+  // Y el reintento que quedara armado se cancela: desde que fuerza (FE #529)
+  // dispararia una peticion de mas, y al forzar sube la generacion, con lo que
+  // un `refetch` en vuelo veria su respuesta descartada
+  if (reintento !== null) clearTimeout(reintento);
+  reintento = null;
+  ultimaComprobacion = Date.now();
+  apunta(usuario);
+  anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+};
+
+const pideAlBackend = async (miGeneracion) => {
   const sigoValiendo = () => miGeneracion === generacion;
 
   try {
-    const respuesta = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!sigoValiendo()) return null;
-
-    if (!respuesta.ok) {
-      // El dispositivo revocado NO se atiende aqui: `fetchWithTokenRefresh` lo
-      // detecta antes, llama a `handleDeviceRevocationLogout` y se queda
-      // esperando una promesa que no resuelve, asi que ese 401 no llega. Habia
-      // una rama para ello heredada del `useAuth` de antes, y se quito: codigo
-      // que no se alcanza, con un test que solo pasaba porque el propio test
-      // sustituia al interceptor, es peor que no tenerlo
-      if (respuesta.status === 401 || respuesta.status === 404) {
-        // Otra vez, y aqui hacia falta de verdad: entre el `clone().json()` de
-        // arriba y esta linea hay un `await`, y en ese hueco cabe un login. Sin
-        // comprobar, esta respuesta vieja escribia «resuelto y sin usuario»
-        // encima de la sesion recien abierta y reabria el ida y vuelta al
-        // formulario que cerro el commit anterior
-        if (!sigoValiendo()) return null;
-
-        olvidaElApunte();
-        anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
-        return null;
-      }
-
-      throw new Error(`Failed to fetch user: ${respuesta.status}`);
+    const usuario = await preguntaAlServidor(sigoValiendo);
+    if (usuario === DESCARTADA) return null;
+    if (usuario === SIN_SESION) {
+      publicaSinSesion();
+      return null;
     }
 
-    const usuario = await respuesta.json();
-    if (!sigoValiendo()) return null;
-
-    // El objeto se publica tal cual, sin conservar el de antes cuando el
-    // contenido coincide. Se probo, y rompia un contrato que hay escrito en
-    // `useEditProfile`: ese formulario se re-sincroniza con `useEffect([user])`,
-    // asi que con la identidad conservada, pulsar «Actualizar datos» sobre datos
-    // que no han cambiado dejaba en pantalla lo que el usuario habia escrito sin
-    // guardar, como si viniera del servidor. Aquello hacia falta mientras la
-    // sesion se revalidaba sola al volver a la aplicacion; retirada esa
-    // revalidacion, `refetch` solo ocurre cuando alguien lo pide, y entonces
-    // re-sincronizar es justo lo que se espera
-
-    clearDeviceRevocationFlag();
-    fallosSeguidos = 0;
-    // Y el reintento que quedara armado se cancela. Antes daba igual —llegaba
-    // sin forzar y salia por «ya esta resuelta» sin tocar la red—, pero desde
-    // que fuerza (FE #529) dispararia una peticion de mas, que es justo el
-    // abanico que este modulo existe para evitar (FE #489); y al forzar sube la
-    // generacion, con lo que un `refetch` en vuelo veria su respuesta
-    // descartada y resolveria a nada
-    if (reintento !== null) clearTimeout(reintento);
-    reintento = null;
-    ultimaComprobacion = Date.now();
-    apunta(usuario);
-    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
-
+    publicaConfirmada(usuario);
     return usuario;
   } catch (error) {
     console.error('Error loading user:', error);
@@ -390,7 +397,10 @@ export const anotaLaSesion = (usuarioDelBackend) => {
   // aplicación sin cobertura arrancaba con él: a la pantalla de aceptar, con la
   // cola de anotaciones apagada y sin red para aceptar
   apunta(usuarioDelBackend);
-  anota({ user: usuarioDelBackend, cargando: false, refrescando: false, error: null, resuelta: true });
+  // Y confirmada: viene del servidor. Si no, tras aceptar desde una sesión
+  // arrancada sin red, `RoleGuard` seguía esperando y cada revalidación
+  // publicaba un objeto nuevo, borrando lo escrito en el perfil (revisión)
+  anota({ user: usuarioDelBackend, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 };
 
 /**
@@ -441,43 +451,72 @@ export const olvidaLaSesion = () => {
  * tuviera los Términos pendientes no llegaba nunca a la pantalla de aceptarlos.
  *
  * De fondo y sin tocar nada más que lo que cambie: ni `cargando` ni
- * `refrescando`, ni reintentos, ni el contador de fallos. Un fallo, o una
- * respuesta que no es 200, deja la sesión como estaba: la que de verdad murió la
- * cierra el interceptor, como en cualquier otra llamada.
+ * `refrescando`, ni reintentos, ni el contador de fallos. Un 401 o un 404 se
+ * tratan como al cargar (sin sesión); un fallo de red o un 5xx dejan la sesión
+ * como estaba y no gastan el minuto.
  */
+
+/** El contenido, sin depender del orden de las claves. */
+const canonico = (valor) => {
+  if (Array.isArray(valor)) return valor.map(canonico);
+  if (valor && typeof valor === 'object') {
+    return Object.fromEntries(Object.keys(valor).sort().map((clave) => [clave, canonico(valor[clave])]));
+  }
+  return valor;
+};
+
 const mismaRespuesta = (usuario) =>
-  JSON.stringify(usuario) === JSON.stringify(instantanea.user) &&
+  JSON.stringify(canonico(usuario)) === JSON.stringify(canonico(instantanea.user)) &&
   !instantanea.sinConfirmar &&
   instantanea.error === null;
 
+// Una revalidación en camino: frente y red a la vez son una sola petición
+let revalidando = false;
+
 export const revalidaLaSesion = async () => {
-  if (seVa || !instantanea.resuelta || !instantanea.user) return;
+  if (seVa || revalidando || !instantanea.resuelta || !instantanea.user) return;
   // Ya se está preguntando, o hay un reintento en camino: ese responde
   if (enVuelo || reintento !== null) return;
+  // Solo lo gasta una respuesta del servidor: un intento sin red (iOS despierta
+  // la aplicación antes que la radio) no puede tapar el de cuando vuelve
   if (Date.now() - ultimaComprobacion < MINIMO_ENTRE_REVALIDACIONES_MS) return;
 
-  ultimaComprobacion = Date.now();
+  revalidando = true;
   // Sin subir la generación: si entretanto se cierra la sesión o alguien fuerza
   // otra consulta, la sube él y esta respuesta deja de mandar
   const mia = generacion;
 
   try {
-    const respuesta = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (mia !== generacion || !respuesta.ok) return;
+    const usuario = await preguntaAlServidor(() => mia === generacion && !seVa);
+    if (usuario === DESCARTADA) return;
+    // Como al cargar: en '/', '/start' o '/login' el interceptor no refresca, y
+    // una sesión muerta o una cuenta borrada seguían dándose por buenas
+    if (usuario === SIN_SESION) {
+      publicaSinSesion();
+      return;
+    }
 
-    const usuario = await respuesta.json();
-    if (mia !== generacion || seVa || mismaRespuesta(usuario)) return;
-
-    clearDeviceRevocationFlag();
-    fallosSeguidos = 0;
-    apunta(usuario);
-    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+    if (mismaRespuesta(usuario)) {
+      ultimaComprobacion = Date.now();
+      return;
+    }
+    publicaConfirmada(usuario);
   } catch {
-    // Sin red: se sigue con lo que había
+    // Sin red o un 5xx: se sigue con lo que había
+  } finally {
+    revalidando = false;
   }
+};
+
+/**
+ * Un arranque sin red, sin copia en el dispositivo y con los reintentos
+ * agotados se queda en «no se sabe» (`cargando`) sin nadie que vuelva a
+ * preguntar. Al volver la red, la consulta normal. Solo tras haber fallado: en
+ * una ruta pública no se consulta la sesión, y no hay que empezar aquí.
+ */
+const alVolverLaRedSinSaberNada = () => {
+  if (seVa || instantanea.resuelta || enVuelo || reintento !== null || fallosSeguidos === 0) return;
+  consultaLaSesion({ forzar: true });
 };
 
 /**
@@ -491,6 +530,7 @@ export const vigilaLaVueltaALaAplicacion = () => {
     if (globalThis.document.visibilityState === 'visible') revalidaLaSesion();
   };
   const alVolverLaRed = () => {
+    alVolverLaRedSinSaberNada();
     revalidaLaSesion();
   };
   globalThis.document.addEventListener('visibilitychange', alCambiarLaVisibilidad);
@@ -522,6 +562,7 @@ export const reiniciaLaSesionCompartida = () => {
   reintento = null;
   fallosSeguidos = 0;
   ultimaComprobacion = 0;
+  revalidando = false;
   instantanea = NADA_SABIDO;
   seVa = false;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes

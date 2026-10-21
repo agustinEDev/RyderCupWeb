@@ -12,7 +12,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   1   vuelve al frente, ahora con Términos pendientes   | se publica el usuario nuevo
  *   2   la misma respuesta                                | nadie se entera: ni aviso ni objeto nuevo
  *   3   sin red                                           | nada cambia, ni reintentos
- *   4   el servidor responde mal (500, 401)               | nada cambia
+ *   4   el servidor responde mal (500, 502)               | nada cambia
+ *   4b  401 o 404: la sesión ya no vale                   | como al cargar: sin usuario y sin la copia
  *   5   antes de 60 s desde la última respuesta           | no pregunta; pasados, sí
  *   5b  recién entrado o recién aceptados (se siembra)    | cuenta como respuesta: no pregunta
  *   6   sin sesión (nada sabido, o resuelta sin usuario)  | no pregunta
@@ -24,6 +25,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   12  mientras pregunta                                 | ni `cargando` ni `refrescando`: sin pantalla de espera
  *   13  la página se va                                   | no pregunta
  *   14  se deja de vigilar                                | no pregunta
+ *   15  falla sin red y la red vuelve a los 5 s           | pregunta: un fallo no gasta el minuto
+ *   15b el servidor responde mal y la red vuelve          | pregunta: tampoco lo gasta
+ *   15c dos avisos a la vez (frente y red)                | una sola petición
+ *   16  arranque sin red, sin copia, reintentos agotados  | al volver la red, la consulta normal
+ *   16b vuelve la red en una ruta pública sin preguntar   | nada: allí no se consulta la sesión
+ *   17  se aceptan los Términos desde la copia sin red    | la sesión queda confirmada
+ *   17b y al volver, con la misma respuesta               | nadie se entera
+ *   18  misma respuesta con las claves en otro orden      | nadie se entera
  */
 const respuestas = [];
 const peticiones = [];
@@ -140,8 +149,7 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     }
   });
 
-  it.each([500, 401, 404])('4: con un %s nada cambia', async (status) => {
-    // La sesión muerta de verdad la cierra el interceptor, no esto
+  it.each([500, 502])('4: con un %s nada cambia', async (status) => {
     await conSesion();
     const antes = loQueHaySobreLaSesion();
     respuestas.push({ ok: false, status, json: async () => ({}) });
@@ -152,6 +160,32 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     expect(peticiones).toHaveLength(1);
     expect(loQueHaySobreLaSesion()).toBe(antes);
     expect(localStorage.getItem(RECUERDO)).not.toBeNull();
+  });
+
+  it.each([401, 404])('4b: con un %s la sesión ya no vale, como al cargar', async (status) => {
+    // En '/', '/start' o '/login' el interceptor no refresca: sin esto, una
+    // sesión muerta o una cuenta borrada seguían dándose por buenas
+    await conSesion();
+    respuestas.push({ ok: false, status, json: async () => ({}) });
+
+    vuelveAlFrente();
+    await asienta();
+
+    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, resuelta: true, cargando: false });
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  it('4c: un 401 que llega tras cerrar la sesión no escribe', async () => {
+    await conSesion();
+    let entrega;
+    respuestas.push(() => new Promise((r) => { entrega = r; }));
+
+    vuelveAlFrente();
+    olvidaLaSesion();
+    entrega({ ok: false, status: 401, json: async () => ({}) });
+    await asienta();
+
+    expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, resuelta: false, cargando: true });
   });
 
   it('5: no pregunta antes del minuto desde la última respuesta; pasado, sí', async () => {
@@ -342,6 +376,128 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     await asienta();
 
     expect(peticiones).toHaveLength(0);
+  });
+
+  it('15: falla sin red al volver al frente y la red vuelve a los 5 s: pregunta', async () => {
+    // iOS despierta la aplicación antes que la radio: el primer intento falla
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await conSesion();
+    respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')), ok(PENDIENTES));
+
+    vuelveAlFrente();
+    await asienta();
+    pasa(5_000);
+    vuelveLaRed();
+    await asienta();
+
+    expect(peticiones).toHaveLength(2);
+    expect(loQueHaySobreLaSesion().user).toEqual(PENDIENTES);
+  });
+
+  it('15b: un 502 tampoco gasta el minuto', async () => {
+    await conSesion();
+    respuestas.push({ ok: false, status: 502, json: async () => ({}) }, ok(PENDIENTES));
+
+    vuelveAlFrente();
+    await asienta();
+    pasa(5_000);
+    vuelveLaRed();
+    await asienta();
+
+    expect(loQueHaySobreLaSesion().user).toEqual(PENDIENTES);
+  });
+
+  it('15c: frente y red a la vez son una sola petición', async () => {
+    await conSesion();
+
+    vuelveAlFrente();
+    vuelveLaRed();
+    await asienta();
+
+    expect(peticiones).toHaveLength(1);
+  });
+
+  it('16: arranque sin red, sin copia y sin reintentos: al volver la red, la consulta normal', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      for (let i = 0; i < 4; i += 1) respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
+      consultaLaSesion();
+      await vi.advanceTimersByTimeAsync(60_000);
+      // Sin saber nada y sin nadie que vuelva a preguntar
+      expect(loQueHaySobreLaSesion()).toMatchObject({ user: null, resuelta: false });
+      peticiones.length = 0;
+      respuestas.push(ok(ACEPTADOS));
+
+      vuelveLaRed();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(peticiones).toHaveLength(1);
+      expect(loQueHaySobreLaSesion()).toMatchObject({ user: ACEPTADOS, cargando: false, resuelta: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('16b: sin haber preguntado nunca (una ruta pública), volver la red no pregunta', async () => {
+    vuelveLaRed();
+    vuelveAlFrente();
+    await asienta();
+
+    expect(peticiones).toHaveLength(0);
+  });
+
+  it('17: aceptar los Términos desde la copia sin red deja la sesión confirmada', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      localStorage.setItem(RECUERDO, JSON.stringify(PENDIENTES));
+      respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
+      await consultaLaSesion();
+      expect(loQueHaySobreLaSesion().sinConfirmar).toBe(true);
+
+      anotaLaSesion({ ...ACEPTADOS });
+
+      expect(loQueHaySobreLaSesion()).toMatchObject({ user: ACEPTADOS, sinConfirmar: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('17b: y al volver con la misma respuesta nadie se entera', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      localStorage.setItem(RECUERDO, JSON.stringify(PENDIENTES));
+      respuestas.push(() => Promise.reject(new TypeError('Failed to fetch')));
+      await consultaLaSesion();
+      anotaLaSesion({ ...ACEPTADOS });
+      const antes = loQueHaySobreLaSesion();
+      peticiones.length = 0;
+      respuestas.length = 0;
+      pasa(MINIMO_ENTRE_REVALIDACIONES_MS + 1);
+      respuestas.push(ok({ ...ACEPTADOS }));
+
+      vuelveAlFrente();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(peticiones).toHaveLength(1);
+      expect(loQueHaySobreLaSesion()).toBe(antes);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('18: la misma respuesta con las claves en otro orden: nadie se entera', async () => {
+    await conSesion({ id: 'u-1', terms_accepted: true, nombre: 'Ana' });
+    const antes = loQueHaySobreLaSesion();
+    respuestas.push(ok({ nombre: 'Ana', terms_accepted: true, id: 'u-1' }));
+
+    vuelveAlFrente();
+    await asienta();
+
+    expect(peticiones).toHaveLength(1);
+    expect(loQueHaySobreLaSesion()).toBe(antes);
   });
 
   it('14: tras dejar de vigilar no pregunta', async () => {

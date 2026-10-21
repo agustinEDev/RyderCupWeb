@@ -211,7 +211,7 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       ).toBeInTheDocument();
     });
 
-    it('5:la suya dice que tiene plaza y deja soltarla (con confirmación)', async () => {
+    it('5: la suya dice que tiene plaza y deja soltarla (con confirmación)', async () => {
       mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 })] });
       pinta();
 

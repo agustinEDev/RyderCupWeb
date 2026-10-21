@@ -27,6 +27,9 @@ export const RUTAS_PUBLICAS = [
   '/auth/google/callback',
 ];
 
+/** La clasificacion compartida de una competicion. */
+const CLASIFICACION_COMPARTIDA = /^\/competitions\/[^/]+\/leaderboard$/;
+
 /** Las publicas que llevan algo variable dentro. Anclados a proposito: con una
  *  subcadena, `/admin/leaderboard` o `/competitions/1/leaderboard/print` habrian
  *  pasado por publicas siendo privadas. */
@@ -35,7 +38,7 @@ const PATRONES_PUBLICOS = [
   // enlace, o alguien recorto la URL— era publica con el `startsWith` anterior y
   // dejaba de serlo al anclar
   /^\/reset-password(\/[^/]*)?$/,
-  /^\/competitions\/[^/]+\/leaderboard$/,
+  CLASIFICACION_COMPARTIDA,
 ];
 
 /** Quita la barra final, que llega sola desde enlaces copiados y correos:
@@ -63,6 +66,9 @@ export const RUTAS_CON_TERMINOS_PENDIENTES = Object.freeze(['/accept-terms', '/a
 
 /** Si en esta ruta se puede estar con los Términos pendientes; con o sin barra final. */
 export const sePuedeEstarConTerminosPendientes = (ruta) => RUTAS_CON_TERMINOS_PENDIENTES.includes(normalizar(ruta));
+
+/** Si es la clasificacion compartida de una competicion; con o sin barra final. */
+export const esLaClasificacionCompartida = (ruta) => CLASIFICACION_COMPARTIDA.test(normalizar(ruta));
 
 /** Si una ruta concreta es publica. */
 export const esRutaPublica = (ruta) => {

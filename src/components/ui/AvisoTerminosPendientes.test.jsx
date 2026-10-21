@@ -19,6 +19,8 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  *   8   /accept-terms y las rutas privadas                    | nada: ahí manda el guardia
  *   9   se aceptan con la página abierta                      | se va sin recargar
  *   10  con barra final en la dirección                       | el aviso igual
+ *   11  el resto de públicas: entrar, registrarse, Google,    | nada: solo en la clasificación
+ *       restablecer, verificar, portada, arranque, precios    |   compartida (revisión)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k }),
@@ -131,6 +133,25 @@ describe('AvisoTerminosPendientes', () => {
     expect(aviso()).not.toBeNull();
 
     act(() => anotaLaSesion({ id: 'u-1', terms_accepted: true }));
+
+    expect(aviso()).toBeNull();
+  });
+
+  it.each([
+    '/',
+    '/start',
+    '/login',
+    '/register',
+    '/auth/google/callback',
+    '/reset-password/abc',
+    '/verify-email',
+    '/forgot-password',
+    '/pricing',
+    '/contact',
+    '/competitions/c-1/leaderboard/print',
+  ])('11: en %s no avisa: solo en la clasificación compartida', (ruta) => {
+    anotaLaSesion(PENDIENTES);
+    abrir(ruta);
 
     expect(aviso()).toBeNull();
   });

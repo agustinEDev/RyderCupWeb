@@ -1,34 +1,29 @@
-import { useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
-import { loQueHaySobreLaSesion, suscribeALaSesion } from '../../services/sesionCompartida';
-import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
-import { esRutaPublica, normalizaLaRuta } from '../../utils/rutasPublicas';
-
-/** Donde se leen los Términos: ahí el aviso estorbaría lo que se va a aceptar. */
-const PAGINAS_LEGALES = ['/terms', '/privacy', '/cookies', '/legal'];
+import { useTerminosPendientes } from '../../hooks/useTerminosPendientes';
+import { esLaClasificacionCompartida } from '../../utils/rutasPublicas';
 
 /**
- * Los Términos pendientes, avisados en las rutas públicas (hotfix 2.50.1).
+ * Los Términos pendientes, avisados en la clasificación compartida (hotfix
+ * 2.50.1).
  *
- * En las privadas manda `ProtectedRoute`, que lleva a aceptarlos; en las
- * públicas no hay guardia, y quien solo abría el enlace de una clasificación
- * compartida no llegaba nunca a la pantalla. No bloquea: la clasificación se
- * sigue viendo.
+ * En las rutas privadas manda `ProtectedRoute`, que lleva a aceptarlos; la
+ * clasificación compartida es pública y no tiene guardia, así que quien solo
+ * abría su enlace no llegaba nunca a la pantalla. No bloquea: la clasificación
+ * se sigue viendo. Solo ahí: en entrar, registrarse o restablecer la contraseña
+ * estorbaría, y en las páginas legales se lee lo que se va a aceptar (revisión).
  *
  * Solo con la sesión CONFIRMADA por el servidor: la copia del dispositivo puede
  * ser de antes de aceptarlos, y sin red tampoco se podrían aceptar. Lee la
- * sesión sin preguntar a la red: en las rutas públicas no se consulta.
+ * sesión sin preguntar a la red.
  */
 const AvisoTerminosPendientes = () => {
   const { t } = useTranslation('common');
   const location = useLocation();
-  const { user, sinConfirmar } = useSyncExternalStore(suscribeALaSesion, loQueHaySobreLaSesion);
+  const pendientes = useTerminosPendientes({ soloConfirmados: true });
 
-  const ruta = normalizaLaRuta(location.pathname);
-  if (!esRutaPublica(ruta) || PAGINAS_LEGALES.includes(ruta)) return null;
-  if (sinConfirmar || !debeAceptarLosTerminos(user)) return null;
+  if (!pendientes || !esLaClasificacionCompartida(location.pathname)) return null;
 
   return (
     <div
