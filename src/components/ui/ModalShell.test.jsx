@@ -373,3 +373,50 @@ describe('ModalShell · la escucha del teclado no se suelta al volver a pintar',
     expect(screen.getByTestId('modal')).not.toHaveClass('items-center');
   });
 });
+
+// Con dos diálogos abiertos solo manda el de encima (#389): el de debajo ni se
+// cierra con su Escape ni se lleva el foco con el tabulador
+describe('ModalShell · dos diálogos, uno encima del otro', () => {
+  const dos = () => {
+    const cerrarAbajo = vi.fn();
+    const cerrarArriba = vi.fn();
+    render(
+      <ModalShell isOpen onClose={cerrarAbajo} testId="abajo"><button>Abajo</button></ModalShell>
+    );
+    render(
+      <ModalShell isOpen onClose={cerrarArriba} testId="arriba"><button>Arriba 1</button><button>Arriba 2</button></ModalShell>
+    );
+    return { cerrarAbajo, cerrarArriba };
+  };
+
+  it('P1 · Escape cierra solo el de encima', () => {
+    const { cerrarAbajo, cerrarArriba } = dos();
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+    expect(cerrarArriba).toHaveBeenCalledTimes(1);
+    expect(cerrarAbajo).not.toHaveBeenCalled();
+  });
+
+  it('P2 · el tabulador da la vuelta en el de encima', () => {
+    dos();
+    const ultimo = screen.getByText('Arriba 2');
+    ultimo.focus();
+    fireEvent.keyDown(ultimo, { key: 'Tab' });
+    expect(document.activeElement).toBe(screen.getByText('Arriba 1'));
+    fireEvent.keyDown(document.activeElement, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(ultimo);
+  });
+
+  it('P3 · al cerrarse el de encima, vuelve a mandar el de debajo', () => {
+    const cerrarAbajo = vi.fn();
+    render(
+      <ModalShell isOpen onClose={cerrarAbajo} testId="abajo"><button>Abajo</button></ModalShell>
+    );
+    const arriba = render(
+      <ModalShell isOpen onClose={vi.fn()} testId="arriba"><button>Arriba</button></ModalShell>
+    );
+    arriba.unmount();
+
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+    expect(cerrarAbajo).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
+import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 
 /**
  * Bottom-sheet tee picker, opened from the + of each friend — same pattern as
@@ -36,15 +37,11 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey
   const { t } = useTranslation('quickMatch');
   const { t: tCourses } = useTranslation('golfCourses');
 
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      onClose();
-    };
-    document.addEventListener('keydown', onKeyDown, true);
-    return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [onClose]);
+  // Modal de verdad: el foco entra, no se sale y vuelve al disparador (#389).
+  // Escape exclusivo: se abre sobre el modal de crear partida, que tiene su
+  // propio Escape y no debe cerrarse con el de la hoja
+  const hojaRef = useRef(null);
+  useFocoRetenido(hojaRef, { alEscape: onClose, escapeExclusivo: true });
 
   const groups = GENDER_ORDER
     .map((gender) => ({
@@ -61,6 +58,7 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey
       onClick={onClose}
     >
       <div
+        ref={hojaRef}
         role="dialog"
         aria-modal="true"
         aria-label={t('create.teePanel.title', { name: playerName })}
