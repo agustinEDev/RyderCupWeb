@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Edit, UserX, UserCheck, Trash2, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import FichaDeFila from './FichaDeFila';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 const PILDORA = 'inline-flex flex-shrink-0 items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border';
 const PILDORA_ADMIN = `${PILDORA} bg-amber-100 text-amber-800 border-amber-200`;
@@ -66,7 +67,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
         titulo={`${abierto.firstName} ${abierto.lastName}${abierto.alias ? ` «${abierto.alias}»` : ''}`}
         subtitulo={abierto.email}
         datos={[
-          { etiqueta: t('users.columnHandicap'), valor: abierto.handicap ?? '—' },
+          { etiqueta: t('users.columnHandicap'), valor: formatoDeIndice(abierto.handicap) ?? '—' },
           { etiqueta: t('users.columnRole'), valor: abierto.isAdmin ? t('users.roleAdmin') : t('users.rolePlayer') },
           { etiqueta: t('users.columnStatus'), valor: abierto.isActive ? t('users.statusActive') : t('users.statusInactive') },
           { etiqueta: t('users.filterVerified'), valor: abierto.emailVerified ? t('users.filterVerifiedYes') : t('users.filterVerifiedNo') },
@@ -124,7 +125,7 @@ const AdminUsersTable = ({ users, onEdit, onToggleActive, onManageDelete }) => {
                   </div>
                 </div>
               </td>
-              <td className="py-3 px-4 text-gray-700">{user.handicap ?? '—'}</td>
+              <td className="py-3 px-4 text-gray-700">{formatoDeIndice(user.handicap) ?? '—'}</td>
               <td className="py-3 px-4">
                 {user.isAdmin ? (
                   <span className={PILDORA_ADMIN}>

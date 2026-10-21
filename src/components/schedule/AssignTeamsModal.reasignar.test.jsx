@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import AssignTeamsModal from './AssignTeamsModal';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 /**
  * «Reasignar equipos» no deshace el draft de un clic (#710, e2e del 24 sep).
@@ -26,7 +27,9 @@ vi.mock('framer-motion', () => {
   return { motion: new Proxy({}, { get: () => Div }) };
 });
 
-const t = (clave, params) => (params?.count !== undefined ? `${clave}_${params.count}` : clave);
+const t = (clave, params) =>
+  abreviaturaDeHandicap(clave, params) ??
+  (params?.count !== undefined ? `${clave}_${params.count}` : clave);
 
 const INSCRITOS = [
   { userId: 'ana', userName: 'Ana Alba', status: 'APPROVED', userHandicap: 8 },
@@ -117,5 +120,19 @@ describe('AssignTeamsModal · reasignar con equipos ya hechos (#710)', () => {
     );
     fireEvent.submit(screen.getByDisplayValue('manual').closest('form'));
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+});
+
+// Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+describe('AssignTeamsModal · hándicap plus (FE #797)', () => {
+  it('H1: en el reparto manual, el plus con «+» y el positivo sin signo', () => {
+    pintar({
+      hasTeams: true,
+      currentTeams: EQUIPOS,
+      enrollments: [{ ...INSCRITOS[0], userHandicap: -2 }, ...INSCRITOS.slice(1)],
+    });
+
+    expect(screen.getByText('HCP: +2.0')).toBeInTheDocument();
+    expect(screen.getByText('HCP: 12.0')).toBeInTheDocument();
   });
 });

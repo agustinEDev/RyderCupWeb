@@ -12,6 +12,8 @@ vi.mock('react-i18next', () => ({
 // La cabecera y el pie tienen sus propios tests; aquí solo estorban
 vi.mock('../../components/layout/Header', () => ({ default: () => null }));
 vi.mock('../../components/layout/Footer', () => ({ default: () => null }));
+// «Volver» tira el `user` de una sesion muerta, y vive bajo el AuthProvider
+vi.mock('../../hooks/useAuthContext', () => ({ useAuthContext: () => ({ clearAuth: vi.fn() }) }));
 
 const { default: LegalNotice } = await import('./LegalNotice');
 

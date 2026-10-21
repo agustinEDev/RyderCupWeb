@@ -22,7 +22,7 @@ import { clasesDelHueco } from '../scoring/clasesDelHueco';
  * Quien anota no necesita excepción: su hoyo y la cabecera salen de la misma
  * resolución, así que no difiere de sí mismo y no se le duplica nada.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, onScoreChange }) => {
+const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, myRound = null, onScoreChange }) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 
@@ -77,6 +77,36 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
 
   // El siguiente por anotar: el primero de la lista sin golpe (FE #725)
   const primerVacio = entries.find(isEmpty)?.participantId ?? null;
+
+  // «Tu vuelta» (21 oct): el acumulado neto de quien anota, ya calculado por
+  // `PersonalRoundCalculator.runningResult`. Sin hoyos anotados, un guion; en
+  // Stableford, el neto y los puntos.
+  // Al par, por t(): el «PAR» de `formatToPar` va fijo. Con signo, el número.
+  const myRoundValue = () => {
+    if (myRound?.toParLabel == null) return '—';
+    const toPar = myRound.toPar === 0 ? t('input.myRoundPar') : myRound.toParLabel;
+    if (myRound.stablefordPoints == null) return toPar;
+    return `${toPar} · ${t('input.myRoundPoints', { count: myRound.stablefordPoints })}`;
+  };
+
+  // Lo que oye un lector de pantalla: «+2» a secas no se entiende de oído
+  const myRoundSpoken = () => {
+    if (myRound?.toPar == null) return t('input.myRoundA11yNone');
+    const toPar =
+      myRound.toPar === 0
+        ? t('input.myRoundA11yPar')
+        : t(myRound.toPar > 0 ? 'input.myRoundA11yOver' : 'input.myRoundA11yUnder', {
+            count: Math.abs(myRound.toPar),
+          });
+    if (myRound.stablefordPoints == null) return toPar;
+    return `${toPar} ${t('input.myRoundA11yPoints', { count: myRound.stablefordPoints })}`;
+  };
+
+  // Con un número impar de casillas queda un hueco en la rejilla de dos y la
+  // vuelta va ahí: la tarjeta no crece. Sin hueco, una línea debajo (21 oct)
+  const hayHueco = entries.length % 2 === 1;
+  const myRoundInCell = myRound != null && hayHueco;
+  const myRoundInLine = myRound != null && !hayHueco;
 
   const handleSelect = (participantId, value) => {
     setOpenParticipantId(null);
@@ -149,7 +179,37 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
             )}
           </div>
         ))}
+        {myRoundInCell && (
+          // `min-w-0`: un valor largo («+12 · 36 pts») no ensancha la columna a
+          // 360 px. Borde discontinuo y sin fondo: no se confunde con un golpe
+          <div data-testid="quick-match-my-round-cell" className="space-y-1 flex flex-col min-w-0">
+            <span className="text-xs font-medium text-gray-500 truncate block" aria-hidden="true">
+              {t('input.myRound')}
+            </span>
+            <span
+              className="w-full h-14 mt-auto px-2 flex items-center justify-center rounded-xl border border-dashed border-gray-300"
+              aria-hidden="true"
+            >
+              <span
+                data-testid="quick-match-my-round-value"
+                className={`min-w-0 truncate font-semibold text-gray-700 ${
+                  myRound.stablefordPoints == null ? 'text-base' : 'text-sm'
+                }`}
+              >
+                {myRoundValue()}
+              </span>
+            </span>
+            <span className="sr-only">{myRoundSpoken()}</span>
+          </div>
+        )}
       </div>
+
+      {myRoundInLine && (
+        <p data-testid="quick-match-my-round-line" className="text-xs text-gray-500 whitespace-nowrap truncate">
+          <span aria-hidden="true">{t('input.myRound')}: {myRoundValue()}</span>
+          <span className="sr-only">{myRoundSpoken()}</span>
+        </p>
+      )}
 
       {openEntry && (
         <ScoreInputPanel

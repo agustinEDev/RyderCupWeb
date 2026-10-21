@@ -73,8 +73,12 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
         openDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // En el `click` y no en el `mousedown`: la lista va en el flujo, y
+    // cerrarla al apretar encogia la caja antes de soltar, con lo que el clic
+    // caia en lo que subia a ocupar su sitio. En captura, para cerrar antes
+    // que el manejador del propio destino, como hacia el `mousedown`
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdown]);
 
   useEffect(() => {
@@ -198,8 +202,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       // un telefono no hay tecla de escape a la que recurrir
       onClick={onClose}
     >
+      {/* Con su alto maximo y desplazamiento propio: la lista de resultados ya
+          ocupa sitio dentro y, larga, no debe sacar la caja de la pantalla */}
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-md"
+        className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-friend-modal-title"
@@ -248,8 +254,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
               <p className="text-xs text-gray-400 mt-1">{t('add.searchMinChars')}</p>
             )}
 
+            {/* En el flujo y no `absolute`: flotando no ocupaba sitio y asomaba
+                por debajo de la caja (QA, 20 oct) */}
             {showDropdown && searchResults.length > 0 && (
-              <div id="friend-search-listbox" className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+              <div id="friend-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
                 {searchResults.map((user, index) => (
                   <button
                     key={user.id}

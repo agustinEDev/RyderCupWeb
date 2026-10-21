@@ -1,6 +1,7 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
 import { entryAtOf, groupParticipantsBySide } from './FoursomesSides';
+import { defaultAllowanceFor } from './defaultAllowance';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
 // —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
@@ -37,6 +38,43 @@ const PERSONAL_ROUND_ALLOWANCE = 100;
  * sin separarse.
  */
 const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
+
+// Los parámetros de `compute` y `runningResult`, con sus valores por defecto.
+// Como en un parámetro por defecto, solo se rellena lo que llega `undefined`
+const PARAMETROS_POR_DEFECTO = Object.freeze({
+  me: null,
+  participants: [],
+  holes: [],
+  holeScores: [],
+  tees: [],
+  participantStrokes: [],
+  matchFormat: null,
+  scoringFormat: null,
+  allowancePercentage: null,
+  playMode: 'HANDICAP',
+});
+
+const conDefectos = (params = {}) => ({
+  ...PARAMETROS_POR_DEFECTO,
+  ...Object.fromEntries(Object.entries(params).filter(([, valor]) => valor !== undefined)),
+});
+
+// Sin allowance conocido, el WHS por defecto del formato —95% en partido libre,
+// 90% en fourball…—, el mismo que aplica el backend; no el 100% a ciegas
+const allowanceDelPartido = ({ matchFormat, allowancePercentage }) =>
+  allowancePercentage ?? defaultAllowanceFor(matchFormat);
+
+// El reparto del partido: el que guardó el backend si lo hay, el local si no
+const repartoDelPartido = (p) =>
+  MatchPlayStrokeAllocator.resolve({
+    participantStrokes: p.participantStrokes,
+    participants: p.participants,
+    holes: p.holes,
+    tees: p.tees,
+    matchFormat: p.matchFormat,
+    allowancePercentage: allowanceDelPartido(p),
+    playMode: p.playMode,
+  });
 
 const sideTotals = (me, participants, holes, holeScores, tees = []) => {
   const members =
@@ -137,17 +175,9 @@ class PersonalRoundCalculator {
    *   `totalStrokes` son los golpes brutos: el historial los pinta debajo del
    *   resultado, o como titular cuando no hay resultado que enseñar.
    */
-  static compute({
-    me = null,
-    participants = [],
-    holes = [],
-    holeScores = [],
-    tees = [],
-    participantStrokes = [],
-    matchFormat = null,
-    allowancePercentage = null,
-    playMode = 'HANDICAP',
-  }) {
+  static compute(params) {
+    const p = conDefectos(params);
+    const { me, participants, holes, holeScores, tees, matchFormat, playMode } = p;
     if (!me) return null;
 
     // En foursomes se juega a golpes alternos con una sola bola: lo anotado es
@@ -204,15 +234,7 @@ class PersonalRoundCalculator {
       me,
       holes,
       holeScores,
-      MatchPlayStrokeAllocator.resolve({
-        participantStrokes,
-        participants,
-        holes,
-        tees,
-        matchFormat,
-        allowancePercentage: allowancePercentage ?? PERSONAL_ROUND_ALLOWANCE,
-        playMode,
-      }),
+      repartoDelPartido(p),
       tees
     );
 
@@ -227,6 +249,59 @@ class PersonalRoundCalculator {
       personalToPar,
       matchToPar: matchToPar === personalToPar ? null : matchToPar,
       totalStrokes: personalTotals.totalStrokes,
+    };
+  }
+
+  /**
+   * «Tu vuelta» mientras se anota: el acumulado neto contra el par de quien
+   * anota, sobre los hoyos ya anotados.
+   *
+   * Se mide con su hándicap de juego PROPIO —el «Hcp de juego» de su tarjeta:
+   * su hándicap con el allowance del formato— repartido por los índices de SU
+   * barra. No con el reparto del partido: en match play ese es la diferencia y
+   * el de hándicap más bajo no recibiría ningún golpe. Tampoco con el 100% de
+   * `compute`: aquí se quiere el número del juego que se está jugando.
+   *
+   * El hándicap de juego sale de `resolve`, el mismo sitio del que lo lee la
+   * tarjeta: el del backend si lo hay, el local si no. Si el backend manda un
+   * reparto en el que falta quien anota, su hándicap de juego local con el
+   * allowance del partido, no 0: con 0 «Tu vuelta» saldría a bruto.
+   *
+   * @param {Object} params Los de `compute`, más `scoringFormat`
+   * @param {?string} params.scoringFormat MEDAL/STABLEFORD, o null en match play
+   * @returns {?{toPar: ?number, toParLabel: ?string, stablefordPoints: ?number, holesPlayed: number}}
+   *   null en foursomes —una bola por bando, no hay vuelta propia— o sin
+   *   jugador. Sin hoyos anotados, `toPar` y `toParLabel` son null.
+   *   `stablefordPoints` solo en Stableford.
+   */
+  static runningResult(params) {
+    const p = conDefectos(params);
+    const { me, holes, holeScores, tees, matchFormat, scoringFormat, playMode } = p;
+    if (!me || matchFormat === 'FOURSOMES') return null;
+
+    // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
+    const playingHandicap =
+      playMode === 'SCRATCH'
+        ? 0
+        : (repartoDelPartido(p)[me.participantId]?.playingHandicap ??
+          MatchPlayStrokeAllocator.playingHandicap(me, holes, tees, allowanceDelPartido(p)));
+
+    const totals = StablefordCalculator.computeParticipantTotals(
+      me,
+      holes,
+      holeScores,
+      {
+        [me.participantId]: MatchPlayStrokeAllocator.ownStrokes(me, holes, tees, playingHandicap),
+      },
+      tees
+    );
+
+    const toPar = totals.holesPlayed ? totals.netStrokes - totals.parPlayed : null;
+    return {
+      toPar,
+      toParLabel: toPar === null ? null : StablefordCalculator.formatToPar(toPar),
+      stablefordPoints: scoringFormat === 'STABLEFORD' ? totals.stablefordPoints : null,
+      holesPlayed: totals.holesPlayed,
     };
   }
 }

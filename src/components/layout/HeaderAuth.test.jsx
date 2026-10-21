@@ -12,7 +12,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../ui/LanguageSwitcher', () => ({
-  default: () => <div data-testid="language-switcher" />,
+  default: ({ compacto }) => <div data-testid={compacto ? 'language-switcher-compacto' : 'language-switcher'} />,
 }));
 
 vi.mock('../../composition', () => ({
@@ -281,10 +281,31 @@ describe('HeaderAuth', () => {
       expect(screen.getByTestId('indicador-desplegable')).toHaveClass('rotate-180');
     });
 
-    it('L1: el idioma ya no ocupa sitio en la barra', () => {
+    // Antes (FE #680) el idioma solo vivia en el desplegable para ahorrar
+    // sitio. Agustín, 20 oct: vuelve a la barra, pero como un globo de solo
+    // icono, que cabe entre md y xl
+    it('L1: en la barra de escritorio el idioma es un globo compacto, sin abrir nada', () => {
       renderHeader('/dashboard');
 
+      expect(screen.getByTestId('language-switcher-compacto')).toBeInTheDocument();
+      // El selector con texto sigue sin ocupar la barra
       expect(screen.queryByTestId('language-switcher')).not.toBeInTheDocument();
+    });
+
+    it('L1b: el globo va justo antes del avatar', () => {
+      renderHeader('/dashboard');
+
+      const botonPerfil = screen.getByText('AS').closest('button');
+      // Hermano del bloque del avatar, no dentro de el: dentro, cada pulsacion
+      // en el globo contaria como pulsar en el desplegable
+      expect(screen.getByTestId('language-switcher-compacto').nextElementSibling).toBe(botonPerfil.parentElement);
+    });
+
+    it('L1c: solo en escritorio; en movil el idioma sigue en Perfil', () => {
+      renderHeader('/dashboard');
+
+      const bloque = screen.getByTestId('language-switcher-compacto').closest('.md\\:flex');
+      expect(bloque).toHaveClass('hidden');
     });
 
     it('L2: se cambia desde el desplegable del avatar, en su propia fila', () => {

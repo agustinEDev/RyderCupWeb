@@ -52,6 +52,60 @@ describe('AddFriendModal', () => {
     vi.clearAllMocks();
   });
 
+  // QA del 20 oct: la lista flotaba (`absolute`) y no ocupaba sitio, asi que
+  // asomaba por debajo de la caja. jsdom no mide: se vigila el contrato de
+  // clases, y que de verdad quepa se mira en el navegador a 360 px
+  describe('la lista de resultados cabe en el modal', () => {
+    it('A1: va dentro de la caja y ocupa su sitio, sin flotar sobre el borde', async () => {
+      pintar();
+      await buscar();
+
+      const lista = screen.getByTestId('search-results-dropdown');
+      expect(screen.getByRole('dialog')).toContainElement(lista);
+      expect(lista).not.toHaveClass('absolute');
+    });
+
+    it('A1b: con muchos resultados la lista se desplaza dentro, con su alto maximo', async () => {
+      pintar();
+      await buscar();
+
+      expect(screen.getByTestId('search-results-dropdown')).toHaveClass('max-h-48', 'overflow-y-auto');
+    });
+
+    it('A1c: la caja nunca pasa del alto de la pantalla: se desplaza por dentro', () => {
+      pintar();
+
+      expect(screen.getByRole('dialog')).toHaveClass('max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
+    });
+  });
+
+  // Revision del 20 oct: con la lista en el flujo, cerrarla en el `mousedown`
+  // encogia la caja antes del `click`, y el clic caia en lo que subia a ocupar
+  // su sitio. Se cierra en el `click`, cuando el destino ya esta decidido
+  describe('la lista no se mueve bajo el dedo', () => {
+    it('M1a: pulsar la X con la lista abierta cierra el modal', async () => {
+      const { onClose } = pintar();
+      await buscar();
+      const cerrar = screen.getByRole('button', { name: 'cancel' });
+
+      fireEvent.mouseDown(cerrar);
+      expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument();
+      fireEvent.click(cerrar);
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('M1b: un clic fuera de la lista la sigue cerrando, sin cerrar el modal', async () => {
+      const { onClose } = pintar();
+      await buscar();
+
+      fireEvent.click(screen.getByText('add.opensProfileHint'));
+
+      expect(screen.queryByTestId('search-results-dropdown')).not.toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
   it('opens the profile of the player you pick', async () => {
     const { onClose } = pintar();
     await buscar();

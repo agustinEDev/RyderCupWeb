@@ -162,6 +162,25 @@ export const refreshAccessToken = async () => {
 };
 
 /**
+ * El refresco compartido: el que hay en vuelo si lo hay, o uno nuevo que queda
+ * guardado para quien llegue mientras tanto. Lo usan el interceptor y la sonda
+ * de sesión (`services/sondaDeSesion`), que refresca sin el interceptor: así
+ * dos refrescos a la vez son UN POST, y no dos con la misma cookie.
+ *
+ * Se suelta en cuanto termina, bien o mal: el siguiente pide el suyo.
+ *
+ * @returns {Promise<boolean>}
+ */
+export const refrescoCompartido = () => {
+  if (!refrescoEnCurso) {
+    refrescoEnCurso = refreshAccessToken().finally(() => {
+      refrescoEnCurso = null;
+    });
+  }
+  return refrescoEnCurso;
+};
+
+/**
  * Interceptor for fetch requests that handles 401 responses with automatic token refresh
  *
  * Flow:
@@ -284,10 +303,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // termina el reintento de abajo—: una peticion que de 401 durante ese
       // reintento salio con el token viejo y necesita su propio refresco, que
       // es exactamente lo que antes se quedaba colgado para siempre
-      refrescoEnCurso = refreshAccessToken().finally(() => {
-        refrescoEnCurso = null;
-      });
-      await refrescoEnCurso;
+      await refrescoCompartido();
 
       // Retry the original request
       console.log('🔄 [TokenRefresh] Retrying original request...');

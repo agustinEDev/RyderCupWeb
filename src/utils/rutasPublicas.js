@@ -1,3 +1,5 @@
+import { esRutaDesconocida } from './rutasDeLaAplicacion';
+
 /**
  * Las rutas que se pueden ver sin sesion.
  *
@@ -85,6 +87,10 @@ export const esRutaPublica = (ruta) => {
 const PANTALLAS_DE_ACCESO = ['/', '/start', '/login', '/register', '/forgot-password'];
 
 export const sinSesionEnRutaPublica = (ruta, hayUsuarioGuardado) => {
+  // Una dirección que no existe, como la clasificación compartida: el visitante
+  // ve «no existe» y no «tu sesión expiró»; con sesión se refresca, que la
+  // página le ofrece volver al panel y la barra inferior (FE #544)
+  if (esRutaDesconocida(ruta)) return !hayUsuarioGuardado;
   if (!esRutaPublica(ruta)) return false;
   const limpia = normalizar(ruta);
 

@@ -20,6 +20,7 @@ import { instanteEnTexto } from '../utils/instanteDeLaApi';
 import { fetchCountriesUseCase, listUserCompetitionsUseCase } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ const Profile = () => {
   // Las fechas en el idioma de la app y leídas como UTC; y si hay hándicap,
   // un booleano: era el texto «Not set» el que lo decidía (FE #710)
   const tieneHandicap = user.handicap !== null && user.handicap !== undefined;
-  const handicap = tieneHandicap ? user.handicap : t('edit.handicap.notSet');
+  const handicap = tieneHandicap ? formatoDeIndice(user.handicap) : t('edit.handicap.notSet');
   const fechaLarga = { year: 'numeric', month: 'long', day: 'numeric' };
   const handicapUpdated =
     instanteEnTexto(user.handicap_updated_at, i18n.language, fechaLarga) ??

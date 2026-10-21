@@ -126,6 +126,13 @@
     "AFTERNOON": "Afternoon",
     "EVENING": "Evening"
   },
+  "handicapLabels": {
+    "index": "HCP {{value}}",
+    "indexWithColon": "HCP: {{value}}",
+    "playing": "PH: {{value}}",
+    "playingCapped": "PH: {{value}} Lim.",
+    "limit": "{{value}} Lim."
+  },
   "handicapModes": {
     "MATCH_PLAY": "Match Play"
   },

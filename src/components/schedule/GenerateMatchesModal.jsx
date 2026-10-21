@@ -3,6 +3,7 @@ import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Zap, Plus, Trash2 } from 'lucide-react';
 import BloqueoDePartidos from './BloqueoDePartidos';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 let matchIdCounter = 0;
 const createEmptyMatch = () => ({ id: ++matchIdCounter, teamAPlayerIds: [], teamBPlayerIds: [] });
@@ -169,7 +170,7 @@ const GenerateMatchesModalContent = ({
               disabled={isUsed}
             >
               {playerNameMap.get(player.userId) || player.userName || 'Unknown'}
-              {player.userHandicap != null ? ` (HCP: ${Number(player.userHandicap).toFixed(1)})` : ''}
+              {player.userHandicap != null ? ` (${t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })})` : ''}
               {isUsed ? ` - ${t('matches.pairings.playerAlreadyUsed')}` : ''}
             </option>
           );

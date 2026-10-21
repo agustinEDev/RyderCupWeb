@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -23,6 +23,7 @@ import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import BlockLoader from '../../components/ui/BlockLoader';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import { useSinConexion } from '../../hooks/useSinConexion';
@@ -124,6 +125,45 @@ const QuickMatchScoringPage = () => {
     discrepancias,
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+
+  // «Tu vuelta» (21 oct): el acumulado neto de quien anota con SU hándicap de
+  // juego, sobre lo visible —lo pendiente de enviar incluido—. En foursomes
+  // sale null: una bola por bando, no hay vuelta propia. En un useMemo y aquí
+  // arriba, antes de las salidas tempranas: es un hook, y la pantalla se pinta
+  // de nuevo con cada sondeo aunque no cambie ningún golpe
+  const participants = quickMatch?.participants;
+  const participantStrokes = quickMatch?.participantStrokes;
+  const matchFormat = quickMatch?.matchFormat ?? null;
+  const scoringFormat = quickMatch?.scoringFormat ?? null;
+  const effectiveAllowance = quickMatch?.effectiveAllowance ?? null;
+  const playMode = quickMatch?.playMode ?? 'HANDICAP';
+  const myRound = useMemo(
+    () =>
+      PersonalRoundCalculator.runningResult({
+        me: myParticipant,
+        participants: participants ?? [],
+        holes,
+        holeScores: holeScoresVisibles,
+        tees,
+        participantStrokes: participantStrokes ?? [],
+        matchFormat,
+        scoringFormat,
+        allowancePercentage: effectiveAllowance,
+        playMode,
+      }),
+    [
+      myParticipant,
+      participants,
+      holes,
+      holeScoresVisibles,
+      tees,
+      participantStrokes,
+      matchFormat,
+      scoringFormat,
+      effectiveAllowance,
+      playMode,
+    ]
+  );
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   // El mapa, cuando ya llegó el campo (sus hoyos) y con él su país: antes,
   // fuera de España se pedía para nada (CodeRabbit)
@@ -397,6 +437,8 @@ const QuickMatchScoringPage = () => {
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();
 
+  // «Tu vuelta»: calculada arriba, antes de las salidas tempranas (es un hook)
+
   // `isCancelled` cuenta igual que `isCompleted`: la partida ya no admite
   // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
   // contra un 409 que se traduce como «vuelve a cargarla» —y recargar no la
@@ -630,6 +672,7 @@ const QuickMatchScoringPage = () => {
                       entries={entries}
                       isReadOnly={isReadOnly}
                       allowPickedUp={allowsPickedUp}
+                      myRound={myRound}
                       onScoreChange={handleScoreChange}
                     />
                     <VentanaDelMapa

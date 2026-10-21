@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Users } from 'lucide-react';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 // Wrapper: controls mount/unmount so inner component always has fresh state
 const AssignTeamsModal = ({ isOpen, ...props }) => {
@@ -211,7 +212,7 @@ const AssignTeamsModalContent = ({
                         </span>
                         {player.userHandicap != null && (
                           <span className="text-xs text-gray-500 ml-2">
-                            HCP: {Number(player.userHandicap).toFixed(1)}
+                            {t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })}
                           </span>
                         )}
                         {esCapitan(player.userId) && (

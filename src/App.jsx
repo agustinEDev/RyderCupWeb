@@ -92,6 +92,7 @@ const LegalNotice = lazyWithRetry(() => import('./pages/public/LegalNotice'));
 
 // Error pages
 const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
+const NotFound = lazyWithRetry(() => import('./pages/public/NotFound'));
 
 // ============================================
 // SENTRY ROUTING INSTRUMENTATION
@@ -404,6 +405,9 @@ function AppContent() {
 
         {/* Error routes */}
         <Route path="/unauthorized" element={<Unauthorized />} />
+        {/* Lo que no lleva a ninguna pantalla: antes, una página en blanco (FE #544).
+            Cualquier ruta nueva va también en `utils/rutasDeLaAplicacion` */}
+        <Route path="*" element={<NotFound />} />
         </SentryRoutes>
       {showBottomNav && (
         <>

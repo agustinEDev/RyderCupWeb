@@ -15,6 +15,7 @@ import {
   respondFriendRequestUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 const PAGE_SIZE = 20;
 const HTTP_NOT_FOUND = 404;
@@ -468,11 +469,11 @@ const PlayerStatsSummary = ({ profile, t }) => {
   }
 
   const items = [
-    { key: 'handicap', label: t('playerProfile:stats.handicap'), value: format(profile.handicap) },
+    { key: 'handicap', label: t('playerProfile:stats.handicap'), value: formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue') },
     {
       key: 'estimatedIndex',
       label: t('playerProfile:stats.estimatedIndex'),
-      value: format(stats.estimatedIndex),
+      value: formatoDeIndice(stats.estimatedIndex) ?? t('playerProfile:stats.noValue'),
       hint: t('playerProfile:stats.estimatedIndexHint'),
     },
     {

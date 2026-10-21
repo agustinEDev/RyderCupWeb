@@ -96,6 +96,16 @@ describe('AdminUsersTable · móvil', () => {
     expect(dato('users.columnLastLogin')).toHaveTextContent('users.lastLoginNever');
   });
 
+  // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+  it('H1: el plus, con «+» en la ficha y en la tabla', () => {
+    pintar({ users: [{ ...ANA, handicap: -2 }, LUIS] });
+    expect(within(screen.getByRole('table')).getByText('+2.0')).toBeInTheDocument();
+    fireEvent.click(fila('Ana Ruiz'));
+
+    const dato = (clave) => within(ficha()).getByText(clave).nextElementSibling;
+    expect(dato('users.columnHandicap')).toHaveTextContent('+2.0');
+  });
+
   it.each([
     ['users.editTooltip', 'onEdit'],
     ['users.deactivateTooltip', 'onToggleActive'],

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1894,5 +1895,172 @@ describe('QuickMatchScoringPage — el mapa del hoyo (BE #532)', () => {
     }
 
     expect(watchPosition).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * «Tu vuelta» (21 oct): la página calcula el acumulado de quien anota con su
+ * hándicap de juego propio y se lo pasa a la casilla del hoyo.
+ *
+ *   N1+N3  solo me anoto, match play: mis golpes, no la diferencia | M1
+ *   N3+N7  Medal: allowance de la partida y golpes aún sin enviar  | M2
+ *   N2+N4  Stableford anotando a dos: línea con neto y puntos      | M3
+ *   N5     foursomes: nada                                         | M4
+ */
+describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
+  const yo = { participantId: 'user-1', userId: 'user-1', name: 'Yo', handicap: 2 };
+  const rival = { participantId: 'user-2', userId: 'user-2', name: 'Rival', handicap: 12 };
+
+  const montar = ({ quickMatch = {}, ...estado } = {}) => {
+    const partida = {
+      ...baseQuickMatch,
+      status: 'IN_PROGRESS',
+      isCompleted: false,
+      participants: [yo, rival],
+      ...quickMatch,
+    };
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: partida,
+      myParticipant: yo,
+      isScorer: true,
+      coveredParticipantIds: ['user-1'],
+      setCurrentHole: vi.fn(),
+      submitScore: vi.fn(),
+      completeMatch: vi.fn(),
+      refetch: vi.fn(),
+      ...estado,
+    });
+    return renderPage();
+  };
+
+  it('M1: en match play cuenta con MIS golpes aunque el reparto sea del rival', () => {
+    montar({
+      quickMatch: {
+        matchFormat: 'SINGLES',
+        scoringFormat: null,
+        participantStrokes: [
+          { participantId: 'user-1', playingHandicap: 1, strokesByHole: {} },
+          { participantId: 'user-2', playingHandicap: 11, strokesByHole: { 1: 1 } },
+        ],
+      },
+      holes: [
+        { holeNumber: 1, par: 4, strokeIndex: 5 },
+        { holeNumber: 2, par: 3, strokeIndex: 15 },
+      ],
+      totalHoles: 2,
+      holeScoresVisibles: [
+        { holeNumber: 1, participantId: 'user-1', score: 6 },
+        { holeNumber: 2, participantId: 'user-1', score: 3 },
+      ],
+    });
+
+    // Su hándicap de juego (el del backend, 1) le da golpe en el hoyo 1: netos
+    // 5 y 3 sobre par 7. Con la diferencia (0 golpes) saldría +2, y con el
+    // local (2) PAR
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(casilla).toHaveTextContent('input.myRound');
+    expect(casilla).toHaveTextContent('+1');
+  });
+
+  it('M2: en Medal aplica el allowance de la partida y cuenta lo pendiente de enviar', () => {
+    const veinte = { ...yo, handicap: 20 };
+    montar({
+      quickMatch: {
+        scoringFormat: 'MEDAL',
+        effectiveAllowance: 50,
+        holeScores: [],
+        participants: [veinte, rival],
+      },
+      myParticipant: veinte,
+      // El golpe aún no ha salido del móvil: solo está en la lista visible
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 4 }],
+    });
+
+    // Hcp 20 al 50% = 10 golpes, 1 en este hoyo: neto 3 sobre par 4. Al 100%
+    // serían 2 y saldría -2
+    expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent('-1');
+  });
+
+  it('M3: en Stableford anotando a dos, una línea con el neto y los puntos', () => {
+    montar({
+      quickMatch: { scoringFormat: 'STABLEFORD', effectiveAllowance: 50 },
+      coveredParticipantIds: ['user-1', 'user-2'],
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 6 }],
+    });
+
+    // Neto 5 sobre par 4: +1 y 1 punto
+    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent(
+      'input.myRound: +1 · input.myRoundPoints 1'
+    );
+    expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
+  });
+
+  it('M4: en foursomes no hay vuelta propia', () => {
+    montar({
+      quickMatch: {
+        matchFormat: 'FOURSOMES',
+        scoringFormat: null,
+        participants: [
+          { ...yo, team: 'A' },
+          { ...rival, team: 'B' },
+        ],
+      },
+      coveredParticipantIds: ['user-1', 'user-2'],
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 6 }],
+    });
+
+    expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
+    expect(screen.queryByTestId('quick-match-my-round-line')).toBeNull();
+  });
+
+  // Lo que cambia la vuelta tiene que rehacerla: un useMemo al que le falta una
+  // dependencia se quedaría con el número viejo
+  it.each([
+    ['el allowance', { effectiveAllowance: 100 }, '-2'],
+    ['SCRATCH', { playMode: 'SCRATCH' }, 'input.myRoundPar'],
+    ['Stableford', { scoringFormat: 'STABLEFORD' }, '-1 · input.myRoundPoints 3'],
+  ])('M5b: si cambia %s, la vuelta se rehace', (_, cambio, esperado) => {
+    const veinte = { ...yo, handicap: 20 };
+    const { rerender } = montar({
+      quickMatch: { scoringFormat: 'MEDAL', effectiveAllowance: 50, participants: [veinte, rival] },
+      myParticipant: veinte,
+      holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 4 }],
+    });
+    expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent('-1');
+
+    const estado = mockUseQuickMatchScoring.mock.results.at(-1).value;
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...estado,
+      quickMatch: { ...estado.quickMatch, ...cambio },
+    });
+    rerender(renderTree());
+
+    expect(screen.getByTestId('quick-match-my-round-value')).toHaveTextContent(esperado);
+  });
+
+  // Revisión final del 21 oct: el cálculo va en un useMemo. Un render que no
+  // cambia nada de lo que decide la vuelta no lo repite; un golpe nuevo, sí
+  it('M5: no recalcula la vuelta si no cambia lo que la decide', () => {
+    const espia = vi.spyOn(PersonalRoundCalculator, 'runningResult');
+    try {
+      const golpes = [{ holeNumber: 1, participantId: 'user-1', score: 6 }];
+      const { rerender } = montar({ holeScoresVisibles: golpes });
+      const antes = espia.mock.calls.length;
+      expect(antes).toBeGreaterThan(0);
+
+      rerender(renderTree());
+      expect(espia).toHaveBeenCalledTimes(antes);
+
+      const estado = mockUseQuickMatchScoring.mock.results.at(-1).value;
+      mockUseQuickMatchScoring.mockReturnValue({
+        ...estado,
+        holeScoresVisibles: [...golpes, { holeNumber: 2, participantId: 'user-1', score: 3 }],
+      });
+      rerender(renderTree());
+      expect(espia.mock.calls.length).toBeGreaterThan(antes);
+    } finally {
+      espia.mockRestore();
+    }
   });
 });

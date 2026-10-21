@@ -12,10 +12,10 @@ import {
   closeTeeWindowUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
-import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
 import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan, seCambia } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { conGenero } from '../../utils/genero';
+import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -483,8 +483,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             el marcador (QA del 11 oct 2026) */}
                         <div data-testid={`datos-${p.userId}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
                           <span className="font-medium break-words text-gray-900">{p.name}</span>
-                          <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
-                          <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
+                          <span>{formatoDeIndice(p.handicap, i18n.language)}</span>
+                          <span>{t('partidas.playing', { juego: formatoDeHandicapDeJuego(p.playingHandicap) })}</span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
                             <span className="font-semibold text-red-700">{t('partidas.noShow', conGenero(p.teeGender))}</span>

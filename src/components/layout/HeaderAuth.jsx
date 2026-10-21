@@ -171,90 +171,96 @@ const HeaderAuth = ({ user, title, backTo }) => {
           ))}
         </div>
 
-        {/* Desktop Profile Dropdown */}
-        <div className="relative" ref={desktopDropdownRef}>
-          <button
-            ref={botonPerfilRef}
-            onClick={toggleDropdown}
-            aria-expanded={isDropdownOpen}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            {user?.is_admin && (
-              <span data-testid="admin-badge" className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                {t('header.adminBadge')}
-              </span>
-            )}
-            <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
-              {getInitials()}
-            </div>
-            {/* Por debajo de xl los enlaces viven aqui dentro: tiene que notarse
-                que el avatar se abre (FE #680) */}
-            <ChevronDown
-              data-testid="indicador-desplegable"
-              aria-hidden="true"
-              className={`-ml-1 h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+        {/* El idioma vuelve a la barra como un globo de solo icono, que cabe
+            entre md y xl (Agustín, 20 oct). La fila del desplegable se queda */}
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher compacto />
 
-          {/* Desktop Dropdown Menu */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-              <div data-testid="navegacion-en-desplegable" className="xl:hidden">
-                {NAVEGACION.map(({ to, clave }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    {t(clave)}
-                  </Link>
-                ))}
-                <div className="border-t border-gray-200 my-1" />
-              </div>
-              <button
-                onClick={handleProfileClick}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                {t('header.viewProfile')}
-              </button>
-              {/* El idioma vive aqui y no en la barra: es un ajuste de la cuenta y
-                  ocupaba el sitio que les faltaba a los enlaces (FE #680). En la
-                  portada sigue en la barra, que alli no hay cuenta */}
-              <div
-                data-testid="idioma-en-desplegable"
-                className="flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-700"
-              >
-                <span className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  {t('header.language')}
-                </span>
-                <LanguageSwitcher />
-              </div>
+          {/* Desktop Profile Dropdown */}
+          <div className="relative" ref={desktopDropdownRef}>
+            <button
+              ref={botonPerfilRef}
+              onClick={toggleDropdown}
+              aria-expanded={isDropdownOpen}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               {user?.is_admin && (
-                <>
-                  <div className="border-t border-gray-200 my-1" />
-                  <p className="px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    {t('header.administration')}
-                  </p>
-                  <Link
-                    to="/admin"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    {t('header.adminPanel')}
-                  </Link>
-                </>
+                <span data-testid="admin-badge" className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  {t('header.adminBadge')}
+                </span>
               )}
-              <div className="border-t border-gray-200 my-1" />
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                {t('header.logout')}
-              </button>
-            </div>
-          )}
+              <div className="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full h-8 w-8 md:h-10 md:w-10 flex items-center justify-center text-white font-bold text-sm md:text-base">
+                {getInitials()}
+              </div>
+              {/* Por debajo de xl los enlaces viven aqui dentro: tiene que notarse
+                  que el avatar se abre (FE #680) */}
+              <ChevronDown
+                data-testid="indicador-desplegable"
+                aria-hidden="true"
+                className={`-ml-1 h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {/* Desktop Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <div data-testid="navegacion-en-desplegable" className="xl:hidden">
+                  {NAVEGACION.map(({ to, clave }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      {t(clave)}
+                    </Link>
+                  ))}
+                  <div className="border-t border-gray-200 my-1" />
+                </div>
+                <button
+                  onClick={handleProfileClick}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  {t('header.viewProfile')}
+                </button>
+                {/* El idioma tambien aqui, con su nombre: es un ajuste de la cuenta
+                    (FE #680). Desde el 20 oct (Agustín) esta ademas en la barra,
+                    como globo de solo icono; esta fila se queda */}
+                <div
+                  data-testid="idioma-en-desplegable"
+                  className="flex items-center justify-between gap-3 px-4 py-2 text-sm text-gray-700"
+                >
+                  <span className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                    {t('header.language')}
+                  </span>
+                  <LanguageSwitcher />
+                </div>
+                {user?.is_admin && (
+                  <>
+                    <div className="border-t border-gray-200 my-1" />
+                    <p className="px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {t('header.administration')}
+                    </p>
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      {t('header.adminPanel')}
+                    </Link>
+                  </>
+                )}
+                <div className="border-t border-gray-200 my-1" />
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  {t('header.logout')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

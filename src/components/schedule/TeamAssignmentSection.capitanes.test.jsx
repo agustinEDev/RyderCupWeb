@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import TeamAssignmentSection from './TeamAssignmentSection';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 /**
  * Los capitanes, a la vista en los equipos del calendario (FE #692, pieza 2).
@@ -11,6 +12,8 @@ import TeamAssignmentSection from './TeamAssignmentSection';
  */
 
 const t = (clave, params) => {
+  const abreviatura = abreviaturaDeHandicap(clave, params);
+  if (abreviatura) return abreviatura;
   if (params?.team) return `${clave}_${params.team}`;
   if (params?.count !== undefined) return `${clave}_${params.count}`;
   return clave;

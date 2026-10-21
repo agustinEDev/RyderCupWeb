@@ -398,7 +398,8 @@ describe('DraftRoomPage · la sala en directo (FE #653)', () => {
 
     const fila = await screen.findByTestId('disponible-carla');
     expect(within(fila).getByText('Carla Cruz')).toBeInTheDocument();
-    expect(within(fila).getByText('8')).toBeInTheDocument();
+    // Con un decimal, como todo índice: un plus se lee «+2.0» (FE #797)
+    expect(within(fila).getByText('8.0')).toBeInTheDocument();
   });
 });
 

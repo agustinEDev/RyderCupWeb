@@ -146,3 +146,103 @@ describe('ScorecardTable · en el móvil, una tarjeta vertical por participante 
     expect(screen.getAllByTestId('vuelta-horizontal')).toHaveLength(2);
   });
 });
+
+/**
+ * FE #414 · el hándicap de juego en la cabecera de cada tarjeta del móvil. En
+ * la misma línea que el nombre: una línea más hacía crecer la tarjeta. Si no
+ * cabe, se corta el nombre; nunca se desplaza de lado.
+ */
+describe('ScorecardTable · el hándicap de juego en el móvil (#414)', () => {
+  beforeEach(() => {
+    pantalla.movil = true;
+  });
+
+  // «HCP 12»: con «Hcp de juego 12» la pareja de foursomes no cabía en una línea
+  const hcp = (valor) => `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
+
+  it('T1: la cabecera de cada tarjeta dice su hándicap de juego', () => {
+    const conHandicap = singles.map((p, i) => ({ ...p, playingHandicap: i === 0 ? -2 : 14 }));
+    render(<ScorecardTable holes={holes} players={conHandicap} currentUserId="u1" matchFormat="SINGLES" />);
+
+    expect(within(screen.getByTestId('tarjeta-vertical-u1')).getByTestId('hcp-de-juego-u1')).toHaveTextContent(hcp('+2'));
+    expect(within(screen.getByTestId('tarjeta-vertical-u2')).getByTestId('hcp-de-juego-u2')).toHaveTextContent(hcp('14'));
+  });
+
+  it('T2: foursomes, los dos de la pareja en su tarjeta, cada uno junto a su nombre', () => {
+    const foursomes = [
+      { userId: 'a1', userName: 'Nacho', team: 'A', playingHandicap: 8 },
+      { userId: 'a2', userName: 'Agustín', team: 'A', playingHandicap: -1 },
+      { userId: 'b1', userName: 'Luna', team: 'B', playingHandicap: 20 },
+      { userId: 'b2', userName: 'Óscar', team: 'B', playingHandicap: 3 },
+    ];
+    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+
+    const tarjeta = within(screen.getByTestId('tarjeta-vertical-team-a'));
+    expect(tarjeta.getByTestId('jugador-a1')).toHaveTextContent(`Nacho${hcp('8')}`);
+    expect(tarjeta.getByTestId('jugador-a2')).toHaveTextContent(`Agustín${hcp('+1')}`);
+    // La pestaña sigue diciendo solo los nombres
+    expect(screen.getByRole('tab', { name: 'Nacho / Agustín' })).toBeInTheDocument();
+  });
+
+  it('T3: en la línea del nombre; si no cabe, se corta el nombre', () => {
+    const largo = [{ userId: 'u1', userName: 'Maximiliano Fernández de la Vega', team: 'A', playingHandicap: 12 }];
+    render(<ScorecardTable holes={holes} players={largo} currentUserId="u1" matchFormat="SINGLES" />);
+
+    const tarjeta = within(screen.getByTestId('tarjeta-vertical-u1'));
+    const jugador = tarjeta.getByTestId('jugador-u1');
+    const valor = tarjeta.getByTestId('hcp-de-juego-u1');
+    const nombre = within(jugador).getByText('Maximiliano Fernández de la Vega');
+    // Nombre y valor, hermanos en la misma fila flexible
+    expect(valor.parentElement).toBe(jugador);
+    expect(nombre.parentElement).toBe(jugador);
+    expect(jugador.className).toMatch(/\binline-flex\b/);
+    expect(jugador.className).toContain('max-w-full');
+    expect(jugador.className).not.toContain('flex-col');
+    expect(nombre.className).toMatch(/\btruncate\b/);
+    expect(nombre.className).toContain('min-w-0');
+    expect(valor.className).toContain('whitespace-nowrap');
+    expect(valor.className).toContain('shrink-0');
+  });
+
+  it('T5: foursomes, la pareja en UNA línea que no se parte: se cortan los nombres', () => {
+    const foursomes = [
+      { userId: 'a1', userName: 'Maximiliano Fernández de la Vega', team: 'A', playingHandicap: 8 },
+      { userId: 'a2', userName: 'Bartolomé Rodríguez-Villanueva', team: 'A', playingHandicap: -1 },
+      { userId: 'b1', userName: 'Luna', team: 'B', playingHandicap: 20 },
+      { userId: 'b2', userName: 'Óscar', team: 'B', playingHandicap: 3 },
+    ];
+    render(<ScorecardTable holes={holes} players={foursomes} currentUserId="a1" matchFormat="FOURSOMES" />);
+
+    const tarjeta = within(screen.getByTestId('tarjeta-vertical-team-a'));
+    const a1 = tarjeta.getByTestId('jugador-a1');
+    const a2 = tarjeta.getByTestId('jugador-a2');
+    const linea = a1.parentElement;
+    // Los dos en la misma fila flexible, que no salta de línea
+    expect(a2.parentElement).toBe(linea);
+    expect(linea.className).toMatch(/(^|\s)flex(\s|$)/);
+    expect(linea.className).toContain('flex-nowrap');
+    expect(linea.className).toContain('whitespace-nowrap');
+    expect(linea.className).toContain('min-w-0');
+    expect(linea.className).not.toMatch(/flex-wrap(\s|$)|break-words|flex-col/);
+    // Cada miembro encoge cortando su nombre; su HCP no encoge
+    for (const [jugador, id] of [[a1, 'a1'], [a2, 'a2']]) {
+      expect(jugador.className).toContain('min-w-0');
+      expect(within(jugador).getByText(foursomes.find(p => p.userId === id).userName).className).toMatch(/\btruncate\b/);
+      expect(tarjeta.getByTestId(`hcp-de-juego-${id}`).className).toContain('shrink-0');
+    }
+    // La barra entre los dos tampoco encoge ni se pierde
+    const barra = a1.nextElementSibling;
+    expect(barra).not.toBe(a2);
+    expect(barra.textContent.trim()).toBe('/');
+    expect(barra.className).toContain('shrink-0');
+    expect(barra.nextElementSibling).toBe(a2);
+  });
+
+  it('T4: sin hándicap de juego, la cabecera solo dice el nombre', () => {
+    render(<ScorecardTable holes={holes} players={singles} currentUserId="u1" matchFormat="SINGLES" />);
+
+    expect(screen.queryAllByTestId(/^hcp-de-juego-/)).toHaveLength(0);
+    expect(screen.getByTestId('jugador-u1').textContent).toBe('Nacho Noche');
+    expect(screen.getByTestId('tarjeta-vertical-u1')).not.toHaveTextContent('undefined');
+  });
+});

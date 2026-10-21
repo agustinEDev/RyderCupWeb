@@ -133,19 +133,20 @@ describe('PartidasEnLaFranja (FE #824, PR 6)', () => {
     const ana = within(g1).getByTestId('partida-jugador-ana');
     expect(ana).toHaveTextContent('ANA');
     expect(ana).toHaveTextContent('12,3');
-    expect(ana).toHaveTextContent('partidas.playing {"juego":11}');
+    expect(ana).toHaveTextContent('partidas.playing {"juego":"11"}');
     expect(ana).toHaveTextContent('partidas.marks {"jugador":"BEA"}');
   });
 
-  // Como el resto de la app: un plus, en negativo (si se quiere «+1,2», en todas partes)
-  it('2b: el de un plus, con su signo, como en el resto de la app', async () => {
+  // Un plus se guarda negativo y se lee con «+», como en el resto de la app (FE #797)
+  it('2b: el de un plus, con su «+» y la coma del idioma', async () => {
     mockLeer.mockResolvedValue(vista({ groups: [partida('g1', 1, '08:00', [jugador('ana', 'bea', { handicap: -1.2, playingHandicap: -2 }), jugador('bea', 'ana')])] }));
     pintar();
     await desplegar();
 
     const ana = await screen.findByTestId('partida-jugador-ana');
-    expect(ana).toHaveTextContent('-1,2');
-    expect(ana).toHaveTextContent('partidas.playing {"juego":-2}');
+    expect(ana).toHaveTextContent('+1,2');
+    expect(ana).toHaveTextContent('partidas.playing {"juego":"+2"}');
+    expect(ana).not.toHaveTextContent('-');
   });
 
   it('3: una de un jugador: incompleta y sin marcador', async () => {

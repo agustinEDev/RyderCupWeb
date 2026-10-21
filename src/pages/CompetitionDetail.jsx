@@ -60,6 +60,7 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -1819,13 +1820,13 @@ const CompetitionDetail = () => {
                                   {conFijado(enrollment) ? (
                                     <span data-testid={`fijado-${enrollment.userId}`} className="text-green-700 text-sm font-medium">
                                       {t(enrollment.category != null && hayVariasCategorias ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
-                                        handicap: unDecimal(enrollment.fixedHandicap),
+                                        handicap: formatoDeIndice(enrollment.fixedHandicap, i18n.language),
                                         categoria: enrollment.category,
                                       })}
                                     </span>
                                   ) : enrollment.hasCustomHandicap ? (
                                     <span className="text-amber-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: Number(enrollment.customHandicap).toFixed(1) })}
+                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.customHandicap, i18n.language) })}
                                       {' '}
                                       <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">
                                         {t('detail.customHandicapBadge')}
@@ -1833,7 +1834,7 @@ const CompetitionDetail = () => {
                                     </span>
                                   ) : enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
                                     <span className="text-green-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
                                     </span>
                                   ) : (
                                     <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
@@ -1903,7 +1904,7 @@ const CompetitionDetail = () => {
                               </p>
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
                                 <p className="text-gray-500 text-sm mt-1">
-                                  {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                  {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
                                 </p>
                               )}
                             </div>

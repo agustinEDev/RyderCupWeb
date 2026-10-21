@@ -93,8 +93,26 @@ const CountryAutocomplete = ({
     );
   }, [searchQuery, sortedCountries]);
 
-  const visibleCountries = matchingCountries.slice(0, MAX_VISIBLE_OPTIONS);
-  const hiddenCount = matchingCountries.length - visibleCountries.length;
+  // Sin búsqueda, la ventana de 50 se centra en el país elegido. Empezando
+  // siempre por la A, todo lo que pase del puesto 50 (España es el 59) no se
+  // pintaba, y sin opción pintada no hay a qué desplazarse: se abría en
+  // Afganistán. Se pegan los bordes para que la ventana vaya siempre llena.
+  const selectedIndex = searchQuery.trim()
+    ? -1
+    : matchingCountries.findIndex(c => c.code === value);
+  const windowStart = selectedIndex < 0
+    ? 0
+    : Math.max(0, Math.min(
+      selectedIndex - Math.floor(MAX_VISIBLE_OPTIONS / 2),
+      matchingCountries.length - MAX_VISIBLE_OPTIONS
+    ));
+  const visibleCountries = matchingCountries.slice(windowStart, windowStart + MAX_VISIBLE_OPTIONS);
+  // Posición del elegido dentro de lo pintado: de ahí parten las flechas
+  const selectedVisibleIndex = selectedIndex < 0 ? -1 : selectedIndex - windowStart;
+  // Centrada en el elegido, la ventana deja países por encima a los que no se
+  // llega desplazando: se avisa arriba de esos y abajo solo de los de después
+  const hiddenBeforeCount = windowStart;
+  const hiddenCount = matchingCountries.length - windowStart - visibleCountries.length;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -181,7 +199,10 @@ const CountryAutocomplete = ({
   const moveActive = (delta) => {
     if (visibleCountries.length === 0) return;
     setActiveIndex((prev) => {
-      const next = prev + delta;
+      // Sin nada resaltado, las flechas siguen desde el elegido, como el
+      // <select>. Al abrir no se resalta para que Enter no elija por nadie.
+      const from = prev < 0 ? selectedVisibleIndex : prev;
+      const next = from + delta;
       if (next < 0) return visibleCountries.length - 1;
       if (next >= visibleCountries.length) return 0;
       return next;
@@ -322,6 +343,19 @@ const CountryAutocomplete = ({
               />
             </div>
           </div>
+
+          {hiddenBeforeCount > 0 && (
+            <p
+              // Igual que el de abajo: un aviso sobre la lista, fuera del listbox
+              className="px-3 py-2 border-b border-gray-100 text-xs text-gray-500 text-center"
+              data-testid="country-autocomplete-earlier"
+            >
+              {t('countrySelect.earlierResults', {
+                defaultValue: '{{count}} before — type to find them',
+                count: hiddenBeforeCount,
+              })}
+            </p>
+          )}
 
           {/* Los botones cuelgan directos del listbox. Con <ul>/<li> de por
               medio, los <li> quedaban entre el role="listbox" y las

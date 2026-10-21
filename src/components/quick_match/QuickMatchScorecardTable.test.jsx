@@ -243,6 +243,26 @@ describe('QuickMatchScorecardTable - reparto de golpes por formato', () => {
     expect(screen.getByTestId('quick-match-player-handicap-p-2')).toHaveTextContent('(M)');
   });
 
+  // Un plus se guarda negativo y se lee con «+» (FE #797). -5 en amarillas
+  // de Meis: -5 x 140/113 + (73,1 - 72) = -5,09, de juego -5
+  it('H2: el hándicap de juego de un plus lleva «+»', () => {
+    renderSingles({
+      participants: [{ ...singlesParticipants[0], handicap: -5 }, singlesParticipants[1]],
+    });
+
+    const plus = screen.getByTestId('quick-match-player-handicap-p-1');
+    expect(plus).toHaveTextContent('scoring.scorecard.playingHandicap {"value":"+5"}');
+    expect(plus).not.toHaveTextContent('-5');
+  });
+
+  it('H3: el de un positivo, sin signo', () => {
+    renderSingles();
+
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent(
+      'scoring.scorecard.playingHandicap {"value":"23"}'
+    );
+  });
+
   it('en scratch no pinta ningún punto', () => {
     const { container } = renderSingles({ playMode: 'SCRATCH' });
 
@@ -593,8 +613,8 @@ describe('QuickMatchScorecardTable · el hándicap de la tarjeta de foursomes es
     renderSides();
 
     // 13 al 50% son 7 (el de p-1 solo serían 9), y 24 al 50% son 12 (p-3: 10)
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":7');
-    expect(screen.getByTestId('quick-match-player-handicap-p-3')).toHaveTextContent('"value":12');
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":"7"');
+    expect(screen.getByTestId('quick-match-player-handicap-p-3')).toHaveTextContent('"value":"12"');
   });
 
   it('deja los dos bandos con números distintos cuando juegan a hándicaps distintos', () => {
@@ -666,7 +686,7 @@ describe('QuickMatchScorecardTable · de dónde sale el hándicap del bando', ()
 
     // El promedio de Course Handicaps (13 al 50% = 7), no el de los 11 y 7 que
     // manda el servidor, que daría 9
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":7');
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":"7"');
   });
 
   it('sin campo cargado se apoya en los del servidor, que es lo único que hay', () => {
@@ -684,7 +704,7 @@ describe('QuickMatchScorecardTable · de dónde sale el hándicap del bando', ()
     );
 
     // Promedio de 11 y 7: sin campo no hay Course Handicap que promediar
-    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":9');
+    expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('"value":"9"');
   });
 });
 

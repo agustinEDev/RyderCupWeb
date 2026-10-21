@@ -97,8 +97,9 @@ export default [
   // se lo salta y provoca deslogueos aparentes (CLAUDE.md). Excepciones, cada una
   // con su motivo en el propio fichero:
   // - tokenRefreshInterceptor.js: ES el interceptor
-  // - useRedirectIfAuthenticated.js: sondea la sesión con timeout y SIN
-  //   interceptor, para no entrar en un bucle de refresco en la pantalla de acceso
+  // - sondaDeSesion.js: sondea la sesión SIN interceptor, para la pantalla de
+  //   acceso (un bucle de refresco) y para «Volver» de los documentos legales
+  //   (un `user` rancio acabaría en «tu sesión expiró» al pulsarlo)
   // - ApiSupportRepository.js: el formulario de contacto es un endpoint público
   {
     files: ['src/**/*.{js,jsx}'],
@@ -106,7 +107,7 @@ export default [
       'src/**/*.test.{js,jsx}',
       'src/setupTests.js',
       'src/utils/tokenRefreshInterceptor.js',
-      'src/hooks/useRedirectIfAuthenticated.js',
+      'src/services/sondaDeSesion.js',
       'src/infrastructure/repositories/ApiSupportRepository.js',
     ],
     rules: {
