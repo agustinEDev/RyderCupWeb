@@ -1,34 +1,52 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link } from 'react-router';
-import { Loader, Sparkles, UserPlus, WifiOff } from 'lucide-react';
+import { AlertCircle, Loader, RefreshCw, Sparkles, UserPlus, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { ponLasNovedadesACero } from '../../hooks/useNovedadesDeActividad';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
-import { getFriendsFeedUseCase, markFeedAsSeenUseCase } from '../../composition';
+import FriendRequestCard from '../../components/feed/FriendRequestCard';
+import { etiquetaDelDia } from '../../components/feed/textosDeActividad';
+import { armaLaLineaDeActividad } from '../../domain/services/lineaDeActividad';
+import {
+  getFriendsFeedUseCase,
+  markFeedAsSeenUseCase,
+  respondFriendRequestUseCase,
+} from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const PAGE_SIZE = 20;
 
 /**
- * FeedPage - La actividad propia y la de los amigos.
+ * FeedPage - Actividad: lo propio y lo de los amigos en una sola línea de
+ * tiempo (FE-1).
  *
- * Sustituye a Amigos en la barra inferior: la lista de amigos vive ahora a un
- * toque de aquí, que es donde uno acaba mirando a sus amigos de todos modos.
+ * Arriba, las solicitudes de amistad, que se aceptan ahí mismo. Debajo, las
+ * tarjetas de lo más reciente a lo más antiguo, separadas por días, con la
+ * marca de «nuevo» en lo llegado desde la última visita. Sin pestañas.
+ *
+ * Sustituye a Amigos en la barra inferior: la lista de amigos vive a un toque
+ * de aquí, que es donde uno acaba mirando a sus amigos de todos modos.
  */
 const FeedPage = () => {
-  const { t } = useTranslation(['feed', 'common']);
+  const { t, i18n } = useTranslation(['feed', 'common']);
   const { user, loading: isLoadingUser } = useAuth();
 
   const [events, setEvents] = useState([]);
   const [authors, setAuthors] = useState({});
   const [courses, setCourses] = useState({});
+  const [requests, setRequests] = useState([]);
+  const [unseenCount, setUnseenCount] = useState(0);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [sinCobertura, setSinCobertura] = useState(false);
+  // null, 'red' (sin cobertura) u 'otro': con fallo no se dice «no hay nada»
+  const [loadError, setLoadError] = useState(null);
+  // Por solicitud: 'enviando' mientras se responde, 'aceptada' después
+  const [requestStates, setRequestStates] = useState({});
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -59,20 +77,26 @@ const FeedPage = () => {
       setEvents(page.events);
       setAuthors(page.authors);
       setCourses(page.courses);
+      setRequests(page.pendingFriendRequests || []);
+      setUnseenCount(page.unseenCount || 0);
       setNextCursor(page.nextCursor);
-      setSinCobertura(false);
+      setLoadError(null);
 
       if (!yaMarcado.current) {
         yaMarcado.current = true;
-        // Que falle apagar el aviso no debe impedir leer el feed: lo peor que
-        // pasa es que la insignia siga puesta hasta la próxima visita.
-        markFeedAsSeenUseCase.execute().catch(() => {});
+        // El número del botón y del icono se pone a cero cuando el backend lo
+        // ha guardado. Que falle no debe impedir leer el feed: lo peor que
+        // pasa es que el número siga puesto hasta la próxima visita.
+        markFeedAsSeenUseCase
+          .execute()
+          .then(() => ponLasNovedadesACero())
+          .catch(() => {});
       }
     } catch (err) {
       // `catch` sin el error no dejaba distinguir un backend roto de no tener
       // cobertura, y las dos cosas acababan en el mismo aviso
       const deRed = esFalloDeRed(err);
-      setSinCobertura(deRed);
+      setLoadError(deRed ? 'red' : 'otro');
       customToast.error(
         tRef.current(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic')
       );
@@ -108,6 +132,40 @@ const FeedPage = () => {
     }
   };
 
+  const respond = async (friendshipId, action) => {
+    setRequestStates((prev) => ({ ...prev, [friendshipId]: 'enviando' }));
+    try {
+      await respondFriendRequestUseCase.execute(friendshipId, action);
+      if (action === 'ACCEPT') {
+        setRequestStates((prev) => ({ ...prev, [friendshipId]: 'aceptada' }));
+      } else {
+        setRequests((prev) => prev.filter((r) => r.friendshipId !== friendshipId));
+      }
+    } catch (err) {
+      // La tarjeta se queda como estaba, con sus botones, para volver a probar
+      setRequestStates((prev) => {
+        const resto = { ...prev };
+        delete resto[friendshipId];
+        return resto;
+      });
+      customToast.error(
+        t(esFalloDeRed(err) ? 'common:sinConexion.mensaje' : 'common:errors.generic')
+      );
+    }
+  };
+
+  const ahora = new Date();
+  const linea = useMemo(
+    () =>
+      armaLaLineaDeActividad({
+        eventos: events,
+        solicitudes: requests,
+        novedades: unseenCount,
+        ahora: new Date(),
+      }),
+    [events, requests, unseenCount]
+  );
+
   if (isLoadingUser || isLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
     // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
@@ -120,13 +178,15 @@ const FeedPage = () => {
     );
   }
 
+  const vacio = linea.dias.length === 0 && linea.solicitudes.length === 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="min-w-0">
             <h1 className="hidden md:block text-xl font-bold text-gray-900">{t('feed:title')}</h1>
             <p className="text-sm text-gray-500">{t('feed:subtitle')}</p>
           </div>
@@ -140,31 +200,55 @@ const FeedPage = () => {
           </Link>
         </div>
 
-        {events.length === 0 && sinCobertura ? (
-          // «Aún no hay nada que contar» es una afirmación, y sin haber podido
-          // preguntar no se sostiene: lo que hay puede estar ahí esperando
-          <div
-            data-testid="feed-sin-cobertura"
-            className="flex flex-col items-center justify-center py-12 text-center"
-          >
-            <WifiOff className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
-            <p className="text-gray-900 font-semibold mb-1">{t('common:sinConexion.aviso')}</p>
-            <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>
-          </div>
-        ) : events.length === 0 ? (
+        {loadError ? (
+          <LoadError deRed={loadError === 'red'} onRetry={loadFeed} t={t} />
+        ) : vacio ? (
           <EmptyFeed t={t} />
         ) : (
           <>
-            <div className="space-y-3" data-testid="feed-events">
-              {events.map((event) => (
-                <ActivityEventCard
-                  key={event.id}
-                  event={event}
-                  author={authors[event.userId]}
-                  courseName={courses[event.payload?.golf_course_id]}
-                />
-              ))}
-            </div>
+            {linea.solicitudes.length > 0 && (
+              <div className="space-y-3 mb-6" data-testid="feed-solicitudes">
+                {linea.solicitudes.map((solicitud) => (
+                  <FriendRequestCard
+                    key={solicitud.friendshipId}
+                    solicitud={solicitud}
+                    autores={authors}
+                    estado={requestStates[solicitud.friendshipId] || 'pendiente'}
+                    onAceptar={() => respond(solicitud.friendshipId, 'ACCEPT')}
+                    onRechazar={() => respond(solicitud.friendshipId, 'DECLINE')}
+                    ahora={ahora}
+                  />
+                ))}
+              </div>
+            )}
+
+            {linea.dias.length > 0 && (
+              <div className="space-y-6" data-testid="feed-events">
+                {linea.dias.map((dia) => (
+                  <section key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
+                    <h2
+                      id={`dia-${dia.clave}`}
+                      data-testid="separador-dia"
+                      className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    >
+                      {etiquetaDelDia(dia.fecha, ahora, t, i18n.language)}
+                    </h2>
+                    <div className="space-y-3">
+                      {dia.tarjetas.map((tarjeta) => (
+                        <ActivityEventCard
+                          key={tarjeta.clave}
+                          tarjeta={tarjeta}
+                          autores={authors}
+                          campos={courses}
+                          yoId={userId}
+                          ahora={ahora}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
 
             {nextCursor && (
               <button
@@ -187,6 +271,36 @@ const FeedPage = () => {
     </div>
   );
 };
+
+/**
+ * No se ha podido cargar. Sin cobertura se dice así —«aún no hay nada que
+ * contar» sería una afirmación que no se sostiene sin haber podido preguntar—,
+ * y en los dos casos se ofrece volver a intentarlo.
+ */
+const LoadError = ({ deRed, onRetry, t }) => (
+  <div
+    data-testid={deRed ? 'feed-sin-cobertura' : 'feed-error'}
+    className="flex flex-col items-center justify-center py-12 text-center"
+  >
+    {deRed ? (
+      <WifiOff className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
+    ) : (
+      <AlertCircle className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
+    )}
+    <p className="text-gray-900 font-semibold mb-1">
+      {deRed ? t('common:sinConexion.aviso') : t('feed:loadError')}
+    </p>
+    {deRed && <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>}
+    <button
+      type="button"
+      onClick={onRetry}
+      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+    >
+      <RefreshCw className="w-4 h-4" aria-hidden="true" />
+      {t('feed:retry')}
+    </button>
+  </div>
+);
 
 /**
  * El feed vacío es el estado normal al principio, no un error: sin amigos, con

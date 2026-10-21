@@ -2,7 +2,7 @@
   "title": "Activity",
   "subtitle": "What you and your friends have achieved",
   "loading": "Loading activity...",
-  "loadMore": "Show more",
+  "loadMore": "Load more",
   "tabs": {
     "feed": "Activity",
     "friends": "Friends"
@@ -45,5 +45,63 @@
     "turnedOff": "Your activity is no longer published",
     "turnedOn": "Your activity is published again"
   },
-  "sinCoberturaDetalle": "The activity could not be fetched. Check again when you have coverage."
+  "sinCoberturaDetalle": "The activity could not be fetched. Check again when you have coverage.",
+  "new": "New",
+  "retry": "Retry",
+  "loadError": "The activity could not be loaded.",
+  "someone": "someone",
+  "days": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "time": {
+    "now": "just now",
+    "minutes": "{{count}} min ago",
+    "hours": "{{count}} h ago"
+  },
+  "position_ordinal_one": "{{count}}st",
+  "position_ordinal_two": "{{count}}nd",
+  "position_ordinal_few": "{{count}}rd",
+  "position_ordinal_other": "{{count}}th",
+  "tied": "{{position}} (tied)",
+  "result": {
+    "points_one": "{{count}} point",
+    "points_other": "{{count}} points",
+    "net": "{{count}} net",
+    "withGross": "{{result}} ({{gross}} strokes)"
+  },
+  "score": {
+    "CONCEDED": "by concession",
+    "W/O": "by walkover"
+  },
+  "cards": {
+    "quickMatchRanked": "You finished {{position}} of {{total}} at {{course}} · {{result}}",
+    "quickMatchRankedNoCourse": "You finished {{position}} of {{total}} · {{result}}",
+    "quickMatchSolo": "You finished the quick match at {{course}} with {{result}}",
+    "quickMatchSoloNoCourse": "You finished the quick match with {{result}}",
+    "friendQuickMatchRanked": "{{name}} finished {{position}} with {{result}}",
+    "friendQuickMatchSolo": "{{name}} finished the quick match with {{result}}",
+    "bestGross": "Best gross in the group",
+    "won": "You won {{score}} against {{rivals}}",
+    "lost": "You lost {{score}} to {{rivals}}",
+    "halved": "You halved with {{rivals}}",
+    "friendWon": "{{name}} won {{score}}",
+    "friendLost": "{{name}} lost {{score}}",
+    "friendHalved": "{{name}} halved",
+    "finalStanding": "Final standings of {{competition}}: {{position}} of {{total}}",
+    "finalStandingNoPosition": "Final standings of {{competition}}: no position",
+    "ENROLLMENT_APPROVED": "You were accepted into {{competition}}",
+    "INVITED_TO_TOURNAMENT": "You were invited to {{competition}}",
+    "ENROLLMENT_REQUEST_CLOSED": "Your request to {{competition}} closed without a place",
+    "ENROLLMENT_REJECTED": "The organizer did not accept your request to {{competition}}",
+    "friendEnrolled": "{{name}} signed up for the tournament {{competition}} ({{dates}})",
+    "friendEnrolledNoDates": "{{name}} signed up for the tournament {{competition}}",
+    "aTournament": "a tournament"
+  },
+  "requests": {
+    "wants": "{{name}} wants to be your friend",
+    "accept": "Accept",
+    "reject": "Reject",
+    "nowFriends": "You're now friends"
+  }
 }
