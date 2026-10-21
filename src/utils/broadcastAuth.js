@@ -6,7 +6,6 @@
  *
  * Use Cases:
  * - When user logs out in one tab, all other tabs logout automatically
- * - When user logs in in one tab, all other tabs receive the event (optional, for future)
  *
  * Browser Compatibility: ~96% (Chrome 54+, Firefox 38+, Edge 79+, Safari 15.4+)
  *
@@ -103,43 +102,6 @@ export const broadcastLogout = () => {
 };
 
 /**
- * Broadcast a login event to all other tabs (optional, for future use)
- * This could be used to notify other tabs when a user logs in
- *
- * @param {Object} userData - User data to share (optional)
- *
- * @example
- * // In Login.jsx after successful login:
- * import { broadcastLogin } from '../utils/broadcastAuth';
- *
- * const handleLogin = async () => {
- *   // ... login logic
- *   broadcastLogin({ email: user.email }); // Notify other tabs
- * };
- */
-export const broadcastLogin = (userData = null) => {
-  const channel = initBroadcastChannel();
-
-  if (!channel) {
-    return;
-  }
-
-  try {
-    channel.postMessage({
-      type: EVENTS.LOGIN,
-      timestamp: Date.now(),
-      data: userData,
-    });
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📡 [BroadcastAuth] Login event broadcasted to other tabs');
-    }
-  } catch (error) {
-    console.error('❌ [BroadcastAuth] Error broadcasting login:', error);
-  }
-};
-
-/**
  * Listen for authentication events from other tabs
  * Sets up a message listener on the broadcast channel
  *
@@ -207,56 +169,6 @@ export const onAuthEvent = (callback) => {
       }
     }
   };
-};
-
-/**
- * Close the broadcast channel and cleanup resources
- * Should be called when the application is unmounting or user is logging out
- *
- * Note: In most cases you don't need to call this manually, as the browser
- * automatically closes the channel when the tab/window is closed.
- *
- * @example
- * // Optional cleanup on app unmount
- * import { closeBroadcastChannel } from './utils/broadcastAuth';
- *
- * useEffect(() => {
- *   return () => {
- *     closeBroadcastChannel();
- *   };
- * }, []);
- */
-export const closeBroadcastChannel = () => {
-  if (authChannel) {
-    try {
-      authChannel.close();
-      authChannel = null;
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔌 [BroadcastAuth] Broadcast channel closed');
-      }
-    } catch (error) {
-      console.error('❌ [BroadcastAuth] Error closing broadcast channel:', error);
-    }
-  }
-};
-
-/**
- * Check if Broadcast Channel API is supported in current browser
- *
- * @returns {boolean} True if supported, false otherwise
- *
- * @example
- * import { isBroadcastChannelSupported } from './utils/broadcastAuth';
- *
- * if (isBroadcastChannelSupported()) {
- *   console.log('Multi-tab sync is available');
- * } else {
- *   console.log('Multi-tab sync not available in this browser');
- * }
- */
-export const isBroadcastChannelSupported = () => {
-  return isBroadcastSupported;
 };
 
 // Exportar constantes de eventos para uso externo

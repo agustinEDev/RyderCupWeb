@@ -72,6 +72,9 @@
 ### Created Files (3 new)
 
 #### 1. `src/utils/sentryHelpers.js` (450 lines)
+
+> **Update (Oct 2026, FE #244):** only `setUserContext()`, `clearUserContext()` and `captureError()` remain. The module tags, business contexts, breadcrumbs, `captureMessage()` and `sanitizeSensitiveData()` helpers listed below were never used and were removed, so the examples that call them no longer apply.
+
 **Purpose:** Utilities for working with Sentry
 
 **Main functions:**
@@ -389,6 +392,9 @@ VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=1.0 # 100%
 ## 🚀 Quick Usage Guide
 
 ### For Developers - Common Use Cases
+
+> **Update (Oct 2026, FE #244):** only `setUserContext()`, `clearUserContext()` and `captureError()` remain. The module tags, business contexts, breadcrumbs, `captureMessage()` and `sanitizeSensitiveData()` helpers listed below were never used and were removed, so the examples that call them no longer apply.
+
 
 #### 1. Set User Context on Login
 

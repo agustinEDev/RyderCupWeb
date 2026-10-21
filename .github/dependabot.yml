@@ -48,7 +48,6 @@ updates:
         patterns:
           - "tailwindcss*"
           - "@tailwindcss/*"
-          - "autoprefixer"
           - "postcss"
       
       # Grupo para Sentry
