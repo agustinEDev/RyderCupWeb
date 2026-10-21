@@ -63,6 +63,23 @@ describe('NotFound', () => {
     expect(screen.queryByRole('link', { name: 'Ir al panel' })).toBeNull();
   });
 
+  it('N6: el fondo llena la pantalla (a 360 px la mitad de abajo salía blanca, pasada del 21 oct)', () => {
+    abrir();
+
+    const principal = screen.getByRole('main');
+    expect(principal).toHaveClass('min-h-dvh', 'bg-gray-50');
+    expect(principal).not.toHaveClass('min-h-[70vh]');
+  });
+
+  it('N6b: con sesión, en el móvil descuenta el hueco de la barra inferior y no baja de más', () => {
+    sesion.valor = { user: { id: 'u-1' }, loading: false };
+    abrir();
+
+    const principal = screen.getByRole('main');
+    expect(principal).toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'md:min-h-dvh');
+    expect(principal).not.toHaveClass('min-h-dvh');
+  });
+
   it('N2b: mientras se pregunta, el mensaje sin botones', () => {
     sesion.valor = { user: null, loading: true };
     abrir();
