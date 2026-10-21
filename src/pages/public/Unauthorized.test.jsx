@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import es from '../../i18n/locales/es/common.json';
@@ -8,6 +8,10 @@ import en from '../../i18n/locales/en/common.json';
  * N5 (FE #544): la página de acceso denegado pedía claves que no existían y
  * salía siempre en inglés, con los textos por defecto del código.
  */
+const sesion = vi.hoisted(() => ({ valor: { user: null, loading: false } }));
+
+vi.mock('../../hooks/useAuth', () => ({ useAuth: () => sesion.valor }));
+
 const busca = (bloque, clave) => clave.split('.').reduce((nodo, parte) => nodo?.[parte], bloque);
 
 vi.mock('react-i18next', async () => {
@@ -23,7 +27,44 @@ vi.mock('react-i18next', async () => {
 
 const { default: Unauthorized } = await import('./Unauthorized');
 
+const abrir = () =>
+  render(
+    <MemoryRouter initialEntries={['/unauthorized']}>
+      <Unauthorized />
+    </MemoryRouter>
+  ).container.firstElementChild;
+
 describe('Unauthorized', () => {
+  beforeEach(() => {
+    sesion.valor = { user: null, loading: false };
+  });
+
+  // QA del 21 oct 2026 (U1): con sesión, en el móvil, 100vh más el hueco de la
+  // barra inferior daban 64 px de desplazamiento sobrante. Como NotFound N6/N6b
+  it('U1: sin sesión, el fondo llena la pantalla y no más', () => {
+    const pagina = abrir();
+
+    expect(pagina).toHaveClass('min-h-dvh');
+    expect(pagina.style.minHeight).toBe('');
+  });
+
+  it('U1b: con sesión, en el móvil descuenta el hueco de la barra inferior y no baja de más', () => {
+    sesion.valor = { user: { id: 'u-1' }, loading: false };
+    const pagina = abrir();
+
+    expect(pagina).toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'md:min-h-dvh');
+    expect(pagina).not.toHaveClass('min-h-dvh');
+    expect(pagina.style.minHeight).toBe('');
+  });
+
+  it('U1c: el resto del aspecto sigue igual (centrado, gris de fondo)', () => {
+    const pagina = abrir();
+
+    expect(pagina.style.display).toBe('flex');
+    expect(pagina.style.justifyContent).toBe('center');
+    expect(pagina.style.backgroundColor).toBe('rgb(249, 250, 251)');
+  });
+
   it('N5: se pinta en español', () => {
     render(
       <MemoryRouter initialEntries={[{ pathname: '/unauthorized', state: { from: { pathname: '/admin' } } }]}>

@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Unauthorized Page
@@ -9,6 +10,7 @@ const Unauthorized = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const requestedPath = location.state?.from?.pathname;
   // Validate redirect target is a relative path to prevent Open Redirect (CWE-601)
@@ -16,13 +18,17 @@ const Unauthorized = () => {
     ? requestedPath
     : '/dashboard';
 
+  // Con sesión, en el móvil App deja debajo el hueco de la barra inferior: la
+  // pantalla menos ese hueco, o sobraban 64 px de desplazamiento (QA del 21 oct
+  // 2026, como NotFound). En clase y no en el estilo, que no sabe de `md:`
+  const alto = user ? 'min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))] md:min-h-dvh' : 'min-h-dvh';
+
   return (
-    <div style={{
+    <div className={alto} style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: '100vh',
       padding: '2rem',
       fontFamily: 'system-ui, sans-serif',
       backgroundColor: '#f9fafb',
