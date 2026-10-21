@@ -5,6 +5,97 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.50.0] - 2026-10-21
+
+**Pulido de la 2.50: accesibilidad, página 404, hándicaps «plus» y la vuelta
+neta en la partida rápida.** Pestañas accesibles y anillo de foco verde, el
+dogleg con una sola distancia hasta moverlo, «Tu vuelta» con el neto
+acumulado, subtotales de puntos y neto en la tarjeta, el HCP de juego en las
+tarjetas de torneo y una ronda de hallazgos de la pasada en el Kind. Va con el
+backend **2.37.0**.
+
+**Notas de despliegue.** Sin variables nuevas y sin cambios de contrato: el
+orden de siempre (backend, `/health`, frontend). Funciona con el backend
+2.36.0; con el 2.37.0, los avisos al organizador nombran a los jugadores
+afectados (el backend los manda en `players`).
+
+### Added
+
+- **Página 404** para direcciones desconocidas: «Ir al panel» con sesión y
+  barra inferior, «Ir al inicio» / «Entrar» sin ella; una dirección desconocida
+  ya no manda a un visitante a «sesión caducada», y la página de acceso no
+  autorizado se traduce (#544).
+- **Enlace «Volver»** en Aviso Legal, Términos, Privacidad y Cookies: vuelve
+  atrás dentro de la aplicación o, si no hay historial, al panel con sesión o a
+  la portada sin ella (#928).
+- **Selector de idioma compacto** (globo) en la cabecera de escritorio con
+  sesión, antes del avatar (#928).
+- **«Tu vuelta» en la partida rápida**: mientras se anota, el resultado neto
+  acumulado frente al propio hándicap de juego («PAR», «-1», «+2»), en grande y
+  en negrita, en una celda libre de la rejilla o en una línea; nada en
+  foursomes (#928, #930).
+- **Subtotales de puntos (Stableford) y de golpes netos (Medal)** junto a los de
+  golpes en la tarjeta de la partida rápida: ida, vuelta y total en móvil, por
+  tramo en escritorio. Solo cuentan los hoyos jugados (#930).
+- **HCP de juego de cada jugador** junto a su nombre en la tarjeta del torneo
+  (los dos de cada pareja de foursomes) y en las tarjetas de grupo de stroke
+  play (#414, #939).
+- **Etiquetas «Pts» / «Neto»** en la cabecera de fila de la tarjeta de
+  escritorio de la partida rápida, sin agrandar la fila (#419).
+- **Los avisos al organizador nombran a los jugadores** cuando falta su barra o
+  su hándicap al cambiar o cerrar una ronda (#932).
+
+### Changed
+
+- **Mapa del hoyo: una sola distancia hasta mover el dogleg** (#927). Lejos del
+  green (más de 200 m, con histéresis hasta 190 m) se ve una línea recta con
+  una etiqueta; al arrastrar el dogleg, dos distancias. «Quitar» solo aparece
+  con el dogleg movido, y se congela al empezar a arrastrarlo para que el GPS
+  no lo mueva a mitad del gesto.
+- **Pestañas accesibles** en un componente compartido (WAI-ARIA, flechas,
+  Inicio/Fin): anotación de partida rápida, de competición y de grupo, amigos,
+  invitaciones, solicitud de hándicap, participantes, campos pendientes y
+  clasificaciones (#658).
+- **Anillo de foco verde de la marca** con `:focus-visible`, solo con teclado
+  (#932).
+- **Paneles inferiores** (barra, teclado de hándicap, panel de golpes, alias):
+  retienen el foco, lo devuelven al botón que los abrió y se cierran con Escape
+  (#389).
+- **Hándicaps «plus»** como «+2.0» / «+2» en toda la aplicación con un único
+  formateador; las etiquetas HCP / PH / Lím. pasan por i18n (#797).
+- **El selector de país se abre en el país guardado** (#398).
+- **El historial de partidas rápidas** carga el resultado de las terminadas de
+  cinco en cinco, y cada tarjeta lo muestra al llegar (#418).
+- **Los resultados de buscar amigos y de las invitaciones** se ven dentro del
+  modal, que crece y hace scroll (#928).
+- **El modal de «Añadir amigo»** usa el `ModalShell` común: bloquea el scroll
+  de fondo, empieza en el buscador y devuelve el foco a «Añadir amigo» al
+  cerrarse (#939).
+- **CI**: presupuesto del bundle de 3400 a 3500 KB (los cambios de la 2.50 lo
+  dejaron en 3404 KB, sin dependencias nuevas).
+
+### Fixed
+
+- **Enlace para restablecer la contraseña**: distingue «enlace no válido» de
+  «no se pudo comprobar» (sin conexión, 408, 429, 5xx), que ofrece reintentar
+  con el mismo enlace (#785).
+- **Páginas 404 y de acceso no autorizado a pantalla completa**: el fondo ya no
+  se corta a media pantalla en el móvil, ni sobra scroll con la barra inferior
+  (#929, #939).
+- En el historial de partidas rápidas, una partida cuyo detalle falla al recargar
+  vuelve a «sin resultado» en vez de quedarse con el anterior (#928).
+
+### Security
+
+- **El perfil de otro jugador ya no muestra su email** (#932).
+
+### Removed
+
+- **Código muerto** (#244): componentes, modelos de dominio, casos de uso,
+  funciones de API heredadas y exportaciones sin uso, unas 1.800 líneas de
+  código y 984 de tests; y las dependencias `clsx`, `tailwind-merge` y
+  `autoprefixer`. Sin cambio de comportamiento ni del bundle.
+
 ## [2.49.0] - 2026-10-20
 
 **Aviso Legal, textos legales nuevos y aceptación de los Términos.** Tras la
