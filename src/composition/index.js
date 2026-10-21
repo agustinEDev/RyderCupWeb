@@ -1,4 +1,3 @@
-export { default as UserEntity } from '../domain/entities/User';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
@@ -79,7 +78,6 @@ import RevokeDeviceUseCase from '../application/use_cases/device/RevokeDeviceUse
 
 // Competition Use Cases
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
-import CreateCompetitionUseCase from '../application/use_cases/competition/CreateCompetitionUseCase';
 import CreateCompetitionWithGolfCoursesUseCase from '../application/use_cases/competition/CreateCompetitionWithGolfCoursesUseCase';
 import UpdateCompetitionUseCase from '../application/use_cases/competition/UpdateCompetitionUseCase';
 import UpdateStrokePlaySettingsUseCase from '../application/use_cases/competition/UpdateStrokePlaySettingsUseCase';
@@ -220,7 +218,6 @@ import RequestEnrollmentUseCase from '../application/use_cases/enrollment/Reques
 import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnrollmentsUseCase';
 import ApproveEnrollmentUseCase from '../application/use_cases/enrollment/ApproveEnrollmentUseCase';
 import RejectEnrollmentUseCase from '../application/use_cases/enrollment/RejectEnrollmentUseCase';
-import CancelEnrollmentUseCase from '../application/use_cases/enrollment/CancelEnrollmentUseCase';
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
@@ -283,7 +280,6 @@ const linkGoogleAccountUseCase = new LinkGoogleAccountUseCase({ authRepository: 
 const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
 const logoutUseCase = new LogoutUseCase({ authRepository: apiAuthRepository });
 const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ authRepository: apiAuthRepository });
-const createCompetitionUseCase = new CreateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({ competitionRepository: apiCompetitionRepository });
@@ -436,7 +432,6 @@ const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
 const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCompetitionsUseCase, getMyTeeGroupsUseCase });
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
-const userCancelEnrollmentUseCase = new CancelEnrollmentUseCase(apiEnrollmentRepository);
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepository);
@@ -561,7 +556,6 @@ export {
   unlinkGoogleAccountUseCase,
   logoutUseCase,
   resendVerificationEmailUseCase,
-  createCompetitionUseCase,
   createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
   updateStrokePlaySettingsUseCase,
@@ -595,7 +589,6 @@ export {
   listEnrollmentsUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
-  userCancelEnrollmentUseCase, // Usuario cancela su solicitud (diferente de cancelCompetitionUseCase)
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,
