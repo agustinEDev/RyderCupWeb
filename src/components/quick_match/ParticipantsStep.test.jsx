@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import ParticipantsStep from './ParticipantsStep';
 
 /**
@@ -15,37 +16,39 @@ import ParticipantsStep from './ParticipantsStep';
  *   H5  '-' / '2a' / '  ' | el texto de siempre, y en el gris del texto de ayuda:
  *                 el color sigue a lo que se enseña, no a que haya algo guardado
  */
-const pinta = (handicap) =>
-  render(
-    <ParticipantsStep
-      t={(clave) => clave}
-      currentUser={{ id: 'u1' }}
-      participants={[]}
-      capacity={4}
-      rosterFull={false}
-      isTeamFormat={false}
-      isFreePlay
-      selectedTeam="A"
-      onSelectedTeamChange={vi.fn()}
-      participantTab="guest"
-      onParticipantTabChange={vi.fn()}
-      availableFriends={[]}
-      courseTees={[]}
-      onAddFriend={vi.fn()}
-      guestForm={{ firstName: '', lastName: '', handicap }}
-      onGuestFirstNameChange={vi.fn()}
-      onGuestLastNameChange={vi.fn()}
-      onAddGuest={vi.fn()}
-      onOpenGuestHandicapPanel={vi.fn()}
-      guestTeeKey=""
-      onGuestTeeKeyChange={vi.fn()}
-      onRemoveParticipant={vi.fn()}
-      isProcessing={false}
-      onBack={vi.fn()}
-      onClose={vi.fn()}
-      onNext={vi.fn()}
-    />
-  );
+const Paso = ({ handicap, ...props }) => (
+  <ParticipantsStep
+    t={(clave) => clave}
+    currentUser={{ id: 'u1' }}
+    participants={[]}
+    capacity={4}
+    rosterFull={false}
+    isTeamFormat={false}
+    isFreePlay
+    selectedTeam="A"
+    onSelectedTeamChange={vi.fn()}
+    participantTab="guest"
+    onParticipantTabChange={vi.fn()}
+    availableFriends={[]}
+    courseTees={[]}
+    onAddFriend={vi.fn()}
+    guestForm={{ firstName: '', lastName: '', handicap }}
+    onGuestFirstNameChange={vi.fn()}
+    onGuestLastNameChange={vi.fn()}
+    onAddGuest={vi.fn()}
+    onOpenGuestHandicapPanel={vi.fn()}
+    guestTeeKey=""
+    onGuestTeeKeyChange={vi.fn()}
+    onRemoveParticipant={vi.fn()}
+    isProcessing={false}
+    onBack={vi.fn()}
+    onClose={vi.fn()}
+    onNext={vi.fn()}
+    {...props}
+  />
+);
+
+const pinta = (handicap) => render(<Paso handicap={handicap} />);
 
 const boton = () => screen.getByTestId('quick-match-guest-handicap-button');
 
@@ -76,5 +79,33 @@ describe('ParticipantsStep · el color sigue al texto (revisión del 21 oct)', (
     expect(boton()).toHaveTextContent('create.participants.guestHandicap');
     expect(boton()).toHaveClass('text-gray-400');
     expect(boton()).not.toHaveClass('text-gray-900');
+  });
+});
+
+describe('ParticipantsStep · amigos o invitado son pestañas (FE #658)', () => {
+  const ConEstado = () => {
+    const [pestana, setPestana] = useState('friends');
+    return <Paso handicap="" participantTab={pestana} onParticipantTabChange={setPestana} />;
+  };
+
+  it('T1: barra con nombre, panel nombrado por su pestaña y las flechas', () => {
+    render(<ConEstado />);
+
+    const barra = screen.getByRole('tablist', { name: 'create.participants.tabsLabel' });
+    const [amigos, invitado] = within(barra).getAllByRole('tab');
+    expect(amigos).toBe(screen.getByTestId('quick-match-tab-friends'));
+    expect(amigos).toHaveAttribute('aria-selected', 'true');
+    expect(invitado).toHaveAttribute('tabindex', '-1');
+    const panel = screen.getByRole('tabpanel', { name: 'create.participants.tabFriends' });
+    expect(amigos).toHaveAttribute('aria-controls', panel.id);
+    expect(within(panel).getByText('create.participants.noFriends')).toBeInTheDocument();
+
+    fireEvent.keyDown(amigos, { key: 'ArrowLeft' });
+
+    expect(invitado).toHaveAttribute('aria-selected', 'true');
+    expect(invitado).toHaveFocus();
+    const formulario = screen.getByRole('tabpanel', { name: 'create.participants.tabGuest' });
+    expect(formulario.tagName).toBe('FORM');
+    expect(within(formulario).getByTestId('quick-match-guest-first-name')).toBeInTheDocument();
   });
 });

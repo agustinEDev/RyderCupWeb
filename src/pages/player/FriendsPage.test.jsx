@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import FriendsPage from './FriendsPage';
@@ -9,12 +9,19 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key) => key, i18n: { language: 'es' } }),
 }));
 
+// El mismo `user` en cada pintada: uno nuevo relanza la carga y desmonta las
+// pestañas a mitad de test
+const sesion = vi.hoisted(() => ({ user: { id: 'me' }, loading: false }));
 vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 'me' }, loading: false }),
+  useAuth: () => sesion,
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <header data-testid="header" />,
+}));
+
+vi.mock('../../components/friend/FriendCard', () => ({
+  default: ({ friendship }) => <div data-testid="friend-card">{friendship.id}</div>,
 }));
 
 const listFriends = vi.fn();
@@ -87,6 +94,34 @@ describe('FriendsPage', () => {
        */
       expect(friendsEs.backToFeed).toBeTruthy();
       expect(friendsEn.backToFeed).toBeTruthy();
+    });
+  });
+
+  describe('las pestañas (FE #658)', () => {
+    it('son pestañas de verdad: barra con nombre, contador dentro y la lista como su panel', async () => {
+      listPending.mockImplementation((_id, tipo) =>
+        Promise.resolve(tipo === 'received' ? { friendships: [{ id: 'f-1' }], totalCount: 1 } : { friendships: [], totalCount: 0 })
+      );
+      renderFriends();
+
+      const barra = await screen.findByRole('tablist', { name: 'tabsLabel' });
+      expect(barra).toBe(screen.getByTestId('friend-tabs'));
+      const [amigos, recibidas, enviadas] = within(barra).getAllByRole('tab');
+      expect(amigos).toBe(screen.getByTestId('tab-friends'));
+      expect(recibidas).toHaveAccessibleName('tabs.received1');
+      expect(amigos).toHaveAttribute('aria-selected', 'true');
+      const panel = screen.getByRole('tabpanel', { name: 'tabs.friends' });
+      expect(within(panel).getByText('empty.friends')).toBeInTheDocument();
+      [amigos, recibidas, enviadas].forEach((tab) => expect(tab).toHaveAttribute('aria-controls', panel.id));
+
+      fireEvent.keyDown(amigos, { key: 'ArrowRight' });
+      expect(recibidas).toHaveAttribute('aria-selected', 'true');
+      expect(recibidas).toHaveFocus();
+      expect(within(screen.getByRole('tabpanel', { name: 'tabs.received1' })).getByTestId('friend-card')).toHaveTextContent('f-1');
+
+      fireEvent.keyDown(recibidas, { key: 'End' });
+      expect(enviadas).toHaveAttribute('aria-selected', 'true');
+      expect(within(screen.getByRole('tabpanel', { name: 'tabs.sent' })).getByText('empty.sent')).toBeInTheDocument();
     });
   });
 });
