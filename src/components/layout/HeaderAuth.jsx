@@ -7,6 +7,8 @@ import { resolveScreen } from './screenTitles';
 import { useGoBack } from '../../hooks/useGoBack';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 import BrandMark from '../ui/BrandMark';
+import InsigniaDeNovedades from '../feed/InsigniaDeNovedades';
+import { useNovedadesDeActividad } from '../../hooks/useNovedadesDeActividad';
 
 // Los destinos de la navegacion de escritorio. Se pintan dos veces —en linea
 // desde xl y dentro del desplegable del avatar por debajo—, asi que viven en
@@ -37,6 +39,10 @@ const HeaderAuth = ({ user, title, backTo }) => {
   const desktopDropdownRef = useRef(null);
   const botonPerfilRef = useRef(null);
   const { logout } = useLogout();
+  // Solo se lee: lo pide la barra inferior, montada también en escritorio
+  const novedades = useNovedadesDeActividad();
+  const insigniaDe = (to, className) =>
+    to === '/feed' ? <InsigniaDeNovedades n={novedades} className={className} /> : null;
 
   // En movil la cabecera dice donde estas y como volver; repetir la marca en
   // cada pantalla es lenguaje de sitio web, no de aplicacion (FE #310)
@@ -164,9 +170,10 @@ const HeaderAuth = ({ user, title, backTo }) => {
             <Link
               key={to}
               to={to}
-              className="text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors"
             >
               {t(clave)}
+              {insigniaDe(to)}
             </Link>
           ))}
         </div>
@@ -210,9 +217,10 @@ const HeaderAuth = ({ user, title, backTo }) => {
                       key={to}
                       to={to}
                       onClick={() => setIsDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
                       {t(clave)}
+                      {insigniaDe(to)}
                     </Link>
                   ))}
                   <div className="border-t border-gray-200 my-1" />

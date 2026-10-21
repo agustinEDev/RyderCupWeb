@@ -81,7 +81,9 @@
     "quickMatch": "Match",
     "friends": "Friends",
     "profile": "Profile",
-    "feed": "Activity"
+    "feed": "Activity",
+    "unseen_one": "{{count}} new item",
+    "unseen_other": "{{count}} new items"
   },
   "screens": {
     "dashboard": "Home",

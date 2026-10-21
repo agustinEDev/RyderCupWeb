@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Home, Trophy, Sparkles, User, Zap } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useNovedadesDeActividad, useVigilanciaDeNovedades } from '../../hooks/useNovedadesDeActividad';
+import InsigniaDeNovedades from '../feed/InsigniaDeNovedades';
 
 // El modal solo se necesita cuando el usuario pulsa el FAB: fuera del bundle inicial
 const CreateQuickMatchModal = lazy(() => import('../quick_match/CreateQuickMatchModal'));
@@ -25,15 +27,21 @@ const QuickMatchLauncher = ({ onClose, onStarted }) => {
   );
 };
 
-const NavItem = ({ to, icon: Icon, label, isActive }) => (
+const ID_DESCRIPCION_NOVEDADES = 'bottom-nav-novedades';
+
+const NavItem = ({ to, icon: Icon, label, isActive, novedades = 0 }) => (
   <Link
     to={to}
     aria-current={isActive ? 'page' : undefined}
+    aria-describedby={novedades > 0 ? ID_DESCRIPCION_NOVEDADES : undefined}
     className={`flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-1 py-2 transition-colors ${
       isActive ? 'text-primary' : 'text-gray-500 active:text-gray-900'
     }`}
   >
-    <Icon className="h-6 w-6" strokeWidth={isActive ? 2.4 : 2} aria-hidden="true" />
+    <span className="relative">
+      <Icon className="h-6 w-6" strokeWidth={isActive ? 2.4 : 2} aria-hidden="true" />
+      <InsigniaDeNovedades n={novedades} className="absolute -top-1.5 left-1/2 ml-1.5" />
+    </span>
     <span className="text-[10px] font-medium leading-none">{label}</span>
   </Link>
 );
@@ -57,6 +65,12 @@ const BottomNav = () => {
 
   const isActive = (path) => pathname === path || pathname.startsWith(`${path}/`);
 
+  // El número de Actividad se pide desde aquí: la barra está montada en toda
+  // pantalla con sesión (en escritorio, oculta por CSS) y fuera de la
+  // anotación, que es justo cuando tiene sentido preguntarlo (FE-1)
+  useVigilanciaDeNovedades();
+  const novedades = useNovedadesDeActividad();
+
   return (
     <>
       {showQuickMatchModal && (
@@ -71,6 +85,13 @@ const BottomNav = () => {
         aria-label={t('bottomNav.label')}
         className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)]"
       >
+        {/* Fuera del enlace para no cambiarle el nombre: lo cuenta como
+            descripción. `hidden` evita que se lea dos veces */}
+        {novedades > 0 && (
+          <span id={ID_DESCRIPCION_NOVEDADES} hidden>
+            {t('bottomNav.unseen', { count: novedades })}
+          </span>
+        )}
         <div className="grid grid-cols-5 items-center">
           <NavItem
             to="/dashboard"
@@ -109,6 +130,7 @@ const BottomNav = () => {
             icon={Sparkles}
             label={t('bottomNav.feed')}
             isActive={isActive('/feed') || isActive('/friends')}
+            novedades={novedades}
           />
           <NavItem
             to="/profile"

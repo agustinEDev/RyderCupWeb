@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import HeaderAuth from './HeaderAuth';
@@ -21,6 +21,11 @@ vi.mock('../../composition', () => ({
 
 vi.mock('../../utils/broadcastAuth', () => ({
   broadcastLogout: vi.fn(),
+}));
+
+let novedades = 0;
+vi.mock('../../hooks/useNovedadesDeActividad', () => ({
+  useNovedadesDeActividad: () => novedades,
 }));
 
 const clearAuth = vi.fn();
@@ -339,6 +344,38 @@ describe('HeaderAuth', () => {
 
       expect(screen.getByTestId('navegacion-en-linea')).toHaveClass('hidden', 'xl:flex');
       expect(enDesplegable()).toHaveClass('xl:hidden');
+    });
+  });
+
+  describe('the unseen number on the desktop Actividad link (FE-1, case 1)', () => {
+    afterEach(() => {
+      novedades = 0;
+    });
+
+    const enLinea = () =>
+      screen.getByTestId('navegacion-en-linea').querySelector('a[href="/feed"]');
+
+    it('shows nothing at zero', () => {
+      renderHeader('/dashboard');
+
+      expect(enLinea().querySelector('[data-testid="insignia-novedades"]')).toBeNull();
+    });
+
+    it('shows 9+ from ten, inline and in the avatar menu', () => {
+      novedades = 12;
+      renderHeader('/dashboard');
+
+      expect(enLinea().querySelector('[data-testid="insignia-novedades"]')).toHaveTextContent('9+');
+      fireEvent.click(screen.getByText('AS').closest('button'));
+      const enMenu = screen.getByTestId('navegacion-en-desplegable').querySelector('a[href="/feed"]');
+      expect(enMenu.querySelector('[data-testid="insignia-novedades"]')).toHaveTextContent('9+');
+    });
+
+    it('only the Actividad link carries it', () => {
+      novedades = 2;
+      renderHeader('/dashboard');
+
+      expect(screen.getAllByTestId('insignia-novedades')).toHaveLength(1);
     });
   });
 });
