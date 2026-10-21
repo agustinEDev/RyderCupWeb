@@ -23,6 +23,8 @@ const CABECERA_DEL_EQUIPO = {
  * @param {boolean} conResultado - Si hay columna de quién se llevó el hoyo
  * @param {string} [columnaExtra] - Título de una columna más tras los golpes
  *   (los puntos Stableford, el neto en Medal); cada hoyo trae su `extra`
+ * @param {{ ida?: ReactNode, vuelta?: ReactNode, total?: ReactNode }} [sumasExtra]
+ *   - Lo que va en la columna extra de cada fila de suma
  */
 const TarjetaVertical = ({
   clave,
@@ -33,6 +35,7 @@ const TarjetaVertical = ({
   sumas,
   conResultado = false,
   columnaExtra,
+  sumasExtra,
 }) => {
   const { t } = useTranslation('scoring');
 
@@ -44,7 +47,11 @@ const TarjetaVertical = ({
       <td data-testid={`suma-${nombre}`} className="py-1.5 text-center font-bold text-gray-800">
         {valor || '-'}
       </td>
-      {columnaExtra && <td />}
+      {columnaExtra && (
+        <td data-testid={`suma-extra-${nombre}`} className="py-1.5 text-center">
+          {sumasExtra?.[nombre]}
+        </td>
+      )}
       {conResultado && <td />}
     </tr>
   );

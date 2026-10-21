@@ -144,3 +144,98 @@ describe('QuickMatchScorecardTable · en el móvil, tarjetas verticales deslizab
     expect(screen.getAllByTestId('vuelta-horizontal').length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Subtotales de puntos y de neto (Agustín, 22 oct: «en la tarjeta hay
+ * sumatorio de golpes por vuelta y sumatorio total; que lo haya también para
+ * los puntos»). En el móvil van en la columna extra de las filas de suma.
+ */
+describe('QuickMatchScorecardTable · en el móvil, subtotales de puntos y de neto', () => {
+  beforeEach(() => {
+    pantalla.movil = true;
+  });
+
+  // Hándicap 18 sin barras: un golpe en cada hoyo
+  const conGolpes = [{ participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false }];
+  // 1: par 4 con 5 -> neto 4, 2 puntos · 2: par 3 recogido -> 0 puntos, neto 5
+  // (doble bogey neto 6 menos el golpe) · 10: par 4 con 3 -> neto 2, 4 puntos
+  const anotados = [
+    { holeNumber: 1, participantId: 'p-1', score: 5 },
+    { holeNumber: 2, participantId: 'p-1', score: null },
+    { holeNumber: 10, participantId: 'p-1', score: 3 },
+  ];
+  const sumaExtra = (nombre) =>
+    within(screen.getByTestId('quick-match-player-card-p-1')).getByTestId(`suma-extra-${nombre}`);
+
+  const pinta = (props) =>
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={anotados}
+        participants={conGolpes}
+        currentParticipantId="p-1"
+        {...props}
+      />
+    );
+
+  it('S1/S2: en Stableford, puntos de la ida, la vuelta y el total; la raya suma cero', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    expect(within(sumaExtra('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+    expect(within(sumaExtra('vuelta')).getByTestId('subtotal-points')).toHaveTextContent(/^4$/);
+    expect(within(sumaExtra('total')).getByTestId('subtotal-points')).toHaveTextContent(/^6$/);
+    // Los golpes de las filas de suma siguen donde estaban
+    expect(screen.getByTestId('suma-total')).toHaveTextContent(/^13$/);
+  });
+
+  it('A1: el subtotal de puntos se lee como los del hoyo', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    expect(within(sumaExtra('total')).getByTestId('subtotal-points')).toHaveAttribute(
+      'title',
+      'scoring.scorecard.subtotalPoints {"count":6}'
+    );
+  });
+
+  it('S4: en Medal, el neto de la ida, la vuelta y el total, con la raya a doble bogey neto', () => {
+    pinta({ scoringFormat: 'MEDAL' });
+
+    expect(within(sumaExtra('ida')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^9$/);
+    expect(within(sumaExtra('vuelta')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^2$/);
+    const total = within(sumaExtra('total')).getByTestId('subtotal-net-strokes');
+    expect(total).toHaveTextContent(/^11$/);
+    expect(total).toHaveAttribute('title', 'scoring.scorecard.subtotalNetStrokes {"count":11}');
+  });
+
+  it('S2: una vuelta sin hoyos jugados no enseña subtotal', () => {
+    pinta({ scoringFormat: 'MEDAL', holeScores: [{ holeNumber: 1, participantId: 'p-1', score: 5 }] });
+
+    expect(within(sumaExtra('ida')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^4$/);
+    expect(sumaExtra('vuelta')).toBeEmptyDOMElement();
+  });
+
+  it('S3: un campo de 9 hoyos solo tiene el total', () => {
+    pinta({ scoringFormat: 'STABLEFORD', holes: holes.slice(0, 9) });
+
+    const tarjeta = screen.getByTestId('quick-match-player-card-p-1');
+    expect(within(tarjeta).queryByTestId('suma-extra-ida')).toBeNull();
+    expect(within(tarjeta).queryByTestId('suma-extra-vuelta')).toBeNull();
+    expect(within(sumaExtra('total')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+  });
+
+  it('S5: en match play no hay columna extra ni subtotales', () => {
+    pinta({ matchFormat: 'SINGLES' });
+
+    expect(screen.queryAllByTestId(/^suma-extra-/)).toHaveLength(0);
+    expect(screen.queryByTestId('subtotal-points')).toBeNull();
+    expect(screen.queryByTestId('subtotal-net-strokes')).toBeNull();
+  });
+
+  it('S6: el subtotal lleva la letra pequeña del hoyo y no ensancha la columna', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    const subtotal = within(sumaExtra('total')).getByTestId('subtotal-points');
+    expect(subtotal.className).toContain('text-[10px]');
+    expect(sumaExtra('total').className).not.toMatch(/min-w|whitespace-nowrap|px-[3-9]/);
+  });
+});
