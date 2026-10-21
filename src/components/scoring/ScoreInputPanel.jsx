@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 
 const MAX_SCORE = 15;
 
@@ -36,6 +37,12 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
   // Con algo escrito que no vale, se dice por qué: antes no pasaba nada (#855)
   const fueraDeRango = trimmed !== '' && !valido;
 
+  // Modal de verdad: el foco entra, no se sale y vuelve al disparador (#389).
+  // Escape, en la misma escucha y exclusivo, como las otras dos hojas: antes
+  // solo cerraba si el foco ya estaba dentro
+  const hojaRef = useRef(null);
+  useFocoRetenido(hojaRef, { alEscape: onClose, escapeExclusivo: true });
+
   const handleCustomConfirm = (e) => {
     e?.preventDefault();
     if (valido) onSelect(num);
@@ -46,9 +53,9 @@ const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp =
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
       role="presentation"
       onClick={onClose}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div
+        ref={hojaRef}
         role="dialog"
         aria-modal="true"
         aria-label={label}
