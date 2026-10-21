@@ -9,6 +9,7 @@ import {
   deleteRoundUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
+import { mensajeConJugadores } from '../../utils/erroresConJugadores';
 import { FRANJAS, diasDelTorneo, franjasLibres, partidosDeLaSesion } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 
@@ -160,7 +161,8 @@ const AgendaDeLaCompeticion = ({
     try {
       await accion();
     } catch (error) {
-      customToast.error(error.message || t('agenda.error'));
+      // Con la lista de afectados, sus nombres; si no, el motivo del servidor
+      customToast.error(mensajeConJugadores(t, error, 'agenda.errors') || error.message || t('agenda.error'));
     } finally {
       await cargarAgenda();
       setOcupado(false);

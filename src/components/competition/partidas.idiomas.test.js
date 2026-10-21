@@ -11,7 +11,11 @@ import en from '../../i18n/locales/en/schedule.json';
  * falta pasaría desapercibida. Un plural vale con `_one` y `_other`.
  */
 const codigo = `${partidas}\n${mias}`;
-const sueltas = [...new Set([...codigo.matchAll(/'partidas\.([a-zA-Z]+)'/g)].map((m) => m[1]))];
+// `'partidas.errors'` es el prefijo que se pasa a `mensajeConJugadores`, un
+// grupo y no un texto: sus claves se comprueban abajo con CON_NOMBRES
+const sueltas = [...new Set([...codigo.matchAll(/'partidas\.([a-zA-Z]+)'/g)].map((m) => m[1]))].filter(
+  (c) => c !== 'errors'
+);
 // Los códigos que se traducen, leídos de sus listas en el componente
 const lista = (nombre) => {
   const cuerpo = codigo.match(new RegExp(`const ${nombre} = \\[([^\\]]*)\\]`))[1];
