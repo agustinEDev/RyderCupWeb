@@ -100,6 +100,32 @@ describe('useFocoRetenido', () => {
     expect(ultimo).toHaveFocus();
   });
 
+  it('H6: lo que está dentro de un panel oculto (hidden) no cuenta para dar la vuelta ni para entrar (CodeRabbit)', () => {
+    // Pestañas con `montadoSiempre`: el panel cerrado sigue montado con `hidden`
+    render(
+      <Dialogo>
+        <div hidden>
+          <button type="button">oculto al principio</button>
+        </div>
+        <button type="button">primero</button>
+        <button type="button">ultimo</button>
+        <div hidden>
+          <button type="button">oculto al final</button>
+        </div>
+      </Dialogo>
+    );
+    const primero = screen.getByText('primero');
+    const ultimo = screen.getByText('ultimo');
+    expect(primero).toHaveFocus();
+
+    ultimo.focus();
+    fireEvent.keyDown(ultimo, { key: 'Tab' });
+    expect(primero).toHaveFocus();
+
+    fireEvent.keyDown(primero, { key: 'Tab', shiftKey: true });
+    expect(ultimo).toHaveFocus();
+  });
+
   it('H3: al abrir y al cerrar mueve el foco sin desplazar la página', () => {
     render(<ConDisparador>{PESTANAS}</ConDisparador>);
     const disparador = screen.getByText('abrir');

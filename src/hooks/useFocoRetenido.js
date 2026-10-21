@@ -14,6 +14,12 @@ export const ENFOCABLES = [
   `[tabindex]${NO_SACADO}`,
 ].join(', ');
 
+// Los enfocables que se ven: lo de un panel de pestañas cerrado sigue montado
+// con `hidden` (`montadoSiempre`) y no puede ser ni el primero ni el último
+// (CodeRabbit, FE #932)
+const enfocablesVisibles = (caja) =>
+  [...(caja?.querySelectorAll(ENFOCABLES) ?? [])].filter((el) => !el.closest('[hidden]'));
+
 // Sin desplazar: en el móvil, enfocar desplazaba la página o el carril de las
 // tarjetas hasta el elemento, y la pantalla saltaba al abrir o cerrar una hoja
 const SIN_DESPLAZAR = { preventScroll: true };
@@ -56,7 +62,7 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
     // vez que este, cuyo efecto corre antes (los hijos van primero), y
     // quitárselo dejaría sin foco al de encima
     const yaDentro = caja?.contains(anterior) && anterior !== caja;
-    if (!yaDentro) (inicialRef?.current ?? caja?.querySelector(ENFOCABLES) ?? caja)?.focus(SIN_DESPLAZAR);
+    if (!yaDentro) (inicialRef?.current ?? enfocablesVisibles(caja)[0] ?? caja)?.focus(SIN_DESPLAZAR);
 
     return () => {
       // Solo si el foco sigue siendo mío. Con dos diálogos encima, al cerrarse
@@ -106,7 +112,7 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
       if (e.key !== 'Tab') return;
 
       const caja = cajaRef.current;
-      const enfocables = [...(caja?.querySelectorAll(ENFOCABLES) ?? [])];
+      const enfocables = enfocablesVisibles(caja);
 
       // Sin nada enfocable dentro no se deja salir: es justo lo que pasa
       // mientras la tarjeta va de camino, con los dos botones desactivados, y
