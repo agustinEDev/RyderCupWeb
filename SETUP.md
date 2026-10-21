@@ -138,8 +138,8 @@ npm install
 
 # Install additional dependencies
 npm install react-router-dom axios
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
+# Tailwind 4: el plugin de PostCSS que carga postcss.config.js; ya no hay `tailwindcss init`
+npm install -D tailwindcss @tailwindcss/postcss postcss
 ```
 
 ### Configure Environment Variables
