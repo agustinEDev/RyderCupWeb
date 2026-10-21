@@ -771,3 +771,21 @@ describe('CountryAutocomplete con el catálogo real, más largo que el tope', ()
     expect(screen.getByRole('option', { name: /Portugal/ })).toHaveAttribute('aria-selected', 'true');
   });
 });
+
+describe('CountryAutocomplete · anillo de foco (22 oct)', () => {
+  it('F2: disparador y X enseñan el anillo con el teclado y no al pulsar', () => {
+    renderSelect({ value: 'ES' });
+    const disparador = screen.getByTestId('country-autocomplete-trigger');
+    const x = screen.getByTestId('country-autocomplete-clear');
+    expect(disparador).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary');
+    expect(x).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary');
+    for (const el of [disparador, x]) expect(el.className).not.toMatch(/(^|\s)focus:ring/);
+  });
+
+  it('F2: con error, el anillo rojo también solo con el teclado', () => {
+    renderSelect({ value: 'ES', error: true });
+    const disparador = screen.getByTestId('country-autocomplete-trigger');
+    expect(disparador).toHaveClass('focus-visible:ring-red-200');
+    expect(disparador.className).not.toMatch(/(^|\s)focus:ring/);
+  });
+});

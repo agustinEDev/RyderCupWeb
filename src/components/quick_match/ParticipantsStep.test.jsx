@@ -109,3 +109,11 @@ describe('ParticipantsStep · amigos o invitado son pestañas (FE #658)', () => 
     expect(within(formulario).getByTestId('quick-match-guest-first-name')).toBeInTheDocument();
   });
 });
+
+describe('ParticipantsStep · anillo de foco (22 oct)', () => {
+  it('F2: el botón del hándicap enseña el anillo con el teclado y no al pulsar', () => {
+    pinta('');
+    expect(boton()).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary');
+    expect(boton().className).not.toMatch(/(^|\s)focus:ring/);
+  });
+});
