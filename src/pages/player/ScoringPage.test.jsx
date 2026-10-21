@@ -377,16 +377,21 @@ describe('ScoringPage', () => {
     expect(anotar).toHaveAttribute('aria-selected', 'true');
     expect(tarjeta).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tabpanel', { name: 'tabs.input' })).toHaveAttribute('id', anotar.getAttribute('aria-controls'));
+    // Anotar está lleno de botones: el panel no es una parada más
+    expect(screen.getByRole('tabpanel', { name: 'tabs.input' })).not.toHaveAttribute('tabindex');
 
     fireEvent.keyDown(anotar, { key: 'ArrowRight' });
     expect(tarjeta).toHaveAttribute('aria-selected', 'true');
     expect(tarjeta).toHaveFocus();
     expect(within(screen.getByRole('tabpanel', { name: 'tabs.scorecard' })).getByTestId('scorecard-table')).toBeInTheDocument();
+    // La tarjeta y la clasificación son tablas: el panel sí
+    expect(screen.getByRole('tabpanel', { name: 'tabs.scorecard' })).toHaveAttribute('tabindex', '0');
 
     fireEvent.keyDown(tarjeta, { key: 'ArrowLeft' });
     fireEvent.keyDown(anotar, { key: 'ArrowLeft' });
     expect(clasificacion).toHaveAttribute('aria-selected', 'true');
     expect(within(screen.getByRole('tabpanel', { name: 'tabs.leaderboard' })).getByTestId('leaderboard-view')).toBeInTheDocument();
+    expect(screen.getByRole('tabpanel', { name: 'tabs.leaderboard' })).toHaveAttribute('tabindex', '0');
   });
 
   it('FE #658: abrir la clasificación con el teclado la pide, como al pulsarla', () => {

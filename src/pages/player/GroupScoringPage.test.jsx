@@ -524,11 +524,15 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(clasificacion).toHaveAttribute('aria-selected', 'true');
     expect(clasificacion).toHaveFocus();
     expect(panelClasificacion).not.toHaveAttribute('hidden');
+    // Una tabla: el panel es la parada del tabulador
+    expect(panelClasificacion).toHaveAttribute('tabindex', '0');
     expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'true');
 
     fireEvent.keyDown(clasificacion, { key: 'End' });
     expect(tarjetas).toHaveAttribute('aria-selected', 'true');
     expect(within(screen.getByRole('tabpanel', { name: 'partida.tabs.cards' })).getByTestId('tarjetas')).toBeInTheDocument();
+    // Las tarjetas llevan sus botones de corregir: el panel no es parada
+    expect(screen.getByRole('tabpanel', { name: 'partida.tabs.cards' })).not.toHaveAttribute('tabindex');
     expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'false');
     fireEvent.keyDown(tarjetas, { key: 'Home' });
     expect(anotar).toHaveAttribute('aria-selected', 'true');

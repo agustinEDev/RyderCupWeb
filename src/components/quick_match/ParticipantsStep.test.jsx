@@ -99,6 +99,8 @@ describe('ParticipantsStep · amigos o invitado son pestañas (FE #658)', () => 
     const panel = screen.getByRole('tabpanel', { name: 'create.participants.tabFriends' });
     expect(amigos).toHaveAttribute('aria-controls', panel.id);
     expect(within(panel).getByText('create.participants.noFriends')).toBeInTheDocument();
+    // La lista se desplaza: el panel entra en el tabulador para poder hacerlo
+    expect(panel).toHaveAttribute('tabindex', '0');
 
     fireEvent.keyDown(amigos, { key: 'ArrowLeft' });
 
@@ -106,6 +108,8 @@ describe('ParticipantsStep · amigos o invitado son pestañas (FE #658)', () => 
     expect(invitado).toHaveFocus();
     const formulario = screen.getByRole('tabpanel', { name: 'create.participants.tabGuest' });
     expect(formulario.tagName).toBe('FORM');
+    // Un formulario: sus campos ya son paradas, el panel no
+    expect(formulario).not.toHaveAttribute('tabindex');
     expect(within(formulario).getByTestId('quick-match-guest-first-name')).toBeInTheDocument();
   });
 });

@@ -159,7 +159,7 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
                   value={manualValue}
                   onChange={(e) => setManualValue(e.target.value)}
                   placeholder={t('edit.handicap.manualPlaceholder')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('edit.handicap.manualHelp')}</p>

@@ -1007,6 +1007,8 @@ describe('SendInvitationModal', () => {
       const panel = screen.getByRole('tabpanel');
       expect(amigos).toHaveAttribute('aria-controls', panel.id);
       expect(panel).toHaveAttribute('aria-labelledby', amigos.id);
+      // Los paneles del modal tienen botones o campos: no son una parada más
+      expect(panel).not.toHaveAttribute('tabindex');
     });
 
     it('FE #658: la barra tiene nombre y se maneja con el teclado, que cambia de panel como un clic', () => {

@@ -701,7 +701,7 @@ const ScoringPage = () => {
           </PanelDePestana>
 
           {/* Tab: Scorecard */}
-          <PanelDePestana id="scorecard" className="space-y-4">
+          <PanelDePestana id="scorecard" enfocable className="space-y-4">
             <ScorecardTable
               holes={scoringView?.holes}
               scores={scoresVisibles}
@@ -714,7 +714,7 @@ const ScoringPage = () => {
           </PanelDePestana>
 
           {/* Tab: Leaderboard (abrirla la pide: el efecto de arriba) */}
-          <PanelDePestana id="leaderboard">
+          <PanelDePestana id="leaderboard" enfocable>
             <LeaderboardView leaderboard={leaderboard} />
           </PanelDePestana>
         </GrupoDePestanas>

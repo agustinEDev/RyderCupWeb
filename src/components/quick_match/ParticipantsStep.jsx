@@ -167,7 +167,7 @@ const ParticipantsStep = ({
             }
           />
 
-          <PanelDePestana id="friends" className="space-y-2 max-h-48 overflow-y-auto">
+          <PanelDePestana id="friends" enfocable className="space-y-2 max-h-48 overflow-y-auto">
             {availableFriends.length === 0 ? (
               <p className="text-sm text-gray-500">{t('create.participants.noFriends')}</p>
             ) : (

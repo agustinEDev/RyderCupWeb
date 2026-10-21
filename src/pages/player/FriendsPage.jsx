@@ -225,7 +225,8 @@ const FriendsPage = () => {
           />
 
           {/* List */}
-          <PanelDePestana>
+          {/* Vacía no hay nada enfocable dentro: entonces el panel sí es parada */}
+          <PanelDePestana enfocable={currentList.length === 0}>
             {currentList.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
