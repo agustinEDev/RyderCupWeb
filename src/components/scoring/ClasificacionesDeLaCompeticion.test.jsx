@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 
 /**
  * La sección «Clasificación» de la ficha de un Stableford o un Medal (FE #824,
@@ -63,6 +63,32 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
 
     expect(screen.getByRole('tablist', { name: 'partida.standingsTitle' })).toBeInTheDocument();
     await screen.findByTestId('fila-ana');
+  });
+
+  it('FE #658: las flechas cambian de clasificación; las dos siguen montadas, la cerrada oculta', async () => {
+    render(<ClasificacionesDeLaCompeticion competitionId="c-1" userId="ana" enJuego={false} />);
+    await screen.findByTestId('fila-ana');
+
+    const [general, scratch] = within(screen.getByRole('tablist', { name: 'partida.standingsTitle' })).getAllByRole('tab');
+    expect(general).toHaveAttribute('tabindex', '0');
+    expect(scratch).toHaveAttribute('tabindex', '-1');
+    const panelGeneral = screen.getByRole('tabpanel', { name: 'partida.overall' });
+    expect(general).toHaveAttribute('aria-controls', panelGeneral.id);
+
+    fireEvent.keyDown(general, { key: 'ArrowRight' });
+
+    expect(scratch).toHaveAttribute('aria-selected', 'true');
+    expect(scratch).toHaveFocus();
+    const panelScratch = screen.getByRole('tabpanel', { name: 'partida.scratch' });
+    await screen.findByTestId('fila-bea');
+    expect(within(panelScratch).getByTestId('fila-bea')).toBeInTheDocument();
+    expect(panelGeneral).toHaveAttribute('hidden');
+    expect(panelGeneral).toBeInTheDocument();
+    expect(mockScratch).toHaveBeenCalledWith('c-1');
+
+    fireEvent.keyDown(scratch, { key: 'Home' });
+    expect(general).toHaveAttribute('aria-selected', 'true');
+    expect(panelScratch).toHaveAttribute('hidden');
   });
 
   it('8: sin resultados todavía', async () => {

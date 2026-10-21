@@ -164,3 +164,35 @@ describe('PendingGolfCourses · sus modales', () => {
     vi.unstubAllGlobals();
   });
 });
+
+/**
+ * Nuevas y actualizaciones son pestañas de verdad (FE #658), con su propia
+ * barra: vive dentro del panel de la sección del admin.
+ */
+describe('PendingGolfCourses · pestañas (FE #658)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchCountriesUseCase.execute.mockResolvedValue([]);
+  });
+
+  it('T1: barra con nombre, la tabla como panel de la abierta y las flechas', async () => {
+    await abrirPagina();
+
+    const barra = screen.getByRole('tablist', { name: 'pages.pending.tabsLabel' });
+    const [nuevas, cambios] = within(barra).getAllByRole('tab');
+    expect(nuevas).toHaveAccessibleName('pages.pending.tabNew (1)');
+    expect(nuevas).toHaveAttribute('aria-selected', 'true');
+    expect(cambios).toHaveAttribute('tabindex', '-1');
+    const panel = screen.getByRole('tabpanel', { name: 'pages.pending.tabNew (1)' });
+    expect(nuevas).toHaveAttribute('aria-controls', panel.id);
+    expect(cambios).toHaveAttribute('aria-controls', panel.id);
+    expect(within(panel).getByText('ver Campo Pendiente')).toBeInTheDocument();
+
+    fireEvent.keyDown(nuevas, { key: 'ArrowRight' });
+
+    expect(cambios).toHaveAttribute('aria-selected', 'true');
+    expect(cambios).toHaveFocus();
+    expect(screen.getByRole('tabpanel', { name: 'pages.pending.tabUpdates (0)' })).toBe(panel);
+    expect(screen.queryByText('ver Campo Pendiente')).toBeNull();
+  });
+});
