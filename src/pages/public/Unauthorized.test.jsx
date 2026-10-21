@@ -40,20 +40,25 @@ describe('Unauthorized', () => {
   });
 
   // QA del 21 oct 2026 (U1): con sesión, en el móvil, 100vh más el hueco de la
-  // barra inferior daban 64 px de desplazamiento sobrante. Como NotFound N6/N6b
-  it('U1: sin sesión, el fondo llena la pantalla y no más', () => {
+  // barra inferior daban 64 px de desplazamiento sobrante. El hueco lo publica
+  // App en `--alto-barra-inferior` solo cuando pinta la barra; la página no
+  // lee la sesión (antes ignoraba `loading` y no sabía de los Términos)
+  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px))]', 'md:min-h-dvh'];
+
+  it('U1: sin sesión, la pantalla menos el hueco que diga App', () => {
     const pagina = abrir();
 
-    expect(pagina).toHaveClass('min-h-dvh');
+    expect(pagina).toHaveClass(...ALTO);
+    expect(pagina).not.toHaveClass('min-h-dvh');
     expect(pagina.style.minHeight).toBe('');
   });
 
-  it('U1b: con sesión, en el móvil descuenta el hueco de la barra inferior y no baja de más', () => {
+  it('U1b: con sesión, el mismo alto: no lo decide el usuario sino la barra que pinta App', () => {
     sesion.valor = { user: { id: 'u-1' }, loading: false };
     const pagina = abrir();
 
-    expect(pagina).toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'md:min-h-dvh');
-    expect(pagina).not.toHaveClass('min-h-dvh');
+    expect(pagina).toHaveClass(...ALTO);
+    expect(pagina).not.toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'min-h-dvh');
     expect(pagina.style.minHeight).toBe('');
   });
 

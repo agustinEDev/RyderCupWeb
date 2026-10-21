@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const BOTON = 'inline-flex items-center justify-center rounded-lg h-10 px-5 text-sm font-bold transition-colors';
 
@@ -18,12 +19,9 @@ const NotFound = () => {
   const { t } = useTranslation('common');
   const { user, loading } = useAuth();
 
-  // Con sesión, en el móvil App deja debajo el hueco de la barra inferior: la
-  // pantalla menos ese hueco, o la página pasaría de la pantalla (21 oct)
-  const alto = user ? 'min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))] md:min-h-dvh' : 'min-h-dvh';
-
+  // La pantalla menos el hueco de la barra inferior, si App la pinta (21 oct)
   return (
-    <main className={`flex ${alto} items-center justify-center bg-gray-50 px-4 py-12`}>
+    <main className={`flex ${PANTALLA_MENOS_BARRA_INFERIOR} items-center justify-center bg-gray-50 px-4 py-12`}>
       <div className="w-full max-w-md rounded-lg bg-white px-6 py-10 text-center shadow-sm">
         <p aria-hidden="true" className="mb-4 text-5xl font-bold text-primary">404</p>
         <h1 className="mb-2 text-2xl font-bold text-gray-900">{t('notFound.title')}</h1>
