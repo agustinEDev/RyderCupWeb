@@ -363,9 +363,9 @@ const QuickMatchScorecardTable = ({
   // La suma de un tramo en la horizontal: los golpes y, debajo, los puntos o
   // el neto. Son dos cifras sin etiqueta que el lector leía de un tirón
   // («4238»): con subtotal se oye una frase y lo visible se le oculta
-  const totalDelTramo = (sectionHoles, card) => {
+  // `extra` llega ya sumado: lo usa también la cabecera de la fila
+  const totalDelTramo = (sectionHoles, card, extra) => {
     const golpes = sumStrokes(sectionHoles, card.members);
-    const extra = valorDelTramo(sectionHoles, card);
     const frase =
       extra == null
         ? null
@@ -414,75 +414,82 @@ const QuickMatchScorecardTable = ({
     );
   };
 
-  const renderSection = (sectionHoles, label, card, seccion) => (
-    <div data-testid="vuelta-horizontal" className="overflow-x-auto">
-      <table className="min-w-full text-xs">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-2 py-1 text-left font-medium text-gray-500">{ts('scorecard.hole')}</th>
-            {sectionHoles.map((h) => (
-              <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500 w-8">
-                {h.holeNumber}
+  const renderSection = (sectionHoles, label, card, seccion) => {
+    // Una vez por tramo: lo usan la cabecera de la fila y la casilla del total
+    const extraSumado = valorDelTramo(sectionHoles, card);
+    return (
+      <div data-testid="vuelta-horizontal" className="overflow-x-auto">
+        <table className="min-w-full text-xs">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-2 py-1 text-left font-medium text-gray-500">{ts('scorecard.hole')}</th>
+              {sectionHoles.map((h) => (
+                <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500 w-8">
+                  {h.holeNumber}
+                </th>
+              ))}
+              <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
+            </tr>
+            <tr className="bg-gray-50">
+              <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
+              {sectionHoles.map((h) => (
+                <th
+                  key={h.holeNumber}
+                  scope="col"
+                  data-testid={`quick-match-par-${card.key}-${h.holeNumber}`}
+                  className="px-2 py-1 text-center text-gray-400 font-normal"
+                >
+                  {h.par}
+                </th>
+              ))}
+              <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
+                {sectionHoles.reduce((s, h) => s + h.par, 0)}
               </th>
-            ))}
-            <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
-          </tr>
-          <tr className="bg-gray-50">
-            <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
-            {sectionHoles.map((h) => (
-              <th
-                key={h.holeNumber}
-                scope="col"
-                data-testid={`quick-match-par-${card.key}-${h.holeNumber}`}
-                className="px-2 py-1 text-center text-gray-400 font-normal"
-              >
-                {h.par}
-              </th>
-            ))}
-            <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
-              {sectionHoles.reduce((s, h) => s + h.par, 0)}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {etiquetaDeLaCifra && valorDelTramo(sectionHoles, card) != null ? (
-              // La cifra pequeña con nombre (#419): en la cabecera y no en cada
-              // casilla. El hueco mide lo que la figura, así la etiqueta cae a la
-              // altura de las cifras y la fila no crece. Sin cifras en el tramo
-              // no hay nada que nombrar, y sola la haría más alta
-              <th scope="row" className="px-2 py-1 text-left align-top font-normal">
-                <span className="sr-only">{label}</span>
-                <div className="flex flex-col gap-0.5">
-                  <span aria-hidden="true" className="h-7" />
-                  <span className={LETRA_DE_LA_CIFRA}>{etiquetaDeLaCifra}</span>
-                </div>
-              </th>
-            ) : (
-              <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
-                {label}
-              </th>
-            )}
-            {sectionHoles.map((h) => (
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {etiquetaDeLaCifra && extraSumado != null ? (
+                // La cifra pequeña con nombre (#419): en la cabecera y no en cada
+                // casilla. El hueco mide lo que la figura, así la etiqueta cae a la
+                // altura de las cifras y la fila no crece. Sin cifras en el tramo
+                // no hay nada que nombrar, y sola la haría más alta
+                <th scope="row" className="px-2 py-1 text-left align-top font-normal">
+                  <span className="sr-only">{label}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span aria-hidden="true" className="h-7" />
+                    <span className={LETRA_DE_LA_CIFRA}>{etiquetaDeLaCifra}</span>
+                  </div>
+                </th>
+              ) : (
+                // `sr-only` saca la celda del flujo, pero la tabla conserva su
+                // columna: medido en Chrome (21 oct), las casillas siguen bajo
+                // su hoyo, también en match play
+                <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
+                  {label}
+                </th>
+              )}
+              {sectionHoles.map((h) => (
+                <td
+                  key={h.holeNumber}
+                  data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
+                  className="px-1 py-1 text-center align-top"
+                >
+                  {casilla(h, card)}
+                </td>
+              ))}
               <td
-                key={h.holeNumber}
-                data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
-                className="px-1 py-1 text-center align-top"
+                data-testid={`quick-match-section-total-${card.key}-${seccion}`}
+                className="px-2 py-1 text-center font-bold align-top"
               >
-                {casilla(h, card)}
+                {totalDelTramo(sectionHoles, card, extraSumado)}
               </td>
-            ))}
-            <td
-              data-testid={`quick-match-section-total-${card.key}-${seccion}`}
-              className="px-2 py-1 text-center font-bold align-top"
-            >
-              {totalDelTramo(sectionHoles, card)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   // Quién es, desde qué barra juega y con qué hándicap: la comparten la
   // tarjeta horizontal y la vertical del móvil

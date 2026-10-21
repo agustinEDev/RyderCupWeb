@@ -577,7 +577,7 @@ describe('CompetitionDetail · plazas en las franjas (FE #824, PR 4)', () => {
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
     await waitFor(() =>
-      expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindow_2')
+      expect(customToast.error).toHaveBeenCalledWith('detail.errors.PLAYERS_WITHOUT_TEE_WINDOW_2')
     );
     // El salto llega con lo releído, no al momento (CodeRabbit en la #836)
     await waitFor(() => expect(traerALaVista).toHaveBeenCalled(), { timeout: 3000 });
@@ -602,7 +602,7 @@ describe('CompetitionDetail · cerrar sin los nombres de quien falta (FE #824)',
     fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindowUnnamed'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.PLAYERS_WITHOUT_TEE_WINDOW_unnamed'));
   });
 
   it('la cuenta es la de todos los que faltan, aunque alguno venga sin nombre (/code-review)', async () => {
@@ -627,7 +627,7 @@ describe('CompetitionDetail · cerrar sin los nombres de quien falta (FE #824)',
     fireEvent.click(await screen.findByText('detail.actions.close-enrollments'));
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutTeeWindow_3'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.PLAYERS_WITHOUT_TEE_WINDOW_3'));
     // Y las franjas se releen: lo pintado puede estar viejo
     await waitFor(() => expect(getScheduleUseCase.execute.mock.calls.length).toBeGreaterThan(lecturas));
   });
@@ -884,7 +884,7 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
       { user_id: 'zzz', missing: 'HANDICAP' },
     ]);
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutHandicap_3'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.PLAYERS_WITHOUT_HANDICAP_3'));
     expect(screen.getByTestId('aprobado-ana')).toHaveAttribute('data-sin-handicap', 'true');
     expect(screen.getByTestId('aprobado-bea')).toHaveAttribute('data-sin-handicap', 'true');
     expect(screen.getByTestId('aprobado-carla')).not.toHaveAttribute('data-sin-handicap');
@@ -961,7 +961,7 @@ describe('CompetitionDetail · hándicap fijado y categoría (FE #824, PR 5)', (
   it('5: sin nombres, un aviso que se lee', async () => {
     await cerrarConFaltas([{ user_id: 'zzz' }]);
 
-    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.playersWithoutHandicapUnnamed'));
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('detail.errors.PLAYERS_WITHOUT_HANDICAP_unnamed'));
   });
 });
 
