@@ -442,3 +442,54 @@ describe('AgendaDeLaCompeticion · lo leído, para la ficha (FE #710)', () => {
     expect(onAgenda).toHaveBeenLastCalledWith(null);
   });
 });
+
+/**
+ * Los avisos que traen la lista de jugadores, con sus nombres (22 oct). El
+ * backend manda un `detail` genérico y los nombres en `players`.
+ *
+ *   #   el servidor rechaza con                    | el aviso
+ *   ----|------------------------------------------|----------------------------------
+ *   J1  PLAYERS_WITHOUT_TEE / _HANDICAP /          | `agenda.errors.<código>` con la
+ *       _TEE_WINDOW y nombres                      | cuenta y los nombres
+ *   J2  el código sin nombres                      | `agenda.errors.<código>_unnamed`
+ *   J3  otro código                                | su mensaje, como siempre
+ */
+describe('AgendaDeLaCompeticion · avisos con nombres', () => {
+  const rechazo = (errorCode, players) =>
+    Object.assign(new Error('Hay jugadores afectados'), { errorCode, data: { detail: 'x', error_code: errorCode, players } });
+
+  it.each(['PLAYERS_WITHOUT_TEE', 'PLAYERS_WITHOUT_HANDICAP', 'PLAYERS_WITHOUT_TEE_WINDOW'])(
+    'J1: %s nombra a los jugadores',
+    async (codigo) => {
+      mockCampos.mockResolvedValue([ALTEA, MEIS]);
+      mockCambiar.mockRejectedValue(rechazo(codigo, [{ user_id: 'u1', name: 'Ana' }, { user_id: 'u2', name: 'Luis' }]));
+      pintar();
+
+      fireEvent.change(await screen.findByTestId('agenda-campo-r1'), { target: { value: 'g2' } });
+
+      await waitFor(() =>
+        expect(mockToastError).toHaveBeenCalledWith(
+          `agenda.errors.${codigo}|${JSON.stringify({ count: 2, jugadores: 'Ana, Luis' })}`
+        )
+      );
+    }
+  );
+
+  it('J2: sin nombres, el texto sin hueco', async () => {
+    mockCambiar.mockRejectedValue(rechazo('PLAYERS_WITHOUT_TEE', []));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
+
+    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('agenda.errors.PLAYERS_WITHOUT_TEE_unnamed'));
+  });
+
+  it('J3: otro código, su mensaje', async () => {
+    mockCambiar.mockRejectedValue(rechazo('GROUP_FULL', [{ name: 'Ana' }]));
+    pintar();
+
+    fireEvent.click(await screen.findByTestId('agenda-formato-r1-SINGLES'));
+
+    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Hay jugadores afectados'));
+  });
+});

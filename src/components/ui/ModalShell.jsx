@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 
 /**
  * El armazón común de los diálogos: el fondo oscuro, la caja y todo lo que
@@ -51,15 +52,15 @@ import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
  *   Para los modales que traen la suya —con cabecera de borde, animada o sin
  *   relleno— y pasaron a este armazón sin cambiar de aspecto (4 oct 2026). Si se
  *   pasa, `maxWidthClass` no se usa
+ * @param {React.RefObject<HTMLElement>} [props.inicialRef] Dónde entra el foco
+ *   al abrir, si no es en lo primero: el campo de un buscador y no la X de la
+ *   cabecera (AddFriendModal, 21 oct 2026)
  * @param {React.ReactNode} props.children
  */
 
 // La caja para un modal que trae la suya dentro: solo la coloca, sin fondo,
 // borde ni relleno, para que se vea como antes de pasar a este armazón
 export const CAJA_PROPIA = 'w-full mx-4 flex justify-center';
-
-const ENFOCABLES =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 // El bloqueo del desplazamiento se cuenta entre TODOS los diálogos abiertos, no
 // por diálogo. Guardándolo cada uno por su cuenta, el segundo en abrirse copiaba
@@ -83,35 +84,21 @@ const ModalShell = ({
   scrollableBackdrop = false,
   hojaInferior = false,
   boxClassName,
+  inicialRef,
   children,
 }) => {
   const cajaRef = useRef(null);
-  const focoPrevioRef = useRef(null);
   const fondoPulsadoRef = useRef(false);
 
-  // El foco entra en la caja al abrir y vuelve a donde estaba al cerrar. Sin lo
-  // segundo, cerrar el diálogo dejaba el foco en el `body` y el siguiente
-  // tabulador empezaba desde la cabecera de la página.
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const caja = cajaRef.current;
-    focoPrevioRef.current = document.activeElement;
-    // Con `:not([disabled])`: enfocar un botón desactivado no hace nada y el
-    // foco se quedaba detrás del diálogo, que es donde no puede estar.
-    (caja?.querySelector(ENFOCABLES) ?? caja)?.focus();
-
-    return () => {
-      const anterior = focoPrevioRef.current;
-      // Solo si el foco sigue siendo mío. Con dos diálogos encima, al cerrarse
-      // el de abajo devolvía el foco a la página y se lo robaba al que quedaba
-      // abierto delante.
-      const esMio = caja?.contains(document.activeElement) || document.activeElement === document.body;
-      if (esMio && typeof anterior?.focus === 'function' && document.contains(anterior)) {
-        anterior.focus();
-      }
-    };
-  }, [isOpen]);
+  // El foco entra, no se sale y vuelve; y Escape cierra (#389). Vive en el hook
+  // para que lo compartan las hojas inferiores
+  useFocoRetenido(cajaRef, {
+    activo: isOpen,
+    inicialRef,
+    alEscape: () => {
+      if (closeOnEscape) onClose?.();
+    },
+  });
 
   // La página de debajo no se arrastra mientras hay un diálogo delante.
   useEffect(() => {
@@ -130,59 +117,6 @@ const ModalShell = ({
         overflowDelFondo = null;
       }
     };
-  }, [isOpen]);
-
-  // Lo que hace Escape, leído en el momento de pulsar. Por `useEffectEvent` y no
-  // como dependencia del efecto de abajo: `onClose` suele ser una función nueva
-  // en cada render, y con ella la escucha se soltaba y se volvía a poner cada
-  // vez que la página de debajo se pintaba. Un Escape que caía en ese hueco se
-  // perdía —con carga, los tests de los modales de admin fallaban así—
-  const alPulsarEscape = useEffectEvent(() => {
-    if (closeOnEscape) onClose?.();
-  });
-
-  // Escape cierra, y el tabulador da la vuelta dentro de la caja en vez de
-  // salirse a lo que hay debajo (RyderCupWeb#389). En `useLayoutEffect`: corre
-  // en el mismo paso que pone el diálogo en la página, mientras que un
-  // `useEffect` llega después de pintarlo, y un Escape en ese hueco se perdía
-  // —un modal que se abre tras una espera, como editar, lo tenía siempre—
-  useLayoutEffect(() => {
-    if (!isOpen) return undefined;
-
-    const alPulsar = (e) => {
-      if (e.key === 'Escape') {
-        alPulsarEscape();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-
-      const caja = cajaRef.current;
-      const enfocables = [...(caja?.querySelectorAll(ENFOCABLES) ?? [])];
-
-      // Sin nada enfocable dentro no se deja salir: es justo lo que pasa
-      // mientras la tarjeta va de camino, con los dos botones desactivados, y
-      // es el momento en que el jugador NO puede acabar en la página de detrás.
-      if (enfocables.length === 0) {
-        e.preventDefault();
-        caja?.focus();
-        return;
-      }
-
-      const primero = enfocables[0];
-      const ultimo = enfocables[enfocables.length - 1];
-      const dentro = caja?.contains(document.activeElement);
-
-      if (e.shiftKey && (document.activeElement === primero || !dentro)) {
-        e.preventDefault();
-        ultimo.focus();
-      } else if (!e.shiftKey && (document.activeElement === ultimo || !dentro)) {
-        e.preventDefault();
-        primero.focus();
-      }
-    };
-
-    document.addEventListener('keydown', alPulsar);
-    return () => document.removeEventListener('keydown', alPulsar);
   }, [isOpen]);
 
   if (!isOpen) return null;

@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 const TeamAssignmentSection = ({
   teamAssignment,
@@ -66,9 +67,9 @@ const TeamAssignmentSection = ({
     // saltaba a dos líneas (#710)
     return (
       <span className="flex shrink-0 items-center gap-1 whitespace-nowrap">
-        <span className={`text-xs ${colorClass} font-medium`}>HCP {hcp.toFixed(1)}</span>
+        <span className={`text-xs ${colorClass} font-medium`}>{t('handicapLabels.index', { value: formatoDeIndice(hcp) })}</span>
         {isLimited && (
-          <span className="text-xs text-amber-600 font-medium">| {maxPlayingHandicap} Lim.</span>
+          <span className="text-xs text-amber-600 font-medium">| {t('handicapLabels.limit', { value: maxPlayingHandicap })}</span>
         )}
       </span>
     );

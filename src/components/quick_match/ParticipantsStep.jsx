@@ -3,6 +3,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import TeeSelectField from './TeeSelectField';
 import TeeSelectPanel from './TeeSelectPanel';
 import TeeColorBadge from '../golf_course/TeeColorBadge';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
 
 /**
  * Wizard step 2: current roster + add participants (friends or guests).
@@ -58,6 +60,10 @@ const ParticipantsStep = ({
     setFriendPickingTee(null);
     onAddFriend(friend, key);
   };
+
+  // Lo que enseña el botón decide también su color: con «-» o «2a» guardados no
+  // hay índice que leer, sale el texto de ayuda y va en su gris
+  const indiceDelInvitado = formatoDeIndice(guestForm.handicap);
 
   return (
   <div className="p-4 space-y-4">
@@ -146,31 +152,22 @@ const ParticipantsStep = ({
           </div>
         )}
 
-        <div className="flex border-b border-gray-200">
-          <button
-            type="button"
-            onClick={() => onParticipantTabChange('friends')}
-            data-testid="quick-match-tab-friends"
-            className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
-              participantTab === 'friends' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t('create.participants.tabFriends')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onParticipantTabChange('guest')}
-            data-testid="quick-match-tab-guest"
-            className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
-              participantTab === 'guest' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t('create.participants.tabGuest')}
-          </button>
-        </div>
+        <GrupoDePestanas actual={participantTab} onElegir={onParticipantTabChange}>
+          <ListaDePestanas
+            etiqueta={t('create.participants.tabsLabel')}
+            className="flex border-b border-gray-200"
+            pestanas={[
+              { id: 'friends', contenido: t('create.participants.tabFriends'), testId: 'quick-match-tab-friends' },
+              { id: 'guest', contenido: t('create.participants.tabGuest'), testId: 'quick-match-tab-guest' },
+            ]}
+            claseDePestana={(abierta) =>
+              `flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                abierta ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'
+              }`
+            }
+          />
 
-        {participantTab === 'friends' && (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <PanelDePestana id="friends" enfocable className="space-y-2 max-h-48 overflow-y-auto">
             {availableFriends.length === 0 ? (
               <p className="text-sm text-gray-500">{t('create.participants.noFriends')}</p>
             ) : (
@@ -197,11 +194,9 @@ const ParticipantsStep = ({
                 </div>
               ))
             )}
-          </div>
-        )}
+          </PanelDePestana>
 
-        {participantTab === 'guest' && (
-          <form onSubmit={onAddGuest} className="space-y-2">
+          <PanelDePestana id="guest" como="form" onSubmit={onAddGuest} className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
@@ -226,11 +221,12 @@ const ParticipantsStep = ({
               type="button"
               onClick={onOpenGuestHandicapPanel}
               data-testid="quick-match-guest-handicap-button"
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary ${
-                guestForm.handicap ? 'text-gray-900' : 'text-gray-400'
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                indiceDelInvitado == null ? 'text-gray-400' : 'text-gray-900'
               }`}
             >
-              {guestForm.handicap || t('create.participants.guestHandicap')}
+              {/* Como en el resumen: un plus guardado «-2» se lee «+2.0» */}
+              {indiceDelInvitado ?? t('create.participants.guestHandicap')}
             </button>
             {courseTees.length > 0 && (
               <TeeSelectField
@@ -253,8 +249,8 @@ const ParticipantsStep = ({
             >
               {t('create.participants.addGuest')}
             </button>
-          </form>
-        )}
+          </PanelDePestana>
+        </GrupoDePestanas>
       </>
     )}
 

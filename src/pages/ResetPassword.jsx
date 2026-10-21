@@ -10,6 +10,7 @@ import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 import BrandMark from '../components/ui/BrandMark';
 import LoadingMark from '../components/ui/LoadingMark';
+import { esFalloDeRedDeLaApi } from '../utils/sinCobertura';
 import {
   validateResetTokenUseCase,
   resetPasswordUseCase,
@@ -25,6 +26,8 @@ import {
  * 2. Pre-validación automática del token (useEffect)
  * 3. Si token válido: muestra formulario
  * 4. Si token inválido/expirado: muestra error y link a /forgot-password
+ *    Enlace malo SOLO con valid:false, un 4xx que no sea 408 ni 429, o el
+ *    token vacío; todo lo demás es «no se pudo comprobar» + «Reintentar» (FE #785)
  * 5. Usuario ingresa nueva contraseña (2 inputs: nueva + confirmar)
  * 6. Validación OWASP: 12+ chars, complejidad
  * 7. Submit → resetPasswordUseCase → redirección a /login
@@ -54,8 +57,13 @@ const ResetPassword = () => {
   }, []);
 
   // Estados del token
-  const [tokenState, setTokenState] = useState('validating'); // 'validating' | 'valid' | 'invalid'
+  // 'unchecked': la API no dijo que el enlace fuera malo (sin conexión, 408, 429,
+  // 5xx, una respuesta que no es JSON…); se ofrece reintentar, no pedir otro (FE #785)
+  const [tokenState, setTokenState] = useState('validating'); // 'validating' | 'valid' | 'invalid' | 'unchecked'
   const [tokenMessage, setTokenMessage] = useState('');
+  const [checkFailure, setCheckFailure] = useState(null); // clave i18n del motivo
+  // Cada «Reintentar» lo sube y vuelve a lanzar la comprobación con el mismo token
+  const [checkAttempt, setCheckAttempt] = useState(0);
 
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -86,7 +94,8 @@ const ResetPassword = () => {
    */
   useEffect(() => {
     const validateToken = async () => {
-      if (!token) {
+      // Vacío o en blanco: enlace malo sin preguntar a nadie
+      if (!token?.trim()) {
         setTokenState('invalid');
         setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         return;
@@ -104,15 +113,38 @@ const ResetPassword = () => {
           setTokenMessage(t('resetPassword.tokenInvalidMessage'));
         }
       } catch (error) {
+        // Regla final (21 oct): el enlace es malo SOLO si la API lo dice —valid:false,
+        // o un 4xx que no sea 408 ni 429—. Todo lo demás no dice nada del enlace
+        // —sin conexión, 408, 429, 5xx, un 200 que no es JSON (el portal de una
+        // wifi), un error sin status— y se ofrece reintentar (FE #785)
         console.error('Token validation error:', error);
-        setTokenState('invalid');
-        // El texto del backend va en español: se dice el de la app (BE #519)
-        setTokenMessage(t('resetPassword.tokenInvalidMessage'));
+        const status = error?.status;
+        const sinRed = esFalloDeRedDeLaApi(error);
+        const enlaceMalo =
+          !sinRed && status >= 400 && status < 500 && status !== 408 && status !== 429;
+        if (enlaceMalo) {
+          setTokenState('invalid');
+          setTokenMessage(t('resetPassword.tokenInvalidMessage'));
+          return;
+        }
+        setTokenState('unchecked');
+        if (sinRed) {
+          setCheckFailure('resetPassword.checkNoConnection');
+        } else if (status === 429) {
+          setCheckFailure('resetPassword.checkTooManyRequests');
+        } else {
+          setCheckFailure('resetPassword.checkServerError');
+        }
       }
     };
 
     validateToken();
-  }, [token, t]);
+  }, [token, t, checkAttempt]);
+
+  const retryCheck = () => {
+    setTokenState('validating');
+    setCheckAttempt((n) => n + 1);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -225,6 +257,60 @@ const ResetPassword = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('resetPassword.validatingToken')}</h2>
           <p className="text-gray-600">{t('resetPassword.validatingMessage')}</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  /**
+   * UI: no se ha podido comprobar el enlace (FE #785)
+   * Sin «pedir otro enlace»: no se sabe que este no valga
+   */
+  if (tokenState === 'unchecked') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full"
+        >
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">{t('resetPassword.checkFailedTitle')}</h2>
+          <p className="text-gray-600 text-center mb-6">{t(checkFailure)}</p>
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={retryCheck}
+              className="block w-full py-3 px-4 bg-primary hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors text-center"
+            >
+              {t('resetPassword.retry')}
+            </button>
+            <Link
+              to="/login"
+              className="block w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors text-center"
+            >
+              {t('resetPassword.backToLoginButton')}
+            </Link>
+          </div>
         </motion.div>
       </div>
     );

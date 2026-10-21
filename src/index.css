@@ -269,6 +269,22 @@
   a {
     touch-action: manipulation;
   }
+
+  /* El anillo de foco, en el verde de la marca y no en el azul del navegador
+     (21 oct). Solo con :focus-visible: con el teclado se ve, con el ratón o el
+     dedo no. En base, para que el anillo propio de un componente (`focus:ring`
+     con `focus:outline-none`) le gane. Nunca se quita sin reemplazo: WCAG 2.4.7 */
+  :focus-visible {
+    outline: 2px solid var(--color-primary-600);
+    outline-offset: 2px;
+  }
+
+  /* Los botones del mapa ya marcan el foco con su sombra azul (la hoja de
+     MapLibre): el global, encima, sería un segundo anillo */
+  .maplibregl-ctrl-group button:focus-visible,
+  .maplibregl-ctrl-attrib-button:focus-visible {
+    outline: none;
+  }
 }
 
 /* La pantalla de espera, la MISMA en toda la cadena del arranque: al abrir la

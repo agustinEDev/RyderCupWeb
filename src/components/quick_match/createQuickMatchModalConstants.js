@@ -23,9 +23,12 @@ export const SCORING_FORMAT_LABEL_KEY = {
   STABLEFORD: 'formatStableford',
 };
 
-// Mirrors backend WHS allowance defaults (quick_match domain entity get_effective_allowance())
-export const DEFAULT_ALLOWANCE_BY_MATCH_FORMAT = { SINGLES: 100, FOURBALL: 90, FOURSOMES: 50 };
-export const DEFAULT_FREE_PLAY_ALLOWANCE = 95;
+// Mirrors backend WHS allowance defaults (quick_match domain entity get_effective_allowance()).
+// La regla vive en el dominio, que también la usa
+export {
+  DEFAULT_ALLOWANCE_BY_MATCH_FORMAT,
+  DEFAULT_FREE_PLAY_ALLOWANCE,
+} from '../../domain/services/defaultAllowance';
 // Curated quick-pick values instead of the full 50-100 (step 5) WHS range:
 // match play only ever really uses its three format defaults, and free play
 // (stroke play) conventionally sits at 90/95/100.

@@ -5,7 +5,9 @@ import { X, TrendingUp, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
 import { updateRfegHandicapUseCase, updateManualHandicapUseCase } from '../../composition';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
  * @param {number|null} [handicapActual] - El hándicap guardado cuando se abre.
@@ -105,39 +107,32 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
             <p className="text-sm text-amber-800">
               {handicapActual == null
                 ? t('handicapModal.subtitle')
-                : t('handicapModal.subtitleStale', { handicap: Number(handicapActual).toFixed(1) })}
+                : t('handicapModal.subtitleStale', { handicap: formatoDeIndice(handicapActual) })}
             </p>
           </div>
 
-          {/* Tabs — solo si el usuario es español */}
-          {isSpanish && (
-            <div className="flex border-b border-gray-200">
-              <button
-                onClick={() => setActiveTab('rfeg')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'rfeg'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('handicapModal.rfegTab')}
-              </button>
-              <button
-                onClick={() => setActiveTab('manual')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'manual'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('handicapModal.manualTab')}
-              </button>
-            </div>
-          )}
+          {/* Tabs — solo si el usuario es español; si no, el manual sin más */}
+          <GrupoDePestanas actual={isSpanish ? activeTab : 'manual'} onElegir={setActiveTab} sinPestanas={!isSpanish}>
+            {isSpanish && (
+              <ListaDePestanas
+                etiqueta={t('handicapModal.tabsLabel')}
+                className="flex border-b border-gray-200"
+                pestanas={[
+                  { id: 'rfeg', contenido: t('handicapModal.rfegTab') },
+                  { id: 'manual', contenido: t('handicapModal.manualTab') },
+                ]}
+                claseDePestana={(abierta) =>
+                  `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    abierta
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`
+                }
+              />
+            )}
 
-          {/* RFEG tab */}
-          {activeTab === 'rfeg' && isSpanish && (
-            <div className="space-y-4">
+            {/* RFEG tab */}
+            <PanelDePestana id="rfeg" className="space-y-4">
               <p className="text-sm text-gray-600">{t('edit.handicap.rfegHelp')}</p>
               <button
                 onClick={handleRfegFetch}
@@ -148,12 +143,10 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
               </button>
               {/* De dónde sale el hándicap que se trae (auditoría legal, F4) */}
               <FuenteRfeg variante="handicap" />
-            </div>
-          )}
+            </PanelDePestana>
 
-          {/* Manual tab */}
-          {activeTab === 'manual' && (
-            <form onSubmit={handleManualSave} className="space-y-4">
+            {/* Manual tab */}
+            <PanelDePestana id="manual" como="form" onSubmit={handleManualSave} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('edit.handicap.manual')}
@@ -166,7 +159,7 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
                   value={manualValue}
                   onChange={(e) => setManualValue(e.target.value)}
                   placeholder={t('edit.handicap.manualPlaceholder')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('edit.handicap.manualHelp')}</p>
@@ -178,8 +171,8 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
               >
                 {isSubmitting ? t('edit.handicap.updating') : t('edit.handicap.updateManually')}
               </button>
-            </form>
-          )}
+            </PanelDePestana>
+          </GrupoDePestanas>
         </div>
 
         {/* Footer */}

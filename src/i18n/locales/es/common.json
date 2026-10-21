@@ -66,6 +66,7 @@
     "myInvitations": "Mis Invitaciones",
     "feed": "Actividad",
     "language": "Idioma",
+    "changeLanguage": "Cambiar idioma",
     "adminPanel": "Panel de Administración",
     "viewProfile": "Ver Perfil",
     "leaderboard": "Clasificación",
@@ -132,7 +133,9 @@
     "empty": "No hay países disponibles",
     "clear": "Quitar el país elegido",
     "moreResults_one": "1 país más — sigue escribiendo para afinar",
-    "moreResults_other": "{{count}} países más — sigue escribiendo para afinar"
+    "moreResults_other": "{{count}} países más — sigue escribiendo para afinar",
+    "earlierResults_one": "1 país antes — escribe para buscarlo",
+    "earlierResults_other": "{{count}} países antes — escribe para buscarlos"
   },
   "brandMarkAlt": "Logo de RyderCupFriends",
   "demasiadasPeticiones": "Demasiados intentos seguidos. Espera un minuto y vuelve a intentarlo.",
@@ -147,5 +150,19 @@
     "generic": "No se ha podido completar la operación. Inténtalo de nuevo."
   },
   "terminosPendientes": "Tienes que aceptar los Términos y condiciones para continuar.",
-  "terminosNoDisponible": "Esto no está disponible ahora mismo. Inténtalo de nuevo más tarde."
+  "terminosNoDisponible": "Esto no está disponible ahora mismo. Inténtalo de nuevo más tarde.",
+  "notFound": {
+    "title": "Esta página no existe",
+    "message": "La dirección no lleva a ninguna pantalla. Puede que el enlace esté mal escrito o que la página ya no exista.",
+    "goToDashboard": "Ir al panel",
+    "goHome": "Ir al inicio",
+    "login": "Entrar"
+  },
+  "unauthorized": {
+    "title": "Acceso denegado",
+    "message": "No tienes permiso para ver esta página. Si crees que es un error, contacta con un administrador.",
+    "attempted": "Intentaste acceder a",
+    "goToDashboard": "Ir al panel",
+    "goBack": "Volver"
+  }
 }

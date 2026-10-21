@@ -161,7 +161,8 @@
       "rejectReasonTooShort": "La razón debe tener al menos 10 caracteres",
       "characters": "caracteres",
       "cancel": "Cancelar",
-      "confirmReject": "Rechazar Campo"
+      "confirmReject": "Rechazar Campo",
+      "tabsLabel": "Tipo de solicitud"
     }
   },
   "detail": {

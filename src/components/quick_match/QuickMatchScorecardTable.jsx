@@ -17,8 +17,13 @@ const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
+import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const MAX_STROKE_DOTS = 2;
+
+// La letra de la cifra pequeña (puntos o neto), y la de su etiqueta en la
+// cabecera de la fila (#419): iguales, para que se lean como pareja
+const LETRA_DE_LA_CIFRA = 'text-[10px] font-semibold text-primary';
 
 /**
  * Quick match scorecard: one card per participant (instead of a single shared
@@ -58,6 +63,13 @@ const QuickMatchScorecardTable = ({
 
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
+  // Cómo se llama la cifra pequeña: columna en el móvil, cabecera de la fila en
+  // la horizontal. En match play no hay
+  const etiquetaDeLaCifra = isStableford
+    ? t('scoring.scorecard.pointsShort')
+    : isMedal
+      ? t('scoring.scorecard.netShort')
+      : undefined;
 
   // El backend manda el reparto con el que ha decidido cada hoyo, y es el dato
   // bueno mientras haya red. Sin conexión no llega nada y se recalcula, que es
@@ -288,9 +300,6 @@ const QuickMatchScorecardTable = ({
       return score != null ? sum + score : sum;
     }, 0);
 
-  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
-  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
-  // y la vertical del móvil (FE #739)
   // Lo que se sabe de un hoyo de una tarjeta: su golpe (o la raya) y lo que
   // recibe. Lo leen la casilla y la columna de puntos o neto
   const datosDelHoyo = (h, card) => {
@@ -310,37 +319,73 @@ const QuickMatchScorecardTable = ({
     return { isPickedUp, score, strokesReceived, dotCount };
   };
 
-  // Los puntos Stableford o el neto en Medal. En la tarjeta del móvil van en
-  // su propia columna; en la horizontal, bajo la figura
-  const extraDelHoyo = (h, card) => {
+  // Los puntos Stableford o el neto en Medal de un hoyo, o null si no hay
+  // nada que contar (hoyo sin anotar o match play). De aquí salen la casilla
+  // y los subtotales, para que el hoyo y la suma no se separen
+  const valorExtraDelHoyo = (h, card) => {
     const { score, strokesReceived } = datosDelHoyo(h, card);
     if (score == null) return null;
-    if (isStableford) {
-      const puntos = StablefordCalculator.holePoints(score, h.par, strokesReceived);
-      return (
-        <span
-          data-testid="hole-points"
-          className="text-[10px] font-semibold text-primary"
-          title={t('scoring.scorecard.holePoints', { count: puntos })}
-        >
-          {puntos}
-        </span>
-      );
-    }
-    if (isMedal) {
-      return (
-        <span
-          data-testid="hole-net-strokes"
-          className="text-[10px] font-semibold text-primary"
-          title={t('scoring.scorecard.holeNetStrokes', { count: score - strokesReceived })}
-        >
-          {score - strokesReceived}
-        </span>
-      );
-    }
+    if (isStableford) return StablefordCalculator.holePoints(score, h.par, strokesReceived);
+    if (isMedal) return score - strokesReceived;
     return null;
   };
 
+  // Lo mismo, como se pinta: en el móvil va en su propia columna; en la
+  // horizontal, bajo la figura (o bajo los golpes del tramo, si es la suma)
+  const pintaExtra = (valor, { subtotal = false } = {}) => {
+    if (valor == null) return null;
+    const prefijo = subtotal ? 'subtotal' : 'hole';
+    const [testId, clave] = isStableford
+      ? [`${prefijo}-points`, subtotal ? 'subtotalPoints' : 'holePoints']
+      : [`${prefijo}-net-strokes`, subtotal ? 'subtotalNetStrokes' : 'holeNetStrokes'];
+    return (
+      <span
+        data-testid={testId}
+        className={LETRA_DE_LA_CIFRA}
+        title={t(`scoring.scorecard.${clave}`, { count: valor })}
+      >
+        {valor}
+      </span>
+    );
+  };
+
+  const extraDelHoyo = (h, card) => pintaExtra(valorExtraDelHoyo(h, card));
+
+  // Suma de los puntos o del neto de un tramo, solo de los hoyos jugados (la
+  // raya ya cuenta como doble bogey neto). Sin ninguno jugado, nada
+  const valorDelTramo = (holeRange, card) => {
+    const valores = holeRange.map((h) => valorExtraDelHoyo(h, card)).filter((v) => v != null);
+    if (valores.length === 0) return null;
+    return valores.reduce((sum, v) => sum + v, 0);
+  };
+  const extraDelTramo = (holeRange, card) => pintaExtra(valorDelTramo(holeRange, card), { subtotal: true });
+
+  // La suma de un tramo en la horizontal: los golpes y, debajo, los puntos o
+  // el neto. Son dos cifras sin etiqueta que el lector leía de un tirón
+  // («4238»): con subtotal se oye una frase y lo visible se le oculta
+  // `extra` llega ya sumado: lo usa también la cabecera de la fila
+  const totalDelTramo = (sectionHoles, card, extra) => {
+    const golpes = sumStrokes(sectionHoles, card.members);
+    const frase =
+      extra == null
+        ? null
+        : isStableford
+          ? t('scoring.scorecard.sectionTotalPointsA11y', { strokes: golpes, count: extra })
+          : t('scoring.scorecard.sectionTotalNetA11y', { strokes: golpes, net: extra });
+    return (
+      <>
+        <div className="flex flex-col items-center gap-0.5" aria-hidden={frase ? 'true' : undefined}>
+          {golpes || '-'}
+          {pintaExtra(extra, { subtotal: true })}
+        </div>
+        {frase && <span className="sr-only">{frase}</span>}
+      </>
+    );
+  };
+
+  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
+  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
+  // y la vertical del móvil (FE #739)
   const casilla = (h, card, { conExtra = true } = {}) => {
     const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(h, card);
     return (
@@ -369,58 +414,82 @@ const QuickMatchScorecardTable = ({
     );
   };
 
-  const renderSection = (sectionHoles, label, card) => (
-    <div data-testid="vuelta-horizontal" className="overflow-x-auto">
-      <table className="min-w-full text-xs">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-2 py-1 text-left font-medium text-gray-500">{ts('scorecard.hole')}</th>
-            {sectionHoles.map((h) => (
-              <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500 w-8">
-                {h.holeNumber}
+  const renderSection = (sectionHoles, label, card, seccion) => {
+    // Una vez por tramo: lo usan la cabecera de la fila y la casilla del total
+    const extraSumado = valorDelTramo(sectionHoles, card);
+    return (
+      <div data-testid="vuelta-horizontal" className="overflow-x-auto">
+        <table className="min-w-full text-xs">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-2 py-1 text-left font-medium text-gray-500">{ts('scorecard.hole')}</th>
+              {sectionHoles.map((h) => (
+                <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500 w-8">
+                  {h.holeNumber}
+                </th>
+              ))}
+              <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
+            </tr>
+            <tr className="bg-gray-50">
+              <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
+              {sectionHoles.map((h) => (
+                <th
+                  key={h.holeNumber}
+                  scope="col"
+                  data-testid={`quick-match-par-${card.key}-${h.holeNumber}`}
+                  className="px-2 py-1 text-center text-gray-400 font-normal"
+                >
+                  {h.par}
+                </th>
+              ))}
+              <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
+                {sectionHoles.reduce((s, h) => s + h.par, 0)}
               </th>
-            ))}
-            <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
-          </tr>
-          <tr className="bg-gray-50">
-            <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
-            {sectionHoles.map((h) => (
-              <th
-                key={h.holeNumber}
-                scope="col"
-                data-testid={`quick-match-par-${card.key}-${h.holeNumber}`}
-                className="px-2 py-1 text-center text-gray-400 font-normal"
-              >
-                {h.par}
-              </th>
-            ))}
-            <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
-              {sectionHoles.reduce((s, h) => s + h.par, 0)}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
-              {label}
-            </th>
-            {sectionHoles.map((h) => (
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {etiquetaDeLaCifra && extraSumado != null ? (
+                // La cifra pequeña con nombre (#419): en la cabecera y no en cada
+                // casilla. El hueco mide lo que la figura, así la etiqueta cae a la
+                // altura de las cifras y la fila no crece. Sin cifras en el tramo
+                // no hay nada que nombrar, y sola la haría más alta
+                <th scope="row" className="px-2 py-1 text-left align-top font-normal">
+                  <span className="sr-only">{label}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span aria-hidden="true" className="h-7" />
+                    <span className={LETRA_DE_LA_CIFRA}>{etiquetaDeLaCifra}</span>
+                  </div>
+                </th>
+              ) : (
+                // `sr-only` saca la celda del flujo, pero la tabla conserva su
+                // columna: medido en Chrome (21 oct), las casillas siguen bajo
+                // su hoyo, también en match play
+                <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
+                  {label}
+                </th>
+              )}
+              {sectionHoles.map((h) => (
+                <td
+                  key={h.holeNumber}
+                  data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
+                  className="px-1 py-1 text-center align-top"
+                >
+                  {casilla(h, card)}
+                </td>
+              ))}
               <td
-                key={h.holeNumber}
-                data-testid={`quick-match-score-cell-${card.key}-${h.holeNumber}`}
-                className="px-1 py-1 text-center align-top"
+                data-testid={`quick-match-section-total-${card.key}-${seccion}`}
+                className="px-2 py-1 text-center font-bold align-top"
               >
-                {casilla(h, card)}
+                {totalDelTramo(sectionHoles, card, extraSumado)}
               </td>
-            ))}
-            <td className="px-2 py-1 text-center font-bold">
-              {sumStrokes(sectionHoles, card.members) || '-'}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   // Quién es, desde qué barra juega y con qué hándicap: la comparten la
   // tarjeta horizontal y la vertical del móvil
@@ -444,7 +513,7 @@ const QuickMatchScorecardTable = ({
               renderTeeLabel(card.teeParticipant),
               card.playingHandicap != null
                 ? t('scoring.scorecard.playingHandicap', {
-                    value: card.playingHandicap,
+                    value: formatoDeHandicapDeJuego(card.playingHandicap),
                   })
                 : null,
               describeStrokes(totalStrokesFor(card.strokesId)),
@@ -464,13 +533,7 @@ const QuickMatchScorecardTable = ({
       cabecera={cabeceraDe(card)}
       // Los puntos o el neto en su columna, no apilados bajo la figura: hay
       // sitio y la fila queda más baja (ronda 2 de pruebas)
-      columnaExtra={
-        isStableford
-          ? t('scoring.scorecard.pointsShort')
-          : isMedal
-            ? t('scoring.scorecard.netShort')
-            : undefined
-      }
+      columnaExtra={etiquetaDeLaCifra}
       hoyos={card.holes.map((h) => ({
         holeNumber: h.holeNumber,
         par: h.par,
@@ -482,6 +545,12 @@ const QuickMatchScorecardTable = ({
         ida: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card.members) : undefined,
         vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card.members) : undefined,
         total: sumStrokes(card.holes, card.members),
+      }}
+      // Como `sumas`: con 9 hoyos no hay ida ni vuelta que sumar
+      sumasExtra={{
+        ida: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
+        vuelta: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        total: extraDelTramo(card.holes, card),
       }}
     />
   );
@@ -520,13 +589,15 @@ const QuickMatchScorecardTable = ({
             {renderSection(
               card.holes.filter((h) => h.holeNumber <= 9),
               ts('scorecard.out'),
-              card
+              card,
+              'ida'
             )}
             {card.holes.some((h) => h.holeNumber > 9) &&
               renderSection(
                 card.holes.filter((h) => h.holeNumber > 9),
                 ts('scorecard.in'),
-                card
+                card,
+                'vuelta'
               )}
           </div>
         </div>

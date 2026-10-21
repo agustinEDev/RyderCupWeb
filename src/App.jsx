@@ -20,6 +20,7 @@ import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
 import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
+import { VARIABLE_ALTO_BARRA_INFERIOR, ALTO_BARRA_INFERIOR } from './utils/barraInferior';
 import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
@@ -92,6 +93,7 @@ const LegalNotice = lazyWithRetry(() => import('./pages/public/LegalNotice'));
 
 // Error pages
 const Unauthorized = lazyWithRetry(() => import('./pages/public/Unauthorized'));
+const NotFound = lazyWithRetry(() => import('./pages/public/NotFound'));
 
 // ============================================
 // SENTRY ROUTING INSTRUMENTATION
@@ -154,6 +156,14 @@ function AppContent() {
 
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
   const showBottomNav = conApi && !isPublicRoute && !isScoringRoute;
+
+  // Su hueco, publicado para las páginas de pantalla completa: lo descuentan
+  // solo cuando la barra está de verdad, sin deducirlo de la sesión
+  useLayoutEffect(() => {
+    const raiz = document.documentElement.style;
+    raiz.setProperty(VARIABLE_ALTO_BARRA_INFERIOR, showBottomNav ? ALTO_BARRA_INFERIOR : '0px');
+    return () => raiz.removeProperty(VARIABLE_ALTO_BARRA_INFERIOR);
+  }, [showBottomNav]);
 
   // Limpiar flag de error de lazy loading tras navegación exitosa
   // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
@@ -404,6 +414,9 @@ function AppContent() {
 
         {/* Error routes */}
         <Route path="/unauthorized" element={<Unauthorized />} />
+        {/* Lo que no lleva a ninguna pantalla: antes, una página en blanco (FE #544).
+            Cualquier ruta nueva va también en `utils/rutasDeLaAplicacion` */}
+        <Route path="*" element={<NotFound />} />
         </SentryRoutes>
       {showBottomNav && (
         <>

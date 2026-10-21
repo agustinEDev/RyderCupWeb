@@ -112,7 +112,8 @@ describe('EnvelopePage · el sobre del capitán (FE #655)', () => {
 
     const fila = await screen.findByTestId('jugador-ana');
     expect(within(fila).getByText('Ana Alba')).toBeInTheDocument();
-    expect(within(fila).getByText('8')).toBeInTheDocument();
+    // Con un decimal, como todo índice: un plus se lee «+2.0» (FE #797)
+    expect(within(fila).getByText('8.0')).toBeInTheDocument();
   });
 
   it('V2: el orden se construye tocando, y se ve el número de cada uno', async () => {

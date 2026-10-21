@@ -12,13 +12,26 @@
  *
  * LO QUE NO DISTINGUE: un `TypeError` de un fallo del código —un mapper que
  * lee una propiedad de `undefined`, por ejemplo— pasa por falta de cobertura,
- * y entonces el aviso miente y el fallo de verdad no sale a la luz. No hay
- * forma barata de separarlos: `fetch` no marca los suyos, y los mensajes
- * cambian con cada navegador. Queda a sabiendas, con la consola como red: en
- * los sitios que usan esto, el error entero se sigue registrando ahí.
+ * y entonces el aviso miente y el fallo de verdad no sale a la luz. Se queda
+ * así porque no todo lo que la usa pasa por `api.js`, que es quien marca los
+ * suyos; donde confundirlos cuesta, `esFalloDeRedDeLaApi`. La consola sigue
+ * siendo la red: en los sitios que usan esto, el error entero se registra ahí.
  */
-export const esFalloDeRed = (err) =>
-  err instanceof TypeError || globalThis.navigator?.onLine === false;
+export const esFalloDeRed = (err) => err instanceof TypeError || esFalloDeRedDeLaApi(err);
+
+/**
+ * La versión estricta, para las llamadas que pasan por `api.js`: solo lo que
+ * él marca con `sinConexion: true` —el fallo de `fetch`, su tope vencido y el
+ * cuerpo que se corta a medias—, o el navegador sin red. Un `TypeError` del
+ * código (leer `.valid` de un cuerpo `null`) no lleva la marca.
+ *
+ * Se usa donde confundirlos tiene coste: en el enlace de restablecer, decir
+ * «sin conexión» a un fallo del código despista. Lo que no pasa por `api.js`
+ * necesita `esFalloDeRed`.
+ */
+export function esFalloDeRedDeLaApi(err) {
+  return err?.sinConexion === true || globalThis.navigator?.onLine === false;
+}
 
 /**
  * Lo que se le enseña a quien está mirando.

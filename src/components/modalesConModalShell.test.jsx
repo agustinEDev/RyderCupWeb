@@ -50,6 +50,7 @@ const { default: AdminEditCompetitionModal } = await import('./admin/AdminEditCo
 const { default: EditUserModal } = await import('./admin/EditUserModal');
 const { default: ManageAccountModal } = await import('./admin/ManageAccountModal');
 const { default: SessionBlockedModal } = await import('./scoring/SessionBlockedModal');
+const { default: AddFriendModal } = await import('./friend/AddFriendModal');
 
 const nombres = { teamA: 'Norte', teamB: 'Sur' };
 const inscritos = [
@@ -151,6 +152,23 @@ describe('Modales sobre ModalShell', () => {
     escape();
     expect(volver).not.toHaveBeenCalled();
     expect(tomar).not.toHaveBeenCalled();
+  });
+
+  // Pasó al armazón el 21 oct 2026. Es la excepción de «pulsar fuera no
+  // cierra»: no tiene pie y en un teléfono el fondo es la otra salida
+  it('AddFriendModal se anuncia, Escape lo cierra y pulsar fuera también', () => {
+    const cerrar = vi.fn();
+    montar(<AddFriendModal isOpen onClose={cerrar} onSearchUsers={vi.fn().mockResolvedValue([])} t={t} />);
+
+    const dialogo = screen.getByRole('dialog');
+    expect(dialogo).toHaveAccessibleName('add.title');
+    expect(dialogo).toHaveAttribute('aria-modal', 'true');
+    escape();
+    expect(cerrar).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(dialogo);
+    fireEvent.click(dialogo);
+    expect(cerrar).toHaveBeenCalledTimes(2);
   });
 
   // Estos cuatro llevan el «ocupado» por dentro: se provoca dejando su

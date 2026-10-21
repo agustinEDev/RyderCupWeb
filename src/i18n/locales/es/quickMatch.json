@@ -65,7 +65,8 @@
       "teePlaceholder": "Elige sus barras",
       "guestFallbackName": "el invitado",
       "errorTeamFull": "Ese equipo ya está completo: elige el otro.",
-      "errorGuestName": "Escribe el nombre y los apellidos del invitado."
+      "errorGuestName": "Escribe el nombre y los apellidos del invitado.",
+      "tabsLabel": "Cómo añadir jugadores"
     },
     "scorers": {
       "heading": "Elegir anotadores",
@@ -213,6 +214,12 @@
       "holeNetStrokes": "{{count}} golpe(s) netos en este hoyo",
       "pointsShort": "Pts",
       "netShort": "Neto",
+      "subtotalPoints_one": "{{count}} punto",
+      "subtotalPoints_other": "{{count}} puntos",
+      "subtotalNetStrokes": "Neto {{count}}",
+      "sectionTotalPointsA11y_one": "{{strokes}} golpes, {{count}} punto",
+      "sectionTotalPointsA11y_other": "{{strokes}} golpes, {{count}} puntos",
+      "sectionTotalNetA11y": "{{strokes}} golpes, {{net}} neto",
       "scratchMatch": "Partida scratch · sin hándicap",
       "playingHandicap": "Hcp de juego {{value}}",
       "receivesStrokes_one": "recibe {{count}} golpe",
@@ -259,7 +266,8 @@
       "classificationStale": "La clasificación no está al día: faltan golpes por enviar, y los de los demás por recibir.",
       "noSeActualiza": "Sin conexión con el servidor: lo que ves puede no estar al día.",
       "standingStale": "El resultado no está al día: hay golpes sin enviar y lo calcula el servidor."
-    }
+    },
+    "tabsLabel": "Vista de la partida"
   },
   "personalRound": {
     "inMatch": "({{value}} en el partido)"

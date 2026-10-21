@@ -9,7 +9,7 @@
  *   el navegador dice que no hay red   | sí, aunque el error no lo parezca
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { esFalloDeRed, mensajeDeError } from './sinCobertura';
+import { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } from './sinCobertura';
 
 const fingeConexion = (hay) =>
   Object.defineProperty(globalThis.navigator, 'onLine', { value: hay, configurable: true });
@@ -46,6 +46,13 @@ describe('esFalloDeRed', () => {
 
     expect(esFalloDeRed(new Error('lo que sea'))).toBe(true);
   });
+
+  it('y el error que api.js marca sin conexión, aunque no sea un TypeError', () => {
+    // El tope vencido y el cuerpo cortado llegan marcados: lo dice la marca
+    fingeConexion(true);
+
+    expect(esFalloDeRed(Object.assign(new Error('x'), { sinConexion: true }))).toBe(true);
+  });
 });
 
 describe('mensajeDeError · un fallo del servidor (FE #710)', () => {
@@ -63,5 +70,56 @@ describe('mensajeDeError · un fallo del servidor (FE #710)', () => {
     const error = Object.assign(new Error('El torneo ya ha empezado'), { status: 499 });
 
     expect(mensajeDeError(error, textos)).toBe('El torneo ya ha empezado');
+  });
+});
+
+/**
+ * La versión estricta: solo lo que `api.js` marcó como falta de red —con
+ * `sinConexion: true`: el fallo de `fetch`, su tope y el cuerpo cortado— o el
+ * navegador sin red. Un `TypeError` sin marca no lo es, traiga o no `cause`.
+ */
+describe('esFalloDeRedDeLaApi', () => {
+  afterEach(() => fingeConexion(true));
+
+  it('el error que marca api.js es falta de red', () => {
+    fingeConexion(true);
+    const marcado = Object.assign(
+      new TypeError('common:sinConexion.mensaje', { cause: new TypeError('Failed to fetch') }),
+      { sinConexion: true }
+    );
+
+    expect(esFalloDeRedDeLaApi(marcado)).toBe(true);
+  });
+
+  it('un TypeError del código, sin marca, NO es falta de red', () => {
+    fingeConexion(true);
+
+    expect(esFalloDeRedDeLaApi(new TypeError("Cannot read properties of null (reading 'valid')"))).toBe(false);
+  });
+
+  it('un TypeError con cause pero sin la marca tampoco', () => {
+    fingeConexion(true);
+
+    expect(esFalloDeRedDeLaApi(new TypeError('x', { cause: new TypeError('Failed to fetch') }))).toBe(false);
+  });
+
+  it('una marca que no es true no cuenta', () => {
+    fingeConexion(true);
+
+    expect(esFalloDeRedDeLaApi(Object.assign(new TypeError('x'), { sinConexion: 'sí' }))).toBe(false);
+  });
+
+  it('sin red en el navegador sí, aunque el error no lo parezca', () => {
+    fingeConexion(false);
+
+    expect(esFalloDeRedDeLaApi(new SyntaxError('Unexpected token <'))).toBe(true);
+  });
+
+  it('con null o undefined no revienta', () => {
+    fingeConexion(true);
+
+    expect(esFalloDeRedDeLaApi(null)).toBe(false);
+    expect(esFalloDeRedDeLaApi(undefined)).toBe(false);
+    expect(esFalloDeRed(null)).toBe(false);
   });
 });

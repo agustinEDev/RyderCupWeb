@@ -12,10 +12,11 @@ import {
   closeTeeWindowUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
-import { formatoUnDecimal } from '../../utils/ajustesDeStrokePlay';
+import { mensajeConJugadores } from '../../utils/erroresConJugadores';
 import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan, seCambia } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { conGenero } from '../../utils/genero';
+import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 /**
  * Las partidas de una franja de stroke play, en la ficha (FE #824, PR 6;
@@ -158,13 +159,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
 
   const mensaje = (error) => {
     const codigo = error?.errorCode;
-    if (CON_NOMBRES.includes(codigo)) {
-      const nombres = (error.data?.players || []).map((p) => p.name).filter(Boolean);
-      // Sin nombres, uno propio sin el hueco: el del servidor no está traducido
-      return nombres.length > 0
-        ? t(`partidas.errors.${codigo}`, { count: error.data.players.length, jugadores: nombres.join(', ') })
-        : t(`partidas.errors.${codigo}_unnamed`);
-    }
+    const conNombres = mensajeConJugadores(t, error, 'partidas.errors', CON_NOMBRES);
+    if (conNombres) return conNombres;
     if (CON_TEXTO.includes(codigo)) return t(`partidas.errors.${codigo}`);
     return error?.message || t('partidas.error');
   };
@@ -483,8 +479,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
                             el marcador (QA del 11 oct 2026) */}
                         <div data-testid={`datos-${p.userId}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
                           <span className="font-medium break-words text-gray-900">{p.name}</span>
-                          <span>{formatoUnDecimal(p.handicap, i18n.language)}</span>
-                          <span>{t('partidas.playing', { juego: p.playingHandicap })}</span>
+                          <span>{formatoDeIndice(p.handicap, i18n.language)}</span>
+                          <span>{t('partidas.playing', { juego: formatoDeHandicapDeJuego(p.playingHandicap) })}</span>
                           {/* Sigue en su partida, pero no juega (2.ª pasada del QA) */}
                           {esNoPresentado(p) && (
                             <span className="font-semibold text-red-700">{t('partidas.noShow', conGenero(p.teeGender))}</span>

@@ -60,6 +60,8 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
+import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import { mensajeConJugadores } from '../utils/erroresConJugadores';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -401,14 +403,11 @@ const CompetitionDetail = () => {
       // dice quiénes y se lleva a «Sin franja», donde se colocan (FE #824)
       // Y sin hándicap tampoco se cierra: se dice quiénes, se marcan en la lista
       // y se abre el personalizado del primero (Agustín, 11 oct 2026)
+      // Los textos, los de aquí (dicen qué hacer en esta pantalla), montados
+      // con la cuenta y los nombres como en el resto de avisos con jugadores
       if (error?.errorCode === 'PLAYERS_WITHOUT_HANDICAP') {
         const faltan = error.data?.players || [];
-        const nombres = faltan.map((p) => p.name).filter(Boolean);
-        customToast.error(
-          nombres.length > 0
-            ? t('detail.errors.playersWithoutHandicap', { count: faltan.length, jugadores: nombres.join(', ') })
-            : t('detail.errors.playersWithoutHandicapUnnamed')
-        );
+        customToast.error(mensajeConJugadores(t, error, 'detail.errors', ['PLAYERS_WITHOUT_HANDICAP']));
         setSinHandicap(new Set(faltan.map((p) => p.user_id)));
         // Con la lista releída: el que falta puede no estar en la de aquí
         // (otra pestaña, una aprobación reciente) (/code-review)
@@ -430,15 +429,7 @@ const CompetitionDetail = () => {
         return;
       }
       if (error?.errorCode === 'PLAYERS_WITHOUT_TEE_WINDOW') {
-        const faltan = error.data?.players || [];
-        const jugadores = faltan.map((p) => p.name).filter(Boolean);
-        // La cuenta, la de todos los que faltan, aunque alguno venga sin nombre
-        // (/code-review). Sin ningún nombre, que no quede «Faltan 0: .»
-        customToast.error(
-          jugadores.length > 0
-            ? t('detail.errors.playersWithoutTeeWindow', { count: faltan.length, jugadores: jugadores.join(', ') })
-            : t('detail.errors.playersWithoutTeeWindowUnnamed')
-        );
+        customToast.error(mensajeConJugadores(t, error, 'detail.errors', ['PLAYERS_WITHOUT_TEE_WINDOW']));
         // Lo pintado puede estar viejo: se releen las franjas, y con lo releído
         // se lleva a «Sin franja» (allí se espera a que aparezca)
         setVersionFranjas((v) => v + 1);
@@ -1819,13 +1810,13 @@ const CompetitionDetail = () => {
                                   {conFijado(enrollment) ? (
                                     <span data-testid={`fijado-${enrollment.userId}`} className="text-green-700 text-sm font-medium">
                                       {t(enrollment.category != null && hayVariasCategorias ? 'detail.fixedHandicap' : 'detail.fixedHandicapNoCategory', {
-                                        handicap: unDecimal(enrollment.fixedHandicap),
+                                        handicap: formatoDeIndice(enrollment.fixedHandicap, i18n.language),
                                         categoria: enrollment.category,
                                       })}
                                     </span>
                                   ) : enrollment.hasCustomHandicap ? (
                                     <span className="text-amber-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: Number(enrollment.customHandicap).toFixed(1) })}
+                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.customHandicap, i18n.language) })}
                                       {' '}
                                       <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">
                                         {t('detail.customHandicapBadge')}
@@ -1833,7 +1824,7 @@ const CompetitionDetail = () => {
                                     </span>
                                   ) : enrollment.userHandicap !== null && enrollment.userHandicap !== undefined ? (
                                     <span className="text-green-700 text-sm font-medium">
-                                      {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                      {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
                                     </span>
                                   ) : (
                                     <span className="text-gray-500 text-sm">{t('detail.noHandicap')}</span>
@@ -1903,7 +1894,7 @@ const CompetitionDetail = () => {
                               </p>
                               {enrollment.userHandicap !== null && enrollment.userHandicap !== undefined && (
                                 <p className="text-gray-500 text-sm mt-1">
-                                  {t('detail.handicapLabel', { handicap: Number(enrollment.userHandicap).toFixed(1) })}
+                                  {t('detail.handicapLabel', { handicap: formatoDeIndice(enrollment.userHandicap, i18n.language) })}
                                 </p>
                               )}
                             </div>

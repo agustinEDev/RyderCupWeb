@@ -442,6 +442,21 @@ describe('AdminPanel', () => {
     expect(solicitudes).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('las pestañas de campos van a la primera y a la última con Inicio y Fin (FE #658)', async () => {
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminGolfCourses/ }));
+    const barra = screen.getByRole('tablist', { name: 'common:screens.adminGolfCourses' });
+    const [aprobados, solicitudes] = within(barra).getAllByRole('tab');
+    fireEvent.keyDown(aprobados, { key: 'End' });
+    expect(solicitudes).toHaveAttribute('aria-selected', 'true');
+    expect(solicitudes).toHaveFocus();
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', solicitudes.id);
+    fireEvent.keyDown(solicitudes, { key: 'Home' });
+    expect(aprobados).toHaveAttribute('aria-selected', 'true');
+    expect(aprobados).toHaveFocus();
+  });
+
   it('en el ordenador, la sección lleva su título y su panel de pestañas', async () => {
     renderPanel();
     await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());

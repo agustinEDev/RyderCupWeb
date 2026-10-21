@@ -51,8 +51,8 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
       },
       // Estos llegan en null cuando no sois amigos. Se dejan en null y no se
       // convierten a 0: un cero se leería como "juega fatal" en vez de "esto no
-      // se puede ver".
-      email: data.email ?? null,
+      // se puede ver". El correo no se trae: el de otro jugador no se enseña
+      // (21 oct)
       handicap: data.handicap ?? null,
       // Las estadísticas pasan por el mismo mapper que las propias: es el
       // mismo DTO del backend, y devolverlo aquí en snake_case obligaría a la

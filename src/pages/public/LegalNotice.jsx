@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
+import VolverDeLoLegal from '../../components/layout/VolverDeLoLegal';
 import { URL_RFEG } from '../../components/golf_course/FuenteRfeg';
 
 // La sexta es «Fuentes de datos y licencias», que lleva enlaces y se pinta aparte
@@ -50,6 +51,7 @@ const LegalNotice = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
+            <VolverDeLoLegal />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               {t('legalNotice.title')}
             </h1>

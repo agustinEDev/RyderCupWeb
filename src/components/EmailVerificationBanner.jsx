@@ -91,7 +91,7 @@ const EmailVerificationBanner = ({ userEmail }) => {
           <button
             type="button"
             onClick={handleDismiss}
-            className="inline-flex rounded-md text-yellow-400 hover:text-yellow-500 focus:outline-none"
+            className="inline-flex rounded-md text-yellow-400 hover:text-yellow-500"
           >
             <span className="sr-only">{t('emailVerification.dismiss')}</span>
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

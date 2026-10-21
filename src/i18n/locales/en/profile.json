@@ -6,7 +6,8 @@
     "rfegTab": "RFEG (Automatic)",
     "manualTab": "Manual",
     "fetchRfeg": "Fetch from RFEG",
-    "dismiss": "Not now"
+    "dismiss": "Not now",
+    "tabsLabel": "How to set your handicap"
   },
   "title": "My Profile",
   "subtitle": "Your account information and statistics",

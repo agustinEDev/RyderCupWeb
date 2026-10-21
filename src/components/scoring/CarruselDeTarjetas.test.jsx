@@ -93,4 +93,34 @@ describe('CarruselDeTarjetas', () => {
 
     expect(screen.getByTestId('carril-de-tarjetas')).toHaveClass('relative');
   });
+
+  it('K8 (FE #658): cada tarjeta se nombra con su nombre de arriba, que la controla', () => {
+    render(<CarruselDeTarjetas tarjetas={TARJETAS} />);
+
+    for (const nombre of ['Nacho', 'Luna', 'Óscar']) {
+      const pestana = screen.getByRole('tab', { name: nombre });
+      const panel = screen.getByRole('tabpanel', { name: nombre });
+      expect(pestana.id).toBeTruthy();
+      expect(panel).toHaveAttribute('aria-labelledby', pestana.id);
+      expect(pestana).toHaveAttribute('aria-controls', panel.id);
+    }
+  });
+
+  it('K9 (FE #658): dos carruseles en la misma pantalla no comparten ids de nombre', () => {
+    render(
+      <>
+        <CarruselDeTarjetas tarjetas={TARJETAS} />
+        <CarruselDeTarjetas tarjetas={TARJETAS} />
+      </>
+    );
+
+    const ids = screen.getAllByRole('tab').map((b) => b.id);
+    expect(new Set(ids).size).toBe(6);
+  });
+
+  it('K10 (FE #658): con una sola tarjeta, sin nombres arriba, sigue nombrada', () => {
+    render(<CarruselDeTarjetas tarjetas={[TARJETAS[0]]} />);
+
+    expect(screen.getByRole('tabpanel', { name: 'Nacho' })).not.toHaveAttribute('aria-labelledby');
+  });
 });

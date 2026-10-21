@@ -72,4 +72,11 @@ describe('NameCaptainsModal · lo que se elige (FE #710)', () => {
     expect(screen.queryByTestId('capitanes-el-mismo')).not.toBeInTheDocument();
     expect(screen.getByText('detail.captains.confirm')).toBeEnabled();
   });
+
+  // Un hándicap plus se guarda negativo y se lee con «+»; el orden sigue el número (FE #797)
+  it('H1: el plus con «+», y el primero por ser el más bajo', () => {
+    pintar({ players: [...JUGADORES, { userId: 'ana', name: 'Ana Alba', handicap: -2 }] });
+
+    expect(opciones('capitan-a')).toEqual(['Ana Alba (+2.0)', 'Carla Cruz (8.4)', 'Dani Díaz (20.0)', 'Eva Esteve']);
+  });
 });

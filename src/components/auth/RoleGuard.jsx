@@ -1,5 +1,4 @@
 import { Navigate, useLocation } from 'react-router';
-import PropTypes from 'prop-types';
 import { useAuth } from '../../hooks/useAuth';
 
 /**
@@ -112,16 +111,6 @@ const RoleGuard = ({
   }
 
   return children;
-};
-
-RoleGuard.propTypes = {
-  allowedRoles: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.arrayOf(PropTypes.string)
-  ]).isRequired,
-  children: PropTypes.node.isRequired,
-  requireAll: PropTypes.bool,
-  redirectTo: PropTypes.string,
 };
 
 export default RoleGuard;

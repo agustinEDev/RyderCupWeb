@@ -23,7 +23,8 @@
     "alreadyEnrolled": "Already in the tournament",
     "loadingFriends": "Loading your friends…",
     "friendsLoadFailed": "Could not load your friends list",
-    "eligibilityLoadFailed": "Could not check who is already invited or in. Close this and open it again"
+    "eligibilityLoadFailed": "Could not check who is already invited or in. Close this and open it again",
+    "tabsLabel": "How to invite"
   },
   "status": {
     "PENDING": "Pending",

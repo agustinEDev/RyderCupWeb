@@ -126,6 +126,13 @@
     "AFTERNOON": "Afternoon",
     "EVENING": "Evening"
   },
+  "handicapLabels": {
+    "index": "HCP {{value}}",
+    "indexWithColon": "HCP: {{value}}",
+    "playing": "PH: {{value}}",
+    "playingCapped": "PH: {{value}} Lim.",
+    "limit": "{{value}} Lim."
+  },
   "handicapModes": {
     "MATCH_PLAY": "Match Play"
   },
@@ -195,6 +202,17 @@
     "addConfirm": "Add",
     "cancel": "Cancel",
     "error": "The schedule could not be changed",
+    "errors": {
+      "PLAYERS_WITHOUT_TEE_one": "Can't change it: {{jugadores}} has no tees on this course.",
+      "PLAYERS_WITHOUT_TEE_other": "Can't change it: {{count}} players have no tees on this course ({{jugadores}}).",
+      "PLAYERS_WITHOUT_TEE_unnamed": "Can't change it: some players have no tees on this course.",
+      "PLAYERS_WITHOUT_HANDICAP_one": "Can't change it: {{jugadores}} has no handicap.",
+      "PLAYERS_WITHOUT_HANDICAP_other": "Can't change it: {{count}} players have no handicap ({{jugadores}}).",
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "Can't change it: some players have no handicap.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_one": "Can't change it: {{jugadores}} still needs a tee time window.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_other": "Can't change it: {{count}} players still need a tee time window ({{jugadores}}).",
+      "PLAYERS_WITHOUT_TEE_WINDOW_unnamed": "Can't change it: some players still need a tee time window."
+    },
     "inDetail": "Change the schedule",
     "confirmFormat": "If the captains already handed in their envelopes, changing the format discards them and they will have to hand them in again. Change it?",
     "confirmRemove": "Remove this session?",

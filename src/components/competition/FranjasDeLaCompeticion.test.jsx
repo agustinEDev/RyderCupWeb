@@ -602,3 +602,60 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(expect.objectContaining({ rounds: [expect.anything()] })));
   });
 });
+
+/**
+ * Los avisos que traen la lista de jugadores, con sus nombres (22 oct): llevar
+ * una franja con partidas a otro campo puede dejar a alguien sin barras.
+ *
+ *   #   el servidor rechaza con                    | el aviso
+ *   ----|------------------------------------------|----------------------------------
+ *   J1  PLAYERS_WITHOUT_TEE / _HANDICAP /          | `agenda.errors.<código>` con la
+ *       _TEE_WINDOW y nombres                      | cuenta y los nombres
+ *   J2  el código sin nombres                      | `agenda.errors.<código>_unnamed`
+ *   J3  otro código                                | su mensaje, como siempre
+ */
+describe('FranjasDeLaCompeticion · avisos con nombres', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLeer.mockResolvedValue({ rounds: [franja()], teeSheetCapacity: 96 });
+    mockCampos.mockResolvedValue(CAMPOS);
+  });
+
+  const rechazo = (errorCode, players) =>
+    Object.assign(new Error('Hay jugadores afectados'), { errorCode, data: { detail: 'x', error_code: errorCode, players } });
+
+  const llevarAOtroCampo = async () => {
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: /^franjas\.change/ }));
+    fireEvent.change(screen.getByLabelText('franjas.course'), { target: { value: 'g-2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'franjas.save' }));
+  };
+
+  it.each(['PLAYERS_WITHOUT_TEE', 'PLAYERS_WITHOUT_HANDICAP', 'PLAYERS_WITHOUT_TEE_WINDOW'])(
+    'J1: %s nombra a los jugadores',
+    async (codigo) => {
+      mockCambiar.mockRejectedValue(rechazo(codigo, [{ user_id: 'u1', name: 'Ana' }, { user_id: 'u2', name: 'Luis' }]));
+      await llevarAOtroCampo();
+
+      await waitFor(() =>
+        expect(mockToast.error).toHaveBeenCalledWith(
+          `agenda.errors.${codigo} ${JSON.stringify({ count: 2, jugadores: 'Ana, Luis' })}`
+        )
+      );
+    }
+  );
+
+  it('J2: sin nombres, el texto sin hueco', async () => {
+    mockCambiar.mockRejectedValue(rechazo('PLAYERS_WITHOUT_HANDICAP', [{ user_id: 'u1', name: null }]));
+    await llevarAOtroCampo();
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('agenda.errors.PLAYERS_WITHOUT_HANDICAP_unnamed'));
+  });
+
+  it('J3: otro código, su mensaje', async () => {
+    mockCambiar.mockRejectedValue(rechazo('NOT_A_TEE_WINDOW', [{ name: 'Ana' }]));
+    await llevarAOtroCampo();
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Hay jugadores afectados'));
+  });
+});

@@ -166,14 +166,25 @@ describe('PlayerProfilePage', () => {
   });
 
   describe('what only friends see', () => {
-    it('shows email, stats and activity once you are friends', async () => {
+    it('shows stats and activity once you are friends', async () => {
       getProfile.mockResolvedValue(amigo());
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-contact')).toBeInTheDocument();
-      expect(screen.getByText('ana@example.com')).toBeInTheDocument();
-      expect(screen.getByTestId('player-profile-stats')).toBeInTheDocument();
+      expect(await screen.findByTestId('player-profile-stats')).toBeInTheDocument();
       expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
+    });
+
+    it("never shows another player's email, not even to a friend and even if the API sends it", async () => {
+      // Decisión de producto (Agustín, 21 oct): el correo de otro no se enseña.
+      // El propio sigue en /profile
+      getProfile.mockResolvedValue(amigo({ email: 'ana@example.com' }));
+      const { container } = renderProfile();
+
+      await screen.findByTestId('player-profile-stats');
+      expect(screen.queryByTestId('player-profile-contact')).not.toBeInTheDocument();
+      expect(screen.queryByText(/ana@example\.com/)).not.toBeInTheDocument();
+      expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
+      expect(document.body.innerHTML).not.toContain('ana@example.com');
     });
 
     it('marks the estimated index as not being the official one', async () => {
@@ -184,6 +195,15 @@ describe('PlayerProfilePage', () => {
       expect(await screen.findByTestId('player-profile-stat-estimatedIndex')).toHaveTextContent(
         'playerProfile:stats.estimatedIndexHint'
       );
+    });
+
+    // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+    it('shows a plus handicap and a plus estimated index with their plus sign', async () => {
+      getProfile.mockResolvedValue(amigo({ handicap: -2, stats: estadisticas({ estimatedIndex: -0.4 }) }));
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('+2.0');
+      expect(screen.getByTestId('player-profile-stat-estimatedIndex')).toHaveTextContent('+0.4');
     });
 
     it('says they publish nothing when the activity comes back forbidden', async () => {

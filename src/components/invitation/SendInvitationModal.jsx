@@ -3,6 +3,7 @@ import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { Loader, Search, UserPlus, X } from 'lucide-react';
 import Avatar from '../ui/Avatar';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
 
 const SendInvitationModalContent = ({
   onClose,
@@ -87,9 +88,9 @@ const SendInvitationModalContent = ({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        // Pulsar una pestana NO es descartar el desplegable: su `mousedown`
-        // llega antes que su `click`, asi que contarlo como tal impedia
-        // devolver los resultados al volver.
+        // Pulsar una pestana NO es descartar el desplegable: este cierre llega
+        // antes que su `click`, asi que contarlo como tal impedia devolver los
+        // resultados al volver.
         // Descartar es pulsar Escape o el fondo. Pinchar en el mensaje, en la
         // barra de pestanas o en cualquier otro sitio del propio formulario es
         // seguir usandolo: cierra el desplegable, pero no cuenta como que el
@@ -101,8 +102,12 @@ const SendInvitationModalContent = ({
         openDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // En el `click` y no en el `mousedown`, como en AddFriendModal: la lista
+    // va en el flujo y cerrarla al apretar subia el pie antes de soltar, y el
+    // clic caia en otro boton. En captura, para seguir cerrando antes que el
+    // manejador del destino: una pestana que restaura la lista lo hace despues
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdown]);
 
   // Keyboard navigation for dropdown (document-level to avoid focus issues)
@@ -351,7 +356,13 @@ const SendInvitationModalContent = ({
       busy={isProcessing}
       boxClassName={CAJA_PROPIA}
     >
-      <div ref={modalRef} className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      {/* Alto maximo con desplazamiento propio, como en AddFriendModal: la
+          lista de resultados ocupa sitio dentro y no debe sacarla de la pantalla */}
+      <div
+        ref={modalRef}
+        data-testid="caja-enviar-invitacion"
+        className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 id="enviar-invitacion-titulo" className="text-lg font-semibold text-gray-900">{t('send.title')}</h2>
           <button
@@ -365,60 +376,27 @@ const SendInvitationModalContent = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200" role="tablist" data-testid="invitation-tabs">
-          <button
-            type="button"
-            onClick={() => handleTabChange('friends')}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === 'friends'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="tab-friends"
-            role="tab"
-            id="tab-friends"
-            aria-selected={activeTab === 'friends'}
-            aria-controls="panel-friends"
-          >
-            {t('send.tabFriends')}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('search')}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === 'search'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="tab-search-user"
-            role="tab"
-            id="tab-search-user"
-            aria-selected={activeTab === 'search'}
-            aria-controls="panel-search"
-          >
-            {t('send.tabSearchUser')}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('email')}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === 'email'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="tab-by-email"
-            role="tab"
-            id="tab-by-email"
-            aria-selected={activeTab === 'email'}
-            aria-controls="panel-email"
-          >
-            {t('send.tabByEmail')}
-          </button>
-        </div>
+        <GrupoDePestanas actual={activeTab} onElegir={handleTabChange}>
+          <ListaDePestanas
+            etiqueta={t('send.tabsLabel')}
+            className="flex border-b border-gray-200"
+            data-testid="invitation-tabs"
+            pestanas={[
+              { id: 'friends', contenido: t('send.tabFriends'), testId: 'tab-friends' },
+              { id: 'search', contenido: t('send.tabSearchUser'), testId: 'tab-search-user' },
+              { id: 'email', contenido: t('send.tabByEmail'), testId: 'tab-by-email' },
+            ]}
+            claseDePestana={(abierta) =>
+              `flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                abierta
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`
+            }
+          />
 
-        {/* Amigos: la lista, sin teclear ni esperar a nada */}
-        {activeTab === 'friends' && (
-          <div className="p-4" role="tabpanel" id="panel-friends" aria-labelledby="tab-friends">
+          {/* Amigos: la lista, sin teclear ni esperar a nada */}
+          <PanelDePestana id="friends" className="p-4">
             {cargandoAmigos ? (
               <div className="py-8 text-center" data-testid="friends-loading">
                 <p className="text-sm text-gray-500">{t('send.loadingFriends')}</p>
@@ -484,12 +462,10 @@ const SendInvitationModalContent = ({
                 })}
               </ul>
             )}
-          </div>
-        )}
+          </PanelDePestana>
 
-        {/* Search User Tab */}
-        {activeTab === 'search' && (
-          <form onSubmit={handleUserSubmit} className="p-4 space-y-4" role="tabpanel" id="panel-search" aria-labelledby="tab-search-user">
+          {/* Search User Tab */}
+          <PanelDePestana id="search" como="form" onSubmit={handleUserSubmit} className="p-4 space-y-4">
             <div>
               {selectedUser ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-md" data-testid="selected-user-chip">
@@ -539,9 +515,10 @@ const SendInvitationModalContent = ({
                     <p className="text-xs text-gray-400 mt-1">{t('send.searchMinChars')}</p>
                   )}
 
-                  {/* Results dropdown */}
+                  {/* Resultados en el flujo y no `absolute`: flotando no ocupaban
+                      sitio y asomaban por debajo de la caja (QA, 20 oct) */}
                   {showDropdown && searchResults.length > 0 && (
-                    <div id="user-search-listbox" className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+                    <div id="user-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
                       {searchResults.map((user, index) => (
                         <button
                           key={user.id}
@@ -636,12 +613,10 @@ const SendInvitationModalContent = ({
                 {isProcessing ? t('send.sending') : t('send.send')}
               </button>
             </div>
-          </form>
-        )}
+          </PanelDePestana>
 
-        {/* By Email Tab */}
-        {activeTab === 'email' && (
-          <form onSubmit={handleEmailSubmit} className="p-4 space-y-4" role="tabpanel" id="panel-email" aria-labelledby="tab-by-email">
+          {/* By Email Tab */}
+          <PanelDePestana id="email" como="form" onSubmit={handleEmailSubmit} className="p-4 space-y-4">
             <div>
               <label htmlFor="invitation-email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('send.emailLabel')}
@@ -700,8 +675,8 @@ const SendInvitationModalContent = ({
                 {isProcessing ? t('send.sending') : t('send.send')}
               </button>
             </div>
-          </form>
-        )}
+          </PanelDePestana>
+        </GrupoDePestanas>
       </div>
     </ModalShell>
   );

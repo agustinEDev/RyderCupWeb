@@ -20,7 +20,7 @@ vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfToken: () => 'csrf' }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRed } = await import('../utils/sinCobertura');
+const { esFalloDeRed, esFalloDeRedDeLaApi } = await import('../utils/sinCobertura');
 const { noLlegoAlServidor, seGuardaParaDespues } = await import('../utils/politicaDeLaCola');
 
 // Como el `fetch` de verdad: no contesta nunca, y al abortar su señal rechaza
@@ -58,6 +58,9 @@ describe('apiRequest · el tope de tiempo (FE #624)', () => {
     expect(error).toBeInstanceOf(TypeError);
     expect(error.message).toBe('t(common:sinConexion.mensaje)');
     expect(esFalloDeRed(error)).toBe(true);
+    // La marca explícita: es lo que mira la versión estricta
+    expect(error.sinConexion).toBe(true);
+    expect(esFalloDeRedDeLaApi(error)).toBe(true);
     expect(noLlegoAlServidor(error)).toBe(true);
     expect(seGuardaParaDespues(error)).toBe(true);
   });

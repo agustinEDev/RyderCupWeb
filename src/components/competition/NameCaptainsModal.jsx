@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ModalShell from '../ui/ModalShell';
+import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
  * Elegir a los dos capitanes, uno por equipo (FE #692).
@@ -58,7 +59,7 @@ const NameCaptainsModal = ({
   const etiqueta = (p) =>
     p.handicap === null || p.handicap === undefined
       ? p.name
-      : `${p.name} (${Number(p.handicap).toFixed(1)})`;
+      : `${p.name} (${formatoDeIndice(p.handicap)})`;
   const listo = Boolean(
     teamA && teamB && teamA !== teamB && disponibles.has(teamA) && disponibles.has(teamB)
   );

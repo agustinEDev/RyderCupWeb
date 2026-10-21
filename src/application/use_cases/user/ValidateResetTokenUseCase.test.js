@@ -98,54 +98,48 @@ describe('ValidateResetTokenUseCase', () => {
     });
   });
 
-  // El catch: la API no responde a un token inválido con un error (eso va como
-  // valid:false, arriba). Aquí llegan la red caída y los errores HTTP, como el
-  // 429 del límite de peticiones o un 5xx
-  describe('Network and HTTP errors (catch)', () => {
-    it('should return valid:false with the error message when rate limited (429)', async () => {
-      // Arrange
-      const token = 'a'.repeat(48);
-      const mockError = new Error('Too many requests');
+  // FE #785: la API no responde a un token inválido con un error (eso va como
+  // valid:false, arriba). Lo que llega como error —la red caída, el 429 del
+  // límite, un 5xx— no dice nada del enlace: el caso de uso lo deja pasar tal
+  // cual y la página lo clasifica (utils/sinCobertura), en vez de convertirlo
+  // en «enlace no válido».
+  //
+  //   #   el repositorio lanza          | el caso de uso
+  //   ----|-----------------------------|---------------------------------
+  //   E1  TypeError (sin conexión)      | lo relanza, el mismo
+  //   E2  Error con status 429          | lo relanza, con su status
+  //   E3  Error con status 500          | lo relanza, el mismo
+  //   E4  Error sin status ni mensaje   | lo relanza: tampoco es un enlace malo
+  describe('Network and HTTP errors are rethrown (FE #785)', () => {
+    it('E1: a network failure is rethrown, not turned into valid:false', async () => {
+      const error = new TypeError('common:sinConexion.mensaje');
+      authRepository.validateResetToken.mockRejectedValue(error);
 
-      authRepository.validateResetToken.mockRejectedValue(mockError);
-
-      // Act
-      const result = await validateResetTokenUseCase.execute(token);
-
-      // Assert
-      expect(result.valid).toBe(false);
-      expect(result.message).toBe('Too many requests');
-      expect(authRepository.validateResetToken).toHaveBeenCalledWith(token);
+      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toBe(error);
+      expect(authRepository.validateResetToken).toHaveBeenCalledWith('a'.repeat(48));
     });
 
-    it('should return valid:false with the error message on a server error', async () => {
-      // Arrange
-      const token = 'a'.repeat(48);
-      const mockError = new Error('Error interno del servidor');
+    it('E2: a 429 is rethrown with its status', async () => {
+      const error = Object.assign(new Error('common:demasiadasPeticiones'), { status: 429 });
+      authRepository.validateResetToken.mockRejectedValue(error);
 
-      authRepository.validateResetToken.mockRejectedValue(mockError);
-
-      // Act
-      const result = await validateResetTokenUseCase.execute(token);
-
-      // Assert
-      expect(result.valid).toBe(false);
-      expect(result.message).toBe('Error interno del servidor');
+      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toMatchObject({
+        status: 429,
+      });
     });
 
-    it('should return generic error message when repository throws unknown error', async () => {
-      // Arrange
-      const token = 'some_token';
-      const mockError = new Error(); // Sin mensaje
+    it('E3: a server error is rethrown', async () => {
+      const error = Object.assign(new Error('Internal Server Error'), { status: 500 });
+      authRepository.validateResetToken.mockRejectedValue(error);
 
-      authRepository.validateResetToken.mockRejectedValue(mockError);
+      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toBe(error);
+    });
 
-      // Act
-      const result = await validateResetTokenUseCase.execute(token);
+    it('E4: an unknown error is rethrown too', async () => {
+      const error = new Error();
+      authRepository.validateResetToken.mockRejectedValue(error);
 
-      // Assert
-      expect(result.valid).toBe(false);
-      expect(result.message).toBe('The token is invalid or has expired');
+      await expect(validateResetTokenUseCase.execute('a'.repeat(48))).rejects.toBe(error);
     });
   });
 
@@ -180,38 +174,6 @@ describe('ValidateResetTokenUseCase', () => {
         'Reset token is required'
       );
       expect(authRepository.validateResetToken).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Network errors', () => {
-    it('should return valid:false on network error', async () => {
-      // Arrange
-      const token = 'valid_token';
-      const mockError = new Error('Network request failed');
-
-      authRepository.validateResetToken.mockRejectedValue(mockError);
-
-      // Act
-      const result = await validateResetTokenUseCase.execute(token);
-
-      // Assert
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('Network request failed');
-    });
-
-    it('should return valid:false on timeout error', async () => {
-      // Arrange
-      const token = 'valid_token';
-      const mockError = new Error('Request timeout');
-
-      authRepository.validateResetToken.mockRejectedValue(mockError);
-
-      // Act
-      const result = await validateResetTokenUseCase.execute(token);
-
-      // Assert
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('Request timeout');
     });
   });
 

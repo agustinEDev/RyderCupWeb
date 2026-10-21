@@ -211,6 +211,18 @@ describe('PlayerStatsPage', () => {
     expect(screen.queryByTestId('rounds-without-tee-note')).not.toBeInTheDocument();
   });
 
+  // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+  it('shows a plus estimated index with its plus sign', async () => {
+    mockGetPlayerStats.mockResolvedValue(
+      PlayerStats.fromPersistence({ roundsPlayed: 8, roundsWithDifferential: 8, estimatedIndex: -1.5 })
+    );
+    renderPage();
+
+    const bloque = await screen.findByTestId('estimated-index-block');
+    expect(bloque).toHaveTextContent('+1.5');
+    expect(bloque).not.toHaveTextContent('-1.5');
+  });
+
   it('states that the index is not the official handicap', async () => {
     /**
      * Quien lee esta pagina es justo quien puede confundir el indice con su

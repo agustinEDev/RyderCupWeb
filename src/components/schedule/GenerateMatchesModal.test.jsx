@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import GenerateMatchesModal from './GenerateMatchesModal';
+import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
 
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
@@ -13,6 +14,8 @@ vi.mock('framer-motion', () => ({
 }));
 
 const mockT = (key, params) => {
+  const abreviatura = abreviaturaDeHandicap(key, params);
+  if (abreviatura) return abreviatura;
   if (params) {
     let result = key;
     Object.entries(params).forEach(([k, v]) => {
@@ -288,5 +291,15 @@ describe('GenerateMatchesModal', () => {
 
     expect(screen.getByDisplayValue('manual')).toBeInTheDocument();
     expect(screen.queryByTestId('emparejan-los-sobres')).not.toBeInTheDocument();
+  });
+
+  // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
+  it('H1: en las opciones, el plus con «+» y el positivo sin signo', () => {
+    const enrollments = [{ ...baseProps.enrollments[0], userHandicap: -2 }, ...baseProps.enrollments.slice(1)];
+    render(<GenerateMatchesModal isOpen={true} {...baseProps} enrollments={enrollments} />);
+    fireEvent.click(screen.getByDisplayValue('manual'));
+
+    expect(screen.getAllByRole('option', { name: 'Player 1 (HCP: +2.0)' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('option', { name: 'Player 3 (HCP: 8.5)' }).length).toBeGreaterThan(0);
   });
 });

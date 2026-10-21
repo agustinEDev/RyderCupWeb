@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 /**
  * Unauthorized Page
@@ -16,13 +17,15 @@ const Unauthorized = () => {
     ? requestedPath
     : '/dashboard';
 
+  // La pantalla menos el hueco de la barra inferior, si App la pinta: 100vh
+  // sobraban 64 px en el móvil (QA del 21 oct 2026). En clase y no en el
+  // estilo, que no sabe de `md:`
   return (
-    <div style={{
+    <div className={PANTALLA_MENOS_BARRA_INFERIOR} style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: '100vh',
       padding: '2rem',
       fontFamily: 'system-ui, sans-serif',
       backgroundColor: '#f9fafb',

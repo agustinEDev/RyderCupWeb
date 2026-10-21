@@ -283,3 +283,267 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
     expect(result.totalStrokes).toBe(6);
   });
 });
+
+/**
+ * «Tu vuelta» mientras se anota (21 oct): el acumulado neto contra el par con
+ * el hándicap de juego PROPIO —el «Hcp de juego» de la tarjeta: su hándicap
+ * con el allowance del formato—, repartido por SUS índices. Nunca la
+ * diferencia del match play.
+ *
+ *   N3  hándicap de juego propio x allowance        | R1, R2, R3, R4, R5
+ *   N4  solo el neto, sin puntos (22 oct)           | R6, R7
+ *   N5  foursomes: nada                             | R8
+ *   N6  SCRATCH: contra el par                      | R9
+ *   N7  solo los hoyos anotados                     | R10
+ *   N8  la raya, doble bogey neto                   | R11
+ *   N9  sin hoyos anotados: sin resultado           | R12
+ *       hándicap plus devuelve golpes               | R13
+ *       sin jugador no hay vuelta                   | R14
+ *       los índices de SU barra                     | R15
+ */
+describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () => {
+  const running = (overrides = {}) =>
+    PersonalRoundCalculator.runningResult({
+      me,
+      participants: [me, rival],
+      holes,
+      holeScores: scores,
+      tees: [],
+      participantStrokes: [],
+      matchFormat: null,
+      allowancePercentage: 100,
+      playMode: 'HANDICAP',
+      ...overrides,
+    });
+
+  it('R1: aplica el allowance del formato al hándicap propio', () => {
+    // Hcp 2 al 50% = 1 golpe, en el hoyo más difícil: netos 3 y 2 sobre par 7
+    const result = running({ allowancePercentage: 50 });
+
+    expect(result.toParLabel).toBe('-2');
+    expect(result.toPar).toBe(-2);
+    expect(result.holesPlayed).toBe(2);
+  });
+
+  it('R2: al 100% recibe su hándicap entero', () => {
+    // Netos 3 y 1 sobre par 7
+    expect(running().toParLabel).toBe('-3');
+  });
+
+  it('R3: en match play el de menos hándicap recibe SUS golpes, no la diferencia', () => {
+    // El backend le da 0 golpes de reparto (la diferencia es del rival), pero
+    // su hándicap de juego es 2: la vuelta cuenta con esos 2
+    const result = running({
+      matchFormat: 'SINGLES',
+      participantStrokes: [
+        { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
+        { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
+      ],
+    });
+
+    expect(result.toParLabel).toBe('-3');
+  });
+
+  it('R4: usa el hándicap de juego que enseña la tarjeta (el del backend)', () => {
+    // Localmente saldría 2; el backend guardó 1, que es el que pinta la tarjeta
+    const result = running({
+      matchFormat: 'FOURBALL',
+      participantStrokes: [
+        { participantId: 'p-1', playingHandicap: 1, strokesByHole: {} },
+        { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1 } },
+      ],
+    });
+
+    expect(result.toParLabel).toBe('-2');
+  });
+
+  it('R5: sin reparto del backend lo calcula con su hándicap y el allowance', () => {
+    const result = running({ matchFormat: 'SINGLES', allowancePercentage: null });
+
+    // Sin allowance conocido, el 100%: 2 golpes
+    expect(result.toParLabel).toBe('-3');
+  });
+
+  it('R6: en Stableford, el neto; los puntos ya no salen de aquí (22 oct)', () => {
+    // Netos 3 (par 4) y 1 (par 3). Los puntos van en la clasificación; un
+    // formato de juego que aún llegue no cambia nada
+    const result = running({ scoringFormat: 'STABLEFORD' });
+
+    expect(result).toEqual({ toPar: -3, toParLabel: '-3', holesPlayed: 2 });
+  });
+
+  it('R7: en ningún formato hay campo de puntos', () => {
+    expect(running()).not.toHaveProperty('stablefordPoints');
+    expect(running({ matchFormat: 'SINGLES' })).not.toHaveProperty('stablefordPoints');
+  });
+
+  it('R8: en foursomes no hay vuelta propia', () => {
+    expect(running({ matchFormat: 'FOURSOMES' })).toBeNull();
+  });
+
+  it('R9: en SCRATCH no recibe golpes y se mide contra el par', () => {
+    const result = running({
+      playMode: 'SCRATCH',
+      participantStrokes: [{ participantId: 'p-1', playingHandicap: 2, strokesByHole: { 1: 1, 2: 1 } }],
+    });
+
+    // Brutos 4 y 2 sobre par 7
+    expect(result.toParLabel).toBe('-1');
+  });
+
+  it('R10: cuenta solo los hoyos anotados', () => {
+    const result = running({ holeScores: [scores[0]] });
+
+    // Hoyo 1: 4 golpes, recibe 1 → neto 3 sobre par 4
+    expect(result.toParLabel).toBe('-1');
+    expect(result.holesPlayed).toBe(1);
+  });
+
+  it('R11: la raya cuenta como doble bogey neto', () => {
+    const result = running({
+      holeScores: [scores[0], { holeNumber: 2, participantId: 'p-1', score: null }],
+    });
+
+    // Neto 3 + raya 5 sobre par 7
+    expect(result.toParLabel).toBe('+1');
+  });
+
+  it('R12: sin hoyos anotados no hay resultado todavía', () => {
+    const result = running({ holeScores: [] });
+
+    expect(result.toParLabel).toBeNull();
+    expect(result.toPar).toBeNull();
+    expect(result.holesPlayed).toBe(0);
+  });
+
+  it('R13: un hándicap plus devuelve golpes en los hoyos más fáciles', () => {
+    const card = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: 4,
+      strokeIndex: i + 1,
+    }));
+    const plus = { participantId: 'p-1', name: 'Alice', handicap: -1 };
+    const result = running({
+      me: plus,
+      participants: [plus, rival],
+      holes: card,
+      holeScores: [{ holeNumber: 18, participantId: 'p-1', score: 4 }],
+    });
+
+    // Cede el golpe en el índice 18: 4 brutos son 5 netos
+    expect(result.toParLabel).toBe('+1');
+  });
+
+  it('R15: reparte por los índices de SU barra, no los del campo', () => {
+    // Su barra invierte la dificultad: el hoyo 2 es el más difícil
+    const yellow = { ...me, color: 'Amarillas', teeGender: 'MALE' };
+    const tees = [
+      {
+        color: 'Amarillas',
+        gender: 'MALE',
+        holes: [
+          { holeNumber: 1, par: 4, strokeIndex: 15 },
+          { holeNumber: 2, par: 3, strokeIndex: 5 },
+        ],
+      },
+    ];
+    const result = running({
+      me: yellow,
+      participants: [yellow, rival],
+      tees,
+      allowancePercentage: 50,
+      holeScores: [scores[1]],
+    });
+
+    // Hcp 2 al 50% = 1 golpe, en el hoyo 2: 2 golpes, neto 1 sobre par 3
+    expect(result.toParLabel).toBe('-2');
+  });
+
+  it('R14: sin jugador no hay vuelta', () => {
+    expect(running({ me: null })).toBeNull();
+  });
+
+  it('R14b: lo que llega undefined toma su valor por defecto, como un parámetro', () => {
+    const result = PersonalRoundCalculator.runningResult({
+      me,
+      participants: undefined,
+      holes,
+      holeScores: undefined,
+      tees: undefined,
+      participantStrokes: undefined,
+      playMode: undefined,
+    });
+
+    expect(result).toEqual({ toPar: null, toParLabel: null, holesPlayed: 0 });
+    expect(
+      PersonalRoundCalculator.compute({ me, holes, holeScores: scores, tees: undefined, participants: undefined })
+    ).not.toBeNull();
+  });
+
+  // Revisión final del 21 oct. Una tarjeta de 18 hoyos de par 4 con índices
+  // 1..18 y un hándicap 20: cada golpe de diferencia en el hándicap de juego se
+  // ve en el resultado, así que el 95%, el 90% y el 100% dan números distintos
+  describe('el hándicap de juego que falta', () => {
+    const card = Array.from({ length: 18 }, (_, i) => ({
+      holeNumber: i + 1,
+      par: 4,
+      strokeIndex: i + 1,
+    }));
+    const alto = { participantId: 'p-1', name: 'Alice', handicap: 20 };
+    const todos = card.map((h) => ({ holeNumber: h.holeNumber, participantId: 'p-1', score: 4 }));
+    const deAlto = (overrides = {}) =>
+      running({ me: alto, participants: [alto, rival], holes: card, holeScores: todos, ...overrides });
+
+    it('R16: si el reparto del backend no trae a quien anota, usa su hándicap local, no 0', () => {
+      const result = deAlto({
+        matchFormat: 'SINGLES',
+        allowancePercentage: 100,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      // Hcp 20 al 100% = 20 golpes: 72 brutos son 52 netos sobre par 72
+      expect(result.toPar).toBe(-20);
+    });
+
+    it('R16b: y con el allowance del partido (fourball al 90%)', () => {
+      const result = deAlto({
+        matchFormat: 'FOURBALL',
+        allowancePercentage: 90,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      expect(result.toPar).toBe(-18);
+    });
+
+    it('R17: sin allowance, el de partido libre es el 95% del formato, no el 100%', () => {
+      const result = deAlto({ matchFormat: null, allowancePercentage: null });
+
+      // 20 al 95% = 19
+      expect(result.toPar).toBe(-19);
+    });
+
+    it('R17b: sin allowance en fourball, su 90%', () => {
+      const result = deAlto({
+        matchFormat: 'FOURBALL',
+        allowancePercentage: undefined,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      expect(result.toPar).toBe(-18);
+    });
+
+    it('R17c: sin allowance en singles, su 100%', () => {
+      const result = deAlto({
+        matchFormat: 'SINGLES',
+        allowancePercentage: null,
+        participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
+      });
+
+      expect(result.toPar).toBe(-20);
+    });
+
+    it('R17d: un allowance explícito manda sobre el del formato', () => {
+      expect(deAlto({ matchFormat: null, allowancePercentage: 100 }).toPar).toBe(-20);
+    });
+  });
+});

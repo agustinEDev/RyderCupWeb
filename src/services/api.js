@@ -24,9 +24,20 @@ const llamaAlBackend = async (url, config) => {
     return await fetchWithTokenRefresh(url, config);
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
-    throw new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: error });
+    throw sinConexion(error);
   }
 };
+
+/**
+ * El error de falta de cobertura, con la marca explícita `sinConexion` que mira
+ * `esFalloDeRedDeLaApi`: un `TypeError` del código no la lleva, y así no se
+ * confunden. Lo crean el fallo de `fetch`, su tope y el cuerpo que se corta a
+ * medias. El original queda en `cause`.
+ */
+const sinConexion = (causa) =>
+  Object.assign(new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: causa }), {
+    sinConexion: true,
+  });
 
 // Prioridad: 1. Runtime config (globalThis.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
@@ -203,8 +214,15 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       return null;
     }
 
-    // Return parsed JSON
-    return await aTiempo(response.json());
+    // Return parsed JSON. Un `TypeError` al leer el cuerpo es la conexión que se
+    // cortó a medias: falta de cobertura, como el de `fetch`. Un `SyntaxError`
+    // (un 200 que no es JSON, el portal de una wifi) sí tuvo respuesta y sube tal cual
+    try {
+      return await aTiempo(response.json());
+    } catch (error) {
+      if (error instanceof TypeError) throw sinConexion(error);
+      throw error;
+    }
   } catch (error) {
     console.error('API Request Error:', error);
     // Se venció el tope: para quien juega, un servidor que no contesta y la
@@ -213,7 +231,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
     // propio tope: un error que llegó antes —una sesión caducada en el refresco
     // que se esperaba, o un 409 cuyo cuerpo tardaba— es la respuesta
     if (corte && error === corte.signal.reason) {
-      throw new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: error });
+      throw sinConexion(error);
     }
     throw error;
   } finally {

@@ -65,7 +65,8 @@
       "teePlaceholder": "Pick their tee",
       "guestFallbackName": "the guest",
       "errorTeamFull": "That team is already full: pick the other one.",
-      "errorGuestName": "Enter the guest's first and last name."
+      "errorGuestName": "Enter the guest's first and last name.",
+      "tabsLabel": "How to add players"
     },
     "scorers": {
       "heading": "Choose scorers",
@@ -213,6 +214,12 @@
       "holeNetStrokes": "{{count}} net stroke(s) on this hole",
       "pointsShort": "Pts",
       "netShort": "Net",
+      "subtotalPoints_one": "{{count}} point",
+      "subtotalPoints_other": "{{count}} points",
+      "subtotalNetStrokes": "Net {{count}}",
+      "sectionTotalPointsA11y_one": "{{strokes}} strokes, {{count}} point",
+      "sectionTotalPointsA11y_other": "{{strokes}} strokes, {{count}} points",
+      "sectionTotalNetA11y": "{{strokes}} strokes, {{net}} net",
       "scratchMatch": "Scratch match · no handicap",
       "playingHandicap": "Playing handicap {{value}}",
       "receivesStrokes_one": "receives {{count}} stroke",
@@ -259,7 +266,8 @@
       "classificationStale": "The standing is not up to date: strokes are still to be sent, and other players' still to arrive.",
       "noSeActualiza": "No connection to the server: what you see may not be up to date.",
       "standingStale": "The result is not up to date: there are strokes still to send, and the server computes it."
-    }
+    },
+    "tabsLabel": "Match view"
   },
   "personalRound": {
     "inMatch": "({{value}} in the match)"

@@ -1,5 +1,5 @@
 /**
- * Input Validation and Sanitization Utilities
+ * Input Validation Utilities
  */
 
 import {
@@ -67,30 +67,6 @@ export const PASSWORD_ERROR_CODES = Object.keys(PASSWORD_ERROR_KEYS);
 export const passwordErrorMessage = (error, t) => {
   const traduccion = passwordErrorTranslation(error?.errorCode);
   return traduccion ? t(traduccion.key, { ns: 'auth', ...traduccion.options }) : null;
-};
-
-/**
- * Get password strength level name
- * @param {number} strength - Strength score (0-4)
- * @returns {string} - Strength level name
- */
-export const getPasswordStrengthLabel = (strength) => {
-  if (strength >= 4) return 'Strong';
-  if (strength >= 3) return 'Medium';
-  if (strength >= 2) return 'Weak';
-  return 'Very weak';
-};
-
-/**
- * Get password strength color
- * @param {number} strength - Strength score (0-4)
- * @returns {string} - Tailwind color class
- */
-export const getPasswordStrengthColor = (strength) => {
-  if (strength >= 4) return 'bg-green-500';
-  if (strength >= 3) return 'bg-yellow-500';
-  if (strength >= 2) return 'bg-orange-500';
-  return 'bg-red-500';
 };
 
 /**
@@ -191,61 +167,6 @@ export const validateEmail = (email) => {
   return {
     isValid: true,
     message: ''
-  };
-};
-
-/**
- * Sanitizes string input to prevent XSS
- * Escapes HTML special characters to prevent injection attacks
- * @param {string} input - Input to sanitize
- * @returns {string} - Sanitized input
- */
-export const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return input;
-
-  // HTML entity encoding map
-  const htmlEntities = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;'
-  };
-
-  return input
-    .replace(/[&<>"'/]/g, (char) => htmlEntities[char])
-    .trim();
-};
-
-/**
- * Validates handicap value
- * @param {number|string} handicap - Handicap to validate
- * @returns {Object} - { isValid: boolean, message: string, value: number }
- */
-export const validateHandicap = (handicap) => {
-  const value = Number.parseFloat(handicap);
-
-  if (Number.isNaN(value)) {
-    return {
-      isValid: false,
-      message: 'Please enter a valid number',
-      value: null
-    };
-  }
-
-  if (value < -10 || value > 54) {
-    return {
-      isValid: false,
-      message: 'Handicap must be between -10.0 and 54.0',
-      value
-    };
-  }
-
-  return {
-    isValid: true,
-    message: '',
-    value
   };
 };
 

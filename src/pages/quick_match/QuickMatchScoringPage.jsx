@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
 import { useParams, useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -23,8 +23,10 @@ import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
 import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchScorecardTable';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
+import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
 import BlockLoader from '../../components/ui/BlockLoader';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 import { useSinConexion } from '../../hooks/useSinConexion';
 
 const TABS = ['input', 'classification', 'scorecard'];
@@ -124,6 +126,42 @@ const QuickMatchScoringPage = () => {
     discrepancias,
     resuelveDiscrepancia,
   } = useQuickMatchScoring(quickMatchId, user?.id);
+
+  // «Tu vuelta» (21 oct): el acumulado neto de quien anota con SU hándicap de
+  // juego, sobre lo visible —lo pendiente de enviar incluido—. En foursomes
+  // sale null: una bola por bando, no hay vuelta propia. En un useMemo y aquí
+  // arriba, antes de las salidas tempranas: es un hook, y la pantalla se pinta
+  // de nuevo con cada sondeo aunque no cambie ningún golpe
+  const participants = quickMatch?.participants;
+  const participantStrokes = quickMatch?.participantStrokes;
+  const matchFormat = quickMatch?.matchFormat ?? null;
+  const effectiveAllowance = quickMatch?.effectiveAllowance ?? null;
+  const playMode = quickMatch?.playMode ?? 'HANDICAP';
+  const myRound = useMemo(
+    () =>
+      PersonalRoundCalculator.runningResult({
+        me: myParticipant,
+        participants: participants ?? [],
+        holes,
+        holeScores: holeScoresVisibles,
+        tees,
+        participantStrokes: participantStrokes ?? [],
+        matchFormat,
+        allowancePercentage: effectiveAllowance,
+        playMode,
+      }),
+    [
+      myParticipant,
+      participants,
+      holes,
+      holeScoresVisibles,
+      tees,
+      participantStrokes,
+      matchFormat,
+      effectiveAllowance,
+      playMode,
+    ]
+  );
   // El mapa del hoyo (BE #532): «Mapa» en la tarjeta lo abre a pantalla completa
   // El mapa, cuando ya llegó el campo (sus hoyos) y con él su país: antes,
   // fuera de España se pedía para nada (CodeRabbit)
@@ -219,8 +257,9 @@ const QuickMatchScoringPage = () => {
     // Y al cerrarse vuelve donde estaba: el contenedor enfocado se desmonta y
     // el foco caeria al principio de la pagina, dejando tirado a quien navega
     // con teclado o lector de pantalla. Si el boton que lo abrio ya no existe
-    // —al cancelar de verdad, desaparece— el foco va a las pestanas, que
-    // siguen ahi.
+    // —al cancelar de verdad, desaparece— el foco va a la pestana abierta,
+    // que sigue ahi (a ella y no a la barra: la barra no es enfocable en el
+    // patron de pestanas, y desde ella las flechas no hacian nada).
     // Sin foco guardado no ha habido ningun aviso abierto —esto corre tambien
     // al montar la pagina— y aqui no hay nada que devolver: tocarlo movia el
     // foco a las pestanas en cada carga.
@@ -231,7 +270,7 @@ const QuickMatchScoringPage = () => {
       previo.focus?.();
       return;
     }
-    tabsRef.current?.focus?.();
+    tabsRef.current?.querySelector('[role="tab"][aria-selected="true"]')?.focus();
   }, [showFinishConfirm, showCancelConfirm, hayDiscrepancia]);
 
   useEffect(() => {
@@ -396,6 +435,8 @@ const QuickMatchScoringPage = () => {
 
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();
+
+  // «Tu vuelta»: calculada arriba, antes de las salidas tempranas (es un hook)
 
   // `isCancelled` cuenta igual que `isCompleted`: la partida ya no admite
   // anotaciones. Sin el, la pantalla seguia viva y cada guardado se estrellaba
@@ -585,23 +626,22 @@ const QuickMatchScoringPage = () => {
           )}
         </div>
 
-        <div ref={tabsRef} tabIndex={-1} className="flex border-b border-gray-200 mb-4 focus:outline-none" data-testid="quick-match-scoring-tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              data-testid={`quick-match-tab-${tab}`}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
-                activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {t(`scoring.tabs.${tab}`)}
-            </button>
-          ))}
-        </div>
+        <GrupoDePestanas actual={activeTab} onElegir={setActiveTab}>
+          {/* Su pestaña abierta recibe el foco al cerrarse un aviso cuyo botón ya no existe */}
+          <ListaDePestanas
+            ref={tabsRef}
+            etiqueta={t('scoring.tabsLabel')}
+            className="flex border-b border-gray-200 mb-4"
+            data-testid="quick-match-scoring-tabs"
+            pestanas={TABS.map((tab) => ({ id: tab, contenido: t(`scoring.tabs.${tab}`), testId: `quick-match-tab-${tab}` }))}
+            claseDePestana={(abierta) =>
+              `flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
+                abierta ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`
+            }
+          />
 
-        {activeTab === 'input' && (
-          <div className="space-y-4">
+          <PanelDePestana id="input" className="space-y-4">
             {!isScorer && (
               <p className="text-sm text-gray-600 bg-gray-100 rounded-lg p-3">{t('scoring.notAScorer')}</p>
             )}
@@ -630,6 +670,7 @@ const QuickMatchScoringPage = () => {
                       entries={entries}
                       isReadOnly={isReadOnly}
                       allowPickedUp={allowsPickedUp}
+                      myRound={myRound}
                       onScoreChange={handleScoreChange}
                     />
                     <VentanaDelMapa
@@ -691,11 +732,9 @@ const QuickMatchScoringPage = () => {
                 </button>
               </div>
             )}
-          </div>
-        )}
+          </PanelDePestana>
 
-        {activeTab === 'classification' && (
-          <>
+          <PanelDePestana id="classification" enfocable>
           {/* Lo nuestro sí está al día —sale de este móvil—, pero de los demás
               solo tenemos la última foto del servidor: lo que hayan anotado
               desde el corte no ha llegado. Así que se pintan los dos, cada
@@ -736,23 +775,23 @@ const QuickMatchScoringPage = () => {
             showFinalBadge={yaCerrada}
             isCancelled={!!quickMatch?.isCancelled}
           />
-          </>
-        )}
+          </PanelDePestana>
 
-        {activeTab === 'scorecard' && (
-          <QuickMatchScorecardTable
-            holes={holes}
-            holeScores={holeScoresVisibles}
-            participants={quickMatch?.participants ?? []}
-            currentParticipantId={myParticipant?.participantId}
-            scoringFormat={quickMatch?.scoringFormat}
-            matchFormat={quickMatch?.matchFormat}
-            playMode={quickMatch?.playMode}
-            participantStrokes={quickMatch?.participantStrokes ?? []}
-            tees={tees}
-            allowancePercentage={quickMatch?.effectiveAllowance}
-          />
-        )}
+          <PanelDePestana id="scorecard" enfocable>
+            <QuickMatchScorecardTable
+              holes={holes}
+              holeScores={holeScoresVisibles}
+              participants={quickMatch?.participants ?? []}
+              currentParticipantId={myParticipant?.participantId}
+              scoringFormat={quickMatch?.scoringFormat}
+              matchFormat={quickMatch?.matchFormat}
+              playMode={quickMatch?.playMode}
+              participantStrokes={quickMatch?.participantStrokes ?? []}
+              tees={tees}
+              allowancePercentage={quickMatch?.effectiveAllowance}
+            />
+          </PanelDePestana>
+        </GrupoDePestanas>
       </div>
 
       {showFinishConfirm && (

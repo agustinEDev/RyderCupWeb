@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 
 /**
  * Con los Términos sin aceptar, el backend responde 403 a todo salvo
@@ -12,6 +12,9 @@ import { render, screen } from '@testing-library/react';
  *   ------------------------------|--------------------------------|----------|------
  *   Términos pendientes           | apagados                       | encendido| no
  *   aceptados                     | encendidos                     | encendido| sí
+ *
+ * La barra publica su hueco en `--alto-barra-inferior` (en <html>) para que las
+ * páginas de pantalla completa lo descuenten: solo cuando se pinta, 0px si no.
  */
 const llamadas = vi.hoisted(() => ({ cola: [], muestras: [], dispositivos: [], refresco: [] }));
 const pendientes = vi.hoisted(() => ({ valor: false }));
@@ -48,6 +51,7 @@ vi.mock('@sentry/react', async (original) => ({
 const App = (await import('./App')).default;
 
 const ultimo = (lista) => lista.at(-1);
+const hueco = () => document.documentElement.style.getPropertyValue('--alto-barra-inferior');
 
 describe('App · nada que llame a la API con los Términos pendientes', () => {
   beforeEach(() => {
@@ -71,6 +75,10 @@ describe('App · nada que llame a la API con los Términos pendientes', () => {
     expect(llamadas.dispositivos).not.toContain(true);
     expect(ultimo(llamadas.refresco)).toBe(true);
     expect(screen.queryByText('barra inferior')).toBeNull();
+    // Con la sesión ya confirmada (el refresco se enciende con ella): el hueco
+    // no sale de la sesión sino de la barra
+    await vi.waitFor(() => expect(ultimo(llamadas.refresco)).toBe(true));
+    expect(hueco()).toBe('0px');
   });
 
   it('aceptados: todo encendido, como siempre', async () => {
@@ -83,5 +91,15 @@ describe('App · nada que llame a la API con los Términos pendientes', () => {
     expect(ultimo(llamadas.dispositivos)).toBe(true);
     expect(ultimo(llamadas.refresco)).toBe(true);
     expect(screen.getByText('barra inferior')).toBeInTheDocument();
+    expect(hueco()).toBe('calc(4rem + env(safe-area-inset-bottom))');
+  });
+
+  it('al desmontarse App, el hueco no se queda publicado', async () => {
+    pendientes.valor = false;
+    render(<App />);
+    await screen.findByText('barra inferior');
+    cleanup();
+
+    expect(hueco()).toBe('');
   });
 });
