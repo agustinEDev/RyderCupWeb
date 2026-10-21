@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pencil } from 'lucide-react';
 import {
@@ -14,6 +14,7 @@ import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
+import NombreConHandicap from './NombreConHandicap';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
@@ -61,8 +62,10 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const esMedal = strokePlay.tournamentType === 'MEDAL';
   const golpeDe = (userId, hoyo) =>
     scoringView.scores.find((s) => s.holeNumber === hoyo)?.playerScores.find((p) => p.userId === userId) ?? null;
-  const parDe = (userId, hoyo) =>
-    scoringView.players.find((p) => p.userId === userId)?.holeCard.find((h) => h.holeNumber === hoyo)?.par ?? null;
+  // Cada jugador por su id, una vez por vista: el hándicap de juego y los pares
+  // vienen en `players`, no en la tarjeta (QA del 21 oct 2026)
+  const jugadores = useMemo(() => new Map(scoringView.players.map((p) => [p.userId, p])), [scoringView]);
+  const parDe = (userId, hoyo) => jugadores.get(userId)?.holeCard.find((h) => h.holeNumber === hoyo)?.par ?? null;
 
   // Lo que se ve en cada hoyo: el golpe validado, los dos si no coinciden
   const textoDe = (golpe) => {
@@ -234,7 +237,15 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
             className={`rounded-lg border bg-white p-3 ${jugador === userId ? 'border-green-300' : 'border-gray-200'}`}
           >
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-semibold text-gray-900">{name}</span>
+              {/* Con su hándicap de juego en la misma línea, como en match play:
+                  si no cabe, se corta el nombre y el valor se queda (QA del 21 oct 2026) */}
+              <NombreConHandicap
+                userId={jugador}
+                nombre={name}
+                playingHandicap={jugadores.get(jugador)?.playingHandicap}
+                className="flex min-w-0 max-w-full items-baseline"
+                nombreClassName="min-w-0 truncate font-semibold text-gray-900"
+              />
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                 {t(`partida.cardStatus.${cardStatus}`, conGenero(teeGender))}
               </span>

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
+import ModalShell from '../ui/ModalShell';
 
 /**
  * Buscador de jugadores.
@@ -29,13 +31,11 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const searchTimerRef = useRef(null);
   const searchRequestIdRef = useRef(0);
   const onSearchUsersRef = useRef(onSearchUsers);
-  const onCloseRef = useRef(onClose);
   const highlightedIndexRef = useRef(highlightedIndex);
   const showDropdownRef = useRef(showDropdown);
   const searchResultsRef = useRef(searchResults);
   const openProfileRef = useRef(null);
   useEffect(() => { onSearchUsersRef.current = onSearchUsers; });
-  useEffect(() => { onCloseRef.current = onClose; });
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe en el mismo
   // momento que el estado. Antes la ref la copiaba un efecto sin dependencias,
@@ -64,10 +64,6 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   }, []);
 
   useEffect(() => {
-    searchInputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         openDropdown(false);
@@ -83,12 +79,16 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Con la lista abierta, Escape es suyo y la cierra; sin ella, cierra el
+      // modal el armazón (`closeOnEscape`), que escucha antes. En `flushSync`:
+      // el armazón lee `closeOnEscape` del último render, y un segundo Escape
+      // antes de pintar lo vería todavía en falso y no cerraría
       if (e.key === 'Escape') {
         if (showDropdownRef.current) {
-          openDropdown(false);
-          highlight(-1);
-        } else {
-          onCloseRef.current();
+          flushSync(() => {
+            openDropdown(false);
+            highlight(-1);
+          });
         }
         return;
       }
@@ -194,122 +194,121 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   // rompe con React Compiler y lo vigila `react-hooks/refs`
   useEffect(() => { openProfileRef.current = handleOpenProfile; });
 
+  // El armazón común (QA del 21 oct 2026): el foco entra en el buscador, no
+  // sale con el tabulador y vuelve al botón que lo abrió; la página de debajo
+  // no se desplaza. Pulsar fuera cierra: sin pie, la X es la única salida
+  // visible, y en un teléfono no hay tecla de escape. Al elegir a alguien la
+  // vuelta del foco no ocurre: Amigos ya no está en la página
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      data-testid="add-friend-backdrop"
-      // Pulsar fuera cierra. Sin el pie, la X es la unica salida visible, y en
-      // un telefono no hay tecla de escape a la que recurrir
-      onClick={onClose}
+    <ModalShell
+      isOpen
+      onClose={onClose}
+      testId="add-friend-backdrop"
+      labelledBy="add-friend-modal-title"
+      closeOnEscape={!showDropdown}
+      inicialRef={searchInputRef}
+      // Con su alto máximo y desplazamiento propio: la lista de resultados ya
+      // ocupa sitio dentro y, larga, no debe sacar la caja de la pantalla
+      boxClassName="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto"
     >
-      {/* Con su alto maximo y desplazamiento propio: la lista de resultados ya
-          ocupa sitio dentro y, larga, no debe sacar la caja de la pantalla */}
-      <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-friend-modal-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 id="add-friend-modal-title" className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
-          {/* h-11 w-11 y no el icono a secas: es la zona tactil minima que usa
-              el resto de la aplicacion, y al quitar el pie esta X paso a ser la
-              unica forma de cerrar */}
-          <button
-            onClick={onClose}
-            aria-label={t('cancel', { ns: 'common' })}
-            className="-mr-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-100"
-          >
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </div>
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <h2 id="add-friend-modal-title" className="text-lg font-semibold text-gray-900">{t('add.title')}</h2>
+        {/* h-11 w-11 y no el icono a secas: es la zona tactil minima que usa
+            el resto de la aplicacion, y al quitar el pie esta X paso a ser la
+            unica forma de cerrar */}
+        <button
+          onClick={onClose}
+          aria-label={t('cancel', { ns: 'common' })}
+          className="-mr-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-100"
+        >
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+      </div>
 
-        {/* Ya no hay formulario: no queda nada que enviar desde aqui. El pie
-            con Cancelar y Enviar se va con el — cierran la X y el fondo */}
-        <div className="p-4">
-          <div className="relative" ref={dropdownRef}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('add.searchPlaceholder')}
-                className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                data-testid="user-search-input"
-                role="combobox"
-                aria-expanded={showDropdown && searchResults.length > 0}
-                aria-haspopup="listbox"
-                aria-controls="friend-search-listbox"
-                aria-activedescendant={highlightedIndex >= 0 ? `friend-search-option-${highlightedIndex}` : undefined}
-              />
-              {isSearching && (
-                <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-              )}
-            </div>
-
-            {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
-              <p className="text-xs text-gray-400 mt-1">{t('add.searchMinChars')}</p>
-            )}
-
-            {/* En el flujo y no `absolute`: flotando no ocupaba sitio y asomaba
-                por debajo de la caja (QA, 20 oct) */}
-            {showDropdown && searchResults.length > 0 && (
-              <div id="friend-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
-                {searchResults.map((user, index) => (
-                  <button
-                    key={user.id}
-                    id={`friend-search-option-${index}`}
-                    type="button"
-                    onClick={() => handleOpenProfile(user)}
-                    onMouseEnter={() => highlight(index)}
-                    className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
-                      index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
-                    }`}
-                    role="option"
-                    aria-selected={index === highlightedIndex}
-                    data-testid={`search-result-${user.id}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Avatar userId={user.id} size="sm" />
-                      {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
-                          su ancho mínimo es el del contenido, así que un
-                          nombre largo desborda en vez de recortarse */}
-                      {/* Alias arriba y nombre real debajo, y solo cuando son
-                          distintos (FE #435). Desde que se puede buscar por
-                          alias, esta lista puede devolver dos «Chuchi»: sin el
-                          nombre real no hay forma de saber a cuál añadir */}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {nombreVisible(user)}
-                        </p>
-                        {nombreRealSiAporta(user) && (
-                          <p className="text-xs text-gray-500 truncate">
-                            {nombreRealSiAporta(user)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
-              <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
-            )}
-
-            {searchFailed && (
-              <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('add.searchFailed')}</p>
+      {/* Ya no hay formulario: no queda nada que enviar desde aqui. El pie
+          con Cancelar y Enviar se va con el — cierran la X y el fondo */}
+      <div className="p-4">
+        <div className="relative" ref={dropdownRef}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('add.searchPlaceholder')}
+              className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              data-testid="user-search-input"
+              role="combobox"
+              aria-expanded={showDropdown && searchResults.length > 0}
+              aria-haspopup="listbox"
+              aria-controls="friend-search-listbox"
+              aria-activedescendant={highlightedIndex >= 0 ? `friend-search-option-${highlightedIndex}` : undefined}
+            />
+            {isSearching && (
+              <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
             )}
           </div>
 
-          <p className="mt-3 text-xs text-gray-500">{t('add.opensProfileHint')}</p>
+          {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
+            <p className="text-xs text-gray-400 mt-1">{t('add.searchMinChars')}</p>
+          )}
+
+          {/* En el flujo y no `absolute`: flotando no ocupaba sitio y asomaba
+              por debajo de la caja (QA, 20 oct) */}
+          {showDropdown && searchResults.length > 0 && (
+            <div id="friend-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
+              {searchResults.map((user, index) => (
+                <button
+                  key={user.id}
+                  id={`friend-search-option-${index}`}
+                  type="button"
+                  onClick={() => handleOpenProfile(user)}
+                  onMouseEnter={() => highlight(index)}
+                  className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
+                    index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
+                  }`}
+                  role="option"
+                  aria-selected={index === highlightedIndex}
+                  data-testid={`search-result-${user.id}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Avatar userId={user.id} size="sm" />
+                    {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
+                        su ancho mínimo es el del contenido, así que un
+                        nombre largo desborda en vez de recortarse */}
+                    {/* Alias arriba y nombre real debajo, y solo cuando son
+                        distintos (FE #435). Desde que se puede buscar por
+                        alias, esta lista puede devolver dos «Chuchi»: sin el
+                        nombre real no hay forma de saber a cuál añadir */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {nombreVisible(user)}
+                      </p>
+                      {nombreRealSiAporta(user) && (
+                        <p className="text-xs text-gray-500 truncate">
+                          {nombreRealSiAporta(user)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 && !isSearching && (
+            <p className="text-xs text-gray-500 mt-1" data-testid="no-users-found">{t('add.noUsersFound')}</p>
+          )}
+
+          {searchFailed && (
+            <p role="alert" className="text-sm text-red-600 mt-1" data-testid="search-error">{t('add.searchFailed')}</p>
+          )}
         </div>
+
+        <p className="mt-3 text-xs text-gray-500">{t('add.opensProfileHint')}</p>
       </div>
-    </div>
+    </ModalShell>
   );
 };
 

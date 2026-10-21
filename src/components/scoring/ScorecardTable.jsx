@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 import GolfFigure from './GolfFigure';
+import NombreConHandicap from './NombreConHandicap';
 import CarruselDeTarjetas from './CarruselDeTarjetas';
 import TarjetaVertical from './TarjetaVertical';
 import { useEsMovil } from '../../hooks/useEsMovil';
@@ -62,29 +62,16 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // Va en la línea de su nombre y no en una propia: con otra línea la tarjeta
   // crecía. En el móvil, si no cabe, se corta el nombre y el valor se queda.
   // En foursomes cada miembro lleva el suyo, no el del bando.
-  // A la vista «HCP 12»: «Hcp de juego 12» partía en dos líneas la cabecera de
-  // la pareja en el móvil y ensanchaba la columna del nombre en el ordenador.
-  // El lector de pantalla oye el largo, que «HCP» deletreado no dice nada.
-  const jugadorConHandicap = (p, cortaElNombre) => {
-    const valor = formatoDeHandicapDeJuego(p.playingHandicap);
-    return (
-      <span
-        data-testid={`jugador-${p.userId}`}
-        className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
-      >
-        <span className={cortaElNombre ? 'min-w-0 truncate' : undefined}>{p.userName}</span>
-        {valor !== null && (
-          <span
-            data-testid={`hcp-de-juego-${p.userId}`}
-            className="ml-1 shrink-0 whitespace-nowrap text-[10px] font-normal text-gray-500"
-          >
-            <span aria-hidden="true">{t('scorecard.playingHandicapShort', { value: valor })}</span>
-            <span className="sr-only">{t('scorecard.playingHandicap', { value: valor })}</span>
-          </span>
-        )}
-      </span>
-    );
-  };
+  const jugadorConHandicap = (p, cortaElNombre) => (
+    <NombreConHandicap
+      testId={`jugador-${p.userId}`}
+      userId={p.userId}
+      nombre={p.userName}
+      playingHandicap={p.playingHandicap}
+      className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
+      nombreClassName={cortaElNombre ? 'min-w-0 truncate' : undefined}
+    />
+  );
 
   const nombresConHandicap = (row, cortaElNombre = false) =>
     row.miembros.map((p, i) => (

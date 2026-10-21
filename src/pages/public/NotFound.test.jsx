@@ -63,21 +63,25 @@ describe('NotFound', () => {
     expect(screen.queryByRole('link', { name: 'Ir al panel' })).toBeNull();
   });
 
-  it('N6: el fondo llena la pantalla (a 360 px la mitad de abajo salía blanca, pasada del 21 oct)', () => {
+  // El hueco de la barra inferior lo publica App en `--alto-barra-inferior`
+  // solo cuando la pinta: la página no lo deduce de la sesión (QA del 21 oct)
+  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px))]', 'md:min-h-dvh'];
+
+  it('N6: el fondo llena la pantalla menos el hueco que diga App (a 360 px la mitad de abajo salía blanca)', () => {
     abrir();
 
     const principal = screen.getByRole('main');
-    expect(principal).toHaveClass('min-h-dvh', 'bg-gray-50');
-    expect(principal).not.toHaveClass('min-h-[70vh]');
+    expect(principal).toHaveClass(...ALTO, 'bg-gray-50');
+    expect(principal).not.toHaveClass('min-h-[70vh]', 'min-h-dvh');
   });
 
-  it('N6b: con sesión, en el móvil descuenta el hueco de la barra inferior y no baja de más', () => {
+  it('N6b: con sesión, el mismo alto: no lo decide el usuario sino la barra que pinta App', () => {
     sesion.valor = { user: { id: 'u-1' }, loading: false };
     abrir();
 
     const principal = screen.getByRole('main');
-    expect(principal).toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'md:min-h-dvh');
-    expect(principal).not.toHaveClass('min-h-dvh');
+    expect(principal).toHaveClass(...ALTO);
+    expect(principal).not.toHaveClass('min-h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]', 'min-h-dvh');
   });
 
   it('N2b: mientras se pregunta, el mensaje sin botones', () => {

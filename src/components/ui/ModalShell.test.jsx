@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useRef } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { createRoot } from 'react-dom/client';
 import ModalShell, { CAJA_PROPIA } from './ModalShell';
@@ -108,6 +109,23 @@ describe('ModalShell', () => {
     abrir();
 
     expect(document.activeElement).toBe(screen.getByText('Primero'));
+  });
+
+  // Un buscador mete el foco en su campo y no en la X de la cabecera
+  // (AddFriendModal, QA del 21 oct 2026)
+  it('con `inicialRef`, el foco entra ahí y no en lo primero', () => {
+    const ConCampo = () => {
+      const campoRef = useRef(null);
+      return (
+        <ModalShell isOpen onClose={vi.fn()} inicialRef={campoRef}>
+          <button>Cerrar</button>
+          <input ref={campoRef} aria-label="Buscar" />
+        </ModalShell>
+      );
+    };
+    render(<ConCampo />);
+
+    expect(screen.getByRole('textbox', { name: 'Buscar' })).toHaveFocus();
   });
 
   it('devuelve el foco a donde estaba al cerrarse', () => {
