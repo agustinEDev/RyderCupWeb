@@ -1076,3 +1076,84 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
     expect(screen.queryByTestId('subtotal-net-strokes')).toBeNull();
   });
 });
+
+/**
+ * La cifra pequeña bajo cada golpe, con nombre en la horizontal (#419).
+ *
+ *   #   formato     | cabecera de la fila de golpes          | casillas
+ *   ----|-----------|----------------------------------------|------------------
+ *   E1  STABLEFORD  | se ve «Pts», alineada con las cifras   | sin etiqueta
+ *   E1  MEDAL       | se ve «Neto»                           | sin etiqueta
+ *   E1  match play  | como antes: solo para el lector        | sin cambios
+ *   E2  los dos     | un hueco del alto de la figura encima  | la fila no crece
+ *                   | y la letra de la cifra: no la estira   |
+ *   E2  tramo vacío | sin cifras que nombrar, sin etiqueta   | la fila no crece
+ */
+describe('QuickMatchScorecardTable · la cifra pequeña tiene nombre (#419)', () => {
+  const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: 4 }];
+  const pinta = (props) =>
+    render(
+      <QuickMatchScorecardTable
+        holes={holes}
+        holeScores={holeScores}
+        participants={participants.slice(0, 1)}
+        currentParticipantId="p-1"
+        {...props}
+      />
+    );
+  const cabeceraDeGolpes = () => screen.getByTestId('vuelta-horizontal').querySelector('tbody th[scope="row"]');
+
+  it.each([
+    ['STABLEFORD', 'scoring.scorecard.pointsShort', 'hole-points'],
+    ['MEDAL', 'scoring.scorecard.netShort', 'hole-net-strokes'],
+  ])('E1: en %s la cabecera de la fila lo dice, a la vista', (scoringFormat, clave, testIdCifra) => {
+    pinta({ scoringFormat });
+
+    const th = cabeceraDeGolpes();
+    expect(th).not.toHaveClass('sr-only');
+    const etiqueta = within(th).getByText(clave);
+    expect(etiqueta).not.toHaveClass('sr-only');
+    // El tramo se sigue oyendo
+    expect(within(th).getByText('scorecard.out')).toHaveClass('sr-only');
+    // Con la misma letra que la cifra que nombra
+    const cifra = screen.getByTestId(testIdCifra);
+    expect(etiqueta.className).toBe(cifra.className);
+    // En la cabecera, no en cada casilla
+    expect(screen.getAllByText(clave)).toHaveLength(1);
+    expect(within(screen.getByTestId('quick-match-score-cell-p-1-1')).queryByText(clave)).toBeNull();
+  });
+
+  it('E2: la etiqueta va debajo de un hueco del alto de la figura, arriba del todo', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    const th = cabeceraDeGolpes();
+    expect(th).toHaveClass('align-top', 'py-1');
+    const columna = within(th).getByText('scoring.scorecard.pointsShort').parentElement;
+    expect(columna).toHaveClass('flex', 'flex-col', 'gap-0.5');
+    // El hueco mide lo que la figura (w-7 h-7) y no dice nada
+    const hueco = columna.firstElementChild;
+    expect(hueco).toHaveClass('h-7');
+    expect(hueco).toHaveTextContent('');
+    expect(screen.getAllByTestId('golf-figure')[0]).toHaveClass('h-7');
+  });
+
+  it('E2: un tramo sin cifras no enseña etiqueta, para que la fila no crezca', () => {
+    // Sin ningún hoyo jugado en el tramo no hay cifra que nombrar, y la
+    // etiqueta sola haría la fila más alta que las casillas
+    pinta({ scoringFormat: 'STABLEFORD', holeScores: [] });
+
+    const th = cabeceraDeGolpes();
+    expect(th).toHaveClass('sr-only');
+    expect(screen.queryByText('scoring.scorecard.pointsShort')).toBeNull();
+  });
+
+  it('E1: en match play no hay etiqueta y la cabecera sigue siendo solo para el lector', () => {
+    pinta({ matchFormat: 'SINGLES' });
+
+    const th = cabeceraDeGolpes();
+    expect(th).toHaveClass('sr-only');
+    expect(th).toHaveTextContent(/^scorecard\.out$/);
+    expect(screen.queryByText('scoring.scorecard.pointsShort')).toBeNull();
+    expect(screen.queryByText('scoring.scorecard.netShort')).toBeNull();
+  });
+});

@@ -102,3 +102,12 @@ describe('TeeSelectField', () => {
     expect(screen.getByTestId('quick-match-creator-tee')).toHaveTextContent('Elige tus barras');
   });
 });
+
+describe('TeeSelectField · anillo de foco (22 oct)', () => {
+  it('F2: el anillo verde sale con el teclado y no al pulsar', () => {
+    renderField();
+    const boton = screen.getByTestId('quick-match-creator-tee');
+    expect(boton).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary');
+    expect(boton.className).not.toMatch(/(^|\s)focus:ring/);
+  });
+});

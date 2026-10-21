@@ -58,5 +58,6 @@
     "failedToRespond": "Failed to respond to request",
     "failedToRemove": "Failed to remove friendship",
     "failedToBlock": "Failed to block user"
-  }
+  },
+  "tabsLabel": "Friend lists"
 }

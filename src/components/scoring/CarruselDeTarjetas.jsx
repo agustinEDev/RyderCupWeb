@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 const COLOR_DEL_NOMBRE = {
   A: 'border-l-blue-500 aria-selected:bg-blue-100 aria-selected:text-blue-700 aria-selected:border-blue-300',
@@ -25,6 +25,9 @@ const sinMovimiento = () =>
  */
 const CarruselDeTarjetas = ({ tarjetas, inicial }) => {
   const carril = useRef(null);
+  // Los ids de los nombres, para que cada tarjeta se nombre con el suyo (FE #658)
+  const base = useId();
+  const idDelNombre = (clave) => `${base}-nombre-${clave}`;
   const [actual, setActual] = useState(() =>
     Math.max(0, tarjetas.findIndex((t) => t.clave === inicial))
   );
@@ -72,6 +75,7 @@ const CarruselDeTarjetas = ({ tarjetas, inicial }) => {
               key={tarjeta.clave}
               type="button"
               role="tab"
+              id={idDelNombre(tarjeta.clave)}
               aria-selected={i === actual}
               aria-controls={`tarjeta-${tarjeta.clave}`}
               onClick={() => ir(i)}
@@ -101,7 +105,9 @@ const CarruselDeTarjetas = ({ tarjetas, inicial }) => {
             key={tarjeta.clave}
             id={`tarjeta-${tarjeta.clave}`}
             role="tabpanel"
-            aria-label={tarjeta.nombre}
+            // Sin nombres arriba (una sola tarjeta), se nombra a sí misma
+            aria-labelledby={varias ? idDelNombre(tarjeta.clave) : undefined}
+            aria-label={varias ? undefined : tarjeta.nombre}
             className="w-full flex-none snap-center"
           >
             {tarjeta.contenido}

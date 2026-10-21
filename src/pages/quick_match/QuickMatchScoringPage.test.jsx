@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
@@ -123,6 +123,36 @@ describe('QuickMatchScoringPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
     });
+  });
+
+  it('FE #658: las vistas son pestañas de verdad, con su nombre, su panel y las flechas', async () => {
+    renderPage();
+
+    const barra = screen.getByRole('tablist', { name: 'scoring.tabsLabel' });
+    expect(barra).toBe(screen.getByTestId('quick-match-scoring-tabs'));
+    // La barra no es una parada ni recibe foco: lo recibe la pestaña abierta
+    expect(barra).not.toHaveAttribute('tabindex');
+    const [anotar, clasificacion, tarjeta] = within(barra).getAllByRole('tab');
+    expect(anotar).toBe(screen.getByTestId('quick-match-tab-input'));
+    expect(anotar).toHaveAttribute('aria-selected', 'true');
+    expect(clasificacion).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tabpanel', { name: 'scoring.tabs.input' })).toHaveAttribute('id', anotar.getAttribute('aria-controls'));
+    // Anotar está lleno de botones: el panel no es una parada más
+    expect(screen.getByRole('tabpanel', { name: 'scoring.tabs.input' })).not.toHaveAttribute('tabindex');
+
+    fireEvent.keyDown(anotar, { key: 'ArrowRight' });
+    expect(clasificacion).toHaveAttribute('aria-selected', 'true');
+    expect(clasificacion).toHaveFocus();
+    const panel = await screen.findByRole('tabpanel', { name: 'scoring.tabs.classification' });
+    expect(within(panel).getByTestId('quick-match-classification-table')).toBeInTheDocument();
+    // La clasificación y la tarjeta son tablas: el panel sí
+    expect(panel).toHaveAttribute('tabindex', '0');
+
+    fireEvent.keyDown(clasificacion, { key: 'End' });
+    expect(tarjeta).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'scoring.tabs.scorecard' })).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(tarjeta, { key: 'ArrowRight' });
+    expect(anotar).toHaveAttribute('aria-selected', 'true');
   });
 
   it('should show the golf course the match was played on', () => {
@@ -1091,7 +1121,10 @@ describe('QuickMatchScoringPage · cancelar una partida en curso', () => {
       fireEvent.click(screen.getByTestId('quick-match-cancel-confirm'));
     });
 
-    expect(document.activeElement).toBe(screen.getByTestId('quick-match-scoring-tabs'));
+    // A la pestaña abierta, no a la barra: la barra no es enfocable en el
+    // patrón de pestañas, y desde ella las flechas no hacían nada
+    expect(document.activeElement).toBe(screen.getByRole('tab', { selected: true }));
+    expect(document.activeElement).toBe(screen.getByTestId('quick-match-tab-input'));
   });
 
   it('does not touch the focus when the page just loads', async () => {

@@ -334,12 +334,12 @@
       "noGolfCourses": "Cannot activate: No golf courses selected",
       "golfCoursesFetchFailed": "Failed to verify golf courses. Please try again.",
       "teamAssignmentFailed": "Enrollments were closed, but automatic team assignment failed. You can assign teams manually.",
-      "playersWithoutTeeWindow_one": "{{jugadores}} still needs a tee time window.",
-      "playersWithoutTeeWindow_other": "{{count}} players still need a tee time window: {{jugadores}}.",
-      "playersWithoutTeeWindowUnnamed": "Some players still need a tee time window: check «Without a window».",
-      "playersWithoutHandicap_one": "{{jugadores}} has no handicap: set a custom one and close again.",
-      "playersWithoutHandicap_other": "{{count}} players have no handicap ({{jugadores}}): set a custom one and close again.",
-      "playersWithoutHandicapUnnamed": "Some players have no handicap: set a custom one and close again."
+      "PLAYERS_WITHOUT_TEE_WINDOW_one": "{{jugadores}} still needs a tee time window.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_other": "{{count}} players still need a tee time window: {{jugadores}}.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_unnamed": "Some players still need a tee time window: check «Without a window».",
+      "PLAYERS_WITHOUT_HANDICAP_one": "{{jugadores}} has no handicap: set a custom one and close again.",
+      "PLAYERS_WITHOUT_HANDICAP_other": "{{count}} players have no handicap ({{jugadores}}): set a custom one and close again.",
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "Some players have no handicap: set a custom one and close again."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {

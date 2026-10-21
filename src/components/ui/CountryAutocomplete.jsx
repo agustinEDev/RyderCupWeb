@@ -274,8 +274,8 @@ const CountryAutocomplete = ({
           data-testid="country-autocomplete-trigger"
           className={`w-full py-2 pl-3 pr-16 rounded-lg border text-left flex items-center gap-2 transition-all ${
             error
-              ? 'border-red-300 focus:ring-2 focus:ring-red-200'
-              : 'border-gray-300 focus:ring-2 focus:ring-primary'
+              ? 'border-red-300 focus-visible:ring-2 focus-visible:ring-red-200'
+              : 'border-gray-300 focus-visible:ring-2 focus-visible:ring-primary'
           } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'} focus:outline-none`}
         >
           {selectedCountry && (
@@ -308,7 +308,7 @@ const CountryAutocomplete = ({
             onClick={handleClear}
             aria-label={t('countrySelect.clear', 'Clear selection')}
             data-testid="country-autocomplete-clear"
-            className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded"
+            className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
           >
             <X className="w-4 h-4" />
           </button>

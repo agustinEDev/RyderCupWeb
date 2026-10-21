@@ -12,6 +12,7 @@ import {
   closeTeeWindowUseCase,
 } from '../../composition';
 import customToast from '../../utils/toast';
+import { mensajeConJugadores } from '../../utils/erroresConJugadores';
 import { anotaSuTarjeta, destinosDelJugador, esNoPresentado, juegan, errorDeMarcadores, partidasQueSeAdelantan, seCambia } from '../../domain/services/PartidasDeLaFranja';
 import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { conGenero } from '../../utils/genero';
@@ -158,13 +159,8 @@ const PartidasEnLaFranja = ({ competitionId, franja, nombre, salidas, userId, or
 
   const mensaje = (error) => {
     const codigo = error?.errorCode;
-    if (CON_NOMBRES.includes(codigo)) {
-      const nombres = (error.data?.players || []).map((p) => p.name).filter(Boolean);
-      // Sin nombres, uno propio sin el hueco: el del servidor no está traducido
-      return nombres.length > 0
-        ? t(`partidas.errors.${codigo}`, { count: error.data.players.length, jugadores: nombres.join(', ') })
-        : t(`partidas.errors.${codigo}_unnamed`);
-    }
+    const conNombres = mensajeConJugadores(t, error, 'partidas.errors', CON_NOMBRES);
+    if (conNombres) return conNombres;
     if (CON_TEXTO.includes(codigo)) return t(`partidas.errors.${codigo}`);
     return error?.message || t('partidas.error');
   };

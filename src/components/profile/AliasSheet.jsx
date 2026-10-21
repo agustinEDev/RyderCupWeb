@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 import { ALIAS_MAX_LENGTH, loQueHayQueMandar, queLePasaAlAlias } from '../../utils/alias';
 
 const CONFLICTO = 409;
@@ -9,13 +10,10 @@ const CONFLICTO = 409;
  * Poner, cambiar o quitar el alias sin salir del panel (FE #435).
  *
  * Misma hoja inferior que el resto de la aplicación, con dos diferencias
- * deliberadas respecto a las que ya había:
+ * deliberadas:
  *
- * - **El foco se gestiona.** Las otras declaran `aria-modal` y dejan que el
- *   tabulador se escape a los controles de detrás (#389). Esta mueve el foco
- *   al campo al abrirse, lo mantiene dentro mientras está abierta y lo
- *   devuelve a quien la abrió al cerrarse. Añadir una cuarta con el mismo
- *   agujero sería empeorar el problema a sabiendas.
+ * - **El foco entra en el campo**, no en lo primero: es una hoja para
+ *   escribir. Lo demás del foco es el de todas las hojas (`useFocoRetenido`).
  * - **Guarda ella misma**, porque no vive dentro de ningún formulario.
  */
 const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
@@ -26,55 +24,19 @@ const AliasSheet = ({ aliasActual, onGuardar, onClose }) => {
 
   const campoRef = useRef(null);
   const panelRef = useRef(null);
-  // Quién tenía el foco antes de abrir, para devolvérselo al cerrar
-  const disparadorRef = useRef(null);
 
-  useEffect(() => {
-    disparadorRef.current = document.activeElement;
-    campoRef.current?.focus();
-
-    return () => {
-      // `focus()` sobre un elemento que ya no está en el documento no hace
-      // nada y no lanza, así que no hace falta comprobarlo
-      disparadorRef.current?.focus?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    const alPulsarTecla = (e) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        // Igual que el fondo y la ✕: con una peticion en vuelo, no
-        if (!guardando) onClose();
-        return;
-      }
-
-      if (e.key !== 'Tab') return;
-
-      // Atrapar el foco: `aria-modal` promete que lo de fuera es inerte, y sin
-      // esto es mentira — un tabulador se va a los botones de detrás
-      const focusables = panelRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusables || focusables.length === 0) return;
-
-      const primero = focusables[0];
-      const ultimo = focusables[focusables.length - 1];
-
-      if (e.shiftKey && document.activeElement === primero) {
-        e.preventDefault();
-        ultimo.focus();
-      } else if (!e.shiftKey && document.activeElement === ultimo) {
-        e.preventDefault();
-        primero.focus();
-      }
-    };
-
-    document.addEventListener('keydown', alPulsarTecla, true);
-    return () => document.removeEventListener('keydown', alPulsarTecla, true);
-    // `guardando` entra en las dependencias a proposito: el listener tiene que
-    // leer el valor de ahora, no el del primer render
-  }, [onClose, guardando]);
+  // El foco de las hojas modales, el compartido (#389): entra en el campo, no
+  // se sale con el tabulador (sin contar lo desactivado), vuelve a quien la
+  // abrió y Escape cierra, en la pila de diálogos. Escape exclusivo, como las
+  // otras hojas: no llega a lo de debajo. Con una petición en vuelo no cierra,
+  // igual que el fondo y la ✕
+  useFocoRetenido(panelRef, {
+    inicialRef: campoRef,
+    escapeExclusivo: true,
+    alEscape: () => {
+      if (!guardando) onClose();
+    },
+  });
 
   const alEscribir = (e) => {
     if (error) setError(null);

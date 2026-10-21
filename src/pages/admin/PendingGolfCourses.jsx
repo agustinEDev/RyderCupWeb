@@ -20,6 +20,7 @@ import {
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 
 /**
  * PendingGolfCourses Page (Admin)
@@ -234,55 +235,51 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
         </div>
       </motion.div>
 
-      {/* Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="p-4"
-      >
-        <div className="flex gap-2 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('new')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeTab === 'new'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t('pages.pending.tabNew')} ({newRequests.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('updates')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeTab === 'updates'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t('pages.pending.tabUpdates')} ({updateProposals.length})
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="p-4"
-      >
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <GolfCourseTable
-            courses={currentCourses}
-            onView={handleViewDetails}
-            onApprove={activeTab === 'new' ? handleApproveNew : handleApproveUpdate}
-            onReject={activeTab === 'new' ? handleRejectNew : handleRejectUpdate}
-            isAdmin={isAdmin}
-            showActions={true}
+      {/* Tabs: las dos comparten la tabla, que es su panel */}
+      <GrupoDePestanas actual={activeTab} onElegir={setActiveTab} panelUnico>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="p-4"
+        >
+          <ListaDePestanas
+            etiqueta={t('pages.pending.tabsLabel')}
+            className="flex gap-2 border-b border-gray-200"
+            pestanas={[
+              { id: 'new', contenido: `${t('pages.pending.tabNew')} (${newRequests.length})` },
+              { id: 'updates', contenido: `${t('pages.pending.tabUpdates')} (${updateProposals.length})` },
+            ]}
+            claseDePestana={(abierta) =>
+              `px-4 py-2 font-medium border-b-2 transition-colors ${
+                abierta
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`
+            }
           />
-        </div>
-      </motion.div>
+        </motion.div>
+
+        {/* Table */}
+        <PanelDePestana
+          como={motion.div}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="p-4"
+        >
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <GolfCourseTable
+              courses={currentCourses}
+              onView={handleViewDetails}
+              onApprove={activeTab === 'new' ? handleApproveNew : handleApproveUpdate}
+              onReject={activeTab === 'new' ? handleRejectNew : handleRejectUpdate}
+              isAdmin={isAdmin}
+              showActions={true}
+            />
+          </div>
+        </PanelDePestana>
+      </GrupoDePestanas>
     </div>
   );
 
@@ -476,7 +473,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder={t('pages.pending.rejectReasonPlaceholder')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none"
                 rows={4}
                 minLength={10}
                 maxLength={500}

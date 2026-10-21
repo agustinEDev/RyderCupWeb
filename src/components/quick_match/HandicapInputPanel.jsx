@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange';
+import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 
 const KEYPAD_DIGITS = [7, 8, 9, 4, 5, 6, 1, 2, 3];
 
@@ -46,15 +47,11 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
     onConfirm(isEmpty ? null : parsed);
   };
 
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      onClose();
-    };
-    document.addEventListener('keydown', onKeyDown, true);
-    return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [onClose]);
+  // Modal de verdad: el foco entra, no se sale y vuelve al disparador (#389).
+  // Escape exclusivo: se abre sobre el modal de crear partida, que tiene su
+  // propio Escape y no debe cerrarse con el de la hoja
+  const hojaRef = useRef(null);
+  useFocoRetenido(hojaRef, { alEscape: onClose, escapeExclusivo: true });
 
   return (
     <div
@@ -63,6 +60,7 @@ const HandicapInputPanel = ({ value, onConfirm, onClose, label }) => {
       onClick={onClose}
     >
       <div
+        ref={hojaRef}
         role="dialog"
         aria-modal="true"
         aria-label={label}

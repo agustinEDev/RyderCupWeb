@@ -65,7 +65,6 @@ describe('ApiSocialFeedRepository', () => {
 
       const perfil = await repository.getPlayerProfile('u1');
 
-      expect(perfil.email).toBeNull();
       expect(perfil.handicap).toBeNull();
       expect(perfil.stats).toBeNull();
     });
@@ -86,7 +85,8 @@ describe('ApiSocialFeedRepository', () => {
       const perfil = await repository.getPlayerProfile('u1');
 
       expect(perfil.isFriend).toBe(true);
-      expect(perfil.email).toBe('ana@example.com');
+      // El correo de otro jugador no se enseña (21 oct): ni se trae al dominio
+      expect(perfil).not.toHaveProperty('email');
       expect(perfil.stats.scoringAvg).toBe(3.2);
       expect(perfil.stats.roundsPlayed).toBe(14);
       expect(perfil.stats.estimatedIndex).toBe(11.8);

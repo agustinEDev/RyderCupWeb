@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import HandicapRequestModal from './HandicapRequestModal';
 
 vi.mock('react-i18next', () => ({
@@ -83,5 +83,54 @@ describe('HandicapRequestModal · fuente del hándicap (F4)', () => {
     abrir({ id: 'u-1', country_code: 'FR' });
 
     expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
+  });
+});
+
+/**
+ * Las dos formas de configurarlo son pestañas de verdad (FE #658), y solo
+ * existen para quien puede tirar de la RFEG.
+ */
+describe('HandicapRequestModal · pestañas (FE #658)', () => {
+  const abrir = (user) =>
+    render(<HandicapRequestModal isOpen user={user} onClose={() => {}} onSaved={() => {}} />);
+
+  it('T1: en España, barra con nombre, panel nombrado por su pestaña y las flechas', () => {
+    abrir({ id: 'u-1', country_code: 'ES' });
+
+    const barra = screen.getByRole('tablist', { name: 'handicapModal.tabsLabel' });
+    const [rfeg, manual] = within(barra).getAllByRole('tab');
+    expect(rfeg).toHaveAttribute('aria-selected', 'true');
+    expect(manual).toHaveAttribute('tabindex', '-1');
+    const panel = screen.getByRole('tabpanel', { name: 'handicapModal.rfegTab' });
+    expect(rfeg).toHaveAttribute('aria-controls', panel.id);
+    expect(within(panel).getByRole('button', { name: 'handicapModal.fetchRfeg' })).toBeInTheDocument();
+    // Con su botón dentro, el panel no es una parada más
+    expect(panel).not.toHaveAttribute('tabindex');
+
+    fireEvent.keyDown(rfeg, { key: 'ArrowRight' });
+
+    expect(manual).toHaveAttribute('aria-selected', 'true');
+    expect(manual).toHaveFocus();
+    expect(screen.getByRole('tabpanel', { name: 'handicapModal.manualTab' }).tagName).toBe('FORM');
+    fireEvent.keyDown(manual, { key: 'ArrowRight' });
+    expect(rfeg).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('T2: fuera de España no hay pestañas, y el formulario manual no se hace pasar por un panel', () => {
+    abrir({ id: 'u-1', country_code: 'FR' });
+
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.queryByRole('tabpanel')).toBeNull();
+    expect(screen.getByRole('button', { name: 'edit.handicap.updateManually' }).closest('form')).toBeInTheDocument();
+  });
+
+  it('T3: si deja de poder tirar de la RFEG con el modal abierto, no se queda en su panel', () => {
+    const props = { isOpen: true, onClose: () => {}, onSaved: () => {} };
+    const { rerender } = render(<HandicapRequestModal {...props} user={{ id: 'u-1', country_code: 'ES' }} />);
+
+    rerender(<HandicapRequestModal {...props} user={{ id: 'u-1', country_code: 'FR' }} />);
+
+    expect(screen.queryByRole('button', { name: 'handicapModal.fetchRfeg' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'edit.handicap.updateManually' })).toBeInTheDocument();
   });
 });

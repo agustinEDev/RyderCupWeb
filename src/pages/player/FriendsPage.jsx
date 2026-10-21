@@ -16,6 +16,7 @@ import {
   searchUsersUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 
 const TABS = ['friends', 'received', 'sent'];
 
@@ -194,57 +195,66 @@ const FriendsPage = () => {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-4" data-testid="friend-tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === tab
+        {/* Tabs: las tres comparten la lista de abajo, que es su panel */}
+        <GrupoDePestanas actual={activeTab} onElegir={setActiveTab} panelUnico>
+          <ListaDePestanas
+            etiqueta={t('tabsLabel')}
+            className="flex border-b border-gray-200 mb-4"
+            data-testid="friend-tabs"
+            pestanas={TABS.map((tab) => ({
+              id: tab,
+              testId: `tab-${tab}`,
+              contenido: (
+                <>
+                  {t(`tabs.${tab}`)}
+                  {listByTab[tab].length > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      {listByTab[tab].length}
+                    </span>
+                  )}
+                </>
+              ),
+            }))}
+            claseDePestana={(abierta) =>
+              `px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
+                abierta
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
-              data-testid={`tab-${tab}`}
-            >
-              {t(`tabs.${tab}`)}
-              {listByTab[tab].length > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                  {listByTab[tab].length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+              }`
+            }
+          />
 
-        {/* List */}
-        {currentList.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">{t(`empty.${activeTab}`)}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {currentList.map((friendship) => (
-              <FriendCard
-                key={friendship.id}
-                friendship={friendship}
-                mode={activeTab === 'friends' ? 'friend' : activeTab === 'received' ? 'received' : 'sent'}
-                onAccept={handleAccept}
-                onDecline={handleDecline}
-                onRemove={handleRemoveOrCancel}
-                onCancel={handleRemoveOrCancel}
-                onBlock={handleBlock}
-                isProcessing={
-                  processingKeys.has(`friendship:${friendship.id}`) ||
-                  processingKeys.has(`user:${friendship.otherUserId}`)
-                }
-                t={t}
-              />
-            ))}
-          </div>
-        )}
+          {/* List */}
+          {/* Vacía no hay nada enfocable dentro: entonces el panel sí es parada */}
+          <PanelDePestana enfocable={currentList.length === 0}>
+            {currentList.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">{t(`empty.${activeTab}`)}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {currentList.map((friendship) => (
+                  <FriendCard
+                    key={friendship.id}
+                    friendship={friendship}
+                    mode={activeTab === 'friends' ? 'friend' : activeTab === 'received' ? 'received' : 'sent'}
+                    onAccept={handleAccept}
+                    onDecline={handleDecline}
+                    onRemove={handleRemoveOrCancel}
+                    onCancel={handleRemoveOrCancel}
+                    onBlock={handleBlock}
+                    isProcessing={
+                      processingKeys.has(`friendship:${friendship.id}`) ||
+                      processingKeys.has(`user:${friendship.otherUserId}`)
+                    }
+                    t={t}
+                  />
+                ))}
+              </div>
+            )}
+          </PanelDePestana>
+        </GrupoDePestanas>
       </div>
     </div>
   );

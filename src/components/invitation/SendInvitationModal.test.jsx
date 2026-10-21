@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import SendInvitationModal from './SendInvitationModal';
 
 const mockT = (key) => key;
@@ -1007,6 +1007,39 @@ describe('SendInvitationModal', () => {
       const panel = screen.getByRole('tabpanel');
       expect(amigos).toHaveAttribute('aria-controls', panel.id);
       expect(panel).toHaveAttribute('aria-labelledby', amigos.id);
+      // Los paneles del modal tienen botones o campos: no son una parada más
+      expect(panel).not.toHaveAttribute('tabindex');
+    });
+
+    it('FE #658: la barra tiene nombre y se maneja con el teclado, que cambia de panel como un clic', () => {
+      renderModalCrudo();
+
+      const barra = screen.getByRole('tablist', { name: 'send.tabsLabel' });
+      const [amigos, buscar, correo] = within(barra).getAllByRole('tab');
+      expect(amigos).toHaveAttribute('tabindex', '0');
+      expect(buscar).toHaveAttribute('tabindex', '-1');
+
+      fireEvent.keyDown(amigos, { key: 'ArrowRight' });
+      expect(buscar).toHaveAttribute('aria-selected', 'true');
+      expect(buscar).toHaveFocus();
+      expect(screen.getByRole('tabpanel', { name: 'send.tabSearchUser' }).tagName).toBe('FORM');
+
+      fireEvent.keyDown(buscar, { key: 'End' });
+      expect(correo).toHaveAttribute('aria-selected', 'true');
+      expect(within(screen.getByRole('tabpanel', { name: 'send.tabByEmail' })).getByLabelText('send.emailLabel')).toBeInTheDocument();
+
+      fireEvent.keyDown(correo, { key: 'ArrowRight' });
+      expect(amigos).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tabpanel', { name: 'send.tabFriends' })).toBeInTheDocument();
+    });
+
+    it('FE #658: cambiar de pestaña con el teclado también borra el mensaje personal', () => {
+      renderModal();
+      fireEvent.change(screen.getByPlaceholderText('send.personalMessagePlaceholder'), { target: { value: 'hola' } });
+
+      fireEvent.keyDown(screen.getByTestId('tab-search-user'), { key: 'ArrowRight' });
+
+      expect(screen.getByPlaceholderText('send.personalMessagePlaceholder')).toHaveValue('');
     });
   });
 
