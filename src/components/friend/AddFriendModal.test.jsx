@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useState } from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import AddFriendModal from './AddFriendModal';
@@ -41,6 +42,30 @@ const buscar = async (texto = 'ana') => {
   await waitFor(() => expect(screen.getByTestId('search-results-dropdown')).toBeInTheDocument(), {
     timeout: 2000,
   });
+};
+
+// Como en Amigos: el boton que lo abre y el modal, con su estado
+const ConDisparador = () => {
+  const [abierto, setAbierto] = useState(false);
+  return (
+    <MemoryRouter>
+      <button type="button" onClick={() => setAbierto(true)}>Añadir amigo</button>
+      <AddFriendModal
+        isOpen={abierto}
+        onClose={() => setAbierto(false)}
+        onSearchUsers={vi.fn().mockResolvedValue(RESULTADOS)}
+        t={(k) => k}
+      />
+    </MemoryRouter>
+  );
+};
+
+const abrirDesdeElBoton = () => {
+  render(<ConDisparador />);
+  const disparador = screen.getByRole('button', { name: 'Añadir amigo' });
+  disparador.focus();
+  fireEvent.click(disparador);
+  return disparador;
 };
 
 /**
@@ -324,5 +349,62 @@ describe('AddFriendModal', () => {
 
     await waitFor(() => expect(screen.getByText('add.searchMinChars')).toBeInTheDocument());
     expect(onSearchUsers).not.toHaveBeenCalled();
+  });
+  // QA del 21 oct 2026 (F1): al cerrar, el foco volvia al `body` y el
+  // tabulador empezaba otra vez desde la cabecera
+  describe('el foco vuelve al boton que lo abrio', () => {
+    it('F1a: al abrir, el foco entra en el buscador', () => {
+      abrirDesdeElBoton();
+
+      expect(screen.getByTestId('user-search-input')).toHaveFocus();
+    });
+
+    it('F1b: con la X', () => {
+      const disparador = abrirDesdeElBoton();
+      fireEvent.click(screen.getByRole('button', { name: 'cancel' }));
+
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(disparador).toHaveFocus();
+    });
+
+    it('F1c: pulsando fuera', () => {
+      const disparador = abrirDesdeElBoton();
+      fireEvent.click(screen.getByTestId('add-friend-backdrop'));
+
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(disparador).toHaveFocus();
+    });
+
+    it('F1d: con Escape', () => {
+      const disparador = abrirDesdeElBoton();
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(disparador).toHaveFocus();
+    });
+
+    it('F1e: con la lista abierta, el primer Escape solo la cierra; el segundo cierra y devuelve el foco', async () => {
+      const disparador = abrirDesdeElBoton();
+      await buscar();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('user-search-input')).toHaveFocus();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(disparador).toHaveFocus();
+    });
+
+    it('F1f: el tabulador no se sale del modal: de lo ultimo vuelve a la X', () => {
+      abrirDesdeElBoton();
+      const input = screen.getByTestId('user-search-input');
+
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(screen.getByRole('button', { name: 'cancel' })).toHaveFocus();
+
+      fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+      expect(input).toHaveFocus();
+    });
   });
 });

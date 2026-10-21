@@ -3,6 +3,7 @@ import { nombreRealSiAporta, nombreVisible } from '../../utils/nombreVisible';
 import { useNavigate } from 'react-router';
 import { X, Search, Loader } from 'lucide-react';
 import Avatar from '../ui/Avatar';
+import { useFocoRetenido } from '../../hooks/useFocoRetenido';
 
 /**
  * Buscador de jugadores.
@@ -25,6 +26,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
   const [searchFailed, setSearchFailed] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
+  const cajaRef = useRef(null);
   const searchInputRef = useRef(null);
   const searchTimerRef = useRef(null);
   const searchRequestIdRef = useRef(0);
@@ -63,9 +65,10 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
     setSearchResults(next);
   }, []);
 
-  useEffect(() => {
-    searchInputRef.current?.focus();
-  }, []);
+  // El foco entra en el buscador, no sale con el tabulador y, al cerrar, vuelve
+  // al boton que abrio el modal (QA del 21 oct 2026). Escape lo lleva el
+  // manejador de abajo: el primero cierra la lista, no el modal
+  useFocoRetenido(cajaRef, { inicialRef: searchInputRef });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -205,6 +208,7 @@ const AddFriendModalContent = ({ onClose, onSearchUsers, t }) => {
       {/* Con su alto maximo y desplazamiento propio: la lista de resultados ya
           ocupa sitio dentro y, larga, no debe sacar la caja de la pantalla */}
       <div
+        ref={cajaRef}
         className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
         role="dialog"
         aria-modal="true"
