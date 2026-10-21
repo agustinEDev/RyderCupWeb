@@ -21,6 +21,10 @@ import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const MAX_STROKE_DOTS = 2;
 
+// La letra de la cifra pequeña (puntos o neto), y la de su etiqueta en la
+// cabecera de la fila (#419): iguales, para que se lean como pareja
+const LETRA_DE_LA_CIFRA = 'text-[10px] font-semibold text-primary';
+
 /**
  * Quick match scorecard: one card per participant (instead of a single shared
  * table with every player as a row) so reviewing several cards side by side
@@ -59,6 +63,13 @@ const QuickMatchScorecardTable = ({
 
   const isStableford = scoringFormat === 'STABLEFORD';
   const isMedal = scoringFormat === 'MEDAL';
+  // Cómo se llama la cifra pequeña: columna en el móvil, cabecera de la fila en
+  // la horizontal. En match play no hay
+  const etiquetaDeLaCifra = isStableford
+    ? t('scoring.scorecard.pointsShort')
+    : isMedal
+      ? t('scoring.scorecard.netShort')
+      : undefined;
 
   // El backend manda el reparto con el que ha decidido cada hoyo, y es el dato
   // bueno mientras haya red. Sin conexión no llega nada y se recalcula, que es
@@ -330,7 +341,7 @@ const QuickMatchScorecardTable = ({
     return (
       <span
         data-testid={testId}
-        className="text-[10px] font-semibold text-primary"
+        className={LETRA_DE_LA_CIFRA}
         title={t(`scoring.scorecard.${clave}`, { count: valor })}
       >
         {valor}
@@ -435,9 +446,23 @@ const QuickMatchScorecardTable = ({
         </thead>
         <tbody>
           <tr>
-            <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
-              {label}
-            </th>
+            {etiquetaDeLaCifra && valorDelTramo(sectionHoles, card) != null ? (
+              // La cifra pequeña con nombre (#419): en la cabecera y no en cada
+              // casilla. El hueco mide lo que la figura, así la etiqueta cae a la
+              // altura de las cifras y la fila no crece. Sin cifras en el tramo
+              // no hay nada que nombrar, y sola la haría más alta
+              <th scope="row" className="px-2 py-1 text-left align-top font-normal">
+                <span className="sr-only">{label}</span>
+                <div className="flex flex-col gap-0.5">
+                  <span aria-hidden="true" className="h-7" />
+                  <span className={LETRA_DE_LA_CIFRA}>{etiquetaDeLaCifra}</span>
+                </div>
+              </th>
+            ) : (
+              <th scope="row" className="px-2 py-1.5 text-left font-medium text-gray-400 sr-only">
+                {label}
+              </th>
+            )}
             {sectionHoles.map((h) => (
               <td
                 key={h.holeNumber}
@@ -501,13 +526,7 @@ const QuickMatchScorecardTable = ({
       cabecera={cabeceraDe(card)}
       // Los puntos o el neto en su columna, no apilados bajo la figura: hay
       // sitio y la fila queda más baja (ronda 2 de pruebas)
-      columnaExtra={
-        isStableford
-          ? t('scoring.scorecard.pointsShort')
-          : isMedal
-            ? t('scoring.scorecard.netShort')
-            : undefined
-      }
+      columnaExtra={etiquetaDeLaCifra}
       hoyos={card.holes.map((h) => ({
         holeNumber: h.holeNumber,
         par: h.par,
