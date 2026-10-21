@@ -1982,17 +1982,16 @@ describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
     expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent('-1');
   });
 
-  it('M3: en Stableford anotando a dos, una línea con el neto y los puntos', () => {
+  it('M3: en Stableford anotando a dos, una línea con el neto, sin los puntos (22 oct)', () => {
     montar({
       quickMatch: { scoringFormat: 'STABLEFORD', effectiveAllowance: 50 },
       coveredParticipantIds: ['user-1', 'user-2'],
       holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 6 }],
     });
 
-    // Neto 5 sobre par 4: +1 y 1 punto
-    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent(
-      'input.myRound: +1 · input.myRoundPoints 1'
-    );
+    // Neto 5 sobre par 4: +1. Los puntos se ven en la clasificación
+    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent(/^input\.myRound: \+1/);
+    expect(screen.getByTestId('quick-match-my-round-line')).not.toHaveTextContent('myRoundPoints');
     expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
   });
 
@@ -2019,7 +2018,6 @@ describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
   it.each([
     ['el allowance', { effectiveAllowance: 100 }, '-2'],
     ['SCRATCH', { playMode: 'SCRATCH' }, 'input.myRoundPar'],
-    ['Stableford', { scoringFormat: 'STABLEFORD' }, '-1 · input.myRoundPoints 3'],
   ])('M5b: si cambia %s, la vuelta se rehace', (_, cambio, esperado) => {
     const veinte = { ...yo, handicap: 20 };
     const { rerender } = montar({

@@ -92,7 +92,7 @@ describe('QuickMatchHoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
  *   N1  solo se anota a sí mismo   | V1: casilla dentro de la rejilla, sin línea
  *   N1  impar (1, 3…): queda hueco  | V1, V1b: casilla dentro de la rejilla, sin línea
  *   N2  par (2, 4…): no hay hueco   | V2, V2b: una línea bajo los botones, sin casilla
- *   N4  Stableford                  | V3: «+2 · 16 pts»
+ *   N4  Stableford                  | V3: solo el neto, «+2»; los puntos, en la clasificación (22 oct)
  *   N5  sin vuelta (foursomes)      | V4: ni casilla ni línea
  *   N9  sin hoyos anotados          | V5: «—», también en Stableford
  *       solo lectura                | V6: se sigue viendo
@@ -147,12 +147,16 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
     expect(screen.queryByTestId('quick-match-my-round-cell')).toBeNull();
   });
 
-  it('V3: en Stableford, el neto y los puntos', () => {
-    pintar([jugador('p1')], { myRound: vuelta({ stablefordPoints: 16 }) });
+  it('V3: en Stableford, solo la diferencia con el hándicap; los puntos van en la clasificación (Agustín, 22 oct)', () => {
+    const { unmount } = pintar([jugador('p1')], { myRound: vuelta({ stablefordPoints: 16 }) });
+    const casilla = screen.getByTestId('quick-match-my-round-cell');
+    expect(screen.getByTestId('quick-match-my-round-value')).toHaveTextContent(/^\+2$/);
+    expect(casilla).not.toHaveTextContent('myRoundPoints');
+    expect(casilla).not.toHaveTextContent('myRoundA11yPoints');
+    unmount();
 
-    expect(screen.getByTestId('quick-match-my-round-cell')).toHaveTextContent(
-      '+2 · input.myRoundPoints:16'
-    );
+    pintar([jugador('p1'), jugador('p2')], { myRound: vuelta({ stablefordPoints: 16 }) });
+    expect(screen.getByTestId('quick-match-my-round-line')).not.toHaveTextContent(/Points/);
   });
 
   it('V4: sin vuelta que enseñar no sale nada', () => {
@@ -182,7 +186,7 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
   it('V7: el lector de pantalla oye la frase, no el signo', () => {
     const { unmount } = pintar([jugador('p1')], { myRound: vuelta({ stablefordPoints: 16 }) });
     const casilla = screen.getByTestId('quick-match-my-round-cell');
-    expect(within(casilla).getByText('input.myRoundA11yOver:2 input.myRoundA11yPoints:16')).toHaveClass('sr-only');
+    expect(within(casilla).getByText('input.myRoundA11yOver:2')).toHaveClass('sr-only');
     unmount();
 
     pintar([jugador('p1'), jugador('p2')], { myRound: vuelta({ toPar: -1, toParLabel: '-1' }) });
@@ -199,18 +203,23 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
     const valor = screen.getByTestId('quick-match-my-round-value');
     expect(casilla.contains(valor)).toBe(true);
     expect(valor).toHaveClass('truncate', 'min-w-0');
-    expect(valor).toHaveTextContent('+12 · input.myRoundPoints:36');
-    // Con puntos, más pequeño; sin ellos, text-base. Nunca el text-lg del golpe
-    expect(valor).toHaveClass('text-sm');
-    expect(valor).not.toHaveClass('text-lg');
+    expect(valor).toHaveTextContent(/^\+12$/);
   });
 
-  it('V8b: sin puntos el valor va en text-base', () => {
+  it('V8b: la cifra grande y en negrita (Agustín, 22 oct: «una fuente más grande y en negrita»)', () => {
     pintar([jugador('p1')], { myRound: vuelta() });
 
     const valor = screen.getByTestId('quick-match-my-round-value');
-    expect(valor).toHaveClass('text-base', 'truncate');
-    expect(valor).not.toHaveClass('text-lg', 'text-sm');
+    expect(valor).toHaveClass('text-3xl', 'font-bold', 'text-gray-900');
+    expect(valor).not.toHaveClass('text-base', 'text-sm', 'font-semibold');
+  });
+
+  it('V8c: en la línea, la cifra también en negrita, sin crecer de una línea', () => {
+    pintar([jugador('p1'), jugador('p2')], { myRound: vuelta() });
+
+    const linea = screen.getByTestId('quick-match-my-round-line');
+    expect(within(linea).getByText('+2')).toHaveClass('font-bold');
+    expect(linea).toHaveClass('whitespace-nowrap', 'truncate');
   });
 
   it('V9: no se parece a la casilla de un golpe: sin fondo gris, borde discontinuo', () => {
@@ -232,9 +241,8 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
     pintar([jugador('p1'), jugador('p2')], {
       myRound: vuelta({ toPar: 0, toParLabel: 'PAR', stablefordPoints: 18 }),
     });
-    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent(
-      'input.myRound: input.myRoundPar · input.myRoundPoints:18'
-    );
+    expect(screen.getByTestId('quick-match-my-round-line')).toHaveTextContent('input.myRound: input.myRoundPar');
+    expect(screen.getByTestId('quick-match-my-round-line')).not.toHaveTextContent('myRoundPoints');
   });
 
   it('V10b: los valores con signo siguen siendo números', () => {
