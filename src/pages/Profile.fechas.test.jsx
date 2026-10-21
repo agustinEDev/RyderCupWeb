@@ -99,3 +99,13 @@ describe('Profile · hándicap plus (FE #797)', () => {
     expect(await screen.findByText('0.0')).toBeInTheDocument();
   });
 });
+
+// El correo de otro jugador ya no se enseña (21 oct); el propio, en su perfil, sí
+describe('Profile · el propio correo (21 oct)', () => {
+  it('C1: el perfil propio sigue enseñando el correo de quien lo mira', async () => {
+    usuario = { ...base, handicap: null, handicap_updated_at: null };
+    pintar();
+
+    expect((await screen.findAllByText('ana@example.com')).length).toBeGreaterThan(0);
+  });
+});
