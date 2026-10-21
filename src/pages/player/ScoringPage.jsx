@@ -25,6 +25,7 @@ import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 
 const TABS = ['input', 'scorecard', 'leaderboard'];
 
@@ -570,26 +571,23 @@ const ScoringPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-4" data-testid="scoring-tabs">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              data-testid={`tab-${tab}`}
-              onClick={() => handleTabChange(tab)}
-              className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
-                activeTab === tab
+        <GrupoDePestanas actual={activeTab} onElegir={handleTabChange}>
+          <ListaDePestanas
+            etiqueta={t('tabsLabel')}
+            className="flex border-b border-gray-200 mb-4"
+            data-testid="scoring-tabs"
+            pestanas={TABS.map((tab) => ({ id: tab, contenido: t(`tabs.${tab}`), testId: `tab-${tab}` }))}
+            claseDePestana={(abierta) =>
+              `flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
+                abierta
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {t(`tabs.${tab}`)}
-            </button>
-          ))}
-        </div>
+              }`
+            }
+          />
 
-        {/* Tab: Input */}
-        {activeTab === 'input' && (
-          <div className="space-y-4">
+          {/* Tab: Input */}
+          <PanelDePestana id="input" className="space-y-4">
             <HoleSelector
               currentHole={currentHole}
               onSelect={handleHoleSelect}
@@ -700,12 +698,10 @@ const ScoringPage = () => {
                 {t('concede.button')}
               </button>
             )}
-          </div>
-        )}
+          </PanelDePestana>
 
-        {/* Tab: Scorecard */}
-        {activeTab === 'scorecard' && (
-          <div className="space-y-4">
+          {/* Tab: Scorecard */}
+          <PanelDePestana id="scorecard" className="space-y-4">
             <ScorecardTable
               holes={scoringView?.holes}
               scores={scoresVisibles}
@@ -715,13 +711,13 @@ const ScoringPage = () => {
               teamBName={scoringView?.teamBName}
               matchFormat={scoringView?.matchFormat}
             />
-          </div>
-        )}
+          </PanelDePestana>
 
-        {/* Tab: Leaderboard */}
-        {activeTab === 'leaderboard' && (
-          <LeaderboardView leaderboard={leaderboard} />
-        )}
+          {/* Tab: Leaderboard (abrirla la pide: el efecto de arriba) */}
+          <PanelDePestana id="leaderboard">
+            <LeaderboardView leaderboard={leaderboard} />
+          </PanelDePestana>
+        </GrupoDePestanas>
 
         {estadoDeEntrega && (
           <>

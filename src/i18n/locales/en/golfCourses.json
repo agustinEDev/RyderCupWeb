@@ -161,7 +161,8 @@
       "rejectReasonTooShort": "Reason must be at least 10 characters",
       "characters": "characters",
       "cancel": "Cancel",
-      "confirmReject": "Reject Course"
+      "confirmReject": "Reject Course",
+      "tabsLabel": "Request type"
     }
   },
   "detail": {

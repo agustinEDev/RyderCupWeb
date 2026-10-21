@@ -504,8 +504,34 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     render(<GroupScoringPage />);
 
     const pestana = screen.getByTestId('tab-input');
-    expect(pestana).toHaveAttribute('aria-controls', 'panel-input');
-    expect(document.getElementById('panel-input')).toHaveAttribute('role', 'tabpanel');
+    const panel = document.getElementById(pestana.getAttribute('aria-controls'));
+    expect(panel).toHaveAttribute('role', 'tabpanel');
+    expect(panel).toHaveAttribute('aria-labelledby', pestana.id);
+  });
+
+  it('FE #658: la barra tiene nombre y se maneja con las flechas, y la clasificación sigue montada', () => {
+    render(<GroupScoringPage />);
+
+    const barra = screen.getByRole('tablist', { name: 'partida.tabsLabel' });
+    const [anotar, clasificacion, tarjetas] = within(barra).getAllByRole('tab');
+    expect(anotar).toHaveAttribute('tabindex', '0');
+    expect(clasificacion).toHaveAttribute('tabindex', '-1');
+    const panelClasificacion = screen.getByTestId('clasificacion').closest('[role="tabpanel"]');
+    expect(panelClasificacion).toHaveAttribute('hidden');
+    expect(panelClasificacion).toHaveAttribute('aria-labelledby', clasificacion.id);
+
+    fireEvent.keyDown(anotar, { key: 'ArrowRight' });
+    expect(clasificacion).toHaveAttribute('aria-selected', 'true');
+    expect(clasificacion).toHaveFocus();
+    expect(panelClasificacion).not.toHaveAttribute('hidden');
+    expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'true');
+
+    fireEvent.keyDown(clasificacion, { key: 'End' });
+    expect(tarjetas).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByRole('tabpanel', { name: 'partida.tabs.cards' })).getByTestId('tarjetas')).toBeInTheDocument();
+    expect(screen.getByTestId('clasificacion')).toHaveAttribute('data-activa', 'false');
+    fireEvent.keyDown(tarjetas, { key: 'Home' });
+    expect(anotar).toHaveAttribute('aria-selected', 'true');
   });
 
   it('11-12: las pestañas; la clasificación solo está activa con la suya abierta', () => {

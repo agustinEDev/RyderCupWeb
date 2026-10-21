@@ -165,6 +165,7 @@ vi.mock('../../components/scoring/SubmitScorecardModal', () => ({
 }));
 
 import ScoringPage from './ScoringPage';
+import { getLeaderboardUseCase } from '../../composition';
 
 describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve (FE #606)', () => {
   // Lo que se ve lo compone el hook con el servidor y la cola. La pantalla ya
@@ -364,6 +365,37 @@ describe('ScoringPage', () => {
   it('16 oct: sin nombre del campo, ni la línea', () => {
     render(<ScoringPage />);
     expect(screen.queryByTestId('campo-de-la-partida')).toBeNull();
+  });
+
+  it('FE #658: las vistas son pestañas de verdad, con su nombre, su panel y las flechas', () => {
+    render(<ScoringPage />);
+
+    const barra = screen.getByRole('tablist', { name: 'tabsLabel' });
+    expect(barra).toBe(screen.getByTestId('scoring-tabs'));
+    const [anotar, tarjeta, clasificacion] = within(barra).getAllByRole('tab');
+    expect(anotar).toBe(screen.getByTestId('tab-input'));
+    expect(anotar).toHaveAttribute('aria-selected', 'true');
+    expect(tarjeta).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tabpanel', { name: 'tabs.input' })).toHaveAttribute('id', anotar.getAttribute('aria-controls'));
+
+    fireEvent.keyDown(anotar, { key: 'ArrowRight' });
+    expect(tarjeta).toHaveAttribute('aria-selected', 'true');
+    expect(tarjeta).toHaveFocus();
+    expect(within(screen.getByRole('tabpanel', { name: 'tabs.scorecard' })).getByTestId('scorecard-table')).toBeInTheDocument();
+
+    fireEvent.keyDown(tarjeta, { key: 'ArrowLeft' });
+    fireEvent.keyDown(anotar, { key: 'ArrowLeft' });
+    expect(clasificacion).toHaveAttribute('aria-selected', 'true');
+    expect(within(screen.getByRole('tabpanel', { name: 'tabs.leaderboard' })).getByTestId('leaderboard-view')).toBeInTheDocument();
+  });
+
+  it('FE #658: abrir la clasificación con el teclado la pide, como al pulsarla', () => {
+    render(<ScoringPage />);
+    expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'tabs.input' }), { key: 'End' });
+
+    expect(getLeaderboardUseCase.execute).toHaveBeenCalledWith('c-1');
   });
 
   it('should switch to scorecard tab', () => {
@@ -599,6 +631,8 @@ describe('ScoringPage', () => {
       fireEvent.click(screen.getByTestId('early-end-confirm'));
 
       expect(screen.getByText('submit.button')).toBeInTheDocument();
+      // Y la pestaña que se marca es la de la tarjeta, no la que se dejó (FE #658)
+      expect(screen.getByRole('tab', { name: 'tabs.scorecard' })).toHaveAttribute('aria-selected', 'true');
     });
 
     it('R3: le dice al aviso si la tarjeta se puede enviar ya', () => {

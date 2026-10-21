@@ -58,5 +58,6 @@
     "failedToRespond": "Error al responder a la solicitud",
     "failedToRemove": "Error al eliminar la amistad",
     "failedToBlock": "Error al bloquear al usuario"
-  }
+  },
+  "tabsLabel": "Listas de amistades"
 }
