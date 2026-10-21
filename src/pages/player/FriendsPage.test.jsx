@@ -112,16 +112,21 @@ describe('FriendsPage', () => {
       expect(amigos).toHaveAttribute('aria-selected', 'true');
       const panel = screen.getByRole('tabpanel', { name: 'tabs.friends' });
       expect(within(panel).getByText('empty.friends')).toBeInTheDocument();
+      // Vacía no hay nada enfocable dentro: el panel es la parada
+      expect(panel).toHaveAttribute('tabindex', '0');
       [amigos, recibidas, enviadas].forEach((tab) => expect(tab).toHaveAttribute('aria-controls', panel.id));
 
       fireEvent.keyDown(amigos, { key: 'ArrowRight' });
       expect(recibidas).toHaveAttribute('aria-selected', 'true');
       expect(recibidas).toHaveFocus();
       expect(within(screen.getByRole('tabpanel', { name: 'tabs.received1' })).getByTestId('friend-card')).toHaveTextContent('f-1');
+      // Con tarjetas, sus botones ya son paradas: el panel no
+      expect(screen.getByRole('tabpanel', { name: 'tabs.received1' })).not.toHaveAttribute('tabindex');
 
       fireEvent.keyDown(recibidas, { key: 'End' });
       expect(enviadas).toHaveAttribute('aria-selected', 'true');
       expect(within(screen.getByRole('tabpanel', { name: 'tabs.sent' })).getByText('empty.sent')).toBeInTheDocument();
+      expect(screen.getByRole('tabpanel', { name: 'tabs.sent' })).toHaveAttribute('tabindex', '0');
     });
   });
 });

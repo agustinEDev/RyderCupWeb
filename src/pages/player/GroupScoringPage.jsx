@@ -433,7 +433,7 @@ const GroupScoringPage = () => {
           </PanelDePestana>
 
           {/* Montada siempre: se pide al abrir su pestaña y deja de releerse al cerrarla */}
-          <PanelDePestana id="standings" montadoSiempre>
+          <PanelDePestana id="standings" montadoSiempre enfocable>
             <ClasificacionDeLaFranja roundId={strokePlay.roundId} userId={userId} activa={activa === 'standings'} />
           </PanelDePestana>
 

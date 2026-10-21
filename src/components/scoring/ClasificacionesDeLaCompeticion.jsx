@@ -48,7 +48,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
           }
         />
         {/* Montadas las dos: cada una se pide al abrirse y deja de releerse al cerrarse */}
-        <PanelDePestana id="overall" montadoSiempre>
+        <PanelDePestana id="overall" montadoSiempre enfocable>
           <Clasificacion
             pedir={pedirGeneral}
             userId={userId}
@@ -59,7 +59,7 @@ const ClasificacionesDeLaCompeticion = ({ competitionId, userId, enJuego }) => {
             vacia="partida.noResultsYet"
           />
         </PanelDePestana>
-        <PanelDePestana id="scratch" montadoSiempre>
+        <PanelDePestana id="scratch" montadoSiempre enfocable>
           <Clasificacion
             pedir={pedirScratch}
             userId={userId}

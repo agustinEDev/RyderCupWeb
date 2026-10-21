@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AliasSheet from './AliasSheet';
+import ModalShell from '../ui/ModalShell';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key) => key, i18n: { language: 'es' } }),
@@ -122,6 +123,87 @@ describe('AliasSheet (FE #435)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('AliasSheet · el foco de la hoja modal, el compartido (#389)', () => {
+  const tab = (el, opciones = {}) => {
+    const evento = new globalThis.KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true, ...opciones });
+    el.dispatchEvent(evento);
+    return evento;
+  };
+
+  it('Tab en el último vuelve al primero, y Shift+Tab en el primero va al último', () => {
+    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={vi.fn()} />);
+    const cruz = screen.getByRole('button', { name: 'alias.sheet.close' });
+    const guardar = screen.getByTestId('alias-sheet-save');
+
+    guardar.focus();
+    tab(guardar);
+    expect(cruz).toHaveFocus();
+
+    tab(cruz, { shiftKey: true });
+    expect(guardar).toHaveFocus();
+  });
+
+  it('con el foco fuera, Tab lo devuelve a la hoja', () => {
+    const fuera = document.createElement('button');
+    document.body.appendChild(fuera);
+    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={vi.fn()} />);
+
+    fuera.focus();
+    tab(fuera);
+
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    fuera.remove();
+  });
+
+  it('guardando, los botones desactivados no cuentan: Tab no se escapa del campo', async () => {
+    // Antes los contaba: el último era «Guardar», desactivado, y el tabulador
+    // desde el campo seguía de largo hacia la página de detrás
+    const onGuardar = vi.fn(() => new Promise(() => {}));
+    render(<AliasSheet aliasActual="" onGuardar={onGuardar} onClose={vi.fn()} />);
+    const campo = screen.getByTestId('alias-sheet-input');
+    fireEvent.change(campo, { target: { value: 'Chuchi' } });
+    fireEvent.click(screen.getByTestId('alias-sheet-save'));
+    await waitFor(() => expect(screen.getByTestId('alias-sheet-save')).toBeDisabled());
+
+    campo.focus();
+    const evento = tab(campo);
+
+    expect(evento.defaultPrevented).toBe(true);
+    expect(campo).toHaveFocus();
+  });
+
+  it('Escape es suyo: no llega a quien lo escuche por su cuenta en la página', () => {
+    const escapeDeLaPagina = vi.fn();
+    const alPulsar = (e) => e.key === 'Escape' && escapeDeLaPagina();
+    document.addEventListener('keydown', alPulsar);
+    const onClose = vi.fn();
+    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={onClose} />);
+
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(escapeDeLaPagina).not.toHaveBeenCalled();
+    document.removeEventListener('keydown', alPulsar);
+  });
+
+  it('sobre otro diálogo de la pila, Escape cierra la hoja y no el de debajo', () => {
+    const cerrarModal = vi.fn();
+    const cerrarHoja = vi.fn();
+    render(
+      <ModalShell isOpen onClose={cerrarModal} labelledBy="t">
+        <h2 id="t">Debajo</h2>
+        <button type="button">del modal</button>
+      </ModalShell>
+    );
+    render(<AliasSheet aliasActual="Chuchi" onGuardar={vi.fn()} onClose={cerrarHoja} />);
+
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+
+    expect(cerrarHoja).toHaveBeenCalledTimes(1);
+    expect(cerrarModal).not.toHaveBeenCalled();
   });
 });
 

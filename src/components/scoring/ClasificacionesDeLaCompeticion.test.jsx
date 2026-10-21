@@ -74,6 +74,8 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
     expect(scratch).toHaveAttribute('tabindex', '-1');
     const panelGeneral = screen.getByRole('tabpanel', { name: 'partida.overall' });
     expect(general).toHaveAttribute('aria-controls', panelGeneral.id);
+    // Una tabla, sin nada enfocable: el panel es la parada del tabulador
+    expect(panelGeneral).toHaveAttribute('tabindex', '0');
 
     fireEvent.keyDown(general, { key: 'ArrowRight' });
 
@@ -82,6 +84,7 @@ describe('ClasificacionesDeLaCompeticion (FE #824, PR 8)', () => {
     const panelScratch = screen.getByRole('tabpanel', { name: 'partida.scratch' });
     await screen.findByTestId('fila-bea');
     expect(within(panelScratch).getByTestId('fila-bea')).toBeInTheDocument();
+    expect(panelScratch).toHaveAttribute('tabindex', '0');
     expect(panelGeneral).toHaveAttribute('hidden');
     expect(panelGeneral).toBeInTheDocument();
     expect(mockScratch).toHaveBeenCalledWith('c-1');

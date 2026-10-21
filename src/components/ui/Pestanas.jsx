@@ -12,7 +12,8 @@ import { createContext, useContext, useId, useRef } from 'react';
  *
  * Teclado: una sola pestaña en el orden del tabulador (la abierta); las
  * flechas abren la de al lado (dando la vuelta) e Inicio/Fin la primera y la
- * última, y el foco va con ellas.
+ * última, y el foco va con ellas. Con Alt, Cmd o Ctrl la tecla no es de la
+ * barra: son atajos del navegador o del sistema.
  */
 const Contexto = createContext(null);
 
@@ -44,7 +45,12 @@ export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }
   const { base, actual, onElegir, panelUnico } = useContext(Contexto);
   const botones = useRef(new Map());
 
+  // Si la abierta no es ninguna de la barra, la primera hace de entrada: sin
+  // ninguna con tabindex 0, a la barra no se llegaba con el teclado
+  const hayAbierta = pestanas.some((p) => p.id === actual);
+
   const alPulsar = (evento) => {
+    if (evento.altKey || evento.metaKey || evento.ctrlKey) return;
     const ultima = pestanas.length - 1;
     const donde = Math.max(0, pestanas.findIndex((p) => p.id === actual));
     const destinos = {
@@ -62,8 +68,9 @@ export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }
 
   return (
     <div role="tablist" aria-label={etiqueta} {...resto}>
-      {pestanas.map(({ id, contenido, testId }) => {
+      {pestanas.map(({ id, contenido, testId }, indice) => {
         const abierta = id === actual;
+        const entrada = abierta || (!hayAbierta && indice === 0);
         return (
           <button
             key={id}
@@ -76,7 +83,7 @@ export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }
             id={idDePestana(base, id)}
             aria-selected={abierta}
             aria-controls={idDePanel(base, id, panelUnico)}
-            tabIndex={abierta ? 0 : -1}
+            tabIndex={entrada ? 0 : -1}
             data-testid={testId}
             onClick={() => onElegir(id)}
             onKeyDown={alPulsar}
@@ -94,9 +101,13 @@ export const ListaDePestanas = ({ etiqueta, pestanas, claseDePestana, ...resto }
  * @param {string} [id] - la pestaña de este panel (sin él, el panel único)
  * @param {import('react').ElementType} [como] - el elemento que lo pinta (un `form`, un `motion.div`...)
  * @param {boolean} [montadoSiempre] - cerrado sigue montado, oculto con `hidden`
+ * @param {boolean} [enfocable] - el panel entra en el tabulador. Solo para el
+ *   que no tiene nada enfocable dentro (una tabla, una clasificación) o es una
+ *   lista que se desplaza: con botones o campos dentro, el panel sería una
+ *   parada de más y un anillo alrededor de todo (WAI-ARIA)
  * El resto va al elemento.
  */
-export const PanelDePestana = ({ id, como: Elemento = 'div', montadoSiempre = false, children, ...resto }) => {
+export const PanelDePestana = ({ id, como: Elemento = 'div', montadoSiempre = false, enfocable = false, children, ...resto }) => {
   const { base, actual, panelUnico, sinPestanas } = useContext(Contexto);
   const abierto = panelUnico || id === actual;
   if (!abierto && !montadoSiempre) return null;
@@ -106,7 +117,7 @@ export const PanelDePestana = ({ id, como: Elemento = 'div', montadoSiempre = fa
       role="tabpanel"
       id={idDePanel(base, id, panelUnico)}
       aria-labelledby={idDePestana(base, panelUnico ? actual : id)}
-      tabIndex={0}
+      tabIndex={enfocable ? 0 : undefined}
       hidden={!abierto}
       {...resto}
     >

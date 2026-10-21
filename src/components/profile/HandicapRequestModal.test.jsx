@@ -104,6 +104,8 @@ describe('HandicapRequestModal · pestañas (FE #658)', () => {
     const panel = screen.getByRole('tabpanel', { name: 'handicapModal.rfegTab' });
     expect(rfeg).toHaveAttribute('aria-controls', panel.id);
     expect(within(panel).getByRole('button', { name: 'handicapModal.fetchRfeg' })).toBeInTheDocument();
+    // Con su botón dentro, el panel no es una parada más
+    expect(panel).not.toHaveAttribute('tabindex');
 
     fireEvent.keyDown(rfeg, { key: 'ArrowRight' });
 

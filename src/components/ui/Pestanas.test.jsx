@@ -14,7 +14,7 @@ const PESTANAS = [
   { id: 'tres', contenido: 'Tres', testId: 'p-tres' },
 ];
 
-const Prueba = ({ inicial = 'uno', onElegir, montadoSiempre = false, etiqueta = 'Vistas', listaProps = {} }) => {
+const Prueba = ({ inicial = 'uno', onElegir, montadoSiempre = false, etiqueta = 'Vistas', listaProps = {}, enfocable }) => {
   const [actual, setActual] = useState(inicial);
   const elegir = (id) => {
     onElegir?.(id);
@@ -29,7 +29,7 @@ const Prueba = ({ inicial = 'uno', onElegir, montadoSiempre = false, etiqueta = 
         {...listaProps}
       />
       {PESTANAS.map((p) => (
-        <PanelDePestana key={p.id} id={p.id} montadoSiempre={montadoSiempre}>
+        <PanelDePestana key={p.id} id={p.id} montadoSiempre={montadoSiempre} enfocable={enfocable}>
           <p>contenido {p.id}</p>
         </PanelDePestana>
       ))}
@@ -58,7 +58,7 @@ describe('Pestanas', () => {
     expect(pestana('Tres')).toHaveAttribute('tabindex', '-1');
   });
 
-  it('P1: cada pestaña controla su panel, y el abierto se nombra con su pestaña y entra en el tabulador', () => {
+  it('P1: cada pestaña controla su panel, y el abierto se nombra con su pestaña', () => {
     render(<Prueba />);
 
     const panel = screen.getByRole('tabpanel');
@@ -66,7 +66,31 @@ describe('Pestanas', () => {
     expect(pestana('Uno')).toHaveAttribute('aria-controls', panel.id);
     expect(panel).toHaveAttribute('aria-labelledby', pestana('Uno').id);
     expect(screen.getByRole('tabpanel', { name: 'Uno' })).toBe(panel);
-    expect(panel).toHaveAttribute('tabindex', '0');
+  });
+
+  it('P6: por defecto el panel no es una parada del tabulador (su contenido ya lo es)', () => {
+    // WAI-ARIA: solo el panel sin nada enfocable dentro entra en el tabulador.
+    // Con botones o campos dentro era una parada de más y un anillo alrededor
+    // de todo el panel
+    render(<Prueba />);
+
+    expect(screen.getByRole('tabpanel')).not.toHaveAttribute('tabindex');
+  });
+
+  it('P6: con enfocable (una tabla, una lista que se desplaza) entra en el tabulador', () => {
+    render(<Prueba enfocable />);
+
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('tabindex', '0');
+  });
+
+  it('P7: si la abierta no es ninguna de la barra, la primera queda en el tabulador', () => {
+    // Sin esto ninguna tenía tabindex 0 y a la barra no se llegaba con el teclado
+    render(<Prueba inicial="no-existe" />);
+
+    expect(pestana('Uno')).toHaveAttribute('tabindex', '0');
+    expect(pestana('Dos')).toHaveAttribute('tabindex', '-1');
+    expect(pestana('Tres')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getAllByRole('tab').every((tab) => tab.getAttribute('aria-selected') === 'false')).toBe(true);
   });
 
   it('P1: sin montadoSiempre, solo existe el panel abierto', () => {
@@ -144,6 +168,31 @@ describe('Pestanas', () => {
     }
     expect(onElegir).not.toHaveBeenCalled();
     expect(pestana('Uno')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('P2: con Alt, Cmd o Ctrl las flechas son del navegador o del sistema, no de la barra', () => {
+    // Alt+flecha es «atrás/adelante» en el navegador, Cmd+flecha va al
+    // principio o al final de la línea...: la barra no se las come
+    const onElegir = vi.fn();
+    render(<Prueba onElegir={onElegir} />);
+
+    for (const modificador of ['altKey', 'metaKey', 'ctrlKey']) {
+      for (const key of ['ArrowRight', 'ArrowLeft', 'Home', 'End']) {
+        const evento = new globalThis.KeyboardEvent('keydown', { key, [modificador]: true, bubbles: true, cancelable: true });
+        pestana('Uno').dispatchEvent(evento);
+        expect(evento.defaultPrevented).toBe(false);
+      }
+    }
+    expect(onElegir).not.toHaveBeenCalled();
+    expect(pestana('Uno')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('P2: con Shift, las flechas siguen siendo de la barra', () => {
+    render(<Prueba />);
+
+    fireEvent.keyDown(pestana('Uno'), { key: 'ArrowRight', shiftKey: true });
+
+    expect(pestana('Dos')).toHaveAttribute('aria-selected', 'true');
   });
 
   it('P2: las flechas no desplazan la página (se quedan con la tecla)', () => {

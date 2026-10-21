@@ -257,8 +257,9 @@ const QuickMatchScoringPage = () => {
     // Y al cerrarse vuelve donde estaba: el contenedor enfocado se desmonta y
     // el foco caeria al principio de la pagina, dejando tirado a quien navega
     // con teclado o lector de pantalla. Si el boton que lo abrio ya no existe
-    // —al cancelar de verdad, desaparece— el foco va a las pestanas, que
-    // siguen ahi.
+    // —al cancelar de verdad, desaparece— el foco va a la pestana abierta,
+    // que sigue ahi (a ella y no a la barra: la barra no es enfocable en el
+    // patron de pestanas, y desde ella las flechas no hacian nada).
     // Sin foco guardado no ha habido ningun aviso abierto —esto corre tambien
     // al montar la pagina— y aqui no hay nada que devolver: tocarlo movia el
     // foco a las pestanas en cada carga.
@@ -269,7 +270,7 @@ const QuickMatchScoringPage = () => {
       previo.focus?.();
       return;
     }
-    tabsRef.current?.focus?.();
+    tabsRef.current?.querySelector('[role="tab"][aria-selected="true"]')?.focus();
   }, [showFinishConfirm, showCancelConfirm, hayDiscrepancia]);
 
   useEffect(() => {
@@ -626,12 +627,11 @@ const QuickMatchScoringPage = () => {
         </div>
 
         <GrupoDePestanas actual={activeTab} onElegir={setActiveTab}>
-          {/* La barra recibe el foco al cerrarse un aviso cuyo botón ya no existe */}
+          {/* Su pestaña abierta recibe el foco al cerrarse un aviso cuyo botón ya no existe */}
           <ListaDePestanas
             ref={tabsRef}
-            tabIndex={-1}
             etiqueta={t('scoring.tabsLabel')}
-            className="flex border-b border-gray-200 mb-4 focus:outline-none"
+            className="flex border-b border-gray-200 mb-4"
             data-testid="quick-match-scoring-tabs"
             pestanas={TABS.map((tab) => ({ id: tab, contenido: t(`scoring.tabs.${tab}`), testId: `quick-match-tab-${tab}` }))}
             claseDePestana={(abierta) =>
@@ -734,7 +734,7 @@ const QuickMatchScoringPage = () => {
             )}
           </PanelDePestana>
 
-          <PanelDePestana id="classification">
+          <PanelDePestana id="classification" enfocable>
           {/* Lo nuestro sí está al día —sale de este móvil—, pero de los demás
               solo tenemos la última foto del servidor: lo que hayan anotado
               desde el corte no ha llegado. Así que se pintan los dos, cada
@@ -777,7 +777,7 @@ const QuickMatchScoringPage = () => {
           />
           </PanelDePestana>
 
-          <PanelDePestana id="scorecard">
+          <PanelDePestana id="scorecard" enfocable>
             <QuickMatchScorecardTable
               holes={holes}
               holeScores={holeScoresVisibles}

@@ -1,5 +1,26 @@
 import { useEffect, useEffectEvent, useLayoutEffect } from 'react';
 
+// Lo que puede recibir el foco con el tabulador. Sin lo desactivado: enfocar
+// un botón desactivado no hace nada y el foco se quedaba detrás del diálogo. Y
+// sin lo que lleva tabindex -1: una pestaña cerrada (o cualquier cosa sacada a
+// propósito del tabulador) no puede ser el primer foco ni el destino de la vuelta
+const NO_SACADO = ':not([tabindex="-1"])';
+export const ENFOCABLES = [
+  `button:not([disabled])${NO_SACADO}`,
+  `[href]${NO_SACADO}`,
+  `input:not([disabled])${NO_SACADO}`,
+  `select:not([disabled])${NO_SACADO}`,
+  `textarea:not([disabled])${NO_SACADO}`,
+  `[tabindex]${NO_SACADO}`,
+].join(', ');
+
+// Sin desplazar: en el móvil, enfocar desplazaba la página o el carril de las
+// tarjetas hasta el elemento, y la pantalla saltaba al abrir o cerrar una hoja
+const SIN_DESPLAZAR = { preventScroll: true };
+
+// Los diálogos abiertos, el de encima al final
+const pila = [];
+
 /**
  * El foco de un diálogo modal: entra al abrir, no se sale con el tabulador y
  * vuelve a donde estaba al cerrar; y Escape cierra (RyderCupWeb#389).
@@ -19,15 +40,10 @@ import { useEffect, useEffectEvent, useLayoutEffect } from 'react';
  * @param {boolean} [opciones.escapeExclusivo=false] Escucha en captura y no deja
  *   que el Escape llegue más allá. Para las hojas que se abren encima de un
  *   diálogo que tiene su propia escucha de Escape, fuera de esta pila
+ * @param {React.RefObject<HTMLElement>} [opciones.inicialRef] Dónde entra el
+ *   foco al abrir, si no es en lo primero (el campo de una hoja para escribir)
  */
-
-export const ENFOCABLES =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-// Los diálogos abiertos, el de encima al final
-const pila = [];
-
-export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclusivo = false } = {}) => {
+export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclusivo = false, inicialRef } = {}) => {
   // El foco entra en la caja al abrir y vuelve a donde estaba al cerrar. Sin lo
   // segundo, cerrar el diálogo dejaba el foco en el `body` y el siguiente
   // tabulador empezaba desde la cabecera de la página.
@@ -36,9 +52,11 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
 
     const caja = cajaRef.current;
     const anterior = document.activeElement;
-    // Con `:not([disabled])`: enfocar un botón desactivado no hace nada y el
-    // foco se quedaba detrás del diálogo, que es donde no puede estar.
-    (caja?.querySelector(ENFOCABLES) ?? caja)?.focus();
+    // Con el foco ya dentro no se toca: es un diálogo de dentro montado a la
+    // vez que este, cuyo efecto corre antes (los hijos van primero), y
+    // quitárselo dejaría sin foco al de encima
+    const yaDentro = caja?.contains(anterior) && anterior !== caja;
+    if (!yaDentro) (inicialRef?.current ?? caja?.querySelector(ENFOCABLES) ?? caja)?.focus(SIN_DESPLAZAR);
 
     return () => {
       // Solo si el foco sigue siendo mío. Con dos diálogos encima, al cerrarse
@@ -46,9 +64,11 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
       // abierto delante.
       const esMio = caja?.contains(document.activeElement) || document.activeElement === document.body;
       if (esMio && typeof anterior?.focus === 'function' && document.contains(anterior)) {
-        anterior.focus();
+        anterior.focus(SIN_DESPLAZAR);
       }
     };
+    // `inicialRef` es una ref: no cambia, y se lee al abrir
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activo, cajaRef]);
 
   // Lo que hace Escape, leído en el momento de pulsar. Por `useEffectEvent` y no
@@ -66,8 +86,14 @@ export const useFocoRetenido = (cajaRef, { activo = true, alEscape, escapeExclus
   useLayoutEffect(() => {
     if (!activo) return undefined;
 
-    const yo = {};
-    pila.push(yo);
+    // Se apila en el orden en que se abren, que es el de encima al final: una
+    // hoja se abre sobre un diálogo que ya estaba. Si se montan a la vez uno
+    // dentro de otro, el efecto del de dentro corre antes y quedaría debajo;
+    // por eso el de fuera se mete por debajo de los que contiene
+    const yo = { caja: cajaRef.current };
+    const contenido = pila.findIndex((otro) => otro.caja && otro.caja !== yo.caja && yo.caja?.contains(otro.caja));
+    if (contenido === -1) pila.push(yo);
+    else pila.splice(contenido, 0, yo);
 
     const alPulsar = (e) => {
       if (pila.at(-1) !== yo) return;

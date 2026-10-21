@@ -187,6 +187,8 @@ describe('PendingGolfCourses · pestañas (FE #658)', () => {
     expect(nuevas).toHaveAttribute('aria-controls', panel.id);
     expect(cambios).toHaveAttribute('aria-controls', panel.id);
     expect(within(panel).getByText('ver Campo Pendiente')).toBeInTheDocument();
+    // La tabla lleva sus botones de ver y aprobar: el panel no es parada
+    expect(panel).not.toHaveAttribute('tabindex');
 
     fireEvent.keyDown(nuevas, { key: 'ArrowRight' });
 
