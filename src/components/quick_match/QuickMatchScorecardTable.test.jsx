@@ -1041,6 +1041,34 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
     expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
   });
 
+  // Revisión del 22 oct: los golpes y el subtotal son dos cifras sin etiqueta
+  // que el lector leía juntas («1002»). Se oye una frase; la vista no cambia
+  it('A2: el lector oye los golpes y los puntos del tramo por separado', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    const frase = within(tramo('ida')).getByText('scoring.scorecard.sectionTotalPointsA11y {"strokes":10,"count":2}');
+    expect(frase).toHaveClass('sr-only');
+    const visible = within(tramo('ida')).getByTestId('subtotal-points').parentElement;
+    expect(visible).toHaveAttribute('aria-hidden', 'true');
+    expect(visible).toHaveTextContent(/^102$/);
+  });
+
+  it('A3: y en Medal, los golpes y el neto', () => {
+    pinta({ scoringFormat: 'MEDAL' });
+
+    expect(
+      within(tramo('vuelta')).getByText('scoring.scorecard.sectionTotalNetA11y {"strokes":3,"net":2}')
+    ).toHaveClass('sr-only');
+  });
+
+  it('A4: sin subtotal, los golpes se leen como siempre, sin frase ni nada oculto', () => {
+    pinta({ matchFormat: 'SINGLES' });
+
+    expect(tramo('ida')).toHaveTextContent(/^10$/);
+    expect(tramo('ida').querySelector('[aria-hidden]')).toBeNull();
+    expect(tramo('ida').querySelector('.sr-only')).toBeNull();
+  });
+
   it('S5: en match play no hay subtotales', () => {
     pinta({ matchFormat: 'SINGLES' });
 

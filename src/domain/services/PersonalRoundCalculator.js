@@ -49,7 +49,6 @@ const PARAMETROS_POR_DEFECTO = Object.freeze({
   tees: [],
   participantStrokes: [],
   matchFormat: null,
-  scoringFormat: null,
   allowancePercentage: null,
   playMode: 'HANDICAP',
 });
@@ -267,16 +266,16 @@ class PersonalRoundCalculator {
    * reparto en el que falta quien anota, su hándicap de juego local con el
    * allowance del partido, no 0: con 0 «Tu vuelta» saldría a bruto.
    *
-   * @param {Object} params Los de `compute`, más `scoringFormat`
-   * @param {?string} params.scoringFormat MEDAL/STABLEFORD, o null en match play
-   * @returns {?{toPar: ?number, toParLabel: ?string, stablefordPoints: ?number, holesPlayed: number}}
+   * Solo el neto: los puntos Stableford se ven en la clasificación (22 oct).
+   *
+   * @param {Object} params Los de `compute`
+   * @returns {?{toPar: ?number, toParLabel: ?string, holesPlayed: number}}
    *   null en foursomes —una bola por bando, no hay vuelta propia— o sin
    *   jugador. Sin hoyos anotados, `toPar` y `toParLabel` son null.
-   *   `stablefordPoints` solo en Stableford.
    */
   static runningResult(params) {
     const p = conDefectos(params);
-    const { me, holes, holeScores, tees, matchFormat, scoringFormat, playMode } = p;
+    const { me, holes, holeScores, tees, matchFormat, playMode } = p;
     if (!me || matchFormat === 'FOURSOMES') return null;
 
     // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
@@ -300,7 +299,6 @@ class PersonalRoundCalculator {
     return {
       toPar,
       toParLabel: toPar === null ? null : StablefordCalculator.formatToPar(toPar),
-      stablefordPoints: scoringFormat === 'STABLEFORD' ? totals.stablefordPoints : null,
       holesPlayed: totals.holesPlayed,
     };
   }

@@ -2061,4 +2061,17 @@ describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
       espia.mockRestore();
     }
   });
+
+  // Revisión del 22 oct: «Tu vuelta» ya no enseña puntos, así que el formato
+  // de juego no entra en el cálculo
+  it('M6: no le pasa el formato de juego', () => {
+    const espia = vi.spyOn(PersonalRoundCalculator, 'runningResult');
+    try {
+      montar({ holeScoresVisibles: [{ holeNumber: 1, participantId: 'user-1', score: 6 }] });
+      expect(espia).toHaveBeenCalled();
+      expect(espia.mock.calls.at(-1)[0]).not.toHaveProperty('scoringFormat');
+    } finally {
+      espia.mockRestore();
+    }
+  });
 });

@@ -16,7 +16,14 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// La pieza de verdad, con un espía para ver lo que le llega
+vi.mock('../scoring/TarjetaVertical', async (importOriginal) => {
+  const real = await importOriginal();
+  return { default: vi.fn(real.default) };
+});
+
 const QuickMatchScorecardTable = (await import('./QuickMatchScorecardTable')).default;
+const TarjetaVertical = (await import('../scoring/TarjetaVertical')).default;
 
 const holes = Array.from({ length: 18 }, (_, i) => ({
   holeNumber: i + 1,
@@ -211,7 +218,9 @@ describe('QuickMatchScorecardTable · en el móvil, subtotales de puntos y de ne
     pinta({ scoringFormat: 'MEDAL', holeScores: [{ holeNumber: 1, participantId: 'p-1', score: 5 }] });
 
     expect(within(sumaExtra('ida')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^4$/);
-    expect(sumaExtra('vuelta')).toBeEmptyDOMElement();
+    // Una raya, como la casilla de golpes de al lado; no una casilla vacía
+    expect(sumaExtra('vuelta')).toHaveTextContent(/^-$/);
+    expect(screen.getByTestId('suma-vuelta')).toHaveTextContent(/^-$/);
   });
 
   it('S3: un campo de 9 hoyos solo tiene el total', () => {
@@ -221,6 +230,17 @@ describe('QuickMatchScorecardTable · en el móvil, subtotales de puntos y de ne
     expect(within(tarjeta).queryByTestId('suma-extra-ida')).toBeNull();
     expect(within(tarjeta).queryByTestId('suma-extra-vuelta')).toBeNull();
     expect(within(sumaExtra('total')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+  });
+
+  it('S3b: con 9 hoyos ni se calculan los subtotales de ida y vuelta', () => {
+    TarjetaVertical.mockClear();
+    pinta({ scoringFormat: 'STABLEFORD', holes: holes.slice(0, 9) });
+
+    const { sumas, sumasExtra } = TarjetaVertical.mock.calls.at(-1)[0];
+    expect(sumas.ida).toBeUndefined();
+    expect(sumasExtra.ida).toBeUndefined();
+    expect(sumasExtra.vuelta).toBeUndefined();
+    expect(sumasExtra.total).not.toBeNull();
   });
 
   it('S5: en match play no hay columna extra ni subtotales', () => {

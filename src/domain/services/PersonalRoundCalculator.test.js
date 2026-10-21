@@ -291,7 +291,7 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
  * diferencia del match play.
  *
  *   N3  hándicap de juego propio x allowance        | R1, R2, R3, R4, R5
- *   N4  Stableford: neto y puntos                   | R6, R7
+ *   N4  solo el neto, sin puntos (22 oct)           | R6, R7
  *   N5  foursomes: nada                             | R8
  *   N6  SCRATCH: contra el par                      | R9
  *   N7  solo los hoyos anotados                     | R10
@@ -311,7 +311,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       tees: [],
       participantStrokes: [],
       matchFormat: null,
-      scoringFormat: 'MEDAL',
       allowancePercentage: 100,
       playMode: 'HANDICAP',
       ...overrides,
@@ -336,7 +335,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     // su hándicap de juego es 2: la vuelta cuenta con esos 2
     const result = running({
       matchFormat: 'SINGLES',
-      scoringFormat: null,
       participantStrokes: [
         { participantId: 'p-1', playingHandicap: 2, strokesByHole: {} },
         { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1, 2: 1 } },
@@ -350,7 +348,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     // Localmente saldría 2; el backend guardó 1, que es el que pinta la tarjeta
     const result = running({
       matchFormat: 'FOURBALL',
-      scoringFormat: null,
       participantStrokes: [
         { participantId: 'p-1', playingHandicap: 1, strokesByHole: {} },
         { participantId: 'p-2', playingHandicap: 12, strokesByHole: { 1: 1 } },
@@ -361,27 +358,27 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
   });
 
   it('R5: sin reparto del backend lo calcula con su hándicap y el allowance', () => {
-    const result = running({ matchFormat: 'SINGLES', scoringFormat: null, allowancePercentage: null });
+    const result = running({ matchFormat: 'SINGLES', allowancePercentage: null });
 
     // Sin allowance conocido, el 100%: 2 golpes
     expect(result.toParLabel).toBe('-3');
   });
 
-  it('R6: en Stableford da también los puntos acumulados', () => {
-    // Netos 3 (par 4) y 1 (par 3): 3 + 4 puntos
+  it('R6: en Stableford, el neto; los puntos ya no salen de aquí (22 oct)', () => {
+    // Netos 3 (par 4) y 1 (par 3). Los puntos van en la clasificación; un
+    // formato de juego que aún llegue no cambia nada
     const result = running({ scoringFormat: 'STABLEFORD' });
 
-    expect(result.stablefordPoints).toBe(7);
-    expect(result.toParLabel).toBe('-3');
+    expect(result).toEqual({ toPar: -3, toParLabel: '-3', holesPlayed: 2 });
   });
 
-  it('R7: fuera de Stableford no hay puntos', () => {
-    expect(running().stablefordPoints).toBeNull();
-    expect(running({ matchFormat: 'SINGLES', scoringFormat: null }).stablefordPoints).toBeNull();
+  it('R7: en ningún formato hay campo de puntos', () => {
+    expect(running()).not.toHaveProperty('stablefordPoints');
+    expect(running({ matchFormat: 'SINGLES' })).not.toHaveProperty('stablefordPoints');
   });
 
   it('R8: en foursomes no hay vuelta propia', () => {
-    expect(running({ matchFormat: 'FOURSOMES', scoringFormat: null })).toBeNull();
+    expect(running({ matchFormat: 'FOURSOMES' })).toBeNull();
   });
 
   it('R9: en SCRATCH no recibe golpes y se mide contra el par', () => {
@@ -477,7 +474,7 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
       playMode: undefined,
     });
 
-    expect(result).toEqual({ toPar: null, toParLabel: null, stablefordPoints: null, holesPlayed: 0 });
+    expect(result).toEqual({ toPar: null, toParLabel: null, holesPlayed: 0 });
     expect(
       PersonalRoundCalculator.compute({ me, holes, holeScores: scores, tees: undefined, participants: undefined })
     ).not.toBeNull();
@@ -500,7 +497,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     it('R16: si el reparto del backend no trae a quien anota, usa su hándicap local, no 0', () => {
       const result = deAlto({
         matchFormat: 'SINGLES',
-        scoringFormat: null,
         allowancePercentage: 100,
         participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
       });
@@ -512,7 +508,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     it('R16b: y con el allowance del partido (fourball al 90%)', () => {
       const result = deAlto({
         matchFormat: 'FOURBALL',
-        scoringFormat: null,
         allowancePercentage: 90,
         participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
       });
@@ -521,7 +516,7 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     });
 
     it('R17: sin allowance, el de partido libre es el 95% del formato, no el 100%', () => {
-      const result = deAlto({ matchFormat: null, scoringFormat: 'STABLEFORD', allowancePercentage: null });
+      const result = deAlto({ matchFormat: null, allowancePercentage: null });
 
       // 20 al 95% = 19
       expect(result.toPar).toBe(-19);
@@ -530,7 +525,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     it('R17b: sin allowance en fourball, su 90%', () => {
       const result = deAlto({
         matchFormat: 'FOURBALL',
-        scoringFormat: null,
         allowancePercentage: undefined,
         participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
       });
@@ -541,7 +535,6 @@ describe('PersonalRoundCalculator.runningResult · «Tu vuelta» al anotar', () 
     it('R17c: sin allowance en singles, su 100%', () => {
       const result = deAlto({
         matchFormat: 'SINGLES',
-        scoringFormat: null,
         allowancePercentage: null,
         participantStrokes: [{ participantId: 'p-2', playingHandicap: 12, strokesByHole: {} }],
       });

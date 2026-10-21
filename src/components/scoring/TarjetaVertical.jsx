@@ -49,7 +49,7 @@ const TarjetaVertical = ({
       </td>
       {columnaExtra && (
         <td data-testid={`suma-extra-${nombre}`} className="py-1.5 text-center">
-          {sumasExtra?.[nombre]}
+          {sumasExtra?.[nombre] ?? '-'}
         </td>
       )}
       {conResultado && <td />}

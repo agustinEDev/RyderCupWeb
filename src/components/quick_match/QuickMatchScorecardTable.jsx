@@ -289,9 +289,6 @@ const QuickMatchScorecardTable = ({
       return score != null ? sum + score : sum;
     }, 0);
 
-  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
-  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
-  // y la vertical del móvil (FE #739)
   // Lo que se sabe de un hoyo de una tarjeta: su golpe (o la raya) y lo que
   // recibe. Lo leen la casilla y la columna de puntos o neto
   const datosDelHoyo = (h, card) => {
@@ -345,15 +342,39 @@ const QuickMatchScorecardTable = ({
 
   // Suma de los puntos o del neto de un tramo, solo de los hoyos jugados (la
   // raya ya cuenta como doble bogey neto). Sin ninguno jugado, nada
-  const extraDelTramo = (holeRange, card) => {
+  const valorDelTramo = (holeRange, card) => {
     const valores = holeRange.map((h) => valorExtraDelHoyo(h, card)).filter((v) => v != null);
     if (valores.length === 0) return null;
-    return pintaExtra(
-      valores.reduce((sum, v) => sum + v, 0),
-      { subtotal: true }
+    return valores.reduce((sum, v) => sum + v, 0);
+  };
+  const extraDelTramo = (holeRange, card) => pintaExtra(valorDelTramo(holeRange, card), { subtotal: true });
+
+  // La suma de un tramo en la horizontal: los golpes y, debajo, los puntos o
+  // el neto. Son dos cifras sin etiqueta que el lector leía de un tirón
+  // («4238»): con subtotal se oye una frase y lo visible se le oculta
+  const totalDelTramo = (sectionHoles, card) => {
+    const golpes = sumStrokes(sectionHoles, card.members);
+    const extra = valorDelTramo(sectionHoles, card);
+    const frase =
+      extra == null
+        ? null
+        : isStableford
+          ? t('scoring.scorecard.sectionTotalPointsA11y', { strokes: golpes, count: extra })
+          : t('scoring.scorecard.sectionTotalNetA11y', { strokes: golpes, net: extra });
+    return (
+      <>
+        <div className="flex flex-col items-center gap-0.5" aria-hidden={frase ? 'true' : undefined}>
+          {golpes || '-'}
+          {pintaExtra(extra, { subtotal: true })}
+        </div>
+        {frase && <span className="sr-only">{frase}</span>}
+      </>
     );
   };
 
+  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
+  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
+  // y la vertical del móvil (FE #739)
   const casilla = (h, card, { conExtra = true } = {}) => {
     const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(h, card);
     return (
@@ -430,10 +451,7 @@ const QuickMatchScorecardTable = ({
               data-testid={`quick-match-section-total-${card.key}-${seccion}`}
               className="px-2 py-1 text-center font-bold align-top"
             >
-              <div className="flex flex-col items-center gap-0.5">
-                {sumStrokes(sectionHoles, card.members) || '-'}
-                {extraDelTramo(sectionHoles, card)}
-              </div>
+              {totalDelTramo(sectionHoles, card)}
             </td>
           </tr>
         </tbody>
@@ -502,10 +520,10 @@ const QuickMatchScorecardTable = ({
         vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card.members) : undefined,
         total: sumStrokes(card.holes, card.members),
       }}
-      // Sin `conIda`: la fila de suma solo existe si la tiene `sumas`
+      // Como `sumas`: con 9 hoyos no hay ida ni vuelta que sumar
       sumasExtra={{
-        ida: extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card),
-        vuelta: extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card),
+        ida: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
+        vuelta: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
         total: extraDelTramo(card.holes, card),
       }}
     />

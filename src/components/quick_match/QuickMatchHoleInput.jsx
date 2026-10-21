@@ -200,7 +200,7 @@ const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entr
       {myRoundInLine && (
         <p data-testid="quick-match-my-round-line" className="text-xs text-gray-500 whitespace-nowrap truncate">
           <span aria-hidden="true">
-            {t('input.myRound')}: <span className="font-bold text-gray-900">{myRoundValue()}</span>
+            {t('input.myRound')}: <span className="text-base font-bold text-gray-900">{myRoundValue()}</span>
           </span>
           <span className="sr-only">{myRoundSpoken()}</span>
         </p>
