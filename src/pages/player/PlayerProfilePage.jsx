@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { nombreVisible } from '../../utils/nombreVisible';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Check, Loader, Lock, Mail, UserPlus, UserX, X } from 'lucide-react';
+import { ArrowLeft, Check, Loader, Lock, UserPlus, UserX, X } from 'lucide-react';
 import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Avatar from '../../components/ui/Avatar';
@@ -265,32 +265,8 @@ const PlayerProfilePage = () => {
 
         {profile.isFriend ? (
           <>
-            {profile.email && (
-              <section
-                className="mt-4 p-4 bg-white border border-gray-200 rounded-lg"
-                data-testid="player-profile-contact"
-              >
-                <h3 className="text-sm font-semibold text-gray-900">
-                  {t('playerProfile:contact.title')}
-                </h3>
-                {/* Un correo no tiene espacios: no puede partirse solo, asi que
-                    su ancho minimo es el ancho entero y desborda la tarjeta en
-                    un movil. `min-w-0` deja encoger al hijo de flex y
-                    `break-all` le permite pasar a la linea siguiente. Se parte
-                    en vez de recortarse porque una direccion a medias no sirve
-                    para nada */}
-                <p className="mt-2 flex items-center gap-2 text-sm text-gray-700">
-                  <Mail className="w-4 h-4 shrink-0 text-gray-400" aria-hidden="true" />
-                  <a
-                    href={`mailto:${profile.email}`}
-                    className="min-w-0 break-all text-primary hover:underline"
-                  >
-                    {profile.email}
-                  </a>
-                </p>
-              </section>
-            )}
-
+            {/* Sin el correo: el de otro jugador no se enseña, ni siendo amigos
+                (Agustín, 21 oct). El propio está en /profile */}
             <PlayerStatsSummary profile={profile} t={t} />
 
             <section className="mt-4" data-testid="player-profile-activity">

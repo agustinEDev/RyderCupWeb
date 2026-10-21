@@ -26,10 +26,6 @@
     "title": "Friends only",
     "hint": "Their handicap, stats and activity show up once you are friends."
   },
-  "contact": {
-    "title": "Contact",
-    "email": "Email"
-  },
   "stats": {
     "title": "Stats",
     "handicap": "Handicap",
