@@ -134,7 +134,6 @@ const QuickMatchScoringPage = () => {
   const participants = quickMatch?.participants;
   const participantStrokes = quickMatch?.participantStrokes;
   const matchFormat = quickMatch?.matchFormat ?? null;
-  const scoringFormat = quickMatch?.scoringFormat ?? null;
   const effectiveAllowance = quickMatch?.effectiveAllowance ?? null;
   const playMode = quickMatch?.playMode ?? 'HANDICAP';
   const myRound = useMemo(
@@ -147,7 +146,6 @@ const QuickMatchScoringPage = () => {
         tees,
         participantStrokes: participantStrokes ?? [],
         matchFormat,
-        scoringFormat,
         allowancePercentage: effectiveAllowance,
         playMode,
       }),
@@ -159,7 +157,6 @@ const QuickMatchScoringPage = () => {
       tees,
       participantStrokes,
       matchFormat,
-      scoringFormat,
       effectiveAllowance,
       playMode,
     ]

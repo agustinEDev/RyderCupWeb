@@ -68,16 +68,12 @@
     "rivalBallOf": "Rival ball · {{nombre}}",
     "myRound": "Your round",
     "myRoundPar": "PAR",
-    "myRoundPoints_one": "{{count}} pt",
-    "myRoundPoints_other": "{{count}} pts",
     "myRoundA11yNone": "Your round: no holes scored yet",
     "myRoundA11yPar": "Your round: level par",
     "myRoundA11yOver_one": "Your round: {{count}} over par",
     "myRoundA11yOver_other": "Your round: {{count}} over par",
     "myRoundA11yUnder_one": "Your round: {{count}} under par",
-    "myRoundA11yUnder_other": "Your round: {{count}} under par",
-    "myRoundA11yPoints_one": "{{count}} point",
-    "myRoundA11yPoints_other": "{{count}} points"
+    "myRoundA11yUnder_other": "Your round: {{count}} under par"
   },
   "scorecard": {
     "title": "Scorecard",

@@ -289,9 +289,6 @@ const QuickMatchScorecardTable = ({
       return score != null ? sum + score : sum;
     }, 0);
 
-  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
-  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
-  // y la vertical del móvil (FE #739)
   // Lo que se sabe de un hoyo de una tarjeta: su golpe (o la raya) y lo que
   // recibe. Lo leen la casilla y la columna de puntos o neto
   const datosDelHoyo = (h, card) => {
@@ -311,37 +308,73 @@ const QuickMatchScorecardTable = ({
     return { isPickedUp, score, strokesReceived, dotCount };
   };
 
-  // Los puntos Stableford o el neto en Medal. En la tarjeta del móvil van en
-  // su propia columna; en la horizontal, bajo la figura
-  const extraDelHoyo = (h, card) => {
+  // Los puntos Stableford o el neto en Medal de un hoyo, o null si no hay
+  // nada que contar (hoyo sin anotar o match play). De aquí salen la casilla
+  // y los subtotales, para que el hoyo y la suma no se separen
+  const valorExtraDelHoyo = (h, card) => {
     const { score, strokesReceived } = datosDelHoyo(h, card);
     if (score == null) return null;
-    if (isStableford) {
-      const puntos = StablefordCalculator.holePoints(score, h.par, strokesReceived);
-      return (
-        <span
-          data-testid="hole-points"
-          className="text-[10px] font-semibold text-primary"
-          title={t('scoring.scorecard.holePoints', { count: puntos })}
-        >
-          {puntos}
-        </span>
-      );
-    }
-    if (isMedal) {
-      return (
-        <span
-          data-testid="hole-net-strokes"
-          className="text-[10px] font-semibold text-primary"
-          title={t('scoring.scorecard.holeNetStrokes', { count: score - strokesReceived })}
-        >
-          {score - strokesReceived}
-        </span>
-      );
-    }
+    if (isStableford) return StablefordCalculator.holePoints(score, h.par, strokesReceived);
+    if (isMedal) return score - strokesReceived;
     return null;
   };
 
+  // Lo mismo, como se pinta: en el móvil va en su propia columna; en la
+  // horizontal, bajo la figura (o bajo los golpes del tramo, si es la suma)
+  const pintaExtra = (valor, { subtotal = false } = {}) => {
+    if (valor == null) return null;
+    const prefijo = subtotal ? 'subtotal' : 'hole';
+    const [testId, clave] = isStableford
+      ? [`${prefijo}-points`, subtotal ? 'subtotalPoints' : 'holePoints']
+      : [`${prefijo}-net-strokes`, subtotal ? 'subtotalNetStrokes' : 'holeNetStrokes'];
+    return (
+      <span
+        data-testid={testId}
+        className="text-[10px] font-semibold text-primary"
+        title={t(`scoring.scorecard.${clave}`, { count: valor })}
+      >
+        {valor}
+      </span>
+    );
+  };
+
+  const extraDelHoyo = (h, card) => pintaExtra(valorExtraDelHoyo(h, card));
+
+  // Suma de los puntos o del neto de un tramo, solo de los hoyos jugados (la
+  // raya ya cuenta como doble bogey neto). Sin ninguno jugado, nada
+  const valorDelTramo = (holeRange, card) => {
+    const valores = holeRange.map((h) => valorExtraDelHoyo(h, card)).filter((v) => v != null);
+    if (valores.length === 0) return null;
+    return valores.reduce((sum, v) => sum + v, 0);
+  };
+  const extraDelTramo = (holeRange, card) => pintaExtra(valorDelTramo(holeRange, card), { subtotal: true });
+
+  // La suma de un tramo en la horizontal: los golpes y, debajo, los puntos o
+  // el neto. Son dos cifras sin etiqueta que el lector leía de un tirón
+  // («4238»): con subtotal se oye una frase y lo visible se le oculta
+  const totalDelTramo = (sectionHoles, card) => {
+    const golpes = sumStrokes(sectionHoles, card.members);
+    const extra = valorDelTramo(sectionHoles, card);
+    const frase =
+      extra == null
+        ? null
+        : isStableford
+          ? t('scoring.scorecard.sectionTotalPointsA11y', { strokes: golpes, count: extra })
+          : t('scoring.scorecard.sectionTotalNetA11y', { strokes: golpes, net: extra });
+    return (
+      <>
+        <div className="flex flex-col items-center gap-0.5" aria-hidden={frase ? 'true' : undefined}>
+          {golpes || '-'}
+          {pintaExtra(extra, { subtotal: true })}
+        </div>
+        {frase && <span className="sr-only">{frase}</span>}
+      </>
+    );
+  };
+
+  // Lo que se pinta en la casilla de un hoyo: la figura, los puntos o el neto
+  // del hoyo y los puntitos de los golpes. La comparten la tarjeta horizontal
+  // y la vertical del móvil (FE #739)
   const casilla = (h, card, { conExtra = true } = {}) => {
     const { isPickedUp, score, strokesReceived, dotCount } = datosDelHoyo(h, card);
     return (
@@ -370,7 +403,7 @@ const QuickMatchScorecardTable = ({
     );
   };
 
-  const renderSection = (sectionHoles, label, card) => (
+  const renderSection = (sectionHoles, label, card, seccion) => (
     <div data-testid="vuelta-horizontal" className="overflow-x-auto">
       <table className="min-w-full text-xs">
         <thead>
@@ -414,8 +447,11 @@ const QuickMatchScorecardTable = ({
                 {casilla(h, card)}
               </td>
             ))}
-            <td className="px-2 py-1 text-center font-bold">
-              {sumStrokes(sectionHoles, card.members) || '-'}
+            <td
+              data-testid={`quick-match-section-total-${card.key}-${seccion}`}
+              className="px-2 py-1 text-center font-bold align-top"
+            >
+              {totalDelTramo(sectionHoles, card)}
             </td>
           </tr>
         </tbody>
@@ -484,6 +520,12 @@ const QuickMatchScorecardTable = ({
         vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card.members) : undefined,
         total: sumStrokes(card.holes, card.members),
       }}
+      // Como `sumas`: con 9 hoyos no hay ida ni vuelta que sumar
+      sumasExtra={{
+        ida: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
+        vuelta: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        total: extraDelTramo(card.holes, card),
+      }}
     />
   );
 
@@ -521,13 +563,15 @@ const QuickMatchScorecardTable = ({
             {renderSection(
               card.holes.filter((h) => h.holeNumber <= 9),
               ts('scorecard.out'),
-              card
+              card,
+              'ida'
             )}
             {card.holes.some((h) => h.holeNumber > 9) &&
               renderSection(
                 card.holes.filter((h) => h.holeNumber > 9),
                 ts('scorecard.in'),
-                card
+                card,
+                'vuelta'
               )}
           </div>
         </div>

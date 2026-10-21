@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import QuickMatchScorecardTable from './QuickMatchScorecardTable';
 
 vi.mock('react-i18next', () => ({
@@ -971,5 +971,108 @@ describe('QuickMatchScorecardTable — la barra sigue al nombre que encabeza', (
     );
 
     expect(screen.getByTestId('quick-match-player-handicap-p-1')).toHaveTextContent('Rojas M (M)');
+  });
+});
+
+/**
+ * Subtotales de puntos y de neto en la tarjeta horizontal: bajo los golpes de
+ * cada tramo, donde van los puntos de cada hoyo (Agustín, 22 oct).
+ */
+describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
+  const dieciocho = Array.from({ length: 18 }, (_, i) => ({
+    holeNumber: i + 1,
+    par: i === 1 ? 3 : 4,
+    strokeIndex: 18 - i,
+  }));
+  // Hándicap 18 sin barras: un golpe en cada hoyo
+  const conGolpes = [{ participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false }];
+  const anotados = [
+    { holeNumber: 1, participantId: 'p-1', score: 5 },
+    { holeNumber: 2, participantId: 'p-1', score: null },
+    { holeNumber: 10, participantId: 'p-1', score: 3 },
+  ];
+  const pinta = (props) =>
+    render(
+      <QuickMatchScorecardTable
+        holes={dieciocho}
+        holeScores={anotados}
+        participants={conGolpes}
+        currentParticipantId="p-1"
+        {...props}
+      />
+    );
+  const tramo = (seccion) => screen.getByTestId(`quick-match-section-total-p-1-${seccion}`);
+
+  it('S1/S2: en Stableford, los puntos de la ida y de la vuelta bajo sus golpes', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+    expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveAttribute(
+      'title',
+      'scoring.scorecard.subtotalPoints {"count":2}'
+    );
+    expect(within(tramo('vuelta')).getByTestId('subtotal-points')).toHaveTextContent(/^4$/);
+    // Los golpes del tramo siguen ahí: 5 + 5 (raya en par 3) y 3
+    expect(tramo('ida')).toHaveTextContent(/^10/);
+    expect(tramo('vuelta')).toHaveTextContent(/^3/);
+  });
+
+  it('S4: en Medal, el neto de cada tramo', () => {
+    pinta({ scoringFormat: 'MEDAL' });
+
+    expect(within(tramo('ida')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^9$/);
+    expect(within(tramo('vuelta')).getByTestId('subtotal-net-strokes')).toHaveTextContent(/^2$/);
+    expect(within(tramo('vuelta')).getByTestId('subtotal-net-strokes')).toHaveAttribute(
+      'title',
+      'scoring.scorecard.subtotalNetStrokes {"count":2}'
+    );
+  });
+
+  it('S2: un tramo sin hoyos jugados no enseña subtotal', () => {
+    pinta({ scoringFormat: 'STABLEFORD', holeScores: [{ holeNumber: 1, participantId: 'p-1', score: 5 }] });
+
+    expect(within(tramo('vuelta')).queryByTestId('subtotal-points')).toBeNull();
+  });
+
+  it('S3: un campo de 9 hoyos tiene un solo subtotal', () => {
+    pinta({ scoringFormat: 'STABLEFORD', holes: dieciocho.slice(0, 9) });
+
+    expect(screen.getAllByTestId('subtotal-points')).toHaveLength(1);
+    expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+  });
+
+  // Revisión del 22 oct: los golpes y el subtotal son dos cifras sin etiqueta
+  // que el lector leía juntas («1002»). Se oye una frase; la vista no cambia
+  it('A2: el lector oye los golpes y los puntos del tramo por separado', () => {
+    pinta({ scoringFormat: 'STABLEFORD' });
+
+    const frase = within(tramo('ida')).getByText('scoring.scorecard.sectionTotalPointsA11y {"strokes":10,"count":2}');
+    expect(frase).toHaveClass('sr-only');
+    const visible = within(tramo('ida')).getByTestId('subtotal-points').parentElement;
+    expect(visible).toHaveAttribute('aria-hidden', 'true');
+    expect(visible).toHaveTextContent(/^102$/);
+  });
+
+  it('A3: y en Medal, los golpes y el neto', () => {
+    pinta({ scoringFormat: 'MEDAL' });
+
+    expect(
+      within(tramo('vuelta')).getByText('scoring.scorecard.sectionTotalNetA11y {"strokes":3,"net":2}')
+    ).toHaveClass('sr-only');
+  });
+
+  it('A4: sin subtotal, los golpes se leen como siempre, sin frase ni nada oculto', () => {
+    pinta({ matchFormat: 'SINGLES' });
+
+    expect(tramo('ida')).toHaveTextContent(/^10$/);
+    expect(tramo('ida').querySelector('[aria-hidden]')).toBeNull();
+    expect(tramo('ida').querySelector('.sr-only')).toBeNull();
+  });
+
+  it('S5: en match play no hay subtotales', () => {
+    pinta({ matchFormat: 'SINGLES' });
+
+    expect(screen.queryByTestId('subtotal-points')).toBeNull();
+    expect(screen.queryByTestId('subtotal-net-strokes')).toBeNull();
   });
 });

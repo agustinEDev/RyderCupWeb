@@ -68,16 +68,12 @@
     "rivalBallOf": "Bola rival · {{nombre}}",
     "myRound": "Tu vuelta",
     "myRoundPar": "PAR",
-    "myRoundPoints_one": "{{count}} pt",
-    "myRoundPoints_other": "{{count}} pts",
     "myRoundA11yNone": "Tu vuelta: aún sin hoyos anotados",
     "myRoundA11yPar": "Tu vuelta: al par",
     "myRoundA11yOver_one": "Tu vuelta: {{count}} por encima del par",
     "myRoundA11yOver_other": "Tu vuelta: {{count}} por encima del par",
     "myRoundA11yUnder_one": "Tu vuelta: {{count}} por debajo del par",
-    "myRoundA11yUnder_other": "Tu vuelta: {{count}} por debajo del par",
-    "myRoundA11yPoints_one": "{{count}} punto",
-    "myRoundA11yPoints_other": "{{count}} puntos"
+    "myRoundA11yUnder_other": "Tu vuelta: {{count}} por debajo del par"
   },
   "scorecard": {
     "title": "Tarjeta",
