@@ -52,7 +52,7 @@ const TeeSelectField = ({
         aria-haspopup="dialog"
         aria-expanded={isPanelOpen}
         data-testid={testIdPrefix}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm text-left hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm text-left hover:border-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {selectedTee ? (
           <TeeColorBadge

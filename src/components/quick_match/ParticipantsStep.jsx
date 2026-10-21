@@ -221,7 +221,7 @@ const ParticipantsStep = ({
               type="button"
               onClick={onOpenGuestHandicapPanel}
               data-testid="quick-match-guest-handicap-button"
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary ${
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 indiceDelInvitado == null ? 'text-gray-400' : 'text-gray-900'
               }`}
             >
