@@ -285,6 +285,43 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
       expect(within(hcp).getByText('scorecard.playingHandicap {"value":"10"}')).toHaveClass('sr-only');
     });
 
+    it('T1d: cada tarjeta, el suyo: el de Bea no es el de Ana', () => {
+      pintar({
+        scoringView: vista('STABLEFORD', [
+          jugador('ana', 'JUGANDO', hoyos()),
+          jugador('bea', 'JUGANDO', hoyos(), { playing_handicap: 3 }),
+        ]),
+      });
+
+      expect(within(screen.getByTestId('tarjeta-bea')).getByTestId('hcp-de-juego-bea')).toHaveTextContent(
+        'scorecard.playingHandicapShort {"value":"3"}'
+      );
+      expect(within(screen.getByTestId('tarjeta-ana')).getByTestId('hcp-de-juego-ana')).toHaveTextContent(
+        'scorecard.playingHandicapShort {"value":"10"}'
+      );
+    });
+
+    it('T1e: al llegar otra vista (el sondeo), el hándicap es el de la nueva', () => {
+      const conHcp = (valor) =>
+        vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos()), jugador('bea', 'JUGANDO', hoyos(), { playing_handicap: valor })]);
+      const { rerender } = pintar({ scoringView: conHcp(3) });
+
+      rerender(<TarjetasDeLaPartida scoringView={conHcp(7)} userId="ana" organiza={false} onCambio={vi.fn()} />);
+
+      expect(screen.getByTestId('hcp-de-juego-bea')).toHaveTextContent('scorecard.playingHandicapShort {"value":"7"}');
+    });
+
+    it('T4: una tarjeta cuyo jugador no está en `players`: sin hándicap ni par, y sin romperse', () => {
+      const completa = vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos()), jugador('bea', 'JUGANDO', hoyos())]);
+      pintar({ scoringView: { ...completa, players: completa.players.filter((p) => p.userId !== 'bea') } });
+
+      const bea = within(screen.getByTestId('tarjeta-bea'));
+      expect(bea.getByText('BEA')).toBeInTheDocument();
+      expect(bea.queryByTestId('hcp-de-juego-bea')).toBeNull();
+      expect(bea.getByTestId('hoyo-bea-1')).toHaveTextContent(/^1·$/);
+      expect(within(screen.getByTestId('tarjeta-ana')).getByTestId('hoyo-ana-1')).toHaveTextContent(/^14·$/);
+    });
+
     it('T1b: un plus se escribe con «+» (se guarda negativo)', () => {
       pintar({ scoringView: vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos(), { playing_handicap: -5 })]) });
 

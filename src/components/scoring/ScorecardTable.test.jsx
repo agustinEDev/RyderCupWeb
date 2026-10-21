@@ -139,6 +139,10 @@ describe('ScorecardTable', () => {
       expect(celda).toHaveTextContent('Player A1 / Player A2');
       expect(celda.className).not.toContain('truncate');
       expect(celda.className).toContain('whitespace-normal');
+      // Ni el nombre: en la tabla, la caja del jugador va en línea, sin cortar
+      const jugadorEnLaTabla = screen.getAllByTestId('jugador-u1')[0];
+      expect(jugadorEnLaTabla).not.toHaveAttribute('class');
+      expect(within(jugadorEnLaTabla).getByText('Player A1')).not.toHaveAttribute('class');
     });
 
     it('should show team names above player names in FOURSOMES', () => {
