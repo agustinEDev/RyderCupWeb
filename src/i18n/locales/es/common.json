@@ -149,6 +149,10 @@
   "errors": {
     "generic": "No se ha podido completar la operación. Inténtalo de nuevo."
   },
+  "avisoTerminos": {
+    "texto": "Tienes que aceptar los nuevos Términos de uso.",
+    "aceptar": "Aceptarlos"
+  },
   "terminosPendientes": "Tienes que aceptar los Términos y condiciones para continuar.",
   "terminosNoDisponible": "Esto no está disponible ahora mismo. Inténtalo de nuevo más tarde.",
   "notFound": {

@@ -37,6 +37,7 @@ vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
 vi.mock('./components/ui/InstallBanner', () => ({ default: () => null }));
 vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
+vi.mock('./components/ui/AvisoTerminosPendientes', () => ({ default: () => <p>aviso de Términos</p> }));
 vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
 vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
@@ -102,6 +103,15 @@ describe('App · nada que llame a la API con los Términos pendientes', () => {
     await screen.findByText('panel');
 
     expect(llamadas.revalidacion.length).toBeGreaterThan(0);
+  });
+
+  it('pinta el aviso de Términos de las rutas públicas (hotfix 2.50.1)', async () => {
+    // Él decide dónde se ve; App solo tiene que montarlo
+    pendientes.valor = true;
+    render(<App />);
+    await screen.findByText('panel');
+
+    expect(screen.getByText('aviso de Términos')).toBeInTheDocument();
   });
 
   it('al desmontarse App, el hueco no se queda publicado', async () => {

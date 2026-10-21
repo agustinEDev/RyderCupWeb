@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } fro
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import AvisoSinConexion from './components/ui/AvisoSinConexion';
+import AvisoTerminosPendientes from './components/ui/AvisoTerminosPendientes';
 import * as Sentry from '@sentry/react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import FullScreenLoader from './components/ui/FullScreenLoader';
@@ -287,6 +288,9 @@ function AppContent() {
             barra se suma a los 100vh de la pantalla de arranque, y eso saca la
             barra de desplazamiento y descentra el monograma */}
         <AvisoSinConexion />
+        {/* Los Términos pendientes, en las rutas públicas: en las privadas
+            lleva a aceptarlos el guardia (hotfix 2.50.1) */}
+        <AvisoTerminosPendientes />
         {/* Dentro de la espera a proposito: fuera se pintaba ENCIMA de ella,
             apareciendo antes que la pantalla a la que acompaña. Ni en la portada
             ni en el arranque: ofrecer «instala la aplicacion» en la pantalla por
