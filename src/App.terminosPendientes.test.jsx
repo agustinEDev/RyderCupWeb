@@ -16,7 +16,7 @@ import { render, screen, cleanup } from '@testing-library/react';
  * La barra publica su hueco en `--alto-barra-inferior` (en <html>) para que las
  * páginas de pantalla completa lo descuenten: solo cuando se pinta, 0px si no.
  */
-const llamadas = vi.hoisted(() => ({ cola: [], muestras: [], dispositivos: [], refresco: [] }));
+const llamadas = vi.hoisted(() => ({ cola: [], muestras: [], dispositivos: [], refresco: [], revalidacion: [] }));
 const pendientes = vi.hoisted(() => ({ valor: false }));
 
 vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
@@ -31,6 +31,7 @@ vi.mock('./hooks/useDeviceRevocationMonitor', () => ({
   useDeviceRevocationMonitor: (o) => { llamadas.dispositivos.push(o.enabled); },
 }));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: (o) => { llamadas.refresco.push(o.enabled); } }));
+vi.mock('./hooks/useRevalidacionDeLaSesion', () => ({ useRevalidacionDeLaSesion: () => { llamadas.revalidacion.push(true); } }));
 vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));
 vi.mock('./hooks/useVolverArriba', () => ({ useVolverArriba: () => {} }));
 vi.mock('./utils/sentryHelpers', () => ({ setUserContext: () => {} }));
@@ -92,6 +93,15 @@ describe('App · nada que llame a la API con los Términos pendientes', () => {
     expect(ultimo(llamadas.refresco)).toBe(true);
     expect(screen.getByText('barra inferior')).toBeInTheDocument();
     expect(hueco()).toBe('calc(4rem + env(safe-area-inset-bottom))');
+  });
+
+  it('vigila la vuelta a la aplicación, también con los Términos pendientes (hotfix 2.50.1)', async () => {
+    // Es lo que lleva a aceptarlos a quien tiene la aplicación abierta días
+    pendientes.valor = true;
+    render(<App />);
+    await screen.findByText('panel');
+
+    expect(llamadas.revalidacion.length).toBeGreaterThan(0);
   });
 
   it('al desmontarse App, el hueco no se queda publicado', async () => {

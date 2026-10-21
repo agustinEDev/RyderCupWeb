@@ -43,6 +43,12 @@ import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 // build, o en un despliegue en contenedor se acaba preguntando a hosts distintos
 const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
+/**
+ * Lo mínimo entre dos comprobaciones al volver a la aplicación o a la red
+ * (hotfix 2.50.1): volver y salir diez veces seguidas no son diez peticiones.
+ */
+export const MINIMO_ENTRE_REVALIDACIONES_MS = 60_000;
+
 /** Lo que se espera antes de volver a intentarlo cuando la consulta falla. */
 export const ESPERA_TRAS_FALLO_MS = 3_000;
 
@@ -126,6 +132,8 @@ let enVuelo = null;
 let generacion = 0;
 let reintento = null;
 let fallosSeguidos = 0;
+// Cuándo respondió el servidor por última vez, o se le volvió a preguntar
+let ultimaComprobacion = 0;
 const oyentes = new Set();
 
 /**
@@ -225,6 +233,7 @@ const pideAlBackend = async (miGeneracion) => {
     // descartada y resolveria a nada
     if (reintento !== null) clearTimeout(reintento);
     reintento = null;
+    ultimaComprobacion = Date.now();
     apunta(usuario);
     anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 
@@ -374,6 +383,7 @@ export const anotaLaSesion = (usuarioDelBackend) => {
   fallosSeguidos = 0;
   if (reintento !== null) clearTimeout(reintento);
   reintento = null;
+  ultimaComprobacion = Date.now();
   // Y la copia del dispositivo, como en el camino de éxito de arriba: lo que se
   // siembra lo acaba de confirmar el backend. Sin esto, tras aceptar los
   // Términos el apunte seguía con `terms_accepted: false`, y abrir la
@@ -398,6 +408,7 @@ export const olvidaLaSesion = () => {
   // tope: sin reintento, sin apunte, y al formulario a la primera, que es
   // justo lo que no puede pasar en mitad del campo
   fallosSeguidos = 0;
+  ultimaComprobacion = 0;
   // Sube la generación: si hay una respuesta en vuelo, ya no manda. Si no,
   // llegaría con el usuario de antes y volvería a dar por buena una sesión que
   // acaba de cerrarse
@@ -414,25 +425,82 @@ export const olvidaLaSesion = () => {
 };
 
 /*
- * Aquí hubo una revalidación al volver a la aplicación, y se retiró.
+ * La revalidación al volver a la aplicación (hotfix 2.50.1).
  *
- * La idea era buena —la instalada vive días abierta y el refresco dura siete, así
- * que la pantalla puede estar enseñando una sesión que el backend ya rechazó—,
- * pero el precio no lo era: esa consulta pasa por `fetchWithTokenRefresh` con un
- * access caducado, así que intenta refrescar, y si ese refresco fallaba **sin
- * respuesta** —un corte a media petición, un tiempo agotado— el interceptor no
- * lo distinguía de una sesión muerta y cerraba sesión con una redirección dura.
+ * Hubo una y se retiró (FE #505), por dos motivos que aquí se evitan:
  *
- * Es decir: volver a la aplicación con mala cobertura podía echar a alguien de
- * la pantalla de anotación en mitad de una vuelta.
+ * - **Echaba a quien volvía sin cobertura.** Pasa por `fetchWithTokenRefresh`
+ *   con el access caducado, y un refresco sin respuesta se tomaba por sesión
+ *   muerta. Eso lo cerró FE #514: el interceptor solo cierra sesión si el
+ *   refresco responde 401, y un fallo de red la conserva.
+ * - **Borraba lo escrito en el perfil.** Publicar un objeto nuevo re-sincroniza
+ *   `useEditProfile`. Por eso aquí, con la misma respuesta, no se publica nada.
  *
- * **Ese motivo concreto ya no existe** (FE #514): el interceptor solo cierra
- * sesión cuando el refresco responde un 401, y un fallo de red la conserva. Si
- * se quiere recuperar la revalidación al volver, ahora se puede sin ese riesgo
- * —queda por decidir en FE #505—. Se mantiene retirada de momento porque nadie
- * ha medido que haga falta: cualquier llamada que falle con un 401 ya dispara
- * ese camino cuando toca, y antes de todo esto tampoco se revalidaba.
+ * Y vuelve porque hace falta: la instalada vive días abierta, o arranca sin red
+ * con una copia escrita por una versión anterior (sin `terms_accepted`), y quien
+ * tuviera los Términos pendientes no llegaba nunca a la pantalla de aceptarlos.
+ *
+ * De fondo y sin tocar nada más que lo que cambie: ni `cargando` ni
+ * `refrescando`, ni reintentos, ni el contador de fallos. Un fallo, o una
+ * respuesta que no es 200, deja la sesión como estaba: la que de verdad murió la
+ * cierra el interceptor, como en cualquier otra llamada.
  */
+const mismaRespuesta = (usuario) =>
+  JSON.stringify(usuario) === JSON.stringify(instantanea.user) &&
+  !instantanea.sinConfirmar &&
+  instantanea.error === null;
+
+export const revalidaLaSesion = async () => {
+  if (seVa || !instantanea.resuelta || !instantanea.user) return;
+  // Ya se está preguntando, o hay un reintento en camino: ese responde
+  if (enVuelo || reintento !== null) return;
+  if (Date.now() - ultimaComprobacion < MINIMO_ENTRE_REVALIDACIONES_MS) return;
+
+  ultimaComprobacion = Date.now();
+  // Sin subir la generación: si entretanto se cierra la sesión o alguien fuerza
+  // otra consulta, la sube él y esta respuesta deja de mandar
+  const mia = generacion;
+
+  try {
+    const respuesta = await fetchWithTokenRefresh(`${API_URL}/api/v1/auth/current-user`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (mia !== generacion || !respuesta.ok) return;
+
+    const usuario = await respuesta.json();
+    if (mia !== generacion || seVa || mismaRespuesta(usuario)) return;
+
+    clearDeviceRevocationFlag();
+    fallosSeguidos = 0;
+    apunta(usuario);
+    anota({ user: usuario, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
+  } catch {
+    // Sin red: se sigue con lo que había
+  }
+};
+
+/**
+ * Pregunta otra vez al volver al frente o al volver la red, con el mínimo de
+ * arriba. Lo monta `App.jsx` una vez.
+ *
+ * @returns {() => void} Dejar de vigilar.
+ */
+export const vigilaLaVueltaALaAplicacion = () => {
+  const alCambiarLaVisibilidad = () => {
+    if (globalThis.document.visibilityState === 'visible') revalidaLaSesion();
+  };
+  const alVolverLaRed = () => {
+    revalidaLaSesion();
+  };
+  globalThis.document.addEventListener('visibilitychange', alCambiarLaVisibilidad);
+  globalThis.addEventListener('online', alVolverLaRed);
+
+  return () => {
+    globalThis.document.removeEventListener('visibilitychange', alCambiarLaVisibilidad);
+    globalThis.removeEventListener('online', alVolverLaRed);
+  };
+};
 
 /**
  * La página se va: una salida que recarga ya ha pedido la navegación. Desde
@@ -453,6 +521,7 @@ export const reiniciaLaSesionCompartida = () => {
   if (reintento !== null) clearTimeout(reintento);
   reintento = null;
   fallosSeguidos = 0;
+  ultimaComprobacion = 0;
   instantanea = NADA_SABIDO;
   seVa = false;
   // Los oyentes NO se tocan: darlos de baja aquí dejaría a los componentes

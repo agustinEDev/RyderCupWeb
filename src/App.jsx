@@ -12,6 +12,7 @@ import { getUserData } from './hooks/useAuth';
 import { useVaciadoDeLaCola } from './hooks/useVaciadoDeLaCola';
 import { useEnvioDeMuestras } from './hooks/useEnvioDeMuestras';
 import { useTerminosPendientes } from './hooks/useTerminosPendientes';
+import { useRevalidacionDeLaSesion } from './hooks/useRevalidacionDeLaSesion';
 import { setUserContext } from './utils/sentryHelpers';
 import useProactiveTokenRefresh from './hooks/useProactiveTokenRefresh';
 import { onAuthEvent, EVENTS } from './utils/broadcastAuth';
@@ -148,6 +149,10 @@ function AppContent() {
   // Con los Términos sin aceptar, el backend responde 403 a todo salvo
   // current-user, accept-terms y logout (F3): nada que llame a la API arranca
   // hasta aceptarlos, ni la barra inferior se pinta
+  // Y se vuelve a preguntar por la sesión al volver a la aplicación o a la red:
+  // la instalada vive días abierta, y sin esto quien tuviera los Términos
+  // pendientes nunca llegaba a aceptarlos (hotfix 2.50.1)
+  useRevalidacionDeLaSesion();
   const terminosPendientes = useTerminosPendientes();
   const conApi = isAuthenticated && !terminosPendientes;
   useVaciadoDeLaCola({ activo: conApi, userId: usuarioActualId });
