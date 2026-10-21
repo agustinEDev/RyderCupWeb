@@ -334,12 +334,12 @@
       "noGolfCourses": "No se puede activar: No se han seleccionado campos de golf",
       "golfCoursesFetchFailed": "Error al verificar los campos de golf. Inténtalo de nuevo.",
       "teamAssignmentFailed": "Las inscripciones se cerraron, pero la asignación automática de equipos falló. Puedes asignar los equipos manualmente.",
-      "playersWithoutTeeWindow_one": "Falta colocar en una franja a {{jugadores}}.",
-      "playersWithoutTeeWindow_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}.",
-      "playersWithoutTeeWindowUnnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja».",
-      "playersWithoutHandicap_one": "A {{jugadores}} le falta el hándicap: ponle uno personalizado y vuelve a cerrar.",
-      "playersWithoutHandicap_other": "A {{count}} jugadores les falta el hándicap ({{jugadores}}): ponles uno personalizado y vuelve a cerrar.",
-      "playersWithoutHandicapUnnamed": "A algunos jugadores les falta el hándicap: ponles uno personalizado y vuelve a cerrar."
+      "PLAYERS_WITHOUT_TEE_WINDOW_one": "Falta colocar en una franja a {{jugadores}}.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_other": "Faltan {{count}} jugadores por colocar en una franja: {{jugadores}}.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_unnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja».",
+      "PLAYERS_WITHOUT_HANDICAP_one": "A {{jugadores}} le falta el hándicap: ponle uno personalizado y vuelve a cerrar.",
+      "PLAYERS_WITHOUT_HANDICAP_other": "A {{count}} jugadores les falta el hándicap ({{jugadores}}): ponles uno personalizado y vuelve a cerrar.",
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "A algunos jugadores les falta el hándicap: ponles uno personalizado y vuelve a cerrar."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
