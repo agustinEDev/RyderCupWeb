@@ -14,6 +14,7 @@ import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import { mensajeDeErrorDePartida } from '../../utils/erroresDePartida';
 import { sinMarcadorEnJuego } from '../../domain/services/PartidasDeLaFranja';
 import { conGenero } from '../../utils/genero';
+import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const RECOGIDA = 'RECOGIDA';
 const SIN_GOLPE = '';
@@ -61,6 +62,9 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
   const esMedal = strokePlay.tournamentType === 'MEDAL';
   const golpeDe = (userId, hoyo) =>
     scoringView.scores.find((s) => s.holeNumber === hoyo)?.playerScores.find((p) => p.userId === userId) ?? null;
+  // El de juego viene en `players`, no en la tarjeta (QA del 21 oct 2026)
+  const handicapDe = (userId) =>
+    formatoDeHandicapDeJuego(scoringView.players.find((p) => p.userId === userId)?.playingHandicap);
   const parDe = (userId, hoyo) =>
     scoringView.players.find((p) => p.userId === userId)?.holeCard.find((h) => h.holeNumber === hoyo)?.par ?? null;
 
@@ -211,6 +215,7 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
       {strokePlay.cards.map((tarjeta) => {
         const { userId: jugador, name, cardStatus, teeGender } = tarjeta;
         const seJuega = cardStatus === 'JUGANDO';
+        const handicap = handicapDe(jugador);
         const confirmaEsta = confirmando?.jugador === jugador ? confirmando : null;
         const tramos = organiza && seJuega ? TRAMOS_DE_SEIS : TRAMOS_DE_NUEVE;
         const sinMarcador = organiza && sinMarcadorEnJuego(strokePlay.cards, jugador);
@@ -234,7 +239,20 @@ const TarjetasDeLaPartida = ({ scoringView, userId, organiza, onCambio }) => {
             className={`rounded-lg border bg-white p-3 ${jugador === userId ? 'border-green-300' : 'border-gray-200'}`}
           >
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-semibold text-gray-900">{name}</span>
+              {/* Con su hándicap de juego en la misma línea, como en match play:
+                  si no cabe, se corta el nombre y el valor se queda (QA del 21 oct 2026) */}
+              <span className="flex min-w-0 max-w-full items-baseline">
+                <span className="min-w-0 truncate font-semibold text-gray-900">{name}</span>
+                {handicap !== null && (
+                  <span
+                    data-testid={`hcp-de-juego-${jugador}`}
+                    className="ml-1 shrink-0 whitespace-nowrap text-[10px] font-normal text-gray-500"
+                  >
+                    <span aria-hidden="true">{t('scorecard.playingHandicapShort', { value: handicap })}</span>
+                    <span className="sr-only">{t('scorecard.playingHandicap', { value: handicap })}</span>
+                  </span>
+                )}
+              </span>
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                 {t(`partida.cardStatus.${cardStatus}`, conGenero(teeGender))}
               </span>

@@ -273,6 +273,49 @@ describe('TarjetasDeLaPartida (FE #824, PR 7)', () => {
     expect(ana.getByTestId('hoyo-ana-4')).toHaveAttribute('data-estado', 'pending');
   });
 
+  // QA del 21 oct 2026 (T1-T3): el hándicap de juego junto al nombre, como en match play
+  describe('hándicap de juego junto al nombre', () => {
+    const hoyos = () => Array.from({ length: 18 }, (_, i) => hoyo(i + 1));
+
+    it('T1: «HCP 10» a la vista y el largo para el lector de pantalla', () => {
+      pintar();
+
+      const hcp = within(screen.getByTestId('tarjeta-ana')).getByTestId('hcp-de-juego-ana');
+      expect(within(hcp).getByText('scorecard.playingHandicapShort {"value":"10"}')).toHaveAttribute('aria-hidden', 'true');
+      expect(within(hcp).getByText('scorecard.playingHandicap {"value":"10"}')).toHaveClass('sr-only');
+    });
+
+    it('T1b: un plus se escribe con «+» (se guarda negativo)', () => {
+      pintar({ scoringView: vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos(), { playing_handicap: -5 })]) });
+
+      expect(screen.getByTestId('hcp-de-juego-ana')).toHaveTextContent('scorecard.playingHandicapShort {"value":"+5"}');
+    });
+
+    it('T1c: el cero también se enseña, sin signo', () => {
+      pintar({ scoringView: vista('MEDAL', [jugador('ana', 'JUGANDO', hoyos(), { playing_handicap: 0 })]) });
+
+      expect(screen.getByTestId('hcp-de-juego-ana')).toHaveTextContent('scorecard.playingHandicapShort {"value":"0"}');
+    });
+
+    it('T2: en la línea del nombre, que se corta; el hándicap no', () => {
+      pintar();
+
+      const hcp = screen.getByTestId('hcp-de-juego-ana');
+      const nombre = within(screen.getByTestId('tarjeta-ana')).getByText('ANA');
+      expect(hcp.parentElement).toBe(nombre.parentElement);
+      expect(nombre).toHaveClass('min-w-0', 'truncate');
+      expect(hcp).toHaveClass('shrink-0', 'whitespace-nowrap');
+      expect(nombre.parentElement).toHaveClass('flex', 'min-w-0', 'max-w-full');
+    });
+
+    it('T3: sin hándicap de juego, nada', () => {
+      pintar({ scoringView: vista('STABLEFORD', [jugador('ana', 'JUGANDO', hoyos(), { playing_handicap: null })]) });
+
+      expect(screen.queryByTestId('hcp-de-juego-ana')).toBeNull();
+      expect(screen.getByTestId('tarjeta-ana')).not.toHaveTextContent('playingHandicap');
+    });
+  });
+
   it('13: quien no organiza no tiene herramientas', () => {
     pintar();
 
