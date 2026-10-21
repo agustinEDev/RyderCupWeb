@@ -17,6 +17,7 @@ import { AccionDelJugador, JugadoresDeLaFranja, SinFranja } from './PlazasDeLaFr
 import PartidasEnLaFranja from './PartidasEnLaFranja';
 import MisPartidas from './MisPartidas';
 import customToast from '../../utils/toast';
+import { mensajeConJugadores } from '../../utils/erroresConJugadores';
 import { FRANJAS, diasDelTorneo, franjasLibres } from '../../utils/agenda';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import {
@@ -394,7 +395,8 @@ const FranjasDeLaCompeticion = ({
       // guardó (CodeRabbit en la #835)
       customToast.success(t(aviso));
     } catch (error) {
-      customToast.error(error.message || t('agenda.error'));
+      // Con la lista de afectados, sus nombres; si no, el motivo del servidor
+      customToast.error(mensajeConJugadores(t, error, 'agenda.errors') || error.message || t('agenda.error'));
     } finally {
       await cargarAgenda();
       setOcupado(false);

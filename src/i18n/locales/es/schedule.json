@@ -202,6 +202,17 @@
     "addConfirm": "Añadir",
     "cancel": "Cancelar",
     "error": "No se ha podido cambiar la agenda",
+    "errors": {
+      "PLAYERS_WITHOUT_TEE_one": "No se puede cambiar: {{jugadores}} no tiene barras de salida en este campo.",
+      "PLAYERS_WITHOUT_TEE_other": "No se puede cambiar: {{count}} jugadores no tienen barras de salida en este campo ({{jugadores}}).",
+      "PLAYERS_WITHOUT_TEE_unnamed": "No se puede cambiar: hay jugadores sin barras de salida en este campo.",
+      "PLAYERS_WITHOUT_HANDICAP_one": "No se puede cambiar: {{jugadores}} no tiene hándicap.",
+      "PLAYERS_WITHOUT_HANDICAP_other": "No se puede cambiar: {{count}} jugadores no tienen hándicap ({{jugadores}}).",
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "No se puede cambiar: hay jugadores sin hándicap.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_one": "No se puede cambiar: falta colocar en una franja a {{jugadores}}.",
+      "PLAYERS_WITHOUT_TEE_WINDOW_other": "No se puede cambiar: faltan {{count}} jugadores por colocar en una franja ({{jugadores}}).",
+      "PLAYERS_WITHOUT_TEE_WINDOW_unnamed": "No se puede cambiar: faltan jugadores por colocar en una franja."
+    },
     "inDetail": "Cambiar la agenda",
     "confirmFormat": "Si los capitanes ya entregaron sus sobres, cambiar el formato los tira y tendrán que volver a entregarlos. ¿Lo cambias?",
     "confirmRemove": "¿Quitas esta sesión?",
