@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
@@ -123,6 +123,30 @@ describe('QuickMatchScoringPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-classification-table')).toBeInTheDocument();
     });
+  });
+
+  it('FE #658: las vistas son pestañas de verdad, con su nombre, su panel y las flechas', async () => {
+    renderPage();
+
+    const barra = screen.getByRole('tablist', { name: 'scoring.tabsLabel' });
+    expect(barra).toBe(screen.getByTestId('quick-match-scoring-tabs'));
+    const [anotar, clasificacion, tarjeta] = within(barra).getAllByRole('tab');
+    expect(anotar).toBe(screen.getByTestId('quick-match-tab-input'));
+    expect(anotar).toHaveAttribute('aria-selected', 'true');
+    expect(clasificacion).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tabpanel', { name: 'scoring.tabs.input' })).toHaveAttribute('id', anotar.getAttribute('aria-controls'));
+
+    fireEvent.keyDown(anotar, { key: 'ArrowRight' });
+    expect(clasificacion).toHaveAttribute('aria-selected', 'true');
+    expect(clasificacion).toHaveFocus();
+    const panel = await screen.findByRole('tabpanel', { name: 'scoring.tabs.classification' });
+    expect(within(panel).getByTestId('quick-match-classification-table')).toBeInTheDocument();
+
+    fireEvent.keyDown(clasificacion, { key: 'End' });
+    expect(tarjeta).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'scoring.tabs.scorecard' })).toBeInTheDocument();
+    fireEvent.keyDown(tarjeta, { key: 'ArrowRight' });
+    expect(anotar).toHaveAttribute('aria-selected', 'true');
   });
 
   it('should show the golf course the match was played on', () => {

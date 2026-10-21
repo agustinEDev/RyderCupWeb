@@ -6,7 +6,8 @@
     "rfegTab": "RFEG (Automático)",
     "manualTab": "Manual",
     "fetchRfeg": "Obtener desde RFEG",
-    "dismiss": "Ahora no"
+    "dismiss": "Ahora no",
+    "tabsLabel": "Cómo configurar el hándicap"
   },
   "title": "Mi Perfil",
   "subtitle": "Información de tu cuenta y estadísticas",

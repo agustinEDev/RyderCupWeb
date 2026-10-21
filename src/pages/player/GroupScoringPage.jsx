@@ -28,6 +28,7 @@ import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal'
 import ClasificacionDeLaFranja from '../../components/scoring/ClasificacionDeLaFranja';
 import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
 const PESTANAS_DEL_JUGADOR = ['input', 'standings', 'cards'];
@@ -293,28 +294,19 @@ const GroupScoringPage = () => {
           <CampoDeLaPartida nombre={scoringView.roundInfo?.golfCourseName} />
         </div>
 
-        <div className="flex border-b border-gray-200" role="tablist">
-          {pestanas.map((p) => (
-            <button
-              key={p}
-              type="button"
-              role="tab"
-              aria-selected={activa === p}
-              id={`tab-${p}`}
-              aria-controls={`panel-${p}`}
-              data-testid={`tab-${p}`}
-              onClick={() => setPestana(p)}
-              className={`min-h-11 flex-1 border-b-2 text-sm font-medium ${
-                activa === p ? 'border-primary text-primary' : 'border-transparent text-gray-500'
-              }`}
-            >
-              {t(`partida.tabs.${p}`)}
-            </button>
-          ))}
-        </div>
+        <GrupoDePestanas actual={activa} onElegir={setPestana}>
+          <ListaDePestanas
+            etiqueta={t('partida.tabsLabel')}
+            className="flex border-b border-gray-200"
+            pestanas={pestanas.map((p) => ({ id: p, contenido: t(`partida.tabs.${p}`), testId: `tab-${p}` }))}
+            claseDePestana={(abierta) =>
+              `min-h-11 flex-1 border-b-2 text-sm font-medium ${
+                abierta ? 'border-primary text-primary' : 'border-transparent text-gray-500'
+              }`
+            }
+          />
 
-        {activa === 'input' && (
-          <div id="panel-input" role="tabpanel" aria-labelledby="tab-input" className="space-y-4">
+          <PanelDePestana id="input" className="space-y-4">
             {/* El no presentado no anota: se le dice por qué (#854) */}
             {noPresentado ? (
               <p data-testid="no-presentado" className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
@@ -438,19 +430,17 @@ const GroupScoringPage = () => {
                 ))}
               </>
             )}
-          </div>
-        )}
+          </PanelDePestana>
 
-        {/* Montada siempre: se pide al abrir su pestaña y deja de releerse al cerrarla */}
-        <div id="panel-standings" role="tabpanel" aria-labelledby="tab-standings" hidden={activa !== 'standings'}>
-          <ClasificacionDeLaFranja roundId={strokePlay.roundId} userId={userId} activa={activa === 'standings'} />
-        </div>
+          {/* Montada siempre: se pide al abrir su pestaña y deja de releerse al cerrarla */}
+          <PanelDePestana id="standings" montadoSiempre>
+            <ClasificacionDeLaFranja roundId={strokePlay.roundId} userId={userId} activa={activa === 'standings'} />
+          </PanelDePestana>
 
-        {activa === 'cards' && (
-          <div id="panel-cards" role="tabpanel" aria-labelledby="tab-cards">
+          <PanelDePestana id="cards">
             <TarjetasDeLaPartida scoringView={scoringView} userId={userId} organiza={organiza} onCambio={refetch} />
-          </div>
-        )}
+          </PanelDePestana>
+        </GrupoDePestanas>
 
         {estadoDeEntrega && (
           <div data-testid="estado-de-entrega" data-estado={estadoDeEntrega}>

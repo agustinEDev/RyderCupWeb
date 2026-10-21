@@ -366,7 +366,8 @@
     },
     "cannotClear": "A stroke cannot be left blank: to remove it, use \"Delete what was scored\".",
     "notOpenYet": "Scoring for this group has not opened yet",
-    "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes."
+    "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes.",
+    "tabsLabel": "Game view"
   },
   "mapa": {
     "abrir": "Map",
@@ -429,5 +430,6 @@
       "HOLE_CHANGED": "The hole has changed"
     },
     "reporteSinCodos": "Move the tee or the green if needed"
-  }
+  },
+  "tabsLabel": "Match view"
 }

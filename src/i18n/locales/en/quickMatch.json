@@ -65,7 +65,8 @@
       "teePlaceholder": "Pick their tee",
       "guestFallbackName": "the guest",
       "errorTeamFull": "That team is already full: pick the other one.",
-      "errorGuestName": "Enter the guest's first and last name."
+      "errorGuestName": "Enter the guest's first and last name.",
+      "tabsLabel": "How to add players"
     },
     "scorers": {
       "heading": "Choose scorers",
@@ -265,7 +266,8 @@
       "classificationStale": "The standing is not up to date: strokes are still to be sent, and other players' still to arrive.",
       "noSeActualiza": "No connection to the server: what you see may not be up to date.",
       "standingStale": "The result is not up to date: there are strokes still to send, and the server computes it."
-    }
+    },
+    "tabsLabel": "Match view"
   },
   "personalRound": {
     "inMatch": "({{value}} in the match)"
