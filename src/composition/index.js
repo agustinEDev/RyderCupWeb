@@ -173,6 +173,7 @@ import ApiFriendRepository from '../infrastructure/repositories/ApiFriendReposit
 import ApiSocialFeedRepository from '../infrastructure/repositories/ApiSocialFeedRepository';
 import GetFriendsFeedUseCase from '../application/use_cases/social/GetFriendsFeedUseCase';
 import MarkFeedAsSeenUseCase from '../application/use_cases/social/MarkFeedAsSeenUseCase';
+import GetFeedUnseenCountUseCase from '../application/use_cases/social/GetFeedUnseenCountUseCase';
 import GetPlayerProfileUseCase from '../application/use_cases/social/GetPlayerProfileUseCase';
 import GetPlayerActivityUseCase from '../application/use_cases/social/GetPlayerActivityUseCase';
 import SetActivitySharingUseCase from '../application/use_cases/social/SetActivitySharingUseCase';
@@ -373,6 +374,7 @@ const apiFriendRepository = new ApiFriendRepository();
 const apiSocialFeedRepository = new ApiSocialFeedRepository();
 export const getFriendsFeedUseCase = new GetFriendsFeedUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const markFeedAsSeenUseCase = new MarkFeedAsSeenUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const getFeedUnseenCountUseCase = new GetFeedUnseenCountUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const getPlayerProfileUseCase = new GetPlayerProfileUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const getPlayerActivityUseCase = new GetPlayerActivityUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const setActivitySharingUseCase = new SetActivitySharingUseCase({ socialFeedRepository: apiSocialFeedRepository });

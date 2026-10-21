@@ -1,3 +1,12 @@
+import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
+
+// Un instante de la API, o null si no viene o no se puede leer
+const instante = (texto) => {
+  if (!texto) return null;
+  const fecha = instanteDeLaApi(texto);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+};
+
 /**
  * ActivityEventMapper - Traduce el feed de la API al dominio del cliente.
  *
@@ -13,9 +22,14 @@ class ActivityEventMapper {
       id: apiEvent.id,
       userId: apiEvent.user_id,
       type: apiEvent.type,
-      occurredAt: apiEvent.occurred_at ? new Date(apiEvent.occurred_at) : null,
+      occurredAt: instante(apiEvent.occurred_at),
+      // Cuándo llegó al feed: por esto se ordena y se cuenta lo nuevo (BE-1).
+      // Un torneo publica días después de sus vueltas
+      publishedAt: instante(apiEvent.published_at),
       payload: apiEvent.payload || {},
-      sourceMatchId: apiEvent.source_match_id,
+      sourceMatchId: apiEvent.source_match_id ?? null,
+      // La tarjeta en la que va: los logros de una vuelta comparten clave
+      groupKey: apiEvent.group_key ?? null,
     };
   }
 
@@ -39,6 +53,20 @@ class ActivityEventMapper {
       authors[id] = ActivityEventMapper.authorToDomain(author);
     });
 
+    // Las solicitudes de amistad sin responder (BE-2). Quien la pide entra en
+    // los autores, que es de donde la pantalla saca nombres y fotos. Una sin
+    // solicitante no se puede aceptar ni pintar: se descarta
+    const pendingFriendRequests = [];
+    (apiResponse.pending_friend_requests || []).forEach((request) => {
+      if (!request?.friendship_id || !request.requester?.id) return;
+      authors[request.requester.id] ??= ActivityEventMapper.authorToDomain(request.requester);
+      pendingFriendRequests.push({
+        friendshipId: request.friendship_id,
+        requesterId: request.requester.id,
+        createdAt: instante(request.created_at),
+      });
+    });
+
     return {
       events: (apiResponse.events || []).map(ActivityEventMapper.toDomain),
       authors,
@@ -47,6 +75,7 @@ class ActivityEventMapper {
       courses: apiResponse.courses || {},
       nextCursor: apiResponse.next_cursor ?? null,
       unseenCount: apiResponse.unseen_count ?? 0,
+      pendingFriendRequests,
     };
   }
 }

@@ -14,9 +14,20 @@ class ISocialFeedRepository {
    * alguien publica algo mientras se navega.
    *
    * @param {{ limit?: number, cursor?: string|null }} options
-   * @returns {Promise<{ events: Array, authors: Object, nextCursor: string|null, unseenCount: number }>}
+   * @returns {Promise<{ events: Array, authors: Object, nextCursor: string|null, unseenCount: number, pendingFriendRequests: Array }>}
    */
   async getFeed() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * El número del botón de Actividad, sin cargar el feed: lo nuevo desde la
+   * última visita (lo propio y las solicitudes de amistad incluidos), con tope
+   * de 10. Es barato a propósito: se pide al abrir la aplicación y al volver.
+   *
+   * @returns {Promise<number>}
+   */
+  async getUnseenCount() {
     throw new Error('Not implemented');
   }
 
