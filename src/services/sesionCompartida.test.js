@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 /**
  * La consulta de la sesión vive una sola vez por carga de página (FE #489).
@@ -251,14 +249,20 @@ describe('la consulta compartida de la sesión', () => {
     expect(loQueHaySobreLaSesion().refrescando).toBe(false);
   });
 
-  it('no queda ninguna revalidación al volver al frente', () => {
-    // Se retiro a proposito: pasaba por el interceptor con el access caducado, y
-    // un refresco que falla sin respuesta acaba en cierre de sesion con
-    // redireccion dura. Volver a la aplicacion con mala cobertura podia echar a
-    // alguien de la pantalla de anotacion en mitad de una vuelta
-    const fuente = readFileSync(resolve(process.cwd(), 'src/services/sesionCompartida.js'), 'utf8');
+  it('importar el módulo no vigila nada: lo arranca App.jsx (hotfix 2.50.1)', async () => {
+    // Se retiró una vez (FE #505) y volvió vigilada desde `App.jsx`. Colgada
+    // del módulo, cualquier prueba que lo importara preguntaría sola al
+    // disparar `online` o `visibilitychange`
+    respuestas.push(usuario());
+    await consultaLaSesion();
+    peticiones.length = 0;
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3_600_000);
 
-    expect(fuente).not.toContain("addEventListener('visibilitychange'");
+    globalThis.document.dispatchEvent(new globalThis.Event('visibilitychange'));
+    globalThis.dispatchEvent(new globalThis.Event('online'));
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(peticiones).toHaveLength(0);
   });
 
   it('un refresco publica un objeto NUEVO, aunque sea la misma persona', async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, UserMinus } from 'lucide-react';
 import { COGER, CAMBIAR, SOLTAR, ESPERAR, DEJAR_DE_ESPERAR } from '../../domain/services/PlazasEnFranjas';
@@ -37,12 +37,17 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
   const [eligiendoCual, setEligiendoCual] = useState(false);
   // Si cambia lo que se puede hacer, lo abierto se cierra: si no, al volver a
   // ser suya la confirmación de soltar se reabría sola (/code-review)
+  //
+  // Al pintar y solo si CAMBIA, no en un efecto: el efecto corría también al
+  // montarse, y con la máquina cargada llegaba después del primer clic y
+  // cerraba la elección recién abierta (4b intermitente en el CI, 21 oct)
   const tipo = accion?.tipo;
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- cerrar lo abierto cuando la acción cambia es justo el objetivo
+  const [tipoVisto, setTipoVisto] = useState(tipo);
+  if (tipo !== tipoVisto) {
+    setTipoVisto(tipo);
     setConfirmandoSoltar(false);
     setEligiendoCual(false);
-  }, [tipo]);
+  }
   if (!accion) return null;
 
   const estado =

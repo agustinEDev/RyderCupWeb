@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.50.1] - 2026-10-21
+
+**Hotfix: quien tiene los Términos pendientes llega a aceptarlos.** Sin
+variables nuevas ni cambios de contrato; funciona con el backend 2.37.0.
+
+### Fixed
+
+- **La sesión se vuelve a comprobar al volver a la aplicación y al volver la
+  red**, como mucho una vez por minuto y solo con sesión. La aplicación
+  instalada abierta durante días, o arrancada sin red con la copia de una
+  versión anterior, no se enteraba de que había Términos nuevos y no llevaba a
+  aceptarlos. De fondo: sin pantalla de espera, sin tocar nada si la respuesta
+  es la misma (no se pierde lo escrito en el perfil) y sin cerrar sesión si
+  falla la red. Si al volver en mitad de una vuelta resultan pendientes, la
+  aplicación lleva a aceptarlos; los golpes anotados sin cobertura siguen
+  guardados en el móvil y se envían al aceptarlos.
+- **Aviso de Términos pendientes en la clasificación compartida**, que es
+  pública y no lleva a aceptarlos: «Tienes que aceptar los nuevos Términos de
+  uso.» con «Aceptarlos», que lleva a aceptarlos y vuelve a la clasificación.
+  No bloquea, y no sale sin sesión ni con los Términos aceptados.
+- **Elegir qué franja dejar al cambiarse de franja**: si se pulsaba «Cambiar
+  por esta» justo al pintarse la agenda, la elección se cerraba sola. Lo
+  destapó un test intermitente en el CI.
+
 ## [2.50.0] - 2026-10-21
 
 **Pulido de la 2.50: accesibilidad, página 404, hándicaps «plus» y la vuelta
