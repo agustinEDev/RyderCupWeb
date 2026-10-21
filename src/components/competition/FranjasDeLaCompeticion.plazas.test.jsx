@@ -178,7 +178,40 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       await waitFor(() => expect(mockCoger).toHaveBeenCalledWith('c', { insteadOfRoundId: 'b' }));
     });
 
-    it('5: la suya dice que tiene plaza y deja soltarla (con confirmación)', async () => {
+    it('4c: pulsar «Cambiar por esta» nada más pintarse no se pierde (falló en el CI, 21 oct)', async () => {
+      // La causa del 4b intermitente: al montarse, la acción cerraba lo abierto
+      // en un efecto. Con la máquina cargada el efecto llegaba DESPUÉS del clic
+      // y cerraba la elección recién abierta. Aquí se pulsa en ese hueco: justo
+      // al aparecer el botón, antes de que corran los efectos
+      let entrega;
+      mockLeer.mockReturnValue(new Promise((r) => { entrega = r; }));
+      pinta({ endDate: '2030-10-14', maxMatchdaysPerPlayer: 2 });
+
+      const pulsado = new Promise((listo) => {
+        const vigia = new globalThis.MutationObserver(() => {
+          const boton = screen.queryByRole('button', { name: 'franjas.switchFor' });
+          if (!boton) return;
+          vigia.disconnect();
+          fireEvent.click(boton);
+          listo();
+        });
+        vigia.observe(document.body, { subtree: true, childList: true });
+      });
+      entrega({
+        rounds: [
+          franja('a', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('b', '2030-10-13', 'MORNING', { playerIds: [YO], placesTaken: 1 }),
+          franja('c', '2030-10-14', 'MORNING'),
+        ],
+      });
+      await pulsado;
+
+      expect(
+        await screen.findByRole('button', { name: /^franjas\.leaveThis.*"franja":"sessions\.MORNING".*13/ })
+      ).toBeInTheDocument();
+    });
+
+    it('5:la suya dice que tiene plaza y deja soltarla (con confirmación)', async () => {
       mockLeer.mockResolvedValue({ rounds: [franja('m', '2030-10-12', 'MORNING', { playerIds: [YO], placesTaken: 1 })] });
       pinta();
 
