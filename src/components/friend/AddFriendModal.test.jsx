@@ -1,15 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import AddFriendModal from './AddFriendModal';
 
 const navigate = vi.fn();
 
-vi.mock('react-router', async (importOriginal) => ({
-  ...(await importOriginal()),
-  useNavigate: () => navigate,
-}));
+// Con `deVerdad.activo` además navega de verdad: para ver adónde va el foco
+// cuando elegir a alguien lleva a su perfil
+const deVerdad = vi.hoisted(() => ({ activo: false }));
+
+vi.mock('react-router', async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    useNavigate: () => {
+      const navegar = original.useNavigate();
+      return (...destino) => {
+        navigate(...destino);
+        if (deVerdad.activo) navegar(...destino);
+      };
+    },
+  };
+});
 
 vi.mock('../ui/Avatar', () => ({
   default: ({ userId }) => <div data-testid={`avatar-${userId}`} />,
@@ -45,10 +58,10 @@ const buscar = async (texto = 'ana') => {
 };
 
 // Como en Amigos: el boton que lo abre y el modal, con su estado
-const ConDisparador = () => {
+const ConDisparadorSinRouter = () => {
   const [abierto, setAbierto] = useState(false);
   return (
-    <MemoryRouter>
+    <>
       <button type="button" onClick={() => setAbierto(true)}>Añadir amigo</button>
       <AddFriendModal
         isOpen={abierto}
@@ -56,8 +69,20 @@ const ConDisparador = () => {
         onSearchUsers={vi.fn().mockResolvedValue(RESULTADOS)}
         t={(k) => k}
       />
-    </MemoryRouter>
+    </>
   );
+};
+
+const ConDisparador = () => (
+  <MemoryRouter>
+    <ConDisparadorSinRouter />
+  </MemoryRouter>
+);
+
+// Cerrar por el fondo es el gesto entero, pulsar y soltar ahí, como en el armazón
+const pulsarElFondo = (fondo) => {
+  fireEvent.mouseDown(fondo);
+  fireEvent.click(fondo);
 };
 
 const abrirDesdeElBoton = () => {
@@ -75,6 +100,7 @@ const abrirDesdeElBoton = () => {
 describe('AddFriendModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    deVerdad.activo = false;
   });
 
   // QA del 20 oct: la lista flotaba (`absolute`) y no ocupaba sitio, asi que
@@ -100,7 +126,9 @@ describe('AddFriendModal', () => {
     it('A1c: la caja nunca pasa del alto de la pantalla: se desplaza por dentro', () => {
       pintar();
 
-      expect(screen.getByRole('dialog')).toHaveClass('max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
+      // El diálogo es el fondo del armazón; la caja, lo que lleva el título
+      const caja = screen.getByRole('heading', { name: 'add.title' }).closest('[tabindex="-1"]');
+      expect(caja).toHaveClass('bg-white', 'max-w-md', 'max-h-[calc(100dvh-2rem)]', 'overflow-y-auto');
     });
   });
 
@@ -321,7 +349,7 @@ describe('AddFriendModal', () => {
     // salida. En un telefono no hay tecla de escape a la que recurrir
     const { onClose } = pintar();
 
-    fireEvent.click(screen.getByTestId('add-friend-backdrop'));
+    pulsarElFondo(screen.getByTestId('add-friend-backdrop'));
 
     expect(onClose).toHaveBeenCalled();
   });
@@ -330,7 +358,9 @@ describe('AddFriendModal', () => {
     // El cierre por fondo no puede tragarse los clics del propio contenido
     const { onClose } = pintar();
 
-    fireEvent.click(screen.getByRole('dialog'));
+    const titulo = screen.getByRole('heading', { name: 'add.title' });
+    fireEvent.mouseDown(titulo);
+    fireEvent.click(titulo);
 
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -350,6 +380,36 @@ describe('AddFriendModal', () => {
     await waitFor(() => expect(screen.getByText('add.searchMinChars')).toBeInTheDocument());
     expect(onSearchUsers).not.toHaveBeenCalled();
   });
+  // Pasó a `ModalShell` (QA del 21 oct 2026): el bloqueo del desplazamiento y
+  // la pila de diálogos vienen con él
+  describe('sobre el armazón comun', () => {
+    it('S1: la página de debajo no se desplaza mientras está abierto, y vuelve al cerrarlo', () => {
+      abrirDesdeElBoton();
+      expect(document.body.style.overflow).toBe('hidden');
+
+      fireEvent.click(screen.getByRole('button', { name: 'cancel' }));
+      expect(document.body.style.overflow).toBe('');
+    });
+
+    it('S2: Escape llama a onClose UNA vez, no la del armazón y la propia', () => {
+      const { onClose } = pintar();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('S3: con la lista abierta, Escape no llama a onClose', async () => {
+      const { onClose } = pintar();
+      await buscar();
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.queryByTestId('search-results-dropdown')).toBeNull();
+    });
+  });
+
   // QA del 21 oct 2026 (F1): al cerrar, el foco volvia al `body` y el
   // tabulador empezaba otra vez desde la cabecera
   describe('el foco vuelve al boton que lo abrio', () => {
@@ -369,7 +429,7 @@ describe('AddFriendModal', () => {
 
     it('F1c: pulsando fuera', () => {
       const disparador = abrirDesdeElBoton();
-      fireEvent.click(screen.getByTestId('add-friend-backdrop'));
+      pulsarElFondo(screen.getByTestId('add-friend-backdrop'));
 
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(disparador).toHaveFocus();
@@ -394,6 +454,29 @@ describe('AddFriendModal', () => {
       fireEvent.keyDown(document, { key: 'Escape' });
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(disparador).toHaveFocus();
+    });
+
+    it('F1g: elegir a alguien lleva a su perfil sin devolverle el foco a Amigos', async () => {
+      deVerdad.activo = true;
+      render(
+        <MemoryRouter initialEntries={['/friends']}>
+          <Routes>
+            <Route path="/friends" element={<ConDisparadorSinRouter />} />
+            <Route path="/players/:id" element={<h1>Perfil</h1>} />
+          </Routes>
+        </MemoryRouter>
+      );
+      const disparador = screen.getByRole('button', { name: 'Añadir amigo' });
+      disparador.focus();
+      fireEvent.click(disparador);
+      await buscar();
+
+      fireEvent.click(screen.getByTestId('search-result-u-1'));
+
+      expect(await screen.findByRole('heading', { name: 'Perfil' })).toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(disparador).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(document.body);
     });
 
     it('F1f: el tabulador no se sale del modal: de lo ultimo vuelve a la X', () => {

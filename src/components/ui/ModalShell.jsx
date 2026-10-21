@@ -52,6 +52,9 @@ import { useFocoRetenido } from '../../hooks/useFocoRetenido';
  *   Para los modales que traen la suya —con cabecera de borde, animada o sin
  *   relleno— y pasaron a este armazón sin cambiar de aspecto (4 oct 2026). Si se
  *   pasa, `maxWidthClass` no se usa
+ * @param {React.RefObject<HTMLElement>} [props.inicialRef] Dónde entra el foco
+ *   al abrir, si no es en lo primero: el campo de un buscador y no la X de la
+ *   cabecera (AddFriendModal, 21 oct 2026)
  * @param {React.ReactNode} props.children
  */
 
@@ -81,6 +84,7 @@ const ModalShell = ({
   scrollableBackdrop = false,
   hojaInferior = false,
   boxClassName,
+  inicialRef,
   children,
 }) => {
   const cajaRef = useRef(null);
@@ -90,6 +94,7 @@ const ModalShell = ({
   // para que lo compartan las hojas inferiores
   useFocoRetenido(cajaRef, {
     activo: isOpen,
+    inicialRef,
     alEscape: () => {
       if (closeOnEscape) onClose?.();
     },
