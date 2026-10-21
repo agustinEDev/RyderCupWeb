@@ -19,7 +19,7 @@ const NotFound = () => {
   const { user, loading } = useAuth();
 
   return (
-    <main className="flex min-h-[70vh] items-center justify-center bg-gray-50 px-4 py-12">
+    <main className="flex min-h-dvh items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-md rounded-lg bg-white px-6 py-10 text-center shadow-sm">
         <p aria-hidden="true" className="mb-4 text-5xl font-bold text-primary">404</p>
         <h1 className="mb-2 text-2xl font-bold text-gray-900">{t('notFound.title')}</h1>
