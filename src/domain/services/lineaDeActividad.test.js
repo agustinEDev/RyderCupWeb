@@ -352,12 +352,16 @@ describe('the badge text with the real count up to 99 (social decisions, case 5)
     expect(textoDeLaInsignia(n)).toBe(texto);
   });
 
-  it('marks up to 99 cards as new, not just 10', () => {
-    const eventos = Array.from({ length: 30 }, (_, i) =>
-      evento({ id: `e${i}`, groupKey: null, publishedAt: new Date(2026, 9, 22, 17, 59 - i) })
-    );
-    const { dias } = armaLaLineaDeActividad({ eventos, novedades: 25, ahora: AHORA });
+  it('marks up to 99 cards as new: the 99 most recent, not the 100th', () => {
+    const eventos = Array.from({ length: 120 }, (_, i) =>
+      evento({ id: `e${i}`, groupKey: null, publishedAt: new Date(2026, 9, 22, 17, 0, 0, 0) - i * 60 * 1000 })
+    ).map((e) => ({ ...e, publishedAt: new Date(e.publishedAt) }));
+    const { dias } = armaLaLineaDeActividad({ eventos, novedades: 99, ahora: AHORA });
+    const tarjetas = dias.flatMap((d) => d.tarjetas);
 
-    expect(dias.flatMap((d) => d.tarjetas).filter((t) => t.nueva)).toHaveLength(25);
+    expect(tarjetas).toHaveLength(120);
+    expect(tarjetas.filter((t) => t.nueva)).toHaveLength(99);
+    expect(tarjetas[98].nueva).toBe(true);
+    expect(tarjetas[99].nueva).toBe(false);
   });
 });
