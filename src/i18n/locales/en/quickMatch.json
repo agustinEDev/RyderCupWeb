@@ -278,7 +278,7 @@
     "player": "a player",
     "forbidden": "You can't view this match.",
     "forbiddenToast": "You can't view that match: here is their profile.",
-    "back": "Back to Activity",
+    "back": "Back",
     "retry": "Retry",
     "tabsLabel": "Read-only quick match"
   }

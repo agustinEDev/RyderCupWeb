@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
+import { useGoBack } from '../../hooks/useGoBack';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX } from 'lucide-react';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -35,10 +36,16 @@ const QuickMatchSharedPage = () => {
   const { quickMatchId } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
+  // A la pantalla anterior; sin ella (enlace directo), a Actividad
+  const volver = useGoBack('/feed');
   const { t } = useTranslation(['quickMatch', 'common']);
 
   const [partida, setPartida] = useState(null);
   const [campo, setCampo] = useState(null);
+  // El campo va aparte: que falle (pendiente, rechazado, sin red) no es que
+  // falle la partida. La partida se pinta igual y lo que necesita los hoyos
+  // lo dice con un error genérico y su reintento
+  const [falloDelCampo, setFalloDelCampo] = useState(false);
   const [fallo, setFallo] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [pestana, setPestana] = useState('classification');
@@ -50,18 +57,22 @@ const QuickMatchSharedPage = () => {
     tRef.current = t;
   }, [t]);
 
+  const cargaElCampo = useCallback(async (golfCourseId) => {
+    setFalloDelCampo(false);
+    try {
+      setCampo(await getGolfCourseUseCase.execute(golfCourseId));
+    } catch {
+      setFalloDelCampo(true);
+    }
+  }, []);
+
   const carga = useCallback(async () => {
     setCargando(true);
     setFallo(null);
     try {
       const datos = await getSharedQuickMatchUseCase.execute(quickMatchId);
-      if (datos.viewerIsParticipant) {
-        setPartida(datos);
-        return;
-      }
-      const delCampo = await getGolfCourseUseCase.execute(datos.golfCourseId);
-      setCampo(delCampo);
       setPartida(datos);
+      if (!datos.viewerIsParticipant) cargaElCampo(datos.golfCourseId);
     } catch (error) {
       if (error?.status === HTTP_FORBIDDEN && perfilDe) {
         customToast.info(tRef.current('shared.forbiddenToast'));
@@ -72,7 +83,7 @@ const QuickMatchSharedPage = () => {
     } finally {
       setCargando(false);
     }
-  }, [quickMatchId, perfilDe, navigate]);
+  }, [quickMatchId, perfilDe, navigate, cargaElCampo]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the load sets state only after awaiting the API
@@ -106,12 +117,18 @@ const QuickMatchSharedPage = () => {
       <div className="min-h-screen bg-gray-50">
         <HeaderAuth />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <SinPartida fallo={fallo} onReintentar={carga} t={t} />
+          <SinPartida fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
         </main>
       </div>
     );
   }
 
+  const esJuegoLibre = partida.scoringFormat === 'MEDAL' || partida.scoringFormat === 'STABLEFORD';
+  const errorDelCampo = (
+    <ErrorDelCampo onReintentar={() => cargaElCampo(partida.golfCourseId)} t={t} />
+  );
+  // Sin los hoyos no hay puntos ni golpes que contar; mientras llegan, nada
+  const sinHoyos = !campo;
   const holes = campo?.holes ?? [];
   const tees = campo?.tees ?? [];
   const cerrada = !!partida.isCompleted || !!partida.isCancelled;
@@ -122,13 +139,7 @@ const QuickMatchSharedPage = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
         {/* En móvil la vuelta la da la cabecera contextual (por historial) */}
-        <Link
-          to="/feed"
-          className="hidden md:inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          {t('shared.back')}
-        </Link>
+        <BotonVolver onVolver={volver} t={t} className="hidden md:inline-flex mb-3" />
 
         {/* La cabecera contextual ya pinta el título en móvil: un segundo
             encabezado de nivel 1 rompería la jerarquía para los lectores de
@@ -174,6 +185,7 @@ const QuickMatchSharedPage = () => {
           />
 
           <PanelDePestana id="classification" enfocable>
+            {esJuegoLibre && sinHoyos ? (falloDelCampo ? errorDelCampo : null) : (
             <QuickMatchClassificationTable
               holes={holes}
               holeScores={partida.holeScores ?? []}
@@ -188,9 +200,11 @@ const QuickMatchSharedPage = () => {
               showFinalBadge={cerrada}
               isCancelled={!!partida.isCancelled}
             />
+            )}
           </PanelDePestana>
 
           <PanelDePestana id="scorecard" enfocable>
+            {sinHoyos ? (falloDelCampo ? errorDelCampo : null) : (
             <div data-testid="quick-match-shared-scorecard">
               <QuickMatchScorecardTable
                 holes={holes}
@@ -204,6 +218,7 @@ const QuickMatchSharedPage = () => {
                 allowancePercentage={partida.effectiveAllowance}
               />
             </div>
+            )}
           </PanelDePestana>
         </GrupoDePestanas>
       </main>
@@ -211,20 +226,58 @@ const QuickMatchSharedPage = () => {
   );
 };
 
+/** «Volver»: a la pantalla anterior, o a Actividad si no la hay. */
+const BotonVolver = ({ onVolver, t, className = '' }) => (
+  <button
+    type="button"
+    onClick={onVolver}
+    data-testid="quick-match-shared-back"
+    className={`items-center gap-1 text-sm text-gray-500 hover:text-primary ${className}`}
+  >
+    <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+    {t('shared.back')}
+  </button>
+);
+
+/** El campo no ha llegado: un error genérico, nunca uno de partida, con reintento. */
+const ErrorDelCampo = ({ onReintentar, t }) => (
+  <div
+    data-testid="quick-match-shared-course-error"
+    className="text-center py-10 px-6 bg-white border border-gray-200 rounded-lg"
+  >
+    <p className="text-sm text-gray-700">{t('scoring.errors.generic')}</p>
+    <button
+      type="button"
+      onClick={onReintentar}
+      data-testid="quick-match-shared-course-retry"
+      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+    >
+      <RefreshCw className="w-4 h-4" aria-hidden="true" />
+      {t('shared.retry')}
+    </button>
+  </div>
+);
+
 /** No hay partida que enseñar: no se puede ver, no existe, o falló la carga. */
-const SinPartida = ({ fallo, onReintentar, t }) => {
+const SinPartida = ({ fallo, onReintentar, onVolver, t }) => {
   if (fallo === HTTP_FORBIDDEN) {
     return (
-      <Aviso testId="quick-match-shared-forbidden" Icono={Lock} texto={t('shared.forbidden')} t={t} />
+      <Aviso testId="quick-match-shared-forbidden" Icono={Lock} texto={t('shared.forbidden')} onVolver={onVolver} t={t} />
     );
   }
   if (fallo === HTTP_NOT_FOUND) {
     return (
-      <Aviso testId="quick-match-shared-not-found" Icono={SearchX} texto={t('scoring.errors.notFound')} t={t} />
+      <Aviso
+        testId="quick-match-shared-not-found"
+        Icono={SearchX}
+        texto={t('scoring.errors.notFound')}
+        onVolver={onVolver}
+        t={t}
+      />
     );
   }
   return (
-    <Aviso testId="quick-match-shared-error" Icono={RefreshCw} texto={t('scoring.errors.generic')} t={t}>
+    <Aviso testId="quick-match-shared-error" Icono={RefreshCw} texto={t('scoring.errors.generic')} onVolver={onVolver} t={t}>
       <button
         type="button"
         onClick={onReintentar}
@@ -238,7 +291,8 @@ const SinPartida = ({ fallo, onReintentar, t }) => {
   );
 };
 
-const Aviso = ({ testId, Icono, texto, t, children }) => (
+// Siempre con una salida: en escritorio no hay flecha en la cabecera
+const Aviso = ({ testId, Icono, texto, onVolver, t, children }) => (
   <div
     data-testid={testId}
     className="text-center py-16 px-6 bg-white border border-gray-200 rounded-lg"
@@ -246,14 +300,9 @@ const Aviso = ({ testId, Icono, texto, t, children }) => (
     <Icono className="w-10 h-10 mx-auto text-gray-300" aria-hidden="true" />
     <p className="mt-3 text-base font-semibold text-gray-900">{texto}</p>
     {children}
-    {!children && (
-      <Link
-        to="/feed"
-        className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
-      >
-        {t('shared.back')}
-      </Link>
-    )}
+    <div className="mt-4">
+      <BotonVolver onVolver={onVolver} t={t} className="inline-flex" />
+    </div>
   </div>
 );
 
