@@ -12,6 +12,7 @@
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
+import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
 /**
  * Handle CSRF validation failure
@@ -39,6 +40,8 @@ export const handleCsrfLogout = (errorData = {}) => {
   // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
   // saldría con el hándicap de esta cuenta
   olvidaElRefrescoDeHandicap();
+  // Y el número de Actividad y el del icono de la aplicación (FE-1)
+  olvidaLasNovedades();
 
   // Hard redirect to login page
   // This is intentional - CSRF failures require a complete app reset

@@ -280,4 +280,34 @@ describe('useNovedadesDeActividad', () => {
       expect(() => act(() => olvidaLasNovedades())).not.toThrow();
     });
   });
+
+  it("the old account's count finishing late does not drop the new one's (review FE-1)", async () => {
+    const respuestas = [];
+    contar.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          respuestas.push(resolve);
+        })
+    );
+    render(
+      <>
+        <Vigia />
+        <Numero />
+      </>
+    );
+    await waitFor(() => expect(contar).toHaveBeenCalledTimes(1));
+
+    // Sale la cuenta A con su recuento en vuelo; la B vuelve a la aplicación
+    act(() => olvidaLasNovedades());
+    act(() => ponVisibilidad('visible'));
+    expect(contar).toHaveBeenCalledTimes(2);
+
+    // Llega tarde el de A: no cuenta, y no suelta el de B
+    await act(async () => respuestas[0](8));
+    act(() => ponVisibilidad('visible'));
+    expect(contar).toHaveBeenCalledTimes(2);
+
+    await act(async () => respuestas[1](5));
+    expect(numero()).toBe('5');
+  });
 });

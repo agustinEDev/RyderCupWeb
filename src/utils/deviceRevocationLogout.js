@@ -22,6 +22,7 @@
 
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
+import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import i18next from 'i18next';
 import customToast from './toast';
 
@@ -167,6 +168,8 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
   // saldría con el hándicap de esta cuenta
   olvidaElRefrescoDeHandicap();
+  // Y el número de Actividad y el del icono de la aplicación (FE-1)
+  olvidaLasNovedades();
 
   // Clear Sentry user context (if Sentry is initialized)
   if (window.Sentry && typeof window.Sentry.setUser === 'function') {

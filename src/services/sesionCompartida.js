@@ -38,6 +38,7 @@
 
 import { clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
+import { olvidaLasNovedades } from './novedadesDeActividad';
 
 // Misma prioridad que el resto: la configuración de ejecución manda sobre la del
 // build, o en un despliegue en contenedor se acaba preguntando a hosts distintos
@@ -210,6 +211,9 @@ const preguntaAlServidor = async (sigoValiendo) => {
 /** El servidor dice que no hay sesión: sin usuario y sin la copia del dispositivo. */
 const publicaSinSesion = () => {
   olvidaElApunte();
+  // El número de Actividad y el del icono pueden ser de una cuenta que salió
+  // por un camino que no limpió (FE-1): sin sesión, no hay número que enseñar
+  olvidaLasNovedades();
   anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 };
 
