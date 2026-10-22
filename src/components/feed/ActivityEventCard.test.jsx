@@ -1085,3 +1085,97 @@ describe('ActivityEventCard — review of the social decisions', () => {
     expect(frase()).toBe('Partida rápida sin terminar de Pedro');
   });
 });
+
+describe('ActivityEventCard — Ryder Cup final standing (I)', () => {
+  const ryder = (payload = {}) =>
+    tarjeta(
+      evento({
+        type: 'TOURNAMENT_FINAL_STANDING',
+        sourceMatchId: 'c-1',
+        groupKey: null,
+        payload: {
+          tournament_type: 'RYDER_CUP',
+          competition_id: 'c-1',
+          competition_name: 'Ryder Otoño',
+          start_date: '2026-10-24',
+          end_date: '2026-10-25',
+          team_a_name: 'Europa',
+          team_b_name: 'América',
+          team_a_points: 15.5,
+          team_b_points: 12.5,
+          my_team: 'A',
+          outcome: 'WON',
+          ...payload,
+        },
+      })
+    );
+
+  it('won: «Clasificación final de Ryder Otoño: tu equipo (Europa) ganó 15½–12½», a tap goes to the tournament', () => {
+    const a = pinta(ryder());
+    expect(frase()).toBe('Clasificación final de Ryder Otoño: tu equipo (Europa) ganó 15½–12½');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    a.unmount();
+
+    pinta(ryder(), { lng: 'en' });
+    expect(frase()).toBe('Final standings of Ryder Otoño: your team (Europa) won 15½–12½');
+  });
+
+  it('lost, from team B: your team goes first in the score', () => {
+    const a = pinta(ryder({ my_team: 'B', outcome: 'LOST' }));
+    expect(frase()).toBe('Clasificación final de Ryder Otoño: tu equipo (América) perdió 12½–15½');
+    a.unmount();
+
+    pinta(ryder({ my_team: 'B', outcome: 'LOST' }), { lng: 'en' });
+    expect(frase()).toBe('Final standings of Ryder Otoño: your team (América) lost 12½–15½');
+  });
+
+  it('halved: «empató 14–14» / «tied 14–14»', () => {
+    const datos = { team_a_points: 14, team_b_points: 14, outcome: 'HALVED' };
+    const a = pinta(ryder(datos));
+    expect(frase()).toBe('Clasificación final de Ryder Otoño: tu equipo (Europa) empató 14–14');
+    a.unmount();
+
+    pinta(ryder(datos), { lng: 'en' });
+    expect(frase()).toBe('Final standings of Ryder Otoño: your team (Europa) tied 14–14');
+  });
+
+  it('half points read ½ alone and with a whole: 0.5 -> «½», 2.5 -> «2½», 3 -> «3»', () => {
+    pinta(ryder({ team_a_points: 2.5, team_b_points: 0.5 }));
+    expect(frase()).toBe('Clasificación final de Ryder Otoño: tu equipo (Europa) ganó 2½–½');
+  });
+
+  it('without a team name: «tu equipo ganó …»', () => {
+    const a = pinta(ryder({ team_a_name: null }));
+    expect(frase()).toBe('Clasificación final de Ryder Otoño: tu equipo ganó 15½–12½');
+    a.unmount();
+
+    pinta(ryder({ team_a_name: '' }), { lng: 'en' });
+    expect(frase()).toBe('Final standings of Ryder Otoño: your team won 15½–12½');
+  });
+
+  it('never «sin puesto» for a Ryder Cup, even with no position', () => {
+    pinta(ryder({ position: null }));
+    expect(frase()).not.toMatch(/sin puesto/);
+  });
+
+  it('without a known outcome or score it only says it is final', () => {
+    const a = pinta(ryder({ outcome: 'SOMETHING_NEW' }));
+    expect(frase()).toBe('Clasificación final de Ryder Otoño');
+    a.unmount();
+
+    pinta(ryder({ team_b_points: null }), { lng: 'en' });
+    expect(frase()).toBe('Final standings of Ryder Otoño');
+  });
+
+  it('a stroke play final standing is as before', () => {
+    pinta(
+      tarjeta(
+        evento({
+          type: 'TOURNAMENT_FINAL_STANDING',
+          payload: { tournament_type: 'STABLEFORD', competition_id: 'c-1', competition_name: 'R', position: 4, total_players: 16 },
+        })
+      )
+    );
+    expect(frase()).toBe('Clasificación final de R: 4.º de 16');
+  });
+});

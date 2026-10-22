@@ -286,6 +286,38 @@ const fraseDeStrokePlayAcabada = (payload, { t, mia, autor, campo }) => {
   );
 };
 
+// «15½», «½», «14»: los puntos de una Ryder, con el medio como se escribe
+const puntosDeRyder = (n) => {
+  const enteros = Math.trunc(n);
+  if (n - enteros !== 0.5) return String(n);
+  return enteros === 0 ? '½' : `${enteros}½`;
+};
+
+const RESULTADOS_DE_RYDER = { WON: 'ryderWon', LOST: 'ryderLost', HALVED: 'ryderHalved' };
+
+/**
+ * El final de una Ryder (I): «Clasificación final de X: tu equipo (Europa)
+ * ganó 15½–12½». No hay puesto: hay equipos, y el tuyo va primero en el
+ * marcador. Sin resultado conocido o sin los dos tanteos, solo que es final.
+ */
+const fraseDeLaRyder = (payload, t) => {
+  const competition = nombreDelTorneo(payload, t);
+  const clave = RESULTADOS_DE_RYDER[payload.outcome];
+  const deA = payload.team_a_points;
+  const deB = payload.team_b_points;
+  const esA = payload.my_team !== 'B';
+  if (!clave || !Number.isFinite(deA) || !Number.isFinite(deB)) {
+    return fraseCon(t, 'feed:cards.ryderFinalBare', { competition });
+  }
+  const [mios, suyos] = esA ? [deA, deB] : [deB, deA];
+  const equipo = esA ? payload.team_a_name : payload.team_b_name;
+  return fraseCon(t, `feed:cards.${clave}${equipo ? '' : 'NoName'}`, {
+    competition,
+    team: equipo,
+    score: `${puntosDeRyder(mios)}–${puntosDeRyder(suyos)}`,
+  });
+};
+
 const personasDe = (ids, autores, t) =>
   (Array.isArray(ids) ? ids : []).map((id) => personaDe(id, autores, t));
 
@@ -413,6 +445,10 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
       }),
       detalles: payload.competition_name ? [payload.competition_name] : [],
     };
+  }
+
+  if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' && payload.tournament_type === 'RYDER_CUP') {
+    return { frase: fraseDeLaRyder(payload, t), detalles: [] };
   }
 
   if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING') {
