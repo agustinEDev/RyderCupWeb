@@ -736,6 +736,27 @@ describe('PlayerProfilePage', () => {
       expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
     });
 
+    it('keeps revealing 5 at a time when a page brings fewer than 5 cards (CodeRabbit FE-2)', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ events: eventos(4), nextCursor: 'cur-a' }))
+        .mockResolvedValueOnce(paginaActividad({ events: eventos(3, 5), nextCursor: 'cur-b' }))
+        .mockResolvedValueOnce(paginaActividad({ events: eventos(8, 8), nextCursor: null }));
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      expect(tarjetasPintadas()).toHaveLength(4);
+
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(7));
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(getActivity).toHaveBeenCalledTimes(3));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(12));
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(15));
+      expect(getActivity).toHaveBeenCalledTimes(3);
+    });
+
     it('counts a round with several achievements as one card', async () => {
       const deLaMismaVuelta = eventos(6).map((e) => ({ ...e, groupKey: 'vuelta-1' }));
       getProfile.mockResolvedValue(amigo());

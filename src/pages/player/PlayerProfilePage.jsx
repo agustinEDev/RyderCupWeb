@@ -209,7 +209,10 @@ const PlayerProfilePage = () => {
             }
           : prev
       );
-      setVisibleCards((n) => n + CARDS_STEP);
+      // Ya se veían todas las cargadas: 5 más a partir de ahí, no del límite
+      // anterior, que una página de menos de 5 tarjetas dejaba por encima
+      // (CodeRabbit FE-2)
+      setVisibleCards(activityCards.length + CARDS_STEP);
     } catch {
       if (gen === generacion.current) customToast.error(t('common:errors.generic'));
     } finally {
