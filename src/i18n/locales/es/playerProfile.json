@@ -11,20 +11,27 @@
     "back": "Volver a la actividad"
   },
   "friendship": {
-    "add": "Añadir a amigos",
+    "add": "Añadir amigo",
     "sent": "Solicitud enviada",
     "received": "Te ha enviado una solicitud",
     "accept": "Aceptar",
     "decline": "Rechazar",
-    "friends": "Sois amigos",
-    "blocked": "Has bloqueado a este jugador",
+    "friends": "Amigos",
+    "blocked": "Bloqueado",
     "requestSent": "Solicitud enviada",
     "accepted": "Ya sois amigos",
-    "declined": "Solicitud rechazada"
+    "declined": "Solicitud rechazada",
+    "unblock": "Desbloquear",
+    "cancelRequest": "Cancelar solicitud",
+    "cancelled": "Solicitud cancelada",
+    "removed": "Ya no sois amigos",
+    "blockedNow": "Jugador bloqueado",
+    "unblocked": "Jugador desbloqueado",
+    "onlyBlockerCanUnblock": "Solo quien ha bloqueado puede desbloquear"
   },
   "private": {
     "title": "Solo entre amigos",
-    "hint": "Su hándicap, sus estadísticas y su actividad se ven cuando sois amigos."
+    "hint": "Hazte su amigo para ver sus estadísticas y actividad"
   },
   "stats": {
     "title": "Estadísticas",
@@ -43,5 +50,56 @@
     "empty": "No ha publicado nada todavía.",
     "hidden": "No publica su actividad.",
     "loadMore": "Ver más"
+  },
+  "handicap": "Hándicap",
+  "menu": {
+    "label": "Más opciones",
+    "remove": "Eliminar amigo",
+    "block": "Bloquear"
+  },
+  "confirm": {
+    "remove": {
+      "title": "¿Eliminar a {{name}} de tus amigos?",
+      "message": "Dejaréis de ver vuestras estadísticas y actividad. Podéis volver a ser amigos con una nueva solicitud.",
+      "confirm": "Eliminar amigo"
+    },
+    "block": {
+      "title": "¿Bloquear a {{name}}?",
+      "message": "Se eliminará vuestra amistad o cualquier solicitud pendiente, y no podrá enviarte solicitudes. Puedes desbloquearle cuando quieras.",
+      "confirm": "Bloquear"
+    }
+  },
+  "headToHead": {
+    "title": "Cara a cara",
+    "against": "Contra él",
+    "alongside": "Con él",
+    "won": "Ganadas",
+    "halved": "Empatadas",
+    "lost": "Perdidas"
+  },
+  "gamesTogether": {
+    "title": "Partidas juntos",
+    "loadMore": "Ver más",
+    "unknownCourse": "Campo sin nombre",
+    "format": {
+      "SINGLES": "Individual",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "STABLEFORD": "Stableford",
+      "MEDAL": "Medal"
+    },
+    "relation": {
+      "AGAINST": "Contra él",
+      "WITH": "Con él"
+    },
+    "result": {
+      "WON": "Ganada",
+      "HALVED": "Empatada",
+      "LOST": "Perdida",
+      "none": "Sin resultado"
+    }
+  },
+  "errors": {
+    "reloadFailed": "Hecho, pero no hemos podido actualizar el perfil. Vuelve a abrirlo en un momento."
   }
 }

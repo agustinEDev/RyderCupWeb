@@ -12,8 +12,33 @@ import apiRequest from '../../services/api.js';
  * - PUT /api/v1/users/me/feed/seen
  * - GET /api/v1/users/{id}/profile
  * - GET /api/v1/users/{id}/activity
+ * - GET /api/v1/users/{id}/games-together
  * - PUT /api/v1/social/activity-sharing
  */
+const balanceDe = (r) => (r ? { won: r.won ?? 0, halved: r.halved ?? 0, lost: r.lost ?? 0 } : null);
+
+const partidaJuntos = (g) => ({
+  kind: g.kind,
+  id: g.id,
+  // Un día sin hora («2026-10-15»): se deja en texto para no correrlo de día
+  // al pasarlo por la zona horaria
+  playedOn: g.played_on,
+  golfCourseId: g.golf_course_id ?? null,
+  golfCourseName: g.golf_course_name ?? null,
+  format: g.format ?? null,
+  relation: g.relation ?? null,
+  result: g.result ?? null,
+  quickMatchId: g.quick_match_id ?? null,
+  competitionId: g.competition_id ?? null,
+  competitionName: g.competition_name ?? null,
+  matchId: g.match_id ?? null,
+});
+
+const paginaDePartidas = (data) => ({
+  games: Array.isArray(data?.games) ? data.games.map(partidaJuntos) : [],
+  nextCursor: data?.next_cursor ?? null,
+});
+
 class ApiSocialFeedRepository extends ISocialFeedRepository {
   #buildQuery({ limit, cursor }) {
     const params = new URLSearchParams();
@@ -66,7 +91,22 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
       // pantalla de perfil a leer los campos de otra forma que el resto del
       // frontend.
       stats: data.stats ? PlayerStatsMapper.toDomain(data.stats) : null,
+      // Solo entre amigos (BE-3). null para cualquier otro: la pantalla no
+      // pinta el bloque, ni un apartado sin partidas
+      headToHead: data.head_to_head
+        ? {
+            against: balanceDe(data.head_to_head.against),
+            alongside: balanceDe(data.head_to_head.alongside),
+          }
+        : null,
+      gamesTogether: data.games_together ? paginaDePartidas(data.games_together) : null,
     };
+  }
+
+  async getGamesTogether(userId, { cursor = null } = {}) {
+    const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+    const data = await apiRequest(`/api/v1/users/${userId}/games-together${query}`);
+    return paginaDePartidas(data);
   }
 
   async getPlayerActivity(userId, { limit = 20, cursor = null } = {}) {

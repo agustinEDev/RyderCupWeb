@@ -16,15 +16,22 @@
     "received": "They sent you a request",
     "accept": "Accept",
     "decline": "Decline",
-    "friends": "You are friends",
-    "blocked": "You have blocked this player",
+    "friends": "Friends",
+    "blocked": "Blocked",
     "requestSent": "Request sent",
     "accepted": "You are now friends",
-    "declined": "Request declined"
+    "declined": "Request declined",
+    "unblock": "Unblock",
+    "cancelRequest": "Cancel request",
+    "cancelled": "Request cancelled",
+    "removed": "You are no longer friends",
+    "blockedNow": "Player blocked",
+    "unblocked": "Player unblocked",
+    "onlyBlockerCanUnblock": "Only the person who blocked can unblock"
   },
   "private": {
     "title": "Friends only",
-    "hint": "Their handicap, stats and activity show up once you are friends."
+    "hint": "Become their friend to see their stats and activity"
   },
   "stats": {
     "title": "Stats",
@@ -43,5 +50,56 @@
     "empty": "They have not published anything yet.",
     "hidden": "They do not publish their activity.",
     "loadMore": "Load more"
+  },
+  "handicap": "Handicap",
+  "menu": {
+    "label": "More options",
+    "remove": "Remove friend",
+    "block": "Block"
+  },
+  "confirm": {
+    "remove": {
+      "title": "Remove {{name}} from your friends?",
+      "message": "You will stop seeing each other's stats and activity. You can become friends again with a new request.",
+      "confirm": "Remove friend"
+    },
+    "block": {
+      "title": "Block {{name}}?",
+      "message": "Your friendship or any pending request will be removed, and they will not be able to send you requests. You can unblock them at any time.",
+      "confirm": "Block"
+    }
+  },
+  "headToHead": {
+    "title": "Head to head",
+    "against": "Against them",
+    "alongside": "With them",
+    "won": "Won",
+    "halved": "Halved",
+    "lost": "Lost"
+  },
+  "gamesTogether": {
+    "title": "Games together",
+    "loadMore": "Load more",
+    "unknownCourse": "Unnamed course",
+    "format": {
+      "SINGLES": "Singles",
+      "FOURBALL": "Fourball",
+      "FOURSOMES": "Foursomes",
+      "STABLEFORD": "Stableford",
+      "MEDAL": "Medal"
+    },
+    "relation": {
+      "AGAINST": "Against them",
+      "WITH": "With them"
+    },
+    "result": {
+      "WON": "Won",
+      "HALVED": "Halved",
+      "LOST": "Lost",
+      "none": "No result"
+    }
+  },
+  "errors": {
+    "reloadFailed": "Done, but we could not refresh the profile. Open it again in a moment."
   }
 }

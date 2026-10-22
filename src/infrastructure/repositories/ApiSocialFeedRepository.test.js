@@ -303,4 +303,134 @@ describe('ApiSocialFeedRepository', () => {
       expect(page.pendingFriendRequests).toEqual([]);
     });
   });
+
+  describe('head to head and games together (FE-2)', () => {
+    const partida = (overrides = {}) => ({
+      kind: 'QUICK_MATCH',
+      id: 'g1',
+      played_on: '2026-10-15',
+      golf_course_id: 'c1',
+      golf_course_name: 'El Saler',
+      format: 'STABLEFORD',
+      relation: 'AGAINST',
+      result: 'WON',
+      quick_match_id: 'g1',
+      competition_id: null,
+      competition_name: null,
+      match_id: null,
+      ...overrides,
+    });
+
+    it('maps the head to head of a friend, both sections', async () => {
+      apiRequest.mockResolvedValue(
+        respuestaPerfil({
+          is_friend: true,
+          head_to_head: {
+            against: { won: 3, halved: 1, lost: 2 },
+            alongside: { won: 1, halved: 0, lost: 4 },
+          },
+        })
+      );
+
+      const perfil = await repository.getPlayerProfile('u1');
+
+      expect(perfil.headToHead).toEqual({
+        against: { won: 3, halved: 1, lost: 2 },
+        alongside: { won: 1, halved: 0, lost: 4 },
+      });
+    });
+
+    it('keeps a section without games as null and the whole block null when absent', async () => {
+      apiRequest.mockResolvedValueOnce(
+        respuestaPerfil({ head_to_head: { against: { won: 1, halved: 0, lost: 0 }, alongside: null } })
+      );
+      const conUno = await repository.getPlayerProfile('u1');
+      expect(conUno.headToHead).toEqual({ against: { won: 1, halved: 0, lost: 0 }, alongside: null });
+
+      apiRequest.mockResolvedValueOnce(respuestaPerfil());
+      const sinNada = await repository.getPlayerProfile('u1');
+      expect(sinNada.headToHead).toBeNull();
+      expect(sinNada.gamesTogether).toBeNull();
+    });
+
+    it('maps the first page of games together to camelCase', async () => {
+      apiRequest.mockResolvedValue(
+        respuestaPerfil({
+          games_together: {
+            games: [
+              partida(),
+              partida({
+                kind: 'TOURNAMENT_GROUP',
+                id: 'g2',
+                played_on: '2026-10-01',
+                format: 'MEDAL',
+                relation: 'AGAINST',
+                result: null,
+                quick_match_id: null,
+                competition_id: 'comp1',
+                competition_name: 'Liga',
+                match_id: 'g2',
+              }),
+            ],
+            next_cursor: '2026-10-01|g2',
+          },
+        })
+      );
+
+      const perfil = await repository.getPlayerProfile('u1');
+
+      expect(perfil.gamesTogether.nextCursor).toBe('2026-10-01|g2');
+      expect(perfil.gamesTogether.games).toEqual([
+        {
+          kind: 'QUICK_MATCH',
+          id: 'g1',
+          playedOn: '2026-10-15',
+          golfCourseId: 'c1',
+          golfCourseName: 'El Saler',
+          format: 'STABLEFORD',
+          relation: 'AGAINST',
+          result: 'WON',
+          quickMatchId: 'g1',
+          competitionId: null,
+          competitionName: null,
+          matchId: null,
+        },
+        {
+          kind: 'TOURNAMENT_GROUP',
+          id: 'g2',
+          playedOn: '2026-10-01',
+          golfCourseId: 'c1',
+          golfCourseName: 'El Saler',
+          format: 'MEDAL',
+          relation: 'AGAINST',
+          result: null,
+          quickMatchId: null,
+          competitionId: 'comp1',
+          competitionName: 'Liga',
+          matchId: 'g2',
+        },
+      ]);
+    });
+
+    it('asks for the next page of games together with the cursor, encoded', async () => {
+      apiRequest.mockResolvedValue({ games: [partida({ id: 'g9', quick_match_id: 'g9' })], next_cursor: null });
+
+      const page = await repository.getGamesTogether('u1', { cursor: '2026-10-01|g2' });
+
+      expect(apiRequest).toHaveBeenCalledWith(
+        '/api/v1/users/u1/games-together?cursor=2026-10-01%7Cg2'
+      );
+      expect(page.games.map((g) => g.id)).toEqual(['g9']);
+      expect(page.nextCursor).toBeNull();
+    });
+
+    it('omits the cursor on the first page of games together and survives an empty body', async () => {
+      apiRequest.mockResolvedValue({});
+
+      const page = await repository.getGamesTogether('u1');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/u1/games-together');
+      expect(page).toEqual({ games: [], nextCursor: null });
+    });
+  });
 });
