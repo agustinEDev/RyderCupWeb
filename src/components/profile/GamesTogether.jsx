@@ -107,7 +107,9 @@ const FilaDePartida = ({ partida, t, idioma }) => {
  * ninguna no se pinta, igual que un apartado vacío del cara a cara.
  */
 const GamesTogether = ({ games, nextCursor, isLoadingMore, onLoadMore, t, idioma }) => {
-  if (!games || games.length === 0) return null;
+  // Una página puede llegar vacía y con cursor: entonces queda «Ver más»
+  const sinPartidas = !games || games.length === 0;
+  if (sinPartidas && !nextCursor) return null;
 
   return (
     <section className="mt-4" data-testid="player-profile-games">
@@ -115,7 +117,7 @@ const GamesTogether = ({ games, nextCursor, isLoadingMore, onLoadMore, t, idioma
         {t('playerProfile:gamesTogether.title')}
       </h3>
       <ul className="space-y-2">
-        {games.map((partida) => (
+        {(games ?? []).map((partida) => (
           <li key={`${partida.kind}-${partida.id}`}>
             <FilaDePartida partida={partida} t={t} idioma={idioma} />
           </li>

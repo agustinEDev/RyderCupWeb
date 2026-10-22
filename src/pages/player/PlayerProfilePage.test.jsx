@@ -1816,4 +1816,28 @@ describe('PlayerProfilePage', () => {
       expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
     });
   });
+
+  describe('review of the social decisions - games together with an empty page and a cursor', () => {
+    it('shows «Ver más» and loads the next page', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [], nextCursor: 'g-cur' } }));
+      getGamesTogether.mockResolvedValueOnce({ games: [juego()], nextCursor: null });
+      renderProfile();
+
+      const boton = await screen.findByTestId('player-profile-games-more');
+      expect(boton).toHaveTextContent('playerProfile:gamesTogether.loadMore');
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('player-profile-game-g1')).toBeInTheDocument();
+      expect(getGamesTogether).toHaveBeenCalledWith('u1', { cursor: 'g-cur' });
+      expect(screen.queryByTestId('player-profile-games-more')).not.toBeInTheDocument();
+    });
+
+    it('with no games and no cursor, nothing is painted', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [], nextCursor: null } }));
+      renderProfile();
+
+      await screen.findByTestId('player-profile-stats');
+      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+    });
+  });
 });
