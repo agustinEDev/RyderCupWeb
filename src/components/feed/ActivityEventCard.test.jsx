@@ -672,3 +672,332 @@ describe('ActivityEventCard — English (case 16)', () => {
     expect(frase()).toBe('You were accepted into R');
   };
 });
+
+describe('ActivityEventCard — enrollment confirmed and tee times (social decisions, case 1)', () => {
+  const CON_RIVALES = {
+    ...AUTORES,
+    u4: { id: 'u4', displayName: 'Juan' },
+    u5: { id: 'u5', displayName: 'Luis' },
+  };
+
+  const inscrito = (payload = {}) =>
+    tarjeta(
+      evento({
+        type: 'ENROLLMENT_CONFIRMED',
+        sourceMatchId: 'c-1',
+        groupKey: null,
+        payload: {
+          competition_id: 'c-1',
+          competition_name: 'Ryder Otoño',
+          start_date: '2026-11-14',
+          end_date: '2026-11-15',
+          ...payload,
+        },
+      })
+    );
+
+  // Sábado 24 de octubre de 2026
+  const salida = (payload = {}) =>
+    tarjeta(
+      evento({
+        type: 'TEE_TIME_ASSIGNED',
+        sourceMatchId: 'r-1',
+        groupKey: null,
+        payload: {
+          competition_id: 'c-1',
+          competition_name: 'Ryder Otoño',
+          start_date: '2026-10-24',
+          end_date: '2026-10-25',
+          round_id: 'r-1',
+          round_date: '2026-10-24',
+          session_type: 'MORNING',
+          kind: 'TEE_GROUP',
+          tee_time: '09:10',
+          partner_ids: ['u2', 'u3'],
+          opponent_ids: [],
+          match_id: null,
+          changed: false,
+          ...payload,
+        },
+      })
+    );
+
+  const partido = (payload = {}) =>
+    salida({ kind: 'MATCH', tee_time: null, partner_ids: ['u2'], opponent_ids: ['u4', 'u5'], match_id: 'mt-1', ...payload });
+
+  it('enrolled: «Te has inscrito en Ryder Otoño» / «You signed up for Ryder Otoño», and a tap goes to the tournament', () => {
+    const a = pinta(inscrito());
+    expect(frase()).toBe('Te has inscrito en Ryder Otoño');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    a.unmount();
+
+    pinta(inscrito(), { lng: 'en' });
+    expect(frase()).toBe('You signed up for Ryder Otoño');
+  });
+
+  it('enrolled without a name reads «un torneo»', () => {
+    pinta(inscrito({ competition_name: null }));
+    expect(frase()).toBe('Te has inscrito en un torneo');
+  });
+
+  it('stroke play tee time: «Ya tienes salida en Ryder Otoño: sáb 24 oct · 9:10 · con Pedro y Xavi»', () => {
+    pinta(salida());
+
+    expect(frase()).toBe('Ya tienes salida en Ryder Otoño: sáb 24 oct · 9:10 · con Pedro y Xavi');
+    const enFrase = within(screen.getByTestId('frase-tarjeta'));
+    expect(enFrase.getByRole('link', { name: 'Pedro' })).toHaveAttribute('href', '/players/u2');
+    expect(enFrase.getByRole('link', { name: 'Xavi' })).toHaveAttribute('href', '/players/u3');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+  });
+
+  it('stroke play tee time in English', () => {
+    pinta(salida(), { lng: 'en' });
+    expect(frase()).toBe('You have a tee time in Ryder Otoño: Sat, Oct 24 · 9:10 · with Pedro and Xavi');
+  });
+
+  it('keeps an afternoon time as it is: «14:30»', () => {
+    pinta(salida({ tee_time: '14:30', session_type: 'AFTERNOON' }));
+    expect(frase()).toBe('Ya tienes salida en Ryder Otoño: sáb 24 oct · 14:30 · con Pedro y Xavi');
+  });
+
+  it('alone in the group: no «con …»', () => {
+    pinta(salida({ partner_ids: [] }));
+    expect(frase()).toBe('Ya tienes salida en Ryder Otoño: sáb 24 oct · 9:10');
+  });
+
+  it('without a time, the session instead', () => {
+    pinta(salida({ tee_time: null }));
+    expect(frase()).toBe('Ya tienes salida en Ryder Otoño: sáb 24 oct, mañana · con Pedro y Xavi');
+  });
+
+  it('Ryder fourball: «Ya tienes partido en Ryder Otoño: sáb 24 oct, mañana · con Pedro contra Juan y Luis»', () => {
+    pinta(partido(), { autores: CON_RIVALES });
+
+    expect(frase()).toBe('Ya tienes partido en Ryder Otoño: sáb 24 oct, mañana · con Pedro contra Juan y Luis');
+    const enFrase = within(screen.getByTestId('frase-tarjeta'));
+    expect(enFrase.getByRole('link', { name: 'Juan' })).toHaveAttribute('href', '/players/u4');
+    expect(enFrase.getByRole('link', { name: 'Luis' })).toHaveAttribute('href', '/players/u5');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+  });
+
+  it('Ryder fourball in English', () => {
+    pinta(partido(), { autores: CON_RIVALES, lng: 'en' });
+    expect(frase()).toBe(
+      'You have a match in Ryder Otoño: Sat, Oct 24, morning · with Pedro against Juan and Luis'
+    );
+  });
+
+  it('Ryder singles: «contra Juan», in the afternoon and in the evening', () => {
+    const a = pinta(partido({ partner_ids: [], opponent_ids: ['u4'], session_type: 'AFTERNOON' }), { autores: CON_RIVALES });
+    expect(frase()).toBe('Ya tienes partido en Ryder Otoño: sáb 24 oct, tarde · contra Juan');
+    a.unmount();
+
+    const b = pinta(partido({ partner_ids: [], opponent_ids: ['u4'], session_type: 'EVENING' }), {
+      autores: CON_RIVALES,
+      lng: 'en',
+    });
+    expect(frase()).toBe('You have a match in Ryder Otoño: Sat, Oct 24, evening · against Juan');
+    b.unmount();
+  });
+
+  it('a Ryder match with a time says both', () => {
+    pinta(partido({ tee_time: '08:30' }), { autores: CON_RIVALES });
+    expect(frase()).toBe('Ya tienes partido en Ryder Otoño: sáb 24 oct, mañana · 8:30 · con Pedro contra Juan y Luis');
+  });
+
+  it('changed: «Ha cambiado tu salida en …» / «Ha cambiado tu partido en …»', () => {
+    const a = pinta(salida({ changed: true }));
+    expect(frase()).toBe('Ha cambiado tu salida en Ryder Otoño: sáb 24 oct · 9:10 · con Pedro y Xavi');
+    a.unmount();
+
+    const b = pinta(partido({ changed: true }), { autores: CON_RIVALES });
+    expect(frase()).toBe('Ha cambiado tu partido en Ryder Otoño: sáb 24 oct, mañana · con Pedro contra Juan y Luis');
+    b.unmount();
+  });
+
+  it('changed in English', () => {
+    const a = pinta(salida({ changed: true }), { lng: 'en' });
+    expect(frase()).toBe('Your tee time in Ryder Otoño has changed: Sat, Oct 24 · 9:10 · with Pedro and Xavi');
+    a.unmount();
+
+    const b = pinta(partido({ changed: true }), { autores: CON_RIVALES, lng: 'en' });
+    expect(frase()).toBe(
+      'Your match in Ryder Otoño has changed: Sat, Oct 24, morning · with Pedro against Juan and Luis'
+    );
+    b.unmount();
+  });
+
+  it('somebody missing from the authors (blocked, inactive) reads «un jugador», without a link', () => {
+    pinta(partido({ opponent_ids: ['u4', 'u-bloqueado'] }), { autores: CON_RIVALES });
+
+    expect(frase()).toBe('Ya tienes partido en Ryder Otoño: sáb 24 oct, mañana · con Pedro contra Juan y un jugador');
+    expect(within(screen.getByTestId('frase-tarjeta')).queryByRole('link', { name: 'un jugador' })).toBeNull();
+  });
+
+  it('without a round date it still says where', () => {
+    pinta(salida({ round_date: null, tee_time: null, session_type: null, partner_ids: [] }));
+    expect(frase()).toBe('Ya tienes salida en Ryder Otoño');
+  });
+
+  it('long names wrap instead of pushing the card sideways', () => {
+    pinta(
+      partido({ partner_ids: ['u2'], opponent_ids: ['u4', 'u5'] }),
+      {
+        autores: {
+          u2: { id: 'u2', displayName: 'Maximiliano Fernández-Villaverde de la Concepción' },
+          u4: { id: 'u4', displayName: 'Bartolomé Rodríguez-Zapatero y Altamirano' },
+          u5: { id: 'u5', displayName: 'Guillermina Echeverría-Santisteban' },
+        },
+      }
+    );
+    expect(screen.getByTestId('frase-tarjeta').className).toMatch(/break-words/);
+  });
+});
+
+describe('ActivityEventCard — unfinished quick matches and holes (social decisions, cases 2, 3)', () => {
+  it('own match play unfinished: «Partida rápida sin terminar contra Pedro», never won or halved', () => {
+    const a = pinta(
+      qm({ match_format: 'SINGLES', outcome: 'UNFINISHED', score: null, unfinished: true, holes_played: 7, opponents: [{ user_id: 'u2' }] })
+    );
+    expect(frase()).toBe('Partida rápida sin terminar contra Pedro');
+    a.unmount();
+
+    pinta(
+      qm({ match_format: 'SINGLES', outcome: 'UNFINISHED', score: null, unfinished: true, holes_played: 0, opponents: [{ user_id: 'u2' }] }),
+      { lng: 'en' }
+    );
+    expect(frase()).toBe('Unfinished quick match against Pedro');
+  });
+
+  it('the «unfinished» flag alone is enough, whatever the outcome says', () => {
+    pinta(qm({ match_format: 'SINGLES', outcome: 'HALVED', score: null, unfinished: true, opponents: [{ user_id: 'u2' }] }));
+    expect(frase()).toBe('Partida rápida sin terminar contra Pedro');
+  });
+
+  it('the UNFINISHED outcome alone is enough too', () => {
+    pinta(qm({ match_format: 'SINGLES', outcome: 'UNFINISHED', score: null, opponents: [{ user_id: 'u2' }] }));
+    expect(frase()).toBe('Partida rápida sin terminar contra Pedro');
+  });
+
+  it("a friend's unfinished match play: «Partida rápida sin terminar de Pedro»", () => {
+    const a = pinta(
+      qm({ match_format: 'SINGLES', outcome: 'UNFINISHED', score: null, unfinished: true, opponents: [{ user_id: 'me' }] }, { userId: 'u2' })
+    );
+    expect(frase()).toBe('Partida rápida sin terminar de Pedro');
+    a.unmount();
+
+    pinta(
+      qm({ match_format: 'SINGLES', outcome: 'UNFINISHED', score: null, unfinished: true, opponents: [{ user_id: 'me' }] }, { userId: 'u2' }),
+      { lng: 'en' }
+    );
+    expect(frase()).toBe("Pedro's unfinished quick match");
+  });
+
+  it('own stroke play unfinished: «Partida rápida sin terminar en El Saler · 18 puntos», no position, no holes', () => {
+    const a = pinta(
+      qm({
+        scoring_format: 'STABLEFORD',
+        unfinished: true,
+        position: null,
+        tied: false,
+        best_gross_in_group: false,
+        total_players: 3,
+        points: 18,
+        gross_strokes: 50,
+        holes_played: 9,
+      })
+    );
+    expect(frase()).toBe('Partida rápida sin terminar en El Saler · 18 puntos');
+    a.unmount();
+
+    pinta(qm({ scoring_format: 'STABLEFORD', unfinished: true, position: null, total_players: 3, points: 18, holes_played: 9 }), {
+      lng: 'en',
+    });
+    expect(frase()).toBe('Unfinished quick match at El Saler · 18 points');
+  });
+
+  it('own Medal unfinished, and without the course', () => {
+    const a = pinta(qm({ scoring_format: 'MEDAL', unfinished: true, position: null, total_players: 2, net_strokes: 40, holes_played: 9 }));
+    expect(frase()).toBe('Partida rápida sin terminar en El Saler · 40 netos');
+    a.unmount();
+
+    pinta(qm({ golf_course_id: 'c-borrado', scoring_format: 'STABLEFORD', unfinished: true, position: null, total_players: 2, points: 12 }));
+    expect(frase()).toBe('Partida rápida sin terminar · 12 puntos');
+  });
+
+  it("a friend's unfinished stroke play: «Partida rápida sin terminar de Pedro · 18 puntos»", () => {
+    const a = pinta(
+      qm({ scoring_format: 'STABLEFORD', unfinished: true, position: null, total_players: 3, points: 18, holes_played: 9 }, { userId: 'u2' })
+    );
+    expect(frase()).toBe('Partida rápida sin terminar de Pedro · 18 puntos');
+    a.unmount();
+
+    pinta(
+      qm({ scoring_format: 'STABLEFORD', unfinished: true, position: null, total_players: 3, points: 18, holes_played: 9 }, { userId: 'u2' }),
+      { lng: 'en' }
+    );
+    expect(frase()).toBe("Pedro's unfinished quick match · 18 points");
+  });
+
+  it('a counting round of fewer than 18 holes says how many: «Acabaste 1.º de 2 en El Saler · 18 puntos · 9 hoyos»', () => {
+    const a = pinta(qm({ scoring_format: 'STABLEFORD', position: 1, tied: false, total_players: 2, points: 18, holes_played: 9 }));
+    expect(frase()).toBe('Acabaste 1.º de 2 en El Saler · 18 puntos · 9 hoyos');
+    a.unmount();
+
+    pinta(qm({ scoring_format: 'STABLEFORD', position: 1, tied: false, total_players: 2, points: 18, holes_played: 9 }), { lng: 'en' });
+    expect(frase()).toBe('You finished 1st of 2 at El Saler · 18 points · 9 holes');
+  });
+
+  it('the holes go after the gross strokes, with the real number', () => {
+    pinta(qm({ scoring_format: 'STABLEFORD', position: 2, total_players: 3, points: 25, gross_strokes: 60, holes_played: 12 }));
+    expect(frase()).toBe('Acabaste 2.º de 3 en El Saler · 25 puntos (60 golpes) · 12 hoyos');
+  });
+
+  it('18 holes, or no number, add nothing', () => {
+    const a = pinta(qm({ scoring_format: 'STABLEFORD', position: 2, total_players: 3, points: 36, holes_played: 18 }));
+    expect(frase()).toBe('Acabaste 2.º de 3 en El Saler · 36 puntos');
+    a.unmount();
+
+    pinta(qm({ scoring_format: 'STABLEFORD', position: 2, total_players: 3, points: 36, holes_played: null }));
+    expect(frase()).toBe('Acabaste 2.º de 3 en El Saler · 36 puntos');
+  });
+
+  it('one hole is singular', () => {
+    pinta(qm({ scoring_format: 'STABLEFORD', position: null, total_players: 1, points: 2, holes_played: 1 }));
+    expect(frase()).toBe('Acabaste la partida rápida en El Saler con 2 puntos · 1 hoyo');
+  });
+
+  it('alone and with a friend, the holes too', () => {
+    const a = pinta(qm({ scoring_format: 'STABLEFORD', position: null, total_players: 1, points: 34, holes_played: 9 }));
+    expect(frase()).toBe('Acabaste la partida rápida en El Saler con 34 puntos · 9 hoyos');
+    a.unmount();
+
+    const b = pinta(qm({ scoring_format: 'STABLEFORD', position: 2, total_players: 4, points: 31, holes_played: 9 }, { userId: 'u2' }));
+    expect(frase()).toBe('Pedro acabó 2.º con 31 puntos · 9 hoyos');
+    b.unmount();
+
+    pinta(qm({ scoring_format: 'MEDAL', position: null, total_players: 1, net_strokes: 35, holes_played: 9 }, { userId: 'u2' }), {
+      lng: 'en',
+    });
+    expect(frase()).toBe('Pedro finished the quick match with 35 net · 9 holes');
+  });
+
+  it('a shared best gross: «Mejor bruto del grupo (empatado)» / «Best gross in the group (tied)»', () => {
+    const datos = { scoring_format: 'STABLEFORD', position: 2, total_players: 4, points: 30, best_gross_in_group: true, best_gross_tied: true };
+    const a = pinta(qm(datos));
+    expect(screen.getByText('Mejor bruto del grupo (empatado)')).toBeInTheDocument();
+    a.unmount();
+
+    const b = pinta(qm(datos), { lng: 'en' });
+    expect(screen.getByText('Best gross in the group (tied)')).toBeInTheDocument();
+    b.unmount();
+
+    pinta(qm({ ...datos, best_gross_tied: false }));
+    expect(screen.getByText('Mejor bruto del grupo')).toBeInTheDocument();
+  });
+
+  it('no tag when the best gross is not theirs, tied or not', () => {
+    pinta(qm({ scoring_format: 'STABLEFORD', position: 2, total_players: 4, points: 30, best_gross_in_group: false, best_gross_tied: true }));
+    expect(screen.queryByText(/Mejor bruto/)).not.toBeInTheDocument();
+  });
+});

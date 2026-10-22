@@ -332,3 +332,14 @@ describe('primerasTarjetasPorDia', () => {
     expect(dias[0].tarjetas).toHaveLength(3);
   });
 });
+
+describe('the new notices are known types (social decisions, case 1)', () => {
+  it.each(['ENROLLMENT_CONFIRMED', 'TEE_TIME_ASSIGNED'])('%s gets its own card', (type) => {
+    const { dias } = armaLaLineaDeActividad({
+      eventos: [evento({ id: 'n1', type, groupKey: null }), evento({ id: 'n2', type, groupKey: null })],
+      ahora: AHORA,
+    });
+
+    expect(dias.flatMap((d) => d.tarjetas).map((t) => t.tipo)).toEqual([type, type]);
+  });
+});

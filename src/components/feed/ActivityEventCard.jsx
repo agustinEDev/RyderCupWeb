@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Award,
   CalendarCheck,
+  Clock,
   Flag,
   Mail,
   Medal,
@@ -17,12 +18,15 @@ import {
 import Avatar from '../ui/Avatar';
 import FraseDeActividad, { NombreDePersona } from './FraseDeActividad';
 import {
+  diaDeLaVuelta,
   fechasDelTorneo,
   fraseCon,
   fraseDeTexto,
   horaDeLaTarjeta,
+  horaDeSalida,
   invitadoDe,
   personaDe,
+  unaTrasOtra,
 } from './textosDeActividad';
 
 /**
@@ -37,6 +41,8 @@ const ICONOS = {
   PERSONAL_BEST: TrendingDown,
   FIRST_TOURNAMENT: Trophy,
   ENROLLMENT_APPROVED: CalendarCheck,
+  ENROLLMENT_CONFIRMED: CalendarCheck,
+  TEE_TIME_ASSIGNED: Clock,
   INVITED_TO_TOURNAMENT: Mail,
   ENROLLMENT_REQUEST_CLOSED: XCircle,
   ENROLLMENT_REJECTED: XCircle,
@@ -54,6 +60,8 @@ const TONOS = {
   PERSONAL_BEST: 'bg-rose-100 text-rose-700',
   FIRST_TOURNAMENT: 'bg-indigo-100 text-indigo-700',
   ENROLLMENT_APPROVED: 'bg-emerald-100 text-emerald-700',
+  ENROLLMENT_CONFIRMED: 'bg-emerald-100 text-emerald-700',
+  TEE_TIME_ASSIGNED: 'bg-sky-100 text-sky-700',
   INVITED_TO_TOURNAMENT: 'bg-sky-100 text-sky-700',
   ENROLLMENT_REQUEST_CLOSED: 'bg-gray-100 text-gray-600',
   ENROLLMENT_REJECTED: 'bg-gray-100 text-gray-600',
@@ -73,12 +81,14 @@ const LOGROS = new Set([
 
 const AVISOS_DE_INSCRIPCION = new Set([
   'ENROLLMENT_APPROVED',
+  'ENROLLMENT_CONFIRMED',
   'INVITED_TO_TOURNAMENT',
   'ENROLLMENT_REQUEST_CLOSED',
   'ENROLLMENT_REJECTED',
 ]);
 
 const HALF_ROUND_HOLES = 9;
+const FULL_ROUND_HOLES = 18;
 
 // El tanteo como se dice: «3&2» tal cual; una concesión o una incomparecencia
 // con palabras, no con el código del backend
@@ -108,6 +118,17 @@ const resultado = (payload, t, conBruto) => {
 };
 
 const nombreDelTorneo = (payload, t) => payload.competition_name || t('feed:cards.aTournament');
+
+// Una partida rápida que se cerró sin acabar: no se gana, no se empata ni
+// tiene puesto. Vale cualquiera de las dos señales del backend
+const sinTerminar = (payload) => payload.unfinished === true || payload.outcome === 'UNFINISHED';
+
+// « · 9 hoyos» detrás de una vuelta que cuenta y no llegó a 18
+const conHoyos = (frase, payload, t) => {
+  const hoyos = payload.holes_played;
+  if (!Number.isInteger(hoyos) || hoyos <= 0 || hoyos >= FULL_ROUND_HOLES) return frase;
+  return unaTrasOtra(frase, fraseDeTexto(` · ${t('feed:result.holes', { count: hoyos })}`));
+};
 
 // Quien mira jugó esa partida rápida: es el autor, o sale entre sus rivales o
 // compañeros
@@ -167,6 +188,14 @@ const SIN_RIVALES = (t) => [{ nombre: t('feed:someone'), enlace: null }];
 /** Lo que dice una partida de match play, tuya o de un amigo. */
 const fraseDeMatchPlay = (payload, { t, idioma, mia, autor, rivales }) => {
   const score = tanteo(payload.score, t);
+  if (sinTerminar(payload)) {
+    return mia
+      ? fraseCon(t, 'feed:cards.unfinishedMatch', {}, {
+          rivales: rivales.length > 0 ? rivales : SIN_RIVALES(t),
+          idioma,
+        })
+      : fraseCon(t, 'feed:cards.friendUnfinishedMatch', {}, { persona: autor });
+  }
   if (mia) {
     const clave = { WON: 'won', LOST: 'lost' }[payload.outcome] || 'halved';
     return fraseCon(t, `feed:cards.${clave}`, { score }, {
@@ -178,8 +207,25 @@ const fraseDeMatchPlay = (payload, { t, idioma, mia, autor, rivales }) => {
   return fraseCon(t, `feed:cards.${clave}`, { score }, { persona: autor });
 };
 
+/** Una partida rápida de Stableford o Medal que se quedó sin terminar. */
+const fraseSinTerminar = (payload, { t, mia, autor, campo }) => {
+  const result = resultado(payload, t, false);
+  if (mia) {
+    return fraseCon(t, campo ? 'feed:cards.unfinishedStroke' : 'feed:cards.unfinishedStrokeNoCourse', {
+      course: campo,
+      result,
+    });
+  }
+  return fraseCon(t, 'feed:cards.friendUnfinishedStroke', { result }, { persona: autor });
+};
+
 /** Lo que dice una partida rápida de Stableford o Medal. */
-const fraseDeStrokePlay = (payload, { t, mia, autor, campo }) => {
+const fraseDeStrokePlay = (payload, contexto) => {
+  if (sinTerminar(payload)) return fraseSinTerminar(payload, contexto);
+  return conHoyos(fraseDeStrokePlayAcabada(payload, contexto), payload, contexto.t);
+};
+
+const fraseDeStrokePlayAcabada = (payload, { t, mia, autor, campo }) => {
   const conPuesto = payload.position != null;
   if (mia) {
     if (conPuesto) {
@@ -208,6 +254,52 @@ const fraseDeStrokePlay = (payload, { t, mia, autor, campo }) => {
     'feed:cards.friendQuickMatchSolo',
     { result: resultado(payload, t, false) },
     { persona: autor }
+  );
+};
+
+const personasDe = (ids, autores, t) =>
+  (Array.isArray(ids) ? ids : []).map((id) => personaDe(id, autores, t));
+
+/**
+ * El aviso de una salida o un partido de torneo, propio (SELF):
+ * «Ya tienes salida en X: sáb 24 oct · 9:10 · con Pedro y Juan» o «Ya tienes
+ * partido en X: sáb 24 oct, mañana · con Pedro contra Juan y Luis». Con
+ * `changed`, «Ha cambiado tu salida/partido en X: …».
+ *
+ * La sesión va en los partidos y, en una salida, solo si falta la hora. Quien
+ * no viene en los autores (bloqueado, desactivado) es «un jugador».
+ */
+const fraseDeSalida = (payload, { t, idioma, autores, ahora }) => {
+  const esPartido = payload.kind === 'MATCH';
+  const hora = horaDeSalida(payload.tee_time);
+  const sesion = t(`feed:teeTime.session.${payload.session_type}`, { defaultValue: '' });
+  const dia = diaDeLaVuelta(payload.round_date, ahora, idioma);
+  const cuando = [
+    [dia, esPartido || !hora ? sesion : ''].filter(Boolean).join(', '),
+    hora,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const base = `${esPartido ? 'match' : 'group'}${payload.changed ? 'Changed' : ''}`;
+  const cabeza = fraseCon(t, `feed:teeTime.${cuando ? base : `${base}Bare`}`, {
+    competition: nombreDelTorneo(payload, t),
+    when: cuando,
+  });
+
+  const companeros = personasDe(payload.partner_ids, autores, t);
+  const rivales = personasDe(payload.opponent_ids, autores, t);
+  let clave = null;
+  if (companeros.length > 0) clave = rivales.length > 0 ? 'withAgainst' : 'with';
+  else if (rivales.length > 0) clave = 'against';
+  if (!clave) return cabeza;
+  return unaTrasOtra(
+    cabeza,
+    fraseCon(t, `feed:teeTime.${clave}`, {}, {
+      companeros: companeros.length > 0 ? companeros : undefined,
+      rivales: rivales.length > 0 ? rivales : undefined,
+      idioma,
+    })
   );
 };
 
@@ -274,7 +366,9 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
     const detalles = campo && (esMatchPlay || !mia) ? [campo] : [];
     return {
       frase,
-      etiqueta: payload.best_gross_in_group ? t('feed:cards.bestGross') : null,
+      etiqueta: payload.best_gross_in_group
+        ? t(payload.best_gross_tied ? 'feed:cards.bestGrossTied' : 'feed:cards.bestGross')
+        : null,
       detalles,
     };
   }
@@ -303,6 +397,10 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
           })
         : fraseCon(t, 'feed:cards.finalStandingNoPosition', { competition });
     return { frase, detalles: [] };
+  }
+
+  if (tarjeta.tipo === 'TEE_TIME_ASSIGNED') {
+    return { frase: fraseDeSalida(payload, { t, idioma, autores, ahora }), detalles: [] };
   }
 
   if (AVISOS_DE_INSCRIPCION.has(tarjeta.tipo)) {
