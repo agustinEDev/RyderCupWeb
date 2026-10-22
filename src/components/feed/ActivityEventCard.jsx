@@ -108,10 +108,30 @@ const resultado = (payload, t, conBruto) => {
 
 const nombreDelTorneo = (payload, t) => payload.competition_name || t('feed:cards.aTournament');
 
-/** Adónde lleva tocar la tarjeta; null si faltan los datos para saberlo. */
-const destinoDe = (tarjeta) => {
+// Quien mira jugó esa partida rápida: es el autor, o sale entre sus rivales o
+// compañeros
+const jugoLaPartida = (tarjeta, yoId) => {
+  if (!yoId) return false;
+  if (tarjeta.autorId === yoId) return true;
+  const payload = tarjeta.eventos[0].payload || {};
+  return ['opponents', 'partners'].some(
+    (clave) => Array.isArray(payload[clave]) && payload[clave].some((p) => p?.user_id === yoId)
+  );
+};
+
+/**
+ * Adónde lleva tocar la tarjeta; null si faltan los datos para saberlo.
+ *
+ * A una partida solo se lleva a quien la jugó: la pantalla de otro le dejaría
+ * fuera. De lo de un amigo en lo que no estuviste, se va a su perfil.
+ */
+const destinoDe = (tarjeta, yoId) => {
   const [primero] = tarjeta.eventos;
   const payload = primero.payload || {};
+  const esDePartida = LOGROS.has(tarjeta.tipo) || tarjeta.tipo === 'QUICK_MATCH_FINISHED';
+  if (esDePartida && !jugoLaPartida(tarjeta, yoId)) {
+    return tarjeta.autorId ? `/players/${tarjeta.autorId}` : null;
+  }
   if (LOGROS.has(tarjeta.tipo)) {
     if (!primero.sourceMatchId) return null;
     const deTorneo = tarjeta.eventos.some((e) => e.payload?.from_tournament);
@@ -122,6 +142,7 @@ const destinoDe = (tarjeta) => {
   if (tarjeta.tipo === 'QUICK_MATCH_FINISHED') {
     return primero.sourceMatchId ? `/quick-matches/${primero.sourceMatchId}/scoring` : null;
   }
+  // Solo llega a uno mismo (SELF): siempre lo jugó
   if (tarjeta.tipo === 'TOURNAMENT_MATCH_RESULT') {
     return primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null;
   }
@@ -323,7 +344,7 @@ const ActivityEventCard = ({ tarjeta, autores = {}, campos = {}, yoId, ahora = n
   const idioma = i18n.language;
 
   const contenido = contenidoDe(tarjeta, { t, idioma, autores, campos, yoId, ahora });
-  const destino = destinoDe(tarjeta);
+  const destino = destinoDe(tarjeta, yoId);
   const mia = !!yoId && tarjeta.autorId === yoId;
   const autor = personaDe(tarjeta.autorId, autores, t);
   const hora = horaDeLaTarjeta(tarjeta.instante, ahora, t, idioma);

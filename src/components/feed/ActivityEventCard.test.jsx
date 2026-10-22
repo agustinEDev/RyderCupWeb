@@ -414,13 +414,93 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
   });
 
-  it('quick match achievement → the quick match; tournament achievement → the competition match', () => {
-    const a = pinta(tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mq', payload: { count: 1 } })));
+  it('own quick match achievement → the quick match; own tournament achievement → the competition match', () => {
+    const a = pinta(tarjeta(evento({ type: 'BIRDIE', userId: YO, sourceMatchId: 'mq', payload: { count: 1 } })));
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');
     a.unmount();
 
-    pinta(tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } })));
+    pinta(tarjeta(evento({ type: 'BIRDIE', userId: YO, sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } })));
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
+  });
+
+  describe('somebody else\'s match: only if you played it, otherwise their profile', () => {
+    it.each([
+      { caso: 'quick match achievement', datos: { type: 'BIRDIE', sourceMatchId: 'mq', payload: { count: 1 } } },
+      { caso: 'tournament achievement', datos: { type: 'BIRDIE', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } } },
+      {
+        caso: 'stroke play quick match',
+        datos: { type: 'QUICK_MATCH_FINISHED', sourceMatchId: 'mq', payload: { scoring_format: 'STABLEFORD', position: 1, total_players: 3, points: 30 } },
+      },
+      {
+        caso: 'match play quick match without you',
+        datos: { type: 'QUICK_MATCH_FINISHED', sourceMatchId: 'mq', payload: { match_format: 'SINGLES', outcome: 'WON', score: '3&2', opponents: [{ user_id: 'u3' }, { user_id: null, name: 'Invitado' }] } },
+      },
+    ])("a friend's $caso → the friend's profile", ({ datos }) => {
+      pinta(tarjeta(evento({ userId: 'u2', ...datos })));
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+    });
+
+    it("a friend's quick match where you were the rival → the quick match", () => {
+      pinta(
+        tarjeta(
+          evento({
+            userId: 'u2',
+            sourceMatchId: 'mq',
+            payload: { match_format: 'SINGLES', outcome: 'WON', score: '3&2', opponents: [{ user_id: YO }] },
+          })
+        )
+      );
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');
+    });
+
+    it("a friend's quick match where you were the partner → the quick match", () => {
+      pinta(
+        tarjeta(
+          evento({
+            userId: 'u2',
+            sourceMatchId: 'mq',
+            payload: { match_format: 'FOURBALL', outcome: 'LOST', score: '1UP', partners: [{ user_id: YO }], opponents: [{ user_id: 'u3' }] },
+          })
+        )
+      );
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');
+    });
+
+    it('without knowing who is looking, no match link: the profile', () => {
+      render(
+        <I18nextProvider i18n={instancias.es}>
+          <MemoryRouter>
+            <ActivityEventCard
+              tarjeta={tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mq', payload: { count: 1 } }))}
+              autores={AUTORES}
+              ahora={AHORA}
+            />
+          </MemoryRouter>
+        </I18nextProvider>
+      );
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+    });
+
+    it('without knowing who is looking, a rival with no id does not count as you', () => {
+      render(
+        <I18nextProvider i18n={instancias.es}>
+          <MemoryRouter>
+            <ActivityEventCard
+              tarjeta={tarjeta(
+                evento({
+                  userId: 'u2',
+                  sourceMatchId: 'mq',
+                  payload: { match_format: 'SINGLES', outcome: 'WON', score: '3&2', opponents: [{ name: 'Invitado' }] },
+                })
+              )}
+              autores={AUTORES}
+              ahora={AHORA}
+            />
+          </MemoryRouter>
+        </I18nextProvider>
+      );
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+    });
   });
 
   it.each([
