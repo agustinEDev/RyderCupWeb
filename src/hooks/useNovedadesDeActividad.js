@@ -72,6 +72,17 @@ export const ponLasNovedadesACero = () => {
   fija(0);
 };
 
+/**
+ * Se cierra la sesión: el número y el del icono eran de esa cuenta. Sin esto,
+ * quien entrara después en el mismo dispositivo vería el de la anterior. Un
+ * recuento que iba de camino tampoco vuelve.
+ */
+export const olvidaLasNovedades = () => {
+  generacion += 1;
+  enVuelo = null;
+  fija(0);
+};
+
 const empiezaAVigilar = () => {
   const alCambiarLaVisibilidad = () => {
     if (globalThis.document.visibilityState === 'visible') refrescaLasNovedades();

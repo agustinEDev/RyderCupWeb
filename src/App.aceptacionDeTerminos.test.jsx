@@ -29,6 +29,7 @@ vi.mock('./hooks/useNovedadesDeActividad', () => ({
   useNovedadesDeActividad: () => 0,
   useVigilanciaDeNovedades: () => {},
   ponLasNovedadesACero: () => {},
+  olvidaLasNovedades: () => {},
 }));
 vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));

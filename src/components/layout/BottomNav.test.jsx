@@ -23,6 +23,7 @@ const vigilar = vi.fn();
 vi.mock('../../hooks/useNovedadesDeActividad', () => ({
   useNovedadesDeActividad: () => novedades,
   useVigilanciaDeNovedades: () => vigilar(),
+  olvidaLasNovedades: () => {},
 }));
 
 const renderNav = (path = '/dashboard') =>

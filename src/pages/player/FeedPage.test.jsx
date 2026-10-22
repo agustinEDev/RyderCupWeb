@@ -27,6 +27,7 @@ vi.mock('../../components/ui/Avatar', () => ({
 const aCero = vi.fn();
 vi.mock('../../hooks/useNovedadesDeActividad', () => ({
   ponLasNovedadesACero: () => aCero(),
+  olvidaLasNovedades: () => {},
 }));
 
 const toastError = vi.fn();

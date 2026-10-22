@@ -4,6 +4,7 @@ import {
   useNovedadesDeActividad,
   useVigilanciaDeNovedades,
   ponLasNovedadesACero,
+  olvidaLasNovedades,
   reiniciaLasNovedades,
 } from './useNovedadesDeActividad';
 
@@ -230,5 +231,53 @@ describe('useNovedadesDeActividad', () => {
 
     await waitFor(() => expect(numero()).toBe('2'));
     expect(() => act(() => ponLasNovedadesACero())).not.toThrow();
+  });
+
+  describe('logout forgets the number (another user on the same device)', () => {
+    it('resets it to zero and clears the app icon', async () => {
+      const { clearAppBadge } = conBadging();
+      contar.mockResolvedValue(7);
+      render(
+        <>
+          <Vigia />
+          <Numero />
+        </>
+      );
+      await waitFor(() => expect(numero()).toBe('7'));
+      clearAppBadge.mockClear();
+
+      act(() => olvidaLasNovedades());
+
+      expect(numero()).toBe('0');
+      expect(clearAppBadge).toHaveBeenCalledTimes(1);
+    });
+
+    it("a count on its way for the previous user does not come back", async () => {
+      let responde;
+      contar.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            responde = resolve;
+          })
+      );
+      render(
+        <>
+          <Vigia />
+          <Numero />
+        </>
+      );
+      await waitFor(() => expect(contar).toHaveBeenCalledTimes(1));
+
+      act(() => olvidaLasNovedades());
+      await act(async () => responde(9));
+
+      expect(numero()).toBe('0');
+    });
+
+    it('works without the Badging API', () => {
+      vi.stubGlobal('navigator', { userAgent: 'sin badging' });
+
+      expect(() => act(() => olvidaLasNovedades())).not.toThrow();
+    });
   });
 });

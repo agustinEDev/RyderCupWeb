@@ -26,6 +26,7 @@ vi.mock('../../utils/broadcastAuth', () => ({
 let novedades = 0;
 vi.mock('../../hooks/useNovedadesDeActividad', () => ({
   useNovedadesDeActividad: () => novedades,
+  olvidaLasNovedades: () => {},
 }));
 
 const clearAuth = vi.fn();
