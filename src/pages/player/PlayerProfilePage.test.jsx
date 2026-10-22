@@ -247,6 +247,32 @@ describe('PlayerProfilePage', () => {
       expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
     });
 
+    it('keeps the course names of every page when loading more (review FE-1)', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(
+          paginaActividad({
+            events: [{ id: 'e1', userId: 'u1', type: 'BIRDIE', occurredAt: new Date('2026-08-10T12:00:00'), payload: { count: 1, golf_course_id: 'c1' }, sourceMatchId: 'm1' }],
+            courses: { c1: 'Campo Uno' },
+            nextCursor: 'cursor-1',
+          })
+        )
+        .mockResolvedValueOnce(
+          paginaActividad({
+            events: [{ id: 'e2', userId: 'u1', type: 'BIRDIE', occurredAt: new Date('2026-08-09T12:00:00'), payload: { count: 1, golf_course_id: 'c2' }, sourceMatchId: 'm2' }],
+            courses: { c2: 'Campo Dos' },
+            nextCursor: null,
+          })
+        );
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e2')).toHaveTextContent('Campo Dos');
+      expect(screen.getByTestId('activity-event-e1')).toHaveTextContent('Campo Uno');
+    });
+
     it('does not show a stats grid for a friend who has not played yet', async () => {
       getProfile.mockResolvedValue(amigo({ stats: estadisticas({ roundsPlayed: 0 }) }));
       renderProfile();

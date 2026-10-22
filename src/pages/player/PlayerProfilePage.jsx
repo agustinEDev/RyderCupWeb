@@ -129,6 +129,9 @@ const PlayerProfilePage = () => {
       setActivity((prev) => ({
         events: [...prev.events, ...page.events],
         authors: { ...prev.authors, ...page.authors },
+        // Los nombres de campo se acumulan como los autores: si no, las
+        // tarjetas ya pintadas perdían el suyo al paginar (revisión FE-1)
+        courses: { ...prev.courses, ...page.courses },
         nextCursor: page.nextCursor,
       }));
     } catch {
