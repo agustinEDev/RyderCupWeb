@@ -1220,6 +1220,46 @@ describe('ActivityEventCard — a friend\'s quick match read-only, and tournamen
     expect(destino).toBe('/quick-matches/mq/shared|u2');
   });
 
+  it("K: from that friend's own profile the link says so, to go back instead of piling the profile", () => {
+    const VeTodo = () => {
+      const { pathname, state } = useLocation();
+      return <p data-testid="destino">{`${pathname}|${state?.perfilDe ?? ''}|${state?.desdeSuPerfil ?? ''}`}</p>;
+    };
+    const toca = (perfilActualId) => {
+      const r = render(
+        <I18nextProvider i18n={instancias.es}>
+          <MemoryRouter initialEntries={['/players/u2']}>
+            <Routes>
+              <Route
+                path="/players/u2"
+                element={
+                  <ActivityEventCard
+                    tarjeta={qm({ scoring_format: 'STABLEFORD', position: 1, total_players: 2, points: 30 }, { userId: 'u2', sourceMatchId: 'mq' })}
+                    autores={AUTORES}
+                    campos={CAMPOS}
+                    yoId={YO}
+                    perfilActualId={perfilActualId}
+                    ahora={AHORA}
+                  />
+                }
+              />
+              <Route path="*" element={<VeTodo />} />
+            </Routes>
+          </MemoryRouter>
+        </I18nextProvider>
+      );
+      fireEvent.click(enlaceDeLaTarjeta());
+      const texto = screen.getByTestId('destino').textContent;
+      r.unmount();
+      return texto;
+    };
+
+    expect(toca('u2')).toBe('/quick-matches/mq/shared|u2|true');
+    // En el perfil de otro (u3) no es «su» perfil
+    expect(toca('u3')).toBe('/quick-matches/mq/shared|u2|');
+    expect(toca(undefined)).toBe('/quick-matches/mq/shared|u2|');
+  });
+
   it('K: who played it still goes to their scoring screen', () => {
     pinta(qm({ match_format: 'SINGLES', outcome: 'LOST', score: '2&1', opponents: [{ user_id: YO }] }, { userId: 'u2', sourceMatchId: 'mq' }));
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');

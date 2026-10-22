@@ -567,8 +567,14 @@ const ActivityEventCard = ({
   // En el perfil de alguien, llevar a ese mismo perfil no lleva a ningún sitio:
   // repetiría la entrada del historial y un enlace vacío para los lectores
   const posible = destinoDe(tarjeta, yoId, autores);
-  const destino =
+  const mismoPerfil =
     !posible.ruta || (perfilActualId && posible.ruta === `/players/${perfilActualId}`) ? null : posible;
+  // Desde el perfil de ese mismo amigo, la vista de solo lectura sabe que si
+  // no se puede ver tiene que volver atrás, no apilar su perfil otra vez
+  const destino =
+    mismoPerfil?.estado && perfilActualId && mismoPerfil.estado.perfilDe === perfilActualId
+      ? { ...mismoPerfil, estado: { ...mismoPerfil.estado, desdeSuPerfil: true } }
+      : mismoPerfil;
   const mia = !!yoId && tarjeta.autorId === yoId;
   const autor = personaDe(tarjeta.autorId, autores, t);
   const hora = horaDeLaTarjeta(tarjeta.instante, ahora, t, idioma);

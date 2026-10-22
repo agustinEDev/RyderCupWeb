@@ -52,6 +52,10 @@ const QuickMatchSharedPage = () => {
 
   // De quién era la tarjeta que trajo aquí: a su perfil si no se puede ver
   const perfilDe = state?.perfilDe ?? null;
+  // Si se vino desde ese mismo perfil, el 403 vuelve a él (atrás) en vez de
+  // apilarlo otra vez; sin pantalla detrás, a su perfil
+  const desdeSuPerfil = !!state?.desdeSuPerfil;
+  const volverAlPerfil = useGoBack(perfilDe ? `/players/${perfilDe}` : '/feed');
   const tRef = useRef(t);
   useEffect(() => {
     tRef.current = t;
@@ -74,6 +78,11 @@ const QuickMatchSharedPage = () => {
       setPartida(datos);
       if (!datos.viewerIsParticipant) cargaElCampo(datos.golfCourseId);
     } catch (error) {
+      if (error?.status === HTTP_FORBIDDEN && perfilDe && desdeSuPerfil) {
+        customToast.info(tRef.current('shared.forbiddenBack'));
+        volverAlPerfil();
+        return;
+      }
       if (error?.status === HTTP_FORBIDDEN && perfilDe) {
         customToast.info(tRef.current('shared.forbiddenToast'));
         navigate(`/players/${perfilDe}`, { replace: true });
@@ -83,7 +92,7 @@ const QuickMatchSharedPage = () => {
     } finally {
       setCargando(false);
     }
-  }, [quickMatchId, perfilDe, navigate, cargaElCampo]);
+  }, [quickMatchId, perfilDe, desdeSuPerfil, volverAlPerfil, navigate, cargaElCampo]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the load sets state only after awaiting the API

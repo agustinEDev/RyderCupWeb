@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation, useNavigationType } from 'react-router';
 import QuickMatchSharedPage from './QuickMatchSharedPage';
 import es from '../../i18n/locales/es/quickMatch.json';
 import en from '../../i18n/locales/en/quickMatch.json';
@@ -345,5 +345,52 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     expect(en.shared.readOnly).toBe('Read only');
     expect(commonEs.screens.sharedQuickMatch).toBe('Partida rápida');
     expect(commonEn.screens.sharedQuickMatch).toBe('Quick match');
+  });
+
+  describe("a 403 coming from that same friend's profile (final review)", () => {
+    const ComoSeLlego = () => {
+      const { pathname } = useLocation();
+      return <p data-testid="llegada">{`${pathname}|${useNavigationType()}`}</p>;
+    };
+    const desdeSuPerfil = (entradas, indice) =>
+      render(
+        <MemoryRouter initialEntries={entradas} initialIndex={indice}>
+          <Routes>
+            <Route path="/quick-matches/:quickMatchId/shared" element={<QuickMatchSharedPage />} />
+            <Route path="*" element={<ComoSeLlego />} />
+          </Routes>
+        </MemoryRouter>
+      );
+    const compartidaDesdeSuPerfil = {
+      pathname: '/quick-matches/qm-1/shared',
+      state: { perfilDe: 'u2', desdeSuPerfil: true },
+    };
+
+    it('goes back to that profile (POP), not on top of it, with «No puedes ver esa partida»', async () => {
+      getShared.mockRejectedValue(error(403));
+      desdeSuPerfil(['/players/u2', compartidaDesdeSuPerfil], 1);
+
+      expect(await screen.findByTestId('llegada')).toHaveTextContent('/players/u2|POP');
+      expect(toastInfo).toHaveBeenCalledWith('shared.forbiddenBack');
+      expect(toastInfo).not.toHaveBeenCalledWith('shared.forbiddenToast');
+      expect(es.shared.forbiddenBack).toBe('No puedes ver esa partida.');
+      expect(en.shared.forbiddenBack).toBe("You can't view that match.");
+    });
+
+    it('without a screen behind (opened directly), to that profile replacing this one', async () => {
+      getShared.mockRejectedValue(error(403));
+      desdeSuPerfil([compartidaDesdeSuPerfil], 0);
+
+      expect(await screen.findByTestId('llegada')).toHaveTextContent('/players/u2|REPLACE');
+      expect(toastInfo).toHaveBeenCalledWith('shared.forbiddenBack');
+    });
+
+    it('from Actividad it stays as it was: to the profile, replacing, «te llevamos a su perfil»', async () => {
+      getShared.mockRejectedValue(error(403));
+      desdeSuPerfil(['/feed', { pathname: '/quick-matches/qm-1/shared', state: { perfilDe: 'u2' } }], 1);
+
+      expect(await screen.findByTestId('llegada')).toHaveTextContent('/players/u2|REPLACE');
+      expect(toastInfo).toHaveBeenCalledWith('shared.forbiddenToast');
+    });
   });
 });

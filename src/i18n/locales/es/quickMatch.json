@@ -278,6 +278,7 @@
     "player": "un jugador",
     "forbidden": "No puedes ver esta partida.",
     "forbiddenToast": "No puedes ver esa partida: te llevamos a su perfil.",
+    "forbiddenBack": "No puedes ver esa partida.",
     "back": "Volver",
     "retry": "Reintentar",
     "tabsLabel": "Partida rápida en solo lectura"
