@@ -78,6 +78,8 @@ const FeedPage = () => {
   const recargando = useRef(false);
   const cargandoMas = useRef(false);
   const recargaPendiente = useRef(false);
+  // Lo cargado, para que la recarga sepa si su página enlaza con ello
+  const cargados = useRef([]);
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -126,6 +128,15 @@ const FeedPage = () => {
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setRequests(page.pendingFriendRequests || []);
       setUnseenCount(page.unseenCount || 0);
+      // El cursor, coherente con la mezcla: si la página fresca enlaza con lo
+      // cargado (comparte alguna entrada), entre las dos no falta nada y sigue
+      // el cursor de siempre, el de la última página traída con «Cargar más».
+      // Si no enlaza —no había nada, o han llegado más entradas de las que
+      // caben en una página—, queda un hueco por debajo y manda el suyo: lo ya
+      // pintado se queda y lo repetido no se duplica al seguir bajando
+      const conocidos = new Set(cargados.current.map((e) => e.id));
+      const enlaza = page.events.length === 0 || page.events.some((e) => conocidos.has(e.id));
+      if (!enlaza) setNextCursor(page.nextCursor ?? null);
       marcaComoVisto();
     } catch {
       // Se queda lo que había
@@ -241,6 +252,10 @@ const FeedPage = () => {
       );
     }
   };
+
+  useEffect(() => {
+    cargados.current = events;
+  }, [events]);
 
   const ahora = new Date();
   const linea = useMemo(
