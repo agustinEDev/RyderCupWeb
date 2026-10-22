@@ -23,6 +23,11 @@ const rutaDePartidaJuntos = (partida) => {
   if (partida.kind === 'TOURNAMENT_MATCH') {
     return partida.matchId ? rutaDeAnotacion({ id: partida.matchId }) : null;
   }
+  // Un torneo stroke play entero (J): su id es el del torneo
+  if (partida.kind === 'TOURNAMENT_STROKE_PLAY') {
+    const torneo = partida.competitionId ?? partida.id;
+    return torneo ? `/competitions/${torneo}` : null;
+  }
   if (partida.kind === 'TOURNAMENT_GROUP') {
     return partida.matchId && partida.competitionId
       ? rutaDeAnotacion({
@@ -53,8 +58,34 @@ const fechaDe = (dia, idioma) => {
   }
 };
 
+const puestoDe = (position, tied, t) => {
+  const texto = t('playerProfile:gamesTogether.position', { count: position, ordinal: true });
+  return tied ? t('playerProfile:gamesTogether.tied', { position: texto }) : texto;
+};
+
+/**
+ * «4.º y 7.º de 16»: el tuyo y el suyo en la general de un torneo stroke play.
+ * Sin los dos puestos o sin el total no se dice nada: a medias se leería mal.
+ */
+const puestosDelTorneo = (partida, t) => {
+  if (partida.myPosition == null || partida.theirPosition == null || !partida.totalPlayers) return null;
+  return t('playerProfile:gamesTogether.positions', {
+    mine: puestoDe(partida.myPosition, partida.myTied, t),
+    theirs: puestoDe(partida.theirPosition, partida.theirTied, t),
+    total: partida.totalPlayers,
+  });
+};
+
 const FilaDePartida = ({ partida, t, idioma }) => {
   const ruta = rutaDePartidaJuntos(partida);
+  const esTorneo = partida.kind === 'TOURNAMENT_STROKE_PLAY';
+  // De un torneo stroke play no hay campo: el título es el torneo, y debajo,
+  // los puestos de los dos
+  const titulo = esTorneo
+    ? partida.competitionName || t('playerProfile:gamesTogether.unknownTournament')
+    : partida.golfCourseName || t('playerProfile:gamesTogether.unknownCourse');
+  const subtitulo = esTorneo ? null : partida.competitionName;
+  const puestos = esTorneo ? puestosDelTorneo(partida, t) : null;
   const resultado = partida.result
     ? t(`playerProfile:gamesTogether.result.${partida.result}`)
     : t('playerProfile:gamesTogether.result.none');
@@ -67,11 +98,12 @@ const FilaDePartida = ({ partida, t, idioma }) => {
   const contenido = (
     <>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">
-          {partida.golfCourseName || t('playerProfile:gamesTogether.unknownCourse')}
-        </p>
-        {partida.competitionName && (
-          <p className="text-xs text-gray-500 truncate">{partida.competitionName}</p>
+        <p className="text-sm font-medium text-gray-900 truncate">{titulo}</p>
+        {subtitulo && <p className="text-xs text-gray-500 truncate">{subtitulo}</p>}
+        {puestos && (
+          <p className="text-xs text-gray-700" data-testid="player-profile-game-positions">
+            {puestos}
+          </p>
         )}
         <p className="text-xs text-gray-500">{detalle.join(' · ')}</p>
       </div>

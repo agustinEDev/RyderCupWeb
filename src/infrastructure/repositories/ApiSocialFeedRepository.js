@@ -32,6 +32,12 @@ const partidaJuntos = (g) => ({
   competitionId: g.competition_id ?? null,
   competitionName: g.competition_name ?? null,
   matchId: g.match_id ?? null,
+  // Solo en un torneo stroke play (J): el puesto de cada uno en la general
+  myPosition: g.my_position ?? null,
+  myTied: g.my_tied ?? false,
+  theirPosition: g.their_position ?? null,
+  theirTied: g.their_tied ?? false,
+  totalPlayers: g.total_players ?? null,
 });
 
 const paginaDePartidas = (data) => ({

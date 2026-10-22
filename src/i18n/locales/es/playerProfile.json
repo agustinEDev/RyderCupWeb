@@ -81,6 +81,13 @@
     "title": "Partidas juntos",
     "loadMore": "Ver más",
     "unknownCourse": "Campo sin nombre",
+    "unknownTournament": "Torneo sin nombre",
+    "positions": "{{mine}} y {{theirs}} de {{total}}",
+    "tied": "{{position}} (empatado)",
+    "position_ordinal_one": "{{count}}.º",
+    "position_ordinal_two": "{{count}}.º",
+    "position_ordinal_few": "{{count}}.º",
+    "position_ordinal_other": "{{count}}.º",
     "format": {
       "SINGLES": "Individual",
       "FOURBALL": "Fourball",
