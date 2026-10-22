@@ -20,6 +20,20 @@ import BlockLoader from '../../components/ui/BlockLoader';
 
 const PAGE_SIZE = 20;
 
+// Lo de una recarga sobre lo ya cargado: lo conocido se actualiza en su sitio
+// (por id) y lo nuevo entra arriba
+const mezclaArriba = (cargados, frescos) => {
+  const porId = new Map(frescos.map((e) => [e.id, e]));
+  const nuevos = frescos.filter((e) => !cargados.some((c) => c.id === e.id));
+  return [...nuevos, ...cargados.map((c) => porId.get(c.id) ?? c)];
+};
+
+// Una página más, al final, sin repetir lo que ya hay
+const mezclaAbajo = (cargados, pagina) => {
+  const ya = new Set(cargados.map((e) => e.id));
+  return [...cargados, ...pagina.filter((e) => !ya.has(e.id))];
+};
+
 // El número del botón y del icono se pone a cero cuando el backend ha guardado
 // la visita. Que falle no debe impedir leer el feed: lo peor que pasa es que el
 // número siga puesto hasta la próxima visita.
@@ -62,6 +76,8 @@ const FeedPage = () => {
   // si la primera carga ya llegó y si hay una recarga en marcha
   const cargado = useRef(false);
   const recargando = useRef(false);
+  const cargandoMas = useRef(false);
+  const recargaPendiente = useRef(false);
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -85,22 +101,31 @@ const FeedPage = () => {
 
   /**
    * Hay novedades estando ya en Actividad —el número subió al volver a la
-   * aplicación o a la red, o se ha vuelto a pulsar Actividad—: se recarga la
-   * línea sin la espera de pantalla completa y se da por vista otra vez, con
-   * lo que el número vuelve a cero. Una recarga a la vez; si falla, se queda
-   * lo que había, sin avisos: no lo ha pedido nadie.
+   * aplicación o a la red, o se ha vuelto a pulsar Actividad—: se pide otra
+   * vez la primera página y se da por vista, con lo que el número vuelve a
+   * cero. Se MEZCLA con lo cargado, no lo sustituye: lo nuevo entra arriba, lo
+   * ya pintado se actualiza, y las páginas traídas con «Cargar más» y su
+   * cursor se quedan —ni se pierde lo leído ni salta el scroll—. Las
+   * solicitudes sí se cambian por las de ahora: se leen en vivo.
+   *
+   * Una recarga a la vez, y nunca con un «Cargar más» en vuelo: se apunta y se
+   * hace al acabar. Si falla, se queda lo que había, sin avisos: no lo ha
+   * pedido nadie.
    */
   const recarga = useCallback(async () => {
     if (!cargado.current || recargando.current) return;
+    if (cargandoMas.current) {
+      recargaPendiente.current = true;
+      return;
+    }
     recargando.current = true;
     try {
       const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
-      setEvents(page.events);
-      setAuthors(page.authors);
-      setCourses(page.courses);
+      setEvents((prev) => mezclaArriba(prev, page.events));
+      setAuthors((prev) => ({ ...prev, ...page.authors }));
+      setCourses((prev) => ({ ...prev, ...page.courses }));
       setRequests(page.pendingFriendRequests || []);
       setUnseenCount(page.unseenCount || 0);
-      setNextCursor(page.nextCursor);
       marcaComoVisto();
     } catch {
       // Se queda lo que había
@@ -169,12 +194,14 @@ const FeedPage = () => {
     if (!nextCursor || isLoadingMore) return;
 
     setIsLoadingMore(true);
+    cargandoMas.current = true;
     try {
       const page = await getFriendsFeedUseCase.execute({
         limit: PAGE_SIZE,
         cursor: nextCursor,
       });
-      setEvents((prev) => [...prev, ...page.events]);
+      // Sin repetir lo que una recarga ya hubiera traído
+      setEvents((prev) => mezclaAbajo(prev, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
@@ -184,6 +211,12 @@ const FeedPage = () => {
       );
     } finally {
       setIsLoadingMore(false);
+      cargandoMas.current = false;
+      // La recarga que llegó mientras tanto se hace ahora
+      if (recargaPendiente.current) {
+        recargaPendiente.current = false;
+        recarga();
+      }
     }
   };
 

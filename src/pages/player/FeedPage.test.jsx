@@ -542,4 +542,149 @@ describe('FeedPage', () => {
       await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
     });
   });
+
+  describe('a background reload merges, it does not replace (final review FE-1)', () => {
+    const diferida = () => {
+      let resolver;
+      const promesa = new Promise((r) => {
+        resolver = r;
+      });
+      return { promesa, resolver };
+    };
+    const ids = () =>
+      [...screen.getByTestId('feed-events').querySelectorAll('article')].map((a) => a.dataset.testid);
+
+    it('keeps the pages loaded with «Cargar más» and their cursor, adds the new on top, updates the known', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(
+          pagina({
+            events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 8), payload: { count: 1, golf_course_id: 'c-2' } })],
+            courses: { 'c-2': 'Campo De La Segunda' },
+            nextCursor: null,
+          })
+        )
+        .mockResolvedValueOnce(
+          pagina({
+            events: [
+              evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }),
+              evento({ payload: { count: 3, golf_course_id: 'c-9' } }),
+            ],
+            courses: { 'c-9': 'Campo Actualizado' },
+            nextCursor: 'cursor-de-la-primera',
+            pendingFriendRequests: [{ friendshipId: 'f-fresca', requesterId: 'u9', createdAt: new Date(2026, 9, 22, 17) }],
+          })
+        );
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+
+      act(() => mockNovedades.fija(1));
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1', 'activity-event-e2']);
+      expect(screen.getByTestId('activity-event-e1')).toHaveTextContent('Campo Actualizado');
+      expect(screen.getByTestId('activity-event-e2')).toHaveTextContent('Campo De La Segunda');
+      // El cursor de la última página cargada manda: no vuelve a ofrecer la segunda
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+      // Las solicitudes, las de ahora
+      expect(screen.getByTestId('solicitud-f-fresca')).toBeInTheDocument();
+    });
+
+    it('with only the first page, keeps offering the next one', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()], nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 8) })], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      await screen.findByTestId('activity-event-nuevo');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e2')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
+    it('waits for a «Cargar más» in flight, then reloads', async () => {
+      const mas = diferida();
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockReturnValueOnce(mas.promesa)
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()], nextCursor: 'otro' }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+
+      act(() => mockNovedades.fija(2));
+      await act(async () => {});
+      expect(getFeed).toHaveBeenCalledTimes(2);
+
+      await act(async () => mas.resolver(pagina({ events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 8) })], nextCursor: null })));
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(3);
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1', 'activity-event-e2']);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('a reload answering after a «Cargar más» does not wipe that page or reset the cursor', async () => {
+      const recarga = diferida();
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockReturnValueOnce(recarga.promesa)
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'e20', publishedAt: new Date(2026, 9, 22, 8) })], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e20');
+
+      await act(async () =>
+        recarga.resolver(pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()], nextCursor: 'cursor-1' }))
+      );
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1', 'activity-event-e20']);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('a page answering after a reload does not duplicate what the reload brought', async () => {
+      const e2 = () => evento({ id: 'e2', groupKey: 'u1:m2', publishedAt: new Date(2026, 9, 22, 8), payload: { count: 3 } });
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [e2(), evento()], nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [e2()], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      act(() => mockNovedades.fija(1));
+      await screen.findByTestId('activity-event-u1:m2');
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(3));
+      await act(async () => {});
+
+      expect(ids()).toEqual(['activity-event-e1', 'activity-event-u1:m2']);
+      expect(within(screen.getByTestId('activity-event-u1:m2')).getByTestId('frase-tarjeta')).toHaveTextContent(/^3 birdies$/);
+    });
+
+    it('what is new goes on top even at the same instant', async () => {
+      const mismo = new Date(2026, 9, 22, 17, 0);
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [evento({ publishedAt: mismo })] }))
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'nuevo', publishedAt: mismo }), evento({ publishedAt: mismo })] }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      await screen.findByTestId('activity-event-nuevo');
+
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1']);
+    });
+  });
 });
