@@ -527,6 +527,7 @@ const PlayerProfilePage = () => {
                           autores={activity.authors}
                           campos={activity.courses}
                           yoId={myId}
+                          perfilActualId={userId}
                         />
                       ))}
                   </div>

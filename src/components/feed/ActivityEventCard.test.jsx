@@ -486,6 +486,46 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
       expect(enlaceDeLaTarjeta()).not.toBeInTheDocument();
     });
 
+    it("on that friend's own profile, no card link to the page already open (CodeRabbit #944)", () => {
+      render(
+        <I18nextProvider i18n={instancias.es}>
+          <MemoryRouter>
+            <ActivityEventCard
+              tarjeta={tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mq', payload: { count: 1 } }))}
+              autores={AUTORES}
+              yoId={YO}
+              perfilActualId="u2"
+              ahora={AHORA}
+            />
+          </MemoryRouter>
+        </I18nextProvider>
+      );
+      expect(enlaceDeLaTarjeta()).not.toBeInTheDocument();
+    });
+
+    it("on that profile, a match the viewer played still links to the match, and other people's names to theirs", () => {
+      render(
+        <I18nextProvider i18n={instancias.es}>
+          <MemoryRouter>
+            <ActivityEventCard
+              tarjeta={tarjeta(
+                evento({
+                  userId: 'u2',
+                  sourceMatchId: 'mq',
+                  payload: { match_format: 'FOURBALL', outcome: 'WON', score: '1UP', partners: [{ user_id: YO }], opponents: [{ user_id: 'u3' }] },
+                })
+              )}
+              autores={AUTORES}
+              yoId={YO}
+              perfilActualId="u2"
+              ahora={AHORA}
+            />
+          </MemoryRouter>
+        </I18nextProvider>
+      );
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');
+    });
+
     it("a friend's quick match where you were the rival → the quick match", () => {
       pinta(
         tarjeta(

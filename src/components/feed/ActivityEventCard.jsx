@@ -336,15 +336,26 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
  * al torneo, si se sabe cuál es.
  *
  * `autores` y `campos` llegan resueltos desde fuera: el `payload` solo guarda
- * ids. Un nombre que falte deja la tarjeta con «alguien» o sin el campo, nunca
- * sin pintar.
+ * ids. Un nombre que falte deja la tarjeta con «un jugador» o sin el campo,
+ * nunca sin pintar. `perfilActualId`: el perfil que se está viendo, al que la
+ * tarjeta no enlaza.
  */
-const ActivityEventCard = ({ tarjeta, autores = {}, campos = {}, yoId, ahora = new Date() }) => {
+const ActivityEventCard = ({
+  tarjeta,
+  autores = {},
+  campos = {},
+  yoId,
+  perfilActualId,
+  ahora = new Date(),
+}) => {
   const { t, i18n } = useTranslation(['feed', 'common']);
   const idioma = i18n.language;
 
   const contenido = contenidoDe(tarjeta, { t, idioma, autores, campos, yoId, ahora });
-  const destino = destinoDe(tarjeta, yoId, autores);
+  // En el perfil de alguien, llevar a ese mismo perfil no lleva a ningún sitio:
+  // repetiría la entrada del historial y un enlace vacío para los lectores
+  const posible = destinoDe(tarjeta, yoId, autores);
+  const destino = perfilActualId && posible === `/players/${perfilActualId}` ? null : posible;
   const mia = !!yoId && tarjeta.autorId === yoId;
   const autor = personaDe(tarjeta.autorId, autores, t);
   const hora = horaDeLaTarjeta(tarjeta.instante, ahora, t, idioma);
