@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react';
 import Avatar from '../ui/Avatar';
+import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import FraseDeActividad, { NombreDePersona } from './FraseDeActividad';
 import {
   diaDeLaVuelta,
@@ -147,34 +148,69 @@ const jugoLaPartida = (tarjeta, yoId) => {
 };
 
 /**
- * Adónde lleva tocar la tarjeta; null si faltan los datos para saberlo.
+ * Una partida rápida: quien la jugó va a su pantalla de anotación; quien no,
+ * a verla en solo lectura (K), con el autor apuntado para volver a su perfil
+ * si el servidor no la deja ver (403). Sin el autor entre los autores
+ * (bloqueado, desactivado) no se lleva a ningún sitio; sin el id de la
+ * partida, a su perfil, como antes.
+ */
+const destinoDePartidaRapida = (quickMatchId, jugo, tarjeta, autores) => {
+  if (jugo) return { ruta: quickMatchId ? `/quick-matches/${quickMatchId}/scoring` : null };
+  const perfil = personaDe(tarjeta.autorId, autores, () => '').enlace;
+  if (!perfil || !quickMatchId) return { ruta: perfil };
+  return { ruta: `/quick-matches/${quickMatchId}/shared`, estado: { perfilDe: tarjeta.autorId } };
+};
+
+/**
+ * Un logro de torneo que dice dónde fue (L): `competition_id` y `kind`, y
+ * `group_id` si fue en un grupo de stroke play. Quien lo jugó va a su
+ * tarjeta; quien no, a la ficha del torneo. Si falta el grupo o el partido,
+ * también a la ficha.
+ */
+const destinoDeLogroDeTorneo = (evento, jugo) => {
+  const { competition_id: competitionId, kind, group_id: groupId } = evento.payload;
+  const ficha = `/competitions/${competitionId}`;
+  if (!jugo) return { ruta: ficha };
+  if (kind === 'TEE_GROUP' && groupId) {
+    return { ruta: rutaDeAnotacion({ id: groupId, competitionId, esPartidaDeFranja: true }) };
+  }
+  if (kind === 'MATCH' && evento.sourceMatchId) {
+    return { ruta: rutaDeAnotacion({ id: evento.sourceMatchId }) };
+  }
+  return { ruta: ficha };
+};
+
+/**
+ * Adónde lleva tocar la tarjeta: `{ ruta, estado }`, con la ruta en null si
+ * faltan los datos para saberlo.
  *
- * A una partida solo se lleva a quien la jugó: la pantalla de otro le dejaría
- * fuera. De lo de un amigo en lo que no estuviste, se va a su perfil.
+ * A la anotación de una partida solo se lleva a quien la jugó: la pantalla de
+ * otro le dejaría fuera.
  */
 const destinoDe = (tarjeta, yoId, autores) => {
   const [primero] = tarjeta.eventos;
   const payload = primero.payload || {};
-  const esDePartida = LOGROS.has(tarjeta.tipo) || tarjeta.tipo === 'QUICK_MATCH_FINISHED';
-  if (esDePartida && !jugoLaPartida(tarjeta, yoId)) {
-    // Sin él en los autores (bloqueado, desactivado) no hay perfil al que ir
-    return personaDe(tarjeta.autorId, autores, () => '').enlace;
-  }
+  const jugo = jugoLaPartida(tarjeta, yoId);
   if (LOGROS.has(tarjeta.tipo)) {
-    if (!primero.sourceMatchId) return null;
     const deTorneo = tarjeta.eventos.some((e) => e.payload?.from_tournament);
-    return deTorneo
-      ? `/player/matches/${primero.sourceMatchId}/scoring`
-      : `/quick-matches/${primero.sourceMatchId}/scoring`;
+    if (!deTorneo) return destinoDePartidaRapida(primero.sourceMatchId, jugo, tarjeta, autores);
+    const conSitio = tarjeta.eventos.find(
+      (e) => e.payload?.from_tournament && e.payload?.competition_id && e.payload?.kind
+    );
+    if (conSitio) return destinoDeLogroDeTorneo(conSitio, jugo);
+    // Los de antes, sin torneo ni tipo: como siempre. Sin haberlo jugado, al
+    // perfil del amigo (sin él en los autores no hay perfil al que ir)
+    if (!jugo) return { ruta: personaDe(tarjeta.autorId, autores, () => '').enlace };
+    return { ruta: primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null };
   }
   if (tarjeta.tipo === 'QUICK_MATCH_FINISHED') {
-    return primero.sourceMatchId ? `/quick-matches/${primero.sourceMatchId}/scoring` : null;
+    return destinoDePartidaRapida(primero.sourceMatchId, jugo, tarjeta, autores);
   }
   // Solo llega a uno mismo (SELF): siempre lo jugó
   if (tarjeta.tipo === 'TOURNAMENT_MATCH_RESULT') {
-    return primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null;
+    return { ruta: primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null };
   }
-  return payload.competition_id ? `/competitions/${payload.competition_id}` : null;
+  return { ruta: payload.competition_id ? `/competitions/${payload.competition_id}` : null };
 };
 
 /** Los rivales de una partida rápida: con cuenta por su id; invitados, por su nombre. */
@@ -518,7 +554,8 @@ const ActivityEventCard = ({
   // En el perfil de alguien, llevar a ese mismo perfil no lleva a ningún sitio:
   // repetiría la entrada del historial y un enlace vacío para los lectores
   const posible = destinoDe(tarjeta, yoId, autores);
-  const destino = perfilActualId && posible === `/players/${perfilActualId}` ? null : posible;
+  const destino =
+    !posible.ruta || (perfilActualId && posible.ruta === `/players/${perfilActualId}`) ? null : posible;
   const mia = !!yoId && tarjeta.autorId === yoId;
   const autor = personaDe(tarjeta.autorId, autores, t);
   const hora = horaDeLaTarjeta(tarjeta.instante, ahora, t, idioma);
@@ -537,7 +574,8 @@ const ActivityEventCard = ({
           debajo de los nombres, que llevan a cada perfil */}
       {destino && (
         <Link
-          to={destino}
+          to={destino.ruta}
+          state={destino.estado}
           data-testid="enlace-tarjeta"
           aria-label={contenido.frase.texto}
           className="absolute inset-0 rounded-lg"

@@ -310,11 +310,28 @@ describe('PlayerProfilePage', () => {
 
     it("activity cards do not link back to the profile already open (CodeRabbit #944)", async () => {
       getProfile.mockResolvedValue(amigo());
-      getActivity.mockResolvedValue(paginaActividad());
+      // Un logro de torneo de los de antes (sin torneo ni tipo): sin haberlo
+      // jugado lleva a su perfil, que es el que ya está abierto
+      const [birdie] = paginaActividad().events;
+      getActivity.mockResolvedValue(
+        paginaActividad({ events: [{ ...birdie, payload: { ...birdie.payload, from_tournament: true } }] })
+      );
       renderProfile();
 
       const tarjeta = await screen.findByTestId('activity-event-e1');
       expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toBeNull();
+    });
+
+    it("a friend's quick match achievement links to its read-only view (K)", async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValue(paginaActividad());
+      renderProfile();
+
+      const tarjeta = await screen.findByTestId('activity-event-e1');
+      expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toHaveAttribute(
+        'href',
+        '/quick-matches/m1/shared'
+      );
     });
 
     it('does not show a stats grid for a friend who has not played yet', async () => {

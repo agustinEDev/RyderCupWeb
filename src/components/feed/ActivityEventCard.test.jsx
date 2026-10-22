@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { render, screen, within, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import i18next from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import feedEs from '../../i18n/locales/es/feed.json';
@@ -466,8 +466,16 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
 
   describe('somebody else\'s match: only if you played it, otherwise their profile', () => {
     it.each([
+      { caso: 'old tournament achievement (no competition_id nor kind)', datos: { type: 'BIRDIE', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } } },
+    ])("a friend's $caso → the friend's profile", ({ datos }) => {
+      pinta(tarjeta(evento({ userId: 'u2', ...datos })));
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+    });
+
+    // K: lo de una partida rápida de un amigo en la que no jugaste se ve en
+    // solo lectura, ya no en su perfil
+    it.each([
       { caso: 'quick match achievement', datos: { type: 'BIRDIE', sourceMatchId: 'mq', payload: { count: 1 } } },
-      { caso: 'tournament achievement', datos: { type: 'BIRDIE', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } } },
       {
         caso: 'stroke play quick match',
         datos: { type: 'QUICK_MATCH_FINISHED', sourceMatchId: 'mq', payload: { scoring_format: 'STABLEFORD', position: 1, total_players: 3, points: 30 } },
@@ -476,12 +484,12 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
         caso: 'match play quick match without you',
         datos: { type: 'QUICK_MATCH_FINISHED', sourceMatchId: 'mq', payload: { match_format: 'SINGLES', outcome: 'WON', score: '3&2', opponents: [{ user_id: 'u3' }, { user_id: null, name: 'Invitado' }] } },
       },
-    ])("a friend's $caso → the friend's profile", ({ datos }) => {
+    ])("a friend's $caso you did not play → its read-only view (K)", ({ datos }) => {
       pinta(tarjeta(evento({ userId: 'u2', ...datos })));
-      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/shared');
     });
 
-    it("no profile link when the friend is missing from the authors (review FE-1)", () => {
+    it("no link when the friend is missing from the authors (review FE-1)", () => {
       pinta(tarjeta(evento({ type: 'BIRDIE', userId: 'u404', sourceMatchId: 'mq', payload: { count: 1 } })));
       expect(enlaceDeLaTarjeta()).not.toBeInTheDocument();
     });
@@ -491,7 +499,7 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
         <I18nextProvider i18n={instancias.es}>
           <MemoryRouter>
             <ActivityEventCard
-              tarjeta={tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mq', payload: { count: 1 } }))}
+              tarjeta={tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } }))}
               autores={AUTORES}
               yoId={YO}
               perfilActualId="u2"
@@ -552,7 +560,7 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
       expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');
     });
 
-    it('without knowing who is looking, no match link: the profile', () => {
+    it('without knowing who is looking, no scoring link: the read-only view (K)', () => {
       render(
         <I18nextProvider i18n={instancias.es}>
           <MemoryRouter>
@@ -564,7 +572,7 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
           </MemoryRouter>
         </I18nextProvider>
       );
-      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/shared');
     });
 
     it('without knowing who is looking, a rival with no id does not count as you', () => {
@@ -585,7 +593,7 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
           </MemoryRouter>
         </I18nextProvider>
       );
-      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/shared');
     });
   });
 
@@ -1177,5 +1185,111 @@ describe('ActivityEventCard — Ryder Cup final standing (I)', () => {
       )
     );
     expect(frase()).toBe('Clasificación final de R: 4.º de 16');
+  });
+});
+
+describe('ActivityEventCard — a friend\'s quick match read-only, and tournament achievements (K, L)', () => {
+  // Lo que el enlace lleva en su estado no se ve en el `href`: se lee en la
+  // ruta de destino
+  const VeElEstado = () => {
+    const { pathname, state } = useLocation();
+    return <p data-testid="destino">{`${pathname}|${state?.perfilDe ?? ''}`}</p>;
+  };
+  const pintaYToca = (t) => {
+    render(
+      <I18nextProvider i18n={instancias.es}>
+        <MemoryRouter initialEntries={['/feed']}>
+          <Routes>
+            <Route
+              path="/feed"
+              element={<ActivityEventCard tarjeta={t} autores={AUTORES} campos={CAMPOS} yoId={YO} ahora={AHORA} />}
+            />
+            <Route path="*" element={<VeElEstado />} />
+          </Routes>
+        </MemoryRouter>
+      </I18nextProvider>
+    );
+    fireEvent.click(enlaceDeLaTarjeta());
+    return screen.getByTestId('destino').textContent;
+  };
+
+  it("K: a friend's quick match you did not play carries the friend, for the 403 fallback", () => {
+    const destino = pintaYToca(
+      qm({ scoring_format: 'STABLEFORD', position: 1, total_players: 2, points: 30 }, { userId: 'u2', sourceMatchId: 'mq' })
+    );
+    expect(destino).toBe('/quick-matches/mq/shared|u2');
+  });
+
+  it('K: who played it still goes to their scoring screen', () => {
+    pinta(qm({ match_format: 'SINGLES', outcome: 'LOST', score: '2&1', opponents: [{ user_id: YO }] }, { userId: 'u2', sourceMatchId: 'mq' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/quick-matches/mq/scoring');
+  });
+
+  it('K: without the quick match id, the friend profile as before', () => {
+    pinta(qm({ scoring_format: 'STABLEFORD', position: 1, total_players: 2, points: 30 }, { userId: 'u2', sourceMatchId: null }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+  });
+
+  const logro = (payload, overrides = {}) =>
+    tarjeta(
+      evento({
+        type: 'BIRDIE',
+        sourceMatchId: 'mt',
+        payload: { count: 1, from_tournament: true, competition_id: 'c-1', ...payload },
+        ...overrides,
+      })
+    );
+
+  it.each(['HOLE_IN_ONE', 'EAGLE_OR_BETTER', 'BIRDIE', 'NEW_COURSE', 'PERSONAL_BEST', 'FIRST_TOURNAMENT'])(
+    'L: my %s in a tournament stroke play group → my group card',
+    (type) => {
+      pinta(
+        tarjeta(
+          evento({
+            type,
+            sourceMatchId: 'ronda',
+            payload: { count: 1, from_tournament: true, competition_id: 'c-1', kind: 'TEE_GROUP', group_id: 'g-7' },
+          })
+        )
+      );
+      expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/groups/g-7/scoring?competition=c-1');
+    }
+  );
+
+  it('L: my achievement in a tournament match → my match card', () => {
+    pinta(logro({ kind: 'MATCH' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
+  });
+
+  it("L: a friend's tournament achievement I did not play → the tournament, group or match", () => {
+    const a = pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7' }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    a.unmount();
+
+    pinta(logro({ kind: 'MATCH' }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+  });
+
+  it("L: a friend's tournament achievement where I am named → my card", () => {
+    pinta(logro({ kind: 'MATCH', opponents: [{ user_id: YO }] }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
+  });
+
+  it('L: a group without group_id, or a match without its id, goes to the tournament', () => {
+    const a = pinta(logro({ kind: 'TEE_GROUP' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    a.unmount();
+
+    pinta(logro({ kind: 'MATCH' }, { sourceMatchId: null }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+  });
+
+  it('L: an old tournament achievement (no competition_id nor kind) behaves as today', () => {
+    const a = pinta(tarjeta(evento({ type: 'BIRDIE', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } })));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
+    a.unmount();
+
+    pinta(tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } })));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
   });
 });
