@@ -272,15 +272,38 @@ describe('StablefordCalculator', () => {
       ]);
     });
 
-    it('Medal: who has not scored stays at the bottom', () => {
+    it('Medal: who has not scored stays at the bottom, with no position and never tied', () => {
       const medal = StablefordCalculator.rankParticipantsByMedal(
-        [p('nada', -5), p('juega', 30)],
+        [p('nada', -5), p('otro-nada', -5), p('juega', 30), p('juega-mal', 2)],
         holes,
-        [s('juega', 9)]
+        [s('juega', 9), s('juega-mal', 12)]
       );
-      expect(medal.map((r) => [r.participantId, r.position])).toEqual([
-        ['juega', 1],
-        ['nada', 2],
+      expect(medal.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['juega', 1, false],
+        ['juega-mal', 2, false],
+        ['nada', null, false],
+        ['otro-nada', null, false],
+      ]);
+    });
+
+    it('Stableford: who has not scored goes after anyone who has, even with 0 points, with no position', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('nada', 0), p('cero-puntos', 30), p('nada-tambien', 0)],
+        holes,
+        [s('cero-puntos', 9)]
+      );
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['cero-puntos', 1, false],
+        ['nada', null, false],
+        ['nada-tambien', null, false],
+      ]);
+    });
+
+    it('nobody has scored yet: nobody has a position', () => {
+      const ranking = StablefordCalculator.rankParticipants([p('a', 1), p('b', 1)], holes, []);
+      expect(ranking.map((r) => [r.position, r.tied])).toEqual([
+        [null, false],
+        [null, false],
       ]);
     });
   });

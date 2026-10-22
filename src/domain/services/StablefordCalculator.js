@@ -43,15 +43,22 @@ const handicapDeDesempate = (row) => row.handicap ?? 0;
 const ordenaConPuestos = (rows, compareResultado) => {
   const compara = (a, b) =>
     compareResultado(a, b) || handicapDeDesempate(a) - handicapDeDesempate(b);
-  const ordenadas = [...rows].sort(compara);
-  ordenadas.forEach((row, i) => {
-    const anterior = ordenadas[i - 1];
+  // Quien no ha anotado ningún hoyo no tiene resultado: va al final, en el
+  // orden en que llega, sin puesto y sin empatar con nadie
+  const conHoyos = rows.filter((row) => row.holesPlayed > 0).sort(compara);
+  const sinHoyos = rows.filter((row) => !(row.holesPlayed > 0));
+  conHoyos.forEach((row, i) => {
+    const anterior = conHoyos[i - 1];
     row.position = anterior && compara(anterior, row) === 0 ? anterior.position : i + 1;
   });
-  ordenadas.forEach((row) => {
-    row.tied = ordenadas.filter((otra) => otra.position === row.position).length > 1;
+  conHoyos.forEach((row) => {
+    row.tied = conHoyos.filter((otra) => otra.position === row.position).length > 1;
   });
-  return ordenadas;
+  sinHoyos.forEach((row) => {
+    row.position = null;
+    row.tied = false;
+  });
+  return [...conHoyos, ...sinHoyos];
 };
 
 class StablefordCalculator {

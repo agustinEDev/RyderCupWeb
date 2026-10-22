@@ -568,4 +568,23 @@ describe('QuickMatchClassificationTable — positions with the handicap tie-brea
     expect(nombres()[2]).toBe('Ana');
     expect(puestos()).toEqual(['T1', 'T1', '3']);
   });
+
+  it('who has not scored a hole has no position: «·», at the bottom', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={unHoyo}
+        holeScores={[{ holeNumber: 1, participantId: 'a', score: 4 }]}
+        participants={[
+          { participantId: 'b', name: 'Bea', handicap: 0 },
+          { participantId: 'c', name: 'Carla', handicap: 0 },
+          { participantId: 'a', name: 'Ana', handicap: 20 },
+        ]}
+        scoringFormat="MEDAL"
+        playMode="SCRATCH"
+      />
+    );
+
+    expect(nombres()).toEqual(['Ana', 'Bea', 'Carla']);
+    expect(puestos()).toEqual(['1', '·', '·']);
+  });
 });

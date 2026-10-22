@@ -231,7 +231,8 @@ const QuickMatchClassificationTable = ({
                       // resultado y mismo hándicap exacto se comparte, «T2»,
                       // como en la clasificación del torneo
                       <span data-testid="quick-match-clasificacion-puesto">
-                        {row.tied ? `T${row.position}` : row.position}
+                        {/* Sin hoyos anotados no hay puesto (va al final) */}
+                        {row.position == null ? '·' : row.tied ? `T${row.position}` : row.position}
                       </span>
                     )
                     : '·'}
