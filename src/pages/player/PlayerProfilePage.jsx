@@ -7,6 +7,10 @@ import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Avatar from '../../components/ui/Avatar';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import PlayerProfileMenu from '../../components/profile/PlayerProfileMenu';
+import HeadToHead from '../../components/profile/HeadToHead';
+import GamesTogether from '../../components/profile/GamesTogether';
 import { armaLaLineaDeActividad } from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -14,11 +18,15 @@ import {
   getPlayerActivityUseCase,
   sendFriendRequestUseCase,
   respondFriendRequestUseCase,
+  removeFriendUseCase,
+  blockUserUseCase,
+  getGamesTogetherUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
-const PAGE_SIZE = 20;
+// La actividad de un amigo, de 5 en 5, como las partidas juntos (22 oct)
+const PAGE_SIZE = 5;
 const HTTP_NOT_FOUND = 404;
 const HTTP_FORBIDDEN = 403;
 
@@ -26,9 +34,11 @@ const HTTP_FORBIDDEN = 403;
  * PlayerProfilePage - El perfil de otro jugador.
  *
  * Tiene dos niveles de detalle, los mismos que el backend: **cualquiera ve la
- * ficha mínima** —foto, nombre y cuántos amigos tiene—, que es lo que hace
- * falta para reconocer a alguien antes de mandarle una solicitud; **el correo,
- * el hándicap, las estadísticas y la actividad solo se ven entre amigos**.
+ * ficha mínima** —foto, nombre, cuántos amigos tiene y su hándicap (BE-3)—,
+ * que es lo que hace falta para reconocer a alguien antes de mandarle una
+ * solicitud; **las estadísticas, la actividad, el cara a cara y las partidas
+ * juntos solo se ven entre amigos**. Con un bloqueo de por medio, en
+ * cualquier sentido, solo nombre y foto. El correo de otro, nunca.
  *
  * Los campos privados llegan en null, no recortados ni a cero, así que aquí se
  * distingue "no puedes ver esto" de "no tiene datos": lo primero se explica,
@@ -41,7 +51,7 @@ const HTTP_FORBIDDEN = 403;
  */
 const PlayerProfilePage = () => {
   const { userId } = useParams();
-  const { t } = useTranslation(['playerProfile', 'common']);
+  const { t, i18n } = useTranslation(['playerProfile', 'common']);
   const { user, loading: isLoadingUser } = useAuth();
   const location = useLocation();
 
@@ -58,6 +68,10 @@ const PlayerProfilePage = () => {
   const [isActivityHidden, setIsActivityHidden] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isActing, setIsActing] = useState(false);
+  const [games, setGames] = useState(null);
+  const [isLoadingMoreGames, setIsLoadingMoreGames] = useState(false);
+  // 'remove' | 'block' | null: lo que espera confirmación
+  const [pendingConfirm, setPendingConfirm] = useState(null);
 
   // `t` solo hace falta para los mensajes de error, pero ponerla en las
   // dependencias ata la carga a la identidad de esa función: un proveedor que
@@ -78,6 +92,7 @@ const PlayerProfilePage = () => {
     try {
       const data = await getPlayerProfileUseCase.execute(userId);
       setProfile(data);
+      setGames(data.gamesTogether ?? null);
       setIsNotFound(false);
 
       if (data.isFriend) {
@@ -141,9 +156,28 @@ const PlayerProfilePage = () => {
     }
   };
 
+  const handleLoadMoreGames = async () => {
+    if (!games?.nextCursor || isLoadingMoreGames) return;
+
+    setIsLoadingMoreGames(true);
+    try {
+      const page = await getGamesTogetherUseCase.execute(userId, { cursor: games.nextCursor });
+      setGames((prev) => ({
+        games: [...prev.games, ...page.games],
+        nextCursor: page.nextCursor,
+      }));
+    } catch {
+      customToast.error(t('common:errors.generic'));
+    } finally {
+      setIsLoadingMoreGames(false);
+    }
+  };
+
   // Tras cambiar la relación se recarga el perfil entero y no solo el botón:
-  // aceptar una solicitud abre de golpe el hándicap, las estadísticas y la
-  // actividad, que hasta ese momento llegaban en null.
+  // aceptar una solicitud abre de golpe las estadísticas y la actividad, que
+  // hasta ese momento llegaban en null, y bloquear las cierra. Nada cambia
+  // antes de que el servidor conteste: si falla, el botón sigue como estaba
+  // y lo dice un aviso.
   const runFriendshipAction = async (action, successKey) => {
     if (isActing) return;
 
@@ -202,6 +236,23 @@ const PlayerProfilePage = () => {
   }
 
   const nombre = nombreVisible(profile);
+  const isBlocked = profile.friendship?.status === 'BLOCKED';
+
+  const handleConfirm = () => {
+    const accion = pendingConfirm;
+    setPendingConfirm(null);
+    if (accion === 'remove') {
+      runFriendshipAction(
+        () => removeFriendUseCase.execute(profile.friendship.friendshipId),
+        'playerProfile:friendship.removed'
+      );
+    } else if (accion === 'block') {
+      runFriendshipAction(
+        () => blockUserUseCase.execute(profile.id),
+        'playerProfile:friendship.blockedNow'
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -237,10 +288,32 @@ const PlayerProfilePage = () => {
           <Avatar userId={profile.id} size="lg" />
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-gray-900 truncate">{nombre}</h2>
-            <p className="text-sm text-gray-500">
-              {t('playerProfile:friendsCount', { count: profile.friendsCount })}
-            </p>
+            {/* Con un bloqueo de por medio, solo nombre y foto: el backend
+                manda el contador a 0 y el hándicap en null, y aquí no se
+                pintan para no decir «0 amigos» de quien sí los tiene */}
+            {!isBlocked && (
+              <>
+                <p className="text-sm text-gray-500">
+                  {t('playerProfile:friendsCount', { count: profile.friendsCount })}
+                </p>
+                <p className="text-sm text-gray-500" data-testid="player-profile-handicap">
+                  {t('playerProfile:handicap')}{' '}
+                  <span className="font-semibold text-gray-900">
+                    {formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue')}
+                  </span>
+                </p>
+              </>
+            )}
           </div>
+          {!isBlocked && (
+            <PlayerProfileMenu
+              isFriend={profile.isFriend}
+              disabled={isActing}
+              onRemove={() => setPendingConfirm('remove')}
+              onBlock={() => setPendingConfirm('block')}
+              t={t}
+            />
+          )}
         </section>
 
         <FriendshipAction
@@ -265,6 +338,31 @@ const PlayerProfilePage = () => {
               'playerProfile:friendship.declined'
             )
           }
+          onCancelRequest={() =>
+            runFriendshipAction(
+              () => removeFriendUseCase.execute(profile.friendship.friendshipId),
+              'playerProfile:friendship.cancelled'
+            )
+          }
+          onUnblock={() =>
+            runFriendshipAction(
+              () => removeFriendUseCase.execute(profile.friendship.friendshipId),
+              'playerProfile:friendship.unblocked'
+            )
+          }
+        />
+
+        {/* Sin `isLoading`: de un modal se sale siempre (4 oct). Confirmar lo
+            cierra al momento y la acción sigue en el botón de estado; si
+            falla, lo dice un aviso */}
+        <ConfirmModal
+          isOpen={pendingConfirm !== null}
+          title={pendingConfirm ? t(`playerProfile:confirm.${pendingConfirm}.title`, { name: nombre }) : ''}
+          message={pendingConfirm ? t(`playerProfile:confirm.${pendingConfirm}.message`) : ''}
+          confirmText={pendingConfirm ? t(`playerProfile:confirm.${pendingConfirm}.confirm`) : undefined}
+          isDestructive
+          onCancel={() => setPendingConfirm(null)}
+          onConfirm={handleConfirm}
         />
 
         {profile.isFriend ? (
@@ -272,6 +370,17 @@ const PlayerProfilePage = () => {
             {/* Sin el correo: el de otro jugador no se enseña, ni siendo amigos
                 (Agustín, 21 oct). El propio está en /profile */}
             <PlayerStatsSummary profile={profile} t={t} />
+
+            <HeadToHead headToHead={profile.headToHead} t={t} />
+
+            <GamesTogether
+              games={games?.games}
+              nextCursor={games?.nextCursor}
+              isLoadingMore={isLoadingMoreGames}
+              onLoadMore={handleLoadMoreGames}
+              t={t}
+              idioma={i18n?.language}
+            />
 
             <section className="mt-4" data-testid="player-profile-activity">
               <h3 className="mb-2 text-sm font-semibold text-gray-900">
@@ -321,7 +430,7 @@ const PlayerProfilePage = () => {
               )}
             </section>
           </>
-        ) : (
+        ) : isBlocked ? null : (
           <section
             className="mt-4 p-4 text-center bg-white border border-gray-200 rounded-lg"
             data-testid="player-profile-private"
@@ -343,7 +452,16 @@ const PlayerProfilePage = () => {
  * `PENDING_RECEIVED` no llevan al mismo sitio: uno espera respuesta del otro,
  * el otro pide una respuesta tuya, y por eso el backend los distingue.
  */
-const FriendshipAction = ({ profile, isActing, t, onSend, onAccept, onDecline }) => {
+const FriendshipAction = ({
+  profile,
+  isActing,
+  t,
+  onSend,
+  onAccept,
+  onDecline,
+  onCancelRequest,
+  onUnblock,
+}) => {
   const status = profile.friendship?.status ?? 'NONE';
 
   if (status === 'ACCEPTED') {
@@ -360,12 +478,21 @@ const FriendshipAction = ({ profile, isActing, t, onSend, onAccept, onDecline })
 
   if (status === 'PENDING_SENT') {
     return (
-      <p
-        className="mt-3 py-2 text-center text-sm text-gray-500 bg-white border border-gray-200 rounded-lg"
+      <div
+        className="mt-3 flex items-center justify-between gap-3 py-2 pl-3 pr-2 bg-white border border-gray-200 rounded-lg"
         data-testid="player-profile-friendship-sent"
       >
-        {t('playerProfile:friendship.sent')}
-      </p>
+        <span className="min-w-0 text-sm text-gray-600">{t('playerProfile:friendship.sent')}</span>
+        <button
+          type="button"
+          onClick={onCancelRequest}
+          disabled={isActing}
+          className="shrink-0 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-60"
+          data-testid="player-profile-cancel-request"
+        >
+          {t('playerProfile:friendship.cancelRequest')}
+        </button>
+      </div>
     );
   }
 
@@ -401,12 +528,26 @@ const FriendshipAction = ({ profile, isActing, t, onSend, onAccept, onDecline })
 
   if (status === 'BLOCKED') {
     return (
-      <p
-        className="mt-3 py-2 text-center text-sm text-gray-500 bg-white border border-gray-200 rounded-lg"
+      <div
+        className="mt-3 flex items-center justify-between gap-3 py-2 pl-3 pr-2 bg-white border border-gray-200 rounded-lg"
         data-testid="player-profile-friendship-blocked"
       >
-        {t('playerProfile:friendship.blocked')}
-      </p>
+        <span className="min-w-0 text-sm font-medium text-gray-600">
+          {t('playerProfile:friendship.blocked')}
+        </span>
+        {/* Si el bloqueo es suyo y no tuyo, el backend no deja quitarlo (403):
+            el perfil no dice quién bloqueó, así que el botón sale igual y
+            el fallo se avisa como cualquier otro */}
+        <button
+          type="button"
+          onClick={onUnblock}
+          disabled={isActing}
+          className="shrink-0 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-60"
+          data-testid="player-profile-unblock"
+        >
+          {t('playerProfile:friendship.unblock')}
+        </button>
+      </div>
     );
   }
 
