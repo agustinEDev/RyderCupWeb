@@ -96,6 +96,7 @@
       "WON": "Won",
       "HALVED": "Halved",
       "LOST": "Lost",
+      "UNFINISHED": "Unfinished",
       "none": "No result"
     }
   },

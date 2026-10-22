@@ -262,6 +262,8 @@ const PlayerProfilePage = () => {
         headToHead: sigueAmigo ? prev.headToHead : null,
         gamesTogether: sigueAmigo ? prev.gamesTogether : null,
         handicap: status === 'BLOCKED' ? null : prev.handicap,
+        // Quien llega aquí con un bloqueo acaba de ponerlo
+        blockedByMe: status === 'BLOCKED' ? true : null,
       };
     });
     if (status !== 'ACCEPTED') {
@@ -665,18 +667,21 @@ const FriendshipAction = ({
         <span className="min-w-0 text-sm font-medium text-gray-600">
           {t('playerProfile:friendship.blocked')}
         </span>
-        {/* Si el bloqueo es suyo y no tuyo, el backend no deja quitarlo (403):
-            el perfil no dice quién bloqueó, así que el botón sale igual y
-            el fallo se avisa como cualquier otro */}
-        <button
-          type="button"
-          onClick={onUnblock}
-          disabled={isActing}
-          className="shrink-0 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-60"
-          data-testid="player-profile-unblock"
-        >
-          {t('playerProfile:friendship.unblock')}
-        </button>
+        {/* Solo desbloquea quien bloqueó. Si el bloqueo es del otro
+            (`blockedByMe` false) no hay nada que hacer aquí: ni botón ni menú.
+            Si no se sabe —un backend que no lo dice—, el botón sale y el 403
+            se explica con su aviso */}
+        {profile.blockedByMe !== false && (
+          <button
+            type="button"
+            onClick={onUnblock}
+            disabled={isActing}
+            className="shrink-0 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-60"
+            data-testid="player-profile-unblock"
+          >
+            {t('playerProfile:friendship.unblock')}
+          </button>
+        )}
       </div>
     );
   }

@@ -59,6 +59,23 @@ describe('ApiSocialFeedRepository', () => {
       expect(perfil.friendship).toEqual({ status: 'NONE', friendshipId: null });
     });
 
+    it('says who put the block: blocked_by_me -> blockedByMe (social decisions, case 6)', async () => {
+      apiRequest.mockResolvedValue(
+        respuestaPerfil({ friendship: { status: 'BLOCKED', friendship_id: 'f1' }, blocked_by_me: false })
+      );
+      expect((await repository.getPlayerProfile('u1')).blockedByMe).toBe(false);
+
+      apiRequest.mockResolvedValue(
+        respuestaPerfil({ friendship: { status: 'BLOCKED', friendship_id: 'f1' }, blocked_by_me: true })
+      );
+      expect((await repository.getPlayerProfile('u1')).blockedByMe).toBe(true);
+    });
+
+    it('leaves blockedByMe as null when an older backend does not send it', async () => {
+      apiRequest.mockResolvedValue(respuestaPerfil());
+      expect((await repository.getPlayerProfile('u1')).blockedByMe).toBeNull();
+    });
+
     it('keeps the private fields as null instead of turning them into zero', async () => {
       // Un cero se leería como "juega fatal" en vez de "esto no se puede ver".
       apiRequest.mockResolvedValue(respuestaPerfil());

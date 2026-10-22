@@ -1679,4 +1679,73 @@ describe('PlayerProfilePage', () => {
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
     });
   });
+
+  describe('social decisions, case 6 - who put the block', () => {
+    it('blocked by me: «Desbloquear» and no «⋯» menu', async () => {
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, blockedByMe: true, friendsCount: 0 })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-unblock')).toHaveTextContent(
+        'playerProfile:friendship.unblock'
+      );
+      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
+    });
+
+    it('blocked by the other: no action and no «⋯» menu, the rest as before', async () => {
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, blockedByMe: false, friendsCount: 0 })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-friendship-blocked')).toHaveTextContent(
+        'playerProfile:friendship.blocked'
+      );
+      expect(screen.queryByTestId('player-profile-unblock')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
+      expect(screen.queryAllByRole('button')).toHaveLength(0);
+      expect(screen.getByText('Ana García')).toBeInTheDocument();
+    });
+
+    it('after blocking, even if the reload fails, the block is mine: «Desbloquear» stays', async () => {
+      getProfile
+        .mockResolvedValueOnce(amigo())
+        .mockRejectedValueOnce(error(500));
+      blockUser.mockResolvedValue({ id: 'f9' });
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
+      fireEvent.click(await screen.findByText('playerProfile:confirm.block.confirm'));
+
+      expect(await screen.findByTestId('player-profile-unblock')).toBeInTheDocument();
+    });
+  });
+
+  describe('social decisions, case 4 - an unfinished game together', () => {
+    it('reads «Sin terminar» / «Unfinished»', async () => {
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: [juego({ result: 'UNFINISHED' })], nextCursor: null } })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-game-g1')).toHaveTextContent(
+        'playerProfile:gamesTogether.result.UNFINISHED'
+      );
+      expect(es.gamesTogether.result.UNFINISHED).toBe('Sin terminar');
+      expect(en.gamesTogether.result.UNFINISHED).toBe('Unfinished');
+    });
+
+    it('a game with no result still reads «Sin resultado»', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [juego({ result: null })], nextCursor: null } }));
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-game-g1')).toHaveTextContent(
+        'playerProfile:gamesTogether.result.none'
+      );
+    });
+  });
+
 });

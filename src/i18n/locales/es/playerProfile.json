@@ -96,6 +96,7 @@
       "WON": "Ganada",
       "HALVED": "Empatada",
       "LOST": "Perdida",
+      "UNFINISHED": "Sin terminar",
       "none": "Sin resultado"
     }
   },
