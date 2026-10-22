@@ -332,3 +332,36 @@ describe('primerasTarjetasPorDia', () => {
     expect(dias[0].tarjetas).toHaveLength(3);
   });
 });
+
+describe('the new notices are known types (social decisions, case 1)', () => {
+  it.each(['ENROLLMENT_CONFIRMED', 'TEE_TIME_ASSIGNED'])('%s gets its own card', (type) => {
+    const { dias } = armaLaLineaDeActividad({
+      eventos: [evento({ id: 'n1', type, groupKey: null }), evento({ id: 'n2', type, groupKey: null })],
+      ahora: AHORA,
+    });
+
+    expect(dias.flatMap((d) => d.tarjetas).map((t) => t.tipo)).toEqual([type, type]);
+  });
+});
+
+describe('the badge text with the real count up to 99 (social decisions, case 5)', () => {
+  it.each([
+    [10, '9+'],
+    [99, '9+'],
+  ])('%s -> %j', (n, texto) => {
+    expect(textoDeLaInsignia(n)).toBe(texto);
+  });
+
+  it('marks up to 99 cards as new: the 99 most recent, not the 100th', () => {
+    const eventos = Array.from({ length: 120 }, (_, i) =>
+      evento({ id: `e${i}`, groupKey: null, publishedAt: new Date(2026, 9, 22, 17, 0, 0, 0) - i * 60 * 1000 })
+    ).map((e) => ({ ...e, publishedAt: new Date(e.publishedAt) }));
+    const { dias } = armaLaLineaDeActividad({ eventos, novedades: 99, ahora: AHORA });
+    const tarjetas = dias.flatMap((d) => d.tarjetas);
+
+    expect(tarjetas).toHaveLength(120);
+    expect(tarjetas.filter((t) => t.nueva)).toHaveLength(99);
+    expect(tarjetas[98].nueva).toBe(true);
+    expect(tarjetas[99].nueva).toBe(false);
+  });
+});

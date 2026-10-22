@@ -226,7 +226,15 @@ const QuickMatchClassificationTable = ({
                     contado lo que llevan hecho desde el corte */}
                 <td className="px-2 py-1.5 text-left text-gray-500">
                   {participantesAlDia === null
-                    ? <span data-testid="quick-match-clasificacion-puesto">{index + 1}</span>
+                    ? (
+                      // El puesto lo da el desempate por hándicap (H): a igual
+                      // resultado y mismo hándicap exacto se comparte, «T2»,
+                      // como en la clasificación del torneo
+                      <span data-testid="quick-match-clasificacion-puesto">
+                        {/* Sin hoyos anotados no hay puesto (va al final) */}
+                        {row.position == null ? '·' : row.tied ? `T${row.position}` : row.position}
+                      </span>
+                    )
                     : '·'}
                 </td>
                 <td className="px-2 py-1.5 text-left font-medium text-gray-900">

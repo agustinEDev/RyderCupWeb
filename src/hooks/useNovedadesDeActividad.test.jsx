@@ -7,6 +7,7 @@ import {
   olvidaLasNovedades,
   reiniciaLasNovedades,
 } from './useNovedadesDeActividad';
+import InsigniaDeNovedades from '../components/feed/InsigniaDeNovedades';
 
 const contar = vi.fn();
 vi.mock('../composition', () => ({
@@ -17,6 +18,9 @@ const Numero = ({ testId = 'numero' }) => {
   const n = useNovedadesDeActividad();
   return <span data-testid={testId}>{n}</span>;
 };
+
+// El botón de Actividad tal como lo pintan la barra y la cabecera
+const InsigniaDeNovedadesConNumero = () => <InsigniaDeNovedades n={useNovedadesDeActividad()} />;
 
 const Vigia = () => {
   useVigilanciaDeNovedades();
@@ -187,6 +191,25 @@ describe('useNovedadesDeActividad', () => {
 
     await waitFor(() => expect(setAppBadge).toHaveBeenCalledWith(3));
   });
+
+  it.each([10, 42, 99])(
+    'the app icon gets the real number %s, while the button reads «9+» (social decisions, case 5)',
+    async (n) => {
+      const { setAppBadge } = conBadging();
+      contar.mockResolvedValue(n);
+      render(
+        <>
+          <Vigia />
+          <Numero />
+          <InsigniaDeNovedadesConNumero />
+        </>
+      );
+
+      await waitFor(() => expect(setAppBadge).toHaveBeenCalledWith(n));
+      expect(numero()).toBe(String(n));
+      expect(screen.getByTestId('insignia-novedades')).toHaveTextContent('9+');
+    }
+  );
 
   it('clears the app icon at zero and when Actividad is opened (case 2, 4)', async () => {
     const { setAppBadge, clearAppBadge } = conBadging();

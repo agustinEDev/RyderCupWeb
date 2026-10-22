@@ -144,7 +144,7 @@ describe('StablefordCalculator', () => {
       expect(ranking.map((r) => r.participantId)).toEqual(['p-2', 'p-1']);
     });
 
-    it('should tie-break by fewer total strokes when points are equal', () => {
+    it('on equal points the lower handicap goes first (here it also has fewer strokes)', () => {
       const participants = [
         { participantId: 'p-1', name: 'Alice', handicap: 0 },
         { participantId: 'p-2', name: 'Bob', handicap: 10 },
@@ -172,11 +172,139 @@ describe('StablefordCalculator', () => {
         allocation
       );
       expect(ranking[0].stablefordPoints).toBe(ranking[1].stablefordPoints);
-      // Alice has fewer gross strokes (4 vs 5) so she ranks first on the tie-break
+      // Alice tiene menos hándicap (0 contra 18): va delante en el desempate
       expect(ranking[0].participantId).toBe('p-1');
 
       // Sanity check the original (non-tied) scenario still resolves without throwing
       expect(() => StablefordCalculator.rankParticipants(participants, holes, holeScores)).not.toThrow();
+    });
+  });
+
+  describe('ties: lower exact handicap index first, shared only on the same index (H)', () => {
+    const holes = [{ holeNumber: 1, par: 4, strokeIndex: 5 }];
+    // El reparto va aparte del hándicap a propósito: así el bruto y el
+    // hándicap dicen cosas distintas y se ve cuál desempata
+    const allocation = { 'p-bajo': { strokesByHole: { 1: 1 } } };
+    const p = (participantId, handicap) => ({ participantId, name: participantId, handicap });
+    const s = (participantId, score) => ({ holeNumber: 1, participantId, score });
+
+    it('Stableford: tied on points, the lower handicap goes first even with more gross strokes', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('p-alto', 20), p('p-bajo', 5)],
+        holes,
+        [s('p-alto', 4), s('p-bajo', 5)],
+        allocation
+      );
+
+      expect(ranking.map((r) => r.participantId)).toEqual(['p-bajo', 'p-alto']);
+      expect(ranking.map((r) => [r.position, r.tied])).toEqual([
+        [1, false],
+        [2, false],
+      ]);
+    });
+
+    it('Stableford: the same exact handicap shares the position, and the next one skips', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('a', 12.4), p('b', 12.4), p('c', 3)],
+        holes,
+        [s('a', 4), s('b', 4), s('c', 6)]
+      );
+
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['a', 1, true],
+        ['b', 1, true],
+        ['c', 3, false],
+      ]);
+    });
+
+    it('a missing handicap counts as 0: ahead of 0.1, level with 0.0, behind a plus', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('decimo', 0.1), p('sin', null), p('cero', 0), p('plus', -1.2)],
+        holes,
+        [s('decimo', 4), s('sin', 4), s('cero', 4), s('plus', 4)]
+      );
+
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['plus', 1, false],
+        ['sin', 2, true],
+        ['cero', 2, true],
+        ['decimo', 4, false],
+      ]);
+    });
+
+    it('12.4 and 12.5 do not share: the exact index decides', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('a', 12.5), p('b', 12.4)],
+        holes,
+        [s('a', 4), s('b', 4)]
+      );
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['b', 1, false],
+        ['a', 2, false],
+      ]);
+    });
+
+    it('more points always first, whatever the handicap', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('bajo', 0), p('alto', 30)],
+        holes,
+        [s('bajo', 5), s('alto', 3)]
+      );
+      expect(ranking.map((r) => [r.participantId, r.position])).toEqual([
+        ['alto', 1],
+        ['bajo', 2],
+      ]);
+    });
+
+    it('Medal: tied on net, the lower handicap first; the same exact one shares', () => {
+      const medal = StablefordCalculator.rankParticipantsByMedal(
+        [p('p-alto', 20), p('p-bajo', 5), p('otro-bajo', 5), p('peor', 1)],
+        holes,
+        [s('p-alto', 4), s('p-bajo', 5), s('otro-bajo', 5), s('peor', 7)],
+        { 'p-bajo': { strokesByHole: { 1: 1 } }, 'otro-bajo': { strokesByHole: { 1: 1 } } }
+      );
+
+      expect(medal.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['p-bajo', 1, true],
+        ['otro-bajo', 1, true],
+        ['p-alto', 3, false],
+        ['peor', 4, false],
+      ]);
+    });
+
+    it('Medal: who has not scored stays at the bottom, with no position and never tied', () => {
+      const medal = StablefordCalculator.rankParticipantsByMedal(
+        [p('nada', -5), p('otro-nada', -5), p('juega', 30), p('juega-mal', 2)],
+        holes,
+        [s('juega', 9), s('juega-mal', 12)]
+      );
+      expect(medal.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['juega', 1, false],
+        ['juega-mal', 2, false],
+        ['nada', null, false],
+        ['otro-nada', null, false],
+      ]);
+    });
+
+    it('Stableford: who has not scored goes after anyone who has, even with 0 points, with no position', () => {
+      const ranking = StablefordCalculator.rankParticipants(
+        [p('nada', 0), p('cero-puntos', 30), p('nada-tambien', 0)],
+        holes,
+        [s('cero-puntos', 9)]
+      );
+      expect(ranking.map((r) => [r.participantId, r.position, r.tied])).toEqual([
+        ['cero-puntos', 1, false],
+        ['nada', null, false],
+        ['nada-tambien', null, false],
+      ]);
+    });
+
+    it('nobody has scored yet: nobody has a position', () => {
+      const ranking = StablefordCalculator.rankParticipants([p('a', 1), p('b', 1)], holes, []);
+      expect(ranking.map((r) => [r.position, r.tied])).toEqual([
+        [null, false],
+        [null, false],
+      ]);
     });
   });
 

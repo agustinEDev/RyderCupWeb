@@ -108,7 +108,8 @@
     "adminUsers": "Users",
     "adminCompetitions": "Competitions",
     "adminGolfCourses": "Golf courses",
-    "adminHoles": "Holes"
+    "adminHoles": "Holes",
+    "sharedQuickMatch": "Quick match"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",

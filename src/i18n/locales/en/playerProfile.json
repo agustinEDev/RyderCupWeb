@@ -81,6 +81,13 @@
     "title": "Games together",
     "loadMore": "Load more",
     "unknownCourse": "Unnamed course",
+    "unknownTournament": "Unnamed tournament",
+    "positions": "{{mine}} and {{theirs}} of {{total}}",
+    "tied": "{{position}} (tied)",
+    "position_ordinal_one": "{{count}}st",
+    "position_ordinal_two": "{{count}}nd",
+    "position_ordinal_few": "{{count}}rd",
+    "position_ordinal_other": "{{count}}th",
     "format": {
       "SINGLES": "Singles",
       "FOURBALL": "Fourball",
@@ -96,6 +103,7 @@
       "WON": "Won",
       "HALVED": "Halved",
       "LOST": "Lost",
+      "UNFINISHED": "Unfinished",
       "none": "No result"
     }
   },

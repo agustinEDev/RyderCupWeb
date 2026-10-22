@@ -59,6 +59,23 @@ describe('ApiSocialFeedRepository', () => {
       expect(perfil.friendship).toEqual({ status: 'NONE', friendshipId: null });
     });
 
+    it('says who put the block: blocked_by_me -> blockedByMe (social decisions, case 6)', async () => {
+      apiRequest.mockResolvedValue(
+        respuestaPerfil({ friendship: { status: 'BLOCKED', friendship_id: 'f1' }, blocked_by_me: false })
+      );
+      expect((await repository.getPlayerProfile('u1')).blockedByMe).toBe(false);
+
+      apiRequest.mockResolvedValue(
+        respuestaPerfil({ friendship: { status: 'BLOCKED', friendship_id: 'f1' }, blocked_by_me: true })
+      );
+      expect((await repository.getPlayerProfile('u1')).blockedByMe).toBe(true);
+    });
+
+    it('leaves blockedByMe as null when an older backend does not send it', async () => {
+      apiRequest.mockResolvedValue(respuestaPerfil());
+      expect((await repository.getPlayerProfile('u1')).blockedByMe).toBeNull();
+    });
+
     it('keeps the private fields as null instead of turning them into zero', async () => {
       // Un cero se leería como "juega fatal" en vez de "esto no se puede ver".
       apiRequest.mockResolvedValue(respuestaPerfil());
@@ -353,6 +370,61 @@ describe('ApiSocialFeedRepository', () => {
       expect(sinNada.gamesTogether).toBeNull();
     });
 
+    it('maps a tournament stroke play entry with both positions (J)', async () => {
+      apiRequest.mockResolvedValue({
+        games: [
+          partida({
+            kind: 'TOURNAMENT_STROKE_PLAY',
+            id: 'comp9',
+            played_on: '2026-10-25',
+            golf_course_id: null,
+            golf_course_name: null,
+            format: 'MEDAL',
+            relation: null,
+            result: 'WON',
+            quick_match_id: null,
+            competition_id: 'comp9',
+            competition_name: 'Liga de Otoño',
+            my_position: 4,
+            my_tied: true,
+            their_position: 7,
+            their_tied: false,
+            total_players: 16,
+          }),
+        ],
+        next_cursor: null,
+      });
+
+      const { games } = await repository.getGamesTogether('u1');
+
+      expect(games[0]).toMatchObject({
+        kind: 'TOURNAMENT_STROKE_PLAY',
+        id: 'comp9',
+        competitionId: 'comp9',
+        competitionName: 'Liga de Otoño',
+        golfCourseName: null,
+        myPosition: 4,
+        myTied: true,
+        theirPosition: 7,
+        theirTied: false,
+        totalPlayers: 16,
+      });
+    });
+
+    it('leaves the positions null for the other kinds', async () => {
+      apiRequest.mockResolvedValue({ games: [partida()], next_cursor: null });
+
+      const { games } = await repository.getGamesTogether('u1');
+
+      expect(games[0]).toMatchObject({
+        myPosition: null,
+        myTied: false,
+        theirPosition: null,
+        theirTied: false,
+        totalPlayers: null,
+      });
+    });
+
     it('maps the first page of games together to camelCase', async () => {
       apiRequest.mockResolvedValue(
         respuestaPerfil({
@@ -394,6 +466,11 @@ describe('ApiSocialFeedRepository', () => {
           competitionId: null,
           competitionName: null,
           matchId: null,
+          myPosition: null,
+          myTied: false,
+          theirPosition: null,
+          theirTied: false,
+          totalPlayers: null,
         },
         {
           kind: 'TOURNAMENT_GROUP',
@@ -408,6 +485,11 @@ describe('ApiSocialFeedRepository', () => {
           competitionId: 'comp1',
           competitionName: 'Liga',
           matchId: 'g2',
+          myPosition: null,
+          myTied: false,
+          theirPosition: null,
+          theirTied: false,
+          totalPlayers: null,
         },
       ]);
     });

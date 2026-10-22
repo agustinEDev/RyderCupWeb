@@ -17,6 +17,8 @@ export const TIPOS_DE_ACTIVIDAD = new Set([
   'PERSONAL_BEST',
   'FIRST_TOURNAMENT',
   'ENROLLMENT_APPROVED',
+  'ENROLLMENT_CONFIRMED',
+  'TEE_TIME_ASSIGNED',
   'INVITED_TO_TOURNAMENT',
   'ENROLLMENT_REQUEST_CLOSED',
   'ENROLLMENT_REJECTED',
@@ -26,7 +28,8 @@ export const TIPOS_DE_ACTIVIDAD = new Set([
   'QUICK_MATCH_FINISHED',
 ]);
 
-// El backend cuenta con tope de 10; el botón no pinta más de una cifra
+// El backend cuenta con tope de 99, que va tal cual al icono de la
+// aplicación; el botón no pinta más de una cifra
 const TOPE_DE_LA_INSIGNIA = 9;
 
 const MINUTO = 60 * 1000;
@@ -125,7 +128,7 @@ const agrupa = (eventos) => {
  * el botón: tarjetas y solicitudes llegadas desde la última visita. Como todo
  * va de lo más reciente a lo más antiguo, las nuevas son las primeras
  * `novedades` de la lista conjunta. El backend no manda la fecha de la última
- * visita, así que con el tope de 10 se marcan como mucho 10.
+ * visita, así que con el tope de 99 se marcan como mucho 99.
  *
  * @param {{ eventos?: Array, solicitudes?: Array, novedades?: number, ahora: Date }} entrada
  * @returns {{ solicitudes: Array, dias: Array<{ clave: string, fecha: Date, tarjetas: Array }> }}

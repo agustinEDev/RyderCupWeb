@@ -53,6 +53,7 @@ export const RUTAS_DE_LA_APLICACION = Object.freeze([
   '/player/groups/:groupId/scoring',
   '/quick-matches',
   '/quick-matches/:quickMatchId/scoring',
+  '/quick-matches/:quickMatchId/shared',
   '/creator/competitions/:id/schedule',
   '/competitions/:id/schedule',
   '/unauthorized',

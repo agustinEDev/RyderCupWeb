@@ -14,6 +14,7 @@ import { haceCuanto, queDiaEs } from '../../domain/services/lineaDeActividad';
 const MARCA = '\u0001';
 const HUECO_NOMBRE = `${MARCA}name${MARCA}`;
 const HUECO_RIVALES = `${MARCA}rivals${MARCA}`;
+const HUECO_COMPANEROS = `${MARCA}partners${MARCA}`;
 
 // `Intl` revienta con una etiqueta que no entiende: entonces, la del navegador
 const conIdioma = (idioma, crea) => {
@@ -65,34 +66,48 @@ const listaDe = (personas, idioma) => {
 };
 
 /**
- * Una frase con huecos para el nombre (`{{name}}`) y los rivales
- * (`{{rivals}}`). Devuelve los trozos, para pintarla con sus enlaces, y el
- * texto plano, para nombrar el enlace de la tarjeta.
+ * Una frase con huecos para el nombre (`{{name}}`), los rivales (`{{rivals}}`)
+ * y los compañeros (`{{partners}}`). Devuelve los trozos, para pintarla con
+ * sus enlaces, y el texto plano, para nombrar el enlace de la tarjeta.
  *
  * @returns {{ trozos: Array<{tipo: 'texto', valor: string}|{tipo: 'persona', persona: Object}>, texto: string }}
  */
-export const fraseCon = (t, clave, valores, { persona, rivales, idioma } = {}) => {
+export const fraseCon = (t, clave, valores, { persona, rivales, companeros, idioma } = {}) => {
   const lista = rivales ? listaDe(rivales, idioma) : null;
+  const deCompaneros = companeros ? listaDe(companeros, idioma) : null;
   const texto = espacios(
-    t(clave, { ...valores, name: persona?.nombre, rivals: lista?.texto })
+    t(clave, {
+      ...valores,
+      name: persona?.nombre,
+      rivals: lista?.texto,
+      partners: deCompaneros?.texto,
+    })
   );
   const conMarcas = espacios(
     t(clave, {
       ...valores,
       name: persona ? HUECO_NOMBRE : undefined,
       rivals: lista ? HUECO_RIVALES : undefined,
+      partners: deCompaneros ? HUECO_COMPANEROS : undefined,
     })
   );
   const trozos = conMarcas
-    .split(new RegExp(`(${HUECO_NOMBRE}|${HUECO_RIVALES})`))
+    .split(new RegExp(`(${HUECO_NOMBRE}|${HUECO_RIVALES}|${HUECO_COMPANEROS})`))
     .filter((trozo) => trozo !== '')
     .flatMap((trozo) => {
       if (trozo === HUECO_NOMBRE) return [{ tipo: 'persona', persona }];
       if (trozo === HUECO_RIVALES) return lista.trozos;
+      if (trozo === HUECO_COMPANEROS) return deCompaneros.trozos;
       return [{ tipo: 'texto', valor: trozo }];
     });
   return { trozos, texto };
 };
+
+/** Varias frases seguidas, como una sola: «Ya tienes salida…» + « · con Pedro». */
+export const unaTrasOtra = (...frases) => ({
+  trozos: frases.flatMap((f) => f.trozos),
+  texto: frases.map((f) => f.texto).join(''),
+});
 
 /** Una frase sin huecos, ya escrita. */
 export const fraseDeTexto = (texto) => ({ trozos: [{ tipo: 'texto', valor: texto }], texto });
@@ -157,4 +172,26 @@ export const fechasDelTorneo = (inicio, fin, ahora, idioma) => {
       ? formato.formatRange(desde, hasta)
       : formato.format(desde);
   });
+};
+
+/**
+ * «sáb 24 oct»: el día de una vuelta, con el día de la semana, que es lo que
+ * se mira para saber cuándo se juega; con el año solo si no es este.
+ */
+export const diaDeLaVuelta = (dia, ahora, idioma) => {
+  const fecha = diaLocal(dia);
+  if (!fecha) return '';
+  const opciones =
+    fecha.getFullYear() === ahora.getFullYear()
+      ? OPCIONES_DEL_DIA.semana
+      : { ...OPCIONES_DEL_DIA.semana, year: 'numeric' };
+  const texto = conIdioma(idioma, (l) => new Intl.DateTimeFormat(l, opciones).format(fecha));
+  // Como en el separador: «sáb 24 oct» en español, «Sat, Oct 24» en inglés
+  return String(idioma || '').startsWith('es') ? texto.replace(',', '') : texto;
+};
+
+/** «9:10»: la hora de salida («09:10») sin el cero de delante; «» si no se lee. */
+export const horaDeSalida = (hora) => {
+  const partes = /^(\d{1,2}):(\d{2})/.exec(hora || '');
+  return partes ? `${Number(partes[1])}:${partes[2]}` : '';
 };

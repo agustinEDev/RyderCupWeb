@@ -127,6 +127,18 @@ class IQuickMatchRepository {
   }
 
   /**
+   * A finished quick match of someone else, read-only (K): the same detail as
+   * `get`, without scoring. The API answers 403 if there is no access or the
+   * match is still in progress, and 404 if it does not exist.
+   *
+   * @param {string} quickMatchId
+   * @returns {Promise<{quickMatch: QuickMatch, readOnly: boolean, viewerIsParticipant: boolean}>}
+   */
+  async getShared(quickMatchId) {
+    throw new Error('Method getShared() must be implemented');
+  }
+
+  /**
    * List quick matches the current user participates in.
    *
    * @param {Object} filters - Optional filters (status, page, limit)

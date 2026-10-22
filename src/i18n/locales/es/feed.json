@@ -70,7 +70,9 @@
     "points_one": "{{count}} punto",
     "points_other": "{{count}} puntos",
     "net": "{{count}} netos",
-    "withGross": "{{result}} ({{gross}} golpes)"
+    "withGross": "{{result}} ({{gross}} golpes)",
+    "holes_one": "{{count}} hoyo",
+    "holes_other": "{{count}} hoyos"
   },
   "score": {
     "CONCEDED": "por concesión",
@@ -92,13 +94,47 @@
     "friendHalved": "{{name}} empató",
     "finalStanding": "Clasificación final de {{competition}}: {{position}} de {{total}}",
     "finalStandingNoPosition": "Clasificación final de {{competition}}: sin puesto",
+    "ryderWon": "Clasificación final de {{competition}}: tu equipo ({{team}}) ganó {{score}}",
+    "ryderWonNoName": "Clasificación final de {{competition}}: tu equipo ganó {{score}}",
+    "ryderLost": "Clasificación final de {{competition}}: tu equipo ({{team}}) perdió {{score}}",
+    "ryderLostNoName": "Clasificación final de {{competition}}: tu equipo perdió {{score}}",
+    "ryderHalved": "Clasificación final de {{competition}}: tu equipo ({{team}}) empató {{score}}",
+    "ryderHalvedNoName": "Clasificación final de {{competition}}: tu equipo empató {{score}}",
+    "ryderFinalBare": "Clasificación final de {{competition}}",
     "ENROLLMENT_APPROVED": "Te han aceptado en {{competition}}",
     "INVITED_TO_TOURNAMENT": "Te han invitado a {{competition}}",
     "ENROLLMENT_REQUEST_CLOSED": "Tu solicitud a {{competition}} se cerró sin plaza",
     "ENROLLMENT_REJECTED": "El organizador no aceptó tu solicitud a {{competition}}",
     "friendEnrolled": "{{name}} se ha apuntado al torneo {{competition}} ({{dates}})",
     "friendEnrolledNoDates": "{{name}} se ha apuntado al torneo {{competition}}",
-    "aTournament": "un torneo"
+    "aTournament": "un torneo",
+    "bestGrossTied": "Mejor bruto del grupo (empatado)",
+    "unfinishedMatch": "Partida rápida sin terminar contra {{rivals}}",
+    "friendUnfinishedMatch": "Partida rápida sin terminar de {{name}}",
+    "unfinishedStroke": "Partida rápida sin terminar en {{course}} · {{result}}",
+    "unfinishedStrokeNoCourse": "Partida rápida sin terminar · {{result}}",
+    "unfinishedStrokeNoResult": "Partida rápida sin terminar en {{course}}",
+    "unfinishedStrokeNoCourseNoResult": "Partida rápida sin terminar",
+    "friendUnfinishedStroke": "Partida rápida sin terminar de {{name}} · {{result}}",
+    "ENROLLMENT_CONFIRMED": "Te has inscrito en {{competition}}"
+  },
+  "teeTime": {
+    "group": "Ya tienes salida en {{competition}}: {{when}}",
+    "groupBare": "Ya tienes salida en {{competition}}",
+    "match": "Ya tienes partido en {{competition}}: {{when}}",
+    "matchBare": "Ya tienes partido en {{competition}}",
+    "groupChanged": "Ha cambiado tu salida en {{competition}}: {{when}}",
+    "groupChangedBare": "Ha cambiado tu salida en {{competition}}",
+    "matchChanged": "Ha cambiado tu partido en {{competition}}: {{when}}",
+    "matchChangedBare": "Ha cambiado tu partido en {{competition}}",
+    "with": " · con {{partners}}",
+    "withAgainst": " · con {{partners}} contra {{rivals}}",
+    "against": " · contra {{rivals}}",
+    "session": {
+      "MORNING": "mañana",
+      "AFTERNOON": "tarde",
+      "EVENING": "noche"
+    }
   },
   "requests": {
     "wants": "{{name}} quiere ser tu amigo",

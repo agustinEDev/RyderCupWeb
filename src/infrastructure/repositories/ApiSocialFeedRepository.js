@@ -32,6 +32,12 @@ const partidaJuntos = (g) => ({
   competitionId: g.competition_id ?? null,
   competitionName: g.competition_name ?? null,
   matchId: g.match_id ?? null,
+  // Solo en un torneo stroke play (J): el puesto de cada uno en la general
+  myPosition: g.my_position ?? null,
+  myTied: g.my_tied ?? false,
+  theirPosition: g.their_position ?? null,
+  theirTied: g.their_tied ?? false,
+  totalPlayers: g.total_players ?? null,
 });
 
 const paginaDePartidas = (data) => ({
@@ -81,6 +87,9 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
         status: data.friendship?.status ?? 'NONE',
         friendshipId: data.friendship?.friendship_id ?? null,
       },
+      // Con un bloqueo, si lo puso quien mira (true) o el otro (false). Un
+      // backend que no lo mande lo deja en null: no se sabe
+      blockedByMe: data.blocked_by_me ?? null,
       // Estos llegan en null cuando no sois amigos. Se dejan en null y no se
       // convierten a 0: un cero se leería como "juega fatal" en vez de "esto no
       // se puede ver". El correo no se trae: el de otro jugador no se enseña

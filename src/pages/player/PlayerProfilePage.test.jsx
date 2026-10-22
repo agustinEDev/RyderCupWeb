@@ -310,11 +310,28 @@ describe('PlayerProfilePage', () => {
 
     it("activity cards do not link back to the profile already open (CodeRabbit #944)", async () => {
       getProfile.mockResolvedValue(amigo());
-      getActivity.mockResolvedValue(paginaActividad());
+      // Un logro de torneo de los de antes (sin torneo ni tipo): sin haberlo
+      // jugado lleva a su perfil, que es el que ya está abierto
+      const [birdie] = paginaActividad().events;
+      getActivity.mockResolvedValue(
+        paginaActividad({ events: [{ ...birdie, payload: { ...birdie.payload, from_tournament: true } }] })
+      );
       renderProfile();
 
       const tarjeta = await screen.findByTestId('activity-event-e1');
       expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toBeNull();
+    });
+
+    it("a friend's quick match achievement links to its read-only view (K)", async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValue(paginaActividad());
+      renderProfile();
+
+      const tarjeta = await screen.findByTestId('activity-event-e1');
+      expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toHaveAttribute(
+        'href',
+        '/quick-matches/m1/shared'
+      );
     });
 
     it('does not show a stats grid for a friend who has not played yet', async () => {
@@ -905,7 +922,26 @@ describe('PlayerProfilePage', () => {
       });
     });
 
-    it('says there is nothing, never a lone «Ver más», when no event makes a card', async () => {
+    it('says there is nothing, with no «Ver más», when no event makes a card and there is no cursor', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValueOnce(
+        paginaActividad({
+          events: [{ ...eventos(1)[0], type: 'TIPO_QUE_NO_EXISTE' }],
+          nextCursor: null,
+        })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
+        'playerProfile:activity.empty'
+      );
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+
+    // Cambia lo de 6d4ba6b («never a lone Ver más»): el backend puede mandar
+    // una página sin nada que pintar y con cursor, y sin el botón lo de detrás
+    // no se vería nunca (decisiones sociales, caso 7)
+    it('offers «Ver más» when no event makes a card but there is a cursor', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity.mockResolvedValueOnce(
         paginaActividad({
@@ -915,10 +951,10 @@ describe('PlayerProfilePage', () => {
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
+      expect(await screen.findByTestId('player-profile-load-more')).toBeInTheDocument();
+      expect(screen.getByTestId('player-profile-activity')).not.toHaveTextContent(
         'playerProfile:activity.empty'
       );
-      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
     });
 
     it('keeps the handicap in the stats grid and not under the name', async () => {
@@ -1677,6 +1713,148 @@ describe('PlayerProfilePage', () => {
       fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
 
       await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
+    });
+  });
+
+  describe('social decisions, case 6 - who put the block', () => {
+    it('blocked by me: «Desbloquear» and no «⋯» menu', async () => {
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, blockedByMe: true, friendsCount: 0 })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-unblock')).toHaveTextContent(
+        'playerProfile:friendship.unblock'
+      );
+      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
+    });
+
+    it('blocked by the other: no action and no «⋯» menu, the rest as before', async () => {
+      getProfile.mockResolvedValue(
+        perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' }, blockedByMe: false, friendsCount: 0 })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-friendship-blocked')).toHaveTextContent(
+        'playerProfile:friendship.blocked'
+      );
+      expect(screen.queryByTestId('player-profile-unblock')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-add-friend')).not.toBeInTheDocument();
+      expect(screen.queryAllByRole('button')).toHaveLength(0);
+      expect(screen.getByText('Ana García')).toBeInTheDocument();
+    });
+
+    it('after blocking, even if the reload fails, the block is mine: «Desbloquear» stays', async () => {
+      getProfile
+        .mockResolvedValueOnce(amigo())
+        .mockRejectedValueOnce(error(500));
+      blockUser.mockResolvedValue({ id: 'f9' });
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
+      fireEvent.click(await screen.findByText('playerProfile:confirm.block.confirm'));
+
+      expect(await screen.findByTestId('player-profile-unblock')).toBeInTheDocument();
+    });
+  });
+
+  describe('social decisions, case 4 - an unfinished game together', () => {
+    it('reads «Sin terminar» / «Unfinished»', async () => {
+      getProfile.mockResolvedValue(
+        amigo({ gamesTogether: { games: [juego({ result: 'UNFINISHED' })], nextCursor: null } })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-game-g1')).toHaveTextContent(
+        'playerProfile:gamesTogether.result.UNFINISHED'
+      );
+      expect(es.gamesTogether.result.UNFINISHED).toBe('Sin terminar');
+      expect(en.gamesTogether.result.UNFINISHED).toBe('Unfinished');
+    });
+
+    it('a game with no result still reads «Sin resultado»', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [juego({ result: null })], nextCursor: null } }));
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-game-g1')).toHaveTextContent(
+        'playerProfile:gamesTogether.result.none'
+      );
+    });
+  });
+
+  describe('social decisions, case 7 - short activity pages that still carry a cursor', () => {
+    beforeEach(() => {
+      getActivity.mockReset();
+    });
+
+    it('a first page with no entries but a cursor offers «Ver más», not «no activity»', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c1' }))
+        .mockResolvedValueOnce(paginaActividad({ nextCursor: null }));
+      renderProfile();
+
+      const boton = await screen.findByTestId('player-profile-load-more');
+      expect(screen.queryByText('playerProfile:activity.empty')).not.toBeInTheDocument();
+
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'c1' });
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+
+    it('«Ver más» that adds nothing but has a cursor keeps the button, without asking again by itself', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ nextCursor: 'c1' }))
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c2' }));
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(getActivity).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByTestId('player-profile-load-more')).toBeEnabled());
+      expect(getActivity).toHaveBeenCalledTimes(2);
+    });
+
+    it('two empty pages in a row end in «no activity», with no button', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c1' }))
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: null }));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-load-more'));
+
+      expect(await screen.findByText('playerProfile:activity.empty')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('review of the social decisions - games together with an empty page and a cursor', () => {
+    it('shows «Ver más» and loads the next page', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [], nextCursor: 'g-cur' } }));
+      getGamesTogether.mockResolvedValueOnce({ games: [juego()], nextCursor: null });
+      renderProfile();
+
+      const boton = await screen.findByTestId('player-profile-games-more');
+      expect(boton).toHaveTextContent('playerProfile:gamesTogether.loadMore');
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('player-profile-game-g1')).toBeInTheDocument();
+      expect(getGamesTogether).toHaveBeenCalledWith('u1', { cursor: 'g-cur' });
+      expect(screen.queryByTestId('player-profile-games-more')).not.toBeInTheDocument();
+    });
+
+    it('with no games and no cursor, nothing is painted', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [], nextCursor: null } }));
+      renderProfile();
+
+      await screen.findByTestId('player-profile-stats');
+      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
     });
   });
 });

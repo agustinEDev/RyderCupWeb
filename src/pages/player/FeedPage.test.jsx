@@ -687,4 +687,202 @@ describe('FeedPage', () => {
       expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1']);
     });
   });
+
+  describe('short pages that still carry a cursor (social decisions, case 7)', () => {
+    // Las respuestas de una sola vez que sobren de un test no pasan al siguiente
+    beforeEach(() => {
+      getFeed.mockReset();
+      getFeed.mockResolvedValue(pagina());
+    });
+
+    it('a first page with no entries but a cursor offers «Cargar más», not the empty state', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ nextCursor: null }));
+      renderFeed();
+
+      const boton = await screen.findByTestId('feed-load-more');
+      expect(boton).toHaveTextContent('Cargar más');
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('in English too: «Load more»', async () => {
+      getFeed.mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }));
+      renderFeed('en');
+
+      expect(await screen.findByTestId('feed-load-more')).toHaveTextContent('Load more');
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('a first page of only unknown types but a cursor offers «Cargar más» too', async () => {
+      getFeed.mockResolvedValueOnce(
+        pagina({ events: [evento({ type: 'NOT_YET_INVENTED' })], nextCursor: 'cursor-1' })
+      );
+      renderFeed();
+
+      expect(await screen.findByTestId('feed-load-more')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('a «Cargar más» that adds nothing but has a cursor keeps the button, with no requests of its own', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(
+          pagina({ events: [evento({ id: 'e3', publishedAt: new Date(2026, 9, 21, 9) })], nextCursor: null })
+        );
+      renderFeed();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByTestId('feed-load-more')).toBeEnabled());
+      expect(screen.getByTestId('feed-load-more')).toHaveTextContent('Cargar más');
+      expect(getFeed).toHaveBeenCalledTimes(2);
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e3')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-2' });
+      expect(getFeed).toHaveBeenCalledTimes(3);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('an empty page with no cursor after an empty first page ends in the empty state', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }));
+      renderFeed();
+
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('a reload keeps the cursor coherent (review of the social decisions)', () => {
+    beforeEach(() => {
+      getFeed.mockReset();
+      getFeed.mockResolvedValue(pagina());
+    });
+
+    const nuevo = (id, minuto) => evento({ id, publishedAt: new Date(2026, 9, 22, 17, minuto) });
+
+    it('before any «Cargar más», the reload brings its cursor: an empty feed that fills up offers more', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59)], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+
+      act(() => mockNovedades.fija(1));
+
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+    });
+
+    it('an empty feed whose reload comes empty but with a cursor offers the next page (CodeRabbit FE #947)', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+
+      act(() => mockNovedades.fija(1));
+
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+    });
+
+    it('with cards loaded, an empty reload with a cursor keeps the cursor of what is loaded', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('feed-load-more');
+
+      act(() => mockNovedades.fija(1));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
+    it('after «Cargar más», a reload that does not join what is loaded (a gap) brings its cursor', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e2', 2)], nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), nuevo('n2', 58)], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('hueco', 30)], nextCursor: 'cursor-3' }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+
+      act(() => mockNovedades.fija(1));
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e2')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-hueco')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+      expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e2')).toBeInTheDocument();
+    });
+
+    it('after «Cargar más», a reload keeps the deeper cursor and what was loaded', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e2', 2)], nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), evento()], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e3', 0)], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+
+      act(() => mockNovedades.fija(1));
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e2')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e3')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-2' });
+    });
+
+    it('after «Cargar más» reached the end, a reload with a cursor does not bring the button back', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e2', 2)], nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), evento()], nextCursor: 'fresco' }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+      await waitFor(() => expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument());
+
+      act(() => mockNovedades.fija(1));
+
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+  });
 });
