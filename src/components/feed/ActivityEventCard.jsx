@@ -21,6 +21,7 @@ import {
   fraseCon,
   fraseDeTexto,
   horaDeLaTarjeta,
+  invitadoDe,
   personaDe,
 } from './textosDeActividad';
 
@@ -125,12 +126,13 @@ const jugoLaPartida = (tarjeta, yoId) => {
  * A una partida solo se lleva a quien la jugó: la pantalla de otro le dejaría
  * fuera. De lo de un amigo en lo que no estuviste, se va a su perfil.
  */
-const destinoDe = (tarjeta, yoId) => {
+const destinoDe = (tarjeta, yoId, autores) => {
   const [primero] = tarjeta.eventos;
   const payload = primero.payload || {};
   const esDePartida = LOGROS.has(tarjeta.tipo) || tarjeta.tipo === 'QUICK_MATCH_FINISHED';
   if (esDePartida && !jugoLaPartida(tarjeta, yoId)) {
-    return tarjeta.autorId ? `/players/${tarjeta.autorId}` : null;
+    // Sin él en los autores (bloqueado, desactivado) no hay perfil al que ir
+    return personaDe(tarjeta.autorId, autores, () => '').enlace;
   }
   if (LOGROS.has(tarjeta.tipo)) {
     if (!primero.sourceMatchId) return null;
@@ -152,9 +154,7 @@ const destinoDe = (tarjeta, yoId) => {
 /** Los rivales de una partida rápida: con cuenta por su id; invitados, por su nombre. */
 const rivalesDePartidaRapida = (payload, autores, t) =>
   (Array.isArray(payload.opponents) ? payload.opponents : []).map((rival) =>
-    rival?.user_id
-      ? personaDe(rival.user_id, autores, t)
-      : { nombre: rival?.name || t('feed:someone'), enlace: null }
+    rival?.user_id ? personaDe(rival.user_id, autores, t) : invitadoDe(rival?.name, t)
   );
 
 const rivalesDeTorneo = (payload, autores, t) =>
@@ -344,7 +344,7 @@ const ActivityEventCard = ({ tarjeta, autores = {}, campos = {}, yoId, ahora = n
   const idioma = i18n.language;
 
   const contenido = contenidoDe(tarjeta, { t, idioma, autores, campos, yoId, ahora });
-  const destino = destinoDe(tarjeta, yoId);
+  const destino = destinoDe(tarjeta, yoId, autores);
   const mia = !!yoId && tarjeta.autorId === yoId;
   const autor = personaDe(tarjeta.autorId, autores, t);
   const hora = horaDeLaTarjeta(tarjeta.instante, ahora, t, idioma);

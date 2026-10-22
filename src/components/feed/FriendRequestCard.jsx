@@ -71,6 +71,7 @@ const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, 
               type="button"
               onClick={onAceptar}
               disabled={enviando}
+              aria-label={t('feed:requests.acceptLabel', { name: persona.nombre })}
               className="inline-flex min-h-[40px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
             >
               {t('feed:requests.accept')}
@@ -79,6 +80,7 @@ const FriendRequestCard = ({ solicitud, autores, estado, onAceptar, onRechazar, 
               type="button"
               onClick={onRechazar}
               disabled={enviando}
+              aria-label={t('feed:requests.rejectLabel', { name: persona.nombre })}
               className="inline-flex min-h-[40px] items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
               {t('feed:requests.reject')}

@@ -28,14 +28,18 @@ const espacios = (texto) => texto.replace(/ {2,}/g, ' ');
 
 /**
  * Una persona de la tarjeta: su nombre y, si tiene cuenta y la conocemos, el
- * enlace a su perfil. Quien ya no está en los autores se lee «alguien».
+ * enlace a su perfil. Quien no viene en los autores (bloqueado, desactivado,
+ * oculto) se lee «un jugador», sin enlace.
  */
 export const personaDe = (id, autores, t) => {
   const autor = id ? autores?.[id] : null;
   const nombre = nombreVisible(autor);
-  if (!nombre) return { nombre: t('feed:someone'), enlace: null };
+  if (!nombre) return { nombre: t('feed:player'), enlace: null };
   return { nombre, enlace: `/players/${id}` };
 };
+
+/** Un invitado de partida rápida: no tiene cuenta, va por su nombre o «un invitado». */
+export const invitadoDe = (nombre, t) => ({ nombre: nombre || t('feed:guest'), enlace: null });
 
 /** Varias personas unidas como en el idioma: «Pedro y Xavi». */
 const listaDe = (personas, idioma) => {
@@ -96,7 +100,8 @@ export const fraseDeTexto = (texto) => ({ trozos: [{ tipo: 'texto', valor: texto
 /** «18:30»: la hora de una tarjeta que no es de hoy. */
 const horaDelReloj = (fecha, idioma) =>
   conIdioma(idioma, (l) =>
-    new Intl.DateTimeFormat(l, { hour: '2-digit', minute: '2-digit' }).format(fecha)
+    // 24 h en los dos idiomas: «18:30», no «06:30 PM»
+    new Intl.DateTimeFormat(l, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(fecha)
   );
 
 /** «hace 5 min», «hace 2 h» si es de hoy; «18:30» si no. */

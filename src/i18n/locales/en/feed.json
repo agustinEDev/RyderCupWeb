@@ -50,6 +50,8 @@
   "retry": "Retry",
   "loadError": "The activity could not be loaded.",
   "someone": "someone",
+  "guest": "a guest",
+  "player": "a player",
   "days": {
     "today": "Today",
     "yesterday": "Yesterday"
@@ -102,6 +104,8 @@
     "wants": "{{name}} wants to be your friend",
     "accept": "Accept",
     "reject": "Reject",
-    "nowFriends": "You're now friends"
+    "nowFriends": "You're now friends",
+    "acceptLabel": "Accept {{name}}'s request",
+    "rejectLabel": "Reject {{name}}'s request"
   }
 }

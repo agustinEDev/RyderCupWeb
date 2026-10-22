@@ -1,5 +1,5 @@
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { render, screen, waitFor, fireEvent, within, act } from '@testing-library/react';
+import { MemoryRouter, Link } from 'react-router';
 import { vi, describe, it, expect, beforeEach, beforeAll, afterEach } from 'vitest';
 import i18next from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
@@ -25,10 +25,31 @@ vi.mock('../../components/ui/Avatar', () => ({
 }));
 
 const aCero = vi.fn();
-vi.mock('../../hooks/useNovedadesDeActividad', () => ({
-  ponLasNovedadesACero: () => aCero(),
-  olvidaLasNovedades: () => {},
-}));
+// El número de Actividad, como una pieza compartida de verdad: la página
+// reacciona a sus cambios mientras está abierta (revisión FE-1)
+const mockNovedades = vi.hoisted(() => {
+  let valor = 0;
+  const oyentes = new Set();
+  return {
+    lee: () => valor,
+    fija: (n) => {
+      valor = n;
+      oyentes.forEach((f) => f());
+    },
+    suscribe: (f) => {
+      oyentes.add(f);
+      return () => oyentes.delete(f);
+    },
+  };
+});
+vi.mock('../../hooks/useNovedadesDeActividad', async () => {
+  const { useSyncExternalStore } = await import('react');
+  return {
+    ponLasNovedadesACero: () => aCero(),
+    olvidaLasNovedades: () => {},
+    useNovedadesDeActividad: () => useSyncExternalStore(mockNovedades.suscribe, mockNovedades.lee),
+  };
+});
 
 const toastError = vi.fn();
 vi.mock('../../utils/toast', () => ({
@@ -92,8 +113,10 @@ const pagina = (overrides = {}) => ({
 const renderFeed = (lng = 'es') =>
   render(
     <I18nextProvider i18n={instancias[lng]}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/feed']}>
         <FeedPage />
+        {/* El botón de Actividad, pulsado estando ya en Actividad */}
+        <Link to="/feed">boton-actividad</Link>
       </MemoryRouter>
     </I18nextProvider>
   );
@@ -101,6 +124,7 @@ const renderFeed = (lng = 'es') =>
 describe('FeedPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNovedades.fija(0);
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(AHORA);
     getFeed.mockResolvedValue(pagina());
@@ -356,8 +380,8 @@ describe('FeedPage', () => {
       expect(
         solicitud.compareDocumentPosition(lista) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
-      expect(within(solicitud).getByRole('button', { name: 'Aceptar' })).toBeInTheDocument();
-      expect(within(solicitud).getByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
+      expect(within(solicitud).getByRole('button', { name: 'Aceptar la solicitud de Pedro' })).toBeInTheDocument();
+      expect(within(solicitud).getByRole('button', { name: 'Rechazar la solicitud de Pedro' })).toBeInTheDocument();
       expect(within(solicitud).getByRole('link', { name: 'Pedro' })).toHaveAttribute('href', '/players/u9');
     });
 
@@ -366,12 +390,12 @@ describe('FeedPage', () => {
       renderFeed();
 
       const solicitud = await screen.findByTestId('solicitud-f1');
-      fireEvent.click(within(solicitud).getByRole('button', { name: 'Aceptar' }));
+      fireEvent.click(within(solicitud).getByRole('button', { name: 'Aceptar la solicitud de Pedro' }));
 
       await waitFor(() => expect(solicitud).toHaveTextContent('Ahora sois amigos'));
       expect(respond).toHaveBeenCalledWith('f1', 'ACCEPT');
-      expect(within(solicitud).queryByRole('button', { name: 'Aceptar' })).not.toBeInTheDocument();
-      expect(within(solicitud).queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+      expect(within(solicitud).queryByRole('button', { name: 'Aceptar la solicitud de Pedro' })).not.toBeInTheDocument();
+      expect(within(solicitud).queryByRole('button', { name: 'Rechazar la solicitud de Pedro' })).not.toBeInTheDocument();
     });
 
     it('reject → the card disappears', async () => {
@@ -379,15 +403,15 @@ describe('FeedPage', () => {
       renderFeed();
 
       const solicitud = await screen.findByTestId('solicitud-f1');
-      fireEvent.click(within(solicitud).getByRole('button', { name: 'Rechazar' }));
+      fireEvent.click(within(solicitud).getByRole('button', { name: 'Rechazar la solicitud de Pedro' }));
 
       await waitFor(() => expect(screen.queryByTestId('solicitud-f1')).not.toBeInTheDocument());
       expect(respond).toHaveBeenCalledWith('f1', 'DECLINE');
     });
 
     it.each([
-      ['Aceptar', 'ACCEPT'],
-      ['Rechazar', 'DECLINE'],
+      ['Aceptar la solicitud de Pedro'],
+      ['Rechazar la solicitud de Pedro'],
     ])('on failure of «%s» the card stays and a toast shows', async (boton) => {
       respond.mockRejectedValue(new Error('boom'));
       conSolicitud();
@@ -398,7 +422,7 @@ describe('FeedPage', () => {
 
       await waitFor(() => expect(toastError).toHaveBeenCalled());
       expect(screen.getByTestId('solicitud-f1')).toBeInTheDocument();
-      expect(within(solicitud).getByRole('button', { name: 'Aceptar' })).toBeEnabled();
+      expect(within(solicitud).getByRole('button', { name: 'Aceptar la solicitud de Pedro' })).toBeEnabled();
       expect(solicitud).not.toHaveTextContent('Ahora sois amigos');
     });
 
@@ -449,6 +473,73 @@ describe('FeedPage', () => {
 
       expect(await screen.findByTestId('feed-sin-cobertura')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    });
+  });
+
+  describe('new things while Actividad is open (review FE-1)', () => {
+    it('a count above zero reloads the timeline and marks it seen', async () => {
+      getFeed.mockResolvedValueOnce(pagina()).mockResolvedValueOnce(
+        pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()] })
+      );
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      await waitFor(() => expect(aCero).toHaveBeenCalledTimes(1));
+
+      act(() => mockNovedades.fija(2));
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(2);
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(aCero).toHaveBeenCalledTimes(2));
+    });
+
+    it('a count already above zero while loading does not load twice', async () => {
+      mockNovedades.fija(3);
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+
+      expect(getFeed).toHaveBeenCalledTimes(1);
+    });
+
+    it('a count back to zero does not reload', async () => {
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      act(() => mockNovedades.fija(2));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+
+      act(() => mockNovedades.fija(0));
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+
+    it('if marking fails, it does not loop', async () => {
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      markSeen.mockRejectedValue(new Error('net'));
+
+      act(() => mockNovedades.fija(4));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+
+    it('tapping Actividad while on Actividad reloads and marks it seen', async () => {
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(1));
+
+      fireEvent.click(screen.getByText('boton-actividad'));
+
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
     });
   });
 });

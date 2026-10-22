@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { AlertCircle, Loader, RefreshCw, Sparkles, UserPlus, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
-import { ponLasNovedadesACero } from '../../hooks/useNovedadesDeActividad';
+import { ponLasNovedadesACero, useNovedadesDeActividad } from '../../hooks/useNovedadesDeActividad';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
 import FriendRequestCard from '../../components/feed/FriendRequestCard';
 import { etiquetaDelDia } from '../../components/feed/textosDeActividad';
@@ -19,6 +19,16 @@ import {
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const PAGE_SIZE = 20;
+
+// El número del botón y del icono se pone a cero cuando el backend ha guardado
+// la visita. Que falle no debe impedir leer el feed: lo peor que pasa es que el
+// número siga puesto hasta la próxima visita.
+const marcaComoVisto = () => {
+  markFeedAsSeenUseCase
+    .execute()
+    .then(() => ponLasNovedadesACero())
+    .catch(() => {});
+};
 
 /**
  * FeedPage - Actividad: lo propio y lo de los amigos en una sola línea de
@@ -48,6 +58,11 @@ const FeedPage = () => {
   // Por solicitud: 'enviando' mientras se responde, 'aceptada' después
   const [requestStates, setRequestStates] = useState({});
 
+  // Lo que hace falta para recargar estando ya en Actividad (revisión FE-1):
+  // si la primera carga ya llegó y si hay una recarga en marcha
+  const cargado = useRef(false);
+  const recargando = useRef(false);
+
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
   // haber mirado.
@@ -68,6 +83,32 @@ const FeedPage = () => {
   // su identidad vuelve a pedir el feed sin parar.
   const userId = user?.id;
 
+  /**
+   * Hay novedades estando ya en Actividad —el número subió al volver a la
+   * aplicación o a la red, o se ha vuelto a pulsar Actividad—: se recarga la
+   * línea sin la espera de pantalla completa y se da por vista otra vez, con
+   * lo que el número vuelve a cero. Una recarga a la vez; si falla, se queda
+   * lo que había, sin avisos: no lo ha pedido nadie.
+   */
+  const recarga = useCallback(async () => {
+    if (!cargado.current || recargando.current) return;
+    recargando.current = true;
+    try {
+      const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
+      setEvents(page.events);
+      setAuthors(page.authors);
+      setCourses(page.courses);
+      setRequests(page.pendingFriendRequests || []);
+      setUnseenCount(page.unseenCount || 0);
+      setNextCursor(page.nextCursor);
+      marcaComoVisto();
+    } catch {
+      // Se queda lo que había
+    } finally {
+      recargando.current = false;
+    }
+  }, []);
+
   const loadFeed = useCallback(async () => {
     if (!userId) return;
 
@@ -81,16 +122,11 @@ const FeedPage = () => {
       setUnseenCount(page.unseenCount || 0);
       setNextCursor(page.nextCursor);
       setLoadError(null);
+      cargado.current = true;
 
       if (!yaMarcado.current) {
         yaMarcado.current = true;
-        // El número del botón y del icono se pone a cero cuando el backend lo
-        // ha guardado. Que falle no debe impedir leer el feed: lo peor que
-        // pasa es que el número siga puesto hasta la próxima visita.
-        markFeedAsSeenUseCase
-          .execute()
-          .then(() => ponLasNovedadesACero())
-          .catch(() => {});
+        marcaComoVisto();
       }
     } catch (err) {
       // `catch` sin el error no dejaba distinguir un backend roto de no tener
@@ -109,6 +145,25 @@ const FeedPage = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     loadFeed();
   }, [loadFeed]);
+
+  // El número sube mientras se mira Actividad: se recarga. Solo cuando sube
+  // —no por el que ya hubiera al entrar, que lo atiende la primera carga— y
+  // si marcar falla el número no cambia, así que no vuelve a dispararse
+  const novedades = useNovedadesDeActividad();
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- recarga sets state only after awaiting the API, never synchronously
+    if (novedades > 0) recarga();
+  }, [novedades, recarga]);
+
+  // Pulsar Actividad estando en Actividad no vuelve a montar la página, pero
+  // sí cambia la entrada del historial
+  const { key: entrada } = useLocation();
+  const entradaVista = useRef(entrada);
+  useEffect(() => {
+    if (entradaVista.current === entrada) return;
+    entradaVista.current = entrada;
+    recarga();
+  }, [entrada, recarga]);
 
   const handleLoadMore = async () => {
     if (!nextCursor || isLoadingMore) return;

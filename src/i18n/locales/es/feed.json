@@ -50,6 +50,8 @@
   "retry": "Reintentar",
   "loadError": "No se ha podido cargar la actividad.",
   "someone": "alguien",
+  "guest": "un invitado",
+  "player": "un jugador",
   "days": {
     "today": "Hoy",
     "yesterday": "Ayer"
@@ -102,6 +104,8 @@
     "wants": "{{name}} quiere ser tu amigo",
     "accept": "Aceptar",
     "reject": "Rechazar",
-    "nowFriends": "Ahora sois amigos"
+    "nowFriends": "Ahora sois amigos",
+    "acceptLabel": "Aceptar la solicitud de {{name}}",
+    "rejectLabel": "Rechazar la solicitud de {{name}}"
   }
 }

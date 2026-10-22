@@ -244,7 +244,7 @@ describe('ActivityEventCard — texts (case 10)', () => {
     expect(frase()).toBe('Ganaste por incomparecencia a Pedro');
   });
 
-  it('a rival who is no longer in the authors reads as «alguien», without a link', () => {
+  it('a rival who is no longer in the authors reads as «un jugador», without a link', () => {
     pinta(
       tarjeta(
         evento({
@@ -254,8 +254,29 @@ describe('ActivityEventCard — texts (case 10)', () => {
       )
     );
 
-    expect(frase()).toBe('Ganaste 1UP a alguien');
+    expect(frase()).toBe('Ganaste 1UP a un jugador');
     expect(within(screen.getByTestId('frase-tarjeta')).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('a guest without a name reads as «un invitado» (review FE-1)', () => {
+    pinta(qm({ match_format: 'SINGLES', outcome: 'WON', score: '2UP', opponents: [{ user_id: null, name: null }] }));
+
+    expect(frase()).toBe('Ganaste 2UP a un invitado');
+  });
+
+  it('an author missing from the authors reads as «un jugador» (review FE-1)', () => {
+    pinta(qm({ match_format: 'SINGLES', outcome: 'WON', score: '2UP', opponents: [] }, { userId: 'u404' }));
+
+    expect(frase()).toBe('un jugador ganó 2UP');
+  });
+
+  it('English: «a guest» and «a player»', () => {
+    const a = pinta(qm({ match_format: 'SINGLES', outcome: 'WON', score: '2UP', opponents: [{ user_id: null, name: null }] }), { lng: 'en' });
+    expect(frase()).toBe('You won 2UP against a guest');
+    a.unmount();
+
+    pinta(qm({ match_format: 'SINGLES', outcome: 'LOST', score: '2&1', opponents: [{ user_id: 'u404' }] }), { lng: 'en' });
+    expect(frase()).toBe('You lost 2&1 to a player');
   });
 
   it('final standing: «Clasificación final de Ryder Otoño: 4.º de 16»', () => {
@@ -389,6 +410,26 @@ describe('ActivityEventCard — time and new mark (cases 7, 8)', () => {
     expect(screen.getByTestId('hora-tarjeta')).toHaveTextContent('18:30');
   });
 
+  it('another day in English is 24-hour too: «18:30» (review FE-1)', () => {
+    pinta(
+      tarjeta(evento({ type: 'ENROLLMENT_APPROVED', payload: { competition_id: 'c-1', competition_name: 'R' } }), {
+        instante: new Date(2026, 9, 20, 18, 30),
+      }),
+      { lng: 'en' }
+    );
+    expect(screen.getByTestId('hora-tarjeta')).toHaveTextContent(/^18:30$/);
+  });
+
+  it('a morning time keeps two digits: «07:05»', () => {
+    pinta(
+      tarjeta(evento({ type: 'ENROLLMENT_APPROVED', payload: { competition_id: 'c-1', competition_name: 'R' } }), {
+        instante: new Date(2026, 9, 20, 7, 5),
+      }),
+      { lng: 'en' }
+    );
+    expect(screen.getByTestId('hora-tarjeta')).toHaveTextContent(/^07:05$/);
+  });
+
   it('carries the «Nuevo» mark only when new', () => {
     const a = conInstante(new Date(2026, 9, 22, 17, 55), { nueva: true });
     expect(screen.getByTestId('marca-nueva')).toHaveTextContent('Nuevo');
@@ -438,6 +479,11 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
     ])("a friend's $caso → the friend's profile", ({ datos }) => {
       pinta(tarjeta(evento({ userId: 'u2', ...datos })));
       expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+    });
+
+    it("no profile link when the friend is missing from the authors (review FE-1)", () => {
+      pinta(tarjeta(evento({ type: 'BIRDIE', userId: 'u404', sourceMatchId: 'mq', payload: { count: 1 } })));
+      expect(enlaceDeLaTarjeta()).not.toBeInTheDocument();
     });
 
     it("a friend's quick match where you were the rival → the quick match", () => {
