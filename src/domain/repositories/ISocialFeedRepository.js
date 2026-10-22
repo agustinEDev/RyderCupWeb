@@ -66,6 +66,19 @@ class ISocialFeedRepository {
   }
 
   /**
+   * Las partidas terminadas jugadas con un amigo, de la más reciente a la más
+   * antigua, de 5 en 5. La primera página llega ya con el perfil. Solo entre
+   * amigos: a cualquier otro, 403.
+   *
+   * @param {string} userId
+   * @param {{ cursor?: string|null }} options
+   * @returns {Promise<{ games: Array, nextCursor: string|null }>}
+   */
+  async getGamesTogether() {
+    throw new Error('Not implemented');
+  }
+
+  /**
    * Enciende o apaga la publicación de los logros propios.
    *
    * Apagarlo **borra** lo ya publicado, y volver a encenderlo no lo recupera:
