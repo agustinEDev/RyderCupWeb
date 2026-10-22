@@ -123,6 +123,11 @@ const nombreDelTorneo = (payload, t) => payload.competition_name || t('feed:card
 // tiene puesto. Vale cualquiera de las dos señales del backend
 const sinTerminar = (payload) => payload.unfinished === true || payload.outcome === 'UNFINISHED';
 
+// Hay número que decir: los netos en Medal, los puntos en Stableford. Una
+// partida sin terminar puede llegar sin él, y «· netos» a secas no se dice
+const tieneResultado = (payload) =>
+  esMedal(payload) ? payload.net_strokes != null : payload.points != null;
+
 // « · 9 hoyos» detrás de una vuelta que cuenta y no llegó a 18
 const conHoyos = (frase, payload, t) => {
   const hoyos = payload.holes_played;
@@ -186,9 +191,11 @@ const rivalesDeTorneo = (payload, autores, t) =>
 const SIN_RIVALES = (t) => [{ nombre: t('feed:someone'), enlace: null }];
 
 /** Lo que dice una partida de match play, tuya o de un amigo. */
-const fraseDeMatchPlay = (payload, { t, idioma, mia, autor, rivales }) => {
+const fraseDeMatchPlay = (payload, { t, idioma, mia, autor, rivales, rapida = false }) => {
   const score = tanteo(payload.score, t);
-  if (sinTerminar(payload)) {
+  // Solo una partida rápida se queda sin terminar: un partido de torneo nunca
+  // se lee como tal, traiga lo que traiga
+  if (rapida && sinTerminar(payload)) {
     return mia
       ? fraseCon(t, 'feed:cards.unfinishedMatch', {}, {
           rivales: rivales.length > 0 ? rivales : SIN_RIVALES(t),
@@ -207,8 +214,30 @@ const fraseDeMatchPlay = (payload, { t, idioma, mia, autor, rivales }) => {
   return fraseCon(t, `feed:cards.${clave}`, { score }, { persona: autor });
 };
 
+/**
+ * Una partida rápida de match play. Si cuenta y se jugó a menos de 18 hoyos
+ * sin decidirse antes, lleva « · 9 hoyos»: «Ganaste 1UP a Pedro · 9 hoyos».
+ * Decidida antes de tiempo (3&2) no: los hoyos que faltan no se jugaron por
+ * eso. Sin `decided_early` (backend viejo) tampoco, por no saberlo.
+ */
+const fraseDeMatchPlayRapida = (payload, contexto) => {
+  const frase = fraseDeMatchPlay(payload, { ...contexto, rapida: true });
+  if (sinTerminar(payload) || payload.decided_early !== false) return frase;
+  return conHoyos(frase, payload, contexto.t);
+};
+
 /** Una partida rápida de Stableford o Medal que se quedó sin terminar. */
 const fraseSinTerminar = (payload, { t, mia, autor, campo }) => {
+  if (!tieneResultado(payload)) {
+    if (mia) {
+      return fraseCon(
+        t,
+        campo ? 'feed:cards.unfinishedStrokeNoResult' : 'feed:cards.unfinishedStrokeNoCourseNoResult',
+        { course: campo }
+      );
+    }
+    return fraseCon(t, 'feed:cards.friendUnfinishedMatch', {}, { persona: autor });
+  }
   const result = resultado(payload, t, false);
   if (mia) {
     return fraseCon(t, campo ? 'feed:cards.unfinishedStroke' : 'feed:cards.unfinishedStrokeNoCourse', {
@@ -354,7 +383,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   if (tarjeta.tipo === 'QUICK_MATCH_FINISHED') {
     const esMatchPlay = !!payload.match_format || !!payload.outcome;
     const frase = esMatchPlay
-      ? fraseDeMatchPlay(payload, {
+      ? fraseDeMatchPlayRapida(payload, {
           t,
           idioma,
           mia,

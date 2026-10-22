@@ -106,6 +106,8 @@
     "friendUnfinishedMatch": "{{name}}'s unfinished quick match",
     "unfinishedStroke": "Unfinished quick match at {{course}} · {{result}}",
     "unfinishedStrokeNoCourse": "Unfinished quick match · {{result}}",
+    "unfinishedStrokeNoResult": "Unfinished quick match at {{course}}",
+    "unfinishedStrokeNoCourseNoResult": "Unfinished quick match",
     "friendUnfinishedStroke": "{{name}}'s unfinished quick match · {{result}}",
     "ENROLLMENT_CONFIRMED": "You signed up for {{competition}}"
   },

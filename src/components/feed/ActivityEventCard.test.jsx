@@ -1001,3 +1001,87 @@ describe('ActivityEventCard — unfinished quick matches and holes (social decis
     expect(screen.queryByText(/Mejor bruto/)).not.toBeInTheDocument();
   });
 });
+
+describe('ActivityEventCard — review of the social decisions', () => {
+  const mp = (payload, overrides) =>
+    qm({ match_format: 'SINGLES', outcome: 'WON', score: '1UP', opponents: [{ user_id: 'u2' }], ...payload }, overrides);
+
+  it('a counting quick match play of fewer than 18 holes says how many: «Ganaste 1UP a Pedro · 9 hoyos»', () => {
+    const a = pinta(mp({ holes_played: 9, decided_early: false }));
+    expect(frase()).toBe('Ganaste 1UP a Pedro · 9 hoyos');
+    a.unmount();
+
+    pinta(mp({ holes_played: 9, decided_early: false }), { lng: 'en' });
+    expect(frase()).toBe('You won 1UP against Pedro · 9 holes');
+  });
+
+  it("a friend's counting quick match play of 12 holes too: «Pedro ganó 1UP · 12 hoyos»", () => {
+    const a = pinta(mp({ holes_played: 12, decided_early: false, opponents: [{ user_id: 'me' }] }, { userId: 'u2' }));
+    expect(frase()).toBe('Pedro ganó 1UP · 12 hoyos');
+    a.unmount();
+
+    pinta(mp({ outcome: 'HALVED', score: 'AS', holes_played: 9, decided_early: false }, { userId: 'u2' }), { lng: 'en' });
+    expect(frase()).toBe('Pedro halved · 9 holes');
+  });
+
+  it('decided early: no holes («Ganaste 3&2 a Pedro»)', () => {
+    pinta(mp({ score: '3&2', holes_played: 16, decided_early: true }));
+    expect(frase()).toBe('Ganaste 3&2 a Pedro');
+  });
+
+  it('an older backend without decided_early: no holes', () => {
+    pinta(mp({ holes_played: 9 }));
+    expect(frase()).toBe('Ganaste 1UP a Pedro');
+  });
+
+  it('18 holes in match play: no holes', () => {
+    pinta(mp({ holes_played: 18, decided_early: false }));
+    expect(frase()).toBe('Ganaste 1UP a Pedro');
+  });
+
+  it('an unfinished quick match play never says the holes', () => {
+    const a = pinta(mp({ outcome: 'UNFINISHED', score: null, unfinished: true, holes_played: 7, decided_early: false }));
+    expect(frase()).toBe('Partida rápida sin terminar contra Pedro');
+    a.unmount();
+
+    pinta(mp({ outcome: 'UNFINISHED', score: null, unfinished: true, holes_played: 7, decided_early: false }, { userId: 'u2' }));
+    expect(frase()).toBe('Partida rápida sin terminar de Pedro');
+  });
+
+  it('a tournament match result never reads as an unfinished quick match, nor gets holes', () => {
+    const torneo = (payload) =>
+      tarjeta(
+        evento({
+          type: 'TOURNAMENT_MATCH_RESULT',
+          payload: { competition_id: 'c-1', competition_name: 'R', opponent_ids: ['u2'], ...payload },
+        })
+      );
+    const a = pinta(torneo({ outcome: 'HALVED', score: 'AS', unfinished: true }));
+    expect(frase()).not.toMatch(/sin terminar/);
+    expect(frase()).toBe('Empataste con Pedro');
+    a.unmount();
+
+    const b = pinta(torneo({ outcome: 'UNFINISHED', score: null }));
+    expect(frase()).not.toMatch(/sin terminar/);
+    b.unmount();
+
+    pinta(torneo({ outcome: 'WON', score: '1UP', holes_played: 9, decided_early: false }));
+    expect(frase()).toBe('Ganaste 1UP a Pedro');
+  });
+
+  it('an unfinished Medal with no net strokes says no «netos» without a number', () => {
+    const a = pinta(qm({ scoring_format: 'MEDAL', unfinished: true, position: null, total_players: 2, net_strokes: null }));
+    expect(frase()).toBe('Partida rápida sin terminar en El Saler');
+    a.unmount();
+
+    const b = pinta(
+      qm({ golf_course_id: 'c-borrado', scoring_format: 'MEDAL', unfinished: true, position: null, net_strokes: null }),
+      { lng: 'en' }
+    );
+    expect(frase()).toBe('Unfinished quick match');
+    b.unmount();
+
+    pinta(qm({ scoring_format: 'MEDAL', unfinished: true, position: null, net_strokes: null }, { userId: 'u2' }));
+    expect(frase()).toBe('Partida rápida sin terminar de Pedro');
+  });
+});

@@ -106,6 +106,8 @@
     "friendUnfinishedMatch": "Partida rápida sin terminar de {{name}}",
     "unfinishedStroke": "Partida rápida sin terminar en {{course}} · {{result}}",
     "unfinishedStrokeNoCourse": "Partida rápida sin terminar · {{result}}",
+    "unfinishedStrokeNoResult": "Partida rápida sin terminar en {{course}}",
+    "unfinishedStrokeNoCourseNoResult": "Partida rápida sin terminar",
     "friendUnfinishedStroke": "Partida rápida sin terminar de {{name}} · {{result}}",
     "ENROLLMENT_CONFIRMED": "Te has inscrito en {{competition}}"
   },
