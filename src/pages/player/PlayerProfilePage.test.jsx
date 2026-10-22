@@ -905,7 +905,26 @@ describe('PlayerProfilePage', () => {
       });
     });
 
-    it('says there is nothing, never a lone «Ver más», when no event makes a card', async () => {
+    it('says there is nothing, with no «Ver más», when no event makes a card and there is no cursor', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValueOnce(
+        paginaActividad({
+          events: [{ ...eventos(1)[0], type: 'TIPO_QUE_NO_EXISTE' }],
+          nextCursor: null,
+        })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
+        'playerProfile:activity.empty'
+      );
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+
+    // Cambia lo de 6d4ba6b («never a lone Ver más»): el backend puede mandar
+    // una página sin nada que pintar y con cursor, y sin el botón lo de detrás
+    // no se vería nunca (decisiones sociales, caso 7)
+    it('offers «Ver más» when no event makes a card but there is a cursor', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity.mockResolvedValueOnce(
         paginaActividad({
@@ -915,10 +934,10 @@ describe('PlayerProfilePage', () => {
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
+      expect(await screen.findByTestId('player-profile-load-more')).toBeInTheDocument();
+      expect(screen.getByTestId('player-profile-activity')).not.toHaveTextContent(
         'playerProfile:activity.empty'
       );
-      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
     });
 
     it('keeps the handicap in the stats grid and not under the name', async () => {
@@ -1748,4 +1767,53 @@ describe('PlayerProfilePage', () => {
     });
   });
 
+  describe('social decisions, case 7 - short activity pages that still carry a cursor', () => {
+    beforeEach(() => {
+      getActivity.mockReset();
+    });
+
+    it('a first page with no entries but a cursor offers «Ver más», not «no activity»', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c1' }))
+        .mockResolvedValueOnce(paginaActividad({ nextCursor: null }));
+      renderProfile();
+
+      const boton = await screen.findByTestId('player-profile-load-more');
+      expect(screen.queryByText('playerProfile:activity.empty')).not.toBeInTheDocument();
+
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'c1' });
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+
+    it('«Ver más» that adds nothing but has a cursor keeps the button, without asking again by itself', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ nextCursor: 'c1' }))
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c2' }));
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(getActivity).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByTestId('player-profile-load-more')).toBeEnabled());
+      expect(getActivity).toHaveBeenCalledTimes(2);
+    });
+
+    it('two empty pages in a row end in «no activity», with no button', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: 'c1' }))
+        .mockResolvedValueOnce(paginaActividad({ events: [], nextCursor: null }));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-load-more'));
+
+      expect(await screen.findByText('playerProfile:activity.empty')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+  });
 });

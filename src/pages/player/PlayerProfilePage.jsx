@@ -519,7 +519,7 @@ const PlayerProfilePage = () => {
                 {t('playerProfile:activity.title')}
               </h3>
 
-              {isActivityHidden || activityCards.length === 0 ? (
+              {isActivityHidden || (activityCards.length === 0 && !activity?.nextCursor) ? (
                 <p className="p-4 text-sm text-gray-500 bg-white border border-gray-200 rounded-lg">
                   {isActivityHidden
                     ? t('playerProfile:activity.hidden')

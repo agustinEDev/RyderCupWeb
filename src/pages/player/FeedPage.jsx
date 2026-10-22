@@ -266,7 +266,10 @@ const FeedPage = () => {
     );
   }
 
-  const vacio = linea.dias.length === 0 && linea.solicitudes.length === 0;
+  // Una página puede llegar con menos entradas de las pedidas, o con ninguna
+  // que se sepa pintar, y aun así traer cursor: entonces queda más que ver y
+  // no se dice «no hay nada», se ofrece «Cargar más»
+  const vacio = linea.dias.length === 0 && linea.solicitudes.length === 0 && !nextCursor;
 
   return (
     <div className="min-h-screen bg-gray-50">

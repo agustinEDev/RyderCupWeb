@@ -687,4 +687,84 @@ describe('FeedPage', () => {
       expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1']);
     });
   });
+
+  describe('short pages that still carry a cursor (social decisions, case 7)', () => {
+    // Las respuestas de una sola vez que sobren de un test no pasan al siguiente
+    beforeEach(() => {
+      getFeed.mockReset();
+      getFeed.mockResolvedValue(pagina());
+    });
+
+    it('a first page with no entries but a cursor offers «Cargar más», not the empty state', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ nextCursor: null }));
+      renderFeed();
+
+      const boton = await screen.findByTestId('feed-load-more');
+      expect(boton).toHaveTextContent('Cargar más');
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('in English too: «Load more»', async () => {
+      getFeed.mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }));
+      renderFeed('en');
+
+      expect(await screen.findByTestId('feed-load-more')).toHaveTextContent('Load more');
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('a first page of only unknown types but a cursor offers «Cargar más» too', async () => {
+      getFeed.mockResolvedValueOnce(
+        pagina({ events: [evento({ type: 'NOT_YET_INVENTED' })], nextCursor: 'cursor-1' })
+      );
+      renderFeed();
+
+      expect(await screen.findByTestId('feed-load-more')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('a «Cargar más» that adds nothing but has a cursor keeps the button, with no requests of its own', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(
+          pagina({ events: [evento({ id: 'e3', publishedAt: new Date(2026, 9, 21, 9) })], nextCursor: null })
+        );
+      renderFeed();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByTestId('feed-load-more')).toBeEnabled());
+      expect(screen.getByTestId('feed-load-more')).toHaveTextContent('Cargar más');
+      expect(getFeed).toHaveBeenCalledTimes(2);
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e3')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-2' });
+      expect(getFeed).toHaveBeenCalledTimes(3);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('an empty page with no cursor after an empty first page ends in the empty state', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }));
+      renderFeed();
+
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+  });
 });
