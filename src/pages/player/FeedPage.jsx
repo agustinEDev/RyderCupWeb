@@ -9,7 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { ponLasNovedadesACero, useNovedadesDeActividad } from '../../hooks/useNovedadesDeActividad';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
 import FriendRequestCard from '../../components/feed/FriendRequestCard';
-import { etiquetaDelDia } from '../../components/feed/textosDeActividad';
+import DiasDeActividad from '../../components/feed/DiasDeActividad';
 import { armaLaLineaDeActividad } from '../../domain/services/lineaDeActividad';
 import {
   getFriendsFeedUseCase,
@@ -56,7 +56,7 @@ const marcaComoVisto = () => {
  * de aquí, que es donde uno acaba mirando a sus amigos de todos modos.
  */
 const FeedPage = () => {
-  const { t, i18n } = useTranslation(['feed', 'common']);
+  const { t } = useTranslation(['feed', 'common']);
   const { user, loading: isLoadingUser } = useAuth();
 
   const [events, setEvents] = useState([]);
@@ -311,31 +311,21 @@ const FeedPage = () => {
             )}
 
             {linea.dias.length > 0 && (
-              <div className="space-y-6" data-testid="feed-events">
-                {linea.dias.map((dia) => (
-                  <section key={dia.clave} aria-labelledby={`dia-${dia.clave}`}>
-                    <h2
-                      id={`dia-${dia.clave}`}
-                      data-testid="separador-dia"
-                      className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500"
-                    >
-                      {etiquetaDelDia(dia.fecha, ahora, t, i18n.language)}
-                    </h2>
-                    <div className="space-y-3">
-                      {dia.tarjetas.map((tarjeta) => (
-                        <ActivityEventCard
-                          key={tarjeta.clave}
-                          tarjeta={tarjeta}
-                          autores={authors}
-                          campos={courses}
-                          yoId={userId}
-                          ahora={ahora}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
+              <DiasDeActividad
+                dias={linea.dias}
+                ahora={ahora}
+                data-testid="feed-events"
+                pintaTarjeta={(tarjeta) => (
+                  <ActivityEventCard
+                    key={tarjeta.clave}
+                    tarjeta={tarjeta}
+                    autores={authors}
+                    campos={courses}
+                    yoId={userId}
+                    ahora={ahora}
+                  />
+                )}
+              />
             )}
 
             {nextCursor && (

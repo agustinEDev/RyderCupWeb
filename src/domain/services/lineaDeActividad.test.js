@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   armaLaLineaDeActividad,
   haceCuanto,
+  primerasTarjetasPorDia,
   queDiaEs,
   textoDeLaInsignia,
 } from './lineaDeActividad';
@@ -294,5 +295,40 @@ describe('haceCuanto (case 8)', () => {
     [new Date(2026, 9, 22, 18, 3), { unidad: 'ahora' }],
   ])('%s -> %j', (fecha, esperado) => {
     expect(haceCuanto(fecha, AHORA)).toEqual(esperado);
+  });
+});
+
+// El perfil enseña la actividad de 5 en 5 tarjetas, con los días de Actividad
+describe('primerasTarjetasPorDia', () => {
+  const dia = (clave, n) => ({
+    clave,
+    fecha: new Date(2026, 9, 22),
+    tarjetas: Array.from({ length: n }, (_, i) => ({ clave: `${clave}-${i}` })),
+  });
+  const forma = (dias) => dias.map((d) => [d.clave, d.tarjetas.length]);
+
+  it.each([
+    [0, []],
+    [2, [['a', 2]]],
+    [3, [['a', 3]]],
+    [4, [['a', 3], ['b', 1]]],
+    [6, [['a', 3], ['b', 2], ['c', 1]]],
+    [99, [['a', 3], ['b', 2], ['c', 1]]],
+  ])('the first %i cards keep their days and drop the empty ones', (n, esperado) => {
+    expect(forma(primerasTarjetasPorDia([dia('a', 3), dia('b', 2), dia('c', 1)], n))).toEqual(
+      esperado
+    );
+  });
+
+  it('keeps the order of the cards inside a day cut in half', () => {
+    const [a] = primerasTarjetasPorDia([dia('a', 3)], 2);
+    expect(a.tarjetas.map((t) => t.clave)).toEqual(['a-0', 'a-1']);
+    expect(a.fecha).toEqual(new Date(2026, 9, 22));
+  });
+
+  it('does not touch the days it receives', () => {
+    const dias = [dia('a', 3)];
+    primerasTarjetasPorDia(dias, 1);
+    expect(dias[0].tarjetas).toHaveLength(3);
   });
 });

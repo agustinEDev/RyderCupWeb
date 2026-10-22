@@ -7,11 +7,15 @@ import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Avatar from '../../components/ui/Avatar';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
+import DiasDeActividad from '../../components/feed/DiasDeActividad';
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import PlayerProfileMenu from '../../components/profile/PlayerProfileMenu';
 import HeadToHead from '../../components/profile/HeadToHead';
 import GamesTogether from '../../components/profile/GamesTogether';
-import { armaLaLineaDeActividad } from '../../domain/services/lineaDeActividad';
+import {
+  armaLaLineaDeActividad,
+  primerasTarjetasPorDia,
+} from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
 import {
   getPlayerProfileUseCase,
@@ -168,16 +172,15 @@ const PlayerProfilePage = () => {
   }, [loadProfile]);
 
   // Las tarjetas que salen de lo cargado: las mismas que Actividad (FE-1), con
-  // los logros de una vuelta juntos y los tipos que no se conocen, fuera
-  const activityCards = useMemo(
-    () =>
-      activity
-        ? armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() }).dias.flatMap(
-            (dia) => dia.tarjetas
-          )
-        : [],
-    [activity]
-  );
+  // los logros de una vuelta juntos y los tipos que no se conocen, fuera. Van
+  // por días, con el separador de Actividad: la tarjeta de otro día solo dice
+  // la hora
+  const { activityDays, activityCards } = useMemo(() => {
+    const dias = activity
+      ? armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() }).dias
+      : [];
+    return { activityDays: dias, activityCards: dias.flatMap((dia) => dia.tarjetas) };
+  }, [activity]);
 
   // «Ver más» enseña 5 tarjetas más; solo pide otra página al servidor cuando
   // ya no quedan tarjetas cargadas sin enseñar
@@ -522,18 +525,20 @@ const PlayerProfilePage = () => {
                 </p>
               ) : (
                 <>
-                  <div className="space-y-3">
-                    {activityCards.slice(0, visibleCards).map((tarjeta) => (
-                        <ActivityEventCard
-                          key={tarjeta.clave}
-                          tarjeta={tarjeta}
-                          autores={activity.authors}
-                          campos={activity.courses}
-                          yoId={myId}
-                          perfilActualId={userId}
-                        />
-                      ))}
-                  </div>
+                  <DiasDeActividad
+                    dias={primerasTarjetasPorDia(activityDays, visibleCards)}
+                    ahora={new Date()}
+                    pintaTarjeta={(tarjeta) => (
+                      <ActivityEventCard
+                        key={tarjeta.clave}
+                        tarjeta={tarjeta}
+                        autores={activity.authors}
+                        campos={activity.courses}
+                        yoId={myId}
+                        perfilActualId={userId}
+                      />
+                    )}
+                  />
 
                   {(activityCards.length > visibleCards || activity.nextCursor) && (
                     <button
