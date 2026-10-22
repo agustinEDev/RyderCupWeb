@@ -372,6 +372,23 @@ describe('HeaderAuth', () => {
       expect(enMenu.querySelector('[data-testid="insignia-novedades"]')).toHaveTextContent('9+');
     });
 
+    it('tells screen readers the number, inline and in the menu (review FE-1)', () => {
+      novedades = 4;
+      renderHeader('/dashboard');
+
+      expect(enLinea()).toHaveAccessibleDescription('bottomNav.unseen');
+      expect(enLinea()).toHaveAccessibleName('header.feed');
+      fireEvent.click(screen.getByText('AS').closest('button'));
+      const enMenu = screen.getByTestId('navegacion-en-desplegable').querySelector('a[href="/feed"]');
+      expect(enMenu).toHaveAccessibleDescription('bottomNav.unseen');
+    });
+
+    it('no description at zero', () => {
+      renderHeader('/dashboard');
+
+      expect(enLinea()).not.toHaveAttribute('aria-describedby');
+    });
+
     it('only the Actividad link carries it', () => {
       novedades = 2;
       renderHeader('/dashboard');

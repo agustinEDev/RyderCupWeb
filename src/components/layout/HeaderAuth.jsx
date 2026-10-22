@@ -13,6 +13,8 @@ import { useNovedadesDeActividad } from '../../hooks/useNovedadesDeActividad';
 // Los destinos de la navegacion de escritorio. Se pintan dos veces —en linea
 // desde xl y dentro del desplegable del avatar por debajo—, asi que viven en
 // un solo sitio
+const ID_DESCRIPCION_NOVEDADES = 'cabecera-novedades';
+
 const NAVEGACION = [
   { to: '/dashboard', clave: 'header.dashboard' },
   { to: '/browse-competitions', clave: 'header.browseCompetitions' },
@@ -43,6 +45,10 @@ const HeaderAuth = ({ user, title, backTo }) => {
   const novedades = useNovedadesDeActividad();
   const insigniaDe = (to, className) =>
     to === '/feed' ? <InsigniaDeNovedades n={novedades} className={className} /> : null;
+  // El número es solo visual: a los lectores de pantalla se lo cuenta esta
+  // descripción, sin cambiarle el nombre al enlace (como en la barra inferior)
+  const descripcionDe = (to) =>
+    to === '/feed' && novedades > 0 ? ID_DESCRIPCION_NOVEDADES : undefined;
 
   // En movil la cabecera dice donde estas y como volver; repetir la marca en
   // cada pantalla es lenguaje de sitio web, no de aplicacion (FE #310)
@@ -160,6 +166,12 @@ const HeaderAuth = ({ user, title, backTo }) => {
         </h2>
       </Link>
 
+      {novedades > 0 && (
+        <span id={ID_DESCRIPCION_NOVEDADES} hidden>
+          {t('bottomNav.unseen', { count: novedades })}
+        </span>
+      )}
+
       {/* Desktop Navigation */}
       <div className="hidden md:flex flex-1 justify-end gap-8">
         {/* En linea solo desde xl: con todo junto la cabecera pide ~1250 px, y por
@@ -170,6 +182,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
             <Link
               key={to}
               to={to}
+              aria-describedby={descripcionDe(to)}
               className="inline-flex items-center gap-1.5 text-gray-900 text-sm font-medium leading-normal hover:text-primary transition-colors"
             >
               {t(clave)}
@@ -216,6 +229,7 @@ const HeaderAuth = ({ user, title, backTo }) => {
                     <Link
                       key={to}
                       to={to}
+                      aria-describedby={descripcionDe(to)}
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
