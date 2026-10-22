@@ -815,6 +815,45 @@ describe('PlayerProfilePage', () => {
         expect(tarjetasDelDia('feed:days.yesterday')).toEqual(['activity-event-e2']);
       });
 
+      it('nests the day headings under «Su actividad» (h4, not h2)', async () => {
+        getProfile.mockResolvedValue(amigo());
+        getActivity.mockResolvedValueOnce(
+          paginaActividad({ events: delDia(1, 1, hoy), nextCursor: null })
+        );
+        renderProfile();
+
+        await screen.findByTestId('activity-event-e1');
+        const separador = within(screen.getByTestId('player-profile-activity')).getByTestId(
+          'separador-dia'
+        );
+        expect(separador.tagName).toBe('H4');
+      });
+
+      it('keeps one separator for a day that arrives split across two server pages', async () => {
+        getProfile.mockResolvedValue(amigo());
+        getActivity
+          .mockResolvedValueOnce(paginaActividad({ events: delDia(5, 1, hoy), nextCursor: 'cur-a' }))
+          .mockResolvedValueOnce(
+            paginaActividad({
+              events: [
+                ...delDia(2, 6, hoy).map((e, i) => ({
+                  ...e,
+                  occurredAt: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 10 - i),
+                })),
+                ...delDia(1, 8, ayer),
+              ],
+              nextCursor: null,
+            })
+          );
+        renderProfile();
+
+        await screen.findByTestId('activity-event-e1');
+        fireEvent.click(screen.getByTestId('player-profile-load-more'));
+        await waitFor(() => expect(tarjetasPintadas()).toHaveLength(8));
+        expect(separadores()).toEqual(['feed:days.today', 'feed:days.yesterday']);
+        expect(tarjetasDelDia('feed:days.today')).toHaveLength(7);
+      });
+
       it('keeps a day cut by the limit of 5 under one separator after «Ver más»', async () => {
         getProfile.mockResolvedValue(amigo());
         getActivity.mockResolvedValueOnce(

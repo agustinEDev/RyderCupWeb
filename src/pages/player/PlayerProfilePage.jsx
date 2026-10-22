@@ -528,6 +528,7 @@ const PlayerProfilePage = () => {
                   <DiasDeActividad
                     dias={primerasTarjetasPorDia(activityDays, visibleCards)}
                     ahora={new Date()}
+                    nivel={4}
                     pintaTarjeta={(tarjeta) => (
                       <ActivityEventCard
                         key={tarjeta.clave}
