@@ -5,6 +5,7 @@ import { clearUserContext } from '../utils/sentryHelpers';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { logoutUseCase } from '../composition';
 import { laPaginaSeVa } from '../services/sesionCompartida';
+import { olvidaLasNovedades } from './useNovedadesDeActividad';
 
 /**
  * Centralized logout hook
@@ -85,6 +86,8 @@ export const useLogout = () => {
     // Clear client-side state
     clearAuth();
     clearUserContext();
+    // El número de Actividad y el del icono son de esta cuenta (FE-1)
+    olvidaLasNovedades();
 
     if (!recargarEn) navigate('/login', { replace: true });
   }, [navigate, clearAuth]);

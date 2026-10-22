@@ -7,6 +7,7 @@ import customToast from '../../utils/toast';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Avatar from '../../components/ui/Avatar';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
+import { armaLaLineaDeActividad } from '../../domain/services/lineaDeActividad';
 import { useAuth } from '../../hooks/useAuth';
 import {
   getPlayerProfileUseCase,
@@ -128,6 +129,9 @@ const PlayerProfilePage = () => {
       setActivity((prev) => ({
         events: [...prev.events, ...page.events],
         authors: { ...prev.authors, ...page.authors },
+        // Los nombres de campo se acumulan como los autores: si no, las
+        // tarjetas ya pintadas perdían el suyo al paginar (revisión FE-1)
+        courses: { ...prev.courses, ...page.courses },
         nextCursor: page.nextCursor,
       }));
     } catch {
@@ -283,13 +287,20 @@ const PlayerProfilePage = () => {
               ) : (
                 <>
                   <div className="space-y-3">
-                    {activity.events.map((event) => (
-                      <ActivityEventCard
-                        key={event.id}
-                        event={event}
-                        author={activity.authors[event.userId]}
-                      />
-                    ))}
+                    {/* Las mismas tarjetas que Actividad (FE-1): los logros de
+                        una vuelta juntos y los tipos que no se conocen, fuera */}
+                    {armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() })
+                      .dias.flatMap((dia) => dia.tarjetas)
+                      .map((tarjeta) => (
+                        <ActivityEventCard
+                          key={tarjeta.clave}
+                          tarjeta={tarjeta}
+                          autores={activity.authors}
+                          campos={activity.courses}
+                          yoId={myId}
+                          perfilActualId={userId}
+                        />
+                      ))}
                   </div>
 
                   {activity.nextCursor && (

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import BottomNav from './BottomNav';
@@ -14,6 +14,16 @@ vi.mock('react-i18next', () => ({
 const useAuthMock = vi.fn(() => ({ user: null, loading: true }));
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => useAuthMock(),
+}));
+
+// El número del botón de Actividad: lo vigila la barra y lo lee de la pieza
+// compartida (FE-1)
+let novedades = 0;
+const vigilar = vi.fn();
+vi.mock('../../hooks/useNovedadesDeActividad', () => ({
+  useNovedadesDeActividad: () => novedades,
+  useVigilanciaDeNovedades: () => vigilar(),
+  olvidaLasNovedades: () => {},
 }));
 
 const renderNav = (path = '/dashboard') =>
@@ -75,5 +85,47 @@ describe('BottomNav', () => {
     fireEvent.click(screen.getByRole('button', { name: 'bottomNav.quickMatch' }));
 
     expect(useAuthMock).toHaveBeenCalled();
+  });
+
+  describe('the unseen number on Actividad (FE-1, case 1)', () => {
+    afterEach(() => {
+      novedades = 0;
+    });
+
+    const insignia = () => screen.queryByTestId('insignia-novedades');
+
+    it('shows nothing at zero', () => {
+      novedades = 0;
+      renderNav();
+
+      expect(insignia()).not.toBeInTheDocument();
+    });
+
+    it.each([
+      [1, '1'],
+      [9, '9'],
+      [10, '9+'],
+    ])('shows %s as %s on the Actividad button', (n, texto) => {
+      novedades = n;
+      renderNav();
+
+      const enlace = screen.getByRole('link', { name: 'bottomNav.feed' });
+      expect(enlace).toContainElement(insignia());
+      expect(insignia()).toHaveTextContent(texto);
+    });
+
+    it('keeps the link name and describes the number for screen readers', () => {
+      novedades = 3;
+      renderNav();
+
+      const enlace = screen.getByRole('link', { name: 'bottomNav.feed' });
+      expect(enlace).toHaveAccessibleDescription('bottomNav.unseen');
+    });
+
+    it('watches the number while the bar is up (case 3)', () => {
+      renderNav();
+
+      expect(vigilar).toHaveBeenCalled();
+    });
   });
 });

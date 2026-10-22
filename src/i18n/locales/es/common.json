@@ -81,7 +81,9 @@
     "quickMatch": "Partida",
     "friends": "Amigos",
     "profile": "Perfil",
-    "feed": "Actividad"
+    "feed": "Actividad",
+    "unseen_one": "{{count}} novedad sin ver",
+    "unseen_other": "{{count}} novedades sin ver"
   },
   "screens": {
     "dashboard": "Inicio",

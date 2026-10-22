@@ -183,4 +183,124 @@ describe('ApiSocialFeedRepository', () => {
       expect(result).toEqual({ shareActivity: true, removedEvents: 0 });
     });
   });
+
+  describe('getUnseenCount (case 1-3)', () => {
+    it('asks the light endpoint and returns the number', async () => {
+      apiRequest.mockResolvedValue({ unseen_count: 4 });
+
+      const n = await repository.getUnseenCount();
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/users/me/feed/unseen-count');
+      expect(n).toBe(4);
+    });
+
+    it('reads a missing or broken number as zero', async () => {
+      apiRequest.mockResolvedValue({});
+      expect(await repository.getUnseenCount()).toBe(0);
+
+      apiRequest.mockResolvedValue({ unseen_count: 'muchos' });
+      expect(await repository.getUnseenCount()).toBe(0);
+    });
+
+    it('lets a failure through so the caller keeps the last value', async () => {
+      apiRequest.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      await expect(repository.getUnseenCount()).rejects.toThrow('Failed to fetch');
+    });
+  });
+
+  describe('getFeed with the redesign fields', () => {
+    it('maps publication date, card key and the pending friend requests', async () => {
+      apiRequest.mockResolvedValue({
+        events: [
+          {
+            id: 'e1',
+            user_id: 'u1',
+            type: 'BIRDIE',
+            occurred_at: '2026-10-22T12:00:00Z',
+            published_at: '2026-10-22T17:00:00Z',
+            payload: { count: 2 },
+            source_match_id: 'm1',
+            group_key: 'u1:m1',
+          },
+        ],
+        authors: {
+          u1: { id: 'u1', first_name: 'Ana', last_name: 'G', display_name: 'Ana G', avatar_source: 'PRESET' },
+        },
+        courses: {},
+        next_cursor: null,
+        unseen_count: 3,
+        pending_friend_requests: [
+          {
+            friendship_id: 'f1',
+            requester: {
+              id: 'u9',
+              first_name: 'Pedro',
+              last_name: 'L',
+              display_name: 'Pedro L',
+              avatar_source: 'PRESET',
+            },
+            created_at: '2026-10-22T16:00:00Z',
+          },
+        ],
+      });
+
+      const page = await repository.getFeed({ limit: 20 });
+
+      expect(page.events[0]).toMatchObject({
+        id: 'e1',
+        publishedAt: new Date('2026-10-22T17:00:00Z'),
+        groupKey: 'u1:m1',
+      });
+      expect(page.unseenCount).toBe(3);
+      expect(page.pendingFriendRequests).toEqual([
+        { friendshipId: 'f1', requesterId: 'u9', createdAt: new Date('2026-10-22T16:00:00Z') },
+      ]);
+      // Quien pide amistad entra en los autores: la tarjeta pinta su nombre
+      expect(page.authors.u9).toMatchObject({ id: 'u9', displayName: 'Pedro L' });
+    });
+
+    it('reads an instant without zone as UTC', async () => {
+      apiRequest.mockResolvedValue({
+        events: [
+          {
+            id: 'e1',
+            user_id: 'u1',
+            type: 'BIRDIE',
+            occurred_at: '2026-10-22T12:00:00',
+            published_at: '2026-10-22T17:00:00',
+            source_match_id: 'm1',
+          },
+        ],
+      });
+
+      const page = await repository.getFeed();
+
+      expect(page.events[0].publishedAt).toEqual(new Date('2026-10-22T17:00:00Z'));
+      expect(page.events[0].occurredAt).toEqual(new Date('2026-10-22T12:00:00Z'));
+    });
+
+    it('defaults the new fields when an older backend omits them', async () => {
+      apiRequest.mockResolvedValue({
+        events: [{ id: 'e1', user_id: 'u1', type: 'BIRDIE', occurred_at: '2026-10-22T12:00:00Z', source_match_id: 'm1' }],
+      });
+
+      const page = await repository.getFeed();
+
+      expect(page.events[0].publishedAt).toBeNull();
+      expect(page.events[0].groupKey).toBeNull();
+      expect(page.pendingFriendRequests).toEqual([]);
+    });
+
+    it('drops a request whose requester is missing', async () => {
+      apiRequest.mockResolvedValue({
+        events: [],
+        pending_friend_requests: [{ friendship_id: 'f1', requester: null, created_at: '2026-10-22T16:00:00Z' }],
+      });
+
+      const page = await repository.getFeed();
+
+      expect(page.pendingFriendRequests).toEqual([]);
+    });
+  });
 });

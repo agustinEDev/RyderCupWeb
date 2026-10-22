@@ -8,6 +8,7 @@ import apiRequest from '../../services/api.js';
  *
  * Endpoints:
  * - GET /api/v1/users/me/feed
+ * - GET /api/v1/users/me/feed/unseen-count
  * - PUT /api/v1/users/me/feed/seen
  * - GET /api/v1/users/{id}/profile
  * - GET /api/v1/users/{id}/activity
@@ -25,6 +26,12 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
   async getFeed({ limit = 20, cursor = null } = {}) {
     const data = await apiRequest(`/api/v1/users/me/feed${this.#buildQuery({ limit, cursor })}`);
     return ActivityEventMapper.feedToDomain(data);
+  }
+
+  async getUnseenCount() {
+    const data = await apiRequest('/api/v1/users/me/feed/unseen-count');
+    const n = data?.unseen_count;
+    return Number.isFinite(n) ? n : 0;
   }
 
   async markFeedAsSeen() {
