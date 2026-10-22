@@ -159,3 +159,25 @@ export const armaLaLineaDeActividad = ({ eventos = [], solicitudes = [], novedad
 
   return { solicitudes: pendientes, dias };
 };
+
+/**
+ * Las primeras `n` tarjetas de la línea, sin perder sus días: un día cortado a
+ * medias se queda con las que caben y uno que no llega a enseñar ninguna no
+ * aparece, para que no haya separadores sin tarjetas debajo. Es lo que usa el
+ * perfil de un amigo, que enseña la actividad de 5 en 5 tarjetas.
+ *
+ * @param {Array<{ clave: string, fecha: Date, tarjetas: Array }>} dias
+ * @param {number} n
+ * @returns {Array<{ clave: string, fecha: Date, tarjetas: Array }>}
+ */
+export const primerasTarjetasPorDia = (dias, n) => {
+  const recortados = [];
+  let quedan = n;
+  for (const dia of dias) {
+    if (quedan <= 0) break;
+    const tarjetas = dia.tarjetas.slice(0, quedan);
+    quedan -= tarjetas.length;
+    recortados.push({ ...dia, tarjetas });
+  }
+  return recortados;
+};
