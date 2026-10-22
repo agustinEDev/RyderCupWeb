@@ -1270,7 +1270,44 @@ describe('ActivityEventCard — a friend\'s quick match read-only, and tournamen
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
   });
 
-  it("L: a friend's tournament achievement where I am named → my card", () => {
+  it("L: a friend's tournament achievement where I am in player_ids → my card", () => {
+    const a = pinta(logro({ kind: 'MATCH', player_ids: [YO, 'u2', 'u3'] }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
+    a.unmount();
+
+    pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7', player_ids: ['u2', 'u3', YO] }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/groups/g-7/scoring?competition=c-1');
+  });
+
+  it("L: a friend's FIRST_TOURNAMENT with me in player_ids → my group card", () => {
+    pinta(
+      tarjeta(
+        evento({
+          type: 'FIRST_TOURNAMENT',
+          userId: 'u2',
+          sourceMatchId: 'ronda',
+          payload: { from_tournament: true, competition_id: 'c-1', kind: 'TEE_GROUP', group_id: 'g-7', player_ids: ['u2', YO] },
+        })
+      )
+    );
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/groups/g-7/scoring?competition=c-1');
+  });
+
+  it("L: player_ids without me → the tournament, even if an old field names me", () => {
+    const a = pinta(logro({ kind: 'MATCH', player_ids: ['u2', 'u3'], opponents: [{ user_id: YO }] }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    a.unmount();
+
+    pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7', player_ids: [] }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+  });
+
+  it('L: my own achievement goes to my card even if player_ids forgot me', () => {
+    pinta(logro({ kind: 'MATCH', player_ids: ['u2'] }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
+  });
+
+  it("L: an earlier achievement without player_ids keeps the current rule: named → my card", () => {
     pinta(logro({ kind: 'MATCH', opponents: [{ user_id: YO }] }, { userId: 'u2' }));
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
   });

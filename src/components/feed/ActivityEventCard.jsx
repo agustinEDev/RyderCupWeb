@@ -162,6 +162,19 @@ const destinoDePartidaRapida = (quickMatchId, jugo, tarjeta, autores) => {
 };
 
 /**
+ * Si quien mira jugó el grupo o el partido de un logro de torneo. El backend
+ * manda en `player_ids` a todos los de ese grupo o partido, autor incluido:
+ * si viene, manda esa lista (o ser el autor). Los logros de antes, sin ella,
+ * siguen con la regla de siempre: autor o nombrado.
+ */
+const jugoElLogroDeTorneo = (evento, tarjeta, yoId, jugoSegunLoDeAntes) => {
+  const jugadores = evento.payload.player_ids;
+  if (!Array.isArray(jugadores)) return jugoSegunLoDeAntes;
+  if (!yoId) return false;
+  return tarjeta.autorId === yoId || jugadores.includes(yoId);
+};
+
+/**
  * Un logro de torneo que dice dónde fue (L): `competition_id` y `kind`, y
  * `group_id` si fue en un grupo de stroke play. Quien lo jugó va a su
  * tarjeta; quien no, a la ficha del torneo. Si falta el grupo o el partido,
@@ -197,7 +210,7 @@ const destinoDe = (tarjeta, yoId, autores) => {
     const conSitio = tarjeta.eventos.find(
       (e) => e.payload?.from_tournament && e.payload?.competition_id && e.payload?.kind
     );
-    if (conSitio) return destinoDeLogroDeTorneo(conSitio, jugo);
+    if (conSitio) return destinoDeLogroDeTorneo(conSitio, jugoElLogroDeTorneo(conSitio, tarjeta, yoId, jugo));
     // Los de antes, sin torneo ni tipo: como siempre. Sin haberlo jugado, al
     // perfil del amigo (sin él en los autores no hay perfil al que ir)
     if (!jugo) return { ruta: personaDe(tarjeta.autorId, autores, () => '').enlace };
