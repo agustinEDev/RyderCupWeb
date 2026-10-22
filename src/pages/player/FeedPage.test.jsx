@@ -793,6 +793,37 @@ describe('FeedPage', () => {
       expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
     });
 
+    it('an empty feed whose reload comes empty but with a cursor offers the next page (CodeRabbit FE #947)', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+
+      act(() => mockNovedades.fija(1));
+
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+    });
+
+    it('with cards loaded, an empty reload with a cursor keeps the cursor of what is loaded', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('feed-load-more');
+
+      act(() => mockNovedades.fija(1));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
     it('after «Cargar más», a reload that does not join what is loaded (a gap) brings its cursor', async () => {
       getFeed
         .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))

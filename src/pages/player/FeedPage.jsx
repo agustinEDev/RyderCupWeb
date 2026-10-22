@@ -135,7 +135,12 @@ const FeedPage = () => {
       // caben en una página—, queda un hueco por debajo y manda el suyo: lo ya
       // pintado se queda y lo repetido no se duplica al seguir bajando
       const conocidos = new Set(cargados.current.map((e) => e.id));
-      const enlaza = page.events.length === 0 || page.events.some((e) => conocidos.has(e.id));
+      // Una página fresca vacía solo «enlaza» si hay algo cargado: con el feed
+      // vacío no hay cursor que llegue a su página siguiente (CodeRabbit FE #947)
+      const enlaza =
+        page.events.length === 0
+          ? cargados.current.length > 0
+          : page.events.some((e) => conocidos.has(e.id));
       if (!enlaza) setNextCursor(page.nextCursor ?? null);
       marcaComoVisto();
     } catch {
