@@ -26,7 +26,8 @@
     "cancelled": "Solicitud cancelada",
     "removed": "Ya no sois amigos",
     "blockedNow": "Jugador bloqueado",
-    "unblocked": "Jugador desbloqueado"
+    "unblocked": "Jugador desbloqueado",
+    "onlyBlockerCanUnblock": "Solo quien ha bloqueado puede desbloquear"
   },
   "private": {
     "title": "Solo entre amigos",
@@ -97,5 +98,8 @@
       "LOST": "Perdida",
       "none": "Sin resultado"
     }
+  },
+  "errors": {
+    "reloadFailed": "Hecho, pero no hemos podido actualizar el perfil. Vuelve a abrirlo en un momento."
   }
 }

@@ -26,7 +26,8 @@
     "cancelled": "Request cancelled",
     "removed": "You are no longer friends",
     "blockedNow": "Player blocked",
-    "unblocked": "Player unblocked"
+    "unblocked": "Player unblocked",
+    "onlyBlockerCanUnblock": "Only the person who blocked can unblock"
   },
   "private": {
     "title": "Friends only",
@@ -97,5 +98,8 @@
       "LOST": "Lost",
       "none": "No result"
     }
+  },
+  "errors": {
+    "reloadFailed": "Done, but we could not refresh the profile. Open it again in a moment."
   }
 }

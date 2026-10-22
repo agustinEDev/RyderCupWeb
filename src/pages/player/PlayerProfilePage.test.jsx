@@ -1,5 +1,5 @@
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PlayerProfilePage from './PlayerProfilePage';
 import es from '../../i18n/locales/es/playerProfile.json';
@@ -652,7 +652,7 @@ describe('PlayerProfilePage', () => {
       );
       renderProfile();
 
-      expect(await screen.findByTestId('player-profile-handicap')).toHaveTextContent('12.4');
+      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('12.4');
       expect(screen.getByTestId('player-profile-stats')).toBeInTheDocument();
       expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
       expect(screen.getByTestId('player-profile-h2h')).toBeInTheDocument();
@@ -660,7 +660,7 @@ describe('PlayerProfilePage', () => {
       expect(screen.queryByTestId('player-profile-private')).not.toBeInTheDocument();
     });
 
-    it('asks for the activity 5 at a time, also when loading more', async () => {
+    it('asks the API for 20 events a time, also when loading more', async () => {
       getProfile.mockResolvedValue(amigo());
       getActivity
         .mockResolvedValueOnce(paginaActividad({ nextCursor: 'cursor-1' }))
@@ -668,12 +668,108 @@ describe('PlayerProfilePage', () => {
       renderProfile();
 
       await screen.findByTestId('activity-event-e1');
-      expect(getActivity).toHaveBeenCalledWith('u1', { limit: 5 });
+      expect(getActivity).toHaveBeenCalledWith('u1', { limit: 20 });
 
       fireEvent.click(screen.getByTestId('player-profile-load-more'));
       await waitFor(() =>
-        expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 5, cursor: 'cursor-1' })
+        expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'cursor-1' })
       );
+    });
+
+    // «De 5 en 5» son TARJETAS, no eventos (revisión FE-2): los logros de una
+    // vuelta se juntan en una, y un tipo desconocido no pinta nada
+    const eventos = (n, desde = 1) =>
+      Array.from({ length: n }, (_, i) => ({
+        id: `e${desde + i}`,
+        userId: 'u1',
+        type: 'BIRDIE',
+        occurredAt: new Date(2026, 7, 28 - (desde + i), 12),
+        payload: { count: 1 },
+        sourceMatchId: `m${desde + i}`,
+      }));
+    const tarjetasPintadas = () =>
+      within(screen.getByTestId('player-profile-activity'))
+        .queryAllByTestId(/^activity-event-/)
+        .map((el) => el.getAttribute('data-testid'));
+
+    it('shows 5 cards and reveals 5 more without asking the API while it has them', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValueOnce(paginaActividad({ events: eventos(12), nextCursor: 'cur-a' }));
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      expect(tarjetasPintadas()).toHaveLength(5);
+
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(10));
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(12));
+      expect(getActivity).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks the next page only once the loaded cards run out', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ events: eventos(5), nextCursor: 'cur-a' }))
+        .mockResolvedValueOnce(paginaActividad({ events: eventos(7, 6), nextCursor: null }));
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      expect(tarjetasPintadas()).toHaveLength(5);
+
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(10));
+      expect(getActivity).toHaveBeenLastCalledWith('u1', { limit: 20, cursor: 'cur-a' });
+
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(12));
+      expect(getActivity).toHaveBeenCalledTimes(2);
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+
+    it('counts a round with several achievements as one card', async () => {
+      const deLaMismaVuelta = eventos(6).map((e) => ({ ...e, groupKey: 'vuelta-1' }));
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValueOnce(
+        paginaActividad({ events: [...deLaMismaVuelta, ...eventos(5, 7)], nextCursor: null })
+      );
+      renderProfile();
+
+      await screen.findByTestId('activity-event-vuelta-1');
+      expect(tarjetasPintadas()).toHaveLength(5);
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      await waitFor(() => expect(tarjetasPintadas()).toHaveLength(6));
+    });
+
+    it('says there is nothing, never a lone «Ver más», when no event makes a card', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValueOnce(
+        paginaActividad({
+          events: [{ ...eventos(1)[0], type: 'TIPO_QUE_NO_EXISTE' }],
+          nextCursor: 'cur-a',
+        })
+      );
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-activity')).toHaveTextContent(
+        'playerProfile:activity.empty'
+      );
+      expect(screen.queryByTestId('player-profile-load-more')).not.toBeInTheDocument();
+    });
+
+    it('keeps the handicap in the stats grid and not under the name', async () => {
+      getProfile.mockResolvedValue(amigo());
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-stat-handicap')).toHaveTextContent('12.4');
+      expect(screen.queryByTestId('player-profile-handicap')).not.toBeInTheDocument();
+    });
+
+    it('shows the handicap under the name when a friend has no stats grid', async () => {
+      getProfile.mockResolvedValue(amigo({ stats: estadisticas({ roundsPlayed: 0 }) }));
+      renderProfile();
+
+      expect(await screen.findByTestId('player-profile-handicap')).toHaveTextContent('12.4');
     });
   });
 
@@ -943,7 +1039,7 @@ describe('PlayerProfilePage', () => {
 
     it('stays blocked when unblocking fails', async () => {
       getProfile.mockResolvedValue(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
-      removeFriend.mockRejectedValue(error(403));
+      removeFriend.mockRejectedValue(error(500));
       renderProfile();
 
       fireEvent.click(await screen.findByTestId('player-profile-unblock'));
@@ -1006,6 +1102,279 @@ describe('PlayerProfilePage', () => {
           expect(idioma.gamesTogether.relation[r]).toBeTruthy();
         }
       }
+    });
+  });
+
+  // ─── Revisión FE-2 ─────────────────────────────────────────────────────────
+
+  describe('review 1 - late answers from another profile are dropped', () => {
+    const aplazada = () => {
+      let resolver;
+      const promesa = new Promise((r) => {
+        resolver = r;
+      });
+      return { promesa, resolver };
+    };
+
+    const Saltar = () => {
+      const navigate = useNavigate();
+      return (
+        <button type="button" onClick={() => navigate('/players/u2')}>
+          saltar
+        </button>
+      );
+    };
+
+    const renderConSalto = () =>
+      render(
+        <MemoryRouter initialEntries={['/players/u1']}>
+          <Saltar />
+          <Routes>
+            <Route path="/players/:userId" element={<PlayerProfilePage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+    const bea = perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' });
+
+    it('keeps the new profile when the old one answers late', async () => {
+      const deU1 = aplazada();
+      getProfile.mockImplementation((id) => (id === 'u1' ? deU1.promesa : Promise.resolve(bea)));
+      renderConSalto();
+
+      fireEvent.click(screen.getByText('saltar'));
+      expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
+
+      deU1.resolver(amigo());
+      await new Promise((r) => setTimeout(r, 20));
+      expect(screen.getByText('Bea Ruiz')).toBeInTheDocument();
+      expect(screen.queryByText('Ana García')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
+    });
+
+    // Bea también es amiga, con sus partidas: lo tardío de Ana no se le pega
+    const beaAmiga = () =>
+      amigo({
+        id: 'u2',
+        firstName: 'Bea',
+        lastName: 'Ruiz',
+        gamesTogether: { games: [juego({ id: 'b1', quickMatchId: 'b1' })], nextCursor: null },
+      });
+
+    it('drops a late page of games together from the previous profile', async () => {
+      const masJuegos = aplazada();
+      getProfile.mockImplementation((id) =>
+        Promise.resolve(
+          id === 'u1' ? amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }) : beaAmiga()
+        )
+      );
+      getGamesTogether.mockReturnValue(masJuegos.promesa);
+      renderConSalto();
+
+      fireEvent.click(await screen.findByTestId('player-profile-games-more'));
+      fireEvent.click(screen.getByText('saltar'));
+      expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
+
+      expect(await screen.findByTestId('player-profile-game-b1')).toBeInTheDocument();
+      masJuegos.resolver({ games: [juego({ id: 'g9', quickMatchId: 'g9' })], nextCursor: null });
+      await new Promise((r) => setTimeout(r, 20));
+      expect(screen.queryByTestId('player-profile-game-g9')).not.toBeInTheDocument();
+      expect(screen.getByTestId('player-profile-game-b1')).toBeInTheDocument();
+    });
+
+    it('drops a late page of activity from the previous profile', async () => {
+      const masActividad = aplazada();
+      getProfile.mockImplementation((id) => Promise.resolve(id === 'u1' ? amigo() : beaAmiga()));
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ nextCursor: 'cursor-1' }))
+        .mockReturnValueOnce(masActividad.promesa)
+        .mockResolvedValueOnce(
+          paginaActividad({ events: [{ ...paginaActividad().events[0], id: 'b-e1', userId: 'u2' }] })
+        );
+      renderConSalto();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+      fireEvent.click(screen.getByText('saltar'));
+      expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
+
+      expect(await screen.findByTestId('activity-event-b-e1')).toBeInTheDocument();
+      masActividad.resolver(paginaActividad({ events: [{ ...paginaActividad().events[0], id: 'e7' }] }));
+      await new Promise((r) => setTimeout(r, 20));
+      expect(screen.queryByTestId('activity-event-e7')).not.toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-b-e1')).toBeInTheDocument();
+    });
+
+    it('disables the «⋯» menu while more games are on their way', async () => {
+      getProfile.mockResolvedValue(amigo({ gamesTogether: { games: [juego()], nextCursor: 'cur-1' } }));
+      getGamesTogether.mockReturnValue(new Promise(() => {}));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-games-more'));
+
+      await waitFor(() => expect(screen.getByTestId('player-profile-menu')).toBeDisabled());
+    });
+
+    it('disables the «⋯» menu while more activity is on its way', async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity
+        .mockResolvedValueOnce(paginaActividad({ nextCursor: 'cursor-1' }))
+        .mockReturnValueOnce(new Promise(() => {}));
+      renderProfile();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('player-profile-load-more'));
+
+      await waitFor(() => expect(screen.getByTestId('player-profile-menu')).toBeDisabled());
+    });
+  });
+
+  describe('review 3 - unblocking from the blocked side', () => {
+    it('says only the one who blocked can unblock when the backend answers 403', async () => {
+      getProfile.mockResolvedValue(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
+      removeFriend.mockRejectedValue(error(403));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-unblock'));
+
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('playerProfile:friendship.onlyBlockerCanUnblock')
+      );
+      expect(customToast.error).not.toHaveBeenCalledWith('common:errors.generic');
+      expect(screen.getByTestId('player-profile-friendship-blocked')).toBeInTheDocument();
+    });
+
+    it('keeps the generic error for a 403 on any other action', async () => {
+      getProfile.mockResolvedValue(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }));
+      removeFriend.mockRejectedValue(error(403));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
+      expect(customToast.error).not.toHaveBeenCalledWith('playerProfile:friendship.onlyBlockerCanUnblock');
+    });
+  });
+
+  describe('review 4 - the action worked but the reload did not', () => {
+    const tumbaLaRecarga = (primero) =>
+      getProfile.mockResolvedValueOnce(primero).mockRejectedValueOnce(error(500));
+
+    const esperaElAvisoDeRecarga = () =>
+      waitFor(() => expect(customToast.error).toHaveBeenCalledWith('playerProfile:errors.reloadFailed'));
+
+    it('shows the profile blocked, without friend data, after blocking', async () => {
+      tumbaLaRecarga(
+        amigo({
+          headToHead: { against: { won: 1, halved: 0, lost: 0 }, alongside: null },
+          gamesTogether: { games: [juego()], nextCursor: null },
+        })
+      );
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+
+      await esperaElAvisoDeRecarga();
+      expect(customToast.success).toHaveBeenCalledWith('playerProfile:friendship.blockedNow');
+      expect(customToast.error).not.toHaveBeenCalledWith('common:errors.generic');
+      expect(await screen.findByTestId('player-profile-friendship-blocked')).toBeInTheDocument();
+      expect(screen.getByTestId('player-profile-unblock')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-menu')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-activity')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-h2h')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-handicap')).not.toBeInTheDocument();
+      expect(screen.queryByText('playerProfile:friendsCount')).not.toBeInTheDocument();
+    });
+
+    it('shows no relationship and no friend data after removing the friend', async () => {
+      tumbaLaRecarga(amigo({ gamesTogether: { games: [juego()], nextCursor: null } }));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(await screen.findByTestId('player-profile-menu-remove'));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+
+      await esperaElAvisoDeRecarga();
+      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-stats')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-games')).not.toBeInTheDocument();
+      expect(screen.getByTestId('player-profile-private')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('player-profile-menu'));
+      const menu = await screen.findByRole('menu');
+      expect(within(menu).queryByTestId('player-profile-menu-remove')).not.toBeInTheDocument();
+    });
+
+    it('shows the request as sent after sending it', async () => {
+      tumbaLaRecarga(perfil());
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
+
+      await esperaElAvisoDeRecarga();
+      expect(await screen.findByTestId('player-profile-friendship-sent')).toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalledWith('common:errors.generic');
+    });
+
+    it('shows no relationship after cancelling the request', async () => {
+      tumbaLaRecarga(perfil({ friendship: { status: 'PENDING_SENT', friendshipId: 'f1' } }));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+
+      await esperaElAvisoDeRecarga();
+      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+    });
+
+    it('shows no relationship after unblocking', async () => {
+      tumbaLaRecarga(perfil({ friendship: { status: 'BLOCKED', friendshipId: 'f1' } }));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-unblock'));
+
+      await esperaElAvisoDeRecarga();
+      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
+    });
+
+    it('shows «Amigos», and offers to remove, after accepting', async () => {
+      tumbaLaRecarga(perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } }));
+      renderProfile();
+
+      await screen.findByTestId('player-profile-friendship-received');
+      fireEvent.click(screen.getByText('playerProfile:friendship.accept'));
+
+      await esperaElAvisoDeRecarga();
+      expect(await screen.findByTestId('player-profile-friendship-accepted')).toBeInTheDocument();
+      // Sin los datos de amigo todavía: ni la pista de «hazte su amigo»
+      expect(screen.queryByTestId('player-profile-private')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('player-profile-menu'));
+      expect(within(await screen.findByRole('menu')).getByTestId('player-profile-menu-remove')).toBeInTheDocument();
+    });
+
+    it('shows no relationship after declining', async () => {
+      tumbaLaRecarga(perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } }));
+      renderProfile();
+
+      await screen.findByTestId('player-profile-friendship-received');
+      fireEvent.click(screen.getByText('playerProfile:friendship.decline'));
+
+      await esperaElAvisoDeRecarga();
+      expect(await screen.findByTestId('player-profile-add-friend')).toBeInTheDocument();
+    });
+  });
+
+  describe('review texts', () => {
+    it('words the new messages in Spanish', () => {
+      expect(es.friendship.onlyBlockerCanUnblock).toBe('Solo quien ha bloqueado puede desbloquear');
+      expect(en.friendship.onlyBlockerCanUnblock).toBe('Only the person who blocked can unblock');
+      expect(es.errors.reloadFailed).toBeTruthy();
+      expect(en.errors.reloadFailed).toBeTruthy();
     });
   });
 });

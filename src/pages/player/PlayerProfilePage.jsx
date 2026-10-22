@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { nombreVisible } from '../../utils/nombreVisible';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -25,8 +25,12 @@ import {
 import BlockLoader from '../../components/ui/BlockLoader';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
-// La actividad de un amigo, de 5 en 5, como las partidas juntos (22 oct)
-const PAGE_SIZE = 5;
+// La actividad de un amigo se enseña de 5 en 5 TARJETAS, como las partidas
+// juntos (22 oct). Al servidor se le piden eventos de 20 en 20: los logros de
+// una vuelta se juntan en una tarjeta y un tipo desconocido no pinta nada, así
+// que 5 eventos no son 5 tarjetas (revisión FE-2)
+const ACTIVITY_PAGE_SIZE = 20;
+const CARDS_STEP = 5;
 const HTTP_NOT_FOUND = 404;
 const HTTP_FORBIDDEN = 403;
 
@@ -72,6 +76,11 @@ const PlayerProfilePage = () => {
   const [isLoadingMoreGames, setIsLoadingMoreGames] = useState(false);
   // 'remove' | 'block' | null: lo que espera confirmación
   const [pendingConfirm, setPendingConfirm] = useState(null);
+  const [visibleCards, setVisibleCards] = useState(CARDS_STEP);
+  // Cada carga del perfil abre una generación nueva. Lo que conteste tarde
+  // —una carga anterior, un «Ver más» de otro perfil— se descarta: si no, un
+  // perfil viejo pisaba al nuevo (revisión FE-2)
+  const generacion = useRef(0);
 
   // `t` solo hace falta para los mensajes de error, pero ponerla en las
   // dependencias ata la carga a la identidad de esa función: un proveedor que
@@ -85,22 +94,36 @@ const PlayerProfilePage = () => {
   const myId = user?.id;
   const isSelf = Boolean(myId) && myId === userId;
 
-  const loadProfile = useCallback(async () => {
-    if (!userId || isSelf) return;
+  /**
+   * Carga el perfil. Devuelve `false` solo si la ficha no se pudo leer (y no
+   * por un 404, que ya es una respuesta): quien acaba de cambiar la relación
+   * lo necesita para no dejar la pantalla contradiciendo a su aviso de éxito.
+   */
+  const loadProfile = useCallback(async ({ avisar = true } = {}) => {
+    if (!userId || isSelf) return true;
+
+    const gen = ++generacion.current;
+    const vigente = () => gen === generacion.current;
 
     setIsLoading(true);
     try {
       const data = await getPlayerProfileUseCase.execute(userId);
+      if (!vigente()) return true;
       setProfile(data);
       setGames(data.gamesTogether ?? null);
       setIsNotFound(false);
+      setActivity(null);
+      setIsActivityHidden(false);
+      setVisibleCards(CARDS_STEP);
 
       if (data.isFriend) {
         try {
-          const page = await getPlayerActivityUseCase.execute(userId, { limit: PAGE_SIZE });
+          const page = await getPlayerActivityUseCase.execute(userId, { limit: ACTIVITY_PAGE_SIZE });
+          if (!vigente()) return true;
           setActivity(page);
           setIsActivityHidden(false);
         } catch (error) {
+          if (!vigente()) return true;
           // Un 403 aquí no es un fallo: significa que no publica su actividad,
           // aunque seáis amigos. El resto del perfil sigue siendo válido, así
           // que no se tira toda la pantalla por esto.
@@ -112,18 +135,21 @@ const PlayerProfilePage = () => {
           }
         }
       }
+      return true;
     } catch (error) {
+      if (!vigente()) return true;
       // El backend responde 404 tanto si el jugador no existe como si no se
       // puede ver, a propósito: un 403 confirmaría que la cuenta existe y
       // probar identificadores serviría para averiguar quién está registrado.
       if (error?.status === HTTP_NOT_FOUND) {
         setIsNotFound(true);
         setProfile(null);
-      } else {
-        customToast.error(tRef.current('common:errors.generic'));
+        return true;
       }
+      if (avisar) customToast.error(tRef.current('common:errors.generic'));
+      return false;
     } finally {
-      setIsLoading(false);
+      if (vigente()) setIsLoading(false);
     }
   }, [userId, isSelf]);
 
@@ -132,25 +158,51 @@ const PlayerProfilePage = () => {
     loadProfile();
   }, [loadProfile]);
 
-  const handleLoadMore = async () => {
-    if (!activity?.nextCursor || isLoadingMore) return;
+  // Las tarjetas que salen de lo cargado: las mismas que Actividad (FE-1), con
+  // los logros de una vuelta juntos y los tipos que no se conocen, fuera
+  const activityCards = useMemo(
+    () =>
+      activity
+        ? armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() }).dias.flatMap(
+            (dia) => dia.tarjetas
+          )
+        : [],
+    [activity]
+  );
 
+  // «Ver más» enseña 5 tarjetas más; solo pide otra página al servidor cuando
+  // ya no quedan tarjetas cargadas sin enseñar
+  const handleLoadMore = async () => {
+    if (isLoadingMore) return;
+    if (activityCards.length > visibleCards) {
+      setVisibleCards((n) => n + CARDS_STEP);
+      return;
+    }
+    if (!activity?.nextCursor) return;
+
+    const gen = generacion.current;
     setIsLoadingMore(true);
     try {
       const page = await getPlayerActivityUseCase.execute(userId, {
-        limit: PAGE_SIZE,
+        limit: ACTIVITY_PAGE_SIZE,
         cursor: activity.nextCursor,
       });
-      setActivity((prev) => ({
-        events: [...prev.events, ...page.events],
-        authors: { ...prev.authors, ...page.authors },
-        // Los nombres de campo se acumulan como los autores: si no, las
-        // tarjetas ya pintadas perdían el suyo al paginar (revisión FE-1)
-        courses: { ...prev.courses, ...page.courses },
-        nextCursor: page.nextCursor,
-      }));
+      if (gen !== generacion.current) return;
+      setActivity((prev) =>
+        prev
+          ? {
+              events: [...prev.events, ...page.events],
+              authors: { ...prev.authors, ...page.authors },
+              // Los nombres de campo se acumulan como los autores: si no, las
+              // tarjetas ya pintadas perdían el suyo al paginar (revisión FE-1)
+              courses: { ...prev.courses, ...page.courses },
+              nextCursor: page.nextCursor,
+            }
+          : prev
+      );
+      setVisibleCards((n) => n + CARDS_STEP);
     } catch {
-      customToast.error(t('common:errors.generic'));
+      if (gen === generacion.current) customToast.error(t('common:errors.generic'));
     } finally {
       setIsLoadingMore(false);
     }
@@ -159,17 +211,44 @@ const PlayerProfilePage = () => {
   const handleLoadMoreGames = async () => {
     if (!games?.nextCursor || isLoadingMoreGames) return;
 
+    const gen = generacion.current;
     setIsLoadingMoreGames(true);
     try {
       const page = await getGamesTogetherUseCase.execute(userId, { cursor: games.nextCursor });
-      setGames((prev) => ({
-        games: [...prev.games, ...page.games],
-        nextCursor: page.nextCursor,
-      }));
+      if (gen !== generacion.current) return;
+      setGames((prev) =>
+        prev ? { games: [...prev.games, ...page.games], nextCursor: page.nextCursor } : prev
+      );
     } catch {
-      customToast.error(t('common:errors.generic'));
+      if (gen === generacion.current) customToast.error(t('common:errors.generic'));
     } finally {
       setIsLoadingMoreGames(false);
+    }
+  };
+
+  // Si la acción salió bien pero la recarga no, la pantalla tiene que decir
+  // lo mismo que el aviso de éxito: se pone la relación nueva a mano y se
+  // retira lo que solo ven los amigos (revisión FE-2)
+  const applyRelationshipLocally = (status) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const sigueAmigo = status === 'ACCEPTED' && prev.isFriend;
+      return {
+        ...prev,
+        friendship: {
+          status,
+          friendshipId: status === 'NONE' ? null : (prev.friendship?.friendshipId ?? null),
+        },
+        isFriend: sigueAmigo,
+        stats: sigueAmigo ? prev.stats : null,
+        headToHead: sigueAmigo ? prev.headToHead : null,
+        gamesTogether: sigueAmigo ? prev.gamesTogether : null,
+        handicap: status === 'BLOCKED' ? null : prev.handicap,
+      };
+    });
+    if (status !== 'ACCEPTED') {
+      setGames(null);
+      setActivity(null);
     }
   };
 
@@ -178,16 +257,27 @@ const PlayerProfilePage = () => {
   // hasta ese momento llegaban en null, y bloquear las cierra. Nada cambia
   // antes de que el servidor conteste: si falla, el botón sigue como estaba
   // y lo dice un aviso.
-  const runFriendshipAction = async (action, successKey) => {
+  const runFriendshipAction = async (action, successKey, { statusAfter, forbiddenKey } = {}) => {
     if (isActing) return;
 
     setIsActing(true);
     try {
-      await action();
+      try {
+        await action();
+      } catch (error) {
+        customToast.error(
+          error?.status === HTTP_FORBIDDEN && forbiddenKey
+            ? t(forbiddenKey)
+            : t('common:errors.generic')
+        );
+        return;
+      }
       customToast.success(t(successKey));
-      await loadProfile();
-    } catch {
-      customToast.error(t('common:errors.generic'));
+      const reloaded = await loadProfile({ avisar: false });
+      if (!reloaded) {
+        applyRelationshipLocally(statusAfter);
+        customToast.error(t('playerProfile:errors.reloadFailed'));
+      }
     } finally {
       setIsActing(false);
     }
@@ -236,7 +326,11 @@ const PlayerProfilePage = () => {
   }
 
   const nombre = nombreVisible(profile);
-  const isBlocked = profile.friendship?.status === 'BLOCKED';
+  const relationship = profile.friendship?.status ?? 'NONE';
+  const isBlocked = relationship === 'BLOCKED';
+  // El hándicap va en la rejilla de estadísticas cuando la hay; si no, bajo
+  // el nombre (y no en los dos sitios a la vez, revisión FE-2)
+  const hasStatsGrid = Boolean(profile.isFriend && profile.stats && profile.stats.roundsPlayed > 0);
 
   const handleConfirm = () => {
     const accion = pendingConfirm;
@@ -244,12 +338,14 @@ const PlayerProfilePage = () => {
     if (accion === 'remove') {
       runFriendshipAction(
         () => removeFriendUseCase.execute(profile.friendship.friendshipId),
-        'playerProfile:friendship.removed'
+        'playerProfile:friendship.removed',
+        { statusAfter: 'NONE' }
       );
     } else if (accion === 'block') {
       runFriendshipAction(
         () => blockUserUseCase.execute(profile.id),
-        'playerProfile:friendship.blockedNow'
+        'playerProfile:friendship.blockedNow',
+        { statusAfter: 'BLOCKED' }
       );
     }
   };
@@ -296,19 +392,21 @@ const PlayerProfilePage = () => {
                 <p className="text-sm text-gray-500">
                   {t('playerProfile:friendsCount', { count: profile.friendsCount })}
                 </p>
-                <p className="text-sm text-gray-500" data-testid="player-profile-handicap">
-                  {t('playerProfile:handicap')}{' '}
-                  <span className="font-semibold text-gray-900">
-                    {formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue')}
-                  </span>
-                </p>
+                {!hasStatsGrid && (
+                  <p className="text-sm text-gray-500" data-testid="player-profile-handicap">
+                    {t('playerProfile:handicap')}{' '}
+                    <span className="font-semibold text-gray-900">
+                      {formatoDeIndice(profile.handicap) ?? t('playerProfile:stats.noValue')}
+                    </span>
+                  </p>
+                )}
               </>
             )}
           </div>
           {!isBlocked && (
             <PlayerProfileMenu
-              isFriend={profile.isFriend}
-              disabled={isActing}
+              isFriend={relationship === 'ACCEPTED'}
+              disabled={isActing || isLoadingMore || isLoadingMoreGames}
               onRemove={() => setPendingConfirm('remove')}
               onBlock={() => setPendingConfirm('block')}
               t={t}
@@ -323,31 +421,41 @@ const PlayerProfilePage = () => {
           onSend={() =>
             runFriendshipAction(
               () => sendFriendRequestUseCase.execute(profile.id),
-              'playerProfile:friendship.requestSent'
+              'playerProfile:friendship.requestSent',
+              { statusAfter: 'PENDING_SENT' }
             )
           }
           onAccept={() =>
             runFriendshipAction(
               () => respondFriendRequestUseCase.execute(profile.friendship.friendshipId, 'ACCEPT'),
-              'playerProfile:friendship.accepted'
+              'playerProfile:friendship.accepted',
+              { statusAfter: 'ACCEPTED' }
             )
           }
           onDecline={() =>
             runFriendshipAction(
               () => respondFriendRequestUseCase.execute(profile.friendship.friendshipId, 'DECLINE'),
-              'playerProfile:friendship.declined'
+              'playerProfile:friendship.declined',
+              { statusAfter: 'NONE' }
             )
           }
           onCancelRequest={() =>
             runFriendshipAction(
               () => removeFriendUseCase.execute(profile.friendship.friendshipId),
-              'playerProfile:friendship.cancelled'
+              'playerProfile:friendship.cancelled',
+              { statusAfter: 'NONE' }
             )
           }
           onUnblock={() =>
             runFriendshipAction(
               () => removeFriendUseCase.execute(profile.friendship.friendshipId),
-              'playerProfile:friendship.unblocked'
+              'playerProfile:friendship.unblocked',
+              {
+                statusAfter: 'NONE',
+                // Solo desbloquea quien bloqueó: el perfil no dice quién fue,
+                // y el 403 del otro lado se explica en vez de un error genérico
+                forbiddenKey: 'playerProfile:friendship.onlyBlockerCanUnblock',
+              }
             )
           }
         />
@@ -387,7 +495,7 @@ const PlayerProfilePage = () => {
                 {t('playerProfile:activity.title')}
               </h3>
 
-              {isActivityHidden || !activity || activity.events.length === 0 ? (
+              {isActivityHidden || activityCards.length === 0 ? (
                 <p className="p-4 text-sm text-gray-500 bg-white border border-gray-200 rounded-lg">
                   {isActivityHidden
                     ? t('playerProfile:activity.hidden')
@@ -396,11 +504,7 @@ const PlayerProfilePage = () => {
               ) : (
                 <>
                   <div className="space-y-3">
-                    {/* Las mismas tarjetas que Actividad (FE-1): los logros de
-                        una vuelta juntos y los tipos que no se conocen, fuera */}
-                    {armaLaLineaDeActividad({ eventos: activity.events, ahora: new Date() })
-                      .dias.flatMap((dia) => dia.tarjetas)
-                      .map((tarjeta) => (
+                    {activityCards.slice(0, visibleCards).map((tarjeta) => (
                         <ActivityEventCard
                           key={tarjeta.clave}
                           tarjeta={tarjeta}
@@ -411,7 +515,7 @@ const PlayerProfilePage = () => {
                       ))}
                   </div>
 
-                  {activity.nextCursor && (
+                  {(activityCards.length > visibleCards || activity.nextCursor) && (
                     <button
                       type="button"
                       onClick={handleLoadMore}
@@ -430,7 +534,7 @@ const PlayerProfilePage = () => {
               )}
             </section>
           </>
-        ) : isBlocked ? null : (
+        ) : isBlocked || relationship === 'ACCEPTED' ? null : (
           <section
             className="mt-4 p-4 text-center bg-white border border-gray-200 rounded-lg"
             data-testid="player-profile-private"
