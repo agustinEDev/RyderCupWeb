@@ -343,3 +343,21 @@ describe('the new notices are known types (social decisions, case 1)', () => {
     expect(dias.flatMap((d) => d.tarjetas).map((t) => t.tipo)).toEqual([type, type]);
   });
 });
+
+describe('the badge text with the real count up to 99 (social decisions, case 5)', () => {
+  it.each([
+    [10, '9+'],
+    [99, '9+'],
+  ])('%s -> %j', (n, texto) => {
+    expect(textoDeLaInsignia(n)).toBe(texto);
+  });
+
+  it('marks up to 99 cards as new, not just 10', () => {
+    const eventos = Array.from({ length: 30 }, (_, i) =>
+      evento({ id: `e${i}`, groupKey: null, publishedAt: new Date(2026, 9, 22, 17, 59 - i) })
+    );
+    const { dias } = armaLaLineaDeActividad({ eventos, novedades: 25, ahora: AHORA });
+
+    expect(dias.flatMap((d) => d.tarjetas).filter((t) => t.nueva)).toHaveLength(25);
+  });
+});
