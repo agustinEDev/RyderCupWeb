@@ -81,6 +81,15 @@ const PlayerProfilePage = () => {
   // —una carga anterior, un «Ver más» de otro perfil— se descarta: si no, un
   // perfil viejo pisaba al nuevo (revisión FE-2)
   const generacion = useRef(0);
+  // Una acción que termina cuando ya se ha salido de este perfil no recarga
+  // ni toca nada: el perfil que se ve ya es otro (revisión final FE-2)
+  const montado = useRef(true);
+  useEffect(() => {
+    montado.current = true;
+    return () => {
+      montado.current = false;
+    };
+  }, []);
 
   // `t` solo hace falta para los mensajes de error, pero ponerla en las
   // dependencias ata la carga a la identidad de esa función: un proveedor que
@@ -229,7 +238,7 @@ const PlayerProfilePage = () => {
   // Si la acción salió bien pero la recarga no, la pantalla tiene que decir
   // lo mismo que el aviso de éxito: se pone la relación nueva a mano y se
   // retira lo que solo ven los amigos (revisión FE-2)
-  const applyRelationshipLocally = (status) => {
+  const applyRelationshipLocally = (status, friendshipId) => {
     setProfile((prev) => {
       if (!prev) return prev;
       const sigueAmigo = status === 'ACCEPTED' && prev.isFriend;
@@ -237,7 +246,10 @@ const PlayerProfilePage = () => {
         ...prev,
         friendship: {
           status,
-          friendshipId: status === 'NONE' ? null : (prev.friendship?.friendshipId ?? null),
+          // El id nuevo lo da la respuesta de enviar o bloquear; sin él,
+          // «Cancelar solicitud» y «Desbloquear» no tendrían qué deshacer
+          friendshipId:
+            status === 'NONE' ? null : (friendshipId ?? prev.friendship?.friendshipId ?? null),
         },
         isFriend: sigueAmigo,
         stats: sigueAmigo ? prev.stats : null,
@@ -262,9 +274,11 @@ const PlayerProfilePage = () => {
 
     setIsActing(true);
     try {
+      let result;
       try {
-        await action();
+        result = await action();
       } catch (error) {
+        if (!montado.current) return;
         customToast.error(
           error?.status === HTTP_FORBIDDEN && forbiddenKey
             ? t(forbiddenKey)
@@ -272,14 +286,16 @@ const PlayerProfilePage = () => {
         );
         return;
       }
+      if (!montado.current) return;
       customToast.success(t(successKey));
       const reloaded = await loadProfile({ avisar: false });
+      if (!montado.current) return;
       if (!reloaded) {
-        applyRelationshipLocally(statusAfter);
+        applyRelationshipLocally(statusAfter, result?.id ?? null);
         customToast.error(t('playerProfile:errors.reloadFailed'));
       }
     } finally {
-      setIsActing(false);
+      if (montado.current) setIsActing(false);
     }
   };
 
@@ -749,4 +765,15 @@ const PlayerStatsSummary = ({ profile, t }) => {
   );
 };
 
-export default PlayerProfilePage;
+/**
+ * Una página por jugador: al pasar de /players/A a /players/B el router
+ * reutiliza el componente, y sin remontarlo B heredaba el estado de A —la
+ * acción en vuelo, el botón ocupado, la recarga al terminar— (revisión final
+ * FE-2). Con la clave en el id, cada perfil empieza de cero.
+ */
+const PlayerProfileRoute = () => {
+  const { userId } = useParams();
+  return <PlayerProfilePage key={userId} />;
+};
+
+export default PlayerProfileRoute;

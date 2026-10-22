@@ -1377,4 +1377,142 @@ describe('PlayerProfilePage', () => {
       expect(en.errors.reloadFailed).toBeTruthy();
     });
   });
+
+  describe('final review - an action that ends on another profile', () => {
+    const IrABea = () => {
+      const navigate = useNavigate();
+      return (
+        <button type="button" data-testid="go-u2" onClick={() => navigate('/players/u2')}>
+          go
+        </button>
+      );
+    };
+
+    const renderConNavegacion = () =>
+      render(
+        <MemoryRouter initialEntries={['/players/u1']}>
+          <IrABea />
+          <Routes>
+            <Route path="/players/:userId" element={<PlayerProfilePage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+    it('neither reloads the old profile over the new one nor leaves it busy', async () => {
+      getProfile.mockImplementation(async (id) =>
+        id === 'u1' ? amigo() : perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' })
+      );
+      let terminaElBloqueo;
+      blockUser.mockImplementation(() => new Promise((r) => { terminaElBloqueo = r; }));
+      renderConNavegacion();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(screen.getByTestId('player-profile-menu-block'));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(screen.getByTestId('go-u2'));
+
+      expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
+      // Bea no hereda la acción en vuelo de Ana
+      expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
+      expect(screen.getByTestId('player-profile-menu')).toBeEnabled();
+
+      terminaElBloqueo({ id: 'f1' });
+      await new Promise((r) => setTimeout(r, 30));
+
+      expect(getProfile.mock.calls.map(([id]) => id)).toEqual(['u1', 'u2']);
+      expect(screen.getByText('Bea Ruiz')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
+    });
+
+    it('does not apply the old profile fallback to the new one', async () => {
+      let llamadasU1 = 0;
+      getProfile.mockImplementation(async (id) => {
+        if (id === 'u2') return perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' });
+        llamadasU1 += 1;
+        if (llamadasU1 > 1) throw error(500);
+        return amigo();
+      });
+      let terminaElBloqueo;
+      blockUser.mockImplementation(() => new Promise((r) => { terminaElBloqueo = r; }));
+      renderConNavegacion();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(screen.getByTestId('player-profile-menu-block'));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(screen.getByTestId('go-u2'));
+      expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
+
+      terminaElBloqueo({ id: 'f1' });
+      await new Promise((r) => setTimeout(r, 30));
+
+      expect(screen.getByTestId('player-profile-add-friend')).toBeInTheDocument();
+      expect(screen.queryByTestId('player-profile-friendship-blocked')).not.toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalledWith('playerProfile:errors.reloadFailed');
+    });
+    it('says nothing about the old profile reload once you have left it', async () => {
+      let rechazaLaRecarga;
+      let llamadasU1 = 0;
+      getProfile.mockImplementation((id) => {
+        if (id === 'u2') return Promise.resolve(perfil({ id: 'u2', firstName: 'Bea', lastName: 'Ruiz' }));
+        llamadasU1 += 1;
+        if (llamadasU1 === 1) return Promise.resolve(perfil());
+        return new Promise((_, rechaza) => { rechazaLaRecarga = rechaza; });
+      });
+      renderConNavegacion();
+
+      fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
+      await waitFor(() => expect(llamadasU1).toBe(2));
+      fireEvent.click(screen.getByTestId('go-u2'));
+      expect(await screen.findByText('Bea Ruiz')).toBeInTheDocument();
+
+      rechazaLaRecarga(error(500));
+      await new Promise((r) => setTimeout(r, 30));
+
+      expect(customToast.error).not.toHaveBeenCalledWith('playerProfile:errors.reloadFailed');
+      expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
+    });
+  });
+
+  describe('final review - the local fallback keeps the new friendship id', () => {
+    it('cancels the request just sent with the id the backend gave', async () => {
+      getProfile.mockResolvedValueOnce(perfil()).mockRejectedValueOnce(error(500));
+      sendRequest.mockResolvedValue({ id: 'f9', status: 'PENDING' });
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
+      fireEvent.click(await screen.findByTestId('player-profile-cancel-request'));
+
+      await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f9'));
+    });
+
+    it('unblocks a player just blocked with the id the backend gave', async () => {
+      getProfile.mockResolvedValueOnce(perfil()).mockRejectedValueOnce(error(500));
+      blockUser.mockResolvedValue({ id: 'f8', status: 'BLOCKED' });
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-menu'));
+      fireEvent.click(await screen.findByTestId('player-profile-menu-block'));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+      fireEvent.click(await screen.findByTestId('player-profile-unblock'));
+
+      await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f8'));
+    });
+
+    it('keeps the id it had when the action returns none', async () => {
+      getProfile
+        .mockResolvedValueOnce(perfil({ friendship: { status: 'PENDING_RECEIVED', friendshipId: 'f1' } }))
+        .mockRejectedValueOnce(error(500));
+      respondRequest.mockResolvedValue(undefined);
+      renderProfile();
+
+      await screen.findByTestId('player-profile-friendship-received');
+      fireEvent.click(screen.getByText('playerProfile:friendship.accept'));
+      await screen.findByTestId('player-profile-friendship-accepted');
+      fireEvent.click(screen.getByTestId('player-profile-menu'));
+      fireEvent.click(await screen.findByTestId('player-profile-menu-remove'));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('confirm-modal-confirm'));
+
+      await waitFor(() => expect(removeFriend).toHaveBeenCalledWith('f1'));
+    });
+  });
 });
