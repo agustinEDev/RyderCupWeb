@@ -146,6 +146,17 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     return QuickMatchMapper.toDomain(apiData);
   }
 
+  // La partida terminada de otro, para verla en solo lectura (K). Sin el tope
+  // de anotar: aquí no se anota nada
+  async getShared(quickMatchId) {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/shared`);
+    return {
+      quickMatch: QuickMatchMapper.toDomain(apiData),
+      readOnly: apiData.read_only ?? true,
+      viewerIsParticipant: !!apiData.viewer_is_participant,
+    };
+  }
+
   async listMine(filters = {}) {
     const apiFilters = {};
     if (filters.status) apiFilters.status = filters.status;

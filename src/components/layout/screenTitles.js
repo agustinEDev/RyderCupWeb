@@ -43,6 +43,8 @@ const SCREENS = [
   { pattern: '/creator/competitions/:id/invitations', titleKey: 'screens.invitations', parent: '/competitions/:id' },
 
   { pattern: '/players/:userId', titleKey: 'screens.playerProfile', back: 'history' },
+  // Se llega desde Actividad o desde el perfil de un amigo: se vuelve por donde se vino
+  { pattern: '/quick-matches/:quickMatchId/shared', titleKey: 'screens.sharedQuickMatch', back: 'history' },
 
   { pattern: '/browse-competitions', titleKey: 'screens.browseCompetitions', parent: '/dashboard' },
   { pattern: '/player/invitations', titleKey: 'screens.myInvitations', parent: '/dashboard' },

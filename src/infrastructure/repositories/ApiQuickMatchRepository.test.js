@@ -134,6 +134,46 @@ describe('ApiQuickMatchRepository', () => {
     });
   });
 
+  describe('getShared (K)', () => {
+    it('GETs /quick-matches/{id}/shared and says it is read-only and whether the viewer played', async () => {
+      apiRequest.mockResolvedValue({
+        ...mockQuickMatchApi,
+        status: 'COMPLETED',
+        participants: [
+          { participant_id: 'p-1', user_id: 'user-1', name: null, handicap: 10, team: null, is_guest: false },
+          { participant_id: 'p-2', user_id: null, name: null, handicap: null, team: null, is_guest: true },
+        ],
+        read_only: true,
+        viewer_is_participant: false,
+      });
+
+      const result = await repo.getShared('qm-1');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/qm-1/shared');
+      expect(result.quickMatch).toBeInstanceOf(QuickMatch);
+      expect(result.readOnly).toBe(true);
+      expect(result.viewerIsParticipant).toBe(false);
+      expect(result.quickMatch.participants.map((p) => [p.name, p.isGuest])).toEqual([
+        [null, false],
+        [null, true],
+      ]);
+    });
+
+    it('a viewer who played is said so; read-only defaults to true', async () => {
+      apiRequest.mockResolvedValue({ ...mockQuickMatchApi, status: 'COMPLETED', viewer_is_participant: true });
+
+      const result = await repo.getShared('qm-1');
+
+      expect(result.viewerIsParticipant).toBe(true);
+      expect(result.readOnly).toBe(true);
+    });
+
+    it('lets a 403 through for the screen to handle', async () => {
+      apiRequest.mockRejectedValue(Object.assign(new Error('Forbidden'), { status: 403 }));
+      await expect(repo.getShared('qm-1')).rejects.toMatchObject({ status: 403 });
+    });
+  });
+
   describe('listMine', () => {
     it('should GET /quick-matches/me with query filters and map results', async () => {
       apiRequest.mockResolvedValue({

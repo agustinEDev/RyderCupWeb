@@ -234,6 +234,7 @@ import HideQuickMatchUseCase from '../application/use_cases/quick_match/HideQuic
 import ExcludeQuickMatchFromStatsUseCase from '../application/use_cases/quick_match/ExcludeQuickMatchFromStatsUseCase';
 import IncludeQuickMatchInStatsUseCase from '../application/use_cases/quick_match/IncludeQuickMatchInStatsUseCase';
 import GetQuickMatchUseCase from '../application/use_cases/quick_match/GetQuickMatchUseCase';
+import GetSharedQuickMatchUseCase from '../application/use_cases/quick_match/GetSharedQuickMatchUseCase';
 import ListMyQuickMatchesUseCase from '../application/use_cases/quick_match/ListMyQuickMatchesUseCase';
 import SubmitQuickMatchHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchHoleScoreUseCase';
 import SubmitQuickMatchProxyHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchProxyHoleScoreUseCase';
@@ -449,6 +450,7 @@ const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: 
 const excludeQuickMatchFromStatsUseCase = new ExcludeQuickMatchFromStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const includeQuickMatchInStatsUseCase = new IncludeQuickMatchInStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const getQuickMatchUseCase = new GetQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const getSharedQuickMatchUseCase = new GetSharedQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const submitQuickMatchProxyHoleScoreUseCase = new SubmitQuickMatchProxyHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -723,6 +725,7 @@ export {
   excludeQuickMatchFromStatsUseCase,
   includeQuickMatchInStatsUseCase,
   getQuickMatchUseCase,
+  getSharedQuickMatchUseCase,
   listMyQuickMatchesUseCase,
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,

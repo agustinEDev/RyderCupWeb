@@ -75,6 +75,7 @@ const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingM
 
 // Quick Match pages (FE #236)
 const QuickMatchScoringPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchScoringPage'));
+const QuickMatchSharedPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchSharedPage'));
 const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQuickMatchesPage'));
 
 // Google OAuth pages
@@ -404,6 +405,12 @@ function AppContent() {
         <Route path="/quick-matches/:quickMatchId/scoring" element={
           <ProtectedRoute>
             <QuickMatchScoringPage />
+          </ProtectedRoute>
+        } />
+        {/* La partida terminada de un amigo, en solo lectura (K) */}
+        <Route path="/quick-matches/:quickMatchId/shared" element={
+          <ProtectedRoute>
+            <QuickMatchSharedPage />
           </ProtectedRoute>
         } />
 

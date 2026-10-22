@@ -271,5 +271,15 @@
   },
   "personalRound": {
     "inMatch": "({{value}} en el partido)"
+  },
+  "shared": {
+    "readOnly": "Solo lectura",
+    "guest": "un invitado",
+    "player": "un jugador",
+    "forbidden": "No puedes ver esta partida.",
+    "forbiddenToast": "No puedes ver esa partida: te llevamos a su perfil.",
+    "back": "Volver a Actividad",
+    "retry": "Reintentar",
+    "tabsLabel": "Partida rápida en solo lectura"
   }
 }
