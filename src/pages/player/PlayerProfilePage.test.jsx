@@ -273,6 +273,15 @@ describe('PlayerProfilePage', () => {
       expect(screen.getByTestId('activity-event-e1')).toHaveTextContent('Campo Uno');
     });
 
+    it("activity cards do not link back to the profile already open (CodeRabbit #944)", async () => {
+      getProfile.mockResolvedValue(amigo());
+      getActivity.mockResolvedValue(paginaActividad());
+      renderProfile();
+
+      const tarjeta = await screen.findByTestId('activity-event-e1');
+      expect(tarjeta.querySelector('[data-testid="enlace-tarjeta"]')).toBeNull();
+    });
+
     it('does not show a stats grid for a friend who has not played yet', async () => {
       getProfile.mockResolvedValue(amigo({ stats: estadisticas({ roundsPlayed: 0 }) }));
       renderProfile();
