@@ -11,14 +11,25 @@ import { MoreHorizontal, Ban, UserMinus } from 'lucide-react';
 const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t }) => {
   const [isOpen, setIsOpen] = useState(false);
   const contenedor = useRef(null);
+  const disparador = useRef(null);
+  const menu = useRef(null);
 
+  const opciones = () => [...(menu.current?.querySelectorAll('[role="menuitem"]') ?? [])];
+
+  // Teclado como un menú de verdad (revisión FE-2): al abrir, el foco va a la
+  // primera opción; Escape cierra y lo devuelve al «⋯»
   useEffect(() => {
     if (!isOpen) return undefined;
+    opciones()[0]?.focus();
+
     const alPulsarFuera = (event) => {
       if (contenedor.current && !contenedor.current.contains(event.target)) setIsOpen(false);
     };
     const alPulsarTecla = (event) => {
-      if (event.key === 'Escape') setIsOpen(false);
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        disparador.current?.focus();
+      }
     };
     document.addEventListener('mousedown', alPulsarFuera);
     document.addEventListener('touchstart', alPulsarFuera);
@@ -30,6 +41,26 @@ const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t })
     };
   }, [isOpen]);
 
+  // Foco itinerante: flechas en círculo, Inicio y Fin a los extremos; Tab
+  // sale del menú y lo cierra
+  const alMoverse = (event) => {
+    const lista = opciones();
+    if (lista.length === 0) return;
+    const actual = lista.indexOf(globalThis.document.activeElement);
+    const destino = {
+      ArrowDown: (actual + 1) % lista.length,
+      ArrowUp: (actual - 1 + lista.length) % lista.length,
+      Home: 0,
+      End: lista.length - 1,
+    }[event.key];
+    if (destino !== undefined) {
+      event.preventDefault();
+      lista[destino].focus();
+    } else if (event.key === 'Tab') {
+      setIsOpen(false);
+    }
+  };
+
   const elige = (accion) => () => {
     setIsOpen(false);
     accion();
@@ -38,6 +69,7 @@ const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t })
   return (
     <div className="relative shrink-0" ref={contenedor}>
       <button
+        ref={disparador}
         type="button"
         onClick={() => setIsOpen((abierto) => !abierto)}
         disabled={disabled}
@@ -52,13 +84,16 @@ const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t })
 
       {isOpen && (
         <div
+          ref={menu}
           role="menu"
+          onKeyDown={alMoverse}
           className="absolute right-0 top-full z-20 mt-1 w-48 max-w-[calc(100vw-2rem)] py-1 bg-white border border-gray-200 rounded-lg shadow-lg"
         >
           {isFriend && (
             <button
               type="button"
               role="menuitem"
+              tabIndex={-1}
               onClick={elige(onRemove)}
               className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
               data-testid="player-profile-menu-remove"
@@ -70,6 +105,7 @@ const PlayerProfileMenu = ({ isFriend, disabled = false, onRemove, onBlock, t })
           <button
             type="button"
             role="menuitem"
+            tabIndex={-1}
             onClick={elige(onBlock)}
             className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
             data-testid="player-profile-menu-block"
