@@ -3001,6 +3001,915 @@
           "toPar": -9
         }
       }
+    },
+    {
+      "name": "stableford el mismo indice escrito distinto (12.4 y 12.40): comparten",
+      "scoringFormat": "STABLEFORD",
+      "playMode": "HANDICAP",
+      "allowancePercentage": 95,
+      "holes": [
+        {
+          "holeNumber": 1,
+          "par": 4,
+          "strokeIndex": 1
+        },
+        {
+          "holeNumber": 2,
+          "par": 4,
+          "strokeIndex": 2
+        },
+        {
+          "holeNumber": 3,
+          "par": 4,
+          "strokeIndex": 3
+        },
+        {
+          "holeNumber": 4,
+          "par": 4,
+          "strokeIndex": 4
+        },
+        {
+          "holeNumber": 5,
+          "par": 4,
+          "strokeIndex": 5
+        },
+        {
+          "holeNumber": 6,
+          "par": 4,
+          "strokeIndex": 6
+        },
+        {
+          "holeNumber": 7,
+          "par": 4,
+          "strokeIndex": 7
+        },
+        {
+          "holeNumber": 8,
+          "par": 4,
+          "strokeIndex": 8
+        },
+        {
+          "holeNumber": 9,
+          "par": 4,
+          "strokeIndex": 9
+        },
+        {
+          "holeNumber": 10,
+          "par": 4,
+          "strokeIndex": 10
+        },
+        {
+          "holeNumber": 11,
+          "par": 4,
+          "strokeIndex": 11
+        },
+        {
+          "holeNumber": 12,
+          "par": 4,
+          "strokeIndex": 12
+        },
+        {
+          "holeNumber": 13,
+          "par": 4,
+          "strokeIndex": 13
+        },
+        {
+          "holeNumber": 14,
+          "par": 4,
+          "strokeIndex": 14
+        },
+        {
+          "holeNumber": 15,
+          "par": 4,
+          "strokeIndex": 15
+        },
+        {
+          "holeNumber": 16,
+          "par": 4,
+          "strokeIndex": 16
+        },
+        {
+          "holeNumber": 17,
+          "par": 4,
+          "strokeIndex": 17
+        },
+        {
+          "holeNumber": 18,
+          "par": 4,
+          "strokeIndex": 18
+        }
+      ],
+      "tees": [
+        {
+          "color": "YELLOW",
+          "gender": "MALE",
+          "courseRating": 72.0,
+          "slopeRating": 113
+        }
+      ],
+      "participants": [
+        {
+          "participantId": "a",
+          "handicap": 12.4,
+          "color": null,
+          "teeGender": null,
+          "handicapText": "12.4"
+        },
+        {
+          "participantId": "b",
+          "handicap": 12.4,
+          "color": null,
+          "teeGender": null,
+          "handicapText": "12.40"
+        },
+        {
+          "participantId": "c",
+          "handicap": 30.0,
+          "color": null,
+          "teeGender": null
+        }
+      ],
+      "scores": {
+        "a": {
+          "1": 5,
+          "2": 5,
+          "3": 5,
+          "4": 5,
+          "5": 5,
+          "6": 5,
+          "7": 5,
+          "8": 5,
+          "9": 5,
+          "10": 5,
+          "11": 5,
+          "12": 5,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "b": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 5,
+          "8": 5,
+          "9": 5,
+          "10": 5,
+          "11": 5,
+          "12": 5,
+          "13": 5,
+          "14": 5,
+          "15": 5,
+          "16": 5,
+          "17": 5,
+          "18": 5
+        },
+        "c": {
+          "1": 6,
+          "2": 6,
+          "3": 6,
+          "4": 6,
+          "5": 6,
+          "6": 6,
+          "7": 6,
+          "8": 6,
+          "9": 6,
+          "10": 6,
+          "11": 6,
+          "12": 6,
+          "13": 6,
+          "14": 6,
+          "15": 6,
+          "16": 6,
+          "17": 6,
+          "18": 6
+        }
+      },
+      "expected": {
+        "a": {
+          "position": 1,
+          "tied": true,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 84,
+          "points": 36
+        },
+        "b": {
+          "position": 1,
+          "tied": true,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 84,
+          "points": 36
+        },
+        "c": {
+          "position": 3,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 108,
+          "points": 29
+        }
+      }
+    },
+    {
+      "name": "stableford scratch empate a puntos, delante el de menos indice",
+      "scoringFormat": "STABLEFORD",
+      "playMode": "SCRATCH",
+      "allowancePercentage": 95,
+      "holes": [
+        {
+          "holeNumber": 1,
+          "par": 4,
+          "strokeIndex": 1
+        },
+        {
+          "holeNumber": 2,
+          "par": 4,
+          "strokeIndex": 2
+        },
+        {
+          "holeNumber": 3,
+          "par": 4,
+          "strokeIndex": 3
+        },
+        {
+          "holeNumber": 4,
+          "par": 4,
+          "strokeIndex": 4
+        },
+        {
+          "holeNumber": 5,
+          "par": 4,
+          "strokeIndex": 5
+        },
+        {
+          "holeNumber": 6,
+          "par": 4,
+          "strokeIndex": 6
+        },
+        {
+          "holeNumber": 7,
+          "par": 4,
+          "strokeIndex": 7
+        },
+        {
+          "holeNumber": 8,
+          "par": 4,
+          "strokeIndex": 8
+        },
+        {
+          "holeNumber": 9,
+          "par": 4,
+          "strokeIndex": 9
+        },
+        {
+          "holeNumber": 10,
+          "par": 4,
+          "strokeIndex": 10
+        },
+        {
+          "holeNumber": 11,
+          "par": 4,
+          "strokeIndex": 11
+        },
+        {
+          "holeNumber": 12,
+          "par": 4,
+          "strokeIndex": 12
+        },
+        {
+          "holeNumber": 13,
+          "par": 4,
+          "strokeIndex": 13
+        },
+        {
+          "holeNumber": 14,
+          "par": 4,
+          "strokeIndex": 14
+        },
+        {
+          "holeNumber": 15,
+          "par": 4,
+          "strokeIndex": 15
+        },
+        {
+          "holeNumber": 16,
+          "par": 4,
+          "strokeIndex": 16
+        },
+        {
+          "holeNumber": 17,
+          "par": 4,
+          "strokeIndex": 17
+        },
+        {
+          "holeNumber": 18,
+          "par": 4,
+          "strokeIndex": 18
+        }
+      ],
+      "tees": [
+        {
+          "color": "YELLOW",
+          "gender": "MALE",
+          "courseRating": 72.0,
+          "slopeRating": 113
+        }
+      ],
+      "participants": [
+        {
+          "participantId": "a",
+          "handicap": 19.0,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "b",
+          "handicap": 0.0,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "c",
+          "handicap": 5.0,
+          "color": null,
+          "teeGender": null
+        }
+      ],
+      "scores": {
+        "a": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "b": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "c": {
+          "1": 5,
+          "2": 5,
+          "3": 5,
+          "4": 5,
+          "5": 5,
+          "6": 5,
+          "7": 5,
+          "8": 5,
+          "9": 5,
+          "10": 5,
+          "11": 5,
+          "12": 5,
+          "13": 5,
+          "14": 5,
+          "15": 5,
+          "16": 5,
+          "17": 5,
+          "18": 5
+        }
+      },
+      "expected": {
+        "a": {
+          "position": 2,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "points": 36
+        },
+        "b": {
+          "position": 1,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "points": 36
+        },
+        "c": {
+          "position": 3,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 90,
+          "points": 18
+        }
+      }
+    },
+    {
+      "name": "stableford scratch sin handicap empata con un 0.0",
+      "scoringFormat": "STABLEFORD",
+      "playMode": "SCRATCH",
+      "allowancePercentage": 95,
+      "holes": [
+        {
+          "holeNumber": 1,
+          "par": 4,
+          "strokeIndex": 1
+        },
+        {
+          "holeNumber": 2,
+          "par": 4,
+          "strokeIndex": 2
+        },
+        {
+          "holeNumber": 3,
+          "par": 4,
+          "strokeIndex": 3
+        },
+        {
+          "holeNumber": 4,
+          "par": 4,
+          "strokeIndex": 4
+        },
+        {
+          "holeNumber": 5,
+          "par": 4,
+          "strokeIndex": 5
+        },
+        {
+          "holeNumber": 6,
+          "par": 4,
+          "strokeIndex": 6
+        },
+        {
+          "holeNumber": 7,
+          "par": 4,
+          "strokeIndex": 7
+        },
+        {
+          "holeNumber": 8,
+          "par": 4,
+          "strokeIndex": 8
+        },
+        {
+          "holeNumber": 9,
+          "par": 4,
+          "strokeIndex": 9
+        },
+        {
+          "holeNumber": 10,
+          "par": 4,
+          "strokeIndex": 10
+        },
+        {
+          "holeNumber": 11,
+          "par": 4,
+          "strokeIndex": 11
+        },
+        {
+          "holeNumber": 12,
+          "par": 4,
+          "strokeIndex": 12
+        },
+        {
+          "holeNumber": 13,
+          "par": 4,
+          "strokeIndex": 13
+        },
+        {
+          "holeNumber": 14,
+          "par": 4,
+          "strokeIndex": 14
+        },
+        {
+          "holeNumber": 15,
+          "par": 4,
+          "strokeIndex": 15
+        },
+        {
+          "holeNumber": 16,
+          "par": 4,
+          "strokeIndex": 16
+        },
+        {
+          "holeNumber": 17,
+          "par": 4,
+          "strokeIndex": 17
+        },
+        {
+          "holeNumber": 18,
+          "par": 4,
+          "strokeIndex": 18
+        }
+      ],
+      "tees": [
+        {
+          "color": "YELLOW",
+          "gender": "MALE",
+          "courseRating": 72.0,
+          "slopeRating": 113
+        }
+      ],
+      "participants": [
+        {
+          "participantId": "a",
+          "handicap": null,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "b",
+          "handicap": 0.0,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "c",
+          "handicap": -1.0,
+          "color": null,
+          "teeGender": null
+        }
+      ],
+      "scores": {
+        "a": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "b": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "c": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        }
+      },
+      "expected": {
+        "a": {
+          "position": 2,
+          "tied": true,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "points": 36
+        },
+        "b": {
+          "position": 2,
+          "tied": true,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "points": 36
+        },
+        "c": {
+          "position": 1,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 3,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "points": 36
+        }
+      }
+    },
+    {
+      "name": "medal scratch golpes brutos y el empate por indice",
+      "scoringFormat": "MEDAL",
+      "playMode": "SCRATCH",
+      "allowancePercentage": 95,
+      "holes": [
+        {
+          "holeNumber": 1,
+          "par": 4,
+          "strokeIndex": 1
+        },
+        {
+          "holeNumber": 2,
+          "par": 4,
+          "strokeIndex": 2
+        },
+        {
+          "holeNumber": 3,
+          "par": 4,
+          "strokeIndex": 3
+        },
+        {
+          "holeNumber": 4,
+          "par": 4,
+          "strokeIndex": 4
+        },
+        {
+          "holeNumber": 5,
+          "par": 4,
+          "strokeIndex": 5
+        },
+        {
+          "holeNumber": 6,
+          "par": 4,
+          "strokeIndex": 6
+        },
+        {
+          "holeNumber": 7,
+          "par": 4,
+          "strokeIndex": 7
+        },
+        {
+          "holeNumber": 8,
+          "par": 4,
+          "strokeIndex": 8
+        },
+        {
+          "holeNumber": 9,
+          "par": 4,
+          "strokeIndex": 9
+        },
+        {
+          "holeNumber": 10,
+          "par": 4,
+          "strokeIndex": 10
+        },
+        {
+          "holeNumber": 11,
+          "par": 4,
+          "strokeIndex": 11
+        },
+        {
+          "holeNumber": 12,
+          "par": 4,
+          "strokeIndex": 12
+        },
+        {
+          "holeNumber": 13,
+          "par": 4,
+          "strokeIndex": 13
+        },
+        {
+          "holeNumber": 14,
+          "par": 4,
+          "strokeIndex": 14
+        },
+        {
+          "holeNumber": 15,
+          "par": 4,
+          "strokeIndex": 15
+        },
+        {
+          "holeNumber": 16,
+          "par": 4,
+          "strokeIndex": 16
+        },
+        {
+          "holeNumber": 17,
+          "par": 4,
+          "strokeIndex": 17
+        },
+        {
+          "holeNumber": 18,
+          "par": 4,
+          "strokeIndex": 18
+        }
+      ],
+      "tees": [
+        {
+          "color": "YELLOW",
+          "gender": "MALE",
+          "courseRating": 72.0,
+          "slopeRating": 113
+        }
+      ],
+      "participants": [
+        {
+          "participantId": "a",
+          "handicap": 20.0,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "b",
+          "handicap": 3.0,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "c",
+          "handicap": 3.0,
+          "color": null,
+          "teeGender": null
+        },
+        {
+          "participantId": "d",
+          "handicap": 0.0,
+          "color": null,
+          "teeGender": null
+        }
+      ],
+      "scores": {
+        "a": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "b": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "c": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4,
+          "10": 4,
+          "11": 4,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "15": 4,
+          "16": 4,
+          "17": 4,
+          "18": 4
+        },
+        "d": {
+          "1": 5,
+          "2": 5,
+          "3": 5,
+          "4": 5,
+          "5": 5,
+          "6": 5,
+          "7": 5,
+          "8": 5,
+          "9": 5,
+          "10": 5,
+          "11": 5,
+          "12": 5,
+          "13": 5,
+          "14": 5,
+          "15": 5,
+          "16": 5,
+          "17": 5,
+          "18": 5
+        }
+      },
+      "expected": {
+        "a": {
+          "position": 3,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 4,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "netStrokes": 72,
+          "toPar": 0
+        },
+        "b": {
+          "position": 1,
+          "tied": true,
+          "unfinished": false,
+          "totalPlayers": 4,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "netStrokes": 72,
+          "toPar": 0
+        },
+        "c": {
+          "position": 1,
+          "tied": true,
+          "unfinished": false,
+          "totalPlayers": 4,
+          "holesPlayed": 18,
+          "grossStrokes": 72,
+          "netStrokes": 72,
+          "toPar": 0
+        },
+        "d": {
+          "position": 4,
+          "tied": false,
+          "unfinished": false,
+          "totalPlayers": 4,
+          "holesPlayed": 18,
+          "grossStrokes": 90,
+          "netStrokes": 90,
+          "toPar": 18
+        }
+      }
     }
   ]
 }
