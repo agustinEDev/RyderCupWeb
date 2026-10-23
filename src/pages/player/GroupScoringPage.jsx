@@ -371,7 +371,7 @@ const GroupScoringPage = () => {
                     // Sin a quién marcar, o con su tarjeta ya cerrada, su casilla no se toca
                     isMarkerScoreLocked={!marcoA || !seJuega(marcoA) || isMarkerScoreLocked || !canScore || isSessionBlocked}
                     onScoreChange={anotar}
-                    allowPickedUp={strokePlay.pickedUpAllowed}
+                    allowPickedUp={strokePlay.pickedUpAllowed === true}
                   />
                   <VentanaDelMapa
                     mapaDelHoyo={mapaDelHoyo}

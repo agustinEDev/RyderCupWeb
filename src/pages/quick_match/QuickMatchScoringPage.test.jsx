@@ -872,6 +872,17 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
       expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
     });
 
+    it('sin formato conocido no ofrece la raya: solo donde se permite (23 oct 2026)', () => {
+      mockUseQuickMatchScoring.mockReturnValue(
+        scoringState({ quickMatch: { scoringFormat: undefined, matchFormat: null } })
+      );
+      renderPage();
+
+      fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+
+      expect(screen.queryByTestId('picked-up-button')).not.toBeInTheDocument();
+    });
+
     it('ensena la raya anotada distinta del hoyo sin anotar', () => {
       mockUseQuickMatchScoring.mockReturnValue(
         scoringState({

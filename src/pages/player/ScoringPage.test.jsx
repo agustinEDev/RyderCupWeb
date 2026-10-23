@@ -267,6 +267,14 @@ describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve 
     expect(screen.getByTestId('hole-input')).toBeInTheDocument();
   });
 
+  it('un partido de torneo es match play: la casilla ofrece la raya (23 oct 2026)', () => {
+    conVista({ matchStatus: 'IN_PROGRESS' });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.allowPickedUp).toBe(true);
+  });
+
   it('Q11 · los tres reciben la vista con la cola, no solo lo del servidor', () => {
     // El servidor no tiene el hoyo 1 (`scoringView.scores` vacío); la cola sí
     const conLaCola = [{

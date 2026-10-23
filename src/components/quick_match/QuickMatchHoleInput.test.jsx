@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 // Con `count` se pega detrás: así se ve que el número llega a la frase
 vi.mock('react-i18next', () => ({
@@ -7,7 +7,13 @@ vi.mock('react-i18next', () => ({
     t: (clave, opts) => (opts?.count != null ? `${clave}:${opts.count}` : clave),
   }),
 }));
-vi.mock('../scoring/ScoreInputPanel', () => ({ default: () => null }));
+const panel = vi.hoisted(() => ({ props: null }));
+vi.mock('../scoring/ScoreInputPanel', () => ({
+  default: (props) => {
+    panel.props = props;
+    return null;
+  },
+}));
 
 import QuickMatchHoleInput from './QuickMatchHoleInput';
 
@@ -268,5 +274,21 @@ describe('QuickMatchHoleInput · «Tu vuelta»', () => {
 
     pintar([jugador('p1')], { myRound: vuelta({ toPar: null, toParLabel: null, holesPlayed: 0 }) });
     expect(screen.getByText('input.myRoundA11yNone')).toHaveClass('sr-only');
+  });
+});
+
+describe('QuickMatchHoleInput · la raya, solo donde se permite (23 oct 2026)', () => {
+  it('sin decir nada, el teclado no ofrece la raya', () => {
+    pintar([jugador('p1')]);
+    fireEvent.click(boton('p1'));
+
+    expect(panel.props.allowPickedUp).toBe(false);
+  });
+
+  it('donde se permite, sí', () => {
+    pintar([jugador('p1')], { allowPickedUp: true });
+    fireEvent.click(boton('p1'));
+
+    expect(panel.props.allowPickedUp).toBe(true);
   });
 });

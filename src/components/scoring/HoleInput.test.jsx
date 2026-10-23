@@ -69,15 +69,17 @@ describe('HoleInput', () => {
     expect(screen.queryByTestId('marked-validation')).not.toBeInTheDocument();
   });
 
-  it('sin recogida (Medal), el teclado no ofrece la raya; por defecto sí (FE #824, PR 7)', () => {
-    const { unmount } = render(<HoleInput {...defaultProps} allowPickedUp={false} />);
+  it.each([
+    ['sin decir nada', {}, false],
+    ['con el dato sin llegar (undefined)', { allowPickedUp: undefined }, false],
+    ['en Medal', { allowPickedUp: false }, false],
+    ['donde se permite', { allowPickedUp: true }, true],
+  ])('la raya solo se ofrece donde se permite: %s (Agustín, 23 oct 2026)', (_caso, extra, sale) => {
+    // «Que la raya no salga ya en Medal, no demos la oportunidad de que falle»:
+    // por defecto no sale, y un dato que no llega tampoco la enseña
+    render(<HoleInput {...defaultProps} {...extra} />);
     fireEvent.click(screen.getAllByRole('button')[0]);
-    expect(screen.queryByTestId('picked-up-button')).toBeNull();
-    unmount();
-
-    render(<HoleInput {...defaultProps} />);
-    fireEvent.click(screen.getAllByRole('button')[0]);
-    expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('picked-up-button') !== null).toBe(sale);
   });
 
   it('sin índice del hoyo (partidas de stroke play), no se enseña la etiqueta vacía (pasada)', () => {
@@ -177,7 +179,7 @@ describe('HoleInput', () => {
   it('should show the dash figure when picked-up is selected', () => {
     // El trazo de la raya, que ahora es el UNICO trazo de la casilla: el hoyo
     // sin anotar se queda vacio.
-    render(<HoleInput {...defaultProps} />);
+    render(<HoleInput {...defaultProps} allowPickedUp />);
     fireEvent.click(screen.getByTestId('own-score-button'));
     fireEvent.click(screen.getByTestId('picked-up-button'));
     expect(screen.getByTestId('own-score-value')).toHaveTextContent('—');

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
+import { permiteLaRaya } from '../../domain/services/permiteLaRaya';
 import { useParams, useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -429,9 +430,9 @@ const QuickMatchScoringPage = () => {
       .filter(Boolean);
 
   // En Medal se emboca en todos los hoyos: quien no lo hace no entrega tarjeta,
-  // así que ahí la raya ni se ofrece —y el backend la rechaza—. En Stableford y
-  // en match play sí, que es donde recoger forma parte del juego.
-  const allowsPickedUp = quickMatch?.scoringFormat !== 'MEDAL';
+  // así que ahí la raya ni se ofrece —y el backend la rechaza—. Solo donde se
+  // permite expresamente: Stableford y match play
+  const allowsPickedUp = permiteLaRaya(quickMatch);
 
   const isFoursomes = quickMatch?.matchFormat === 'FOURSOMES';
   const entries = isFoursomes ? sideEntries() : playerEntries();

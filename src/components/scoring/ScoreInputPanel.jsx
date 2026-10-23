@@ -12,9 +12,10 @@ const MAX_SCORE = 15;
  * `allowPickedUp` esconde la raya donde no se puede recoger. En Medal hay que
  * embocar en todos los hoyos —quien no lo hace no entrega tarjeta—, así que
  * ofrecer ahí el botón es ofrecer algo que el backend rechaza. En Stableford y
- * en match play sí: recoger es parte del juego.
+ * en match play sí: recoger es parte del juego. Por defecto NO sale: se ofrece
+ * solo donde se permite expresamente (Agustín, 23 oct 2026).
  */
-const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp = true }) => {
+const ScoreInputPanel = ({ value, onSelect, onClose, label, par, allowPickedUp = false }) => {
   const { t } = useTranslation('scoring');
   const [customMode, setCustomMode] = useState(false);
   const [customInput, setCustomInput] = useState('');

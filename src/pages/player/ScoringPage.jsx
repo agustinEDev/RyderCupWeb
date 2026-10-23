@@ -624,6 +624,9 @@ const ScoringPage = () => {
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <>
                 <HoleInput
+                  // Un partido de torneo es match play: recoger es conceder el
+                  // hoyo, y la raya se permite (23 oct 2026: se dice dónde sí)
+                  allowPickedUp
                   // Y otra vez cada vez que su hoyo no se puede guardar (FE #622):
                   // la casilla guarda su propia selección y solo adopta la vista
                   // cuando esta cambia, así que enseñaba un golpe que no estaba en
