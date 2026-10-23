@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.51.0] - 2026-10-23
+
+**Release social 1: Actividad rediseñada y perfil de otro jugador.** Una sola
+línea de tiempo con el número de novedades en el botón y en el icono de la
+app, perfil de amigos y no amigos con cara a cara y partidas juntos, y la
+partida rápida de un amigo en solo lectura. Necesita el backend **2.38.0** y
+se despliega **justo después** de él (cambios `api-breaking` en el backend).
+
+**Notas de despliegue.**
+
+- Sin variables nuevas. Bundle ~3461 KB (zona de aviso, por debajo del límite
+  de 3500 KB).
+
+### Added
+
+- **Actividad como línea de tiempo** (#944): lo más nuevo arriba, separadores
+  por día, marca de «nuevo», una tarjeta por vuelta y solicitudes de amistad
+  con Aceptar / Rechazar. Número de novedades en el botón (hasta «9+») y en el
+  icono de la app (el número real, hasta 99), que se limpia al abrir Actividad
+  y al cerrar sesión.
+- **Avisos nuevos** (#947): «Te has inscrito en…», tu hora de salida o tu
+  partido y su cambio, resultado final de tu equipo en la Ryder, partidas
+  cortas con «· N hoyos» y mejor bruto empatado.
+- **Perfil de otro jugador** (#945, #947): botón según la relación (añadir,
+  solicitud enviada, aceptar, amigos), menú «⋯» para eliminar o bloquear,
+  vista de bloqueado («Desbloquear» solo para quien bloqueó), y siendo amigo,
+  estadísticas, actividad, **cara a cara** y **partidas jugadas juntos**,
+  incluidos los torneos stroke play terminados («4.º y 7.º de 16»).
+- **Partida rápida de un amigo en solo lectura** (#947,
+  `/quick-matches/:id/shared`): clasificación y tarjeta, sin anotar; quien la
+  jugó va a su anotación.
+- Los logros de torneo abren la tarjeta a quien jugó ese grupo o partido; el
+  resto va al torneo (#947).
+
+### Changed
+
+- **Clasificación de la partida rápida con desempate por el hándicap exacto
+  más bajo** (sin hándicap = 0), «T2» solo en empates exactos y sin puesto
+  para quien no ha anotado; fijado con los casos de paridad que genera el
+  backend (#947).
+
+### Fixed
+
+- La actividad del perfil se agrupa por día como la de Actividad: las
+  tarjetas de días anteriores ya no muestran solo la hora (#946).
+- «Cargar más» sigue disponible con páginas cortas o vacías, y la recarga en
+  segundo plano no descoloca el cursor (#947).
+
 ## [2.50.1] - 2026-10-21
 
 **Hotfix: quien tiene los Términos pendientes llega a aceptarlos.** Sin
