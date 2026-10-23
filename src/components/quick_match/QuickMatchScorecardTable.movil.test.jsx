@@ -164,8 +164,8 @@ describe('QuickMatchScorecardTable · en el móvil, subtotales de puntos y de ne
 
   // Hándicap 18 sin barras: un golpe en cada hoyo
   const conGolpes = [{ participantId: 'p-1', name: 'Alice', handicap: 18, team: null, isGuest: false }];
-  // 1: par 4 con 5 -> neto 4, 2 puntos · 2: par 3 recogido -> 0 puntos, neto 5
-  // (doble bogey neto 6 menos el golpe) · 10: par 4 con 3 -> neto 2, 4 puntos
+  // 1: par 4 con 5 -> neto 4, 2 puntos · 2: par 3 recogido -> 0 puntos, bruto
+  // 6 (doble bogey neto) y neto 5 · 10: par 4 con 3 -> neto 2, 4 puntos
   const anotados = [
     { holeNumber: 1, participantId: 'p-1', score: 5 },
     { holeNumber: 2, participantId: 'p-1', score: null },
@@ -191,8 +191,9 @@ describe('QuickMatchScorecardTable · en el móvil, subtotales de puntos y de ne
     expect(within(sumaExtra('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
     expect(within(sumaExtra('vuelta')).getByTestId('subtotal-points')).toHaveTextContent(/^4$/);
     expect(within(sumaExtra('total')).getByTestId('subtotal-points')).toHaveTextContent(/^6$/);
-    // Los golpes de las filas de suma siguen donde estaban
-    expect(screen.getByTestId('suma-total')).toHaveTextContent(/^13$/);
+    // Los golpes de las filas de suma siguen donde estaban: 5 + 6 (la raya del
+    // par 3 con su golpe, doble bogey neto) + 3
+    expect(screen.getByTestId('suma-total')).toHaveTextContent(/^14$/);
   });
 
   it('A1: el subtotal de puntos se lee como los del hoyo', () => {

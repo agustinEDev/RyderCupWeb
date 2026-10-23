@@ -418,29 +418,29 @@ describe('StablefordCalculator', () => {
       expect(result.stablefordPoints).toBe(0);
     });
 
-    it('should not let the strokes received move the gross charge', () => {
-      // El bruto es un dato objetivo: no puede cambiar con el allowance. El
-      // neto si es doble bogey NETO, de ahi los cero puntos.
+    it.each([
+      [0, 6], // sin golpes: par + 2
+      [1, 7],
+      [2, 8],
+      [-1, 5], // plus: cede el golpe
+    ])('should charge %i strokes received into the gross of a raya (%i)', (golpes, bruto) => {
+      // «Siempre una raya es par + golpes recibidos + 2» (Agustin, 23 oct
+      // 2026): el bruto es su doble bogey NETO. El neto se queda en par + 2,
+      // de ahi los cero puntos.
       const participant = { participantId: 'p-1', handicap: 18 };
-      const allocation = { 'p-1': { strokesByHole: { 1: 1 } } };
+      const allocation = { 'p-1': { strokesByHole: { 1: golpes } } };
       const holeScores = [{ holeNumber: 1, participantId: 'p-1', score: null }];
 
-      const conGolpe = StablefordCalculator.computeParticipantTotals(
+      const result = StablefordCalculator.computeParticipantTotals(
         participant,
         holes,
         holeScores,
         allocation
       );
-      const scratch = StablefordCalculator.computeParticipantTotals(
-        { participantId: 'p-1', handicap: 0 },
-        holes,
-        holeScores
-      );
 
-      expect(conGolpe.totalStrokes).toBe(6);
-      expect(conGolpe.totalStrokes).toBe(scratch.totalStrokes);
-      expect(conGolpe.netStrokes).toBe(6);
-      expect(conGolpe.stablefordPoints).toBe(0);
+      expect(result.totalStrokes).toBe(bruto);
+      expect(result.netStrokes).toBe(6);
+      expect(result.stablefordPoints).toBe(0);
     });
 
     it('should still ignore a hole with no recorded entry at all', () => {
@@ -491,9 +491,8 @@ describe('StablefordCalculator', () => {
       );
 
       expect(result.stablefordPoints).toBe(30);
-      // 89, el mismo bruto que a scratch: la raya vale par + 2 y el reparto no
-      // entra en un total de golpes. Lo que si cambia es el neto.
-      expect(result.totalStrokes).toBe(89);
+      // 90: la raya suma su doble bogey neto, 7 con el golpe que recibe
+      expect(result.totalStrokes).toBe(90);
       expect(result.netStrokes).toBe(78);
       expect(result.netStrokes - result.parPlayed).toBe(6);
     });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import ScorecardTable from './ScorecardTable';
 
 vi.mock('react-i18next', () => ({
@@ -562,5 +562,132 @@ describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () =>
     expect(screen.getAllByTestId('jugador-u2')[0].textContent).toBe('Player B');
     expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent('undefined');
     expect(screen.getByTestId('scorecard-table')).not.toHaveTextContent('playingHandicap');
+  });
+});
+
+/**
+ * «Siempre una raya es par + golpes recibidos + 2» (Agustín, 23 oct 2026): en
+ * la tarjeta del partido, con los golpes que el jugador recibe en el partido.
+ * En neto, `par + 2`. Antes la raya no sumaba nada.
+ */
+describe('ScorecardTable · la raya suma su doble bogey neto', () => {
+  // Recibe golpe en el hoyo 1: con golpes en juego sale el interruptor de neto
+  const singles = [
+    { userId: 'u1', userName: 'Player A', team: 'A', strokesReceived: [1] },
+    { userId: 'u2', userName: 'Player B', team: 'B' },
+  ];
+  const scores = [
+    {
+      holeNumber: 1,
+      playerScores: [
+        { userId: 'u1', ownScore: null, ownSubmitted: true, netScore: null, strokesReceivedThisHole: 1 },
+      ],
+    },
+    {
+      holeNumber: 2,
+      playerScores: [{ userId: 'u1', ownScore: 4, ownSubmitted: true, netScore: 4, strokesReceivedThisHole: 0 }],
+    },
+  ];
+  // La suma de la ida de Player A: última casilla de su fila en la primera tabla
+  const sumaDeLaIda = () => {
+    const [ida] = screen.getAllByRole('table');
+    const fila = within(ida).getByText('Player A').closest('tr');
+    const celdas = within(fila).getAllByRole('cell');
+    return celdas[celdas.length - 1];
+  };
+
+  it('en bruto: par 4 con un golpe recogido vale 7', () => {
+    render(<ScorecardTable holes={holes} scores={scores} players={singles} currentUserId="u1" />);
+
+    expect(sumaDeLaIda()).toHaveTextContent(/^11$/);
+  });
+
+  it('en neto: la raya vale par + 2', () => {
+    render(<ScorecardTable holes={holes} scores={scores} players={singles} currentUserId="u1" />);
+    fireEvent.click(screen.getByRole('switch', { name: 'scorecard.grossNet' }));
+
+    expect(sumaDeLaIda()).toHaveTextContent(/^10$/);
+  });
+
+  it('con el par de la barra del jugador, no el del campo', () => {
+    const naranjas = holes.map((h) => (h.holeNumber === 1 ? { ...h, par: 3 } : h));
+    const conBarra = [{ ...singles[0], holeCard: naranjas }, singles[1]];
+    render(<ScorecardTable holes={holes} scores={scores} players={conBarra} currentUserId="u1" />);
+
+    // Par 3 recogido con un golpe: 6, más el 4 del hoyo 2
+    expect(sumaDeLaIda()).toHaveTextContent(/^10$/);
+  });
+
+  it('en foursomes cuenta la raya aunque esté en la fila del compañero', () => {
+    // Sin conexión solo se reescribe la fila de quien anota: la del otro llega
+    // sin enviar y no puede tapar la raya
+    const bandos = [
+      { userId: 'u1', userName: 'Player A', team: 'A', strokesReceived: [1] },
+      { userId: 'u3', userName: 'Player C', team: 'A', strokesReceived: [1] },
+      { userId: 'u2', userName: 'Player B', team: 'B' },
+    ];
+    const conCompanero = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: null, ownSubmitted: false, strokesReceivedThisHole: 1 },
+          { userId: 'u3', ownScore: null, ownSubmitted: true, strokesReceivedThisHole: 1 },
+        ],
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={conCompanero}
+        players={bandos}
+        currentUserId="u1"
+        matchFormat="FOURSOMES"
+      />
+    );
+
+    const [ida] = screen.getAllByRole('table');
+    const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
+    const celdas = within(fila).getAllByRole('cell');
+    expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
+  });
+
+  it('una raya enviada gana a un número sin enviar de la otra fila', () => {
+    const bandos = [
+      { userId: 'u1', userName: 'Player A', team: 'A', strokesReceived: [1] },
+      { userId: 'u3', userName: 'Player C', team: 'A', strokesReceived: [1] },
+      { userId: 'u2', userName: 'Player B', team: 'B' },
+    ];
+    const conNumeroSinEnviar = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 5, ownSubmitted: false, strokesReceivedThisHole: 1 },
+          { userId: 'u3', ownScore: null, ownSubmitted: true, strokesReceivedThisHole: 1 },
+        ],
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={conNumeroSinEnviar}
+        players={bandos}
+        currentUserId="u1"
+        matchFormat="FOURSOMES"
+      />
+    );
+
+    const [ida] = screen.getAllByRole('table');
+    const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
+    const celdas = within(fila).getAllByRole('cell');
+    expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
+  });
+
+  it('un hoyo sin anotar sigue sin sumar', () => {
+    const sinEnviar = [
+      { holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: null, ownSubmitted: false }] },
+    ];
+    render(<ScorecardTable holes={holes} scores={sinEnviar} players={singles} currentUserId="u1" />);
+
+    expect(sumaDeLaIda()).toHaveTextContent(/^-$/);
   });
 });
