@@ -11,9 +11,6 @@ import TarjetaVertical from '../scoring/TarjetaVertical';
 import { useEsMovil } from '../../hooks/useEsMovil';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 
-// Doble bogey BRUTO: lo que suma al total de golpes un hoyo que no se terminó.
-// Sin golpes recibidos a propósito — ver `getCountingScore`.
-const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
@@ -96,15 +93,17 @@ const QuickMatchScorecardTable = ({
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
 
   // Los golpes con los que cuenta el hoyo, o null si está sin anotar. Un hoyo
-  // RECOGIDO —entrada sin número— vale `par + 2`, el doble bogey que se
-  // escribe en la tarjeta, SIN golpes recibidos: este total es bruto y no puede
-  // moverse con el allowance. Es la misma cuenta que hacen el calculador y el
-  // backend, para que el total de aquí, el de la clasificación y el del
-  // historial sigan siendo el mismo número.
-  const getCountingScore = (holeNumber, members, par) => {
+  // RECOGIDO —entrada sin número— vale su doble bogey NETO, `par + 2 + golpes
+  // recibidos` (Agustín, 23 oct 2026: «siempre una raya es par + golpes
+  // recibidos + 2»), con los golpes que esta tarjeta recibe en el partido. Es
+  // la misma cuenta que hacen el calculador y el backend.
+  const getCountingScore = (holeNumber, members, par, strokesId) => {
     const entry = getEntry(holeNumber, members);
     if (!entry) return null;
-    return entry.score ?? par + GROSS_DOUBLE_BOGEY_OVER_PAR;
+    return (
+      entry.score ??
+      StablefordCalculator.netDoubleBogey(par, getStrokesReceived(holeNumber, strokesId))
+    );
   };
 
   // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
@@ -294,9 +293,9 @@ const QuickMatchScorecardTable = ({
     return `${name}${suffix}`;
   };
 
-  const sumStrokes = (holeRange, members) =>
+  const sumStrokes = (holeRange, card) =>
     holeRange.reduce((sum, h) => {
-      const score = getCountingScore(h.holeNumber, members, h.par);
+      const score = getCountingScore(h.holeNumber, card.members, h.par, card.strokesId);
       return score != null ? sum + score : sum;
     }, 0);
 
@@ -306,11 +305,9 @@ const QuickMatchScorecardTable = ({
     const entry = getEntry(h.holeNumber, card.members);
     const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
     // La raya es un hoyo anotado sin número: se pinta como raya y
-    // puntúa cero. Para los puntos del hoyo se usa el doble bogey
-    // NETO —lo que el WHS computa en un hoyo no terminado—, que no es
-    // lo mismo que el `par + 2` bruto con el que suma al total de la
-    // fila: el bruto no lleva golpes recibidos y el neto sí. Sin
-    // entrada no hay hoyo que pintar.
+    // puntúa cero. Vale su doble bogey NETO —lo que el WHS computa en
+    // un hoyo no terminado—, el mismo con el que suma al total de la
+    // fila. Sin entrada no hay hoyo que pintar.
     const isPickedUp = entry != null && entry.score == null;
     const score = isPickedUp
       ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)
@@ -365,7 +362,7 @@ const QuickMatchScorecardTable = ({
   // («4238»): con subtotal se oye una frase y lo visible se le oculta
   // `extra` llega ya sumado: lo usa también la cabecera de la fila
   const totalDelTramo = (sectionHoles, card, extra) => {
-    const golpes = sumStrokes(sectionHoles, card.members);
+    const golpes = sumStrokes(sectionHoles, card);
     const frase =
       extra == null
         ? null
@@ -542,9 +539,9 @@ const QuickMatchScorecardTable = ({
         extra: extraDelHoyo(h, card),
       }))}
       sumas={{
-        ida: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card.members) : undefined,
-        vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card.members) : undefined,
-        total: sumStrokes(card.holes, card.members),
+        ida: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
+        vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        total: sumStrokes(card.holes, card),
       }}
       // Como `sumas`: con 9 hoyos no hay ida ni vuelta que sumar
       sumasExtra={{

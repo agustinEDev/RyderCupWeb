@@ -1012,8 +1012,9 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
       'scoring.scorecard.subtotalPoints {"count":2}'
     );
     expect(within(tramo('vuelta')).getByTestId('subtotal-points')).toHaveTextContent(/^4$/);
-    // Los golpes del tramo siguen ahí: 5 + 5 (raya en par 3) y 3
-    expect(tramo('ida')).toHaveTextContent(/^10/);
+    // Los golpes del tramo siguen ahí: 5 + 6 (raya en par 3 con un golpe
+    // recibido: su doble bogey neto, Agustín 23 oct 2026) y 3
+    expect(tramo('ida')).toHaveTextContent(/^11/);
     expect(tramo('vuelta')).toHaveTextContent(/^3/);
   });
 
@@ -1046,11 +1047,11 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
   it('A2: el lector oye los golpes y los puntos del tramo por separado', () => {
     pinta({ scoringFormat: 'STABLEFORD' });
 
-    const frase = within(tramo('ida')).getByText('scoring.scorecard.sectionTotalPointsA11y {"strokes":10,"count":2}');
+    const frase = within(tramo('ida')).getByText('scoring.scorecard.sectionTotalPointsA11y {"strokes":11,"count":2}');
     expect(frase).toHaveClass('sr-only');
     const visible = within(tramo('ida')).getByTestId('subtotal-points').parentElement;
     expect(visible).toHaveAttribute('aria-hidden', 'true');
-    expect(visible).toHaveTextContent(/^102$/);
+    expect(visible).toHaveTextContent(/^112$/);
   });
 
   it('A3: y en Medal, los golpes y el neto', () => {

@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import GolfFigure from './GolfFigure';
+import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import NombreConHandicap from './NombreConHandicap';
 import CarruselDeTarjetas from './CarruselDeTarjetas';
 import TarjetaVertical from './TarjetaVertical';
@@ -153,10 +154,22 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     return holeData?.holeResult || null;
   };
 
+  // Lo que suma un hoyo de la fila. La raya (anotada y sin número) vale su
+  // doble bogey neto, `par + 2 + golpes recibidos` en el partido, y `par + 2`
+  // en neto (Agustín, 23 oct 2026: «siempre una raya es par + golpes
+  // recibidos + 2»). Antes se quedaba fuera del total.
+  const valorDelHoyo = (h, row) => {
+    const ps = getRowScore(h.holeNumber, row);
+    if (ps?.ownSubmitted && ps.ownScore == null) {
+      const par = parFor(row.playerIds, h.holeNumber, h.par);
+      return StablefordCalculator.netDoubleBogey(par, showNet ? 0 : (ps.strokesReceivedThisHole ?? 0));
+    }
+    return showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
+  };
+
   const sumRowScores = (holeRange, row) => {
     return holeRange.reduce((sum, h) => {
-      const ps = getRowScore(h.holeNumber, row);
-      const val = showNet ? (ps?.netScore ?? ps?.ownScore) : ps?.ownScore;
+      const val = valorDelHoyo(h, row);
       return val !== null && val !== undefined ? sum + val : sum;
     }, 0);
   };

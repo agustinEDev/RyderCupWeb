@@ -31,13 +31,10 @@ const PERSONAL_ROUND_ALLOWANCE = 100;
  * mismo hoyo el total podía no cuadrar con lo que enseñaba la tarjeta.
  *
  * Un hoyo RECOGIDO cuenta: está jugado, y el resultado del partido lo trata
- * como cualquier otro. Vale doble bogey BRUTO —`par + 2`, sin golpes
- * recibidos—, porque este total es bruto y meterle un hoyo neto dentro
- * mezclaría dos escalas en el mismo número. Es la misma cuenta que hace
- * `_foursomes_side_strokes` en el backend, del que este total tiene que seguir
- * sin separarse.
+ * como cualquier otro. Vale su doble bogey NETO, `par + 2 + golpes recibidos`
+ * (Agustín, 23 oct 2026). Es la misma cuenta que hace `_foursomes_side_strokes`
+ * en el backend, del que este total tiene que seguir sin separarse.
  */
-const GROSS_DOUBLE_BOGEY_OVER_PAR = 2;
 
 // Los parámetros de `compute` y `runningResult`, con sus valores por defecto.
 // Como en un parámetro por defecto, solo se rellena lo que llega `undefined`
@@ -75,7 +72,7 @@ const repartoDelPartido = (p) =>
     playMode: p.playMode,
   });
 
-const sideTotals = (me, participants, holes, holeScores, tees = []) => {
+const sideTotals = (me, participants, holes, holeScores, tees = [], allocation = {}) => {
   const members =
     groupParticipantsBySide(participants).find((side) =>
       side.some((p) => p.participantId === me.participantId)
@@ -118,10 +115,14 @@ const sideTotals = (me, participants, holes, holeScores, tees = []) => {
 
     // Solo rayas: el bando recogió. Sin el par de su barra no hay con qué
     // contarlo, y antes que inventar un número se deja el hoyo fuera, igual que
-    // hace `_foursomes_side_strokes`.
+    // hace `_foursomes_side_strokes`. Vale su doble bogey neto con los golpes
+    // del bando en el partido: comparten bola y reparto, el del titular.
     const par = parAt(hole.holeNumber);
     if (par == null) continue;
-    totalStrokes += par + GROSS_DOUBLE_BOGEY_OVER_PAR;
+    totalStrokes += StablefordCalculator.netDoubleBogey(
+      par,
+      StablefordCalculator.strokesOnHole(allocation, members[0].participantId, hole.holeNumber)
+    );
     holesPlayed += 1;
   }
 
@@ -189,10 +190,9 @@ class PersonalRoundCalculator {
     // formato nuevo a golpes alternos habría que acordarse de añadirlo en los
     // dos sitios.
     if (matchFormat === 'FOURSOMES') {
-      // Sin reparto: el bruto no depende de los golpes que se den. Las salidas
-      // sí hacen falta, para resolver el par de la barra del bando cuando hay
-      // una raya que contar.
-      const teamTotals = sideTotals(me, participants, holes, holeScores, tees);
+      // Las salidas y el reparto del partido hacen falta para la raya: su par
+      // es el de la barra del bando y vale su doble bogey neto
+      const teamTotals = sideTotals(me, participants, holes, holeScores, tees, repartoDelPartido(p));
       if (!teamTotals.holesPlayed) return null;
       return {
         personalToPar: null,
