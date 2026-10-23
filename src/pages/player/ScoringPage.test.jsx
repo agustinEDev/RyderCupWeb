@@ -275,6 +275,14 @@ describe('ScoringPage · la casilla, el selector y la tarjeta leen lo que se ve 
     expect(casilla.props.allowPickedUp).toBe(true);
   });
 
+  it('sin el formato del partido en la vista, no se ofrece la raya', () => {
+    conVista({ matchStatus: 'IN_PROGRESS', matchFormat: undefined });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.allowPickedUp).toBe(false);
+  });
+
   it('Q11 · los tres reciben la vista con la cola, no solo lo del servidor', () => {
     // El servidor no tiene el hoyo 1 (`scoringView.scores` vacío); la cola sí
     const conLaCola = [{
