@@ -102,7 +102,8 @@ class TeeGroupScoringMapper {
         // HH:MM, como en ScheduleMapper
         teeTime: typeof api.tee_time === 'string' ? api.tee_time.slice(0, 5) : api.tee_time,
         tournamentType: api.tournament_type,
-        pickedUpAllowed: api.picked_up_allowed,
+        // Solo un sí expreso: una vista vieja sin el dato no ofrece la raya (23 oct 2026)
+        pickedUpAllowed: api.picked_up_allowed === true,
         iMarkUserId: api.i_mark_user_id ?? null,
         cards: jugadores.map((p) => ({
           userId: p.user_id,
