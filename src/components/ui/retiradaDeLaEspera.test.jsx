@@ -260,6 +260,7 @@ describe('no quedan esperas con dibujo propio', () => {
     'pages/admin/AdminPanel.jsx',                           // botones de accion
     'pages/player/FeedPage.jsx',                            // boton de cargar mas
     'pages/player/PlayerProfilePage.jsx',                   // boton de cargar mas
+    'components/profile/GamesTogether.jsx',                 // boton de cargar mas (FE-2)
     'components/admin/AdminEditCompetitionModal.jsx',       // boton de guardar
     'components/admin/EditUserModal.jsx',                   // boton de guardar
     'components/friend/AddFriendModal.jsx',                 // indicador dentro del buscador

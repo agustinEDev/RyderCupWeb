@@ -1,22 +1,59 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router';
-import { Loader, Sparkles, UserPlus, WifiOff } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Link, useLocation } from 'react-router';
+import { AlertCircle, Loader, RefreshCw, Sparkles, UserPlus, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import { ponLasNovedadesACero, useNovedadesDeActividad } from '../../hooks/useNovedadesDeActividad';
 import ActivityEventCard from '../../components/feed/ActivityEventCard';
-import { getFriendsFeedUseCase, markFeedAsSeenUseCase } from '../../composition';
+import FriendRequestCard from '../../components/feed/FriendRequestCard';
+import DiasDeActividad from '../../components/feed/DiasDeActividad';
+import { armaLaLineaDeActividad } from '../../domain/services/lineaDeActividad';
+import {
+  getFriendsFeedUseCase,
+  markFeedAsSeenUseCase,
+  respondFriendRequestUseCase,
+} from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 
 const PAGE_SIZE = 20;
 
+// Lo de una recarga sobre lo ya cargado: lo conocido se actualiza en su sitio
+// (por id) y lo nuevo entra arriba
+const mezclaArriba = (cargados, frescos) => {
+  const porId = new Map(frescos.map((e) => [e.id, e]));
+  const nuevos = frescos.filter((e) => !cargados.some((c) => c.id === e.id));
+  return [...nuevos, ...cargados.map((c) => porId.get(c.id) ?? c)];
+};
+
+// Una página más, al final, sin repetir lo que ya hay
+const mezclaAbajo = (cargados, pagina) => {
+  const ya = new Set(cargados.map((e) => e.id));
+  return [...cargados, ...pagina.filter((e) => !ya.has(e.id))];
+};
+
+// El número del botón y del icono se pone a cero cuando el backend ha guardado
+// la visita. Que falle no debe impedir leer el feed: lo peor que pasa es que el
+// número siga puesto hasta la próxima visita.
+const marcaComoVisto = () => {
+  markFeedAsSeenUseCase
+    .execute()
+    .then(() => ponLasNovedadesACero())
+    .catch(() => {});
+};
+
 /**
- * FeedPage - La actividad propia y la de los amigos.
+ * FeedPage - Actividad: lo propio y lo de los amigos en una sola línea de
+ * tiempo (FE-1).
  *
- * Sustituye a Amigos en la barra inferior: la lista de amigos vive ahora a un
- * toque de aquí, que es donde uno acaba mirando a sus amigos de todos modos.
+ * Arriba, las solicitudes de amistad, que se aceptan ahí mismo. Debajo, las
+ * tarjetas de lo más reciente a lo más antiguo, separadas por días, con la
+ * marca de «nuevo» en lo llegado desde la última visita. Sin pestañas.
+ *
+ * Sustituye a Amigos en la barra inferior: la lista de amigos vive a un toque
+ * de aquí, que es donde uno acaba mirando a sus amigos de todos modos.
  */
 const FeedPage = () => {
   const { t } = useTranslation(['feed', 'common']);
@@ -25,10 +62,24 @@ const FeedPage = () => {
   const [events, setEvents] = useState([]);
   const [authors, setAuthors] = useState({});
   const [courses, setCourses] = useState({});
+  const [requests, setRequests] = useState([]);
+  const [unseenCount, setUnseenCount] = useState(0);
   const [nextCursor, setNextCursor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [sinCobertura, setSinCobertura] = useState(false);
+  // null, 'red' (sin cobertura) u 'otro': con fallo no se dice «no hay nada»
+  const [loadError, setLoadError] = useState(null);
+  // Por solicitud: 'enviando' mientras se responde, 'aceptada' después
+  const [requestStates, setRequestStates] = useState({});
+
+  // Lo que hace falta para recargar estando ya en Actividad (revisión FE-1):
+  // si la primera carga ya llegó y si hay una recarga en marcha
+  const cargado = useRef(false);
+  const recargando = useRef(false);
+  const cargandoMas = useRef(false);
+  const recargaPendiente = useRef(false);
+  // Lo cargado, para que la recarga sepa si su página enlaza con ello
+  const cargados = useRef([]);
 
   // Se marca como visto una sola vez por visita. Sin esto, cada paginación
   // volvería a marcarlo, y el aviso se apagaría por refrescar en vez de por
@@ -50,6 +101,55 @@ const FeedPage = () => {
   // su identidad vuelve a pedir el feed sin parar.
   const userId = user?.id;
 
+  /**
+   * Hay novedades estando ya en Actividad —el número subió al volver a la
+   * aplicación o a la red, o se ha vuelto a pulsar Actividad—: se pide otra
+   * vez la primera página y se da por vista, con lo que el número vuelve a
+   * cero. Se MEZCLA con lo cargado, no lo sustituye: lo nuevo entra arriba, lo
+   * ya pintado se actualiza, y las páginas traídas con «Cargar más» y su
+   * cursor se quedan —ni se pierde lo leído ni salta el scroll—. Las
+   * solicitudes sí se cambian por las de ahora: se leen en vivo.
+   *
+   * Una recarga a la vez, y nunca con un «Cargar más» en vuelo: se apunta y se
+   * hace al acabar. Si falla, se queda lo que había, sin avisos: no lo ha
+   * pedido nadie.
+   */
+  const recarga = useCallback(async () => {
+    if (!cargado.current || recargando.current) return;
+    if (cargandoMas.current) {
+      recargaPendiente.current = true;
+      return;
+    }
+    recargando.current = true;
+    try {
+      const page = await getFriendsFeedUseCase.execute({ limit: PAGE_SIZE });
+      setEvents((prev) => mezclaArriba(prev, page.events));
+      setAuthors((prev) => ({ ...prev, ...page.authors }));
+      setCourses((prev) => ({ ...prev, ...page.courses }));
+      setRequests(page.pendingFriendRequests || []);
+      setUnseenCount(page.unseenCount || 0);
+      // El cursor, coherente con la mezcla: si la página fresca enlaza con lo
+      // cargado (comparte alguna entrada), entre las dos no falta nada y sigue
+      // el cursor de siempre, el de la última página traída con «Cargar más».
+      // Si no enlaza —no había nada, o han llegado más entradas de las que
+      // caben en una página—, queda un hueco por debajo y manda el suyo: lo ya
+      // pintado se queda y lo repetido no se duplica al seguir bajando
+      const conocidos = new Set(cargados.current.map((e) => e.id));
+      // Una página fresca vacía solo «enlaza» si hay algo cargado: con el feed
+      // vacío no hay cursor que llegue a su página siguiente (CodeRabbit FE #947)
+      const enlaza =
+        page.events.length === 0
+          ? cargados.current.length > 0
+          : page.events.some((e) => conocidos.has(e.id));
+      if (!enlaza) setNextCursor(page.nextCursor ?? null);
+      marcaComoVisto();
+    } catch {
+      // Se queda lo que había
+    } finally {
+      recargando.current = false;
+    }
+  }, []);
+
   const loadFeed = useCallback(async () => {
     if (!userId) return;
 
@@ -59,20 +159,21 @@ const FeedPage = () => {
       setEvents(page.events);
       setAuthors(page.authors);
       setCourses(page.courses);
+      setRequests(page.pendingFriendRequests || []);
+      setUnseenCount(page.unseenCount || 0);
       setNextCursor(page.nextCursor);
-      setSinCobertura(false);
+      setLoadError(null);
+      cargado.current = true;
 
       if (!yaMarcado.current) {
         yaMarcado.current = true;
-        // Que falle apagar el aviso no debe impedir leer el feed: lo peor que
-        // pasa es que la insignia siga puesta hasta la próxima visita.
-        markFeedAsSeenUseCase.execute().catch(() => {});
+        marcaComoVisto();
       }
     } catch (err) {
       // `catch` sin el error no dejaba distinguir un backend roto de no tener
       // cobertura, y las dos cosas acababan en el mismo aviso
       const deRed = esFalloDeRed(err);
-      setSinCobertura(deRed);
+      setLoadError(deRed ? 'red' : 'otro');
       customToast.error(
         tRef.current(deRed ? 'common:sinConexion.mensaje' : 'common:errors.generic')
       );
@@ -86,16 +187,37 @@ const FeedPage = () => {
     loadFeed();
   }, [loadFeed]);
 
+  // El número sube mientras se mira Actividad: se recarga. Solo cuando sube
+  // —no por el que ya hubiera al entrar, que lo atiende la primera carga— y
+  // si marcar falla el número no cambia, así que no vuelve a dispararse
+  const novedades = useNovedadesDeActividad();
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- recarga sets state only after awaiting the API, never synchronously
+    if (novedades > 0) recarga();
+  }, [novedades, recarga]);
+
+  // Pulsar Actividad estando en Actividad no vuelve a montar la página, pero
+  // sí cambia la entrada del historial
+  const { key: entrada } = useLocation();
+  const entradaVista = useRef(entrada);
+  useEffect(() => {
+    if (entradaVista.current === entrada) return;
+    entradaVista.current = entrada;
+    recarga();
+  }, [entrada, recarga]);
+
   const handleLoadMore = async () => {
     if (!nextCursor || isLoadingMore) return;
 
     setIsLoadingMore(true);
+    cargandoMas.current = true;
     try {
       const page = await getFriendsFeedUseCase.execute({
         limit: PAGE_SIZE,
         cursor: nextCursor,
       });
-      setEvents((prev) => [...prev, ...page.events]);
+      // Sin repetir lo que una recarga ya hubiera traído
+      setEvents((prev) => mezclaAbajo(prev, page.events));
       setAuthors((prev) => ({ ...prev, ...page.authors }));
       setCourses((prev) => ({ ...prev, ...page.courses }));
       setNextCursor(page.nextCursor);
@@ -105,8 +227,52 @@ const FeedPage = () => {
       );
     } finally {
       setIsLoadingMore(false);
+      cargandoMas.current = false;
+      // La recarga que llegó mientras tanto se hace ahora
+      if (recargaPendiente.current) {
+        recargaPendiente.current = false;
+        recarga();
+      }
     }
   };
+
+  const respond = async (friendshipId, action) => {
+    setRequestStates((prev) => ({ ...prev, [friendshipId]: 'enviando' }));
+    try {
+      await respondFriendRequestUseCase.execute(friendshipId, action);
+      if (action === 'ACCEPT') {
+        setRequestStates((prev) => ({ ...prev, [friendshipId]: 'aceptada' }));
+      } else {
+        setRequests((prev) => prev.filter((r) => r.friendshipId !== friendshipId));
+      }
+    } catch (err) {
+      // La tarjeta se queda como estaba, con sus botones, para volver a probar
+      setRequestStates((prev) => {
+        const resto = { ...prev };
+        delete resto[friendshipId];
+        return resto;
+      });
+      customToast.error(
+        t(esFalloDeRed(err) ? 'common:sinConexion.mensaje' : 'common:errors.generic')
+      );
+    }
+  };
+
+  useEffect(() => {
+    cargados.current = events;
+  }, [events]);
+
+  const ahora = new Date();
+  const linea = useMemo(
+    () =>
+      armaLaLineaDeActividad({
+        eventos: events,
+        solicitudes: requests,
+        novedades: unseenCount,
+        ahora: new Date(),
+      }),
+    [events, requests, unseenCount]
+  );
 
   if (isLoadingUser || isLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
@@ -120,13 +286,18 @@ const FeedPage = () => {
     );
   }
 
+  // Una página puede llegar con menos entradas de las pedidas, o con ninguna
+  // que se sepa pintar, y aun así traer cursor: entonces queda más que ver y
+  // no se dice «no hay nada», se ofrece «Cargar más»
+  const vacio = linea.dias.length === 0 && linea.solicitudes.length === 0 && !nextCursor;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderAuth />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="min-w-0">
             <h1 className="hidden md:block text-xl font-bold text-gray-900">{t('feed:title')}</h1>
             <p className="text-sm text-gray-500">{t('feed:subtitle')}</p>
           </div>
@@ -140,31 +311,45 @@ const FeedPage = () => {
           </Link>
         </div>
 
-        {events.length === 0 && sinCobertura ? (
-          // «Aún no hay nada que contar» es una afirmación, y sin haber podido
-          // preguntar no se sostiene: lo que hay puede estar ahí esperando
-          <div
-            data-testid="feed-sin-cobertura"
-            className="flex flex-col items-center justify-center py-12 text-center"
-          >
-            <WifiOff className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
-            <p className="text-gray-900 font-semibold mb-1">{t('common:sinConexion.aviso')}</p>
-            <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>
-          </div>
-        ) : events.length === 0 ? (
+        {loadError ? (
+          <LoadError deRed={loadError === 'red'} onRetry={loadFeed} t={t} />
+        ) : vacio ? (
           <EmptyFeed t={t} />
         ) : (
           <>
-            <div className="space-y-3" data-testid="feed-events">
-              {events.map((event) => (
-                <ActivityEventCard
-                  key={event.id}
-                  event={event}
-                  author={authors[event.userId]}
-                  courseName={courses[event.payload?.golf_course_id]}
-                />
-              ))}
-            </div>
+            {linea.solicitudes.length > 0 && (
+              <div className="space-y-3 mb-6" data-testid="feed-solicitudes">
+                {linea.solicitudes.map((solicitud) => (
+                  <FriendRequestCard
+                    key={solicitud.friendshipId}
+                    solicitud={solicitud}
+                    autores={authors}
+                    estado={requestStates[solicitud.friendshipId] || 'pendiente'}
+                    onAceptar={() => respond(solicitud.friendshipId, 'ACCEPT')}
+                    onRechazar={() => respond(solicitud.friendshipId, 'DECLINE')}
+                    ahora={ahora}
+                  />
+                ))}
+              </div>
+            )}
+
+            {linea.dias.length > 0 && (
+              <DiasDeActividad
+                dias={linea.dias}
+                ahora={ahora}
+                data-testid="feed-events"
+                pintaTarjeta={(tarjeta) => (
+                  <ActivityEventCard
+                    key={tarjeta.clave}
+                    tarjeta={tarjeta}
+                    autores={authors}
+                    campos={courses}
+                    yoId={userId}
+                    ahora={ahora}
+                  />
+                )}
+              />
+            )}
 
             {nextCursor && (
               <button
@@ -187,6 +372,36 @@ const FeedPage = () => {
     </div>
   );
 };
+
+/**
+ * No se ha podido cargar. Sin cobertura se dice así —«aún no hay nada que
+ * contar» sería una afirmación que no se sostiene sin haber podido preguntar—,
+ * y en los dos casos se ofrece volver a intentarlo.
+ */
+const LoadError = ({ deRed, onRetry, t }) => (
+  <div
+    data-testid={deRed ? 'feed-sin-cobertura' : 'feed-error'}
+    className="flex flex-col items-center justify-center py-12 text-center"
+  >
+    {deRed ? (
+      <WifiOff className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
+    ) : (
+      <AlertCircle className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
+    )}
+    <p className="text-gray-900 font-semibold mb-1">
+      {deRed ? t('common:sinConexion.aviso') : t('feed:loadError')}
+    </p>
+    {deRed && <p className="text-gray-500 text-sm">{t('feed:sinCoberturaDetalle')}</p>}
+    <button
+      type="button"
+      onClick={onRetry}
+      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
+    >
+      <RefreshCw className="w-4 h-4" aria-hidden="true" />
+      {t('feed:retry')}
+    </button>
+  </div>
+);
 
 /**
  * El feed vacío es el estado normal al principio, no un error: sin amigos, con

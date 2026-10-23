@@ -271,5 +271,16 @@
   },
   "personalRound": {
     "inMatch": "({{value}} in the match)"
+  },
+  "shared": {
+    "readOnly": "Read only",
+    "guest": "a guest",
+    "player": "a player",
+    "forbidden": "You can't view this match.",
+    "forbiddenToast": "You can't view that match: here is their profile.",
+    "forbiddenBack": "You can't view that match.",
+    "back": "Back",
+    "retry": "Retry",
+    "tabsLabel": "Read-only quick match"
   }
 }

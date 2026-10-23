@@ -14,6 +14,10 @@ import {
   clearDeviceRevocationFlag,
 } from './deviceRevocationLogout';
 import customToast from './toast';
+import { olvidaLasNovedades } from '../services/novedadesDeActividad';
+
+// El número de Actividad y el del icono son de la cuenta que sale (FE-1)
+vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 
 // Mock i18next
 vi.mock('i18next', () => ({
@@ -237,6 +241,12 @@ describe('deviceRevocationLogout utilities', () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith('pedir_handicap');
     });
 
+    it('forgets the Activity number and the app icon badge (review FE-1)', () => {
+      handleDeviceRevocationLogout();
+
+      expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
+    });
+
     it('should clear Sentry user context', () => {
       handleDeviceRevocationLogout();
 
@@ -275,6 +285,14 @@ describe('deviceRevocationLogout utilities', () => {
   // handleSessionExpiredLogout - always shows expiration message
   // ============================================
   describe('handleSessionExpiredLogout', () => {
+    it('forgets the Activity number and the app icon badge (review FE-1)', () => {
+      vi.useFakeTimers();
+      handleSessionExpiredLogout();
+      vi.useRealTimers();
+
+      expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
+    });
+
     beforeEach(() => {
       vi.useFakeTimers();
     });

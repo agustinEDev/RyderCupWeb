@@ -23,6 +23,14 @@ vi.mock('./composition', async (original) => ({
 vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('./hooks/useVaciadoDeLaCola', () => ({ useVaciadoDeLaCola: () => {} }));
 vi.mock('./hooks/useEnvioDeMuestras', () => ({ useEnvioDeMuestras: () => {} }));
+// El número de Actividad se pide al montarse la barra inferior (FE-1): es red,
+// como las dos de arriba, y aquí la red no se toca
+vi.mock('./hooks/useNovedadesDeActividad', () => ({
+  useNovedadesDeActividad: () => 0,
+  useVigilanciaDeNovedades: () => {},
+  ponLasNovedadesACero: () => {},
+  olvidaLasNovedades: () => {},
+}));
 vi.mock('./hooks/useDeviceRevocationMonitor', () => ({ useDeviceRevocationMonitor: () => {} }));
 vi.mock('./hooks/useProactiveTokenRefresh', () => ({ default: () => {} }));
 vi.mock('./hooks/useCortinaDeArranque', () => ({ useCortinaDeArranque: () => {} }));

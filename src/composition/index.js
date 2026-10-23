@@ -173,8 +173,10 @@ import ApiFriendRepository from '../infrastructure/repositories/ApiFriendReposit
 import ApiSocialFeedRepository from '../infrastructure/repositories/ApiSocialFeedRepository';
 import GetFriendsFeedUseCase from '../application/use_cases/social/GetFriendsFeedUseCase';
 import MarkFeedAsSeenUseCase from '../application/use_cases/social/MarkFeedAsSeenUseCase';
+import GetFeedUnseenCountUseCase from '../application/use_cases/social/GetFeedUnseenCountUseCase';
 import GetPlayerProfileUseCase from '../application/use_cases/social/GetPlayerProfileUseCase';
 import GetPlayerActivityUseCase from '../application/use_cases/social/GetPlayerActivityUseCase';
+import GetGamesTogetherUseCase from '../application/use_cases/social/GetGamesTogetherUseCase';
 import SetActivitySharingUseCase from '../application/use_cases/social/SetActivitySharingUseCase';
 import SendFriendRequestUseCase from '../application/use_cases/friend/SendFriendRequestUseCase';
 import RespondFriendRequestUseCase from '../application/use_cases/friend/RespondFriendRequestUseCase';
@@ -232,6 +234,7 @@ import HideQuickMatchUseCase from '../application/use_cases/quick_match/HideQuic
 import ExcludeQuickMatchFromStatsUseCase from '../application/use_cases/quick_match/ExcludeQuickMatchFromStatsUseCase';
 import IncludeQuickMatchInStatsUseCase from '../application/use_cases/quick_match/IncludeQuickMatchInStatsUseCase';
 import GetQuickMatchUseCase from '../application/use_cases/quick_match/GetQuickMatchUseCase';
+import GetSharedQuickMatchUseCase from '../application/use_cases/quick_match/GetSharedQuickMatchUseCase';
 import ListMyQuickMatchesUseCase from '../application/use_cases/quick_match/ListMyQuickMatchesUseCase';
 import SubmitQuickMatchHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchHoleScoreUseCase';
 import SubmitQuickMatchProxyHoleScoreUseCase from '../application/use_cases/quick_match/SubmitQuickMatchProxyHoleScoreUseCase';
@@ -373,8 +376,10 @@ const apiFriendRepository = new ApiFriendRepository();
 const apiSocialFeedRepository = new ApiSocialFeedRepository();
 export const getFriendsFeedUseCase = new GetFriendsFeedUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const markFeedAsSeenUseCase = new MarkFeedAsSeenUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const getFeedUnseenCountUseCase = new GetFeedUnseenCountUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const getPlayerProfileUseCase = new GetPlayerProfileUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const getPlayerActivityUseCase = new GetPlayerActivityUseCase({ socialFeedRepository: apiSocialFeedRepository });
+export const getGamesTogetherUseCase = new GetGamesTogetherUseCase({ socialFeedRepository: apiSocialFeedRepository });
 export const setActivitySharingUseCase = new SetActivitySharingUseCase({ socialFeedRepository: apiSocialFeedRepository });
 const sendFriendRequestUseCase = new SendFriendRequestUseCase({ friendRepository: apiFriendRepository });
 const respondFriendRequestUseCase = new RespondFriendRequestUseCase({ friendRepository: apiFriendRepository });
@@ -445,6 +450,7 @@ const hideQuickMatchUseCase = new HideQuickMatchUseCase({ quickMatchRepository: 
 const excludeQuickMatchFromStatsUseCase = new ExcludeQuickMatchFromStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const includeQuickMatchInStatsUseCase = new IncludeQuickMatchInStatsUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const getQuickMatchUseCase = new GetQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
+const getSharedQuickMatchUseCase = new GetSharedQuickMatchUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const listMyQuickMatchesUseCase = new ListMyQuickMatchesUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const submitQuickMatchHoleScoreUseCase = new SubmitQuickMatchHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
 const submitQuickMatchProxyHoleScoreUseCase = new SubmitQuickMatchProxyHoleScoreUseCase({ quickMatchRepository: apiQuickMatchRepository });
@@ -719,6 +725,7 @@ export {
   excludeQuickMatchFromStatsUseCase,
   includeQuickMatchInStatsUseCase,
   getQuickMatchUseCase,
+  getSharedQuickMatchUseCase,
   listMyQuickMatchesUseCase,
   submitQuickMatchHoleScoreUseCase,
   submitQuickMatchProxyHoleScoreUseCase,

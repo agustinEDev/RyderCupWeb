@@ -28,6 +28,39 @@ import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
 // de la pantalla deja de cuadrar con la del historial.
 const NET_DOUBLE_BOGEY_OVER_PAR = 2;
 
+// El desempate de la clasificación (H): a igual resultado, delante el de menos
+// hándicap índice EXACTO, el que tenía en la partida. Sin hándicap cuenta como
+// 0. Lo mismo que hace el backend al publicar el resultado
+// (`PublishQuickMatchResultUseCase`); la paridad la fija
+// `StablefordCalculator.parity.test.js`.
+const handicapDeDesempate = (row) => row.handicap ?? 0;
+
+/**
+ * Ordena las filas y les pone su puesto. Solo comparten puesto quienes empatan
+ * en el resultado Y tienen exactamente el mismo hándicap; el siguiente salta
+ * los puestos compartidos (1, 1, 3), como en cualquier clasificación.
+ */
+const ordenaConPuestos = (rows, compareResultado) => {
+  const compara = (a, b) =>
+    compareResultado(a, b) || handicapDeDesempate(a) - handicapDeDesempate(b);
+  // Quien no ha anotado ningún hoyo no tiene resultado: va al final, en el
+  // orden en que llega, sin puesto y sin empatar con nadie
+  const conHoyos = rows.filter((row) => row.holesPlayed > 0).sort(compara);
+  const sinHoyos = rows.filter((row) => !(row.holesPlayed > 0));
+  conHoyos.forEach((row, i) => {
+    const anterior = conHoyos[i - 1];
+    row.position = anterior && compara(anterior, row) === 0 ? anterior.position : i + 1;
+  });
+  conHoyos.forEach((row) => {
+    row.tied = conHoyos.filter((otra) => otra.position === row.position).length > 1;
+  });
+  sinHoyos.forEach((row) => {
+    row.position = null;
+    row.tied = false;
+  });
+  return [...conHoyos, ...sinHoyos];
+};
+
 class StablefordCalculator {
   /**
    * Golpes que recibe un participante en un hoyo, según el reparto ya resuelto.
@@ -161,8 +194,9 @@ class StablefordCalculator {
   }
 
   /**
-   * Ranks participants by Stableford points (desc), tie-broken by fewer
-   * total strokes.
+   * Ranks participants by Stableford points (desc), tie-broken by the lower
+   * exact handicap index (none counts as 0). Each row carries its `position`
+   * and `tied`: only the same points AND the same exact index share a place.
    *
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
@@ -175,6 +209,7 @@ class StablefordCalculator {
       participantId: participant.participantId,
       name: participant.name,
       team: participant.team,
+      handicap: participant.handicap ?? null,
       ...StablefordCalculator.computeParticipantTotals(
         participant,
         holes,
@@ -184,10 +219,7 @@ class StablefordCalculator {
       ),
     }));
 
-    return rows.sort((a, b) => {
-      if (b.stablefordPoints !== a.stablefordPoints) return b.stablefordPoints - a.stablefordPoints;
-      return a.totalStrokes - b.totalStrokes;
-    });
+    return ordenaConPuestos(rows, (a, b) => b.stablefordPoints - a.stablefordPoints);
   }
 
   /**
@@ -195,7 +227,8 @@ class StablefordCalculator {
    * fewer is better) for Medal play — not raw net strokes, so participants
    * with a partial round (fewer holes played) still rank fairly against
    * those further along. Participants with no recorded score sink to the
-   * bottom.
+   * bottom. Ties go to the lower exact handicap index, with `position` and
+   * `tied` as in `rankParticipants`.
    *
    * @param {Array<{participantId: string, name: string, handicap: number|null}>} participants
    * @param {Array<{holeNumber: number, par: number, strokeIndex: number}>} holes
@@ -208,6 +241,7 @@ class StablefordCalculator {
       participantId: participant.participantId,
       name: participant.name,
       team: participant.team,
+      handicap: participant.handicap ?? null,
       ...StablefordCalculator.computeParticipantTotals(
         participant,
         holes,
@@ -217,7 +251,7 @@ class StablefordCalculator {
       ),
     }));
 
-    return rows.sort((a, b) => {
+    return ordenaConPuestos(rows, (a, b) => {
       if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
       if (a.holesPlayed === 0) return 1;
       if (b.holesPlayed === 0) return -1;

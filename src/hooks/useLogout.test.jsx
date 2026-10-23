@@ -34,6 +34,12 @@ vi.mock('../utils/broadcastAuth', () => ({
   broadcastLogout: vi.fn(),
 }));
 
+// El número de Actividad y el del icono son de la cuenta: salir los olvida (FE-1)
+const mockOlvidaLasNovedades = vi.fn();
+vi.mock('./useNovedadesDeActividad', () => ({
+  olvidaLasNovedades: () => mockOlvidaLasNovedades(),
+}));
+
 // Este entorno no trae `localStorage`; los demas tests del proyecto lo ponen igual
 const almacen = (() => {
   let store = {};
@@ -100,6 +106,22 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
 
     expect(loQueQueda()).toEqual([]);
     expect(window.location.href).toBe('/');
+  });
+
+  it.each([
+    { caso: 'with reload', opciones: { recargarEn: '/' } },
+    { caso: 'without reload', opciones: {} },
+    { caso: 'when the backend fails', opciones: { recargarEn: '/' }, fallo: new TypeError('Failed to fetch') },
+    { caso: 'from another tab', opciones: { desdeOtraPestana: true, skipBackendCall: true } },
+  ])('forgets the Activity number and the app icon badge ($caso)', async ({ opciones, fallo }) => {
+    mockOlvidaLasNovedades.mockClear();
+    if (fallo) logoutUseCase.execute.mockRejectedValue(fallo);
+    else logoutUseCase.execute.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+    await act(async () => { await result.current.logout(opciones); });
+
+    expect(mockOlvidaLasNovedades).toHaveBeenCalledTimes(1);
   });
 
   it('y también cuando el backend no contesta', async () => {

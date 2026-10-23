@@ -1,15 +1,20 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent, within, act } from '@testing-library/react';
+import { MemoryRouter, Link } from 'react-router';
+import { vi, describe, it, expect, beforeEach, beforeAll, afterEach } from 'vitest';
+import i18next from 'i18next';
+import { I18nextProvider, initReactI18next } from 'react-i18next';
+import feedEs from '../../i18n/locales/es/feed.json';
+import feedEn from '../../i18n/locales/en/feed.json';
+import commonEs from '../../i18n/locales/es/common.json';
+import commonEn from '../../i18n/locales/en/common.json';
 import FeedPage from './FeedPage';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key) => key, i18n: { language: 'es' } }),
-}));
-
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { id: 'me' }, loading: false }),
-}));
+// Un solo `user` para todos los render: uno nuevo por render recargaría el
+// feed en bucle en una página con efectos sobre él
+vi.mock('../../hooks/useAuth', () => {
+  const user = { id: 'me' };
+  return { useAuth: () => ({ user, loading: false }) };
+});
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <header data-testid="header" />,
@@ -19,45 +24,116 @@ vi.mock('../../components/ui/Avatar', () => ({
   default: ({ userId }) => <div data-testid={`avatar-${userId}`} />,
 }));
 
+const aCero = vi.fn();
+// El número de Actividad, como una pieza compartida de verdad: la página
+// reacciona a sus cambios mientras está abierta (revisión FE-1)
+const mockNovedades = vi.hoisted(() => {
+  let valor = 0;
+  const oyentes = new Set();
+  return {
+    lee: () => valor,
+    fija: (n) => {
+      valor = n;
+      oyentes.forEach((f) => f());
+    },
+    suscribe: (f) => {
+      oyentes.add(f);
+      return () => oyentes.delete(f);
+    },
+  };
+});
+vi.mock('../../hooks/useNovedadesDeActividad', async () => {
+  const { useSyncExternalStore } = await import('react');
+  return {
+    ponLasNovedadesACero: () => aCero(),
+    olvidaLasNovedades: () => {},
+    useNovedadesDeActividad: () => useSyncExternalStore(mockNovedades.suscribe, mockNovedades.lee),
+  };
+});
+
+const toastError = vi.fn();
+vi.mock('../../utils/toast', () => ({
+  default: { error: (...a) => toastError(...a), success: vi.fn() },
+}));
+
 const getFeed = vi.fn();
 const markSeen = vi.fn();
+const respond = vi.fn();
 
 vi.mock('../../composition', () => ({
   getFriendsFeedUseCase: { execute: (...args) => getFeed(...args) },
   markFeedAsSeenUseCase: { execute: (...args) => markSeen(...args) },
+  respondFriendRequestUseCase: { execute: (...args) => respond(...args) },
 }));
+
+// Jueves 22 de octubre de 2026, 18:00
+const AHORA = new Date(2026, 9, 22, 18, 0);
+
+const instancias = {};
+beforeAll(async () => {
+  for (const lng of ['es', 'en']) {
+    const i = i18next.createInstance();
+    await i.use(initReactI18next).init({
+      lng,
+      fallbackLng: 'es',
+      ns: ['feed', 'common'],
+      defaultNS: 'feed',
+      resources: { es: { feed: feedEs, common: commonEs }, en: { feed: feedEn, common: commonEn } },
+      interpolation: { escapeValue: false },
+    });
+    instancias[lng] = i;
+  }
+});
 
 const evento = (overrides = {}) => ({
   id: 'e1',
   userId: 'u1',
   type: 'BIRDIE',
-  occurredAt: new Date('2026-08-10T12:00:00'),
+  occurredAt: new Date(2026, 9, 22, 12, 0),
+  publishedAt: new Date(2026, 9, 22, 17, 0),
   payload: { count: 3, holes: [1, 5, 9] },
   sourceMatchId: 'm1',
+  groupKey: null,
   ...overrides,
 });
 
 const pagina = (overrides = {}) => ({
   events: [evento()],
-  authors: { u1: { id: 'u1', firstName: 'Ana', lastName: 'García' } },
+  authors: {
+    u1: { id: 'u1', firstName: 'Ana', lastName: 'García' },
+    u9: { id: 'u9', displayName: 'Pedro' },
+  },
   courses: {},
   nextCursor: null,
   unseenCount: 0,
+  pendingFriendRequests: [],
   ...overrides,
 });
 
-const renderFeed = () =>
+const renderFeed = (lng = 'es') =>
   render(
-    <MemoryRouter>
-      <FeedPage />
-    </MemoryRouter>
+    <I18nextProvider i18n={instancias[lng]}>
+      <MemoryRouter initialEntries={['/feed']}>
+        <FeedPage />
+        {/* El botón de Actividad, pulsado estando ya en Actividad */}
+        <Link to="/feed">boton-actividad</Link>
+      </MemoryRouter>
+    </I18nextProvider>
   );
 
 describe('FeedPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNovedades.fija(0);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(AHORA);
     getFeed.mockResolvedValue(pagina());
     markSeen.mockResolvedValue(undefined);
+    respond.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows the achievements with their author', async () => {
@@ -80,8 +156,6 @@ describe('FeedPage', () => {
   });
 
   it('still paints the entry when the course name is missing', async () => {
-    // Un campo borrado, o un id que el backend no supo leer, deja la entrada
-    // sin nombre — nunca sin pintar.
     getFeed.mockResolvedValue(
       pagina({
         events: [evento({ payload: { count: 3, holes: [1, 5, 9], golf_course_id: 'c-borrado' } })],
@@ -94,8 +168,6 @@ describe('FeedPage', () => {
   });
 
   it('keeps the course names from earlier pages when loading more', async () => {
-    // Los nombres se acumulan igual que los autores: si se reemplazaran, las
-    // entradas ya pintadas perderían el suyo al paginar.
     getFeed.mockResolvedValueOnce(
       pagina({
         events: [evento({ payload: { golf_course_id: 'c-1' } })],
@@ -105,7 +177,7 @@ describe('FeedPage', () => {
     );
     getFeed.mockResolvedValueOnce(
       pagina({
-        events: [evento({ id: 'e2', payload: { golf_course_id: 'c-2' } })],
+        events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 9), payload: { golf_course_id: 'c-2' } })],
         courses: { 'c-2': 'Otro Campo' },
       })
     );
@@ -119,8 +191,6 @@ describe('FeedPage', () => {
   });
 
   it('marks the feed as seen once, not on every page', async () => {
-    // Marcar en cada paginación apagaría el aviso por refrescar en vez de por
-    // haber mirado.
     getFeed.mockResolvedValue(pagina({ nextCursor: 'cursor-1' }));
     renderFeed();
 
@@ -131,29 +201,44 @@ describe('FeedPage', () => {
     expect(markSeen).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps showing the feed when marking it as seen fails', async () => {
-    // Lo peor que puede pasar es que la insignia siga puesta: no debe impedir leer.
+  it('opening Actividad puts the button and the icon to zero once it is marked seen (case 4)', async () => {
+    renderFeed();
+
+    await waitFor(() => expect(aCero).toHaveBeenCalledTimes(1));
+    expect(markSeen).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the number when marking as seen fails, and still shows the feed (case 4)', async () => {
     markSeen.mockRejectedValue(new Error('network'));
     renderFeed();
 
     expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+    await waitFor(() => expect(markSeen).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(aCero).not.toHaveBeenCalled();
   });
 
-  it('offers to find friends when there is nothing to show', async () => {
-    // El feed vacío es el estado normal al principio, no un error.
+  it('offers to find friends when there is nothing to show (case 14)', async () => {
     getFeed.mockResolvedValue(pagina({ events: [], authors: {} }));
     renderFeed();
 
     expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
-    expect(screen.getByText('feed:empty.addFriends')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Buscar amigos' })).toHaveAttribute('href', '/friends');
   });
 
-  it('appends the next page instead of replacing what is shown', async () => {
+  it('only unknown types still read as empty (forward compatibility)', async () => {
+    getFeed.mockResolvedValue(pagina({ events: [evento({ type: 'NOT_YET_INVENTED' })] }));
+    renderFeed();
+
+    expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+  });
+
+  it('appends the next page instead of replacing what is shown, with «Cargar más» (case 13)', async () => {
     getFeed
       .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
       .mockResolvedValueOnce(
         pagina({
-          events: [evento({ id: 'e2', userId: 'u2' })],
+          events: [evento({ id: 'e2', userId: 'u2', publishedAt: new Date(2026, 9, 22, 8) })],
           authors: { u2: { id: 'u2', firstName: 'Luis', lastName: 'Pérez' } },
           nextCursor: null,
         })
@@ -161,10 +246,12 @@ describe('FeedPage', () => {
     renderFeed();
 
     await screen.findByTestId('activity-event-e1');
+    expect(screen.getByTestId('feed-load-more')).toHaveTextContent('Cargar más');
     fireEvent.click(screen.getByTestId('feed-load-more'));
 
     expect(await screen.findByTestId('activity-event-e2')).toBeInTheDocument();
     expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
+    expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
   });
 
   it('hides the load-more button on the last page', async () => {
@@ -174,10 +261,628 @@ describe('FeedPage', () => {
     expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
   });
 
-  it('links to the friends list, which no longer has its own tab', async () => {
+  it('links to the friends list', async () => {
     renderFeed();
 
     const enlace = await screen.findByTestId('feed-friends-link');
     expect(enlace).toHaveAttribute('href', '/friends');
+  });
+
+  describe('timeline', () => {
+    it('is one list without tabs, newest first (case 5)', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [
+            evento({ id: 'viejo', publishedAt: new Date(2026, 9, 22, 9) }),
+            evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17) }),
+          ],
+        })
+      );
+      renderFeed();
+
+      await screen.findByTestId('activity-event-nuevo');
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+      const ids = [...screen.getByTestId('feed-events').querySelectorAll('article')].map((a) => a.dataset.testid);
+      expect(ids).toEqual(['activity-event-nuevo', 'activity-event-viejo']);
+    });
+
+    it('separates the days: Hoy, Ayer, this week, older, other year (case 6)', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [
+            evento({ id: 'hoy', publishedAt: new Date(2026, 9, 22, 10) }),
+            evento({ id: 'ayer', publishedAt: new Date(2026, 9, 21, 10) }),
+            evento({ id: 'martes', publishedAt: new Date(2026, 9, 20, 10) }),
+            evento({ id: 'octubre', publishedAt: new Date(2026, 9, 1, 10) }),
+            evento({ id: 'antano', publishedAt: new Date(2025, 11, 31, 10) }),
+          ],
+        })
+      );
+      renderFeed();
+
+      await screen.findByTestId('activity-event-hoy');
+      const separadores = screen.getAllByTestId('separador-dia').map((s) => s.textContent);
+      expect(separadores).toEqual(['Hoy', 'Ayer', 'mar 20 oct', '1 oct', '31 dic 2025']);
+    });
+
+    it('separates the days in English too (case 16)', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [
+            evento({ id: 'hoy', publishedAt: new Date(2026, 9, 22, 10) }),
+            evento({ id: 'ayer', publishedAt: new Date(2026, 9, 21, 10) }),
+            evento({ id: 'octubre', publishedAt: new Date(2026, 9, 1, 10) }),
+          ],
+        })
+      );
+      renderFeed('en');
+
+      await screen.findByTestId('activity-event-hoy');
+      const separadores = screen.getAllByTestId('separador-dia').map((s) => s.textContent);
+      expect(separadores).toEqual(['Today', 'Yesterday', 'Oct 1']);
+    });
+
+    it('marks the cards new since the last visit (case 7)', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [
+            evento({ id: 'a', publishedAt: new Date(2026, 9, 22, 17) }),
+            evento({ id: 'b', publishedAt: new Date(2026, 9, 22, 16) }),
+            evento({ id: 'c', publishedAt: new Date(2026, 9, 22, 15) }),
+          ],
+          unseenCount: 2,
+        })
+      );
+      renderFeed();
+
+      await screen.findByTestId('activity-event-a');
+      expect(within(screen.getByTestId('activity-event-a')).getByTestId('marca-nueva')).toBeInTheDocument();
+      expect(within(screen.getByTestId('activity-event-b')).getByTestId('marca-nueva')).toBeInTheDocument();
+      expect(within(screen.getByTestId('activity-event-c')).queryByTestId('marca-nueva')).not.toBeInTheDocument();
+    });
+
+    it('shows one card for several achievements of the same round (case 9)', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [
+            evento({ id: 'b', type: 'BIRDIE', groupKey: 'u1:m1', payload: { count: 2 } }),
+            evento({ id: 'e', type: 'EAGLE_OR_BETTER', groupKey: 'u1:m1', payload: { count: 1 } }),
+          ],
+        })
+      );
+      renderFeed();
+
+      const tarjeta = await screen.findByTestId('activity-event-u1:m1');
+      expect(tarjeta).toHaveTextContent('2 birdies');
+      expect(tarjeta).toHaveTextContent('Un eagle');
+      expect(screen.getAllByRole('article')).toHaveLength(1);
+    });
+  });
+
+  describe('friend requests (case 11)', () => {
+    const conSolicitud = () =>
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [evento()],
+          pendingFriendRequests: [
+            { friendshipId: 'f1', requesterId: 'u9', createdAt: new Date(2026, 9, 22, 16) },
+          ],
+        })
+      );
+
+    it('go on top with «Aceptar» and «Rechazar», the name linking to the profile', async () => {
+      conSolicitud();
+      renderFeed();
+
+      const solicitud = await screen.findByTestId('solicitud-f1');
+      const lista = screen.getByTestId('feed-events');
+      expect(
+        solicitud.compareDocumentPosition(lista) & globalThis.Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(within(solicitud).getByRole('button', { name: 'Aceptar la solicitud de Pedro' })).toBeInTheDocument();
+      expect(within(solicitud).getByRole('button', { name: 'Rechazar la solicitud de Pedro' })).toBeInTheDocument();
+      expect(within(solicitud).getByRole('link', { name: 'Pedro' })).toHaveAttribute('href', '/players/u9');
+    });
+
+    it('accept → the card becomes «Ahora sois amigos»', async () => {
+      conSolicitud();
+      renderFeed();
+
+      const solicitud = await screen.findByTestId('solicitud-f1');
+      fireEvent.click(within(solicitud).getByRole('button', { name: 'Aceptar la solicitud de Pedro' }));
+
+      await waitFor(() => expect(solicitud).toHaveTextContent('Ahora sois amigos'));
+      expect(respond).toHaveBeenCalledWith('f1', 'ACCEPT');
+      expect(within(solicitud).queryByRole('button', { name: 'Aceptar la solicitud de Pedro' })).not.toBeInTheDocument();
+      expect(within(solicitud).queryByRole('button', { name: 'Rechazar la solicitud de Pedro' })).not.toBeInTheDocument();
+    });
+
+    it('reject → the card disappears', async () => {
+      conSolicitud();
+      renderFeed();
+
+      const solicitud = await screen.findByTestId('solicitud-f1');
+      fireEvent.click(within(solicitud).getByRole('button', { name: 'Rechazar la solicitud de Pedro' }));
+
+      await waitFor(() => expect(screen.queryByTestId('solicitud-f1')).not.toBeInTheDocument());
+      expect(respond).toHaveBeenCalledWith('f1', 'DECLINE');
+    });
+
+    it.each([
+      ['Aceptar la solicitud de Pedro'],
+      ['Rechazar la solicitud de Pedro'],
+    ])('on failure of «%s» the card stays and a toast shows', async (boton) => {
+      respond.mockRejectedValue(new Error('boom'));
+      conSolicitud();
+      renderFeed();
+
+      const solicitud = await screen.findByTestId('solicitud-f1');
+      fireEvent.click(within(solicitud).getByRole('button', { name: boton }));
+
+      await waitFor(() => expect(toastError).toHaveBeenCalled());
+      expect(screen.getByTestId('solicitud-f1')).toBeInTheDocument();
+      expect(within(solicitud).getByRole('button', { name: 'Aceptar la solicitud de Pedro' })).toBeEnabled();
+      expect(solicitud).not.toHaveTextContent('Ahora sois amigos');
+    });
+
+    it('a request alone is not an empty feed', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [],
+          pendingFriendRequests: [{ friendshipId: 'f1', requesterId: 'u9', createdAt: new Date(2026, 9, 22, 16) }],
+        })
+      );
+      renderFeed();
+
+      expect(await screen.findByTestId('solicitud-f1')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('marks a new request', async () => {
+      getFeed.mockResolvedValue(
+        pagina({
+          events: [evento()],
+          unseenCount: 1,
+          pendingFriendRequests: [{ friendshipId: 'f1', requesterId: 'u9', createdAt: new Date(2026, 9, 22, 17, 30) }],
+        })
+      );
+      renderFeed();
+
+      const solicitud = await screen.findByTestId('solicitud-f1');
+      expect(within(solicitud).getByTestId('marca-nueva')).toBeInTheDocument();
+    });
+  });
+
+  describe('load error (case 15)', () => {
+    it('offers «Reintentar», which loads again', async () => {
+      getFeed.mockRejectedValueOnce(new Error('500')).mockResolvedValueOnce(pagina());
+      renderFeed();
+
+      const reintentar = await screen.findByRole('button', { name: 'Reintentar' });
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+      fireEvent.click(reintentar);
+
+      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+
+    it('without coverage says so, and also offers «Reintentar»', async () => {
+      getFeed.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      renderFeed();
+
+      expect(await screen.findByTestId('feed-sin-cobertura')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    });
+  });
+
+  describe('new things while Actividad is open (review FE-1)', () => {
+    it('a count above zero reloads the timeline and marks it seen', async () => {
+      getFeed.mockResolvedValueOnce(pagina()).mockResolvedValueOnce(
+        pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()] })
+      );
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      await waitFor(() => expect(aCero).toHaveBeenCalledTimes(1));
+
+      act(() => mockNovedades.fija(2));
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(2);
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(aCero).toHaveBeenCalledTimes(2));
+    });
+
+    it('a count already above zero while loading does not load twice', async () => {
+      mockNovedades.fija(3);
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+
+      expect(getFeed).toHaveBeenCalledTimes(1);
+    });
+
+    it('a count back to zero does not reload', async () => {
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      act(() => mockNovedades.fija(2));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+
+      act(() => mockNovedades.fija(0));
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+
+    it('if marking fails, it does not loop', async () => {
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      markSeen.mockRejectedValue(new Error('net'));
+
+      act(() => mockNovedades.fija(4));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+      await act(async () => {});
+      await act(async () => {});
+
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+
+    it('tapping Actividad while on Actividad reloads and marks it seen', async () => {
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(1));
+
+      fireEvent.click(screen.getByText('boton-actividad'));
+
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(markSeen).toHaveBeenCalledTimes(2));
+    });
+  });
+
+  describe('a background reload merges, it does not replace (final review FE-1)', () => {
+    const diferida = () => {
+      let resolver;
+      const promesa = new Promise((r) => {
+        resolver = r;
+      });
+      return { promesa, resolver };
+    };
+    const ids = () =>
+      [...screen.getByTestId('feed-events').querySelectorAll('article')].map((a) => a.dataset.testid);
+
+    it('keeps the pages loaded with «Cargar más» and their cursor, adds the new on top, updates the known', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(
+          pagina({
+            events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 8), payload: { count: 1, golf_course_id: 'c-2' } })],
+            courses: { 'c-2': 'Campo De La Segunda' },
+            nextCursor: null,
+          })
+        )
+        .mockResolvedValueOnce(
+          pagina({
+            events: [
+              evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }),
+              evento({ payload: { count: 3, golf_course_id: 'c-9' } }),
+            ],
+            courses: { 'c-9': 'Campo Actualizado' },
+            nextCursor: 'cursor-de-la-primera',
+            pendingFriendRequests: [{ friendshipId: 'f-fresca', requesterId: 'u9', createdAt: new Date(2026, 9, 22, 17) }],
+          })
+        );
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+
+      act(() => mockNovedades.fija(1));
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1', 'activity-event-e2']);
+      expect(screen.getByTestId('activity-event-e1')).toHaveTextContent('Campo Actualizado');
+      expect(screen.getByTestId('activity-event-e2')).toHaveTextContent('Campo De La Segunda');
+      // El cursor de la última página cargada manda: no vuelve a ofrecer la segunda
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+      // Las solicitudes, las de ahora
+      expect(screen.getByTestId('solicitud-f-fresca')).toBeInTheDocument();
+    });
+
+    it('with only the first page, keeps offering the next one', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()], nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 8) })], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      await screen.findByTestId('activity-event-nuevo');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e2')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
+    it('waits for a «Cargar más» in flight, then reloads', async () => {
+      const mas = diferida();
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockReturnValueOnce(mas.promesa)
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()], nextCursor: 'otro' }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+
+      act(() => mockNovedades.fija(2));
+      await act(async () => {});
+      expect(getFeed).toHaveBeenCalledTimes(2);
+
+      await act(async () => mas.resolver(pagina({ events: [evento({ id: 'e2', publishedAt: new Date(2026, 9, 22, 8) })], nextCursor: null })));
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(3);
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1', 'activity-event-e2']);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('a reload answering after a «Cargar más» does not wipe that page or reset the cursor', async () => {
+      const recarga = diferida();
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockReturnValueOnce(recarga.promesa)
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'e20', publishedAt: new Date(2026, 9, 22, 8) })], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e20');
+
+      await act(async () =>
+        recarga.resolver(pagina({ events: [evento({ id: 'nuevo', publishedAt: new Date(2026, 9, 22, 17, 59) }), evento()], nextCursor: 'cursor-1' }))
+      );
+
+      expect(await screen.findByTestId('activity-event-nuevo')).toBeInTheDocument();
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1', 'activity-event-e20']);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('a page answering after a reload does not duplicate what the reload brought', async () => {
+      const e2 = () => evento({ id: 'e2', groupKey: 'u1:m2', publishedAt: new Date(2026, 9, 22, 8), payload: { count: 3 } });
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [e2(), evento()], nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [e2()], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      act(() => mockNovedades.fija(1));
+      await screen.findByTestId('activity-event-u1:m2');
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(3));
+      await act(async () => {});
+
+      expect(ids()).toEqual(['activity-event-e1', 'activity-event-u1:m2']);
+      expect(within(screen.getByTestId('activity-event-u1:m2')).getByTestId('frase-tarjeta')).toHaveTextContent(/^3 birdies$/);
+    });
+
+    it('what is new goes on top even at the same instant', async () => {
+      const mismo = new Date(2026, 9, 22, 17, 0);
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [evento({ publishedAt: mismo })] }))
+        .mockResolvedValueOnce(pagina({ events: [evento({ id: 'nuevo', publishedAt: mismo }), evento({ publishedAt: mismo })] }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+
+      act(() => mockNovedades.fija(1));
+      await screen.findByTestId('activity-event-nuevo');
+
+      expect(ids()).toEqual(['activity-event-nuevo', 'activity-event-e1']);
+    });
+  });
+
+  describe('short pages that still carry a cursor (social decisions, case 7)', () => {
+    // Las respuestas de una sola vez que sobren de un test no pasan al siguiente
+    beforeEach(() => {
+      getFeed.mockReset();
+      getFeed.mockResolvedValue(pagina());
+    });
+
+    it('a first page with no entries but a cursor offers «Cargar más», not the empty state', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ nextCursor: null }));
+      renderFeed();
+
+      const boton = await screen.findByTestId('feed-load-more');
+      expect(boton).toHaveTextContent('Cargar más');
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+
+      fireEvent.click(boton);
+
+      expect(await screen.findByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('in English too: «Load more»', async () => {
+      getFeed.mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }));
+      renderFeed('en');
+
+      expect(await screen.findByTestId('feed-load-more')).toHaveTextContent('Load more');
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('a first page of only unknown types but a cursor offers «Cargar más» too', async () => {
+      getFeed.mockResolvedValueOnce(
+        pagina({ events: [evento({ type: 'NOT_YET_INVENTED' })], nextCursor: 'cursor-1' })
+      );
+      renderFeed();
+
+      expect(await screen.findByTestId('feed-load-more')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-empty')).not.toBeInTheDocument();
+    });
+
+    it('a «Cargar más» that adds nothing but has a cursor keeps the button, with no requests of its own', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(
+          pagina({ events: [evento({ id: 'e3', publishedAt: new Date(2026, 9, 21, 9) })], nextCursor: null })
+        );
+      renderFeed();
+
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByTestId('feed-load-more')).toBeEnabled());
+      expect(screen.getByTestId('feed-load-more')).toHaveTextContent('Cargar más');
+      expect(getFeed).toHaveBeenCalledTimes(2);
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e3')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-2' });
+      expect(getFeed).toHaveBeenCalledTimes(3);
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
+
+    it('an empty page with no cursor after an empty first page ends in the empty state', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }));
+      renderFeed();
+
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+      expect(getFeed).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('a reload keeps the cursor coherent (review of the social decisions)', () => {
+    beforeEach(() => {
+      getFeed.mockReset();
+      getFeed.mockResolvedValue(pagina());
+    });
+
+    const nuevo = (id, minuto) => evento({ id, publishedAt: new Date(2026, 9, 22, 17, minuto) });
+
+    it('before any «Cargar más», the reload brings its cursor: an empty feed that fills up offers more', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59)], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+
+      act(() => mockNovedades.fija(1));
+
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+    });
+
+    it('an empty feed whose reload comes empty but with a cursor offers the next page (CodeRabbit FE #947)', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      expect(await screen.findByTestId('feed-empty')).toBeInTheDocument();
+
+      act(() => mockNovedades.fija(1));
+
+      fireEvent.click(await screen.findByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+    });
+
+    it('with cards loaded, an empty reload with a cursor keeps the cursor of what is loaded', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [], authors: {}, nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('viejo', 1)], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('feed-load-more');
+
+      act(() => mockNovedades.fija(1));
+      await waitFor(() => expect(getFeed).toHaveBeenCalledTimes(2));
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      expect(await screen.findByTestId('activity-event-viejo')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-1' });
+    });
+
+    it('after «Cargar más», a reload that does not join what is loaded (a gap) brings its cursor', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e2', 2)], nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), nuevo('n2', 58)], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('hueco', 30)], nextCursor: 'cursor-3' }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+
+      act(() => mockNovedades.fija(1));
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e2')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-hueco')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'fresco' });
+      expect(screen.getByTestId('activity-event-e1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e2')).toBeInTheDocument();
+    });
+
+    it('after «Cargar más», a reload keeps the deeper cursor and what was loaded', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e2', 2)], nextCursor: 'cursor-2' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), evento()], nextCursor: 'fresco' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e3', 0)], nextCursor: null }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+
+      act(() => mockNovedades.fija(1));
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-event-e2')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+
+      expect(await screen.findByTestId('activity-event-e3')).toBeInTheDocument();
+      expect(getFeed).toHaveBeenLastCalledWith({ limit: 20, cursor: 'cursor-2' });
+    });
+
+    it('after «Cargar más» reached the end, a reload with a cursor does not bring the button back', async () => {
+      getFeed
+        .mockResolvedValueOnce(pagina({ nextCursor: 'cursor-1' }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('e2', 2)], nextCursor: null }))
+        .mockResolvedValueOnce(pagina({ events: [nuevo('n1', 59), evento()], nextCursor: 'fresco' }));
+      renderFeed();
+      await screen.findByTestId('activity-event-e1');
+      fireEvent.click(screen.getByTestId('feed-load-more'));
+      await screen.findByTestId('activity-event-e2');
+      await waitFor(() => expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument());
+
+      act(() => mockNovedades.fija(1));
+
+      expect(await screen.findByTestId('activity-event-n1')).toBeInTheDocument();
+      expect(screen.queryByTestId('feed-load-more')).not.toBeInTheDocument();
+    });
   });
 });

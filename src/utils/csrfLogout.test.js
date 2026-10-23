@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleCsrfLogout } from './csrfLogout';
 import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../services/loUltimoConocido';
+import { olvidaLasNovedades } from '../services/novedadesDeActividad';
+
+vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 
 /**
  * LA TABLA — salir por un fallo de CSRF.
@@ -27,6 +30,14 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
   });
 
   afterEach(() => vi.restoreAllMocks());
+
+  it('forgets the Activity number and the app icon badge (review FE-1)', () => {
+    olvidaLasNovedades.mockClear();
+
+    handleCsrfLogout({ detail: 'CSRF token missing' });
+
+    expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
+  });
 
   it('se lleva las partidas guardadas de la cuenta anterior', () => {
     // Es el cuarto camino de salida y tampoco pasa por `clearAuth`: en un móvil

@@ -81,7 +81,9 @@
     "quickMatch": "Partida",
     "friends": "Amigos",
     "profile": "Perfil",
-    "feed": "Actividad"
+    "feed": "Actividad",
+    "unseen_one": "{{count}} novedad sin ver",
+    "unseen_other": "{{count}} novedades sin ver"
   },
   "screens": {
     "dashboard": "Inicio",
@@ -106,7 +108,8 @@
     "adminUsers": "Usuarios",
     "adminCompetitions": "Competiciones",
     "adminGolfCourses": "Campos de golf",
-    "adminHoles": "Hoyos"
+    "adminHoles": "Hoyos",
+    "sharedQuickMatch": "Partida rápida"
   },
   "footer": {
     "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",

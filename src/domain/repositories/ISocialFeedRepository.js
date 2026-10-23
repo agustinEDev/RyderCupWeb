@@ -14,9 +14,20 @@ class ISocialFeedRepository {
    * alguien publica algo mientras se navega.
    *
    * @param {{ limit?: number, cursor?: string|null }} options
-   * @returns {Promise<{ events: Array, authors: Object, nextCursor: string|null, unseenCount: number }>}
+   * @returns {Promise<{ events: Array, authors: Object, nextCursor: string|null, unseenCount: number, pendingFriendRequests: Array }>}
    */
   async getFeed() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * El número del botón de Actividad, sin cargar el feed: lo nuevo desde la
+   * última visita (lo propio y las solicitudes de amistad incluidos), con tope
+   * de 10. Es barato a propósito: se pide al abrir la aplicación y al volver.
+   *
+   * @returns {Promise<number>}
+   */
+  async getUnseenCount() {
     throw new Error('Not implemented');
   }
 
@@ -51,6 +62,19 @@ class ISocialFeedRepository {
    * @returns {Promise<{ events: Array, nextCursor: string|null }>}
    */
   async getPlayerActivity() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * Las partidas terminadas jugadas con un amigo, de la más reciente a la más
+   * antigua, de 5 en 5. La primera página llega ya con el perfil. Solo entre
+   * amigos: a cualquier otro, 403.
+   *
+   * @param {string} userId
+   * @param {{ cursor?: string|null }} options
+   * @returns {Promise<{ games: Array, nextCursor: string|null }>}
+   */
+  async getGamesTogether() {
     throw new Error('Not implemented');
   }
 

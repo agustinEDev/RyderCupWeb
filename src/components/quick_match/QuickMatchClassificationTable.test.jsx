@@ -512,3 +512,79 @@ describe('QuickMatchClassificationTable', () => {
     });
   });
 });
+
+describe('QuickMatchClassificationTable — positions with the handicap tie-break (H)', () => {
+  const unHoyo = [{ holeNumber: 1, par: 4, strokeIndex: 5 }];
+  const puestos = () =>
+    screen.getAllByTestId('quick-match-clasificacion-puesto').map((celda) => celda.textContent);
+  const nombres = () =>
+    within(screen.getByTestId('quick-match-classification-table'))
+      .getAllByRole('row')
+      .slice(1)
+      .map((fila) => fila.querySelectorAll('td')[1].textContent);
+
+  it('Stableford: the same points and the same exact handicap share «T2» behind the lower one', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={unHoyo}
+        holeScores={[
+          { holeNumber: 1, participantId: 'a', score: 4 },
+          { holeNumber: 1, participantId: 'b', score: 4 },
+          { holeNumber: 1, participantId: 'c', score: 4 },
+        ]}
+        participants={[
+          { participantId: 'a', name: 'Ana', handicap: 12.4 },
+          { participantId: 'b', name: 'Bea', handicap: 3 },
+          { participantId: 'c', name: 'Carla', handicap: 12.4 },
+        ]}
+        scoringFormat="STABLEFORD"
+        playMode="SCRATCH"
+      />
+    );
+
+    expect(nombres()).toEqual(['Bea', 'Ana', 'Carla']);
+    expect(puestos()).toEqual(['1', 'T2', 'T2']);
+  });
+
+  it('Medal: the lower handicap goes first on equal net; no handicap counts as 0', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={unHoyo}
+        holeScores={[
+          { holeNumber: 1, participantId: 'a', score: 4 },
+          { holeNumber: 1, participantId: 'b', score: 4 },
+          { holeNumber: 1, participantId: 'c', score: 4 },
+        ]}
+        participants={[
+          { participantId: 'a', name: 'Ana', handicap: 0.1 },
+          { participantId: 'b', name: 'Bea', handicap: null },
+          { participantId: 'c', name: 'Carla', handicap: 0 },
+        ]}
+        scoringFormat="MEDAL"
+        playMode="SCRATCH"
+      />
+    );
+
+    expect(nombres()[2]).toBe('Ana');
+    expect(puestos()).toEqual(['T1', 'T1', '3']);
+  });
+
+  it('who has not scored a hole has no position: «·», at the bottom', () => {
+    render(
+      <QuickMatchClassificationTable
+        holes={unHoyo}
+        holeScores={[{ holeNumber: 1, participantId: 'a', score: 4 }]}
+        participants={[
+          { participantId: 'b', name: 'Bea', handicap: 0 },
+          { participantId: 'c', name: 'Carla', handicap: 0 },
+          { participantId: 'a', name: 'Ana', handicap: 20 },
+        ]}
+        scoringFormat="MEDAL"
+        playMode="SCRATCH"
+      />
+    );
+
+    expect(nombres()).toEqual(['Ana', 'Bea', 'Carla']);
+    expect(puestos()).toEqual(['1', '·', '·']);
+  });
+});
