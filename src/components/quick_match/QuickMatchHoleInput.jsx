@@ -22,7 +22,7 @@ import { clasesDelHueco } from '../scoring/clasesDelHueco';
  * Quien anota no necesita excepción: su hoyo y la cabecera salen de la misma
  * resolución, así que no difiere de sí mismo y no se le duplica nada.
  */
-const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = true, myRound = null, onScoreChange }) => {
+const QuickMatchHoleInput = ({ holeNumber, par, strokeIndex, meters = null, entries, isReadOnly = false, allowPickedUp = false, myRound = null, onScoreChange }) => {
   const { t } = useTranslation('scoring');
   const [openParticipantId, setOpenParticipantId] = useState(null);
 

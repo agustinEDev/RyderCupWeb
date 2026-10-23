@@ -872,6 +872,39 @@ describe('QuickMatchScoringPage · foursomes anota una bola por bando', () => {
       expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
     });
 
+    it('el foursomes de match play sigue ofreciendo la raya del bando (23 oct 2026)', () => {
+      mockUseQuickMatchScoring.mockReturnValue(
+        scoringState({
+          quickMatch: {
+            scoringFormat: null,
+            matchFormat: 'FOURSOMES',
+            participants: [
+              { participantId: 'user-1', userId: 'user-1', name: 'Ana', team: 'A' },
+              { participantId: 'user-2', userId: 'user-2', name: 'Bea', team: 'A' },
+              { participantId: 'user-3', userId: 'user-3', name: 'Carla', team: 'B' },
+              { participantId: 'user-4', userId: 'user-4', name: 'Dora', team: 'B' },
+            ],
+          },
+        })
+      );
+      renderPage();
+
+      fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+
+      expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+    });
+
+    it('sin formato conocido no ofrece la raya: solo donde se permite (23 oct 2026)', () => {
+      mockUseQuickMatchScoring.mockReturnValue(
+        scoringState({ quickMatch: { scoringFormat: undefined, matchFormat: null } })
+      );
+      renderPage();
+
+      fireEvent.click(screen.getByTestId('quick-match-score-button-user-1'));
+
+      expect(screen.queryByTestId('picked-up-button')).not.toBeInTheDocument();
+    });
+
     it('ensena la raya anotada distinta del hoyo sin anotar', () => {
       mockUseQuickMatchScoring.mockReturnValue(
         scoringState({

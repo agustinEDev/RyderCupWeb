@@ -41,7 +41,8 @@ const HoleInput = ({
   teamBName,
   matchFormat,
   // En Medal no se recoge: el teclado no ofrece la raya (FE #824, PR 7)
-  allowPickedUp = true,
+  // Por defecto no: la raya se ofrece solo donde se permite (23 oct 2026)
+  allowPickedUp = false,
 }) => {
   const { t } = useTranslation('scoring');
   const conPie = (netScore !== null && netScore !== undefined) || Boolean(holeResult) || Boolean(standing);

@@ -170,6 +170,12 @@ describe('GroupScoringPage (FE #824, PR 7)', () => {
     expect(llamadas.casilla.allowPickedUp).toBe(false);
   });
 
+  it('3b: sin el dato de si se permite (una vista vieja), no se ofrece la raya (23 oct 2026)', () => {
+    mockHook = hook({ scoringView: vista({ picked_up_allowed: undefined }) });
+    render(<GroupScoringPage />);
+    expect(llamadas.casilla.allowPickedUp).toBe(false);
+  });
+
   it('6: guardar un hoyo, con quien marco', () => {
     render(<GroupScoringPage />);
 
