@@ -651,6 +651,37 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
   });
 
+  it('una raya enviada gana a un número sin enviar de la otra fila', () => {
+    const bandos = [
+      { userId: 'u1', userName: 'Player A', team: 'A', strokesReceived: [1] },
+      { userId: 'u3', userName: 'Player C', team: 'A', strokesReceived: [1] },
+      { userId: 'u2', userName: 'Player B', team: 'B' },
+    ];
+    const conNumeroSinEnviar = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: 5, ownSubmitted: false, strokesReceivedThisHole: 1 },
+          { userId: 'u3', ownScore: null, ownSubmitted: true, strokesReceivedThisHole: 1 },
+        ],
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={conNumeroSinEnviar}
+        players={bandos}
+        currentUserId="u1"
+        matchFormat="FOURSOMES"
+      />
+    );
+
+    const [ida] = screen.getAllByRole('table');
+    const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
+    const celdas = within(fila).getAllByRole('cell');
+    expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
+  });
+
   it('un hoyo sin anotar sigue sin sumar', () => {
     const sinEnviar = [
       { holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: null, ownSubmitted: false }] },

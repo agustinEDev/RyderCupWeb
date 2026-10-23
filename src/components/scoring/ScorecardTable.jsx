@@ -136,14 +136,16 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     return holeData.playerScores?.find(ps => ps.userId === userId) || null;
   };
 
-  // Lo anotado en un hoyo de la fila: primero un número, luego una anotación
-  // enviada (la raya) y si no, cualquier fila. Sin conexión solo se reescribe
-  // la fila de quien anota, y la del compañero sin enviar tapaba su raya
+  // Lo anotado en un hoyo de la fila: primero lo enviado (con número, y si no
+  // la raya), luego un número sin enviar y si no, cualquier fila. Sin conexión
+  // solo se reescribe la fila de quien anota, y la del compañero sin enviar
+  // tapaba su raya
   const getRowScore = (holeNumber, row) => {
     const anotados = row.playerIds.map((userId) => getPlayerScore(holeNumber, userId));
     return (
-      anotados.find((ps) => ps?.ownScore != null) ??
+      anotados.find((ps) => ps?.ownSubmitted && ps.ownScore != null) ??
       anotados.find((ps) => ps?.ownSubmitted) ??
+      anotados.find((ps) => ps?.ownScore != null) ??
       anotados.find(Boolean) ??
       null
     );

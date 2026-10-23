@@ -1,6 +1,6 @@
 import StablefordCalculator from './StablefordCalculator';
 import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
-import { entryAtOf, groupParticipantsBySide } from './FoursomesSides';
+import { entryAtOf, groupParticipantsBySide, sideCardHolder } from './FoursomesSides';
 import { defaultAllowanceFor } from './defaultAllowance';
 
 // Una vuelta personal se mide con el hándicap de juego entero. El allowance
@@ -116,12 +116,13 @@ const sideTotals = (me, participants, holes, holeScores, tees = [], allocation =
     // Solo rayas: el bando recogió. Sin el par de su barra no hay con qué
     // contarlo, y antes que inventar un número se deja el hoyo fuera, igual que
     // hace `_foursomes_side_strokes`. Vale su doble bogey neto con los golpes
-    // del bando en el partido: comparten bola y reparto, el del titular.
+    // del bando en el partido: comparten bola y reparto, el del titular
+    // (`sideCardHolder`, el mismo que la tarjeta).
     const par = parAt(hole.holeNumber);
     if (par == null) continue;
     totalStrokes += StablefordCalculator.netDoubleBogey(
       par,
-      StablefordCalculator.strokesOnHole(allocation, members[0].participantId, hole.holeNumber)
+      StablefordCalculator.strokesOnHole(allocation, sideCardHolder(members).participantId, hole.holeNumber)
     );
     holesPlayed += 1;
   }
