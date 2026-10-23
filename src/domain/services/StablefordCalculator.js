@@ -153,18 +153,12 @@ class StablefordCalculator {
       );
 
       if (entry.score == null) {
-        // La raya no trae golpes, así que el bruto y el neto se llevan por
-        // separado en vez de derivar uno del otro:
-        //
-        // - BRUTO: `par + 2`, el doble bogey que se escribe en la tarjeta. Sin
-        //   golpes recibidos, porque un total de golpes no puede depender del
-        //   reparto: la misma vuelta daba 89 o 90 según el allowance.
-        // - NETO: doble bogey NETO, que es lo que el WHS manda computar en un
-        //   hoyo no terminado y lo que lo deja en cero puntos.
-        //
-        // Restarle los golpes al bruto daría `par + 2 - golpes`, o sea un punto
-        // por hoyo recogido a quien recibe golpe ahí. Recoger no puntúa.
-        totalStrokes += hole.par + NET_DOUBLE_BOGEY_OVER_PAR;
+        // La raya no trae golpes: vale su doble bogey NETO, `par + 2 + golpes
+        // recibidos`, también en el bruto (Agustín, 23 oct 2026: «siempre una
+        // raya es par + golpes recibidos + 2»). El neto queda en `par + 2`, que
+        // es lo que la deja en cero puntos: recoger no puntúa. El bruto pasa
+        // así a depender del reparto, y se aceptó.
+        totalStrokes += StablefordCalculator.netDoubleBogey(hole.par, strokesReceived);
         netStrokes += hole.par + NET_DOUBLE_BOGEY_OVER_PAR;
         parPlayed += hole.par;
         holesPlayed += 1;

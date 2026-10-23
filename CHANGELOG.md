@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.52.0] - 2026-10-24
+
+**La raya cuenta su doble bogey neto y no se ofrece en Medal.** Necesita el
+backend **2.39.0** y se despliega justo después de él.
+
+**Notas de despliegue.**
+
+- Sin variables nuevas. Bundle ~3465 KB (zona de aviso, por debajo del límite
+  de 3500 KB).
+
+### Changed
+
+- **La raya suma su doble bogey neto al total de golpes** (#950): `par + 2 +
+  golpes recibidos` en vez de `par + 2`, en el calculador (anotación,
+  clasificación y «Tu vuelta»), la tarjeta de la partida rápida con los golpes
+  de cada tarjeta, el total del bando en foursomes y la tarjeta del partido de
+  torneo, que antes la dejaba fuera (neto: `par + 2`). El arnés de paridad se
+  regenera desde el backend.
+- **La raya solo se ofrece donde se permite** (#951): los teclados no la
+  enseñan por defecto. Sale en la partida rápida Stableford o match play, en
+  el partido de torneo si la vista trae el formato y en los grupos de stroke
+  play si el servidor dice `picked_up_allowed: true`. Nunca en Medal, tampoco
+  con la partida aún cargando o una vista vieja.
+
+### Fixed
+
+- En la tarjeta del partido de torneo, lo enviado gana a lo no enviado: una
+  raya del compañero anotada sin conexión ya no la tapa la otra fila (#950).
+
 ## [2.51.0] - 2026-10-23
 
 **Release social 1: Actividad rediseñada y perfil de otro jugador.** Una sola

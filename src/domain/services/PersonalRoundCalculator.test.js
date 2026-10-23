@@ -248,12 +248,12 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
   /**
    * La raya del bando: recogieron la bola. El hoyo esta jugado —el resultado
    * del partido lo cuenta como cualquier otro—, asi que aqui tambien, con su
-   * doble bogey bruto. Dejandolo fuera, el total salia de menos hoyos de los
+   * doble bogey neto. Dejandolo fuera, el total salia de menos hoyos de los
    * que el propio partido dice que se jugaron.
    *
    * Misma cuenta que `_foursomes_side_strokes` en el backend.
    */
-  it('cuenta la raya del bando como doble bogey bruto', () => {
+  it('cuenta la raya del bando como doble bogey neto', () => {
     const result = computeFoursomes([
       { holeNumber: 1, participantId: 'p-1', score: 4 },
       { holeNumber: 2, participantId: 'p-3', score: null },
@@ -261,6 +261,33 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
 
     // 4 en el hoyo 1, y el 2 es par 3 recogido -> 5
     expect(result.totalStrokes).toBe(9);
+  });
+
+  it('suma a la raya del bando los golpes que recibe el bando en el partido', () => {
+    // «Siempre una raya es par + golpes recibidos + 2» (Agustín, 23 oct 2026).
+    // Comparten bola y reparto: los del titular del bando, que mandó el backend
+    const result = PersonalRoundCalculator.compute({
+      me: teamMe,
+      participants: [teamMe, partner, teamRival],
+      holes,
+      holeScores: [
+        { holeNumber: 1, participantId: 'p-1', score: 4 },
+        { holeNumber: 2, participantId: 'p-3', score: null },
+      ],
+      tees: [],
+      participantStrokes: [
+        // El del titular manda aunque la raya la anotara el compañero
+        { participantId: 'p-1', playingHandicap: 2, strokesByHole: { 2: 1 } },
+        { participantId: 'p-3', playingHandicap: 4, strokesByHole: { 2: 2 } },
+        { participantId: 'p-2', playingHandicap: 0, strokesByHole: {} },
+      ],
+      matchFormat: 'FOURSOMES',
+      allowancePercentage: 50,
+      playMode: 'HANDICAP',
+    });
+
+    // 4 en el hoyo 1, y el 2 es par 3 recogido con un golpe -> 6
+    expect(result.totalStrokes).toBe(10);
   });
 
   it('prefiere el numero del companero a la raya del titular', () => {

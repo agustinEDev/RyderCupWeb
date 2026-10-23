@@ -16,6 +16,18 @@ const VISTA = {
 };
 
 describe('TeeGroupScoringMapper.toScoringViewDTO', () => {
+  it.each([
+    [true, true],
+    [false, false],
+    [undefined, false],
+    ['true', false],
+  ])('la raya, solo con picked_up_allowed verdadero (%s): una vista vieja no la ofrece', (dato, sale) => {
+    // 23 oct 2026: «que la raya no salga ya en Medal, no demos la oportunidad de que falle»
+    expect(
+      TeeGroupScoringMapper.toScoringViewDTO({ ...VISTA, picked_up_allowed: dato }).strokePlay.pickedUpAllowed
+    ).toBe(sale);
+  });
+
   it('lleva el campo de la franja, para pedir su mapa de hoyos', () => {
     expect(TeeGroupScoringMapper.toScoringViewDTO(VISTA).roundInfo.golfCourseId).toBe('gc-1');
   });

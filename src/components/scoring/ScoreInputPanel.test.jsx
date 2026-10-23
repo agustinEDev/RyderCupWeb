@@ -76,3 +76,20 @@ describe('ScoreInputPanel «Otro…» (#855)', () => {
     expect(screen.getByRole('button', { name: 'input.confirmScore' }).className).toContain('shrink-0');
   });
 });
+
+
+describe('ScoreInputPanel · la raya, solo donde se permite (23 oct 2026)', () => {
+  it('sin decir nada no ofrece la raya', () => {
+    render(<ScoreInputPanel value={undefined} onSelect={vi.fn()} onClose={vi.fn()} label="Hoyo 1" par={4} />);
+
+    expect(screen.queryByTestId('picked-up-button')).toBeNull();
+  });
+
+  it('donde se permite, sí', () => {
+    render(
+      <ScoreInputPanel value={undefined} onSelect={vi.fn()} onClose={vi.fn()} label="Hoyo 1" par={4} allowPickedUp />
+    );
+
+    expect(screen.getByTestId('picked-up-button')).toBeInTheDocument();
+  });
+});
