@@ -609,6 +609,48 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     expect(sumaDeLaIda()).toHaveTextContent(/^10$/);
   });
 
+  it('con el par de la barra del jugador, no el del campo', () => {
+    const naranjas = holes.map((h) => (h.holeNumber === 1 ? { ...h, par: 3 } : h));
+    const conBarra = [{ ...singles[0], holeCard: naranjas }, singles[1]];
+    render(<ScorecardTable holes={holes} scores={scores} players={conBarra} currentUserId="u1" />);
+
+    // Par 3 recogido con un golpe: 6, más el 4 del hoyo 2
+    expect(sumaDeLaIda()).toHaveTextContent(/^10$/);
+  });
+
+  it('en foursomes cuenta la raya aunque esté en la fila del compañero', () => {
+    // Sin conexión solo se reescribe la fila de quien anota: la del otro llega
+    // sin enviar y no puede tapar la raya
+    const bandos = [
+      { userId: 'u1', userName: 'Player A', team: 'A', strokesReceived: [1] },
+      { userId: 'u3', userName: 'Player C', team: 'A', strokesReceived: [1] },
+      { userId: 'u2', userName: 'Player B', team: 'B' },
+    ];
+    const conCompanero = [
+      {
+        holeNumber: 1,
+        playerScores: [
+          { userId: 'u1', ownScore: null, ownSubmitted: false, strokesReceivedThisHole: 1 },
+          { userId: 'u3', ownScore: null, ownSubmitted: true, strokesReceivedThisHole: 1 },
+        ],
+      },
+    ];
+    render(
+      <ScorecardTable
+        holes={holes}
+        scores={conCompanero}
+        players={bandos}
+        currentUserId="u1"
+        matchFormat="FOURSOMES"
+      />
+    );
+
+    const [ida] = screen.getAllByRole('table');
+    const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
+    const celdas = within(fila).getAllByRole('cell');
+    expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
+  });
+
   it('un hoyo sin anotar sigue sin sumar', () => {
     const sinEnviar = [
       { holeNumber: 1, playerScores: [{ userId: 'u1', ownScore: null, ownSubmitted: false }] },

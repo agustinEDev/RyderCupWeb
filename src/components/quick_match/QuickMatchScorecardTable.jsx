@@ -92,20 +92,6 @@ const QuickMatchScorecardTable = ({
   const getStrokesReceived = (holeNumber, participantId) =>
     allocation[participantId]?.strokesByHole?.[holeNumber] ?? 0;
 
-  // Los golpes con los que cuenta el hoyo, o null si está sin anotar. Un hoyo
-  // RECOGIDO —entrada sin número— vale su doble bogey NETO, `par + 2 + golpes
-  // recibidos` (Agustín, 23 oct 2026: «siempre una raya es par + golpes
-  // recibidos + 2»), con los golpes que esta tarjeta recibe en el partido. Es
-  // la misma cuenta que hacen el calculador y el backend.
-  const getCountingScore = (holeNumber, members, par, strokesId) => {
-    const entry = getEntry(holeNumber, members);
-    if (!entry) return null;
-    return (
-      entry.score ??
-      StablefordCalculator.netDoubleBogey(par, getStrokesReceived(holeNumber, strokesId))
-    );
-  };
-
   // Con signo: un hándicap plus suma negativo porque CEDE golpes. Sumarlo a
   // secas y preguntar por "> 0" hacía que la cabecera dijese "no recibe golpes"
   // mientras la propia tarjeta pintaba los puntos de los golpes cedidos.
@@ -295,7 +281,8 @@ const QuickMatchScorecardTable = ({
 
   const sumStrokes = (holeRange, card) =>
     holeRange.reduce((sum, h) => {
-      const score = getCountingScore(h.holeNumber, card.members, h.par, card.strokesId);
+      // La casilla y la suma cuentan lo mismo: la raya, su doble bogey neto
+      const { score } = datosDelHoyo(h, card);
       return score != null ? sum + score : sum;
     }, 0);
 
@@ -305,9 +292,10 @@ const QuickMatchScorecardTable = ({
     const entry = getEntry(h.holeNumber, card.members);
     const strokesReceived = getStrokesReceived(h.holeNumber, card.strokesId);
     // La raya es un hoyo anotado sin número: se pinta como raya y
-    // puntúa cero. Vale su doble bogey NETO —lo que el WHS computa en
-    // un hoyo no terminado—, el mismo con el que suma al total de la
-    // fila. Sin entrada no hay hoyo que pintar.
+    // puntúa cero. Vale su doble bogey NETO, `par + 2 + golpes recibidos`
+    // en el partido (Agustín, 23 oct 2026: «siempre una raya es par +
+    // golpes recibidos + 2»), también en el total de la fila. Sin
+    // entrada no hay hoyo que pintar.
     const isPickedUp = entry != null && entry.score == null;
     const score = isPickedUp
       ? StablefordCalculator.netDoubleBogey(h.par, strokesReceived)

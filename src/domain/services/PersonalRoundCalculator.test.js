@@ -276,8 +276,9 @@ describe('PersonalRoundCalculator · los golpes del bando en foursomes', () => {
       ],
       tees: [],
       participantStrokes: [
+        // El del titular manda aunque la raya la anotara el compañero
         { participantId: 'p-1', playingHandicap: 2, strokesByHole: { 2: 1 } },
-        { participantId: 'p-3', playingHandicap: 2, strokesByHole: { 2: 1 } },
+        { participantId: 'p-3', playingHandicap: 4, strokesByHole: { 2: 2 } },
         { participantId: 'p-2', playingHandicap: 0, strokesByHole: {} },
       ],
       matchFormat: 'FOURSOMES',
