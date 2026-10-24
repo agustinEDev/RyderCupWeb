@@ -400,6 +400,7 @@
     "quitarPunto": "Quitar",
     "ayudaMedir": "Toca el mapa para medir",
     "noCarga": "No se ha podido abrir el mapa. Comprueba la conexión e inténtalo de nuevo.",
+    "actualizando": "Actualizando la aplicación…",
     "atribucionPnoa": "PNOA CC BY 4.0 scne.es",
     "atribucionOsm": "© OpenStreetMap",
     "ortofoto": {

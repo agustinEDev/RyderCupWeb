@@ -8,6 +8,9 @@ vi.mock('@sentry/react', () => ({
   captureException: vi.fn(),
 }));
 
+const recarga = vi.hoisted(() => ({ enCurso: false }));
+vi.mock('../../utils/recargaPorTrozoViejo', () => ({ esElEcoDeLaRecarga: () => recarga.enCurso }));
+
 function Bomb({ error }) {
   throw error;
 }
@@ -19,6 +22,7 @@ describe('LazyLoadErrorBoundary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    recarga.enCurso = false;
     reloadMock = vi.fn();
     // jsdom's window.location.reload isn't configurable, so spyOn fails on it directly
     Object.defineProperty(window, 'location', {
@@ -72,5 +76,20 @@ describe('LazyLoadErrorBoundary', () => {
     expect(reloadMock).not.toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Unable to Load Application')).toBeInTheDocument();
+  });
+
+  it('recargando ya por un trozo viejo: en blanco, sin Sentry ni otra recarga (24 oct)', () => {
+    recarga.enCurso = true;
+
+    const { container } = render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new TypeError("undefined is not an object (evaluating 'e.default')")} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(reloadMock).not.toHaveBeenCalled();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBeNull();
   });
 });

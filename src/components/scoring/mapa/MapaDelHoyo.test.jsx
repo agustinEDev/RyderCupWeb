@@ -385,9 +385,9 @@ describe('MapaDelHoyo', () => {
       tocar(36.2893, -5.332);
 
       const lineas = mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
-      // A mitad de hoyo sigue también la línea de ti al green (T3); los metros, solo del punto
-      expect(lineas).toContainEqual([[-5.332, 36.2888], [-5.332, 36.2893]]);
-      expect(lineas.some(([, b]) => b[1] === 36.29)).toBe(true);
+      // Solo la de ti al punto: la de ti al green se va (M1, Agustín, 24 oct;
+      // deshace la T3 del 19 oct, que la dejaba)
+      expect(lineas).toEqual([[[-5.332, 36.2888], [-5.332, 36.2893]]]);
       const etiquetas = mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.tramo === 'medida' && /mapa\.tramo/.test(m.opciones.element?.textContent ?? ''));
       expect(etiquetas.map((m) => m.opciones.element.textContent)).toEqual(['mapa.tramo {"metros":56}']);
       // Cada etiqueta, en mitad de su tramo
@@ -2610,7 +2610,7 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(medida()[1][0]).toEqual([T.lon, alNorte(250).lat]);
   });
 
-  it('D3 (19 oct: T3): tocar otro sitio mide hasta allí; el codo no se mueve', () => {
+  it('D3 (M1, 24 oct): tocar otro sitio mide solo hasta allí; el codo se esconde y vuelve igual', () => {
     conGreenSuelto();
     desde(0);
     no();
@@ -2618,8 +2618,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     tocar(alNorte(200));
 
+    expect(elCodo()).toHaveLength(0);
+    expect(medida()).toEqual([[en(T), en(alNorte(200))]]);
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
     expect(elCodo()[0].p).toEqual(codo);
-    expect(medida()).toContainEqual([en(T), en(alNorte(200))]);
   });
 
   it('D3 (C9, 20 oct): «Quitar» deja la línea directa, con el codo otra vez sin tocar', () => {
@@ -2891,11 +2893,42 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     tocar(alNorte(80));
     expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":80}']);
+    // M1 (24 oct): solo la línea de ti al punto, sin la del green ni su codo
+    expect(medida()).toEqual([[en(T), en(alNorte(80))]]);
+    expect(elCodo()).toHaveLength(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
     expect(medida()).toEqual([[en(T), en(G300)]]);
     expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":300}']);
     expect(elCodo()).toHaveLength(1);
+  });
+
+  it('M2: con el codo movido, medir lo esconde y «Quitar» lo deja donde estaba', () => {
+    conGreenSuelto();
+    desde(0);
+    no();
+    arrastrarElCodo(250);
+
+    tocar(alNorte(80));
+    expect(medida()).toEqual([[en(T), en(alNorte(80))]]);
+    expect(elCodo()).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
+    expect(elCodo()).toHaveLength(1);
+    expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(250).lat, 9);
+    expect(medida()).toHaveLength(2);
+  });
+
+  it('M3: tocar otro punto pasa la medida al nuevo, desde ti', () => {
+    conGreenSuelto();
+    desde(0);
+    no();
+
+    tocar(alNorte(80));
+    tocar(alNorte(120));
+
+    expect(medida()).toEqual([[en(T), en(alNorte(120))]]);
+    expect(textosDeMedida()).toEqual(['mapa.tramo {"metros":120}']);
   });
 
   it('C8: sin tocar el codo no se anuncian tramos (la distancia al green la dice el recuadro)', () => {
@@ -2991,7 +3024,7 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     expect(document.activeElement).toHaveTextContent('mapa.pideSalida');
   });
 
-  it('D2b (19 oct: T3): un punto tocado tras el «No» y antes del GPS bueno es una medida; el codo sale en medio', () => {
+  it('D2b (M1, 24 oct): un punto tocado tras el «No» y antes del GPS bueno es una medida; al quitarlo, el codo en medio', () => {
     conGreenSuelto();
     desde(0, 25);
     no();
@@ -2999,8 +3032,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
     desde(0);
 
+    expect(medida()).toEqual([[en(T), en(alNorte(100))]]);
+    expect(elCodo()).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
     expect(elCodo()[0].p[1]).toBeCloseTo(alNorte(150).lat, 9);
-    expect(medida()).toContainEqual([en(T), en(alNorte(100))]);
   });
 
   it('D5b: desde ti con codo, si el GPS se vuelve flojo se dice que se busca y no hay metros', () => {
@@ -3445,7 +3480,7 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       expect(elCodo()[0].opciones.draggable).toBe(true);
     });
 
-    it('D3d (19 oct: T3, T6): tocando otro sitio desde ti, se mide hasta allí; el codo no se mueve y el mapa no gira', () => {
+    it('D3d (M1, 24 oct; T6): tocando otro sitio desde ti, se mide solo hasta allí; el codo vuelve igual y el mapa no gira', () => {
       abrirConLinea();
       desde(50);
       const codo = elCodo()[0].p;
@@ -3453,9 +3488,10 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       act(() => mapa().oyentes.click({ lngLat: { lat: alNorte(100).lat, lng: T.lon + 0.0005 } }));
 
-      expect(elCodo()[0].p).toEqual(codo);
-      expect(medida()).toContainEqual([en(alNorte(50)), [T.lon + 0.0005, alNorte(100).lat]]);
+      expect(medida()).toEqual([[en(alNorte(50)), [T.lon + 0.0005, alNorte(100).lat]]]);
       expect(mapa().fitBounds).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
+      expect(elCodo()[0].p).toEqual(codo);
     });
 
     it('H5: con el GPS flojo, el hoyo entero; al ser bueno, se decide', () => {
@@ -3578,8 +3614,8 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
 
       desde(150);
 
-      // Se queda como medida (19 oct: T3), no como codo
-      expect(medida()).toEqual([[en(alNorte(150)), en(G300)], [en(alNorte(150)), en(alNorte(200))]]);
+      // Se queda como medida, no como codo, y sola (M1, 24 oct)
+      expect(medida()).toEqual([[en(alNorte(150)), en(alNorte(200))]]);
       expect(elCodo()).toEqual([]);
     });
 
@@ -4261,7 +4297,7 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     expect(lineaDelHoyo()).toBeUndefined();
   });
 
-  it('T3: a mitad de hoyo mide de ti al punto; la línea al green y su codo siguen, sin sus metros', () => {
+  it('M1 (24 oct; deshace la T3 del 19 oct): a mitad de hoyo mide solo de ti al punto; la línea al green y su codo se esconden', () => {
     abrirConLinea();
     desde(50);
     const codo = elCodo()[0].p;
@@ -4269,11 +4305,12 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
     tocar(P);
 
-    expect(elCodo()[0].p).toEqual(codo);
-    expect(medida()).toHaveLength(2);
-    expect(medida()).toContainEqual([en(alNorte(50)), en(P)]);
-    // Solo los metros hasta el punto: los de la línea al green, fuera mientras tanto
+    expect(elCodo()).toHaveLength(0);
+    expect(medida()).toEqual([[en(alNorte(50)), en(P)]]);
     expect(cifras('medida')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.quitarPunto' }));
+    expect(elCodo()[0].p).toEqual(codo);
+    expect(medida()).toHaveLength(1);
   });
 
   it.each([
@@ -4379,21 +4416,14 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     expect(mapa().fitBounds).not.toHaveBeenCalled();
   });
 
-  it('T3 (revisor): arrastrar el codo con un punto: el punto y su única cifra se quedan', () => {
+  it('M1 (24 oct): con un punto no hay codo que arrastrar; el punto y su única cifra se quedan', () => {
     abrirConLinea();
     desde(50);
     tocar(P);
-    const [codo] = elCodo();
 
-    act(() => {
-      codo.setLngLat([T.lon, alNorte(120).lat]);
-      codo.oyentes.dragend({ target: codo });
-    });
-
+    expect(elCodo()).toHaveLength(0);
     expect(elPunto()).toHaveLength(1);
     expect(cifras('medida')).toHaveLength(1);
-    expect(medida()).toContainEqual([en(alNorte(50)), en(P)]);
-    expect(medida()).toContainEqual([en(alNorte(50)), [T.lon, alNorte(120).lat]]);
   });
 
   it('T3 (revisor): un punto tocado antes de decidir la mitad del hoyo se mide luego desde ti', () => {

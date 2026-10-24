@@ -65,7 +65,7 @@ function emitVersionFile() {
       }
     }
 
-    const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
+    const version = VERSION_DE_LA_APP
     info = { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() }
     return info
   }
@@ -157,7 +157,16 @@ const securityHeaders = {
 }
 
 // https://vitejs.dev/config/
+// La versión de la aplicación sale de `package.json`, como la de
+// `version.json`: la de Sentry venía de una variable del entorno de build que
+// decía 1.0.0 en producción, y cada error llegaba sin saber de qué build era
+// (Sentry RYDERCUP-FRONTEND-23, 24 oct 2026)
+const VERSION_DE_LA_APP = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')).version
+
 export default defineConfig(() => ({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(VERSION_DE_LA_APP),
+  },
   // Ensure environment variables are properly loaded
   // Vite automatically loads .env files and exposes VITE_* variables
   // In Render, VITE_API_BASE_URL is set as environment variable
