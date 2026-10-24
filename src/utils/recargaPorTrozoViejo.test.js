@@ -113,7 +113,8 @@ describe('recarga por un trozo viejo', () => {
     disparar();
 
     expect(guardado.get('rcf-recarga-por-trozo-viejo')).toBe('123456');
-    expect(guardado.get('lazy_load_error_reloaded')).toBe('true');
+    // La de la barrera es también la hora: cuenta 30 s (24 oct)
+    expect(guardado.get('lazy_load_error_reloaded')).toBe('123456');
   });
 
   it('E2: si ya recargó hace menos de 30 s, no vuelve a recargar: sale el error', async () => {

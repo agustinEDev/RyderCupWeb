@@ -2,6 +2,7 @@ import { Component } from 'react';
 import * as Sentry from '@sentry/react';
 import { retiraLaCortina } from '../../utils/cortinaDeArranque';
 import { esElEcoDeLaRecarga } from '../../utils/recargaPorTrozoViejo';
+import { apuntarLaRecarga, olvidarLaRecarga, puedeRecargar } from '../../utils/recargaDeLaBarrera';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -32,8 +33,8 @@ class LazyLoadErrorBoundary extends Component {
       error?.message?.includes('Importing a module script failed') ||
       error?.message?.includes('Failed to fetch dynamically imported module');
 
-    const alreadyReloaded = Boolean(sessionStorage.getItem('lazy_load_error_reloaded'));
-    const willAutoReload = isChunkLoadError && !alreadyReloaded;
+    // Una vez cada 30 s; sin almacenamiento (`null`), ninguna: el aviso
+    const willAutoReload = isChunkLoadError && puedeRecargar() === true;
 
     return {
       hasError: !willAutoReload,
@@ -54,9 +55,12 @@ class LazyLoadErrorBoundary extends Component {
       // Mark as reloaded and reload the page (typically happens after
       // deployments when old chunks are deleted). Self-healing: skip Sentry
       // reporting for this path, the user never actually saw a broken app.
-      sessionStorage.setItem('lazy_load_error_reloaded', 'true');
-      window.location.reload();
-      return;
+      if (apuntarLaRecarga()) {
+        window.location.reload();
+        return;
+      }
+      // Sin poder apuntarla, recargar podría no acabar nunca: el aviso
+      this.setState({ hasError: true, isReloading: false });
     }
 
     // La cortina del arranque tapa la pantalla entera: sin esto se quedaria
@@ -127,7 +131,7 @@ class LazyLoadErrorBoundary extends Component {
           )}
           <button
             onClick={() => {
-              sessionStorage.removeItem('lazy_load_error_reloaded');
+              olvidarLaRecarga();
               window.location.reload();
             }}
             style={{

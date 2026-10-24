@@ -11,6 +11,9 @@ vi.mock('@sentry/react', () => ({
 const recarga = vi.hoisted(() => ({ enCurso: false }));
 vi.mock('../../utils/recargaPorTrozoViejo', () => ({ esElEcoDeLaRecarga: () => recarga.enCurso }));
 
+const AHORA = 1_000_000;
+const TROZO = 'Failed to fetch dynamically imported module: x.js';
+
 function Bomb({ error }) {
   throw error;
 }
@@ -30,6 +33,7 @@ describe('LazyLoadErrorBoundary', () => {
       value: { ...originalLocation, reload: reloadMock },
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(Date, 'now').mockReturnValue(AHORA);
   });
 
   afterEach(() => {
@@ -49,11 +53,12 @@ describe('LazyLoadErrorBoundary', () => {
 
     expect(reloadMock).toHaveBeenCalledTimes(1);
     expect(Sentry.captureException).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBe('true');
+    // La hora de la recarga: cuenta 30 s (24 oct)
+    expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBe(String(AHORA));
   });
 
   it('reports to Sentry when the chunk-load error persists after the reload already happened', () => {
-    sessionStorage.setItem('lazy_load_error_reloaded', 'true');
+    sessionStorage.setItem('lazy_load_error_reloaded', String(AHORA - 29_999));
 
     render(
       <LazyLoadErrorBoundary>
@@ -94,7 +99,7 @@ describe('LazyLoadErrorBoundary', () => {
   });
 
   it('R8: el botón del aviso borra la marca y recarga (24 oct)', () => {
-    sessionStorage.setItem('lazy_load_error_reloaded', 'true');
+    sessionStorage.setItem('lazy_load_error_reloaded', String(AHORA));
     render(
       <LazyLoadErrorBoundary>
         <Bomb error={new Error('Failed to fetch dynamically imported module: x.js')} />
@@ -105,6 +110,76 @@ describe('LazyLoadErrorBoundary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Refresh Page' }));
 
     expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBeNull();
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+  });
+
+  // La marca es la hora de la recarga y solo cuenta 30 s (24 oct)
+  it.each([
+    ['R4: de hace 30 s o más', String(AHORA - 30_000)],
+    ["R6: la vieja 'true' de la versión anterior", 'true'],
+    ['R6: ilegible', 'abc'],
+    ['R7: del futuro (reloj hacia atrás)', String(AHORA + 60_000)],
+  ])('%s no cuenta: recarga una vez', (_caso, marca) => {
+    sessionStorage.setItem('lazy_load_error_reloaded', marca);
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBe(String(AHORA));
+  });
+
+  it('R9: sin almacenamiento no puede apuntarla: el aviso, sin recargar', () => {
+    vi.spyOn(globalThis.Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    vi.spyOn(globalThis.Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).not.toHaveBeenCalled();
+    expect(screen.getByText('Unable to Load Application')).toBeInTheDocument();
+  });
+
+  it('R9: si se lee pero no se puede escribir, tampoco recarga', () => {
+    vi.spyOn(globalThis.Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).not.toHaveBeenCalled();
+    expect(screen.getByText('Unable to Load Application')).toBeInTheDocument();
+  });
+
+  it('R9: el botón del aviso recarga aunque no pueda borrar la marca', () => {
+    vi.spyOn(globalThis.Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    vi.spyOn(globalThis.Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Page' }));
+
     expect(reloadMock).toHaveBeenCalledTimes(1);
   });
 });

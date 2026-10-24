@@ -25,12 +25,12 @@
  * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
  * recarga no llega.
  */
-export const ESPERA_ENTRE_RECARGAS_MS = 30_000;
+import { apuntarLaRecarga, recienRecargada, ESPERA_ENTRE_RECARGAS_MS } from './recargaDeLaBarrera';
+
+export { ESPERA_ENTRE_RECARGAS_MS };
 export const OLVIDAR_LA_RECARGA_MS = 10_000;
 
 const CLAVE = 'rcf-recarga-por-trozo-viejo';
-// La de `LazyLoadErrorBoundary`: con ella apuntada no recarga otra vez
-const CLAVE_DE_LA_BARRERA = 'lazy_load_error_reloaded';
 const MARCA = /<meta\s+name="app-build"\s+content="([^"]*)"/i;
 
 let recargando = false;
@@ -54,15 +54,12 @@ const leer = (almacen) => {
 const apuntar = (almacen, instante) => {
   try {
     almacen.setItem(CLAVE, String(instante));
-    almacen.setItem(CLAVE_DE_LA_BARRERA, 'true');
   } catch {
     // Sin almacenamiento (navegación privada) se recarga igual
   }
+  // La de `LazyLoadErrorBoundary`, con la misma hora: no recarga otra vez
+  apuntarLaRecarga(almacen, instante);
 };
-
-/** Una recarga apuntada hace menos de 30 s; con el reloj hacia atrás, no cuenta. */
-const recienRecargada = (ultima, instante) =>
-  ultima !== null && instante >= ultima && instante - ultima < ESPERA_ENTRE_RECARGAS_MS;
 
 export function instalarRecargaPorTrozoViejo({
   ventana = globalThis.window,
