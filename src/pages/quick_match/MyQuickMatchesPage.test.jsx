@@ -316,7 +316,7 @@ describe('MyQuickMatchesPage', () => {
       // Su hándicap de juego en la partida: 1 (el backend ya aplicó el
       // allowance); al 100 % del índice serían 12
       participantStrokes: [
-        { participantId: 'user-1', playingHandicap: 1, strokesByHole: { 1: 6, 2: 5 } },
+        { participantId: 'user-1', playingHandicap: 1, strokesByHole: { 1: 1 } },
       ],
       effectiveAllowance: 95,
       playMode: 'HANDICAP',
