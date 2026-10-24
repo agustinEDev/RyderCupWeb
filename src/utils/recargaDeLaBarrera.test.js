@@ -19,6 +19,7 @@ import { apuntarLaRecarga, buildDeLaPagina, puedeRecargar } from './recargaDeLaB
  *   B8  la versión de la página: su `app-build`, o '' sin ella
  *   B9  los dos escritores, con la recarga sin cambiar de versión | se acaba
  *   B10 la nota no crece sin fin                       | guarda los 20 últimos pares
+ *   B11 el almacén acepta la nota pero no la guarda    | apuntar falla: no se recarga
  */
 const CLAVE = 'lazy_load_error_reloaded';
 const almacenCon = (valor) => {
@@ -122,5 +123,11 @@ describe('la nota de la recarga', () => {
     expect(recargas).toHaveLength(20);
     expect(recargas[0]).toEqual(['A', '/p5']);
     expect(recargas.at(-1)).toEqual(['A', '/p24']);
+  });
+
+  it('B11: si el almacén acepta la nota pero no la guarda, apuntar falla: sin ella podría no acabar', () => {
+    const olvidadizo = { getItem: () => null, setItem: () => {} };
+
+    expect(apuntarLaRecarga({ build: 'A', ruta: '/x', almacen: olvidadizo })).toBe(false);
   });
 });

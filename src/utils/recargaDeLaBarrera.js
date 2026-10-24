@@ -3,11 +3,12 @@
  * `recargaPorTrozoViejo` (revisiones del 24-25 oct 2026).
  *
  * Guarda los pares versión (el `app-build` de la página) y página donde se
- * recargó. Se puede recargar si el par aún no está. Solo se añade, nunca se
- * pisa ni se borra: cada recarga suma un par nuevo, así que no puede haber
- * bucle, tampoco entre la barrera y `recargaPorTrozoViejo`, que apuntan
- * versiones distintas para la misma página. Tras un despliegue la versión ya
- * es otra y se puede volver a recargar.
+ * recargó, los 20 últimos. Se puede recargar si el par aún no está. Un par no
+ * pisa a otro: cada recarga suma uno nuevo, así que no puede haber bucle,
+ * tampoco entre la barrera y `recargaPorTrozoViejo`, que apuntan versiones
+ * distintas para la misma página. Tras un despliegue la versión ya es otra y
+ * se puede volver a recargar. Pasar de 20 pide que el usuario vaya a páginas
+ * nuevas: nunca es una recarga sola.
  *
  * Antes era un `'true'` y todo dependía de cuándo borrarlo: al montar (antes
  * de que el trozo volviera a fallar: bucle), al cambiar de página (llegaba
@@ -69,7 +70,8 @@ export const apuntarLaRecarga = ({
     const recargas = leer(almacen).filter((par) => !esElPar(build, ruta)(par));
     recargas.push([build, ruta]);
     almacen.setItem(CLAVE_DE_LA_BARRERA, JSON.stringify({ recargas: recargas.slice(-PARES_QUE_SE_GUARDAN) }));
-    return true;
+    // Releída: un almacén que acepta la nota sin guardarla traería el bucle
+    return leer(almacen).some(esElPar(build, ruta));
   } catch {
     return false;
   }
