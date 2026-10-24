@@ -8,7 +8,7 @@ import { inicialesDe } from '../../utils/inicialesDe';
  * se montaba sobre el hoyo de al lado.
  *
  * Mide el nombre entero en una copia invisible contra el ancho de la casilla,
- * y vuelve a medir cuando la casilla cambia. La caja recorta la copia: si no,
+ * y vuelve a medir cuando la casilla cambia o llega la fuente. La caja recorta la copia: si no,
  * desbordaba la casilla y podía estirar el deslizamiento de la tarjeta. Sin
  * ResizeObserver no mide y se queda el nombre, como antes. Con las iniciales,
  * el nombre sigue en el `title` y para el lector de pantalla.
@@ -25,7 +25,17 @@ const NombreQueCabe = ({ nombre }) => {
     medir();
     const observador = new Observador(medir);
     observador.observe(caja.current);
-    return () => observador.disconnect();
+    // La primera medida puede ser con la fuente de reserva, más estrecha: al
+    // llegar la de la app el nombre crece y la casilla no, así que el
+    // observador no avisa
+    let vivo = true;
+    globalThis.document?.fonts?.ready?.then(() => {
+      if (vivo) medir();
+    });
+    return () => {
+      vivo = false;
+      observador.disconnect();
+    };
   }, [nombre]);
 
   return (

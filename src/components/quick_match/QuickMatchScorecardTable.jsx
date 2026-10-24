@@ -539,7 +539,7 @@ const QuickMatchScorecardTable = ({
     </>
   );
 
-  const conIda = (card) => card.holes.some((h) => h.holeNumber > 9);
+  const conVuelta = (card) => card.holes.some((h) => h.holeNumber > 9);
   const tarjetaVertical = (card) => (
     <TarjetaVertical
       clave={card.key}
@@ -557,14 +557,14 @@ const QuickMatchScorecardTable = ({
         extra: extraDelHoyo(h, card),
       }))}
       sumas={{
-        ida: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
-        vuelta: conIda(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        ida: conVuelta(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
+        vuelta: conVuelta(card) ? sumStrokes(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
         total: sumStrokes(card.holes, card),
       }}
       // Como `sumas`: con 9 hoyos no hay ida ni vuelta que sumar
       sumasExtra={{
-        ida: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
-        vuelta: conIda(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
+        ida: conVuelta(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber <= 9), card) : undefined,
+        vuelta: conVuelta(card) ? extraDelTramo(card.holes.filter((h) => h.holeNumber > 9), card) : undefined,
         total: extraDelTramo(card.holes, card),
       }}
     />
@@ -606,9 +606,9 @@ const QuickMatchScorecardTable = ({
               ts('scorecard.out'),
               card,
               'ida',
-              !conIda(card)
+              !conVuelta(card)
             )}
-            {conIda(card) &&
+            {conVuelta(card) &&
               renderSection(
                 card.holes.filter((h) => h.holeNumber > 9),
                 ts('scorecard.in'),

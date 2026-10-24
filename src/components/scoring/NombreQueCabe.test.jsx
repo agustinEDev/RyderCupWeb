@@ -43,6 +43,7 @@ const conMedidas = () => {
 };
 
 afterEach(() => {
+  delete globalThis.document.fonts;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   avisar = null;
@@ -94,10 +95,32 @@ describe('NombreQueCabe', () => {
     expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(/^Maximiliano R\.$/);
   });
 
+  it('N6: al llegar la fuente de verdad vuelve a medir: el nombre ya no cabe', async () => {
+    conMedidas();
+    anchos.caja = 100;
+    anchos.nombre = 75;
+    let llegada;
+    const fonts = { ready: new Promise((r) => (llegada = r)) };
+    // jsdom no trae `document.fonts`
+    Object.defineProperty(globalThis.document, 'fonts', { value: fonts, configurable: true });
+    render(<NombreQueCabe nombre="Maximiliano R." />);
+    expect(screen.getByTestId('nombre-que-cabe')).toHaveTextContent(/^Maximiliano R\.$/);
+
+    // La fuente de la app es más ancha que la de reserva; la casilla no cambia
+    anchos.nombre = 110;
+    await act(async () => llegada());
+
+    expect(screen.getByText('MR')).toBeInTheDocument();
+  });
+
   it('N5: las iniciales, de las dos primeras palabras', () => {
     expect(inicialesDe('Maximiliano R.')).toBe('MR');
     expect(inicialesDe('Lu')).toBe('L');
     expect(inicialesDe('ana  gil pérez')).toBe('AG');
     expect(inicialesDe('')).toBe('');
+    // La primera letra, no el primer carácter
+    expect(inicialesDe('😀Pepe Ruiz')).toBe('PR');
+    expect(inicialesDe('(Juan) Pérez')).toBe('JP');
+    expect(inicialesDe('Íñigo Ñúñez')).toBe('ÍÑ');
   });
 });
