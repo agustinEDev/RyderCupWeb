@@ -36,6 +36,15 @@ const MatchStandingSummary = ({
 }) => {
   const { t } = useTranslation('quickMatch');
 
+  if (!standing && terminada && holeScores.length > 0) {
+    // Hubo partida, pero ningún hoyo lo anotaron los dos bandos: como Actividad
+    return (
+      <p className="text-sm text-gray-500 text-center py-6" data-testid="quick-match-standing-unfinished">
+        {t('scoring.classification.unfinished')}
+      </p>
+    );
+  }
+
   if (!standing) {
     return (
       <p className="text-sm text-gray-500 text-center py-6" data-testid="quick-match-standing-empty">
@@ -46,7 +55,8 @@ const MatchStandingSummary = ({
 
   const { teamA, teamB } = resolveMatchTeams(participants);
   const lead = standing.leadingTeam ? parseInt(standing.status, 10) : 0;
-  const leaderNames = (standing.leadingTeam === 'A' ? teamA : teamB).map((p) => p.name).join(' & ');
+  const leaders = standing.leadingTeam === 'A' ? teamA : teamB;
+  const leaderNames = leaders.map((p) => p.name).join(' & ');
   const sinTerminar =
     terminada &&
     !cuentaElMatchPlay({
@@ -73,9 +83,9 @@ const MatchStandingSummary = ({
   if (sinTerminar) {
     quien = t('scoring.classification.unfinished');
   } else if (standing.leadingTeam && conGanador) {
-    quien = t('scoring.classification.won', { name: leaderNames });
+    quien = t('scoring.classification.won', { name: leaderNames, count: leaders.length });
   } else if (standing.leadingTeam && !cancelada && !terminada) {
-    quien = t('scoring.classification.leads', { name: leaderNames });
+    quien = t('scoring.classification.leads', { name: leaderNames, count: leaders.length });
   }
 
   return (
@@ -159,6 +169,10 @@ const QuickMatchClassificationTable = ({
   allowancePercentage = 100,
   playMode = 'HANDICAP',
   participantStrokes = [],
+  // Lo que tiene el servidor, sin la cola de este móvil: con eso dice
+  // Actividad si la partida cuenta, y con eso se calcula el marcador. Sin él,
+  // lo que se pinta
+  holeScoresDelServidor = null,
   // No es «esta terminada», es «pinta el distintivo de partida cerrada»: se le
   // pasa true tambien para una cancelada, y con el nombre viejo la siguiente
   // condicion que alguien colgara de el se activaria ahi sin querer.
@@ -196,7 +210,7 @@ const QuickMatchClassificationTable = ({
         <MatchStandingSummary
           participants={participants}
           standing={standing}
-          holeScores={holeScores}
+          holeScores={holeScoresDelServidor ?? holeScores}
           matchFormat={matchFormat}
           terminada={showFinalBadge && !isCancelled}
           cancelada={isCancelled}

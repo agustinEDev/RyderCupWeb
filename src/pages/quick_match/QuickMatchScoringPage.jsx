@@ -773,6 +773,7 @@ const QuickMatchScoringPage = () => {
             playMode={quickMatch?.playMode}
             participantStrokes={quickMatch?.participantStrokes ?? []}
             matchFormat={quickMatch?.matchFormat}
+            holeScoresDelServidor={quickMatch?.holeScores ?? []}
             showFinalBadge={yaCerrada}
             isCancelled={!!quickMatch?.isCancelled}
           />
