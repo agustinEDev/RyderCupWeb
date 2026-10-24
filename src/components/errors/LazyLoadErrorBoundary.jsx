@@ -55,8 +55,12 @@ class LazyLoadErrorBoundary extends Component {
     // Log the error for debugging
     console.error('LazyLoadErrorBoundary caught an error:', error, errorInfo);
 
-    // Ni Sentry ni una segunda recarga: ya hay una en camino
-    if (esElEcoDeLaRecarga(error)) return;
+    // Ni Sentry ni una segunda recarga: ya hay una en camino. Si no llega, el
+    // aviso a los 10 s en vez del blanco
+    if (esElEcoDeLaRecarga(error)) {
+      this.esperarALaRecarga();
+      return;
+    }
 
     if (this.state.isReloading) {
       // Mark as reloaded and reload the page (typically happens after
@@ -64,10 +68,7 @@ class LazyLoadErrorBoundary extends Component {
       // reporting for this path, the user never actually saw a broken app.
       if (apuntarLaRecarga()) {
         window.location.reload();
-        this.esperaALaRecarga = setTimeout(
-          () => this.setState({ hasError: true, isReloading: false }),
-          ESPERA_A_LA_RECARGA_MS
-        );
+        this.esperarALaRecarga();
         return;
       }
       // Sin poder apuntarla, recargar podría no acabar nunca: el aviso
@@ -91,6 +92,14 @@ class LazyLoadErrorBoundary extends Component {
       scope.setExtra('url', window.location.href);
       Sentry.captureException(error);
     });
+  }
+
+  // Si la recarga no llega (la aplicación se fue a segundo plano), el aviso
+  esperarALaRecarga() {
+    this.esperaALaRecarga = setTimeout(
+      () => this.setState({ hasError: true, isReloading: false }),
+      ESPERA_A_LA_RECARGA_MS
+    );
   }
 
   componentWillUnmount() {

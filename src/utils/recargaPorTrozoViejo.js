@@ -26,7 +26,7 @@
  * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
  * recarga no llega.
  */
-import { apuntarLaRecarga, yaRecargo } from './recargaDeLaBarrera';
+import { apuntarLaRecarga, olvidarLaRecarga, yaRecargo } from './recargaDeLaBarrera';
 
 export const OLVIDAR_LA_RECARGA_MS = 10_000;
 
@@ -67,9 +67,10 @@ export function instalarRecargaPorTrozoViejo({
     if (yaRecargo(almacen) !== false || !apuntarLaRecarga(almacen)) return;
     recargando = true;
     // Si la recarga no llega (la aplicación se fue a segundo plano), lo que
-    // falle después vuelve a contar
+    // falle después vuelve a contar, y la siguiente vuelve a poder recargar
     programar(() => {
       recargando = false;
+      olvidarLaRecarga(almacen);
     }, OLVIDAR_LA_RECARGA_MS);
     evento.preventDefault();
     ventana.location.reload();

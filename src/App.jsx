@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } from 'react';
+import { useEffect, useLayoutEffect, useCallback, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import AvisoSinConexion from './components/ui/AvisoSinConexion';
@@ -27,26 +27,9 @@ import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
-import { olvidarLaRecarga } from './utils/recargaDeLaBarrera';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Lazy loading con retry automático para fallos de red transitorios
-// Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
-// al LazyLoadErrorBoundary (que maneja la recarga de página). Una pantalla que
-// carga bien olvida la recarga: la siguiente actualización vuelve a poder
-// recargar sola (`recargaDeLaBarrera`)
-function lazyWithRetry(importFn) {
-  return lazy(() =>
-    importFn()
-      .catch(() =>
-        new Promise(resolve => setTimeout(resolve, 1500)).then(() => importFn())
-      )
-      .then((modulo) => {
-        olvidarLaRecarga();
-        return modulo;
-      })
-  );
-}
-
+// Pantallas diferidas, con reintento y olvido de la recarga: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
 const AppStart = lazyWithRetry(() => import('./pages/AppStart'));
 const Login = lazyWithRetry(() => import('./pages/Login'));

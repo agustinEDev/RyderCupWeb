@@ -215,4 +215,24 @@ describe('LazyLoadErrorBoundary', () => {
       vi.useRealTimers();
     }
   });
+
+  it('R11: el eco de la recarga por build viejo tampoco se queda en blanco si no llega', () => {
+    vi.useFakeTimers();
+    recarga.enCurso = true;
+    try {
+      const { container } = render(
+        <LazyLoadErrorBoundary>
+          <Bomb error={new TypeError("undefined is not an object (evaluating 'e.default')")} />
+        </LazyLoadErrorBoundary>
+      );
+      expect(container).toBeEmptyDOMElement();
+
+      act(() => vi.advanceTimersByTime(10_000));
+
+      expect(screen.getByText('Unable to Load Application')).toBeInTheDocument();
+      expect(reloadMock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

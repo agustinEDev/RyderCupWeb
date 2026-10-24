@@ -387,4 +387,11 @@ describe('la partida sin terminar', () => {
     expect(screen.queryByText('6UP')).not.toBeInTheDocument();
     expect(screen.queryByText(/6UP/)).not.toBeInTheDocument();
   });
+
+  it('convive con la marca de excluida de estadísticas', () => {
+    renderList({ matches: [sinTerminar({ excludedFromStats: true })] });
+
+    expect(screen.getByTestId('result-badge')).toHaveTextContent('recentMatches.resultShort.UNFINISHED');
+    expect(screen.getByTestId('recent-match-excluded-qm-st')).toBeInTheDocument();
+  });
 });

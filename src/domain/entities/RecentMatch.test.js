@@ -58,6 +58,24 @@ describe('RecentMatch', () => {
     });
   });
 
+  describe('isUnfinished', () => {
+    // Una partida rápida de match play que no cuenta (24 oct 2026)
+    it('is true for an unfinished quick match', () => {
+      expect(RecentMatch.fromPersistence({ id: 'x', result: 'UNFINISHED' }).isUnfinished()).toBe(true);
+    });
+
+    it('is false for a decided match and for a round without result', () => {
+      expect(RecentMatch.fromPersistence(tournamentMatch).isUnfinished()).toBe(false);
+      expect(RecentMatch.fromPersistence({ id: 'y' }).isUnfinished()).toBe(false);
+    });
+
+    it('shows no score when unfinished, even if one arrives', () => {
+      const match = RecentMatch.fromPersistence({ id: 'z', result: 'UNFINISHED', score: '6UP' });
+      expect(match.shownScore).toBeNull();
+      expect(RecentMatch.fromPersistence(tournamentMatch).shownScore).toBe(tournamentMatch.score);
+    });
+  });
+
   describe('hasResult', () => {
     it('is true for a match play result', () => {
       expect(RecentMatch.fromPersistence(tournamentMatch).hasResult()).toBe(true);

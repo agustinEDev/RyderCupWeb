@@ -21,9 +21,8 @@ const RESULT_TONES = {
 };
 
 const MatchRow = ({ match, onOpen, t, formatDate }) => {
-  // Sin terminar no hay tanteo: un 6UP de seis hoyos no es un resultado. El
-  // backend ya no lo manda, pero si llegara no se pinta
-  const score = match.result === 'UNFINISHED' ? null : match.score;
+  // Sin terminar no hay tanteo: un 6UP de seis hoyos no es un resultado
+  const score = match.shownScore;
   const opponents = match.opponents.join(', ');
   const format = match.matchFormat || match.scoringFormat;
   const formatLabel = format ? t(`recentMatches.format.${format}`, format) : null;

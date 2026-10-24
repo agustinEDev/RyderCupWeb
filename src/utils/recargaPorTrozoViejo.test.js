@@ -26,6 +26,7 @@ const montar = async ({
   const almacen = almacenDado ?? {
     getItem: (k) => guardado.get(k) ?? null,
     setItem: (k, v) => guardado.set(k, v),
+    removeItem: (k) => guardado.delete(k),
   };
   const ventana = {
     addEventListener: (tipo, fn) => objetivo.addEventListener(tipo, fn),
@@ -176,6 +177,16 @@ describe('recarga por un trozo viejo', () => {
 
     expect(disparar().defaultPrevented).toBe(false);
     expect(ventana.location.reload).not.toHaveBeenCalled();
+  });
+
+  it('si la recarga no llega, a los 10 s olvida también su marca: la siguiente vuelve a poder', async () => {
+    const { disparar, programado, guardado } = await montar();
+    disparar();
+    expect(guardado.get('lazy_load_error_reloaded')).toBe('true');
+
+    programado.forEach((fn) => fn());
+
+    expect(guardado.has('lazy_load_error_reloaded')).toBe(false);
   });
 
   it('si la recarga no llega, la marca de recargando se apaga sola a los 10 s', async () => {
