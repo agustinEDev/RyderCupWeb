@@ -170,8 +170,7 @@ const QuickMatchClassificationTable = ({
   playMode = 'HANDICAP',
   participantStrokes = [],
   // Lo que tiene el servidor, sin la cola de este móvil: con eso dice
-  // Actividad si la partida cuenta, y con eso se calcula el marcador. Sin él,
-  // lo que se pinta
+  // Actividad si una partida terminada cuenta. Sin él, lo que se pinta
   holeScoresDelServidor = null,
   // No es «esta terminada», es «pinta el distintivo de partida cerrada»: se le
   // pasa true tambien para una cancelada, y con el nombre viejo la siguiente

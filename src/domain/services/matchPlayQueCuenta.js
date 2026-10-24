@@ -11,15 +11,15 @@ const hoyosDe = (holeScores, participantId) =>
   new Set(holeScores.filter((h) => h.participantId === participantId).map((h) => h.holeNumber));
 
 /**
- * Los hoyos que entregó un bando. En fourball, los que anotaron los dos: la
- * bola que falta puede cambiar el mejor neto. En foursomes la bola del bando
- * va a nombre de uno; en individual el bando es el jugador. La raya (sin
+ * Los hoyos que entregó un bando: los que anotaron todos sus jugadores, porque
+ * en fourball la bola que falta puede cambiar el mejor neto (en individual el
+ * bando es el jugador). En foursomes el bando juega una bola, a nombre de uno. La raya (sin
  * número) es un hoyo entregado.
  */
 const hoyosDelBando = (holeScores, bando, matchFormat) => {
   const porJugador = bando.map((p) => hoyosDe(holeScores, p.participantId));
   if (porJugador.length === 0) return new Set();
-  if (matchFormat === 'FOURBALL') {
+  if (matchFormat !== 'FOURSOMES') {
     return new Set([...porJugador[0]].filter((hoyo) => porJugador.every((h) => h.has(hoyo))));
   }
   return new Set(porJugador.flatMap((h) => [...h]));
