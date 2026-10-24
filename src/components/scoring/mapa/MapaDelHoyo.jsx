@@ -341,7 +341,9 @@ const MapaDelHoyo = ({
     () => (desdeMi && !tocado && codoSinTocar && codoSeVe ? enMedio(posicionBuena, centroDelGreen) : null),
     [desdeMi, tocado, codoSinTocar, codoSeVe, posicionBuena, centroDelGreen],
   );
-  const codoAhora = tocado ?? codoEnMedio;
+  // Con un punto tocado, solo la línea de ti a él: la de ti al green y su codo
+  // se esconden, y «Quitar» los devuelve como estaban (M1, Agustín, 24 oct)
+  const codoAhora = medido ? null : (tocado ?? codoEnMedio);
   useLayoutEffect(() => {
     // El codo sin tocar cuenta mientras está a la vista, también con el GPS
     // flojo, que no lo pinta (/code-review)
@@ -873,7 +875,7 @@ const MapaDelHoyo = ({
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
-    const deMiAlGreen = desdeMi && (!reporte || menuDeMotivos) ? tramosDesdeMi(posicionBuena, tocado, green) : [];
+    const deMiAlGreen = desdeMi && !medido && (!reporte || menuDeMotivos) ? tramosDesdeMi(posicionBuena, tocado, green) : [];
     const tramos = [...deMiAlGreen, ...tramosDelToque];
     ultimaMedida.current = geojsonDeLaMedida(tramos);
     mapa.getSource('medida')?.setData(ultimaMedida.current);
