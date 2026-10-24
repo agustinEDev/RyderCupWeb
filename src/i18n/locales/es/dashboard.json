@@ -117,12 +117,14 @@
     "result": {
       "WON": "Ganado",
       "LOST": "Perdido",
-      "HALVED": "Empatado"
+      "HALVED": "Empatado",
+      "UNFINISHED": "Sin terminar"
     },
     "resultShort": {
       "WON": "G",
       "LOST": "P",
-      "HALVED": "E"
+      "HALVED": "E",
+      "UNFINISHED": "ST"
     },
     "format": {
       "SINGLES": "Individual",

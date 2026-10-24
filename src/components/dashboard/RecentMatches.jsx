@@ -15,9 +15,15 @@ const RESULT_TONES = {
   WON: 'bg-green-100 text-green-700',
   LOST: 'bg-red-100 text-red-700',
   HALVED: 'bg-gray-100 text-gray-700',
+  // Una partida rápida de match play que no cuenta: más apagado que el
+  // empate, porque no es un resultado (Agustín, 24 oct 2026)
+  UNFINISHED: 'bg-gray-100 text-gray-500',
 };
 
 const MatchRow = ({ match, onOpen, t, formatDate }) => {
+  // Sin terminar no hay tanteo: un 6UP de seis hoyos no es un resultado. El
+  // backend ya no lo manda, pero si llegara no se pinta
+  const score = match.result === 'UNFINISHED' ? null : match.score;
   const opponents = match.opponents.join(', ');
   const format = match.matchFormat || match.scoringFormat;
   const formatLabel = format ? t(`recentMatches.format.${format}`, format) : null;
@@ -103,7 +109,7 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
             // El marcador solo cuando la columna de la derecha está ocupada por
             // los puntos: si no, esa columna ya lo enseña en grande, y
             // repetirlo aquí volvía a dejar el campo fuera
-            match.hasResult() && match.stablefordPoints !== null ? match.score : null,
+            match.hasResult() && match.stablefordPoints !== null ? score : null,
             match.golfCourseName,
           ]
             .filter(Boolean)
@@ -138,8 +144,8 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
             {t('recentMatches.points', { count: match.stablefordPoints })}
           </span>
         ) : (
-          match.score && (
-            <span className="text-base font-bold text-gray-900">{match.score}</span>
+          score && (
+            <span className="text-base font-bold text-gray-900">{score}</span>
           )
         )}
         <span className="text-[10px] text-gray-400">{formatDate(match.date)}</span>
