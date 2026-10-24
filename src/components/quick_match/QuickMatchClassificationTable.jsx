@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAllocator';
 import PersonalRoundCalculator from '../../domain/services/PersonalRoundCalculator';
+import { cuentaElMatchPlay } from '../../domain/services/matchPlayQueCuenta';
 
 // Mirrors the backend's ScoringService._compute_standing SINGLES fallback:
 // team is only set for FOURBALL/FOURSOMES, so a 2-participant match without
@@ -19,8 +20,20 @@ const resolveMatchTeams = (participants) => {
  * Match-play standing (SINGLES/FOURBALL/FOURSOMES): there's no individual
  * points/strokes ranking to show, just who's up and by how much, mirroring
  * the backend's already-computed `standing` (GetQuickMatchUseCase._compute_standing).
+ *
+ * Terminada dice quién ganó, con el marcador del historial (2UP, 3&2 o
+ * «Empate»); cancelada no tiene ganador: el marcador como quedó y nada más.
+ * Terminada sin que cuente (pocos hoyos, sin decidir) dice «sin terminar»,
+ * como Actividad (Agustín, 24 oct 2026).
  */
-const MatchStandingSummary = ({ participants, standing }) => {
+const MatchStandingSummary = ({
+  participants,
+  standing,
+  holeScores = [],
+  matchFormat = null,
+  terminada = false,
+  cancelada = false,
+}) => {
   const { t } = useTranslation('quickMatch');
 
   if (!standing) {
@@ -34,22 +47,41 @@ const MatchStandingSummary = ({ participants, standing }) => {
   const { teamA, teamB } = resolveMatchTeams(participants);
   const lead = standing.leadingTeam ? parseInt(standing.status, 10) : 0;
   const leaderNames = (standing.leadingTeam === 'A' ? teamA : teamB).map((p) => p.name).join(' & ');
+  const sinTerminar =
+    terminada &&
+    !cuentaElMatchPlay({
+      holeScores,
+      teamA,
+      teamB,
+      matchFormat,
+      decididaAntes: standing.isDecided && standing.holesRemaining > 0,
+    });
+  const conGanador = terminada && !sinTerminar;
 
   let resultLabel;
   if (!standing.leadingTeam) {
-    resultLabel = t('scoring.classification.allSquare');
+    resultLabel = t(conGanador ? 'scoring.classification.halved' : 'scoring.classification.allSquare');
   } else if (standing.isDecided && standing.holesRemaining > 0) {
     resultLabel = t('scoring.classification.decidedResult', { lead, remaining: standing.holesRemaining });
+  } else if (conGanador) {
+    resultLabel = t('scoring.classification.wonUp', { count: lead });
   } else {
     resultLabel = t('scoring.classification.holesUp', { count: lead });
+  }
+
+  let quien = null;
+  if (sinTerminar) {
+    quien = t('scoring.classification.unfinished');
+  } else if (standing.leadingTeam && conGanador) {
+    quien = t('scoring.classification.won', { name: leaderNames });
+  } else if (standing.leadingTeam && !cancelada && !terminada) {
+    quien = t('scoring.classification.leads', { name: leaderNames });
   }
 
   return (
     <div className="text-center py-6" data-testid="quick-match-standing">
       <p className="text-2xl font-bold text-gray-900">{resultLabel}</p>
-      {standing.leadingTeam && (
-        <p className="text-sm text-gray-500 mt-1">{t('scoring.classification.leads', { name: leaderNames })}</p>
-      )}
+      {quien && <p className="text-sm text-gray-500 mt-1">{quien}</p>}
       <p className="text-xs text-gray-400 mt-2">
         {t('scoring.classification.holesPlayed', { count: standing.holesPlayed })}
       </p>
@@ -161,7 +193,14 @@ const QuickMatchClassificationTable = ({
     // la vuelta de quien sí había anotado la suya entera.
     return (
       <div data-testid="quick-match-classification-table">
-        <MatchStandingSummary participants={participants} standing={standing} />
+        <MatchStandingSummary
+          participants={participants}
+          standing={standing}
+          holeScores={holeScores}
+          matchFormat={matchFormat}
+          terminada={showFinalBadge && !isCancelled}
+          cancelada={isCancelled}
+        />
         <PersonalRound round={myRound} className="pb-4" />
       </div>
     );
