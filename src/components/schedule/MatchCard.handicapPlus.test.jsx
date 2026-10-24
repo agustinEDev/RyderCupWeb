@@ -17,10 +17,10 @@ import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
  *   #   caso                        | qué se ve
  *   ----|---------------------------|---------------------------
  *   H1  índice -2.0                 | «HCP +2.0»
- *   H2  de juego -2                 | «PH: +2»
- *   H3  positivos                   | «HCP 12.4», «PH: 18», sin signo
- *   H4  cero                        | «HCP 0.0», «PH: 0»
- *   H6  el tope de juego no cambia  | «PH: 18 Lim.» con el tope en 18
+ *   H2  de juego -2                 | «Hcp juego: +2»
+ *   H3  positivos                   | «HCP 12.4», «Hcp juego: 18», sin signo
+ *   H4  cero                        | «HCP 0.0», «Hcp juego: 0»
+ *   H6  el tope de juego no cambia  | «Hcp juego: 18 Lim.» con el tope en 18
  */
 const t = (clave, params) => abreviaturaDeHandicap(clave, params) ?? clave;
 
@@ -77,7 +77,7 @@ describe('MatchCard · hándicap plus (FE #797)', () => {
     pintarTarjeta(partido(plus, normal));
 
     expect(screen.getByText('HCP +2.0')).toBeInTheDocument();
-    expect(screen.getByText('PH: +2')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: +2')).toBeInTheDocument();
     expect(screen.queryByText(/-2/)).toBeNull();
   });
 
@@ -85,27 +85,27 @@ describe('MatchCard · hándicap plus (FE #797)', () => {
     pintarTarjeta(partido(plus, normal));
 
     expect(screen.getByText('HCP 12.4')).toBeInTheDocument();
-    expect(screen.getByText('PH: 18')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: 18')).toBeInTheDocument();
   });
 
   it('H4: el cero va sin signo', () => {
     pintarTarjeta(partido({ userId: 'ana', playerHandicap: -0, playingHandicap: 0 }, normal));
 
     expect(screen.getByText('HCP 0.0')).toBeInTheDocument();
-    expect(screen.getByText('PH: 0')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: 0')).toBeInTheDocument();
   });
 
   it('H2: el plus con tope también lleva su «+»', () => {
     pintarTarjeta(partido(plus, normal), { maxPlayingHandicap: -3 });
 
-    expect(screen.getByText('PH: +2 Lim.')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: +2 Lim.')).toBeInTheDocument();
   });
 
   it('H6: el tope compara el número, no el texto', () => {
     pintarTarjeta(partido(plus, normal), { maxPlayingHandicap: 18 });
 
-    expect(screen.getByText('PH: 18 Lim.')).toBeInTheDocument();
-    expect(screen.getByText('PH: +2')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: 18 Lim.')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: +2')).toBeInTheDocument();
   });
 });
 
@@ -114,14 +114,14 @@ describe('MatchDetailModal · hándicap plus (FE #797)', () => {
     pintarDetalle(partido(plus, normal));
 
     expect(await screen.findByText('HCP +2.0')).toBeInTheDocument();
-    expect(screen.getByText('PH: +2')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: +2')).toBeInTheDocument();
     expect(screen.getByText('HCP 12.4')).toBeInTheDocument();
-    expect(screen.getByText('PH: 18')).toBeInTheDocument();
+    expect(screen.getByText('Hcp juego: 18')).toBeInTheDocument();
   });
 
   it('H2: el plus con tope también lleva su «+»', async () => {
     pintarDetalle(partido(plus, normal), { maxPlayingHandicap: -3 });
 
-    expect(await screen.findByText('PH: +2 Lim.')).toBeInTheDocument();
+    expect(await screen.findByText('Hcp juego: +2 Lim.')).toBeInTheDocument();
   });
 });

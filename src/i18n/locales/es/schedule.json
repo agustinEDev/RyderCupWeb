@@ -129,8 +129,8 @@
   "handicapLabels": {
     "index": "HCP {{value}}",
     "indexWithColon": "HCP: {{value}}",
-    "playing": "PH: {{value}}",
-    "playingCapped": "PH: {{value}} Lim.",
+    "playing": "Hcp juego: {{value}}",
+    "playingCapped": "Hcp juego: {{value}} Lim.",
     "limit": "{{value}} Lim."
   },
   "handicapModes": {

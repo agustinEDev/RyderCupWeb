@@ -2,12 +2,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 
 /**
- * El nombre con su hándicap de juego al lado, «Ana HCP 10» (QA del 21 oct 2026).
+ * El nombre con su hándicap de juego al lado, «Ana Hcp juego 10» (QA del 21 oct
+ * 2026; «HCP» queda para el índice desde el 24 oct).
  * Una sola pieza para la tabla de match play y las tarjetas de stroke play.
  *
  *   caso | hándicap      | se ve
  *   -----|---------------|----------------------------------------------
- *   C1   | 10            | «HCP 10» a la vista; el largo, al lector
+ *   C1   | 10            | «Hcp juego 10» a la vista; el largo, al lector
  *   C2   | -2 (plus)     | «+2»
  *   C3   | 0             | «0», sin signo
  *   C4   | null          | solo el nombre

@@ -216,10 +216,9 @@ const MyQuickMatchesPage = () => {
         const myParticipant = detail.participants.find((p) => p.userId === user.id);
         if (!myParticipant) return null;
 
-        // Las dos lecturas de la vuelta, calculadas en un solo sitio para que
-        // esta tarjeta y la pestaña de clasificación no puedan dar números
-        // distintos para la misma vuelta, que es lo que pasaba.
-        return PersonalRoundCalculator.compute({
+        // «Tu vuelta», la real de la partida: la misma que al anotar (Agustín,
+        // 24 oct 2026). La clasificación de la partida sigue con sus dos lecturas
+        return PersonalRoundCalculator.vueltaDelHistorial({
           me: myParticipant,
           participants: detail.participants ?? [],
           holes: course.holes || [],
@@ -360,9 +359,9 @@ const MyQuickMatchesPage = () => {
                         data-testid={`quick-match-result-${qm.id}`}
                       >
                           {/* En foursomes no hay vuelta propia —una sola bola a
-                              golpes alternos—, asi que el calculador deja las
-                              dos lecturas en null y los golpes del equipo pasan
-                              a ser el titular, con su etiqueta detras. */}
+                              golpes alternos—, asi que el calculador la deja
+                              en null y los golpes del equipo pasan a ser el
+                              titular, con su etiqueta detras. */}
                           {resultsByMatchId[qm.id].personalToPar ? (
                             <>
                               <span className="text-sm font-bold text-gray-900">
@@ -379,14 +378,6 @@ const MyQuickMatchesPage = () => {
                               </span>
                               <span className="text-xs text-gray-500">{t('history.teamTotal')}</span>
                             </>
-                          )}
-                          {resultsByMatchId[qm.id].matchToPar && (
-                            <span
-                              className="text-xs text-gray-500"
-                              data-testid={`quick-match-result-in-match-${qm.id}`}
-                            >
-                              {t('personalRound.inMatch', { value: resultsByMatchId[qm.id].matchToPar })}
-                            </span>
                           )}
                       </span>
                     )}
