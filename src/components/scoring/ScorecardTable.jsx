@@ -5,6 +5,8 @@ import StablefordCalculator from '../../domain/services/StablefordCalculator';
 import NombreConHandicap from './NombreConHandicap';
 import CarruselDeTarjetas from './CarruselDeTarjetas';
 import TarjetaVertical from './TarjetaVertical';
+import ColumnasDeLaVuelta, { CLASE_DE_LA_TABLA } from './ColumnasDeLaVuelta';
+import NombreQueCabe from './NombreQueCabe';
 import { useEsMovil } from '../../hooks/useEsMovil';
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 
@@ -276,16 +278,20 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
     );
   };
 
-  const renderSection = (sectionHoles, label) => (
+  // `conTotal`: el último tramo acaba en TOTAL, como la tarjeta de papel; el
+  // otro deja su hueco para que las columnas cuadren (FE #938)
+  const renderSection = (sectionHoles, label, conTotal) => (
     <div data-testid="vuelta-horizontal" className="overflow-x-auto">
-      <table className="min-w-full text-xs">
+      <table className={CLASE_DE_LA_TABLA}>
+        <ColumnasDeLaVuelta hoyos={sectionHoles} anchoPrimera={matchFormat === 'FOURSOMES' ? 'w-[120px]' : 'w-24'} />
         <thead>
           <tr className="bg-gray-50">
             <th className="px-2 py-1 text-left font-medium text-gray-500">{t('scorecard.hole')}</th>
             {sectionHoles.map(h => (
-              <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500 w-8">{h.holeNumber}</th>
+              <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500">{h.holeNumber}</th>
             ))}
             <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
+            {conTotal ? <th className="px-2 py-1 text-center font-bold text-gray-700">{t('scorecard.total')}</th> : <td />}
           </tr>
           <tr className="bg-gray-50">
             <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{t('scorecard.par')}</th>
@@ -295,6 +301,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
             <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
               {sectionHoles.reduce((s, h) => s + h.par, 0)}
             </th>
+            {conTotal ? (
+              <th scope="col" data-testid="scorecard-total-par" className="px-2 py-1 text-center font-medium text-gray-500">
+                {holes.reduce((s, h) => s + h.par, 0)}
+              </th>
+            ) : <td />}
           </tr>
           <tr className="bg-gray-50">
             <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{t('scorecard.si')}</th>
@@ -302,6 +313,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
               <th key={h.holeNumber} scope="col" className="px-2 py-1 text-center text-gray-400 font-normal">{h.strokeIndex}</th>
             ))}
             <th scope="col" className="px-2 py-1"></th>
+            <td />
           </tr>
         </thead>
         <tbody>
@@ -311,7 +323,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
               <tr key={row.id} className={row.isCurrentUser ? 'bg-blue-50' : ''}>
                 {/* El nombre se parte en líneas y no se corta: con « / » la
                     pareja se leía «Nacho Noche / …», sin saber con quién (#727) */}
-                <td className={`px-2 py-1.5 text-left font-medium text-gray-700 whitespace-normal break-words leading-tight ${matchFormat === 'FOURSOMES' ? 'min-w-[96px] max-w-[120px]' : 'min-w-[80px] max-w-[96px]'} ${borderClass}`}>
+                <td className={`px-2 py-1.5 text-left font-medium text-gray-700 whitespace-normal break-words leading-tight ${borderClass}`}>
                   {isTeamFormat && (
                     <span className="block text-[10px] text-gray-400 leading-tight">
                       {row.team === 'A' ? teamAName : teamBName}
@@ -327,6 +339,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                 <td className="px-2 py-1 text-center font-bold">
                   {sumRowScores(sectionHoles, row) || '-'}
                 </td>
+                {conTotal ? (
+                  <td data-testid={`scorecard-total-${row.id}`} className="px-2 py-1 text-center font-bold">
+                    {sumRowScores(holes, row) || '-'}
+                  </td>
+                ) : <td />}
               </tr>
             );
           })}
@@ -352,11 +369,11 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
                   ? t('scorecard.halved')
                   : bestNames.length > 0
                     ? (
-                      <span className="flex flex-col items-center leading-tight">
+                      <span className="flex flex-col leading-tight">
                         {bestNames.map((entry, i) => (
-                          <span key={entry.id}>
+                          <span key={entry.id} className="block">
                             {i > 0 && <span className="block text-gray-400 font-normal">{t('scorecard.and')}</span>}
-                            <span className="whitespace-nowrap">{entry.name}</span>
+                            <NombreQueCabe nombre={entry.name} />
                           </span>
                         ))}
                       </span>
@@ -369,6 +386,7 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
               );
             })}
             <td className="px-2 py-1"></td>
+            <td />
           </tr>
         </tbody>
       </table>
@@ -404,8 +422,8 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
         />
       ) : (
         <>
-          {renderSection(outHoles, t('scorecard.out'))}
-          {inHoles.length > 0 && renderSection(inHoles, t('scorecard.in'))}
+          {renderSection(outHoles, t('scorecard.out'), inHoles.length === 0)}
+          {inHoles.length > 0 && renderSection(inHoles, t('scorecard.in'), true)}
         </>
       )}
     </div>
