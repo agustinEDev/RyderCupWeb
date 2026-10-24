@@ -245,9 +245,9 @@ describe('MyQuickMatchesPage', () => {
 
   /**
    * En match play los golpes se dan por DIFERENCIA, así que el backend manda
-   * cero para el jugador de hándicap más bajo. Esta tarjeta es el historial
-   * personal, no el partido: usar ese reparto haría que la misma vuelta
-   * contara distinto según con quién se jugó.
+   * cero para el jugador de hándicap más bajo. «Tu vuelta» va con su hándicap
+   * de juego en la partida, no con esa diferencia: si no, la misma vuelta
+   * contaría distinto según con quién se jugó (24 oct 2026).
    */
   it("should ignore the match allocation and use the player's own handicap", async () => {
     mockListMyQuickMatches.mockResolvedValue({
@@ -288,7 +288,7 @@ describe('MyQuickMatchesPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-result-qm-4')).toBeInTheDocument();
     });
-    // Sus dos golpes siguen contando: -3. Con el reparto del partido saldría -1.
+    // Su hándicap de juego en la partida, 2: -3. Con la diferencia saldría -1.
     expect(screen.getByText('-3')).toBeInTheDocument();
   });
 

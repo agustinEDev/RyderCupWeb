@@ -488,7 +488,7 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
  * línea la tarjeta crecía.
  */
 describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () => {
-  // Corto a la vista («HCP 12»): «Hcp de juego 12» ensanchaba la columna del
+  // Corto a la vista («Hcp juego 12»): «Hcp de juego 12» ensanchaba la columna del
   // nombre en el ordenador. El lector de pantalla oye el largo.
   const hcp = (valor) => `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
   const hcpLargo = (valor) => `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;

@@ -5,9 +5,10 @@ import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
  * El nombre con su hándicap de juego al lado (QA del 21 oct 2026): la tabla de
  * match play y las tarjetas de stroke play lo pintan igual.
  *
- * A la vista «HCP 12»: «Hcp de juego 12» partía en dos líneas la cabecera de la
- * pareja en el móvil y ensanchaba la columna del nombre en el ordenador. El
- * lector de pantalla oye el largo, que «HCP» deletreado no dice nada. El valor
+ * A la vista «Hcp juego 12» (24 oct 2026: «HCP» queda para el índice), más corto
+ * que «Hcp de juego 12», que partía en dos líneas la cabecera de la pareja en el
+ * móvil y ensanchaba la columna del nombre en el ordenador. El lector de
+ * pantalla oye el largo. El valor
  * no se encoge: si no cabe, se corta el nombre (lo decide `nombreClassName`).
  *
  * @param {Object} props

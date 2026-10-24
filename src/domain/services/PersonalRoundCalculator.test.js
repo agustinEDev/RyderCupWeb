@@ -636,4 +636,30 @@ describe('PersonalRoundCalculator.vueltaDelHistorial', () => {
   it('sin hoyos anotados no hay vuelta', () => {
     expect(historial({ holeScores: [] })).toBeNull();
   });
+
+  it.each([
+    ['con el reparto del backend', { participantStrokes: [{ participantId: 'p-1', playingHandicap: 1, strokesByHole: {} }] }],
+    ['sin el reparto del backend', { allowancePercentage: 90 }],
+    ['en SCRATCH', { playMode: 'SCRATCH' }],
+    ['con una raya', { holeScores: [{ holeNumber: 1, participantId: 'p-1', score: null }, ...scores.slice(1)] }],
+    ['con hándicap plus', { me: { ...me, handicap: -2 } }],
+  ])('V1 = V3: la misma cifra que al anotar, %s', (_caso, cambios) => {
+    const params = {
+      me,
+      participants: [me, rival],
+      holes,
+      holeScores: scores,
+      tees: [],
+      participantStrokes: [],
+      matchFormat: 'SINGLES',
+      allowancePercentage: 100,
+      playMode: 'HANDICAP',
+      ...cambios,
+    };
+    if (cambios.me) params.participants = [cambios.me, rival];
+
+    expect(PersonalRoundCalculator.vueltaDelHistorial(params).personalToPar).toBe(
+      PersonalRoundCalculator.runningResult(params).toParLabel
+    );
+  });
 });
