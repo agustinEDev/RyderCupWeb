@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
+import { instalarRecargaPorTrozoViejo } from './utils/recargaPorTrozoViejo';
 import { sentryScrubbing } from './utils/sentryScrubbing';
 import { sentrySampleRates } from './infrastructure/sentrySampleRates';
 import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
@@ -34,6 +35,10 @@ startCapturingInstallPrompt();
 // Sustituye al registro que inyectaba el plugin: además de registrar, recarga
 // cuando entra una versión nueva y la busca al volver a primer plano
 registerServiceWorker();
+
+// Y si aun así una pantalla diferida no carga porque la página sigue con el
+// build viejo, una recarga trae el nuevo (Sentry RYDERCUP-FRONTEND-23)
+instalarRecargaPorTrozoViejo();
 
 // ============================================
 // EARLY SENTRY INITIALIZATION
