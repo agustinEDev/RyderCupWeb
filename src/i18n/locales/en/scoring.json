@@ -97,7 +97,7 @@
     "total": "TOTAL",
     "standing": "Standing",
     "playingHandicap": "Playing handicap {{value}}",
-    "playingHandicapShort": "HCP {{value}}"
+    "playingHandicapShort": "PH {{value}}"
   },
   "leaderboard": {
     "title": "Leaderboard",

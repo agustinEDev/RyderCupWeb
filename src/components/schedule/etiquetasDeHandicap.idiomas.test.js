@@ -11,14 +11,14 @@ import en from '../../i18n/locales/en/schedule.json';
 /**
  * Las abreviaturas del hándicap en el calendario —«HCP» del índice, «PH» del
  * de juego y «Lim.» del tope— pasan por `t()` (revisión del 21 oct), como todo
- * texto visible. Se quedan IGUALES en los dos idiomas: Agustín decidió mantener
- * «HCP», así que solo cambia de dónde salen, no lo que se lee.
+ * texto visible. «HCP» es el índice en los dos idiomas; el de juego es «Hcp
+ * juego» en español y «PH» en inglés (Agustín, 24 oct 2026: un nombre por cosa).
  *
  *   #   comprobación                                         | esperado
  *   ----|----------------------------------------------------|---------------------------
  *   E1  ningún componente las escribe a mano                  | ni «HCP», ni «PH:», ni «Lim.»
  *   E2  cada clave `handicapLabels.*` usada existe en es y en | todas
- *   E3  con el i18next de verdad, se leen como antes          | «HCP +2.0», «PH: 18 Lim.»…
+ *   E3  con el i18next de verdad, se leen así                 | «HCP +2.0», «Hcp juego: 18 Lim.»… (24 oct)
  */
 const componentes = { matchCard, matchDetail, assignTeams, generateMatches, teamAssignment };
 const codigo = Object.values(componentes).join('\n');
@@ -55,13 +55,18 @@ describe('las abreviaturas del hándicap del calendario', () => {
     }
   });
 
-  it.each(['es', 'en'])('E3: en %s se leen como antes', async (idioma) => {
+  // El de juego, «Hcp juego» en español y «PH» en inglés; el índice, «HCP» en
+  // los dos (Agustín, 24 oct 2026)
+  it.each([
+    ['es', 'Hcp juego'],
+    ['en', 'PH'],
+  ])('E3: en %s se leen así', async (idioma, deJuego) => {
     const t = await traductor(idioma);
 
     expect(t('handicapLabels.index', { value: '+2.0' })).toBe('HCP +2.0');
     expect(t('handicapLabels.indexWithColon', { value: '12.4' })).toBe('HCP: 12.4');
-    expect(t('handicapLabels.playing', { value: '18' })).toBe('PH: 18');
-    expect(t('handicapLabels.playingCapped', { value: '+2' })).toBe('PH: +2 Lim.');
+    expect(t('handicapLabels.playing', { value: '18' })).toBe(`${deJuego}: 18`);
+    expect(t('handicapLabels.playingCapped', { value: '+2' })).toBe(`${deJuego}: +2 Lim.`);
     expect(t('handicapLabels.limit', { value: 18 })).toBe('18 Lim.');
   });
 });

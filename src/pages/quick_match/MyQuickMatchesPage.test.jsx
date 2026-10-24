@@ -220,6 +220,8 @@ describe('MyQuickMatchesPage', () => {
         { holeNumber: 1, participantId: 'user-1', score: 4 },
         { holeNumber: 2, participantId: 'user-1', score: 2 },
       ],
+      // Su hándicap de juego en la partida, el que manda el backend
+      participantStrokes: [{ participantId: 'user-1', playingHandicap: 2, strokesByHole: {} }],
       effectiveAllowance: 100,
       playMode: 'HANDICAP',
     });
@@ -291,13 +293,12 @@ describe('MyQuickMatchesPage', () => {
   });
 
   /**
-   * En juego libre el backend aplica el allowance WHS de stroke play, el 95%
-   * (`FREE_PLAY_ALLOWANCE`), asi que el reparto del partido NO es el mismo que
-   * el del handicap de juego entero. Ensenando solo uno, esta tarjeta y la
-   * pestana de clasificacion daban dos numeros distintos para la misma vuelta
-   * sin que nada dijera por que. Se ensenan los dos, etiquetados.
+   * «Tu vuelta» en el historial es la de la partida, la misma que al anotar:
+   * su hándicap de juego en ella, con el allowance que aplicó el backend, por
+   * los índices de su barra. Ni el 100 % ni los golpes del reparto, y una sola
+   * cifra (Agustín, 24 oct 2026).
    */
-  it('should show the match figure next to the personal one in free play', async () => {
+  it('«Tu vuelta» es la de la partida: su hándicap de juego con el allowance (Agustín, 24 oct)', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
         { id: 'qm-6', golfCourseId: 'course-1', scoringFormat: 'MEDAL', status: 'COMPLETED', createdAt: '2026-07-21T10:00:00Z' },
@@ -312,9 +313,10 @@ describe('MyQuickMatchesPage', () => {
         { holeNumber: 1, participantId: 'user-1', score: 10 },
         { holeNumber: 2, participantId: 'user-1', score: 10 },
       ],
-      // Al 95% el handicap de juego baja de 12 a 11, y se reparte distinto
+      // Su hándicap de juego en la partida: 1 (el backend ya aplicó el
+      // allowance); al 100 % del índice serían 12
       participantStrokes: [
-        { participantId: 'user-1', playingHandicap: 11, strokesByHole: { 1: 6, 2: 5 } },
+        { participantId: 'user-1', playingHandicap: 1, strokesByHole: { 1: 6, 2: 5 } },
       ],
       effectiveAllowance: 95,
       playMode: 'HANDICAP',
@@ -332,11 +334,12 @@ describe('MyQuickMatchesPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-result-qm-6')).toBeInTheDocument();
     });
-    // Entero: el reparto local le da un golpe en cada hoyo -> netos 9 y 9
-    // sobre un par jugado de 7 -> +11
-    expect(screen.getByText('+11')).toBeInTheDocument();
-    // Del partido: el reparto que mando el backend al 95% -> netos 4 y 5 -> +2
-    expect(screen.getByTestId('quick-match-result-in-match-qm-6')).toHaveTextContent('+2');
+    // 1 de juego por los índices de su barra: un golpe en el hoyo más difícil
+    // -> netos 9 y 10 sobre un par de 7 -> +12. Al 100 % (12) eran +11; con
+    // los golpes del reparto, +2
+    expect(screen.getByTestId('quick-match-result-qm-6')).toHaveTextContent('+12');
+    // Una sola cifra: ya es la de la partida
+    expect(screen.queryByTestId('quick-match-result-in-match-qm-6')).not.toBeInTheDocument();
   });
 
   /**
