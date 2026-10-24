@@ -405,7 +405,6 @@ const QuickMatchScorecardTable = ({
   const renderSection = (sectionHoles, label, card, seccion, conTotal) => {
     // Una vez por tramo: lo usan la cabecera de la fila y la casilla del total
     const extraSumado = valorDelTramo(sectionHoles, card);
-    const hueco = <td aria-hidden="true" />;
     return (
       <div data-testid="vuelta-horizontal" className="overflow-x-auto">
         <table className={CLASE_DE_LA_TABLA}>
@@ -422,7 +421,7 @@ const QuickMatchScorecardTable = ({
               {conTotal ? (
                 <th className="px-2 py-1 text-center font-bold text-gray-700">{ts('scorecard.total')}</th>
               ) : (
-                hueco
+                <td />
               )}
             </tr>
             <tr className="bg-gray-50">
@@ -449,7 +448,7 @@ const QuickMatchScorecardTable = ({
                   {card.holes.reduce((s, h) => s + h.par, 0)}
                 </th>
               ) : (
-                hueco
+                <td />
               )}
             </tr>
           </thead>
@@ -498,7 +497,7 @@ const QuickMatchScorecardTable = ({
                   {totalDelTramo(card.holes, card, valorDelTramo(card.holes, card))}
                 </td>
               ) : (
-                hueco
+                <td />
               )}
             </tr>
           </tbody>

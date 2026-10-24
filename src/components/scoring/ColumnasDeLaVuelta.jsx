@@ -16,8 +16,8 @@ const ColumnasDeLaVuelta = ({ hoyos, anchoPrimera }) => (
     {hoyos.map((h) => (
       <col key={h.holeNumber} />
     ))}
-    <col className="w-14" />
-    <col className="w-14" />
+    <col className="w-16" />
+    <col className="w-16" />
   </colgroup>
 );
 

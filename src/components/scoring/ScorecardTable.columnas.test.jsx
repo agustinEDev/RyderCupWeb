@@ -71,6 +71,11 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
     const [ida, vuelta] = tablas();
     expect(columnas(ida)).toHaveLength(12);
     expect(columnas(ida)).toEqual(columnas(vuelta));
+    for (const tabla of [ida, vuelta]) {
+      for (const fila of tabla.querySelectorAll('tr')) {
+        expect(fila.children).toHaveLength(12);
+      }
+    }
   });
 
   it('C2: la vuelta acaba en TOTAL, con el par y los golpes de los 18', () => {
@@ -80,8 +85,8 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
     const [, vuelta] = tablas();
     const cabecera = vuelta.querySelector('thead tr');
     expect(cabecera.lastElementChild).toHaveTextContent('scorecard.total');
-    expect(screen.getByTestId('scorecard-total-par')).toHaveTextContent('72');
-    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent('11');
+    expect(screen.getByTestId('scorecard-total-par')).toHaveTextContent(/^72$/);
+    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^11$/);
   });
 
   it('C3: la ida no lleva TOTAL, sino su hueco vacío', () => {
@@ -90,7 +95,7 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
     const [ida] = tablas();
     expect(ida).not.toHaveTextContent('scorecard.total');
     for (const fila of ida.querySelectorAll('tr')) {
-      expect(fila.lastElementChild).toHaveTextContent('');
+      expect(fila.lastElementChild.textContent).toBe('');
     }
     expect(within(ida).queryByTestId('scorecard-total-u1')).not.toBeInTheDocument();
   });
@@ -101,25 +106,25 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
     const [ida, ...resto] = tablas();
     expect(resto).toHaveLength(0);
     expect(ida.querySelector('thead tr').lastElementChild).toHaveTextContent('scorecard.total');
-    expect(screen.getByTestId('scorecard-total-par')).toHaveTextContent('36');
-    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent('9');
+    expect(screen.getByTestId('scorecard-total-par')).toHaveTextContent(/^36$/);
+    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^9$/);
   });
 
   it('C5: suma solo lo anotado, y sin nada anotado pinta «-»', () => {
     render(<ScorecardTable holes={dieciocho} players={players} scores={[golpe(3, 'u1', 7)]} currentUserId="u1" />);
 
-    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent('7');
-    expect(screen.getByTestId('scorecard-total-u2')).toHaveTextContent('-');
+    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^7$/);
+    expect(screen.getByTestId('scorecard-total-u2')).toHaveTextContent(/^-$/);
   });
 
   it('C7: con el botón en neto, el TOTAL suma el neto', () => {
     const scores = [golpe(1, 'u1', 5, 4), golpe(10, 'u1', 6, 6)];
     render(<ScorecardTable holes={dieciocho} players={players} scores={scores} currentUserId="u1" />);
-    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent('11');
+    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^11$/);
 
     fireEvent.click(screen.getByRole('switch'));
 
-    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent('10');
+    expect(screen.getByTestId('scorecard-total-u1')).toHaveTextContent(/^10$/);
   });
 
   it('C7: en foursomes la fila del bando lleva su TOTAL', () => {
@@ -134,6 +139,42 @@ describe('ScorecardTable · columnas de la ida y la vuelta', () => {
       <ScorecardTable holes={dieciocho} players={pareja} scores={scores} currentUserId="u1" matchFormat="FOURSOMES" />
     );
 
-    expect(screen.getByTestId('scorecard-total-team-a')).toHaveTextContent('9');
+    expect(screen.getByTestId('scorecard-total-team-a')).toHaveTextContent(/^9$/);
+  });
+});
+
+describe('ScorecardTable · el nombre de la mejor bola, si no cabe', () => {
+  // Agustín, 24 oct 2026: con las columnas fijas, a 768 px «Maximiliano R.»
+  // no cabe en la casilla del hoyo y salen sus iniciales
+  it('pinta las iniciales cuando el nombre no cabe en la casilla', () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      }
+    );
+    vi.spyOn(globalThis.HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function () {
+      return this.dataset.medida === 'caja' ? 47 : 0;
+    });
+    vi.spyOn(globalThis.HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(function () {
+      return this.dataset.medida === 'nombre' ? 75 : 0;
+    });
+    const largos = [
+      { userId: 'u1', userName: 'Maximiliano Rodríguez', team: 'A' },
+      { userId: 'u2', userName: 'Ana Gil', team: 'B' },
+    ];
+    const scores = [{ holeNumber: 1, playerScores: [], holeResult: { winner: 'A', bestBallPlayerA: ['u1'] } }];
+
+    try {
+      render(<ScorecardTable holes={dieciocho} players={largos} scores={scores} currentUserId="u1" matchFormat="SINGLES" />);
+
+      const [ida] = tablas();
+      expect(within(ida).getByText('MR')).toHaveAttribute('title', 'Maximiliano R.');
+      expect(within(ida).getByText('Maximiliano R.', { selector: '.sr-only' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
   });
 });
