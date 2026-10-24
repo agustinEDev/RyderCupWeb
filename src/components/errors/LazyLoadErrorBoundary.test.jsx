@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import * as Sentry from '@sentry/react';
 import LazyLoadErrorBoundary from './LazyLoadErrorBoundary';
 
@@ -91,5 +91,20 @@ describe('LazyLoadErrorBoundary', () => {
     expect(reloadMock).not.toHaveBeenCalled();
     expect(Sentry.captureException).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBeNull();
+  });
+
+  it('R8: el botón del aviso borra la marca y recarga (24 oct)', () => {
+    sessionStorage.setItem('lazy_load_error_reloaded', 'true');
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error('Failed to fetch dynamically imported module: x.js')} />
+      </LazyLoadErrorBoundary>
+    );
+    expect(reloadMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Page' }));
+
+    expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBeNull();
+    expect(reloadMock).toHaveBeenCalledTimes(1);
   });
 });

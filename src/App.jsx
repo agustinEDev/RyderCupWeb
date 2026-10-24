@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } from 'react';
+import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import AvisoSinConexion from './components/ui/AvisoSinConexion';
@@ -173,8 +173,15 @@ function AppContent() {
   }, [showBottomNav]);
 
   // Limpiar flag de error de lazy loading tras navegación exitosa
-  // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
+  // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero.
+  // Solo al cambiar de página, no al montar: tras la recarga, el efecto llegaba
+  // antes de que el trozo volviera a fallar y la página se recargaba sin fin
+  // (revisor en el Kind, 24 oct 2026). Con la ruta anterior y no con «primera
+  // vez», que el modo estricto repite el efecto al montar
+  const rutaDeLaMarca = useRef(location.pathname);
   useEffect(() => {
+    if (rutaDeLaMarca.current === location.pathname) return;
+    rutaDeLaMarca.current = location.pathname;
     sessionStorage.removeItem('lazy_load_error_reloaded');
   }, [location.pathname]);
 
