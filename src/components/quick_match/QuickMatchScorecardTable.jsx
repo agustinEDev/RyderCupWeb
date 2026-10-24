@@ -8,6 +8,7 @@ import {
 import GolfFigure from '../scoring/GolfFigure';
 import CarruselDeTarjetas from '../scoring/CarruselDeTarjetas';
 import TarjetaVertical from '../scoring/TarjetaVertical';
+import ColumnasDeLaVuelta, { CLASE_DE_LA_TABLA } from '../scoring/ColumnasDeLaVuelta';
 import { useEsMovil } from '../../hooks/useEsMovil';
 import StablefordCalculator from '../../domain/services/StablefordCalculator';
 
@@ -399,21 +400,30 @@ const QuickMatchScorecardTable = ({
     );
   };
 
-  const renderSection = (sectionHoles, label, card, seccion) => {
+  // `conTotal`: el último tramo acaba en TOTAL, como la tarjeta de papel; el
+  // otro deja su hueco para que las columnas cuadren (FE #938)
+  const renderSection = (sectionHoles, label, card, seccion, conTotal) => {
     // Una vez por tramo: lo usan la cabecera de la fila y la casilla del total
     const extraSumado = valorDelTramo(sectionHoles, card);
+    const hueco = <td aria-hidden="true" />;
     return (
       <div data-testid="vuelta-horizontal" className="overflow-x-auto">
-        <table className="min-w-full text-xs">
+        <table className={CLASE_DE_LA_TABLA}>
+          <ColumnasDeLaVuelta hoyos={sectionHoles} anchoPrimera="w-16" />
           <thead>
             <tr className="bg-gray-50">
               <th className="px-2 py-1 text-left font-medium text-gray-500">{ts('scorecard.hole')}</th>
               {sectionHoles.map((h) => (
-                <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500 w-8">
+                <th key={h.holeNumber} className="px-2 py-1 text-center font-medium text-gray-500">
                   {h.holeNumber}
                 </th>
               ))}
               <th className="px-2 py-1 text-center font-bold text-gray-700">{label}</th>
+              {conTotal ? (
+                <th className="px-2 py-1 text-center font-bold text-gray-700">{ts('scorecard.total')}</th>
+              ) : (
+                hueco
+              )}
             </tr>
             <tr className="bg-gray-50">
               <th scope="row" className="px-2 py-1 text-left text-gray-400 font-normal">{ts('scorecard.par')}</th>
@@ -430,6 +440,17 @@ const QuickMatchScorecardTable = ({
               <th scope="col" className="px-2 py-1 text-center font-medium text-gray-500">
                 {sectionHoles.reduce((s, h) => s + h.par, 0)}
               </th>
+              {conTotal ? (
+                <th
+                  scope="col"
+                  data-testid={`quick-match-total-par-${card.key}`}
+                  className="px-2 py-1 text-center font-medium text-gray-500"
+                >
+                  {card.holes.reduce((s, h) => s + h.par, 0)}
+                </th>
+              ) : (
+                hueco
+              )}
             </tr>
           </thead>
           <tbody>
@@ -469,6 +490,16 @@ const QuickMatchScorecardTable = ({
               >
                 {totalDelTramo(sectionHoles, card, extraSumado)}
               </td>
+              {conTotal ? (
+                <td
+                  data-testid={`quick-match-section-total-${card.key}-total`}
+                  className="px-2 py-1 text-center font-bold align-top"
+                >
+                  {totalDelTramo(card.holes, card, valorDelTramo(card.holes, card))}
+                </td>
+              ) : (
+                hueco
+              )}
             </tr>
           </tbody>
         </table>
@@ -575,14 +606,16 @@ const QuickMatchScorecardTable = ({
               card.holes.filter((h) => h.holeNumber <= 9),
               ts('scorecard.out'),
               card,
-              'ida'
+              'ida',
+              !conIda(card)
             )}
-            {card.holes.some((h) => h.holeNumber > 9) &&
+            {conIda(card) &&
               renderSection(
                 card.holes.filter((h) => h.holeNumber > 9),
                 ts('scorecard.in'),
                 card,
-                'vuelta'
+                'vuelta',
+                true
               )}
           </div>
         </div>
