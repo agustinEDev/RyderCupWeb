@@ -9,7 +9,7 @@ vi.mock('@sentry/react', () => ({
 }));
 
 const recarga = vi.hoisted(() => ({ enCurso: false }));
-vi.mock('../../utils/recargaPorTrozoViejo', () => ({ recargandoPorTrozoViejo: () => recarga.enCurso }));
+vi.mock('../../utils/recargaPorTrozoViejo', () => ({ esElEcoDeLaRecarga: () => recarga.enCurso }));
 
 function Bomb({ error }) {
   throw error;

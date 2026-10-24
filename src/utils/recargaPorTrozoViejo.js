@@ -1,6 +1,6 @@
 /**
- * Cuando una pantalla diferida no carga, recargar una vez (Agustín, 24 oct
- * 2026; Sentry RYDERCUP-FRONTEND-23).
+ * Cuando una pantalla diferida no carga porque la página sigue con un build
+ * viejo, recargar una vez (Agustín, 24 oct 2026; Sentry RYDERCUP-FRONTEND-23).
  *
  * Pasa en la aplicación instalada: entra un service worker nuevo con la
  * aplicación en segundo plano, la recarga de `serviceWorkerRegistration.js` no
@@ -9,28 +9,37 @@
  * nuevo, que sí está entero en la caché: funciona también sin conexión. Lo
  * anotado sin conexión no se pierde, porque la cola vive en el móvil.
  *
+ * - Solo si la página es de un build viejo: la marca `app-build` de la página
+ *   no es la del `index.html` que guarda el service worker. Se mira al
+ *   arrancar, al volver a primer plano y al cambiar de service worker, porque
+ *   el aviso de Vite hay que contestarlo en el acto. Un fallo de red con el
+ *   build al día sigue su camino: `lazyWithRetry` reintenta a los 1,5 s.
  * - Solo con un service worker controlando: sin él, recargar sin red dejaría
  *   la página de error del navegador.
- * - Como mucho una vez cada 30 s: si vuelve a fallar, el error sale como
- *   siempre y la pantalla dice que no se pudo cargar.
- * - También salta si lo que falla es la hoja de estilos del trozo: Vite avisa
- *   igual, y recargar lo arregla del mismo modo.
+ * - Una sola recarga: como mucho una cada 30 s, y apunta también la de
+ *   `LazyLoadErrorBoundary` para que esa no haga otra. Si vuelve a fallar, el
+ *   error sale como siempre y la pantalla dice que no se pudo cargar.
  *
  * Evitado el error, el `import()` acaba sin módulo y React lanza otro antes de
  * que la recarga se lleve la página: `recargandoPorTrozoViejo()` deja a las
- * barreras de error y a Sentry no pintarlo ni mandarlo (revisión, 24 oct).
- * `LazyLoadErrorBoundary` tiene su propia recarga, una por sesión, para las
- * pantallas de las rutas: esta la adelanta y cubre también el mapa, que no
- * recarga.
+ * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
+ * recarga no llega.
  */
 export const ESPERA_ENTRE_RECARGAS_MS = 30_000;
+export const OLVIDAR_LA_RECARGA_MS = 10_000;
 
 const CLAVE = 'rcf-recarga-por-trozo-viejo';
+// La de `LazyLoadErrorBoundary`: con ella apuntada no recarga otra vez
+const CLAVE_DE_LA_BARRERA = 'lazy_load_error_reloaded';
+const MARCA = /<meta\s+name="app-build"\s+content="([^"]*)"/i;
 
 let recargando = false;
 
 /** Si la página se está recargando por un trozo viejo: lo que falle ya no cuenta. */
 export const recargandoPorTrozoViejo = () => recargando;
+
+/** La marca del build de un HTML, o null si no la trae. */
+export const marcaDelBuild = (html) => MARCA.exec(html ?? '')?.[1] ?? null;
 
 /** La última recarga, o null si no hay ninguna apuntada (o no se puede leer). */
 const leer = (almacen) => {
@@ -45,24 +54,70 @@ const leer = (almacen) => {
 const apuntar = (almacen, instante) => {
   try {
     almacen.setItem(CLAVE, String(instante));
+    almacen.setItem(CLAVE_DE_LA_BARRERA, 'true');
   } catch {
     // Sin almacenamiento (navegación privada) se recarga igual
   }
 };
 
+/** Una recarga apuntada hace menos de 30 s; con el reloj hacia atrás, no cuenta. */
+const recienRecargada = (ultima, instante) =>
+  ultima !== null && instante >= ultima && instante - ultima < ESPERA_ENTRE_RECARGAS_MS;
+
 export function instalarRecargaPorTrozoViejo({
   ventana = globalThis.window,
+  documento = globalThis.document,
   almacen = globalThis.sessionStorage,
+  cachesApi = globalThis.caches,
   ahora = Date.now,
+  programar = globalThis.setTimeout,
 } = {}) {
+  const buildQueCorre = documento?.querySelector?.('meta[name="app-build"]')?.getAttribute('content') ?? null;
+  let esViejo = false;
+
+  const comprobar = async () => {
+    if (!buildQueCorre || !cachesApi?.match) return;
+    try {
+      const guardado = await cachesApi.match('/index.html', { ignoreSearch: true });
+      const marca = guardado ? marcaDelBuild(await guardado.text()) : null;
+      esViejo = marca !== null && marca !== buildQueCorre;
+    } catch {
+      // Sin caché que leer no se sabe: se deja como estaba
+    }
+  };
+
   ventana.addEventListener('vite:preloadError', (evento) => {
-    if (!ventana.navigator?.serviceWorker?.controller) return;
+    if (!esViejo || !ventana.navigator?.serviceWorker?.controller) return;
     const instante = ahora();
-    const ultima = leer(almacen);
-    if (ultima !== null && instante - ultima < ESPERA_ENTRE_RECARGAS_MS) return;
+    if (recienRecargada(leer(almacen), instante)) return;
     apuntar(almacen, instante);
     recargando = true;
+    // Si la recarga no llega (la aplicación se fue a segundo plano), lo que
+    // falle después vuelve a contar
+    programar(() => {
+      recargando = false;
+    }, OLVIDAR_LA_RECARGA_MS);
     evento.preventDefault();
     ventana.location.reload();
   });
+
+  documento?.addEventListener?.('visibilitychange', () => {
+    if (documento.visibilityState === 'visible') comprobar();
+  });
+  ventana.navigator?.serviceWorker?.addEventListener?.('controllerchange', comprobar);
+  return comprobar();
 }
+
+/**
+ * El eco del `import()` cancelado: lo que React lanza al quedarse sin módulo.
+ * Solo eso se calla mientras se recarga, no cualquier error.
+ */
+export const esElEcoDeLaRecarga = (error) => {
+  const mensaje = String(error?.message ?? error ?? '');
+  return (
+    recargando &&
+    (/default/.test(mensaje) ||
+      /Importing a module script failed/.test(mensaje) ||
+      /dynamically imported module/.test(mensaje))
+  );
+};

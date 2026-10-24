@@ -65,7 +65,7 @@ function emitVersionFile() {
       }
     }
 
-    const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'))
+    const version = VERSION_DE_LA_APP
     info = { version, commit: commit.slice(0, 7), builtAt: new Date().toISOString() }
     return info
   }

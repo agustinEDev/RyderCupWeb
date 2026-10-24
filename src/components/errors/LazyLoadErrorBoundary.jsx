@@ -1,7 +1,7 @@
 import { Component } from 'react';
 import * as Sentry from '@sentry/react';
 import { retiraLaCortina } from '../../utils/cortinaDeArranque';
-import { recargandoPorTrozoViejo } from '../../utils/recargaPorTrozoViejo';
+import { esElEcoDeLaRecarga } from '../../utils/recargaPorTrozoViejo';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -19,7 +19,7 @@ class LazyLoadErrorBoundary extends Component {
   static getDerivedStateFromError(error) {
     // La página ya se recarga por un trozo viejo: lo de ahora es el eco de ese
     // fallo, en blanco hasta que llegue la recarga
-    if (recargandoPorTrozoViejo()) {
+    if (esElEcoDeLaRecarga(error)) {
       return { hasError: false, isReloading: true, errorMessage: null, errorName: null };
     }
     // React may invoke getDerivedStateFromError more than once for the same
@@ -48,7 +48,7 @@ class LazyLoadErrorBoundary extends Component {
     console.error('LazyLoadErrorBoundary caught an error:', error, errorInfo);
 
     // Ni Sentry ni una segunda recarga: ya hay una en camino
-    if (recargandoPorTrozoViejo()) return;
+    if (esElEcoDeLaRecarga(error)) return;
 
     if (this.state.isReloading) {
       // Mark as reloaded and reload the page (typically happens after
