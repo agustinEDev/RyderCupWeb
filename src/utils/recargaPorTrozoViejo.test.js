@@ -13,8 +13,7 @@ const montar = async ({
   corre = VIEJO,
   enCache = NUEVO,
   conServiceWorker = true,
-  ultima = null,
-  ahora = 100_000,
+  yaRecargo = false,
   almacen: almacenDado = null,
 } = {}) => {
   vi.resetModules();
@@ -23,7 +22,7 @@ const montar = async ({
   const documento = new globalThis.EventTarget();
   documento.visibilityState = 'visible';
   documento.querySelector = () => (corre ? { getAttribute: () => corre } : null);
-  const guardado = new Map(ultima === null ? [] : [['rcf-recarga-por-trozo-viejo', String(ultima)]]);
+  const guardado = new Map(yaRecargo ? [['lazy_load_error_reloaded', 'true']] : []);
   const almacen = almacenDado ?? {
     getItem: (k) => guardado.get(k) ?? null,
     setItem: (k, v) => guardado.set(k, v),
@@ -42,7 +41,6 @@ const montar = async ({
     documento,
     almacen,
     cachesApi,
-    ahora: () => ahora,
     programar: (fn) => programado.push(fn),
   });
   const disparar = () => {
@@ -107,42 +105,24 @@ describe('recarga por un trozo viejo', () => {
     expect(ventana.location.reload).toHaveBeenCalledTimes(1);
   });
 
-  it('E1: apunta cuándo recargó, y también la recarga de la barrera de rutas', async () => {
-    const { disparar, guardado } = await montar({ ahora: 123_456 });
+  it('E1: apunta la recarga en la marca de la barrera de rutas', async () => {
+    const { disparar, guardado } = await montar();
 
     disparar();
 
-    expect(guardado.get('rcf-recarga-por-trozo-viejo')).toBe('123456');
-    // La de la barrera es también la hora: cuenta 30 s (24 oct)
-    expect(guardado.get('lazy_load_error_reloaded')).toBe('123456');
+    expect(guardado.get('lazy_load_error_reloaded')).toBe('true');
   });
 
-  it('E2: si ya recargó hace menos de 30 s, no vuelve a recargar: sale el error', async () => {
-    const { disparar, ventana } = await montar({ ultima: 100_000 - 29_999 });
+  it('E2 y R7: si ya recargó y no ha cargado ninguna pantalla, no vuelve a recargar: sale el error', async () => {
+    const { disparar, ventana } = await montar({ yaRecargo: true });
 
     expect(disparar().defaultPrevented).toBe(false);
     expect(ventana.location.reload).not.toHaveBeenCalled();
   });
 
-  it('E2: pasados los 30 s, vuelve a poder recargar', async () => {
-    const { disparar, ventana } = await montar({ ultima: 100_000 - 30_000 });
-
-    disparar();
-
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it('E2: con el reloj hacia atrás, la marca vieja no bloquea', async () => {
-    const { disparar, ventana } = await montar({ ultima: 200_000 });
-
-    disparar();
-
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it('E2: una marca ilegible no impide recargar', async () => {
-    const { disparar, ventana, guardado } = await montar();
-    guardado.set('rcf-recarga-por-trozo-viejo', 'abc');
+  it('E2: cuando una pantalla carga bien se olvida, y vuelve a poder recargar', async () => {
+    const { disparar, ventana, guardado } = await montar({ yaRecargo: true });
+    guardado.delete('lazy_load_error_reloaded');
 
     disparar();
 
@@ -156,7 +136,7 @@ describe('recarga por un trozo viejo', () => {
     expect(ventana.location.reload).not.toHaveBeenCalled();
   });
 
-  it('sin almacenamiento (modo privado) recarga igual, sin romperse', async () => {
+  it('R9: sin almacenamiento no puede apuntarla: no recarga, sin romperse', async () => {
     const roto = {
       getItem: () => {
         throw new Error('SecurityError');
@@ -167,9 +147,35 @@ describe('recarga por un trozo viejo', () => {
     };
     const { disparar, ventana } = await montar({ almacen: roto });
 
-    disparar();
+    expect(disparar().defaultPrevented).toBe(false);
+    expect(ventana.location.reload).not.toHaveBeenCalled();
+  });
 
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
+  it('R9: si no se puede leer, no sabe si ya recargó: no recarga', async () => {
+    const guardado = new Map();
+    const ciego = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+      setItem: (k, v) => guardado.set(k, v),
+    };
+    const { disparar, ventana } = await montar({ almacen: ciego });
+
+    expect(disparar().defaultPrevented).toBe(false);
+    expect(ventana.location.reload).not.toHaveBeenCalled();
+  });
+
+  it('R9: si se lee pero no se puede escribir, tampoco recarga', async () => {
+    const lleno = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    };
+    const { disparar, ventana } = await montar({ almacen: lleno });
+
+    expect(disparar().defaultPrevented).toBe(false);
+    expect(ventana.location.reload).not.toHaveBeenCalled();
   });
 
   it('si la recarga no llega, la marca de recargando se apaga sola a los 10 s', async () => {

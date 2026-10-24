@@ -27,15 +27,23 @@ import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
+import { olvidarLaRecarga } from './utils/recargaDeLaBarrera';
 
 // Lazy loading con retry automático para fallos de red transitorios
 // Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
-// al LazyLoadErrorBoundary (que maneja la recarga de página)
+// al LazyLoadErrorBoundary (que maneja la recarga de página). Una pantalla que
+// carga bien olvida la recarga: la siguiente actualización vuelve a poder
+// recargar sola (`recargaDeLaBarrera`)
 function lazyWithRetry(importFn) {
   return lazy(() =>
-    importFn().catch(() =>
-      new Promise(resolve => setTimeout(resolve, 1500)).then(() => importFn())
-    )
+    importFn()
+      .catch(() =>
+        new Promise(resolve => setTimeout(resolve, 1500)).then(() => importFn())
+      )
+      .then((modulo) => {
+        olvidarLaRecarga();
+        return modulo;
+      })
   );
 }
 

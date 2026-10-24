@@ -2,7 +2,13 @@ import { Component } from 'react';
 import * as Sentry from '@sentry/react';
 import { retiraLaCortina } from '../../utils/cortinaDeArranque';
 import { esElEcoDeLaRecarga } from '../../utils/recargaPorTrozoViejo';
-import { apuntarLaRecarga, olvidarLaRecarga, puedeRecargar } from '../../utils/recargaDeLaBarrera';
+import {
+  apuntarLaRecarga,
+  olvidarLaRecarga,
+  recargarTraeLaPagina,
+  yaRecargo,
+  ESPERA_A_LA_RECARGA_MS,
+} from '../../utils/recargaDeLaBarrera';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -33,8 +39,9 @@ class LazyLoadErrorBoundary extends Component {
       error?.message?.includes('Importing a module script failed') ||
       error?.message?.includes('Failed to fetch dynamically imported module');
 
-    // Una vez cada 30 s; sin almacenamiento (`null`), ninguna: el aviso
-    const willAutoReload = isChunkLoadError && puedeRecargar() === true;
+    // Una vez hasta que cargue una pantalla; sin almacenamiento (`null`), o sin
+    // red ni service worker, ninguna: el aviso
+    const willAutoReload = isChunkLoadError && yaRecargo() === false && recargarTraeLaPagina();
 
     return {
       hasError: !willAutoReload,
@@ -57,6 +64,10 @@ class LazyLoadErrorBoundary extends Component {
       // reporting for this path, the user never actually saw a broken app.
       if (apuntarLaRecarga()) {
         window.location.reload();
+        this.esperaALaRecarga = setTimeout(
+          () => this.setState({ hasError: true, isReloading: false }),
+          ESPERA_A_LA_RECARGA_MS
+        );
         return;
       }
       // Sin poder apuntarla, recargar podría no acabar nunca: el aviso
@@ -80,6 +91,10 @@ class LazyLoadErrorBoundary extends Component {
       scope.setExtra('url', window.location.href);
       Sentry.captureException(error);
     });
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.esperaALaRecarga);
   }
 
   render() {

@@ -5,21 +5,21 @@ import { act, cleanup, render, screen } from '@testing-library/react';
  * Una pantalla diferida cuyo trozo falla siempre (sin cobertura y con la caché
  * a medias): la página se recargaba sin fin, unas 6 veces en 8 s (revisor en el
  * Kind, 24 oct 2026). `App` borraba la marca de «ya recargué» al montar, antes
- * de que el trozo volviera a fallar. Borrarla solo al cambiar de página tampoco
- * bastaba: React Router navega en transición y el efecto llegaba tarde (otra
- * recarga de más, o el aviso sin recargar tras un despliegue). Ahora la marca
- * es la hora de la recarga y cuenta 30 s, como la de `recargaPorTrozoViejo`.
+ * de que el trozo volviera a fallar. Ahora la marca se borra cuando una
+ * pantalla carga bien (`recargaDeLaBarrera`), sin horas: tarde lo que tarde el
+ * fallo, tras la recarga sale el aviso.
  *
  *   #   caso                                               | esperado
  *   ----|--------------------------------------------------|------------------------------------
  *   R1  abro una pantalla que falla siempre                | una recarga y luego el aviso
  *   R2  navego a una pantalla que falla siempre            | una recarga y luego el aviso
  *   R3  tras la recarga por build viejo (#958) vuelve a fallar | ninguna recarga más: el aviso
- *   R4  la recarga fue hace más de 30 s y falla otra       | recarga una vez
+ *   R4  tras recargar, una pantalla carga; luego otra falla | recarga una vez
  *   R5  recarga reciente y redirección a /login, que falla | el aviso, sin otra recarga
+ *   R6  el fallo tras la recarga tarda más de 30 s         | el aviso, sin otra recarga
  *
- * R6-R9 (marca vieja o ilegible, reloj hacia atrás, botón, sin almacenamiento)
- * en `LazyLoadErrorBoundary.test.jsx`.
+ * R7 en `recargaPorTrozoViejo.test.js`; R8-R11 (botón, sin almacenamiento, sin
+ * red ni service worker, recarga que no llega) en `LazyLoadErrorBoundary.test.jsx`.
  */
 vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('./hooks/useAuth', () => ({
@@ -108,8 +108,32 @@ const recargar = () => {
   return montar();
 };
 
+// Una pantalla que carga bien olvida la recarga, y aquí el trozo que falla es
+// el componente, no el `import()` (Vitest envuelve con otro mensaje el error de
+// una fábrica). Se cargan una vez al empezar: desde entonces su `lazy` ya no
+// vuelve a cargar y solo falla, como un trozo que no llega. El perfil no se
+// calienta: R4 necesita que cargue bien
+let calentadas = false;
+const calentar = async () => {
+  for (const [ruta, hay] of [
+    ['/profile/devices', true],
+    ['/dashboard', false],
+  ]) {
+    sesion.hay = hay;
+    window.history.pushState({}, '', ruta);
+    await montar();
+    await vi.waitFor(() => expect(recargas).toHaveBeenCalled(), { timeout: 4000 });
+    cleanup();
+    sessionStorage.clear();
+    recargas.mockClear();
+    nuevoTrozoQueFalla();
+  }
+  sesion.hay = true;
+  calentadas = true;
+};
+
 describe('App · una pantalla diferida que falla siempre', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     sessionStorage.clear();
     sesion.hay = true;
     nuevoTrozoQueFalla();
@@ -127,6 +151,7 @@ describe('App · una pantalla diferida que falla siempre', () => {
       value: Object.defineProperties({ reload: recargas, assign: vi.fn(), replace: vi.fn() }, enVivo),
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    if (!calentadas) await calentar();
   });
 
   afterEach(() => {
@@ -162,8 +187,8 @@ describe('App · una pantalla diferida que falla siempre', () => {
   });
 
   it('R3: tras la recarga por build viejo, si vuelve a fallar, el aviso sin otra recarga', async () => {
-    // Lo que apunta `recargaPorTrozoViejo` antes de recargar: la hora
-    sessionStorage.setItem(MARCA, String(Date.now()));
+    // Lo que apunta `recargaPorTrozoViejo` antes de recargar
+    sessionStorage.setItem(MARCA, 'true');
     window.history.pushState({}, '', '/profile/devices');
     await montar();
 
@@ -171,12 +196,13 @@ describe('App · una pantalla diferida que falla siempre', () => {
     expect(recargas).not.toHaveBeenCalled();
   });
 
-  it('R4: con la recarga de hace más de 30 s, otra pantalla que falla recarga una vez', async () => {
-    // Recargó al arrancar y el jugador se quedó en el panel; luego se desplegó
-    sessionStorage.setItem(MARCA, String(Date.now() - 31_000));
-    window.history.pushState({}, '', '/dashboard');
+  it('R4: tras recargar, una pantalla que carga bien la olvida, y la siguiente que falla recarga', async () => {
+    // Recargó al arrancar y el perfil cargó; luego se desplegó otra versión
+    sessionStorage.setItem(MARCA, 'true');
+    window.history.pushState({}, '', '/profile');
     await montar();
-    await screen.findByText('panel');
+    await screen.findByText('perfil');
+    expect(sessionStorage.getItem(MARCA)).toBeNull();
 
     await ir('/profile/devices');
 
@@ -184,7 +210,7 @@ describe('App · una pantalla diferida que falla siempre', () => {
   });
 
   it('R5: con la recarga reciente, la redirección a un /login que falla saca el aviso', async () => {
-    sessionStorage.setItem(MARCA, String(Date.now()));
+    sessionStorage.setItem(MARCA, 'true');
     sesion.hay = false;
     window.history.pushState({}, '', '/dashboard');
     await montar();
@@ -192,5 +218,19 @@ describe('App · una pantalla diferida que falla siempre', () => {
     expect(await screen.findByText(AVISO, {}, { timeout: 4000 })).toBeInTheDocument();
     expect(window.location.pathname).toBe('/login');
     expect(recargas).not.toHaveBeenCalled();
+  });
+
+  it('R6: aunque el fallo tras la recarga tarde más de 30 s, el aviso sin otra recarga', async () => {
+    window.history.pushState({}, '', '/profile/devices');
+    await montar();
+    await vi.waitFor(() => expect(recargas).toHaveBeenCalledTimes(1), { timeout: 4000 });
+
+    // Poca señal: el reloj corre un minuto antes de que el trozo vuelva a fallar
+    const ahora = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(ahora + 60_000);
+    await recargar();
+
+    expect(await screen.findByText(AVISO, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(recargas).toHaveBeenCalledTimes(1);
   });
 });
