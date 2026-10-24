@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import BlockLoader from '../../ui/BlockLoader';
 import ModalShell from '../../ui/ModalShell';
 import { captureError } from '../../../utils/sentryHelpers';
+import { recargandoPorTrozoViejo } from '../../../utils/recargaPorTrozoViejo';
 import { hoyoDeUnaMarca } from '../../../domain/services/hoyoMarcado';
 import { useMuestrasDelCampo } from '../../../hooks/useMuestrasDelCampo';
 import { useReportarHoyo } from '../../../hooks/useReportarHoyo';
@@ -39,15 +40,18 @@ class SiNoCarga extends Component {
   }
 
   static getDerivedStateFromError() {
-    return { fallo: true };
+    // Recargando por un trozo viejo, el mapa no falló: llega el build nuevo
+    return { fallo: true, recargando: recargandoPorTrozoViejo() };
   }
 
   componentDidCatch(error) {
+    if (this.state.recargando) return;
     captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
   }
 
   render() {
     if (!this.state.fallo) return this.props.children;
+    if (this.state.recargando) return null;
     return (
       <SalidaDelMapa onCerrar={this.props.onCerrar}>
         <p>{this.props.texto}</p>

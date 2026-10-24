@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
-import { instalarRecargaPorTrozoViejo } from './utils/recargaPorTrozoViejo';
+import { instalarRecargaPorTrozoViejo, recargandoPorTrozoViejo } from './utils/recargaPorTrozoViejo';
 import { sentryScrubbing } from './utils/sentryScrubbing';
 import { sentrySampleRates } from './infrastructure/sentrySampleRates';
 import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
@@ -74,6 +74,9 @@ if (sentryDsn) {
   // su lista de URLs, que no pasa por `beforeSend`- pasan todos por los
   // procesadores de eventos: uno solo los cubre sin recorrerlos dos veces
   Sentry.addEventProcessor(sentryScrubbing.eventProcessor);
+  // Lo que falle mientras la página se recarga por un trozo viejo es el eco de
+  // ese fallo, ya resuelto: no se manda
+  Sentry.addEventProcessor((evento) => (recargandoPorTrozoViejo() ? null : evento));
 }
 
 // ============================================

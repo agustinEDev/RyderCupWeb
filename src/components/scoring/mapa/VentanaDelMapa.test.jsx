@@ -3,6 +3,8 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 vi.mock('../../../utils/sentryHelpers', () => ({ captureError: vi.fn() }));
+const recarga = vi.hoisted(() => ({ enCurso: false }));
+vi.mock('../../../utils/recargaPorTrozoViejo', () => ({ recargandoPorTrozoViejo: () => recarga.enCurso }));
 const toastFalso = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: toastFalso }));
 
@@ -97,6 +99,25 @@ describe('VentanaDelMapa', () => {
     expect(await screen.findByText('mapa.noCarga')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'mapa.cerrar' }));
     expect(mapaDelHoyo.cerrar).toHaveBeenCalled();
+    globalThis.console.error.mockRestore();
+  });
+
+  it('recargando por un trozo viejo, el mapa que no carga no avisa ni va a Sentry (24 oct)', async () => {
+    const { captureError } = await import('../../../utils/sentryHelpers');
+    captureError.mockClear();
+    recarga.enCurso = true;
+    carga.falla = true;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<VentanaDelMapa mapaDelHoyo={estado()} golfCourseId="gc-1" numeroDeHoyo={3} par={4} />);
+
+    // Lo mismo que tarda en salir el aviso cuando no se recarga (A5)
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(screen.queryByText('mapa.noCarga')).toBeNull();
+    expect(captureError).not.toHaveBeenCalled();
+    recarga.enCurso = false;
     globalThis.console.error.mockRestore();
   });
 

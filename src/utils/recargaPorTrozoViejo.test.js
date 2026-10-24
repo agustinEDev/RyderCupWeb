@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { instalarRecargaPorTrozoViejo, ESPERA_ENTRE_RECARGAS_MS } from './recargaPorTrozoViejo';
 
 /**
@@ -26,8 +26,6 @@ const montar = ({ conServiceWorker = true, ultima = null, ahora = 100_000 } = {}
 };
 
 describe('recarga por un trozo viejo', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('E1: con service worker, recarga una vez y no deja saltar el error', () => {
     const { disparar, ventana, evento } = montar();
 
@@ -54,16 +52,21 @@ describe('recarga por un trozo viejo', () => {
     expect(evento.preventDefault).not.toHaveBeenCalled();
   });
 
-  it('E2: pasados los 30 s, vuelve a poder recargar', () => {
-    const { disparar, ventana } = montar({ ultima: 100_000 - ESPERA_ENTRE_RECARGAS_MS });
+  it('E2: una marca ilegible no impide recargar', () => {
+    const { disparar, ventana, guardado } = montar();
+    guardado.set('rcf-recarga-por-trozo-viejo', 'abc');
 
     disparar();
 
     expect(ventana.location.reload).toHaveBeenCalledTimes(1);
   });
 
-  it('E2: los 30 s', () => {
-    expect(ESPERA_ENTRE_RECARGAS_MS).toBe(30_000);
+  it('E2: pasados los 30 s, vuelve a poder recargar', () => {
+    const { disparar, ventana } = montar({ ultima: 100_000 - ESPERA_ENTRE_RECARGAS_MS });
+
+    disparar();
+
+    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
   });
 
   it('E3: sin service worker no recarga: sin red saldría la página de error del navegador', () => {
@@ -97,5 +100,46 @@ describe('recarga por un trozo viejo', () => {
     oyentes['vite:preloadError']({ preventDefault: vi.fn() });
 
     expect(ventana.location.reload).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('con el evento de verdad del navegador', () => {
+  it('lo cancela, y desde entonces la página está recargándose', async () => {
+    vi.resetModules();
+    const modulo = await import('./recargaPorTrozoViejo');
+    const objetivo = new globalThis.EventTarget();
+    const reload = vi.fn();
+    const ventana = {
+      addEventListener: (tipo, fn) => objetivo.addEventListener(tipo, fn),
+      navigator: { serviceWorker: { controller: {} } },
+      location: { reload },
+    };
+    modulo.instalarRecargaPorTrozoViejo({ ventana, almacen: { getItem: () => null, setItem: () => {} } });
+    expect(modulo.recargandoPorTrozoViejo()).toBe(false);
+
+    const evento = new globalThis.Event('vite:preloadError', { cancelable: true });
+    objetivo.dispatchEvent(evento);
+
+    expect(evento.defaultPrevented).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(modulo.recargandoPorTrozoViejo()).toBe(true);
+  });
+
+  it('sin recargar, la página no está recargándose', async () => {
+    vi.resetModules();
+    const modulo = await import('./recargaPorTrozoViejo');
+    const objetivo = new globalThis.EventTarget();
+    const ventana = {
+      addEventListener: (tipo, fn) => objetivo.addEventListener(tipo, fn),
+      navigator: { serviceWorker: { controller: null } },
+      location: { reload: vi.fn() },
+    };
+    modulo.instalarRecargaPorTrozoViejo({ ventana, almacen: { getItem: () => null, setItem: () => {} } });
+
+    const evento = new globalThis.Event('vite:preloadError', { cancelable: true });
+    objetivo.dispatchEvent(evento);
+
+    expect(evento.defaultPrevented).toBe(false);
+    expect(modulo.recargandoPorTrozoViejo()).toBe(false);
   });
 });
