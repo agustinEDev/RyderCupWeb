@@ -19,15 +19,16 @@
  * - Una sola recarga: apunta en la nota de `LazyLoadErrorBoundary`
  *   (`recargaDeLaBarrera`) la versión a la que va y la página. Si esa versión
  *   vuelve a fallar en esa página, el error sale como siempre y la pantalla
- *   dice que no se pudo cargar. Sin almacenamiento recarga igual: cambia de
- *   versión, así que no puede repetirse.
+ *   dice que no se pudo cargar. Sin almacenamiento no se puede apuntar: no
+ *   recarga, como la barrera (si la recarga no cambiara de versión, no
+ *   acabaría nunca).
  *
  * Evitado el error, el `import()` acaba sin módulo y React lanza otro antes de
  * que la recarga se lleve la página: `recargandoPorTrozoViejo()` deja a las
  * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
  * recarga no llega.
  */
-import { apuntarLaRecarga, puedeRecargar } from './recargaDeLaBarrera';
+import { apuntarLaRecarga, buildDeLaPagina, puedeRecargar } from './recargaDeLaBarrera';
 
 export const OLVIDAR_LA_RECARGA_MS = 10_000;
 
@@ -48,7 +49,8 @@ export function instalarRecargaPorTrozoViejo({
   cachesApi = globalThis.caches,
   programar = globalThis.setTimeout,
 } = {}) {
-  const buildQueCorre = documento?.querySelector?.('meta[name="app-build"]')?.getAttribute('content') ?? null;
+  // Sin la marca (en desarrollo) no se sabe si es vieja: no hace nada
+  const buildQueCorre = buildDeLaPagina(documento) || null;
   let esViejo = false;
   // La versión que guarda el service worker: a la que lleva la recarga
   let buildNuevo = null;
@@ -69,8 +71,7 @@ export function instalarRecargaPorTrozoViejo({
     if (!esViejo || !ventana.navigator?.serviceWorker?.controller) return;
     // Ya recargó a esa versión en esta página: el error sigue su camino
     const nota = { build: buildNuevo, ruta: ventana.location?.pathname ?? '', almacen };
-    if (puedeRecargar(nota) === false) return;
-    apuntarLaRecarga(nota);
+    if (puedeRecargar(nota) !== true || !apuntarLaRecarga(nota)) return;
     recargando = true;
     // Si la recarga no llega (la aplicación se fue a segundo plano), lo que
     // falle después vuelve a contar

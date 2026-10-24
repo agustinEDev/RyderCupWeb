@@ -29,7 +29,7 @@ import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Pantallas diferidas, con reintento y olvido de la recarga: `utils/lazyWithRetry`
+// Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
 const AppStart = lazyWithRetry(() => import('./pages/AppStart'));
 const Login = lazyWithRetry(() => import('./pages/Login'));

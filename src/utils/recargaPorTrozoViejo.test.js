@@ -22,7 +22,7 @@ const montar = async ({
   const documento = new globalThis.EventTarget();
   documento.visibilityState = 'visible';
   documento.querySelector = () => (corre ? { getAttribute: () => corre } : null);
-  const guardado = new Map(nota ? [['lazy_load_error_reloaded', JSON.stringify(nota)]] : []);
+  const guardado = new Map(nota ? [['lazy_load_error_reloaded', JSON.stringify({ recargas: nota })]] : []);
   const almacen = almacenDado ?? {
     getItem: (k) => guardado.get(k) ?? null,
     setItem: (k, v) => guardado.set(k, v),
@@ -118,27 +118,27 @@ describe('recarga por un trozo viejo', () => {
 
     disparar();
 
-    expect(JSON.parse(guardado.get('lazy_load_error_reloaded'))).toEqual({ build: NUEVO, rutas: ['/scoring'] });
+    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas).toEqual([[NUEVO, '/scoring']]);
   });
 
-  it('E2 y R3: si ya recargó a esa versión en esta página, no vuelve a recargar: sale el error', async () => {
-    const { disparar, ventana } = await montar({ nota: { build: NUEVO, rutas: ['/scoring'] } });
+  it('E2: si ya recargó a esa versión en esta página, no vuelve a recargar: sale el error', async () => {
+    const { disparar, ventana } = await montar({ nota: [[NUEVO, '/scoring']] });
 
     expect(disparar().defaultPrevented).toBe(false);
     expect(ventana.location.reload).not.toHaveBeenCalled();
   });
 
   it('E2: en otra página, o con la nota de otra versión, sí recarga', async () => {
-    const enOtra = await montar({ nota: { build: NUEVO, rutas: ['/otra'] } });
+    const enOtra = await montar({ nota: [[NUEVO, '/otra']] });
     enOtra.disparar();
     expect(enOtra.ventana.location.reload).toHaveBeenCalledTimes(1);
 
-    const deOtra = await montar({ nota: { build: VIEJO, rutas: ['/scoring'] } });
+    const deOtra = await montar({ nota: [[VIEJO, '/scoring']] });
     deOtra.disparar();
     expect(deOtra.ventana.location.reload).toHaveBeenCalledTimes(1);
   });
 
-  it('R9: sin almacenamiento recarga igual: cambia de versión, así que no puede repetirse', async () => {
+  it('R9: sin almacenamiento no puede apuntarla: no recarga, como la barrera', async () => {
     const roto = {
       getItem: () => {
         throw new Error('SecurityError');
@@ -149,8 +149,8 @@ describe('recarga por un trozo viejo', () => {
     };
     const { disparar, ventana } = await montar({ almacen: roto });
 
-    expect(disparar().defaultPrevented).toBe(true);
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
+    expect(disparar().defaultPrevented).toBe(false);
+    expect(ventana.location.reload).not.toHaveBeenCalled();
   });
 
   it('si la recarga no llega, el temporizador no toca la nota', async () => {
@@ -159,7 +159,7 @@ describe('recarga por un trozo viejo', () => {
 
     programado.forEach((fn) => fn());
 
-    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).build).toBe(NUEVO);
+    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas).toEqual([[NUEVO, '/scoring']]);
   });
 
   it('si la recarga no llega, la marca de recargando se apaga sola a los 10 s', async () => {

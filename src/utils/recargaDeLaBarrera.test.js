@@ -2,21 +2,23 @@ import { describe, it, expect } from 'vitest';
 import { apuntarLaRecarga, buildDeLaPagina, puedeRecargar } from './recargaDeLaBarrera';
 
 /**
- * La nota de «ya recargué» (25 oct 2026): la versión con la que se recargó y
- * las páginas donde se hizo. Se puede recargar si la versión es otra, o si es
- * la misma en una página donde aún no se recargó. No se borra nunca: como cada
- * recarga cambia de versión o de página, no puede haber bucle.
+ * La nota de «ya recargué» (25 oct 2026): los pares versión y página donde se
+ * recargó. Se puede recargar si el par aún no está. Solo se añade, nunca se
+ * pisa: cada recarga suma un par nuevo, así que no puede haber bucle, tampoco
+ * entre la barrera y `recargaPorTrozoViejo`, que apuntan versiones distintas.
  *
- *   #   caso                                       | ¿recarga?
- *   ----|------------------------------------------|----------------------------
- *   B1  sin nota                                   | sí
- *   B2  misma versión, misma página                | no: el aviso
- *   B3  otra versión (un despliegue)               | sí
- *   B4  misma versión, otra página                 | sí
- *   B5  apuntar: misma versión suma la página; otra versión empieza de nuevo
+ *   #   caso                                           | ¿recarga?
+ *   ----|----------------------------------------------|----------------------------
+ *   B1  sin nota                                       | sí
+ *   B2  misma versión, misma página                    | no: el aviso
+ *   B3  otra versión (un despliegue)                   | sí
+ *   B4  misma versión, otra página                     | sí
+ *   B5  apuntar suma el par, sin repetirlo ni pisar los de otra versión
  *   B6  nota vieja `'true'`, ilegible o con otra forma | no cuenta: sí
- *   B7  sin almacenamiento                         | no se sabe (null); apuntar falla
+ *   B7  sin almacenamiento                             | no se sabe (null); apuntar falla
  *   B8  la versión de la página: su `app-build`, o '' sin ella
+ *   B9  los dos escritores, con la recarga sin cambiar de versión | se acaba
+ *   B10 la nota no crece sin fin                       | guarda los 20 últimos pares
  */
 const CLAVE = 'lazy_load_error_reloaded';
 const almacenCon = (valor) => {
@@ -28,7 +30,7 @@ const almacenCon = (valor) => {
     removeItem: (k) => datos.delete(k),
   };
 };
-const nota = (build, rutas) => JSON.stringify({ build, rutas });
+const nota = (...recargas) => JSON.stringify({ recargas });
 
 describe('la nota de la recarga', () => {
   it('B1: sin nota, puede recargar', () => {
@@ -36,31 +38,33 @@ describe('la nota de la recarga', () => {
   });
 
   it('B2: con la misma versión en la misma página, no', () => {
-    expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon(nota('A', ['/x'])) })).toBe(false);
+    expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon(nota(['A', '/x'])) })).toBe(false);
   });
 
   it('B3: con otra versión, sí', () => {
-    expect(puedeRecargar({ build: 'B', ruta: '/x', almacen: almacenCon(nota('A', ['/x'])) })).toBe(true);
+    expect(puedeRecargar({ build: 'B', ruta: '/x', almacen: almacenCon(nota(['A', '/x'])) })).toBe(true);
   });
 
   it('B4: con la misma versión en otra página, sí', () => {
-    expect(puedeRecargar({ build: 'A', ruta: '/y', almacen: almacenCon(nota('A', ['/x'])) })).toBe(true);
+    expect(puedeRecargar({ build: 'A', ruta: '/y', almacen: almacenCon(nota(['A', '/x'])) })).toBe(true);
   });
 
-  it('B5: apuntar con la misma versión suma la página; con otra, empieza de nuevo', () => {
-    const almacen = almacenCon(nota('A', ['/x']));
+  it('B5: apuntar suma el par, sin repetirlo ni pisar los de otra versión', () => {
+    const almacen = almacenCon(nota(['A', '/x']));
 
     expect(apuntarLaRecarga({ build: 'A', ruta: '/y', almacen })).toBe(true);
-    expect(JSON.parse(almacen.datos.get(CLAVE))).toEqual({ build: 'A', rutas: ['/x', '/y'] });
-
     apuntarLaRecarga({ build: 'A', ruta: '/y', almacen });
-    expect(JSON.parse(almacen.datos.get(CLAVE)).rutas).toEqual(['/x', '/y']);
+    apuntarLaRecarga({ build: 'B', ruta: '/x', almacen });
 
-    apuntarLaRecarga({ build: 'B', ruta: '/z', almacen });
-    expect(JSON.parse(almacen.datos.get(CLAVE))).toEqual({ build: 'B', rutas: ['/z'] });
+    expect(JSON.parse(almacen.datos.get(CLAVE)).recargas).toEqual([
+      ['A', '/x'],
+      ['A', '/y'],
+      ['B', '/x'],
+    ]);
+    expect(puedeRecargar({ build: 'A', ruta: '/x', almacen })).toBe(false);
   });
 
-  it.each([['true'], ['abc'], ['{"build":1}'], ['{"build":"A","rutas":"/x"}'], ['null']])(
+  it.each([['true'], ['abc'], ['{"recargas":1}'], ['{"build":"A","rutas":["/x"]}'], ['null'], ['{"recargas":[["A"]]}'], ['{"recargas":[1]}']])(
     'B6: la nota %s no cuenta',
     (valor) => {
       expect(puedeRecargar({ build: 'A', ruta: '/x', almacen: almacenCon(valor) })).toBe(true);
@@ -87,5 +91,36 @@ describe('la nota de la recarga', () => {
 
     expect(buildDeLaPagina(con)).toBe('2.53.0 abc');
     expect(buildDeLaPagina(sin)).toBe('');
+  });
+
+  it('B9: la barrera (versión X) y recargaPorTrozoViejo (versión Y) en la misma página se acaban', () => {
+    // La recarga no cambia de versión: la página sigue en X y la caché dice Y
+    const almacen = almacenCon();
+    const recargas = [];
+    for (let carga = 0; carga < 6; carga += 1) {
+      const trozoViejo = { build: 'Y', ruta: '/x', almacen };
+      const barrera = { build: 'X', ruta: '/x', almacen };
+      if (puedeRecargar(trozoViejo)) {
+        apuntarLaRecarga(trozoViejo);
+        recargas.push('trozoViejo');
+      } else if (puedeRecargar(barrera)) {
+        apuntarLaRecarga(barrera);
+        recargas.push('barrera');
+      } else {
+        break;
+      }
+    }
+
+    expect(recargas).toEqual(['trozoViejo', 'barrera']);
+  });
+
+  it('B10: guarda los 20 últimos pares', () => {
+    const almacen = almacenCon();
+    for (let i = 0; i < 25; i += 1) apuntarLaRecarga({ build: 'A', ruta: `/p${i}`, almacen });
+
+    const { recargas } = JSON.parse(almacen.datos.get(CLAVE));
+    expect(recargas).toHaveLength(20);
+    expect(recargas[0]).toEqual(['A', '/p5']);
+    expect(recargas.at(-1)).toEqual(['A', '/p24']);
   });
 });

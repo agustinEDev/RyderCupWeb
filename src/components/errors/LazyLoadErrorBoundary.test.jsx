@@ -21,7 +21,7 @@ vi.mock('../../utils/cortinaDeArranque', () => ({
 const TROZO = 'Failed to fetch dynamically imported module: x.js';
 const MARCA = 'lazy_load_error_reloaded';
 // Sin `app-build` en la página la versión es '': la nota de esta página y versión
-const notaDeAqui = () => JSON.stringify({ build: '', rutas: [window.location.pathname] });
+const notaDeAqui = () => JSON.stringify({ recargas: [['', window.location.pathname]] });
 
 function Bomb({ error }) {
   throw error;
@@ -65,7 +65,7 @@ describe('LazyLoadErrorBoundary', () => {
     expect(sessionStorage.getItem(MARCA)).toBe(notaDeAqui());
   });
 
-  it('R1 y R7: con la misma versión en la misma página ya recargó: el aviso y Sentry', () => {
+  it('R1: con la misma versión en la misma página ya recargó: el aviso y Sentry', () => {
     sessionStorage.setItem(MARCA, notaDeAqui());
 
     render(
@@ -248,7 +248,7 @@ describe('LazyLoadErrorBoundary', () => {
   });
 
   it('R4: con la nota de otra versión (un despliegue), recarga una vez', () => {
-    sessionStorage.setItem(MARCA, JSON.stringify({ build: '2.52.0 adc31ce', rutas: [window.location.pathname] }));
+    sessionStorage.setItem(MARCA, JSON.stringify({ recargas: [['2.52.0 adc31ce', window.location.pathname]] }));
 
     render(
       <LazyLoadErrorBoundary>
@@ -257,11 +257,14 @@ describe('LazyLoadErrorBoundary', () => {
     );
 
     expect(reloadMock).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem(MARCA)).toBe(notaDeAqui());
+    expect(JSON.parse(sessionStorage.getItem(MARCA)).recargas).toEqual([
+      ['2.52.0 adc31ce', window.location.pathname],
+      ['', window.location.pathname],
+    ]);
   });
 
   it('R7: con la misma versión en otra página, recarga una vez y suma la página', () => {
-    sessionStorage.setItem(MARCA, JSON.stringify({ build: '', rutas: ['/otra'] }));
+    sessionStorage.setItem(MARCA, JSON.stringify({ recargas: [['', '/otra']] }));
 
     render(
       <LazyLoadErrorBoundary>
@@ -270,7 +273,10 @@ describe('LazyLoadErrorBoundary', () => {
     );
 
     expect(reloadMock).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(sessionStorage.getItem(MARCA)).rutas).toEqual(['/otra', window.location.pathname]);
+    expect(JSON.parse(sessionStorage.getItem(MARCA)).recargas).toEqual([
+      ['', '/otra'],
+      ['', window.location.pathname],
+    ]);
   });
 
   it("R6: la nota vieja 'true' de la versión anterior no cuenta", () => {

@@ -2,24 +2,27 @@
  * La nota de «ya recargué» de `LazyLoadErrorBoundary` y de
  * `recargaPorTrozoViejo` (revisiones del 24-25 oct 2026).
  *
- * Guarda la versión con la que se recargó (el `app-build` de la página) y las
- * páginas donde se hizo. Se puede recargar si la versión es otra, o si es la
- * misma en una página donde aún no se recargó. No se borra nunca: cada recarga
- * tiene que cambiar de versión o de página, así que no puede haber bucle, y
- * tras un despliegue la versión ya es otra.
+ * Guarda los pares versión (el `app-build` de la página) y página donde se
+ * recargó. Se puede recargar si el par aún no está. Solo se añade, nunca se
+ * pisa ni se borra: cada recarga suma un par nuevo, así que no puede haber
+ * bucle, tampoco entre la barrera y `recargaPorTrozoViejo`, que apuntan
+ * versiones distintas para la misma página. Tras un despliegue la versión ya
+ * es otra y se puede volver a recargar.
  *
  * Antes era un `'true'` y todo dependía de cuándo borrarlo: al montar (antes
  * de que el trozo volviera a fallar: bucle), al cambiar de página (llegaba
  * tarde, React Router navega en transición), a los 30 s (con poca señal volvía
  * el bucle) o al cargar una pantalla (la borraba otra, no la que falló).
  *
- * Sin almacenamiento no se puede apuntar: la barrera no recarga y sale el
- * aviso, con su botón (Agustín).
+ * Sin almacenamiento no se puede apuntar: no se recarga y sale el aviso, con
+ * su botón (Agustín).
  */
 export const CLAVE_DE_LA_BARRERA = 'lazy_load_error_reloaded';
 // Si la recarga no llega (la aplicación se fue a segundo plano), el aviso en
 // vez de una pantalla en blanco para siempre
 export const ESPERA_A_LA_RECARGA_MS = 10_000;
+// Basta con los últimos: cada uno es una recarga de verdad
+const PARES_QUE_SE_GUARDAN = 20;
 
 /** La versión de la página, o '' sin ella (en desarrollo). */
 export const buildDeLaPagina = (documento = globalThis.document) =>
@@ -27,16 +30,18 @@ export const buildDeLaPagina = (documento = globalThis.document) =>
 
 const rutaDeLaPagina = () => globalThis.location?.pathname ?? '';
 
-/** La nota guardada, o null. La `'true'` de antes, o algo ilegible, no cuenta. */
+/** Los pares guardados. La `'true'` de antes, o algo ilegible, no cuenta. */
 const leer = (almacen) => {
   const guardada = almacen.getItem(CLAVE_DE_LA_BARRERA);
   try {
-    const nota = JSON.parse(guardada);
-    return typeof nota?.build === 'string' && Array.isArray(nota.rutas) ? nota : null;
+    const recargas = JSON.parse(guardada)?.recargas;
+    return Array.isArray(recargas) ? recargas.filter((par) => Array.isArray(par) && par.length === 2) : [];
   } catch {
-    return null;
+    return [];
   }
 };
+
+const esElPar = (build, ruta) => ([b, r]) => b === build && r === ruta;
 
 /**
  * Si se puede recargar con esta versión en esta página: `true`, `false` si ya
@@ -48,8 +53,7 @@ export const puedeRecargar = ({
   almacen = globalThis.sessionStorage,
 } = {}) => {
   try {
-    const nota = leer(almacen);
-    return nota === null || nota.build !== build || !nota.rutas.includes(ruta);
+    return !leer(almacen).some(esElPar(build, ruta));
   } catch {
     return null;
   }
@@ -62,9 +66,9 @@ export const apuntarLaRecarga = ({
   almacen = globalThis.sessionStorage,
 } = {}) => {
   try {
-    const nota = leer(almacen);
-    const rutas = nota?.build === build ? nota.rutas.filter((r) => r !== ruta) : [];
-    almacen.setItem(CLAVE_DE_LA_BARRERA, JSON.stringify({ build, rutas: [...rutas, ruta] }));
+    const recargas = leer(almacen).filter((par) => !esElPar(build, ruta)(par));
+    recargas.push([build, ruta]);
+    almacen.setItem(CLAVE_DE_LA_BARRERA, JSON.stringify({ recargas: recargas.slice(-PARES_QUE_SE_GUARDAN) }));
     return true;
   } catch {
     return false;
