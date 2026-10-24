@@ -299,6 +299,16 @@ describe('MyQuickMatchesPage', () => {
    * cifra (Agustín, 24 oct 2026).
    */
   it('«Tu vuelta» es la de la partida: su hándicap de juego con el allowance (Agustín, 24 oct)', async () => {
+    // Un campo de 18 hoyos, como exige el backend: el reparto va por posición
+    // sobre 18. Los dos jugados son los de índice 11 y 12
+    const indices = [11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18];
+    const dieciochoHoyos = indices.map((strokeIndex, i) => ({
+      holeNumber: i + 1,
+      par: i === 1 ? 3 : 4,
+      strokeIndex,
+    }));
+    const golpesEnLosIndices = (ph) =>
+      Object.fromEntries(dieciochoHoyos.filter((h) => h.strokeIndex <= ph).map((h) => [h.holeNumber, 1]));
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
         { id: 'qm-6', golfCourseId: 'course-1', scoringFormat: 'MEDAL', status: 'COMPLETED', createdAt: '2026-07-21T10:00:00Z' },
@@ -313,30 +323,24 @@ describe('MyQuickMatchesPage', () => {
         { holeNumber: 1, participantId: 'user-1', score: 10 },
         { holeNumber: 2, participantId: 'user-1', score: 10 },
       ],
-      // Su hándicap de juego en la partida: 1 (el backend ya aplicó el
-      // allowance); al 100 % del índice serían 12
+      // Su hándicap de juego en la partida: 11, el 95 % de su índice 12 que ya
+      // aplicó el backend; al 100 % serían 12
       participantStrokes: [
-        { participantId: 'user-1', playingHandicap: 1, strokesByHole: { 1: 1 } },
+        { participantId: 'user-1', playingHandicap: 11, strokesByHole: golpesEnLosIndices(11) },
       ],
       effectiveAllowance: 95,
       playMode: 'HANDICAP',
     });
-    mockGetGolfCourse.mockResolvedValue({
-      holes: [
-        { holeNumber: 1, par: 4, strokeIndex: 5 },
-        { holeNumber: 2, par: 3, strokeIndex: 15 },
-      ],
-      tees: [],
-    });
+    mockGetGolfCourse.mockResolvedValue({ holes: dieciochoHoyos, tees: [] });
 
     renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-result-qm-6')).toBeInTheDocument();
     });
-    // 1 de juego por los índices de su barra: un golpe en el hoyo más difícil
-    // -> netos 9 y 10 sobre un par de 7 -> +12. Al 100 % (12) eran +11; con
-    // los golpes del reparto, +2
+    // 11 de juego por los índices de su barra: golpe en el hoyo 1 (índice 11)
+    // y no en el 2 (índice 12) -> netos 9 y 10 sobre un par de 7 -> +12. Al
+    // 100 % (12) también en el 2: +11
     expect(screen.getByTestId('quick-match-result-qm-6')).toHaveTextContent('+12');
     // Una sola cifra: ya es la de la partida
     expect(screen.queryByTestId('quick-match-result-in-match-qm-6')).not.toBeInTheDocument();
