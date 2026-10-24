@@ -4,22 +4,24 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 /**
  * Una pantalla diferida cuyo trozo falla siempre (sin cobertura y con la caché
  * a medias): la página se recargaba sin fin, unas 6 veces en 8 s (revisor en el
- * Kind, 24 oct 2026). `App` borraba la marca de «ya recargué» al montar, antes
- * de que el trozo volviera a fallar. Ahora la marca se borra cuando una
- * pantalla carga bien (`recargaDeLaBarrera`), sin horas: tarde lo que tarde el
- * fallo, tras la recarga sale el aviso.
+ * Kind, 24 oct 2026). `App` borraba la nota de «ya recargué» al montar, antes
+ * de que el trozo volviera a fallar. Ahora la nota guarda la versión y las
+ * páginas donde se recargó, y no se borra (`recargaDeLaBarrera`): solo se
+ * recarga con otra versión o en otra página, así que no puede haber bucle.
  *
  *   #   caso                                               | esperado
  *   ----|--------------------------------------------------|------------------------------------
  *   R1  abro una pantalla que falla siempre                | una recarga y luego el aviso
  *   R2  navego a una pantalla que falla siempre            | una recarga y luego el aviso
- *   R3  tras la recarga por build viejo (#958) vuelve a fallar | ninguna recarga más: el aviso
- *   R4  tras recargar, una pantalla carga; luego otra falla | recarga una vez
- *   R5  recarga reciente y redirección a /login, que falla | el aviso, sin otra recarga
+ *   R3  la #958 recargó a esta versión y vuelve a fallar   | ninguna recarga más: el aviso
+ *   R4  la nota es de otra versión (despliegue después)    | recarga una vez
+ *   R4b la nota es de esta versión, pero de otra página    | recarga una vez
+ *   R5  redirección a /login, que falla, tras recargar     | el aviso, sin otra recarga
  *   R6  el fallo tras la recarga tarda más de 30 s         | el aviso, sin otra recarga
  *
- * R7 en `recargaPorTrozoViejo.test.js`; R8-R11 (botón, sin almacenamiento, sin
- * red ni service worker, recarga que no llega) en `LazyLoadErrorBoundary.test.jsx`.
+ * Lo demás (trozos anidados, nota vieja, botón, sin almacenamiento, sin red ni
+ * service worker, recarga que no llega) en `LazyLoadErrorBoundary.test.jsx`,
+ * `recargaDeLaBarrera.test.js` y `recargaPorTrozoViejo.test.js`.
  */
 vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('./hooks/useAuth', () => ({
@@ -108,32 +110,11 @@ const recargar = () => {
   return montar();
 };
 
-// Una pantalla que carga bien olvida la recarga, y aquí el trozo que falla es
-// el componente, no el `import()` (Vitest envuelve con otro mensaje el error de
-// una fábrica). Se cargan una vez al empezar: desde entonces su `lazy` ya no
-// vuelve a cargar y solo falla, como un trozo que no llega. El perfil no se
-// calienta: R4 necesita que cargue bien
-let calentadas = false;
-const calentar = async () => {
-  for (const [ruta, hay] of [
-    ['/profile/devices', true],
-    ['/dashboard', false],
-  ]) {
-    sesion.hay = hay;
-    window.history.pushState({}, '', ruta);
-    await montar();
-    await vi.waitFor(() => expect(recargas).toHaveBeenCalled(), { timeout: 4000 });
-    cleanup();
-    sessionStorage.clear();
-    recargas.mockClear();
-    nuevoTrozoQueFalla();
-  }
-  sesion.hay = true;
-  calentadas = true;
-};
+// Sin `app-build` en la página, la versión es ''
+const nota = (build, rutas) => JSON.stringify({ build, rutas });
 
 describe('App · una pantalla diferida que falla siempre', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     sessionStorage.clear();
     sesion.hay = true;
     nuevoTrozoQueFalla();
@@ -151,7 +132,6 @@ describe('App · una pantalla diferida que falla siempre', () => {
       value: Object.defineProperties({ reload: recargas, assign: vi.fn(), replace: vi.fn() }, enVivo),
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    if (!calentadas) await calentar();
   });
 
   afterEach(() => {
@@ -187,8 +167,8 @@ describe('App · una pantalla diferida que falla siempre', () => {
   });
 
   it('R3: tras la recarga por build viejo, si vuelve a fallar, el aviso sin otra recarga', async () => {
-    // Lo que apunta `recargaPorTrozoViejo` antes de recargar
-    sessionStorage.setItem(MARCA, 'true');
+    // Lo que apunta `recargaPorTrozoViejo`: la versión a la que va, que es esta
+    sessionStorage.setItem(MARCA, nota('', ['/profile/devices']));
     window.history.pushState({}, '', '/profile/devices');
     await montar();
 
@@ -196,21 +176,27 @@ describe('App · una pantalla diferida que falla siempre', () => {
     expect(recargas).not.toHaveBeenCalled();
   });
 
-  it('R4: tras recargar, una pantalla que carga bien la olvida, y la siguiente que falla recarga', async () => {
-    // Recargó al arrancar y el perfil cargó; luego se desplegó otra versión
-    sessionStorage.setItem(MARCA, 'true');
-    window.history.pushState({}, '', '/profile');
+  it('R4: con la nota de otra versión, recarga una vez: es un despliegue', async () => {
+    sessionStorage.setItem(MARCA, nota('2.52.0 adc31ce', ['/profile/devices']));
+    window.history.pushState({}, '', '/dashboard');
     await montar();
-    await screen.findByText('perfil');
-    expect(sessionStorage.getItem(MARCA)).toBeNull();
+    await screen.findByText('panel');
 
     await ir('/profile/devices');
 
     await vi.waitFor(() => expect(recargas).toHaveBeenCalledTimes(1), { timeout: 4000 });
   });
 
+  it('R4b: con la nota de esta versión pero de otra página, recarga una vez', async () => {
+    sessionStorage.setItem(MARCA, nota('', ['/dashboard']));
+    window.history.pushState({}, '', '/profile/devices');
+    await montar();
+
+    await vi.waitFor(() => expect(recargas).toHaveBeenCalledTimes(1), { timeout: 4000 });
+  });
+
   it('R5: con la recarga reciente, la redirección a un /login que falla saca el aviso', async () => {
-    sessionStorage.setItem(MARCA, 'true');
+    sessionStorage.setItem(MARCA, nota('', ['/login']));
     sesion.hay = false;
     window.history.pushState({}, '', '/dashboard');
     await montar();

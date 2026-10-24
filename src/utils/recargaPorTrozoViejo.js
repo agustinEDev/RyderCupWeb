@@ -16,17 +16,18 @@
  *   build al día sigue su camino: `lazyWithRetry` reintenta a los 1,5 s.
  * - Solo con un service worker controlando: sin él, recargar sin red dejaría
  *   la página de error del navegador.
- * - Una sola recarga: la misma marca que `LazyLoadErrorBoundary`
- *   (`recargaDeLaBarrera`), que se borra cuando una pantalla carga bien. Si
- *   vuelve a fallar antes, el error sale como siempre y la pantalla dice que
- *   no se pudo cargar. Sin almacenamiento no se puede apuntar: no recarga.
+ * - Una sola recarga: apunta en la nota de `LazyLoadErrorBoundary`
+ *   (`recargaDeLaBarrera`) la versión a la que va y la página. Si esa versión
+ *   vuelve a fallar en esa página, el error sale como siempre y la pantalla
+ *   dice que no se pudo cargar. Sin almacenamiento recarga igual: cambia de
+ *   versión, así que no puede repetirse.
  *
  * Evitado el error, el `import()` acaba sin módulo y React lanza otro antes de
  * que la recarga se lleve la página: `recargandoPorTrozoViejo()` deja a las
  * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
  * recarga no llega.
  */
-import { apuntarLaRecarga, olvidarLaRecarga, yaRecargo } from './recargaDeLaBarrera';
+import { apuntarLaRecarga, puedeRecargar } from './recargaDeLaBarrera';
 
 export const OLVIDAR_LA_RECARGA_MS = 10_000;
 
@@ -49,6 +50,8 @@ export function instalarRecargaPorTrozoViejo({
 } = {}) {
   const buildQueCorre = documento?.querySelector?.('meta[name="app-build"]')?.getAttribute('content') ?? null;
   let esViejo = false;
+  // La versión que guarda el service worker: a la que lleva la recarga
+  let buildNuevo = null;
 
   const comprobar = async () => {
     if (!buildQueCorre || !cachesApi?.match) return;
@@ -56,6 +59,7 @@ export function instalarRecargaPorTrozoViejo({
       const guardado = await cachesApi.match('/index.html', { ignoreSearch: true });
       const marca = guardado ? marcaDelBuild(await guardado.text()) : null;
       esViejo = marca !== null && marca !== buildQueCorre;
+      buildNuevo = marca;
     } catch {
       // Sin caché que leer no se sabe: se deja como estaba
     }
@@ -63,14 +67,15 @@ export function instalarRecargaPorTrozoViejo({
 
   ventana.addEventListener('vite:preloadError', (evento) => {
     if (!esViejo || !ventana.navigator?.serviceWorker?.controller) return;
-    // Ya recargó y nada ha cargado desde entonces, o no se puede apuntar
-    if (yaRecargo(almacen) !== false || !apuntarLaRecarga(almacen)) return;
+    // Ya recargó a esa versión en esta página: el error sigue su camino
+    const nota = { build: buildNuevo, ruta: ventana.location?.pathname ?? '', almacen };
+    if (puedeRecargar(nota) === false) return;
+    apuntarLaRecarga(nota);
     recargando = true;
     // Si la recarga no llega (la aplicación se fue a segundo plano), lo que
-    // falle después vuelve a contar, y la siguiente vuelve a poder recargar
+    // falle después vuelve a contar
     programar(() => {
       recargando = false;
-      olvidarLaRecarga(almacen);
     }, OLVIDAR_LA_RECARGA_MS);
     evento.preventDefault();
     ventana.location.reload();

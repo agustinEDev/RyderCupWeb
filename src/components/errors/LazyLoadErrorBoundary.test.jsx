@@ -11,7 +11,17 @@ vi.mock('@sentry/react', () => ({
 const recarga = vi.hoisted(() => ({ enCurso: false }));
 vi.mock('../../utils/recargaPorTrozoViejo', () => ({ esElEcoDeLaRecarga: () => recarga.enCurso }));
 
+const cortina = vi.hoisted(() => ({ retirada: 0 }));
+vi.mock('../../utils/cortinaDeArranque', () => ({
+  retiraLaCortina: () => {
+    cortina.retirada += 1;
+  },
+}));
+
 const TROZO = 'Failed to fetch dynamically imported module: x.js';
+const MARCA = 'lazy_load_error_reloaded';
+// Sin `app-build` en la página la versión es '': la nota de esta página y versión
+const notaDeAqui = () => JSON.stringify({ build: '', rutas: [window.location.pathname] });
 
 function Bomb({ error }) {
   throw error;
@@ -25,6 +35,7 @@ describe('LazyLoadErrorBoundary', () => {
     vi.clearAllMocks();
     sessionStorage.clear();
     recarga.enCurso = false;
+    cortina.retirada = 0;
     reloadMock = vi.fn();
     // jsdom's window.location.reload isn't configurable, so spyOn fails on it directly
     Object.defineProperty(window, 'location', {
@@ -51,11 +62,11 @@ describe('LazyLoadErrorBoundary', () => {
 
     expect(reloadMock).toHaveBeenCalledTimes(1);
     expect(Sentry.captureException).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem('lazy_load_error_reloaded')).toBe('true');
+    expect(sessionStorage.getItem(MARCA)).toBe(notaDeAqui());
   });
 
-  it('reports to Sentry when the chunk-load error persists after the reload already happened', () => {
-    sessionStorage.setItem('lazy_load_error_reloaded', 'true');
+  it('R1 y R7: con la misma versión en la misma página ya recargó: el aviso y Sentry', () => {
+    sessionStorage.setItem(MARCA, notaDeAqui());
 
     render(
       <LazyLoadErrorBoundary>
@@ -96,7 +107,7 @@ describe('LazyLoadErrorBoundary', () => {
   });
 
   it('R8: el botón del aviso borra la marca y recarga (24 oct)', () => {
-    sessionStorage.setItem('lazy_load_error_reloaded', 'true');
+    sessionStorage.setItem(MARCA, notaDeAqui());
     render(
       <LazyLoadErrorBoundary>
         <Bomb error={new Error('Failed to fetch dynamically imported module: x.js')} />
@@ -234,5 +245,76 @@ describe('LazyLoadErrorBoundary', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('R4: con la nota de otra versión (un despliegue), recarga una vez', () => {
+    sessionStorage.setItem(MARCA, JSON.stringify({ build: '2.52.0 adc31ce', rutas: [window.location.pathname] }));
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(MARCA)).toBe(notaDeAqui());
+  });
+
+  it('R7: con la misma versión en otra página, recarga una vez y suma la página', () => {
+    sessionStorage.setItem(MARCA, JSON.stringify({ build: '', rutas: ['/otra'] }));
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem(MARCA)).rutas).toEqual(['/otra', window.location.pathname]);
+  });
+
+  it("R6: la nota vieja 'true' de la versión anterior no cuenta", () => {
+    sessionStorage.setItem(MARCA, 'true');
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('R11: al saltar el plazo quita la cortina del arranque, que si no tapaba el aviso', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <LazyLoadErrorBoundary>
+          <Bomb error={new Error(TROZO)} />
+        </LazyLoadErrorBoundary>
+      );
+      expect(cortina.retirada).toBe(0);
+
+      act(() => vi.advanceTimersByTime(10_000));
+
+      expect(cortina.retirada).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('R9: si no se puede leer la nota, no sabe si ya recargó: el aviso, sin recargar', () => {
+    vi.spyOn(globalThis.Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error(TROZO)} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(reloadMock).not.toHaveBeenCalled();
+    expect(screen.getByText('Unable to Load Application')).toBeInTheDocument();
   });
 });

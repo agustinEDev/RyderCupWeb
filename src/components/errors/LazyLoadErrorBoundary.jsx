@@ -5,8 +5,8 @@ import { esElEcoDeLaRecarga } from '../../utils/recargaPorTrozoViejo';
 import {
   apuntarLaRecarga,
   olvidarLaRecarga,
+  puedeRecargar,
   recargarTraeLaPagina,
-  yaRecargo,
   ESPERA_A_LA_RECARGA_MS,
 } from '../../utils/recargaDeLaBarrera';
 
@@ -39,9 +39,9 @@ class LazyLoadErrorBoundary extends Component {
       error?.message?.includes('Importing a module script failed') ||
       error?.message?.includes('Failed to fetch dynamically imported module');
 
-    // Una vez hasta que cargue una pantalla; sin almacenamiento (`null`), o sin
-    // red ni service worker, ninguna: el aviso
-    const willAutoReload = isChunkLoadError && yaRecargo() === false && recargarTraeLaPagina();
+    // Una vez por versión y página; sin almacenamiento (`null`), o sin red ni
+    // service worker, ninguna: el aviso
+    const willAutoReload = isChunkLoadError && puedeRecargar() === true && recargarTraeLaPagina();
 
     return {
       hasError: !willAutoReload,
@@ -96,10 +96,12 @@ class LazyLoadErrorBoundary extends Component {
 
   // Si la recarga no llega (la aplicación se fue a segundo plano), el aviso
   esperarALaRecarga() {
-    this.esperaALaRecarga = setTimeout(
-      () => this.setState({ hasError: true, isReloading: false }),
-      ESPERA_A_LA_RECARGA_MS
-    );
+    clearTimeout(this.esperaALaRecarga);
+    this.esperaALaRecarga = setTimeout(() => {
+      // La cortina del arranque taparía el aviso (FE #485)
+      retiraLaCortina();
+      this.setState({ hasError: true, isReloading: false });
+    }, ESPERA_A_LA_RECARGA_MS);
   }
 
   componentWillUnmount() {
