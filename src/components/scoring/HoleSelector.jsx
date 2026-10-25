@@ -18,15 +18,18 @@ const HoleSelector = ({ currentHole, onSelect, scores = [], totalHoles = 18, noG
     if (!holeScore) return 'empty';
     const hasPlayers = Array.isArray(holeScore.playerScores) && holeScore.playerScores.length > 0;
     if (!hasPlayers) return 'empty';
+    // Un desacuerdo, o una corrección que aún está en la cola, no es un hoyo
+    // cerrado aunque el servidor tenga su resultado (/code-review, 26 oct 2026)
+    const queCuentan = holeScore.playerScores.filter(ps => cuentaLaBola(ps, retirados));
+    const hasMismatch = queCuentan.some(ps => ps.validationStatus === 'mismatch');
+    if (hasMismatch) return 'mismatch';
+    if (holeScore.playerScores.some(ps => ps.enCola)) return 'pending';
     // Cerrado: con el resultado del servidor (también el que se cerró sin la
     // bola de un retirado que luego volvió), o con todas las bolas que cuentan
     // validadas
     if (holeScore.holeResult) return 'validated';
-    const queCuentan = holeScore.playerScores.filter(ps => cuentaLaBola(ps, retirados));
     const hasAllMatch = queCuentan.length > 0 && queCuentan.every(ps => ps.validationStatus === 'match');
     if (hasAllMatch) return 'validated';
-    const hasMismatch = holeScore.playerScores.some(ps => ps.validationStatus === 'mismatch');
-    if (hasMismatch) return 'mismatch';
     // Sin nada anotado aún, vacío: la API trae fila de los 18 hoyos, también de
     // los no jugados de un partido acabado (#847)
     const algoAnotado = holeScore.playerScores.some(ps => ps.ownSubmitted || ps.markerSubmitted);

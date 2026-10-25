@@ -93,5 +93,7 @@ describe('RetiradaPorElOrganizador', () => {
     fireEvent.click(screen.getByRole('button', { name: 'withdraw.confirmYes' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('withdraw.errors.SCORECARD_SUBMITTED');
+    // Y vuelve a leer: el rechazo dice que la vista que tenía ya no vale
+    await waitFor(() => expect(casos.vista.execute).toHaveBeenCalledTimes(2));
   });
 });

@@ -21,6 +21,10 @@ class SubmitHoleScoreUseCase {
     if (!scoreData.markedPlayerId && scoreData.markedScore !== undefined) {
       throw new Error('Marked player ID is required');
     }
+    // Y sin marcado ni golpe no hay nada que mandar
+    if (!scoreData.markedPlayerId && scoreData.ownScore === undefined) {
+      throw new Error('Nothing to submit');
+    }
 
     // Omitir un golpe NO es lo mismo que mandarlo nulo (#609): nulo es una raya
     // —conceder el hoyo, en match play— y el backend la guarda como tal

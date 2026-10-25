@@ -134,4 +134,31 @@ describe('HoleSelector · fourball con un retirado', () => {
     render(<HoleSelector currentHole={2} onSelect={() => {}} scores={cerrado} />);
     expect(screen.getByTestId('hole-btn-1').className).toContain('bg-green-100');
   });
+
+  // /code-review (26 oct 2026): el resultado del servidor no tapa lo que aún
+  // no está cerrado: una corrección en la cola, o un desacuerdo nuevo
+  it('con resultado del servidor y una corrección en la cola, a medias', () => {
+    const cerrado = hoyo('match').map((h) => ({
+      ...h,
+      holeResult: { winner: 'B' },
+      playerScores: h.playerScores.map((ps) => (ps.userId === 'a2' ? { ...ps, validationStatus: 'pending', enCola: true } : ps)),
+    }));
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={cerrado} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-yellow-100');
+  });
+
+  it('con resultado del servidor y un desacuerdo, rojo', () => {
+    const cerrado = hoyo('match').map((h) => ({
+      ...h,
+      holeResult: { winner: 'B' },
+      playerScores: h.playerScores.map((ps) => (ps.userId === 'b1' ? { ...ps, validationStatus: 'mismatch' } : ps)),
+    }));
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={cerrado} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-red-100');
+  });
+
+  it('el desacuerdo en la bola del retirado no pinta rojo: no cuenta', () => {
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={hoyo('mismatch')} retirados={['a1']} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-green-100');
+  });
 });

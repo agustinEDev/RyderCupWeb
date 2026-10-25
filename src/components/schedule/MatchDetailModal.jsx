@@ -18,6 +18,9 @@ const MatchDetailModal = ({
   teamNames,
   t,
   canManage = false,
+  // El de la ronda: el detalle del partido no lo trae, y la retirada es solo
+  // de fourball (F10)
+  matchFormat = null,
 }) => {
   const navigate = useNavigate();
   const [match, setMatch] = useState(null);
@@ -166,7 +169,7 @@ const MatchDetailModal = ({
               </div>
 
               {/* Fourball: el organizador retira o devuelve a un jugador (F10) */}
-              {canManage && (match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
+              {canManage && matchFormat === 'FOURBALL' && (match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
                 <RetiradaPorElOrganizador key={matchId} matchId={matchId} />
               )}
 

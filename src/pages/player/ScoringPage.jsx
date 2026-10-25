@@ -70,7 +70,6 @@ const ScoringPage = () => {
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
-    isMarkerScoreLocked,
     validatedHoles,
     totalHoles,
     holesToSubmit,
@@ -84,6 +83,7 @@ const ScoringPage = () => {
     isWithdrawn,
     marcaBloqueadaPara,
     marcadoPendienteEn,
+    retirando,
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
@@ -92,8 +92,13 @@ const ScoringPage = () => {
   // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
   // piden volver a anotarlos, que sería pedir algo imposible: van en otra frase
   const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
-  const golpeBloqueado = { ownScore: isOwnScoreLocked, markedScore: isMarkerScoreLocked };
-  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every((g) => golpeBloqueado[g]);
+  // La marca, con el bloqueo de a quién iba: quien marca a dos puede tener uno
+  // entregado y el otro no (/code-review, 26 oct 2026)
+  const golpeBloqueado = (g, hoyo) =>
+    g === 'ownScore' ? isOwnScoreLocked : marcaBloqueadaPara(
+      noGuardados[hoyo].marcado ?? aQuienesMarco(scoringView?.markerAssignments, user?.id)[0]
+    );
+  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every((g) => golpeBloqueado(g, hoyo));
   const porAnotar = hoyosNoGuardados.filter((h) => !yaNoSeAnota(h));
   const sinAnotar = hoyosNoGuardados.filter(yaNoSeAnota);
 
@@ -234,21 +239,22 @@ const ScoringPage = () => {
   );
   // Lo que queda sin enviar del hoyo manda: la cola guarda una entrada por
   // hoyo, y cambiar de marcado la pisaría (25 oct 2026: uno cada vez)
-  const pendienteAqui = marcadoPendienteEn?.(currentHole) ?? null;
+  const pendienteAqui = marcadoPendienteEn(currentHole);
   const fijadoPorLaCola = misMarcados.length > 1 && misMarcados.includes(pendienteAqui);
   const elegidoAqui = marcadoElegido?.hoyo === currentHole ? marcadoElegido.id : null;
   const marcadoActivo = fijadoPorLaCola
     ? pendienteAqui
     : misMarcados.includes(elegidoAqui) ? elegidoAqui : (sinGolpeAqui ?? misMarcados[0]);
   const nombreDe = (id) => scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
+  // Quien no marca a nadie no tiene asignación propia de la que sacarlo
+  const quienMeMarcaId = scoringView?.markerAssignments?.find((ma) => ma.marksUserId === currentUserId)?.scorerUserId;
+  const quienMeMarca = quienMeMarcaId ? nombreDe(quienMeMarcaId) : null;
   const markerAssignment = scoringView?.markerAssignments?.find(
     (ma) => ma.scorerUserId === currentUserId && ma.marksUserId === marcadoActivo
   );
   // Con el marcado elegido: con dos, el primero no dice nada del otro. Sin
   // marcado (el rival que marcaba al retirado) no hay marca que guardar
-  const marcaBloqueada = marcaBloqueadaPara
-    ? marcaBloqueadaPara(markerAssignment?.marksUserId)
-    : !markerAssignment || isMarkerScoreLocked;
+  const marcaBloqueada = marcaBloqueadaPara(markerAssignment?.marksUserId);
 
   // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
   // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
@@ -342,8 +348,11 @@ const ScoringPage = () => {
 
   const handleScoreChange = (scoreData, tocado) => {
     if (!markerAssignment) {
-      // Sin nadie a quien marcar, su bola sola (RyderCupAM#666)
-      if (canScore) submitScore(currentHole, { ownScore: scoreData.ownScore }, { tocado });
+      // Sin nadie a quien marcar, su bola sola (RyderCupAM#666). Solo quien
+      // juega —un admin mirando no tiene bola— y solo si la tocó
+      if (isMatchPlayer && canScore && scoreData.ownScore !== undefined) {
+        submitScore(currentHole, { ownScore: scoreData.ownScore }, { tocado });
+      }
       return;
     }
     submitScore(currentHole, {
@@ -709,7 +718,8 @@ const ScoringPage = () => {
                   par={currentHoleData.par}
                   markedPar={holeFor(markerAssignment?.marksUserId)?.par ?? courseHoleData?.par ?? null}
                   markedName={aQuienMarco}
-                  markerName={markerAssignment?.markedByName ?? null}
+                  markerName={markerAssignment?.markedByName ?? quienMeMarca}
+                  marksSomeone={Boolean(markerAssignment)}
                   strokeIndex={currentHoleData.strokeIndex}
                   playerScore={currentPlayerScore}
                   markedPlayerScore={markedPlayerScore}
@@ -779,7 +789,7 @@ const ScoringPage = () => {
               opciones={opcionesDeLaRetirada}
               yo={currentUserId}
               onRetirar={retirarJugador}
-              enviando={isSubmitting}
+              enviando={retirando}
             />
           </PanelDePestana>
 

@@ -14,7 +14,7 @@ vi.mock('./RetiradaPorElOrganizador', () => ({
 
 const { default: MatchDetailModal } = await import('./MatchDetailModal');
 
-const pinta = (canManage) =>
+const pinta = (canManage, matchFormat = 'FOURBALL') =>
   render(
     <MatchDetailModal
       isOpen
@@ -25,6 +25,7 @@ const pinta = (canManage) =>
       teamNames={{ teamA: 'A', teamB: 'B' }}
       t={(k) => k}
       canManage={canManage}
+      matchFormat={matchFormat}
     />
   );
 
@@ -32,6 +33,14 @@ describe('MatchDetailModal · retirada del organizador', () => {
   it('F10: quien gestiona la ve', async () => {
     pinta(true);
     expect(await screen.findByTestId('retirada-organizador')).toHaveTextContent('m-1');
+  });
+
+  // /code-review (26 oct 2026): en individual o foursomes no hay retirada, y
+  // leer la vista de anotar para nada pesa
+  it.each(['SINGLES', 'FOURSOMES', null])('F10: en %s, no se monta', async (formato) => {
+    pinta(true, formato);
+    await screen.findByText('status.IN_PROGRESS');
+    expect(screen.queryByTestId('retirada-organizador')).not.toBeInTheDocument();
   });
 
   it('F10: un jugador que mira el calendario, no', async () => {

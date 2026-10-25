@@ -41,7 +41,8 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
 
   const jugadores = (vista?.players ?? []).map((p) => ({ ...p, puede: opcionesDeRetirada(vista, p.userId) }));
   const conAlgo = jugadores.filter((p) => p.puede.retirarme || p.puede.volver);
-  if (conAlgo.length === 0) return null;
+  // Con un rechazo, el aviso se queda aunque la vista nueva ya no ofrezca nada
+  if (conAlgo.length === 0 && !fallo) return null;
 
   const accion = async (playerId, deshacer) => {
     setPorConfirmar(null);
@@ -53,6 +54,8 @@ const RetiradaPorElOrganizador = ({ matchId }) => {
     } catch (err) {
       const motivo = err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
       setFallo(motivo ? `withdraw.errors.${motivo}` : 'withdraw.failed');
+      // El rechazo dice que la vista que había ya no vale (/code-review)
+      setVersion((v) => v + 1);
     } finally {
       setEnviando(false);
     }

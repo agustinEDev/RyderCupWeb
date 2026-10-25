@@ -141,4 +141,12 @@ describe('SubmitHoleScoreUseCase · sin marcado', () => {
     ).rejects.toThrow();
     expect(scoringRepository.submitHoleScore).not.toHaveBeenCalled();
   });
+
+  it('sin marcado y sin golpes, no se manda nada (/code-review)', async () => {
+    const scoringRepository = { submitHoleScore: vi.fn() };
+    await expect(
+      new SubmitHoleScoreUseCase({ scoringRepository }).execute('m-1', 3, { ownScore: undefined })
+    ).rejects.toThrow();
+    expect(scoringRepository.submitHoleScore).not.toHaveBeenCalled();
+  });
 });

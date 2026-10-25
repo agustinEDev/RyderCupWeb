@@ -107,6 +107,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // a salvo. Por partido, porque la ruta no lleva `key`: el hook se reutiliza al
   // ir de uno a otro, y al volver los golpes perdidos siguen perdidos
   const [noGuardados, setNoGuardados] = useState(SIN_HOYOS);
+  // Retirar no comparte `isSubmitting` con los golpes: un golpe que acaba
+  // durante la retirada volvía a habilitar sus botones (/code-review)
+  const [retirando, setRetirando] = useState(false);
   // Por qué se paró el último vaciado, si fue por el almacenamiento del móvil
   // (ver `PARO`). Estado PROPIO y no `error`: el sondeo pone `error` a null
   // cada diez segundos al cargar bien la vista, así que un aviso puesto ahí
@@ -325,6 +328,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           [encima.campo]: encima.valor,
           [encima.marca]: true,
           validationStatus: 'pending',
+          // Para que el selector no lo dé por cerrado aunque el servidor ya
+          // tenga resultado del hoyo: este golpe aún no ha llegado
+          enCola: true,
           ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
           // Lo de la cola es de quien anota aquí: ya no es del marcador de antes
           ...(encima.campo === 'markerScore' ? { markerBy: null, markerByName: null } : {}),
@@ -653,7 +659,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
       if (perdidos.length === 0) return;
       const golpes = { ...hoyosNoGuardados()[holeNumber]?.golpes };
       for (const g of perdidos) golpes[g] = Math.max(golpes[g] ?? 0, estaAnotacion);
-      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes } });
+      // De quién era la marca perdida: quien marca a dos puede tener uno
+      // entregado y el otro no (/code-review, 26 oct 2026)
+      const marcado = perdidos.includes('markedScore')
+        ? (scoreData?.markedPlayerId ?? null)
+        : (hoyosNoGuardados()[holeNumber]?.marcado ?? null);
+      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes, marcado } });
     };
     const hayUnFalloPosterior = () =>
       Object.values(hoyosNoGuardados()[holeNumber]?.golpes ?? {}).some((turno) => turno > estaAnotacion);
@@ -863,8 +874,17 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
       setFallo(deLaRetirada({ i18nKey: 'withdraw.needsConnection' }, matchId));
       return;
     }
-    setIsSubmitting(true);
+    setRetirando(true);
     try {
+      // Retirado, el servidor rechaza para siempre sus golpes (PLAYER_WITHDRAWN):
+      // los suyos tienen que salir antes, y si no salen no se le retira
+      if (!deshacer && playerId === currentUserId && pendientesPropias() > 0) {
+        await processQueue();
+        if (pendientesPropias() > 0) {
+          if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada({ i18nKey: 'withdraw.pendingScores' }, matchId));
+          return;
+        }
+      }
       await origen.retira.execute(matchId, playerId, { deshacer });
       if (!esDeOtraPartida(matchId)) marcaEscritura();
       await fetchScoringView();
@@ -872,9 +892,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     } catch (err) {
       if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada(conClaveDeRetirada(err), matchId));
     } finally {
-      setIsSubmitting(false);
+      setRetirando(false);
     }
-  }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.retira]);
+  }, [matchId, currentUserId, pendientesPropias, processQueue, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.retira]);
 
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {
@@ -1024,9 +1044,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   const turnosNoGuardados = useMemo(() => {
     const hoyos = noGuardados[matchId];
     if (!hoyos) return SIN_HOYOS;
-    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
+    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes, marcado }]) => [
       hoyo,
-      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined) },
+      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined), marcado: marcado ?? null },
     ]));
   }, [noGuardados, matchId]);
 
@@ -1063,6 +1083,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     isMarkerScoreLocked,
     marcaBloqueadaPara,
     marcadoPendienteEn,
+    retirando,
     isFullyLocked,
     validatedHoles,
     totalHoles,

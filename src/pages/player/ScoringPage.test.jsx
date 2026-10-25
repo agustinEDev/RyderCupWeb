@@ -71,6 +71,10 @@ const mockUseScoring = {
   concedeMatch: vi.fn(),
   takeOverSession: vi.fn(),
   refetch: vi.fn(),
+  // Como el hook con un solo marcado: sin marcado, o con él entregado
+  marcaBloqueadaPara: (id) => !id || mockUseScoring.isMarkerScoreLocked,
+  marcadoPendienteEn: () => null,
+  retirando: false,
 };
 
 const mapaHoyo = vi.hoisted(() => ({
@@ -1565,6 +1569,7 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
       mockUseScoring.canScore = true;
       mockUseScoring.isOwnScoreLocked = false;
       mockUseScoring.isMarkerScoreLocked = false;
+      mockUseScoring.marcaBloqueadaPara = (id) => !id || mockUseScoring.isMarkerScoreLocked;
     });
 
     it.each([
@@ -1592,6 +1597,28 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
 
       expect(screen.getByTestId('no-guardados').textContent).toContain('offline.noGuardados ');
       expect(screen.getByTestId('no-guardados').textContent).not.toContain('noGuardadosSinAnotar');
+    });
+
+    // /code-review (26 oct 2026): quien marca a dos mira el bloqueo de ESE marcado
+    it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u4' } };
+      mockUseScoring.isOwnScoreLocked = true;
+      mockUseScoring.isMarkerScoreLocked = true;
+      mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('offline.noGuardados ');
+    });
+
+    it('la marca perdida era de Carlos, que entregó: ya no se puede', () => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u2' } };
+      mockUseScoring.isOwnScoreLocked = true;
+      mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('noGuardadosSinAnotar');
     });
 
     // Segunda revisión: mira qué golpe se perdió, no si están bloqueados los dos
@@ -1924,6 +1951,55 @@ describe('ScoringPage · fourball con un retirado', () => {
 
     expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4 }, { tocado: ['ownScore'] });
     expect(casilla.props.isMarkerScoreLocked).toBe(true);
+  });
+
+  // /code-review (26 oct 2026)
+  const sinMarcado = () => fourball({
+    withdrawnPlayerIds: ['u4'],
+    markerAssignments: [
+      { scorerUserId: 'u3', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u2', markedByName: 'Carlos' },
+      { scorerUserId: 'u2', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u3', markedByName: 'Bea' },
+    ],
+  });
+
+  it('sin marcado: sin casilla de marca y con quien me anota a mí', () => {
+    Object.assign(mockUseScoring, { scoringView: sinMarcado() });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.marksSomeone).toBe(false);
+    expect(casilla.props.markerName).toBe('Carlos');
+  });
+
+  it('un admin que no juega no manda golpe propio', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, { submitScore, scoringView: sinMarcado(), isMatchPlayer: false, canScore: true });
+
+    render(<ScoringPage />);
+    casilla.props.onScoreChange({ ownScore: 4 }, ['ownScore']);
+
+    expect(submitScore).not.toHaveBeenCalled();
+  });
+
+  it('sin marcado y solo tocando la marca, no se manda nada', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, { submitScore, scoringView: sinMarcado() });
+
+    render(<ScoringPage />);
+    casilla.props.onScoreChange({ ownScore: undefined, markedScore: 3 }, ['markedScore']);
+
+    expect(submitScore).not.toHaveBeenCalled();
+  });
+
+  it('los botones de retirada van con su propio indicador, no con el de los golpes', () => {
+    Object.assign(mockUseScoring, { scoringView: fourball(), isSubmitting: true, retirando: false });
+    const { unmount } = render(<ScoringPage />);
+    expect(screen.getByRole('button', { name: 'withdraw.withdrawMe' })).toBeEnabled();
+    unmount();
+
+    Object.assign(mockUseScoring, { isSubmitting: false, retirando: true });
+    render(<ScoringPage />);
+    expect(screen.getByRole('button', { name: 'withdraw.withdrawMe' })).toBeDisabled();
   });
 
   it('con algo sin enviar en el hoyo, el selector se queda en ese marcado y lo dice', () => {

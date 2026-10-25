@@ -74,16 +74,17 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
         playingHandicap={p.playingHandicap}
         className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
         nombreClassName={cortaElNombre ? 'min-w-0 truncate' : undefined}
-      />
-      {/* Fourball: retirado (RyderCupAM#665, F4) */}
-      {retirados.includes(p.userId) && (
-        <span
-          data-testid={`etiqueta-retirado-${p.userId}`}
-          className="ml-1 shrink-0 rounded bg-red-50 px-1 text-[10px] font-medium text-red-700"
-        >
-          {t('withdraw.badge')}
-        </span>
-      )}
+      >
+        {/* Fourball: retirado (RyderCupAM#665, F4) */}
+        {retirados.includes(p.userId) && (
+          <span
+            data-testid={`etiqueta-retirado-${p.userId}`}
+            className="ml-1 shrink-0 whitespace-nowrap rounded bg-red-50 px-1 text-[10px] font-medium text-red-700"
+          >
+            {t('withdraw.badge')}
+          </span>
+        )}
+      </NombreConHandicap>
     </>
   );
 
