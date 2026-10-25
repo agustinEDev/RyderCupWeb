@@ -69,9 +69,9 @@ def gzip_de(fichero: Path) -> int:
 
 
 def js_del_arranque(index_html: str) -> list[str]:
-    """Los JS que pide index.html, en orden de aparición y sin la query (`?v=1`:
-    el fichero en dist/ es el mismo). Uno que salga dos veces, quien suma lo
-    cuenta una."""
+    """Los JS propios que pide index.html, en orden de aparición y sin la query
+    (`?v=1`: el fichero en dist/ es el mismo). Uno que salga dos veces, quien
+    suma lo cuenta una."""
     rutas: list[str] = []
     for etiqueta in ETIQUETA.finditer(index_html):
         atributos = {k.lower(): a or b or c for k, a, b, c in ATRIBUTO.findall(etiqueta.group(0))}
@@ -81,9 +81,11 @@ def js_del_arranque(index_html: str) -> list[str]:
             ruta = atributos.get("href")
         else:
             ruta = None
-        ruta = urlsplit(ruta).path if ruta else None
-        if ruta and ruta.endswith(JS):
-            rutas.append(ruta)
+        partes = urlsplit(ruta) if ruta else None
+        # Un JS de otro origen (`https://…`, `//…`) no está en dist/: no es del
+        # paquete, y sin el dominio se confundiría con uno local (CodeRabbit)
+        if partes and not partes.scheme and not partes.netloc and partes.path.endswith(JS):
+            rutas.append(partes.path)
     return rutas
 
 

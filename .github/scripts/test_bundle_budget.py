@@ -33,6 +33,7 @@ tamaño comprimido es el suyo más unos pocos bytes de cabecera.
 | B21  | valor sin comillas en etiqueta autocerrada (`/>`)  | 0    |
 | B22  | el mismo fichero escrito de dos formas cuenta una  | 0    |
 | B23  | un trozo en una subcarpeta de assets también tiene tope | 1 |
+| B24  | un JS de otro origen no es del paquete (CodeRabbit) | 0   |
 """
 
 import io
@@ -294,6 +295,17 @@ class PresupuestoDelBundle(unittest.TestCase):
         self.indice(("script", self.trozo("index.js", 100)))
         self.assertEqual(self.correr(), 1)
         self.assertIn("pesado.js", self.log.getvalue())
+
+    def test_B24_un_js_de_otro_origen_no_es_del_paquete(self):
+        # Con el mismo nombre que uno local: no debe contarse ni darse por ausente
+        self.trozo("lib.js", 100)
+        (self.dist / "index.html").write_text(
+            f'<script type="module" src="/assets/{self.trozo("index.js", 50)}"></script>'
+            '<script src="https://cdn.example.com/assets/lib.js"></script>'
+            '<link rel="modulepreload" href="//cdn.example.com/otro.js">'
+        )
+        self.assertEqual(self.correr(), 0)
+        self.assertEqual(self.salidas()["size_kb"], "50")
 
 if __name__ == "__main__":
     unittest.main()
