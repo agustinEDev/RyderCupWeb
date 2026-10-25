@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.53.0] - 2026-10-25
+
+**La partida rápida dice quién ganó y el historial, lo que pasó.** Necesita el
+backend **2.40.0** y se despliega justo después de él.
+
+**Notas de despliegue.**
+
+- Sin variables nuevas. Bundle ~3467 KB (zona de aviso, por debajo del límite
+  de 3500 KB).
+- El historial pinta `UNFINISHED` (backend 2.40.0): con el backend 2.39 no
+  llega nunca, pero el front 2.52 no lo sabe pintar; por eso van seguidos.
+- La release de Sentry pasa a ser la versión real de `package.json` (antes
+  `rydercup-web@1.0.0`).
+
+### Changed
+
+- **Medir tocando el mapa** (#958): a mitad de hoyo, el punto tocado deja solo
+  la línea desde ti hasta él, con sus metros; «Quitar» devuelve la línea al
+  green con su codo. Sustituye la T3 del 19 oct.
+- **«Tu vuelta» del historial de partidas rápidas es la de la anotación**
+  (#959), sin «(… en el partido)». Sustituye la lectura al 100 % del 18 ago.
+  Textos: «Hcp hoyo», «Hcp juego» y «HCP» solo para el índice (inglés: SI,
+  PH, HCP).
+
+### Added
+
+- **La partida rápida terminada dice quién ganó** (#957): «2UP»/«3&2» y «X
+  ganó» («ganaron» en pareja), «Empate», o «Sin terminar» si no cuenta (la
+  misma regla que Actividad). Cancelada: el tanteo, sin ganador.
+- **Las últimas partidas marcan la partida rápida sin terminar** (#961): un
+  círculo gris «ST», sin tanteo; «Sin terminar» para el lector de pantalla.
+- **Tarjeta horizontal de escritorio** (#960): ida y vuelta comparten columnas
+  (el hoyo 1 encima del 10) y acaban en TOTAL; el nombre del mejor bola que no
+  cabe sale con iniciales.
+
+### Fixed
+
+- **Una versión vieja de la app instalada ya no rompe el mapa** (#958): si un
+  trozo de pantalla falla porque la página corre una versión anterior a la del
+  service worker, recarga una vez y trae la nueva.
+- **Sin bucle de recargas cuando una pantalla falla siempre** (#961), por
+  ejemplo sin cobertura y con la caché a medias: una recarga por versión y
+  página, y luego el aviso.
+- En el horario, un nombre largo baja de línea junto a sus hándicaps en vez de
+  salirse a 360 px (#959).
+- Dependencias: parches de `undici`, `fast-uri` y `serialize-javascript`.
+
 ## [2.52.0] - 2026-10-24
 
 **La raya cuenta su doble bogey neto y no se ofrece en Medal.** Necesita el
