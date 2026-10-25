@@ -1,6 +1,14 @@
 import { Component } from 'react';
 import * as Sentry from '@sentry/react';
 import { retiraLaCortina } from '../../utils/cortinaDeArranque';
+import { esElEcoDeLaRecarga } from '../../utils/recargaPorTrozoViejo';
+import {
+  apuntarLaRecarga,
+  olvidarLaRecarga,
+  puedeRecargar,
+  recargarTraeLaPagina,
+  ESPERA_A_LA_RECARGA_MS,
+} from '../../utils/recargaDeLaBarrera';
 
 /**
  * Error Boundary specifically for handling lazy loading failures
@@ -16,6 +24,11 @@ class LazyLoadErrorBoundary extends Component {
   }
 
   static getDerivedStateFromError(error) {
+    // La página ya se recarga por un trozo viejo: lo de ahora es el eco de ese
+    // fallo, en blanco hasta que llegue la recarga
+    if (esElEcoDeLaRecarga(error)) {
+      return { hasError: false, isReloading: true, errorMessage: null, errorName: null };
+    }
     // React may invoke getDerivedStateFromError more than once for the same
     // error (it's a render-phase, side-effect-free method by contract), so it
     // must only compute state here — sessionStorage writes and reload() live
@@ -26,8 +39,9 @@ class LazyLoadErrorBoundary extends Component {
       error?.message?.includes('Importing a module script failed') ||
       error?.message?.includes('Failed to fetch dynamically imported module');
 
-    const alreadyReloaded = Boolean(sessionStorage.getItem('lazy_load_error_reloaded'));
-    const willAutoReload = isChunkLoadError && !alreadyReloaded;
+    // Una vez por versión y página; sin almacenamiento (`null`), o sin red ni
+    // service worker, ninguna: el aviso
+    const willAutoReload = isChunkLoadError && puedeRecargar() === true && recargarTraeLaPagina();
 
     return {
       hasError: !willAutoReload,
@@ -41,13 +55,24 @@ class LazyLoadErrorBoundary extends Component {
     // Log the error for debugging
     console.error('LazyLoadErrorBoundary caught an error:', error, errorInfo);
 
+    // Ni Sentry ni una segunda recarga: ya hay una en camino. Si no llega, el
+    // aviso a los 10 s en vez del blanco
+    if (esElEcoDeLaRecarga(error)) {
+      this.esperarALaRecarga();
+      return;
+    }
+
     if (this.state.isReloading) {
       // Mark as reloaded and reload the page (typically happens after
       // deployments when old chunks are deleted). Self-healing: skip Sentry
       // reporting for this path, the user never actually saw a broken app.
-      sessionStorage.setItem('lazy_load_error_reloaded', 'true');
-      window.location.reload();
-      return;
+      if (apuntarLaRecarga()) {
+        window.location.reload();
+        this.esperarALaRecarga();
+        return;
+      }
+      // Sin poder apuntarla, recargar podría no acabar nunca: el aviso
+      this.setState({ hasError: true, isReloading: false });
     }
 
     // La cortina del arranque tapa la pantalla entera: sin esto se quedaria
@@ -67,6 +92,20 @@ class LazyLoadErrorBoundary extends Component {
       scope.setExtra('url', window.location.href);
       Sentry.captureException(error);
     });
+  }
+
+  // Si la recarga no llega (la aplicación se fue a segundo plano), el aviso
+  esperarALaRecarga() {
+    clearTimeout(this.esperaALaRecarga);
+    this.esperaALaRecarga = setTimeout(() => {
+      // La cortina del arranque taparía el aviso (FE #485)
+      retiraLaCortina();
+      this.setState({ hasError: true, isReloading: false });
+    }, ESPERA_A_LA_RECARGA_MS);
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.esperaALaRecarga);
   }
 
   render() {
@@ -118,7 +157,7 @@ class LazyLoadErrorBoundary extends Component {
           )}
           <button
             onClick={() => {
-              sessionStorage.removeItem('lazy_load_error_reloaded');
+              olvidarLaRecarga();
               window.location.reload();
             }}
             style={{

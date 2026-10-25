@@ -46,7 +46,9 @@ const MatchCard = ({
       const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
       return (
         <div key={p.userId || i} className="flex items-center justify-between gap-2">
-          <p className={`text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+          {/* Que encoja y parta: con «Hcp juego» al lado, un nombre largo sin
+              espacios empujaba la fila fuera de la tarjeta a 360 px */}
+          <p className={`min-w-0 break-words text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
             {getPlayerName(p.userId, playerNameMap)}
           </p>
           <div className="flex items-center gap-1 shrink-0">

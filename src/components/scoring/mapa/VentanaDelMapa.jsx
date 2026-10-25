@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import BlockLoader from '../../ui/BlockLoader';
 import ModalShell from '../../ui/ModalShell';
 import { captureError } from '../../../utils/sentryHelpers';
+import { esElEcoDeLaRecarga } from '../../../utils/recargaPorTrozoViejo';
 import { hoyoDeUnaMarca } from '../../../domain/services/hoyoMarcado';
 import { useMuestrasDelCampo } from '../../../hooks/useMuestrasDelCampo';
 import { useReportarHoyo } from '../../../hooks/useReportarHoyo';
@@ -38,19 +39,22 @@ class SiNoCarga extends Component {
     this.state = { fallo: false };
   }
 
-  static getDerivedStateFromError() {
-    return { fallo: true };
+  static getDerivedStateFromError(error) {
+    // Recargando por un trozo viejo, el mapa no falló: llega el build nuevo
+    return { fallo: true, recargando: esElEcoDeLaRecarga(error) };
   }
 
   componentDidCatch(error) {
+    if (this.state.recargando) return;
     captureError(error, { tags: { modulo: 'mapa-de-hoyos' } });
   }
 
   render() {
     if (!this.state.fallo) return this.props.children;
+    // De un modal se sale siempre: también mientras llega la recarga
     return (
       <SalidaDelMapa onCerrar={this.props.onCerrar}>
-        <p>{this.props.texto}</p>
+        <p>{this.state.recargando ? this.props.textoRecargando : this.props.texto}</p>
       </SalidaDelMapa>
     );
   }
@@ -133,7 +137,7 @@ const MapaAbierto = ({ mapaDelHoyo, golfCourseId, numeroDeHoyo, par, metros = nu
   const visto = congelado ?? ahora;
 
   return (
-    <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')}>
+    <SiNoCarga onCerrar={cerrar} texto={t('mapa.noCarga')} textoRecargando={t('mapa.actualizando')}>
       <Suspense
         fallback={
           <SalidaDelMapa onCerrar={cerrar}>

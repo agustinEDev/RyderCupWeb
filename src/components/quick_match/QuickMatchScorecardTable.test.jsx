@@ -1035,11 +1035,15 @@ describe('QuickMatchScorecardTable · subtotales de puntos y de neto', () => {
     expect(within(tramo('vuelta')).queryByTestId('subtotal-points')).toBeNull();
   });
 
-  it('S3: un campo de 9 hoyos tiene un solo subtotal', () => {
+  // Sin vuelta, la ida y el TOTAL: la misma cifra en los dos (FE #938,
+  // Agustín, 24 oct 2026)
+  it('S3: un campo de 9 hoyos tiene la ida y el total, con la misma cifra', () => {
     pinta({ scoringFormat: 'STABLEFORD', holes: dieciocho.slice(0, 9) });
 
-    expect(screen.getAllByTestId('subtotal-points')).toHaveLength(1);
+    expect(screen.getAllByTestId('subtotal-points')).toHaveLength(2);
     expect(within(tramo('ida')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+    expect(within(tramo('total')).getByTestId('subtotal-points')).toHaveTextContent(/^2$/);
+    expect(screen.queryByTestId('quick-match-section-total-p-1-vuelta')).toBeNull();
   });
 
   // Revisión del 22 oct: los golpes y el subtotal son dos cifras sin etiqueta

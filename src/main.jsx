@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
+import { instalarRecargaPorTrozoViejo, esElEcoDeLaRecarga } from './utils/recargaPorTrozoViejo';
 import { sentryScrubbing } from './utils/sentryScrubbing';
 import { sentrySampleRates } from './infrastructure/sentrySampleRates';
 import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
@@ -35,6 +36,10 @@ startCapturingInstallPrompt();
 // cuando entra una versión nueva y la busca al volver a primer plano
 registerServiceWorker();
 
+// Y si aun así una pantalla diferida no carga porque la página sigue con el
+// build viejo, una recarga trae el nuevo (Sentry RYDERCUP-FRONTEND-23)
+instalarRecargaPorTrozoViejo();
+
 // ============================================
 // EARLY SENTRY INITIALIZATION
 // ============================================
@@ -44,7 +49,7 @@ if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
-    release: `rydercup-web@${import.meta.env.VITE_APP_VERSION || '1.6.0'}`,
+    release: `rydercup-web@${import.meta.env.VITE_APP_VERSION}`,
     // No integrations yet - will be added by lazy-loaded infrastructure/sentry
     integrations: [],
     // Sample rates: no se pueden cambiar despues de init. Salen de un solo
@@ -69,6 +74,11 @@ if (sentryDsn) {
   // su lista de URLs, que no pasa por `beforeSend`- pasan todos por los
   // procesadores de eventos: uno solo los cubre sin recorrerlos dos veces
   Sentry.addEventProcessor(sentryScrubbing.eventProcessor);
+  // El eco del import cancelado mientras la página se recarga por un trozo
+  // viejo: ya resuelto, no se manda. Lo demás, sí
+  Sentry.addEventProcessor((evento) =>
+    evento.exception?.values?.some((e) => esElEcoDeLaRecarga({ message: e.value })) ? null : evento
+  );
 }
 
 // ============================================

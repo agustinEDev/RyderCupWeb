@@ -97,7 +97,7 @@
     "total": "TOTAL",
     "standing": "Standing",
     "playingHandicap": "Playing handicap {{value}}",
-    "playingHandicapShort": "HCP {{value}}"
+    "playingHandicapShort": "PH {{value}}"
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -390,6 +390,7 @@
     "quitarPunto": "Remove",
     "ayudaMedir": "Tap the map to measure",
     "noCarga": "The map could not be opened. Check the connection and try again.",
+    "actualizando": "Updating the app…",
     "atribucionPnoa": "PNOA CC BY 4.0 scne.es",
     "atribucionOsm": "© OpenStreetMap",
     "ortofoto": {

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useLayoutEffect, useCallback, lazy, Suspense, useState } from 'react';
+import { useEffect, useLayoutEffect, useCallback, Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import AvisoSinConexion from './components/ui/AvisoSinConexion';
@@ -27,18 +27,9 @@ import { retiraLaCortina } from './utils/cortinaDeArranque';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Lazy loading con retry automático para fallos de red transitorios
-// Si el primer import() falla, reintenta tras 1.5s antes de propagar el error
-// al LazyLoadErrorBoundary (que maneja la recarga de página)
-function lazyWithRetry(importFn) {
-  return lazy(() =>
-    importFn().catch(() =>
-      new Promise(resolve => setTimeout(resolve, 1500)).then(() => importFn())
-    )
-  );
-}
-
+// Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
 const AppStart = lazyWithRetry(() => import('./pages/AppStart'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
@@ -171,12 +162,6 @@ function AppContent() {
     raiz.setProperty(VARIABLE_ALTO_BARRA_INFERIOR, showBottomNav ? ALTO_BARRA_INFERIOR : '0px');
     return () => raiz.removeProperty(VARIABLE_ALTO_BARRA_INFERIOR);
   }, [showBottomNav]);
-
-  // Limpiar flag de error de lazy loading tras navegación exitosa
-  // Asegura que la auto-recarga funcione en cada despliegue, no solo el primero
-  useEffect(() => {
-    sessionStorage.removeItem('lazy_load_error_reloaded');
-  }, [location.pathname]);
 
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {

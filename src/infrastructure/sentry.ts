@@ -47,7 +47,7 @@ const SENTRY_CONFIG = {
 };
 
 // Obtener release desde package.json
-const RELEASE = `rydercup-web@${import.meta.env.VITE_APP_VERSION || '1.6.0'}`;
+const RELEASE = `rydercup-web@${import.meta.env.VITE_APP_VERSION}`;
 
 // Misma prioridad que el resto del codigo: runtime config primero (FE #392).
 // En un despliegue en contenedor la variable de compilacion ni siquiera existe

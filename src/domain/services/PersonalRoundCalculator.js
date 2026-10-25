@@ -3,10 +3,9 @@ import MatchPlayStrokeAllocator from './MatchPlayStrokeAllocator';
 import { entryAtOf, groupParticipantsBySide, sideCardHolder } from './FoursomesSides';
 import { defaultAllowanceFor } from './defaultAllowance';
 
-// Una vuelta personal se mide con el hándicap de juego entero. El allowance
-// —95% en juego libre, 90% en fourball, 50% en foursomes— equilibra un partido,
-// no mide una vuelta: con él, la misma vuelta salía -2, PAR o +8 según con qué
-// formato se hubiera jugado, y dejaba de poder compararse con las demás.
+// La lectura personal de `compute` (la de la clasificación de la partida) se
+// mide con el hándicap de juego entero. «Tu vuelta» al anotar y en el historial
+// es la real de la partida, con su allowance (Agustín, 24 oct 2026).
 const PERSONAL_ROUND_ALLOWANCE = 100;
 
 /**
@@ -141,10 +140,11 @@ const sideTotals = (me, participants, holes, holeScores, tees = [], allocation =
  *   del formato en juego libre, o por diferencia en match play, donde el de
  *   hándicap más bajo no recibe ninguno.
  *
- * Antes cada pantalla elegía uno por su cuenta y sin decirlo: el historial daba
- * la personal y la clasificación la del partido, así que la misma vuelta salía
- * `+4` en un sitio y `+3` en otro sin que nada explicara por qué. Se calculan
- * los dos aquí, una sola vez, y las pantallas los enseñan juntos y etiquetados.
+ * Antes cada pantalla elegía uno por su cuenta y sin decirlo, y la misma vuelta
+ * salía `+4` en un sitio y `+3` en otro. `compute` calcula los dos, una sola
+ * vez, y la clasificación los enseña juntos y etiquetados. El historial y la
+ * anotación enseñan solo la real de la partida (`vueltaDelHistorial`,
+ * `runningResult`; Agustín, 24 oct 2026).
  *
  * La del partido sale de `participantStrokes` —el reparto que guardó el
  * backend— y no de recalcularlo: si se recalculara, editar la valoración de una
@@ -275,26 +275,8 @@ class PersonalRoundCalculator {
    *   jugador. Sin hoyos anotados, `toPar` y `toParLabel` son null.
    */
   static runningResult(params) {
-    const p = conDefectos(params);
-    const { me, holes, holeScores, tees, matchFormat, playMode } = p;
-    if (!me || matchFormat === 'FOURSOMES') return null;
-
-    // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
-    const playingHandicap =
-      playMode === 'SCRATCH'
-        ? 0
-        : (repartoDelPartido(p)[me.participantId]?.playingHandicap ??
-          MatchPlayStrokeAllocator.playingHandicap(me, holes, tees, allowanceDelPartido(p)));
-
-    const totals = StablefordCalculator.computeParticipantTotals(
-      me,
-      holes,
-      holeScores,
-      {
-        [me.participantId]: MatchPlayStrokeAllocator.ownStrokes(me, holes, tees, playingHandicap),
-      },
-      tees
-    );
+    const totals = totalesDeLaPartida(params);
+    if (!totals) return null;
 
     const toPar = totals.holesPlayed ? totals.netStrokes - totals.parPlayed : null;
     return {
@@ -303,6 +285,54 @@ class PersonalRoundCalculator {
       holesPlayed: totals.holesPlayed,
     };
   }
+
+  /**
+   * «Tu vuelta» en el historial de partidas rápidas: la real de la partida, la
+   * misma que se ve al anotar (Agustín, 24 oct 2026; deshace el 100 % del 18
+   * ago). Con la forma de `compute`, para pintarla igual; sin la cifra del
+   * partido al lado, que ya es esta. En foursomes, los golpes del bando.
+   *
+   * @param {Object} params Los de `compute`
+   * @returns {?{personalToPar: ?string, matchToPar: null, totalStrokes: number}}
+   */
+  static vueltaDelHistorial(params) {
+    if (params?.matchFormat === 'FOURSOMES') return PersonalRoundCalculator.compute(params);
+    const totals = totalesDeLaPartida(params);
+    if (!totals?.holesPlayed) return null;
+    return {
+      personalToPar: StablefordCalculator.formatToPar(totals.netStrokes - totals.parPlayed),
+      matchToPar: null,
+      totalStrokes: totals.totalStrokes,
+    };
+  }
+}
+
+/**
+ * Los totales de la vuelta con el hándicap de juego de la partida, repartido
+ * por los índices de su barra: lo que miden «Tu vuelta» al anotar y en el
+ * historial. Null en foursomes o sin jugador.
+ */
+function totalesDeLaPartida(params) {
+  const p = conDefectos(params);
+  const { me, holes, holeScores, tees, matchFormat, playMode } = p;
+  if (!me || matchFormat === 'FOURSOMES') return null;
+
+  // En SCRATCH nadie recibe golpes, diga lo que diga un reparto viejo
+  const playingHandicap =
+    playMode === 'SCRATCH'
+      ? 0
+      : (repartoDelPartido(p)[me.participantId]?.playingHandicap ??
+        MatchPlayStrokeAllocator.playingHandicap(me, holes, tees, allowanceDelPartido(p)));
+
+  return StablefordCalculator.computeParticipantTotals(
+    me,
+    holes,
+    holeScores,
+    {
+      [me.participantId]: MatchPlayStrokeAllocator.ownStrokes(me, holes, tees, playingHandicap),
+    },
+    tees
+  );
 }
 
 export default PersonalRoundCalculator;

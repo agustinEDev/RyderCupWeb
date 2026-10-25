@@ -488,7 +488,7 @@ describe('ScorecardTable — la fila de quien mira va primero', () => {
  * línea la tarjeta crecía.
  */
 describe('ScorecardTable · el hándicap de juego junto al nombre (#414)', () => {
-  // Corto a la vista («HCP 12»): «Hcp de juego 12» ensanchaba la columna del
+  // Corto a la vista («Hcp juego 12»): «Hcp de juego 12» ensanchaba la columna del
   // nombre en el ordenador. El lector de pantalla oye el largo.
   const hcp = (valor) => `scorecard.playingHandicapShort ${JSON.stringify({ value: valor })}`;
   const hcpLargo = (valor) => `scorecard.playingHandicap ${JSON.stringify({ value: valor })}`;
@@ -593,7 +593,8 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     const [ida] = screen.getAllByRole('table');
     const fila = within(ida).getByText('Player A').closest('tr');
     const celdas = within(fila).getAllByRole('cell');
-    return celdas[celdas.length - 1];
+    // La última es el hueco del TOTAL, que solo lleva la vuelta (FE #938)
+    return celdas[celdas.length - 2];
   };
 
   it('en bruto: par 4 con un golpe recogido vale 7', () => {
@@ -648,7 +649,8 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     const [ida] = screen.getAllByRole('table');
     const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
     const celdas = within(fila).getAllByRole('cell');
-    expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
+    // La penúltima: la última es el hueco del TOTAL (FE #938)
+    expect(celdas[celdas.length - 2]).toHaveTextContent(/^7$/);
   });
 
   it('una raya enviada gana a un número sin enviar de la otra fila', () => {
@@ -679,7 +681,8 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     const [ida] = screen.getAllByRole('table');
     const fila = within(ida).getAllByRole('row').find((tr) => tr.textContent.includes('Player C'));
     const celdas = within(fila).getAllByRole('cell');
-    expect(celdas[celdas.length - 1]).toHaveTextContent(/^7$/);
+    // La penúltima: la última es el hueco del TOTAL (FE #938)
+    expect(celdas[celdas.length - 2]).toHaveTextContent(/^7$/);
   });
 
   it('un hoyo sin anotar sigue sin sumar', () => {

@@ -116,12 +116,14 @@
     "result": {
       "WON": "Won",
       "LOST": "Lost",
-      "HALVED": "Halved"
+      "HALVED": "Halved",
+      "UNFINISHED": "Unfinished"
     },
     "resultShort": {
       "WON": "W",
       "LOST": "L",
-      "HALVED": "H"
+      "HALVED": "H",
+      "UNFINISHED": "U"
     },
     "format": {
       "SINGLES": "Singles",

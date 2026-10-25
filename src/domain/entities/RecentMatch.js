@@ -169,10 +169,24 @@ class RecentMatch {
    * Si el partido se adjudicó a alguien, que solo pasa en match play.
    *
    * Una vuelta de medal o Stableford tiene marcador pero no ganador: no se
-   * juega contra un rival concreto.
+   * juega contra un rival concreto. Una partida rápida sin terminar también
+   * cuenta aquí: lleva su insignia, «ST».
    */
   hasResult() {
     return this.#result !== null && this.#result !== undefined;
+  }
+
+  /**
+   * Una partida rápida de match play que no cuenta: ni decidida antes de
+   * tiempo ni con los mismos hoyos, 9 o más, en los dos bandos (24 oct 2026).
+   */
+  isUnfinished() {
+    return this.#result === 'UNFINISHED';
+  }
+
+  /** El marcador que se enseña: sin terminar no hay, aunque llegara uno. */
+  get shownScore() {
+    return this.isUnfinished() ? null : this.#score;
   }
 
   /** Ruta donde se puede volver a ver la partida. */
