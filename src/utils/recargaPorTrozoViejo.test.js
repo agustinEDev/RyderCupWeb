@@ -13,8 +13,7 @@ const montar = async ({
   corre = VIEJO,
   enCache = NUEVO,
   conServiceWorker = true,
-  ultima = null,
-  ahora = 100_000,
+  nota = null,
   almacen: almacenDado = null,
 } = {}) => {
   vi.resetModules();
@@ -23,15 +22,16 @@ const montar = async ({
   const documento = new globalThis.EventTarget();
   documento.visibilityState = 'visible';
   documento.querySelector = () => (corre ? { getAttribute: () => corre } : null);
-  const guardado = new Map(ultima === null ? [] : [['rcf-recarga-por-trozo-viejo', String(ultima)]]);
+  const guardado = new Map(nota ? [['lazy_load_error_reloaded', JSON.stringify({ recargas: nota })]] : []);
   const almacen = almacenDado ?? {
     getItem: (k) => guardado.get(k) ?? null,
     setItem: (k, v) => guardado.set(k, v),
+    removeItem: (k) => guardado.delete(k),
   };
   const ventana = {
     addEventListener: (tipo, fn) => objetivo.addEventListener(tipo, fn),
     navigator: { serviceWorker: { controller: conServiceWorker ? {} : null } },
-    location: { reload: vi.fn() },
+    location: { reload: vi.fn(), pathname: '/scoring' },
   };
   const cachesApi = {
     match: vi.fn(async () => (enCache === null ? undefined : { text: async () => html(enCache) })),
@@ -42,7 +42,6 @@ const montar = async ({
     documento,
     almacen,
     cachesApi,
-    ahora: () => ahora,
     programar: (fn) => programado.push(fn),
   });
   const disparar = () => {
@@ -107,47 +106,6 @@ describe('recarga por un trozo viejo', () => {
     expect(ventana.location.reload).toHaveBeenCalledTimes(1);
   });
 
-  it('E1: apunta cuándo recargó, y también la recarga de la barrera de rutas', async () => {
-    const { disparar, guardado } = await montar({ ahora: 123_456 });
-
-    disparar();
-
-    expect(guardado.get('rcf-recarga-por-trozo-viejo')).toBe('123456');
-    expect(guardado.get('lazy_load_error_reloaded')).toBe('true');
-  });
-
-  it('E2: si ya recargó hace menos de 30 s, no vuelve a recargar: sale el error', async () => {
-    const { disparar, ventana } = await montar({ ultima: 100_000 - 29_999 });
-
-    expect(disparar().defaultPrevented).toBe(false);
-    expect(ventana.location.reload).not.toHaveBeenCalled();
-  });
-
-  it('E2: pasados los 30 s, vuelve a poder recargar', async () => {
-    const { disparar, ventana } = await montar({ ultima: 100_000 - 30_000 });
-
-    disparar();
-
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it('E2: con el reloj hacia atrás, la marca vieja no bloquea', async () => {
-    const { disparar, ventana } = await montar({ ultima: 200_000 });
-
-    disparar();
-
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it('E2: una marca ilegible no impide recargar', async () => {
-    const { disparar, ventana, guardado } = await montar();
-    guardado.set('rcf-recarga-por-trozo-viejo', 'abc');
-
-    disparar();
-
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
-  });
-
   it('E3: sin service worker no recarga: sin red saldría la página de error del navegador', async () => {
     const { disparar, ventana } = await montar({ conServiceWorker: false });
 
@@ -155,7 +113,32 @@ describe('recarga por un trozo viejo', () => {
     expect(ventana.location.reload).not.toHaveBeenCalled();
   });
 
-  it('sin almacenamiento (modo privado) recarga igual, sin romperse', async () => {
+  it('E1: apunta la versión a la que va y la página donde recarga', async () => {
+    const { disparar, guardado } = await montar();
+
+    disparar();
+
+    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas).toEqual([[NUEVO, '/scoring']]);
+  });
+
+  it('E2: si ya recargó a esa versión en esta página, no vuelve a recargar: sale el error', async () => {
+    const { disparar, ventana } = await montar({ nota: [[NUEVO, '/scoring']] });
+
+    expect(disparar().defaultPrevented).toBe(false);
+    expect(ventana.location.reload).not.toHaveBeenCalled();
+  });
+
+  it('E2: en otra página, o con la nota de otra versión, sí recarga', async () => {
+    const enOtra = await montar({ nota: [[NUEVO, '/otra']] });
+    enOtra.disparar();
+    expect(enOtra.ventana.location.reload).toHaveBeenCalledTimes(1);
+
+    const deOtra = await montar({ nota: [[VIEJO, '/scoring']] });
+    deOtra.disparar();
+    expect(deOtra.ventana.location.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('R9: sin almacenamiento no puede apuntarla: no recarga, como la barrera', async () => {
     const roto = {
       getItem: () => {
         throw new Error('SecurityError');
@@ -166,9 +149,17 @@ describe('recarga por un trozo viejo', () => {
     };
     const { disparar, ventana } = await montar({ almacen: roto });
 
+    expect(disparar().defaultPrevented).toBe(false);
+    expect(ventana.location.reload).not.toHaveBeenCalled();
+  });
+
+  it('si la recarga no llega, el temporizador no toca la nota', async () => {
+    const { disparar, programado, guardado } = await montar();
     disparar();
 
-    expect(ventana.location.reload).toHaveBeenCalledTimes(1);
+    programado.forEach((fn) => fn());
+
+    expect(JSON.parse(guardado.get('lazy_load_error_reloaded')).recargas).toEqual([[NUEVO, '/scoring']]);
   });
 
   it('si la recarga no llega, la marca de recargando se apaga sola a los 10 s', async () => {
@@ -205,5 +196,37 @@ describe('el eco de la recarga', () => {
 
     expect(modulo.marcaDelBuild(html(NUEVO))).toBe(NUEVO);
     expect(modulo.marcaDelBuild('<html></html>')).toBeNull();
+  });
+
+  it('con el almacenamiento bloqueado (leer sessionStorage ya lanza), se instala sin romper el arranque', async () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('SecurityError');
+      },
+    });
+    try {
+      vi.resetModules();
+      const modulo = await import('./recargaPorTrozoViejo');
+      const objetivo = new globalThis.EventTarget();
+      const ventana = {
+        addEventListener: (tipo, fn) => objetivo.addEventListener(tipo, fn),
+        navigator: { serviceWorker: { controller: {} } },
+        location: { reload: vi.fn(), pathname: '/scoring' },
+      };
+      const documento = new globalThis.EventTarget();
+      documento.querySelector = () => ({ getAttribute: () => VIEJO });
+      const cachesApi = { match: async () => ({ text: async () => html(NUEVO) }) };
+
+      await modulo.instalarRecargaPorTrozoViejo({ ventana, documento, cachesApi, programar: () => {} });
+      const evento = new globalThis.Event('vite:preloadError', { cancelable: true });
+      objetivo.dispatchEvent(evento);
+
+      // Sin almacenamiento no puede apuntarla: no recarga, y nada lanza
+      expect(ventana.location.reload).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(globalThis, 'sessionStorage', original);
+    }
   });
 });

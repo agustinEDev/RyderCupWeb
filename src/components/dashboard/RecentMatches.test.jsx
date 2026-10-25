@@ -335,3 +335,63 @@ describe('la marca de partida que no cuenta', () => {
     expect(en.recentMatches?.excludedBadge).toBe('Not counted');
   });
 });
+
+/**
+ * Una partida rápida de match play que no cuenta (Agustín, 24 oct 2026): el
+ * historial decía «Ganado · 6UP» donde la partida y Actividad dicen «Sin
+ * terminar». El backend manda ahora `UNFINISHED` sin tanteo.
+ *
+ *   #   caso                                   | se ve
+ *   ----|--------------------------------------|-----------------------------------------
+ *   F1  UNFINISHED                             | círculo gris «ST», «Sin terminar» al lector
+ *   F2  en inglés                              | «U», «Unfinished»
+ *   F3  UNFINISHED con tanteo (no debería)     | no se pinta el tanteo
+ *   F4  WON / LOST / HALVED / nulo             | sin cambios (arriba)
+ */
+describe('la partida sin terminar', () => {
+  const sinTerminar = (extra = {}) =>
+    RecentMatch.fromPersistence({
+      id: 'qm-st',
+      date: '2026-10-21',
+      matchFormat: 'FOURBALL',
+      golfCourseName: 'La Galiana',
+      result: 'UNFINISHED',
+      score: null,
+      opponents: ['Ana Soto'],
+      ...extra,
+    });
+
+  it('F1: círculo gris con «ST» y «Sin terminar» para el lector', () => {
+    renderList({ matches: [sinTerminar()] });
+
+    const insignia = screen.getByTestId('result-badge');
+    expect(insignia).toHaveTextContent('recentMatches.resultShort.UNFINISHED');
+    expect(screen.getByText('recentMatches.result.UNFINISHED')).toBeInTheDocument();
+    // Gris más apagado que el empate: no es un resultado
+    expect(insignia).toHaveClass('bg-gray-100', 'text-gray-500');
+  });
+
+  it('F1 y F2: el texto existe en los dos idiomas, no es la clave en crudo', async () => {
+    const es = (await import('../../i18n/locales/es/dashboard.json')).default;
+    const en = (await import('../../i18n/locales/en/dashboard.json')).default;
+
+    expect(es.recentMatches.resultShort.UNFINISHED).toBe('ST');
+    expect(es.recentMatches.result.UNFINISHED).toBe('Sin terminar');
+    expect(en.recentMatches.resultShort.UNFINISHED).toBe('U');
+    expect(en.recentMatches.result.UNFINISHED).toBe('Unfinished');
+  });
+
+  it('F3: si llegara con tanteo, no se pinta: un 6UP sin terminar no es un resultado', () => {
+    renderList({ matches: [sinTerminar({ score: '6UP' }), sinTerminar({ id: 'qm-st2', score: '6UP', stablefordPoints: 20 })] });
+
+    expect(screen.queryByText('6UP')).not.toBeInTheDocument();
+    expect(screen.queryByText(/6UP/)).not.toBeInTheDocument();
+  });
+
+  it('convive con la marca de excluida de estadísticas', () => {
+    renderList({ matches: [sinTerminar({ excludedFromStats: true })] });
+
+    expect(screen.getByTestId('result-badge')).toHaveTextContent('recentMatches.resultShort.UNFINISHED');
+    expect(screen.getByTestId('recent-match-excluded-qm-st')).toBeInTheDocument();
+  });
+});
