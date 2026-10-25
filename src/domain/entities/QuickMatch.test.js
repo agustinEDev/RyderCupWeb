@@ -113,3 +113,11 @@ describe('QuickMatch', () => {
     });
   });
 });
+
+describe('QuickMatch · playedAt en la persistencia', () => {
+  it('H5: toPersistence lo guarda en ISO (nulo si no hay)', () => {
+    const conFecha = new QuickMatch({ ...baseProps(), playedAt: '2026-10-21T22:30:00.000Z' });
+    expect(conFecha.toPersistence().playedAt).toBe('2026-10-21T22:30:00.000Z');
+    expect(new QuickMatch(baseProps()).toPersistence().playedAt).toBeNull();
+  });
+});

@@ -41,3 +41,18 @@ export const instanteEnTexto = (texto, idioma, opciones) => {
     return instante.toLocaleString(undefined, opciones);
   }
 };
+
+/**
+ * El instante de la API, o nulo si falta o no se lee (H5, 25 oct 2026). Una
+ * `Date` inválida es verdadera para `??` y se pintaba «Invalid Date»; con nulo,
+ * la pantalla cae a su fecha de respaldo.
+ *
+ * @param {unknown} texto - fecha y hora ISO de la API; otra cosa, nulo
+ * @returns {Date|null}
+ */
+export const instanteSiEsValido = (texto) => {
+  // Solo texto: `new Date(1)` es un instante válido de 1970 (CodeRabbit)
+  if (typeof texto !== 'string' || !texto) return null;
+  const instante = instanteDeLaApi(texto);
+  return Number.isNaN(instante.getTime()) ? null : instante;
+};

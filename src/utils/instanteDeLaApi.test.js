@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { instanteDeLaApi, instanteEnTexto } from './instanteDeLaApi';
+import { instanteDeLaApi, instanteEnTexto, instanteSiEsValido } from './instanteDeLaApi';
 
 /**
  * La API manda parte de sus horas sin huso (`datetime.now()` en un servidor en
@@ -45,5 +45,19 @@ describe('instanteEnTexto', () => {
 
   it('un idioma que Intl no entiende no rompe la pantalla', () => {
     expect(instanteEnTexto('2026-09-23T23:55:00', 'no_es_un_idioma!', MADRID)).toMatch(/2026/);
+  });
+});
+
+// H5 (code-review, 25 oct 2026): un instante que no se lee no puede llegar a la
+// pantalla como «Invalid Date»; nulo, y la pantalla cae a la fecha de respaldo
+describe('instanteSiEsValido', () => {
+  it('H5: el instante, si se lee; si no, o sin texto, nulo', () => {
+    expect(instanteSiEsValido('2026-10-21T22:30:00Z').toISOString()).toBe('2026-10-21T22:30:00.000Z');
+    expect(instanteSiEsValido('2026-10-21T22:30:00')?.toISOString()).toBe('2026-10-21T22:30:00.000Z');
+    expect(instanteSiEsValido('no es una fecha')).toBeNull();
+    expect(instanteSiEsValido(null)).toBeNull();
+    expect(instanteSiEsValido(undefined)).toBeNull();
+    // Solo texto: un número sería una fecha de 1970 (CodeRabbit)
+    expect(instanteSiEsValido(1)).toBeNull();
   });
 });
