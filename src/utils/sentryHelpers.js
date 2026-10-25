@@ -34,7 +34,6 @@ export const setUserContext = (user) => {
  */
 export const clearUserContext = () => {
   Sentry.setUser(null);
-  console.log('🧹 Sentry: User context cleared');
 };
 
 // ============================================

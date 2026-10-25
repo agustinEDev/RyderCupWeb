@@ -85,12 +85,12 @@ if (!SENTRY_CONFIG.dsn) {
 
     // Replay - Grabación de sesiones
     replayIntegration({
-      // Máscara de texto sensible: enmascarada siempre en producción para evitar
-      // fugas de PII (nombres, emails, hándicaps) hacia Sentry (tercero) ante
-      // cualquier error de JS. En otros entornos se deja sin enmascarar para
-      // facilitar la depuración.
-      maskAllText: SENTRY_CONFIG.environment === 'production',
-      blockAllMedia: SENTRY_CONFIG.environment === 'production',
+      // Texto enmascarado e imágenes bloqueadas en CUALQUIER entorno (25 oct
+      // 2026): Sentry es un tercero, y un entorno de pruebas con la clave y
+      // datos reales (el Kind con la copia de PRO) grababa el texto tal cual.
+      // Para depurar quedan las migas y la traza.
+      maskAllText: true,
+      blockAllMedia: true,
 
       // Configuración de privacidad
       // Nota: maskTextSelector y blockSelector removidos en Sentry 10

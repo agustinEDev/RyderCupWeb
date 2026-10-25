@@ -74,3 +74,22 @@ describe('useDeviceRevocationMonitor', () => {
     expect(api.apiRequest).not.toHaveBeenCalled();
   });
 });
+
+// U7 (25 oct 2026): Sentry recoge la consola como migas, y la respuesta entera
+// llevaba los dispositivos del usuario (navegador, quizá IP)
+describe('useDeviceRevocationMonitor · respuesta malformada', () => {
+  it('U7: el aviso dice el tipo y las claves, nunca el contenido', async () => {
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    api.apiRequest.mockResolvedValue({ devices: 'roto', ip_address: '203.0.113.7', user_agent: 'Navegador secreto' });
+
+    renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
+
+    await vi.waitFor(() => expect(aviso).toHaveBeenCalled());
+    const escrito = JSON.stringify(aviso.mock.calls);
+    expect(escrito).not.toContain('203.0.113.7');
+    expect(escrito).not.toContain('Navegador secreto');
+    expect(escrito).not.toContain('roto');
+    expect(escrito).toContain('ip_address');
+    aviso.mockRestore();
+  });
+});

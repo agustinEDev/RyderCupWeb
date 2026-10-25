@@ -65,3 +65,12 @@ describe('sentryHelpers · el usuario que ve Sentry', () => {
     expect(sentry.setUser).toHaveBeenCalledWith(null);
   });
 });
+
+describe('sentryHelpers · al limpiar el usuario', () => {
+  it('U8: no escribe nada en la consola (Sentry la recoge como migas)', () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    clearUserContext();
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+});
