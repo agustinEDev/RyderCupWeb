@@ -323,8 +323,8 @@ def build_ci(p: dict) -> str:
         return f"vite build failed — {VER_LOG}."
     tam, tope, aviso = (_entero(p.get(k)) for k in ("size_kb", "budget_kb", "warning_kb"))
     if tam is None:
-        return f"Production build done, but no JS bundle was measured in dist/assets — {VER_LOG}."
-    texto = f"Production build OK. JS bundle {tam} KB"
+        return f"Production build done, but no JS was measured — {VER_LOG}."
+    texto = f"Production build OK. Startup JS {tam} KB gzip"
     if tope:
         texto += f" of a {tope} KB budget ({tam * 100 // tope}%"
         texto += f"; warns above {aviso} KB)." if aviso else ")."
