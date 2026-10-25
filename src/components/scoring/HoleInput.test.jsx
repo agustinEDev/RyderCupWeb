@@ -704,3 +704,39 @@ describe('HoleInput — sin «Mapa» dentro (mapa de hoyos)', () => {
     expect(screen.getByTestId('pie-del-hoyo')).toBeInTheDocument();
   });
 });
+
+// CodeRabbit (FE #970): quien marca a dos cambia de marcado en el mismo hoyo.
+// Con los dos sin golpe en la vista, lo tecleado para el primero se quedaba y
+// salía con el golpe propio a nombre del segundo
+describe('HoleInput · al cambiar de marcado', () => {
+  const props = { holeNumber: 5, par: 4, strokeIndex: 7 };
+
+  it('la marca vuelve a la del nuevo marcado; el golpe propio se queda', () => {
+    const onScoreChange = vi.fn();
+    const { rerender } = render(<HoleInput {...props} onScoreChange={onScoreChange} markedPlayerId="u2" />);
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /4/ }));
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
+
+    rerender(<HoleInput {...props} onScoreChange={onScoreChange} markedPlayerId="u4" />);
+
+    // Vacía, como la de Dani en la vista
+    expect(screen.queryByTestId('marked-score-value')).not.toBeInTheDocument();
+    expect(screen.getByTestId('own-score-value')).toHaveTextContent('4');
+    fireEvent.click(screen.getByTestId('own-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /6/ }));
+    expect(onScoreChange).toHaveBeenLastCalledWith({ ownScore: 6, markedScore: undefined }, 'ownScore');
+  });
+
+  it('con el mismo marcado, lo tecleado se queda', () => {
+    const { rerender } = render(<HoleInput {...props} onScoreChange={vi.fn()} markedPlayerId="u2" />);
+    fireEvent.click(screen.getByTestId('marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /5/ }));
+
+    rerender(<HoleInput {...props} onScoreChange={vi.fn()} markedPlayerId="u2" />);
+
+    expect(screen.getByTestId('marked-score-value')).toHaveTextContent('5');
+  });
+});
+

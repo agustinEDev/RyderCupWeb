@@ -720,6 +720,7 @@ const ScoringPage = () => {
                   markedName={aQuienMarco}
                   markerName={markerAssignment?.markedByName ?? quienMeMarca}
                   marksSomeone={Boolean(markerAssignment)}
+                  markedPlayerId={markerAssignment?.marksUserId}
                   strokeIndex={currentHoleData.strokeIndex}
                   playerScore={currentPlayerScore}
                   markedPlayerScore={markedPlayerScore}

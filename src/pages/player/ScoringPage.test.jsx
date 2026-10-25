@@ -2027,6 +2027,16 @@ describe('ScoringPage · fourball con un retirado', () => {
     expect(screen.getByRole('radio', { name: 'Carlos' })).toBeChecked();
   });
 
+  it('la casilla sabe a quién marca: cambia con el marcado elegido', () => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados() });
+
+    render(<ScoringPage />);
+    expect(casilla.props.markedPlayerId).toBe('u2');
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+
+    expect(casilla.props.markedPlayerId).toBe('u4');
+  });
+
   it('la casilla se bloquea según el marcado elegido, no el primero', () => {
     Object.assign(mockUseScoring, {
       scoringView: dosMarcados(),
