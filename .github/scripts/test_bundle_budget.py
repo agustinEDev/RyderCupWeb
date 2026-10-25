@@ -27,6 +27,12 @@ tamaño comprimido es el suyo más unos pocos bytes de cabecera.
 | B15  | un .mjs (el worker de MapLibre) sobre su tope      | 1    |
 | B16  | comillas simples y query string en index.html      | 0    |
 | B17  | GITHUB_OUTPUT dice qué falló, aunque el arranque quepa | — |
+| B18  | medio KB por encima del tope no se redondea a dentro | 1  |
+| B19  | data-rel / data-src no tapan el rel / src de verdad | 0   |
+| B20  | rel con varios valores («modulepreload prefetch»)  | 0    |
+| B21  | valor sin comillas en etiqueta autocerrada (`/>`)  | 0    |
+| B22  | el mismo fichero escrito de dos formas cuenta una  | 0    |
+| B23  | un trozo en una subcarpeta de assets también tiene tope | 1 |
 """
 
 import io
@@ -229,6 +235,65 @@ class PresupuestoDelBundle(unittest.TestCase):
         self.assertIn("fantasma.js", problemas)
         self.assertEqual(self.salidas()["size_kb"], "100")
 
+
+    # --- Revisión (/code-review) ---
+
+    def test_B18_medio_kb_por_encima_no_se_redondea_a_dentro(self):
+        self.indice(("script", self.trozo("index.js", 10)))
+        tamanos = {"index.js": 270 * KB + 400}
+        with mock.patch.object(bundle_budget, "gzip_de", lambda f: tamanos[f.name]):
+            self.assertEqual(self.correr(), 1)
+
+    def test_B18_justo_en_el_tope_en_bytes(self):
+        self.indice(("script", self.trozo("index.js", 10)))
+        tamanos = {"index.js": 270 * KB}
+        with mock.patch.object(bundle_budget, "gzip_de", lambda f: tamanos[f.name]):
+            self.assertEqual(self.correr(), 0)
+
+    def test_B19_data_rel_y_data_src_no_tapan_los_de_verdad(self):
+        self.trozo("react.js", 100)
+        self.trozo("index.js", 50)
+        (self.dist / "index.html").write_text(
+            '<script type="module" src="/assets/index.js" data-src="/legacy.js"></script>'
+            '<link rel="modulepreload" href="/assets/react.js" data-rel="x">'
+        )
+        self.assertEqual(self.correr(), 0)
+        self.assertEqual(self.salidas()["size_kb"], "150")
+
+    def test_B20_rel_con_varios_valores(self):
+        self.trozo("react.js", 100)
+        (self.dist / "index.html").write_text(
+            f'<script type="module" src="/assets/{self.trozo("index.js", 50)}"></script>'
+            '<link rel="modulepreload prefetch" href="/assets/react.js">'
+        )
+        self.assertEqual(self.correr(), 0)
+        self.assertEqual(self.salidas()["size_kb"], "150")
+
+    def test_B21_sin_comillas_en_etiqueta_autocerrada(self):
+        self.trozo("react.js", 100)
+        (self.dist / "index.html").write_text(
+            f"<script type=module src=/assets/{self.trozo('index.js', 50)}></script>"
+            "<link rel=modulepreload href=/assets/react.js/>"
+        )
+        self.assertEqual(self.correr(), 0)
+        self.assertEqual(self.salidas()["size_kb"], "150")
+
+    def test_B22_el_mismo_fichero_escrito_de_dos_formas(self):
+        index = self.trozo("index.js", 150)
+        (self.dist / "index.html").write_text(
+            f'<script type="module" src="/assets/{index}"></script>'
+            f'<link rel="modulepreload" href="./assets/{index}">'
+            f'<link rel="modulepreload" href="/assets/../assets/{index}">'
+        )
+        self.assertEqual(self.correr(), 0)
+        self.assertEqual(self.salidas()["size_kb"], "150")
+
+    def test_B23_trozo_en_subcarpeta_tambien_tiene_tope(self):
+        (self.dist / "assets" / "workers").mkdir()
+        self.trozo("workers/pesado.js", 330)
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(self.correr(), 1)
+        self.assertIn("pesado.js", self.log.getvalue())
 
 if __name__ == "__main__":
     unittest.main()
