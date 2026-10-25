@@ -1,4 +1,5 @@
-import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
+import { instanteSiEsValido } from '../../utils/instanteDeLaApi';
+import { diaDeLaSesion } from '../../utils/diaDeLaSesion';
 import RecentMatch from '../../domain/entities/RecentMatch';
 
 /**
@@ -21,8 +22,10 @@ class RecentMatchMapper {
 
     return RecentMatch.fromPersistence({
       id: apiData.id,
-      date: apiData.date ?? null,
-      playedAt: apiData.played_at ? instanteDeLaApi(apiData.played_at) : null,
+      // Un día sin hora, a medianoche LOCAL: como UTC salía el día antes al
+      // oeste de Greenwich (H5)
+      date: diaDeLaSesion(apiData.date) ?? apiData.date ?? null,
+      playedAt: instanteSiEsValido(apiData.played_at),
       matchFormat: apiData.match_format ?? null,
       scoringFormat: apiData.scoring_format ?? null,
       golfCourseId: apiData.golf_course_id ?? null,

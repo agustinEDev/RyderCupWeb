@@ -267,6 +267,7 @@ class QuickMatch {
       scoringAssignments: this.#scoringAssignments,
       createdAt: this.#createdAt.toISOString(),
       updatedAt: this.#updatedAt.toISOString(),
+      playedAt: this.#playedAt ? this.#playedAt.toISOString() : null,
     };
   }
 

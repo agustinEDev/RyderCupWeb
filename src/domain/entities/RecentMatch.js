@@ -8,14 +8,6 @@
  * lo uno ni lo otro. `matchFormat` y `scoringFormat` son ejes distintos y
  * mutuamente excluyentes en el dominio, no dos nombres para lo mismo.
  */
-// Un día sin hora («2026-10-21») es ese día a medianoche LOCAL: `new Date()` lo
-// leía como medianoche UTC, y al oeste de Greenwich salía el día antes (H5)
-const DIA = /^(\d{4})-(\d{2})-(\d{2})$/;
-const diaLocal = (valor) => {
-  const partes = typeof valor === 'string' ? DIA.exec(valor) : null;
-  return partes ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3])) : new Date(valor);
-};
-
 class RecentMatch {
   #id;
   #date;
@@ -60,7 +52,7 @@ class RecentMatch {
     }
 
     this.#id = id;
-    this.#date = date ? diaLocal(date) : null;
+    this.#date = date ? new Date(date) : null;
     this.#playedAt = playedAt ? new Date(playedAt) : null;
     this.#matchFormat = matchFormat;
     this.#scoringFormat = scoringFormat;

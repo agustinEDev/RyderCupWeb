@@ -112,3 +112,9 @@ describe('RecentMatchMapper · played_at', () => {
     }
   });
 });
+
+describe('RecentMatchMapper · played_at ilegible', () => {
+  it('H5: un played_at que no se lee es nulo (no «Invalid Date»), y la fila cae a date', () => {
+    expect(RecentMatchMapper.toDomain({ id: 'qm-1', date: '2026-10-21', played_at: 'basura' }).playedAt).toBeNull();
+  });
+});

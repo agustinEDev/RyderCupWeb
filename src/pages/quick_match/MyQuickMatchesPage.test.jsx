@@ -1072,7 +1072,7 @@ describe('MyQuickMatchesPage · la fecha de juego', () => {
   it('H5: enseña cuando se jugó; sin ese dato (backend viejo), cuando se creó', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
-        { id: 'qm-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-15T12:00:00Z', playedAt: new Date('2026-07-27T12:00:00Z') },
+        { id: 'qm-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-15T12:00:00Z', playedAt: '2026-07-27T12:00:00.000Z' },
         { id: 'qm-2', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-10T12:00:00Z', playedAt: null },
       ],
       totalCount: 2,
@@ -1082,8 +1082,8 @@ describe('MyQuickMatchesPage · la fecha de juego', () => {
 
     renderPage();
 
-    expect(await screen.findByText(new RegExp(new Date('2026-07-27T12:00:00Z').toLocaleDateString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
-    expect(screen.queryByText(new RegExp(new Date('2026-07-15T12:00:00Z').toLocaleDateString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).not.toBeInTheDocument();
-    expect(screen.getByText(new RegExp(new Date('2026-07-10T12:00:00Z').toLocaleDateString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
+    expect(await screen.findByText(new RegExp(new Date('2026-07-27T12:00:00Z').toLocaleString('en', { day: 'numeric', month: 'numeric', year: 'numeric' }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(new Date('2026-07-15T12:00:00Z').toLocaleString('en', { day: 'numeric', month: 'numeric', year: 'numeric' }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).not.toBeInTheDocument();
+    expect(screen.getByText(new RegExp(new Date('2026-07-10T12:00:00Z').toLocaleString('en', { day: 'numeric', month: 'numeric', year: 'numeric' }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
+import { instanteSiEsValido } from '../../utils/instanteDeLaApi';
 import ISocialFeedRepository from '../../domain/repositories/ISocialFeedRepository';
 import ActivityEventMapper from '../mappers/ActivityEventMapper';
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
@@ -25,7 +25,7 @@ const partidaJuntos = (g) => ({
   // al pasarlo por la zona horaria
   playedOn: g.played_on,
   // La partida rápida, su instante (H5): su día se pinta en la hora local
-  playedAt: g.played_at ? instanteDeLaApi(g.played_at) : null,
+  playedAt: instanteSiEsValido(g.played_at),
   golfCourseId: g.golf_course_id ?? null,
   golfCourseName: g.golf_course_name ?? null,
   format: g.format ?? null,

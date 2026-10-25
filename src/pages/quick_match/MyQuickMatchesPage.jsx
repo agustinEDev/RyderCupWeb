@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { instanteEnTexto } from '../../utils/instanteDeLaApi';
 import { useNavigate } from 'react-router';
 import { Zap, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +34,7 @@ const STATUS_STYLES = {
 
 const MyQuickMatchesPage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('quickMatch');
+  const { t, i18n } = useTranslation('quickMatch');
   const { user, loading: isLoadingUser } = useAuth();
 
   const [quickMatches, setQuickMatches] = useState([]);
@@ -338,7 +339,7 @@ const MyQuickMatchesPage = () => {
                     <p className="text-xs text-gray-500 truncate">
                       {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
                       {/* Cuando se jugó (H5); con un backend viejo, cuando se creó */}
-                      {new Date(qm.playedAt ?? qm.createdAt).toLocaleDateString()}
+                      {instanteEnTexto(qm.playedAt ?? qm.createdAt, i18n.language, { day: 'numeric', month: 'numeric', year: 'numeric' })}
                     </p>
 
                     {/* En todo menos en las canceladas: ver `llevaMarcaDeNoCuenta` */}
