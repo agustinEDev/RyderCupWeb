@@ -13,39 +13,17 @@ import * as Sentry from '@sentry/react';
 // ============================================
 
 /**
- * Establece el contexto del usuario autenticado en Sentry
+ * Establece el usuario de la sesión en Sentry: solo su id (25 oct 2026).
  *
- * @param {Object} user - Objeto de usuario con datos personales
- * @param {string} user.id - ID único del usuario
- * @param {string} user.email - Email del usuario
- * @param {string} user.first_name - Nombre del usuario
- * @param {string} user.last_name - Apellido del usuario
- * @param {string} user.country_code - Código de país (opcional)
- * @param {boolean} user.email_verified - Estado de verificación de email
+ * Sentry es un tercero y para depurar basta con el id, que se cruza con la base
+ * de datos si hace falta. Antes salían el correo, el nombre, el país y el
+ * hándicap en cada evento, y el correo también en las migas por un
+ * `console.log`: Sentry recoge la consola.
  *
- * @example
- * const user = JSON.parse(localStorage.getItem('user'));
- * setUserContext(user);
+ * @param {{ id?: string } | null} user - El usuario de la sesión
  */
 export const setUserContext = (user) => {
-  if (!user) {
-    Sentry.setUser(null); // Limpiar contexto si no hay usuario
-    return;
-  }
-
-  Sentry.setUser({
-    id: user.id,
-    email: user.email,
-    username: `${user.first_name} ${user.last_name}`,
-    // Datos adicionales que aparecerán en el panel de Sentry
-    first_name: user.first_name,
-    last_name: user.last_name,
-    country_code: user.country_code || 'N/A',
-    email_verified: user.email_verified,
-    handicap: user.handicap || 'N/A',
-  });
-
-  console.log('✅ Sentry: User context set', user.email);
+  Sentry.setUser(user?.id ? { id: user.id } : null);
 };
 
 /**
