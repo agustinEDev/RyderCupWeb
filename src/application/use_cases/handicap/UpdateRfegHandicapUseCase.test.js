@@ -151,6 +151,24 @@ describe('UpdateRfegHandicapUseCase', () => {
     expect(handicapRepository.updateFromRfeg).not.toHaveBeenCalled();
   });
 
+  // C2 (25 oct 2026): gemelo de canUseRFEG. Sentry recogía la consola como
+  // migas, y el país del usuario salía en ella
+  it('C2: un usuario no español no deja su país en la consola', async () => {
+    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    userRepository.getById.mockResolvedValue(
+      new User({ id: 'user-123', first_name: 'Test', last_name: 'User', email: 'test@example.com', country_code: 'FR' })
+    );
+
+    await expect(updateRfegHandicapUseCase.execute({ userId: 'user-123' })).rejects.toThrow();
+
+    // Con el mensaje del Error: JSON.stringify lo deja fuera (CodeRabbit)
+    const escrito = JSON.stringify(espias.flatMap((e) => e.mock.calls), (_, valor) =>
+      valor instanceof Error ? { name: valor.name, message: valor.message } : valor
+    );
+    expect(escrito).not.toContain('FR');
+    espias.forEach((e) => e.mockRestore());
+  });
+
   it('should allow RFEG update for user with country_code ES (case insensitive)', async () => {
     // Arrange
     const userId = 'user-123';

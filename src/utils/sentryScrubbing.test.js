@@ -149,30 +149,16 @@ describe('sentryScrubbing', () => {
     expect(foto.data.node.attributes.href).toBe(RESET);
   });
 
-  it('H8: la miga de consola tapa sus argumentos sin tocar los de la app', () => {
-    const deLaApp = { url: RESET };
-    const argumentos = [`fallo en ${RESET}`, deLaApp];
-    const miga = { category: 'console', message: `fallo en ${RESET}`, data: { arguments: argumentos } };
+  // C1 (25 oct 2026): la consola no sale hacia Sentry, en ningún entorno. Lleva
+  // datos personales y mensajes de la API, y el filtro de `sentry.ts` que la
+  // quitaba en producción nunca se registraba (la inicialización es la de
+  // `main.jsx`). Lo que la app quiera mandar, con `captureError`
+  it.each(['log', 'warn', 'error'])('C1: la miga de console.%s se descarta', (nivel) => {
+    const deLaApp = { correo: 'ana@example.com' };
+    const miga = { category: 'console', level: nivel, message: 'ana@example.com', data: { arguments: ['x', deLaApp] } };
 
-    sentryScrubbing.beforeBreadcrumb(miga);
-
-    expect(miga.message).not.toContain(TOKEN);
-    expect(miga.data.arguments[0]).not.toContain(TOKEN);
-    expect(miga.data.arguments).not.toBe(argumentos);
-    expect(argumentos[0]).toBe(`fallo en ${RESET}`);
-    expect(deLaApp.url).toBe(RESET);
-  });
-
-  it('H9: un objeto pasado a la consola sale tapado sin tocar el de la app', () => {
-    const deLaApp = { url: RESET, lista: [GOOGLE] };
-    const miga = { category: 'console', data: { arguments: ['enlace', deLaApp] } };
-
-    sentryScrubbing.beforeBreadcrumb(miga);
-
-    sinToken(miga);
-    expect(miga.data.arguments[1]).not.toBe(deLaApp);
-    expect(deLaApp.url).toBe(RESET);
-    expect(deLaApp.lista[0]).toBe(GOOGLE);
+    expect(sentryScrubbing.beforeBreadcrumb(miga)).toBeNull();
+    expect(deLaApp.correo).toBe('ana@example.com');
   });
 
   it('H7: la transacción, con su URL y la de sus spans', () => {

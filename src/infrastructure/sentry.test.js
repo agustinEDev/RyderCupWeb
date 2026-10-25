@@ -52,4 +52,17 @@ describe('infrastructure/sentry', () => {
     const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
     expect(nombres).toEqual(['BrowserTracing', 'Replay']);
   });
+
+  // R1 (25 oct 2026): en cualquier entorno, no solo en producción. Un entorno
+  // de pruebas con la clave de Sentry y datos reales (el Kind con la copia de
+  // PRO) grababa el texto tal cual
+  it('R1: la grabación enmascara el texto y bloquea las imágenes fuera de producción', async () => {
+    vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'development');
+
+    await import('./sentry');
+
+    expect(sentry.replayIntegration).toHaveBeenCalledWith(
+      expect.objectContaining({ maskAllText: true, blockAllMedia: true })
+    );
+  });
 });

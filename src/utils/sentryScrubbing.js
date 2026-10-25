@@ -27,7 +27,7 @@ const RECORDING_CUSTOM = 5;
  *   el cliente, Replay y todas las migas). Recorrerlo en cada transaccion era
  *   medio SDK en el hilo principal, y no sale en el evento;
  * - `arguments`: los objetos que la app paso a `console.*`, los suyos, no una
- *   copia. `beforeBreadcrumb` los sustituye por una copia tapada.
+ *   copia. Esas migas no salen (`beforeBreadcrumb`), pero no se tocan nunca.
  */
 const SKIP_KEYS = new Set(['sdkProcessingMetadata', 'arguments']);
 
@@ -67,38 +67,15 @@ export const scrubDeep = (value, visto = new WeakSet()) => {
 const scrubAll = (item) => scrubDeep(item);
 
 /**
- * Copia tapada de un valor: el texto, tapado; los objetos simples y las listas,
- * copiados; lo demas (una funcion, un nodo del DOM, un Error) tal cual, que
- * Sentry lo reduce luego a su nombre. `structuredClone` no vale: lanza con una
- * funcion o un nodo, y el objeto se quedaria sin tapar.
- */
-const scrubbedCopy = (value, visto = new WeakSet()) => {
-  if (typeof value === 'string') return scrubUrl(value);
-  if (!value || typeof value !== 'object' || !isPlain(value)) return value;
-  if (visto.has(value)) return '[Circular]';
-  visto.add(value);
-  if (Array.isArray(value)) return value.map((item) => scrubbedCopy(item, visto));
-  const copia = {};
-  for (const key of Object.keys(value)) {
-    try {
-      copia[key] = scrubbedCopy(value[key], visto);
-    } catch {
-      // Un getter que lanza: esa clave no sale
-    }
-  }
-  return copia;
-};
-
-/**
- * Una miga de consola guarda en `data.arguments` los objetos que se pasaron a
- * `console.*`, sin copiar: se sustituyen por una copia tapada, y los de la app
- * no se tocan. `console.log({ url })` con el token salia tal cual (CodeRabbit).
+ * Las migas de consola no salen hacia Sentry, en ningún entorno (25 oct 2026).
+ * La app escribe en la consola datos personales y mensajes de la API, y el
+ * filtro de `infrastructure/sentry.ts` que las quitaba en producción no se
+ * registraba nunca: la inicialización que cuenta es la de `main.jsx`, que usa
+ * este gancho. Lo que haga falta para depurar se manda a propósito con
+ * `captureError`. Las demás migas (navegación, clics, red) salen tapadas.
  */
 const scrubBreadcrumb = (breadcrumb) => {
-  const argumentos = breadcrumb?.data?.arguments;
-  if (Array.isArray(argumentos)) {
-    breadcrumb.data.arguments = argumentos.map((arg) => scrubbedCopy(arg));
-  }
+  if (breadcrumb?.category === 'console') return null;
   return scrubDeep(breadcrumb);
 };
 

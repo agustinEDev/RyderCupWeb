@@ -41,7 +41,6 @@ class UpdateRfegHandicapUseCase {
     const countryValue = user.countryCode.value();
 
     if (countryValue !== 'ES') {
-      console.error('❌ [UpdateRfegHandicapUseCase] User is not Spanish:', countryValue);
       throw new Error(
         'RFEG handicap updates are only available for Spanish players. Your nationality is set to: ' + countryValue
       );
