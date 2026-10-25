@@ -197,4 +197,36 @@ describe('el eco de la recarga', () => {
     expect(modulo.marcaDelBuild(html(NUEVO))).toBe(NUEVO);
     expect(modulo.marcaDelBuild('<html></html>')).toBeNull();
   });
+
+  it('con el almacenamiento bloqueado (leer sessionStorage ya lanza), se instala sin romper el arranque', async () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('SecurityError');
+      },
+    });
+    try {
+      vi.resetModules();
+      const modulo = await import('./recargaPorTrozoViejo');
+      const objetivo = new globalThis.EventTarget();
+      const ventana = {
+        addEventListener: (tipo, fn) => objetivo.addEventListener(tipo, fn),
+        navigator: { serviceWorker: { controller: {} } },
+        location: { reload: vi.fn(), pathname: '/scoring' },
+      };
+      const documento = new globalThis.EventTarget();
+      documento.querySelector = () => ({ getAttribute: () => VIEJO });
+      const cachesApi = { match: async () => ({ text: async () => html(NUEVO) }) };
+
+      await modulo.instalarRecargaPorTrozoViejo({ ventana, documento, cachesApi, programar: () => {} });
+      const evento = new globalThis.Event('vite:preloadError', { cancelable: true });
+      objetivo.dispatchEvent(evento);
+
+      // Sin almacenamiento no puede apuntarla: no recarga, y nada lanza
+      expect(ventana.location.reload).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(globalThis, 'sessionStorage', original);
+    }
+  });
 });

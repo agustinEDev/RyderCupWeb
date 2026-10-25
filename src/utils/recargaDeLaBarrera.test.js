@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { apuntarLaRecarga, buildDeLaPagina, puedeRecargar } from './recargaDeLaBarrera';
+import { apuntarLaRecarga, buildDeLaPagina, olvidarLaRecarga, puedeRecargar } from './recargaDeLaBarrera';
 
 /**
  * La nota de «ya recargué» (25 oct 2026): los pares versión y página donde se
@@ -20,6 +20,7 @@ import { apuntarLaRecarga, buildDeLaPagina, puedeRecargar } from './recargaDeLaB
  *   B9  los dos escritores, con la recarga sin cambiar de versión | se acaba
  *   B10 la nota no crece sin fin                       | guarda los 20 últimos pares
  *   B11 el almacén acepta la nota pero no la guarda    | apuntar falla: no se recarga
+ *   B12 leer `sessionStorage` ya lanza (Safari sin cookies) | null, false y sin lanzar
  */
 const CLAVE = 'lazy_load_error_reloaded';
 const almacenCon = (valor) => {
@@ -129,5 +130,22 @@ describe('la nota de la recarga', () => {
     const olvidadizo = { getItem: () => null, setItem: () => {} };
 
     expect(apuntarLaRecarga({ build: 'A', ruta: '/x', almacen: olvidadizo })).toBe(false);
+  });
+
+  it('B12: si leer sessionStorage ya lanza, null, false y sin lanzar (CodeRabbit)', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('SecurityError');
+      },
+    });
+    try {
+      expect(puedeRecargar({ build: 'A', ruta: '/x' })).toBeNull();
+      expect(apuntarLaRecarga({ build: 'A', ruta: '/x' })).toBe(false);
+      expect(() => olvidarLaRecarga()).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, 'sessionStorage', original);
+    }
   });
 });

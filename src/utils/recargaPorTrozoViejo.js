@@ -45,7 +45,7 @@ export const marcaDelBuild = (html) => MARCA.exec(html ?? '')?.[1] ?? null;
 export function instalarRecargaPorTrozoViejo({
   ventana = globalThis.window,
   documento = globalThis.document,
-  almacen = globalThis.sessionStorage,
+  almacen,
   cachesApi = globalThis.caches,
   programar = globalThis.setTimeout,
 } = {}) {

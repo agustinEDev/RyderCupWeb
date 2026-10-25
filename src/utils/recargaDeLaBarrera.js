@@ -30,6 +30,9 @@ export const buildDeLaPagina = (documento = globalThis.document) =>
   documento?.querySelector?.('meta[name="app-build"]')?.getAttribute('content') ?? '';
 
 const rutaDeLaPagina = () => globalThis.location?.pathname ?? '';
+// Se lee dentro de cada `try`: con el almacenamiento bloqueado (Safari sin
+// cookies), leer `sessionStorage` ya lanza (CodeRabbit)
+const almacenDeLaSesion = () => globalThis.sessionStorage;
 
 /** Los pares guardados. La `'true'` de antes, o algo ilegible, no cuenta. */
 const leer = (almacen) => {
@@ -48,25 +51,18 @@ const esElPar = (build, ruta) => ([b, r]) => b === build && r === ruta;
  * Si se puede recargar con esta versión en esta página: `true`, `false` si ya
  * se hizo, o `null` si no se puede leer el almacenamiento.
  */
-export const puedeRecargar = ({
-  build = buildDeLaPagina(),
-  ruta = rutaDeLaPagina(),
-  almacen = globalThis.sessionStorage,
-} = {}) => {
+export const puedeRecargar = ({ build = buildDeLaPagina(), ruta = rutaDeLaPagina(), almacen } = {}) => {
   try {
-    return !leer(almacen).some(esElPar(build, ruta));
+    return !leer(almacen ?? almacenDeLaSesion()).some(esElPar(build, ruta));
   } catch {
     return null;
   }
 };
 
 /** Apunta la recarga; `false` si no se pudo. */
-export const apuntarLaRecarga = ({
-  build = buildDeLaPagina(),
-  ruta = rutaDeLaPagina(),
-  almacen = globalThis.sessionStorage,
-} = {}) => {
+export const apuntarLaRecarga = ({ build = buildDeLaPagina(), ruta = rutaDeLaPagina(), almacen: dado } = {}) => {
   try {
+    const almacen = dado ?? almacenDeLaSesion();
     const recargas = leer(almacen).filter((par) => !esElPar(build, ruta)(par));
     recargas.push([build, ruta]);
     almacen.setItem(CLAVE_DE_LA_BARRERA, JSON.stringify({ recargas: recargas.slice(-PARES_QUE_SE_GUARDAN) }));
@@ -78,9 +74,9 @@ export const apuntarLaRecarga = ({
 };
 
 /** La olvida: el botón del aviso recarga a mano y la siguiente vuelve a contar. */
-export const olvidarLaRecarga = (almacen = globalThis.sessionStorage) => {
+export const olvidarLaRecarga = (almacen) => {
   try {
-    almacen.removeItem(CLAVE_DE_LA_BARRERA);
+    (almacen ?? almacenDeLaSesion()).removeItem(CLAVE_DE_LA_BARRERA);
   } catch {
     // Sin almacenamiento no hay nada que olvidar
   }
