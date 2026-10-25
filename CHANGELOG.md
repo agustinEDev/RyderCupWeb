@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.54.0] - 2026-10-25
+
+**Sentry ve solo lo necesario y el presupuesto mide lo que se descarga.** Solo
+frontend: funciona con el backend **2.40.0** que ya está en producción.
+
+**Notas de despliegue.**
+
+- Sin variables nuevas. Arranque **240 KB gzip** de 270 (la cifra que vigila
+  ahora el CI); el total del disco, 3478 KB, ya no bloquea.
+- Dos dependencias mayores: framer-motion 14.6 y vite-plugin-pwa 2.0. El
+  service worker que se genera es el mismo (misma lista de precarga).
+
+### Changed
+
+- **A Sentry solo va el id del usuario** (#965): antes iban el correo, el
+  nombre, el país, la verificación y el hándicap en cada evento.
+- **Ninguna línea de la consola llega a Sentry**, en ningún entorno (#965). El
+  filtro que las quitaba en producción no se ejecutaba nunca; la app escribe en
+  la consola datos personales y mensajes de la API. Los errores siguen con su
+  traza, navegaciones, clics y red.
+- **La grabación de sesiones enmascara el texto y bloquea las imágenes en
+  todos los entornos** (#965), no solo en producción.
+- **El presupuesto del paquete mide lo que descarga quien abre la app** (#964,
+  FE #374): los JS de `index.html` en gzip (tope 270 KB) y un tope de 320 KB por
+  trozo, en vez de sumar todo el disco. La tarjeta del CI dice qué falló.
+- Dependencias (#934, #935, #936): i18next 26.5, react-i18next 17.1,
+  lucide-react 1.59, framer-motion 14.6 y vite-plugin-pwa 2.0.
+
+### Fixed
+
+- Al revocar un dispositivo, el usuario de Sentry se limpia de verdad (#965):
+  la línea anterior usaba un `window.Sentry` que no existía.
+
 ## [2.53.0] - 2026-10-25
 
 **La partida rápida dice quién ganó y el historial, lo que pasó.** Necesita el
