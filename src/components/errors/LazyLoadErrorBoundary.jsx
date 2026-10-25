@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import * as Sentry from '@sentry/react';
+import { textosDelError } from './textosDelError';
 import { retiraLaCortina } from '../../utils/cortinaDeArranque';
 import { esElEcoDeLaRecarga } from '../../utils/recargaPorTrozoViejo';
 import {
@@ -116,7 +117,9 @@ class LazyLoadErrorBoundary extends Component {
     }
 
     if (this.state.hasError) {
-      // Fallback UI when error persists after reload
+      // Fallback UI when error persists after reload. En el idioma de la app,
+      // sin las traducciones: justo ahora pueden no cargar (25 oct 2026)
+      const textos = textosDelError().sinCargar;
       return (
         <div style={{
           display: 'flex',
@@ -129,17 +132,16 @@ class LazyLoadErrorBoundary extends Component {
           fontFamily: 'system-ui, sans-serif'
         }}>
           <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>
-            Unable to Load Application
+            {textos.titulo}
           </h1>
           <p style={{ color: '#6b7280', marginBottom: '1rem', maxWidth: '600px' }}>
-            We encountered an issue loading the application. This typically happens after an update.
-            Please try refreshing the page or clearing your browser cache.
+            {textos.texto}
           </p>
           {/* v2.0.4: Show error details for debugging */}
           {this.state.errorMessage && (
             <details style={{ marginBottom: '2rem', maxWidth: '600px', textAlign: 'left' }}>
               <summary style={{ cursor: 'pointer', color: '#6b7280', fontSize: '0.875rem' }}>
-                Technical details
+                {textos.detalles}
               </summary>
               <pre style={{
                 marginTop: '0.5rem',
@@ -175,7 +177,7 @@ class LazyLoadErrorBoundary extends Component {
             onMouseOut={(e) => e.target.style.backgroundColor = '#2d7b3e'}
             onBlur={(e) => e.target.style.backgroundColor = '#2d7b3e'}
           >
-            Refresh Page
+            {textos.boton}
           </button>
         </div>
       );

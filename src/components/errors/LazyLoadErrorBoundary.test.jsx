@@ -323,4 +323,21 @@ describe('LazyLoadErrorBoundary', () => {
     expect(reloadMock).not.toHaveBeenCalled();
     expect(screen.getByText('Unable to Load Application')).toBeInTheDocument();
   });
+
+  // E (25 oct 2026): el aviso en el idioma de la app, sin depender de que
+  // carguen las traducciones (este test no inicia i18next)
+  it('E: con la app en español, el aviso y su botón en español', () => {
+    vi.spyOn(globalThis.Storage.prototype, 'getItem').mockImplementation((clave) => (clave === 'i18nextLng' ? 'es' : null));
+
+    render(
+      <LazyLoadErrorBoundary>
+        <Bomb error={new Error('Something unrelated broke')} />
+      </LazyLoadErrorBoundary>
+    );
+
+    expect(screen.getByText('No se ha podido cargar la aplicación')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Recargar' })).toBeInTheDocument();
+    expect(screen.getByText('Detalles técnicos')).toBeInTheDocument();
+    expect(screen.queryByText('Unable to Load Application')).not.toBeInTheDocument();
+  });
 });

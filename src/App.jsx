@@ -23,7 +23,7 @@ import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
 import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
 import { VARIABLE_ALTO_BARRA_INFERIOR, ALTO_BARRA_INFERIOR } from './utils/barraInferior';
-import { retiraLaCortina } from './utils/cortinaDeArranque';
+import ErrorFallback from './components/errors/ErrorFallback';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
@@ -432,77 +432,6 @@ function AppContent() {
     </LazyLoadErrorBoundary>
   );
 }
-
-/**
- * Error Fallback Component for Sentry ErrorBoundary
- */
-const ErrorFallback = ({ error, componentStack, resetError }) => {
-  // Si el arbol revienta, la cortina se queda encima tapando esta misma
-  // pantalla hasta que la red del CSS la aparta seis segundos despues. Ya paso:
-  // `useInstallPrompt` lee `localStorage`, y en Safari con las cookies
-  // bloqueadas eso lanza.
-  useLayoutEffect(() => {
-    retiraLaCortina();
-  }, []);
-
-  return (
-  <div style={{
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100vh',
-    padding: '2rem',
-    textAlign: 'center',
-    fontFamily: 'system-ui, sans-serif'
-  }}>
-    <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>
-      Oops! Something went wrong
-    </h1>
-    <p style={{ color: '#6b7280', marginBottom: '2rem', maxWidth: '600px' }}>
-      We&apos;re sorry for the inconvenience. An error occurred and our team has been notified.
-      Please try refreshing the page or contact support if the problem persists.
-    </p>
-    <button
-      onClick={resetError}
-      style={{
-        padding: '0.75rem 1.5rem',
-        backgroundColor: '#2d7b3e',
-        color: 'white',
-        border: 'none',
-        borderRadius: '0.5rem',
-        fontSize: '1rem',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s'
-      }}
-      onMouseOver={(e) => e.target.style.backgroundColor = '#235a2e'}
-      onFocus={(e) => e.target.style.backgroundColor = '#235a2e'}
-      onMouseOut={(e) => e.target.style.backgroundColor = '#2d7b3e'}
-      onBlur={(e) => e.target.style.backgroundColor = '#2d7b3e'}
-    >
-      Try Again
-    </button>
-    {process.env.NODE_ENV === 'development' && (
-      <details style={{ marginTop: '2rem', textAlign: 'left', maxWidth: '800px' }}>
-        <summary style={{ cursor: 'pointer', color: '#ef4444', marginBottom: '0.5rem' }}>
-          Error Details (Development Only)
-        </summary>
-        <pre style={{
-          backgroundColor: '#1f2937',
-          color: '#f3f4f6',
-          padding: '1rem',
-          borderRadius: '0.5rem',
-          overflow: 'auto',
-          fontSize: '0.875rem'
-        }}>
-          {error?.toString()}
-          {componentStack}
-        </pre>
-      </details>
-    )}
-  </div>
-  );
-};
 
 /**
  * Componente principal App con Router y ErrorBoundary
