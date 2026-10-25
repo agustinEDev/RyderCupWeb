@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import RecentMatchMapper from './RecentMatchMapper';
 
 describe('RecentMatchMapper', () => {
@@ -101,8 +101,14 @@ describe('RecentMatchMapper · played_at', () => {
   });
 
   it('H5: un día sin hora es ese día en la hora local, no la medianoche UTC (al oeste de Greenwich salía el día antes)', () => {
-    const partida = RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' });
-    // A medianoche LOCAL: leído como UTC, en cualquier zona distinta de UTC la hora no es 0
-    expect([partida.date.getFullYear(), partida.date.getMonth(), partida.date.getDate(), partida.date.getHours()]).toEqual([2026, 9, 21, 0]);
+    // Al oeste de Greenwich: en UTC, la zona del CI, el fallo no se ve
+    vi.stubEnv('TZ', 'America/New_York');
+    try {
+      const partida = RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' });
+      // A medianoche LOCAL: leído como UTC, en cualquier zona distinta de UTC la hora no es 0
+      expect([partida.date.getFullYear(), partida.date.getMonth(), partida.date.getDate(), partida.date.getHours()]).toEqual([2026, 9, 21, 0]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

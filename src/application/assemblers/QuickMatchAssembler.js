@@ -37,6 +37,8 @@ class QuickMatchAssembler {
       excludedFromStats: quickMatch.excludedFromStats,
       createdAt: quickMatch.createdAt.toISOString(),
       updatedAt: quickMatch.updatedAt.toISOString(),
+      // Cuando se jugó (H5): la fila lo pinta, y en texto se guarda en localStorage
+      playedAt: quickMatch.playedAt ? quickMatch.playedAt.toISOString() : null,
 
       // Computed fields
       isPending: quickMatch.isPending(),
