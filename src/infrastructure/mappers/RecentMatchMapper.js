@@ -1,3 +1,4 @@
+import { instanteDeLaApi } from '../../utils/instanteDeLaApi';
 import RecentMatch from '../../domain/entities/RecentMatch';
 
 /**
@@ -21,6 +22,7 @@ class RecentMatchMapper {
     return RecentMatch.fromPersistence({
       id: apiData.id,
       date: apiData.date ?? null,
+      playedAt: apiData.played_at ? instanteDeLaApi(apiData.played_at) : null,
       matchFormat: apiData.match_format ?? null,
       scoringFormat: apiData.scoring_format ?? null,
       golfCourseId: apiData.golf_course_id ?? null,

@@ -337,7 +337,8 @@ const MyQuickMatchesPage = () => {
                     </p>
                     <p className="text-xs text-gray-500 truncate">
                       {qm.name && `${t(`history.format.${qm.matchFormat ?? qm.scoringFormat}`, qm.matchFormat ?? qm.scoringFormat)} · `}
-                      {new Date(qm.createdAt).toLocaleDateString()}
+                      {/* Cuando se jugó (H5); con un backend viejo, cuando se creó */}
+                      {new Date(qm.playedAt ?? qm.createdAt).toLocaleDateString()}
                     </p>
 
                     {/* En todo menos en las canceladas: ver `llevaMarcaDeNoCuenta` */}

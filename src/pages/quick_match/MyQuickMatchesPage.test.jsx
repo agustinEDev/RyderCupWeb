@@ -1066,3 +1066,24 @@ describe('MyQuickMatchesPage · resultados de cinco en cinco (FE #418)', () => {
     await waitFor(() => expect(screen.queryByTestId('quick-match-result-qm-1')).not.toBeInTheDocument());
   });
 });
+
+// H5 (25 oct 2026): la fecha de cada fila es la de juego, no la de creación
+describe('MyQuickMatchesPage · la fecha de juego', () => {
+  it('H5: enseña cuando se jugó; sin ese dato (backend viejo), cuando se creó', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-1', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-15T12:00:00Z', playedAt: new Date('2026-07-27T12:00:00Z') },
+        { id: 'qm-2', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-10T12:00:00Z', playedAt: null },
+      ],
+      totalCount: 2,
+      page: 1,
+      limit: 50,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(new RegExp(new Date('2026-07-27T12:00:00Z').toLocaleDateString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(new Date('2026-07-15T12:00:00Z').toLocaleDateString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).not.toBeInTheDocument();
+    expect(screen.getByText(new RegExp(new Date('2026-07-10T12:00:00Z').toLocaleDateString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
+  });
+});

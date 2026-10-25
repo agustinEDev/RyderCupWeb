@@ -101,6 +101,7 @@ class QuickMatchMapper {
       excludedFromStats: apiData.excluded_from_stats ?? false,
       createdAt: apiData.created_at && instanteDeLaApi(apiData.created_at),
       updatedAt: apiData.updated_at && instanteDeLaApi(apiData.updated_at),
+      playedAt: apiData.played_at ? instanteDeLaApi(apiData.played_at) : null,
     });
   }
 

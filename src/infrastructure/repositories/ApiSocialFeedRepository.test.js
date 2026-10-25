@@ -411,6 +411,19 @@ describe('ApiSocialFeedRepository', () => {
       });
     });
 
+    // H5 (25 oct 2026): el instante de la partida rápida, para su día local
+    it('H5: played_at llega como playedAt (un instante); sin él, nulo', async () => {
+      apiRequest.mockResolvedValue({
+        games: [partida({ id: 'q1', played_at: '2026-10-21T22:30:00Z' }), partida({ id: 'q2' })],
+        next_cursor: null,
+      });
+
+      const { games } = await repository.getGamesTogether('u1');
+
+      expect(games[0].playedAt.toISOString()).toBe('2026-10-21T22:30:00.000Z');
+      expect(games[1].playedAt).toBeNull();
+    });
+
     it('leaves the positions null for the other kinds', async () => {
       apiRequest.mockResolvedValue({ games: [partida()], next_cursor: null });
 
@@ -457,6 +470,7 @@ describe('ApiSocialFeedRepository', () => {
           kind: 'QUICK_MATCH',
           id: 'g1',
           playedOn: '2026-10-15',
+          playedAt: null,
           golfCourseId: 'c1',
           golfCourseName: 'El Saler',
           format: 'STABLEFORD',
@@ -476,6 +490,7 @@ describe('ApiSocialFeedRepository', () => {
           kind: 'TOURNAMENT_GROUP',
           id: 'g2',
           playedOn: '2026-10-01',
+          playedAt: null,
           golfCourseId: 'c1',
           golfCourseName: 'El Saler',
           format: 'MEDAL',

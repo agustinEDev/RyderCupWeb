@@ -113,3 +113,13 @@ describe('GamesTogether — a tournament stroke play (J)', () => {
     expect(fila()).toHaveTextContent('Empatada');
   });
 });
+
+// H5 (25 oct 2026): la partida rápida se fecha por su instante, en el día local
+describe('GamesTogether · la fecha de la partida rápida', () => {
+  it('H5: con playedAt, su día local; no el día UTC de playedOn', () => {
+    pinta(torneo({ kind: 'QUICK_MATCH', playedOn: '2026-10-24', playedAt: new Date('2026-10-25T12:00:00Z') }));
+
+    const esperado = new Date('2026-10-25T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    expect(fila()).toHaveTextContent(esperado);
+  });
+});

@@ -91,3 +91,18 @@ describe('RecentMatchMapper', () => {
     });
   });
 });
+
+// H5 (25 oct 2026): el instante de la partida rápida, para su día local
+describe('RecentMatchMapper · played_at', () => {
+  it('H5: played_at llega como playedAt; sin él, nulo', () => {
+    const conInstante = RecentMatchMapper.toDomain({ id: 'qm-1', date: '2026-10-21', played_at: '2026-10-21T22:30:00Z' });
+    expect(conInstante.playedAt.toISOString()).toBe('2026-10-21T22:30:00.000Z');
+    expect(RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' }).playedAt).toBeNull();
+  });
+
+  it('H5: un día sin hora es ese día en la hora local, no la medianoche UTC (al oeste de Greenwich salía el día antes)', () => {
+    const partida = RecentMatchMapper.toDomain({ id: 'm-1', date: '2026-10-21' });
+    // A medianoche LOCAL: leído como UTC, en cualquier zona distinta de UTC la hora no es 0
+    expect([partida.date.getFullYear(), partida.date.getMonth(), partida.date.getDate(), partida.date.getHours()]).toEqual([2026, 9, 21, 0]);
+  });
+});

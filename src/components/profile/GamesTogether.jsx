@@ -47,9 +47,10 @@ const rutaDePartidaJuntos = (partida) => {
  * que solo se le pasan las dos que hay.
  */
 const fechaDe = (dia, idioma) => {
-  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dia || '');
-  if (!partes) return dia || '';
-  const fecha = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+  // Un instante (la partida rápida, H5) se pinta en su día local
+  const partes = dia instanceof Date ? null : /^(\d{4})-(\d{2})-(\d{2})$/.exec(dia || '');
+  if (!partes && !(dia instanceof Date)) return dia || '';
+  const fecha = dia instanceof Date ? dia : new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
   const locale = String(idioma || '').toLowerCase().startsWith('en') ? 'en-GB' : 'es-ES';
   try {
     return fecha.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -90,7 +91,7 @@ const FilaDePartida = ({ partida, t, idioma }) => {
     ? t(`playerProfile:gamesTogether.result.${partida.result}`)
     : t('playerProfile:gamesTogether.result.none');
   const detalle = [
-    fechaDe(partida.playedOn, idioma),
+    fechaDe(partida.playedAt ?? partida.playedOn, idioma),
     partida.format ? t(`playerProfile:gamesTogether.format.${partida.format}`) : null,
     partida.relation ? t(`playerProfile:gamesTogether.relation.${partida.relation}`) : null,
   ].filter(Boolean);
