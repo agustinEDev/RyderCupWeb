@@ -22,6 +22,8 @@ import SessionBlockedModal from '../../components/scoring/SessionBlockedModal';
 import EarlyEndModal from '../../components/scoring/EarlyEndModal';
 import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
+import RetiradaDelFourball from '../../components/scoring/RetiradaDelFourball';
+import { opcionesDeRetirada, aQuienesMarco } from '../../domain/services/retiradaDelFourball';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -43,6 +45,8 @@ const ScoringPage = () => {
   const [activeTab, setActiveTab] = useState('input');
   const [leaderboard, setLeaderboard] = useState(null);
   const [showConcedeModal, setShowConcedeModal] = useState(false);
+  // A quién anota quien marca a dos (F5); null, el que toca
+  const [marcadoElegido, setMarcadoElegido] = useState(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
   const [, marcaLaHora] = useState(0);
@@ -76,6 +80,8 @@ const ScoringPage = () => {
     submitScore,
     submitScorecard,
     concedeMatch,
+    retirarJugador,
+    isWithdrawn,
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
@@ -118,6 +124,7 @@ const ScoringPage = () => {
     golpe: 'errors.failedToSubmitScore',
     tarjeta: 'errors.failedToSubmitScorecard',
     concesion: 'errors.failedToConcede',
+    retirada: 'withdraw.failed',
   };
   const falloDeUnaAccion = Boolean(CLAVE_POR_ACCION[origenDelError]);
   const textoDelFallo = (err) => {
@@ -202,7 +209,8 @@ const ScoringPage = () => {
   // el 18 no veía nada. Solo para quien juega. En un partido cerrado sin
   // jugar no se pide entregar —ya tiene su aviso—, pero quien entregó antes del
   // cierre sí lee que está entregada y que ya no se espera a nadie
-  const estadoDeEntrega = !isMatchPlayer
+  // El retirado del fourball no entrega: terminan los demás (RyderCupAM#665)
+  const estadoDeEntrega = !isMatchPlayer || isWithdrawn
     ? null
     : hasSubmitted
     ? 'entregada'
@@ -214,9 +222,17 @@ const ScoringPage = () => {
     ? 'faltaValidar'
     : null;
 
-  // Find current user's marker assignment
+  // Fourball con un retirado (F5): su pareja marca también al rival que él
+  // marcaba, y elige a quién anota. Por defecto, al primero sin su golpe en este
+  // hoyo; con uno solo, como siempre
+  const misMarcados = aQuienesMarco(scoringView?.markerAssignments, currentUserId);
+  const filaDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
+  const sinGolpeAqui = misMarcados.find(
+    (id) => !filaDelHoyo?.playerScores?.find((ps) => ps.userId === id)?.markerSubmitted
+  );
+  const marcadoActivo = misMarcados.includes(marcadoElegido) ? marcadoElegido : (sinGolpeAqui ?? misMarcados[0]);
   const markerAssignment = scoringView?.markerAssignments?.find(
-    (ma) => ma.scorerUserId === currentUserId
+    (ma) => ma.scorerUserId === currentUserId && ma.marksUserId === marcadoActivo
   );
 
   // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
@@ -235,9 +251,12 @@ const ScoringPage = () => {
 
   // Players who still need to submit their scorecard for the match to complete
   const esFoursomes = scoringView?.matchFormat === 'FOURSOMES';
+  // El retirado no entrega: no se le espera (F4)
+  const retirados = scoringView?.withdrawnPlayerIds ?? [];
   const pendingPlayers = scoringView?.players?.filter(
-    (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId)
+    (p) => !scoringView?.scorecardSubmittedBy?.includes(p.userId) && !retirados.includes(p.userId)
   ) ?? [];
+  const opcionesDeLaRetirada = opcionesDeRetirada(scoringView, currentUserId);
 
   // El par, el índice y los metros son de la barra de CADA jugador: en 56 de
   // los 800 campos federados el índice cambia entre barras y en 25 el par.
@@ -594,6 +613,7 @@ const ScoringPage = () => {
               scores={scoresVisibles}
               totalHoles={totalHoles}
               noGuardados={hoyosNoGuardados}
+              retirados={retirados}
             />
 
             {aunNoAbre && (
@@ -623,6 +643,32 @@ const ScoringPage = () => {
 
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <>
+                {canScore && misMarcados.length > 1 && (
+                  <fieldset data-testid="a-quien-anoto" className="flex flex-wrap items-center gap-2 text-sm">
+                    <legend className="sr-only">{t('withdraw.markingWho')}</legend>
+                    <span aria-hidden="true" className="text-gray-600">{t('withdraw.markingWho')}</span>
+                    {misMarcados.map((id) => {
+                      const nombre = scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
+                      return (
+                        <label
+                          key={id}
+                          className={`min-h-11 inline-flex items-center rounded-full border px-3 cursor-pointer ${
+                            id === marcadoActivo ? 'border-primary bg-primary/10 font-medium' : 'border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="a-quien-anoto"
+                            className="sr-only"
+                            checked={id === marcadoActivo}
+                            onChange={() => setMarcadoElegido(id)}
+                          />
+                          {nombre}
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                )}
                 <HoleInput
                   // Un partido de torneo es match play: recoger es conceder el
                   // hoyo, y la raya se permite. Solo si la vista lo dice (23 oct
@@ -702,6 +748,14 @@ const ScoringPage = () => {
                 {t('concede.button')}
               </button>
             )}
+
+            {/* Fourball: retirarse, retirar a la pareja o volver (F2, F3) */}
+            <RetiradaDelFourball
+              opciones={opcionesDeLaRetirada}
+              yo={currentUserId}
+              onRetirar={retirarJugador}
+              enviando={isSubmitting}
+            />
           </PanelDePestana>
 
           {/* Tab: Scorecard */}
@@ -714,6 +768,7 @@ const ScoringPage = () => {
               teamAName={scoringView?.teamAName}
               teamBName={scoringView?.teamBName}
               matchFormat={scoringView?.matchFormat}
+              retirados={retirados}
             />
           </PanelDePestana>
 

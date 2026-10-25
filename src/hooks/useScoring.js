@@ -42,6 +42,13 @@ const deCarga = falloDe('carga');
 const delGolpe = falloDe('golpe');
 const deLaTarjeta = falloDe('tarjeta');
 const deLaConcesion = falloDe('concesion');
+const deLaRetirada = falloDe('retirada');
+
+// Un 409 de la retirada trae su motivo (RyderCupAM#665): se explica con su texto
+const conClaveDeRetirada = (err) => {
+  const motivo = err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
+  return motivo ? Object.assign(err, { i18nKey: `withdraw.errors.${motivo}` }) : err;
+};
 // Un fallo de carga no pisa el de una acción del mismo partido: con el servidor
 // caído el sondeo falla cada 10 s, y el aviso de un golpe que no se guardó
 // duraba hasta el siguiente. Salvo que desmienta el partido —ya no está, no es
@@ -116,8 +123,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // Determine if user is a player in this match
   const isMatchPlayer = scoringView?.players?.some(p => p.userId === currentUserId) ?? false;
 
+  // Fourball: el retirado ni anota ni entrega hasta que se deshaga (RyderCupAM#665)
+  const isWithdrawn = scoringView?.withdrawnPlayerIds?.includes(currentUserId) ?? false;
+
   // Admins can score any match even if not enrolled as a player
-  const canScore = isMatchPlayer || isAdmin;
+  const canScore = (isMatchPlayer && !isWithdrawn) || isAdmin;
 
   // Determine if scorecard already submitted by current user
   const hasSubmitted = scoringView?.scorecardSubmittedBy?.includes(currentUserId) ?? false;
@@ -826,6 +836,29 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
 
 
 
+  // --- Retirar a un jugador del fourball, o deshacerlo (RyderCupAM#665) ---
+  const retirarJugador = useCallback(async (playerId, { deshacer = false } = {}) => {
+    // Solo la Ryder: en stroke play se retira por su propio camino
+    if (!matchId || !origen.retira) return;
+    // No va a la cola: retirar cambia quién marca a quién y lo que cuenta, y
+    // aplicarlo tarde y a ciegas sería peor que decir que hace falta red (F8)
+    if (!navigator.onLine) {
+      setFallo(deLaRetirada({ i18nKey: 'withdraw.needsConnection' }, matchId));
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await origen.retira.execute(matchId, playerId, { deshacer });
+      if (!esDeOtraPartida(matchId)) marcaEscritura();
+      await fetchScoringView();
+      if (!esDeOtraPartida(matchId)) setFallo(null);
+    } catch (err) {
+      if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada(conClaveDeRetirada(err), matchId));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.retira]);
+
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {
     if (!matchId) return;
@@ -1005,6 +1038,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
 
     // Derived
     isMatchPlayer,
+    isWithdrawn,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
@@ -1021,6 +1055,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     submitScore,
     submitScorecard,
     concedeMatch,
+    retirarJugador,
     takeOverSession,
     refetch: fetchScoringView,
   };

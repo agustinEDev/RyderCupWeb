@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { X, Trophy, AlertTriangle, ClipboardList } from 'lucide-react';
 import { getMatchDetailUseCase } from '../../composition';
 import BlockLoader from '../ui/BlockLoader';
+import RetiradaPorElOrganizador from './RetiradaPorElOrganizador';
 import { formatoDeIndice, formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
 
 const MatchDetailModal = ({
@@ -16,6 +17,7 @@ const MatchDetailModal = ({
   maxPlayingHandicap,
   teamNames,
   t,
+  canManage = false,
 }) => {
   const navigate = useNavigate();
   const [match, setMatch] = useState(null);
@@ -162,6 +164,11 @@ const MatchDetailModal = ({
                   )}
                 </div>
               </div>
+
+              {/* Fourball: el organizador retira o devuelve a un jugador (F10) */}
+              {canManage && (match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
+                <RetiradaPorElOrganizador matchId={matchId} />
+              )}
 
               {/* Handicap Strokes */}
               {match.handicapStrokesGiven != null && match.handicapStrokesGiven > 0 && (

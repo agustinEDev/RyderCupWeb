@@ -694,3 +694,13 @@ describe('ScorecardTable · la raya suma su doble bogey neto', () => {
     expect(sumaDeLaIda()).toHaveTextContent(/^-$/);
   });
 });
+
+// F4 (25 oct 2026): el retirado del fourball lleva su etiqueta junto al nombre
+describe('ScorecardTable · fourball con un retirado', () => {
+  it('F4: «Retirado» junto a su nombre, y solo junto al suyo', () => {
+    render(<ScorecardTable holes={holes} players={players} currentUserId="u1" retirados={['u2']} />);
+    expect(screen.getAllByTestId('etiqueta-retirado-u2').length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('etiqueta-retirado-u1')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('etiqueta-retirado-u2')[0]).toHaveTextContent('withdraw.badge');
+  });
+});

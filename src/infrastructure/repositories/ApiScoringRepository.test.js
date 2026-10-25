@@ -263,3 +263,31 @@ describe('ApiScoringRepository · el tope de tiempo de anotar (FE #624)', () => 
     expect(topeDe()).toBeUndefined();
   });
 });
+
+// Fourball con un jugador retirado (25 oct 2026, RyderCupAM#665)
+describe('ApiScoringRepository · retirada del fourball', () => {
+  let repo;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repo = new ApiScoringRepository();
+  });
+
+  it('F1: retirar y deshacer llaman a sus rutas con POST y devuelven la respuesta en camelCase', async () => {
+    apiRequest.mockResolvedValue({ match_id: 'match-1', withdrawn_player_ids: ['u-1'], decided_result: null });
+
+    const retirada = await repo.withdrawPlayer('match-1', 'u-1');
+    expect(apiRequest).toHaveBeenLastCalledWith('/api/v1/competitions/matches/match-1/players/u-1/withdraw', {
+      topeMs: TOPE_DE_ANOTAR_MS,
+      method: 'POST',
+    });
+    expect(retirada).toEqual({ matchId: 'match-1', withdrawnPlayerIds: ['u-1'], decidedResult: null });
+
+    apiRequest.mockResolvedValue({ match_id: 'match-1', withdrawn_player_ids: [], decided_result: { winner: 'B', score: '3&2' } });
+    const vuelta = await repo.reinstatePlayer('match-1', 'u-1');
+    expect(apiRequest).toHaveBeenLastCalledWith('/api/v1/competitions/matches/match-1/players/u-1/reinstate', {
+      topeMs: TOPE_DE_ANOTAR_MS,
+      method: 'POST',
+    });
+    expect(vuelta.decidedResult).toEqual({ winner: 'B', score: '3&2' });
+  });
+});

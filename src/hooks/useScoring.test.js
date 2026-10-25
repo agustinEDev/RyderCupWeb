@@ -22,6 +22,7 @@ vi.mock('../composition', () => ({
   submitHoleScoreUseCase: { execute: vi.fn() },
   submitScorecardUseCase: { execute: vi.fn() },
   concedeMatchUseCase: { execute: vi.fn() },
+  withdrawMatchPlayerUseCase: { execute: vi.fn() },
 }));
 
 // Mock offline queue
@@ -58,6 +59,7 @@ import {
   submitHoleScoreUseCase,
   submitScorecardUseCase,
   concedeMatchUseCase,
+  withdrawMatchPlayerUseCase,
 } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
@@ -3758,3 +3760,74 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
     expect(delHoyo5()).toEqual([]);
   });
 });
+
+// Fourball con un jugador retirado (25 oct 2026, tabla F1–F10)
+describe('useScoring · retirada del fourball', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    getScoringViewUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: [] });
+  });
+
+  it('F3: retirado, no anota (aunque juegue el partido)', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: ['u1'] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isMatchPlayer).toBe(true);
+    expect(result.current.canScore).toBe(false);
+    expect(result.current.isWithdrawn).toBe(true);
+  });
+
+  it('F2: retirar llama al caso de uso y vuelve a leer la vista; deshacer, con su marca', async () => {
+    withdrawMatchPlayerUseCase.execute.mockResolvedValue({ withdrawnPlayerIds: ['u2'] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const lecturas = getScoringViewUseCase.execute.mock.calls.length;
+
+    await act(async () => {
+      await result.current.retirarJugador('u2');
+    });
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith('m-1', 'u2', { deshacer: false });
+    expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(lecturas);
+
+    await act(async () => {
+      await result.current.retirarJugador('u2', { deshacer: true });
+    });
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith('m-1', 'u2', { deshacer: true });
+  });
+
+  it('F8: sin conexión no lo intenta y lo dice', async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+
+    await act(async () => {
+      await result.current.retirarJugador('u2');
+    });
+
+    expect(withdrawMatchPlayerUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.origenDelError).toBe('retirada');
+    expect(result.current.error.i18nKey).toBe('withdraw.needsConnection');
+    enLinea.mockRestore();
+  });
+
+  it('F9: un 409 con motivo se explica con su texto', async () => {
+    const rechazo = Object.assign(new Error('Cannot withdraw the last player of a side'), {
+      status: 409,
+      errorCode: 'WITHDRAWAL_NOT_ALLOWED',
+      data: { reason: 'LAST_OF_SIDE' },
+    });
+    withdrawMatchPlayerUseCase.execute.mockRejectedValue(rechazo);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.retirarJugador('u2');
+    });
+
+    expect(result.current.origenDelError).toBe('retirada');
+    expect(result.current.error.i18nKey).toBe('withdraw.errors.LAST_OF_SIDE');
+  });
+});
+

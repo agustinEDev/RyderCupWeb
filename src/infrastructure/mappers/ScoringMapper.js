@@ -114,6 +114,9 @@ class ScoringMapper {
         }
         : null,
       scorecardSubmittedBy: apiData.scorecard_submitted_by || [],
+      // Fourball: los retirados (RyderCupAM#665). Su bola sin validar no
+      // cuenta, no entregan y las asignaciones ya vienen sin ellos
+      withdrawnPlayerIds: apiData.withdrawn_player_ids || [],
     };
   }
 

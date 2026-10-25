@@ -18,7 +18,7 @@ import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarje
  * rejilla de iconos y competía con el propio resultado, que es lo que se viene
  * a leer aquí.
  */
-const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName, matchFormat }) => {
+const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, teamAName, teamBName, matchFormat, retirados = [] }) => {
   const { t } = useTranslation('scoring');
   const [showNet, setShowNet] = useState(false);
   const esMovil = useEsMovil();
@@ -66,14 +66,25 @@ const ScorecardTable = ({ holes = [], scores = [], players = [], currentUserId, 
   // crecía. En el móvil, si no cabe, se corta el nombre y el valor se queda.
   // En foursomes cada miembro lleva el suyo, no el del bando.
   const jugadorConHandicap = (p, cortaElNombre) => (
-    <NombreConHandicap
-      testId={`jugador-${p.userId}`}
-      userId={p.userId}
-      nombre={p.userName}
-      playingHandicap={p.playingHandicap}
-      className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
-      nombreClassName={cortaElNombre ? 'min-w-0 truncate' : undefined}
-    />
+    <>
+      <NombreConHandicap
+        testId={`jugador-${p.userId}`}
+        userId={p.userId}
+        nombre={p.userName}
+        playingHandicap={p.playingHandicap}
+        className={cortaElNombre ? 'inline-flex min-w-0 max-w-full items-baseline align-bottom' : undefined}
+        nombreClassName={cortaElNombre ? 'min-w-0 truncate' : undefined}
+      />
+      {/* Fourball: retirado (RyderCupAM#665, F4) */}
+      {retirados.includes(p.userId) && (
+        <span
+          data-testid={`etiqueta-retirado-${p.userId}`}
+          className="ml-1 shrink-0 rounded bg-red-50 px-1 text-[10px] font-medium text-red-700"
+        >
+          {t('withdraw.badge')}
+        </span>
+      )}
+    </>
   );
 
   const nombresConHandicap = (row, cortaElNombre = false) =>

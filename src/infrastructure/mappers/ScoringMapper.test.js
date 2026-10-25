@@ -222,6 +222,8 @@ describe('ScoringMapper', () => {
       expect(dto.scores).toEqual([]);
       expect(dto.matchStanding).toBeNull();
       expect(dto.scorecardSubmittedBy).toEqual([]);
+      // Sin el campo (backend anterior a RyderCupAM#665), nadie retirado
+      expect(dto.withdrawnPlayerIds).toEqual([]);
     });
 
     it('should handle null validation_status as pending', () => {
@@ -535,5 +537,10 @@ describe('ScoringMapper', () => {
 
       expect(dto.players[0].color).toBe('ORANGE');
     });
+  });
+
+  it('F1: los retirados del fourball llegan como withdrawnPlayerIds', () => {
+    const dto = ScoringMapper.toScoringViewDTO({ withdrawn_player_ids: ['u-1'] });
+    expect(dto.withdrawnPlayerIds).toEqual(['u-1']);
   });
 });

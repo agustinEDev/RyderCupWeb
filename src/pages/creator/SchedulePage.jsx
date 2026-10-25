@@ -578,6 +578,7 @@ const SchedulePage = () => {
           maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
           teamNames={teamNames}
           t={t}
+          canManage={canManage}
         />
       )}
 
