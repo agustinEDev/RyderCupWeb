@@ -291,9 +291,11 @@ export default Sentry.withProfiler(App);
 ```
 
 Only the id since 25 Oct 2026: Sentry is a third party and the id is enough to
-debug. Email, name, country and handicap are no longer sent, and nothing that
-logs personal data to the console (Sentry records it as breadcrumbs). Session
-Replay masks all text and blocks media in every environment.
+debug. Email, name, country and handicap are no longer sent. Console
+breadcrumbs are dropped in every environment (`sentryScrubbing.beforeBreadcrumb`,
+the hook `main.jsx` registers): the app logs personal data and API messages to
+the console. Anything needed to debug goes explicitly through `captureError`.
+Session Replay masks all text and blocks media in every environment.
 
 ### 5. Custom Business Context
 
