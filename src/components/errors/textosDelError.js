@@ -8,7 +8,8 @@
  * El idioma, el mismo que elige i18next: el que tiene en memoria si ya arrancó
  * (cubre un cambio de idioma con el almacenamiento bloqueado), si no el guardado
  * (`i18nextLng`) y, sin él, el primero del navegador. Español si empieza por
- * «es»; si no, inglés, el de por defecto de la app.
+ * «es»; si no, inglés, el de por defecto de la app. Un idioma nuevo de la app
+ * necesita sus textos aquí: lo exige un test contra `src/i18n/locales`.
  */
 import i18next from 'i18next';
 
@@ -18,14 +19,15 @@ const TEXTOS = {
   es: {
     sinCargar: {
       titulo: 'No se ha podido cargar la aplicación',
-      texto:
-        'Suele pasar tras una actualización o sin cobertura. Recarga la página; si sigue, borra los datos del sitio en el navegador.',
+      // Nada de «borra los datos del sitio»: se llevaría la cola de golpes sin
+      // conexión y la sesión (code-review)
+      texto: 'Suele pasar tras una actualización o sin cobertura. Recarga la página cuando tengas conexión; lo que hayas anotado no se pierde.',
       detalles: 'Detalles técnicos',
       boton: 'Recargar',
     },
     fallo: {
       titulo: 'Algo ha fallado',
-      texto: 'Sentimos las molestias: el error ya nos ha llegado. Prueba a recargar; si sigue pasando, escríbenos desde Contacto.',
+      texto: 'Sentimos las molestias: el error ya nos ha llegado. Pulsa Reintentar; si vuelve a pasar, cierra la app y ábrela de nuevo.',
       detalles: 'Detalles del error (solo en desarrollo)',
       boton: 'Reintentar',
     },
@@ -33,27 +35,29 @@ const TEXTOS = {
   en: {
     sinCargar: {
       titulo: 'Unable to Load Application',
-      texto:
-        'We encountered an issue loading the application. This typically happens after an update. Please try refreshing the page or clearing your browser cache.',
+      texto: 'This usually happens after an update or without coverage. Reload the page when you are back online; nothing you have scored is lost.',
       detalles: 'Technical details',
       boton: 'Refresh Page',
     },
     fallo: {
       titulo: 'Oops! Something went wrong',
-      texto:
-        "We're sorry for the inconvenience. An error occurred and our team has been notified. Please try refreshing the page or contact support if the problem persists.",
+      texto: "Sorry for the inconvenience: we've been notified of the error. Tap Try Again; if it happens again, close the app and open it again.",
       detalles: 'Error Details (Development Only)',
       boton: 'Try Again',
     },
   },
 };
 
-const esEspanol = (idioma) => typeof idioma === 'string' && idioma.toLowerCase().startsWith('es');
+// La base de la etiqueta («es-ES», «es_ES» → «es»), si hay textos para ella
+const base = (idioma) => String(idioma ?? '').split(/[-_]/)[0].toLowerCase();
+const conTextos = (idioma) => (Object.hasOwn(TEXTOS, base(idioma)) ? base(idioma) : null);
 
 /** 'es' o 'en'. Sin almacenamiento (Safari sin cookies lanza al leerlo), el del navegador. */
 export const idiomaDelError = ({ i18n = i18next, almacen, navegador = globalThis.navigator } = {}) => {
-  const enMemoria = i18n?.resolvedLanguage || i18n?.language;
-  if (enMemoria) return esEspanol(enMemoria) ? 'es' : 'en';
+  // El elegido antes que el resuelto: si el JSON en español no carga, i18next
+  // resuelve «en», y esta pantalla sale justo entonces (code-review)
+  const enMemoria = i18n?.language || i18n?.resolvedLanguage;
+  if (enMemoria) return conTextos(enMemoria) ?? 'en';
   let guardado = null;
   try {
     guardado = (almacen ?? globalThis.localStorage)?.getItem(CLAVE_DEL_IDIOMA) ?? null;
@@ -61,7 +65,10 @@ export const idiomaDelError = ({ i18n = i18next, almacen, navegador = globalThis
     // Sin almacenamiento: se mira el navegador
   }
   const idioma = guardado || navegador?.languages?.[0] || navegador?.language;
-  return esEspanol(idioma) ? 'es' : 'en';
+  return conTextos(idioma) ?? 'en';
 };
 
-export const textosDelError = (idioma = idiomaDelError()) => ({ ...(TEXTOS[idioma] ?? TEXTOS.en), idioma: TEXTOS[idioma] ? idioma : 'en' });
+export const textosDelError = (idioma = idiomaDelError()) => {
+  const elegido = conTextos(idioma) ?? 'en';
+  return { ...TEXTOS[elegido], idioma: elegido };
+};

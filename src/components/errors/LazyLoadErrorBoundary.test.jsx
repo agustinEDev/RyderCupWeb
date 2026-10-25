@@ -12,6 +12,8 @@ const recarga = vi.hoisted(() => ({ enCurso: false }));
 vi.mock('../../utils/recargaPorTrozoViejo', () => ({ esElEcoDeLaRecarga: () => recarga.enCurso }));
 
 const cortina = vi.hoisted(() => ({ retirada: 0 }));
+// Sin i18next arrancado: el idioma sale del almacenamiento que espía cada test
+vi.mock('i18next', () => ({ default: {} }));
 vi.mock('../../utils/cortinaDeArranque', () => ({
   retiraLaCortina: () => {
     cortina.retirada += 1;

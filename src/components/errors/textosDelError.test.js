@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { readdirSync } from 'node:fs';
 import { idiomaDelError, textosDelError } from './textosDelError';
 
 /**
@@ -56,6 +57,10 @@ describe('idiomaDelError', () => {
     expect(idiomaDelError({ i18n: { language: 'en' }, almacen: almacen('es'), navegador: navegador('es-ES') })).toBe('en');
   });
 
+  it('E5b: manda el idioma elegido, no el resuelto (si el JSON en español no carga, i18next resuelve «en»)', () => {
+    expect(idiomaDelError({ i18n: { language: 'es', resolvedLanguage: 'en' }, almacen: almacen(null), navegador: navegador('en-US') })).toBe('es');
+  });
+
   it('E6: del navegador, el primero de su lista, como i18next', () => {
     expect(idiomaDelError({ ...sinI18n, almacen: almacen(null), navegador: navegador('en-US', ['es-ES', 'en-US']) })).toBe('es');
   });
@@ -75,5 +80,18 @@ describe('textosDelError', () => {
     }
     expect(es.sinCargar.titulo).toBe('No se ha podido cargar la aplicación');
     expect(es.fallo.boton).toBe('Reintentar');
+  });
+
+  it('E7: no invitan a borrar datos (la cola sin conexión vive en el navegador) y casan con su botón', () => {
+    for (const idioma of ['es', 'en']) {
+      const { sinCargar, fallo } = textosDelError(idioma);
+      expect(`${sinCargar.texto} ${fallo.texto}`).not.toMatch(/borra|datos del sitio|clear|cache|caché/i);
+      expect(fallo.texto).toContain(fallo.boton);
+    }
+  });
+
+  it('E8: cada idioma de la app tiene sus textos (uno nuevo no se queda en inglés sin avisar)', () => {
+    const idiomas = readdirSync('src/i18n/locales', { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
+    for (const idioma of idiomas) expect(textosDelError(idioma).idioma).toBe(idioma);
   });
 });
