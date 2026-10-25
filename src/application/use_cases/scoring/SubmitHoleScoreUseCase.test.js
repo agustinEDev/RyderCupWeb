@@ -124,3 +124,21 @@ describe('SubmitHoleScoreUseCase', () => {
     expect(scoringRepository.submitHoleScore).not.toHaveBeenCalled();
   });
 });
+
+// Fourball con un retirado (25 oct 2026): quien le marcaba no marca a nadie y
+// tiene que poder anotar su bola (RyderCupAM#666)
+describe('SubmitHoleScoreUseCase · sin marcado', () => {
+  it('sin marcado, manda solo su golpe', async () => {
+    const scoringRepository = { submitHoleScore: vi.fn().mockResolvedValue({}) };
+    await new SubmitHoleScoreUseCase({ scoringRepository }).execute('m-1', 3, { ownScore: 5 });
+    expect(scoringRepository.submitHoleScore).toHaveBeenCalledWith('m-1', 3, { ownScore: 5 });
+  });
+
+  it('un golpe de marcador sin decir de quién no se manda', async () => {
+    const scoringRepository = { submitHoleScore: vi.fn() };
+    await expect(
+      new SubmitHoleScoreUseCase({ scoringRepository }).execute('m-1', 3, { ownScore: 5, markedScore: 4 })
+    ).rejects.toThrow();
+    expect(scoringRepository.submitHoleScore).not.toHaveBeenCalled();
+  });
+});

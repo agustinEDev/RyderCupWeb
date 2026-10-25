@@ -167,7 +167,7 @@ const MatchDetailModal = ({
 
               {/* Fourball: el organizador retira o devuelve a un jugador (F10) */}
               {canManage && (match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
-                <RetiradaPorElOrganizador matchId={matchId} />
+                <RetiradaPorElOrganizador key={matchId} matchId={matchId} />
               )}
 
               {/* Handicap Strokes */}

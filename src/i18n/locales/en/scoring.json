@@ -458,6 +458,7 @@
     },
     "organizerTitle": "Withdraw a fourball player",
     "organizerWithdraw": "Withdraw {{nombre}}",
-    "organizerUndo": "Undo {{nombre}}'s withdrawal"
+    "organizerUndo": "Undo {{nombre}}'s withdrawal",
+    "oneAtATime": "What you scored for {{nombre}} on this hole has not reached the server yet: the other one, once you are back online"
   }
 }

@@ -1895,6 +1895,75 @@ describe('ScoringPage · fourball con un retirado', () => {
     expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4, markedPlayerId: 'u4', markedScore: 5 }, { tocado: ['markedScore'] });
   });
 
+  const dosMarcados = (extra = {}) =>
+    fourball({
+      withdrawnPlayerIds: ['u3'],
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u2', markedByName: 'Carlos' },
+        { scorerUserId: 'u1', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u2', markedByName: 'Carlos' },
+        { scorerUserId: 'u2', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u1', markedByName: 'Ana' },
+      ],
+      ...extra,
+    });
+
+  it('sin nadie a quien marcar (el rival que marcaba al retirado), su golpe sale solo', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, {
+      submitScore,
+      scoringView: fourball({
+        withdrawnPlayerIds: ['u4'],
+        markerAssignments: [
+          { scorerUserId: 'u3', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u2', markedByName: 'Carlos' },
+          { scorerUserId: 'u2', marksUserId: 'u3', marksName: 'Bea', markedByUserId: 'u3', markedByName: 'Bea' },
+        ],
+      }),
+    });
+
+    render(<ScoringPage />);
+    casilla.props.onScoreChange({ ownScore: 4, markedScore: undefined }, ['ownScore']);
+
+    expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4 }, { tocado: ['ownScore'] });
+    expect(casilla.props.isMarkerScoreLocked).toBe(true);
+  });
+
+  it('con algo sin enviar en el hoyo, el selector se queda en ese marcado y lo dice', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: dosMarcados(),
+      marcadoPendienteEn: (hoyo) => (hoyo === 1 ? 'u4' : null),
+    });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByRole('radio', { name: 'Dani' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Carlos' })).toBeDisabled();
+    expect(screen.getByText('withdraw.oneAtATime {"nombre":"Dani"}')).toBeInTheDocument();
+  });
+
+  it('la elección es del hoyo: en el siguiente vuelve al primero sin golpe', () => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados() });
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+    expect(screen.getByRole('radio', { name: 'Dani' })).toBeChecked();
+
+    mockUseScoring.currentHole = 2;
+    rerender(<ScoringPage />);
+
+    expect(screen.getByRole('radio', { name: 'Carlos' })).toBeChecked();
+  });
+
+  it('la casilla se bloquea según el marcado elegido, no el primero', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: dosMarcados(),
+      marcaBloqueadaPara: (id) => id === 'u2',
+    });
+
+    render(<ScoringPage />);
+    expect(casilla.props.isMarkerScoreLocked).toBe(true);
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+
+    expect(casilla.props.isMarkerScoreLocked).toBe(false);
+  });
+
   it('F5: marcando a uno, no hay selector', () => {
     Object.assign(mockUseScoring, { scoringView: fourball() });
     render(<ScoringPage />);

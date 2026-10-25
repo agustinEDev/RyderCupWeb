@@ -45,7 +45,8 @@ const ScoringPage = () => {
   const [activeTab, setActiveTab] = useState('input');
   const [leaderboard, setLeaderboard] = useState(null);
   const [showConcedeModal, setShowConcedeModal] = useState(false);
-  // A quién anota quien marca a dos (F5); null, el que toca
+  // A quién anota quien marca a dos (F5), y en qué hoyo lo eligió: la elección
+  // es del hoyo, y en el siguiente vuelve al primero sin golpe
   const [marcadoElegido, setMarcadoElegido] = useState(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
@@ -70,7 +71,6 @@ const ScoringPage = () => {
     hasSubmitted,
     isOwnScoreLocked,
     isMarkerScoreLocked,
-    isFullyLocked,
     validatedHoles,
     totalHoles,
     holesToSubmit,
@@ -82,6 +82,8 @@ const ScoringPage = () => {
     concedeMatch,
     retirarJugador,
     isWithdrawn,
+    marcaBloqueadaPara,
+    marcadoPendienteEn,
     takeOverSession,
     refetch,
   } = useScoring(matchId, user?.id, user?.is_admin ?? false);
@@ -230,10 +232,23 @@ const ScoringPage = () => {
   const sinGolpeAqui = misMarcados.find(
     (id) => !filaDelHoyo?.playerScores?.find((ps) => ps.userId === id)?.markerSubmitted
   );
-  const marcadoActivo = misMarcados.includes(marcadoElegido) ? marcadoElegido : (sinGolpeAqui ?? misMarcados[0]);
+  // Lo que queda sin enviar del hoyo manda: la cola guarda una entrada por
+  // hoyo, y cambiar de marcado la pisaría (25 oct 2026: uno cada vez)
+  const pendienteAqui = marcadoPendienteEn?.(currentHole) ?? null;
+  const fijadoPorLaCola = misMarcados.length > 1 && misMarcados.includes(pendienteAqui);
+  const elegidoAqui = marcadoElegido?.hoyo === currentHole ? marcadoElegido.id : null;
+  const marcadoActivo = fijadoPorLaCola
+    ? pendienteAqui
+    : misMarcados.includes(elegidoAqui) ? elegidoAqui : (sinGolpeAqui ?? misMarcados[0]);
+  const nombreDe = (id) => scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
   const markerAssignment = scoringView?.markerAssignments?.find(
     (ma) => ma.scorerUserId === currentUserId && ma.marksUserId === marcadoActivo
   );
+  // Con el marcado elegido: con dos, el primero no dice nada del otro. Sin
+  // marcado (el rival que marcaba al retirado) no hay marca que guardar
+  const marcaBloqueada = marcaBloqueadaPara
+    ? marcaBloqueadaPara(markerAssignment?.marksUserId)
+    : !markerAssignment || isMarkerScoreLocked;
 
   // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
   // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
@@ -326,7 +341,11 @@ const ScoringPage = () => {
   );
 
   const handleScoreChange = (scoreData, tocado) => {
-    if (!markerAssignment) return;
+    if (!markerAssignment) {
+      // Sin nadie a quien marcar, su bola sola (RyderCupAM#666)
+      if (canScore) submitScore(currentHole, { ownScore: scoreData.ownScore }, { tocado });
+      return;
+    }
     submitScore(currentHole, {
       ownScore: scoreData.ownScore,
       markedPlayerId: markerAssignment.marksUserId,
@@ -644,29 +663,35 @@ const ScoringPage = () => {
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <>
                 {canScore && misMarcados.length > 1 && (
-                  <fieldset data-testid="a-quien-anoto" className="flex flex-wrap items-center gap-2 text-sm">
+                  <fieldset
+                    data-testid="a-quien-anoto"
+                    disabled={fijadoPorLaCola}
+                    className="flex flex-wrap items-center gap-2 text-sm"
+                  >
                     <legend className="sr-only">{t('withdraw.markingWho')}</legend>
                     <span aria-hidden="true" className="text-gray-600">{t('withdraw.markingWho')}</span>
-                    {misMarcados.map((id) => {
-                      const nombre = scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
-                      return (
-                        <label
-                          key={id}
-                          className={`min-h-11 inline-flex items-center rounded-full border px-3 cursor-pointer ${
-                            id === marcadoActivo ? 'border-primary bg-primary/10 font-medium' : 'border-gray-300'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="a-quien-anoto"
-                            className="sr-only"
-                            checked={id === marcadoActivo}
-                            onChange={() => setMarcadoElegido(id)}
-                          />
-                          {nombre}
-                        </label>
-                      );
-                    })}
+                    {misMarcados.map((id) => (
+                      <label
+                        key={id}
+                        className={`min-h-11 inline-flex items-center rounded-full border px-3 cursor-pointer focus-within:ring-2 focus-within:ring-primary ${
+                          id === marcadoActivo ? 'border-primary bg-primary/10 font-medium' : 'border-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="a-quien-anoto"
+                          className="sr-only"
+                          checked={id === marcadoActivo}
+                          onChange={() => setMarcadoElegido({ hoyo: currentHole, id })}
+                        />
+                        {nombreDe(id)}
+                      </label>
+                    ))}
+                    {fijadoPorLaCola && (
+                      <p className="w-full text-xs text-amber-800">
+                        {t('withdraw.oneAtATime', { nombre: nombreDe(pendienteAqui) })}
+                      </p>
+                    )}
                   </fieldset>
                 )}
                 <HoleInput
@@ -694,9 +719,9 @@ const ScoringPage = () => {
                   strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
                   holeResult={currentHoleScore?.holeResult}
                   standing={currentHoleScore?.holeResult?.standing}
-                  isReadOnly={!canScore || isFullyLocked || isSessionBlocked}
+                  isReadOnly={!canScore || (isOwnScoreLocked && marcaBloqueada) || isSessionBlocked}
                   isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
-                  isMarkerScoreLocked={isMarkerScoreLocked || !canScore || isSessionBlocked}
+                  isMarkerScoreLocked={marcaBloqueada || !canScore || isSessionBlocked}
                   onScoreChange={handleScoreChange}
                   teamAName={scoringView?.teamAName}
                   teamBName={scoringView?.teamBName}

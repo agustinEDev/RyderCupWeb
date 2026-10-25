@@ -468,6 +468,7 @@
     },
     "organizerTitle": "Retirar a un jugador del fourball",
     "organizerWithdraw": "Retirar a {{nombre}}",
-    "organizerUndo": "Deshacer la retirada de {{nombre}}"
+    "organizerUndo": "Deshacer la retirada de {{nombre}}",
+    "oneAtATime": "Lo anotado a {{nombre}} en este hoyo aún no ha llegado: al otro, cuando vuelva la conexión"
   }
 }

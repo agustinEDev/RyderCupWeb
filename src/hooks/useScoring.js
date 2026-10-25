@@ -157,6 +157,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // has an unresolved discrepancy — leaving no one able to fix it.
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
+  // Quien marca a dos (fourball con un retirado) bloquea por marcado: entregó
+  // uno, al otro se le sigue marcando. Sin marcado, no hay marca que guardar
+  const entregadas = scoringView?.scorecardSubmittedBy;
+  const marcaBloqueadaPara = useCallback(
+    (id) => !id || (entregadas?.includes(id) ?? false),
+    [entregadas]
+  );
+
   // My line on every hole, in hole order
   const myHoleScores = scoringView?.scores?.map(
     s => s.playerScores?.find(ps => ps.userId === currentUserId)
@@ -594,6 +602,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     [matchId, currentUserId]
   );
 
+  // A quién iba lo que queda sin enviar de un hoyo: la cola guarda una entrada
+  // por hoyo, así que quien marca a dos no cambia de marcado hasta que salga
+  // (decidido el 25 oct 2026: uno cada vez, sin perder golpes)
+  const marcadoPendienteEn = useCallback(
+    (holeNumber) => loGuardadoDe(holeNumber)?.scoreData?.markedPlayerId ?? null,
+    [loGuardadoDe]
+  );
+
   // Tras llegar un envío sobra lo que quedaba guardado de ese hoyo y ya está
   // superado: lo anterior —también una huérfana de antes de que la cola
   // guardara dueño— y lo propio. Lo que NO sobra es una corrección hecha con la
@@ -617,7 +633,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // y solo ese cuenta como vuelto a anotar (FE #622). Sin él, los que trae
   const submitScore = useCallback(async (holeNumber, scoreData, { tocado } = {}) => {
     if (!matchId || !canScore) return;
-    if (isOwnScoreLocked && isMarkerScoreLocked) return;
+    // Con el marcado de ESTE golpe: con dos, el primero no dice nada del otro
+    if (isOwnScoreLocked && marcaBloqueadaPara(scoreData?.markedPlayerId)) return;
     const estaAnotacion = ++anotacionRef.current;
     const golpesTocados = tocado ? [tocado] : golpesQueTrae(scoreData);
     // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
@@ -794,7 +811,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
+  }, [matchId, canScore, isOwnScoreLocked, marcaBloqueadaPara, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -907,7 +924,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
 
   // --- Session lock (scoped per userId) ---
   useEffect(() => {
-    if (!matchId || !isMatchPlayer || !currentUserId) return;
+    // El retirado no anota: no coge el candado (y no le sale «sesión tomada»)
+    if (!matchId || !isMatchPlayer || isWithdrawn || !currentUserId) return;
 
     // Force-release any stale lock before acquiring.
     // Prevents orphaned locks (closed tabs, page reloads, or cookie-shared
@@ -957,7 +975,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         clearInterval(currentRefreshTimer);
       }
     };
-  }, [matchId, isMatchPlayer, currentUserId]);
+  }, [matchId, isMatchPlayer, isWithdrawn, currentUserId]);
 
   // --- Initial fetch + polling ---
   useEffect(() => {
@@ -1043,6 +1061,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     hasSubmitted,
     isOwnScoreLocked,
     isMarkerScoreLocked,
+    marcaBloqueadaPara,
+    marcadoPendienteEn,
     isFullyLocked,
     validatedHoles,
     totalHoles,

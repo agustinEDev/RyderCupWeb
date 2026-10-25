@@ -3831,3 +3831,68 @@ describe('useScoring · retirada del fourball', () => {
   });
 });
 
+// Revisión del front del fourball (25 oct 2026): quien marca a dos
+describe('useScoring · quien marca a dos', () => {
+  const vistaDeDos = {
+    ...mockScoringView,
+    matchFormat: 'FOURBALL',
+    players: [
+      { userId: 'u1', userName: 'Ana', team: 'A' },
+      { userId: 'u3', userName: 'Bea', team: 'A' },
+      { userId: 'u2', userName: 'Carlos', team: 'B' },
+      { userId: 'u4', userName: 'Dani', team: 'B' },
+    ],
+    withdrawnPlayerIds: ['u3'],
+    markerAssignments: [
+      { scorerUserId: 'u1', marksUserId: 'u2' },
+      { scorerUserId: 'u1', marksUserId: 'u4' },
+      { scorerUserId: 'u2', marksUserId: 'u1' },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    offlineQueue.getByMatch.mockReturnValue([]);
+  });
+
+  it('el bloqueo va por marcado: entregó Carlos, a Dani se le sigue marcando', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({ ...vistaDeDos, scorecardSubmittedBy: ['u1', 'u2'] });
+    submitHoleScoreUseCase.execute.mockResolvedValue({ ...vistaDeDos, scorecardSubmittedBy: ['u1', 'u2'] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.marcaBloqueadaPara('u2')).toBe(true);
+    expect(result.current.marcaBloqueadaPara('u4')).toBe(false);
+    expect(result.current.marcaBloqueadaPara(undefined)).toBe(true);
+
+    // Con mi tarjeta entregada, la marca de Dani sigue saliendo
+    await act(async () => {
+      await result.current.submitScore(1, { markedPlayerId: 'u4', markedScore: 5 }, { tocado: ['markedScore'] });
+    });
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('lo que queda sin enviar de un hoyo dice a quién iba', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', scoreData: { markedPlayerId: 'u4', markedScore: 5 } },
+    ]);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.marcadoPendienteEn(3)).toBe('u4');
+    expect(result.current.marcadoPendienteEn(4)).toBeNull();
+  });
+
+  it('el retirado no coge el candado de la sesión (no anota)', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({ ...vistaDeDos, withdrawnPlayerIds: ['u1'] });
+    sessionLock.acquire.mockClear();
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isWithdrawn).toBe(true);
+    expect(sessionLock.acquire).not.toHaveBeenCalled();
+  });
+});
+
