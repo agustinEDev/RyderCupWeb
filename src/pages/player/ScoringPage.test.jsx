@@ -71,6 +71,10 @@ const mockUseScoring = {
   concedeMatch: vi.fn(),
   takeOverSession: vi.fn(),
   refetch: vi.fn(),
+  // Como el hook con un solo marcado: sin marcado, o con él entregado
+  marcaBloqueadaPara: (id) => !id || mockUseScoring.isMarkerScoreLocked,
+  marcadoPendienteEn: () => null,
+  retirando: false,
 };
 
 const mapaHoyo = vi.hoisted(() => ({
@@ -1565,6 +1569,7 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
       mockUseScoring.canScore = true;
       mockUseScoring.isOwnScoreLocked = false;
       mockUseScoring.isMarkerScoreLocked = false;
+      mockUseScoring.marcaBloqueadaPara = (id) => !id || mockUseScoring.isMarkerScoreLocked;
     });
 
     it.each([
@@ -1592,6 +1597,28 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
 
       expect(screen.getByTestId('no-guardados').textContent).toContain('offline.noGuardados ');
       expect(screen.getByTestId('no-guardados').textContent).not.toContain('noGuardadosSinAnotar');
+    });
+
+    // /code-review (26 oct 2026): quien marca a dos mira el bloqueo de ESE marcado
+    it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u4' } };
+      mockUseScoring.isOwnScoreLocked = true;
+      mockUseScoring.isMarkerScoreLocked = true;
+      mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('offline.noGuardados ');
+    });
+
+    it('la marca perdida era de Carlos, que entregó: ya no se puede', () => {
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u2' } };
+      mockUseScoring.isOwnScoreLocked = true;
+      mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('noGuardadosSinAnotar');
     });
 
     // Segunda revisión: mira qué golpe se perdió, no si están bloqueados los dos
@@ -1783,3 +1810,250 @@ describe('ScoringPage — sesión tomada con el mapa abierto', () => {
     expect(mapaHoyo.args.cerrarSi).toBe(true);
   });
 });
+
+// Fourball con un jugador retirado (25 oct 2026, tabla F1–F10)
+describe('ScoringPage · fourball con un retirado', () => {
+  const vistaOriginal = mockUseScoring.scoringView;
+  const original = { ...mockUseScoring };
+  // Borrando lo añadido: `Object.assign` solo no quita una clave nueva, y el
+  // `isWithdrawn` de un test se colaba en el siguiente
+  afterEach(() => {
+    for (const clave of Object.keys(mockUseScoring)) {
+      if (!(clave in original)) delete mockUseScoring[clave];
+    }
+    Object.assign(mockUseScoring, original);
+    mockUseScoring.scoringView = vistaOriginal;
+  });
+
+  const fourball = (extra = {}) => ({
+    ...vistaOriginal,
+    matchFormat: 'FOURBALL',
+    withdrawnPlayerIds: [],
+    players: [
+      { userId: 'u1', userName: 'Ana', team: 'A' },
+      { userId: 'u3', userName: 'Bea', team: 'A' },
+      { userId: 'u2', userName: 'Carlos', team: 'B' },
+      { userId: 'u4', userName: 'Dani', team: 'B' },
+    ],
+    markerAssignments: [
+      { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u4', markedByName: 'Dani' },
+      { scorerUserId: 'u3', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u2', markedByName: 'Carlos' },
+      { scorerUserId: 'u2', marksUserId: 'u3', marksName: 'Bea', markedByUserId: 'u1', markedByName: 'Ana' },
+      { scorerUserId: 'u4', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u3', markedByName: 'Bea' },
+    ],
+    ...extra,
+  });
+
+  it('F2: ofrece retirarme y retirar a mi pareja, y retirar llama al hook', () => {
+    const retirarJugador = vi.fn();
+    Object.assign(mockUseScoring, { scoringView: fourball(), retirarJugador });
+
+    render(<ScoringPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'withdraw.withdrawPartner {"nombre":"Bea"}' }));
+    fireEvent.click(screen.getByRole('button', { name: 'withdraw.confirmYes' }));
+
+    expect(screen.getByRole('button', { name: 'withdraw.withdrawMe' })).toBeInTheDocument();
+    expect(retirarJugador).toHaveBeenCalledWith('u3', { deshacer: false });
+  });
+
+  it('F2c: en individual no hay retirada', () => {
+    render(<ScoringPage />);
+    expect(screen.queryByTestId('retirada-del-fourball')).not.toBeInTheDocument();
+  });
+
+  it('F3: retirado, el aviso para volver y sin barra de entregar', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: fourball({ withdrawnPlayerIds: ['u1'] }),
+      isWithdrawn: true,
+      canScore: false,
+      partidoAcabado: true,
+    });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByText('withdraw.youAreWithdrawn')).toBeInTheDocument();
+    expect(screen.queryByTestId('hueco-de-la-barra')).not.toBeInTheDocument();
+  });
+
+  it('F4 y F6: la tarjeta y el selector reciben a los retirados', () => {
+    Object.assign(mockUseScoring, { scoringView: fourball({ withdrawnPlayerIds: ['u3'] }) });
+
+    render(<ScoringPage />);
+    // La tarjeta vive en su pestaña, que no se monta hasta abrirla
+    fireEvent.click(screen.getByTestId('tab-scorecard'));
+
+    expect(tarjeta.props.retirados).toEqual(['u3']);
+    expect(selector.props.retirados).toEqual(['u3']);
+  });
+
+  it('F4: el retirado no está en «falta por entregar»', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: fourball({ withdrawnPlayerIds: ['u3'], scorecardSubmittedBy: ['u1'] }),
+      hasSubmitted: true,
+    });
+
+    render(<ScoringPage />);
+
+    const barra = screen.getByTestId('barra-de-entrega');
+    expect(barra).toHaveTextContent('Carlos');
+    expect(barra).not.toHaveTextContent('Bea');
+  });
+
+  it('F5: marcando a dos, se elige a quién; el golpe va al elegido', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, {
+      submitScore,
+      scoringView: fourball({
+        withdrawnPlayerIds: ['u3'],
+        markerAssignments: [
+          { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u4', markedByName: 'Dani' },
+          { scorerUserId: 'u1', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u4', markedByName: 'Dani' },
+          { scorerUserId: 'u4', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u1', markedByName: 'Ana' },
+          { scorerUserId: 'u2', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u1', markedByName: 'Ana' },
+        ],
+      }),
+    });
+
+    render(<ScoringPage />);
+    expect(screen.getByTestId('a-quien-anoto')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+    casilla.props.onScoreChange({ ownScore: 4, markedScore: 5 }, ['markedScore']);
+
+    expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4, markedPlayerId: 'u4', markedScore: 5 }, { tocado: ['markedScore'] });
+  });
+
+  const dosMarcados = (extra = {}) =>
+    fourball({
+      withdrawnPlayerIds: ['u3'],
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u2', markedByName: 'Carlos' },
+        { scorerUserId: 'u1', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u2', markedByName: 'Carlos' },
+        { scorerUserId: 'u2', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u1', markedByName: 'Ana' },
+      ],
+      ...extra,
+    });
+
+  it('sin nadie a quien marcar (el rival que marcaba al retirado), su golpe sale solo', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, {
+      submitScore,
+      scoringView: fourball({
+        withdrawnPlayerIds: ['u4'],
+        markerAssignments: [
+          { scorerUserId: 'u3', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u2', markedByName: 'Carlos' },
+          { scorerUserId: 'u2', marksUserId: 'u3', marksName: 'Bea', markedByUserId: 'u3', markedByName: 'Bea' },
+        ],
+      }),
+    });
+
+    render(<ScoringPage />);
+    casilla.props.onScoreChange({ ownScore: 4, markedScore: undefined }, ['ownScore']);
+
+    expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4 }, { tocado: ['ownScore'] });
+    expect(casilla.props.isMarkerScoreLocked).toBe(true);
+  });
+
+  // /code-review (26 oct 2026)
+  const sinMarcado = () => fourball({
+    withdrawnPlayerIds: ['u4'],
+    markerAssignments: [
+      { scorerUserId: 'u3', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u2', markedByName: 'Carlos' },
+      { scorerUserId: 'u2', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u3', markedByName: 'Bea' },
+    ],
+  });
+
+  it('sin marcado: sin casilla de marca y con quien me anota a mí', () => {
+    Object.assign(mockUseScoring, { scoringView: sinMarcado() });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.marksSomeone).toBe(false);
+    expect(casilla.props.markerName).toBe('Carlos');
+  });
+
+  it('un admin que no juega no manda golpe propio', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, { submitScore, scoringView: sinMarcado(), isMatchPlayer: false, canScore: true });
+
+    render(<ScoringPage />);
+    casilla.props.onScoreChange({ ownScore: 4 }, ['ownScore']);
+
+    expect(submitScore).not.toHaveBeenCalled();
+  });
+
+  it('sin marcado y solo tocando la marca, no se manda nada', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, { submitScore, scoringView: sinMarcado() });
+
+    render(<ScoringPage />);
+    casilla.props.onScoreChange({ ownScore: undefined, markedScore: 3 }, ['markedScore']);
+
+    expect(submitScore).not.toHaveBeenCalled();
+  });
+
+  it('los botones de retirada van con su propio indicador, no con el de los golpes', () => {
+    Object.assign(mockUseScoring, { scoringView: fourball(), isSubmitting: true, retirando: false });
+    const { unmount } = render(<ScoringPage />);
+    expect(screen.getByRole('button', { name: 'withdraw.withdrawMe' })).toBeEnabled();
+    unmount();
+
+    Object.assign(mockUseScoring, { isSubmitting: false, retirando: true });
+    render(<ScoringPage />);
+    expect(screen.getByRole('button', { name: 'withdraw.withdrawMe' })).toBeDisabled();
+  });
+
+  it('con algo sin enviar en el hoyo, el selector se queda en ese marcado y lo dice', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: dosMarcados(),
+      marcadoPendienteEn: (hoyo) => (hoyo === 1 ? 'u4' : null),
+    });
+
+    render(<ScoringPage />);
+
+    expect(screen.getByRole('radio', { name: 'Dani' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Carlos' })).toBeDisabled();
+    expect(screen.getByText('withdraw.oneAtATime {"nombre":"Dani"}')).toBeInTheDocument();
+  });
+
+  it('la elección es del hoyo: en el siguiente vuelve al primero sin golpe', () => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados() });
+    const { rerender } = render(<ScoringPage />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+    expect(screen.getByRole('radio', { name: 'Dani' })).toBeChecked();
+
+    mockUseScoring.currentHole = 2;
+    rerender(<ScoringPage />);
+
+    expect(screen.getByRole('radio', { name: 'Carlos' })).toBeChecked();
+  });
+
+  it('la casilla sabe a quién marca: cambia con el marcado elegido', () => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados() });
+
+    render(<ScoringPage />);
+    expect(casilla.props.markedPlayerId).toBe('u2');
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+
+    expect(casilla.props.markedPlayerId).toBe('u4');
+  });
+
+  it('la casilla se bloquea según el marcado elegido, no el primero', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: dosMarcados(),
+      marcaBloqueadaPara: (id) => id === 'u2',
+    });
+
+    render(<ScoringPage />);
+    expect(casilla.props.isMarkerScoreLocked).toBe(true);
+    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
+
+    expect(casilla.props.isMarkerScoreLocked).toBe(false);
+  });
+
+  it('F5: marcando a uno, no hay selector', () => {
+    Object.assign(mockUseScoring, { scoringView: fourball() });
+    render(<ScoringPage />);
+    expect(screen.queryByTestId('a-quien-anoto')).not.toBeInTheDocument();
+  });
+});
+

@@ -22,6 +22,7 @@ vi.mock('../composition', () => ({
   submitHoleScoreUseCase: { execute: vi.fn() },
   submitScorecardUseCase: { execute: vi.fn() },
   concedeMatchUseCase: { execute: vi.fn() },
+  withdrawMatchPlayerUseCase: { execute: vi.fn() },
 }));
 
 // Mock offline queue
@@ -58,6 +59,7 @@ import {
   submitHoleScoreUseCase,
   submitScorecardUseCase,
   concedeMatchUseCase,
+  withdrawMatchPlayerUseCase,
 } from '../composition';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
@@ -3315,6 +3317,20 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     expect(result.current.error).toBeNull();
   });
 
+  // /code-review (26 oct 2026): quien marca a dos necesita saber de QUIÉN era
+  // la marca perdida, para decir si aún se puede volver a anotar
+  it('N1c · la marca perdida recuerda a quién iba; sin marca, null', async () => {
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }); });
+    await act(async () => { await result.current.submitScore(6, { ownScore: 4 }); });
+
+    expect(result.current.noGuardados[5].marcado).toBe('u4');
+    expect(result.current.noGuardados[6].marcado).toBeNull();
+  });
+
   it('N1b · enviando: la petición no llega y el móvil no tiene sitio', async () => {
     const { result } = await monta();
     sinSitio();
@@ -3758,3 +3774,225 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
     expect(delHoyo5()).toEqual([]);
   });
 });
+
+// Fourball con un jugador retirado (25 oct 2026, tabla F1–F10)
+describe('useScoring · retirada del fourball', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    getScoringViewUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: [] });
+  });
+
+  it('F3: retirado, no anota (aunque juegue el partido)', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: ['u1'] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isMatchPlayer).toBe(true);
+    expect(result.current.canScore).toBe(false);
+    expect(result.current.isWithdrawn).toBe(true);
+  });
+
+  it('F2: retirar llama al caso de uso y vuelve a leer la vista; deshacer, con su marca', async () => {
+    withdrawMatchPlayerUseCase.execute.mockResolvedValue({ withdrawnPlayerIds: ['u2'] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const lecturas = getScoringViewUseCase.execute.mock.calls.length;
+
+    await act(async () => {
+      await result.current.retirarJugador('u2');
+    });
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith('m-1', 'u2', { deshacer: false });
+    expect(getScoringViewUseCase.execute.mock.calls.length).toBeGreaterThan(lecturas);
+
+    await act(async () => {
+      await result.current.retirarJugador('u2', { deshacer: true });
+    });
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenLastCalledWith('m-1', 'u2', { deshacer: true });
+  });
+
+  it('F8: sin conexión no lo intenta y lo dice', async () => {
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+
+    await act(async () => {
+      await result.current.retirarJugador('u2');
+    });
+
+    expect(withdrawMatchPlayerUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.origenDelError).toBe('retirada');
+    expect(result.current.error.i18nKey).toBe('withdraw.needsConnection');
+    enLinea.mockRestore();
+  });
+
+  // /code-review (26 oct 2026): retirado, el servidor rechaza para siempre sus
+  // golpes (PLAYER_WITHDRAWN). Antes de retirarse, lo suyo tiene que salir
+  it('F11: retirarme con golpes en la cola: primero los manda; si no salen, no me retira y lo dice', async () => {
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 14, participantId: null, userId: 'u1', scoreData: { ownScore: 5, markedPlayerId: 'u2' } },
+    ]);
+    submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('caído'), { status: 503 }));
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    submitHoleScoreUseCase.execute.mockClear();
+
+    await act(async () => {
+      await result.current.retirarJugador('u1');
+    });
+
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
+    expect(withdrawMatchPlayerUseCase.execute).not.toHaveBeenCalled();
+    expect(result.current.error.i18nKey).toBe('withdraw.pendingScores');
+    offlineQueue.getByMatch.mockReturnValue([]);
+    submitHoleScoreUseCase.execute.mockReset();
+  });
+
+  it('F11b: a mi pareja sí, aunque yo tenga golpes en la cola (son míos, no suyos)', async () => {
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 14, participantId: null, userId: 'u1', scoreData: { ownScore: 5, markedPlayerId: 'u2' } },
+    ]);
+    withdrawMatchPlayerUseCase.execute.mockResolvedValue({});
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.retirarJugador('u3');
+    });
+
+    expect(withdrawMatchPlayerUseCase.execute).toHaveBeenCalledWith('m-1', 'u3', { deshacer: false });
+    offlineQueue.getByMatch.mockReturnValue([]);
+  });
+
+  it('F12: retirando tiene su propio indicador: un golpe que acaba no lo apaga', async () => {
+    let suelta;
+    withdrawMatchPlayerUseCase.execute.mockReturnValue(new Promise((r) => { suelta = r; }));
+    submitHoleScoreUseCase.execute.mockResolvedValue({ ...mockScoringView, withdrawnPlayerIds: [] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let retirada;
+    act(() => { retirada = result.current.retirarJugador('u2'); });
+    await waitFor(() => expect(result.current.retirando).toBe(true));
+    await act(async () => {
+      await result.current.submitScore(1, { ownScore: 4, markedPlayerId: 'u2' });
+    });
+    expect(result.current.retirando).toBe(true);
+
+    await act(async () => { suelta({}); await retirada; });
+    expect(result.current.retirando).toBe(false);
+    submitHoleScoreUseCase.execute.mockReset();
+  });
+
+  it('F9: un 409 con motivo se explica con su texto', async () => {
+    const rechazo = Object.assign(new Error('Cannot withdraw the last player of a side'), {
+      status: 409,
+      errorCode: 'WITHDRAWAL_NOT_ALLOWED',
+      data: { reason: 'LAST_OF_SIDE' },
+    });
+    withdrawMatchPlayerUseCase.execute.mockRejectedValue(rechazo);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.retirarJugador('u2');
+    });
+
+    expect(result.current.origenDelError).toBe('retirada');
+    expect(result.current.error.i18nKey).toBe('withdraw.errors.LAST_OF_SIDE');
+  });
+});
+
+// Revisión del front del fourball (25 oct 2026): quien marca a dos
+describe('useScoring · quien marca a dos', () => {
+  const vistaDeDos = {
+    ...mockScoringView,
+    matchFormat: 'FOURBALL',
+    players: [
+      { userId: 'u1', userName: 'Ana', team: 'A' },
+      { userId: 'u3', userName: 'Bea', team: 'A' },
+      { userId: 'u2', userName: 'Carlos', team: 'B' },
+      { userId: 'u4', userName: 'Dani', team: 'B' },
+    ],
+    withdrawnPlayerIds: ['u3'],
+    markerAssignments: [
+      { scorerUserId: 'u1', marksUserId: 'u2' },
+      { scorerUserId: 'u1', marksUserId: 'u4' },
+      { scorerUserId: 'u2', marksUserId: 'u1' },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+    offlineQueue.getByMatch.mockReturnValue([]);
+  });
+
+  it('el bloqueo va por marcado: entregó Carlos, a Dani se le sigue marcando', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({ ...vistaDeDos, scorecardSubmittedBy: ['u1', 'u2'] });
+    submitHoleScoreUseCase.execute.mockResolvedValue({ ...vistaDeDos, scorecardSubmittedBy: ['u1', 'u2'] });
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.marcaBloqueadaPara('u2')).toBe(true);
+    expect(result.current.marcaBloqueadaPara('u4')).toBe(false);
+    expect(result.current.marcaBloqueadaPara(undefined)).toBe(true);
+
+    // Con mi tarjeta entregada, la marca de Dani sigue saliendo
+    await act(async () => {
+      await result.current.submitScore(1, { markedPlayerId: 'u4', markedScore: 5 }, { tocado: ['markedScore'] });
+    });
+    expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('lo que queda sin enviar de un hoyo dice a quién iba', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', scoreData: { markedPlayerId: 'u4', markedScore: 5 } },
+    ]);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.marcadoPendienteEn(3)).toBe('u4');
+    expect(result.current.marcadoPendienteEn(4)).toBeNull();
+  });
+
+  it('el retirado no coge el candado de la sesión (no anota)', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({ ...vistaDeDos, withdrawnPlayerIds: ['u1'] });
+    sessionLock.acquire.mockClear();
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isWithdrawn).toBe(true);
+    expect(sessionLock.acquire).not.toHaveBeenCalled();
+  });
+});
+
+// /code-review (26 oct 2026): lo que pone la cola encima va marcado, para que el
+// selector no lo dé por cerrado aunque el servidor tenga resultado del hoyo
+describe('useScoring · lo de la cola va marcado', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    almacen.clear();
+  });
+
+  it('la fila corregida en la cola lleva enCola', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      scores: [{
+        holeNumber: 2,
+        holeResult: { winner: 'A' },
+        playerScores: [{ userId: 'u1', ownScore: 4, ownSubmitted: true, validationStatus: 'match' }],
+      }],
+    });
+    offlineQueue.getByMatch.mockReturnValue([
+      { matchId: 'm-1', holeNumber: 2, participantId: null, userId: 'u1', scoreData: { ownScore: 5 } },
+    ]);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const fila = result.current.scoresVisibles.find((h) => h.holeNumber === 2).playerScores[0];
+    expect(fila).toMatchObject({ ownScore: 5, validationStatus: 'pending', enCola: true });
+  });
+});
+

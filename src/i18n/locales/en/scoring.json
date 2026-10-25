@@ -432,5 +432,34 @@
     },
     "reporteSinCodos": "Move the tee or the green if needed"
   },
-  "tabsLabel": "Match view"
+  "tabsLabel": "Match view",
+  "withdraw": {
+    "withdrawMe": "Withdraw from the match",
+    "withdrawPartner": "Mark {{nombre}} as withdrawn",
+    "undoPartner": "Undo {{nombre}}'s withdrawal",
+    "youAreWithdrawn": "You are withdrawn from this match",
+    "comeBack": "Back to the match",
+    "confirmTitle": "Withdraw from the match?",
+    "confirmMessage": "From now on their ball does not count on holes they have not validated, and their partner will also mark the opponent they marked. It can be undone until someone hands in a scorecard.",
+    "confirmYes": "Yes, withdraw",
+    "cancel": "Cancel",
+    "badge": "Withdrawn",
+    "markingWho": "You score:",
+    "needsConnection": "You need a connection to withdraw or bring back a player",
+    "failed": "The player could not be withdrawn or brought back",
+    "errors": {
+      "NOT_FOURBALL": "A player can only be withdrawn in a fourball",
+      "MATCH_NOT_ACTIVE": "The match is no longer in play",
+      "NOT_A_PLAYER": "That player is not in this match",
+      "ALREADY_WITHDRAWN": "That player is already withdrawn",
+      "LAST_OF_SIDE": "Both players of a side cannot be withdrawn: concede the match",
+      "SCORECARD_SUBMITTED": "A scorecard has been handed in: validated holes do not change",
+      "NOT_WITHDRAWN": "That player is not withdrawn"
+    },
+    "organizerTitle": "Withdraw a fourball player",
+    "organizerWithdraw": "Withdraw {{nombre}}",
+    "organizerUndo": "Undo {{nombre}}'s withdrawal",
+    "oneAtATime": "What you scored for {{nombre}} on this hole has not reached the server yet: the other one, once you are back online",
+    "pendingScores": "You have scores not sent yet: once they reach the server you can withdraw, or they would be lost"
+  }
 }

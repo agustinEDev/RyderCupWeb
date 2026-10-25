@@ -27,6 +27,8 @@ const HoleInput = ({
   strokeIndex,
   playerScore,
   markedPlayerScore,
+  // A quién se marca: quien marca a dos lo cambia en el mismo hoyo
+  markedPlayerId,
   validationStatus,
   markedValidationStatus,
   netScore,
@@ -92,6 +94,14 @@ const HoleInput = ({
     setOwnValue(ownDeLaVista);
   }
   const [markedVisto, setMarkedVisto] = useState(markedDeLaVista);
+  // Otro marcado: su marca es la de la vista, no lo tecleado para el anterior,
+  // aunque las dos digan lo mismo y lo de abajo no lo vea (CodeRabbit, FE #970)
+  const [marcadoVisto, setMarcadoVisto] = useState(markedPlayerId);
+  if (marcadoVisto !== markedPlayerId) {
+    setMarcadoVisto(markedPlayerId);
+    setMarkedVisto(markedDeLaVista);
+    setMarkedValue(markedDeLaVista);
+  }
   if (markedVisto !== markedDeLaVista) {
     setMarkedVisto(markedDeLaVista);
     setMarkedValue(markedDeLaVista);

@@ -15,8 +15,15 @@ class SubmitHoleScoreUseCase {
     if (!scoreData) {
       throw new Error('Score data is required');
     }
-    if (!scoreData.markedPlayerId) {
+    // Sin marcado se manda solo su golpe: en un fourball con un retirado, quien
+    // le marcaba ya no marca a nadie (RyderCupAM#666). Un golpe de marcador sí
+    // tiene que decir de quién es
+    if (!scoreData.markedPlayerId && scoreData.markedScore !== undefined) {
       throw new Error('Marked player ID is required');
+    }
+    // Y sin marcado ni golpe no hay nada que mandar
+    if (!scoreData.markedPlayerId && scoreData.ownScore === undefined) {
+      throw new Error('Nothing to submit');
     }
 
     // Omitir un golpe NO es lo mismo que mandarlo nulo (#609): nulo es una raya
@@ -25,7 +32,7 @@ class SubmitHoleScoreUseCase {
     // `undefined`, y pasarla por `HoleScore` la convertia en `null`: asi se
     // concedia el hoyo del otro sin que nadie lo concediera, y su hoyo pasaba a
     // desacuerdo si ya habia anotado. Se valida y se manda solo lo que viene
-    const aEnviar = { markedPlayerId: scoreData.markedPlayerId };
+    const aEnviar = scoreData.markedPlayerId ? { markedPlayerId: scoreData.markedPlayerId } : {};
     if (scoreData.ownScore !== undefined) {
       aEnviar.ownScore = new HoleScore(scoreData.ownScore).getValue();
     }
