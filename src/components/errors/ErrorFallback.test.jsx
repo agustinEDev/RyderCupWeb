@@ -28,6 +28,8 @@ describe('ErrorFallback', () => {
     expect(screen.getByRole('heading', { name: 'Algo ha fallado' })).toBeInTheDocument();
     expect(screen.getByText(/el error ya nos ha llegado/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    // Para que el lector de pantalla lo lea con voz española: la página dice «en»
+    expect(screen.getByRole('heading', { name: 'Algo ha fallado' }).closest('[lang]')).toHaveAttribute('lang', 'es');
   });
 
   it('E: en inglés, la de siempre', () => {

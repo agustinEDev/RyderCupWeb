@@ -8,7 +8,7 @@ import { textosDelError } from './textosDelError';
  * cargado (25 oct 2026; antes, dentro de App.jsx y siempre en inglés).
  */
 const ErrorFallback = ({ error, componentStack, resetError }) => {
-  const textos = textosDelError().fallo;
+  const { fallo: textos, idioma } = textosDelError();
   // Si el arbol revienta, la cortina se queda encima tapando esta misma
   // pantalla hasta que la red del CSS la aparta seis segundos despues. Ya paso:
   // `useInstallPrompt` lee `localStorage`, y en Safari con las cookies
@@ -18,7 +18,7 @@ const ErrorFallback = ({ error, componentStack, resetError }) => {
   }, []);
 
   return (
-  <div style={{
+  <div lang={idioma} style={{
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',

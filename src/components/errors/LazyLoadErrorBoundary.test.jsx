@@ -338,6 +338,7 @@ describe('LazyLoadErrorBoundary', () => {
     expect(screen.getByText('No se ha podido cargar la aplicación')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Recargar' })).toBeInTheDocument();
     expect(screen.getByText('Detalles técnicos')).toBeInTheDocument();
+    expect(screen.getByText('No se ha podido cargar la aplicación').closest('[lang]')).toHaveAttribute('lang', 'es');
     expect(screen.queryByText('Unable to Load Application')).not.toBeInTheDocument();
   });
 });

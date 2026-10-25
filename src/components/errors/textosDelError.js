@@ -5,10 +5,13 @@
  * demanda (`i18n/config.js`), y estas pantallas salen justo cuando la carga
  * falla, sin cobertura o con la caché a medias. Antes estaban fijas en inglés.
  *
- * El idioma, el mismo que elige i18next: el guardado (`i18nextLng`) y, sin él,
- * el del navegador. Español si empieza por «es»; si no, inglés, el de por
- * defecto de la app.
+ * El idioma, el mismo que elige i18next: el que tiene en memoria si ya arrancó
+ * (cubre un cambio de idioma con el almacenamiento bloqueado), si no el guardado
+ * (`i18nextLng`) y, sin él, el primero del navegador. Español si empieza por
+ * «es»; si no, inglés, el de por defecto de la app.
  */
+import i18next from 'i18next';
+
 const CLAVE_DEL_IDIOMA = 'i18nextLng';
 
 const TEXTOS = {
@@ -48,15 +51,17 @@ const TEXTOS = {
 const esEspanol = (idioma) => typeof idioma === 'string' && idioma.toLowerCase().startsWith('es');
 
 /** 'es' o 'en'. Sin almacenamiento (Safari sin cookies lanza al leerlo), el del navegador. */
-export const idiomaDelError = ({ almacen, navegador = globalThis.navigator } = {}) => {
+export const idiomaDelError = ({ i18n = i18next, almacen, navegador = globalThis.navigator } = {}) => {
+  const enMemoria = i18n?.resolvedLanguage || i18n?.language;
+  if (enMemoria) return esEspanol(enMemoria) ? 'es' : 'en';
   let guardado = null;
   try {
     guardado = (almacen ?? globalThis.localStorage)?.getItem(CLAVE_DEL_IDIOMA) ?? null;
   } catch {
     // Sin almacenamiento: se mira el navegador
   }
-  const idioma = guardado || navegador?.language;
+  const idioma = guardado || navegador?.languages?.[0] || navegador?.language;
   return esEspanol(idioma) ? 'es' : 'en';
 };
 
-export const textosDelError = (idioma = idiomaDelError()) => TEXTOS[idioma] ?? TEXTOS.en;
+export const textosDelError = (idioma = idiomaDelError()) => ({ ...(TEXTOS[idioma] ?? TEXTOS.en), idioma: TEXTOS[idioma] ? idioma : 'en' });

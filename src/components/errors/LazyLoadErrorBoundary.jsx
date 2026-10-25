@@ -119,9 +119,9 @@ class LazyLoadErrorBoundary extends Component {
     if (this.state.hasError) {
       // Fallback UI when error persists after reload. En el idioma de la app,
       // sin las traducciones: justo ahora pueden no cargar (25 oct 2026)
-      const textos = textosDelError().sinCargar;
+      const { sinCargar: textos, idioma } = textosDelError();
       return (
-        <div style={{
+        <div lang={idioma} style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
