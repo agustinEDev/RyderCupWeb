@@ -800,6 +800,7 @@ jobs:
           SIZE_KB: ${{ steps.bundle.outputs.size_kb }}
           BUDGET_KB: ${{ steps.bundle.outputs.budget_kb }}
           WARNING_KB: ${{ steps.bundle.outputs.warning_kb }}
+          BUNDLE_PROBLEMS: ${{ steps.bundle.outputs.problems }}
           DIST_OUTCOME: ${{ steps.dist.outcome }}
           # Entrada «Deploy like Render»
           RENDER_OUTCOME: ${{ steps.render.outcome }}
@@ -825,7 +826,8 @@ jobs:
             IF_FAILS="Render would ship a broken site or a different build from the one tested. A version difference: update package-lock.json with that npm. A smoke failure: a missing chunk, an integrity hash or version.json in dist/."
           else
             RESULT=$(python3 .github/scripts/summary_results.py build-ci build_outcome="$VITE_OUTCOME" \
-              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" output_outcome="$DIST_OUTCOME")
+              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" \
+              problems="$BUNDLE_PROBLEMS" output_outcome="$DIST_OUTCOME")
             WHAT="Builds the production bundle with Vite and checks what opening the app downloads (the JS index.html loads, gzip) and the size of each chunk against the budgets in .github/scripts/bundle_budget.py. The build is kept as the build-output artifact."
             IF_FAILS="If the build broke, run 'npm run build' locally. If a budget was exceeded, lazy-load what the first screen does not need or split the chunk, or raise the budget in bundle_budget.py with its reason."
           fi

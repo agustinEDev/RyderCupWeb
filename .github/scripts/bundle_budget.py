@@ -8,17 +8,25 @@ nada: el 80 % eran pantallas diferidas que solo llegan si se navega a ellas
 (MapLibre, 1 MB, solo al abrir el mapa), y dividir una pantalla en trozos movía
 bytes sin bajar la suma. El tope se subió once veces, de 1400 a 3500 KB.
 
+Lo que NO cuenta como arranque, a sabiendas: la primera pantalla y lo que
+ella pida (son `lazy`: el panel son ~15 KB gzip y sus textos), y el precache
+de la PWA, que tras la primera visita baja en segundo plano todo lo demás.
+Mover código de la entrada a un `lazy` de la primera ruta baja la cifra sin
+acelerar nada: si algún día importa, se mide el cierre de imports de la ruta
+con el manifiesto de Vite (`build.manifest`).
+
 Tres comprobaciones:
 - Arranque (gzip): por encima de MAX_STARTUP_KB falla; de STARTUP_WARNING_KB,
   avisa.
-- Cada trozo (gzip), diferido o no: por encima de MAX_CHUNK_KB falla. Un trozo
-  diferido no pesa en el arranque, pero sigue siendo una espera al abrir su
-  pantalla.
+- Cada trozo (gzip), diferido o no, `.js` o `.mjs` (el worker de MapLibre): por
+  encima de MAX_CHUNK_KB falla. Un trozo diferido no pesa en el arranque, pero
+  sigue siendo una espera al abrir su pantalla.
 - Total del disco sin comprimir, la cifra de antes: solo sale en el log y avisa
   por encima de TOTAL_WARNING_KB; nunca falla.
 
 Uso: bundle_budget.py <dist>. Escribe en $GITHUB_OUTPUT, si existe,
-size_kb (el arranque), budget_kb y warning_kb para la tarjeta.
+size_kb (el arranque), budget_kb, warning_kb y problems (qué falló, vacío si
+nada) para la tarjeta.
 """
 
 import gzip
@@ -26,6 +34,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # 25 oct 2026 (#374, decidido con el product owner): el arranque pesaba
 # 240 KB gzip; 30 KB de margen. MapLibre, el trozo más grande, 276 KB gzip.
@@ -36,9 +45,10 @@ MAX_CHUNK_KB = 320
 TOTAL_WARNING_KB = 3500
 
 # Los JS de la página: el script de entrada y los modulepreload. Los atributos
-# pueden venir en cualquier orden, así que se busca la etiqueta entera
+# pueden venir en cualquier orden y con comillas dobles, simples o sin ellas
 ETIQUETA = re.compile(r"<(script|link)\b[^>]*>", re.IGNORECASE)
-ATRIBUTO = re.compile(r'\b(src|href|rel)\s*=\s*"([^"]*)"', re.IGNORECASE)
+ATRIBUTO = re.compile(r"""\b(src|href|rel)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", re.IGNORECASE)
+JS = (".js", ".mjs")
 
 
 def kb(octetos: int) -> int:
@@ -54,14 +64,16 @@ def js_del_arranque(index_html: str) -> list[str]:
     script y como preload sale dos veces: quien suma los cuenta una."""
     rutas: list[str] = []
     for etiqueta in ETIQUETA.finditer(index_html):
-        atributos = {k.lower(): v for k, v in ATRIBUTO.findall(etiqueta.group(0))}
+        atributos = {k.lower(): a or b or c for k, a, b, c in ATRIBUTO.findall(etiqueta.group(0))}
         if etiqueta.group(1).lower() == "script":
             ruta = atributos.get("src")
         elif atributos.get("rel", "").lower() == "modulepreload":
             ruta = atributos.get("href")
         else:
             ruta = None
-        if ruta and ruta.endswith(".js"):
+        # Sin la query (`?v=1`): el fichero en dist/ es el mismo
+        ruta = urlsplit(ruta).path if ruta else ruta
+        if ruta and ruta.endswith(JS):
             rutas.append(ruta)
     return rutas
 
@@ -83,7 +95,7 @@ def main(argv: list[str]) -> int:
         print("Uso: bundle_budget.py <dist>")
         return 2
     dist = Path(argv[0])
-    trozos = sorted((dist / "assets").glob("*.js"))
+    trozos = sorted(t for t in (dist / "assets").iterdir() if t.suffix in JS) if (dist / "assets").is_dir() else []
     if not trozos:
         print("::error::No JS bundles found in dist/assets: nothing was measured")
         return 1
@@ -91,9 +103,10 @@ def main(argv: list[str]) -> int:
     fallos: list[str] = []
     comprimido = {t.name: gzip_de(t) for t in trozos}
 
-    # --- Total del disco: solo informa ---
-    total = sum(t.stat().st_size for t in trozos)
-    print(f"📦 All JS on disk: {kb(total)} KB uncompressed, {kb(sum(comprimido.values()))} KB gzip, {len(trozos)} files")
+    # --- Total del disco: solo informa. Sin los .mjs, como la cifra de antes ---
+    total = sum(t.stat().st_size for t in trozos if t.suffix == ".js")
+    solo_js = [t for t in trozos if t.suffix == ".js"]
+    print(f"📦 All .js on disk: {kb(total)} KB uncompressed, {kb(sum(comprimido[t.name] for t in solo_js))} KB gzip, {len(solo_js)} files (.mjs listed, not summed)")
     for t in sorted(trozos, key=lambda t: comprimido[t.name], reverse=True):
         print(f"  {kb(comprimido[t.name]):>5} KB gzip  {kb(t.stat().st_size):>6} KB  {t.name}")
     if kb(total) > TOTAL_WARNING_KB:
@@ -114,7 +127,7 @@ def main(argv: list[str]) -> int:
         if not fichero.is_file():
             fallos.append(f"dist/index.html loads {ruta}, which is not in dist/")
             continue
-        del_arranque[ruta] = comprimido.get(fichero.name, gzip_de(fichero))
+        del_arranque[ruta] = comprimido[fichero.name] if fichero.parent == dist / "assets" else gzip_de(fichero)
 
     arranque = kb(sum(del_arranque.values()))
     print("")
@@ -134,7 +147,13 @@ def main(argv: list[str]) -> int:
         if kb(tam) > MAX_CHUNK_KB:
             fallos.append(f"{nombre} is {kb(tam)} KB gzip, over the {MAX_CHUNK_KB} KB limit for one chunk")
 
-    escribir_salidas({"size_kb": arranque, "budget_kb": MAX_STARTUP_KB, "warning_kb": STARTUP_WARNING_KB})
+    escribir_salidas({
+        "size_kb": arranque,
+        "budget_kb": MAX_STARTUP_KB,
+        "warning_kb": STARTUP_WARNING_KB,
+        # Una línea: GITHUB_OUTPUT es clave=valor por línea
+        "problems": "; ".join(f.split(". ")[0] for f in fallos),
+    })
 
     for fallo in fallos:
         print(f"::error::{fallo}")

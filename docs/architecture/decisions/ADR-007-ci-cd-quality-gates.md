@@ -1,7 +1,7 @@
 # ADR-007: CI/CD Quality Gates
 
 **Date:** December 24, 2025
-**Status:** Accepted (Implemented in v1.8.0)
+**Status:** Accepted (Implemented in v1.8.0). The bundle gate was replaced on 25 Oct 2026 (#374): it now budgets the gzipped JS `index.html` loads and caps each chunk, instead of summing every `dist/assets/*.js`. See `.github/scripts/bundle_budget.py`.
 **Decision Makers:** Frontend development team
 
 ## Context and Problem

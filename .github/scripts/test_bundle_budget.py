@@ -24,11 +24,15 @@ tamaño comprimido es el suyo más unos pocos bytes de cabecera.
 | B12  | el total y la lista salen en el log                | —    |
 | B13  | dist/assets sin ningún JS                          | 1    |
 | B14  | GITHUB_OUTPUT con el arranque, el tope y el aviso  | —    |
+| B15  | un .mjs (el worker de MapLibre) sobre su tope      | 1    |
+| B16  | comillas simples y query string en index.html      | 0    |
+| B17  | GITHUB_OUTPUT dice qué falló, aunque el arranque quepa | — |
 """
 
 import io
 import os
 import random
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -56,8 +60,9 @@ def html(*referencias: tuple[str, str]) -> str:
 class PresupuestoDelBundle(unittest.TestCase):
     def setUp(self):
         self.dist = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dist)
         (self.dist / "assets").mkdir()
-        self.salida = self.dist.parent / f"{self.dist.name}_github_output"
+        self.salida = self.dist / "github_output"
         entorno = mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(self.salida)})
         entorno.start()
         self.addCleanup(entorno.stop)
@@ -195,8 +200,34 @@ class PresupuestoDelBundle(unittest.TestCase):
         self.correr()
         self.assertEqual(
             self.salidas(),
-            {"size_kb": "100", "budget_kb": "270", "warning_kb": "255"},
+            {"size_kb": "100", "budget_kb": "270", "warning_kb": "255", "problems": ""},
         )
+
+    def test_B15_un_mjs_sobre_su_tope(self):
+        self.trozo("maplibre-gl-worker.mjs", 330)
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(self.correr(), 1)
+        self.assertIn("maplibre-gl-worker.mjs", self.log.getvalue())
+
+    def test_B16_comillas_simples_y_query_string(self):
+        self.trozo("react.js", 100)
+        (self.dist / "index.html").write_text(
+            "<html><head>"
+            f"<script type=module src='/assets/{self.trozo('index.js', 50)}?v=1'></script>"
+            "<link rel=modulepreload href='/assets/react.js'>"
+            "</head></html>"
+        )
+        self.assertEqual(self.correr(), 0)
+        self.assertEqual(self.salidas()["size_kb"], "150")
+
+    def test_B17_github_output_dice_que_fallo(self):
+        self.trozo("teselas.js", 330)
+        self.indice(("script", self.trozo("index.js", 100)), ("preload", "fantasma.js"))
+        self.assertEqual(self.correr(), 1)
+        problemas = self.salidas()["problems"]
+        self.assertIn("teselas.js", problemas)
+        self.assertIn("fantasma.js", problemas)
+        self.assertEqual(self.salidas()["size_kb"], "100")
 
 
 if __name__ == "__main__":

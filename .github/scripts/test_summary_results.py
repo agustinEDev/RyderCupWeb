@@ -15,6 +15,8 @@ Tests del «Result» de las tarjetas de licencias y Dependency Review (#777).
 | D3   | dependency-review | licencias ilegibles                        | no inventa el número               |
 | D4   | dependency-review | licencias con otro formato (una lista)     | no inventa el número               |
 | D5   | dependency-review | solo `unlicensed` (NOASSERTION, no falla)  | 0 fuera; los sin licencia, aparte  |
+| P1   | build-ci          | arranque en tope, sin problemas            | el arranque gzip y su tope         |
+| P2   | build-ci          | arranque en tope, un trozo se pasa (#374)  | el motivo, no «within budget»      |
 """
 
 import json
@@ -97,6 +99,19 @@ class TarjetaDeDependencyReview(unittest.TestCase):
         })
         self.assertTrue(r.endswith("1 with a licence outside the allow-list "
                                    "(2 with no licence reported, which does not fail)."), r)
+
+
+
+class TarjetaDelBuild(unittest.TestCase):
+    BASE = {"build_outcome": "success", "size_kb": "240", "budget_kb": "270", "warning_kb": "255", "output_outcome": "success"}
+
+    def test_P1_arranque_sin_problemas(self):
+        r = sr.build_ci({**self.BASE, "problems": ""})
+        self.assertEqual(r, "Production build OK. Startup JS 240 KB gzip of a 270 KB budget (88%; warns above 255 KB).")
+
+    def test_P2_un_trozo_se_pasa(self):
+        r = sr.build_ci({**self.BASE, "problems": "teselas.js is 330 KB gzip, over the 320 KB limit for one chunk"})
+        self.assertIn("Bundle check failed: teselas.js is 330 KB gzip", r)
 
 
 if __name__ == "__main__":

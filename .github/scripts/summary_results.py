@@ -334,6 +334,8 @@ def build_ci(p: dict) -> str:
             texto += " Close to the budget."
     else:
         texto += f" (budget: {VER_LOG})."
+    if p.get("problems"):
+        texto += f" Bundle check failed: {p['problems']}."
     if p.get("output_outcome") == "failure":
         texto += " But dist/ is missing."
     return texto
