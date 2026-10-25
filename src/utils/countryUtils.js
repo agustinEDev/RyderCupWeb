@@ -101,31 +101,12 @@ export const getCountriesInfo = (countryCodes) => {
  *   canUseRFEG({ country_code: null }) → false
  *   canUseRFEG(null) → false
  */
+// Sin consola (25 oct 2026): Sentry la recoge como migas, y el país del
+// usuario salía en cada error de la pantalla de perfil
 export const canUseRFEG = (user) => {
-  console.log('🔍 [canUseRFEG] Checking RFEG eligibility:', {
-    hasUser: !!user,
-    userType: typeof user,
-    hasCountryCode: !!(user?.country_code),
-    countryCode: user?.country_code,
-    countryCodeType: typeof user?.country_code
-  });
-
-  // Validate user object exists
-  if (!user || typeof user !== 'object') {
-    console.log('❌ [canUseRFEG] User object invalid');
-    return false;
-  }
-
-  // User must have a country_code defined
-  if (!user.country_code) {
-    console.log('❌ [canUseRFEG] User has no country_code');
-    return false;
-  }
-
+  if (!user || typeof user !== 'object') return false;
   // Only Spanish users (ES) can use RFEG
-  const isSpanish = user.country_code.toUpperCase() === 'ES';
-  console.log(isSpanish ? '✅ [canUseRFEG] User is Spanish' : '❌ [canUseRFEG] User is not Spanish:', user.country_code);
-  return isSpanish;
+  return Boolean(user.country_code) && user.country_code.toUpperCase() === 'ES';
 };
 
 /**

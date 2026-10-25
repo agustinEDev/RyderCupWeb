@@ -285,17 +285,17 @@ export default Sentry.withProfiler(App);
 // In every error, Sentry includes:
 {
   user: {
-    id: "uuid",
-    email: "user@example.com",
-    username: "Nombre Apellido",
-    first_name: "Nombre",
-    last_name: "Apellido",
-    country_code: "ES",
-    email_verified: true,
-    handicap: 15.2
+    id: "uuid"
   }
 }
 ```
+
+Only the id since 25 Oct 2026: Sentry is a third party and the id is enough to
+debug. Email, name, country and handicap are no longer sent. Console
+breadcrumbs are dropped in every environment (`sentryScrubbing.beforeBreadcrumb`,
+the hook `main.jsx` registers): the app logs personal data and API messages to
+the console. Anything needed to debug goes explicitly through `captureError`.
+Session Replay masks all text and blocks media in every environment.
 
 ### 5. Custom Business Context
 

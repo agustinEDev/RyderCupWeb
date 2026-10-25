@@ -18,6 +18,9 @@ import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
 // El número de Actividad y el del icono son de la cuenta que sale (FE-1)
 vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+// C4 (25 oct 2026): por sentryHelpers; `window.Sentry` no lo asigna nadie
+const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn() }));
+vi.mock('./sentryHelpers', () => sentryHelpers);
 
 // Mock i18next
 vi.mock('i18next', () => ({
@@ -250,7 +253,7 @@ describe('deviceRevocationLogout utilities', () => {
     it('should clear Sentry user context', () => {
       handleDeviceRevocationLogout();
 
-      expect(window.Sentry.setUser).toHaveBeenCalledWith(null);
+      expect(sentryHelpers.clearUserContext).toHaveBeenCalledTimes(1);
     });
 
     it('should show revocation message with 🔒 icon (always for this handler)', () => {

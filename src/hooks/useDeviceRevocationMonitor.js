@@ -65,8 +65,13 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
 
       // Validate API response shape before processing
       if (!response || !Array.isArray(response.devices)) {
-        // Malformed response - log for debugging but don't logout
-        console.warn('[DeviceMonitor] Malformed API response:', response);
+        // Malformed response - log for debugging but don't logout. Solo la
+        // forma: Sentry recoge la consola como migas, y la respuesta trae los
+        // dispositivos del usuario (25 oct 2026)
+        console.warn('[DeviceMonitor] Malformed API response:', {
+          type: response === null ? 'null' : typeof response,
+          keys: response && typeof response === 'object' ? Object.keys(response) : [],
+        });
         return;
       }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { canUseRFEG, getCountryFlag, getCountryInfo, getCountriesInfo } from './countryUtils';
 
 describe('countryUtils', () => {
@@ -214,5 +214,18 @@ describe('countryUtils', () => {
       const info = getCountriesInfo([]);
       expect(info).toEqual([]);
     });
+  });
+});
+
+// U6 (25 oct 2026): Sentry recoge la consola como migas, y el país del usuario
+// salía en cada error de la pantalla de perfil
+describe('canUseRFEG · sin consola', () => {
+  it('U6: no escribe el país del usuario en la consola', () => {
+    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    canUseRFEG({ country_code: 'FR' });
+    canUseRFEG({ country_code: 'ES' });
+    canUseRFEG(null);
+    for (const espia of espias) expect(espia).not.toHaveBeenCalled();
+    espias.forEach((e) => e.mockRestore());
   });
 });

@@ -25,6 +25,7 @@ import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApunte
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import i18next from 'i18next';
 import customToast from './toast';
+import { clearUserContext } from './sentryHelpers';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -171,10 +172,9 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
   // Y el número de Actividad y el del icono de la aplicación (FE-1)
   olvidaLasNovedades();
 
-  // Clear Sentry user context (if Sentry is initialized)
-  if (window.Sentry && typeof window.Sentry.setUser === 'function') {
-    window.Sentry.setUser(null);
-  }
+  // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
+  // nadie y esta línea no hacía nada (25 oct 2026)
+  clearUserContext();
 
   // Determine reason if not explicitly provided
   if (reason === 'unknown' && errorData?.detail) {

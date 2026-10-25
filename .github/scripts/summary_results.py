@@ -323,17 +323,21 @@ def build_ci(p: dict) -> str:
         return f"vite build failed — {VER_LOG}."
     tam, tope, aviso = (_entero(p.get(k)) for k in ("size_kb", "budget_kb", "warning_kb"))
     if tam is None:
-        return f"Production build done, but no JS bundle was measured in dist/assets — {VER_LOG}."
-    texto = f"Production build OK. JS bundle {tam} KB"
-    if tope:
-        texto += f" of a {tope} KB budget ({tam * 100 // tope}%"
-        texto += f"; warns above {aviso} KB)." if aviso else ")."
-        if tam > tope:
-            texto += f" Over the budget by {tam - tope} KB."
-        elif aviso and tam > aviso:
-            texto += " Close to the budget."
+        return f"Production build done, but no JS was measured — {VER_LOG}."
+    if p.get("problems"):
+        # El fallo primero: el paso está en rojo aunque el arranque quepa (#374)
+        texto = f"Production build done, but the bundle check failed: {p['problems']}."
+        if tope:
+            texto += f" Startup JS {tam} KB gzip of a {tope} KB budget."
     else:
-        texto += f" (budget: {VER_LOG})."
+        texto = f"Production build OK. Startup JS {tam} KB gzip"
+        if tope:
+            texto += f" of a {tope} KB budget ({tam * 100 // tope}%"
+            texto += f"; warns above {aviso} KB)." if aviso else ")."
+            if aviso and tam > aviso:
+                texto += " Close to the budget."
+        else:
+            texto += f" (budget: {VER_LOG})."
     if p.get("output_outcome") == "failure":
         texto += " But dist/ is missing."
     return texto
