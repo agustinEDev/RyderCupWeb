@@ -47,11 +47,12 @@ export const instanteEnTexto = (texto, idioma, opciones) => {
  * `Date` inválida es verdadera para `??` y se pintaba «Invalid Date»; con nulo,
  * la pantalla cae a su fecha de respaldo.
  *
- * @param {string|null|undefined} texto - fecha y hora ISO de la API
+ * @param {unknown} texto - fecha y hora ISO de la API; otra cosa, nulo
  * @returns {Date|null}
  */
 export const instanteSiEsValido = (texto) => {
-  if (!texto) return null;
+  // Solo texto: `new Date(1)` es un instante válido de 1970 (CodeRabbit)
+  if (typeof texto !== 'string' || !texto) return null;
   const instante = instanteDeLaApi(texto);
   return Number.isNaN(instante.getTime()) ? null : instante;
 };

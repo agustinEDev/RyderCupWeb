@@ -57,5 +57,7 @@ describe('instanteSiEsValido', () => {
     expect(instanteSiEsValido('no es una fecha')).toBeNull();
     expect(instanteSiEsValido(null)).toBeNull();
     expect(instanteSiEsValido(undefined)).toBeNull();
+    // Solo texto: un número sería una fecha de 1970 (CodeRabbit)
+    expect(instanteSiEsValido(1)).toBeNull();
   });
 });
