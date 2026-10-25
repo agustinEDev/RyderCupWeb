@@ -762,96 +762,12 @@ jobs:
         if: matrix.build == 'ci'
         # Antes en code-quality, que compilaba otra vez solo para esto (28 sep 2026)
         id: bundle
-        run: |
-          echo "📦 Bundle size analysis:"
-
-          # Get total bundle size
-          TOTAL_SIZE=$(du -sb dist/assets/*.js 2>/dev/null | awk '{s+=$1} END {print s}')
-
-          # Sin JS que medir no hay nada que dar por bueno: la salida de Vite ha
-          # cambiado de sitio o el build no la ha escrito (antes salía en verde)
-          if [ -z "$TOTAL_SIZE" ]; then
-            echo "::error::No JS bundles found in dist/assets: nothing was measured"
-            exit 1
-          fi
-
-          # Convert to KB
-          TOTAL_SIZE_KB=$((TOTAL_SIZE / 1024))
-
-          echo "  Total JS bundle size: ${TOTAL_SIZE_KB} KB"
-          echo "size_kb=$TOTAL_SIZE_KB" >> $GITHUB_OUTPUT
-
-          # Define budget (in KB)
-          # v2.1: Reduced from 1600 KB to 1400 KB after replacing country-flag-icons (239 KB) with CDN images
-          # v2.0.11: Raised to 1500 KB after Sprint 3 invitations system (2 new pages, 3 components, i18n namespace)
-          # Jul 2026: Raised to 1600 KB after minor-updates dependency bump (Sentry SDK growth mainly); no
-          # trimmable dead code found (knip-flagged unused deps/files aren't part of the compiled bundle anyway)
-          # 29 Jul 2026: Raised to 1650 KB after Quick Match pre-start summary + HandicapInputPanel (new
-          # component, no new dependencies) pushed actual size to 1602 KB; small headroom added instead of
-          # re-bumping on the next minor feature
-          # 2 Aug 2026: Raised to 1700 KB after the admin panel Competitions tab (new table/modal components +
-          # i18n) pushed actual size to 1662 KB; no trimmable code found — the check sums every dist/assets/*.js
-          # file, so code-splitting the new tab wouldn't reduce the total, only move bytes to another chunk
-          # 10 Aug 2026: Raised to 1750 KB after the player statistics work (FE #306): stats data layer,
-          # NextMatchBanner, RecentMatches and the /stats page pushed the total to 1705 KB. The page is
-          # lazy-loaded, but this check sums every dist/assets/*.js file, so splitting moves bytes
-          # between chunks without lowering the total
-          # 14 Aug 2026: Raised to 1800 KB. develop stood at 1744 KB and TeeSelectPanel (FE #377) adds
-          # 2.6 KB, which left only 3.2 KB under the previous 1750 KB budget — thin enough that the next
-          # feature of any size would turn the check red mid-review. Against this 1800 KB budget the same
-          # 1746.8 KB leaves 53.2 KB. Sentry is 328 KB of the total (19%) and is the one real lever here;
-          # trimming it is tracked separately. Raised in one step rather than per-feature so the budget
-          # stops being a thing we bump under pressure
-          # 30 Aug 2026: Raised to 2000 KB. Same story again, which is the point: develop stood at
-          # 1796 KB — 4 KB under the 1800 budget — so offline scoring (FE #515) turned the check red
-          # by 3 KB and so would anything else. The warning is raised to 1900 KB too: at 1500 it
-          # fired on every build and had stopped meaning "you are near the ceiling". Sentry is still
-          # the one real lever (328 KB, 19%) and trimming it is still tracked separately; until that
-          # happens each raise buys about six months, not a fix
-          # 24 Sep 2026: Raised to 2200 KB, warning at 2100 KB (decided by the product owner).
-          # The competition redesign's last pieces landed together: the agenda in the
-          # competition detail (FE #654, #709) and the reason a session has no matches
-          # plus the organiser's dashboard warning (BE #361, #708). Together they left
-          # develop at 1999.4 KB, half a KB under the 2000 budget, so the next change of
-          # any size would have turned the check red. Removing RoundFormModal already
-          # took back what it could. Sentry (328 KB) is still the one real lever, and
-          # trimming it is still tracked separately.
-          # 14 Oct 2026: the stroke play standings got their own page (the
-          # leaderboard route) and the player is taken to their row; with the
-          # review fixes develop reached 2200.5 KB. Raised to 2250 so the next
-          # change does not trip it at once; Sentry is still the real lever.
-          # 15 Oct 2026: the hole map (BE #532) brings MapLibre, about 1 MB in a
-          # chunk of its own that only loads when the map is opened (its worker
-          # is a separate .mjs, not counted here). develop reached 3230 KB.
-          # Raised to 3400 so the next change does not trip it at once.
-          # 21 Oct 2026: the 2.50 polish (404 page, reset-link retry, plus
-          # handicap formatter, country picker window, running net while
-          # scoring, shared session probe; no new dependencies) reached
-          # 3404 KB. Raised to 3500; MapLibre and Sentry are still the levers.
-          MAX_BUNDLE_SIZE_KB=3500
-          WARNING_THRESHOLD_KB=3300
-          { echo "budget_kb=$MAX_BUNDLE_SIZE_KB"; echo "warning_kb=$WARNING_THRESHOLD_KB"; } >> "$GITHUB_OUTPUT"
-
-          # List all bundles with sizes
-          echo ""
-          echo "  Individual bundles:"
-          du -h dist/assets/*.js | sort -h
-
-          # Check against budget
-          if [ $TOTAL_SIZE_KB -gt $MAX_BUNDLE_SIZE_KB ]; then
-            echo ""
-            echo "❌ Bundle size (${TOTAL_SIZE_KB} KB) exceeds budget (${MAX_BUNDLE_SIZE_KB} KB)!"
-            echo "💡 Tip: Consider code splitting, tree shaking, or removing unused dependencies"
-            exit 1
-          elif [ $TOTAL_SIZE_KB -gt $WARNING_THRESHOLD_KB ]; then
-            echo ""
-            echo "⚠️ Bundle size (${TOTAL_SIZE_KB} KB) is approaching budget limit (${MAX_BUNDLE_SIZE_KB} KB)"
-            echo "   Current usage: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))%"
-          else
-            echo ""
-            echo "✅ Bundle size is within budget"
-            echo "   Budget used: $(( TOTAL_SIZE_KB * 100 / MAX_BUNDLE_SIZE_KB ))% (${TOTAL_SIZE_KB}/${MAX_BUNDLE_SIZE_KB} KB)"
-          fi
+        # Desde #374 (25 oct 2026) mide lo que descarga quien abre la aplicación
+        # (los JS de index.html, gzip) y un tope por trozo, no la suma de todo el
+        # disco: esa cifra se subió once veces, de 1400 a 3500 KB, porque contaba
+        # pantallas diferidas como MapLibre (1 MB) y castigaba dividir el código.
+        # Los topes y su historia, en .github/scripts/bundle_budget.py
+        run: python3 .github/scripts/bundle_budget.py dist
       - name: Check build output
         if: matrix.build == 'ci'
         id: dist
@@ -884,6 +800,7 @@ jobs:
           SIZE_KB: ${{ steps.bundle.outputs.size_kb }}
           BUDGET_KB: ${{ steps.bundle.outputs.budget_kb }}
           WARNING_KB: ${{ steps.bundle.outputs.warning_kb }}
+          BUNDLE_PROBLEMS: ${{ steps.bundle.outputs.problems }}
           DIST_OUTCOME: ${{ steps.dist.outcome }}
           # Entrada «Deploy like Render»
           RENDER_OUTCOME: ${{ steps.render.outcome }}
@@ -909,9 +826,10 @@ jobs:
             IF_FAILS="Render would ship a broken site or a different build from the one tested. A version difference: update package-lock.json with that npm. A smoke failure: a missing chunk, an integrity hash or version.json in dist/."
           else
             RESULT=$(python3 .github/scripts/summary_results.py build-ci build_outcome="$VITE_OUTCOME" \
-              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" output_outcome="$DIST_OUTCOME")
-            WHAT="Builds the production bundle with Vite and checks the total size of dist/assets/*.js against the budget in this workflow. The build is kept as the build-output artifact."
-            IF_FAILS="If the build broke, run 'npm run build' locally. If the budget was exceeded, trim the code or raise MAX_BUNDLE_SIZE_KB with its reason, as the history in ci-cd.yml does."
+              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" \
+              problems="$BUNDLE_PROBLEMS" output_outcome="$DIST_OUTCOME")
+            WHAT="Builds the production bundle with Vite and checks what opening the app downloads (the JS index.html loads, gzip) and the size of each chunk against the budgets in .github/scripts/bundle_budget.py. The build is kept as the build-output artifact."
+            IF_FAILS="If the build broke, run 'npm run build' locally. If a budget was exceeded, lazy-load what the first screen does not need or split the chunk, or raise the budget in bundle_budget.py with its reason."
           fi
           python3 .github/scripts/summary_card.py \
             --title "$TITLE" --what "$WHAT" \
