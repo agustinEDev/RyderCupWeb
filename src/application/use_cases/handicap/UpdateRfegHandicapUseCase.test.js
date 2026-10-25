@@ -161,7 +161,11 @@ describe('UpdateRfegHandicapUseCase', () => {
 
     await expect(updateRfegHandicapUseCase.execute({ userId: 'user-123' })).rejects.toThrow();
 
-    expect(JSON.stringify(espias.flatMap((e) => e.mock.calls))).not.toContain('FR');
+    // Con el mensaje del Error: JSON.stringify lo deja fuera (CodeRabbit)
+    const escrito = JSON.stringify(espias.flatMap((e) => e.mock.calls), (_, valor) =>
+      valor instanceof Error ? { name: valor.name, message: valor.message } : valor
+    );
+    expect(escrito).not.toContain('FR');
     espias.forEach((e) => e.mockRestore());
   });
 

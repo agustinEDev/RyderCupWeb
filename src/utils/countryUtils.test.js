@@ -221,7 +221,7 @@ describe('countryUtils', () => {
 // salía en cada error de la pantalla de perfil
 describe('canUseRFEG · sin consola', () => {
   it('U6: no escribe el país del usuario en la consola', () => {
-    const espias = ['log', 'info', 'warn', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
+    const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
     canUseRFEG({ country_code: 'FR' });
     canUseRFEG({ country_code: 'ES' });
     canUseRFEG(null);
