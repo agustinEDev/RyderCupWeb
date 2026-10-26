@@ -24,6 +24,10 @@
  *   C16  de texto con teclado decimal                      | sin flechas, con la coma del móvil
  *   C17  «1,» y «1,5»                                      | se ven tal cual; salen «1» y «1.5»
  *   C18  lo que no es un hándicap (letras, «1,2,3», «1,55») | no se escribe
+ *   C19  al salir con la coma colgando («12,»)               | se queda «12» (revisor)
+ *   C20  pegado con espacios (« 12 »)                       | sale «12» (revisor)
+ *   C21  fuera de rango dentro de un formulario            | el formulario no es válido
+ *   C22  quien lo usa pasa `ref` o `type`                  | sigue de texto y con su validez
  *   C11  desactivado                                       | el campo y el «+»
  *   C12  el «+» se anuncia en los dos idiomas              | «Hándicap plus» / «Plus handicap»
  *   C13  lo demás va al campo (id, placeholder...)         | sí
@@ -251,6 +255,57 @@ describe('CampoDeHandicap', () => {
 
     expect(alCambiar).not.toHaveBeenCalled();
     expect(campo()).toHaveValue('2');
+  });
+
+  it.each([
+    ['12,', '12'],
+    ['12.', '12'],
+    ['1,5', '1,5'],
+    [',', ''],
+  ])('C19: al salir, «%s» se queda «%s»', (escrito, seQueda) => {
+    render(<Controlado />);
+    fireEvent.change(campo(), { target: { value: escrito } });
+
+    fireEvent.blur(campo());
+
+    expect(campo()).toHaveValue(seQueda);
+  });
+
+  it('C19b: el `onBlur` de quien lo usa sigue llegando', () => {
+    const alSalir = vi.fn();
+    pintar('2', { onBlur: alSalir });
+
+    fireEvent.blur(campo());
+
+    expect(alSalir).toHaveBeenCalledTimes(1);
+  });
+
+  it('C20: pegado con espacios alrededor, se escribe sin ellos', () => {
+    const alCambiar = vi.fn();
+    render(<Controlado alCambiar={alCambiar} />);
+
+    fireEvent.change(campo(), { target: { value: ' +2,4 ' } });
+
+    expect(alCambiar).toHaveBeenLastCalledWith('-2.4');
+    expect(campo()).toHaveValue('2,4');
+  });
+
+  it('C21: fuera de rango, el formulario no es válido', () => {
+    render(<form><Controlado /></form>);
+
+    fireEvent.change(campo(), { target: { value: '60' } });
+
+    expect(campo().closest('form').checkValidity()).toBe(false);
+    fireEvent.change(campo(), { target: { value: '6' } });
+    expect(campo().closest('form').checkValidity()).toBe(true);
+  });
+
+  it('C22: aunque le pasen `ref` o `type`, sigue de texto y con su validez', () => {
+    const otraRef = { current: null };
+    render(<CampoDeHandicap id="hcp" value="60" onChange={vi.fn()} type="number" ref={otraRef} />);
+
+    expect(campo()).toHaveAttribute('type', 'text');
+    expect(campo().validationMessage).toBe('handicapField.outOfRange');
   });
 
   it('C18b: solo la coma no suelta el «+»', () => {

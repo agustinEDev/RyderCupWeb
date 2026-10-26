@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 // Signo opcional, hasta dos cifras y un decimal, con coma o punto
 const FORMA_DEL_HANDICAP = /^([+-]?)(\d{0,2})(?:[.,](\d?))?$/;
 
-const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }) => {
+const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ...resto }) => {
   const { t } = useTranslation('common');
   const texto = String(value ?? '');
   const conSigno = texto.startsWith('-');
@@ -45,7 +45,9 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
   };
 
   const alEscribir = (e) => {
-    const forma = FORMA_DEL_HANDICAP.exec(e.target.value);
+    // Pegado con espacios alrededor, sin ellos (revisor)
+    const tecleado = e.target.value.trim();
+    const forma = FORMA_DEL_HANDICAP.exec(tecleado);
     // Lo que no es un hándicap no se escribe
     if (!forma) return;
     const [, signo, entero, decimal = ''] = forma;
@@ -53,7 +55,7 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
     // también está diciendo «plus»
     const conMenos = signo !== '';
     const esPlus = plus || conMenos;
-    const loQueSeVe = e.target.value.slice(signo.length);
+    const loQueSeVe = tecleado.slice(signo.length);
     setEnPantalla(loQueSeVe);
     const numero = entero === '' && decimal === '' ? '' : `${entero || '0'}${decimal ? `.${decimal}` : ''}`;
     if (numero === '') {
@@ -65,6 +67,13 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
       return;
     }
     dice(esPlus ? `-${numero}` : numero);
+  };
+
+  // Al salir, la coma colgando se va: si quien lo usa devuelve el mismo valor
+  // tras guardar, «12,» se quedaba a la vista (revisor)
+  const alSalir = (e) => {
+    if (/[.,]$/.test(enPantalla)) setEnPantalla(enPantalla.slice(0, -1));
+    onBlur?.(e);
   };
 
   // Fuera de rango no se envía el formulario, como hacía el numérico con su
@@ -98,13 +107,15 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
         +
       </button>
       <input
+        aria-invalid={fueraDeRango}
+        {...resto}
+        // Detrás de lo demás: de texto y con su validez, se le pase lo que se le pase
         ref={campo}
         type="text"
         inputMode="decimal"
-        aria-invalid={fueraDeRango}
-        {...resto}
         value={enPantalla}
         onChange={alEscribir}
+        onBlur={alSalir}
         disabled={disabled}
         className={`min-w-0 ${className}`}
       />
