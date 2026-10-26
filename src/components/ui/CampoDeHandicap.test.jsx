@@ -23,6 +23,7 @@
  *   C12  el «+» se anuncia en los dos idiomas              | «Hándicap plus» / «Plus handicap»
  *   C13  lo demás va al campo (id, placeholder...)         | sí
  *   C14  sin hándicap (null)                               | vacío y sin «+»
+ *   C15  quien lo usa lo vacía (cancelar, tras guardar)    | el «+» se suelta
  */
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
@@ -188,5 +189,18 @@ describe('CampoDeHandicap', () => {
     expect(campo()).toHaveAttribute('placeholder', 'tu hándicap');
     expect(campo()).toHaveAttribute('name', 'handicap');
     expect(campo()).toBeRequired();
+  });
+
+  // Revisor: el «+» recordado con el campo vacío no sobrevive a que quien lo
+  // usa lo vacíe por su cuenta; si no, lo siguiente saldría plus sin pedirlo
+  it('C15: si quien lo usa lo vacía, el «+» se suelta', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<CampoDeHandicap id="hcp" value="" onChange={onChange} />);
+    fireEvent.click(mas());
+    rerender(<CampoDeHandicap id="hcp" value="-2" onChange={onChange} />);
+
+    rerender(<CampoDeHandicap id="hcp" value="" onChange={onChange} />);
+
+    expect(mas()).toHaveAttribute('aria-pressed', 'false');
   });
 });

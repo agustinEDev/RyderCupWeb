@@ -171,7 +171,8 @@ function AppContent() {
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {
     const initUserContext = async () => {
-      // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout)
+      // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout),
+      // salvo en la clasificación compartida (`conSesionPosible`)
       if (!conSesionPosible) {
         setIsAuthenticated(false);
         setUsuarioActualId(null);
@@ -439,12 +440,15 @@ function AppContent() {
         </>
       )}
       {/* Sin la barra (sin sesión, o en el escritorio), el aviso de instalar va
-          al borde: su hueco, para que no tape lo último (QA, FE #865-13) */}
-      <div
-        aria-hidden="true"
-        data-testid="hueco-aviso-instalar"
-        className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
-      />
+          al borde: su hueco, para que no tape lo último (QA, FE #865-13). En la
+          anotación no: es inmersiva */}
+      {!isScoringRoute && (
+        <div
+          aria-hidden="true"
+          data-testid="hueco-aviso-instalar"
+          className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
+        />
+      )}
 
       </Suspense>
 

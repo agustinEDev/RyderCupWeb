@@ -93,7 +93,7 @@ describe('App · nada que llame a la API con los Términos pendientes', () => {
     expect(ultimo(llamadas.dispositivos)).toBe(true);
     expect(ultimo(llamadas.refresco)).toBe(true);
     expect(screen.getByText('barra inferior')).toBeInTheDocument();
-    expect(hueco()).toBe('calc(4rem + env(safe-area-inset-bottom))');
+    expect(hueco()).toBe('calc(5rem + env(safe-area-inset-bottom))');
   });
 
   it('vigila la vuelta a la aplicación, también con los Términos pendientes (hotfix 2.50.1)', async () => {

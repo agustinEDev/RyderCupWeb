@@ -21,6 +21,18 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
   // Con el campo vacío el valor no dice si es plus: lo recuerda el botón
   const [plusSinNumero, setPlusSinNumero] = useState(false);
   const plus = sinSigno === '' ? plusSinNumero : conSigno;
+  // Lo último que dijo el campo: si quien lo usa lo vacía por su cuenta
+  // (cancelar, tras guardar), el «+» recordado ya no vale (revisor)
+  const [loQueDijo, setLoQueDijo] = useState(texto);
+  if (texto !== loQueDijo) {
+    setLoQueDijo(texto);
+    if (texto === '') setPlusSinNumero(false);
+  }
+
+  const dice = (valor) => {
+    setLoQueDijo(valor);
+    onChange(valor);
+  };
 
   const alEscribir = (e) => {
     const escrito = e.target.value.trim();
@@ -30,10 +42,10 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
     const esPlus = plus || conMenos;
     if (numero === '') {
       setPlusSinNumero(esPlus);
-      onChange('');
+      dice('');
       return;
     }
-    onChange(esPlus ? `-${numero}` : numero);
+    dice(esPlus ? `-${numero}` : numero);
   };
 
   const alPulsarMas = () => {
@@ -41,7 +53,7 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
       setPlusSinNumero(!plus);
       return;
     }
-    onChange(plus ? sinSigno : `-${sinSigno}`);
+    dice(plus ? sinSigno : `-${sinSigno}`);
   };
 
   return (

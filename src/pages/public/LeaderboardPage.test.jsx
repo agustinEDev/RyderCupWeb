@@ -40,7 +40,7 @@ vi.mock('../../components/layout/Header', () => ({
 }));
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
-  default: ({ user }) => <div data-testid="header-auth">{user?.id}</div>,
+  default: ({ user, backTo }) => <div data-testid="header-auth" data-back={String(backTo)}>{user?.id}</div>,
 }));
 
 vi.mock('../../components/layout/Footer', () => ({
@@ -136,6 +136,21 @@ describe('LeaderboardPage', () => {
     expect(volver.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'md:inline-flex']));
     const titulo = screen.getByRole('heading', { level: 1, name: 'leaderboard.title' });
     expect(titulo.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'md:block']));
+  });
+
+  // Revisor: la flecha de la cabecera sale del mapa de pantallas (la ficha), y
+  // la página vuelve a la agenda de una Ryder a la que se llegó desde ella
+  it('H3: con sesión, la flecha de la cabecera va adonde va el volver de la página', async () => {
+    mockUser.current = { id: 'u-1' };
+    mockDetalle.mockReturnValueOnce(new Promise(() => {}));
+    const { unmount } = render(<LeaderboardPage />);
+    // Mientras carga no se sabe: la del mapa de pantallas
+    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back', 'undefined');
+    unmount();
+
+    render(<LeaderboardPage />);
+    await screen.findByTestId('leaderboard-view');
+    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back', '/competitions/c-1/schedule');
   });
 
   it('H2: sin sesión, como siempre: el título y el volver a la vista', async () => {

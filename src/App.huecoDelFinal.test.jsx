@@ -33,6 +33,7 @@ vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
 vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
 vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
 vi.mock('./pages/Dashboard', () => ({ default: () => <p>panel</p> }));
+vi.mock('./pages/quick_match/QuickMatchScoringPage', () => ({ default: () => <p>anotando</p> }));
 vi.mock('./pages/public/LeaderboardPage', () => ({ default: () => <p>clasificacion</p> }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -92,5 +93,16 @@ describe('App · el hueco del final', () => {
     const delAviso = screen.getByTestId('hueco-aviso-instalar');
     expect(delAviso.className.split(' ')).toContain('h-[var(--alto-aviso-instalar,0px)]');
     expect(delAviso.className.split(' ')).not.toContain('hidden');
+  });
+
+  // Revisor: la anotación es inmersiva y no tiene barra; el aviso no se le suma
+  it('E4: anotando, ni hueco de barra ni del aviso', async () => {
+    sesion.usuario = { id: 'u-1' };
+    window.history.pushState({}, '', '/quick-matches/q1/scoring');
+    render(<App />);
+
+    await screen.findByText('anotando');
+    expect(screen.queryByTestId('hueco-barra-inferior')).toBeNull();
+    expect(screen.queryByTestId('hueco-aviso-instalar')).toBeNull();
   });
 });

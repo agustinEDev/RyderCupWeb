@@ -89,7 +89,8 @@ const LeaderboardPage = () => {
     if (!competitionId || sesionCargando || yaSabida) return undefined;
     let vigente = true;
 
-    // Sin sesión no se puede leer la ficha (ni entrar en ella): ni se pregunta
+    // Sin sesión no se puede leer la ficha (ni entrar en ella): quien llama ni
+    // pregunta (`fetchLeaderboard`)
     const esDeStrokePlay = () => {
       if (fichaMirada.current?.id === competitionId) return fichaMirada.current.promesa;
       const marca = { id: competitionId, promesa: null };
@@ -146,7 +147,9 @@ const LeaderboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {user ? <HeaderAuth user={user} /> : <Header />}
+      {/* La flecha, adonde va el volver de la página (la agenda de una Ryder a
+          la que se llegó desde ella); mientras carga no se sabe: la del mapa */}
+      {user ? <HeaderAuth user={user} backTo={isLoading ? undefined : backTo} /> : <Header />}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
