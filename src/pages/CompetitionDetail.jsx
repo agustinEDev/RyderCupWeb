@@ -1454,8 +1454,10 @@ const CompetitionDetail = () => {
               className="p-4"
             >
               {/* En juego o acabado, plegada: lo que se mira es la clasificación y las partidas */}
+              {/* Algo menor en el móvil: a 360 px partía en dos líneas (QA, FE #865-5) */}
               <Plegable
                 abiertoAlPrincipio={!conClasificacion}
+                claseDelTitulo="text-base sm:text-lg"
                 titulo={
                   <>
                     <Settings className="w-5 h-5 text-primary" />

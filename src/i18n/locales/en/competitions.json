@@ -350,7 +350,7 @@
       "failed": "Could not save how your name is shown. Please try again."
     },
     "settings": {
-      "title": "Competition Settings",
+      "title": "Settings",
       "teamOne": "Team 1:",
       "teamTwo": "Team 2:",
       "playMode": "Play Mode:",

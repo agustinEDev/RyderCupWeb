@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
+import es from '../i18n/locales/es/competitions.json';
+import en from '../i18n/locales/en/competitions.json';
 
 /**
  * Caso 13 de la PR 3 (FE #824): un Stableford o un Medal se cierra con
@@ -336,6 +338,19 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
 
     expect(titulo.closest('details')).toHaveProperty('open', abiertos);
     expect(screen.getByText('detail.approvedPlayers').closest('details')).toHaveProperty('open', abiertos);
+  });
+
+  // QA (FE #865-5): a 360 px el título partía en dos líneas («Configuración de
+  // la / Competición»). Más corto y algo menor en el móvil
+  it('F8: el título de la configuración, corto y algo menor en el móvil', async () => {
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'ACTIVE' }));
+    renderPage();
+    const titulo = (await screen.findByText('detail.settings.title')).closest('h3');
+
+    expect(titulo.className.split(' ')).toEqual(expect.arrayContaining(['text-base', 'sm:text-lg']));
+    expect(titulo.className.split(' ')).not.toContain('text-lg');
+    expect(es.detail.settings.title).toBe('Configuración');
+    expect(en.detail.settings.title).toBe('Settings');
   });
 
   it('F6b/F7: plegados se abren tocando el título, que sigue diciendo cuántos jugadores hay', async () => {

@@ -350,7 +350,7 @@
       "failed": "No se pudo guardar cómo se muestra tu nombre. Inténtalo de nuevo."
     },
     "settings": {
-      "title": "Configuración de la Competición",
+      "title": "Configuración",
       "teamOne": "Equipo 1:",
       "teamTwo": "Equipo 2:",
       "playMode": "Modo de Juego:",
