@@ -747,7 +747,9 @@ const MapaDelHoyo = ({
       marcaGps.current = null;
       return;
     }
-    marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
+    // Por encima de las cifras, que se crean después y lo tapaban; sin quedarse
+    // con el toque, que debajo puede haber un codo que arrastrar (QA, 26 oct)
+    marcaGps.current ??= new Marker({ element: punto('pointer-events-none z-10 h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     // Lejos no; y si mientras tanto el jugador movió el mapa, tampoco al llegar
     // Ya orientado (O4, O5), tampoco: el salto cortaría el giro o deshace el encuadre (revisor)

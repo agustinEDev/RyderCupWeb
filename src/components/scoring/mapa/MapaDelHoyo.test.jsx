@@ -700,6 +700,21 @@ describe('MapaDelHoyo — tras la revisión', () => {
     expect(yo.remove).toHaveBeenCalled();
   });
 
+  // QA del 26 oct (FE #938): los marcadores se apilan por orden de creación, y
+  // la cifra de la línea, creada después, tapaba el punto azul. Va por encima
+  // de todas, pero sin quitarle el dedo a lo que haya debajo (un codo)
+  it('el punto azul va por encima de las cifras y no se queda con el toque', () => {
+    abrir();
+    act(() => gps.exito(lectura(36.2888, -5.332)));
+
+    const yo = mapas.marcas.find((m) => m.opciones.element?.className.includes('bg-blue-500'));
+    const cifras = mapas.marcas.filter((m) => m.opciones.element?.dataset?.tramo);
+
+    expect(cifras.length).toBeGreaterThan(0);
+    expect(yo.getElement().className.split(' ')).toEqual(expect.arrayContaining(['z-10', 'pointer-events-none']));
+    for (const cifra of cifras) expect(cifra.getElement().className).not.toMatch(/\bz-/);
+  });
+
 });
 
 describe('MapaDelHoyo — tras /code-review', () => {
