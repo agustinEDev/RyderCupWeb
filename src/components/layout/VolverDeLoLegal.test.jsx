@@ -172,13 +172,30 @@ describe('L2 · sin página anterior DENTRO de la aplicación', () => {
 });
 
 describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
-  it('L3a: sin usuario guardado va a la portada sin tocar la red', async () => {
+  // QA del 26 oct (FE #938): el `user` guardado puede faltar con la sesión
+  // viva (otra pestaña, almacenamiento borrado), y entonces echaba a la
+  // portada a quien tenía sesión. Se pregunta siempre al pulsar
+  it('L3a: sin usuario guardado también pregunta, y con sesión va al panel', async () => {
+    fetchFalso.mockResolvedValueOnce(respuesta(200, USUARIO));
+    abrir();
+
+    await pulsar();
+
+    expect(screen.getByText('panel')).toBeInTheDocument();
+    expect(fetchFalso).toHaveBeenCalledTimes(1);
+    expect(anotaLaSesion).toHaveBeenCalledWith(USUARIO);
+  });
+
+  it('L3a2: sin usuario guardado ni sesión, a la portada', async () => {
+    fetchFalso.mockResolvedValue(respuesta(401));
+    refrescoCompartido.mockRejectedValueOnce(Object.assign(new Error('sin sesión'), { response: { status: 401 } }));
     abrir();
 
     await pulsar();
 
     expect(screen.getByText('portada')).toBeInTheDocument();
-    expect(fetchFalso).not.toHaveBeenCalled();
+    expect(fetchFalso).toHaveBeenCalledTimes(1);
+    expect(anotaLaSesion).not.toHaveBeenCalled();
   });
 
   it('L3b: con la sesión confirmada por el backend va al panel y la siembra', async () => {
@@ -221,7 +238,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     expect(anotaLaSesion).not.toHaveBeenCalled();
     expect(fetchWithTokenRefresh).not.toHaveBeenCalled();
     // Como en la pantalla de acceso: el `user` guardado es resto de una sesion
-    // muerta, y sin tirarlo cada pulsacion volveria a la red
+    // muerta
     expect(clearAuth).toHaveBeenCalledTimes(1);
     // Lo de Sentry es solo del dispositivo revocado
     expect(clearUserContext).not.toHaveBeenCalled();
@@ -240,7 +257,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     expect(clearAuth).toHaveBeenCalledTimes(1);
   });
 
-  it('L3e2: tirada la sesion muerta, la siguiente pulsacion ya no toca la red', async () => {
+  it('L3e2: tirada la sesion muerta, la siguiente pulsacion vuelve a preguntar', async () => {
     conUsuarioGuardado();
     fetchFalso.mockResolvedValue(respuesta(401));
     refrescoCompartido.mockResolvedValue({});
@@ -253,7 +270,7 @@ describe('L3 · sin página anterior (enlace directo o pestaña nueva)', () => {
     await pulsar();
 
     expect(screen.getByText('portada')).toBeInTheDocument();
-    expect(fetchFalso).not.toHaveBeenCalled();
+    expect(fetchFalso).toHaveBeenCalled();
   });
 
   it('L3e3: con el dispositivo revocado, a la portada y sin el `user` guardado', async () => {

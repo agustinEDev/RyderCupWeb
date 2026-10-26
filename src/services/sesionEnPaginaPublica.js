@@ -11,8 +11,9 @@
  * interceptor, con la misma pieza que `useRedirectIfAuthenticated`
  * (`sondaDeSesion`), que no arrastra ni el logout ni la redirección.
  *
- * Y nada de decidir por el `user` guardado: sobrevive a las cookies. Solo sirve
- * para no tocar la red cuando no hay ni eso, que es el visitante de siempre.
+ * Y nada de decidir por el `user` guardado, ni para no preguntar: sobrevive a
+ * las cookies, y también puede faltar con la sesión viva (QA del 26 oct, FE
+ * #938). Se pregunta siempre; solo se pulsa a petición.
  */
 
 import { anotaLaSesion } from './sesionCompartida';
@@ -27,7 +28,7 @@ export const TOPE_DE_LA_COMPROBACION_MS = 5000;
  *   una sesión anterior.
  * - `revocada`: también un «no», pero porque se revocó este dispositivo: quien
  *   llama limpia además lo que limpia el cierre por revocación.
- * - `no-sabida`: no hay nada guardado, o no se pudo preguntar a tiempo.
+ * - `no-sabida`: no se pudo preguntar a tiempo.
  */
 export const ESTADO_DE_LA_SESION = Object.freeze({
   CONFIRMADA: 'confirmada',
@@ -36,21 +37,11 @@ export const ESTADO_DE_LA_SESION = Object.freeze({
   NO_SABIDA: 'no-sabida',
 });
 
-const hayUsuarioGuardado = () => {
-  try {
-    return Boolean(localStorage.getItem('user'));
-  } catch {
-    return false;
-  }
-};
-
 /**
  * @returns {Promise<'confirmada'|'muerta'|'revocada'|'no-sabida'>} Qué hacer con cada uno
  *   lo decide quien llama; en la duda, a la portada.
  */
 export const estadoDeLaSesion = async () => {
-  if (!hayUsuarioGuardado()) return ESTADO_DE_LA_SESION.NO_SABIDA;
-
   const corte = new AbortController();
   let vencido = false;
   let temporizador;
