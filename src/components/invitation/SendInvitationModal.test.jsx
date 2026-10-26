@@ -1124,9 +1124,24 @@ describe('SendInvitationModal', () => {
       { id: 'libre', firstName: 'Carla', lastName: 'Libre' },
     ];
 
+    let rerenderConInvitados;
     const buscar = async () => {
       onSearchUsers.mockResolvedValue(resultados);
-      renderModal({ idsInscritos: ['dentro'], idsInvitados: ['invitada'] });
+      const { rerender } = renderModal({ idsInscritos: ['dentro'], idsInvitados: ['invitada'] });
+      rerenderConInvitados = (idsInvitados) =>
+        rerender(
+          <SendInvitationModal
+            isOpen={true}
+            onClose={onClose}
+            onSend={onSend}
+            onSendByUserId={onSendByUserId}
+            onSearchUsers={onSearchUsers}
+            isProcessing={false}
+            t={mockT}
+            idsInscritos={['dentro']}
+            idsInvitados={idsInvitados}
+          />
+        );
       const input = screen.getByTestId('user-search-input');
       fireEvent.change(input, { target: { value: 'a' + 'a' } });
       await act(async () => {
@@ -1154,23 +1169,73 @@ describe('SendInvitationModal', () => {
       expect(within(fila).queryByText('send.alreadyEnrolled')).not.toBeInTheDocument();
     });
 
-    it('B3: con el teclado, Enter sobre uno marcado no lo elige', async () => {
+    it('B3: si el resaltado pasa a estar invitado con la lista abierta, Enter no lo elige', async () => {
       const input = await buscar();
-
       fireEvent.keyDown(input, { key: 'ArrowDown' });
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+
+      rerenderConInvitados(['invitada', 'libre']);
       fireEvent.keyDown(input, { key: 'Enter' });
 
       expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
     });
 
-    it('B3b: tampoco elige con Enter a quien ya está invitado', async () => {
+    // CodeRabbit: las flechas pasaban por los marcados uno a uno
+    it('B3c: las flechas se saltan a los marcados', async () => {
       const input = await buscar();
 
       fireEvent.keyDown(input, { key: 'ArrowDown' });
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      // Y al dar la vuelta, otra vez al único que se puede
       fireEvent.keyDown(input, { key: 'ArrowDown' });
-      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+    });
 
-      expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+    it('B3d: si no se puede ninguno, las flechas no resaltan nada', async () => {
+      onSearchUsers.mockResolvedValue(resultados.slice(0, 2));
+      renderModal({ idsInscritos: ['dentro'], idsInvitados: ['invitada'] });
+      const input = screen.getByTestId('user-search-input');
+      fireEvent.change(input, { target: { value: 'aa' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+      expect(screen.getByTestId('search-result-dentro')).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByTestId('search-result-invitada')).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('B3e: sin nadie marcado, la flecha arriba empieza por el último', async () => {
+      onSearchUsers.mockResolvedValue(resultados);
+      renderModal();
+      const input = screen.getByTestId('user-search-input');
+      fireEvent.change(input, { target: { value: 'aa' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+
+      expect(screen.getByTestId('search-result-libre')).toHaveAttribute('aria-selected', 'true');
+    });
+
+    // CodeRabbit: mientras no se sabe quién está ya dentro, o si no se pudo
+    // saber, nadie se puede elegir (como en la pestaña de amigos)
+    it.each([
+      ['cargando', { cargandoAmigos: true }],
+      ['sin poder comprobarlo', { falloAlComprobarSituacion: true }],
+    ])('B5: %s, ningún resultado se puede elegir', async (_caso, props) => {
+      onSearchUsers.mockResolvedValue(resultados);
+      renderModal(props);
+      fireEvent.change(screen.getByTestId('user-search-input'), { target: { value: 'aa' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+
+      expect(screen.getByTestId('search-result-libre')).toBeDisabled();
     });
 
     it('B4: quien está libre se sigue eligiendo, con el ratón y con el teclado', async () => {

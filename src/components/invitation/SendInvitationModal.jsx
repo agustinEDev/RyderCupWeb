@@ -54,7 +54,10 @@ const SendInvitationModalContent = ({
   const situacionDe = (id) => {
     const yaInscrito = idsInscritos.includes(id);
     const yaInvitado = idsInvitados.includes(id);
-    return { yaInscrito, yaInvitado, noSePuede: yaInscrito || yaInvitado };
+    // Sin saber todavía quién está dentro, o sin haberlo podido saber, nadie:
+    // el servidor rechazaría justo a esos (CodeRabbit)
+    const sinComprobar = cargandoAmigos || falloAlComprobarSituacion;
+    return { yaInscrito, yaInvitado, noSePuede: sinComprobar || yaInscrito || yaInvitado };
   };
   // El `Enter` del teclado lee por ref: que tampoco elija a quien la lista
   // enseña bloqueado (QA, 26 oct)
@@ -153,16 +156,24 @@ const SendInvitationModalContent = ({
 
       if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
 
+      // Las flechas se saltan a quien no se puede elegir; si no hay nadie, no
+      // resaltan nada (CodeRabbit)
+      const siguienteElegible = (paso) => {
+        const lista = searchResultsRef.current;
+        const len = lista.length;
+        let i = highlightedIndexRef.current;
+        for (let vueltas = 0; vueltas < len; vueltas++) {
+          i = i < 0 && paso < 0 ? len - 1 : (i + paso + len) % len;
+          if (!yaEstaRef.current(lista[i].id)) return i;
+        }
+        return -1;
+      };
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        const len = searchResultsRef.current.length;
-        const prev = highlightedIndexRef.current;
-        highlight(prev < len - 1 ? prev + 1 : 0);
+        highlight(siguienteElegible(1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        const len = searchResultsRef.current.length;
-        const prev = highlightedIndexRef.current;
-        highlight(prev > 0 ? prev - 1 : len - 1);
+        highlight(siguienteElegible(-1));
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {

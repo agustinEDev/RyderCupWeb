@@ -63,7 +63,7 @@ vi.mock('../../components/scoring/LeaderboardView', () => ({
   default: ({ leaderboard }) => leaderboard ? <div data-testid="leaderboard-view">Leaderboard</div> : null,
 }));
 
-import LeaderboardPage from './LeaderboardPage';
+import LeaderboardPage, { TOPE_DE_LA_FICHA_MS } from './LeaderboardPage';
 import { getLeaderboardUseCase } from '../../composition';
 
 describe('LeaderboardPage', () => {
@@ -144,8 +144,8 @@ describe('LeaderboardPage', () => {
     mockUser.current = { id: 'u-1' };
     mockDetalle.mockReturnValueOnce(new Promise(() => {}));
     const { unmount } = render(<LeaderboardPage />);
-    // Mientras carga no se sabe: la del mapa de pantallas
-    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back', 'undefined');
+    // Mientras carga no se sabe: sin flecha, como el enlace de la página (CodeRabbit)
+    expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back', 'null');
     unmount();
 
     render(<LeaderboardPage />);
@@ -551,6 +551,27 @@ describe('LeaderboardPage', () => {
 
       expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
       expect(screen.getByTestId('leaderboard-view')).toBeInTheDocument();
+    });
+
+    // CodeRabbit: una ficha que no contesta dejaba la página cargando para siempre
+    it('S4: si la ficha no contesta, al vencer su plazo se pide la clasificación de la Ryder', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockDetalle.mockReturnValueOnce(new Promise(() => {})).mockResolvedValue({ id: 'c-1', hasTeams: true });
+      render(<LeaderboardPage />);
+      await act(async () => {});
+      expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(TOPE_DE_LA_FICHA_MS);
+      });
+
+      expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
+      // Y como sin red: el siguiente refresco vuelve a preguntar
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30000);
+      });
+      expect(mockDetalle).toHaveBeenCalledTimes(2);
     });
 
     it('L6: sin sesión no pregunta por la ficha (no podría leerla)', async () => {

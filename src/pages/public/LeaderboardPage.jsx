@@ -15,6 +15,9 @@ import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 const POLL_INTERVAL = 30000; // 30 seconds
 // La ficha de un stroke play en juego, para enterarse de que empieza o acaba
 const CADA_FICHA = 5 * 60000;
+// La ficha se pregunta antes que la clasificación: si no contesta, no puede
+// dejar la página cargando para siempre (CodeRabbit)
+export const TOPE_DE_LA_FICHA_MS = 8000;
 
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
@@ -94,7 +97,7 @@ const LeaderboardPage = () => {
     const esDeStrokePlay = () => {
       if (fichaMirada.current?.id === competitionId) return fichaMirada.current.promesa;
       const marca = { id: competitionId, promesa: null };
-      marca.promesa = getCompetitionDetailUseCase
+      const ficha = getCompetitionDetailUseCase
         .execute(competitionId)
         .then((competicion) => (competicion?.hasTeams === false ? competicion : null))
         .catch((err) => {
@@ -105,6 +108,16 @@ const LeaderboardPage = () => {
           if (esFalloDeRed(err) && fichaMirada.current === marca) fichaMirada.current = null;
           return null;
         });
+      // Con un plazo: vencido, se sigue sin ella (la de la Ryder) y, como sin
+      // red, el siguiente refresco vuelve a preguntar (CodeRabbit)
+      let temporizador;
+      const plazo = new Promise((resolver) => {
+        temporizador = setTimeout(() => {
+          if (fichaMirada.current === marca) fichaMirada.current = null;
+          resolver(null);
+        }, TOPE_DE_LA_FICHA_MS);
+      });
+      marca.promesa = Promise.race([ficha, plazo]).finally(() => clearTimeout(temporizador));
       fichaMirada.current = marca;
       return marca.promesa;
     };
@@ -148,8 +161,8 @@ const LeaderboardPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* La flecha, adonde va el volver de la página (la agenda de una Ryder a
-          la que se llegó desde ella); mientras carga no se sabe: la del mapa */}
-      {user ? <HeaderAuth user={user} backTo={isLoading ? undefined : backTo} /> : <Header />}
+          la que se llegó desde ella); mientras carga no se sabe: sin flecha */}
+      {user ? <HeaderAuth user={user} backTo={isLoading ? null : backTo} /> : <Header />}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
