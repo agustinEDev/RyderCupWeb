@@ -9,6 +9,8 @@ import { render, screen } from '@testing-library/react';
  *   -----|------------------------------------------------|---------------------------------
  *   E1   | con la barra inferior                          | 5rem: el botón «Partida» sobresale
  *        |                                                | por encima (llega a 71 px), no 4rem
+ *   E2   | con la barra y el aviso de instalar            | además, el alto del aviso
+ *   E3   | sin barra (sin sesión, o en escritorio)        | el alto del aviso, que va al borde
  */
 const sesion = vi.hoisted(() => ({ usuario: { id: 'u-1' } }));
 
@@ -62,5 +64,33 @@ describe('App · el hueco del final', () => {
     const hueco = screen.getByTestId('hueco-barra-inferior');
     expect(hueco.className).toMatch(/h-\[calc\(5rem\+env\(safe-area-inset-bottom\)/);
     expect(hueco.className.split(' ')).toContain('md:hidden');
+  });
+
+  it('E2: con la barra, el hueco del móvil cuenta también el aviso de instalar', async () => {
+    sesion.usuario = { id: 'u-1' };
+    window.history.pushState({}, '', '/dashboard');
+    render(<App />);
+
+    await screen.findByText('barra inferior');
+    expect(screen.getByTestId('hueco-barra-inferior').className).toContain(
+      'h-[calc(5rem+env(safe-area-inset-bottom)+var(--alto-aviso-instalar,0px))]'
+    );
+    // En el escritorio no hay barra: el del aviso va aparte
+    const delAviso = screen.getByTestId('hueco-aviso-instalar');
+    expect(delAviso.className.split(' ')).toEqual(
+      expect.arrayContaining(['hidden', 'md:block', 'h-[var(--alto-aviso-instalar,0px)]'])
+    );
+  });
+
+  it('E3: sin barra, el hueco del aviso en todos los anchos', async () => {
+    sesion.usuario = null;
+    window.history.pushState({}, '', '/esto-no-existe');
+    render(<App />);
+
+    await screen.findByRole('heading', { level: 1, name: 'notFound.title' });
+    expect(screen.queryByTestId('hueco-barra-inferior')).toBeNull();
+    const delAviso = screen.getByTestId('hueco-aviso-instalar');
+    expect(delAviso.className.split(' ')).toContain('h-[var(--alto-aviso-instalar,0px)]');
+    expect(delAviso.className.split(' ')).not.toContain('hidden');
   });
 });

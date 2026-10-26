@@ -428,15 +428,23 @@ function AppContent() {
         <>
           {/* Espaciador en el flujo: la nav es fixed y taparía el final de la
               página. 5rem y no los 4 de la barra: el botón «Partida» sobresale
-              por encima y llega a 71 px del borde (QA, FE #865-8) */}
+              por encima y llega a 71 px del borde (QA, FE #865-8). Más el aviso
+              de instalar, que va encima (#865-13) */}
           <div
             aria-hidden="true"
             data-testid="hueco-barra-inferior"
-            className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom))]"
+            className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom)+var(--alto-aviso-instalar,0px))]"
           />
           <BottomNav />
         </>
       )}
+      {/* Sin la barra (sin sesión, o en el escritorio), el aviso de instalar va
+          al borde: su hueco, para que no tape lo último (QA, FE #865-13) */}
+      <div
+        aria-hidden="true"
+        data-testid="hueco-aviso-instalar"
+        className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
+      />
 
       </Suspense>
 
