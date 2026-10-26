@@ -150,14 +150,18 @@ const LeaderboardPage = () => {
         {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
             de texto y de destino al detectar un stroke play (revisor) */}
         {!isLoading && (
+          // Con sesión, en el móvil la flecha va en la cabecera (QA, FE #865-4)
           <Link
             to={backTo}
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+            className={`${user ? 'hidden md:inline-flex' : 'inline-flex'} items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3`}
           >
             &larr; {backText}
           </Link>
         )}
-        <h1 className={`text-2xl font-bold text-gray-900 ${general ? 'mb-1' : 'mb-6'}`}>{t('leaderboard.title')}</h1>
+        {/* Con sesión, en el móvil lo dice la cabecera: dos <h1> no */}
+        <h1 className={`${user ? 'hidden md:block' : ''} text-2xl font-bold text-gray-900 ${general ? 'mb-1' : 'mb-6'}`}>
+          {t('leaderboard.title')}
+        </h1>
 
         {isLoading && (
           <BlockLoader texto={t('loading')} />

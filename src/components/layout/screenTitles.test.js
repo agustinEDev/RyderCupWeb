@@ -102,4 +102,14 @@ describe('resolveScreen', () => {
     }
     expect(resolveScreen('/admin')).toMatchObject({ titleKey: 'screens.admin', backTo: '/profile' });
   });
+
+  // QA (FE #865-4): con sesión, la clasificación lleva la cabecera de la
+  // aplicación, con flecha a su competición
+  it('titles the shared leaderboard and sends it back to its competition', () => {
+    expect(resolveScreen('/competitions/c1/leaderboard')).toEqual({
+      titleKey: 'screens.leaderboard',
+      backTo: '/competitions/c1',
+      backByHistory: false,
+    });
+  });
 });

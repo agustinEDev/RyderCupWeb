@@ -123,6 +123,27 @@ describe('LeaderboardPage', () => {
     expect(screen.queryByTestId('header')).not.toBeInTheDocument();
   });
 
+  // QA (FE #865-4): con sesión, la cabecera de la aplicación dice el título y
+  // lleva la flecha en el móvil; el título y el «volver» de la página quedan
+  // para el escritorio, o en el móvil saldrían dos (y dos <h1>)
+  it('H1: con sesión, el título y el volver de la página solo en escritorio', async () => {
+    mockUser.current = { id: 'u-1' };
+    render(<LeaderboardPage />);
+
+    const volver = await screen.findByRole('link', { name: /summary\.back/ });
+    expect(volver.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'md:inline-flex']));
+    const titulo = screen.getByRole('heading', { level: 1, name: 'leaderboard.title' });
+    expect(titulo.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'md:block']));
+  });
+
+  it('H2: sin sesión, como siempre: el título y el volver a la vista', async () => {
+    render(<LeaderboardPage />);
+
+    const volver = await screen.findByRole('link', { name: /summary\.back/ });
+    expect(volver.className.split(' ')).not.toContain('hidden');
+    expect(screen.getByRole('heading', { level: 1, name: 'leaderboard.title' }).className.split(' ')).not.toContain('hidden');
+  });
+
   /**
    * Un Stableford o un Medal tiene aquí su general (14 oct 2026): antes el
    * enlace llevaba al error del servidor y luego redirigía a la ficha.
