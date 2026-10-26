@@ -182,14 +182,17 @@ describe('CompetitionDetail - edición de hándicap', () => {
     });
   });
 
-  it('muestra error de validación si el valor no es un número tras normalizar', async () => {
+  // Las letras ya no se escriben (26 oct): lo que queda sin número es el vacío
+  it('muestra error de validación si el campo queda sin número', async () => {
     renderPage();
 
     const editButton = await screen.findByTitle('detail.editHandicap');
     fireEvent.click(editButton);
 
     const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: '' } });
     fireEvent.change(input, { target: { value: 'abc' } });
+    expect(input).toHaveValue('');
 
     const saveButton = screen.getByTitle('detail.saveHandicap');
     fireEvent.click(saveButton);

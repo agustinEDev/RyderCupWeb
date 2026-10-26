@@ -333,4 +333,15 @@ describe('CompleteProfile · el «+» del hándicap', () => {
 
     await waitFor(() => expect(guardarHandicap).toHaveBeenCalledWith({ userId: 'u-1', handicap: '-1.5' }));
   });
+
+  // 26 oct: el campo es de texto y el caso de uso no entiende la coma
+  it('P4: con coma, «1,5» se guarda 1.5', async () => {
+    abrir();
+
+    fireEvent.change(screen.getByLabelText('google.completeProfile.handicapLabel'), { target: { value: '1,5' } });
+    fireEvent.click(casilla());
+    guardar();
+
+    await waitFor(() => expect(guardarHandicap).toHaveBeenCalledWith({ userId: 'u-1', handicap: '1.5' }));
+  });
 });

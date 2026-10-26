@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange';
 
 /**
  * El hándicap a mano, con su «+» al lado (QA del 26 oct, FE #938).
@@ -10,10 +11,17 @@ import { useTranslation } from 'react-i18next';
  * partida rápida. Hacia fuera, el valor de siempre: el texto con el signo que
  * guarda el backend, así que quien lo usa lo lee y lo envía como antes.
  *
+ * Es de texto con teclado decimal, no numérico: el numérico esconde lo que hay
+ * escrito mientras no es un número entero («1,» llegaba vacío) y no deja ver el
+ * signo. Se ve lo que se escribe, con su coma, y sale con punto (26 oct).
+ *
  * @param {string|number|null} value - El hándicap, negativo si es plus
  * @param {(valor: string) => void} onChange - Recibe el texto con su signo
  */
-const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }) => {
+// Signo opcional, hasta dos cifras y un decimal, con coma o punto
+const FORMA_DEL_HANDICAP = /^([+-]?)(\d{0,2})(?:[.,](\d?))?$/;
+
+const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ref, ...resto }) => {
   const { t } = useTranslation('common');
   const texto = String(value ?? '');
   const conSigno = texto.startsWith('-');
@@ -24,8 +32,11 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
   // Lo último que dijo el campo: si quien lo usa lo vacía por su cuenta
   // (cancelar, tras guardar), el «+» recordado ya no vale (revisor)
   const [loQueDijo, setLoQueDijo] = useState(texto);
+  // Lo que se ve, tal cual se escribió: «1,» sale como «1» pero se sigue viendo
+  const [enPantalla, setEnPantalla] = useState(sinSigno);
   if (texto !== loQueDijo) {
     setLoQueDijo(texto);
+    setEnPantalla(sinSigno);
     if (texto === '') setPlusSinNumero(false);
   }
 
@@ -35,22 +46,50 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
   };
 
   const alEscribir = (e) => {
-    const escrito = e.target.value.trim();
+    // Pegado con espacios alrededor, sin ellos (revisor)
+    const tecleado = e.target.value.trim();
+    const forma = FORMA_DEL_HANDICAP.exec(tecleado);
+    // Lo que no es un hándicap no se escribe
+    if (!forma) return;
+    const [, signo, entero, decimal = ''] = forma;
     // Quien lo escribe con el menos de antes, o con el «+» de los golfistas,
-    // también está diciendo «plus» (en un campo de texto llega tal cual)
-    const conMenos = escrito.startsWith('-') || escrito.startsWith('+');
-    const numero = conMenos ? escrito.slice(1) : escrito;
+    // también está diciendo «plus»
+    const conMenos = signo !== '';
     const esPlus = plus || conMenos;
+    const loQueSeVe = tecleado.slice(signo.length);
+    setEnPantalla(loQueSeVe);
+    const numero = entero === '' && decimal === '' ? '' : `${entero || '0'}${decimal ? `.${decimal}` : ''}`;
     if (numero === '') {
       // Vaciarlo suelta el «+»: si no, lo siguiente salía plus sin quererlo
       // (pasada del Kind, 26 oct). Escribir solo el signo sí lo enciende, y
-      // un decimal a medio escribir («1,») llega vacío sin serlo (revisor)
-      setPlusSinNumero(e.target.validity?.badInput ? esPlus : conMenos);
+      // la coma sola espera al número sin soltarlo
+      setPlusSinNumero(loQueSeVe === '' ? conMenos : esPlus);
       dice('');
       return;
     }
     dice(esPlus ? `-${numero}` : numero);
   };
+
+  // Al salir, la coma colgando se va: si quien lo usa devuelve el mismo valor
+  // tras guardar, «12,» se quedaba a la vista (revisor)
+  const alSalir = (e) => {
+    if (/[.,]$/.test(enPantalla)) setEnPantalla(enPantalla.slice(0, -1));
+    onBlur?.(e);
+  };
+
+  // Fuera de rango no se envía el formulario, como hacía el numérico con su
+  // max, pero con el aviso en su idioma
+  const fueraDeRango = sinSigno !== '' && Number(sinSigno) > (plus ? -MIN_HANDICAP : MAX_HANDICAP);
+  const campo = useRef(null);
+  // El campo es de los dos: el suyo para la validez y el de quien lo usa (CodeRabbit)
+  const alMontar = (nodo) => {
+    campo.current = nodo;
+    if (typeof ref === 'function') ref(nodo);
+    else if (ref) ref.current = nodo;
+  };
+  useEffect(() => {
+    campo.current?.setCustomValidity(fueraDeRango ? t('handicapField.outOfRange') : '');
+  }, [fueraDeRango, t]);
 
   const alPulsarMas = () => {
     if (sinSigno === '') {
@@ -75,13 +114,15 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
         +
       </button>
       <input
-        type="number"
-        step="0.1"
-        min="0"
-        max={plus ? '10' : '54'}
+        aria-invalid={fueraDeRango}
         {...resto}
-        value={sinSigno}
+        // Detrás de lo demás: de texto y con su validez, se le pase lo que se le pase
+        ref={alMontar}
+        type="text"
+        inputMode="decimal"
+        value={enPantalla}
         onChange={alEscribir}
+        onBlur={alSalir}
         disabled={disabled}
         className={`min-w-0 ${className}`}
       />

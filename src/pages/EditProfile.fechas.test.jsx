@@ -116,7 +116,7 @@ describe('EditProfile · el «+» del hándicap a mano', () => {
     handicapEscrito = '-2';
     pintar();
 
-    expect(screen.getByLabelText('edit.handicap.manual')).toHaveValue(2);
+    expect(screen.getByLabelText('edit.handicap.manual')).toHaveValue('2');
     expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
   });
 

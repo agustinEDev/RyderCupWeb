@@ -88,7 +88,7 @@ describe('EditUserModal · el «+» del hándicap', () => {
   it('P5: un plus se ve sin signo y con el «+» pulsado', () => {
     render(<EditUserModal user={{ ...user, handicap: -1.5 }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
-    expect(screen.getByLabelText('editModal.handicap')).toHaveValue(1.5);
+    expect(screen.getByLabelText('editModal.handicap')).toHaveValue('1.5');
     expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -101,5 +101,16 @@ describe('EditUserModal · el «+» del hándicap', () => {
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0][0].handicap).toBe(-2);
+  });
+
+  it('P7: con coma, «1,5» se envía 1.5', async () => {
+    const onSubmit = vi.fn().mockResolvedValue();
+    render(<EditUserModal user={user} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('editModal.handicap'), { target: { value: '1,5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].handicap).toBe(1.5);
   });
 });

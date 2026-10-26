@@ -139,6 +139,12 @@ export const useEditProfile = () => {
       return;
     }
 
+    // Vacío, el caso de uso lo convertía en 0 y se guardaba hándicap 0 (26 oct)
+    if (formData.handicap === '') {
+      customToast.error(t('edit.handicap.manualHelp'));
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateManualHandicapUseCase.execute({
