@@ -11,6 +11,8 @@
 class RecentMatch {
   #id;
   #date;
+  // La partida rápida, su instante (H5): el día se pinta en la hora local
+  #playedAt;
   #matchFormat;
   #scoringFormat;
   #golfCourseId;
@@ -29,6 +31,7 @@ class RecentMatch {
   constructor({
     id,
     date = null,
+    playedAt = null,
     matchFormat = null,
     scoringFormat = null,
     golfCourseId = null,
@@ -50,6 +53,7 @@ class RecentMatch {
 
     this.#id = id;
     this.#date = date ? new Date(date) : null;
+    this.#playedAt = playedAt ? new Date(playedAt) : null;
     this.#matchFormat = matchFormat;
     this.#scoringFormat = scoringFormat;
     this.#golfCourseId = golfCourseId;
@@ -78,6 +82,10 @@ class RecentMatch {
 
   get date() {
     return this.#date;
+  }
+
+  get playedAt() {
+    return this.#playedAt;
   }
 
   get matchFormat() {

@@ -587,3 +587,81 @@ describe('las partidas de stroke play en la cola (FE #824, PR 7)', () => {
     expect(resumen.find((p) => p.matchId === 'm-1')).toMatchObject({ esPartidaDeFranja: false });
   });
 });
+
+// Fourball con un retirado (26 oct 2026): quien marca a dos anota a los dos
+// rivales en el mismo hoyo, cada uno en su casilla. Sin cobertura, cada marcado
+// tiene su hueco, y el hueco es el del jugador que lleva la anotación, no su
+// posición: al retirarse la pareja el orden de los rivales puede cambiar
+describe('scoringOfflineQueue · un hueco por marcado (quien marca a dos)', () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+    vi.clearAllMocks();
+  });
+
+  const deCarlos = { ownScore: 5, markedPlayerId: 'C', markedScore: 6 };
+  const deDani = (golpes) => ({ markedPlayerId: 'D', markedScore: golpes });
+  const loGuardado = () => getAll().map((e) => e.scoreData);
+
+  it('la marca de Dani no pisa lo de Carlos, y al revés', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+    expect(loGuardado()).toEqual([deCarlos, deDani(4)]);
+
+    enqueue('m-1', 3, { ...deCarlos, markedScore: 7 }, null, 'A');
+    expect(loGuardado()).toEqual([deDani(4), { ...deCarlos, markedScore: 7 }]);
+  });
+
+  it('reanotar a Dani sustituye su hueco', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+    enqueue('m-1', 3, deDani(5), null, 'A');
+
+    expect(loGuardado()).toEqual([deCarlos, deDani(5)]);
+  });
+
+  it('el golpe propio vive en un solo hueco: al guardarlo con otro marcado, sale del anterior', () => {
+    // Con la retirada, el primero de la lista pasó de Dani a Carlos
+    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'D', markedScore: 4 }, null, 'A', {}, ['ownScore', 'markedScore']);
+    enqueue('m-1', 3, deCarlos, null, 'A');
+
+    expect(loGuardado()).toEqual([deDani(4), deCarlos]);
+    expect(getAll()[0].tocados).toEqual(['markedScore']);
+  });
+
+  it('y si el anterior se queda sin golpes, sale entero', () => {
+    // El rival que marcaba al retirado: antes con marcado, ahora sin él
+    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'B' }, null, 'A');
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'A');
+
+    expect(loGuardado()).toEqual([{ ownScore: 4 }]);
+  });
+
+  it('una marca sola no toca el golpe propio de otro hueco', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+
+    expect(getAll()[0].scoreData.ownScore).toBe(5);
+  });
+
+  it('borrar un hueco deja el otro; sin decir cuál, todos los del hoyo', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+
+    remove('m-1', 3, null, 'A', 'D');
+    expect(loGuardado()).toEqual([deCarlos]);
+
+    enqueue('m-1', 3, deDani(4), null, 'A');
+    remove('m-1', 3, null, 'A', null);
+    expect(loGuardado()).toEqual([deCarlos, deDani(4)]);
+
+    remove('m-1', 3, null, 'A');
+    expect(loGuardado()).toEqual([]);
+  });
+
+  it('el propio, de otra persona del mismo móvil, no se toca', () => {
+    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'D' }, null, 'B');
+    enqueue('m-1', 3, deCarlos, null, 'A');
+
+    expect(getAll()[0].scoreData.ownScore).toBe(5);
+  });
+});

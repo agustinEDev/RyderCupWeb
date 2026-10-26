@@ -104,7 +104,8 @@ describe('donde vive la cortina del arranque', () => {
     // error hasta que el CSS la apartaba seis segundos despues. Ahora la
     // decision es de la ruta y va dentro, asi que cada fallback tiene que
     // levantarla el mismo.
-    expect(lee('src/App.jsx')).toMatch(/const ErrorFallback[\s\S]{0,600}retiraLaCortina\(\)/);
+    // La de un fallo de render vive en su componente desde el 25 oct 2026
+    expect(lee('src/components/errors/ErrorFallback.jsx')).toMatch(/const ErrorFallback[\s\S]{0,600}retiraLaCortina\(\)/);
     expect(lee('src/components/errors/LazyLoadErrorBoundary.jsx')).toContain('retiraLaCortina()');
   });
 });

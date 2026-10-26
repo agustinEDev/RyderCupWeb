@@ -442,5 +442,32 @@
     },
     "reporteSinCodos": "Mueve la salida o el green si hace falta"
   },
-  "tabsLabel": "Vista del partido"
+  "tabsLabel": "Vista del partido",
+  "withdraw": {
+    "withdrawMe": "Retirarme del partido",
+    "withdrawPartner": "Marcar a {{nombre}} como retirado",
+    "undoPartner": "Deshacer la retirada de {{nombre}}",
+    "youAreWithdrawn": "Estás retirado de este partido",
+    "comeBack": "Volver al partido",
+    "confirmTitle": "¿Retirar del partido?",
+    "confirmMessage": "Desde ahora su bola no cuenta en los hoyos que no tenga validados y su pareja marcará también al rival que marcaba. Se puede deshacer mientras nadie haya entregado la tarjeta.",
+    "confirmYes": "Sí, retirar",
+    "cancel": "Cancelar",
+    "badge": "Retirado",
+    "needsConnection": "Necesitas conexión para retirar o devolver a un jugador",
+    "failed": "No se ha podido retirar ni devolver al jugador",
+    "errors": {
+      "NOT_FOURBALL": "Solo se puede retirar a un jugador en un fourball",
+      "MATCH_NOT_ACTIVE": "El partido ya no está en juego",
+      "NOT_A_PLAYER": "Ese jugador no juega este partido",
+      "ALREADY_WITHDRAWN": "Ese jugador ya está retirado",
+      "LAST_OF_SIDE": "No se puede retirar a los dos de un bando: concede el partido",
+      "SCORECARD_SUBMITTED": "Ya hay una tarjeta entregada: lo validado no se mueve",
+      "NOT_WITHDRAWN": "Ese jugador no está retirado"
+    },
+    "organizerTitle": "Retirar a un jugador del fourball",
+    "organizerWithdraw": "Retirar a {{nombre}}",
+    "organizerUndo": "Deshacer la retirada de {{nombre}}",
+    "pendingScores": "Tienes golpes sin enviar: cuando lleguen al servidor podrás retirarte, o se perderían"
+  }
 }

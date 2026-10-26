@@ -67,6 +67,26 @@ class IScoringRepository {
   async concedeMatch(matchId, concedingTeam, reason) {
     throw new Error('Method not implemented');
   }
+
+  /**
+   * Retira a un jugador de un fourball (RyderCupAM#665).
+   * @param {string} matchId
+   * @param {string} playerId
+   * @returns {Promise<{matchId: string, withdrawnPlayerIds: string[], decidedResult: Object|null}>}
+   */
+  async withdrawPlayer(matchId, playerId) {
+    throw new Error('Method not implemented');
+  }
+
+  /**
+   * Deshace la retirada.
+   * @param {string} matchId
+   * @param {string} playerId
+   * @returns {Promise<{matchId: string, withdrawnPlayerIds: string[], decidedResult: Object|null}>}
+   */
+  async reinstatePlayer(matchId, playerId) {
+    throw new Error('Method not implemented');
+  }
 }
 
 export default IScoringRepository;

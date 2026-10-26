@@ -395,3 +395,22 @@ describe('la partida sin terminar', () => {
     expect(screen.getByTestId('recent-match-excluded-qm-st')).toBeInTheDocument();
   });
 });
+
+// H5 (25 oct 2026): la partida rápida se fecha por su instante, en el día local
+describe('RecentMatches · la fecha de la partida rápida', () => {
+  it('H5: con playedAt, su día local; no el día UTC de date', () => {
+    const rapida = RecentMatch.fromPersistence({
+      id: 'qm-h5',
+      date: '2026-08-01',
+      playedAt: '2026-08-05T12:00:00Z',
+      scoringFormat: 'STABLEFORD',
+      golfCourseName: 'Meis',
+      stablefordPoints: 30,
+    });
+
+    renderList({ matches: [rapida] });
+
+    const esperado = new Date('2026-08-05T12:00:00Z').toLocaleDateString('es', { day: 'numeric', month: 'short' });
+    expect(screen.getByText(esperado)).toBeInTheDocument();
+  });
+});

@@ -32,6 +32,8 @@ class QuickMatch {
   #scoringAssignments;
   #excludedFromStats;
   #createdAt;
+  // Cuando se jugó (H5): al empezar, o al crearla si no empezó. Nulo con un backend viejo
+  #playedAt;
   #updatedAt;
 
   constructor({
@@ -54,6 +56,7 @@ class QuickMatch {
     excludedFromStats = false,
     createdAt = null,
     updatedAt = null,
+    playedAt = null,
   }) {
     if (!id || typeof id !== 'string') {
       throw new TypeError('id must be a non-empty string');
@@ -99,6 +102,7 @@ class QuickMatch {
     this.#excludedFromStats = excludedFromStats;
     this.#createdAt = createdAt ? new Date(createdAt) : new Date();
     this.#updatedAt = updatedAt ? new Date(updatedAt) : new Date();
+    this.#playedAt = playedAt ? new Date(playedAt) : null;
   }
 
   // === Factory Methods ===
@@ -202,6 +206,10 @@ class QuickMatch {
     return this.#updatedAt;
   }
 
+  get playedAt() {
+    return this.#playedAt;
+  }
+
   // === Query Methods ===
 
   isPending() {
@@ -259,6 +267,7 @@ class QuickMatch {
       scoringAssignments: this.#scoringAssignments,
       createdAt: this.#createdAt.toISOString(),
       updatedAt: this.#updatedAt.toISOString(),
+      playedAt: this.#playedAt ? this.#playedAt.toISOString() : null,
     };
   }
 

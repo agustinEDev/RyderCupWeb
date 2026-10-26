@@ -147,7 +147,7 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
             <span className="text-base font-bold text-gray-900">{score}</span>
           )
         )}
-        <span className="text-[10px] text-gray-400">{formatDate(match.date)}</span>
+        <span className="text-[10px] text-gray-400">{formatDate(match.playedAt ?? match.date)}</span>
       </span>
     </button>
   );

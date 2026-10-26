@@ -578,6 +578,8 @@ const SchedulePage = () => {
           maxPlayingHandicap={competition.maxPlayingHandicap ?? null}
           teamNames={teamNames}
           t={t}
+          canManage={canManage}
+          matchFormat={rounds.find((r) => r.matches?.some((m) => m.id === detailMatchId))?.matchFormat ?? null}
         />
       )}
 

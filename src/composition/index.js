@@ -201,6 +201,7 @@ import SubmitHoleScoreUseCase from '../application/use_cases/scoring/SubmitHoleS
 import SubmitScorecardUseCase from '../application/use_cases/scoring/SubmitScorecardUseCase';
 import GetLeaderboardUseCase from '../application/use_cases/scoring/GetLeaderboardUseCase';
 import ConcedeMatchUseCase from '../application/use_cases/scoring/ConcedeMatchUseCase';
+import WithdrawMatchPlayerUseCase from '../application/use_cases/scoring/WithdrawMatchPlayerUseCase';
 // Anotar las partidas de stroke play (FE #824, PR 7)
 import RetireFromTeeGroupUseCase from '../application/use_cases/scoring/RetireFromTeeGroupUseCase';
 import CorrectTeeGroupHoleUseCase from '../application/use_cases/scoring/CorrectTeeGroupHoleUseCase';
@@ -401,6 +402,7 @@ const submitHoleScoreUseCase = new SubmitHoleScoreUseCase({ scoringRepository: a
 const submitScorecardUseCase = new SubmitScorecardUseCase({ scoringRepository: apiScoringRepository });
 const getLeaderboardUseCase = new GetLeaderboardUseCase({ scoringRepository: apiScoringRepository });
 const concedeMatchUseCase = new ConcedeMatchUseCase({ scoringRepository: apiScoringRepository });
+const withdrawMatchPlayerUseCase = new WithdrawMatchPlayerUseCase({ scoringRepository: apiScoringRepository });
 // Las partidas de stroke play se anotan con los MISMOS casos de uso que el
 // partido de la Ryder, sobre su repositorio: misma validación de lo que se manda
 // (omitir no es raya) y mismo `useScoring` con su cola (FE #824, PR 7)
@@ -703,6 +705,7 @@ export {
   submitScorecardUseCase,
   getLeaderboardUseCase,
   concedeMatchUseCase,
+  withdrawMatchPlayerUseCase,
   getTeeGroupScoringViewUseCase,
   submitTeeGroupHoleScoreUseCase,
   submitTeeGroupScorecardUseCase,

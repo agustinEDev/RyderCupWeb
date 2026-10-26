@@ -12,7 +12,7 @@ import {
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
-import { GOLPES_DEL_HOYO, golpesQueTrae } from '../utils/golpesDelHoyo';
+import { GOLPES_DEL_HOYO, conSuRival, golpeBase, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -42,6 +42,13 @@ const deCarga = falloDe('carga');
 const delGolpe = falloDe('golpe');
 const deLaTarjeta = falloDe('tarjeta');
 const deLaConcesion = falloDe('concesion');
+const deLaRetirada = falloDe('retirada');
+
+// Un 409 de la retirada trae su motivo (RyderCupAM#665): se explica con su texto
+const conClaveDeRetirada = (err) => {
+  const motivo = err?.errorCode === 'WITHDRAWAL_NOT_ALLOWED' ? err?.data?.reason : null;
+  return motivo ? Object.assign(err, { i18nKey: `withdraw.errors.${motivo}` }) : err;
+};
 // Un fallo de carga no pisa el de una acción del mismo partido: con el servidor
 // caído el sondeo falla cada 10 s, y el aviso de un golpe que no se guardó
 // duraba hasta el siguiente. Salvo que desmienta el partido —ya no está, no es
@@ -100,6 +107,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // a salvo. Por partido, porque la ruta no lleva `key`: el hook se reutiliza al
   // ir de uno a otro, y al volver los golpes perdidos siguen perdidos
   const [noGuardados, setNoGuardados] = useState(SIN_HOYOS);
+  // Retirar no comparte `isSubmitting` con los golpes: un golpe que acaba
+  // durante la retirada volvía a habilitar sus botones (/code-review)
+  const [retirando, setRetirando] = useState(false);
   // Por qué se paró el último vaciado, si fue por el almacenamiento del móvil
   // (ver `PARO`). Estado PROPIO y no `error`: el sondeo pone `error` a null
   // cada diez segundos al cargar bien la vista, así que un aviso puesto ahí
@@ -116,8 +126,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // Determine if user is a player in this match
   const isMatchPlayer = scoringView?.players?.some(p => p.userId === currentUserId) ?? false;
 
+  // Fourball: el retirado ni anota ni entrega hasta que se deshaga (RyderCupAM#665)
+  const isWithdrawn = scoringView?.withdrawnPlayerIds?.includes(currentUserId) ?? false;
+
   // Admins can score any match even if not enrolled as a player
-  const canScore = isMatchPlayer || isAdmin;
+  const canScore = (isMatchPlayer && !isWithdrawn) || isAdmin;
 
   // Determine if scorecard already submitted by current user
   const hasSubmitted = scoringView?.scorecardSubmittedBy?.includes(currentUserId) ?? false;
@@ -146,6 +159,15 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // the whole input as soon as MY marker submits, even while the player I still mark
   // has an unresolved discrepancy — leaving no one able to fix it.
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
+
+
+  // Quien marca a dos (fourball con un retirado) bloquea por marcado: entregó
+  // uno, al otro se le sigue marcando. Sin marcado, no hay marca que guardar
+  const entregadas = scoringView?.scorecardSubmittedBy;
+  const marcaBloqueadaPara = useCallback(
+    (id) => !id || (entregadas?.includes(id) ?? false),
+    [entregadas]
+  );
 
   // My line on every hole, in hole order
   const myHoleScores = scoringView?.scores?.map(
@@ -307,6 +329,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           [encima.campo]: encima.valor,
           [encima.marca]: true,
           validationStatus: 'pending',
+          // Para que el selector no lo dé por cerrado aunque el servidor ya
+          // tenga resultado del hoyo: este golpe aún no ha llegado
+          enCola: true,
           ...(encima.campo === 'ownScore' ? { netScore: null } : {}),
           // Lo de la cola es de quien anota aquí: ya no es del marcador de antes
           ...(encima.campo === 'markerScore' ? { markerBy: null, markerByName: null } : {}),
@@ -573,13 +598,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
   }, [vaciaLaDeEstaPartida, pendientesPropias, firmaDeLaCola]);
 
-  // Lo guardado de este jugador para ese hoyo. Sin participante: las que lo
-  // llevan son de partida rápida
+  // Lo guardado de este jugador para ese hoyo y ese marcado: quien marca a dos
+  // tiene una por rival. Sin participante: las que lo llevan son de partida rápida
   const loGuardadoDe = useCallback(
-    (holeNumber) => offlineQueue.getByMatch(matchId, currentUserId).find(
+    (holeNumber, marcado = null) => offlineQueue.getByMatch(matchId, currentUserId).find(
       (e) => e.holeNumber === holeNumber
         && e.participantId == null
         && (e.userId ?? null) === (currentUserId ?? null)
+        && marcadoDe(e.scoreData) === marcado
     ),
     [matchId, currentUserId]
   );
@@ -588,14 +614,17 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // superado: lo anterior —también una huérfana de antes de que la cola
   // guardara dueño— y lo propio. Lo que NO sobra es una corrección hecha con la
   // petición en vuelo, que sale en la pasada siguiente
+  // Del mismo marcado: lo de un rival no supera lo del otro (26 oct 2026)
   const borraLoSuperado = useCallback(
     (holeNumber, loEnviado) => {
+      const marcado = marcadoDe(loEnviado.scoreData);
       const superadas = offlineQueue
         .getByMatch(matchId, currentUserId)
         .filter((e) => e.holeNumber === holeNumber && e.participantId == null)
+        .filter((e) => marcadoDe(e.scoreData) === marcado)
         .filter((e) => estaSuperada(e, loEnviado));
       for (const guardada of superadas) {
-        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null);
+        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null, marcado);
       }
     },
     [matchId, currentUserId]
@@ -607,9 +636,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // y solo ese cuenta como vuelto a anotar (FE #622). Sin él, los que trae
   const submitScore = useCallback(async (holeNumber, scoreData, { tocado } = {}) => {
     if (!matchId || !canScore) return;
-    if (isOwnScoreLocked && isMarkerScoreLocked) return;
+    // Con el marcado de ESTE golpe: con dos, el primero no dice nada del otro
+    if (isOwnScoreLocked && marcaBloqueadaPara(scoreData?.markedPlayerId)) return;
     const estaAnotacion = ++anotacionRef.current;
-    const golpesTocados = tocado ? [tocado] : golpesQueTrae(scoreData);
+    const marcado = marcadoDe(scoreData);
+    // Cada marca, con su rival: quien marca a dos tiene dos en el mismo hoyo, y
+    // el nombre no cambia si deja de marcar a dos (26 oct 2026, CodeRabbit)
+    const nombra = (golpes) => conSuRival(golpes, marcado);
+    const golpesTocados = nombra(tocado ? [tocado] : golpesQueTrae(scoreData));
     // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
     // otro: la lista va por partido, así que lo apuntado o retirado se queda en
     // el suyo y la pantalla del otro no lo ve. Al volver, sigue siendo verdad
@@ -710,7 +744,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     // apartaba al rechazarla
     const cuandoSeGuardo = guardado === false
       ? Date.now()
-      : loGuardadoDe(holeNumber)?.timestamp ?? Date.now();
+      : loGuardadoDe(holeNumber, marcado)?.timestamp ?? Date.now();
     // Si el servidor contestó —acepte o rechace— hay cobertura para lo aplazado
     let contesto = false;
     try {
@@ -749,7 +783,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         // la siguiente anotación buena retire el error (FE #521). Lo guardado
         // de antes también sale, que está superado; lo que se queda es una
         // corrección hecha con la petición en camino, que no es la rechazada
-        const loGuardado = loGuardadoDe(holeNumber);
+        const loGuardado = loGuardadoDe(holeNumber, marcado);
         const esLaRechazada = !loGuardado
           || estaSuperada(loGuardado, { cuando: cuandoSeGuardo, scoreData });
         if (esLaRechazada) {
@@ -757,7 +791,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           // una corrección anterior del otro golpe, sin enviar: el aviso nombra
           // los golpes de las dos, o ese se pierde sin decirlo (FE #813). De una
           // entrada de antes, sin ese dato, los golpes que trae
-          const deLaCola = loGuardado ? (loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
+          const deLaCola = loGuardado ? nombra(loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
           const loMandado = Object.fromEntries(Object.entries(scoreData ?? {}).filter(([, v]) => v !== undefined));
           apartaLaRechazada(
             {
@@ -784,7 +818,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, isMarkerScoreLocked, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
+  }, [matchId, canScore, isOwnScoreLocked, marcaBloqueadaPara, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -825,6 +859,38 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   }, [matchId, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.concede]);
 
 
+
+  // --- Retirar a un jugador del fourball, o deshacerlo (RyderCupAM#665) ---
+  const retirarJugador = useCallback(async (playerId, { deshacer = false } = {}) => {
+    // Solo la Ryder: en stroke play se retira por su propio camino
+    if (!matchId || !origen.retira) return;
+    // No va a la cola: retirar cambia quién marca a quién y lo que cuenta, y
+    // aplicarlo tarde y a ciegas sería peor que decir que hace falta red (F8)
+    if (!navigator.onLine) {
+      setFallo(deLaRetirada({ i18nKey: 'withdraw.needsConnection' }, matchId));
+      return;
+    }
+    setRetirando(true);
+    try {
+      // Retirado, el servidor rechaza para siempre sus golpes (PLAYER_WITHDRAWN):
+      // los suyos tienen que salir antes, y si no salen no se le retira
+      if (!deshacer && playerId === currentUserId && pendientesPropias() > 0) {
+        await processQueue();
+        if (pendientesPropias() > 0) {
+          if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada({ i18nKey: 'withdraw.pendingScores' }, matchId));
+          return;
+        }
+      }
+      await origen.retira.execute(matchId, playerId, { deshacer });
+      if (!esDeOtraPartida(matchId)) marcaEscritura();
+      await fetchScoringView();
+      if (!esDeOtraPartida(matchId)) setFallo(null);
+    } catch (err) {
+      if (!esDeOtraPartida(matchId)) setFallo(deLaRetirada(conClaveDeRetirada(err), matchId));
+    } finally {
+      setRetirando(false);
+    }
+  }, [matchId, currentUserId, pendientesPropias, processQueue, fetchScoringView, marcaEscritura, esDeOtraPartida, origen.retira]);
 
   // --- Take over session (force-acquire lock) ---
   const takeOverSession = useCallback(() => {
@@ -874,7 +940,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
 
   // --- Session lock (scoped per userId) ---
   useEffect(() => {
-    if (!matchId || !isMatchPlayer || !currentUserId) return;
+    // El retirado no anota: no coge el candado (y no le sale «sesión tomada»)
+    if (!matchId || !isMatchPlayer || isWithdrawn || !currentUserId) return;
 
     // Force-release any stale lock before acquiring.
     // Prevents orphaned locks (closed tabs, page reloads, or cookie-shared
@@ -924,7 +991,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         clearInterval(currentRefreshTimer);
       }
     };
-  }, [matchId, isMatchPlayer, currentUserId]);
+  }, [matchId, isMatchPlayer, isWithdrawn, currentUserId]);
 
   // --- Initial fetch + polling ---
   useEffect(() => {
@@ -975,7 +1042,12 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     if (!hoyos) return SIN_HOYOS;
     return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
       hoyo,
-      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined) },
+      // En el orden de siempre; las marcas de quien marca a dos, por rival
+      {
+        turno,
+        golpes: Object.keys(golpes).sort((a, b) =>
+          GOLPES_DEL_HOYO.indexOf(golpeBase(a)) - GOLPES_DEL_HOYO.indexOf(golpeBase(b)) || a.localeCompare(b)),
+      },
     ]));
   }, [noGuardados, matchId]);
 
@@ -1005,10 +1077,13 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
 
     // Derived
     isMatchPlayer,
+    isWithdrawn,
     canScore,
     hasSubmitted,
     isOwnScoreLocked,
     isMarkerScoreLocked,
+    marcaBloqueadaPara,
+    retirando,
     isFullyLocked,
     validatedHoles,
     totalHoles,
@@ -1021,6 +1096,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     submitScore,
     submitScorecard,
     concedeMatch,
+    retirarJugador,
     takeOverSession,
     refetch: fetchScoringView,
   };

@@ -1,4 +1,5 @@
 import * as offlineQueue from './scoringOfflineQueue';
+import { marcadoDe } from './golpesDelHoyo';
 
 /** Los campos que son golpes. `markedPlayerId` y `decidido` no se sustituyen. */
 const GOLPES = ['ownScore', 'markedScore', 'score'];
@@ -42,12 +43,15 @@ export const guardaLaCorreccion = (
   laPartida = {},
   tocados = null
 ) => {
+  // La de ese hoyo y ese marcado: quien marca a dos tiene una por rival (26 oct 2026)
+  const marcado = marcadoDe(scoreData);
   const laDeEseHoyo = () => offlineQueue
     .getByMatch(matchId, userId)
     .find((e) =>
       e.holeNumber === holeNumber
       && (e.participantId ?? null) === (participantId ?? null)
-      && (e.userId ?? null) === (userId ?? null));
+      && (e.userId ?? null) === (userId ?? null)
+      && marcadoDe(e.scoreData) === marcado);
 
   const anterior = laDeEseHoyo();
   // Los golpes tocados solo si los hay: partida rápida no los usa —cada aviso ya
@@ -78,7 +82,7 @@ export const guardaLaCorreccion = (
   if (GOLPES.some((g) => g in loQueQueda)) {
     offlineQueue.enqueue(matchId, holeNumber, loQueQueda, participantId, userId, laPartida);
   } else {
-    offlineQueue.remove(matchId, holeNumber, participantId, userId);
+    offlineQueue.remove(matchId, holeNumber, participantId, userId, marcado);
   }
   return guardado;
 };

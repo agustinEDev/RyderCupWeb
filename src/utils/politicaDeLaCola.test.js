@@ -123,3 +123,13 @@ describe('politicaDeLaCola · Términos sin aceptar', () => {
     expect(esRechazoDefinitivo(errorCon(403))).toBe(true);
   });
 });
+
+// F7 (25 oct 2026): el retirado del fourball no anota hasta que se deshaga; su
+// golpe en la cola no se salva reintentándolo (RyderCupAM#665)
+describe('politicaDeLaCola · jugador retirado', () => {
+  it('F7: un 409 PLAYER_WITHDRAWN es definitivo', () => {
+    const rechazo = Object.assign(new Error('retirado'), { status: 409, errorCode: 'PLAYER_WITHDRAWN' });
+    expect(esRechazoDefinitivo(rechazo)).toBe(true);
+    expect(seGuardaParaDespues(rechazo)).toBe(false);
+  });
+});

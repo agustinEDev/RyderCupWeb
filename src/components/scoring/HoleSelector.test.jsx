@@ -105,3 +105,60 @@ describe('HoleSelector · los hoyos que no se pudieron guardar (FE #622)', () =>
     });
   });
 });
+
+// F6 (25 oct 2026): con un retirado del fourball, el hoyo se cierra sin su bola
+describe('HoleSelector · fourball con un retirado', () => {
+  const hoyo = (a1) => [{
+    holeNumber: 1,
+    holeResult: null,
+    playerScores: [
+      { userId: 'a1', validationStatus: a1, ownSubmitted: false, markerSubmitted: false },
+      { userId: 'a2', validationStatus: 'match', ownSubmitted: true, markerSubmitted: true },
+      { userId: 'b1', validationStatus: 'match', ownSubmitted: true, markerSubmitted: true },
+      { userId: 'b2', validationStatus: 'match', ownSubmitted: true, markerSubmitted: true },
+    ],
+  }];
+
+  it('F6: la bola del retirado sin validar no deja el hoyo a medias', () => {
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={hoyo('pending')} retirados={['a1']} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-green-100');
+  });
+
+  it('F6: sin retirados, la misma bola sí lo deja a medias', () => {
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={hoyo('pending')} />);
+    expect(screen.getByTestId('hole-btn-1').className).not.toContain('bg-green-100');
+  });
+
+  it('F6: con resultado del servidor (cerrado sin su bola al volver), verde', () => {
+    const cerrado = hoyo('pending').map((h) => ({ ...h, holeResult: { winner: 'B' } }));
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={cerrado} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-green-100');
+  });
+
+  // /code-review (26 oct 2026): el resultado del servidor no tapa lo que aún
+  // no está cerrado: una corrección en la cola, o un desacuerdo nuevo
+  it('con resultado del servidor y una corrección en la cola, a medias', () => {
+    const cerrado = hoyo('match').map((h) => ({
+      ...h,
+      holeResult: { winner: 'B' },
+      playerScores: h.playerScores.map((ps) => (ps.userId === 'a2' ? { ...ps, validationStatus: 'pending', enCola: true } : ps)),
+    }));
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={cerrado} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-yellow-100');
+  });
+
+  it('con resultado del servidor y un desacuerdo, rojo', () => {
+    const cerrado = hoyo('match').map((h) => ({
+      ...h,
+      holeResult: { winner: 'B' },
+      playerScores: h.playerScores.map((ps) => (ps.userId === 'b1' ? { ...ps, validationStatus: 'mismatch' } : ps)),
+    }));
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={cerrado} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-red-100');
+  });
+
+  it('el desacuerdo en la bola del retirado no pinta rojo: no cuenta', () => {
+    render(<HoleSelector currentHole={2} onSelect={() => {}} scores={hoyo('mismatch')} retirados={['a1']} />);
+    expect(screen.getByTestId('hole-btn-1').className).toContain('bg-green-100');
+  });
+});

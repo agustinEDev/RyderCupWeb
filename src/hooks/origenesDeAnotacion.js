@@ -18,6 +18,8 @@ export const ORIGEN_RYDER = Object.freeze({
   get anota() { return composicion.submitHoleScoreUseCase; },
   get entrega() { return composicion.submitScorecardUseCase; },
   get concede() { return composicion.concedeMatchUseCase; },
+  // Fourball: retirar a un jugador o devolverlo (RyderCupAM#665)
+  get retira() { return composicion.withdrawMatchPlayerUseCase; },
   tipo: null,
 });
 
@@ -25,7 +27,8 @@ export const ORIGEN_PARTIDA_DE_FRANJA = Object.freeze({
   get leeLaVista() { return composicion.getTeeGroupScoringViewUseCase; },
   get anota() { return composicion.submitTeeGroupHoleScoreUseCase; },
   get entrega() { return composicion.submitTeeGroupScorecardUseCase; },
-  // En stroke play no se concede
+  // En stroke play no se concede, ni se retira por aquí (tiene lo suyo)
   concede: null,
+  retira: null,
   get tipo() { return cola.TIPO_PARTIDA_DE_FRANJA; },
 });

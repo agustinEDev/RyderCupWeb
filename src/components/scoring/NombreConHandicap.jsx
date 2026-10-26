@@ -18,8 +18,9 @@ import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
  * @param {string} [props.className] La caja de los dos
  * @param {string} [props.nombreClassName] El nombre
  * @param {string} [props.testId] El de la caja
+ * @param {import('react').ReactNode} [props.children] Detrás del valor, dentro de la caja
  */
-const NombreConHandicap = ({ userId, nombre, playingHandicap, className, nombreClassName, testId }) => {
+const NombreConHandicap = ({ userId, nombre, playingHandicap, className, nombreClassName, testId, children }) => {
   const { t } = useTranslation('scoring');
   const valor = formatoDeHandicapDeJuego(playingHandicap);
   return (
@@ -34,6 +35,9 @@ const NombreConHandicap = ({ userId, nombre, playingHandicap, className, nombreC
           <span className="sr-only">{t('scorecard.playingHandicap', { value: valor })}</span>
         </span>
       )}
+      {/* Lo que va detrás del valor (la etiqueta de retirado): dentro, para que
+          al no caber se recorte el nombre y no se ensanche la fila */}
+      {children}
     </span>
   );
 };

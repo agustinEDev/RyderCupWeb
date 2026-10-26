@@ -183,3 +183,15 @@ describe('QuickMatchMapper - reparto de golpes del backend', () => {
     expect(QuickMatchMapper.toDomain({ ...base, play_mode: 'SCRATCH' }).playMode).toBe('SCRATCH');
   });
 });
+
+// H5 (25 oct 2026): la fecha que se enseña es la de juego, no la de creación
+describe('QuickMatchMapper · played_at', () => {
+  it('H5: played_at llega como playedAt, un instante en UTC', () => {
+    const qm = QuickMatchMapper.toDomain({ ...baseApiData(), played_at: '2026-10-21T22:30:00Z' });
+    expect(qm.playedAt.toISOString()).toBe('2026-10-21T22:30:00.000Z');
+  });
+
+  it('H5: sin played_at (backend viejo), nulo', () => {
+    expect(QuickMatchMapper.toDomain(baseApiData()).playedAt).toBeNull();
+  });
+});

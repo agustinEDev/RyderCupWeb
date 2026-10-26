@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.55.0] - 2026-10-26
+
+**Retirar a un jugador de un fourball de torneo.** El jugador, su pareja o el
+organizador lo retiran desde la anotación o el calendario; su pareja marca a
+los dos rivales desde la misma casilla, también sin cobertura. Además, las
+partidas rápidas dicen el día en que se jugaron y las pantallas de error
+hablan el idioma de la app. Va con el backend **2.41.0**.
+
+**Notas de despliegue.**
+
+- **Backend 2.41.0 antes**: el golpe propio sin marcado (el rival que marcaba
+  al retirado) lo rechaza el 2.40 con un 422.
+- Sin variables nuevas. Arranque **241 KB gzip** de 270.
+
+### Added
+
+- **Retirar a un jugador de un fourball de torneo** (#970): en la pantalla de
+  anotar, «Retirarme del partido» y «Marcar a … como retirado», con
+  confirmación; el retirado ve «Estás retirado de este partido» y «Volver al
+  partido»; su pareja, «Deshacer la retirada de …». El organizador lo hace
+  desde el detalle del partido en el calendario. Solo se ofrece lo que el
+  servidor va a aceptar, y un rechazo se explica por su motivo. La tarjeta
+  marca al retirado con «Retirado» y el selector de hoyos no cuenta su bola
+  sin validar. Si al retirarse a sí mismo quedan golpes sin enviar, se envían
+  antes; si no salen, no se le retira.
+- **Quien marca a dos rivales lo hace desde una sola casilla** (#974): su
+  anotación a la izquierda, el primer marcado a la derecha y el segundo justo
+  debajo; cada casilla manda solo su golpe. Sin cobertura se guardan las dos
+  marcas a la vez: la cola tiene una anotación por jugador marcado, y el golpe
+  propio vive en una sola. Los avisos de golpes no guardados o rechazados
+  nombran la marca de cada rival.
+- El rival que marcaba al retirado anota solo su bola (#970).
+
+### Fixed
+
+- **«Mis partidas rápidas» enseña el día en que se jugó**, no el de creación,
+  y el historial y «partidas juntos» la ponen en su día local, como Actividad
+  (#969). Con un backend anterior, la fecha de creación.
+- **Las pantallas de error hablan el idioma de la app** (#968), en español o
+  inglés, sin depender de las traducciones que se cargan aparte, y ya no
+  aconsejan borrar los datos del sitio (se llevaría los golpes sin enviar).
+- Al bloquearse una casilla con el teclado abierto (el rival entrega su
+  tarjeta), el teclado se cierra (#974).
+
 ## [2.54.0] - 2026-10-25
 
 **Sentry ve solo lo necesario y el presupuesto mide lo que se descarga.** Solo

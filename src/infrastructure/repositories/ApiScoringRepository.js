@@ -79,6 +79,33 @@ class ApiScoringRepository extends IScoringRepository {
     });
     return data;
   }
+
+  /**
+   * POST /api/v1/competitions/matches/{matchId}/players/{playerId}/withdraw
+   * Fourball: retira al jugador (RyderCupAM#665)
+   */
+  async withdrawPlayer(matchId, playerId) {
+    return this.#retirada(matchId, playerId, 'withdraw');
+  }
+
+  /**
+   * POST /api/v1/competitions/matches/{matchId}/players/{playerId}/reinstate
+   */
+  async reinstatePlayer(matchId, playerId) {
+    return this.#retirada(matchId, playerId, 'reinstate');
+  }
+
+  async #retirada(matchId, playerId, accion) {
+    const data = await apiRequest(
+      `/api/v1/competitions/matches/${matchId}/players/${playerId}/${accion}`,
+      { topeMs: TOPE_DE_ANOTAR_MS, method: 'POST' }
+    );
+    return {
+      matchId: data.match_id,
+      withdrawnPlayerIds: data.withdrawn_player_ids ?? [],
+      decidedResult: data.decided_result ?? null,
+    };
+  }
 }
 
 export default ApiScoringRepository;
