@@ -873,6 +873,20 @@ describe('HoleInput · con un segundo marcado', () => {
     expect(onSecondMarkedChange).not.toHaveBeenCalled();
   });
 
+  it('sin su nombre, las palabras de siempre y no un hueco', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        secondMarked={dani({ name: null, validationStatus: 'mismatch', playerScore: { ownSubmitted: true, ownScore: 5 } })}
+        onSecondMarkedChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'input.markerScore' })).toBe(screen.getByTestId('second-marked-score-button'));
+    expect(screen.getByTestId('lo-que-puso-el-otro-second')).toHaveTextContent('"nombre":"input.theMarkedPlayer"');
+  });
+
   it('sin segundo marcado, dos casillas como siempre', () => {
     render(<HoleInput {...props} onScoreChange={vi.fn()} />);
 

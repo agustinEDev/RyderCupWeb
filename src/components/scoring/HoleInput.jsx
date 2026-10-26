@@ -5,6 +5,33 @@ import ScoreInputPanel from './ScoreInputPanel';
 import { HuecoParaAnotar } from './HuecoParaAnotar';
 import { clasesDelHueco } from './clasesDelHueco';
 
+// Un golpe de la casilla: el botón que abre el teclado o, bloqueado, el número.
+// Uno para los tres —el tuyo y el de cada marcado— para que digan lo mismo
+const HuecoDelGolpe = ({ id, prefijo, valor, bloqueado, siguiente, onAbrir, pinta }) => (
+  !bloqueado ? (
+    <button
+      id={id}
+      data-testid={`${prefijo}-score-button`}
+      onClick={onAbrir}
+      className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
+        valor === undefined ? clasesDelHueco(siguiente) : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
+      }`}
+    >
+      {valor === undefined ? (
+        <HuecoParaAnotar siguiente={siguiente} />
+      ) : (
+        <span data-testid={`${prefijo}-score-value`} className="text-2xl font-bold text-gray-900">
+          {pinta(valor)}
+        </span>
+      )}
+    </button>
+  ) : (
+    <p data-testid={`${prefijo}-score-value`} className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
+      {pinta(valor)}
+    </p>
+  )
+);
+
 const HoleInput = ({
   holeNumber,
   par,
@@ -129,7 +156,8 @@ const HoleInput = ({
     setSegundoValue(segundoDeLaVista);
   }
   const segundoBloqueado = Boolean(secondMarked?.isLocked);
-  const etiquetaSegundo = secondMarked ? t('input.youMark', { nombre: secondMarked.name }) : null;
+  // Sin su nombre, las palabras de siempre, como el primero
+  const etiquetaSegundo = secondMarked?.name ? t('input.youMark', { nombre: secondMarked.name }) : t('input.markerScore');
   const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | 'second' | null
   // Si su casilla se bloquea con el teclado abierto (el rival entrega su
   // tarjeta), el teclado se cierra: abierto, sus números ya no hacían nada
@@ -182,6 +210,8 @@ const HoleInput = ({
       : val;
   };
 
+  const pinta = (val) => displayScore(val, t('input.pickedUp'));
+
   // En foursomes la bola es de la pareja: «La pareja rival puso…» (/code-review)
   const nombreDelOtro = (nombre, porDefecto) => (enParejas ? t('input.rivalPair') : nombre || t(porDefecto));
   const golpesEnTexto = (golpes) => (golpes === null ? t('input.pickedUp') : golpes);
@@ -196,7 +226,7 @@ const HoleInput = ({
         : null,
     second:
       secondMarked?.validationStatus === 'mismatch' && secondMarked.playerScore?.ownSubmitted
-        ? t('input.otherPut', { nombre: secondMarked.name, golpes: golpesEnTexto(secondMarked.playerScore.ownScore) })
+        ? t('input.otherPut', { nombre: nombreDelOtro(secondMarked.name, 'input.theMarkedPlayer'), golpes: golpesEnTexto(secondMarked.playerScore.ownScore) })
         : null,
   };
 
@@ -258,53 +288,18 @@ const HoleInput = ({
           </div>
           )}
 
-          {/* Own score */}
-          {!isOwnScoreLocked ? (
-            <button
-              id={idPropio}
-              data-testid="own-score-button"
-              onClick={() => setOpenPanel('own')}
-              className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
-                ownValue === undefined
-                  ? clasesDelHueco(siguienteHueco === 'own')
-                  : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
-              }`}
-            >
-              {ownValue === undefined ? (
-                <HuecoParaAnotar siguiente={siguienteHueco === 'own'} />
-              ) : (
-                <span data-testid="own-score-value" className="text-2xl font-bold text-gray-900">
-                  {displayScore(ownValue, t('input.pickedUp'))}
-                </span>
-              )}
-            </button>
-          ) : (
-            <p data-testid="own-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
-              {displayScore(ownValue, t('input.pickedUp'))}
-            </p>
-          )}
+          <HuecoDelGolpe
+            id={idPropio}
+            prefijo="own"
+            valor={ownValue}
+            bloqueado={isOwnScoreLocked}
+            siguiente={siguienteHueco === 'own'}
+            onAbrir={() => setOpenPanel('own')}
+            pinta={pinta}
+          />
 
           {/* Marker score */}
-          {!conMarcado ? null : !marcadoBloqueado ? (
-            <button
-              id={idMarcado}
-              data-testid="marked-score-button"
-              onClick={() => setOpenPanel('marked')}
-              className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
-                markedValue === undefined
-                  ? clasesDelHueco(siguienteHueco === 'marked')
-                  : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
-              }`}
-            >
-              {markedValue === undefined ? (
-                <HuecoParaAnotar siguiente={siguienteHueco === 'marked'} />
-              ) : (
-                <span data-testid="marked-score-value" className="text-2xl font-bold text-gray-900">
-                  {displayScore(markedValue, t('input.pickedUp'))}
-                </span>
-              )}
-            </button>
-          ) : markedScoredBy ? (
+          {!conMarcado ? null : marcadoBloqueado && markedScoredBy ? (
             <div className="flex h-12 flex-col items-center justify-center">
               <p data-testid="marked-score-value" className="text-2xl font-bold text-gray-400">
                 {displayScore(markedValue, t('input.pickedUp'))}
@@ -314,9 +309,15 @@ const HoleInput = ({
               </p>
             </div>
           ) : (
-            <p data-testid="marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
-              {displayScore(markedValue, t('input.pickedUp'))}
-            </p>
+            <HuecoDelGolpe
+              id={idMarcado}
+              prefijo="marked"
+              valor={markedValue}
+              bloqueado={marcadoBloqueado}
+              siguiente={siguienteHueco === 'marked'}
+              onAbrir={() => setOpenPanel('marked')}
+              pinta={pinta}
+            />
           )}
 
           {/* En un desacuerdo, lo que puso el otro: con solo la ✗ no se sabía
@@ -349,30 +350,15 @@ const HoleInput = ({
                 )}
               </div>
               <span aria-hidden="true" />
-              {!segundoBloqueado ? (
-                <button
-                  id={idSegundo}
-                  data-testid="second-marked-score-button"
-                  onClick={() => setOpenPanel('second')}
-                  className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
-                    segundoValue === undefined
-                      ? clasesDelHueco(siguienteHueco === 'second')
-                      : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  {segundoValue === undefined ? (
-                    <HuecoParaAnotar siguiente={siguienteHueco === 'second'} />
-                  ) : (
-                    <span data-testid="second-marked-score-value" className="text-2xl font-bold text-gray-900">
-                      {displayScore(segundoValue, t('input.pickedUp'))}
-                    </span>
-                  )}
-                </button>
-              ) : (
-                <p data-testid="second-marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
-                  {displayScore(segundoValue, t('input.pickedUp'))}
-                </p>
-              )}
+              <HuecoDelGolpe
+                id={idSegundo}
+                prefijo="second-marked"
+                valor={segundoValue}
+                bloqueado={segundoBloqueado}
+                siguiente={siguienteHueco === 'second'}
+                onAbrir={() => setOpenPanel('second')}
+                pinta={pinta}
+              />
               {loQuePuso.second && (
                 <>
                   <span aria-hidden="true" />

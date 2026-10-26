@@ -589,55 +589,79 @@ describe('las partidas de stroke play en la cola (FE #824, PR 7)', () => {
 });
 
 // Fourball con un retirado (26 oct 2026): quien marca a dos anota a los dos
-// rivales en el mismo hoyo, cada uno en su casilla. Sin cobertura, cada uno
-// tiene su hueco: la anotación del segundo no puede pisar la del hoyo
+// rivales en el mismo hoyo, cada uno en su casilla. Sin cobertura, cada marcado
+// tiene su hueco, y el hueco es el del jugador que lleva la anotación, no su
+// posición: al retirarse la pareja el orden de los rivales puede cambiar
 describe('scoringOfflineQueue · un hueco por marcado (quien marca a dos)', () => {
   beforeEach(() => {
     localStorageMock.clear();
     vi.clearAllMocks();
   });
 
-  const delHoyo = { ownScore: 5, markedPlayerId: 'C', markedScore: 6 };
+  const deCarlos = { ownScore: 5, markedPlayerId: 'C', markedScore: 6 };
   const deDani = (golpes) => ({ markedPlayerId: 'D', markedScore: golpes });
+  const loGuardado = () => getAll().map((e) => e.scoreData);
 
-  it('la marca del segundo no pisa la del hoyo', () => {
-    enqueue('m-1', 3, delHoyo, null, 'A');
-    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+  it('la marca de Dani no pisa lo de Carlos, y al revés', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+    expect(loGuardado()).toEqual([deCarlos, deDani(4)]);
 
-    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo, deDani(4)]);
-    expect(getAll()[1].marcado).toBe('D');
+    enqueue('m-1', 3, { ...deCarlos, markedScore: 7 }, null, 'A');
+    expect(loGuardado()).toEqual([deDani(4), { ...deCarlos, markedScore: 7 }]);
   });
 
-  it('reanotar al segundo sustituye su hueco y no el del hoyo', () => {
-    enqueue('m-1', 3, delHoyo, null, 'A');
-    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
-    enqueue('m-1', 3, deDani(5), null, 'A', {}, null, 'D');
+  it('reanotar a Dani sustituye su hueco', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+    enqueue('m-1', 3, deDani(5), null, 'A');
 
-    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo, deDani(5)]);
+    expect(loGuardado()).toEqual([deCarlos, deDani(5)]);
   });
 
-  it('y anotar el hoyo no se lleva el hueco del segundo', () => {
-    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
-    enqueue('m-1', 3, delHoyo, null, 'A');
+  it('el golpe propio vive en un solo hueco: al guardarlo con otro marcado, sale del anterior', () => {
+    // Con la retirada, el primero de la lista pasó de Dani a Carlos
+    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'D', markedScore: 4 }, null, 'A', {}, ['ownScore', 'markedScore']);
+    enqueue('m-1', 3, deCarlos, null, 'A');
 
-    expect(getAll()).toHaveLength(2);
+    expect(loGuardado()).toEqual([deDani(4), deCarlos]);
+    expect(getAll()[0].tocados).toEqual(['markedScore']);
   });
 
-  it('borrar el hueco del segundo deja el del hoyo, y al revés', () => {
-    enqueue('m-1', 3, delHoyo, null, 'A');
-    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+  it('y si el anterior se queda sin golpes, sale entero', () => {
+    // El rival que marcaba al retirado: antes con marcado, ahora sin él
+    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'B' }, null, 'A');
+    enqueue('m-1', 3, { ownScore: 4 }, null, 'A');
+
+    expect(loGuardado()).toEqual([{ ownScore: 4 }]);
+  });
+
+  it('una marca sola no toca el golpe propio de otro hueco', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+
+    expect(getAll()[0].scoreData.ownScore).toBe(5);
+  });
+
+  it('borrar un hueco deja el otro; sin decir cuál, todos los del hoyo', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A');
 
     remove('m-1', 3, null, 'A', 'D');
-    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo]);
+    expect(loGuardado()).toEqual([deCarlos]);
 
-    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+    enqueue('m-1', 3, deDani(4), null, 'A');
+    remove('m-1', 3, null, 'A', null);
+    expect(loGuardado()).toEqual([deCarlos, deDani(4)]);
+
     remove('m-1', 3, null, 'A');
-    expect(getAll().map((e) => e.scoreData)).toEqual([deDani(4)]);
+    expect(loGuardado()).toEqual([]);
   });
 
-  it('lo del hoyo se guarda como siempre, sin el campo: la cola de antes se sigue entendiendo', () => {
-    enqueue('m-1', 3, delHoyo, null, 'A');
+  it('el propio, de otra persona del mismo móvil, no se toca', () => {
+    enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'D' }, null, 'B');
+    enqueue('m-1', 3, deCarlos, null, 'A');
 
-    expect(getAll()[0]).not.toHaveProperty('marcado');
+    expect(getAll()[0].scoreData.ownScore).toBe(5);
   });
 });

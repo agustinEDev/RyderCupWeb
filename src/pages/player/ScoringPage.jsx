@@ -24,6 +24,7 @@ import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import RetiradaDelFourball from '../../components/scoring/RetiradaDelFourball';
 import { opcionesDeRetirada, aQuienesMarco } from '../../domain/services/retiradaDelFourball';
+import { rivalDe } from '../../utils/golpesDelHoyo';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -88,13 +89,15 @@ const ScoringPage = () => {
   // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
   // piden volver a anotarlos, que sería pedir algo imposible: van en otra frase
   const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
-  // Cada marca, con el bloqueo de SU rival: quien marca a dos puede tener uno
-  // entregado y el otro no. La del segundo, sin segundo (se deshizo la
-  // retirada), ya no se puede anotar (26 oct 2026)
-  const [primerMarcado = null, segundoMarcado = null] = aQuienesMarco(scoringView?.markerAssignments, user?.id);
+  // Cada marca, con el bloqueo de SU rival: quien marca a dos las nombra con él
+  // y puede tener uno entregado y el otro no. A quien ya no marca (se deshizo
+  // la retirada) no se le puede volver a anotar (26 oct 2026)
+  const misMarcados = aQuienesMarco(scoringView?.markerAssignments, user?.id);
+  const [primerMarcado = null, segundoMarcado = null] = misMarcados;
   const golpeBloqueado = (g) => {
     if (g === 'ownScore') return isOwnScoreLocked;
-    if (g === 'secondMarkedScore') return !segundoMarcado || marcaBloqueadaPara(segundoMarcado);
+    const rival = rivalDe(g);
+    if (rival) return !misMarcados.includes(rival) || marcaBloqueadaPara(rival);
     return marcaBloqueadaPara(primerMarcado);
   };
   const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every(golpeBloqueado);
@@ -332,6 +335,13 @@ const ScoringPage = () => {
   const markedPlayerScore = currentHoleScore?.playerScores?.find(
     (ps) => ps.userId === markerAssignment?.marksUserId
   );
+
+  // La fila del segundo marcado en este hoyo, y su nombre, de su asignación
+  // como el del primero: sin él, `null`, y la casilla pone las palabras de
+  // siempre (no su id)
+  const filaDelSegundo = currentHoleScore?.playerScores?.find((ps) => ps.userId === segundoMarcado);
+  const nombreDelSegundo = (segundoMarcado
+    && scoringView?.markerAssignments?.find((ma) => ma.marksUserId === segundoMarcado)?.marksName) || null;
 
   // El golpe del segundo marcado sale solo: ni el tuyo ni el del primero
   const handleSecondMarkedChange = (golpes) => {
@@ -697,10 +707,10 @@ const ScoringPage = () => {
                   onScoreChange={handleScoreChange}
                   secondMarked={segundoMarcado ? {
                     id: segundoMarcado,
-                    name: nombreDe(segundoMarcado),
+                    name: nombreDelSegundo,
                     par: holeFor(segundoMarcado)?.par ?? courseHoleData?.par ?? null,
-                    playerScore: currentHoleScore?.playerScores?.find((ps) => ps.userId === segundoMarcado),
-                    validationStatus: currentHoleScore?.playerScores?.find((ps) => ps.userId === segundoMarcado)?.validationStatus,
+                    playerScore: filaDelSegundo,
+                    validationStatus: filaDelSegundo?.validationStatus,
                     isLocked: segundoBloqueado || !canScore || isSessionBlocked,
                   } : null}
                   onSecondMarkedChange={handleSecondMarkedChange}

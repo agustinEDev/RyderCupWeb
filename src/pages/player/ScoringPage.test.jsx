@@ -1615,7 +1615,7 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
 
     it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
       marcandoADos();
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['secondMarkedScore'] } };
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore@u4'] } };
       mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
 
       render(<ScoringPage />);
@@ -1625,7 +1625,7 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
 
     it('la marca perdida era de Carlos, que entregó: ya no se puede', () => {
       marcandoADos();
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'] } };
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore@u2'] } };
       mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
 
       render(<ScoringPage />);
@@ -1633,9 +1633,9 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
       expect(screen.getByTestId('no-guardados').textContent).toContain('noGuardadosSinAnotar');
     });
 
-    it('la de Dani, si ya no hay segundo marcado (se deshizo la retirada): ya no se puede', () => {
+    it('la de Dani, si ya no le marco (se deshizo la retirada): ya no se puede', () => {
       mockUseScoring.isOwnScoreLocked = true;
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['secondMarkedScore'] } };
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore@u4'] } };
       mockUseScoring.marcaBloqueadaPara = () => false;
 
       render(<ScoringPage />);
@@ -1934,6 +1934,17 @@ describe('ScoringPage · fourball con un retirado', () => {
     expect(casilla.props.secondMarked).toMatchObject({ id: 'u4', name: 'Dani', isLocked: false });
     casilla.props.onScoreChange({ ownScore: 4, markedScore: 5 }, 'markedScore');
     expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'markedScore' });
+  });
+
+  it('F5: sin nombre del segundo en la vista, la casilla no recibe su id como nombre', () => {
+    const vista = dosMarcados();
+    vista.players = vista.players.map((p) => (p.userId === 'u4' ? { ...p, userName: '' } : p));
+    vista.markerAssignments = vista.markerAssignments.map((ma) => (ma.marksUserId === 'u4' ? { ...ma, marksName: '' } : ma));
+    Object.assign(mockUseScoring, { scoringView: vista });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.secondMarked.name).toBeNull();
   });
 
   it('F5: el golpe del segundo sale solo, a su nombre', () => {

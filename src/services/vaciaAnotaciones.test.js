@@ -382,17 +382,18 @@ describe('avisoTrasElVaciado (FE #551)', () => {
   });
 });
 
-// Quien marca a dos (26 oct 2026): el mismo hoyo tiene dos huecos, el del
-// hoyo y el del segundo marcado, y cada uno se manda y se borra por su lado
+// Quien marca a dos (26 oct 2026): el mismo hoyo tiene un hueco por marcado, y
+// cada uno se manda, se borra y se avisa por su lado
 describe('vaciaAnotaciones · un hueco por marcado', () => {
   beforeEach(() => {
     elDisco.clear();
     vi.restoreAllMocks();
   });
 
+  const deDani = (e) => e.scoreData.markedPlayerId === 'D';
   const losDos = () => {
-    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO);
-    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, null, 'D');
+    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO, {}, ['ownScore', 'markedScore@C']);
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, ['markedScore@D']);
     return cola.deQuien(YO);
   };
 
@@ -406,16 +407,14 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
     expect(cola.deQuien(YO)).toHaveLength(0);
   });
 
-  it('el rechazo del segundo (ya no le marca: se deshizo la retirada) aparta solo el suyo', async () => {
-    const manda = vi.fn(async (e) => { if (e.marcado === 'D') throw errorCon(403); });
+  it('el rechazo de Dani (ya no le marca: se deshizo la retirada) aparta solo lo suyo, con su nombre', async () => {
+    const manda = vi.fn(async (e) => { if (deDani(e)) throw errorCon(403); });
 
     const r = await vaciaAnotaciones({ entradas: losDos(), manda });
 
     expect(r).toMatchObject({ enviadas: 1, descartadas: 1 });
     expect(cola.deQuien(YO)).toHaveLength(0);
-    // Su aviso es de la marca del SEGUNDO: con el mismo nombre que la del
-    // primero, reanotar a uno retiraba el aviso del otro
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['secondMarkedScore']);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@D']);
   });
 
   it('rechazadas las dos marcas del hoyo, el aviso las distingue', async () => {
@@ -423,27 +422,27 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
 
     await vaciaAnotaciones({ entradas: losDos(), manda });
 
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['ownScore', 'markedScore', 'secondMarkedScore']);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['ownScore', 'markedScore@C', 'markedScore@D']);
   });
 
-  it('con el hueco del segundo delante en la cola, lo del hoyo se reconoce y sale', async () => {
-    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, null, 'D');
-    cola.enqueue('m-1', 3, { ownScore: 5 }, null, YO);
-    const delHoyo = cola.deQuien(YO).find((e) => !e.marcado);
+  it('con el hueco de Dani delante en la cola, lo de Carlos se reconoce y sale', async () => {
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO);
+    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO);
+    const deCarlos = cola.deQuien(YO).find((e) => !deDani(e));
     const manda = vi.fn();
 
-    const r = await vaciaAnotaciones({ entradas: [delHoyo], manda });
+    const r = await vaciaAnotaciones({ entradas: [deCarlos], manda });
 
     expect(r).toMatchObject({ enviadas: 1, cambiadas: 0 });
-    expect(cola.deQuien(YO).map((e) => e.marcado)).toEqual(['D']);
+    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual(['D']);
   });
 
-  it('el rechazo del hoyo no se lleva el hueco del segundo', async () => {
-    const manda = vi.fn(async (e) => { if (!e.marcado) throw errorCon(409); });
+  it('el rechazo de lo de Carlos no se lleva el hueco de Dani', async () => {
+    const manda = vi.fn(async (e) => { if (!deDani(e)) throw errorCon(409); });
     const entradas = losDos();
 
     await vaciaAnotaciones({ entradas: [entradas[0]], manda });
 
-    expect(cola.deQuien(YO).map((e) => e.marcado)).toEqual(['D']);
+    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual(['D']);
   });
 });

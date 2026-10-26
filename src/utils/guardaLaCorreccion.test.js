@@ -15,8 +15,8 @@ Object.defineProperty(globalThis, 'localStorage', { value: almacen, writable: tr
 
 /**
  * Quien marca a dos (26 oct 2026): cada marcado tiene su hueco en la cola. Si
- * el móvil no puede guardar la corrección del segundo, lo que sale es lo
- * sustituido de SU hueco, nunca lo del hoyo.
+ * el móvil no puede guardar una corrección, lo que sale es lo sustituido de SU
+ * hueco, nunca lo del otro marcado.
  */
 describe('guardaLaCorreccion · quien marca a dos', () => {
   beforeEach(() => {
@@ -24,38 +24,30 @@ describe('guardaLaCorreccion · quien marca a dos', () => {
     vi.clearAllMocks();
   });
 
-  const delHoyo = { ownScore: 5, markedPlayerId: 'C', markedScore: 6 };
+  const deCarlos = { ownScore: 5, markedPlayerId: 'C', markedScore: 6 };
+  const sinSitio = () => almacen.setItem.mockImplementationOnce(() => { throw new Error('QuotaExceededError'); });
 
-  it('sin sitio para la corrección del segundo, sale su marca vieja y el hoyo se queda', () => {
-    enqueue('m-1', 3, delHoyo, null, 'A');
-    enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, 'A', {}, null, 'D');
-    almacen.setItem.mockImplementationOnce(() => { throw new Error('QuotaExceededError'); });
+  it('sin sitio para la corrección de Dani, sale su marca vieja y lo de Carlos se queda', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, 'A');
+    sinSitio();
 
-    const guardado = guardaLaCorreccion('m-1', 3, { markedPlayerId: 'D', markedScore: 5 }, null, 'A', {}, ['markedScore'], 'D');
+    const guardado = guardaLaCorreccion('m-1', 3, { markedPlayerId: 'D', markedScore: 5 }, null, 'A', {}, ['markedScore@D']);
 
     expect(guardado).toBe(false);
-    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo]);
+    expect(getAll().map((e) => e.scoreData)).toEqual([deCarlos]);
   });
 
-  it('lo que no se sustituye se queda en SU hueco, no en el del hoyo', () => {
-    enqueue('m-1', 3, { ownScore: 5 }, null, 'A');
-    enqueue('m-1', 3, { ownScore: 7, markedPlayerId: 'D', markedScore: 4 }, null, 'A', {}, null, 'D');
-    almacen.setItem.mockImplementationOnce(() => { throw new Error('QuotaExceededError'); });
+  it('sin sitio para la de Carlos, lo que no se sustituye se queda en SU hueco', () => {
+    enqueue('m-1', 3, deCarlos, null, 'A');
+    enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, 'A');
+    sinSitio();
 
-    guardaLaCorreccion('m-1', 3, { markedPlayerId: 'D', markedScore: 5 }, null, 'A', {}, ['markedScore'], 'D');
+    guardaLaCorreccion('m-1', 3, { ...deCarlos, markedScore: 7 }, null, 'A', {}, ['markedScore@C']);
 
-    expect(getAll().map((e) => [e.marcado ?? null, e.scoreData])).toEqual([
-      [null, { ownScore: 5 }],
-      ['D', { ownScore: 7, markedPlayerId: 'D' }],
+    expect(getAll().map((e) => e.scoreData)).toEqual([
+      { markedPlayerId: 'D', markedScore: 4 },
+      { ownScore: 5, markedPlayerId: 'C' },
     ]);
-  });
-
-  it('con sitio, la corrección va al hueco del segundo', () => {
-    enqueue('m-1', 3, delHoyo, null, 'A');
-
-    guardaLaCorreccion('m-1', 3, { markedPlayerId: 'D', markedScore: 5 }, null, 'A', {}, ['markedScore'], 'D');
-
-    expect(getAll()).toHaveLength(2);
-    expect(getAll()[1]).toMatchObject({ marcado: 'D', scoreData: { markedPlayerId: 'D', markedScore: 5 } });
   });
 });

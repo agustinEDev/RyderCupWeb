@@ -22,7 +22,7 @@ import {
   noLlegoAlServidor,
 } from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
-import { golpesQueTrae } from '../utils/golpesDelHoyo';
+import { golpeBase, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
 
 /**
  * Por qué se sale del bucle antes de tiempo. **Todos los valores están aquí**:
@@ -96,8 +96,8 @@ const laMismaEnLaCola = (entrada) => {
         e.holeNumber === entrada.holeNumber
         && (e.participantId ?? null) === (entrada.participantId ?? null)
         && (e.userId ?? null) === (entrada.userId ?? null)
-        // El hueco del segundo marcado es otra anotación del mismo hoyo
-        && (e.marcado ?? null) === (entrada.marcado ?? null)
+        // Quien marca a dos tiene una por rival en el mismo hoyo
+        && marcadoDe(e.scoreData) === marcadoDe(entrada.scoreData)
     );
   const esLaMisma = Boolean(
     ahora
@@ -124,13 +124,10 @@ const LATIDO_EN_VUELO_MS = 30_000;
 // los que tocó el jugador, si la anotación lo dice y siguen en ella; si no, los
 // que trae. Las de partida rápida llevan `score`, que no es ninguno de los dos:
 // su aviso ya es del participante y queda sin golpes, como antes
-// El hueco del segundo marcado de quien marca a dos (26 oct 2026), solo si lo
-// es: el resto de anotaciones se borra como siempre
-const delHueco = (entrada) => (entrada.marcado ? [entrada.marcado] : []);
-
 const golpesPerdidosDe = (entrada) => {
-  const trae = golpesQueTrae(entrada.scoreData, entrada.marcado);
-  const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(g)) : trae;
+  const trae = golpesQueTrae(entrada.scoreData);
+  // Quien marca a dos nombra la marca con su rival (`markedScore@id`)
+  const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(golpeBase(g))) : trae;
   return golpes.length > 0 ? { golpes } : {};
 };
 
@@ -166,7 +163,7 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     entrada.holeNumber,
     entrada.participantId,
     entrada.userId ?? null,
-    ...delHueco(entrada)
+    marcadoDe(entrada.scoreData)
   );
 };
 
@@ -310,7 +307,7 @@ export const vaciaAnotaciones = async ({
       entrada.holeNumber,
       entrada.participantId,
       entrada.userId ?? null,
-      ...delHueco(entrada)
+      marcadoDe(entrada.scoreData)
     );
     if (!borrada) {
       // El golpe llegó pero no se pudo sacar de la cola: sin espacio, o en una

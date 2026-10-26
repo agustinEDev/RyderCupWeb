@@ -13,6 +13,8 @@
  * así que allí va `null` y todo se comporta como antes (FE #515).
  */
 
+import { marcadoDe } from './golpesDelHoyo';
+
 const STORAGE_KEY = 'rydercup-scoring-queue';
 
 /**
@@ -35,18 +37,40 @@ export const TIPO_PARTIDA_DE_FRANJA = 'TEE_GROUP';
  * compartido la anotación de la segunda persona borraba la de la primera al
  * guardarse: mismo partido, mismo hoyo, luego «la misma». Eran dos golpes de
  * dos personas, y uno desaparecía sin dejar rastro.
- *
- * **Y el segundo marcado, también** (26 oct 2026). En un fourball con un
- * retirado, su pareja marca a los dos rivales, cada uno en su casilla: la marca
- * del segundo va en su propio hueco, y sin él pisaba la anotación del hoyo. Lo
- * del hoyo —el golpe propio y el primer marcado— sigue sin el campo.
  */
-const mismaAnotacion = (entry, matchId, holeNumber, participantId, userId, marcado = null) =>
+const mismaAnotacion = (entry, matchId, holeNumber, participantId, userId, marcado) =>
   entry.matchId === matchId
   && entry.holeNumber === holeNumber
   && (entry.participantId ?? null) === (participantId ?? null)
   && (entry.userId ?? null) === (userId ?? null)
-  && (entry.marcado ?? null) === (marcado ?? null);
+  // Sin decir el marcado (`undefined`), cualquiera: todo el hoyo de esa persona
+  && (marcado === undefined || marcadoDe(entry.scoreData) === marcado);
+
+
+/** Los campos que son golpes, para saber si a una anotación le queda alguno. */
+const GOLPES = ['ownScore', 'markedScore', 'score'];
+
+/**
+ * El golpe propio de un hoyo vive en UNA anotación: la última que lo trae. Si
+ * se quedara también en la de otro marcado —la del rival que iba primero
+ * antes de la retirada, o la de cuando se marcaba al retirado— el vaciado
+ * mandaría los dos, y el más viejo podía llegar el último.
+ */
+const sinElPropioDeOtroHueco = (cola, nueva) => {
+  if (nueva.scoreData?.ownScore === undefined) return cola;
+  return cola.flatMap((entry) => {
+    // Las del mismo hoyo que quedan son de otro hueco
+    if (!mismaAnotacion(entry, nueva.matchId, nueva.holeNumber, nueva.participantId, nueva.userId)) return [entry];
+    const resto = { ...entry.scoreData };
+    delete resto.ownScore;
+    if (!GOLPES.some((g) => resto[g] !== undefined)) return [];
+    return [{
+      ...entry,
+      scoreData: resto,
+      ...(entry.tocados ? { tocados: entry.tocados.filter((g) => g !== 'ownScore') } : {}),
+    }];
+  });
+};
 
 /**
  * Get all queued scores from localStorage.
@@ -84,9 +108,6 @@ const tocadosTras = (anterior, tocados) => {
  * @param {{matchName?: string|null, matchNumber?: number|null}} [laPartida] -
  *   Cómo se llama la partida, para el aviso del panel. Va en un objeto y no
  *   como dos parámetros más porque ya son cinco por delante
- * @param {Array<string>|null} [tocados] - Qué golpes eligió el jugador (FE #813)
- * @param {string|null} [marcado] - El segundo marcado de quien marca a dos: su
- *   marca va en su propio hueco, sin pisar la anotación del hoyo
  * @returns {boolean} Si de verdad quedó guardada. Un iPhone sin espacio, o una
  *   ventana privada, rechazan el guardado: quien llame tiene que poder decirlo,
  *   porque callarlo hace desaparecer el golpe sin ningún aviso
@@ -109,16 +130,17 @@ export const enqueue = (
   participantId = null,
   userId = null,
   laPartida = {},
-  tocados = null,
-  marcado = null
+  tocados = null
 ) => {
   const { matchName = null, matchNumber = null, tipo = null } = laPartida;
   const queue = getAll();
+  const marcado = marcadoDe(scoreData);
   const anterior = queue.find(
     entry => mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)
   );
-  const filtered = queue.filter(
-    entry => !mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)
+  const filtered = sinElPropioDeOtroHueco(
+    queue.filter(entry => !mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)),
+    { matchId, holeNumber, participantId, userId, scoreData }
   );
   filtered.push({
     matchId,
@@ -146,8 +168,6 @@ export const enqueue = (
     // reencola sin decirlo no se lo quita
     ...((tipo ?? anterior?.tipo) ? { tipo: tipo ?? anterior.tipo } : {}),
     ...tocadosTras(anterior, tocados),
-    // Solo en el hueco del segundo marcado: lo del hoyo se guarda como siempre
-    ...(marcado ? { marcado } : {}),
   });
   return guarda(filtered);
 };
@@ -179,11 +199,11 @@ export const dequeue = () => {
  *   dueño devuelve las de todo el mundo, y `remove` sin dueño no toca ninguna
  *   de ellas. Es asimétrico a propósito —leer de más es inofensivo y borrar de
  *   más no lo es— pero se presta a confusión, así que aquí queda dicho.
- * @param {string|null} [marcado] - El hueco del segundo marcado; sin él, el
- *   del hoyo
+ * @param {string|null} [marcado] - De qué marcado (ver `marcadoDe`); `null`, la
+ *   anotación sin marcado. Sin decirlo, todas las de ese hoyo y esa persona
  * @returns {boolean} Si de verdad quedó guardado el cambio
  */
-export const remove = (matchId, holeNumber, participantId = null, userId = null, marcado = null) => {
+export const remove = (matchId, holeNumber, participantId = null, userId = null, marcado = undefined) => {
   const queue = getAll();
   const filtered = queue.filter(
     entry => !mismaAnotacion(entry, matchId, holeNumber, participantId, userId, marcado)

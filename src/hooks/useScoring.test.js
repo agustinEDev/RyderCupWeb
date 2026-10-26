@@ -728,7 +728,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null)
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null, null)
       );
     });
 
@@ -883,7 +883,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, 'u1')
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, 'u1', null)
       );
       expect(golpesPerdidos.pendientes('u1')).toEqual([
         expect.objectContaining({ matchId: 'm-1', holeNumber: 7, matchName: 'La Herrería' }),
@@ -943,7 +943,7 @@ describe('useScoring', () => {
       // vuelta: eso es lo que antes no pasaba, porque se salía con un `break`
       expect(submitHoleScoreUseCase.execute.mock.calls.slice(0, 2).map((c) => c[1]))
         .toEqual([7, 8]);
-      expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 8, undefined, 'u1');
+      expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 8, undefined, 'u1', null);
     });
 
     it('pero un fallo de sesión sí para el vaciado entero', async () => {
@@ -3319,17 +3319,34 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
 
   // Quien marca a dos (26 oct 2026): la marca del segundo rival es otro golpe.
   // Con un solo nombre, guardar la de uno retiraba el aviso de la del otro
-  it('N1c · la marca del segundo se avisa aparte, y guardarla no retira la del primero', async () => {
+  it('N1c · marcando a dos, cada marca se avisa con su rival, y guardar una no retira la otra', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2' },
+        { scorerUserId: 'u1', marksUserId: 'u4' },
+      ],
+    });
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 6 }); });
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }); });
+    expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2', 'markedScore@u4']);
+
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' }); });
+
+    expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2']);
+  });
+
+  it('N1d · marcando a uno, la marca se llama como siempre', async () => {
     sinCobertura();
     const { result } = await monta();
     sinSitio();
 
     await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }); });
-    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }); });
-    expect(result.current.noGuardados[5].golpes).toEqual(['markedScore', 'secondMarkedScore']);
-
-    conSitio();
-    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' }); });
 
     expect(result.current.noGuardados[5].golpes).toEqual(['markedScore']);
   });
@@ -3953,7 +3970,7 @@ describe('useScoring · quien marca a dos', () => {
   const conRed = () => Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
   afterEach(conRed);
 
-  it('sin cobertura, la marca del segundo va a su propio hueco y la del primero al del hoyo', async () => {
+  it('sin cobertura, cada marca va con su rival', async () => {
     sinRed();
     getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
@@ -3964,14 +3981,15 @@ describe('useScoring · quien marca a dos', () => {
       await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
     });
 
-    const [delSegundo, delHoyo] = offlineQueue.enqueue.mock.calls;
-    expect(delSegundo).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['secondMarkedScore'], 'u4']);
-    expect(delHoyo).toHaveLength(7);
+    // El hueco sale de a quién marca cada una; los golpes, con su rival
+    const [deDani, deCarlos] = offlineQueue.enqueue.mock.calls;
+    expect(deDani).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['markedScore@u4']]);
+    expect(deCarlos).toEqual(['m-1', 3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, null, 'u1', expect.anything(), ['ownScore']]);
   });
 
   const enLaCola = [
     { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 100, scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 } },
-    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 50, marcado: 'u4', scoreData: { markedPlayerId: 'u4', markedScore: 4 } },
+    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 50, scoreData: { markedPlayerId: 'u4', markedScore: 4 } },
   ];
 
   it('al llegar lo del hoyo no se borra el hueco del segundo', async () => {
@@ -3986,7 +4004,7 @@ describe('useScoring · quien marca a dos', () => {
       await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
     });
 
-    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1']]);
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u2']]);
   });
 
   it('al llegar la marca del segundo se borra su hueco, y no el del hoyo', async () => {
@@ -4001,8 +4019,8 @@ describe('useScoring · quien marca a dos', () => {
       await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
     });
 
-    // Se guarda en su hueco antes de mandarlo, y es el suyo el que sale
-    expect(offlineQueue.enqueue.mock.calls.at(-1).at(-1)).toBe('u4');
+    // Se guarda antes de mandarlo, con su rival, y es el suyo el que sale
+    expect(offlineQueue.enqueue.mock.calls.at(-1).at(-1)).toEqual(['markedScore@u4']);
     expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
   });
 

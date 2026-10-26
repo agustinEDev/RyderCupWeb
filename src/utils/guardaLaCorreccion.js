@@ -1,4 +1,5 @@
 import * as offlineQueue from './scoringOfflineQueue';
+import { marcadoDe } from './golpesDelHoyo';
 
 /** Los campos que son golpes. `markedPlayerId` y `decidido` no se sustituyen. */
 const GOLPES = ['ownScore', 'markedScore', 'score'];
@@ -31,9 +32,6 @@ const GOLPES = ['ownScore', 'markedScore', 'score'];
  * esa escritura también falla no hay nada más que hacer: el aviso de que no se
  * pudo guardar ya está puesto, y es lo que pide volver a anotarlo.
  *
- * Con `marcado`, el hueco del segundo marcado de quien marca a dos (26 oct
- * 2026): lo sustituido sale de ese hueco, nunca del del hoyo.
- *
  * @returns {boolean|undefined} Lo que devuelve `enqueue`
  */
 export const guardaLaCorreccion = (
@@ -43,25 +41,23 @@ export const guardaLaCorreccion = (
   participantId = null,
   userId = null,
   laPartida = {},
-  tocados = null,
-  marcado = null
+  tocados = null
 ) => {
+  // La de ese hoyo y ese marcado: quien marca a dos tiene una por rival (26 oct 2026)
+  const marcado = marcadoDe(scoreData);
   const laDeEseHoyo = () => offlineQueue
     .getByMatch(matchId, userId)
     .find((e) =>
       e.holeNumber === holeNumber
       && (e.participantId ?? null) === (participantId ?? null)
       && (e.userId ?? null) === (userId ?? null)
-      && (e.marcado ?? null) === (marcado ?? null));
+      && marcadoDe(e.scoreData) === marcado);
 
   const anterior = laDeEseHoyo();
   // Los golpes tocados solo si los hay: partida rápida no los usa —cada aviso ya
-  // es de un participante— y su llamada sigue siendo la de siempre (FE #813).
-  // El marcado, igual: solo quien marca a dos lo lleva
-  const delHueco = marcado ? [marcado] : [];
+  // es de un participante— y su llamada sigue siendo la de siempre (FE #813)
   const guardado = offlineQueue.enqueue(
-    matchId, holeNumber, scoreData, participantId, userId, laPartida,
-    ...(tocados || marcado ? [tocados, ...delHueco] : [])
+    matchId, holeNumber, scoreData, participantId, userId, laPartida, ...(tocados ? [tocados] : [])
   );
   if (guardado !== false || !anterior) return guardado;
 
@@ -84,9 +80,9 @@ export const guardaLaCorreccion = (
     Object.entries(loViejo).filter(([campo]) => !sustituidos.includes(campo))
   );
   if (GOLPES.some((g) => g in loQueQueda)) {
-    offlineQueue.enqueue(matchId, holeNumber, loQueQueda, participantId, userId, laPartida, ...(marcado ? [null, marcado] : []));
+    offlineQueue.enqueue(matchId, holeNumber, loQueQueda, participantId, userId, laPartida);
   } else {
-    offlineQueue.remove(matchId, holeNumber, participantId, userId, ...delHueco);
+    offlineQueue.remove(matchId, holeNumber, participantId, userId, marcado);
   }
   return guardado;
 };
