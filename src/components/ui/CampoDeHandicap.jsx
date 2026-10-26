@@ -21,7 +21,7 @@ import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange'
 // Signo opcional, hasta dos cifras y un decimal, con coma o punto
 const FORMA_DEL_HANDICAP = /^([+-]?)(\d{0,2})(?:[.,](\d?))?$/;
 
-const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ...resto }) => {
+const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ref, ...resto }) => {
   const { t } = useTranslation('common');
   const texto = String(value ?? '');
   const conSigno = texto.startsWith('-');
@@ -81,6 +81,12 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ..
   // max, pero con el aviso en su idioma
   const fueraDeRango = sinSigno !== '' && Number(sinSigno) > (plus ? -MIN_HANDICAP : MAX_HANDICAP);
   const campo = useRef(null);
+  // El campo es de los dos: el suyo para la validez y el de quien lo usa (CodeRabbit)
+  const alMontar = (nodo) => {
+    campo.current = nodo;
+    if (typeof ref === 'function') ref(nodo);
+    else if (ref) ref.current = nodo;
+  };
   useEffect(() => {
     campo.current?.setCustomValidity(fueraDeRango ? t('handicapField.outOfRange') : '');
   }, [fueraDeRango, t]);
@@ -111,7 +117,7 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ..
         aria-invalid={fueraDeRango}
         {...resto}
         // Detrás de lo demás: de texto y con su validez, se le pase lo que se le pase
-        ref={campo}
+        ref={alMontar}
         type="text"
         inputMode="decimal"
         value={enPantalla}

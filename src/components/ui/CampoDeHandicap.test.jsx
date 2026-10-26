@@ -27,7 +27,7 @@
  *   C19  al salir con la coma colgando («12,»)               | se queda «12» (revisor)
  *   C20  pegado con espacios (« 12 »)                       | sale «12» (revisor)
  *   C21  fuera de rango dentro de un formulario            | el formulario no es válido
- *   C22  quien lo usa pasa `ref` o `type`                  | sigue de texto y con su validez
+ *   C22  quien lo usa pasa `ref` o `type`                  | sigue de texto y con su validez; su `ref` llega (CodeRabbit)
  *   C11  desactivado                                       | el campo y el «+»
  *   C12  el «+» se anuncia en los dos idiomas              | «Hándicap plus» / «Plus handicap»
  *   C13  lo demás va al campo (id, placeholder...)         | sí
@@ -306,6 +306,14 @@ describe('CampoDeHandicap', () => {
 
     expect(campo()).toHaveAttribute('type', 'text');
     expect(campo().validationMessage).toBe('handicapField.outOfRange');
+    expect(otraRef.current).toBe(campo());
+  });
+
+  it('C22b: con una `ref` de función, también le llega', () => {
+    const otraRef = vi.fn();
+    render(<CampoDeHandicap id="hcp" value="2" onChange={vi.fn()} ref={otraRef} />);
+
+    expect(otraRef).toHaveBeenCalledWith(campo());
   });
 
   it('C18b: solo la coma no suelta el «+»', () => {
