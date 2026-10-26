@@ -31,8 +31,8 @@ const LeaderboardPage = () => {
   const [isLoading, setIsLoading] = useState(!desdeLaFicha);
   const [error, setError] = useState(null);
   // Un Stableford o un Medal tiene aquí su general (14 oct 2026: en la ficha,
-  // con 200 participantes, no cabe). La de la Ryder contesta 400 y la ficha
-  // dice cuál es
+  // con 200 participantes, no cabe). Lo dice la ficha, que con sesión se mira
+  // antes de pedir la de la Ryder
   const [laDeStrokePlay, setLaDeStrokePlay] = useState(desdeLaFicha);
   // Otra competición sin desmontarse: de cero, sin enseñar nada de la anterior
   // mientras llega lo suyo (revisor)
@@ -91,7 +91,6 @@ const LeaderboardPage = () => {
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): ni se pregunta
     const esDeStrokePlay = () => {
-      if (!conSesion) return Promise.resolve(null);
       if (fichaMirada.current?.id === competitionId) return fichaMirada.current.promesa;
       const marca = { id: competitionId, promesa: null };
       marca.promesa = getCompetitionDetailUseCase
@@ -111,20 +110,23 @@ const LeaderboardPage = () => {
 
     const fetchLeaderboard = async () => {
       try {
+        // Con sesión, la ficha primero: la de la Ryder contesta 400 a un stroke
+        // play, y ese 400 acababa en la consola (QA, FE #865-6)
+        // Sin sesión, ni se pregunta (`esDeStrokePlay`), ni se espera
+        const competicion = conSesion ? await esDeStrokePlay() : null;
+        if (!vigente) return;
+        if (competicion) {
+          setLaDeStrokePlay(competicion);
+          setError(null);
+          // Ya se sabe qué es: la de la Ryder ni se pide
+          clearInterval(pollRef.current);
+          return;
+        }
         const data = await getLeaderboardUseCase.execute(competitionId);
         if (!vigente) return;
         setLeaderboard(data);
         setError(null);
       } catch (err) {
-        const competicion = err?.status === 400 ? await esDeStrokePlay() : null;
-        if (competicion) {
-          if (!vigente) return;
-          setLaDeStrokePlay(competicion);
-          setError(null);
-          // La de la Ryder no va a cambiar de opinión: se deja de pedir
-          clearInterval(pollRef.current);
-          return;
-        }
         if (vigente) setError(err);
       } finally {
         if (vigente) setIsLoading(false);

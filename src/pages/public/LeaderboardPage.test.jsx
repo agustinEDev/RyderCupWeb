@@ -69,6 +69,8 @@ import { getLeaderboardUseCase } from '../../composition';
 describe('LeaderboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Como el caso de uso: una promesa, que la ficha ya se mira antes (FE #865-6)
+    mockDetalle.mockReset().mockResolvedValue(null);
     mockUser.current = null;
     mockLocationState.state = null;
   });
@@ -158,7 +160,7 @@ describe('LeaderboardPage', () => {
       mockSesionCargando.current = false;
       mockLocationState.state = null;
       getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
-      mockDetalle.mockReset();
+      mockDetalle.mockReset().mockResolvedValue(null);
     });
 
     it('G1: con sesión y en juego, la página pinta su general (no redirige) con el nombre de la competición', async () => {
@@ -206,7 +208,7 @@ describe('LeaderboardPage', () => {
 
     it('G11: si la página pasa a otra competición (una Ryder) sin desmontarse, no sigue pintando la general de la anterior', async () => {
       mockUser.current = { id: 'u-1' };
-      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      // Sin el 400 de la Ryder para la primera: ya no se pide (FE #865-6)
       mockDetalle.mockResolvedValueOnce({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
       const { rerender } = render(<LeaderboardPage />);
       await screen.findByTestId('general-stroke-play');
@@ -435,6 +437,8 @@ describe('LeaderboardPage', () => {
 
       expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
       expect(mockDetalle).toHaveBeenCalledTimes(2);
+      // Y el error de antes se va
+      expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
     });
 
     it('L8: si la ficha respondió con un error, no se vuelve a preguntar (una por competición)', async () => {
@@ -486,6 +490,52 @@ describe('LeaderboardPage', () => {
       await vi.advanceTimersByTimeAsync(30000);
 
       expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
+    });
+
+    // QA (FE #865-6): el enlace directo a la general de un stroke play pedía
+    // antes la de la Ryder, que contesta 400 (a la consola y quizá a Sentry).
+    // Con sesión se mira primero la ficha, que ya se miraba una vez
+    it('S1: con sesión, un stroke play no pide la clasificación de la Ryder', async () => {
+      mockUser.current = { id: 'u-1' };
+      getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
+      expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+      expect(mockDetalle).toHaveBeenCalledTimes(1);
+    });
+
+    it('S2: con sesión, una Ryder: la ficha una vez y su clasificación como siempre', async () => {
+      mockUser.current = { id: 'u-1' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: true });
+
+      render(<LeaderboardPage />);
+      expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(getLeaderboardUseCase.execute.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(mockDetalle).toHaveBeenCalledTimes(1);
+    });
+
+    it('S3: la ficha de la competición anterior que llega tarde no pinta su general en la nueva', async () => {
+      mockUser.current = { id: 'u-1' };
+      let llegaLaDeC1;
+      mockDetalle
+        .mockReturnValueOnce(new Promise((r) => { llegaLaDeC1 = r; }))
+        .mockResolvedValue({ id: 'c-2', hasTeams: true });
+      const { rerender } = render(<LeaderboardPage />);
+      await vi.waitFor(() => expect(mockDetalle).toHaveBeenCalledWith('c-1'));
+
+      mockParams.id = 'c-2';
+      rerender(<LeaderboardPage />);
+      expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
+      await act(async () => llegaLaDeC1({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' }));
+
+      expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+      expect(screen.getByTestId('leaderboard-view')).toBeInTheDocument();
     });
 
     it('L6: sin sesión no pregunta por la ficha (no podría leerla)', async () => {
