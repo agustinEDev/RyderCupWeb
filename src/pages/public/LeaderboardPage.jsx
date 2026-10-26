@@ -11,6 +11,7 @@ import { getCompetitionDetailUseCase, getLeaderboardUseCase } from '../../compos
 import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 // La ficha de un stroke play en juego, para enterarse de que empieza o acaba
@@ -159,7 +160,9 @@ const LeaderboardPage = () => {
   }, [competitionId, conSesion, sesionCargando, yaSabida]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    // La pantalla menos la barra inferior y el aviso de instalar, que App suma
+    // al final: con `min-h-screen` hacía scroll casi vacía (pasada del Kind)
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50 flex flex-col`}>
       {/* La flecha, adonde va el volver de la página (la agenda de una Ryder a
           la que se llegó desde ella); mientras carga no se sabe: sin flecha */}
       {user ? <HeaderAuth user={user} backTo={isLoading ? null : backTo} /> : <Header />}

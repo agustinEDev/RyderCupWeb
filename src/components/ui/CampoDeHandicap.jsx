@@ -42,7 +42,10 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
     const numero = conMenos ? escrito.slice(1) : escrito;
     const esPlus = plus || conMenos;
     if (numero === '') {
-      setPlusSinNumero(esPlus);
+      // Vaciarlo suelta el «+»: si no, lo siguiente salía plus sin quererlo
+      // (pasada del Kind, 26 oct). Escribir solo el signo sí lo enciende, y
+      // un decimal a medio escribir («1,») llega vacío sin serlo (revisor)
+      setPlusSinNumero(e.target.validity?.badInput ? esPlus : conMenos);
       dice('');
       return;
     }
