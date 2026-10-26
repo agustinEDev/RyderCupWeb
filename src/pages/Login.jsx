@@ -99,9 +99,11 @@ const Login = () => {
 
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+          {/* Solo aparece: entrando desplazada, un clic en ese medio segundo
+              podía soltarse fuera del botón, que se había movido (QA, FE #865-12) */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="w-full max-w-md"
           >
@@ -131,8 +133,8 @@ const Login = () => {
               {/* Success Message */}
               {successMessage && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
