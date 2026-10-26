@@ -240,3 +240,27 @@ describe('golpesPerdidos · qué golpe del hoyo se perdió (FE #813)', () => {
   });
 });
 
+
+// CodeRabbit (FE #974): la marca se nombra siempre con su rival. Un aviso de
+// antes, sin rival, era de quien se marcaba entonces: reanotar esa marca lo retira
+describe('golpesPerdidos · la marca con su rival', () => {
+  beforeEach(() => { olvidaTodos(); });
+
+  const aviso = (golpes) => ({ matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', golpes });
+
+  it('reanotar la marca de un rival deja la del otro', () => {
+    apunta(aviso(['markedScore@u2', 'markedScore@u4']));
+
+    olvidaEl('m-1', 3, 'u1', undefined, ['markedScore@u4']);
+
+    expect(pendientes('u1')[0].golpes).toEqual(['markedScore@u2']);
+  });
+
+  it('un aviso de antes, sin rival, se retira al reanotar la marca', () => {
+    apunta(aviso(['ownScore', 'markedScore']));
+
+    olvidaEl('m-1', 3, 'u1', undefined, ['markedScore@u2']);
+
+    expect(pendientes('u1')[0].golpes).toEqual(['ownScore']);
+  });
+});

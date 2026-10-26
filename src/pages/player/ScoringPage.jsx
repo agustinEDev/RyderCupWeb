@@ -24,6 +24,7 @@ import BarraDeEntrega from '../../components/scoring/BarraDeEntrega';
 import ConcedeMatchModal from '../../components/scoring/ConcedeMatchModal';
 import RetiradaDelFourball from '../../components/scoring/RetiradaDelFourball';
 import { opcionesDeRetirada, aQuienesMarco } from '../../domain/services/retiradaDelFourball';
+import { rivalDe } from '../../utils/golpesDelHoyo';
 import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal';
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -45,9 +46,6 @@ const ScoringPage = () => {
   const [activeTab, setActiveTab] = useState('input');
   const [leaderboard, setLeaderboard] = useState(null);
   const [showConcedeModal, setShowConcedeModal] = useState(false);
-  // A quién anota quien marca a dos (F5), y en qué hoyo lo eligió: la elección
-  // es del hoyo, y en el siguiente vuelve al primero sin golpe
-  const [marcadoElegido, setMarcadoElegido] = useState(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [earlyEndDismissed, setEarlyEndDismissed] = useState(false);
   const [, marcaLaHora] = useState(0);
@@ -82,7 +80,6 @@ const ScoringPage = () => {
     retirarJugador,
     isWithdrawn,
     marcaBloqueadaPara,
-    marcadoPendienteEn,
     retirando,
     takeOverSession,
     refetch,
@@ -92,13 +89,18 @@ const ScoringPage = () => {
   // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
   // piden volver a anotarlos, que sería pedir algo imposible: van en otra frase
   const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
-  // La marca, con el bloqueo de a quién iba: quien marca a dos puede tener uno
-  // entregado y el otro no (/code-review, 26 oct 2026)
-  const golpeBloqueado = (g, hoyo) =>
-    g === 'ownScore' ? isOwnScoreLocked : marcaBloqueadaPara(
-      noGuardados[hoyo].marcado ?? aQuienesMarco(scoringView?.markerAssignments, user?.id)[0]
-    );
-  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every((g) => golpeBloqueado(g, hoyo));
+  // Cada marca, con el bloqueo de SU rival: quien marca a dos las nombra con él
+  // y puede tener uno entregado y el otro no. A quien ya no marca (se deshizo
+  // la retirada) no se le puede volver a anotar (26 oct 2026)
+  const misMarcados = aQuienesMarco(scoringView?.markerAssignments, user?.id);
+  const [primerMarcado = null, segundoMarcado = null] = misMarcados;
+  const golpeBloqueado = (g) => {
+    if (g === 'ownScore') return isOwnScoreLocked;
+    const rival = rivalDe(g);
+    if (rival) return !misMarcados.includes(rival) || marcaBloqueadaPara(rival);
+    return marcaBloqueadaPara(primerMarcado);
+  };
+  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every(golpeBloqueado);
   const porAnotar = hoyosNoGuardados.filter((h) => !yaNoSeAnota(h));
   const sinAnotar = hoyosNoGuardados.filter(yaNoSeAnota);
 
@@ -230,31 +232,19 @@ const ScoringPage = () => {
     : null;
 
   // Fourball con un retirado (F5): su pareja marca también al rival que él
-  // marcaba, y elige a quién anota. Por defecto, al primero sin su golpe en este
-  // hoyo; con uno solo, como siempre
-  const misMarcados = aQuienesMarco(scoringView?.markerAssignments, currentUserId);
-  const filaDelHoyo = scoresVisibles.find((s) => s.holeNumber === currentHole);
-  const sinGolpeAqui = misMarcados.find(
-    (id) => !filaDelHoyo?.playerScores?.find((ps) => ps.userId === id)?.markerSubmitted
-  );
-  // Lo que queda sin enviar del hoyo manda: la cola guarda una entrada por
-  // hoyo, y cambiar de marcado la pisaría (25 oct 2026: uno cada vez)
-  const pendienteAqui = marcadoPendienteEn(currentHole);
-  const fijadoPorLaCola = misMarcados.length > 1 && misMarcados.includes(pendienteAqui);
-  const elegidoAqui = marcadoElegido?.hoyo === currentHole ? marcadoElegido.id : null;
-  const marcadoActivo = fijadoPorLaCola
-    ? pendienteAqui
-    : misMarcados.includes(elegidoAqui) ? elegidoAqui : (sinGolpeAqui ?? misMarcados[0]);
+  // marcaba. La casilla es del primero, como siempre, y la del segundo va
+  // debajo (26 oct 2026: una casilla por marcado, sin elegir)
   const nombreDe = (id) => scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
   // Quien no marca a nadie no tiene asignación propia de la que sacarlo
   const quienMeMarcaId = scoringView?.markerAssignments?.find((ma) => ma.marksUserId === currentUserId)?.scorerUserId;
   const quienMeMarca = quienMeMarcaId ? nombreDe(quienMeMarcaId) : null;
   const markerAssignment = scoringView?.markerAssignments?.find(
-    (ma) => ma.scorerUserId === currentUserId && ma.marksUserId === marcadoActivo
+    (ma) => ma.scorerUserId === currentUserId && ma.marksUserId === primerMarcado
   );
-  // Con el marcado elegido: con dos, el primero no dice nada del otro. Sin
+  // Cada marcado con su bloqueo: con dos, el primero no dice nada del otro. Sin
   // marcado (el rival que marcaba al retirado) no hay marca que guardar
   const marcaBloqueada = marcaBloqueadaPara(markerAssignment?.marksUserId);
+  const segundoBloqueado = segundoMarcado ? marcaBloqueadaPara(segundoMarcado) : true;
 
   // A quién marco, para «Anotas a …» del hoyo. En foursomes hay una bola por
   // pareja y se marca a la pareja rival (#710): «Luna / Óscar», no solo Luna.
@@ -345,6 +335,19 @@ const ScoringPage = () => {
   const markedPlayerScore = currentHoleScore?.playerScores?.find(
     (ps) => ps.userId === markerAssignment?.marksUserId
   );
+
+  // La fila del segundo marcado en este hoyo, y su nombre, de su asignación
+  // como el del primero: sin él, `null`, y la casilla pone las palabras de
+  // siempre (no su id)
+  const filaDelSegundo = currentHoleScore?.playerScores?.find((ps) => ps.userId === segundoMarcado);
+  const nombreDelSegundo = (segundoMarcado
+    && scoringView?.markerAssignments?.find((ma) => ma.marksUserId === segundoMarcado)?.marksName) || null;
+
+  // El golpe del segundo marcado sale solo: ni el tuyo ni el del primero
+  const handleSecondMarkedChange = (golpes) => {
+    if (!segundoMarcado) return;
+    submitScore(currentHole, { markedPlayerId: segundoMarcado, markedScore: golpes }, { tocado: 'markedScore' });
+  };
 
   const handleScoreChange = (scoreData, tocado) => {
     if (!markerAssignment) {
@@ -671,38 +674,6 @@ const ScoringPage = () => {
 
             {currentHoleData && !aunNoAbre && !cerradoSinJugar && (
               <>
-                {canScore && misMarcados.length > 1 && (
-                  <fieldset
-                    data-testid="a-quien-anoto"
-                    disabled={fijadoPorLaCola}
-                    className="flex flex-wrap items-center gap-2 text-sm"
-                  >
-                    <legend className="sr-only">{t('withdraw.markingWho')}</legend>
-                    <span aria-hidden="true" className="text-gray-600">{t('withdraw.markingWho')}</span>
-                    {misMarcados.map((id) => (
-                      <label
-                        key={id}
-                        className={`min-h-11 inline-flex items-center rounded-full border px-3 cursor-pointer focus-within:ring-2 focus-within:ring-primary ${
-                          id === marcadoActivo ? 'border-primary bg-primary/10 font-medium' : 'border-gray-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="a-quien-anoto"
-                          className="sr-only"
-                          checked={id === marcadoActivo}
-                          onChange={() => setMarcadoElegido({ hoyo: currentHole, id })}
-                        />
-                        {nombreDe(id)}
-                      </label>
-                    ))}
-                    {fijadoPorLaCola && (
-                      <p className="w-full text-xs text-amber-800">
-                        {t('withdraw.oneAtATime', { nombre: nombreDe(pendienteAqui) })}
-                      </p>
-                    )}
-                  </fieldset>
-                )}
                 <HoleInput
                   // Un partido de torneo es match play: recoger es conceder el
                   // hoyo, y la raya se permite. Solo si la vista lo dice (23 oct
@@ -730,10 +701,19 @@ const ScoringPage = () => {
                   strokesReceived={currentPlayerScore?.strokesReceivedThisHole}
                   holeResult={currentHoleScore?.holeResult}
                   standing={currentHoleScore?.holeResult?.standing}
-                  isReadOnly={!canScore || (isOwnScoreLocked && marcaBloqueada) || isSessionBlocked}
+                  isReadOnly={!canScore || (isOwnScoreLocked && marcaBloqueada && segundoBloqueado) || isSessionBlocked}
                   isOwnScoreLocked={isOwnScoreLocked || !canScore || isSessionBlocked}
                   isMarkerScoreLocked={marcaBloqueada || !canScore || isSessionBlocked}
                   onScoreChange={handleScoreChange}
+                  secondMarked={segundoMarcado ? {
+                    id: segundoMarcado,
+                    name: nombreDelSegundo,
+                    par: holeFor(segundoMarcado)?.par ?? courseHoleData?.par ?? null,
+                    playerScore: filaDelSegundo,
+                    validationStatus: filaDelSegundo?.validationStatus,
+                    isLocked: segundoBloqueado || !canScore || isSessionBlocked,
+                  } : null}
+                  onSecondMarkedChange={handleSecondMarkedChange}
                   teamAName={scoringView?.teamAName}
                   teamBName={scoringView?.teamBName}
                 />

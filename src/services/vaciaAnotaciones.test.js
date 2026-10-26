@@ -335,7 +335,8 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
 
     await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
 
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+    // La marca, con su rival (26 oct 2026)
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@u2']);
   });
 
   it('A2 · una anotación de antes, sin ese dato: los golpes que trae', async () => {
@@ -353,7 +354,7 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
 
     await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
 
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@u2']);
   });
 
   it('A4 · en partida rápida no hay golpes que distinguir: el aviso es del participante', async () => {
@@ -379,5 +380,78 @@ describe('avisoTrasElVaciado (FE #551)', () => {
 
   it('una pasada que termina sin pararse lo retira', () => {
     expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_ESCRIBIR, null)).toBeNull();
+  });
+});
+
+// Quien marca a dos (26 oct 2026): el mismo hoyo tiene un hueco por marcado, y
+// cada uno se manda, se borra y se avisa por su lado
+describe('vaciaAnotaciones · un hueco por marcado', () => {
+  beforeEach(() => {
+    elDisco.clear();
+    vi.restoreAllMocks();
+  });
+
+  const deDani = (e) => e.scoreData.markedPlayerId === 'D';
+  const losDos = () => {
+    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO, {}, ['ownScore', 'markedScore@C']);
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, ['markedScore@D']);
+    return cola.deQuien(YO);
+  };
+
+  it('una rechazada de antes, sin golpes tocados, nombra la marca con su rival', async () => {
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO);
+
+    await vaciaAnotaciones({ entradas: cola.deQuien(YO), manda: vi.fn().mockRejectedValue(errorCon(409)) });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@D']);
+  });
+
+  it('manda y borra los dos', async () => {
+    const manda = vi.fn();
+
+    const r = await vaciaAnotaciones({ entradas: losDos(), manda });
+
+    expect(manda).toHaveBeenCalledTimes(2);
+    expect(r).toMatchObject({ enviadas: 2, cambiadas: 0 });
+    expect(cola.deQuien(YO)).toHaveLength(0);
+  });
+
+  it('el rechazo de Dani (ya no le marca: se deshizo la retirada) aparta solo lo suyo, con su nombre', async () => {
+    const manda = vi.fn(async (e) => { if (deDani(e)) throw errorCon(403); });
+
+    const r = await vaciaAnotaciones({ entradas: losDos(), manda });
+
+    expect(r).toMatchObject({ enviadas: 1, descartadas: 1 });
+    expect(cola.deQuien(YO)).toHaveLength(0);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@D']);
+  });
+
+  it('rechazadas las dos marcas del hoyo, el aviso las distingue', async () => {
+    const manda = vi.fn().mockRejectedValue(errorCon(409));
+
+    await vaciaAnotaciones({ entradas: losDos(), manda });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['ownScore', 'markedScore@C', 'markedScore@D']);
+  });
+
+  it('con el hueco de Dani delante en la cola, lo de Carlos se reconoce y sale', async () => {
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO);
+    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO);
+    const deCarlos = cola.deQuien(YO).find((e) => !deDani(e));
+    const manda = vi.fn();
+
+    const r = await vaciaAnotaciones({ entradas: [deCarlos], manda });
+
+    expect(r).toMatchObject({ enviadas: 1, cambiadas: 0 });
+    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual(['D']);
+  });
+
+  it('el rechazo de lo de Carlos no se lleva el hueco de Dani', async () => {
+    const manda = vi.fn(async (e) => { if (!deDani(e)) throw errorCon(409); });
+    const entradas = losDos();
+
+    await vaciaAnotaciones({ entradas: [entradas[0]], manda });
+
+    expect(cola.deQuien(YO).map((e) => e.scoreData.markedPlayerId)).toEqual(['D']);
   });
 });

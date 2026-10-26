@@ -602,7 +602,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     await waitFor(() =>
       expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledWith('qm-1', 7, 5)
     );
-    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null));
+    await waitFor(() => expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null, null));
   });
 
   it('al volver a anotar bien un hoyo perdido, el aviso rojo se retira', async () => {
@@ -680,7 +680,7 @@ describe('useQuickMatchScoring · vaciar lo guardado (FE #515, tablas B y C)', (
     const result = await montaCon([pendiente(7, 5), pendiente(8, 4)]);
 
     await waitFor(() => expect(submitQuickMatchHoleScoreUseCase.execute).toHaveBeenCalledTimes(2));
-    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null);
+    expect(offlineQueue.remove).toHaveBeenCalledWith('qm-1', 7, 'user-1', null, null);
     expect(result.current.perdidos).toContainEqual(expect.objectContaining({ holeNumber: 7 }));
   });
 

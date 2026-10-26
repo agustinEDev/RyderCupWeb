@@ -22,7 +22,7 @@ import {
   noLlegoAlServidor,
 } from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
-import { golpesQueTrae } from '../utils/golpesDelHoyo';
+import { conSuRival, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
 
 /**
  * Por qué se sale del bucle antes de tiempo. **Todos los valores están aquí**:
@@ -96,6 +96,8 @@ const laMismaEnLaCola = (entrada) => {
         e.holeNumber === entrada.holeNumber
         && (e.participantId ?? null) === (entrada.participantId ?? null)
         && (e.userId ?? null) === (entrada.userId ?? null)
+        // Quien marca a dos tiene una por rival en el mismo hoyo
+        && marcadoDe(e.scoreData) === marcadoDe(entrada.scoreData)
     );
   const esLaMisma = Boolean(
     ahora
@@ -123,8 +125,11 @@ const LATIDO_EN_VUELO_MS = 30_000;
 // que trae. Las de partida rápida llevan `score`, que no es ninguno de los dos:
 // su aviso ya es del participante y queda sin golpes, como antes
 const golpesPerdidosDe = (entrada) => {
-  const trae = golpesQueTrae(entrada.scoreData);
-  const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(g)) : trae;
+  // La marca, con su rival (`markedScore@id`), también en una anotación de
+  // antes: sus tocados, o los golpes que trae, la nombran sin él
+  const marcado = marcadoDe(entrada.scoreData);
+  const trae = conSuRival(golpesQueTrae(entrada.scoreData), marcado);
+  const golpes = entrada.tocados ? conSuRival(entrada.tocados, marcado).filter((g) => trae.includes(g)) : trae;
   return golpes.length > 0 ? { golpes } : {};
 };
 
@@ -159,7 +164,8 @@ export const apartaLaRechazada = (entrada, dueñoSiNoLoTiene = null) => {
     entrada.matchId,
     entrada.holeNumber,
     entrada.participantId,
-    entrada.userId ?? null
+    entrada.userId ?? null,
+    marcadoDe(entrada.scoreData)
   );
 };
 
@@ -302,7 +308,8 @@ export const vaciaAnotaciones = async ({
       entrada.matchId,
       entrada.holeNumber,
       entrada.participantId,
-      entrada.userId ?? null
+      entrada.userId ?? null,
+      marcadoDe(entrada.scoreData)
     );
     if (!borrada) {
       // El golpe llegó pero no se pudo sacar de la cola: sin espacio, o en una

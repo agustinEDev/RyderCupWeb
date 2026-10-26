@@ -12,7 +12,7 @@ import {
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
-import { GOLPES_DEL_HOYO, golpesQueTrae } from '../utils/golpesDelHoyo';
+import { GOLPES_DEL_HOYO, conSuRival, golpeBase, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -159,6 +159,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // the whole input as soon as MY marker submits, even while the player I still mark
   // has an unresolved discrepancy — leaving no one able to fix it.
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
+
 
   // Quien marca a dos (fourball con un retirado) bloquea por marcado: entregó
   // uno, al otro se le sigue marcando. Sin marcado, no hay marca que guardar
@@ -597,37 +598,33 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
   }, [vaciaLaDeEstaPartida, pendientesPropias, firmaDeLaCola]);
 
-  // Lo guardado de este jugador para ese hoyo. Sin participante: las que lo
-  // llevan son de partida rápida
+  // Lo guardado de este jugador para ese hoyo y ese marcado: quien marca a dos
+  // tiene una por rival. Sin participante: las que lo llevan son de partida rápida
   const loGuardadoDe = useCallback(
-    (holeNumber) => offlineQueue.getByMatch(matchId, currentUserId).find(
+    (holeNumber, marcado = null) => offlineQueue.getByMatch(matchId, currentUserId).find(
       (e) => e.holeNumber === holeNumber
         && e.participantId == null
         && (e.userId ?? null) === (currentUserId ?? null)
+        && marcadoDe(e.scoreData) === marcado
     ),
     [matchId, currentUserId]
-  );
-
-  // A quién iba lo que queda sin enviar de un hoyo: la cola guarda una entrada
-  // por hoyo, así que quien marca a dos no cambia de marcado hasta que salga
-  // (decidido el 25 oct 2026: uno cada vez, sin perder golpes)
-  const marcadoPendienteEn = useCallback(
-    (holeNumber) => loGuardadoDe(holeNumber)?.scoreData?.markedPlayerId ?? null,
-    [loGuardadoDe]
   );
 
   // Tras llegar un envío sobra lo que quedaba guardado de ese hoyo y ya está
   // superado: lo anterior —también una huérfana de antes de que la cola
   // guardara dueño— y lo propio. Lo que NO sobra es una corrección hecha con la
   // petición en vuelo, que sale en la pasada siguiente
+  // Del mismo marcado: lo de un rival no supera lo del otro (26 oct 2026)
   const borraLoSuperado = useCallback(
     (holeNumber, loEnviado) => {
+      const marcado = marcadoDe(loEnviado.scoreData);
       const superadas = offlineQueue
         .getByMatch(matchId, currentUserId)
         .filter((e) => e.holeNumber === holeNumber && e.participantId == null)
+        .filter((e) => marcadoDe(e.scoreData) === marcado)
         .filter((e) => estaSuperada(e, loEnviado));
       for (const guardada of superadas) {
-        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null);
+        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null, marcado);
       }
     },
     [matchId, currentUserId]
@@ -642,7 +639,11 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     // Con el marcado de ESTE golpe: con dos, el primero no dice nada del otro
     if (isOwnScoreLocked && marcaBloqueadaPara(scoreData?.markedPlayerId)) return;
     const estaAnotacion = ++anotacionRef.current;
-    const golpesTocados = tocado ? [tocado] : golpesQueTrae(scoreData);
+    const marcado = marcadoDe(scoreData);
+    // Cada marca, con su rival: quien marca a dos tiene dos en el mismo hoyo, y
+    // el nombre no cambia si deja de marcar a dos (26 oct 2026, CodeRabbit)
+    const nombra = (golpes) => conSuRival(golpes, marcado);
+    const golpesTocados = nombra(tocado ? [tocado] : golpesQueTrae(scoreData));
     // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
     // otro: la lista va por partido, así que lo apuntado o retirado se queda en
     // el suyo y la pantalla del otro no lo ve. Al volver, sigue siendo verdad
@@ -659,12 +660,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
       if (perdidos.length === 0) return;
       const golpes = { ...hoyosNoGuardados()[holeNumber]?.golpes };
       for (const g of perdidos) golpes[g] = Math.max(golpes[g] ?? 0, estaAnotacion);
-      // De quién era la marca perdida: quien marca a dos puede tener uno
-      // entregado y el otro no (/code-review, 26 oct 2026)
-      const marcado = perdidos.includes('markedScore')
-        ? (scoreData?.markedPlayerId ?? null)
-        : (hoyosNoGuardados()[holeNumber]?.marcado ?? null);
-      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes, marcado } });
+      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes } });
     };
     const hayUnFalloPosterior = () =>
       Object.values(hoyosNoGuardados()[holeNumber]?.golpes ?? {}).some((turno) => turno > estaAnotacion);
@@ -748,7 +744,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     // apartaba al rechazarla
     const cuandoSeGuardo = guardado === false
       ? Date.now()
-      : loGuardadoDe(holeNumber)?.timestamp ?? Date.now();
+      : loGuardadoDe(holeNumber, marcado)?.timestamp ?? Date.now();
     // Si el servidor contestó —acepte o rechace— hay cobertura para lo aplazado
     let contesto = false;
     try {
@@ -787,7 +783,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         // la siguiente anotación buena retire el error (FE #521). Lo guardado
         // de antes también sale, que está superado; lo que se queda es una
         // corrección hecha con la petición en camino, que no es la rechazada
-        const loGuardado = loGuardadoDe(holeNumber);
+        const loGuardado = loGuardadoDe(holeNumber, marcado);
         const esLaRechazada = !loGuardado
           || estaSuperada(loGuardado, { cuando: cuandoSeGuardo, scoreData });
         if (esLaRechazada) {
@@ -795,7 +791,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           // una corrección anterior del otro golpe, sin enviar: el aviso nombra
           // los golpes de las dos, o ese se pierde sin decirlo (FE #813). De una
           // entrada de antes, sin ese dato, los golpes que trae
-          const deLaCola = loGuardado ? (loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
+          const deLaCola = loGuardado ? nombra(loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
           const loMandado = Object.fromEntries(Object.entries(scoreData ?? {}).filter(([, v]) => v !== undefined));
           apartaLaRechazada(
             {
@@ -1044,9 +1040,14 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   const turnosNoGuardados = useMemo(() => {
     const hoyos = noGuardados[matchId];
     if (!hoyos) return SIN_HOYOS;
-    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes, marcado }]) => [
+    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
       hoyo,
-      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined), marcado: marcado ?? null },
+      // En el orden de siempre; las marcas de quien marca a dos, por rival
+      {
+        turno,
+        golpes: Object.keys(golpes).sort((a, b) =>
+          GOLPES_DEL_HOYO.indexOf(golpeBase(a)) - GOLPES_DEL_HOYO.indexOf(golpeBase(b)) || a.localeCompare(b)),
+      },
     ]));
   }, [noGuardados, matchId]);
 
@@ -1082,7 +1083,6 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     isOwnScoreLocked,
     isMarkerScoreLocked,
     marcaBloqueadaPara,
-    marcadoPendienteEn,
     retirando,
     isFullyLocked,
     validatedHoles,

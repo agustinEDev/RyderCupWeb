@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Este entorno no trae `localStorage`, y el aviso de «no se pudo guardar» vive
 // ahí. Se define arriba del todo: dentro de un `beforeEach` los módulos ya
@@ -185,8 +185,9 @@ describe('useScoring', () => {
       null,
       'u1',
       { matchName: null, matchNumber: 1 },
-      // Sin decir qué golpe se tocó, los que trae (FE #813)
-      ['ownScore', 'markedScore'],
+      // Sin decir qué golpe se tocó, los que trae (FE #813); la marca, con su
+      // rival (26 oct 2026)
+      ['ownScore', 'markedScore@u2'],
     );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
@@ -217,8 +218,9 @@ describe('useScoring', () => {
       // El número TAMBIÉN: una jornada juega varios partidos en el mismo campo,
       // y solo con el campo el panel enseña dos avisos idénticos
       { matchName: 'La Herrería', matchNumber: 3 },
-      // Sin decir qué golpe se tocó, los que trae (FE #813)
-      ['ownScore', 'markedScore'],
+      // Sin decir qué golpe se tocó, los que trae (FE #813); la marca, con su
+      // rival (26 oct 2026)
+      ['ownScore', 'markedScore@u2'],
     );
   });
 
@@ -728,7 +730,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null)
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, null, null)
       );
     });
 
@@ -883,7 +885,7 @@ describe('useScoring', () => {
       });
 
       await waitFor(() =>
-        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, 'u1')
+        expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 7, undefined, 'u1', null)
       );
       expect(golpesPerdidos.pendientes('u1')).toEqual([
         expect.objectContaining({ matchId: 'm-1', holeNumber: 7, matchName: 'La Herrería' }),
@@ -943,7 +945,7 @@ describe('useScoring', () => {
       // vuelta: eso es lo que antes no pasaba, porque se salía con un `break`
       expect(submitHoleScoreUseCase.execute.mock.calls.slice(0, 2).map((c) => c[1]))
         .toEqual([7, 8]);
-      expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 8, undefined, 'u1');
+      expect(offlineQueue.remove).toHaveBeenCalledWith('m-1', 8, undefined, 'u1', null);
     });
 
     it('pero un fallo de sesión sí para el vaciado entero', async () => {
@@ -3317,18 +3319,53 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     expect(result.current.error).toBeNull();
   });
 
-  // /code-review (26 oct 2026): quien marca a dos necesita saber de QUIÉN era
-  // la marca perdida, para decir si aún se puede volver a anotar
-  it('N1c · la marca perdida recuerda a quién iba; sin marca, null', async () => {
+  // Quien marca a dos (26 oct 2026): la marca del segundo rival es otro golpe.
+  // Con un solo nombre, guardar la de uno retiraba el aviso de la del otro
+  it('N1c · marcando a dos, cada marca se avisa con su rival, y guardar una no retira la otra', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue({
+      ...mockScoringView,
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2' },
+        { scorerUserId: 'u1', marksUserId: 'u4' },
+      ],
+    });
     sinCobertura();
     const { result } = await monta();
     sinSitio();
 
+    await act(async () => { await result.current.submitScore(5, { ownScore: 4, markedPlayerId: 'u2', markedScore: 6 }); });
     await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }); });
-    await act(async () => { await result.current.submitScore(6, { ownScore: 4 }); });
+    expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2', 'markedScore@u4']);
 
-    expect(result.current.noGuardados[5].marcado).toBe('u4');
-    expect(result.current.noGuardados[6].marcado).toBeNull();
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' }); });
+
+    expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2']);
+  });
+
+  // CodeRabbit (FE #974): el nombre no depende de a cuántos se marca. Si no,
+  // al deshacerse la retirada el aviso de un rival ya no se podía retirar
+  it('N1d · el aviso de una marca se retira aunque entre medias deje de marcar a dos', async () => {
+    const aDos = {
+      ...mockScoringView,
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2' },
+        { scorerUserId: 'u1', marksUserId: 'u4' },
+      ],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(aDos);
+    sinCobertura();
+    const { result } = await monta();
+    sinSitio();
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }); });
+
+    // Se deshace la retirada: vuelve a marcar solo a u2
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    await act(async () => { await result.current.refetch(); });
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'markedScore' }); });
+
+    expect(result.current.noGuardados[5]).toBeUndefined();
   });
 
   it('N1b · enviando: la petición no llega y el móvil no tiene sitio', async () => {
@@ -3686,7 +3723,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'markedScore');
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['markedScore']);
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['markedScore@u2']);
   });
 
   it('R3b · también lo que se guarda antes de enviar', async () => {
@@ -3714,7 +3751,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
     await anota(result, golpe(4, 5), 'markedScore');
 
     expect(delHoyo5()).toHaveLength(1);
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R5b · y si la corrección no cupo, lo que había de antes en la cola también', async () => {
@@ -3730,7 +3767,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R5c · aunque el envío no traiga el golpe que la cola tenía', async () => {
@@ -3746,7 +3783,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(undefined, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R5d · una entrada de antes, sin golpes tocados, cuenta con los que trae', async () => {
@@ -3762,7 +3799,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(undefined, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R4 · un aviso de antes, sin golpes, se retira con cualquier guardado como siempre', async () => {
@@ -3945,16 +3982,79 @@ describe('useScoring · quien marca a dos', () => {
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
   });
 
-  it('lo que queda sin enviar de un hoyo dice a quién iba', async () => {
+  // 26 oct 2026: una casilla por marcado, y sin cobertura un hueco para cada uno
+  const sinRed = () => Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+  const conRed = () => Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  afterEach(conRed);
+
+  it('sin cobertura, cada marca va con su rival', async () => {
+    sinRed();
     getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
-    offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', scoreData: { markedPlayerId: 'u4', markedScore: 5 } },
-    ]);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.marcadoPendienteEn(3)).toBe('u4');
-    expect(result.current.marcadoPendienteEn(4)).toBeNull();
+    await act(async () => {
+      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+      await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
+    });
+
+    // El hueco sale de a quién marca cada una; los golpes, con su rival
+    const [deDani, deCarlos] = offlineQueue.enqueue.mock.calls;
+    expect(deDani).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['markedScore@u4']]);
+    expect(deCarlos).toEqual(['m-1', 3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, null, 'u1', expect.anything(), ['ownScore']]);
+  });
+
+  const enLaCola = [
+    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 100, scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 } },
+    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 50, scoreData: { markedPlayerId: 'u4', markedScore: 4 } },
+  ];
+
+  it('al llegar lo del hoyo no se borra el hueco del segundo', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    submitHoleScoreUseCase.execute.mockResolvedValue(vistaDeDos);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.getByMatch.mockReturnValue(enLaCola);
+    offlineQueue.remove.mockClear();
+
+    await act(async () => {
+      await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
+    });
+
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u2']]);
+  });
+
+  it('al llegar la marca del segundo se borra su hueco, y no el del hoyo', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    submitHoleScoreUseCase.execute.mockResolvedValue(vistaDeDos);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.getByMatch.mockReturnValue([enLaCola[0], { ...enLaCola[1], timestamp: 200 }]);
+    offlineQueue.remove.mockClear();
+
+    await act(async () => {
+      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+    });
+
+    // Se guarda antes de mandarlo, con su rival, y es el suyo el que sale
+    expect(offlineQueue.enqueue.mock.calls.at(-1).at(-1)).toEqual(['markedScore@u4']);
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
+  });
+
+  it('si rechazan la marca del segundo (se deshizo la retirada), sale su hueco y el del hoyo se queda', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // Lo del hoyo, posterior: no es lo rechazado, y no sale
+    offlineQueue.getByMatch.mockReturnValue([{ ...enLaCola[0], timestamp: 300 }, { ...enLaCola[1], timestamp: 200 }]);
+    offlineQueue.remove.mockClear();
+
+    await act(async () => {
+      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+    });
+
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
   });
 
   it('el retirado no coge el candado de la sesión (no anota)', async () => {

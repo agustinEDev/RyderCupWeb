@@ -73,7 +73,6 @@ const mockUseScoring = {
   refetch: vi.fn(),
   // Como el hook con un solo marcado: sin marcado, o con él entregado
   marcaBloqueadaPara: (id) => !id || mockUseScoring.isMarkerScoreLocked,
-  marcadoPendienteEn: () => null,
   retirando: false,
 };
 
@@ -1565,7 +1564,9 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
   // Revisión: si ya no se puede anotar, «vuelve a anotarlo» pide algo
   // imposible. Se sigue diciendo que no se guardaron, con otro texto
   describe('P5 · cuando ya no se puede anotar', () => {
+    const vistaDeAntes = mockUseScoring.scoringView;
     afterEach(() => {
+      mockUseScoring.scoringView = vistaDeAntes;
       mockUseScoring.canScore = true;
       mockUseScoring.isOwnScoreLocked = false;
       mockUseScoring.isMarkerScoreLocked = false;
@@ -1599,11 +1600,22 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
       expect(screen.getByTestId('no-guardados').textContent).not.toContain('noGuardadosSinAnotar');
     });
 
-    // /code-review (26 oct 2026): quien marca a dos mira el bloqueo de ESE marcado
-    it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u4' } };
+    // Quien marca a dos (26 oct 2026): la marca de cada rival es un golpe
+    // distinto, y cada uno mira el bloqueo de SU rival
+    const marcandoADos = () => {
+      mockUseScoring.scoringView = {
+        ...vistaDeAntes,
+        markerAssignments: [
+          { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos' },
+          { scorerUserId: 'u1', marksUserId: 'u4', marksName: 'Dani' },
+        ],
+      };
       mockUseScoring.isOwnScoreLocked = true;
-      mockUseScoring.isMarkerScoreLocked = true;
+    };
+
+    it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
+      marcandoADos();
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore@u4'] } };
       mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
 
       render(<ScoringPage />);
@@ -1612,9 +1624,19 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
     });
 
     it('la marca perdida era de Carlos, que entregó: ya no se puede', () => {
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u2' } };
-      mockUseScoring.isOwnScoreLocked = true;
+      marcandoADos();
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore@u2'] } };
       mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('noGuardadosSinAnotar');
+    });
+
+    it('la de Dani, si ya no le marco (se deshizo la retirada): ya no se puede', () => {
+      mockUseScoring.isOwnScoreLocked = true;
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore@u4'] } };
+      mockUseScoring.marcaBloqueadaPara = () => false;
 
       render(<ScoringPage />);
 
@@ -1899,27 +1921,103 @@ describe('ScoringPage · fourball con un retirado', () => {
     expect(barra).not.toHaveTextContent('Bea');
   });
 
-  it('F5: marcando a dos, se elige a quién; el golpe va al elegido', () => {
+  // 26 oct 2026: una casilla por marcado, la del segundo bajo la del primero
+  it('F5: marcando a dos, la casilla es del primero y lleva debajo la del segundo; sin selector', () => {
     const submitScore = vi.fn();
+    Object.assign(mockUseScoring, { submitScore, scoringView: dosMarcados() });
+
+    render(<ScoringPage />);
+
+    expect(screen.queryByTestId('a-quien-anoto')).not.toBeInTheDocument();
+    expect(casilla.props.markedPlayerId).toBe('u2');
+    expect(casilla.props.markedName).toBe('Carlos');
+    expect(casilla.props.secondMarked).toMatchObject({ id: 'u4', name: 'Dani', isLocked: false });
+    casilla.props.onScoreChange({ ownScore: 4, markedScore: 5 }, 'markedScore');
+    expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'markedScore' });
+  });
+
+  it('F5: sin nombre del segundo en la vista, la casilla no recibe su id como nombre', () => {
+    const vista = dosMarcados();
+    vista.players = vista.players.map((p) => (p.userId === 'u4' ? { ...p, userName: '' } : p));
+    vista.markerAssignments = vista.markerAssignments.map((ma) => (ma.marksUserId === 'u4' ? { ...ma, marksName: '' } : ma));
+    Object.assign(mockUseScoring, { scoringView: vista });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.secondMarked.name).toBeNull();
+  });
+
+  it('F5: el golpe del segundo sale solo, a su nombre', () => {
+    const submitScore = vi.fn();
+    Object.assign(mockUseScoring, { submitScore, scoringView: dosMarcados() });
+
+    render(<ScoringPage />);
+    casilla.props.onSecondMarkedChange(3);
+
+    expect(submitScore).toHaveBeenLastCalledWith(1, { markedPlayerId: 'u4', markedScore: 3 }, { tocado: 'markedScore' });
+  });
+
+  it('F5: la casilla del segundo lleva su fila del hoyo, su par y su validación', () => {
+    const filaDeDani = { userId: 'u4', markerSubmitted: true, markerScore: 4, validationStatus: 'match' };
     Object.assign(mockUseScoring, {
-      submitScore,
-      scoringView: fourball({
-        withdrawnPlayerIds: ['u3'],
-        markerAssignments: [
-          { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos', markedByUserId: 'u4', markedByName: 'Dani' },
-          { scorerUserId: 'u1', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u4', markedByName: 'Dani' },
-          { scorerUserId: 'u4', marksUserId: 'u1', marksName: 'Ana', markedByUserId: 'u1', markedByName: 'Ana' },
-          { scorerUserId: 'u2', marksUserId: 'u4', marksName: 'Dani', markedByUserId: 'u1', markedByName: 'Ana' },
-        ],
-      }),
+      scoringView: dosMarcados(),
+      scoresVisibles: [{ holeNumber: 1, playerScores: [filaDeDani] }],
     });
 
     render(<ScoringPage />);
-    expect(screen.getByTestId('a-quien-anoto')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
-    casilla.props.onScoreChange({ ownScore: 4, markedScore: 5 }, ['markedScore']);
 
-    expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4, markedPlayerId: 'u4', markedScore: 5 }, { tocado: ['markedScore'] });
+    expect(casilla.props.secondMarked).toMatchObject({ playerScore: filaDeDani, validationStatus: 'match' });
+  });
+
+  it('F5: cada casilla se bloquea por su marcado', () => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados(), marcaBloqueadaPara: (id) => id === 'u2' });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.isMarkerScoreLocked).toBe(true);
+    expect(casilla.props.secondMarked.isLocked).toBe(false);
+  });
+
+  it('F5: entregó Dani: la del segundo se bloquea y la del primero no', () => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados(), marcaBloqueadaPara: (id) => id === 'u4' });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.isMarkerScoreLocked).toBe(false);
+    expect(casilla.props.secondMarked.isLocked).toBe(true);
+  });
+
+  it('F5: la del segundo lleva el par de SU barra', () => {
+    const vista = dosMarcados();
+    vista.players = vista.players.map((p) => (p.userId === 'u4' ? { ...p, holeCard: [{ holeNumber: 1, par: 3, strokeIndex: 1 }] } : p));
+    Object.assign(mockUseScoring, { scoringView: vista });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.secondMarked.par).toBe(3);
+  });
+
+  it('F5: con mi tarjeta y la de Carlos entregadas, aún se marca a Dani: no es solo lectura', () => {
+    Object.assign(mockUseScoring, {
+      scoringView: dosMarcados(),
+      isOwnScoreLocked: true,
+      marcaBloqueadaPara: (id) => id === 'u2',
+    });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.isReadOnly).toBe(false);
+  });
+
+  it.each([
+    ['sin permiso para anotar', { canScore: false }],
+    ['con la sesión en otro móvil', { isSessionBlocked: true }],
+  ])('F5: %s, la del segundo también se bloquea', (_, extra) => {
+    Object.assign(mockUseScoring, { scoringView: dosMarcados(), ...extra });
+
+    render(<ScoringPage />);
+
+    expect(casilla.props.secondMarked.isLocked).toBe(true);
   });
 
   const dosMarcados = (extra = {}) =>
@@ -2002,58 +2100,10 @@ describe('ScoringPage · fourball con un retirado', () => {
     expect(screen.getByRole('button', { name: 'withdraw.withdrawMe' })).toBeDisabled();
   });
 
-  it('con algo sin enviar en el hoyo, el selector se queda en ese marcado y lo dice', () => {
-    Object.assign(mockUseScoring, {
-      scoringView: dosMarcados(),
-      marcadoPendienteEn: (hoyo) => (hoyo === 1 ? 'u4' : null),
-    });
-
-    render(<ScoringPage />);
-
-    expect(screen.getByRole('radio', { name: 'Dani' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Carlos' })).toBeDisabled();
-    expect(screen.getByText('withdraw.oneAtATime {"nombre":"Dani"}')).toBeInTheDocument();
-  });
-
-  it('la elección es del hoyo: en el siguiente vuelve al primero sin golpe', () => {
-    Object.assign(mockUseScoring, { scoringView: dosMarcados() });
-    const { rerender } = render(<ScoringPage />);
-    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
-    expect(screen.getByRole('radio', { name: 'Dani' })).toBeChecked();
-
-    mockUseScoring.currentHole = 2;
-    rerender(<ScoringPage />);
-
-    expect(screen.getByRole('radio', { name: 'Carlos' })).toBeChecked();
-  });
-
-  it('la casilla sabe a quién marca: cambia con el marcado elegido', () => {
-    Object.assign(mockUseScoring, { scoringView: dosMarcados() });
-
-    render(<ScoringPage />);
-    expect(casilla.props.markedPlayerId).toBe('u2');
-    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
-
-    expect(casilla.props.markedPlayerId).toBe('u4');
-  });
-
-  it('la casilla se bloquea según el marcado elegido, no el primero', () => {
-    Object.assign(mockUseScoring, {
-      scoringView: dosMarcados(),
-      marcaBloqueadaPara: (id) => id === 'u2',
-    });
-
-    render(<ScoringPage />);
-    expect(casilla.props.isMarkerScoreLocked).toBe(true);
-    fireEvent.click(screen.getByRole('radio', { name: 'Dani' }));
-
-    expect(casilla.props.isMarkerScoreLocked).toBe(false);
-  });
-
-  it('F5: marcando a uno, no hay selector', () => {
+  it('F5: marcando a uno, sin casilla del segundo', () => {
     Object.assign(mockUseScoring, { scoringView: fourball() });
     render(<ScoringPage />);
-    expect(screen.queryByTestId('a-quien-anoto')).not.toBeInTheDocument();
+    expect(casilla.props.secondMarked).toBeNull();
   });
 });
 

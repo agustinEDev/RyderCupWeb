@@ -740,3 +740,157 @@ describe('HoleInput · al cambiar de marcado', () => {
   });
 });
 
+
+/**
+ * Quien marca a dos (fourball con un retirado, 26 oct 2026): tu anotación a la
+ * izquierda como siempre; a la derecha, el primer marcado a su altura y el
+ * segundo justo debajo. Cada casilla manda lo suyo.
+ */
+describe('HoleInput · con un segundo marcado', () => {
+  const props = { holeNumber: 3, par: 5, strokeIndex: 6, markedName: 'Carlos', markedPlayerId: 'u2' };
+  const dani = (extra = {}) => ({ id: 'u4', name: 'Dani', par: 5, playerScore: null, validationStatus: null, isLocked: false, ...extra });
+
+  it('la casilla del segundo va debajo de la del primero, en su columna', () => {
+    render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani()} onSecondMarkedChange={vi.fn()} />);
+
+    const huecos = [...screen.getByTestId('huecos-del-hoyo').children];
+    const sitio = (el) => huecos.indexOf(el);
+    const delSegundo = screen.getByTestId('second-marked-score-button');
+    // Rejilla de dos columnas: lo del segundo, en los impares (columna derecha)
+    // y después del hueco del primero
+    expect(sitio(delSegundo) % 2).toBe(1);
+    expect(sitio(delSegundo)).toBeGreaterThan(sitio(screen.getByTestId('marked-score-button')));
+    expect(screen.getByRole('button', { name: 'input.youMark {"nombre":"Dani"}' })).toBe(delSegundo);
+  });
+
+  it('su teclado va con su nombre y su par, y manda solo su golpe', () => {
+    const onScoreChange = vi.fn();
+    const onSecondMarkedChange = vi.fn();
+    render(
+      <HoleInput {...props} onScoreChange={onScoreChange} secondMarked={dani({ par: 4 })} onSecondMarkedChange={onSecondMarkedChange} />
+    );
+
+    fireEvent.click(screen.getByTestId('second-marked-score-button'));
+    expect(screen.getByText('input.youMark {"nombre":"Dani"}', { selector: 'h3, h2, p, span, div' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^3/ }));
+
+    expect(onSecondMarkedChange).toHaveBeenCalledWith(3);
+    expect(onScoreChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId('second-marked-score-value')).toHaveTextContent('3');
+  });
+
+  it('enseña lo que ya le anotaste, con su propia marca de validación', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        secondMarked={dani({ playerScore: { markerSubmitted: true, markerScore: 4, ownSubmitted: true, ownScore: 5 }, validationStatus: 'mismatch' })}
+        onSecondMarkedChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('second-marked-score-value')).toHaveTextContent('4');
+    expect(within(screen.getByTestId('second-marked-validation')).getByTestId('validation-icon'))
+      .toHaveAttribute('title', 'validation.mismatch');
+    expect(screen.getByTestId('lo-que-puso-el-otro-second')).toHaveTextContent('input.otherPut {"nombre":"Dani","golpes":5}');
+  });
+
+  it('con su tarjeta entregada, su golpe se ve y no se toca', () => {
+    const onSecondMarkedChange = vi.fn();
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        secondMarked={dani({ isLocked: true, playerScore: { markerSubmitted: true, markerScore: 4 } })}
+        onSecondMarkedChange={onSecondMarkedChange}
+      />
+    );
+
+    expect(screen.queryByTestId('second-marked-score-button')).not.toBeInTheDocument();
+    expect(screen.getByTestId('second-marked-score-value')).toHaveTextContent('4');
+  });
+
+  it('el siguiente hueco por anotar es el suyo cuando los de arriba están puestos', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        playerScore={{ ownSubmitted: true, ownScore: 5 }}
+        markedPlayerScore={{ markerSubmitted: true, markerScore: 6 }}
+        secondMarked={dani()}
+        onSecondMarkedChange={vi.fn()}
+      />
+    );
+
+    expect(within(screen.getByTestId('second-marked-score-button')).getByTestId('anotar-siguiente')).toBeInTheDocument();
+  });
+
+  it('una vista nueva llega a su casilla', () => {
+    const { rerender } = render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani()} onSecondMarkedChange={vi.fn()} />);
+
+    rerender(
+      <HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani({ playerScore: { markerSubmitted: true, markerScore: 7 } })} onSecondMarkedChange={vi.fn()} />
+    );
+
+    expect(screen.getByTestId('second-marked-score-value')).toHaveTextContent('7');
+  });
+
+  it('su teclado etiqueta contra SU par', () => {
+    render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani({ par: 3 })} onSecondMarkedChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId('second-marked-score-button'));
+
+    expect(screen.getByRole('button', { name: /^3/ })).toHaveTextContent('input.par');
+  });
+
+  it('si el segundo pasa a ser otro, su casilla vuelve a la de la vista', () => {
+    const { rerender } = render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani()} onSecondMarkedChange={vi.fn()} />);
+    fireEvent.click(screen.getByTestId('second-marked-score-button'));
+    fireEvent.click(screen.getByRole('button', { name: /^4/ }));
+
+    rerender(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani({ id: 'u3', name: 'Bea' })} onSecondMarkedChange={vi.fn()} />);
+
+    expect(screen.queryByTestId('second-marked-score-value')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['del segundo', 'second-marked-score-button', (bloq) => ({ secondMarked: dani({ isLocked: bloq }) })],
+    ['del primero', 'marked-score-button', (bloq) => ({ secondMarked: dani(), isMarkerScoreLocked: bloq })],
+    ['propia', 'own-score-button', (bloq) => ({ secondMarked: dani(), isOwnScoreLocked: bloq })],
+    ['del segundo, al quedar solo lectura', 'second-marked-score-button', (bloq) => ({ secondMarked: dani(), isReadOnly: bloq })],
+  ])('si la casilla %s se bloquea con el teclado abierto, el teclado se cierra y no manda nada', (_, boton, conBloqueo) => {
+    const onScoreChange = vi.fn();
+    const onSecondMarkedChange = vi.fn();
+    const pinta = (bloq) => <HoleInput {...props} onScoreChange={onScoreChange} onSecondMarkedChange={onSecondMarkedChange} {...conBloqueo(bloq)} />;
+    const { rerender } = render(pinta(false));
+    fireEvent.click(screen.getByTestId(boton));
+    expect(screen.getByRole('button', { name: /^4/ })).toBeInTheDocument();
+
+    rerender(pinta(true));
+
+    expect(screen.queryByRole('button', { name: /^4/ })).not.toBeInTheDocument();
+    expect(onScoreChange).not.toHaveBeenCalled();
+    expect(onSecondMarkedChange).not.toHaveBeenCalled();
+  });
+
+  it('sin su nombre, las palabras de siempre y no un hueco', () => {
+    render(
+      <HoleInput
+        {...props}
+        onScoreChange={vi.fn()}
+        secondMarked={dani({ name: null, validationStatus: 'mismatch', playerScore: { ownSubmitted: true, ownScore: 5 } })}
+        onSecondMarkedChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'input.markerScore' })).toBe(screen.getByTestId('second-marked-score-button'));
+    expect(screen.getByTestId('lo-que-puso-el-otro-second')).toHaveTextContent('"nombre":"input.theMarkedPlayer"');
+  });
+
+  it('sin segundo marcado, dos casillas como siempre', () => {
+    render(<HoleInput {...props} onScoreChange={vi.fn()} />);
+
+    expect(screen.queryByTestId('second-marked-score-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('second-marked-score-value')).not.toBeInTheDocument();
+  });
+});
