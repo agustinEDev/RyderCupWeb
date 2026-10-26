@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MAX_HANDICAP, MIN_HANDICAP } from '../../domain/services/handicapRange';
 
 /**
  * El hándicap a mano, con su «+» al lado (QA del 26 oct, FE #938).
@@ -78,7 +79,7 @@ const CampoDeHandicap = ({ value, onChange, onBlur, disabled, className = '', ..
 
   // Fuera de rango no se envía el formulario, como hacía el numérico con su
   // max, pero con el aviso en su idioma
-  const fueraDeRango = sinSigno !== '' && Number(sinSigno) > (plus ? 10 : 54);
+  const fueraDeRango = sinSigno !== '' && Number(sinSigno) > (plus ? -MIN_HANDICAP : MAX_HANDICAP);
   const campo = useRef(null);
   useEffect(() => {
     campo.current?.setCustomValidity(fueraDeRango ? t('handicapField.outOfRange') : '');
