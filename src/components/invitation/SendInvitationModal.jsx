@@ -49,6 +49,21 @@ const SendInvitationModalContent = ({
   const resultsQueryRef = useRef('');
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   onSearchUsersRef.current = onSearchUsers;
+  // Si ya está dentro o invitado: una sola regla para la pestaña de amigos, la
+  // búsqueda y el teclado (/code-review)
+  const situacionDe = (id) => {
+    const yaInscrito = idsInscritos.includes(id);
+    const yaInvitado = idsInvitados.includes(id);
+    // Sin saber todavía quién está dentro, o sin haberlo podido saber, nadie:
+    // el servidor rechazaría justo a esos (CodeRabbit)
+    const sinComprobar = cargandoAmigos || falloAlComprobarSituacion;
+    return { yaInscrito, yaInvitado, noSePuede: sinComprobar || yaInscrito || yaInvitado };
+  };
+  // El `Enter` del teclado lee por ref: que tampoco elija a quien la lista
+  // enseña bloqueado (QA, 26 oct)
+  const yaEstaRef = useRef(null);
+  // eslint-disable-next-line react-hooks/refs -- como `onSearchUsersRef`: el listener del teclado se registra una sola vez
+  yaEstaRef.current = (id) => situacionDe(id).noSePuede;
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
   // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
@@ -141,21 +156,30 @@ const SendInvitationModalContent = ({
 
       if (!showDropdownRef.current || searchResultsRef.current.length === 0) return;
 
+      // Las flechas se saltan a quien no se puede elegir; si no hay nadie, no
+      // resaltan nada (CodeRabbit)
+      const siguienteElegible = (paso) => {
+        const lista = searchResultsRef.current;
+        const len = lista.length;
+        let i = highlightedIndexRef.current;
+        for (let vueltas = 0; vueltas < len; vueltas++) {
+          i = i < 0 && paso < 0 ? len - 1 : (i + paso + len) % len;
+          if (!yaEstaRef.current(lista[i].id)) return i;
+        }
+        return -1;
+      };
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        const len = searchResultsRef.current.length;
-        const prev = highlightedIndexRef.current;
-        highlight(prev < len - 1 ? prev + 1 : 0);
+        highlight(siguienteElegible(1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        const len = searchResultsRef.current.length;
-        const prev = highlightedIndexRef.current;
-        highlight(prev > 0 ? prev - 1 : len - 1);
+        highlight(siguienteElegible(-1));
       } else if (e.key === 'Enter') {
         const idx = highlightedIndexRef.current;
         if (idx >= 0 && idx < searchResultsRef.current.length) {
           e.preventDefault();
           const user = searchResultsRef.current[idx];
+          if (yaEstaRef.current(user.id)) return;
           setSelectedUser(user);
           setSearchQuery('');
           openDropdown(false);
@@ -259,8 +283,7 @@ const SendInvitationModalContent = ({
   // la aplicación falla, no que esa persona ya está dentro
   const amigosConSuSituacion = friends.map((amigo) => ({
     ...amigo,
-    yaInscrito: idsInscritos.includes(amigo.otherUserId),
-    yaInvitado: idsInvitados.includes(amigo.otherUserId),
+    ...situacionDe(amigo.otherUserId),
   }));
 
   const handleEmailSubmit = async (e) => {
@@ -428,7 +451,7 @@ const SendInvitationModalContent = ({
             ) : (
               <ul className="space-y-2 max-h-72 overflow-y-auto">
                 {amigosConSuSituacion.map((amigo) => {
-                  const noSePuede = amigo.yaInscrito || amigo.yaInvitado;
+                  const { noSePuede } = amigo;
                   return (
                     <li key={amigo.otherUserId}>
                       <button
@@ -519,43 +542,59 @@ const SendInvitationModalContent = ({
                       sitio y asomaban por debajo de la caja (QA, 20 oct) */}
                   {showDropdown && searchResults.length > 0 && (
                     <div id="user-search-listbox" className="w-full mt-1 bg-white border border-gray-200 rounded-md max-h-48 overflow-y-auto" data-testid="search-results-dropdown" role="listbox">
-                      {searchResults.map((user, index) => (
-                        <button
-                          key={user.id}
-                          id={`search-option-${index}`}
-                          type="button"
-                          onClick={() => handleSelectUser(user)}
-                          onMouseEnter={() => highlight(index)}
-                          className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 ${
-                            index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
-                          }`}
-                          role="option"
-                          aria-selected={index === highlightedIndex}
-                          data-testid={`search-result-${user.id}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Avatar userId={user.id} size="sm" />
-                            {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
-                                su ancho mínimo es el del contenido, así que un
-                                nombre largo desborda en vez de recortarse */}
-                            {/* Gemelo de AddFriendModal: los dos consumen la
-                                misma busqueda, que desde BE #239 casa tambien
-                                por alias. Sin el nombre real debajo, una
-                                busqueda por apodo devuelve filas donde no
-                                aparece por ningun lado lo que se escribio */}
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {nombreVisible(user)}
-                              </p>
-                              {nombreRealSiAporta(user) && (
-                                <p className="text-xs text-gray-500 truncate">
-                                  {nombreRealSiAporta(user)}
+                      {searchResults.map((user, index) => {
+                        // Como en la pestaña de amigos: sale, pero marcado y sin
+                        // poder elegirlo, que el servidor lo rechazaría (QA, 26 oct)
+                        const { yaInscrito, yaInvitado, noSePuede } = situacionDe(user.id);
+                        return (
+                          <button
+                            key={user.id}
+                            id={`search-option-${index}`}
+                            type="button"
+                            onClick={() => handleSelectUser(user)}
+                            onMouseEnter={() => highlight(index)}
+                            disabled={noSePuede}
+                            className={`w-full px-3 py-2 text-left transition-colors border-b border-gray-100 last:border-b-0 disabled:cursor-default ${
+                              index === highlightedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'
+                            }`}
+                            role="option"
+                            aria-selected={index === highlightedIndex}
+                            aria-disabled={noSePuede || undefined}
+                            data-testid={`search-result-${user.id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Avatar userId={user.id} size="sm" />
+                              {/* `truncate` no basta en un hijo de flex: sin `min-w-0`
+                                  su ancho mínimo es el del contenido, así que un
+                                  nombre largo desborda en vez de recortarse */}
+                              {/* Gemelo de AddFriendModal: los dos consumen la
+                                  misma busqueda, que desde BE #239 casa tambien
+                                  por alias. Sin el nombre real debajo, una
+                                  busqueda por apodo devuelve filas donde no
+                                  aparece por ningun lado lo que se escribio */}
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className={`text-sm font-medium truncate ${
+                                    noSePuede ? 'text-gray-400' : 'text-gray-900'
+                                  }`}
+                                >
+                                  {nombreVisible(user)}
                                 </p>
-                              )}
+                                {nombreRealSiAporta(user) && (
+                                  <p className="text-xs text-gray-500 truncate">
+                                    {nombreRealSiAporta(user)}
+                                  </p>
+                                )}
+                              </div>
+                              {yaInscrito ? (
+                                <span className="shrink-0 text-xs text-gray-500">{t('send.alreadyEnrolled')}</span>
+                              ) : yaInvitado ? (
+                                <span className="shrink-0 text-xs text-gray-500">{t('send.alreadyInvited')}</span>
+                              ) : null}
                             </div>
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
 

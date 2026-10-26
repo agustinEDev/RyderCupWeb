@@ -39,6 +39,8 @@ const SCREENS = [
   { pattern: '/competitions/:id', titleKey: 'screens.competition', parent: '/competitions' },
   { pattern: '/competitions/:id/edit', titleKey: 'screens.editCompetition', parent: '/competitions/:id' },
   { pattern: '/competitions/:id/schedule', titleKey: 'screens.schedule', parent: '/competitions/:id' },
+  // Pública, pero con sesión lleva esta cabecera (QA, FE #865-4)
+  { pattern: '/competitions/:id/leaderboard', titleKey: 'screens.leaderboard', parent: '/competitions/:id' },
   { pattern: '/creator/competitions/:id/schedule', titleKey: 'screens.schedule', parent: '/competitions/:id' },
   { pattern: '/creator/competitions/:id/invitations', titleKey: 'screens.invitations', parent: '/competitions/:id' },
 

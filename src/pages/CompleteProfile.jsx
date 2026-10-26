@@ -9,6 +9,7 @@ import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
+import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 
 const CompleteProfile = () => {
@@ -230,15 +231,11 @@ const CompleteProfile = () => {
               <label htmlFor="handicap" className="block text-sm font-semibold text-gray-700 mb-2">
                 {t('google.completeProfile.handicapLabel')}
               </label>
-              <input
+              <CampoDeHandicap
                 id="handicap"
-                type="number"
                 name="handicap"
                 value={formData.handicap}
-                onChange={handleChange}
-                step="0.1"
-                min="-10"
-                max="54"
+                onChange={(valor) => handleChange({ target: { name: 'handicap', value: valor } })}
                 placeholder={t('google.completeProfile.handicapPlaceholder')}
                 className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-gray-900 placeholder:text-gray-400"
                 disabled={isSaving}

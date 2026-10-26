@@ -215,9 +215,11 @@ const Competitions = () => {
             data-testid="tarjeta-competicion"
             className="min-w-0 bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group"
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="flex-1 min-w-0">
+            {/* Header. El título se guarda 10rem: si no cabe con el estado, el
+                estado baja de línea, que a 800 px la tarjeta mide ~215 px y lo
+                partía a mitad de palabra (QA, 26 oct) */}
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+              <div className="min-w-0 flex-[1_1_10rem]">
                 <h3 className="text-gray-900 font-bold text-lg mb-1 group-hover:text-primary transition-colors break-words">
                   {competition.name}
                 </h3>

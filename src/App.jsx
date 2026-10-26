@@ -21,7 +21,7 @@ import { useLogout } from './hooks/useLogout';
 import { useDeviceRevocationMonitor } from './hooks/useDeviceRevocationMonitor';
 import InstallBanner from './components/ui/InstallBanner';
 import BottomNav from './components/layout/BottomNav';
-import { esRutaPublica, esPuertaDeEntrada } from './utils/rutasPublicas';
+import { esRutaPublica, esPuertaDeEntrada, esLaClasificacionCompartida } from './utils/rutasPublicas';
 import { VARIABLE_ALTO_BARRA_INFERIOR, ALTO_BARRA_INFERIOR } from './utils/barraInferior';
 import ErrorFallback from './components/errors/ErrorFallback';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
@@ -115,6 +115,11 @@ function AppContent() {
   // olvido significa consultar la sesión donde no la hay, comerse un 401 y echar
   // al usuario a `/login` diciendo que expiró.
   const isPublicRoute = esRutaPublica(location.pathname);
+  // La clasificación compartida es pública, pero quien tiene sesión llega desde
+  // su competición y la ve como el resto de la aplicación, con su barra
+  // inferior (QA, FE #865-4). Ahí sí se pregunta por la sesión: el interceptor
+  // ya no refresca sin `user` guardado (`sinSesionEnRutaPublica`)
+  const conSesionPosible = !isPublicRoute || esLaClasificacionCompartida(location.pathname);
 
   // Cada pantalla empieza por el principio, menos al volver atrás (FE #643).
   // Va aquí arriba, colgado del router y no de cada pantalla: el defecto no era
@@ -153,7 +158,7 @@ function AppContent() {
   useEnvioDeMuestras({ activo: conApi, userId: usuarioActualId });
 
   // Navegación inferior: solo móvil, solo con sesión y fuera del scoring
-  const showBottomNav = conApi && !isPublicRoute && !isScoringRoute;
+  const showBottomNav = conApi && conSesionPosible && !isScoringRoute;
 
   // Su hueco, publicado para las páginas de pantalla completa: lo descuentan
   // solo cuando la barra está de verdad, sin deducirlo de la sesión
@@ -166,8 +171,9 @@ function AppContent() {
   // Establecer contexto de usuario en Sentry si está autenticado (via httpOnly cookie)
   useEffect(() => {
     const initUserContext = async () => {
-      // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout)
-      if (isPublicRoute) {
+      // FIX: No verificar sesión en rutas públicas (previene bucle infinito en /login después de logout),
+      // salvo en la clasificación compartida (`conSesionPosible`)
+      if (!conSesionPosible) {
         setIsAuthenticated(false);
         setUsuarioActualId(null);
         return;
@@ -184,7 +190,7 @@ function AppContent() {
       }
     };
     initUserContext();
-  }, [isPublicRoute]);
+  }, [conSesionPosible]);
 
   /**
    * Cerrar sesión cuando otra pestaña de este navegador la cierra: es el mismo
@@ -421,10 +427,27 @@ function AppContent() {
         </SentryRoutes>
       {showBottomNav && (
         <>
-          {/* Espaciador en el flujo: la nav es fixed y taparía el final de la página */}
-          <div aria-hidden="true" className="md:hidden h-[calc(4rem+env(safe-area-inset-bottom))]" />
+          {/* Espaciador en el flujo: la nav es fixed y taparía el final de la
+              página. 5rem y no los 4 de la barra: el botón «Partida» sobresale
+              por encima y llega a 71 px del borde (QA, FE #865-8). Más el aviso
+              de instalar, que va encima (#865-13) */}
+          <div
+            aria-hidden="true"
+            data-testid="hueco-barra-inferior"
+            className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom)+var(--alto-aviso-instalar,0px))]"
+          />
           <BottomNav />
         </>
+      )}
+      {/* Sin la barra (sin sesión, o en el escritorio), el aviso de instalar va
+          al borde: su hueco, para que no tape lo último (QA, FE #865-13). En la
+          anotación no: es inmersiva */}
+      {!isScoringRoute && (
+        <div
+          aria-hidden="true"
+          data-testid="hueco-aviso-instalar"
+          className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
+        />
       )}
 
       </Suspense>

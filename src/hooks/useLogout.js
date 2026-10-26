@@ -6,6 +6,7 @@ import { broadcastLogout } from '../utils/broadcastAuth';
 import { logoutUseCase } from '../composition';
 import { laPaginaSeVa } from '../services/sesionCompartida';
 import { olvidaLasNovedades } from './useNovedadesDeActividad';
+import { esRutaPublica } from '../utils/rutasPublicas';
 
 /**
  * Centralized logout hook
@@ -17,6 +18,15 @@ import { olvidaLasNovedades } from './useNovedadesDeActividad';
  *  de este lado no depende de que conteste: la cookie caduca sola, y quedarse
  *  dentro con los datos puestos es peor que salir sin que el servidor se entere. */
 const ESPERA_MAXIMA_MS = 5_000;
+
+/** Adónde sale la pestaña que se entera de otra: si estaba en una página que se
+ *  ve sin sesión, a ella misma; si no, a /login (QA, FE #865-11) */
+const salidaDeEstaPestana = () => {
+  const { pathname = '', search = '' } = globalThis.location ?? {};
+  // Los enlaces de un solo uso del correo no: recargarlos gasta otra vez el token
+  const deUnSoloUso = /^\/(verify-email|reset-password)(\/|$)/.test(pathname);
+  return esRutaPublica(pathname) && !deUnSoloUso ? `${pathname}${search}` : '/login';
+};
 
 export const useLogout = () => {
   const navigate = useNavigate();
@@ -37,7 +47,8 @@ export const useLogout = () => {
    * @param {string|null} options.recargarEn - Destino de una salida con recarga
    *   completa. Sin esto se navega a `/login` como cliente.
    * @param {boolean} options.desdeOtraPestana - El cierre llega de otra pestaña: sin avisar ni llamar
-   *   al backend, y recargando a `/login` (la navegación pedida antes de limpiar)
+   *   al backend, y recargando a `/login`, o a la misma página si se ve sin sesión
+   *   (la navegación pedida antes de limpiar)
    */
   const logout = useCallback(async ({ skipBackendCall = false, recargarEn: destino = null, desdeOtraPestana = false } = {}) => {
     // El cierre llega de otra pestaña: ni se avisa (avisar de vuelta era un
@@ -46,7 +57,7 @@ export const useLogout = () => {
     // haber pedido la navegación hacía volver a preguntar por la sesión, y un
     // 200 reescribía los datos de quien salía o un 401 acababa en «sesión
     // caducada» (FE #865, /code-review)
-    const recargarEn = desdeOtraPestana ? '/login' : destino;
+    const recargarEn = desdeOtraPestana ? salidaDeEstaPestana() : destino;
 
     // A las demas pestañas primero: son las que no se enteran de nada, y así
     // lo saben aunque esta se cierre mientras espera al servidor

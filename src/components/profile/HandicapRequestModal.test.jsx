@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import HandicapRequestModal from './HandicapRequestModal';
 
 vi.mock('react-i18next', () => ({
@@ -132,5 +132,23 @@ describe('HandicapRequestModal · pestañas (FE #658)', () => {
 
     expect(screen.queryByRole('button', { name: 'handicapModal.fetchRfeg' })).toBeNull();
     expect(screen.getByRole('button', { name: 'edit.handicap.updateManually' })).toBeInTheDocument();
+  });
+});
+
+// QA del 26 oct (FE #938): el plus con el «+» de al lado, no con un «-»
+describe('HandicapRequestModal · el «+» del hándicap a mano', () => {
+  it('P4: con el «+» pulsado se guarda en negativo', async () => {
+    const { updateManualHandicapUseCase } = await import('../../composition');
+    updateManualHandicapUseCase.execute.mockResolvedValue({});
+    render(<HandicapRequestModal isOpen user={{ id: 'u-1', country_code: 'ES' }} onClose={() => {}} onSaved={() => {}} />);
+    fireEvent.click(screen.getByText('handicapModal.manualTab'));
+
+    fireEvent.change(screen.getByLabelText('edit.handicap.manual'), { target: { value: '1.5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
+    fireEvent.submit(screen.getByLabelText('edit.handicap.manual').closest('form'));
+
+    await waitFor(() =>
+      expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({ userId: 'u-1', handicap: -1.5 })
+    );
   });
 });

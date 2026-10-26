@@ -200,7 +200,8 @@
       "STABLEFORD": "E.g. Sunday Stableford",
       "MEDAL": "E.g. Spring Medal"
     },
-    "organizerPlays": "Are you playing? If not, you do not take a place."
+    "organizerPlays": "Are you playing? If not, you do not take a place.",
+    "settingsTitle": "Competition Settings"
   },
   "edit": {
     "title": "Edit Competition",
@@ -350,7 +351,7 @@
       "failed": "Could not save how your name is shown. Please try again."
     },
     "settings": {
-      "title": "Competition Settings",
+      "title": "Settings",
       "teamOne": "Team 1:",
       "teamTwo": "Team 2:",
       "playMode": "Play Mode:",

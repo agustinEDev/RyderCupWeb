@@ -15,6 +15,9 @@ import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 const POLL_INTERVAL = 30000; // 30 seconds
 // La ficha de un stroke play en juego, para enterarse de que empieza o acaba
 const CADA_FICHA = 5 * 60000;
+// La ficha se pregunta antes que la clasificación: si no contesta, no puede
+// dejar la página cargando para siempre (CodeRabbit)
+export const TOPE_DE_LA_FICHA_MS = 8000;
 
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
@@ -31,8 +34,8 @@ const LeaderboardPage = () => {
   const [isLoading, setIsLoading] = useState(!desdeLaFicha);
   const [error, setError] = useState(null);
   // Un Stableford o un Medal tiene aquí su general (14 oct 2026: en la ficha,
-  // con 200 participantes, no cabe). La de la Ryder contesta 400 y la ficha
-  // dice cuál es
+  // con 200 participantes, no cabe). Lo dice la ficha, que con sesión se mira
+  // antes de pedir la de la Ryder
   const [laDeStrokePlay, setLaDeStrokePlay] = useState(desdeLaFicha);
   // Otra competición sin desmontarse: de cero, sin enseñar nada de la anterior
   // mientras llega lo suyo (revisor)
@@ -89,12 +92,12 @@ const LeaderboardPage = () => {
     if (!competitionId || sesionCargando || yaSabida) return undefined;
     let vigente = true;
 
-    // Sin sesión no se puede leer la ficha (ni entrar en ella): ni se pregunta
+    // Sin sesión no se puede leer la ficha (ni entrar en ella): quien llama ni
+    // pregunta (`fetchLeaderboard`)
     const esDeStrokePlay = () => {
-      if (!conSesion) return Promise.resolve(null);
       if (fichaMirada.current?.id === competitionId) return fichaMirada.current.promesa;
       const marca = { id: competitionId, promesa: null };
-      marca.promesa = getCompetitionDetailUseCase
+      const ficha = getCompetitionDetailUseCase
         .execute(competitionId)
         .then((competicion) => (competicion?.hasTeams === false ? competicion : null))
         .catch((err) => {
@@ -105,26 +108,39 @@ const LeaderboardPage = () => {
           if (esFalloDeRed(err) && fichaMirada.current === marca) fichaMirada.current = null;
           return null;
         });
+      // Con un plazo: vencido, se sigue sin ella (la de la Ryder) y, como sin
+      // red, el siguiente refresco vuelve a preguntar (CodeRabbit)
+      let temporizador;
+      const plazo = new Promise((resolver) => {
+        temporizador = setTimeout(() => {
+          if (fichaMirada.current === marca) fichaMirada.current = null;
+          resolver(null);
+        }, TOPE_DE_LA_FICHA_MS);
+      });
+      marca.promesa = Promise.race([ficha, plazo]).finally(() => clearTimeout(temporizador));
       fichaMirada.current = marca;
       return marca.promesa;
     };
 
     const fetchLeaderboard = async () => {
       try {
+        // Con sesión, la ficha primero: la de la Ryder contesta 400 a un stroke
+        // play, y ese 400 acababa en la consola (QA, FE #865-6)
+        // Sin sesión, ni se pregunta (`esDeStrokePlay`), ni se espera
+        const competicion = conSesion ? await esDeStrokePlay() : null;
+        if (!vigente) return;
+        if (competicion) {
+          setLaDeStrokePlay(competicion);
+          setError(null);
+          // Ya se sabe qué es: la de la Ryder ni se pide
+          clearInterval(pollRef.current);
+          return;
+        }
         const data = await getLeaderboardUseCase.execute(competitionId);
         if (!vigente) return;
         setLeaderboard(data);
         setError(null);
       } catch (err) {
-        const competicion = err?.status === 400 ? await esDeStrokePlay() : null;
-        if (competicion) {
-          if (!vigente) return;
-          setLaDeStrokePlay(competicion);
-          setError(null);
-          // La de la Ryder no va a cambiar de opinión: se deja de pedir
-          clearInterval(pollRef.current);
-          return;
-        }
         if (vigente) setError(err);
       } finally {
         if (vigente) setIsLoading(false);
@@ -144,20 +160,26 @@ const LeaderboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {user ? <HeaderAuth user={user} /> : <Header />}
+      {/* La flecha, adonde va el volver de la página (la agenda de una Ryder a
+          la que se llegó desde ella); mientras carga no se sabe: sin flecha */}
+      {user ? <HeaderAuth user={user} backTo={isLoading ? null : backTo} /> : <Header />}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
             de texto y de destino al detectar un stroke play (revisor) */}
         {!isLoading && (
+          // Con sesión, en el móvil la flecha va en la cabecera (QA, FE #865-4)
           <Link
             to={backTo}
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+            className={`${user ? 'hidden md:inline-flex' : 'inline-flex'} items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3`}
           >
             &larr; {backText}
           </Link>
         )}
-        <h1 className={`text-2xl font-bold text-gray-900 ${general ? 'mb-1' : 'mb-6'}`}>{t('leaderboard.title')}</h1>
+        {/* Con sesión, en el móvil lo dice la cabecera: dos <h1> no */}
+        <h1 className={`${user ? 'hidden md:block' : ''} text-2xl font-bold text-gray-900 ${general ? 'mb-1' : 'mb-6'}`}>
+          {t('leaderboard.title')}
+        </h1>
 
         {isLoading && (
           <BlockLoader texto={t('loading')} />

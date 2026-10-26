@@ -65,7 +65,8 @@ describe('NotFound', () => {
 
   // El hueco de la barra inferior lo publica App en `--alto-barra-inferior`
   // solo cuando la pinta: la página no lo deduce de la sesión (QA del 21 oct)
-  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px))]', 'md:min-h-dvh'];
+  // Y el aviso de instalar, que también flota abajo (revisor de las sobras del QA)
+  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px)-var(--alto-aviso-instalar,0px))]', 'md:min-h-[calc(100dvh-var(--alto-aviso-instalar,0px))]'];
 
   it('N6: el fondo llena la pantalla menos el hueco que diga App (a 360 px la mitad de abajo salía blanca)', () => {
     abrir();

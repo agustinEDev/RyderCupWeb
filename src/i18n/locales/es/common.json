@@ -109,7 +109,8 @@
     "adminCompetitions": "Competiciones",
     "adminGolfCourses": "Campos de golf",
     "adminHoles": "Hoyos",
-    "sharedQuickMatch": "Partida rápida"
+    "sharedQuickMatch": "Partida rápida",
+    "leaderboard": "Clasificación"
   },
   "footer": {
     "description": "La plataforma definitiva para gestionar torneos de golf amateur en formato Ryder Cup. Conecta con amigos y disfruta del espíritu de la competencia amistosa.",
@@ -171,5 +172,8 @@
     "attempted": "Intentaste acceder a",
     "goToDashboard": "Ir al panel",
     "goBack": "Volver"
+  },
+  "handicapField": {
+    "plus": "Hándicap plus"
   }
 }

@@ -196,4 +196,49 @@ describe('SignInForm', () => {
     expect(window.localStorage.getItem('refrescar_handicap')).toBe('true');
     expect(window.localStorage.getItem('needs_handicap')).toBeNull();
   });
+
+  // QA (FE #865-12): con el formulario rellenado por el gestor de contraseñas,
+  // el primer «Iniciar Sesión» a veces no hacía nada. El gestor puede rellenar
+  // sin que React se entere: se lee lo que hay en el formulario al enviar
+  describe('relleno sin avisar a React', () => {
+    // Pone el valor en el campo sin el evento que escucha React
+    const rellenaSinAvisar = (campo, valor) =>
+      Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value').set.call(campo, valor);
+
+    it('R1: entra con lo que hay en el formulario', async () => {
+      ejecutarLogin.mockResolvedValue({ user: { firstName: 'Ana', emailVerified: true }, csrfToken: 't' });
+      pintar();
+
+      rellenaSinAvisar(campoCorreo(), 'ana@example.com');
+      rellenaSinAvisar(campoContrasena(), 'secreta');
+      enviar();
+
+      await waitFor(() => expect(ejecutarLogin).toHaveBeenCalledWith('ana@example.com', 'secreta'));
+      expect(screen.queryByText('validation.passwordRequired')).not.toBeInTheDocument();
+    });
+
+    it('R2: y valida eso mismo: un correo que no vale no se manda', async () => {
+      pintar();
+
+      rellenaSinAvisar(campoCorreo(), 'esto-no-es-un-correo');
+      rellenaSinAvisar(campoContrasena(), 'secreta');
+      enviar();
+
+      await waitFor(() => expect(screen.getByText('validation.emailInvalid')).toBeInTheDocument());
+      expect(ejecutarLogin).not.toHaveBeenCalled();
+    });
+
+    it('R3: al fallar se borra la contraseña también del campo', async () => {
+      ejecutarLogin.mockRejectedValue(new Error('Credenciales incorrectas'));
+      pintar();
+
+      rellenaSinAvisar(campoCorreo(), 'ana@example.com');
+      rellenaSinAvisar(campoContrasena(), 'secreta');
+      enviar();
+
+      await waitFor(() => expect(errorToast).toHaveBeenCalled());
+      expect(campoContrasena()).toHaveValue('');
+      expect(campoCorreo()).toHaveValue('ana@example.com');
+    });
+  });
 });

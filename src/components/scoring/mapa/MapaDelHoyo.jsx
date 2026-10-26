@@ -155,9 +155,9 @@ const sincronizarCifras = (mapa, etiquetas, tramos, { tipo, color, texto, donde 
 };
 // Los puntos que se arrastran: la salida, los codos y el green
 const CLASE_DEL_PUNTO = {
-  salida: 'h-5 w-5 rounded-full border-[3px] border-gray-900 bg-white shadow',
-  codo: 'h-5 w-5 rounded-full border-[3px] border-white bg-gray-900/70 shadow',
-  green: 'h-5 w-5 rounded-full border-[3px] border-white bg-yellow-400 shadow',
+  salida: 'h-5 w-5 rounded-full border-[3px] border-gray-900 bg-white shadow z-[2]',
+  codo: 'h-5 w-5 rounded-full border-[3px] border-white bg-gray-900/70 shadow z-[2]',
+  green: 'h-5 w-5 rounded-full border-[3px] border-white bg-yellow-400 shadow z-[2]',
 };
 const tipoDelPunto = (i, linea) => (i === 0 ? 'salida' : i === linea.length - 1 ? 'green' : 'codo');
 
@@ -747,7 +747,9 @@ const MapaDelHoyo = ({
       marcaGps.current = null;
       return;
     }
-    marcaGps.current ??= new Marker({ element: punto('h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
+    // Por encima de las cifras, que se crean después y lo tapaban, pero debajo
+    // de los demás puntos (z-[2]); sin quedarse con el toque (QA, 26 oct)
+    marcaGps.current ??= new Marker({ element: punto('pointer-events-none z-[1] h-4 w-4 rounded-full border-[3px] border-white bg-blue-500 shadow-[0_0_0_6px_rgba(59,130,246,0.3)]') }).setLngLat(lngLat(posicion)).addTo(mapa);
     marcaGps.current.setLngLat(lngLat(posicion));
     // Lejos no; y si mientras tanto el jugador movió el mapa, tampoco al llegar
     // Ya orientado (O4, O5), tampoco: el salto cortaría el giro o deshace el encuadre (revisor)
@@ -770,7 +772,7 @@ const MapaDelHoyo = ({
     }
     if (!codoAhora) return;
     if (!marcaTocada.current) {
-      const m = new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow'), draggable: arrastrable });
+      const m = new Marker({ element: punto('h-3.5 w-3.5 rounded-full border-2 border-white bg-yellow-400 shadow z-[2]'), draggable: arrastrable });
       m.arrastrable = arrastrable;
       if (arrastrable) {
         // La línea y sus metros siguen al dedo (D3b)
@@ -799,7 +801,7 @@ const MapaDelHoyo = ({
       return;
     }
     if (!marcaMedida.current) {
-      const elemento = punto('h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow');
+      const elemento = punto('h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow z-[2]');
       elemento.dataset.punto = 'medido';
       marcaMedida.current = new Marker({ element: elemento }).setLngLat(lngLat(medido)).addTo(mapa);
     }

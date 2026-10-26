@@ -255,7 +255,8 @@ describe('CreateCompetition · elegir el modo de configuración (FE #695)', () =
     await screen.findByText('create.competitionDetails');
 
     // Modo de juego, hándicap y cupo valen para cualquier tipo de torneo
-    expect(screen.getByText('detail.settings.title')).toBeInTheDocument();
+    // Su propio título: acortar el de la ficha (FE #865-5) no lo cambia aquí
+    expect(screen.getByText('create.settingsTitle')).toBeInTheDocument();
     expect(screen.queryByText('create.ryderCupSettings')).not.toBeInTheDocument();
   });
 

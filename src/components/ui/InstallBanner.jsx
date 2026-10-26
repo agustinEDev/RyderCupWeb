@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { VARIABLE_ALTO_AVISO_INSTALAR } from '../../utils/barraInferior';
 import { useTranslation } from 'react-i18next';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import InstallInstructionsModal from './InstallInstructionsModal';
@@ -33,6 +34,22 @@ const InstallBanner = ({ aboveBottomNav = false }) => {
   const { canInstall, isIOS, iosInstallRoute, isDesktopSafari, install, dismiss } = useInstallPrompt();
   const [showInstructions, setShowInstructions] = useState(false);
 
+  // Su alto, mientras se ve, para el hueco del final de la página; cambia si el
+  // texto ocupa otra línea (al girar el móvil, en otro idioma)
+  // Con React 19 la ref devuelve su limpieza: no se la vuelve a llamar con null
+  const publicaSuAlto = useCallback((aviso) => {
+    const raiz = document.documentElement.style;
+    const mide = () => raiz.setProperty(VARIABLE_ALTO_AVISO_INSTALAR, `${aviso.offsetHeight}px`);
+    mide();
+    const Observador = globalThis.ResizeObserver;
+    const observador = Observador ? new Observador(mide) : null;
+    observador?.observe(aviso);
+    return () => {
+      observador?.disconnect();
+      raiz.removeProperty(VARIABLE_ALTO_AVISO_INSTALAR);
+    };
+  }, []);
+
   if (!canInstall) return null;
 
   // Con nav inferior el banner no puede apoyarse en el borde: la nav ya ocupa
@@ -51,6 +68,7 @@ const InstallBanner = ({ aboveBottomNav = false }) => {
       onClose={() => setShowInstructions(false)}
     />
     <div
+      ref={publicaSuAlto}
       data-testid="install-banner"
       className={`fixed left-0 right-0 z-50 bg-green-700 text-white shadow-lg ${positionClasses}`}
     >
