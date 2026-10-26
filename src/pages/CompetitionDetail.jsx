@@ -61,6 +61,7 @@ import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { mensajeConJugadores } from '../utils/erroresConJugadores';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
@@ -1767,11 +1768,13 @@ const CompetitionDetail = () => {
                             <div className="flex items-center gap-2 mt-1">
                               {editingHandicapId === enrollment.id ? (
                                 <div className="flex items-center gap-1.5">
-                                  <input
+                                  {/* El texto admite la coma decimal, que `handleSaveHandicap` ya lee */}
+                                  <CampoDeHandicap
                                     type="text"
                                     inputMode="decimal"
+                                    aria-label={t('detail.editHandicap')}
                                     value={handicapInput}
-                                    onChange={(e) => setHandicapInput(e.target.value)}
+                                    onChange={setHandicapInput}
                                     autoFocus
                                     className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                   />

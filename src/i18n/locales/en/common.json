@@ -171,5 +171,8 @@
     "attempted": "You tried to access",
     "goToDashboard": "Go to dashboard",
     "goBack": "Go back"
+  },
+  "handicapField": {
+    "plus": "Plus handicap"
   }
 }

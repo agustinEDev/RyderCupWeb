@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
 /**
@@ -34,6 +34,7 @@ vi.mock('../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn(), 
 
 let ficha;
 let inscritos;
+const fijarHandicap = vi.fn();
 // Lo que la ficha no use aquí responde vacío
 vi.mock('../composition', () =>
   new Proxy(
@@ -41,6 +42,7 @@ vi.mock('../composition', () =>
       getCompetitionDetailUseCase: { execute: async () => ficha },
       listEnrollmentsUseCase: { execute: async () => inscritos },
       getCompetitionGolfCoursesUseCase: { execute: async () => [] },
+      setCustomHandicapUseCase: { execute: (...a) => fijarHandicap(...a) },
     },
     { get: (o, k) => o[k] ?? { execute: vi.fn().mockResolvedValue(null) }, has: () => true }
   )
@@ -118,5 +120,32 @@ describe('CompetitionDetail · hándicap plus (FE #797)', () => {
 
     expect(await screen.findByTestId('fijado-ana')).toHaveTextContent('{"handicap":"+2,0"');
     expect(screen.getByTestId('fijado-bea')).toHaveTextContent('{"handicap":"12,4"');
+  });
+});
+
+// QA del 26 oct (FE #938): el organizador fija un plus con el «+», no con un «-»
+describe('CompetitionDetail · el «+» al fijar el hándicap de un inscrito', () => {
+  it('P7: el plus que ya tiene se ve sin signo y con el «+» pulsado', async () => {
+    ficha = base;
+    inscritos = [inscrito('ana', { userHandicap: 10, hasCustomHandicap: true, customHandicap: -3.5 })];
+    pintar();
+
+    fireEvent.click(await screen.findByTitle('detail.editHandicap'));
+
+    expect(screen.getByRole('textbox', { name: 'detail.editHandicap' })).toHaveValue('3.5');
+    expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('P8: con el «+» pulsado se guarda en negativo', async () => {
+    fijarHandicap.mockResolvedValue({});
+    ficha = base;
+    inscritos = [inscrito('ana', { userHandicap: 2 })];
+    pintar();
+
+    fireEvent.click(await screen.findByTitle('detail.editHandicap'));
+    fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
+    fireEvent.click(screen.getByTitle('detail.saveHandicap'));
+
+    await waitFor(() => expect(fijarHandicap).toHaveBeenCalledWith('c1', 'enr-ana', -2));
   });
 });

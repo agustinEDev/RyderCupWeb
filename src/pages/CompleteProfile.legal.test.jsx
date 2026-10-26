@@ -18,6 +18,7 @@ const actualizarPerfil = vi.fn();
 const aceptarTerminos = vi.fn();
 const toastError = vi.fn();
 const refetch = vi.fn();
+const guardarHandicap = vi.fn();
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
@@ -31,7 +32,7 @@ const DTO = { id: 'u-1', is_admin: false, terms_accepted: true };
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: (...a) => actualizarPerfil(...a) },
   acceptTermsUseCase: { execute: (...a) => aceptarTerminos(...a) },
-  updateManualHandicapUseCase: { execute: vi.fn() },
+  updateManualHandicapUseCase: { execute: (...a) => guardarHandicap(...a) },
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
 }));
 
@@ -309,5 +310,27 @@ describe('CompleteProfile · la marca contra los bucles', () => {
 
     await screen.findByText('panel');
     expect(globalThis.sessionStorage.getItem('rydercup-terminos-redirigido')).toBeNull();
+  });
+});
+
+// QA del 26 oct (FE #938): el plus con el «+» de al lado, no con un «-»
+describe('CompleteProfile · el «+» del hándicap', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sesion.user = { id: 'u-1', terms_accepted: false };
+    refetch.mockResolvedValue(undefined);
+    aceptarTerminos.mockResolvedValue({ termsAccepted: true });
+    guardarHandicap.mockResolvedValue({});
+  });
+
+  it('P3: con el «+» pulsado se guarda en negativo', async () => {
+    abrir();
+
+    fireEvent.change(screen.getByLabelText('google.completeProfile.handicapLabel'), { target: { value: '1.5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
+    fireEvent.click(casilla());
+    guardar();
+
+    await waitFor(() => expect(guardarHandicap).toHaveBeenCalledWith({ userId: 'u-1', handicap: '-1.5' }));
   });
 });

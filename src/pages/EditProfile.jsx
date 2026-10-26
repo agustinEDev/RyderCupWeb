@@ -10,6 +10,7 @@ import { canUseRFEG } from '../utils/countryUtils';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
+import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 
 const EditProfile = () => {
@@ -396,15 +397,11 @@ const EditProfile = () => {
                     <label htmlFor="handicap" className="block text-sm font-medium text-gray-700 mb-1">
                       {t('edit.handicap.manual')}
                     </label>
-                    <input
+                    <CampoDeHandicap
                       id="handicap"
-                      type="number"
                       name="handicap"
                       value={formData.handicap}
-                      onChange={handleInputChange}
-                      step="0.1"
-                      min="-10"
-                      max="54"
+                      onChange={(valor) => handleInputChange({ target: { name: 'handicap', value: valor } })}
                       placeholder={t('edit.handicap.manualPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />

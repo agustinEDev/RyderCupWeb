@@ -171,5 +171,8 @@
     "attempted": "Intentaste acceder a",
     "goToDashboard": "Ir al panel",
     "goBack": "Volver"
+  },
+  "handicapField": {
+    "plus": "Hándicap plus"
   }
 }
