@@ -18,6 +18,7 @@
  *   C7b  lo mismo con el «+» ya pulsado                    | «-1.5», no «--1.5»
  *   C8   se vacía el campo con plus                        | sale «» y el «+» se suelta (pasada del Kind)
  *   C8b  en el de texto, solo el signo («+» o «-»)          | el «+» se enciende, esperando el número
+ *   C8c  en el numérico, «1,» a medio escribir (llega «»)    | el «+» sigue pulsado (revisor)
  *   C9   cambia desde fuera de -2 a 5                      | el «+» se suelta
  *   C10  límites del número sin signo                      | de 0 a 54; con plus, hasta 10
  *   C11  desactivado                                       | el campo y el «+»
@@ -155,6 +156,21 @@ describe('CampoDeHandicap', () => {
 
     fireEvent.change(campo(), { target: { value: '5' } });
     expect(alCambiar).toHaveBeenLastCalledWith('5');
+  });
+
+  // Revisor: en el numérico, «1,» a medio escribir llega vacío (badInput); no es
+  // vaciarlo, y soltar el «+» ahí guardaba 1,5 en vez de +1,5
+  it('C8c: a medio escribir un decimal, el «+» sigue pulsado', () => {
+    const alCambiar = vi.fn();
+    render(<Controlado inicial="-1" alCambiar={alCambiar} />);
+    Object.defineProperty(campo(), 'validity', { value: { badInput: true }, configurable: true });
+
+    fireEvent.change(campo(), { target: { value: '' } });
+    expect(mas()).toHaveAttribute('aria-pressed', 'true');
+
+    delete campo().validity;
+    fireEvent.change(campo(), { target: { value: '1.5' } });
+    expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
   });
 
   it.each(['+', '-'])('C8b: en el de texto, escribir solo «%s» enciende el «+» a la espera del número', (signo) => {
