@@ -160,6 +160,17 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // has an unresolved discrepancy — leaving no one able to fix it.
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
+  // Quien marca a dos (fourball con un retirado): la marca del segundo va en su
+  // propio hueco de la cola, y la del primero, con el golpe propio, en el del
+  // hoyo (26 oct 2026). `null` es el del hoyo
+  const huecoDe = useCallback(
+    (scoreData) => {
+      const id = scoreData?.markedPlayerId;
+      return id && id !== markedPlayerId ? id : null;
+    },
+    [markedPlayerId]
+  );
+
   // Quien marca a dos (fourball con un retirado) bloquea por marcado: entregó
   // uno, al otro se le sigue marcando. Sin marcado, no hay marca que guardar
   const entregadas = scoringView?.scorecardSubmittedBy;
@@ -597,37 +608,32 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
   }, [vaciaLaDeEstaPartida, pendientesPropias, firmaDeLaCola]);
 
-  // Lo guardado de este jugador para ese hoyo. Sin participante: las que lo
-  // llevan son de partida rápida
+  // Lo guardado de este jugador para ese hoyo, en el hueco del hoyo o en el del
+  // segundo marcado. Sin participante: las que lo llevan son de partida rápida
   const loGuardadoDe = useCallback(
-    (holeNumber) => offlineQueue.getByMatch(matchId, currentUserId).find(
+    (holeNumber, marcado = null) => offlineQueue.getByMatch(matchId, currentUserId).find(
       (e) => e.holeNumber === holeNumber
         && e.participantId == null
         && (e.userId ?? null) === (currentUserId ?? null)
+        && (e.marcado ?? null) === marcado
     ),
     [matchId, currentUserId]
-  );
-
-  // A quién iba lo que queda sin enviar de un hoyo: la cola guarda una entrada
-  // por hoyo, así que quien marca a dos no cambia de marcado hasta que salga
-  // (decidido el 25 oct 2026: uno cada vez, sin perder golpes)
-  const marcadoPendienteEn = useCallback(
-    (holeNumber) => loGuardadoDe(holeNumber)?.scoreData?.markedPlayerId ?? null,
-    [loGuardadoDe]
   );
 
   // Tras llegar un envío sobra lo que quedaba guardado de ese hoyo y ya está
   // superado: lo anterior —también una huérfana de antes de que la cola
   // guardara dueño— y lo propio. Lo que NO sobra es una corrección hecha con la
   // petición en vuelo, que sale en la pasada siguiente
+  // Del mismo hueco: lo del hoyo no supera la marca del segundo marcado, ni al revés
   const borraLoSuperado = useCallback(
-    (holeNumber, loEnviado) => {
+    (holeNumber, loEnviado, marcado = null) => {
       const superadas = offlineQueue
         .getByMatch(matchId, currentUserId)
         .filter((e) => e.holeNumber === holeNumber && e.participantId == null)
+        .filter((e) => (e.marcado ?? null) === marcado)
         .filter((e) => estaSuperada(e, loEnviado));
       for (const guardada of superadas) {
-        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null);
+        offlineQueue.remove(matchId, holeNumber, null, guardada.userId ?? null, ...(marcado ? [marcado] : []));
       }
     },
     [matchId, currentUserId]
@@ -643,6 +649,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     if (isOwnScoreLocked && marcaBloqueadaPara(scoreData?.markedPlayerId)) return;
     const estaAnotacion = ++anotacionRef.current;
     const golpesTocados = tocado ? [tocado] : golpesQueTrae(scoreData);
+    const hueco = huecoDe(scoreData);
+    const delHueco = hueco ? [hueco] : [];
     // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
     // otro: la lista va por partido, así que lo apuntado o retirado se queda en
     // el suyo y la pantalla del otro no lo ve. Al volver, sigue siendo verdad
@@ -708,7 +716,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         null,
         currentUserId,
         laPartidaRef.current,
-        golpesTocados
+        golpesTocados,
+        ...delHueco
       );
       setPendingQueueSize(pendientesPropias());
       if (guardado === false) {
@@ -738,7 +747,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
       null,
       currentUserId,
       laPartidaRef.current,
-      golpesTocados
+      golpesTocados,
+      ...delHueco
     );
     // Cuándo quedó guardado, para distinguir después lo que este envío deja
     // superado de una corrección hecha con él en vuelo. Si el móvil NO pudo
@@ -748,7 +758,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     // apartaba al rechazarla
     const cuandoSeGuardo = guardado === false
       ? Date.now()
-      : loGuardadoDe(holeNumber)?.timestamp ?? Date.now();
+      : loGuardadoDe(holeNumber, hueco)?.timestamp ?? Date.now();
     // Si el servidor contestó —acepte o rechace— hay cobertura para lo aplazado
     let contesto = false;
     try {
@@ -761,7 +771,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         setScoringView((prev) => conHoyosDe(updatedView, prev));
         setFallo(null);
       }
-      borraLoSuperado(holeNumber, { cuando: cuandoSeGuardo, scoreData });
+      borraLoSuperado(holeNumber, { cuando: cuandoSeGuardo, scoreData }, hueco);
       yaNoSePierde();
     } catch (err) {
       // La misma política que el resto de la aplicación: un 401, un 408 o un
@@ -787,7 +797,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
         // la siguiente anotación buena retire el error (FE #521). Lo guardado
         // de antes también sale, que está superado; lo que se queda es una
         // corrección hecha con la petición en camino, que no es la rechazada
-        const loGuardado = loGuardadoDe(holeNumber);
+        const loGuardado = loGuardadoDe(holeNumber, hueco);
         const esLaRechazada = !loGuardado
           || estaSuperada(loGuardado, { cuando: cuandoSeGuardo, scoreData });
         if (esLaRechazada) {
@@ -805,6 +815,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
               userId: currentUserId ?? null,
               scoreData: { ...loGuardado?.scoreData, ...loMandado },
               tocados: [...new Set([...golpesTocados, ...deLaCola])],
+              ...(hueco ? { marcado: hueco } : {}),
               ...laPartidaRef.current,
             },
             currentUserId ?? null
@@ -822,7 +833,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, marcaBloqueadaPara, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
+  }, [matchId, canScore, isOwnScoreLocked, marcaBloqueadaPara, huecoDe, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {
@@ -1082,7 +1093,6 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     isOwnScoreLocked,
     isMarkerScoreLocked,
     marcaBloqueadaPara,
-    marcadoPendienteEn,
     retirando,
     isFullyLocked,
     validatedHoles,

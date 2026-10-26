@@ -444,7 +444,6 @@
     "confirmYes": "Yes, withdraw",
     "cancel": "Cancel",
     "badge": "Withdrawn",
-    "markingWho": "You score:",
     "needsConnection": "You need a connection to withdraw or bring back a player",
     "failed": "The player could not be withdrawn or brought back",
     "errors": {
@@ -459,7 +458,6 @@
     "organizerTitle": "Withdraw a fourball player",
     "organizerWithdraw": "Withdraw {{nombre}}",
     "organizerUndo": "Undo {{nombre}}'s withdrawal",
-    "oneAtATime": "What you scored for {{nombre}} on this hole has not reached the server yet: the other one, once you are back online",
     "pendingScores": "You have scores not sent yet: once they reach the server you can withdraw, or they would be lost"
   }
 }

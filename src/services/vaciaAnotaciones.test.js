@@ -381,3 +381,59 @@ describe('avisoTrasElVaciado (FE #551)', () => {
     expect(avisoTrasElVaciado(PARO.NO_SE_PUDO_ESCRIBIR, null)).toBeNull();
   });
 });
+
+// Quien marca a dos (26 oct 2026): el mismo hoyo tiene dos huecos, el del
+// hoyo y el del segundo marcado, y cada uno se manda y se borra por su lado
+describe('vaciaAnotaciones · un hueco por marcado', () => {
+  beforeEach(() => {
+    elDisco.clear();
+    vi.restoreAllMocks();
+  });
+
+  const losDos = () => {
+    cola.enqueue('m-1', 3, { ownScore: 5, markedPlayerId: 'C', markedScore: 6 }, null, YO);
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, null, 'D');
+    return cola.deQuien(YO);
+  };
+
+  it('manda y borra los dos', async () => {
+    const manda = vi.fn();
+
+    const r = await vaciaAnotaciones({ entradas: losDos(), manda });
+
+    expect(manda).toHaveBeenCalledTimes(2);
+    expect(r).toMatchObject({ enviadas: 2, cambiadas: 0 });
+    expect(cola.deQuien(YO)).toHaveLength(0);
+  });
+
+  it('el rechazo del segundo (ya no le marca: se deshizo la retirada) aparta solo el suyo', async () => {
+    const manda = vi.fn(async (e) => { if (e.marcado === 'D') throw errorCon(403); });
+
+    const r = await vaciaAnotaciones({ entradas: losDos(), manda });
+
+    expect(r).toMatchObject({ enviadas: 1, descartadas: 1 });
+    expect(cola.deQuien(YO)).toHaveLength(0);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+  });
+
+  it('con el hueco del segundo delante en la cola, lo del hoyo se reconoce y sale', async () => {
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, null, 'D');
+    cola.enqueue('m-1', 3, { ownScore: 5 }, null, YO);
+    const delHoyo = cola.deQuien(YO).find((e) => !e.marcado);
+    const manda = vi.fn();
+
+    const r = await vaciaAnotaciones({ entradas: [delHoyo], manda });
+
+    expect(r).toMatchObject({ enviadas: 1, cambiadas: 0 });
+    expect(cola.deQuien(YO).map((e) => e.marcado)).toEqual(['D']);
+  });
+
+  it('el rechazo del hoyo no se lleva el hueco del segundo', async () => {
+    const manda = vi.fn(async (e) => { if (!e.marcado) throw errorCon(409); });
+    const entradas = losDos();
+
+    await vaciaAnotaciones({ entradas: [entradas[0]], manda });
+
+    expect(cola.deQuien(YO).map((e) => e.marcado)).toEqual(['D']);
+  });
+});

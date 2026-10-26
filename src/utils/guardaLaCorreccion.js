@@ -31,6 +31,9 @@ const GOLPES = ['ownScore', 'markedScore', 'score'];
  * esa escritura también falla no hay nada más que hacer: el aviso de que no se
  * pudo guardar ya está puesto, y es lo que pide volver a anotarlo.
  *
+ * Con `marcado`, el hueco del segundo marcado de quien marca a dos (26 oct
+ * 2026): lo sustituido sale de ese hueco, nunca del del hoyo.
+ *
  * @returns {boolean|undefined} Lo que devuelve `enqueue`
  */
 export const guardaLaCorreccion = (
@@ -40,20 +43,25 @@ export const guardaLaCorreccion = (
   participantId = null,
   userId = null,
   laPartida = {},
-  tocados = null
+  tocados = null,
+  marcado = null
 ) => {
   const laDeEseHoyo = () => offlineQueue
     .getByMatch(matchId, userId)
     .find((e) =>
       e.holeNumber === holeNumber
       && (e.participantId ?? null) === (participantId ?? null)
-      && (e.userId ?? null) === (userId ?? null));
+      && (e.userId ?? null) === (userId ?? null)
+      && (e.marcado ?? null) === (marcado ?? null));
 
   const anterior = laDeEseHoyo();
   // Los golpes tocados solo si los hay: partida rápida no los usa —cada aviso ya
-  // es de un participante— y su llamada sigue siendo la de siempre (FE #813)
+  // es de un participante— y su llamada sigue siendo la de siempre (FE #813).
+  // El marcado, igual: solo quien marca a dos lo lleva
+  const delHueco = marcado ? [marcado] : [];
   const guardado = offlineQueue.enqueue(
-    matchId, holeNumber, scoreData, participantId, userId, laPartida, ...(tocados ? [tocados] : [])
+    matchId, holeNumber, scoreData, participantId, userId, laPartida,
+    ...(tocados || marcado ? [tocados, ...delHueco] : [])
   );
   if (guardado !== false || !anterior) return guardado;
 
@@ -76,9 +84,9 @@ export const guardaLaCorreccion = (
     Object.entries(loViejo).filter(([campo]) => !sustituidos.includes(campo))
   );
   if (GOLPES.some((g) => g in loQueQueda)) {
-    offlineQueue.enqueue(matchId, holeNumber, loQueQueda, participantId, userId, laPartida);
+    offlineQueue.enqueue(matchId, holeNumber, loQueQueda, participantId, userId, laPartida, ...(marcado ? [null, marcado] : []));
   } else {
-    offlineQueue.remove(matchId, holeNumber, participantId, userId);
+    offlineQueue.remove(matchId, holeNumber, participantId, userId, ...delHueco);
   }
   return guardado;
 };

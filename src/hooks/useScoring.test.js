@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Este entorno no trae `localStorage`, y el aviso de «no se pudo guardar» vive
 // ahí. Se define arriba del todo: dentro de un `beforeEach` los módulos ya
@@ -3945,16 +3945,78 @@ describe('useScoring · quien marca a dos', () => {
     expect(submitHoleScoreUseCase.execute).toHaveBeenCalled();
   });
 
-  it('lo que queda sin enviar de un hoyo dice a quién iba', async () => {
+  // 26 oct 2026: una casilla por marcado, y sin cobertura un hueco para cada uno
+  const sinRed = () => Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+  const conRed = () => Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  afterEach(conRed);
+
+  it('sin cobertura, la marca del segundo va a su propio hueco y la del primero al del hoyo', async () => {
+    sinRed();
     getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
-    offlineQueue.getByMatch.mockReturnValue([
-      { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', scoreData: { markedPlayerId: 'u4', markedScore: 5 } },
-    ]);
     const { result } = renderHook(() => useScoring('m-1', 'u1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.marcadoPendienteEn(3)).toBe('u4');
-    expect(result.current.marcadoPendienteEn(4)).toBeNull();
+    await act(async () => {
+      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+      await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
+    });
+
+    const [delSegundo, delHoyo] = offlineQueue.enqueue.mock.calls;
+    expect(delSegundo).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['markedScore'], 'u4']);
+    expect(delHoyo).toHaveLength(7);
+  });
+
+  const enLaCola = [
+    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 100, scoreData: { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 } },
+    { matchId: 'm-1', holeNumber: 3, participantId: null, userId: 'u1', timestamp: 50, marcado: 'u4', scoreData: { markedPlayerId: 'u4', markedScore: 4 } },
+  ];
+
+  it('al llegar lo del hoyo no se borra el hueco del segundo', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    submitHoleScoreUseCase.execute.mockResolvedValue(vistaDeDos);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.getByMatch.mockReturnValue(enLaCola);
+    offlineQueue.remove.mockClear();
+
+    await act(async () => {
+      await result.current.submitScore(3, { ownScore: 5, markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'ownScore' });
+    });
+
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1']]);
+  });
+
+  it('al llegar la marca del segundo se borra su hueco, y no el del hoyo', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    submitHoleScoreUseCase.execute.mockResolvedValue(vistaDeDos);
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    offlineQueue.getByMatch.mockReturnValue([enLaCola[0], { ...enLaCola[1], timestamp: 200 }]);
+    offlineQueue.remove.mockClear();
+
+    await act(async () => {
+      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+    });
+
+    // Se guarda en su hueco antes de mandarlo, y es el suyo el que sale
+    expect(offlineQueue.enqueue.mock.calls.at(-1).at(-1)).toBe('u4');
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
+  });
+
+  it('si rechazan la marca del segundo (se deshizo la retirada), sale su hueco y el del hoyo se queda', async () => {
+    getScoringViewUseCase.execute.mockResolvedValue(vistaDeDos);
+    submitHoleScoreUseCase.execute.mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
+    const { result } = renderHook(() => useScoring('m-1', 'u1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // Lo del hoyo, posterior: no es lo rechazado, y no sale
+    offlineQueue.getByMatch.mockReturnValue([{ ...enLaCola[0], timestamp: 300 }, { ...enLaCola[1], timestamp: 200 }]);
+    offlineQueue.remove.mockClear();
+
+    await act(async () => {
+      await result.current.submitScore(3, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' });
+    });
+
+    expect(offlineQueue.remove.mock.calls).toEqual([['m-1', 3, null, 'u1', 'u4']]);
   });
 
   it('el retirado no coge el candado de la sesión (no anota)', async () => {

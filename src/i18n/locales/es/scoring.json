@@ -454,7 +454,6 @@
     "confirmYes": "Sí, retirar",
     "cancel": "Cancelar",
     "badge": "Retirado",
-    "markingWho": "Anotas a:",
     "needsConnection": "Necesitas conexión para retirar o devolver a un jugador",
     "failed": "No se ha podido retirar ni devolver al jugador",
     "errors": {
@@ -469,7 +468,6 @@
     "organizerTitle": "Retirar a un jugador del fourball",
     "organizerWithdraw": "Retirar a {{nombre}}",
     "organizerUndo": "Deshacer la retirada de {{nombre}}",
-    "oneAtATime": "Lo anotado a {{nombre}} en este hoyo aún no ha llegado: al otro, cuando vuelva la conexión",
     "pendingScores": "Tienes golpes sin enviar: cuando lleguen al servidor podrás retirarte, o se perderían"
   }
 }

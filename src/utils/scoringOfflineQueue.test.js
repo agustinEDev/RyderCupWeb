@@ -587,3 +587,57 @@ describe('las partidas de stroke play en la cola (FE #824, PR 7)', () => {
     expect(resumen.find((p) => p.matchId === 'm-1')).toMatchObject({ esPartidaDeFranja: false });
   });
 });
+
+// Fourball con un retirado (26 oct 2026): quien marca a dos anota a los dos
+// rivales en el mismo hoyo, cada uno en su casilla. Sin cobertura, cada uno
+// tiene su hueco: la anotación del segundo no puede pisar la del hoyo
+describe('scoringOfflineQueue · un hueco por marcado (quien marca a dos)', () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+    vi.clearAllMocks();
+  });
+
+  const delHoyo = { ownScore: 5, markedPlayerId: 'C', markedScore: 6 };
+  const deDani = (golpes) => ({ markedPlayerId: 'D', markedScore: golpes });
+
+  it('la marca del segundo no pisa la del hoyo', () => {
+    enqueue('m-1', 3, delHoyo, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+
+    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo, deDani(4)]);
+    expect(getAll()[1].marcado).toBe('D');
+  });
+
+  it('reanotar al segundo sustituye su hueco y no el del hoyo', () => {
+    enqueue('m-1', 3, delHoyo, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+    enqueue('m-1', 3, deDani(5), null, 'A', {}, null, 'D');
+
+    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo, deDani(5)]);
+  });
+
+  it('y anotar el hoyo no se lleva el hueco del segundo', () => {
+    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+    enqueue('m-1', 3, delHoyo, null, 'A');
+
+    expect(getAll()).toHaveLength(2);
+  });
+
+  it('borrar el hueco del segundo deja el del hoyo, y al revés', () => {
+    enqueue('m-1', 3, delHoyo, null, 'A');
+    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+
+    remove('m-1', 3, null, 'A', 'D');
+    expect(getAll().map((e) => e.scoreData)).toEqual([delHoyo]);
+
+    enqueue('m-1', 3, deDani(4), null, 'A', {}, null, 'D');
+    remove('m-1', 3, null, 'A');
+    expect(getAll().map((e) => e.scoreData)).toEqual([deDani(4)]);
+  });
+
+  it('lo del hoyo se guarda como siempre, sin el campo: la cola de antes se sigue entendiendo', () => {
+    enqueue('m-1', 3, delHoyo, null, 'A');
+
+    expect(getAll()[0]).not.toHaveProperty('marcado');
+  });
+});

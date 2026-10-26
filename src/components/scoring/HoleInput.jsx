@@ -29,6 +29,12 @@ const HoleInput = ({
   markedPlayerScore,
   // A quién se marca: quien marca a dos lo cambia en el mismo hoyo
   markedPlayerId,
+  // Quien marca a dos (fourball con un retirado, 26 oct 2026): el segundo
+  // marcado, con su casilla debajo de la del primero. `{ name, par,
+  // playerScore, validationStatus, isLocked }`; su golpe sale por
+  // `onSecondMarkedChange`, solo, sin el tuyo ni el del primero
+  secondMarked = null,
+  onSecondMarkedChange,
   validationStatus,
   markedValidationStatus,
   netScore,
@@ -53,6 +59,7 @@ const HoleInput = ({
   // (CodeRabbit en la #747)
   const idPropio = useId();
   const idMarcado = useId();
+  const idSegundo = useId();
   // En foursomes hay una bola por pareja (#710): «Tu anotación» y «Anotación
   // marcador» hablaban como si cada uno jugara la suya
   const enParejas = matchFormat === 'FOURSOMES';
@@ -106,7 +113,18 @@ const HoleInput = ({
     setMarkedVisto(markedDeLaVista);
     setMarkedValue(markedDeLaVista);
   }
-  const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | null
+  // El segundo marcado, con la misma regla: lo tecleado se queda hasta que la
+  // vista diga otra cosa
+  const segundoDeLaVista = secondMarked?.playerScore?.markerSubmitted ? secondMarked.playerScore.markerScore : undefined;
+  const [segundoValue, setSegundoValue] = useState(segundoDeLaVista);
+  const [segundoVisto, setSegundoVisto] = useState(segundoDeLaVista);
+  if (segundoVisto !== segundoDeLaVista) {
+    setSegundoVisto(segundoDeLaVista);
+    setSegundoValue(segundoDeLaVista);
+  }
+  const segundoBloqueado = Boolean(secondMarked?.isLocked);
+  const etiquetaSegundo = secondMarked ? t('input.youMark', { nombre: secondMarked.name }) : null;
+  const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | 'second' | null
 
   const handleOwnSelect = (val) => {
     if (isReadOnly || isOwnScoreLocked) return;
@@ -124,6 +142,13 @@ const HoleInput = ({
     setMarkedValue(val);
     setOpenPanel(null);
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
+  };
+
+  const handleSegundoSelect = (val) => {
+    if (isReadOnly || segundoBloqueado) return;
+    setSegundoValue(val);
+    setOpenPanel(null);
+    if (onSecondMarkedChange) onSecondMarkedChange(val);
   };
 
   // La raya (`null`, bola recogida) se pinta distinta del hoyo sin anotar
@@ -155,6 +180,10 @@ const HoleInput = ({
       markedValidationStatus === 'mismatch' && markedPlayerScore?.ownSubmitted
         ? t('input.otherPut', { nombre: nombreDelOtro(markedName, 'input.theMarkedPlayer'), golpes: golpesEnTexto(markedPlayerScore.ownScore) })
         : null,
+    second:
+      secondMarked?.validationStatus === 'mismatch' && secondMarked.playerScore?.ownSubmitted
+        ? t('input.otherPut', { nombre: secondMarked.name, golpes: golpesEnTexto(secondMarked.playerScore.ownScore) })
+        : null,
   };
 
   // El siguiente hueco por anotar: el tuyo antes que el del rival (FE #725).
@@ -164,7 +193,9 @@ const HoleInput = ({
       ? 'own'
       : !marcadoBloqueado && markedValue === undefined
         ? 'marked'
-        : null;
+        : secondMarked && !segundoBloqueado && segundoValue === undefined
+          ? 'second'
+          : null;
 
   return (
     <div data-testid="hole-input" className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
@@ -289,6 +320,55 @@ const HoleInput = ({
               )}
             </>
           )}
+
+          {/* El segundo marcado, en la columna de la derecha bajo el primero;
+              a la izquierda, hueco (26 oct 2026) */}
+          {secondMarked && (
+            <>
+              <span aria-hidden="true" />
+              <div className="flex items-center justify-between gap-2 pt-2">
+                <label htmlFor={idSegundo} className="min-w-0 break-words text-xs font-medium text-gray-500">{etiquetaSegundo}</label>
+                {secondMarked.validationStatus && (
+                  <span data-testid="second-marked-validation">
+                    <ValidationIcon status={secondMarked.validationStatus} />
+                  </span>
+                )}
+              </div>
+              <span aria-hidden="true" />
+              {!segundoBloqueado ? (
+                <button
+                  id={idSegundo}
+                  data-testid="second-marked-score-button"
+                  onClick={() => setOpenPanel('second')}
+                  className={`w-full h-12 flex items-center justify-center rounded-xl transition-colors ${
+                    segundoValue === undefined
+                      ? clasesDelHueco(siguienteHueco === 'second')
+                      : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  {segundoValue === undefined ? (
+                    <HuecoParaAnotar siguiente={siguienteHueco === 'second'} />
+                  ) : (
+                    <span data-testid="second-marked-score-value" className="text-2xl font-bold text-gray-900">
+                      {displayScore(segundoValue, t('input.pickedUp'))}
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <p data-testid="second-marked-score-value" className="h-12 flex items-center justify-center text-2xl font-bold text-gray-400">
+                  {displayScore(segundoValue, t('input.pickedUp'))}
+                </p>
+              )}
+              {loQuePuso.second && (
+                <>
+                  <span aria-hidden="true" />
+                  <p className="text-xs text-red-700">
+                    <span data-testid="lo-que-puso-el-otro-second">{loQuePuso.second}</span>
+                  </p>
+                </>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -348,6 +428,16 @@ const HoleInput = ({
           onClose={() => setOpenPanel(null)}
           label={etiquetaMarcado}
           par={markedPar ?? par}
+          allowPickedUp={allowPickedUp}
+        />
+      )}
+      {openPanel === 'second' && (
+        <ScoreInputPanel
+          value={segundoValue}
+          onSelect={handleSegundoSelect}
+          onClose={() => setOpenPanel(null)}
+          label={etiquetaSegundo}
+          par={secondMarked?.par ?? par}
           allowPickedUp={allowPickedUp}
         />
       )}
