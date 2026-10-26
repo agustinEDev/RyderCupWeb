@@ -64,6 +64,7 @@ vi.mock('../../components/scoring/LeaderboardView', () => ({
 }));
 
 import LeaderboardPage, { TOPE_DE_LA_FICHA_MS } from './LeaderboardPage';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { getLeaderboardUseCase } from '../../composition';
 
 describe('LeaderboardPage', () => {
@@ -151,6 +152,16 @@ describe('LeaderboardPage', () => {
     render(<LeaderboardPage />);
     await screen.findByTestId('leaderboard-view');
     expect(screen.getByTestId('header-auth')).toHaveAttribute('data-back', '/competitions/c-1/schedule');
+  });
+
+  // Pasada del Kind (26 oct): con la barra inferior, la página medía la pantalla
+  // entera y además el hueco de la barra: scroll en una página casi vacía
+  it('H4: la página mide la pantalla menos la barra y el aviso de instalar', () => {
+    mockUser.current = { id: 'u-1' };
+    const { container } = render(<LeaderboardPage />);
+
+    expect(container.firstChild.className).toContain(PANTALLA_MENOS_BARRA_INFERIOR);
+    expect(container.firstChild.className.split(' ')).not.toContain('min-h-screen');
   });
 
   it('H2: sin sesión, como siempre: el título y el volver a la vista', async () => {
