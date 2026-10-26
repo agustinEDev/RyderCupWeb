@@ -12,7 +12,7 @@ import {
 // (FE #614). El mismo servicio que usa partida rápida desde la FE #524
 import { loQueSeSupo, olvida, recuerda } from '../services/loUltimoConocido';
 import { guardaLaCorreccion } from '../utils/guardaLaCorreccion';
-import { GOLPES_DEL_HOYO, golpesQueTrae } from '../utils/golpesDelHoyo';
+import { GOLPES_DEL_HOYO, enSuHueco, golpesQueTrae } from '../utils/golpesDelHoyo';
 import * as golpesPerdidos from '../utils/golpesPerdidos';
 import * as offlineQueue from '../utils/scoringOfflineQueue';
 import * as sessionLock from '../utils/scoringSessionLock';
@@ -648,8 +648,8 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     // Con el marcado de ESTE golpe: con dos, el primero no dice nada del otro
     if (isOwnScoreLocked && marcaBloqueadaPara(scoreData?.markedPlayerId)) return;
     const estaAnotacion = ++anotacionRef.current;
-    const golpesTocados = tocado ? [tocado] : golpesQueTrae(scoreData);
     const hueco = huecoDe(scoreData);
+    const golpesTocados = tocado ? enSuHueco([tocado], hueco) : golpesQueTrae(scoreData, hueco);
     const delHueco = hueco ? [hueco] : [];
     // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
     // otro: la lista va por partido, así que lo apuntado o retirado se queda en
@@ -667,12 +667,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
       if (perdidos.length === 0) return;
       const golpes = { ...hoyosNoGuardados()[holeNumber]?.golpes };
       for (const g of perdidos) golpes[g] = Math.max(golpes[g] ?? 0, estaAnotacion);
-      // De quién era la marca perdida: quien marca a dos puede tener uno
-      // entregado y el otro no (/code-review, 26 oct 2026)
-      const marcado = perdidos.includes('markedScore')
-        ? (scoreData?.markedPlayerId ?? null)
-        : (hoyosNoGuardados()[holeNumber]?.marcado ?? null);
-      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes, marcado } });
+      ponNoGuardados({ ...hoyosNoGuardados(), [holeNumber]: { turno: estaAnotacion, golpes } });
     };
     const hayUnFalloPosterior = () =>
       Object.values(hoyosNoGuardados()[holeNumber]?.golpes ?? {}).some((turno) => turno > estaAnotacion);
@@ -805,7 +800,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           // una corrección anterior del otro golpe, sin enviar: el aviso nombra
           // los golpes de las dos, o ese se pierde sin decirlo (FE #813). De una
           // entrada de antes, sin ese dato, los golpes que trae
-          const deLaCola = loGuardado ? (loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
+          const deLaCola = loGuardado ? (loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData, loGuardado.marcado)) : [];
           const loMandado = Object.fromEntries(Object.entries(scoreData ?? {}).filter(([, v]) => v !== undefined));
           apartaLaRechazada(
             {
@@ -1055,9 +1050,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   const turnosNoGuardados = useMemo(() => {
     const hoyos = noGuardados[matchId];
     if (!hoyos) return SIN_HOYOS;
-    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes, marcado }]) => [
+    return Object.fromEntries(Object.entries(hoyos).map(([hoyo, { turno, golpes }]) => [
       hoyo,
-      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined), marcado: marcado ?? null },
+      { turno, golpes: GOLPES_DEL_HOYO.filter((g) => golpes[g] !== undefined) },
     ]));
   }, [noGuardados, matchId]);
 

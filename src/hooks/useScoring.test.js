@@ -3317,18 +3317,21 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     expect(result.current.error).toBeNull();
   });
 
-  // /code-review (26 oct 2026): quien marca a dos necesita saber de QUIÉN era
-  // la marca perdida, para decir si aún se puede volver a anotar
-  it('N1c · la marca perdida recuerda a quién iba; sin marca, null', async () => {
+  // Quien marca a dos (26 oct 2026): la marca del segundo rival es otro golpe.
+  // Con un solo nombre, guardar la de uno retiraba el aviso de la del otro
+  it('N1c · la marca del segundo se avisa aparte, y guardarla no retira la del primero', async () => {
     sinCobertura();
     const { result } = await monta();
     sinSitio();
 
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }); });
     await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }); });
-    await act(async () => { await result.current.submitScore(6, { ownScore: 4 }); });
+    expect(result.current.noGuardados[5].golpes).toEqual(['markedScore', 'secondMarkedScore']);
 
-    expect(result.current.noGuardados[5].marcado).toBe('u4');
-    expect(result.current.noGuardados[6].marcado).toBeNull();
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u4', markedScore: 4 }, { tocado: 'markedScore' }); });
+
+    expect(result.current.noGuardados[5].golpes).toEqual(['markedScore']);
   });
 
   it('N1b · enviando: la petición no llega y el móvil no tiene sitio', async () => {
@@ -3962,7 +3965,7 @@ describe('useScoring · quien marca a dos', () => {
     });
 
     const [delSegundo, delHoyo] = offlineQueue.enqueue.mock.calls;
-    expect(delSegundo).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['markedScore'], 'u4']);
+    expect(delSegundo).toEqual(['m-1', 3, { markedPlayerId: 'u4', markedScore: 4 }, null, 'u1', expect.anything(), ['secondMarkedScore'], 'u4']);
     expect(delHoyo).toHaveLength(7);
   });
 

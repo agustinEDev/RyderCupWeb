@@ -413,7 +413,17 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
 
     expect(r).toMatchObject({ enviadas: 1, descartadas: 1 });
     expect(cola.deQuien(YO)).toHaveLength(0);
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+    // Su aviso es de la marca del SEGUNDO: con el mismo nombre que la del
+    // primero, reanotar a uno retiraba el aviso del otro
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['secondMarkedScore']);
+  });
+
+  it('rechazadas las dos marcas del hoyo, el aviso las distingue', async () => {
+    const manda = vi.fn().mockRejectedValue(errorCon(409));
+
+    await vaciaAnotaciones({ entradas: losDos(), manda });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['ownScore', 'markedScore', 'secondMarkedScore']);
   });
 
   it('con el hueco del segundo delante en la cola, lo del hoyo se reconoce y sale', async () => {

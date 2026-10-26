@@ -31,7 +31,7 @@ const HoleInput = ({
   markedPlayerId,
   // Quien marca a dos (fourball con un retirado, 26 oct 2026): el segundo
   // marcado, con su casilla debajo de la del primero. `{ name, par,
-  // playerScore, validationStatus, isLocked }`; su golpe sale por
+  // playerScore, validationStatus, isLocked }` con su `id`; su golpe sale por
   // `onSecondMarkedChange`, solo, sin el tuyo ni el del primero
   secondMarked = null,
   onSecondMarkedChange,
@@ -114,10 +114,16 @@ const HoleInput = ({
     setMarkedValue(markedDeLaVista);
   }
   // El segundo marcado, con la misma regla: lo tecleado se queda hasta que la
-  // vista diga otra cosa
+  // vista diga otra cosa, o hasta que el segundo pase a ser otro, como el primero
   const segundoDeLaVista = secondMarked?.playerScore?.markerSubmitted ? secondMarked.playerScore.markerScore : undefined;
   const [segundoValue, setSegundoValue] = useState(segundoDeLaVista);
   const [segundoVisto, setSegundoVisto] = useState(segundoDeLaVista);
+  const [segundoQuien, setSegundoQuien] = useState(secondMarked?.id);
+  if (segundoQuien !== secondMarked?.id) {
+    setSegundoQuien(secondMarked?.id);
+    setSegundoVisto(segundoDeLaVista);
+    setSegundoValue(segundoDeLaVista);
+  }
   if (segundoVisto !== segundoDeLaVista) {
     setSegundoVisto(segundoDeLaVista);
     setSegundoValue(segundoDeLaVista);
@@ -125,6 +131,14 @@ const HoleInput = ({
   const segundoBloqueado = Boolean(secondMarked?.isLocked);
   const etiquetaSegundo = secondMarked ? t('input.youMark', { nombre: secondMarked.name }) : null;
   const [openPanel, setOpenPanel] = useState(null); // 'own' | 'marked' | 'second' | null
+  // Si su casilla se bloquea con el teclado abierto (el rival entrega su
+  // tarjeta), el teclado se cierra: abierto, sus números ya no hacían nada
+  const panelBloqueado =
+    (openPanel !== null && isReadOnly)
+    || (openPanel === 'own' && isOwnScoreLocked)
+    || (openPanel === 'marked' && marcadoBloqueado)
+    || (openPanel === 'second' && segundoBloqueado);
+  if (panelBloqueado) setOpenPanel(null);
 
   const handleOwnSelect = (val) => {
     if (isReadOnly || isOwnScoreLocked) return;
@@ -144,8 +158,8 @@ const HoleInput = ({
     if (onScoreChange) onScoreChange({ ownScore: ownValue, markedScore: val }, 'markedScore');
   };
 
+  // Bloqueada, el teclado ya se ha cerrado (`panelBloqueado`)
   const handleSegundoSelect = (val) => {
-    if (isReadOnly || segundoBloqueado) return;
     setSegundoValue(val);
     setOpenPanel(null);
     if (onSecondMarkedChange) onSecondMarkedChange(val);

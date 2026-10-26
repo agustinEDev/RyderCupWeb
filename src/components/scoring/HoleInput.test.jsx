@@ -748,7 +748,7 @@ describe('HoleInput · al cambiar de marcado', () => {
  */
 describe('HoleInput · con un segundo marcado', () => {
   const props = { holeNumber: 3, par: 5, strokeIndex: 6, markedName: 'Carlos', markedPlayerId: 'u2' };
-  const dani = (extra = {}) => ({ name: 'Dani', par: 5, playerScore: null, validationStatus: null, isLocked: false, ...extra });
+  const dani = (extra = {}) => ({ id: 'u4', name: 'Dani', par: 5, playerScore: null, validationStatus: null, isLocked: false, ...extra });
 
   it('la casilla del segundo va debajo de la del primero, en su columna', () => {
     render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani()} onSecondMarkedChange={vi.fn()} />);
@@ -843,14 +843,33 @@ describe('HoleInput · con un segundo marcado', () => {
     expect(screen.getByRole('button', { name: /^3/ })).toHaveTextContent('input.par');
   });
 
-  it('si entrega su tarjeta con el teclado abierto, lo elegido ya no sale', () => {
-    const onSecondMarkedChange = vi.fn();
-    const { rerender } = render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani()} onSecondMarkedChange={onSecondMarkedChange} />);
+  it('si el segundo pasa a ser otro, su casilla vuelve a la de la vista', () => {
+    const { rerender } = render(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani()} onSecondMarkedChange={vi.fn()} />);
     fireEvent.click(screen.getByTestId('second-marked-score-button'));
-
-    rerender(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani({ isLocked: true })} onSecondMarkedChange={onSecondMarkedChange} />);
     fireEvent.click(screen.getByRole('button', { name: /^4/ }));
 
+    rerender(<HoleInput {...props} onScoreChange={vi.fn()} secondMarked={dani({ id: 'u3', name: 'Bea' })} onSecondMarkedChange={vi.fn()} />);
+
+    expect(screen.queryByTestId('second-marked-score-value')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['del segundo', 'second-marked-score-button', (bloq) => ({ secondMarked: dani({ isLocked: bloq }) })],
+    ['del primero', 'marked-score-button', (bloq) => ({ secondMarked: dani(), isMarkerScoreLocked: bloq })],
+    ['propia', 'own-score-button', (bloq) => ({ secondMarked: dani(), isOwnScoreLocked: bloq })],
+    ['del segundo, al quedar solo lectura', 'second-marked-score-button', (bloq) => ({ secondMarked: dani(), isReadOnly: bloq })],
+  ])('si la casilla %s se bloquea con el teclado abierto, el teclado se cierra y no manda nada', (_, boton, conBloqueo) => {
+    const onScoreChange = vi.fn();
+    const onSecondMarkedChange = vi.fn();
+    const pinta = (bloq) => <HoleInput {...props} onScoreChange={onScoreChange} onSecondMarkedChange={onSecondMarkedChange} {...conBloqueo(bloq)} />;
+    const { rerender } = render(pinta(false));
+    fireEvent.click(screen.getByTestId(boton));
+    expect(screen.getByRole('button', { name: /^4/ })).toBeInTheDocument();
+
+    rerender(pinta(true));
+
+    expect(screen.queryByRole('button', { name: /^4/ })).not.toBeInTheDocument();
+    expect(onScoreChange).not.toHaveBeenCalled();
     expect(onSecondMarkedChange).not.toHaveBeenCalled();
   });
 

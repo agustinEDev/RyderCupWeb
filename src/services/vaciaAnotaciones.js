@@ -129,7 +129,7 @@ const LATIDO_EN_VUELO_MS = 30_000;
 const delHueco = (entrada) => (entrada.marcado ? [entrada.marcado] : []);
 
 const golpesPerdidosDe = (entrada) => {
-  const trae = golpesQueTrae(entrada.scoreData);
+  const trae = golpesQueTrae(entrada.scoreData, entrada.marcado);
   const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(g)) : trae;
   return golpes.length > 0 ? { golpes } : {};
 };

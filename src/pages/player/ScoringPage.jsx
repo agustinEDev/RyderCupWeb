@@ -88,13 +88,16 @@ const ScoringPage = () => {
   // pueden anotar —sin permiso, o con bloqueados los golpes que se perdieron— no
   // piden volver a anotarlos, que sería pedir algo imposible: van en otra frase
   const hoyosNoGuardados = Object.keys(noGuardados).map(Number).sort((a, b) => a - b);
-  // La marca, con el bloqueo de a quién iba: quien marca a dos puede tener uno
-  // entregado y el otro no (/code-review, 26 oct 2026)
-  const golpeBloqueado = (g, hoyo) =>
-    g === 'ownScore' ? isOwnScoreLocked : marcaBloqueadaPara(
-      noGuardados[hoyo].marcado ?? aQuienesMarco(scoringView?.markerAssignments, user?.id)[0]
-    );
-  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every((g) => golpeBloqueado(g, hoyo));
+  // Cada marca, con el bloqueo de SU rival: quien marca a dos puede tener uno
+  // entregado y el otro no. La del segundo, sin segundo (se deshizo la
+  // retirada), ya no se puede anotar (26 oct 2026)
+  const [primerMarcado = null, segundoMarcado = null] = aQuienesMarco(scoringView?.markerAssignments, user?.id);
+  const golpeBloqueado = (g) => {
+    if (g === 'ownScore') return isOwnScoreLocked;
+    if (g === 'secondMarkedScore') return !segundoMarcado || marcaBloqueadaPara(segundoMarcado);
+    return marcaBloqueadaPara(primerMarcado);
+  };
+  const yaNoSeAnota = (hoyo) => !canScore || noGuardados[hoyo].golpes.every(golpeBloqueado);
   const porAnotar = hoyosNoGuardados.filter((h) => !yaNoSeAnota(h));
   const sinAnotar = hoyosNoGuardados.filter(yaNoSeAnota);
 
@@ -228,8 +231,6 @@ const ScoringPage = () => {
   // Fourball con un retirado (F5): su pareja marca también al rival que él
   // marcaba. La casilla es del primero, como siempre, y la del segundo va
   // debajo (26 oct 2026: una casilla por marcado, sin elegir)
-  const misMarcados = aQuienesMarco(scoringView?.markerAssignments, currentUserId);
-  const [primerMarcado = null, segundoMarcado = null] = misMarcados;
   const nombreDe = (id) => scoringView?.players?.find((p) => p.userId === id)?.userName ?? id;
   // Quien no marca a nadie no tiene asignación propia de la que sacarlo
   const quienMeMarcaId = scoringView?.markerAssignments?.find((ma) => ma.marksUserId === currentUserId)?.scorerUserId;
@@ -695,6 +696,7 @@ const ScoringPage = () => {
                   isMarkerScoreLocked={marcaBloqueada || !canScore || isSessionBlocked}
                   onScoreChange={handleScoreChange}
                   secondMarked={segundoMarcado ? {
+                    id: segundoMarcado,
                     name: nombreDe(segundoMarcado),
                     par: holeFor(segundoMarcado)?.par ?? courseHoleData?.par ?? null,
                     playerScore: currentHoleScore?.playerScores?.find((ps) => ps.userId === segundoMarcado),

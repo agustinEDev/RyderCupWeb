@@ -1564,7 +1564,9 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
   // Revisión: si ya no se puede anotar, «vuelve a anotarlo» pide algo
   // imposible. Se sigue diciendo que no se guardaron, con otro texto
   describe('P5 · cuando ya no se puede anotar', () => {
+    const vistaDeAntes = mockUseScoring.scoringView;
     afterEach(() => {
+      mockUseScoring.scoringView = vistaDeAntes;
       mockUseScoring.canScore = true;
       mockUseScoring.isOwnScoreLocked = false;
       mockUseScoring.isMarkerScoreLocked = false;
@@ -1598,11 +1600,22 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
       expect(screen.getByTestId('no-guardados').textContent).not.toContain('noGuardadosSinAnotar');
     });
 
-    // /code-review (26 oct 2026): quien marca a dos mira el bloqueo de ESE marcado
-    it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u4' } };
+    // Quien marca a dos (26 oct 2026): la marca de cada rival es un golpe
+    // distinto, y cada uno mira el bloqueo de SU rival
+    const marcandoADos = () => {
+      mockUseScoring.scoringView = {
+        ...vistaDeAntes,
+        markerAssignments: [
+          { scorerUserId: 'u1', marksUserId: 'u2', marksName: 'Carlos' },
+          { scorerUserId: 'u1', marksUserId: 'u4', marksName: 'Dani' },
+        ],
+      };
       mockUseScoring.isOwnScoreLocked = true;
-      mockUseScoring.isMarkerScoreLocked = true;
+    };
+
+    it('la marca perdida era de Dani y solo entregó Carlos: todavía se puede', () => {
+      marcandoADos();
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['secondMarkedScore'] } };
       mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
 
       render(<ScoringPage />);
@@ -1611,9 +1624,19 @@ describe('ScoringPage · los hoyos que no se pudieron guardar (FE #622)', () => 
     });
 
     it('la marca perdida era de Carlos, que entregó: ya no se puede', () => {
-      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'], marcado: 'u2' } };
-      mockUseScoring.isOwnScoreLocked = true;
+      marcandoADos();
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['markedScore'] } };
       mockUseScoring.marcaBloqueadaPara = (id) => id === 'u2';
+
+      render(<ScoringPage />);
+
+      expect(screen.getByTestId('no-guardados').textContent).toContain('noGuardadosSinAnotar');
+    });
+
+    it('la de Dani, si ya no hay segundo marcado (se deshizo la retirada): ya no se puede', () => {
+      mockUseScoring.isOwnScoreLocked = true;
+      mockUseScoring.noGuardados = { 5: { turno: 1, golpes: ['secondMarkedScore'] } };
+      mockUseScoring.marcaBloqueadaPara = () => false;
 
       render(<ScoringPage />);
 
@@ -1908,7 +1931,7 @@ describe('ScoringPage · fourball con un retirado', () => {
     expect(screen.queryByTestId('a-quien-anoto')).not.toBeInTheDocument();
     expect(casilla.props.markedPlayerId).toBe('u2');
     expect(casilla.props.markedName).toBe('Carlos');
-    expect(casilla.props.secondMarked).toMatchObject({ name: 'Dani', isLocked: false });
+    expect(casilla.props.secondMarked).toMatchObject({ id: 'u4', name: 'Dani', isLocked: false });
     casilla.props.onScoreChange({ ownScore: 4, markedScore: 5 }, 'markedScore');
     expect(submitScore).toHaveBeenLastCalledWith(1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 5 }, { tocado: 'markedScore' });
   });
