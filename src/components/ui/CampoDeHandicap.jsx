@@ -36,8 +36,9 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
 
   const alEscribir = (e) => {
     const escrito = e.target.value.trim();
-    // Quien lo escribe con el menos de antes también está diciendo «plus»
-    const conMenos = escrito.startsWith('-');
+    // Quien lo escribe con el menos de antes, o con el «+» de los golfistas,
+    // también está diciendo «plus» (en un campo de texto llega tal cual)
+    const conMenos = escrito.startsWith('-') || escrito.startsWith('+');
     const numero = conMenos ? escrito.slice(1) : escrito;
     const esPlus = plus || conMenos;
     if (numero === '') {

@@ -49,11 +49,18 @@ const SendInvitationModalContent = ({
   const resultsQueryRef = useRef('');
   // eslint-disable-next-line react-hooks/refs -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
   onSearchUsersRef.current = onSearchUsers;
-  // Quién ya está dentro o invitado, para que el `Enter` del teclado, que lee
-  // por ref, tampoco elija a quien la lista enseña bloqueado (QA, 26 oct)
+  // Si ya está dentro o invitado: una sola regla para la pestaña de amigos, la
+  // búsqueda y el teclado (/code-review)
+  const situacionDe = (id) => {
+    const yaInscrito = idsInscritos.includes(id);
+    const yaInvitado = idsInvitados.includes(id);
+    return { yaInscrito, yaInvitado, noSePuede: yaInscrito || yaInvitado };
+  };
+  // El `Enter` del teclado lee por ref: que tampoco elija a quien la lista
+  // enseña bloqueado (QA, 26 oct)
   const yaEstaRef = useRef(null);
   // eslint-disable-next-line react-hooks/refs -- como `onSearchUsersRef`: el listener del teclado se registra una sola vez
-  yaEstaRef.current = (id) => idsInscritos.includes(id) || idsInvitados.includes(id);
+  yaEstaRef.current = (id) => situacionDe(id).noSePuede;
 
   // El resaltado se mueve SIEMPRE por aqui, y la ref se escribe a la vez que
   // el estado. Copiarla en el cuerpo del componente la dejaba al dia solo
@@ -265,8 +272,7 @@ const SendInvitationModalContent = ({
   // la aplicación falla, no que esa persona ya está dentro
   const amigosConSuSituacion = friends.map((amigo) => ({
     ...amigo,
-    yaInscrito: idsInscritos.includes(amigo.otherUserId),
-    yaInvitado: idsInvitados.includes(amigo.otherUserId),
+    ...situacionDe(amigo.otherUserId),
   }));
 
   const handleEmailSubmit = async (e) => {
@@ -434,7 +440,7 @@ const SendInvitationModalContent = ({
             ) : (
               <ul className="space-y-2 max-h-72 overflow-y-auto">
                 {amigosConSuSituacion.map((amigo) => {
-                  const noSePuede = amigo.yaInscrito || amigo.yaInvitado;
+                  const { noSePuede } = amigo;
                   return (
                     <li key={amigo.otherUserId}>
                       <button
@@ -528,9 +534,7 @@ const SendInvitationModalContent = ({
                       {searchResults.map((user, index) => {
                         // Como en la pestaña de amigos: sale, pero marcado y sin
                         // poder elegirlo, que el servidor lo rechazaría (QA, 26 oct)
-                        const yaInscrito = idsInscritos.includes(user.id);
-                        const yaInvitado = idsInvitados.includes(user.id);
-                        const noSePuede = yaInscrito || yaInvitado;
+                        const { yaInscrito, yaInvitado, noSePuede } = situacionDe(user.id);
                         return (
                           <button
                             key={user.id}

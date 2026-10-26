@@ -200,7 +200,8 @@
       "STABLEFORD": "Ej: Stableford de los domingos",
       "MEDAL": "Ej: Medal de primavera"
     },
-    "organizerPlays": "¿Juegas tú? Si no, no ocupas plaza."
+    "organizerPlays": "¿Juegas tú? Si no, no ocupas plaza.",
+    "settingsTitle": "Configuración de la Competición"
   },
   "edit": {
     "title": "Editar Competición",

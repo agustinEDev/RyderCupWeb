@@ -23,7 +23,9 @@ const ESPERA_MAXIMA_MS = 5_000;
  *  ve sin sesión, a ella misma; si no, a /login (QA, FE #865-11) */
 const salidaDeEstaPestana = () => {
   const { pathname = '', search = '' } = globalThis.location ?? {};
-  return esRutaPublica(pathname) ? `${pathname}${search}` : '/login';
+  // Los enlaces de un solo uso del correo no: recargarlos gasta otra vez el token
+  const deUnSoloUso = /^\/(verify-email|reset-password)(\/|$)/.test(pathname);
+  return esRutaPublica(pathname) && !deUnSoloUso ? `${pathname}${search}` : '/login';
 };
 
 export const useLogout = () => {

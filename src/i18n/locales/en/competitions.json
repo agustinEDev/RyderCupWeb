@@ -200,7 +200,8 @@
       "STABLEFORD": "E.g. Sunday Stableford",
       "MEDAL": "E.g. Spring Medal"
     },
-    "organizerPlays": "Are you playing? If not, you do not take a place."
+    "organizerPlays": "Are you playing? If not, you do not take a place.",
+    "settingsTitle": "Competition Settings"
   },
   "edit": {
     "title": "Edit Competition",

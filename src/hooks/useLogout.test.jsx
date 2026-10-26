@@ -210,6 +210,16 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
     expect(loQueQueda()).toEqual([]);
   });
 
+  // /code-review: recargar el enlace del correo volvería a gastar su token
+  it.each(['/verify-email', '/reset-password/abc'])('O9d: en un enlace de un solo uso (%s), a /login', async (pathname) => {
+    vi.stubGlobal('location', { href: '', pathname, search: '?token=x' });
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+
+    expect(window.location.href).toBe('/login');
+  });
+
   it('O9b: en una privada, a /login como antes', async () => {
     vi.stubGlobal('location', { href: '', pathname: '/profile', search: '' });
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });

@@ -122,6 +122,17 @@ describe('CampoDeHandicap', () => {
     expect(mas()).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // /code-review: en golf el plus se escribe «+1,5»; en el campo de texto de la
+  // ficha llegaba tal cual y se guardaba como hándicap normal
+  it('C7c: escrito con el «+», también es plus', () => {
+    const alCambiar = vi.fn();
+    render(<CampoDeHandicap id="hcp" type="text" value="" onChange={alCambiar} />);
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '+1,5' } });
+
+    expect(alCambiar).toHaveBeenLastCalledWith('-1,5');
+  });
+
   it('C7b: con el «+» ya pulsado, el menos escrito no se suma al suyo', () => {
     const alCambiar = vi.fn();
     render(<Controlado inicial="-2" alCambiar={alCambiar} />);

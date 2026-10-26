@@ -133,6 +133,9 @@ describe('CompetitionDetail · el «+» al fijar el hándicap de un inscrito', (
     fireEvent.click(await screen.findByTitle('detail.editHandicap'));
 
     expect(screen.getByRole('textbox', { name: 'detail.editHandicap' })).toHaveValue('3.5');
+    // Con el «+» la fila es más ancha: a 360 px salta de línea, sin scroll (/code-review)
+    const fila = screen.getByTitle('detail.saveHandicap').parentElement;
+    expect(fila.className.split(' ')).toContain('flex-wrap');
     expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
   });
 

@@ -711,7 +711,7 @@ describe('MapaDelHoyo — tras la revisión', () => {
     const cifras = mapas.marcas.filter((m) => m.opciones.element?.dataset?.tramo);
 
     expect(cifras.length).toBeGreaterThan(0);
-    expect(yo.getElement().className.split(' ')).toEqual(expect.arrayContaining(['z-10', 'pointer-events-none']));
+    expect(yo.getElement().className.split(' ')).toEqual(expect.arrayContaining(['z-[1]', 'pointer-events-none']));
     for (const cifra of cifras) expect(cifra.getElement().className).not.toMatch(/\bz-/);
   });
 
@@ -2584,6 +2584,23 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
     desde(160);
 
     expect(enlace).not.toHaveFocus();
+  });
+
+  // /code-review: el punto azul, solo por encima de las cifras; el codo, la
+  // salida y lo que se toca para medir siguen encima de él
+  it('D2z: el codo queda por encima del punto azul, y este por encima de las cifras', () => {
+    conGreenSuelto();
+    desde(0);
+
+    no();
+
+    const vivas = mapas.marcas.filter((m) => !m.quitada);
+    const yo = vivas.find((m) => m.opciones.element?.className.includes('bg-blue-500'));
+    expect(yo.getElement().className.split(' ')).toContain('z-[1]');
+    expect(elCodo()[0].getElement().className.split(' ')).toContain('z-[2]');
+    const otras = vivas.filter((m) => m !== yo && !m.opciones.element?.dataset?.tramo);
+    expect(otras.length).toBeGreaterThan(0);
+    for (const otra of otras) expect(otra.getElement().className.split(' ')).toContain('z-[2]');
   });
 
   it('D2: a más de 200 m, la línea sale con un codo en medio, sin tocar: un tramo (C2, 20 oct)', () => {
