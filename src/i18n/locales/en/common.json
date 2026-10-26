@@ -174,6 +174,7 @@
     "goBack": "Go back"
   },
   "handicapField": {
-    "plus": "Plus handicap"
+    "plus": "Plus handicap",
+    "outOfRange": "Between +10 and 54"
   }
 }

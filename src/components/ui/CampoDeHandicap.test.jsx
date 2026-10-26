@@ -18,9 +18,12 @@
  *   C7b  lo mismo con el «+» ya pulsado                    | «-1.5», no «--1.5»
  *   C8   se vacía el campo con plus                        | sale «» y el «+» se suelta (pasada del Kind)
  *   C8b  en el de texto, solo el signo («+» o «-»)          | el «+» se enciende, esperando el número
- *   C8c  en el numérico, «1,» a medio escribir (llega «»)    | el «+» sigue pulsado (revisor)
+ *   C8c  «1,» a medio escribir, con el «+»                   | se ve «1,», sale «-1», el «+» sigue
  *   C9   cambia desde fuera de -2 a 5                      | el «+» se suelta
- *   C10  límites del número sin signo                      | de 0 a 54; con plus, hasta 10
+ *   C10  fuera de rango (más de 54; plus, más de 10)        | inválido, con «Entre +10 y 54»
+ *   C16  de texto con teclado decimal                      | sin flechas, con la coma del móvil
+ *   C17  «1,» y «1,5»                                      | se ven tal cual; salen «1» y «1.5»
+ *   C18  lo que no es un hándicap (letras, «1,2,3», «1,55») | no se escribe
  *   C11  desactivado                                       | el campo y el «+»
  *   C12  el «+» se anuncia en los dos idiomas              | «Hándicap plus» / «Plus handicap»
  *   C13  lo demás va al campo (id, placeholder...)         | sí
@@ -59,21 +62,21 @@ const Controlado = ({ inicial = '', alCambiar }) => {
   );
 };
 
-const campo = () => screen.getByRole('spinbutton');
+const campo = () => screen.getByRole('textbox');
 const mas = () => screen.getByRole('button', { name: 'handicapField.plus' });
 
 describe('CampoDeHandicap', () => {
   it.each([['-1.5'], [-1.5]])('C1: con %p se ve sin signo y el «+» pulsado', (valor) => {
     pintar(valor);
 
-    expect(campo()).toHaveValue(1.5);
+    expect(campo()).toHaveValue('1.5');
     expect(mas()).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('C2: un hándicap normal, sin el «+»', () => {
     pintar(12.3);
 
-    expect(campo()).toHaveValue(12.3);
+    expect(campo()).toHaveValue('12.3');
     expect(mas()).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -110,7 +113,7 @@ describe('CampoDeHandicap', () => {
     fireEvent.change(campo(), { target: { value: '3' } });
 
     expect(alCambiar).toHaveBeenLastCalledWith('-3');
-    expect(campo()).toHaveValue(3);
+    expect(campo()).toHaveValue('3');
   });
 
   it('C7: escrito con el menos de antes, también es plus', () => {
@@ -120,7 +123,7 @@ describe('CampoDeHandicap', () => {
     fireEvent.change(campo(), { target: { value: '-1.5' } });
 
     expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
-    expect(campo()).toHaveValue(1.5);
+    expect(campo()).toHaveValue('1.5');
     expect(mas()).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -128,11 +131,11 @@ describe('CampoDeHandicap', () => {
   // ficha llegaba tal cual y se guardaba como hándicap normal
   it('C7c: escrito con el «+», también es plus', () => {
     const alCambiar = vi.fn();
-    render(<CampoDeHandicap id="hcp" type="text" value="" onChange={alCambiar} />);
+    render(<CampoDeHandicap id="hcp" value="" onChange={alCambiar} />);
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '+1,5' } });
+    fireEvent.change(campo(), { target: { value: '+1,5' } });
 
-    expect(alCambiar).toHaveBeenLastCalledWith('-1,5');
+    expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
   });
 
   it('C7b: con el «+» ya pulsado, el menos escrito no se suma al suyo', () => {
@@ -158,36 +161,35 @@ describe('CampoDeHandicap', () => {
     expect(alCambiar).toHaveBeenLastCalledWith('5');
   });
 
-  // Revisor: en el numérico, «1,» a medio escribir llega vacío (badInput); no es
-  // vaciarlo, y soltar el «+» ahí guardaba 1,5 en vez de +1,5
-  it('C8c: a medio escribir un decimal, el «+» sigue pulsado', () => {
+  // Revisor: en el numérico «1,» llegaba vacío y soltaba el «+»; de texto, se ve
+  it('C8c: a medio escribir un decimal, se ve y el «+» sigue pulsado', () => {
     const alCambiar = vi.fn();
     render(<Controlado inicial="-1" alCambiar={alCambiar} />);
-    Object.defineProperty(campo(), 'validity', { value: { badInput: true }, configurable: true });
 
-    fireEvent.change(campo(), { target: { value: '' } });
+    fireEvent.change(campo(), { target: { value: '1,' } });
+    expect(campo()).toHaveValue('1,');
+    expect(alCambiar).toHaveBeenLastCalledWith('-1');
     expect(mas()).toHaveAttribute('aria-pressed', 'true');
 
-    delete campo().validity;
-    fireEvent.change(campo(), { target: { value: '1.5' } });
+    fireEvent.change(campo(), { target: { value: '1,5' } });
     expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
   });
 
-  it.each(['+', '-'])('C8b: en el de texto, escribir solo «%s» enciende el «+» a la espera del número', (signo) => {
+  it.each(['+', '-'])('C8b: escribir solo «%s» enciende el «+» a la espera del número', (signo) => {
     const alCambiar = vi.fn();
     const Texto = () => {
       const [valor, setValor] = useState('');
       return (
-        <CampoDeHandicap id="hcp" type="text" value={valor} onChange={(v) => { setValor(v); alCambiar(v); }} />
+        <CampoDeHandicap id="hcp" value={valor} onChange={(v) => { setValor(v); alCambiar(v); }} />
       );
     };
     render(<Texto />);
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: signo } });
+    fireEvent.change(campo(), { target: { value: signo } });
     expect(mas()).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '1,5' } });
+    fireEvent.change(campo(), { target: { value: '1,5' } });
 
-    expect(alCambiar).toHaveBeenLastCalledWith('-1,5');
+    expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
   });
 
   it('C9: si el valor cambia desde fuera, el «+» lo sigue', () => {
@@ -196,16 +198,72 @@ describe('CampoDeHandicap', () => {
     rerender(<CampoDeHandicap id="hcp" value="5" onChange={onChange} />);
 
     expect(mas()).toHaveAttribute('aria-pressed', 'false');
-    expect(campo()).toHaveValue(5);
+    expect(campo()).toHaveValue('5');
   });
 
-  it('C10: el número va sin signo, hasta 54; con plus, hasta 10', () => {
-    render(<Controlado />);
+  it.each([
+    ['55', false, true],
+    ['54', false, false],
+    ['11', true, true],
+    ['10', true, false],
+  ])('C10: %s (plus %p) fuera de rango: %p', (escrito, conPlus, fuera) => {
+    render(<Controlado inicial={conPlus ? '-1' : ''} />);
 
-    expect(campo()).toHaveAttribute('min', '0');
-    expect(campo()).toHaveAttribute('max', '54');
+    fireEvent.change(campo(), { target: { value: escrito } });
+
+    expect(campo().validationMessage).toBe(fuera ? 'handicapField.outOfRange' : '');
+    expect(campo()).toHaveAttribute('aria-invalid', String(fuera));
+  });
+
+  it('C10b: el aviso del rango, en los dos idiomas', () => {
+    expect(es.handicapField.outOfRange).toBe('Entre +10 y 54');
+    expect(en.handicapField.outOfRange).toBe('Between +10 and 54');
+  });
+
+  it('C16: de texto, con el teclado decimal del móvil', () => {
+    pintar('');
+
+    expect(campo()).toHaveAttribute('type', 'text');
+    expect(campo()).toHaveAttribute('inputmode', 'decimal');
+  });
+
+  it.each([
+    ['1,', '1,', '1'],
+    ['1,5', '1,5', '1.5'],
+    ['1.5', '1.5', '1.5'],
+    ['12', '12', '12'],
+    [',5', ',5', '0.5'],
+  ])('C17: «%s» se ve «%s» y sale «%s»', (escrito, seVe, sale) => {
+    const alCambiar = vi.fn();
+    render(<Controlado alCambiar={alCambiar} />);
+
+    fireEvent.change(campo(), { target: { value: escrito } });
+
+    expect(campo()).toHaveValue(seVe);
+    expect(alCambiar).toHaveBeenLastCalledWith(sale);
+  });
+
+  it.each(['1a', '1,2,3', '1,55', '1 5', '123', '1-'])('C18: «%s» no se escribe', (escrito) => {
+    const alCambiar = vi.fn();
+    render(<Controlado inicial="2" alCambiar={alCambiar} />);
+
+    fireEvent.change(campo(), { target: { value: escrito } });
+
+    expect(alCambiar).not.toHaveBeenCalled();
+    expect(campo()).toHaveValue('2');
+  });
+
+  it('C18b: solo la coma no suelta el «+»', () => {
+    const alCambiar = vi.fn();
+    render(<Controlado alCambiar={alCambiar} />);
     fireEvent.click(mas());
-    expect(campo()).toHaveAttribute('max', '10');
+
+    fireEvent.change(campo(), { target: { value: ',' } });
+
+    expect(campo()).toHaveValue(',');
+    expect(mas()).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.change(campo(), { target: { value: ',5' } });
+    expect(alCambiar).toHaveBeenLastCalledWith('-0.5');
   });
 
   it('C11: desactivado, también el «+»', () => {
@@ -223,7 +281,7 @@ describe('CampoDeHandicap', () => {
   it.each([[null], [undefined]])('C14: sin hándicap (%p), el campo vacío y sin «+»', (valor) => {
     const { onChange } = pintar(valor);
 
-    expect(campo()).toHaveValue(null);
+    expect(campo()).toHaveValue('');
     expect(mas()).toHaveAttribute('aria-pressed', 'false');
     // Y el «+» se queda esperando al número, sin inventarse uno
     fireEvent.click(mas());

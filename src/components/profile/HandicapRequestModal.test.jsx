@@ -151,4 +151,19 @@ describe('HandicapRequestModal · el «+» del hándicap a mano', () => {
       expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({ userId: 'u-1', handicap: -1.5 })
     );
   });
+
+  // 26 oct: el campo es de texto; «1,» con la coma colgando guarda 1
+  it('P7: «1,» guarda 1', async () => {
+    const { updateManualHandicapUseCase } = await import('../../composition');
+    updateManualHandicapUseCase.execute.mockResolvedValue({});
+    render(<HandicapRequestModal isOpen user={{ id: 'u-1', country_code: 'ES' }} onClose={() => {}} onSaved={() => {}} />);
+    fireEvent.click(screen.getByText('handicapModal.manualTab'));
+
+    fireEvent.change(screen.getByLabelText('edit.handicap.manual'), { target: { value: '1,' } });
+    fireEvent.submit(screen.getByLabelText('edit.handicap.manual').closest('form'));
+
+    await waitFor(() =>
+      expect(updateManualHandicapUseCase.execute).toHaveBeenCalledWith({ userId: 'u-1', handicap: 1 })
+    );
+  });
 });

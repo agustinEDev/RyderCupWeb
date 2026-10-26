@@ -1772,8 +1772,6 @@ const CompetitionDetail = () => {
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   {/* El texto admite la coma decimal, que `handleSaveHandicap` ya lee */}
                                   <CampoDeHandicap
-                                    type="text"
-                                    inputMode="decimal"
                                     aria-label={t('detail.editHandicap')}
                                     value={handicapInput}
                                     onChange={setHandicapInput}
