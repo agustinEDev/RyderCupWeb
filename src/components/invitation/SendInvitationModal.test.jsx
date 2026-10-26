@@ -1113,5 +1113,76 @@ describe('SendInvitationModal', () => {
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
-});
 
+  // QA del 26 oct (FE #938): en la búsqueda salían como cualquier otro, y elegir
+  // a quien ya está dentro acababa en el rechazo del servidor. Como en amigos:
+  // salen, marcados y sin poder elegirlos
+  describe('B · resultados de la búsqueda ya inscritos o invitados', () => {
+    const resultados = [
+      { id: 'dentro', firstName: 'Ana', lastName: 'Dentro' },
+      { id: 'invitada', firstName: 'Bea', lastName: 'Invitada' },
+      { id: 'libre', firstName: 'Carla', lastName: 'Libre' },
+    ];
+
+    const buscar = async () => {
+      onSearchUsers.mockResolvedValue(resultados);
+      renderModal({ idsInscritos: ['dentro'], idsInvitados: ['invitada'] });
+      const input = screen.getByTestId('user-search-input');
+      fireEvent.change(input, { target: { value: 'a' + 'a' } });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      return input;
+    };
+
+    it('B1: el inscrito sale marcado y no se puede elegir', async () => {
+      await buscar();
+      const fila = screen.getByTestId('search-result-dentro');
+
+      expect(within(fila).getByText('send.alreadyEnrolled')).toBeInTheDocument();
+      expect(fila).toBeDisabled();
+      fireEvent.click(fila);
+      expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+    });
+
+    it('B2: el invitado sale marcado y no se puede elegir', async () => {
+      await buscar();
+      const fila = screen.getByTestId('search-result-invitada');
+
+      expect(within(fila).getByText('send.alreadyInvited')).toBeInTheDocument();
+      expect(fila).toBeDisabled();
+      expect(within(fila).queryByText('send.alreadyEnrolled')).not.toBeInTheDocument();
+    });
+
+    it('B3: con el teclado, Enter sobre uno marcado no lo elige', async () => {
+      const input = await buscar();
+
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+    });
+
+    it('B3b: tampoco elige con Enter a quien ya está invitado', async () => {
+      const input = await buscar();
+
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(screen.queryByTestId('selected-user-chip')).not.toBeInTheDocument();
+    });
+
+    it('B4: quien está libre se sigue eligiendo, con el ratón y con el teclado', async () => {
+      const input = await buscar();
+      const libre = screen.getByTestId('search-result-libre');
+      expect(libre).toBeEnabled();
+      expect(within(libre).queryByText(/send\.already/)).not.toBeInTheDocument();
+
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(screen.getByTestId('selected-user-chip')).toHaveTextContent('Carla');
+    });
+  });
+});
