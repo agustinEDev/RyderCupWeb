@@ -19,6 +19,8 @@
  * porque un 403 de CSRF cierra la sesión desde `api.js` en mitad del bucle.
  */
 
+import { esElMismoGolpe } from './golpesDelHoyo';
+
 const CLAVE = 'rydercup-golpes-perdidos';
 
 const leeTodo = () => {
@@ -136,7 +138,7 @@ export const olvidaEl = (matchId, holeNumber, userId = null, participantId = und
     leeTodo().flatMap((a) => {
       if (!delHoyo(a)) return [a];
       if (!golpes || !a.golpes) return [];
-      const quedan = a.golpes.filter((g) => !golpes.includes(g));
+      const quedan = a.golpes.filter((g) => !golpes.some((anotado) => esElMismoGolpe(g, anotado)));
       return quedan.length > 0 ? [{ ...a, golpes: quedan }] : [];
     })
   );

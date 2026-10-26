@@ -160,14 +160,6 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
   // has an unresolved discrepancy — leaving no one able to fix it.
   const isFullyLocked = isOwnScoreLocked && isMarkerScoreLocked;
 
-  // Quien marca a dos (fourball con un retirado, 26 oct 2026) nombra cada
-  // marca con su rival en los avisos: con un solo nombre, guardar la de uno
-  // retiraba el aviso de la del otro. Marcando a uno, el nombre de siempre
-  const marcaADos = new Set(
-    (scoringView?.markerAssignments ?? [])
-      .filter((ma) => ma.scorerUserId === currentUserId)
-      .map((ma) => ma.marksUserId)
-  ).size > 1;
 
   // Quien marca a dos (fourball con un retirado) bloquea por marcado: entregó
   // uno, al otro se le sigue marcando. Sin marcado, no hay marca que guardar
@@ -648,7 +640,9 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     if (isOwnScoreLocked && marcaBloqueadaPara(scoreData?.markedPlayerId)) return;
     const estaAnotacion = ++anotacionRef.current;
     const marcado = marcadoDe(scoreData);
-    const nombra = (golpes) => (marcaADos ? conSuRival(golpes, marcado) : golpes);
+    // Cada marca, con su rival: quien marca a dos tiene dos en el mismo hoyo, y
+    // el nombre no cambia si deja de marcar a dos (26 oct 2026, CodeRabbit)
+    const nombra = (golpes) => conSuRival(golpes, marcado);
     const golpesTocados = nombra(tocado ? [tocado] : golpesQueTrae(scoreData));
     // Siempre en el partido de ESTE envío, aunque termine con el jugador ya en
     // otro: la lista va por partido, así que lo apuntado o retirado se queda en
@@ -797,7 +791,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
           // una corrección anterior del otro golpe, sin enviar: el aviso nombra
           // los golpes de las dos, o ese se pierde sin decirlo (FE #813). De una
           // entrada de antes, sin ese dato, los golpes que trae
-          const deLaCola = loGuardado ? (loGuardado.tocados ?? nombra(golpesQueTrae(loGuardado.scoreData))) : [];
+          const deLaCola = loGuardado ? nombra(loGuardado.tocados ?? golpesQueTrae(loGuardado.scoreData)) : [];
           const loMandado = Object.fromEntries(Object.entries(scoreData ?? {}).filter(([, v]) => v !== undefined));
           apartaLaRechazada(
             {
@@ -824,7 +818,7 @@ export const useScoring = (matchId, currentUserId, isAdmin = false, origen = ORI
     }
     // Sin respuesta no se insiste: `online` y volver a la aplicación lo harán
     if (contesto && aplazadoRef.current) processQueue();
-  }, [matchId, canScore, isOwnScoreLocked, marcaBloqueadaPara, marcaADos, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
+  }, [matchId, canScore, isOwnScoreLocked, marcaBloqueadaPara, isOffline, pendientesPropias, currentUserId, loGuardadoDe, borraLoSuperado, processQueue, marcaEscritura, esDeOtraPartida, origen.anota]);
 
   // --- Submit scorecard ---
   const submitScorecard = useCallback(async () => {

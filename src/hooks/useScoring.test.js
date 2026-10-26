@@ -185,8 +185,9 @@ describe('useScoring', () => {
       null,
       'u1',
       { matchName: null, matchNumber: 1 },
-      // Sin decir qué golpe se tocó, los que trae (FE #813)
-      ['ownScore', 'markedScore'],
+      // Sin decir qué golpe se tocó, los que trae (FE #813); la marca, con su
+      // rival (26 oct 2026)
+      ['ownScore', 'markedScore@u2'],
     );
     expect(submitHoleScoreUseCase.execute).not.toHaveBeenCalled();
   });
@@ -217,8 +218,9 @@ describe('useScoring', () => {
       // El número TAMBIÉN: una jornada juega varios partidos en el mismo campo,
       // y solo con el campo el panel enseña dos avisos idénticos
       { matchName: 'La Herrería', matchNumber: 3 },
-      // Sin decir qué golpe se tocó, los que trae (FE #813)
-      ['ownScore', 'markedScore'],
+      // Sin decir qué golpe se tocó, los que trae (FE #813); la marca, con su
+      // rival (26 oct 2026)
+      ['ownScore', 'markedScore@u2'],
     );
   });
 
@@ -3341,14 +3343,29 @@ describe('useScoring · los hoyos que no se pudieron guardar (FE #622)', () => {
     expect(result.current.noGuardados[5].golpes).toEqual(['ownScore', 'markedScore@u2']);
   });
 
-  it('N1d · marcando a uno, la marca se llama como siempre', async () => {
+  // CodeRabbit (FE #974): el nombre no depende de a cuántos se marca. Si no,
+  // al deshacerse la retirada el aviso de un rival ya no se podía retirar
+  it('N1d · el aviso de una marca se retira aunque entre medias deje de marcar a dos', async () => {
+    const aDos = {
+      ...mockScoringView,
+      markerAssignments: [
+        { scorerUserId: 'u1', marksUserId: 'u2' },
+        { scorerUserId: 'u1', marksUserId: 'u4' },
+      ],
+    };
+    getScoringViewUseCase.execute.mockResolvedValue(aDos);
     sinCobertura();
     const { result } = await monta();
     sinSitio();
-
     await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }); });
 
-    expect(result.current.noGuardados[5].golpes).toEqual(['markedScore']);
+    // Se deshace la retirada: vuelve a marcar solo a u2
+    getScoringViewUseCase.execute.mockResolvedValue(mockScoringView);
+    await act(async () => { await result.current.refetch(); });
+    conSitio();
+    await act(async () => { await result.current.submitScore(5, { markedPlayerId: 'u2', markedScore: 6 }, { tocado: 'markedScore' }); });
+
+    expect(result.current.noGuardados[5]).toBeUndefined();
   });
 
   it('N1b · enviando: la petición no llega y el móvil no tiene sitio', async () => {
@@ -3706,7 +3723,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'markedScore');
 
-    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['markedScore']);
+    expect(offlineQueue.enqueue).toHaveBeenCalledWith('m-1', 5, golpe(4, 5), null, 'u1', expect.anything(), ['markedScore@u2']);
   });
 
   it('R3b · también lo que se guarda antes de enviar', async () => {
@@ -3734,7 +3751,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
     await anota(result, golpe(4, 5), 'markedScore');
 
     expect(delHoyo5()).toHaveLength(1);
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R5b · y si la corrección no cupo, lo que había de antes en la cola también', async () => {
@@ -3750,7 +3767,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(4, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R5c · aunque el envío no traiga el golpe que la cola tenía', async () => {
@@ -3766,7 +3783,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(undefined, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R5d · una entrada de antes, sin golpes tocados, cuenta con los que trae', async () => {
@@ -3782,7 +3799,7 @@ describe('useScoring · el aviso de un golpe rechazado es de ESE golpe (FE #813)
 
     await anota(result, golpe(undefined, 5), 'markedScore');
 
-    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore', 'ownScore']);
+    expect([...delHoyo5()[0].golpes].sort()).toEqual(['markedScore@u2', 'ownScore']);
   });
 
   it('R4 · un aviso de antes, sin golpes, se retira con cualquier guardado como siempre', async () => {

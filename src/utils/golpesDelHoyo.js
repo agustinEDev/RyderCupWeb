@@ -17,7 +17,8 @@ export const golpesQueTrae = (scoreData) => GOLPES_DEL_HOYO.filter((g) => scoreD
  * en el mismo hoyo, y los avisos de lo que no se guardó, o de lo que se
  * rechazó, las nombran con su rival: `markedScore@<id>`. Con un solo nombre,
  * guardar la marca de un rival retiraba el aviso de la del otro, que seguía
- * sin estar en ningún sitio. Con un solo marcado, el nombre de siempre.
+ * sin estar en ningún sitio. Siempre con su rival, marque a uno o a dos: si
+ * dependiera de eso, al deshacerse la retirada el aviso no se podía retirar.
  */
 export const conSuRival = (golpes, marcado) =>
   golpes.map((g) => (g === 'markedScore' && marcado ? `markedScore@${marcado}` : g));
@@ -37,3 +38,12 @@ export const rivalDe = (golpe) => golpe.split('@')[1] ?? null;
  * pisaban. Partida rápida no lleva marcado: un hueco, como siempre.
  */
 export const marcadoDe = (scoreData) => scoreData?.markedPlayerId ?? null;
+
+/**
+ * Si un golpe apuntado es el que se acaba de volver a anotar. Una marca de
+ * antes, sin rival (`markedScore`), era la del único marcado de entonces: la
+ * retira cualquier marca de ese hoyo.
+ */
+export const esElMismoGolpe = (apuntado, anotado) =>
+  apuntado === anotado
+  || (rivalDe(apuntado) === null && golpeBase(apuntado) === golpeBase(anotado));

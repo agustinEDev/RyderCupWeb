@@ -22,7 +22,7 @@ import {
   noLlegoAlServidor,
 } from '../utils/politicaDeLaCola';
 import * as cola from '../utils/scoringOfflineQueue';
-import { golpeBase, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
+import { conSuRival, golpesQueTrae, marcadoDe } from '../utils/golpesDelHoyo';
 
 /**
  * Por qué se sale del bucle antes de tiempo. **Todos los valores están aquí**:
@@ -125,9 +125,11 @@ const LATIDO_EN_VUELO_MS = 30_000;
 // que trae. Las de partida rápida llevan `score`, que no es ninguno de los dos:
 // su aviso ya es del participante y queda sin golpes, como antes
 const golpesPerdidosDe = (entrada) => {
-  const trae = golpesQueTrae(entrada.scoreData);
-  // Quien marca a dos nombra la marca con su rival (`markedScore@id`)
-  const golpes = entrada.tocados ? entrada.tocados.filter((g) => trae.includes(golpeBase(g))) : trae;
+  // La marca, con su rival (`markedScore@id`), también en una anotación de
+  // antes: sus tocados, o los golpes que trae, la nombran sin él
+  const marcado = marcadoDe(entrada.scoreData);
+  const trae = conSuRival(golpesQueTrae(entrada.scoreData), marcado);
+  const golpes = entrada.tocados ? conSuRival(entrada.tocados, marcado).filter((g) => trae.includes(g)) : trae;
   return golpes.length > 0 ? { golpes } : {};
 };
 

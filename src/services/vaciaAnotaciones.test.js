@@ -335,7 +335,8 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
 
     await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
 
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+    // La marca, con su rival (26 oct 2026)
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@u2']);
   });
 
   it('A2 · una anotación de antes, sin ese dato: los golpes que trae', async () => {
@@ -353,7 +354,7 @@ describe('vaciaAnotaciones · qué golpe se apunta como perdido (FE #813)', () =
 
     await vaciaAnotaciones({ entradas: [entrada], manda: rechaza() });
 
-    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore']);
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@u2']);
   });
 
   it('A4 · en partida rápida no hay golpes que distinguir: el aviso es del participante', async () => {
@@ -396,6 +397,14 @@ describe('vaciaAnotaciones · un hueco por marcado', () => {
     cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO, {}, ['markedScore@D']);
     return cola.deQuien(YO);
   };
+
+  it('una rechazada de antes, sin golpes tocados, nombra la marca con su rival', async () => {
+    cola.enqueue('m-1', 3, { markedPlayerId: 'D', markedScore: 4 }, null, YO);
+
+    await vaciaAnotaciones({ entradas: cola.deQuien(YO), manda: vi.fn().mockRejectedValue(errorCon(409)) });
+
+    expect(golpesPerdidos.pendientes(YO)[0].golpes).toEqual(['markedScore@D']);
+  });
 
   it('manda y borra los dos', async () => {
     const manda = vi.fn();
