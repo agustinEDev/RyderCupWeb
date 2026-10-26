@@ -426,8 +426,14 @@ function AppContent() {
         </SentryRoutes>
       {showBottomNav && (
         <>
-          {/* Espaciador en el flujo: la nav es fixed y taparía el final de la página */}
-          <div aria-hidden="true" className="md:hidden h-[calc(4rem+env(safe-area-inset-bottom))]" />
+          {/* Espaciador en el flujo: la nav es fixed y taparía el final de la
+              página. 5rem y no los 4 de la barra: el botón «Partida» sobresale
+              por encima y llega a 71 px del borde (QA, FE #865-8) */}
+          <div
+            aria-hidden="true"
+            data-testid="hueco-barra-inferior"
+            className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom))]"
+          />
           <BottomNav />
         </>
       )}
