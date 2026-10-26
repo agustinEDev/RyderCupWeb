@@ -45,8 +45,7 @@ const CampoDeHandicap = ({ value, onChange, disabled, className = '', ...resto }
       // Vaciarlo suelta el «+»: si no, lo siguiente salía plus sin quererlo
       // (pasada del Kind, 26 oct). Escribir solo el signo sí lo enciende, y
       // un decimal a medio escribir («1,») llega vacío sin serlo (revisor)
-      if (!e.target.validity?.badInput) setPlusSinNumero(conMenos);
-      else setPlusSinNumero(esPlus);
+      setPlusSinNumero(e.target.validity?.badInput ? esPlus : conMenos);
       dice('');
       return;
     }
