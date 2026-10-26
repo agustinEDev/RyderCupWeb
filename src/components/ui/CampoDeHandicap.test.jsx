@@ -16,7 +16,8 @@
  *   C6   «+» con el campo vacío, luego se escribe 3        | sale «-3»
  *   C7   se escribe «-1.5» como antes                      | sale «-1.5», el «+» pulsado
  *   C7b  lo mismo con el «+» ya pulsado                    | «-1.5», no «--1.5»
- *   C8   se vacía el campo con plus                        | sale «»
+ *   C8   se vacía el campo con plus                        | sale «» y el «+» se suelta (pasada del Kind)
+ *   C8b  en el de texto, solo el signo («+» o «-»)          | el «+» se enciende, esperando el número
  *   C9   cambia desde fuera de -2 a 5                      | el «+» se suelta
  *   C10  límites del número sin signo                      | de 0 a 54; con plus, hasta 10
  *   C11  desactivado                                       | el campo y el «+»
@@ -142,14 +143,35 @@ describe('CampoDeHandicap', () => {
     expect(alCambiar).toHaveBeenLastCalledWith('-1.5');
   });
 
-  it('C8: vaciado, sale vacío y el «+» se queda como estaba', () => {
+  // Pasada del Kind (26 oct): con el «+» encendido tras vaciar, escribir 5
+  // guardaba +5 sin quererlo. Los plus son pocos: quien lo sea lo vuelve a pulsar
+  it('C8: vaciado, sale vacío y el «+» se suelta; lo siguiente ya no es plus', () => {
     const alCambiar = vi.fn();
     render(<Controlado inicial="-2" alCambiar={alCambiar} />);
 
     fireEvent.change(campo(), { target: { value: '' } });
-
     expect(alCambiar).toHaveBeenLastCalledWith('');
+    expect(mas()).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.change(campo(), { target: { value: '5' } });
+    expect(alCambiar).toHaveBeenLastCalledWith('5');
+  });
+
+  it.each(['+', '-'])('C8b: en el de texto, escribir solo «%s» enciende el «+» a la espera del número', (signo) => {
+    const alCambiar = vi.fn();
+    const Texto = () => {
+      const [valor, setValor] = useState('');
+      return (
+        <CampoDeHandicap id="hcp" type="text" value={valor} onChange={(v) => { setValor(v); alCambiar(v); }} />
+      );
+    };
+    render(<Texto />);
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: signo } });
     expect(mas()).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '1,5' } });
+
+    expect(alCambiar).toHaveBeenLastCalledWith('-1,5');
   });
 
   it('C9: si el valor cambia desde fuera, el «+» lo sigue', () => {
