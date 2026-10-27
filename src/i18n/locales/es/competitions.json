@@ -324,6 +324,18 @@
         "body_other": "{{count}} jugadores no tienen franja ({{jugadores}}): hay que colocarlos antes de cerrar las inscripciones.",
         "confirm": "Ir a colocarlos",
         "keep": "Ahora no"
+      },
+      "remove": {
+        "title": "¿Quitar a {{nombre}}?",
+        "body": "Dejará de estar inscrito en {{competicion}}. Se le avisará en la app y podrás volver a invitarle.",
+        "confirm": "Sí, quitarle",
+        "keep": "No, dejarle"
+      },
+      "removeWithTeams": {
+        "title": "¿Quitar a {{nombre}}?",
+        "body": "Dejará de estar inscrito en {{competicion}} y se desharán los equipos: tendrás que volver a repartirlos. Se le avisará en la app.",
+        "confirm": "Sí, quitarle",
+        "keep": "No, dejarle"
       }
     },
     "errors": {
@@ -340,7 +352,12 @@
       "PLAYERS_WITHOUT_TEE_WINDOW_unnamed": "Faltan jugadores por colocar en una franja: revisa «Sin franja».",
       "PLAYERS_WITHOUT_HANDICAP_one": "A {{jugadores}} le falta el hándicap: ponle uno personalizado y vuelve a cerrar.",
       "PLAYERS_WITHOUT_HANDICAP_other": "A {{count}} jugadores les falta el hándicap ({{jugadores}}): ponles uno personalizado y vuelve a cerrar.",
-      "PLAYERS_WITHOUT_HANDICAP_unnamed": "A algunos jugadores les falta el hándicap: ponles uno personalizado y vuelve a cerrar."
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "A algunos jugadores les falta el hándicap: ponles uno personalizado y vuelve a cerrar.",
+      "removePlayerHasMatches": "Ya hay partidos generados: no se puede quitar a nadie.",
+      "removeDraftInProgress": "La sala de draft está abierta: espera a que termine.",
+      "removeNotAllowed": "La competición ya ha empezado: no se puede quitar a nadie.",
+      "removeOrganizer": "No puedes quitarte a ti mismo.",
+      "removeFailed": "No se pudo quitar al jugador."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
@@ -422,7 +439,8 @@
       "statusReverted": "Competición revertida al estado CERRADA correctamente",
       "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO",
       "captainsNamed": "Capitanes nombrados. Las inscripciones quedan cerradas.",
-      "captainsChanged": "Capitanes cambiados."
+      "captainsChanged": "Capitanes cambiados.",
+      "playerRemoved": "{{nombre}} ya no está inscrito"
     },
     "failedToApprove": "Error al aprobar la inscripción",
     "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
@@ -493,7 +511,8 @@
     },
     "allWindowsClosed": "Todas las franjas están cerradas: cuando revises la clasificación, termina la competición.",
     "onlyFriendsVisible": "De momento solo ves a tus amigos inscritos.",
-    "onlyParticipantsSee": "Los inscritos solo los ven quienes participan."
+    "onlyParticipantsSee": "Los inscritos solo los ven quienes participan.",
+    "removePlayerAria": "Quitar a {{nombre}}"
   },
   "browse": {
     "title": "Explorar Competiciones",

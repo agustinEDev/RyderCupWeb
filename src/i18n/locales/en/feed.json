@@ -114,6 +114,7 @@
     "INVITED_TO_TOURNAMENT": "You were invited to {{competition}}",
     "ENROLLMENT_REQUEST_CLOSED": "Your request to {{competition}} closed without a place",
     "ENROLLMENT_REJECTED": "The organizer did not accept your request to {{competition}}",
+    "ENROLLMENT_REMOVED": "The organizer removed you from {{competition}}",
     "friendEnrolled": "{{name}} signed up for the tournament {{competition}} ({{dates}})",
     "friendEnrolledNoDates": "{{name}} signed up for the tournament {{competition}}",
     "aTournament": "a tournament",

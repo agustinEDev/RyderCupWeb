@@ -25,6 +25,9 @@ import BlockLoader from '../../components/ui/BlockLoader';
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
 // 101, y una pendiente que no se ve es una invitación que se manda otra vez
 const POR_PAGINA = 100;
+
+// Las que se pueden volver a mandar (release social 2): ya no esperan respuesta
+const REINVITABLES = new Set(['DECLINED', 'EXPIRED', 'CANCELLED', 'NO_ROOM']);
 // Una red por si el total promete más de lo que el servidor acaba dando: sin
 // ella, un `total_count` equivocado deja el bucle dando vueltas
 const TOPE_DE_PAGINAS = 20;
@@ -76,6 +79,9 @@ const InvitationsPage = () => {
   // La invitación que se va a retirar, a la espera de confirmarlo (FE #724)
   const [retirando, setRetirando] = useState(null);
   const [retirandoEnCurso, setRetirandoEnCurso] = useState(false);
+  // A quién no se le ofrece volver a invitar (release social 2): ya inscritos y
+  // correos con otra pendiente. Sin saberlo, a nadie: el servidor lo rechazaría
+  const [situacion, setSituacion] = useState({ sabida: false, inscritos: new Set(), pendientes: new Set() });
   // Para la pestaña de amigos del modal (FE #409)
   const [friends, setFriends] = useState([]);
   const [idsInscritos, setIdsInscritos] = useState([]);
@@ -198,6 +204,35 @@ const InvitationsPage = () => {
     }
   }, [user, loadData]);
 
+  // Quién está dentro y a qué correos ya hay una pendiente, para «Volver a
+  // invitar» (release social 2). Se relee con la lista: tras invitar o retirar.
+  // Solo si hay alguna que volver a mandar: si no, son dos consultas de más
+  const hayReinvitables = invitations.some((inv) => REINVITABLES.has(inv.status));
+  useEffect(() => {
+    if (!user?.id || !hayReinvitables) return undefined;
+    let vigente = true;
+    const inscritos = listEnrollmentsUseCase.execute(id, { status: 'APPROVED' }).then((res) => {
+      const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
+      return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
+    });
+    const pendientes = todasLasPaginas(
+      (page) => listCompetitionInvitationsUseCase.execute(id, { status: 'PENDING', limit: POR_PAGINA, page }),
+      (res) => res.invitations ?? []
+    ).then((lista) => lista.map((inv) => inv.inviteeEmail?.toLowerCase()).filter(Boolean));
+    Promise.allSettled([inscritos, pendientes]).then(([losInscritos, lasPendientes]) => {
+      if (!vigente) return;
+      const sabida = losInscritos.status === 'fulfilled' && lasPendientes.status === 'fulfilled';
+      setSituacion({
+        sabida,
+        inscritos: new Set(sabida ? losInscritos.value : []),
+        pendientes: new Set(sabida ? lasPendientes.value : []),
+      });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [user?.id, id, invitations, hayReinvitables]);
+
   // Lo que se dice si no se pudo invitar, por id o por correo
   const avisarDelEnvioFallido = (error) => {
     // Sin plazas (FE #724): se dice así y se recarga, que la pantalla ya no
@@ -277,6 +312,13 @@ const InvitationsPage = () => {
     }
   };
 
+  // Volver a invitar (release social 2): una nueva, al usuario si lo era, o al
+  // correo. Los avisos de fallo, los de siempre al invitar
+  const handleReinvitar = (invitation) =>
+    invitation.inviteeUserId
+      ? handleSendByUserId(invitation.inviteeUserId, null)
+      : handleSendInvitation(invitation.inviteeEmail, null);
+
   const handleSearchUsers = async (query) => {
     if (!query || query.trim().length < 2) return [];
     // El fallo se propaga al modal, como en FriendsPage: devolviendo [] se
@@ -294,6 +336,15 @@ const InvitationsPage = () => {
   // ofrecerlo era enterarse al enviar
   const inscritos = competition?.enrolledCount ?? 0;
   const lleno = Boolean(competition?.maxPlayers) && inscritos >= competition.maxPlayers;
+  // A quién se le ofrece volver a invitar (R1-R3): cerrada, con sitio, y ni
+  // dentro ni con otra pendiente
+  const puedeReinvitar = (invitation) =>
+    REINVITABLES.has(invitation.status) &&
+    situacion.sabida &&
+    sePuedeInvitar &&
+    !lleno &&
+    !situacion.inscritos.has(invitation.inviteeUserId) &&
+    !situacion.pendientes.has(invitation.inviteeEmail?.toLowerCase());
 
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería
@@ -435,7 +486,8 @@ const InvitationsPage = () => {
                 invitation={invitation}
                 mode="creator"
                 onWithdraw={setRetirando}
-                isProcessing={retirandoEnCurso}
+                onReinvite={puedeReinvitar(invitation) ? handleReinvitar : undefined}
+                isProcessing={retirandoEnCurso || isProcessing}
                 t={t}
               />
             ))}

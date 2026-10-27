@@ -389,3 +389,37 @@ describe('InvitationCard · la fecha dice qué pasó (FE #724)', () => {
     expect(correo.previousElementSibling).toHaveClass('flex-shrink-0');
   });
 });
+
+describe('InvitationCard — volver a invitar (release social 2)', () => {
+  const rechazada = { ...pendingInvitation, status: 'DECLINED', isPending: false };
+
+  it('con onReinvite, el organizador ve el botón y lo usa con esa invitación', () => {
+    const onReinvite = vi.fn();
+    render(<InvitationCard invitation={rechazada} mode="creator" onReinvite={onReinvite} t={mockT} />);
+
+    fireEvent.click(screen.getByTestId('reinvite-button'));
+
+    expect(onReinvite).toHaveBeenCalledWith(rechazada);
+    expect(screen.getByTestId('reinvite-button')).toHaveTextContent('actions.reinvite');
+  });
+
+  it('sin onReinvite (la página no la ofrece), no sale', () => {
+    render(<InvitationCard invitation={rechazada} mode="creator" t={mockT} />);
+
+    expect(screen.queryByTestId('reinvite-button')).not.toBeInTheDocument();
+  });
+
+  it('el invitado nunca lo ve', () => {
+    render(<InvitationCard invitation={rechazada} mode="player" onReinvite={vi.fn()} t={mockT} />);
+
+    expect(screen.queryByTestId('reinvite-button')).not.toBeInTheDocument();
+  });
+
+  it('mientras se procesa, desactivado', () => {
+    render(
+      <InvitationCard invitation={rechazada} mode="creator" onReinvite={vi.fn()} isProcessing t={mockT} />
+    );
+
+    expect(screen.getByTestId('reinvite-button')).toBeDisabled();
+  });
+});

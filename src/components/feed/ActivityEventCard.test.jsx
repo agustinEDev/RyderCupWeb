@@ -320,6 +320,8 @@ describe('ActivityEventCard — texts (case 10)', () => {
     ['INVITED_TO_TOURNAMENT', 'Te han invitado a Ryder Otoño'],
     ['ENROLLMENT_REQUEST_CLOSED', 'Tu solicitud a Ryder Otoño se cerró sin plaza'],
     ['ENROLLMENT_REJECTED', 'El organizador no aceptó tu solicitud a Ryder Otoño'],
+    // N1, release social 2
+    ['ENROLLMENT_REMOVED', 'El organizador te ha quitado de Ryder Otoño'],
   ])('enrolment notice %s: «%s»', (type, texto) => {
     pinta(
       tarjeta(
@@ -602,6 +604,7 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
     'INVITED_TO_TOURNAMENT',
     'ENROLLMENT_REQUEST_CLOSED',
     'ENROLLMENT_REJECTED',
+    'ENROLLMENT_REMOVED',
     'ENROLLED_IN_TOURNAMENT',
     'TOURNAMENT_FINAL_STANDING',
   ])('%s → the competition', (type) => {

@@ -144,6 +144,8 @@ describe('armaLaLineaDeActividad', () => {
     'INVITED_TO_TOURNAMENT',
     'ENROLLMENT_REQUEST_CLOSED',
     'ENROLLMENT_REJECTED',
+    // «El organizador te ha quitado» (release social 2)
+    'ENROLLMENT_REMOVED',
     'ENROLLED_IN_TOURNAMENT',
     'TOURNAMENT_MATCH_RESULT',
     'TOURNAMENT_FINAL_STANDING',

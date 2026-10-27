@@ -39,7 +39,8 @@
     "decline": "Decline",
     "accepting": "Accepting...",
     "declining": "Declining...",
-    "withdraw": "Withdraw"
+    "withdraw": "Withdraw",
+    "reinvite": "Invite again"
   },
   "filter": {
     "allStatuses": "All Statuses",
