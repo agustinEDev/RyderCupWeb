@@ -1,15 +1,34 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
 
+// Una sola regla para «Caducada» y para dejar de ofrecer la ficha (/code-review)
+const haCaducado = (expiresAt) => Boolean(expiresAt) && new Date(expiresAt) - new Date() <= 0;
+
+// Lo más que espera setTimeout: con más, salta enseguida
+const ESPERA_MAXIMA_MS = 2 ** 31 - 1;
+
+// Con la página abierta, la tarjeta se vuelve a pintar cuando caduca: el enlace
+// a la ficha no puede quedarse (CodeRabbit)
+const useHaCaducado = (expiresAt) => {
+  const [, setRepintar] = useState(0);
+  useEffect(() => {
+    if (!expiresAt) return undefined;
+    const falta = new Date(expiresAt) - new Date();
+    if (falta <= 0 || falta > ESPERA_MAXIMA_MS) return undefined;
+    const reloj = setTimeout(() => setRepintar((n) => n + 1), falta);
+    return () => clearTimeout(reloj);
+  }, [expiresAt]);
+  return haCaducado(expiresAt);
+};
+
 const getExpirationText = (expiresAt, t) => {
   if (!expiresAt) return null;
 
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diffMs = expiry - now;
+  const diffMs = new Date(expiresAt) - new Date();
 
-  if (diffMs <= 0) return t('card.expired');
+  if (haCaducado(expiresAt)) return t('card.expired');
 
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
@@ -27,14 +46,18 @@ const CLAVE_DE_LA_FECHA = {
 
 const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isProcessing, t }) => {
   const showActions = mode === 'player' && invitation.isPending;
+  const caducada = useHaCaducado(invitation.expiresAt);
   // Quien invita puede retirar una pendiente (FE #724). El jugador no: él la
   // rechaza, y las ya respondidas no estorban en su lista
   const sePuedeRetirar = mode === 'creator' && invitation.isPending && Boolean(onWithdraw);
   const expirationText = invitation.isPending ? getExpirationText(invitation.expiresAt, t) : null;
-  // Aceptada, la tarjeta lleva a su competicion (FE #682). Pendiente no: si un
-  // invitado puede abrir una privada antes de aceptar lo decide RyderCupAM#329.
-  // Y el organizador ya mira esta lista desde dentro de la competicion
+  // Aceptada, la tarjeta lleva a su competicion (FE #682). Y el organizador ya
+  // mira esta lista desde dentro de la competicion
   const enlazaACompeticion = mode === 'player' && invitation.isAccepted && invitation.competitionId;
+  // Pendiente, el invitado ya puede mirarla antes de contestar (release social
+  // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
+  // Caducada ya no deja verla: el servidor tampoco la cuenta (revisor)
+  const puedeMirarla = showActions && invitation.competitionId && !caducada;
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco
@@ -91,6 +114,19 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
               <Clock className="h-3.5 w-3.5" />
               <span>{expirationText}</span>
             </div>
+          )}
+
+          {puedeMirarla && (
+            <Link
+              to={`/competitions/${invitation.competitionId}`}
+              state={{ from: 'invitations' }}
+              // Con varias pendientes, el lector de pantalla las distingue (revisor)
+              aria-label={`${t('card.viewCompetition')}: ${nombre}`}
+              className="mt-1 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              {t('card.viewCompetition')}
+              <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </Link>
           )}
 
           {invitation.respondedAt && !invitation.isPending && (

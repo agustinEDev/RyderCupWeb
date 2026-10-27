@@ -990,13 +990,30 @@ const CompetitionDetail = () => {
   const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
   const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  // Check if competition has reached max players
+  // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
+  // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
+  // Un solo total para todo (cabecera, completa, agenda): nunca menos de las
+  // filas que ve, por si el número aún no está al día (/code-review)
+  const approvedCount = canManage && enrollments.length > 0
+    ? approvedEnrollments.length
+    : Math.max(competition.enrolledCount || 0, approvedEnrollments.length);
+  // Qué ve de los inscritos lo dice el servidor, no se adivina comparando
+  // la lista con el número (/code-review): sus amigos, o nadie (una privada
+  // en la que no está)
+  const soloVeASusAmigos = !canManage && competition.enrolledVisibility === 'FRIENDS';
+  const noVeANadie = !canManage && competition.enrolledVisibility === 'NONE';
+  const listaAMedias = soloVeASusAmigos || noVeANadie;
+  // Con la lista a medias no se sabe qué categorías salieron: se cuentan solo
+  // con la entera, y si no, se dice lo pedido (revisor de la release social 2)
+  const categoriasVistas = listaAMedias ? [] : approvedEnrollments.map((e) => e.category ?? null);
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
-  const hayVariasCategorias = salenDeLosInscritos(approvedEnrollments.map((e) => e.category ?? null)) > 1;
+  const hayVariasCategorias = salenDeLosInscritos(categoriasVistas) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
   // Lo que se pidió frente a lo que salió al cerrar (QA del 11 oct 2026): «3
   // categorías iguales, repartidas: 14,0» eran 2, y con una sola el jugador
   // seguía viendo los límites pedidos
-  const categoriasAsignadas = approvedEnrollments.map((e) => e.category ?? null);
+  const categoriasAsignadas = categoriasVistas;
   const salieron = salenDeLosInscritos(categoriasAsignadas);
   const menosDeLasPedidas = esStrokePlay && competition.strokePlay ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas) : null;
   const textoDeCategorias = (ajustes) => {
@@ -1035,11 +1052,6 @@ const CompetitionDetail = () => {
       )
     : null;
 
-  // Check if competition has reached max players
-  // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
-  const approvedCount = enrollments.length > 0
-    ? approvedEnrollments.length
-    : (competition.enrolledCount || 0);
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
@@ -1622,6 +1634,7 @@ const CompetitionDetail = () => {
                   el servidor lo rechaza */}
               {esStrokePlay ? (
                 <FranjasDeLaCompeticion
+                  soloAmigos={listaAMedias}
                   competitionId={competition.id}
                   startDate={competition.startDate}
                   endDate={competition.endDate}
@@ -1666,7 +1679,7 @@ const CompetitionDetail = () => {
                 endDate={competition.endDate}
                 // Terminada o cancelada ya no se toca: el servidor lo rechaza
                 canManage={canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)}
-                jugadores={approvedEnrollments.length}
+                jugadores={canManage ? approvedEnrollments.length : approvedCount}
                 // Cuando cambia la competición —estado, equipos— se vuelve a leer
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
@@ -1702,16 +1715,26 @@ const CompetitionDetail = () => {
                 titulo={
                   <>
                     <Users className="w-5 h-5 flex-none text-green-600" />
-                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
+                    <TituloConNumero
+                      texto={t('detail.approvedPlayers')}
+                      numero={canManage ? approvedEnrollments.length : approvedCount}
+                    />
                   </>
                 }
               >
 
+                {listaAMedias && (
+                  <p className="mb-3 text-sm text-gray-600">
+                    {t(noVeANadie ? 'detail.onlyParticipantsSee' : 'detail.onlyFriendsVisible')}
+                  </p>
+                )}
                 {approvedEnrollments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>{t('detail.noApprovedPlayers')}</p>
-                  </div>
+                  !listaAMedias && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>{t('detail.noApprovedPlayers')}</p>
+                    </div>
+                  )
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[...approvedEnrollments]

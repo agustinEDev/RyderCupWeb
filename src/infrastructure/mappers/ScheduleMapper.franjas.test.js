@@ -22,6 +22,8 @@ const franja = (extra = {}) => ({
     places_taken: 12,
     player_ids: ['u-1'],
     waiting_ids: ['u-2', 'u-3'],
+    waiting_count: 5,
+    my_waiting_position: 4,
   },
   ...extra,
 });
@@ -38,7 +40,21 @@ describe('ScheduleMapper · las franjas (FE #824)', () => {
       placesTaken: 12,
       playerIds: ['u-1'],
       waitingIds: ['u-2', 'u-3'],
+      // Release social 2: los ids, los que deja ver; la cuenta y el puesto, de verdad
+      waitingCount: 5,
+      myWaitingPosition: 4,
     });
+  });
+
+  it('D1c: de un servidor de antes, la cuenta sale de los ids y sin puesto', () => {
+    const vieja = franja();
+    delete vieja.tee_sheet.waiting_count;
+    delete vieja.tee_sheet.my_waiting_position;
+
+    const hoja = ScheduleMapper.toRoundDTO(vieja).teeSheet;
+
+    expect(hoja.waitingCount).toBe(2);
+    expect(hoja.myWaitingPosition).toBeNull();
   });
 
   it('D1b: una sesión de la Ryder no tiene hoja', () => {

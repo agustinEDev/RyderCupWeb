@@ -297,7 +297,9 @@
     "removePlayerConfirm": "Remove {{jugador}}? Their place goes to the first on the waiting list.",
     "removePlayerYes": "Yes, remove",
     "waitingPosition_female_one": "You are #{{count}} on the waiting list",
-    "waitingPosition_female_other": "You are #{{count}} on the waiting list"
+    "waitingPosition_female_other": "You are #{{count}} on the waiting list",
+    "showFriends_one": "Your friend here ({{count}})",
+    "showFriends_other": "Your friends here ({{count}})"
   },
   "partidas": {
     "show": "Groups",

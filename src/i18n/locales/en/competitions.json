@@ -491,7 +491,9 @@
       "MENOS_DE_SEIS_one": "{{pedidas}} categories were set and {{count}} comes out: some had fewer than 6 players and were merged with the next one.",
       "MENOS_DE_SEIS_other": "{{pedidas}} categories were set and {{count}} come out: some had fewer than 6 players and were merged with the next one."
     },
-    "allWindowsClosed": "All tee windows are closed: once you have checked the standings, finish the competition."
+    "allWindowsClosed": "All tee windows are closed: once you have checked the standings, finish the competition.",
+    "onlyFriendsVisible": "For now you only see your friends who have entered.",
+    "onlyParticipantsSee": "Only participants can see who has entered."
   },
   "browse": {
     "title": "Browse Competitions",

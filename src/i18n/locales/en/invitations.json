@@ -55,7 +55,8 @@
     "respondedAt": "Responded",
     "message": "Message",
     "withdrawnAt": "Withdrawn on {{date}}",
-    "noRoomSince": "No place since {{date}}"
+    "noRoomSince": "No place since {{date}}",
+    "viewCompetition": "View the competition"
   },
   "success": {
     "sent": "Invitation sent successfully",

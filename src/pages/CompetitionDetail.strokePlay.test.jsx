@@ -274,6 +274,23 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
     expect(await franja.findByRole('button', { name: 'partidas.generate' })).toBeInTheDocument();
   });
 
+  // Revisor de la release social 2: «tus amigos» solo si de verdad ve menos de
+  // los que hay; ya publicada, o en una privada en la que está, los ve a todos
+  it.each([
+    ['ALL', /franjas\.showPlayers/],
+    ['FRIENDS', /franjas\.showFriends/],
+  ])('viendo %s, las franjas dicen %s', async (visibilidad, boton) => {
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    const { getScheduleUseCase } = await import('../composition');
+    const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 2, playerIds: ['ana', 'bea'], waitingIds: [] };
+    getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'ACTIVE', creatorId: 'otra', enrolledCount: 9, enrolledVisibility: visibilidad }));
+    renderPage();
+
+    const franja = within(await screen.findByTestId('franja-r1'));
+    expect(await franja.findByRole('button', { name: boton })).toBeInTheDocument();
+  });
+
   it('acabada, el organizador que no juega sigue viéndolas (CodeRabbit)', async () => {
     const { getScheduleUseCase, getTeeGroupsUseCase } = await import('../composition');
     const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 0, playerIds: [], waitingIds: [] };
@@ -1330,6 +1347,25 @@ describe('CompetitionDetail · los ajustes de un Stableford o un Medal (FE #824,
     const texto = await screen.findByTestId('ajuste-categorias');
     await waitFor(() => expect(texto).toHaveTextContent('detail.settings.categoriesCameOut_3'));
     expect(texto).not.toHaveTextContent('WithLimits');
+  });
+
+  // Revisor de la release social 2: el jugador que solo ve a sus amigos no
+  // sabe cuántas categorías salieron; se le dice lo pedido, no una cuenta a medias
+  it('22b: viendo solo a sus amigos, lo pedido y no lo que «salió» de su lista', async () => {
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockListEnrollments.mockResolvedValue(INSCRITOS.slice(0, 2).map((e) => ({ ...e, fixedHandicap: 10, category: 1 })));
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...medal({ categoryLimits: [10.2, 20.5], categoryCount: 3, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
+      creatorId: 'otra',
+      enrolledCount: 9,
+      enrolledVisibility: 'FRIENDS',
+      status: 'CLOSED',
+    });
+    renderPage();
+
+    const texto = await screen.findByTestId('ajuste-categorias');
+    await waitFor(() => expect(texto).toHaveTextContent('detail.settings.equalCategoriesSplit_3'));
+    expect(texto).not.toHaveTextContent('CameOut');
   });
 
   it('21: con varias categorías, «Tu partida» dice la mía', async () => {

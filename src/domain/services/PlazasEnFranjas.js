@@ -37,10 +37,11 @@ export const situacionEnLasFranjas = (franjas, userId, maxJornadas) => {
 
   const accionEn = (f) => {
     if (!f.teeSheet) return null;
-    const { playerIds, waitingIds, placesTaken, capacity } = f.teeSheet;
+    const { playerIds, waitingIds, placesTaken, capacity, myWaitingPosition } = f.teeSheet;
     if (playerIds.includes(userId)) return { tipo: SOLTAR };
     const enEspera = waitingIds.indexOf(userId);
-    if (enEspera >= 0) return { tipo: DEJAR_DE_ESPERAR, posicion: enEspera + 1 };
+    // La espera llega filtrada (sus amigos y él): el puesto de verdad lo da el servidor
+    if (enEspera >= 0) return { tipo: DEJAR_DE_ESPERAR, posicion: myWaitingPosition ?? enEspera + 1 };
 
     const delMismoDia = mias.filter((m) => m.roundDate === f.roundDate).map((m) => m.id);
     const hayHueco = placesTaken < capacity;
