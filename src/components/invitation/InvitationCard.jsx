@@ -2,14 +2,15 @@ import { Link } from 'react-router';
 import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
 
+// Una sola regla para «Caducada» y para dejar de ofrecer la ficha (/code-review)
+const haCaducado = (expiresAt) => Boolean(expiresAt) && new Date(expiresAt) - new Date() <= 0;
+
 const getExpirationText = (expiresAt, t) => {
   if (!expiresAt) return null;
 
-  const now = new Date();
-  const expiry = new Date(expiresAt);
-  const diffMs = expiry - now;
+  const diffMs = new Date(expiresAt) - new Date();
 
-  if (diffMs <= 0) return t('card.expired');
+  if (haCaducado(expiresAt)) return t('card.expired');
 
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
@@ -37,8 +38,7 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
   // Pendiente, el invitado ya puede mirarla antes de contestar (release social
   // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
   // Caducada ya no deja verla: el servidor tampoco la cuenta (revisor)
-  const caducada = invitation.expiresAt && new Date(invitation.expiresAt) <= new Date();
-  const puedeMirarla = showActions && invitation.competitionId && !caducada;
+  const puedeMirarla = showActions && invitation.competitionId && !haCaducado(invitation.expiresAt);
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco

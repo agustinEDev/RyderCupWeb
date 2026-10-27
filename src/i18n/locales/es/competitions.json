@@ -492,7 +492,8 @@
       "MENOS_DE_SEIS_other": "Se pidieron {{pedidas}} categorías y salen {{count}}: alguna se quedaba con menos de 6 jugadores y se juntó con la de al lado."
     },
     "allWindowsClosed": "Todas las franjas están cerradas: cuando revises la clasificación, termina la competición.",
-    "onlyFriendsVisible": "De momento solo ves a tus amigos inscritos."
+    "onlyFriendsVisible": "De momento solo ves a tus amigos inscritos.",
+    "onlyParticipantsSee": "Los inscritos solo los ven quienes participan."
   },
   "browse": {
     "title": "Explorar Competiciones",

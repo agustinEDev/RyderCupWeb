@@ -136,6 +136,9 @@ class CompetitionAssembler {
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
       teamsAssigned: apiData?.teams_assigned === true,
+      // Qué ve quien mira de los inscritos: ALL, FRIENDS o NONE (release social 2).
+      // Solo lo manda la ficha
+      enrolledVisibility: apiData?.enrolled_visibility ?? null,
       // Capitanes y subcapitanes, uno por equipo (FE #692, RyderCupAM#320)
       captains: {
         teamA: apiData?.team_a_captain_id ?? null,

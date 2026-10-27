@@ -277,14 +277,14 @@ describe('CompetitionDetail · las franjas en la ficha (FE #824)', () => {
   // Revisor de la release social 2: «tus amigos» solo si de verdad ve menos de
   // los que hay; ya publicada, o en una privada en la que está, los ve a todos
   it.each([
-    [4, /franjas\.showPlayers/],
-    [9, /franjas\.showFriends/],
-  ])('con %i inscritos y viendo a 4, las franjas dicen %s', async (inscritos, boton) => {
+    ['ALL', /franjas\.showPlayers/],
+    ['FRIENDS', /franjas\.showFriends/],
+  ])('viendo %s, las franjas dicen %s', async (visibilidad, boton) => {
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     const { getScheduleUseCase } = await import('../composition');
     const hoja = { firstTeeTime: '08:00', lastTeeTime: '08:30', intervalMinutes: 10, groupSize: 4, teeTimes: ['08:00', '08:10', '08:20', '08:30'], capacity: 16, placesTaken: 2, playerIds: ['ana', 'bea'], waitingIds: [] };
     getScheduleUseCase.execute.mockResolvedValue({ rounds: [{ ...agendaPorDefecto().rounds[0], teeSheet: hoja }] });
-    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'ACTIVE', creatorId: 'otra', enrolledCount: inscritos }));
+    mockGetCompetitionDetail.mockResolvedValue(stableford({ status: 'ACTIVE', creatorId: 'otra', enrolledCount: 9, enrolledVisibility: visibilidad }));
     renderPage();
 
     const franja = within(await screen.findByTestId('franja-r1'));
@@ -1358,6 +1358,7 @@ describe('CompetitionDetail · los ajustes de un Stableford o un Medal (FE #824,
       ...medal({ categoryLimits: [10.2, 20.5], categoryCount: 3, maxMatchdaysPerPlayer: 1, overallStanding: 'ACCUMULATED' }),
       creatorId: 'otra',
       enrolledCount: 9,
+      enrolledVisibility: 'FRIENDS',
       status: 'CLOSED',
     });
     renderPage();

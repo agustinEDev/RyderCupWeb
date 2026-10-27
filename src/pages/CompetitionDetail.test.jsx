@@ -1341,6 +1341,7 @@ describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
       creatorId: 'otra-persona',
       maxPlayers: 4,
       enrolledCount: 3,
+      enrolledVisibility: 'FRIENDS',
       countries: [],
     });
     mockListEnrollments.mockResolvedValue([amiga]);
@@ -1375,10 +1376,10 @@ describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
     expect(screen.queryByText('detail.noApprovedPlayers')).not.toBeInTheDocument();
   });
 
-  it('V4: si los ve a todos, sin aviso', async () => {
+  it('V4: si los ve a todos, sin aviso, aunque el número aún no esté al día', async () => {
     mockGetCompetitionDetail.mockResolvedValue({
       id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
-      maxPlayers: 4, enrolledCount: 1, countries: [],
+      maxPlayers: 4, enrolledCount: 3, enrolledVisibility: 'ALL', countries: [],
     });
     renderPage();
 
@@ -1427,6 +1428,19 @@ describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
     expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
   });
 
+  it('V9: en una privada en la que no está, que solo los ven quienes participan', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
+      maxPlayers: 4, enrolledCount: 3, enrolledVisibility: 'NONE', countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText('detail.onlyParticipantsSee')).toBeInTheDocument();
+    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+    expect(screen.queryByText('detail.noApprovedPlayers')).not.toBeInTheDocument();
+  });
+
   it('V8: el número nunca baja de las filas que ve', async () => {
     mockGetCompetitionDetail.mockResolvedValue({
       id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
@@ -1445,4 +1459,6 @@ it('V7: el aviso, en los dos idiomas', async () => {
 
   expect(es.detail.onlyFriendsVisible).toBe('De momento solo ves a tus amigos inscritos.');
   expect(en.detail.onlyFriendsVisible).toBe('For now you only see your friends who have entered.');
+  expect(es.detail.onlyParticipantsSee).toBe('Los inscritos solo los ven quienes participan.');
+  expect(en.detail.onlyParticipantsSee).toBe('Only participants can see who has entered.');
 });

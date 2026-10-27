@@ -993,14 +993,20 @@ const CompetitionDetail = () => {
   // Check if competition has reached max players
   // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
   // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
+  // Un solo total para todo (cabecera, completa, agenda): nunca menos de las
+  // filas que ve, por si el número aún no está al día (/code-review)
   const approvedCount = canManage && enrollments.length > 0
     ? approvedEnrollments.length
-    : (competition.enrolledCount || 0);
-  // Ve menos de los que hay: sus amigos, hasta que se publiquen las partidas
-  const soloVeASusAmigos = !canManage && approvedEnrollments.length < approvedCount;
+    : Math.max(competition.enrolledCount || 0, approvedEnrollments.length);
+  // Qué ve de los inscritos lo dice el servidor, no se adivina comparando
+  // la lista con el número (/code-review): sus amigos, o nadie (una privada
+  // en la que no está)
+  const soloVeASusAmigos = !canManage && competition.enrolledVisibility === 'FRIENDS';
+  const noVeANadie = !canManage && competition.enrolledVisibility === 'NONE';
+  const listaAMedias = soloVeASusAmigos || noVeANadie;
   // Con la lista a medias no se sabe qué categorías salieron: se cuentan solo
   // con la entera, y si no, se dice lo pedido (revisor de la release social 2)
-  const categoriasVistas = soloVeASusAmigos ? [] : approvedEnrollments.map((e) => e.category ?? null);
+  const categoriasVistas = listaAMedias ? [] : approvedEnrollments.map((e) => e.category ?? null);
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
   const hayVariasCategorias = salenDeLosInscritos(categoriasVistas) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
@@ -1628,7 +1634,7 @@ const CompetitionDetail = () => {
                   el servidor lo rechaza */}
               {esStrokePlay ? (
                 <FranjasDeLaCompeticion
-                  soloAmigos={soloVeASusAmigos}
+                  soloAmigos={listaAMedias}
                   competitionId={competition.id}
                   startDate={competition.startDate}
                   endDate={competition.endDate}
@@ -1711,21 +1717,19 @@ const CompetitionDetail = () => {
                     <Users className="w-5 h-5 flex-none text-green-600" />
                     <TituloConNumero
                       texto={t('detail.approvedPlayers')}
-                      numero={
-                        canManage
-                          ? approvedEnrollments.length
-                          : Math.max(approvedCount, approvedEnrollments.length)
-                      }
+                      numero={canManage ? approvedEnrollments.length : approvedCount}
                     />
                   </>
                 }
               >
 
-                {soloVeASusAmigos && (
-                  <p className="mb-3 text-sm text-gray-600">{t('detail.onlyFriendsVisible')}</p>
+                {listaAMedias && (
+                  <p className="mb-3 text-sm text-gray-600">
+                    {t(noVeANadie ? 'detail.onlyParticipantsSee' : 'detail.onlyFriendsVisible')}
+                  </p>
                 )}
                 {approvedEnrollments.length === 0 ? (
-                  !soloVeASusAmigos && (
+                  !listaAMedias && (
                     <div className="text-center py-8 text-gray-500">
                       <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                       <p>{t('detail.noApprovedPlayers')}</p>
