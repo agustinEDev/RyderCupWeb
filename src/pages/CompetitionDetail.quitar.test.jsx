@@ -226,6 +226,44 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
     await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(leidas));
   });
 
+  it('se relee en silencio: la lista sigue montada, sin la espera de pantalla completa (revisor)', async () => {
+    await pintaComo();
+    // La del organizador, que se queda: si la ficha se desmontara (la espera de
+    // pantalla completa), volvería otra
+    const suya = screen.getByTestId('aprobado-org-1');
+    const leidas = mockGetCompetitionDetail.mock.calls.length;
+    // La ficha releída tarda: si se esperara a pantalla completa, se vería ahora
+    mockGetCompetitionDetail.mockReturnValue(new Promise(() => {}));
+
+    fireEvent.click(screen.getByTestId('quitar-u-pedro'));
+    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+
+    await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(leidas));
+    expect(screen.getByTestId('aprobado-org-1')).toBe(suya);
+  });
+
+  it('quitado, su fila desaparece con la lista releída', async () => {
+    await pintaComo();
+    mockListEnrollments.mockResolvedValue([INSCRITOS[0]]);
+
+    fireEvent.click(screen.getByTestId('quitar-u-pedro'));
+    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+
+    await waitFor(() => expect(screen.queryByTestId('aprobado-u-pedro')).not.toBeInTheDocument());
+  });
+
+  it('si ya no estaba inscrito (404), lo dice y relee la lista (revisor)', async () => {
+    mockQuitar.mockRejectedValue(Object.assign(new Error('x'), { status: 404 }));
+    await pintaComo();
+    const listas = mockListEnrollments.mock.calls.length;
+
+    fireEvent.click(screen.getByTestId('quitar-u-pedro'));
+    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('detail.errors.removeGone'));
+    await waitFor(() => expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(listas));
+  });
+
   it('sin confirmar, nada', async () => {
     await pintaComo();
 

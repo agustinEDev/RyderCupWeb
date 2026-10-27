@@ -269,11 +269,33 @@ const CompetitionDetail = () => {
     try {
       await removeEnrolledPlayerUseCase.execute(enrollment.id);
       customToast.success(t('detail.success.playerRemoved', datos));
-      await loadCompetition();
     } catch (error) {
-      customToast.error(t(MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ?? 'detail.errors.removeFailed'));
-    } finally {
-      setQuitandoId(null);
+      customToast.error(
+        t(
+          error?.status === 404
+            ? 'detail.errors.removeGone'
+            : (MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ?? 'detail.errors.removeFailed')
+        )
+      );
+    }
+    // Bien o mal, se relee: la lista (y los equipos, si se deshicieron) ya no
+    // es la de antes. En silencio, sin la espera de pantalla completa: quitar a
+    // varios seguidos hacía parpadear la ficha y la subía arriba (revisor)
+    await releerTrasQuitar();
+    setQuitandoId(null);
+  };
+
+  const releerTrasQuitar = async () => {
+    try {
+      const [ficha, lista] = await Promise.all([
+        getCompetitionDetailUseCase.execute(id),
+        listEnrollmentsUseCase.execute(id),
+      ]);
+      setCompetition(ficha);
+      setEnrollments(lista);
+    } catch (error) {
+      // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
+      console.error('Error reloading after removing a player:', error);
     }
   };
 

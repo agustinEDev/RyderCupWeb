@@ -333,7 +333,7 @@
       },
       "removeWithTeams": {
         "title": "Remove {{nombre}}?",
-        "body": "They will no longer be enrolled in {{competicion}} and the teams will be undone: you will have to split them again. They will be told in the app.",
+        "body": "They will no longer be enrolled in {{competicion}} and the teams will be undone: you will have to split them again. They will be told in the app and you can invite them again.",
         "confirm": "Yes, remove",
         "keep": "No, keep"
       }
@@ -356,8 +356,9 @@
       "removePlayerHasMatches": "Matches have already been generated: nobody can be removed.",
       "removeDraftInProgress": "The draft room is open: wait until it is over.",
       "removeNotAllowed": "The competition has already started: nobody can be removed.",
-      "removeOrganizer": "You cannot remove yourself.",
-      "removeFailed": "The player could not be removed."
+      "removeOrganizer": "The organizer cannot be removed.",
+      "removeFailed": "The player could not be removed.",
+      "removeGone": "They were no longer enrolled."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {

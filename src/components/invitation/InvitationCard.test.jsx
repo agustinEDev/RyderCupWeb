@@ -415,6 +415,12 @@ describe('InvitationCard — volver a invitar (release social 2)', () => {
     expect(screen.queryByTestId('reinvite-button')).not.toBeInTheDocument();
   });
 
+  it('mide 44 px de alto, como pide el dedo (revisor)', () => {
+    render(<InvitationCard invitation={rechazada} mode="creator" onReinvite={vi.fn()} t={mockT} />);
+
+    expect(screen.getByTestId('reinvite-button').className).toMatch(/\bmin-h-11\b/);
+  });
+
   it('mientras se procesa, desactivado', () => {
     render(
       <InvitationCard invitation={rechazada} mode="creator" onReinvite={vi.fn()} isProcessing t={mockT} />

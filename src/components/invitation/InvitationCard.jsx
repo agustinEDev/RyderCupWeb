@@ -183,7 +183,8 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, onR
             data-testid="reinvite-button"
             onClick={() => onReinvite(invitation)}
             disabled={isProcessing}
-            className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label={t('actions.reinviteAria', { name: invitation.inviteeName || invitation.inviteeEmail })}
+            className="flex-shrink-0 min-h-11 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {t('actions.reinvite')}
           </button>

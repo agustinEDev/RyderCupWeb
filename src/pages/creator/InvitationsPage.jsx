@@ -314,10 +314,17 @@ const InvitationsPage = () => {
 
   // Volver a invitar (release social 2): una nueva, al usuario si lo era, o al
   // correo. Los avisos de fallo, los de siempre al invitar
-  const handleReinvitar = (invitation) =>
-    invitation.inviteeUserId
+  const handleReinvitar = async (invitation) => {
+    const enviada = await (invitation.inviteeUserId
       ? handleSendByUserId(invitation.inviteeUserId, null)
-      : handleSendInvitation(invitation.inviteeEmail, null);
+      : handleSendInvitation(invitation.inviteeEmail, null));
+    // Ya hay una pendiente a ese correo: el botón se va al momento, sin esperar
+    // a releer las pendientes (un segundo toque daba «ya enviada»; revisor)
+    if (enviada && invitation.inviteeEmail) {
+      const correo = invitation.inviteeEmail.toLowerCase();
+      setSituacion((antes) => ({ ...antes, pendientes: new Set([...antes.pendientes, correo]) }));
+    }
+  };
 
   const handleSearchUsers = async (query) => {
     if (!query || query.trim().length < 2) return [];

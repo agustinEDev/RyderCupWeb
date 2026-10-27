@@ -40,7 +40,8 @@
     "accepting": "Accepting...",
     "declining": "Declining...",
     "withdraw": "Withdraw",
-    "reinvite": "Invite again"
+    "reinvite": "Invite again",
+    "reinviteAria": "Invite {{name}} again"
   },
   "filter": {
     "allStatuses": "All Statuses",

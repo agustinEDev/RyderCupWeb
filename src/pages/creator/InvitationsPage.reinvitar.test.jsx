@@ -102,7 +102,7 @@ const pinta = () =>
     </MemoryRouter>
   );
 
-const volverAInvitar = () => screen.queryByRole('button', { name: 'actions.reinvite' });
+const volverAInvitar = () => screen.queryByTestId('reinvite-button');
 
 // La lista de la pantalla, y aparte las pendientes (para saber a quién no ofrecer)
 const conLista = (lista, pendientes = []) =>
@@ -135,7 +135,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
       conLista([invitacion(status, { inviteeUserId: 'u-2' })]);
       pinta();
 
-      fireEvent.click(await screen.findByRole('button', { name: 'actions.reinvite' }));
+      fireEvent.click(await screen.findByTestId('reinvite-button'));
 
       await waitFor(() => expect(mockEnviar).toHaveBeenCalledWith('comp-1', 'u-2', null));
       expect(mockEnviarPorCorreo).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     conLista([invitacion('DECLINED', { inviteeUserId: null })]);
     pinta();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'actions.reinvite' }));
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
 
     await waitFor(() => expect(mockEnviarPorCorreo).toHaveBeenCalledWith('comp-1', 'player@test.com', null));
   });
@@ -169,7 +169,36 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     await screen.findByText('Tres');
     await trasSaberLaSituacion();
 
-    expect(screen.getAllByRole('button', { name: 'actions.reinvite' })).toHaveLength(1);
+    expect(screen.getAllByTestId('reinvite-button')).toHaveLength(1);
+  });
+
+  it('mandada, el botón se va al momento: un segundo toque no manda otra (revisor)', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    let soltar;
+    mockEnviar.mockReturnValue(new Promise((r) => { soltar = r; }));
+    pinta();
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+    // La lista releída aún no trae la nueva pendiente
+    mockLista.mockImplementation((_, filtros = {}) =>
+      filtros.status === 'PENDING'
+        ? new Promise(() => {})
+        : Promise.resolve({ invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })], totalCount: 1 })
+    );
+
+    await act(async () => soltar({}));
+
+    expect(volverAInvitar()).not.toBeInTheDocument();
+    expect(mockEnviar).toHaveBeenCalledTimes(1);
+  });
+
+  it('dice a quién en su etiqueta', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    pinta();
+
+    expect(await screen.findByTestId('reinvite-button')).toHaveAttribute(
+      'aria-label',
+      'actions.reinviteAria {"name":"Player One"}'
+    );
   });
 
   it('R2: ya inscrito, sin botón', async () => {
@@ -227,7 +256,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     mockEnviar.mockRejectedValue(Object.assign(new Error('x'), { status: 409, errorCode: 'COMPETITION_FULL' }));
     pinta();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'actions.reinvite' }));
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
 
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.competitionFull'));
   });

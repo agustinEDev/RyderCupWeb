@@ -333,7 +333,7 @@
       },
       "removeWithTeams": {
         "title": "¿Quitar a {{nombre}}?",
-        "body": "Dejará de estar inscrito en {{competicion}} y se desharán los equipos: tendrás que volver a repartirlos. Se le avisará en la app.",
+        "body": "Dejará de estar inscrito en {{competicion}} y se desharán los equipos: tendrás que volver a repartirlos. Se le avisará en la app y podrás volver a invitarle.",
         "confirm": "Sí, quitarle",
         "keep": "No, dejarle"
       }
@@ -356,8 +356,9 @@
       "removePlayerHasMatches": "Ya hay partidos generados: no se puede quitar a nadie.",
       "removeDraftInProgress": "La sala de draft está abierta: espera a que termine.",
       "removeNotAllowed": "La competición ya ha empezado: no se puede quitar a nadie.",
-      "removeOrganizer": "No puedes quitarte a ti mismo.",
-      "removeFailed": "No se pudo quitar al jugador."
+      "removeOrganizer": "No se puede quitar al organizador.",
+      "removeFailed": "No se pudo quitar al jugador.",
+      "removeGone": "Ya no estaba inscrito."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
