@@ -98,6 +98,9 @@ const LeaderboardPage = () => {
     // play salía un instante como error (/code-review). Y si la ficha ya dijo
     // que es un stroke play, la de la Ryder no hace falta
     if (!competitionId || sesionCargando || yaSabida) return undefined;
+    // La marca es de esa competición: al pasar a otra se olvida, o al volver a
+    // la privada la página se quedaba cargando para siempre (CodeRabbit)
+    if (privadaRef.current !== null && privadaRef.current !== competitionId) privadaRef.current = null;
     if (privadaRef.current === competitionId) return undefined;
     let vigente = true;
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX, Trophy } from 'lucide-react';
@@ -67,6 +67,11 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
   }
   // La carga vigente: una respuesta de otra partida ya no pinta nada
   const vigenteRef = useRef(idDeLaVista);
+  // Al confirmar el cambio, antes de que llegue nada: con solo la carga
+  // (efecto pasivo) quedaba un hueco para la respuesta vieja (CodeRabbit)
+  useLayoutEffect(() => {
+    vigenteRef.current = idDeLaVista;
+  }, [idDeLaVista]);
 
   const carga = useCallback(async () => {
     vigenteRef.current = idDeLaVista;

@@ -672,6 +672,29 @@ describe('LeaderboardPage', () => {
       }
     });
 
+    it('F7: privada → otra → la privada otra vez: vuelve a decirlo, no se queda cargando (CodeRabbit)', async () => {
+      mockUser.current = { id: 'me' };
+      const privada = Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+      getLeaderboardUseCase.execute.mockImplementation((id) =>
+        id === 'c-1' ? Promise.reject(privada) : Promise.resolve(mockRyder)
+      );
+      try {
+        const { rerender } = render(<LeaderboardPage />);
+        await screen.findByTestId('clasificacion-privada');
+
+        mockParams.id = 'c-2';
+        rerender(<LeaderboardPage />);
+        await screen.findByTestId('leaderboard-view');
+        mockParams.id = 'c-1';
+        rerender(<LeaderboardPage />);
+
+        expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+      } finally {
+        mockParams.id = 'c-1';
+        getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      }
+    });
+
     it('F7: y deja de pedirla cada 30 s (revisor)', async () => {
       mockUser.current = { id: 'me' };
       vi.useFakeTimers({ shouldAdvanceTime: true });
