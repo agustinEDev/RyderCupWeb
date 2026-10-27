@@ -199,6 +199,7 @@ const CamposDeLaHoja = ({ hoja, dia, primeraAntes, onCambio, resumenId }) => {
  * @param {boolean} [props.inscripcionesAbiertas] - Si aún se apunta gente: si no, «caben N de los M» ya no dice nada (FE #856)
  */
 const FranjasDeLaCompeticion = ({
+  soloAmigos = false,
   competitionId,
   startDate,
   endDate,
@@ -656,7 +657,8 @@ const FranjasDeLaCompeticion = ({
                         {(estoyInscrito || canManage) && (
                           <JugadoresDeLaFranja
                             franja={f}
-                            soloAmigos={!canManage}
+                            soloAmigos={soloAmigos}
+                            yo={userId}
                             destinosDe={(id) => destinosParaMover(franjas, id, f.id)}
                             nombreDe={nombreDe}
                             etiqueta={etiqueta}

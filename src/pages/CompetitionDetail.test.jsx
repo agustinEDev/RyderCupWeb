@@ -1426,6 +1426,17 @@ describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
     expect(await screen.findByText('detail.noApprovedPlayers')).toBeInTheDocument();
     expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
   });
+
+  it('V8: el número nunca baja de las filas que ve', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
+      maxPlayers: 4, enrolledCount: 0, countries: [],
+    });
+    renderPage();
+
+    const titulo = await tituloDeAprobados();
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+  });
 });
 
 it('V7: el aviso, en los dos idiomas', async () => {

@@ -163,7 +163,7 @@ describe('InvitationCard', () => {
         />
       );
 
-      const enlace = screen.getByRole('link', { name: 'card.viewCompetition' });
+      const enlace = screen.getByRole('link', { name: 'card.viewCompetition: Summer Cup' });
       expect(enlace).toHaveAttribute('href', '/competitions/comp-1');
       expect(screen.getByTestId('invitation-card').tagName).not.toBe('A');
       expect(screen.getByTestId('accept-button')).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe('InvitationCard', () => {
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByRole('link', { name: 'card.viewCompetition' }));
+      fireEvent.click(screen.getByRole('link', { name: 'card.viewCompetition: Summer Cup' }));
 
       expect(screen.getByTestId('origen')).toHaveTextContent('invitations');
     });
@@ -193,6 +193,18 @@ describe('InvitationCard', () => {
       render(
         <InvitationCard
           invitation={{ ...pendingInvitation, status: 'DECLINED', isPending: false, isDeclined: true }}
+          mode="player"
+          t={mockT}
+        />
+      );
+
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    it('I2e: pendiente pero ya caducada, sin enlace: ya no deja verla', () => {
+      render(
+        <InvitationCard
+          invitation={{ ...pendingInvitation, expiresAt: new Date(Date.now() - 60_000).toISOString() }}
           mode="player"
           t={mockT}
         />

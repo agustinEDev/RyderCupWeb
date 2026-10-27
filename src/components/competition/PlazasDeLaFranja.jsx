@@ -152,6 +152,7 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
 export const JugadoresDeLaFranja = ({
   franja,
   soloAmigos = false,
+  yo,
   destinosDe,
   nombreDe,
   etiqueta,
@@ -166,7 +167,10 @@ export const JugadoresDeLaFranja = ({
   // A quién se va a quitar: la plaza la coge al momento el primero de la
   // espera, así que se confirma, como al soltar la propia (/code-review)
   const [quitando, setQuitando] = useState(null);
-  const { playerIds, waitingIds } = franja.teeSheet;
+  // Con solo sus amigos, él no cuenta: ya sabe dónde está (revisor)
+  const sinMi = (ids) => (soloAmigos ? ids.filter((id) => id !== yo) : ids);
+  const playerIds = sinMi(franja.teeSheet.playerIds);
+  const waitingIds = sinMi(franja.teeSheet.waitingIds);
   // Sin ningún amigo en ella, no hay nada que desplegar
   if (soloAmigos && playerIds.length + waitingIds.length === 0) return null;
   const Espera = soloAmigos ? 'ul' : 'ol';

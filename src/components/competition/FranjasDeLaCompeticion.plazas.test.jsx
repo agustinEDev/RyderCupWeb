@@ -318,18 +318,20 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
           franja('m', '2030-10-12', 'MORNING', {
             capacity: 4,
             placesTaken: 4,
-            playerIds: ['ana'],
+            playerIds: [YO, 'ana'],
             waitingIds: ['sin'],
           }),
         ],
       });
-      pinta();
+      pinta({ soloAmigos: true });
 
       const fila = await en('m');
       expect(fila.queryByRole('button', { name: /^franjas\.showPlayers/ })).not.toBeInTheDocument();
+      // Él no cuenta como amigo suyo, ni sale en la lista
       fireEvent.click(fila.getByRole('button', { name: 'franjas.showFriends {"count":2}' }));
 
       expect(within(fila.getByTestId('jugadores-m')).getByText('Ana Alba')).toBeInTheDocument();
+      expect(within(fila.getByTestId('jugadores-m')).queryByText('Yo Mismo')).not.toBeInTheDocument();
       const espera = fila.getByTestId('espera-m');
       expect(within(espera).getByText('Sin Franja')).toBeInTheDocument();
       expect(espera.tagName).toBe('UL');
@@ -337,18 +339,29 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
 
     it('11b: sin amigos en la franja, no hay nada que desplegar', async () => {
       mockLeer.mockResolvedValue({
-        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 4, placesTaken: 3 })],
+        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 4, placesTaken: 3, playerIds: [YO] })],
       });
-      pinta();
+      pinta({ soloAmigos: true });
 
       const fila = await en('m');
       expect(fila.queryByRole('button', { name: /^franjas\.show/ })).not.toBeInTheDocument();
+    });
+
+    it('11e: si ve a todos (ya publicada, o una privada en la que está), «Ver jugadores»', async () => {
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, playerIds: ['ana', 'bea'] })],
+      });
+      pinta({ soloAmigos: false });
+
+      const fila = await en('m');
+      expect(fila.getByRole('button', { name: /^franjas\.showPlayers/ })).toBeInTheDocument();
     });
 
     it('11d: «Tus amigos aquí», en los dos idiomas', async () => {
       const es = (await import('../../i18n/locales/es/schedule.json')).default;
       const en = (await import('../../i18n/locales/en/schedule.json')).default;
 
+      expect(es.franjas.showFriends_one).toBe('Tu amigo aquí ({{count}})');
       expect(es.franjas.showFriends_other).toBe('Tus amigos aquí ({{count}})');
       expect(en.franjas.showFriends_one).toBe('Your friend here ({{count}})');
       expect(en.franjas.showFriends_other).toBe('Your friends here ({{count}})');

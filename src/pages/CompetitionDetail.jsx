@@ -990,13 +990,24 @@ const CompetitionDetail = () => {
   const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
   const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  // Check if competition has reached max players
+  // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
+  // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
+  const approvedCount = canManage && enrollments.length > 0
+    ? approvedEnrollments.length
+    : (competition.enrolledCount || 0);
+  // Ve menos de los que hay: sus amigos, hasta que se publiquen las partidas
+  const soloVeASusAmigos = !canManage && approvedEnrollments.length < approvedCount;
+  // Con la lista a medias no se sabe qué categorías salieron: se cuentan solo
+  // con la entera, y si no, se dice lo pedido (revisor de la release social 2)
+  const categoriasVistas = soloVeASusAmigos ? [] : approvedEnrollments.map((e) => e.category ?? null);
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
-  const hayVariasCategorias = salenDeLosInscritos(approvedEnrollments.map((e) => e.category ?? null)) > 1;
+  const hayVariasCategorias = salenDeLosInscritos(categoriasVistas) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
   // Lo que se pidió frente a lo que salió al cerrar (QA del 11 oct 2026): «3
   // categorías iguales, repartidas: 14,0» eran 2, y con una sola el jugador
   // seguía viendo los límites pedidos
-  const categoriasAsignadas = approvedEnrollments.map((e) => e.category ?? null);
+  const categoriasAsignadas = categoriasVistas;
   const salieron = salenDeLosInscritos(categoriasAsignadas);
   const menosDeLasPedidas = esStrokePlay && competition.strokePlay ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas) : null;
   const textoDeCategorias = (ajustes) => {
@@ -1035,14 +1046,6 @@ const CompetitionDetail = () => {
       )
     : null;
 
-  // Check if competition has reached max players
-  // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
-  // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
-  const approvedCount = canManage && enrollments.length > 0
-    ? approvedEnrollments.length
-    : (competition.enrolledCount || 0);
-  // Ve menos de los que hay: sus amigos, hasta que se publiquen las partidas
-  const soloVeASusAmigos = !canManage && approvedEnrollments.length < approvedCount;
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
@@ -1625,6 +1628,7 @@ const CompetitionDetail = () => {
                   el servidor lo rechaza */}
               {esStrokePlay ? (
                 <FranjasDeLaCompeticion
+                  soloAmigos={soloVeASusAmigos}
                   competitionId={competition.id}
                   startDate={competition.startDate}
                   endDate={competition.endDate}
@@ -1669,7 +1673,7 @@ const CompetitionDetail = () => {
                 endDate={competition.endDate}
                 // Terminada o cancelada ya no se toca: el servidor lo rechaza
                 canManage={canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)}
-                jugadores={approvedEnrollments.length}
+                jugadores={canManage ? approvedEnrollments.length : approvedCount}
                 // Cuando cambia la competición —estado, equipos— se vuelve a leer
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
@@ -1707,7 +1711,11 @@ const CompetitionDetail = () => {
                     <Users className="w-5 h-5 flex-none text-green-600" />
                     <TituloConNumero
                       texto={t('detail.approvedPlayers')}
-                      numero={canManage ? approvedEnrollments.length : approvedCount}
+                      numero={
+                        canManage
+                          ? approvedEnrollments.length
+                          : Math.max(approvedCount, approvedEnrollments.length)
+                      }
                     />
                   </>
                 }

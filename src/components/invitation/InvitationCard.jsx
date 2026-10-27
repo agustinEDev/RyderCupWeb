@@ -36,7 +36,9 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
   const enlazaACompeticion = mode === 'player' && invitation.isAccepted && invitation.competitionId;
   // Pendiente, el invitado ya puede mirarla antes de contestar (release social
   // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
-  const puedeMirarla = showActions && invitation.competitionId;
+  // Caducada ya no deja verla: el servidor tampoco la cuenta (revisor)
+  const caducada = invitation.expiresAt && new Date(invitation.expiresAt) <= new Date();
+  const puedeMirarla = showActions && invitation.competitionId && !caducada;
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco
@@ -99,6 +101,8 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
             <Link
               to={`/competitions/${invitation.competitionId}`}
               state={{ from: 'invitations' }}
+              // Con varias pendientes, el lector de pantalla las distingue (revisor)
+              aria-label={`${t('card.viewCompetition')}: ${nombre}`}
               className="mt-1 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary hover:underline"
             >
               {t('card.viewCompetition')}

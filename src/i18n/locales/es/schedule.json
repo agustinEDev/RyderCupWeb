@@ -298,7 +298,7 @@
     "removePlayerYes": "Sí, quitar",
     "waitingPosition_female_one": "Eres la {{count}}.ª en espera",
     "waitingPosition_female_other": "Eres la {{count}}.ª en espera",
-    "showFriends_one": "Tus amigos aquí ({{count}})",
+    "showFriends_one": "Tu amigo aquí ({{count}})",
     "showFriends_other": "Tus amigos aquí ({{count}})"
   },
   "partidas": {
