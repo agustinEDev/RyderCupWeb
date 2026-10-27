@@ -347,6 +347,16 @@ describe('FranjasDeLaCompeticion · plazas y esperas (FE #824, PR 4)', () => {
       expect(fila.queryByRole('button', { name: /^franjas\.show/ })).not.toBeInTheDocument();
     });
 
+    it('11f: en espera, cuántos esperan de verdad, aunque no los vea', async () => {
+      mockLeer.mockResolvedValue({
+        rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, waitingCount: 5 })],
+      });
+      pinta({ soloAmigos: true });
+
+      const fila = await en('m');
+      expect(fila.getByText(/franjas\.taken/).textContent).toContain('"espera":5');
+    });
+
     it('11e: si ve a todos (ya publicada, o una privada en la que está), «Ver jugadores»', async () => {
       mockLeer.mockResolvedValue({
         rounds: [franja('m', '2030-10-12', 'MORNING', { capacity: 2, placesTaken: 2, playerIds: ['ana', 'bea'] })],

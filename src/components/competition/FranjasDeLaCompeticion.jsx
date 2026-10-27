@@ -634,7 +634,7 @@ const FranjasDeLaCompeticion = ({
                           })}
                         </p>
                         <p className="text-gray-500">
-                          {t('franjas.taken', { count: hoja.placesTaken, espera: hoja.waitingIds.length })}
+                          {t('franjas.taken', { count: hoja.placesTaken, espera: hoja.waitingCount ?? hoja.waitingIds.length })}
                         </p>
                         {situacion && !sinCargar && (
                           <AccionDelJugador
