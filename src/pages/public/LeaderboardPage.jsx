@@ -145,7 +145,11 @@ const LeaderboardPage = () => {
         setLeaderboard(data);
         setError(null);
       } catch (err) {
-        if (vigente) setError(err);
+        if (!vigente) return;
+        setError(err);
+        // De una privada sin llave, ni se repite: otro 403 cada 30 s no
+        // arregla nada y gasta el cupo compartido (revisor)
+        if (esDeUnaPrivada(err)) clearInterval(pollRef.current);
       } finally {
         if (vigente) setIsLoading(false);
       }

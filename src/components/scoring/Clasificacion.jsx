@@ -86,7 +86,8 @@ const Clasificacion = ({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
     leer();
   }, [activa, leer, cada, version]);
-  useSondeoMientras(activa && cada != null, leer, cada ?? 0);
+  // De una privada sin llave, ni se repite: otro 403 no arregla nada (revisor)
+  useSondeoMientras(activa && cada != null && !privada, leer, cada ?? 0);
   const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
 
   if (!activa) return null;

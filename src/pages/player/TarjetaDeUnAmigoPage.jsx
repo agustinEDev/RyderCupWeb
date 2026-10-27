@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Lock, RefreshCw, SearchX, Trophy } from 'lucide-react';
@@ -9,10 +9,22 @@ import ScorecardTable from '../../components/scoring/ScorecardTable';
 import { useAuth } from '../../hooks/useAuth';
 import { useGoBack } from '../../hooks/useGoBack';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
+import { esDeUnaPrivada } from '../../utils/competicionPrivada';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { getScoringViewUseCase, getTeeGroupScoringViewUseCase } from '../../composition';
 
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
+
+/**
+ * Qué se le dice: solo el 403 de una privada es «solo la ven quienes
+ * participan»; otro 403 (Términos…) es un fallo más, con reintento (revisor).
+ */
+const motivoDelFallo = (error) => {
+  if (esDeUnaPrivada(error)) return HTTP_FORBIDDEN;
+  if (error?.status === HTTP_NOT_FOUND) return HTTP_NOT_FOUND;
+  return 'otro';
+};
 
 /**
  * TarjetaDeUnAmigoPage - La partida (stroke play) o el partido (Ryder) de un
@@ -44,16 +56,31 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
   const [fallo, setFallo] = useState(null);
   const [cargando, setCargando] = useState(true);
 
+  // Otra partida sin desmontarse: de cero, sin enseñar la anterior (revisor)
+  const [deLaVista, setDeLaVista] = useState(idDeLaVista);
+  if (deLaVista !== idDeLaVista) {
+    setDeLaVista(idDeLaVista);
+    setVista(null);
+    setFallo(null);
+    setCargando(true);
+  }
+  // La carga vigente: una respuesta de otra partida ya no pinta nada
+  const vigenteRef = useRef(idDeLaVista);
+
   const carga = useCallback(async () => {
+    vigenteRef.current = idDeLaVista;
     setCargando(true);
     setFallo(null);
+    const vigente = () => vigenteRef.current === idDeLaVista;
     try {
       const casoDeUso = esPartida ? getTeeGroupScoringViewUseCase : getScoringViewUseCase;
-      setVista(await casoDeUso.execute(idDeLaVista));
+      const leida = await casoDeUso.execute(idDeLaVista);
+      if (vigente()) setVista(leida);
     } catch (error) {
-      setFallo(error?.status ?? 'otro');
+      if (!vigente()) return;
+      setFallo(motivoDelFallo(error));
     } finally {
-      setCargando(false);
+      if (vigente()) setCargando(false);
     }
   }, [esPartida, idDeLaVista]);
 
@@ -74,16 +101,16 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
 
   if (cargando && !vista) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
-        <BlockLoader texto={t(esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle', { number: '' })} />
+        <BlockLoader texto={t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')} />
       </div>
     );
   }
 
   if (fallo !== null || !vista) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <SinTarjeta fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
@@ -97,7 +124,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
   }`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth />
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
         <BotonVolver onVolver={volver} t={t} className="hidden md:inline-flex mb-3" />
@@ -108,9 +135,11 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
         </h1>
         <div className="flex items-start justify-between gap-3 mb-4">
           <h2 className="text-xl font-bold text-gray-900 break-words">
-            {t(esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle', {
-              number: vista.matchNumber ?? '',
-            })}
+            {vista.matchNumber != null
+              ? t(esPartida ? 'friendCard.groupTitle' : 'friendCard.matchTitle', {
+                  number: vista.matchNumber,
+                })
+              : t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')}
           </h2>
           <span
             data-testid="tarjeta-solo-lectura"

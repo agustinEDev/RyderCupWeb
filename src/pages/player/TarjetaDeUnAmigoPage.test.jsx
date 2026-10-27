@@ -12,8 +12,8 @@
  * | -   | No anota: ni el hook de anotación ni su sondeo    | Una sola carga                             |
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
 import TarjetaDeUnAmigoPage from './TarjetaDeUnAmigoPage';
 import es from '../../i18n/locales/es/scoring.json';
 import en from '../../i18n/locales/en/scoring.json';
@@ -164,7 +164,7 @@ describe('TarjetaDeUnAmigoPage — un partido de Ryder', () => {
 
 describe('TarjetaDeUnAmigoPage — lo que no se puede ver', () => {
   it('F6: 403, «solo la ven quienes participan», con Volver', async () => {
-    verPartida.mockRejectedValue(fallo(403));
+    verPartida.mockRejectedValue(Object.assign(fallo(403), { errorCode: 'PRIVATE_COMPETITION' }));
 
     pinta('/competitions/c-1/groups/g-7?jugador=u2');
 
@@ -188,6 +188,87 @@ describe('TarjetaDeUnAmigoPage — lo que no se puede ver', () => {
 
     expect(await screen.findByTestId('tarjetas-de-la-partida')).toBeInTheDocument();
     expect(verPartida).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('TarjetaDeUnAmigoPage — revisor de la PR 4', () => {
+  it('otro 403 (no de una privada) es un fallo que se reintenta, no «solo participantes»', async () => {
+    verPartida.mockRejectedValue(Object.assign(fallo(403), { errorCode: 'TERMINOS_NO_ACEPTADOS' }));
+
+    pinta('/competitions/c-1/groups/g-7');
+
+    expect(await screen.findByTestId('tarjeta-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('tarjeta-prohibida')).not.toBeInTheDocument();
+  });
+
+  it('mientras carga, el título de la pantalla, sin huecos', () => {
+    verPartida.mockReturnValue(new Promise(() => {}));
+
+    pinta('/competitions/c-1/groups/g-7');
+
+    expect(screen.getByText('common:screens.friendGroup')).toBeInTheDocument();
+  });
+
+  it('la altura descuenta la barra inferior, como la clasificación', async () => {
+    verPartida.mockResolvedValue(vista());
+    const { container } = pinta('/competitions/c-1/groups/g-7');
+    await screen.findByTestId('tarjetas-de-la-partida');
+
+    expect(container.firstChild.className).toContain('var(--alto-barra-inferior');
+  });
+
+  it('otra partida sin desmontar: no enseña la anterior, ni la pisa una respuesta vieja', async () => {
+    let soltarLaVieja;
+    verPartida
+      .mockReturnValueOnce(new Promise((r) => { soltarLaVieja = r; }))
+      .mockResolvedValueOnce(vista(['u4', 'u5'], { matchNumber: 9 }));
+    const Saltar = () => {
+      const navegar = useNavigate();
+      return <button type="button" data-testid="saltar" onClick={() => navegar('/competitions/c-1/groups/g-9')} />;
+    };
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/groups/g-7']}>
+        <Saltar />
+        <Routes>
+          <Route path="/competitions/:id/groups/:groupId" element={<TarjetaDeUnAmigoPage tipo="partida" />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTestId('saltar'));
+    expect(await screen.findByText('friendCard.groupTitle 9')).toBeInTheDocument();
+    await act(async () => {
+      soltarLaVieja(vista(['u2', 'u3'], { matchNumber: 3 }));
+    });
+
+    expect(screen.getByText('friendCard.groupTitle 9')).toBeInTheDocument();
+    expect(screen.queryByText('friendCard.groupTitle 3')).not.toBeInTheDocument();
+  });
+});
+
+describe('TarjetaDeUnAmigoPage — al cambiar de partida', () => {
+  it('mientras llega la nueva, no se ve la anterior', async () => {
+    verPartida
+      .mockResolvedValueOnce(vista(['u2', 'u3'], { matchNumber: 3 }))
+      .mockReturnValueOnce(new Promise(() => {}));
+    const Saltar = () => {
+      const navegar = useNavigate();
+      return <button type="button" data-testid="saltar" onClick={() => navegar('/competitions/c-1/groups/g-9')} />;
+    };
+    render(
+      <MemoryRouter initialEntries={['/competitions/c-1/groups/g-7']}>
+        <Saltar />
+        <Routes>
+          <Route path="/competitions/:id/groups/:groupId" element={<TarjetaDeUnAmigoPage tipo="partida" />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('friendCard.groupTitle 3')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('saltar'));
+
+    expect(screen.queryByText('friendCard.groupTitle 3')).not.toBeInTheDocument();
+    expect(screen.getByText('common:screens.friendGroup')).toBeInTheDocument();
   });
 });
 

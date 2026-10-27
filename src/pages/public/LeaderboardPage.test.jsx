@@ -633,6 +633,27 @@ describe('LeaderboardPage', () => {
       );
       expect(screen.queryByText(/Lo jugado de una competición privada/)).not.toBeInTheDocument();
     });
+
+    it('F7: y deja de pedirla cada 30 s (revisor)', async () => {
+      mockUser.current = { id: 'me' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        getLeaderboardUseCase.execute.mockRejectedValue(
+          Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' })
+        );
+        render(<LeaderboardPage />);
+        await screen.findByTestId('clasificacion-privada');
+        const pedidas = getLeaderboardUseCase.execute.mock.calls.length;
+
+        await vi.advanceTimersByTimeAsync(30000);
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(getLeaderboardUseCase.execute.mock.calls.length).toBe(pedidas);
+      } finally {
+        vi.useRealTimers();
+        getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      }
+    });
   });
 });
 
