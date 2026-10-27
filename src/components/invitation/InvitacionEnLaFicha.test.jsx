@@ -238,6 +238,29 @@ describe('InvitacionEnLaFicha — I10: mientras responde', () => {
   });
 });
 
+describe('InvitacionEnLaFicha — mientras responde, lo dice (revisor de la PR 3)', () => {
+  it.each([
+    ['invitacion-aceptar', 'actions.accepting'],
+    ['invitacion-rechazar', 'actions.declining'],
+  ])('%s → «%s» en ese botón', (boton, texto) => {
+    responder.mockReturnValue(new Promise(() => {}));
+    pinta();
+
+    fireEvent.click(screen.getByTestId(boton));
+
+    expect(screen.getByTestId(boton)).toHaveTextContent(texto);
+    // El otro, con su texto de siempre
+    const otro = boton === 'invitacion-aceptar' ? 'invitacion-rechazar' : 'invitacion-aceptar';
+    expect(screen.getByTestId(otro)).toHaveTextContent(otro === 'invitacion-aceptar' ? 'actions.accept' : 'actions.decline');
+  });
+
+  it('a 360 px, con el mismo margen lateral que la cabecera', () => {
+    pinta();
+
+    expect(screen.getByTestId('invitacion-en-la-ficha').className).toMatch(/\bmx-4\b/);
+  });
+});
+
 describe('InvitacionEnLaFicha — textos', () => {
   it.each([
     ['es', es],

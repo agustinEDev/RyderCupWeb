@@ -61,7 +61,7 @@ const MyInvitationsPage = () => {
 
   // Aceptar o rechazar, con las mismas reglas que el cuadro de la ficha. Al
   // aceptar, a su ficha, con el origen para que «Volver» traiga de nuevo aquí
-  const { procesandoId, aceptar, rechazar, preguntaDelGenero } = useResponderInvitacion({
+  const { seEstaRespondiendo, aceptar, rechazar, preguntaDelGenero } = useResponderInvitacion({
     alAceptar: (result) => {
       if (result?.competitionId) {
         navigate(`/competitions/${result.competitionId}`, { state: { from: 'invitations' } });
@@ -158,7 +158,7 @@ const MyInvitationsPage = () => {
                 mode="player"
                 onAccept={aceptar}
                 onDecline={rechazar}
-                isProcessing={procesandoId === invitation.id}
+                isProcessing={seEstaRespondiendo(invitation.id)}
                 t={t}
               />
             ))}

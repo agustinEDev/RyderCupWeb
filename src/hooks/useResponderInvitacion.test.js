@@ -15,6 +15,19 @@ beforeEach(() => {
   responder.mockReturnValue(new Promise(() => {}));
 });
 
+describe('useResponderInvitacion — el candado es de cada invitación (revisor de la PR 3)', () => {
+  it('con una en curso, otra se responde', () => {
+    const { result } = renderHook(() => useResponderInvitacion({ alAceptar: vi.fn(), alCambiar: vi.fn() }));
+
+    act(() => {
+      result.current.rechazar('inv-1');
+      result.current.aceptar('inv-2');
+    });
+
+    expect(responder.mock.calls).toEqual([['inv-1', 'DECLINE'], ['inv-2', 'ACCEPT']]);
+  });
+});
+
 describe('useResponderInvitacion — I10: dos toques antes de pintar el botón desactivado', () => {
   it.each([
     ['aceptar', 'aceptar'],

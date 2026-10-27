@@ -119,6 +119,29 @@ describe('MyInvitationsPage', () => {
     expect(screen.getByTestId('decline-button')).toBeInTheDocument();
   });
 
+  it('dos tarjetas: con una respondiendo, la otra también se responde (revisor de la PR 3)', async () => {
+    faltaGenero = false;
+    const tarjeta = (id) => ({
+      id, competitionId: `c-${id}`, competitionName: id, inviterName: 'Creator', inviteeEmail: 'p@test.com',
+      status: 'PENDING', isPending: true, isAccepted: false, isDeclined: false, isExpired: false,
+      personalMessage: null, expiresAt: new Date(Date.now() + 86400000).toISOString(), respondedAt: null,
+    });
+    mockListMyInvitations.mockResolvedValue({ invitations: [tarjeta('inv-a'), tarjeta('inv-b')], totalCount: 2 });
+    mockRespondToInvitation.mockImplementation((id) => (id === 'inv-a' ? new Promise(() => {}) : Promise.resolve({})));
+    renderPage();
+    const [, rechazarB] = await screen.findAllByTestId('decline-button');
+    const [rechazarA] = screen.getAllByTestId('decline-button');
+
+    fireEvent.click(rechazarA);
+    fireEvent.click(rechazarB);
+
+    await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-b', 'DECLINE'));
+    expect(mockRespondToInvitation).toHaveBeenCalledTimes(2);
+    // Respondida B, A sigue en curso: su tarjeta, desactivada
+    await waitFor(() => expect(mockListMyInvitations).toHaveBeenCalledTimes(2));
+    expect(screen.getAllByTestId('decline-button')[0]).toBeDisabled();
+  });
+
   it('A4: se puede filtrar por las que se quedaron sin plaza (#710)', async () => {
     renderPage();
     const filtro = await screen.findByTestId('status-filter');

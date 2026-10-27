@@ -25,20 +25,23 @@ import { respondToInvitationUseCase } from '../composition';
 export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendiente = 'errors.notPendingAnymore' }) => {
   const { t } = useTranslation('invitations');
   const generoParaApuntarse = useGeneroParaApuntarse();
-  const [procesandoId, setProcesandoId] = useState(null);
+  // Las que se están respondiendo: cada tarjeta, desactivada mientras la suya
+  const [enProceso, setEnProceso] = useState([]);
   const [aceptandoSinGenero, setAceptandoSinGenero] = useState(null);
-  // Un doble toque antes de que se pinte el botón desactivado: una sola respuesta
-  const ocupado = useRef(false);
+  // Un doble toque antes de que se pinte el botón desactivado: una sola
+  // respuesta. De cada invitación: en la lista, otra tarjeta se sigue
+  // pudiendo responder mientras tanto (revisor)
+  const enCurso = useRef(new Set());
 
   const empezar = (invitationId) => {
-    if (ocupado.current) return false;
-    ocupado.current = true;
-    setProcesandoId(invitationId);
+    if (enCurso.current.has(invitationId)) return false;
+    enCurso.current.add(invitationId);
+    setEnProceso((ids) => [...ids, invitationId]);
     return true;
   };
-  const terminar = () => {
-    ocupado.current = false;
-    setProcesandoId(null);
+  const terminar = (invitationId) => {
+    enCurso.current.delete(invitationId);
+    setEnProceso((ids) => ids.filter((id) => id !== invitationId));
   };
 
   const avisarDelFallo = (error) => {
@@ -64,7 +67,7 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
       console.error('Error accepting invitation:', error);
       avisarDelFallo(error);
     } finally {
-      terminar();
+      terminar(invitationId);
     }
   };
 
@@ -85,7 +88,7 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
     } catch (error) {
       console.error('Error saving gender:', error);
       customToast.error(error?.message || t('errors.failedToRespond'));
-      terminar();
+      terminar(invitationId);
       return;
     }
     await responderAceptando(invitationId);
@@ -109,12 +112,12 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
       console.error('Error declining invitation:', error);
       avisarDelFallo(error);
     } finally {
-      terminar();
+      terminar(invitationId);
     }
   };
 
   return {
-    procesandoId,
+    seEstaRespondiendo: (invitationId) => enProceso.includes(invitationId),
     aceptar,
     rechazar,
     preguntaDelGenero: {
