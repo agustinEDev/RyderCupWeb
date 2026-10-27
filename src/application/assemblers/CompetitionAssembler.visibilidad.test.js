@@ -149,3 +149,23 @@ describe('CompetitionAssembler · el modo de configuración llega a la pantalla 
     expect(loQueLlegaALaPantalla(respuestaDeLaApi()).setupMode).toBe('RYDER_CUP');
   });
 });
+
+describe('CompetitionAssembler · mi invitación pendiente llega a la ficha (release social 2, I1/I2)', () => {
+  it('con ella, su id y su caducidad', () => {
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1', expires_at: '2026-11-03T10:00:00' } })
+    );
+
+    expect(dto.myPendingInvitation).toEqual({ id: 'inv-1', expiresAt: '2026-11-03T10:00:00' });
+  });
+
+  it('sin caducidad, null en ella', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1' } }));
+
+    expect(dto.myPendingInvitation).toEqual({ id: 'inv-1', expiresAt: null });
+  });
+
+  it.each([[null], [undefined]])('sin ella (%s), null', (valor) => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: valor })).myPendingInvitation).toBeNull();
+  });
+});

@@ -28,6 +28,7 @@ import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import InvitacionEnLaFicha from '../components/invitation/InvitacionEnLaFicha';
 import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -1290,6 +1291,11 @@ const CompetitionDetail = () => {
                 )}
               </div>
             </motion.div>
+
+            {/* Mi invitación pendiente: aceptar o rechazar aquí mismo, sin pasar
+                por «Mis invitaciones». Respondida, la ficha se relee (release
+                social 2) */}
+            <InvitacionEnLaFicha invitacion={competition.myPendingInvitation ?? null} alCambiar={loadCompetition} />
 
             {/* Action Buttons */}
             {canManage && (
