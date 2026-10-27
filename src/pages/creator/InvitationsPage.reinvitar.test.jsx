@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 /**
@@ -214,7 +214,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     mockInscritos.mockResolvedValue([{ userId: 'u-2' }]);
     pinta();
     await screen.findByText('Player One');
-    await waitFor(() => expect(mockInscritos).toHaveBeenCalled());
+    await trasSaberLaSituacion();
 
     expect(volverAInvitar()).not.toBeInTheDocument();
   });
@@ -224,7 +224,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })], [pendiente]);
     pinta();
     await screen.findByText('Player One');
-    await waitFor(() => expect(mockInscritos).toHaveBeenCalled());
+    await trasSaberLaSituacion();
 
     expect(volverAInvitar()).not.toBeInTheDocument();
   });
@@ -295,7 +295,27 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     fireEvent.click(screen.getByTestId('a-la-otra'));
 
     await waitFor(() => expect(mockInscritos).toHaveBeenCalledWith('comp-2', { status: 'APPROVED' }));
+    await screen.findByText('Player One');
     expect(volverAInvitar()).not.toBeInTheDocument();
+  });
+
+  it('reinvitada y retirada la nueva, la vieja vuelve a ofrecerlo (CodeRabbit)', async () => {
+    const vieja = invitacion('DECLINED', { inviteeUserId: 'u-2' });
+    const nueva = invitacion('PENDING', { id: 'inv-2', inviteeUserId: 'u-2' });
+    conLista([vieja]);
+    mockRetirar.mockResolvedValue(undefined);
+    pinta();
+    const boton = await screen.findByTestId('reinvite-button');
+    // Lo que contestará el servidor tras mandarla: la nueva, pendiente
+    conLista([nueva, vieja], [nueva]);
+    fireEvent.click(boton);
+    await waitFor(() => expect(mockEnviar).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole('button', { name: 'actions.withdraw' }));
+    conLista([invitacion('CANCELLED', { id: 'inv-2', inviteeUserId: 'u-2' }), vieja]);
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'creator.withdrawDialog.confirm' }));
+
+    await waitFor(() => expect(mockRetirar).toHaveBeenCalledWith('inv-2'));
+    await waitFor(() => expect(screen.getAllByTestId('reinvite-button')).toHaveLength(2));
   });
 
   it('R2: sin saber quién está dentro, no se ofrece', async () => {
@@ -303,7 +323,7 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     mockInscritos.mockRejectedValue(new Error('sin red'));
     pinta();
     await screen.findByText('Player One');
-    await waitFor(() => expect(mockInscritos).toHaveBeenCalled());
+    await trasSaberLaSituacion();
 
     expect(volverAInvitar()).not.toBeInTheDocument();
   });

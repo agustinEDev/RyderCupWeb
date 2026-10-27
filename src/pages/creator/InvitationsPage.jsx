@@ -311,6 +311,11 @@ const InvitationsPage = () => {
     try {
       await cancelInvitationUseCase.execute(retirando.id);
       customToast.success(t('success.withdrawn'));
+      // Ya no está pendiente: si se mandó desde aquí, deja de contarse como
+      // enviada y su invitación cerrada vuelve a ofrecer «Volver a invitar»
+      // (CodeRabbit). Antes de la recarga del `finally`
+      const retiradas = new Set(clavesDe(retirando));
+      enviadasRef.current.set(id, new Set([...enviadasAqui()].filter((clave) => !retiradas.has(clave))));
     } catch (error) {
       console.error('Error withdrawing invitation:', error);
       customToast.error(
