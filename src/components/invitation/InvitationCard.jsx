@@ -44,7 +44,7 @@ const CLAVE_DE_LA_FECHA = {
   NO_ROOM: 'card.noRoomSince',
 };
 
-const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isProcessing, t }) => {
+const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, onReinvite, isProcessing, t }) => {
   const showActions = mode === 'player' && invitation.isPending;
   const caducada = useHaCaducado(invitation.expiresAt);
   // Quien invita puede retirar una pendiente (FE #724). El jugador no: él la
@@ -173,6 +173,20 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
             className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {t('actions.withdraw')}
+          </button>
+        )}
+
+        {/* Volver a invitar (release social 2): la página decide a cuáles */}
+        {mode === 'creator' && onReinvite && (
+          <button
+            type="button"
+            data-testid="reinvite-button"
+            onClick={() => onReinvite(invitation)}
+            disabled={isProcessing}
+            aria-label={t('actions.reinviteAria', { name: invitation.inviteeName || invitation.inviteeEmail })}
+            className="flex-shrink-0 min-h-11 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {t('actions.reinvite')}
           </button>
         )}
 

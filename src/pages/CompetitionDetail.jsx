@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, UserMinus, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
 import Plegable from '../components/ui/Plegable';
 import TituloConNumero from '../components/ui/TituloConNumero';
@@ -47,6 +47,7 @@ import {
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
+  removeEnrolledPlayerUseCase,
   assignTeamsUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
@@ -73,6 +74,17 @@ const VUELTAS = {
 };
 const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
 
+// Antes de empezar se puede quitar a un inscrito (release social 2)
+const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
+
+// Por qué no se pudo quitar, por el código del servidor
+const MOTIVOS_PARA_NO_QUITAR = {
+  PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
+  DRAFT_IN_PROGRESS: 'detail.errors.removeDraftInProgress',
+  REMOVAL_NOT_ALLOWED: 'detail.errors.removeNotAllowed',
+  CANNOT_REMOVE_ORGANIZER: 'detail.errors.removeOrganizer',
+};
+
 const CompetitionDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,6 +104,8 @@ const CompetitionDetail = () => {
   // Lo que espera un «sí» en el modal de la app, en lugar de `window.confirm`,
   // el diálogo nativo del navegador (FE #730)
   const [pregunta, setPregunta] = useState(null);
+  // La inscripción que se está quitando (release social 2): su botón, desactivado
+  const [quitandoId, setQuitandoId] = useState(null);
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
   // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
@@ -243,6 +257,56 @@ const CompetitionDetail = () => {
   const contestar = (si) => {
     pregunta?.responder(si);
     setPregunta(null);
+  };
+
+  // El organizador quita a un inscrito (release social 2, 27 oct 2026): se le
+  // pregunta, se le avisa en la app y, con equipos formados, se deshacen
+  const handleQuitar = async (enrollment) => {
+    const datos = { nombre: enrollment.userName || t('detail.unknownUser'), competicion: competition.name };
+    const accion = competition.teamsAssigned ? 'removeWithTeams' : 'remove';
+    if (!(await preguntar(accion, { destructiva: true, datos }))) return;
+    setQuitandoId(enrollment.id);
+    try {
+      await removeEnrolledPlayerUseCase.execute(enrollment.id);
+      customToast.success(t('detail.success.playerRemoved', datos));
+      // Su hándicap, si se estaba editando, ya no es de nadie (/code-review)
+      setEditingHandicapId((editando) => (editando === enrollment.id ? null : editando));
+    } catch (error) {
+      customToast.error(
+        t(
+          error?.status === 404
+            ? 'detail.errors.removeGone'
+            : (MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ?? 'detail.errors.removeFailed')
+        )
+      );
+    }
+    // Bien o mal, se relee: la lista (y los equipos, si se deshicieron) ya no
+    // es la de antes. En silencio, sin la espera de pantalla completa: quitar a
+    // varios seguidos hacía parpadear la ficha y la subía arriba (revisor)
+    await releerTrasQuitar();
+    setQuitandoId(null);
+  };
+
+  const releerTrasQuitar = async () => {
+    // Con los mismos guardas que las demás relecturas: una respuesta vieja no
+    // pisa otra más nueva, ni la de otra competición (/code-review)
+    const deEsta = id;
+    const turnoDeLaFicha = lecturasDeLaFicha.turno();
+    const turnoDeLaLista = lecturasDeInscripciones.turno();
+    try {
+      const [ficha, lista] = await Promise.all([
+        getCompetitionDetailUseCase.execute(deEsta),
+        listEnrollmentsUseCase.execute(deEsta),
+      ]);
+      if (deEsta !== idActual.current) return;
+      if (lecturasDeLaFicha.aplicar(turnoDeLaFicha)) setCompetition(ficha);
+      if (lecturasDeInscripciones.aplicar(turnoDeLaLista)) setEnrollments(lista);
+    } catch (error) {
+      // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
+      console.error('Error reloading after removing a player:', error);
+    }
+    // Y sus franjas: quitarle no mueve la fecha de la ficha (/code-review)
+    if (deEsta === idActual.current) setVersionFranjas((v) => v + 1);
   };
 
   const handleStatusChange = async (action) => {
@@ -1882,6 +1946,24 @@ const CompetitionDetail = () => {
                               {enrollment.team}
                             </span>
                           )}
+                          {/* Quitarle (release social 2): quien organiza, antes de
+                              empezar, a cualquiera menos a sí mismo */}
+                          {canManage &&
+                            SE_PUEDE_QUITAR.has(competition.status) &&
+                            enrollment.userId !== competition.creatorId && (
+                              <button
+                                type="button"
+                                data-testid={`quitar-${enrollment.userId}`}
+                                onClick={() => handleQuitar(enrollment)}
+                                disabled={quitandoId !== null}
+                                aria-label={t('detail.removePlayerAria', {
+                                  nombre: enrollment.userName || t('detail.unknownUser'),
+                                })}
+                                className="ml-2 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                              >
+                                <UserMinus className="h-5 w-5" aria-hidden="true" />
+                              </button>
+                            )}
                         </div>
                       ))}
                   </div>

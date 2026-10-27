@@ -39,7 +39,9 @@
     "decline": "Rechazar",
     "accepting": "Aceptando...",
     "declining": "Rechazando...",
-    "withdraw": "Retirar"
+    "withdraw": "Retirar",
+    "reinvite": "Volver a invitar",
+    "reinviteAria": "Volver a invitar a {{name}}"
   },
   "filter": {
     "allStatuses": "Todos los estados",

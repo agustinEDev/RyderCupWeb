@@ -324,6 +324,18 @@
         "body_other": "{{count}} players have no tee window ({{jugadores}}): place them before closing enrollments.",
         "confirm": "Go and place them",
         "keep": "Not now"
+      },
+      "remove": {
+        "title": "Remove {{nombre}}?",
+        "body": "They will no longer be enrolled in {{competicion}}. They will be told in the app and you can invite them again.",
+        "confirm": "Yes, remove",
+        "keep": "No, keep"
+      },
+      "removeWithTeams": {
+        "title": "Remove {{nombre}}?",
+        "body": "They will no longer be enrolled in {{competicion}} and the teams will be undone: you will have to split them again. They will be told in the app and you can invite them again.",
+        "confirm": "Yes, remove",
+        "keep": "No, keep"
       }
     },
     "errors": {
@@ -340,7 +352,13 @@
       "PLAYERS_WITHOUT_TEE_WINDOW_unnamed": "Some players still need a tee time window: check «Without a window».",
       "PLAYERS_WITHOUT_HANDICAP_one": "{{jugadores}} has no handicap: set a custom one and close again.",
       "PLAYERS_WITHOUT_HANDICAP_other": "{{count}} players have no handicap ({{jugadores}}): set a custom one and close again.",
-      "PLAYERS_WITHOUT_HANDICAP_unnamed": "Some players have no handicap: set a custom one and close again."
+      "PLAYERS_WITHOUT_HANDICAP_unnamed": "Some players have no handicap: set a custom one and close again.",
+      "removePlayerHasMatches": "Matches have already been generated: nobody can be removed.",
+      "removeDraftInProgress": "The draft room is open: wait until it is over.",
+      "removeNotAllowed": "The competition has already started: nobody can be removed.",
+      "removeOrganizer": "The organizer cannot be removed.",
+      "removeFailed": "The player could not be removed.",
+      "removeGone": "They were no longer enrolled."
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
@@ -422,7 +440,8 @@
       "statusReverted": "Competition reverted to CLOSED status successfully",
       "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status",
       "captainsNamed": "Captains named. Enrolment is now closed.",
-      "captainsChanged": "Captains changed."
+      "captainsChanged": "Captains changed.",
+      "playerRemoved": "{{nombre}} is no longer enrolled"
     },
     "failedToApprove": "Failed to approve enrollment",
     "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",
@@ -493,7 +512,8 @@
     },
     "allWindowsClosed": "All tee windows are closed: once you have checked the standings, finish the competition.",
     "onlyFriendsVisible": "For now you only see your friends who have entered.",
-    "onlyParticipantsSee": "Only participants can see who has entered."
+    "onlyParticipantsSee": "Only participants can see who has entered.",
+    "removePlayerAria": "Remove {{nombre}}"
   },
   "browse": {
     "title": "Browse Competitions",

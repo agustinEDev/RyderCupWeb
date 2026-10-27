@@ -21,11 +21,10 @@ import apiRequest from '../../services/api.js';
  * - GET    /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/approve
  * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/reject
- * - POST   /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/cancel
  * - PUT    /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}/handicap
  * - PUT    /api/v1/enrollments/{enrollmentId}/name-preference
  * - POST   /api/v1/competitions/{competitionId}/enrollments/direct
- * - DELETE /api/v1/competitions/{competitionId}/enrollments/{enrollmentId}
+ * - POST   /api/v1/enrollments/{enrollmentId}/remove
  */
 class ApiEnrollmentRepository extends IEnrollmentRepository {
   /**
@@ -276,24 +275,6 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
-   * Cancelar enrollment (por el usuario)
-   *
-   * @param {string} competitionId
-   * @param {string} enrollmentId
-   * @returns {Promise<Enrollment>}
-   */
-  async cancel(competitionId, enrollmentId) {
-    const apiData = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}/cancel`,
-      {
-        method: 'POST',
-      }
-    );
-
-    return EnrollmentMapper.toDomain(apiData);
-  }
-
-  /**
    * Establecer handicap personalizado
    *
    * @param {string} competitionId
@@ -383,21 +364,13 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
-   * Eliminar enrollment (DELETE físico)
+   * El organizador quita a un inscrito (release social 2)
    *
-   * NOTA: Usar con precaución. Normalmente se prefiere cambiar a estado final.
-   *
-   * @param {string} competitionId
    * @param {string} enrollmentId
    * @returns {Promise<void>}
    */
-  async delete(competitionId, enrollmentId) {
-    await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}`,
-      {
-        method: 'DELETE',
-      }
-    );
+  async remove(enrollmentId) {
+    await this.#request(`/api/v1/enrollments/${enrollmentId}/remove`, { method: 'POST' });
   }
 }
 
