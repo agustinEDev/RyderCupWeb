@@ -144,9 +144,14 @@ export const AccionDelJugador = ({ franja, accion, puedeElegir, userId, etiqueta
  * Quién juega y quién espera en una franja, desplegable, y lo que puede hacer
  * con ellos el organizador: moverlos a otra con sitio (en un paso) y, con las
  * inscripciones abiertas, quitarlos.
+ *
+ * `soloAmigos`: quien no organiza recibe de la agenda solo a sus amigos de la
+ * franja (release social 2). Se le dice así, y la espera va sin números: no
+ * serían su puesto en la lista.
  */
 export const JugadoresDeLaFranja = ({
   franja,
+  soloAmigos = false,
   destinosDe,
   nombreDe,
   etiqueta,
@@ -162,13 +167,18 @@ export const JugadoresDeLaFranja = ({
   // espera, así que se confirma, como al soltar la propia (/code-review)
   const [quitando, setQuitando] = useState(null);
   const { playerIds, waitingIds } = franja.teeSheet;
+  // Sin ningún amigo en ella, no hay nada que desplegar
+  if (soloAmigos && playerIds.length + waitingIds.length === 0) return null;
+  const Espera = soloAmigos ? 'ul' : 'ol';
 
   return (
     <div>
       <button type="button" aria-expanded={abierta} onClick={() => setAbierta((a) => !a)}
         className="flex min-h-11 items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900">
         {abierta ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        {t('franjas.showPlayers', { count: playerIds.length })}
+        {soloAmigos
+          ? t('franjas.showFriends', { count: playerIds.length + waitingIds.length })
+          : t('franjas.showPlayers', { count: playerIds.length })}
       </button>
       {abierta && (
         <div className="mt-1 space-y-2">
@@ -221,11 +231,14 @@ export const JugadoresDeLaFranja = ({
           {waitingIds.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-500">{t('franjas.waitingList')}</p>
-              <ol data-testid={`espera-${franja.id}`} className="list-decimal pl-5 text-sm text-gray-700">
+              <Espera
+                data-testid={`espera-${franja.id}`}
+                className={`${soloAmigos ? 'list-disc' : 'list-decimal'} pl-5 text-sm text-gray-700`}
+              >
                 {waitingIds.map((id) => (
                   <li key={id}>{nombreDe(id)}</li>
                 ))}
-              </ol>
+              </Espera>
             </div>
           )}
         </div>

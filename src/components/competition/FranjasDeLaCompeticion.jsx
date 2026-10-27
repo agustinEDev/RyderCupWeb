@@ -656,6 +656,7 @@ const FranjasDeLaCompeticion = ({
                         {(estoyInscrito || canManage) && (
                           <JugadoresDeLaFranja
                             franja={f}
+                            soloAmigos={!canManage}
                             destinosDe={(id) => destinosParaMover(franjas, id, f.id)}
                             nombreDe={nombreDe}
                             etiqueta={etiqueta}
