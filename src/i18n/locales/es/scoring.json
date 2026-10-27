@@ -469,5 +469,16 @@
     "organizerWithdraw": "Retirar a {{nombre}}",
     "organizerUndo": "Deshacer la retirada de {{nombre}}",
     "pendingScores": "Tienes golpes sin enviar: cuando lleguen al servidor podrás retirarte, o se perderían"
+  },
+  "friendCard": {
+    "readOnly": "Solo lectura",
+    "forbidden": "Esta partida solo la ven quienes participan",
+    "notFound": "Esta partida no existe",
+    "error": "No se pudo cargar la partida",
+    "retry": "Reintentar",
+    "back": "Volver",
+    "standings": "Ver clasificación",
+    "groupTitle": "Partida {{number}}",
+    "matchTitle": "Partido {{number}}"
   }
 }

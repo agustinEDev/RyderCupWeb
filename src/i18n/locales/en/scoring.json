@@ -459,5 +459,16 @@
     "organizerWithdraw": "Withdraw {{nombre}}",
     "organizerUndo": "Undo {{nombre}}'s withdrawal",
     "pendingScores": "You have scores not sent yet: once they reach the server you can withdraw, or they would be lost"
+  },
+  "friendCard": {
+    "readOnly": "Read only",
+    "forbidden": "Only participants can see this game",
+    "notFound": "This game does not exist",
+    "error": "The game could not be loaded",
+    "retry": "Retry",
+    "back": "Back",
+    "standings": "See standings",
+    "groupTitle": "Group {{number}}",
+    "matchTitle": "Match {{number}}"
   }
 }

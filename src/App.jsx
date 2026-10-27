@@ -67,6 +67,7 @@ const UpcomingMatchesPage = lazyWithRetry(() => import('./pages/player/UpcomingM
 // Quick Match pages (FE #236)
 const QuickMatchScoringPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchScoringPage'));
 const QuickMatchSharedPage = lazyWithRetry(() => import('./pages/quick_match/QuickMatchSharedPage'));
+const TarjetaDeUnAmigoPage = lazyWithRetry(() => import('./pages/player/TarjetaDeUnAmigoPage'));
 const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQuickMatchesPage'));
 
 // Google OAuth pages
@@ -327,6 +328,9 @@ function AppContent() {
         <Route path="/competitions/:id/draft" element={<ProtectedRoute><DraftRoomPage /></ProtectedRoute>} />
         {/* El sobre de cada capitán para una sesión (FE #655) */}
         <Route path="/competitions/:id/rounds/:roundId/envelope" element={<ProtectedRoute><EnvelopePage /></ProtectedRoute>} />
+        {/* La partida o el partido de un amigo, en solo lectura, desde su logro (release social 2) */}
+        <Route path="/competitions/:id/groups/:groupId" element={<ProtectedRoute><TarjetaDeUnAmigoPage tipo="partida" /></ProtectedRoute>} />
+        <Route path="/competitions/:id/matches/:matchId" element={<ProtectedRoute><TarjetaDeUnAmigoPage tipo="partido" /></ProtectedRoute>} />
         <Route path="/browse-competitions" element={<ProtectedRoute><BrowseCompetitions /></ProtectedRoute>} />
 
         {/* Admin (v2.4.0), protegido por el rol ADMIN; cada sección del panel en su ruta (17 oct): resumen, usuarios, competiciones, campos y hoyos */}
