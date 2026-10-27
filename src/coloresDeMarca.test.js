@@ -41,9 +41,12 @@ const TONOS = {
   accent: ['#d4af37', '--color-accent-500'],
   navy: ['#1e3a5f', '--color-navy-800'],
 };
-const conSuTono = (regla, color) => {
+// Con su tono de verdad: el hexadecimal en la regla, o la variable y, en lo
+// que compila Tailwind, que esa variable vale ese hexadecimal (CodeRabbit)
+const conSuTono = (regla, color, css) => {
   const [hex, variable] = TONOS[color];
-  return regla.toLowerCase().includes(hex) || regla.includes(`var(${variable})`);
+  if (regla.toLowerCase().includes(hex)) return true;
+  return regla.includes(`var(${variable})`) && css.toLowerCase().includes(`${variable}: ${hex}`);
 };
 
 describe('colores de marca', () => {
@@ -53,12 +56,14 @@ describe('colores de marca', () => {
     ['border-primary/30', 'primary', 'border-color'],
     ['ring-primary/20', 'primary', '--tw-ring-color'],
     ['bg-accent/90', 'accent', 'background-color'],
-  ])('%s existe, con su tono', (clase, color, propiedad) => {
+  ])('%s existe, con su tono y su opacidad', (clase, color, propiedad) => {
     const regla = reglaDe(clase);
+    const opacidad = clase.split('/')[1];
 
     expect(regla).not.toBeNull();
     expect(regla).toContain(propiedad);
-    expect(conSuTono(regla, color)).toBe(true);
+    expect(conSuTono(regla, color, tailwind.build([clase]))).toBe(true);
+    expect(regla).toMatch(new RegExp(`\\b${opacidad}%`));
   });
 
   it.each([
@@ -74,6 +79,6 @@ describe('colores de marca', () => {
     const regla = reglaDe(clase);
 
     expect(regla).not.toBeNull();
-    expect(conSuTono(regla, color)).toBe(true);
+    expect(conSuTono(regla, color, tailwind.build([clase]))).toBe(true);
   });
 });
