@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -37,6 +37,14 @@ vi.mock('../hooks/useUserRoles', () => ({
 
 vi.mock('../components/layout/HeaderAuth', () => ({
   default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+}));
+
+const mockVersionDeFranjas = vi.fn();
+vi.mock('../components/competition/FranjasDeLaCompeticion', () => ({
+  default: ({ version }) => {
+    mockVersionDeFranjas(version);
+    return <div data-testid="franjas" />;
+  },
 }));
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
@@ -262,6 +270,65 @@ describe('CompetitionDetail · quitar a un inscrito', () => {
 
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('detail.errors.removeGone'));
     await waitFor(() => expect(mockListEnrollments.mock.calls.length).toBeGreaterThan(listas));
+  });
+
+  it('en un stroke play, las franjas se releen: ya no está colocado (/code-review)', async () => {
+    await pintaComo({ ficha: { hasTeams: false } });
+    await screen.findByTestId('franjas');
+    const antes = mockVersionDeFranjas.mock.calls.at(-1)[0];
+
+    fireEvent.click(screen.getByTestId('quitar-u-pedro'));
+    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+
+    await waitFor(() => expect(mockVersionDeFranjas.mock.calls.at(-1)[0]).not.toBe(antes));
+  });
+
+  it('si se estaba editando su hándicap, el editor se cierra (/code-review)', async () => {
+    await pintaComo();
+    fireEvent.click(within(screen.getByTestId('aprobado-u-pedro')).getByTitle('detail.editHandicap'));
+    expect(screen.getByLabelText('detail.editHandicap')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('quitar-u-pedro'));
+    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+
+    await waitFor(() => expect(mockQuitar).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByLabelText('detail.editHandicap')).not.toBeInTheDocument());
+  });
+
+  it('si se cambia de competición mientras se relee, lo de la anterior no se pinta (/code-review)', async () => {
+    Object.assign(mockAuthUser, { id: 'org-1' });
+    let soltarLaVieja;
+    mockGetCompetitionDetail.mockImplementation((id) =>
+      Promise.resolve(id === 'comp-2' ? { ...FICHA, id: 'comp-2', name: 'Copa Y' } : { ...FICHA })
+    );
+    mockListEnrollments.mockResolvedValue(INSCRITOS);
+    const Saltar = () => {
+      const navegar = useNavigate();
+      return <button type="button" data-testid="saltar" onClick={() => navegar('/competitions/comp-2')} />;
+    };
+    render(
+      <MemoryRouter initialEntries={['/competitions/comp-1']}>
+        <Saltar />
+        <Routes>
+          <Route path="/competitions/:id" element={<CompetitionDetail />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByTestId('aprobado-u-pedro');
+    mockGetCompetitionDetail.mockImplementation((id) =>
+      id === 'comp-2'
+        ? Promise.resolve({ ...FICHA, id: 'comp-2', name: 'Copa Y' })
+        : new Promise((r) => { soltarLaVieja = r; })
+    );
+
+    fireEvent.click(screen.getByTestId('quitar-u-pedro'));
+    fireEvent.click(await screen.findByText('detail.confirmDialogs.remove.confirm'));
+    await waitFor(() => expect(soltarLaVieja).toBeDefined());
+    fireEvent.click(screen.getByTestId('saltar'));
+    expect((await screen.findAllByText('Copa Y')).length).toBeGreaterThan(0);
+    await act(async () => soltarLaVieja({ ...FICHA, name: 'Copa X vieja' }));
+
+    expect(screen.queryByText('Copa X vieja')).not.toBeInTheDocument();
   });
 
   it('sin confirmar, nada', async () => {

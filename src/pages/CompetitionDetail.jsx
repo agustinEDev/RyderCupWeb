@@ -269,6 +269,8 @@ const CompetitionDetail = () => {
     try {
       await removeEnrolledPlayerUseCase.execute(enrollment.id);
       customToast.success(t('detail.success.playerRemoved', datos));
+      // Su hándicap, si se estaba editando, ya no es de nadie (/code-review)
+      setEditingHandicapId((editando) => (editando === enrollment.id ? null : editando));
     } catch (error) {
       customToast.error(
         t(
@@ -286,17 +288,25 @@ const CompetitionDetail = () => {
   };
 
   const releerTrasQuitar = async () => {
+    // Con los mismos guardas que las demás relecturas: una respuesta vieja no
+    // pisa otra más nueva, ni la de otra competición (/code-review)
+    const deEsta = id;
+    const turnoDeLaFicha = lecturasDeLaFicha.turno();
+    const turnoDeLaLista = lecturasDeInscripciones.turno();
     try {
       const [ficha, lista] = await Promise.all([
-        getCompetitionDetailUseCase.execute(id),
-        listEnrollmentsUseCase.execute(id),
+        getCompetitionDetailUseCase.execute(deEsta),
+        listEnrollmentsUseCase.execute(deEsta),
       ]);
-      setCompetition(ficha);
-      setEnrollments(lista);
+      if (deEsta !== idActual.current) return;
+      if (lecturasDeLaFicha.aplicar(turnoDeLaFicha)) setCompetition(ficha);
+      if (lecturasDeInscripciones.aplicar(turnoDeLaLista)) setEnrollments(lista);
     } catch (error) {
       // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
       console.error('Error reloading after removing a player:', error);
     }
+    // Y sus franjas: quitarle no mueve la fecha de la ficha (/code-review)
+    if (deEsta === idActual.current) setVersionFranjas((v) => v + 1);
   };
 
   const handleStatusChange = async (action) => {

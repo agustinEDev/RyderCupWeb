@@ -51,6 +51,30 @@ const todasLasPaginas = async (pideLaPagina, sacaLasFilas) => {
   return filas;
 };
 
+// Quién está dentro: solo APPROVED. Sin filtro vienen también REQUESTED,
+// REJECTED, CANCELLED e INVITED, y quien se retiró o fue rechazado SÍ se puede
+// volver a invitar. Marcarlos habría bloqueado a quien el backend acepta
+const idsDeLosInscritos = (competitionId) =>
+  listEnrollmentsUseCase.execute(competitionId, { status: 'APPROVED' }).then((res) => {
+    const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
+    return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
+  });
+
+// Las pendientes, enteras y sin el filtro de la pantalla: `invitations` está
+// filtrada por lo que el creador haya elegido arriba y paginada
+const lasPendientes = (competitionId) =>
+  todasLasPaginas(
+    (page) => listCompetitionInvitationsUseCase.execute(competitionId, { status: 'PENDING', limit: POR_PAGINA, page }),
+    (res) => res.invitations ?? []
+  );
+
+// A quién va una invitación: por su usuario y por su correo, los que traiga
+const clavesDe = (invitation) =>
+  [
+    invitation.inviteeUserId && `u:${invitation.inviteeUserId}`,
+    invitation.inviteeEmail && `c:${invitation.inviteeEmail.toLowerCase()}`,
+  ].filter(Boolean);
+
 // Solo se invita con la inscripción por abrir o abierta: es lo que acepta el
 // servidor (#710). Cerrada, en juego o terminada, no
 const SE_PUEDE_INVITAR = new Set(['DRAFT', 'ACTIVE']);
@@ -81,7 +105,12 @@ const InvitationsPage = () => {
   const [retirandoEnCurso, setRetirandoEnCurso] = useState(false);
   // A quién no se le ofrece volver a invitar (release social 2): ya inscritos y
   // correos con otra pendiente. Sin saberlo, a nadie: el servidor lo rechazaría
-  const [situacion, setSituacion] = useState({ sabida: false, inscritos: new Set(), pendientes: new Set() });
+  // De qué competición es (`de`): al cambiar de una a otra no vale la anterior
+  const [situacion, setSituacion] = useState({ de: null, sabida: false, inscritos: new Set(), pendientes: new Set() });
+  // Las mandadas desde aquí: una lectura de antes del envío no las borra (/code-review)
+  // Por competición: las de otra no cuentan aquí
+  const enviadasRef = useRef(new Map());
+  const enviadasAqui = () => enviadasRef.current.get(id) ?? new Set();
   // Para la pestaña de amigos del modal (FE #409)
   const [friends, setFriends] = useState([]);
   const [idsInscritos, setIdsInscritos] = useState([]);
@@ -151,24 +180,10 @@ const InvitationsPage = () => {
       (res) => res.friendships ?? []
     );
 
-    // Solo APPROVED: sin filtro vienen también REQUESTED, REJECTED, CANCELLED e
-    // INVITED, y quien se retiró o fue rechazado SÍ se puede volver a invitar.
-    // Marcarlos habría bloqueado a quien el backend acepta sin problema
-    const inscritos = listEnrollmentsUseCase
-      .execute(id, { status: 'APPROVED' })
-      .then((res) => {
-        const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
-        return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
-      });
-
-    // Las pendientes se piden aparte y sin el filtro de la pantalla:
-    // `invitations` está filtrada por lo que el creador haya elegido arriba y
-    // paginada, así que con el desplegable en «Aceptadas» no habría ninguna
-    // pendiente y se ofrecería invitar a quien ya está invitado
-    const invitados = todasLasPaginas(
-      (page) => listCompetitionInvitationsUseCase.execute(id, { status: 'PENDING', limit: POR_PAGINA, page }),
-      (res) => res.invitations ?? []
-    ).then((lista) => lista.map((inv) => inv.inviteeUserId).filter(Boolean));
+    const inscritos = idsDeLosInscritos(id);
+    // Con el desplegable en «Aceptadas» no habría ninguna pendiente en la
+    // lista, y se ofrecería invitar a quien ya está invitado
+    const invitados = lasPendientes(id).then((lista) => lista.map((inv) => inv.inviteeUserId).filter(Boolean));
 
     // Las tres a la vez, pero la pestaña no se da por cargada hasta que están
     // las tres: con solo los amigos, las filas salían pulsables durante un
@@ -211,21 +226,17 @@ const InvitationsPage = () => {
   useEffect(() => {
     if (!user?.id || !hayReinvitables) return undefined;
     let vigente = true;
-    const inscritos = listEnrollmentsUseCase.execute(id, { status: 'APPROVED' }).then((res) => {
-      const inscripciones = Array.isArray(res) ? res : (res?.enrollments ?? []);
-      return inscripciones.map((e) => e.userId ?? e.user_id).filter(Boolean);
-    });
-    const pendientes = todasLasPaginas(
-      (page) => listCompetitionInvitationsUseCase.execute(id, { status: 'PENDING', limit: POR_PAGINA, page }),
-      (res) => res.invitations ?? []
-    ).then((lista) => lista.map((inv) => inv.inviteeEmail?.toLowerCase()).filter(Boolean));
-    Promise.allSettled([inscritos, pendientes]).then(([losInscritos, lasPendientes]) => {
+    // Las pendientes, por usuario y por correo: una invitación por usuario
+    // puede no traer el correo (/code-review)
+    const pendientes = lasPendientes(id).then((lista) => lista.flatMap(clavesDe));
+    Promise.allSettled([idsDeLosInscritos(id), pendientes]).then(([losInscritos, lasDeAhora]) => {
       if (!vigente) return;
-      const sabida = losInscritos.status === 'fulfilled' && lasPendientes.status === 'fulfilled';
+      const sabida = losInscritos.status === 'fulfilled' && lasDeAhora.status === 'fulfilled';
       setSituacion({
+        de: id,
         sabida,
         inscritos: new Set(sabida ? losInscritos.value : []),
-        pendientes: new Set(sabida ? lasPendientes.value : []),
+        pendientes: new Set(sabida ? [...lasDeAhora.value, ...(enviadasRef.current.get(id) ?? [])] : []),
       });
     });
     return () => {
@@ -318,11 +329,12 @@ const InvitationsPage = () => {
     const enviada = await (invitation.inviteeUserId
       ? handleSendByUserId(invitation.inviteeUserId, null)
       : handleSendInvitation(invitation.inviteeEmail, null));
-    // Ya hay una pendiente a ese correo: el botón se va al momento, sin esperar
-    // a releer las pendientes (un segundo toque daba «ya enviada»; revisor)
-    if (enviada && invitation.inviteeEmail) {
-      const correo = invitation.inviteeEmail.toLowerCase();
-      setSituacion((antes) => ({ ...antes, pendientes: new Set([...antes.pendientes, correo]) }));
+    // Ya hay una pendiente: el botón se va al momento, sin esperar a releer
+    // las pendientes (un segundo toque daba «ya enviada»; revisor)
+    if (enviada) {
+      const claves = clavesDe(invitation);
+      enviadasRef.current.set(id, new Set([...enviadasAqui(), ...claves]));
+      setSituacion((antes) => ({ ...antes, pendientes: new Set([...antes.pendientes, ...claves]) }));
     }
   };
 
@@ -348,10 +360,11 @@ const InvitationsPage = () => {
   const puedeReinvitar = (invitation) =>
     REINVITABLES.has(invitation.status) &&
     situacion.sabida &&
+    situacion.de === id &&
     sePuedeInvitar &&
     !lleno &&
     !situacion.inscritos.has(invitation.inviteeUserId) &&
-    !situacion.pendientes.has(invitation.inviteeEmail?.toLowerCase());
+    !clavesDe(invitation).some((clave) => situacion.pendientes.has(clave));
 
   // `useUserRoles` deja los tres roles a false ante CUALQUIER error, así que un
   // 500 o un corte de red se parecen a «no tienes permiso». Echar por eso sería

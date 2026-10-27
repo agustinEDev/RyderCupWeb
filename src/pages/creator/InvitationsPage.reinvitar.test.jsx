@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 
 /**
  * Volver a invitar (release social 2, tabla aprobada el 27 oct 2026: R1-R3).
@@ -93,9 +93,17 @@ const competicion = (extra = {}) => ({
   id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', maxPlayers: 12, enrolledCount: 4, ...extra,
 });
 
+const AOtra = () => {
+  const navegar = useNavigate();
+  return (
+    <button type="button" data-testid="a-la-otra" onClick={() => navegar('/creator/competitions/comp-2/invitations')} />
+  );
+};
+
 const pinta = () =>
   render(
     <MemoryRouter initialEntries={['/creator/competitions/comp-1/invitations']}>
+      <AOtra />
       <Routes>
         <Route path="/creator/competitions/:id/invitations" element={<InvitationsPage />} />
       </Routes>
@@ -218,6 +226,75 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     await screen.findByText('Player One');
     await waitFor(() => expect(mockInscritos).toHaveBeenCalled());
 
+    expect(volverAInvitar()).not.toBeInTheDocument();
+  });
+
+  it('R2: con otra pendiente a ese usuario (sin correo), sin botón (/code-review)', async () => {
+    const pendiente = invitacion('PENDING', { id: 'inv-2', inviteeUserId: 'u-2', inviteeEmail: null });
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })], [pendiente]);
+    pinta();
+    await screen.findByText('Player One');
+    await trasSaberLaSituacion();
+
+    expect(volverAInvitar()).not.toBeInTheDocument();
+  });
+
+  it('mandada a un usuario sin correo a la vista, el botón también se va (/code-review)', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })]);
+    pinta();
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+    mockLista.mockImplementation((_, filtros = {}) =>
+      filtros.status === 'PENDING'
+        ? new Promise(() => {})
+        : Promise.resolve({
+            invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2', inviteeEmail: null })],
+            totalCount: 1,
+          })
+    );
+
+    await waitFor(() => expect(mockEnviar).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(volverAInvitar()).not.toBeInTheDocument());
+  });
+
+  it('una lectura de las pendientes de antes del envío no lo vuelve a ofrecer (/code-review)', async () => {
+    let soltarLasViejas;
+    mockLista.mockImplementation((_, filtros = {}) =>
+      filtros.status === 'PENDING'
+        ? new Promise((r) => { soltarLasViejas = r; })
+        : Promise.resolve({ invitations: [invitacion('DECLINED', { inviteeUserId: 'u-2' })], totalCount: 1 })
+    );
+    mockInscritos.mockResolvedValue([]);
+    pinta();
+    await screen.findByText('Player One');
+    await waitFor(() => expect(soltarLasViejas).toBeDefined());
+    const primera = soltarLasViejas;
+    // Se sabe la situación con una primera lectura, y sale el botón
+    await act(async () => primera({ invitations: [], totalCount: 0 }));
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+    await waitFor(() => expect(mockEnviar).toHaveBeenCalled());
+    // La recarga de la lista falla: la lectura de las pendientes que estaba en
+    // marcha, de antes del envío, llega después
+    mockLista.mockImplementation((_, filtros = {}) =>
+      filtros.status === 'PENDING'
+        ? Promise.resolve({ invitations: [], totalCount: 0 })
+        : Promise.reject(new Error('sin red'))
+    );
+    await act(async () => {});
+
+    expect(volverAInvitar()).not.toBeInTheDocument();
+  });
+
+  it('al pasar a otra competición, no se usa lo que se sabía de la anterior (/code-review)', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    pinta();
+    await trasSaberLaSituacion();
+    expect(await screen.findByTestId('reinvite-button')).toBeInTheDocument();
+    mockInscritos.mockReturnValue(new Promise(() => {}));
+    mockDetalle.mockResolvedValue(competicion({ id: 'comp-2' }));
+
+    fireEvent.click(screen.getByTestId('a-la-otra'));
+
+    await waitFor(() => expect(mockInscritos).toHaveBeenCalledWith('comp-2', { status: 'APPROVED' }));
     expect(volverAInvitar()).not.toBeInTheDocument();
   });
 
