@@ -5,6 +5,7 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 import { useCentrarEnMiFila } from '../../hooks/useCentrarEnMiFila';
 import { conGenero } from '../../utils/genero';
+import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 
 const HOYOS = 18;
 
@@ -42,6 +43,8 @@ const Clasificacion = ({
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
+  // De una privada en la que no está, sin llave: reintentar no lo arregla
+  const [privada, setPrivada] = useState(false);
   const [categoria, setCategoria] = useState(null);
   // Las que hay, de la lectura sin filtro: al filtrar no desaparecen
   const [categorias, setCategorias] = useState([]);
@@ -65,8 +68,12 @@ const Clasificacion = ({
       if (categoria == null) {
         setCategorias([...new Set(leida.rows.map((r) => r.category).filter((c) => c != null))].sort((a, b) => a - b));
       }
-    } catch {
+    } catch (error) {
       if (!lecturas.aplicar(turno)) return;
+      if (esDeUnaPrivada(error)) {
+        setPrivada(true);
+        return;
+      }
       setSinCargar(true);
       setRespuestas((n) => n + 1);
     }
@@ -83,6 +90,14 @@ const Clasificacion = ({
   const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
 
   if (!activa) return null;
+
+  if (privada) {
+    return (
+      <p data-testid="clasificacion-privada" className="text-sm text-gray-600">
+        {t('partida.standingsPrivate')}
+      </p>
+    );
+  }
 
   if (sinCargar && !clasificacion) {
     return (

@@ -447,3 +447,26 @@ describe('Clasificacion · me lleva a mi fila', () => {
   });
 });
 
+
+describe('Clasificacion · de una privada que no se puede ver (release social 2, F7)', () => {
+  const privada = () =>
+    Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+
+  it('dice que solo la ven quienes participan, sin reintentar', async () => {
+    const pedir = vi.fn().mockRejectedValue(privada());
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    expect(await screen.findByTestId('clasificacion-privada')).toHaveTextContent(
+      'partida.standingsPrivate'
+    );
+    expect(screen.queryByText('partida.retry')).not.toBeInTheDocument();
+  });
+
+  it('otro 403 sigue siendo un fallo que se reintenta', async () => {
+    const pedir = vi.fn().mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    expect(await screen.findByText('partida.standingsNotLoaded')).toBeInTheDocument();
+    expect(screen.queryByTestId('clasificacion-privada')).not.toBeInTheDocument();
+  });
+});

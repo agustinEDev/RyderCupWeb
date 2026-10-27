@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 
-const mockLocationState = { state: null };
+const mockLocationState = { state: null, search: '' };
 const mockParams = { id: 'c-1' };
 vi.mock('react-router', () => ({
   useParams: () => mockParams,
@@ -74,6 +74,7 @@ describe('LeaderboardPage', () => {
     mockDetalle.mockReset().mockResolvedValue(null);
     mockUser.current = null;
     mockLocationState.state = null;
+    mockLocationState.search = '';
   });
 
   it('should render the page with header and footer', async () => {
@@ -593,6 +594,44 @@ describe('LeaderboardPage', () => {
 
       expect(await screen.findByText('llega con sus rondas')).toBeInTheDocument();
       expect(mockDetalle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('release social 2: la fila de un amigo y la privada (F5, F7)', () => {
+    it('F5: con ?jugador, destaca y centra su fila en la general', async () => {
+      mockUser.current = { id: 'me' };
+      mockLocationState.search = '?jugador=u2';
+      mockDetalle.mockResolvedValue({ id: 'c-1', name: 'Copa X', hasTeams: false, status: 'COMPLETED' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-user', 'u2');
+    });
+
+    it('sin ?jugador, la de quien mira', async () => {
+      mockUser.current = { id: 'me' };
+      mockDetalle.mockResolvedValue({ id: 'c-1', name: 'Copa X', hasTeams: false, status: 'COMPLETED' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-user', 'me');
+    });
+
+    it('F7: una Ryder privada que no puede ver lo dice, en vez del error', async () => {
+      mockUser.current = { id: 'me' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(
+        Object.assign(new Error('Lo jugado de una competición privada…'), {
+          status: 403,
+          errorCode: 'PRIVATE_COMPETITION',
+        })
+      );
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('clasificacion-privada')).toHaveTextContent(
+        'leaderboard.private'
+      );
+      expect(screen.queryByText(/Lo jugado de una competición privada/)).not.toBeInTheDocument();
     });
   });
 });

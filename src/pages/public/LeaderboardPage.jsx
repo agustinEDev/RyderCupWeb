@@ -6,6 +6,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import Footer from '../../components/layout/Footer';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
 import ClasificacionesDeLaCompeticion from '../../components/scoring/ClasificacionesDeLaCompeticion';
+import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 import { useAuth } from '../../hooks/useAuth';
 import { getCompetitionDetailUseCase, getLeaderboardUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -25,6 +26,8 @@ const LeaderboardPage = () => {
   const { t } = useTranslation('scoring');
   const { user, loading: sesionCargando } = useAuth();
   const location = useLocation();
+  // La fila de un amigo, desde su posición o su logro en Actividad (release social 2)
+  const jugador = new URLSearchParams(location.search ?? '').get('jugador');
   // Desde la ficha llega lo que ya se sabe de la competición: de esta, y de
   // un stroke play, no hace falta preguntar nada para pintar su general
   // (/code-review)
@@ -190,7 +193,13 @@ const LeaderboardPage = () => {
 
         {error && !isLoading && (
           <div className="text-center py-8">
-            <p className="text-red-600">{error.message || t('errors.generic')}</p>
+            {esDeUnaPrivada(error) ? (
+              <p data-testid="clasificacion-privada" className="text-gray-600">
+                {t('leaderboard.private')}
+              </p>
+            ) : (
+              <p className="text-red-600">{error.message || t('errors.generic')}</p>
+            )}
           </div>
         )}
 
@@ -201,7 +210,7 @@ const LeaderboardPage = () => {
               // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
               key={competitionId}
               competitionId={competitionId}
-              userId={user?.id}
+              userId={jugador || user?.id}
               enJuego={enJuego}
             />
           </>
