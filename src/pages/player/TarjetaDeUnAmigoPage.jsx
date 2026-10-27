@@ -10,6 +10,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGoBack } from '../../hooks/useGoBack';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
+import { rutaEnSuFila } from '../../utils/rutasDeUnAmigo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { getScoringViewUseCase, getTeeGroupScoringViewUseCase } from '../../composition';
 
@@ -102,7 +103,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
   if (cargando && !vista) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <BlockLoader texto={t(esPartida ? 'common:screens.friendGroup' : 'common:screens.friendMatch')} />
       </div>
     );
@@ -111,7 +112,7 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
   if (fallo !== null || !vista) {
     return (
       <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-        <HeaderAuth />
+        <HeaderAuth user={user} />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <SinTarjeta fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
         </main>
@@ -119,13 +120,11 @@ const TarjetaDeUnAmigoPage = ({ tipo }) => {
     );
   }
 
-  const enSuFila = `/competitions/${competitionId}/leaderboard${
-    jugador ? `?jugador=${encodeURIComponent(jugador)}` : ''
-  }`;
+  const enSuFila = rutaEnSuFila(competitionId, jugador);
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
-      <HeaderAuth />
+      <HeaderAuth user={user} />
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">
         <BotonVolver onVolver={volver} t={t} className="hidden md:inline-flex mb-3" />
         {/* En móvil el título lo pinta la cabecera contextual: un segundo

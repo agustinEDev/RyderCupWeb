@@ -7,6 +7,7 @@ const mockParams = { id: 'c-1' };
 vi.mock('react-router', () => ({
   useParams: () => mockParams,
   useLocation: () => mockLocationState,
+  useSearchParams: () => [new URLSearchParams(mockLocationState.search ?? '')],
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
   Navigate: ({ to, replace }) => <div data-testid="redirige" data-to={to} data-replace={String(Boolean(replace))} />,
 }));
@@ -60,7 +61,8 @@ vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', () => ({
 }));
 
 vi.mock('../../components/scoring/LeaderboardView', () => ({
-  default: ({ leaderboard }) => leaderboard ? <div data-testid="leaderboard-view">Leaderboard</div> : null,
+  default: ({ leaderboard, jugador }) =>
+    leaderboard ? <div data-testid="leaderboard-view" data-jugador={jugador ?? ''}>Leaderboard</div> : null,
 }));
 
 import LeaderboardPage, { TOPE_DE_LA_FICHA_MS } from './LeaderboardPage';
@@ -632,6 +634,42 @@ describe('LeaderboardPage', () => {
         'leaderboard.private'
       );
       expect(screen.queryByText(/Lo jugado de una competición privada/)).not.toBeInTheDocument();
+    });
+
+    it('F5: en una Ryder, ?jugador= llega a la vista de los partidos (/code-review)', async () => {
+      mockUser.current = { id: 'me' };
+      mockLocationState.search = '?jugador=u2';
+      try {
+        render(<LeaderboardPage />);
+
+        expect(await screen.findByTestId('leaderboard-view')).toHaveAttribute('data-jugador', 'u2');
+      } finally {
+        mockLocationState.search = '';
+      }
+    });
+
+    it('F7: si la página se relanza (cambia la sesión), no vuelve a pedirla (/code-review)', async () => {
+      mockUser.current = { id: 'me' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        getLeaderboardUseCase.execute.mockRejectedValue(
+          Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' })
+        );
+        const { rerender } = render(<LeaderboardPage />);
+        await screen.findByTestId('clasificacion-privada');
+        const pedidas = getLeaderboardUseCase.execute.mock.calls.length;
+
+        mockUser.current = null;
+        rerender(<LeaderboardPage />);
+        await vi.advanceTimersByTimeAsync(30000);
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(getLeaderboardUseCase.execute.mock.calls.length).toBe(pedidas);
+        expect(screen.getByTestId('clasificacion-privada')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+        getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      }
     });
 
     it('F7: y deja de pedirla cada 30 s (revisor)', async () => {

@@ -31,7 +31,7 @@ vi.mock('../../hooks/useAuth', () => {
 });
 
 vi.mock('../../components/layout/HeaderAuth', () => ({
-  default: () => <header data-testid="header" />,
+  default: ({ user }) => <header data-testid="header" data-user={user?.id ?? ''} />,
 }));
 
 // La de solo lectura no anota: si tocara el hook de anotación (sondeo, cola
@@ -243,6 +243,21 @@ describe('TarjetaDeUnAmigoPage — revisor de la PR 4', () => {
 
     expect(screen.getByText('friendCard.groupTitle 9')).toBeInTheDocument();
     expect(screen.queryByText('friendCard.groupTitle 3')).not.toBeInTheDocument();
+  });
+});
+
+describe('TarjetaDeUnAmigoPage — la cabecera (/code-review)', () => {
+  it.each([
+    ['cargando', () => new Promise(() => {})],
+    ['cargada', () => Promise.resolve(vista())],
+    ['con fallo', () => Promise.reject(fallo(500))],
+  ])('%s: con su usuario (iniciales y acceso de admin en escritorio)', async (_, respuesta) => {
+    verPartida.mockImplementation(respuesta);
+
+    pinta('/competitions/c-1/groups/g-7');
+
+    await screen.findByTestId('header');
+    expect(screen.getByTestId('header')).toHaveAttribute('data-user', 'me');
   });
 });
 

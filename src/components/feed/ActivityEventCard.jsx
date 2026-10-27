@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import { rutaDeAnotacion } from '../../utils/rutaDeAnotacion';
+import { conJugador, rutaEnSuFila } from '../../utils/rutasDeUnAmigo';
 import FraseDeActividad, { NombreDePersona } from './FraseDeActividad';
 import {
   diaDeLaVuelta,
@@ -174,18 +175,17 @@ const jugoElLogroDeTorneo = (evento, tarjeta, yoId, jugoSegunLoDeAntes) => {
   return tarjeta.autorId === yoId || jugadores.includes(yoId);
 };
 
-// La clasificación de una competición, en la fila de un jugador (release social 2)
-const enSuFila = (competitionId, userId) =>
-  `/competitions/${competitionId}/leaderboard?jugador=${encodeURIComponent(userId)}`;
-
 // La tarjeta de solo lectura de la partida (o el partido) de un amigo; sin
 // saber cuál, la clasificación en su fila (F4)
 const deUnAmigo = (competitionId, kind, groupId, matchId, autorId) => {
-  const suya = `?jugador=${encodeURIComponent(autorId)}`;
-  if (kind === 'TEE_GROUP' && groupId) return `/competitions/${competitionId}/groups/${groupId}${suya}`;
-  if (kind === 'MATCH' && matchId) return `/competitions/${competitionId}/matches/${matchId}${suya}`;
-  return enSuFila(competitionId, autorId);
+  if (kind === 'TEE_GROUP' && groupId) return conJugador(`/competitions/${competitionId}/groups/${groupId}`, autorId);
+  if (kind === 'MATCH' && matchId) return conJugador(`/competitions/${competitionId}/matches/${matchId}`, autorId);
+  return rutaEnSuFila(competitionId, autorId);
 };
+
+// La clave de un texto en tercera persona, si es de un amigo: «finalStanding»
+// → «friendFinalStanding» (release social 2)
+const claveDeQuien = (mia, clave) => (mia ? clave : `friend${clave[0].toUpperCase()}${clave.slice(1)}`);
 
 /**
  * Un logro de torneo que dice dónde fue (L): `competition_id` y `kind`, y
@@ -246,7 +246,7 @@ const destinoDe = (tarjeta, yoId, autores) => {
   }
   // La posición final de un amigo: la clasificación, en su fila (F5)
   if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' && tarjeta.autorId !== yoId && payload.competition_id) {
-    return { ruta: enSuFila(payload.competition_id, tarjeta.autorId) };
+    return { ruta: rutaEnSuFila(payload.competition_id, tarjeta.autorId) };
   }
   return { ruta: payload.competition_id ? `/competitions/${payload.competition_id}` : null };
 };
@@ -382,7 +382,7 @@ const fraseDeLaRyder = (payload, t, { mia = true, autor } = {}) => {
   const esA = payload.my_team !== 'B';
   // La de un amigo, en tercera persona: «El equipo de Pedro (Europa) ganó…»
   // (release social 2); `my_team` es el suyo
-  const deQuien = mia ? (c) => c : (c) => `friend${c[0].toUpperCase()}${c.slice(1)}`;
+  const deQuien = (c) => claveDeQuien(mia, c);
   const persona = mia ? {} : { persona: autor };
   if (!clave || !Number.isFinite(deA) || !Number.isFinite(deB)) {
     return fraseCon(t, `feed:cards.${deQuien('ryderFinalBare')}`, { competition }, persona);
@@ -533,8 +533,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING') {
     const competition = nombreDelTorneo(payload, t);
     // La de un amigo, en tercera persona (release social 2)
-    const amigo = mia ? '' : 'friend';
-    const clave = (c) => `feed:cards.${amigo ? `${amigo}${c[0].toUpperCase()}${c.slice(1)}` : c}`;
+    const clave = (c) => `feed:cards.${claveDeQuien(mia, c)}`;
     const persona = mia ? {} : { persona: autor };
     const frase =
       payload.position != null

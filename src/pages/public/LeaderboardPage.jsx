@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useLocation } from 'react-router';
+import { useParams, Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import HeaderAuth from '../../components/layout/HeaderAuth';
@@ -27,7 +27,8 @@ const LeaderboardPage = () => {
   const { user, loading: sesionCargando } = useAuth();
   const location = useLocation();
   // La fila de un amigo, desde su posición o su logro en Actividad (release social 2)
-  const jugador = new URLSearchParams(location.search ?? '').get('jugador');
+  const [parametros] = useSearchParams();
+  const jugador = parametros.get('jugador');
   // Desde la ficha llega lo que ya se sabe de la competición: de esta, y de
   // un stroke play, no hace falta preguntar nada para pintar su general
   // (/code-review)
@@ -70,6 +71,9 @@ const LeaderboardPage = () => {
   // desarrollo, un refresco) espera a esa misma (revisor)
   const fichaMirada = useRef(null);
   const pollRef = useRef(null);
+  // La competición privada que ya dijo 403: relanzar el efecto (cambia la
+  // sesión) no vuelve a preguntarla (/code-review)
+  const privadaRef = useRef(null);
 
   // Su estado, cada 5 min: que empiece o acabe se sabe sin recargar, y acabada
   // deja de releerse (/code-review). Lo que llegue para otra, no vale
@@ -94,6 +98,7 @@ const LeaderboardPage = () => {
     // play salía un instante como error (/code-review). Y si la ficha ya dijo
     // que es un stroke play, la de la Ryder no hace falta
     if (!competitionId || sesionCargando || yaSabida) return undefined;
+    if (privadaRef.current === competitionId) return undefined;
     let vigente = true;
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): quien llama ni
@@ -149,7 +154,10 @@ const LeaderboardPage = () => {
         setError(err);
         // De una privada sin llave, ni se repite: otro 403 cada 30 s no
         // arregla nada y gasta el cupo compartido (revisor)
-        if (esDeUnaPrivada(err)) clearInterval(pollRef.current);
+        if (esDeUnaPrivada(err)) {
+          privadaRef.current = competitionId;
+          clearInterval(pollRef.current);
+        }
       } finally {
         if (vigente) setIsLoading(false);
       }
@@ -219,7 +227,7 @@ const LeaderboardPage = () => {
             />
           </>
         ) : (
-          !isLoading && !error && <LeaderboardView leaderboard={leaderboard} />
+          !isLoading && !error && <LeaderboardView leaderboard={leaderboard} jugador={jugador} />
         )}
       </main>
 

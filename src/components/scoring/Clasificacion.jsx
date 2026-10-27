@@ -81,11 +81,12 @@ const Clasificacion = ({
 
   // Al abrirla, y otra vez si deja de releerse (la competición acaba: lo sin
   // terminar pasa a NR/NP y lo pintado era de hasta un minuto antes; revisor)
+  // De una privada sin llave, tampoco al volver a su pestaña (/code-review)
   useEffect(() => {
-    if (!activa) return;
+    if (!activa || privada) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
     leer();
-  }, [activa, leer, cada, version]);
+  }, [activa, leer, cada, version, privada]);
   // De una privada sin llave, ni se repite: otro 403 no arregla nada (revisor)
   useSondeoMientras(activa && cada != null && !privada, leer, cada ?? 0);
   const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });

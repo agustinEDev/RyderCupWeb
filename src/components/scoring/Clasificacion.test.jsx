@@ -462,6 +462,18 @@ describe('Clasificacion · de una privada que no se puede ver (release social 2,
     expect(screen.queryByText('partida.retry')).not.toBeInTheDocument();
   });
 
+  it('ni al volver a su pestaña (/code-review)', async () => {
+    const pedir = vi.fn().mockRejectedValue(privada());
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa />);
+    await screen.findByTestId('clasificacion-privada');
+
+    rerender(<Clasificacion pedir={pedir} userId="x" activa={false} />);
+    rerender(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+    expect(pedir).toHaveBeenCalledTimes(1);
+  });
+
   it('y deja de pedirla: repetir un 403 no lo arregla (revisor)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {

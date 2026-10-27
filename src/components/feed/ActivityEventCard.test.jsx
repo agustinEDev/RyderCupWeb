@@ -1310,6 +1310,15 @@ describe('ActivityEventCard — a friend\'s quick match read-only, and tournamen
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/matches/mt?jugador=u2');
   });
 
+  it('F4: without an author id, no ?jugador=undefined (/code-review)', () => {
+    const a = pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7' }, { userId: null }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/groups/g-7');
+    a.unmount();
+
+    pinta(logro({ kind: 'TEE_GROUP' }, { userId: null }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/leaderboard');
+  });
+
   it("F4: a friend's achievement without its group → the standings, on their row", () => {
     pinta(logro({ kind: 'TEE_GROUP' }, { userId: 'u2' }));
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/leaderboard?jugador=u2');
