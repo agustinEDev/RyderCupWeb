@@ -85,6 +85,14 @@ describe('resolveScreen', () => {
     expect(resolveScreen(path)).toBeNull();
   });
 
+  it.each([
+    ['/competitions/c-1/groups/g-7', 'screens.friendGroup'],
+    ['/competitions/c-1/matches/m-9', 'screens.friendMatch'],
+  ])("titles a friend's read-only card %s and goes back the way it came", (path, titleKey) => {
+    // Se llega desde Actividad (release social 2): se vuelve por donde se vino
+    expect(resolveScreen(path)).toEqual({ titleKey, backTo: null, backByHistory: true });
+  });
+
   it('does not confuse the quick match list with its scoring screen', () => {
     expect(resolveScreen('/quick-matches')).toMatchObject({ titleKey: 'screens.myQuickMatches' });
     expect(resolveScreen('/quick-matches/q-1/scoring')).toBeNull();

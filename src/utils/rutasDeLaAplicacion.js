@@ -41,6 +41,8 @@ export const RUTAS_DE_LA_APLICACION = Object.freeze([
   '/competitions/:id',
   '/competitions/:id/draft',
   '/competitions/:id/rounds/:roundId/envelope',
+  '/competitions/:id/groups/:groupId',
+  '/competitions/:id/matches/:matchId',
   '/browse-competitions',
   '/admin/:seccion?',
   '/creator/competitions/:id/invitations',

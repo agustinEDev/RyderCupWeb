@@ -5,6 +5,7 @@ import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
 import { useCentrarEnMiFila } from '../../hooks/useCentrarEnMiFila';
 import { conGenero } from '../../utils/genero';
+import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 
 const HOYOS = 18;
 
@@ -42,6 +43,8 @@ const Clasificacion = ({
   const { t } = useTranslation('scoring');
   const [clasificacion, setClasificacion] = useState(null);
   const [sinCargar, setSinCargar] = useState(false);
+  // De una privada en la que no está, sin llave: reintentar no lo arregla
+  const [privada, setPrivada] = useState(false);
   const [categoria, setCategoria] = useState(null);
   // Las que hay, de la lectura sin filtro: al filtrar no desaparecen
   const [categorias, setCategorias] = useState([]);
@@ -65,8 +68,12 @@ const Clasificacion = ({
       if (categoria == null) {
         setCategorias([...new Set(leida.rows.map((r) => r.category).filter((c) => c != null))].sort((a, b) => a - b));
       }
-    } catch {
+    } catch (error) {
       if (!lecturas.aplicar(turno)) return;
+      if (esDeUnaPrivada(error)) {
+        setPrivada(true);
+        return;
+      }
       setSinCargar(true);
       setRespuestas((n) => n + 1);
     }
@@ -74,15 +81,25 @@ const Clasificacion = ({
 
   // Al abrirla, y otra vez si deja de releerse (la competición acaba: lo sin
   // terminar pasa a NR/NP y lo pintado era de hasta un minuto antes; revisor)
+  // De una privada sin llave, tampoco al volver a su pestaña (/code-review)
   useEffect(() => {
-    if (!activa) return;
+    if (!activa || privada) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pedir la clasificación al servidor es el objetivo
     leer();
-  }, [activa, leer, cada, version]);
-  useSondeoMientras(activa && cada != null, leer, cada ?? 0);
+  }, [activa, leer, cada, version, privada]);
+  // De una privada sin llave, ni se repite: otro 403 no arregla nada (revisor)
+  useSondeoMientras(activa && cada != null && !privada, leer, cada ?? 0);
   const bloqueRef = useCentrarEnMiFila({ modo: centraEnMi, activa, respuestas });
 
   if (!activa) return null;
+
+  if (privada) {
+    return (
+      <p data-testid="clasificacion-privada" className="text-sm text-gray-600">
+        {t('partida.standingsPrivate')}
+      </p>
+    );
+  }
 
   if (sinCargar && !clasificacion) {
     return (
