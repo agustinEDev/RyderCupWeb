@@ -1036,10 +1036,13 @@ const CompetitionDetail = () => {
     : null;
 
   // Check if competition has reached max players
-  // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
-  const approvedCount = enrollments.length > 0
+  // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
+  // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
+  const approvedCount = canManage && enrollments.length > 0
     ? approvedEnrollments.length
     : (competition.enrolledCount || 0);
+  // Ve menos de los que hay: sus amigos, hasta que se publiquen las partidas
+  const soloVeASusAmigos = !canManage && approvedEnrollments.length < approvedCount;
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
@@ -1702,16 +1705,24 @@ const CompetitionDetail = () => {
                 titulo={
                   <>
                     <Users className="w-5 h-5 flex-none text-green-600" />
-                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
+                    <TituloConNumero
+                      texto={t('detail.approvedPlayers')}
+                      numero={canManage ? approvedEnrollments.length : approvedCount}
+                    />
                   </>
                 }
               >
 
+                {soloVeASusAmigos && (
+                  <p className="mb-3 text-sm text-gray-600">{t('detail.onlyFriendsVisible')}</p>
+                )}
                 {approvedEnrollments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>{t('detail.noApprovedPlayers')}</p>
-                  </div>
+                  !soloVeASusAmigos && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>{t('detail.noApprovedPlayers')}</p>
+                    </div>
+                  )
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[...approvedEnrollments]
