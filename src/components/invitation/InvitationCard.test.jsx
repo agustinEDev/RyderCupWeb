@@ -150,11 +150,63 @@ describe('InvitationCard', () => {
       );
     });
 
-    it('I2: pendiente, no enlaza: si puede ver una privada antes de aceptar lo decide RyderCupAM#329', () => {
-      render(<InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />);
+    // Release social 2: el invitado ya puede abrir la privada antes de contestar.
+    // La tarjeta entera no: lleva los botones de aceptar y rechazar dentro
+    it('I2: pendiente, un enlace «Ver la competición» y los botones siguen', () => {
+      render(
+        <InvitationCard
+          invitation={pendingInvitation}
+          mode="player"
+          onAccept={onAccept}
+          onDecline={onDecline}
+          t={mockT}
+        />
+      );
+
+      const enlace = screen.getByRole('link', { name: 'card.viewCompetition' });
+      expect(enlace).toHaveAttribute('href', '/competitions/comp-1');
+      expect(screen.getByTestId('invitation-card').tagName).not.toBe('A');
+      expect(screen.getByTestId('accept-button')).toBeInTheDocument();
+      expect(screen.getByTestId('decline-button')).toBeInTheDocument();
+    });
+
+    it('I2b: y vuelve a las invitaciones desde la ficha', () => {
+      const Origen = () => <div data-testid="origen">{useLocation().state?.from}</div>;
+      renderSinRouter(
+        <MemoryRouter initialEntries={['/player/invitations']}>
+          <Routes>
+            <Route
+              path="/player/invitations"
+              element={<InvitationCard invitation={pendingInvitation} mode="player" t={mockT} />}
+            />
+            <Route path="/competitions/:id" element={<Origen />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('link', { name: 'card.viewCompetition' }));
+
+      expect(screen.getByTestId('origen')).toHaveTextContent('invitations');
+    });
+
+    it('I2c: rechazada o caducada, sin enlace', () => {
+      render(
+        <InvitationCard
+          invitation={{ ...pendingInvitation, status: 'DECLINED', isPending: false, isDeclined: true }}
+          mode="player"
+          t={mockT}
+        />
+      );
 
       expect(screen.queryByRole('link')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('abre-competicion')).not.toBeInTheDocument();
+    });
+
+    it('I2d: «Ver la competición», en los dos idiomas', async () => {
+      const es = (await import('../../i18n/locales/es/invitations.json')).default;
+      const en = (await import('../../i18n/locales/en/invitations.json')).default;
+
+      expect(es.card.viewCompetition).toBe('Ver la competición');
+      expect(en.card.viewCompetition).toBe('View the competition');
     });
 
     it('I3: el organizador no necesita el enlace: su lista ya está dentro de la competición', () => {

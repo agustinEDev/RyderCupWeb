@@ -31,10 +31,12 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
   // rechaza, y las ya respondidas no estorban en su lista
   const sePuedeRetirar = mode === 'creator' && invitation.isPending && Boolean(onWithdraw);
   const expirationText = invitation.isPending ? getExpirationText(invitation.expiresAt, t) : null;
-  // Aceptada, la tarjeta lleva a su competicion (FE #682). Pendiente no: si un
-  // invitado puede abrir una privada antes de aceptar lo decide RyderCupAM#329.
-  // Y el organizador ya mira esta lista desde dentro de la competicion
+  // Aceptada, la tarjeta lleva a su competicion (FE #682). Y el organizador ya
+  // mira esta lista desde dentro de la competicion
   const enlazaACompeticion = mode === 'player' && invitation.isAccepted && invitation.competitionId;
+  // Pendiente, el invitado ya puede mirarla antes de contestar (release social
+  // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
+  const puedeMirarla = showActions && invitation.competitionId;
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco
@@ -91,6 +93,17 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
               <Clock className="h-3.5 w-3.5" />
               <span>{expirationText}</span>
             </div>
+          )}
+
+          {puedeMirarla && (
+            <Link
+              to={`/competitions/${invitation.competitionId}`}
+              state={{ from: 'invitations' }}
+              className="mt-1 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              {t('card.viewCompetition')}
+              <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </Link>
           )}
 
           {invitation.respondedAt && !invitation.isPending && (
