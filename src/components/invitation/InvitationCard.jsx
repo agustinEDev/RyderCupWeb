@@ -1,9 +1,27 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Mail, Clock, User, MessageSquare, ChevronRight } from 'lucide-react';
 import InvitationBadge from './InvitationBadge';
 
 // Una sola regla para «Caducada» y para dejar de ofrecer la ficha (/code-review)
 const haCaducado = (expiresAt) => Boolean(expiresAt) && new Date(expiresAt) - new Date() <= 0;
+
+// Lo más que espera setTimeout: con más, salta enseguida
+const ESPERA_MAXIMA_MS = 2 ** 31 - 1;
+
+// Con la página abierta, la tarjeta se vuelve a pintar cuando caduca: el enlace
+// a la ficha no puede quedarse (CodeRabbit)
+const useHaCaducado = (expiresAt) => {
+  const [, setRepintar] = useState(0);
+  useEffect(() => {
+    if (!expiresAt) return undefined;
+    const falta = new Date(expiresAt) - new Date();
+    if (falta <= 0 || falta > ESPERA_MAXIMA_MS) return undefined;
+    const reloj = setTimeout(() => setRepintar((n) => n + 1), falta);
+    return () => clearTimeout(reloj);
+  }, [expiresAt]);
+  return haCaducado(expiresAt);
+};
 
 const getExpirationText = (expiresAt, t) => {
   if (!expiresAt) return null;
@@ -28,6 +46,7 @@ const CLAVE_DE_LA_FECHA = {
 
 const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isProcessing, t }) => {
   const showActions = mode === 'player' && invitation.isPending;
+  const caducada = useHaCaducado(invitation.expiresAt);
   // Quien invita puede retirar una pendiente (FE #724). El jugador no: él la
   // rechaza, y las ya respondidas no estorban en su lista
   const sePuedeRetirar = mode === 'creator' && invitation.isPending && Boolean(onWithdraw);
@@ -38,7 +57,7 @@ const InvitationCard = ({ invitation, mode, onAccept, onDecline, onWithdraw, isP
   // Pendiente, el invitado ya puede mirarla antes de contestar (release social
   // 2): con un enlace propio, porque la tarjeta lleva dentro aceptar y rechazar
   // Caducada ya no deja verla: el servidor tampoco la cuenta (revisor)
-  const puedeMirarla = showActions && invitation.competitionId && !haCaducado(invitation.expiresAt);
+  const puedeMirarla = showActions && invitation.competitionId && !caducada;
   const nombre = invitation.competitionName || t('card.for');
 
   // Aceptada, la tarjeta entera es el enlace: el titulo solo era un blanco

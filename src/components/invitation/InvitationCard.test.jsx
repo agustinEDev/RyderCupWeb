@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as renderSinRouter, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render as renderSinRouter, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import InvitationCard from './InvitationCard';
 
@@ -211,6 +211,87 @@ describe('InvitationCard', () => {
       );
 
       expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    describe('I2f: caduca con la página abierta (CodeRabbit)', () => {
+      beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+      });
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      const queCaducaEnUnMinuto = () => ({
+        ...pendingInvitation,
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      });
+
+      it('el enlace se va y dice «Caducada» en cuanto llega su hora', () => {
+        render(<InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />);
+        expect(screen.getByRole('link')).toBeInTheDocument();
+
+        act(() => {
+          vi.advanceTimersByTime(60_000);
+        });
+
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+        expect(screen.getByText('card.expired')).toBeInTheDocument();
+      });
+
+      it('antes de su hora sigue ahí', () => {
+        render(<InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />);
+
+        act(() => {
+          vi.advanceTimersByTime(59_000);
+        });
+
+        expect(screen.getByRole('link')).toBeInTheDocument();
+      });
+
+      it('al desmontarse no deja el reloj puesto', () => {
+        const { unmount } = render(
+          <InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />
+        );
+        expect(vi.getTimerCount()).toBe(1);
+
+        unmount();
+
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it('si cambia la fecha, cuenta con la nueva y suelta la vieja', () => {
+        const enUnaHora = { ...pendingInvitation, expiresAt: new Date(Date.now() + 3_600_000).toISOString() };
+        const { rerender } = render(<InvitationCard invitation={enUnaHora} mode="player" t={mockT} />);
+        rerender(<InvitationCard invitation={queCaducaEnUnMinuto()} mode="player" t={mockT} />);
+
+        expect(vi.getTimerCount()).toBe(1);
+        act(() => {
+          vi.advanceTimersByTime(60_000);
+        });
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      });
+
+      it('sin fecha, o ya caducada, no pone reloj', () => {
+        render(<InvitationCard invitation={{ ...pendingInvitation, expiresAt: null }} mode="player" t={mockT} />);
+        render(<InvitationCard invitation={{ ...pendingInvitation, expiresAt: undefined }} mode="player" t={mockT} />);
+        render(
+          <InvitationCard
+            invitation={{ ...pendingInvitation, expiresAt: new Date(Date.now() - 1).toISOString() }}
+            mode="player"
+            t={mockT}
+          />
+        );
+
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it('una fecha lejana no pone reloj: con más de 24,8 días, setTimeout saltaría enseguida', () => {
+        const lejana = { ...pendingInvitation, expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString() };
+        render(<InvitationCard invitation={lejana} mode="player" t={mockT} />);
+
+        expect(vi.getTimerCount()).toBe(0);
+        expect(screen.getByRole('link')).toBeInTheDocument();
+      });
     });
 
     it('I2d: «Ver la competición», en los dos idiomas', async () => {
