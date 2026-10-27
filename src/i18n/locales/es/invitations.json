@@ -101,5 +101,10 @@
     "subtitle": "Ver y responder a invitaciones de competiciones",
     "pendingCount_one": "{{count}} pendiente",
     "pendingCount_other": "{{count}} pendientes"
+  },
+  "inDetail": {
+    "title": "Te han invitado a esta competición",
+    "expiresOn": "Caduca el {{date}}",
+    "notPendingAnymore": "Esa invitación ya no estaba pendiente."
   }
 }

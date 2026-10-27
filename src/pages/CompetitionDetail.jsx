@@ -28,6 +28,7 @@ import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import InvitacionEnLaFicha from '../components/invitation/InvitacionEnLaFicha';
 import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -1291,6 +1292,11 @@ const CompetitionDetail = () => {
               </div>
             </motion.div>
 
+            {/* Mi invitación pendiente: aceptar o rechazar aquí mismo, sin pasar
+                por «Mis invitaciones». Respondida, la ficha se relee (release
+                social 2) */}
+            <InvitacionEnLaFicha invitacion={competition.myPendingInvitation ?? null} alCambiar={loadCompetition} />
+
             {/* Action Buttons */}
             {canManage && (
               <motion.div
@@ -1362,12 +1368,15 @@ const CompetitionDetail = () => {
             )}
 
             {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
-                creó, y con sitio. En una privada se entra por invitación, y el
+                creó, sin invitación pendiente, y con sitio. En una privada se entra por invitación, y el
                 servidor lo rechaza (FE #734) */}
             {!isCreator &&
               competition.status === 'ACTIVE' &&
               competition.visibility === 'PUBLIC' &&
               !hasEnrollment &&
+              // Con invitación pendiente, el cuadro: aceptarla ya inscribe
+              // (decidido el 27 oct)
+              !competition.myPendingInvitation &&
               !isFull && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

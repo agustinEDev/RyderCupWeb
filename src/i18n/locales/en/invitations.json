@@ -101,5 +101,10 @@
     "subtitle": "View and respond to competition invitations",
     "pendingCount_one": "{{count}} pending",
     "pendingCount_other": "{{count}} pending"
+  },
+  "inDetail": {
+    "title": "You've been invited to this competition",
+    "expiresOn": "Expires on {{date}}",
+    "notPendingAnymore": "That invitation was no longer pending."
   }
 }

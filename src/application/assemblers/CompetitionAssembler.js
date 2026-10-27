@@ -127,6 +127,14 @@ class CompetitionAssembler {
             teeTime: apiData.my_next_session.tee_time ?? null,
           }
         : null,
+      // Mi invitación pendiente, solo si aceptarla puede salir bien: el cuadro
+      // de la ficha (release social 2)
+      myPendingInvitation: apiData?.my_pending_invitation
+        ? {
+            id: apiData.my_pending_invitation.id,
+            expiresAt: apiData.my_pending_invitation.expires_at ?? null,
+          }
+        : null,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
