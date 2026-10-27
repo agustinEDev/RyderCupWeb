@@ -174,16 +174,31 @@ const jugoElLogroDeTorneo = (evento, tarjeta, yoId, jugoSegunLoDeAntes) => {
   return tarjeta.autorId === yoId || jugadores.includes(yoId);
 };
 
+// La clasificación de una competición, en la fila de un jugador (release social 2)
+const enSuFila = (competitionId, userId) =>
+  `/competitions/${competitionId}/leaderboard?jugador=${encodeURIComponent(userId)}`;
+
+// La tarjeta de solo lectura de la partida (o el partido) de un amigo; sin
+// saber cuál, la clasificación en su fila (F4)
+const deUnAmigo = (competitionId, kind, groupId, matchId, autorId) => {
+  const suya = `?jugador=${encodeURIComponent(autorId)}`;
+  if (kind === 'TEE_GROUP' && groupId) return `/competitions/${competitionId}/groups/${groupId}${suya}`;
+  if (kind === 'MATCH' && matchId) return `/competitions/${competitionId}/matches/${matchId}${suya}`;
+  return enSuFila(competitionId, autorId);
+};
+
 /**
  * Un logro de torneo que dice dónde fue (L): `competition_id` y `kind`, y
  * `group_id` si fue en un grupo de stroke play. Quien lo jugó va a su
- * tarjeta; quien no, a la ficha del torneo. Si falta el grupo o el partido,
- * también a la ficha.
+ * tarjeta; quien no, a la de su amigo en solo lectura (release social 2), y
+ * sin saber cuál, a la clasificación en su fila.
  */
-const destinoDeLogroDeTorneo = (evento, jugo) => {
+const destinoDeLogroDeTorneo = (evento, jugo, autorId) => {
   const { competition_id: competitionId, kind, group_id: groupId } = evento.payload;
   const ficha = `/competitions/${competitionId}`;
-  if (!jugo) return { ruta: ficha };
+  // De un amigo, sin haberla jugado: su tarjeta, en solo lectura; sin saber
+  // cuál, la clasificación en su fila (release social 2, F4)
+  if (!jugo) return { ruta: deUnAmigo(competitionId, kind, groupId, evento.sourceMatchId, autorId) };
   if (kind === 'TEE_GROUP' && groupId) {
     return { ruta: rutaDeAnotacion({ id: groupId, competitionId, esPartidaDeFranja: true }) };
   }
@@ -210,7 +225,13 @@ const destinoDe = (tarjeta, yoId, autores) => {
     const conSitio = tarjeta.eventos.find(
       (e) => e.payload?.from_tournament && e.payload?.competition_id && e.payload?.kind
     );
-    if (conSitio) return destinoDeLogroDeTorneo(conSitio, jugoElLogroDeTorneo(conSitio, tarjeta, yoId, jugo));
+    if (conSitio) {
+      return destinoDeLogroDeTorneo(
+        conSitio,
+        jugoElLogroDeTorneo(conSitio, tarjeta, yoId, jugo),
+        tarjeta.autorId
+      );
+    }
     // Los de antes, sin torneo ni tipo: como siempre. Sin haberlo jugado, al
     // perfil del amigo (sin él en los autores no hay perfil al que ir)
     if (!jugo) return { ruta: personaDe(tarjeta.autorId, autores, () => '').enlace };
@@ -222,6 +243,10 @@ const destinoDe = (tarjeta, yoId, autores) => {
   // Solo llega a uno mismo (SELF): siempre lo jugó
   if (tarjeta.tipo === 'TOURNAMENT_MATCH_RESULT') {
     return { ruta: primero.sourceMatchId ? `/player/matches/${primero.sourceMatchId}/scoring` : null };
+  }
+  // La posición final de un amigo: la clasificación, en su fila (F5)
+  if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' && tarjeta.autorId !== yoId && payload.competition_id) {
+    return { ruta: enSuFila(payload.competition_id, tarjeta.autorId) };
   }
   return { ruta: payload.competition_id ? `/competitions/${payload.competition_id}` : null };
 };
@@ -349,22 +374,27 @@ const RESULTADOS_DE_RYDER = { WON: 'ryderWon', LOST: 'ryderLost', HALVED: 'ryder
  * ganó 15½–12½». No hay puesto: hay equipos, y el tuyo va primero en el
  * marcador. Sin resultado conocido o sin los dos tanteos, solo que es final.
  */
-const fraseDeLaRyder = (payload, t) => {
+const fraseDeLaRyder = (payload, t, { mia = true, autor } = {}) => {
   const competition = nombreDelTorneo(payload, t);
   const clave = RESULTADOS_DE_RYDER[payload.outcome];
   const deA = payload.team_a_points;
   const deB = payload.team_b_points;
   const esA = payload.my_team !== 'B';
+  // La de un amigo, en tercera persona: «El equipo de Pedro (Europa) ganó…»
+  // (release social 2); `my_team` es el suyo
+  const deQuien = mia ? (c) => c : (c) => `friend${c[0].toUpperCase()}${c.slice(1)}`;
+  const persona = mia ? {} : { persona: autor };
   if (!clave || !Number.isFinite(deA) || !Number.isFinite(deB)) {
-    return fraseCon(t, 'feed:cards.ryderFinalBare', { competition });
+    return fraseCon(t, `feed:cards.${deQuien('ryderFinalBare')}`, { competition }, persona);
   }
   const [mios, suyos] = esA ? [deA, deB] : [deB, deA];
   const equipo = esA ? payload.team_a_name : payload.team_b_name;
-  return fraseCon(t, `feed:cards.${clave}${equipo ? '' : 'NoName'}`, {
-    competition,
-    team: equipo,
-    score: `${puntosDeRyder(mios)}–${puntosDeRyder(suyos)}`,
-  });
+  return fraseCon(
+    t,
+    `feed:cards.${deQuien(clave)}${equipo ? '' : 'NoName'}`,
+    { competition, team: equipo, score: `${puntosDeRyder(mios)}–${puntosDeRyder(suyos)}` },
+    persona
+  );
 };
 
 const personasDe = (ids, autores, t) =>
@@ -497,19 +527,24 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   }
 
   if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING' && payload.tournament_type === 'RYDER_CUP') {
-    return { frase: fraseDeLaRyder(payload, t), detalles: [] };
+    return { frase: fraseDeLaRyder(payload, t, { mia, autor }), detalles: [] };
   }
 
   if (tarjeta.tipo === 'TOURNAMENT_FINAL_STANDING') {
     const competition = nombreDelTorneo(payload, t);
+    // La de un amigo, en tercera persona (release social 2)
+    const amigo = mia ? '' : 'friend';
+    const clave = (c) => `feed:cards.${amigo ? `${amigo}${c[0].toUpperCase()}${c.slice(1)}` : c}`;
+    const persona = mia ? {} : { persona: autor };
     const frase =
       payload.position != null
-        ? fraseCon(t, 'feed:cards.finalStanding', {
-            competition,
-            position: puesto(payload, t),
-            total: payload.total_players,
-          })
-        : fraseCon(t, 'feed:cards.finalStandingNoPosition', { competition });
+        ? fraseCon(
+            t,
+            clave('finalStanding'),
+            { competition, position: puesto(payload, t), total: payload.total_players },
+            persona
+          )
+        : fraseCon(t, clave('finalStandingNoPosition'), { competition }, persona);
     return { frase, detalles: [] };
   }
 
