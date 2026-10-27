@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useLocation } from 'react-router';
+import { useParams, Link, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import Footer from '../../components/layout/Footer';
 import LeaderboardView from '../../components/scoring/LeaderboardView';
 import ClasificacionesDeLaCompeticion from '../../components/scoring/ClasificacionesDeLaCompeticion';
+import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 import { useAuth } from '../../hooks/useAuth';
 import { getCompetitionDetailUseCase, getLeaderboardUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
@@ -25,6 +26,9 @@ const LeaderboardPage = () => {
   const { t } = useTranslation('scoring');
   const { user, loading: sesionCargando } = useAuth();
   const location = useLocation();
+  // La fila de un amigo, desde su posición o su logro en Actividad (release social 2)
+  const [parametros] = useSearchParams();
+  const jugador = parametros.get('jugador');
   // Desde la ficha llega lo que ya se sabe de la competición: de esta, y de
   // un stroke play, no hace falta preguntar nada para pintar su general
   // (/code-review)
@@ -67,6 +71,9 @@ const LeaderboardPage = () => {
   // desarrollo, un refresco) espera a esa misma (revisor)
   const fichaMirada = useRef(null);
   const pollRef = useRef(null);
+  // La competición privada que ya dijo 403: relanzar el efecto (cambia la
+  // sesión) no vuelve a preguntarla (/code-review)
+  const privadaRef = useRef(null);
 
   // Su estado, cada 5 min: que empiece o acabe se sabe sin recargar, y acabada
   // deja de releerse (/code-review). Lo que llegue para otra, no vale
@@ -91,6 +98,10 @@ const LeaderboardPage = () => {
     // play salía un instante como error (/code-review). Y si la ficha ya dijo
     // que es un stroke play, la de la Ryder no hace falta
     if (!competitionId || sesionCargando || yaSabida) return undefined;
+    // La marca es de esa competición: al pasar a otra se olvida, o al volver a
+    // la privada la página se quedaba cargando para siempre (CodeRabbit)
+    if (privadaRef.current !== null && privadaRef.current !== competitionId) privadaRef.current = null;
+    if (privadaRef.current === competitionId) return undefined;
     let vigente = true;
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): quien llama ni
@@ -142,7 +153,14 @@ const LeaderboardPage = () => {
         setLeaderboard(data);
         setError(null);
       } catch (err) {
-        if (vigente) setError(err);
+        if (!vigente) return;
+        setError(err);
+        // De una privada sin llave, ni se repite: otro 403 cada 30 s no
+        // arregla nada y gasta el cupo compartido (revisor)
+        if (esDeUnaPrivada(err)) {
+          privadaRef.current = competitionId;
+          clearInterval(pollRef.current);
+        }
       } finally {
         if (vigente) setIsLoading(false);
       }
@@ -190,7 +208,13 @@ const LeaderboardPage = () => {
 
         {error && !isLoading && (
           <div className="text-center py-8">
-            <p className="text-red-600">{error.message || t('errors.generic')}</p>
+            {esDeUnaPrivada(error) ? (
+              <p data-testid="clasificacion-privada" className="text-gray-600">
+                {t('leaderboard.private')}
+              </p>
+            ) : (
+              <p className="text-red-600">{error.message || t('errors.generic')}</p>
+            )}
           </div>
         )}
 
@@ -201,12 +225,12 @@ const LeaderboardPage = () => {
               // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
               key={competitionId}
               competitionId={competitionId}
-              userId={user?.id}
+              userId={jugador || user?.id}
               enJuego={enJuego}
             />
           </>
         ) : (
-          !isLoading && !error && <LeaderboardView leaderboard={leaderboard} />
+          !isLoading && !error && <LeaderboardView leaderboard={leaderboard} jugador={jugador} />
         )}
       </main>
 

@@ -47,6 +47,9 @@ const SCREENS = [
   { pattern: '/players/:userId', titleKey: 'screens.playerProfile', back: 'history' },
   // Se llega desde Actividad o desde el perfil de un amigo: se vuelve por donde se vino
   { pattern: '/quick-matches/:quickMatchId/shared', titleKey: 'screens.sharedQuickMatch', back: 'history' },
+  // La partida o el partido de un amigo, desde su logro en Actividad (release social 2)
+  { pattern: '/competitions/:id/groups/:groupId', titleKey: 'screens.friendGroup', back: 'history' },
+  { pattern: '/competitions/:id/matches/:matchId', titleKey: 'screens.friendMatch', back: 'history' },
 
   { pattern: '/browse-competitions', titleKey: 'screens.browseCompetitions', parent: '/dashboard' },
   { pattern: '/player/invitations', titleKey: 'screens.myInvitations', parent: '/dashboard' },

@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 
-const mockLocationState = { state: null };
+const mockLocationState = { state: null, search: '' };
 const mockParams = { id: 'c-1' };
 vi.mock('react-router', () => ({
   useParams: () => mockParams,
   useLocation: () => mockLocationState,
+  useSearchParams: () => [new URLSearchParams(mockLocationState.search ?? '')],
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
   Navigate: ({ to, replace }) => <div data-testid="redirige" data-to={to} data-replace={String(Boolean(replace))} />,
 }));
@@ -60,7 +61,8 @@ vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', () => ({
 }));
 
 vi.mock('../../components/scoring/LeaderboardView', () => ({
-  default: ({ leaderboard }) => leaderboard ? <div data-testid="leaderboard-view">Leaderboard</div> : null,
+  default: ({ leaderboard, jugador }) =>
+    leaderboard ? <div data-testid="leaderboard-view" data-jugador={jugador ?? ''}>Leaderboard</div> : null,
 }));
 
 import LeaderboardPage, { TOPE_DE_LA_FICHA_MS } from './LeaderboardPage';
@@ -74,6 +76,7 @@ describe('LeaderboardPage', () => {
     mockDetalle.mockReset().mockResolvedValue(null);
     mockUser.current = null;
     mockLocationState.state = null;
+    mockLocationState.search = '';
   });
 
   it('should render the page with header and footer', async () => {
@@ -593,6 +596,124 @@ describe('LeaderboardPage', () => {
 
       expect(await screen.findByText('llega con sus rondas')).toBeInTheDocument();
       expect(mockDetalle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('release social 2: la fila de un amigo y la privada (F5, F7)', () => {
+    it('F5: con ?jugador, destaca y centra su fila en la general', async () => {
+      mockUser.current = { id: 'me' };
+      mockLocationState.search = '?jugador=u2';
+      mockDetalle.mockResolvedValue({ id: 'c-1', name: 'Copa X', hasTeams: false, status: 'COMPLETED' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-user', 'u2');
+    });
+
+    it('sin ?jugador, la de quien mira', async () => {
+      mockUser.current = { id: 'me' };
+      mockDetalle.mockResolvedValue({ id: 'c-1', name: 'Copa X', hasTeams: false, status: 'COMPLETED' });
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-user', 'me');
+    });
+
+    it('F7: una Ryder privada que no puede ver lo dice, en vez del error', async () => {
+      mockUser.current = { id: 'me' };
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(
+        Object.assign(new Error('Lo jugado de una competición privada…'), {
+          status: 403,
+          errorCode: 'PRIVATE_COMPETITION',
+        })
+      );
+
+      render(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('clasificacion-privada')).toHaveTextContent(
+        'leaderboard.private'
+      );
+      expect(screen.queryByText(/Lo jugado de una competición privada/)).not.toBeInTheDocument();
+    });
+
+    it('F5: en una Ryder, ?jugador= llega a la vista de los partidos (/code-review)', async () => {
+      mockUser.current = { id: 'me' };
+      mockLocationState.search = '?jugador=u2';
+      try {
+        render(<LeaderboardPage />);
+
+        expect(await screen.findByTestId('leaderboard-view')).toHaveAttribute('data-jugador', 'u2');
+      } finally {
+        mockLocationState.search = '';
+      }
+    });
+
+    it('F7: si la página se relanza (cambia la sesión), no vuelve a pedirla (/code-review)', async () => {
+      mockUser.current = { id: 'me' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        getLeaderboardUseCase.execute.mockRejectedValue(
+          Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' })
+        );
+        const { rerender } = render(<LeaderboardPage />);
+        await screen.findByTestId('clasificacion-privada');
+        const pedidas = getLeaderboardUseCase.execute.mock.calls.length;
+
+        mockUser.current = null;
+        rerender(<LeaderboardPage />);
+        await vi.advanceTimersByTimeAsync(30000);
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(getLeaderboardUseCase.execute.mock.calls.length).toBe(pedidas);
+        expect(screen.getByTestId('clasificacion-privada')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+        getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      }
+    });
+
+    it('F7: privada → otra → la privada otra vez: vuelve a decirlo, no se queda cargando (CodeRabbit)', async () => {
+      mockUser.current = { id: 'me' };
+      const privada = Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+      getLeaderboardUseCase.execute.mockImplementation((id) =>
+        id === 'c-1' ? Promise.reject(privada) : Promise.resolve(mockRyder)
+      );
+      try {
+        const { rerender } = render(<LeaderboardPage />);
+        await screen.findByTestId('clasificacion-privada');
+
+        mockParams.id = 'c-2';
+        rerender(<LeaderboardPage />);
+        await screen.findByTestId('leaderboard-view');
+        mockParams.id = 'c-1';
+        rerender(<LeaderboardPage />);
+
+        expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+      } finally {
+        mockParams.id = 'c-1';
+        getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      }
+    });
+
+    it('F7: y deja de pedirla cada 30 s (revisor)', async () => {
+      mockUser.current = { id: 'me' };
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        getLeaderboardUseCase.execute.mockRejectedValue(
+          Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' })
+        );
+        render(<LeaderboardPage />);
+        await screen.findByTestId('clasificacion-privada');
+        const pedidas = getLeaderboardUseCase.execute.mock.calls.length;
+
+        await vi.advanceTimersByTimeAsync(30000);
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(getLeaderboardUseCase.execute.mock.calls.length).toBe(pedidas);
+      } finally {
+        vi.useRealTimers();
+        getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+      }
     });
   });
 });

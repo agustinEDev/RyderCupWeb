@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import TeamStandingsHeader from './TeamStandingsHeader';
 
@@ -25,13 +26,27 @@ const fechaCorta = (dia, idioma) => {
   }
 };
 
-const LeaderboardView = ({ leaderboard }) => {
+const juegaEn = (match, jugador) =>
+  [...(match.teamAPlayers ?? []), ...(match.teamBPlayers ?? [])].some((p) => p.userId === jugador);
+
+const LeaderboardView = ({ leaderboard, jugador = null }) => {
   const { t, i18n } = useTranslation(['scoring', 'schedule']);
+  // Con ?jugador= (la posición final de un amigo en Actividad), sus partidos
+  // destacados y el primero en pantalla (release social 2, /code-review)
+  const primeroSuyoRef = useRef(null);
+  const partidos = leaderboard?.matches ?? [];
+  const enJuego = partidos.filter((m) => m.status === 'IN_PROGRESS');
+  const acabados = partidos.filter((m) => m.status === 'COMPLETED' || m.status === 'CONCEDED' || m.status === 'WALKOVER');
+  // El primero suyo en el orden en que se pintan: en juego, luego acabados
+  const primeroSuyo = jugador ? [...enJuego, ...acabados].find((m) => juegaEn(m, jugador))?.matchId : undefined;
+  useEffect(() => {
+    if (primeroSuyo) primeroSuyoRef.current?.scrollIntoView?.({ block: 'center' });
+  }, [primeroSuyo]);
 
   if (!leaderboard) return null;
 
-  const inProgress = (leaderboard.matches || []).filter(m => m.status === 'IN_PROGRESS');
-  const completed = (leaderboard.matches || []).filter(m => m.status === 'COMPLETED' || m.status === 'CONCEDED' || m.status === 'WALKOVER');
+  const inProgress = enJuego;
+  const completed = acabados;
 
   const renderMatch = (match) => {
     const teamANames = (match.teamAPlayers ?? []).map(p => p.userName).join(' / ');
@@ -42,9 +57,16 @@ const LeaderboardView = ({ leaderboard }) => {
     const isTeamBLeading = match.leadingTeam === 'B';
     const teamAHighlighted = isTeamALeading || teamAWon;
     const teamBHighlighted = isTeamBLeading || teamBWon;
+    const suyo = !!jugador && juegaEn(match, jugador);
 
     return (
-      <div key={match.matchId} data-testid={`leaderboard-match-${match.matchId}`} className="bg-white rounded-lg border border-gray-200 p-4">
+      <div
+        key={match.matchId}
+        ref={match.matchId === primeroSuyo ? primeroSuyoRef : undefined}
+        data-testid={`leaderboard-match-${match.matchId}`}
+        data-destacado={suyo ? 'true' : undefined}
+        className={`bg-white rounded-lg border p-4 ${suyo ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200'}`}
+      >
         <div className="flex items-center justify-between mb-3">
           <span className="min-w-0 text-xs font-medium text-gray-500">
             {/* Con varias sesiones el número se repite: dos «#2» seguidos no

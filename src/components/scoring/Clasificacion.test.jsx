@@ -447,3 +447,55 @@ describe('Clasificacion · me lleva a mi fila', () => {
   });
 });
 
+
+describe('Clasificacion · de una privada que no se puede ver (release social 2, F7)', () => {
+  const privada = () =>
+    Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+
+  it('dice que solo la ven quienes participan, sin reintentar', async () => {
+    const pedir = vi.fn().mockRejectedValue(privada());
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    expect(await screen.findByTestId('clasificacion-privada')).toHaveTextContent(
+      'partida.standingsPrivate'
+    );
+    expect(screen.queryByText('partida.retry')).not.toBeInTheDocument();
+  });
+
+  it('ni al volver a su pestaña (/code-review)', async () => {
+    const pedir = vi.fn().mockRejectedValue(privada());
+    const { rerender } = render(<Clasificacion pedir={pedir} userId="x" activa />);
+    await screen.findByTestId('clasificacion-privada');
+
+    rerender(<Clasificacion pedir={pedir} userId="x" activa={false} />);
+    rerender(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+    expect(pedir).toHaveBeenCalledTimes(1);
+  });
+
+  it('y deja de pedirla: repetir un 403 no lo arregla (revisor)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const pedir = vi.fn().mockRejectedValue(privada());
+      render(<Clasificacion pedir={pedir} userId="x" activa cada={60000} />);
+      await screen.findByTestId('clasificacion-privada');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(180000);
+      });
+
+      expect(pedir).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('otro 403 sigue siendo un fallo que se reintenta', async () => {
+    const pedir = vi.fn().mockRejectedValue(Object.assign(new Error('x'), { status: 403 }));
+    render(<Clasificacion pedir={pedir} userId="x" activa />);
+
+    expect(await screen.findByText('partida.standingsNotLoaded')).toBeInTheDocument();
+    expect(screen.queryByTestId('clasificacion-privada')).not.toBeInTheDocument();
+  });
+});

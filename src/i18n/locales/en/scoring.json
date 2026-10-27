@@ -109,7 +109,8 @@
     "wins": "{{score}} to {{team}}",
     "conceded": "{{team}} (Conceded)",
     "walkover": "{{team}} (Walkover)",
-    "noMatches": "No matches available"
+    "noMatches": "No matches available",
+    "private": "Only participants can see these standings"
   },
   "validation": {
     "match": "Match",
@@ -367,7 +368,8 @@
     "cannotClear": "A stroke cannot be left blank: to remove it, use \"Delete what was scored\".",
     "notOpenYet": "Scoring for this group has not opened yet",
     "organiserValidates": "Nobody playing marks you: the organiser validates your holes. Keep scoring your strokes.",
-    "tabsLabel": "Game view"
+    "tabsLabel": "Game view",
+    "standingsPrivate": "Only participants can see these standings"
   },
   "mapa": {
     "abrir": "Map",
@@ -459,5 +461,16 @@
     "organizerWithdraw": "Withdraw {{nombre}}",
     "organizerUndo": "Undo {{nombre}}'s withdrawal",
     "pendingScores": "You have scores not sent yet: once they reach the server you can withdraw, or they would be lost"
+  },
+  "friendCard": {
+    "readOnly": "Read only",
+    "forbidden": "Only participants can see this game",
+    "notFound": "This game does not exist",
+    "error": "The game could not be loaded",
+    "retry": "Retry",
+    "back": "Back",
+    "standings": "See standings",
+    "groupTitle": "Group {{number}}",
+    "matchTitle": "Match {{number}}"
   }
 }

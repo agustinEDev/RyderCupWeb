@@ -42,6 +42,47 @@ const mockLeaderboard = {
   ],
 };
 
+describe('LeaderboardView — los partidos de un jugador (release social 2, /code-review)', () => {
+  it('con ?jugador=, se destacan los suyos, en cualquiera de los dos equipos', () => {
+    render(<LeaderboardView leaderboard={mockLeaderboard} jugador="u4" />);
+
+    expect(screen.getByTestId('leaderboard-match-m-2')).toHaveAttribute('data-destacado', 'true');
+    expect(screen.getByTestId('leaderboard-match-m-1')).not.toHaveAttribute('data-destacado');
+  });
+
+  it('el primero de los suyos se centra en pantalla', () => {
+    const centrar = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = centrar;
+
+    render(<LeaderboardView leaderboard={mockLeaderboard} jugador="u1" />);
+
+    expect(centrar).toHaveBeenCalledTimes(1);
+    expect(centrar.mock.contexts[0]).toBe(screen.getByTestId('leaderboard-match-m-1'));
+  });
+
+  it('con uno acabado y otro en juego, se centra el de en juego, que se pinta primero', () => {
+    const centrar = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = centrar;
+    const conLosDos = {
+      ...mockLeaderboard,
+      matches: [
+        { ...mockLeaderboard.matches[1], teamAPlayers: [{ userId: 'u9', userName: 'Nueve' }] },
+        { ...mockLeaderboard.matches[0], teamBPlayers: [{ userId: 'u9', userName: 'Nueve' }] },
+      ],
+    };
+
+    render(<LeaderboardView leaderboard={conLosDos} jugador="u9" />);
+
+    expect(centrar.mock.contexts[0]).toBe(screen.getByTestId('leaderboard-match-m-1'));
+  });
+
+  it('sin jugador, ninguno', () => {
+    render(<LeaderboardView leaderboard={mockLeaderboard} />);
+
+    expect(document.querySelectorAll('[data-destacado]')).toHaveLength(0);
+  });
+});
+
 describe('LeaderboardView', () => {
   it('should return null when leaderboard is null', () => {
     const { container } = render(<LeaderboardView leaderboard={null} />);

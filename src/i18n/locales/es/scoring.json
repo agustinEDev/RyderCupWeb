@@ -109,7 +109,8 @@
     "wins": "{{score}} para {{team}}",
     "conceded": "{{team}} (Concedido)",
     "walkover": "{{team}} (Walkover)",
-    "noMatches": "No hay partidos disponibles"
+    "noMatches": "No hay partidos disponibles",
+    "private": "Esta clasificación solo la ven quienes participan"
   },
   "validation": {
     "match": "Coincide",
@@ -377,7 +378,8 @@
     "cannotClear": "Un número no se deja en blanco: para quitarlo, «Borrar lo anotado».",
     "notOpenYet": "La anotación de esta partida aún no ha abierto",
     "organiserValidates": "Nadie en juego te marca: tus hoyos los valida el organizador. Sigue anotando tus golpes.",
-    "tabsLabel": "Vista de la partida"
+    "tabsLabel": "Vista de la partida",
+    "standingsPrivate": "Esta clasificación solo la ven quienes participan"
   },
   "mapa": {
     "abrir": "Mapa",
@@ -469,5 +471,16 @@
     "organizerWithdraw": "Retirar a {{nombre}}",
     "organizerUndo": "Deshacer la retirada de {{nombre}}",
     "pendingScores": "Tienes golpes sin enviar: cuando lleguen al servidor podrás retirarte, o se perderían"
+  },
+  "friendCard": {
+    "readOnly": "Solo lectura",
+    "forbidden": "Esta partida solo la ven quienes participan",
+    "notFound": "Esta partida no existe",
+    "error": "No se pudo cargar la partida",
+    "retry": "Reintentar",
+    "back": "Volver",
+    "standings": "Ver clasificación",
+    "groupTitle": "Partida {{number}}",
+    "matchTitle": "Partido {{number}}"
   }
 }
