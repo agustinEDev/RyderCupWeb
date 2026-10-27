@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../utils/toast';
+import { mensajeDeError } from '../utils/sinCobertura';
 import { useGeneroParaApuntarse } from './useGeneroParaApuntarse';
 import { respondToInvitationUseCase } from '../composition';
 
@@ -56,6 +57,14 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
     }
   };
 
+  // Sin conexión, el texto de la app y no el «Failed to fetch» del navegador;
+  // con motivo del servidor, ese; un 5xx, el genérico (CodeRabbit)
+  const textoDelFallo = (error) =>
+    mensajeDeError(error, {
+      sinConexion: t('common:sinConexion.mensaje'),
+      generico: t('errors.failedToRespond'),
+    });
+
   const avisarDelFallo = (error) => {
     if (error?.errorCode === 'INVITATION_NO_ROOM') {
       customToast.error(t('errors.noRoom'));
@@ -67,7 +76,7 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
       releer(alCambiar);
       return;
     }
-    customToast.error(error?.message || t('errors.failedToRespond'));
+    customToast.error(textoDelFallo(error));
   };
 
   // Hasta que la pantalla se ha releído, sigue en curso: si no, el botón se
@@ -105,7 +114,7 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
       await generoParaApuntarse.guardar(genero);
     } catch (error) {
       console.error('Error saving gender:', error);
-      customToast.error(error?.message || t('errors.failedToRespond'));
+      customToast.error(textoDelFallo(error));
       terminar(invitationId);
       return;
     }

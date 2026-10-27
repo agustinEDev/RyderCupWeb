@@ -110,13 +110,14 @@ describe('InvitacionEnLaFicha — aceptar', () => {
 
   it('I4: si no se puede guardar el género, ni acepta ni recarga', async () => {
     genero.falta = true;
-    genero.guardar.mockRejectedValue(new Error('sin red'));
+    genero.guardar.mockRejectedValue(new TypeError('Failed to fetch'));
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
     fireEvent.click(screen.getByTestId('elegir-genero'));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('sin red'));
+    // Sin respuesta del servidor, el texto de «sin conexión» de la app (CodeRabbit)
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
     expect(responder).not.toHaveBeenCalled();
     expect(alCambiar).not.toHaveBeenCalled();
   });
@@ -157,7 +158,8 @@ describe('InvitacionEnLaFicha — aceptar', () => {
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    // El de la app, no el «Failed to fetch» del navegador (CodeRabbit)
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
     expect(alCambiar).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('invitacion-aceptar'));
@@ -209,13 +211,13 @@ describe('InvitacionEnLaFicha — rechazar', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it('I11: otro fallo al rechazar, aviso y sin recargar', async () => {
-    responder.mockRejectedValue(fallo({ status: 500 }));
+  it('I11: un 5xx al rechazar, el genérico (no el fallo del servidor en crudo) y sin recargar', async () => {
+    responder.mockRejectedValue(Object.assign(new Error('Internal Server Error'), { status: 500 }));
     const { alCambiar } = pinta();
 
     fireEvent.click(screen.getByTestId('invitacion-rechazar'));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Te falta el hándicap'));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('errors.failedToRespond'));
     expect(alCambiar).not.toHaveBeenCalled();
   });
 });
