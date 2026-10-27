@@ -25,7 +25,8 @@ import { respondToInvitationUseCase } from '../composition';
 export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendiente = 'errors.notPendingAnymore' }) => {
   const { t } = useTranslation('invitations');
   const generoParaApuntarse = useGeneroParaApuntarse();
-  // Las que se están respondiendo: cada tarjeta, desactivada mientras la suya
+  // Las que se están respondiendo, y con qué: cada tarjeta, desactivada (y con
+  // «Aceptando…» o «Rechazando…») mientras la suya
   const [enProceso, setEnProceso] = useState([]);
   const [aceptandoSinGenero, setAceptandoSinGenero] = useState(null);
   // Un doble toque antes de que se pinte el botón desactivado: una sola
@@ -33,39 +34,56 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
   // pudiendo responder mientras tanto (revisor)
   const enCurso = useRef(new Set());
 
-  const empezar = (invitationId) => {
+  const empezar = (invitationId, accion) => {
     if (enCurso.current.has(invitationId)) return false;
     enCurso.current.add(invitationId);
-    setEnProceso((ids) => [...ids, invitationId]);
+    setEnProceso((lista) => [...lista, { id: invitationId, accion }]);
     return true;
   };
   const terminar = (invitationId) => {
     enCurso.current.delete(invitationId);
-    setEnProceso((ids) => ids.filter((id) => id !== invitationId));
+    setEnProceso((lista) => lista.filter((p) => p.id !== invitationId));
+  };
+
+  // Releer lo de la pantalla tras una respuesta que SÍ se guardó: si falla, no
+  // se dice que no se pudo responder (/code-review). Cada pantalla avisa ya de
+  // sus propios fallos al cargar
+  const releer = async (hacer, ...argumentos) => {
+    try {
+      await hacer(...argumentos);
+    } catch (error) {
+      console.error('Error reloading after answering an invitation:', error);
+    }
   };
 
   const avisarDelFallo = (error) => {
     if (error?.errorCode === 'INVITATION_NO_ROOM') {
       customToast.error(t('errors.noRoom'));
-      alCambiar();
+      releer(alCambiar);
       return;
     }
     if (error?.status === 409 && !error?.errorCode) {
       customToast.error(t(textoYaNoPendiente));
-      alCambiar();
+      releer(alCambiar);
       return;
     }
     customToast.error(error?.message || t('errors.failedToRespond'));
   };
 
+  // Hasta que la pantalla se ha releído, sigue en curso: si no, el botón se
+  // reactivaba antes y un segundo toque mandaba otra respuesta (/code-review)
   const responderAceptando = async (invitationId) => {
     try {
-      const result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
+      let result;
+      try {
+        result = await respondToInvitationUseCase.execute(invitationId, 'ACCEPT');
+      } catch (error) {
+        console.error('Error accepting invitation:', error);
+        avisarDelFallo(error);
+        return;
+      }
       customToast.success(t('success.accepted'));
-      alAceptar(result);
-    } catch (error) {
-      console.error('Error accepting invitation:', error);
-      avisarDelFallo(error);
+      await releer(alAceptar, result);
     } finally {
       terminar(invitationId);
     }
@@ -76,13 +94,13 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
       setAceptandoSinGenero(invitationId);
       return;
     }
-    if (empezar(invitationId)) responderAceptando(invitationId);
+    if (empezar(invitationId, 'ACCEPT')) responderAceptando(invitationId);
   };
 
   const aceptarConGenero = async (genero) => {
     const invitationId = aceptandoSinGenero;
     setAceptandoSinGenero(null);
-    if (!empezar(invitationId)) return;
+    if (!empezar(invitationId, 'ACCEPT')) return;
     try {
       await generoParaApuntarse.guardar(genero);
     } catch (error) {
@@ -97,27 +115,31 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
   };
 
   const rechazar = async (invitationId) => {
-    if (!empezar(invitationId)) return;
+    if (!empezar(invitationId, 'DECLINE')) return;
     try {
-      await respondToInvitationUseCase.execute(invitationId, 'DECLINE');
-      customToast.success(t('success.declined'));
-      await alCambiar();
-    } catch (error) {
-      // Rechazar una que se quedó sin plaza, o que ya no estaba pendiente, no es
-      // un fallo: no iba a jugarla y ya no la juega. Sin aviso (FE #737, 5 oct)
-      if (error?.errorCode === 'INVITATION_NO_ROOM' || (error?.status === 409 && !error?.errorCode)) {
-        await alCambiar();
+      try {
+        await respondToInvitationUseCase.execute(invitationId, 'DECLINE');
+      } catch (error) {
+        // Rechazar una que se quedó sin plaza, o que ya no estaba pendiente, no
+        // es un fallo: no iba a jugarla y ya no la juega. Sin aviso (FE #737, 5 oct)
+        if (error?.errorCode === 'INVITATION_NO_ROOM' || (error?.status === 409 && !error?.errorCode)) {
+          await releer(alCambiar);
+          return;
+        }
+        console.error('Error declining invitation:', error);
+        avisarDelFallo(error);
         return;
       }
-      console.error('Error declining invitation:', error);
-      avisarDelFallo(error);
+      customToast.success(t('success.declined'));
+      await releer(alCambiar);
     } finally {
       terminar(invitationId);
     }
   };
 
   return {
-    seEstaRespondiendo: (invitationId) => enProceso.includes(invitationId),
+    seEstaRespondiendo: (invitationId) => enProceso.some((p) => p.id === invitationId),
+    accionEnCurso: (invitationId) => enProceso.find((p) => p.id === invitationId)?.accion ?? null,
     aceptar,
     rechazar,
     preguntaDelGenero: {

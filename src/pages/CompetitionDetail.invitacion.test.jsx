@@ -170,6 +170,27 @@ describe('CompetitionDetail · mi invitación pendiente', () => {
     expect(screen.queryByTestId('cuadro-invitacion')).not.toBeInTheDocument();
   });
 
+  it('pública con invitación pendiente: el cuadro, y no «Pedir plaza» (/code-review, decidido el 27 oct)', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      ...FICHA,
+      visibility: 'PUBLIC',
+      myPendingInvitation: { id: 'inv-1', expiresAt: null },
+    });
+
+    renderPage();
+
+    await screen.findByTestId('cuadro-invitacion');
+    expect(screen.queryByText('detail.actions.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('pública sin invitación: «Pedir plaza» como siempre', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({ ...FICHA, visibility: 'PUBLIC' });
+
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.request-to-join')).toBeInTheDocument();
+  });
+
   it('I3/I12: al responder, la ficha se relee; ya sin invitación, el cuadro se va', async () => {
     mockGetCompetitionDetail
       .mockResolvedValueOnce({ ...FICHA, myPendingInvitation: { id: 'inv-1', expiresAt: null } })

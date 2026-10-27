@@ -1368,12 +1368,15 @@ const CompetitionDetail = () => {
             )}
 
             {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
-                creó, y con sitio. En una privada se entra por invitación, y el
+                creó, sin invitación pendiente, y con sitio. En una privada se entra por invitación, y el
                 servidor lo rechaza (FE #734) */}
             {!isCreator &&
               competition.status === 'ACTIVE' &&
               competition.visibility === 'PUBLIC' &&
               !hasEnrollment &&
+              // Con invitación pendiente, el cuadro: aceptarla ya inscribe
+              // (decidido el 27 oct)
+              !competition.myPendingInvitation &&
               !isFull && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

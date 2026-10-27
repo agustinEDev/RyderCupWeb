@@ -16,7 +16,7 @@
  * | I11 | Sin conexión u otro fallo                    | Aviso; el cuadro sigue, se puede reintentar       |
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import InvitacionEnLaFicha from './InvitacionEnLaFicha';
 import es from '../../i18n/locales/es/invitations.json';
 import en from '../../i18n/locales/en/invitations.json';
@@ -258,6 +258,76 @@ describe('InvitacionEnLaFicha — mientras responde, lo dice (revisor de la PR 3
     pinta();
 
     expect(screen.getByTestId('invitacion-en-la-ficha').className).toMatch(/\bmx-4\b/);
+  });
+});
+
+describe('InvitacionEnLaFicha — la caducidad (/code-review)', () => {
+  it('una fecha que no se puede leer no tumba la ficha: sin la línea', () => {
+    pinta({ invitacion: { id: 'inv-1', expiresAt: 'basura' } });
+
+    expect(screen.getByTestId('invitacion-en-la-ficha')).toBeInTheDocument();
+    expect(screen.queryByTestId('invitacion-caduca')).not.toBeInTheDocument();
+  });
+
+  it('sin huso, es UTC (como todo instante de la API)', () => {
+    vi.useFakeTimers({ now: new Date('2026-10-27T12:00:00Z') });
+    const formatear = vi.spyOn(Date.prototype, 'toLocaleString');
+    try {
+      pinta({ invitacion: { id: 'inv-1', expiresAt: '2026-11-03T00:30:00' } });
+
+      expect(formatear.mock.contexts[0].toISOString()).toBe('2026-11-03T00:30:00.000Z');
+    } finally {
+      formatear.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('caducada al abrir la ficha, no sale', () => {
+    vi.useFakeTimers({ now: new Date('2026-11-04T00:00:00Z') });
+    try {
+      pinta({ invitacion: { id: 'inv-1', expiresAt: '2026-11-03T10:00:00' } });
+
+      expect(screen.queryByTestId('invitacion-en-la-ficha')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('si caduca con la ficha abierta, desaparece sola', () => {
+    vi.useFakeTimers({ now: new Date('2026-11-03T09:59:59Z') });
+    try {
+      pinta({ invitacion: { id: 'inv-1', expiresAt: '2026-11-03T10:00:00' } });
+      expect(screen.getByTestId('invitacion-en-la-ficha')).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(screen.queryByTestId('invitacion-en-la-ficha')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('InvitacionEnLaFicha — otra invitación tras releer', () => {
+  it('que ya llega caducada, no sale aunque el reloj de la anterior no haya saltado', () => {
+    vi.useFakeTimers({ now: new Date('2026-11-01T00:00:00Z') });
+    try {
+      const { rerender } = render(
+        <InvitacionEnLaFicha invitacion={{ id: 'inv-1', expiresAt: '2026-11-09T00:00:00' }} alCambiar={vi.fn()} />
+      );
+      vi.setSystemTime(new Date('2026-11-03T00:00:00Z'));
+
+      rerender(<InvitacionEnLaFicha invitacion={{ id: 'inv-2', expiresAt: '2026-11-02T00:00:00' }} alCambiar={vi.fn()} />);
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+
+      expect(screen.queryByTestId('invitacion-en-la-ficha')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
