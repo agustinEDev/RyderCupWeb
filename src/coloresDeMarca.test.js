@@ -1,48 +1,79 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 // Lo que usa `@tailwindcss/postcss` por dentro: compila el `index.css` de verdad
 import { compile } from '@tailwindcss/node';
 
 /**
- * El verde de marca con opacidad (pasada del Kind, 27 oct 2026).
+ * Los colores de la marca con opacidad (pasada del Kind, 27 oct 2026).
  *
- * `index.css` definía `primary` solo por su escala (`--color-primary-50` … `-950`)
- * y tres utilidades a mano. Tailwind no generaba `bg-primary/90`, `ring-primary/20`
- * ni `border-primary/30`, que se usan en 69 ficheros: ni el hover de los botones,
- * ni los anillos de foco, ni los fondos suaves; y el cuadro de la invitación salía
- * con borde negro. jsdom no pinta CSS, así que ningún render lo nota: de ahí que
- * esto compile el tema y mire lo que sale (revisor: no basta con buscar el texto).
+ * `index.css` definía cada color solo por su escala (`--color-primary-50` … `-950`)
+ * y unas utilidades a mano. Tailwind no generaba `bg-primary/90`, `ring-primary/20`,
+ * `border-primary/30` ni `bg-accent/90`, usadas en 70 ficheros: ni el hover de los
+ * botones, ni los anillos de foco, ni los fondos suaves; y el cuadro de la invitación
+ * salía con borde negro. jsdom no pinta CSS, así que ningún render lo nota: de ahí
+ * que esto compile el tema y mire lo que sale.
  */
 const SRC = resolve(process.cwd(), 'src');
-const generado = async (clases) => {
-  const tailwind = await compile(readFileSync(resolve(SRC, 'index.css'), 'utf8'), {
-    base: SRC,
-    onDependency() {},
-  });
-  return tailwind.build(clases);
+let tailwind;
+
+beforeAll(async () => {
+  tailwind = await compile(readFileSync(resolve(SRC, 'index.css'), 'utf8'), { base: SRC, onDependency() {} });
+});
+
+/** La regla entera de una clase, contando llaves (lleva un `@supports` dentro). */
+const reglaDe = (clase) => {
+  const css = tailwind.build([clase]);
+  const inicio = css.indexOf(`.${clase.replace('/', '\\/')} {`);
+  if (inicio < 0) return null;
+  let profundidad = 0;
+  for (let i = css.indexOf('{', inicio); i < css.length; i++) {
+    if (css[i] === '{') profundidad++;
+    else if (css[i] === '}' && --profundidad === 0) return css.slice(inicio, i + 1);
+  }
+  return null;
 };
-const reglaDe = (css, clase) => {
-  const selector = `.${clase.replace('/', '\\/')} {`;
-  const inicio = css.indexOf(selector);
-  return inicio < 0 ? null : css.slice(inicio, css.indexOf('}', inicio));
+
+// El tono de cada color «a secas»: el de las utilidades que había a mano
+const TONOS = {
+  primary: ['#16a34a', '--color-primary-500'],
+  secondary: ['#1e3a5f', '--color-secondary-500'],
+  accent: ['#d4af37', '--color-accent-500'],
+  navy: ['#1e3a5f', '--color-navy-800'],
+};
+const conSuTono = (regla, color) => {
+  const [hex, variable] = TONOS[color];
+  return regla.toLowerCase().includes(hex) || regla.includes(`var(${variable})`);
 };
 
 describe('colores de marca', () => {
   it.each([
-    ['bg-primary/90', 'background-color'],
-    ['bg-primary/5', 'background-color'],
-    ['border-primary/30', 'border-color'],
-    ['ring-primary/20', '--tw-ring-color'],
-  ])('%s existe, con el verde de marca', async (clase, propiedad) => {
-    const regla = reglaDe(await generado([clase]), clase);
+    ['bg-primary/90', 'primary', 'background-color'],
+    ['bg-primary/5', 'primary', 'background-color'],
+    ['border-primary/30', 'primary', 'border-color'],
+    ['ring-primary/20', 'primary', '--tw-ring-color'],
+    ['bg-accent/90', 'accent', 'background-color'],
+  ])('%s existe, con su tono', (clase, color, propiedad) => {
+    const regla = reglaDe(clase);
 
     expect(regla).not.toBeNull();
     expect(regla).toContain(propiedad);
-    expect(regla).toMatch(/#16a34a|--color-primary/);
+    expect(conSuTono(regla, color)).toBe(true);
   });
 
-  it.each(['bg-primary', 'text-primary', 'border-primary'])('%s sigue siendo el verde de siempre', async (clase) => {
-    expect(reglaDe(await generado([clase]), clase)).toMatch(/var\(--color-primary(-500)?\)|#16a34a/);
+  it.each([
+    ['bg-primary', 'primary'],
+    ['text-primary', 'primary'],
+    ['border-primary', 'primary'],
+    ['bg-secondary', 'secondary'],
+    ['text-secondary', 'secondary'],
+    ['bg-accent', 'accent'],
+    ['text-accent', 'accent'],
+    ['bg-navy', 'navy'],
+  ])('%s sigue siendo el de siempre', (clase, color) => {
+    const regla = reglaDe(clase);
+
+    expect(regla).not.toBeNull();
+    expect(conSuTono(regla, color)).toBe(true);
   });
 });

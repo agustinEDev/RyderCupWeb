@@ -18,9 +18,6 @@
   --color-primary-800: #166534;
   --color-primary-900: #14532d;
   --color-primary-950: #052e16;
-  /* El primario a secas: de él salen bg-primary/90, ring-primary/20… Sin él,
-     Tailwind no generaba ninguna opacidad (pasada del Kind, 27 oct 2026) */
-  --color-primary: var(--color-primary-500);
 
   --color-secondary-500: #1E3A5F;
 
@@ -50,6 +47,14 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #131613;
   --color-gray-950: #0a0d0a;
+  /* Cada color «a secas»: de él salen sus opacidades (bg-primary/90,
+     ring-primary/20, bg-accent/90…). Sin ellos, Tailwind no generaba ninguna
+     (pasada del Kind, 27 oct 2026). Van con `inline`: no existen como variables
+     en :root, así que a mano se usa el tono (`var(--color-primary-500)`) */
+  --color-primary: var(--color-primary-500);
+  --color-secondary: var(--color-secondary-500);
+  --color-accent: var(--color-accent-500);
+  --color-navy: var(--color-navy-800);
 }
 
 @layer base {
@@ -156,26 +161,6 @@
   .font-inter {
     font-family: 'Inter Variable', 'Inter', sans-serif;
   }
-}
-
-@utility bg-secondary {
-  background-color: var(--color-secondary-500);
-}
-
-@utility bg-accent {
-  background-color: var(--color-accent-500);
-}
-
-@utility bg-navy {
-  background-color: var(--color-navy-800);
-}
-
-@utility text-secondary {
-  color: var(--color-secondary-500);
-}
-
-@utility text-accent {
-  color: var(--color-accent-500);
 }
 
 /* react-hot-toast fija su contenedor con `bottom: 16px` en un style inline, de
