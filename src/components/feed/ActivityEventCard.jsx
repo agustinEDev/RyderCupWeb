@@ -126,7 +126,9 @@ const fraseDeLaEspera = (tipo, payload, t) => {
     if (time) clave = payload.waiting ? 'feed:cards.playerJoinedWaiting' : 'feed:cards.playerJoined';
     return fraseCon(t, clave, { competition, player, time });
   }
-  return fraseCon(t, `feed:cards.${tipo}`, { competition, time });
+  // Sin la hora de la franja, la frase sin ella (revisor)
+  const clave = time ? `feed:cards.${tipo}` : `feed:cards.${tipo}_NoTime`;
+  return fraseCon(t, clave, { competition, time });
 };
 
 const HALF_ROUND_HOLES = 9;

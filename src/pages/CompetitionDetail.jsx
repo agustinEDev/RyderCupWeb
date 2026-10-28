@@ -1149,6 +1149,18 @@ const CompetitionDetail = () => {
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
   const userEnrollment = enrollments.find((e) => e.userId === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
+  // Con franjas el cupo es de sus plazas: el máximo no quita el botón
+  // (release social 3, revisor)
+  const rondasLeidas = agendaLeida?.rounds ?? [];
+  const conFranjas = esStrokePlay && rondasLeidas.some((r) => r.teeSheet);
+  const bloqueaElMaximo = isFull && !conFranjas;
+  // Quien solo espera: sin plaza en ninguna franja y con su puesto en una espera
+  const miEspera =
+    esStrokePlay && userEnrollment?.status === 'APPROVED'
+      ? rondasLeidas.find((r) => r.teeSheet?.myWaitingPosition)
+      : null;
+  const soloEspero =
+    miEspera != null && !rondasLeidas.some((r) => r.teeSheet?.playerIds?.includes(user.id));
 
   // Elegir entre alias y nombre legal solo tiene sentido si (FE #571):
   // - hay alias: sin él las dos opciones pintan lo mismo,
@@ -1466,7 +1478,7 @@ const CompetitionDetail = () => {
               // Con invitación pendiente, el cuadro: aceptarla ya inscribe
               // (decidido el 27 oct)
               !competition.myPendingInvitation &&
-              !isFull && (
+              !bloqueaElMaximo && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1499,14 +1511,26 @@ const CompetitionDetail = () => {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-blue-600" />
                     <span className="text-blue-900 font-medium">{t('detail.enrollmentStatus')}</span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
-                        userEnrollment?.status || competition.enrollment_status
-                      )}`}
-                    >
-                      {(userEnrollment?.status || competition.enrollment_status) &&
-                        etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, user?.gender)}
-                    </span>
+                    {soloEspero ? (
+                      <span
+                        data-testid="estado-en-espera"
+                        className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"
+                      >
+                        {t('detail.waitingListStatus', {
+                          position: miEspera.teeSheet.myWaitingPosition,
+                          time: miEspera.teeSheet.firstTeeTime,
+                        })}
+                      </span>
+                    ) : (
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
+                          userEnrollment?.status || competition.enrollment_status
+                        )}`}
+                      >
+                        {(userEnrollment?.status || competition.enrollment_status) &&
+                          etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, user?.gender)}
+                      </span>
+                    )}
                   </div>
 
                   {puedeElegirNombre && (
@@ -2132,6 +2156,10 @@ const CompetitionDetail = () => {
         faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
         // Las franjas, para elegir en el mismo paso (release social 3)
         franjas={esStrokePlay ? (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet) : []}
+        // Sin la agenda leída no hay franjas que elegir: no se deja enviar
+        franjasSinCargar={esStrokePlay && agendaLeida == null}
+        // Al cambiar de franja, fuera el error de la anterior
+        onElegir={() => setErrorAlApuntarse(null)}
       />
     </div>
   );

@@ -207,6 +207,12 @@ const BrowseCompetitions = () => {
     } catch (error) {
       console.error('❌ Error requesting enrollment:', error);
 
+      // Con la sala de draft abierta no entra nadie: se dice en el diálogo, que
+      // sigue abierto, y la tarjeta se queda (release social 3, revisor)
+      if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
+        if (esSuModal()) setErrorAlApuntarse(t('detail.errors.draftInProgress'));
+        return;
+      }
       // Check if it's a duplicate enrollment error (409 Conflict)
       // Por el estado: el texto del servidor no lleva «409» (revisión local)
       if (error?.status === 409) {
@@ -464,11 +470,8 @@ const BrowseCompetitions = () => {
         onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
-        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
-        faltaHandicap={
-          [...exploreCompetitions, ...joinableCompetitions].find((c) => c.id === enrollTargetId)?.hasTeams === false &&
-          (user?.handicap === null || user?.handicap === undefined)
-        }
+        // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
+        // hándicap (release social 3)
         error={errorAlApuntarse}
       />
     </div>
@@ -552,7 +555,11 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            {t('browse.card.players')} <span className="font-medium text-gray-900">{enrolledCount} / {maxPlayers}</span>
+            {t('browse.card.players')}{' '}
+            <span className="font-medium text-gray-900">
+              {/* En un stroke play el cupo es de sus franjas (release social 3) */}
+              {competition.hasTeams === false ? enrolledCount : `${enrolledCount} / ${maxPlayers}`}
+            </span>
             {llena && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
           </span>
         </div>

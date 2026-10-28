@@ -134,7 +134,11 @@
     "PLACE_FROM_WAITING_LIST": "Has entrado en {{competition}} desde la espera: franja de las {{time}}",
     "ENROLLMENT_NO_PLACE": "No hubo plaza para ti en {{competition}}: se cerraron las inscripciones",
     "TEE_WINDOW_REMOVED": "Se ha quitado la franja de las {{time}} de {{competition}} en la que esperabas",
-    "TEAMS_CHANGED": "Los equipos de {{competition}} han cambiado: revisa tu sobre"
+    "TEAMS_CHANGED": "Los equipos de {{competition}} han cambiado: revisa tu sobre",
+    "PLACE_FROM_WAITING_LIST_NoTime": "Has entrado en {{competition}} desde la espera",
+    "TEE_WINDOW_REMOVED_NoTime": "Se ha quitado una franja de {{competition}} en la que esperabas",
+    "ENROLLMENT_NO_PLACE_NoTime": "No hubo plaza para ti en {{competition}}: se cerraron las inscripciones",
+    "TEAMS_CHANGED_NoTime": "Los equipos de {{competition}} han cambiado: revisa tu sobre"
   },
   "teeTime": {
     "group": "Ya tienes salida en {{competition}}: {{when}}",

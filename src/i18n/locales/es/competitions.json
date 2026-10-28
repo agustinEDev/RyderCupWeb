@@ -440,7 +440,6 @@
       "completed": "Competición completada correctamente",
       "cancelled": "Competición cancelada correctamente",
       "deleted": "Competición eliminada correctamente",
-      "enrollmentRequested": "Solicitud de inscripción enviada correctamente",
       "enrollmentsReopened": "Inscripciones reabiertas correctamente",
       "statusReverted": "Competición revertida al estado CERRADA correctamente",
       "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO",
@@ -520,7 +519,8 @@
     "allWindowsClosed": "Todas las franjas están cerradas: cuando revises la clasificación, termina la competición.",
     "onlyFriendsVisible": "De momento solo ves a tus amigos inscritos.",
     "onlyParticipantsSee": "Los inscritos solo los ven quienes participan.",
-    "removePlayerAria": "Quitar a {{nombre}}"
+    "removePlayerAria": "Quitar a {{nombre}}",
+    "waitingListStatus": "En espera: n.º {{position}} de la franja de las {{time}}"
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -548,7 +548,7 @@
       "created-by": "Creado por:",
       "players": "Jugadores:",
       "full": "LLENO",
-      "requesting": "Solicitando...",
+      "requesting": "Apuntándote...",
       "request-to-join": "Apuntarme",
       "view-details": "Ver Detalles"
     },
@@ -586,7 +586,8 @@
     "waitingCount_other": "{{count}} en espera",
     "freePlaces_one": "{{count}} plaza libre",
     "freePlaces_other": "{{count}} plazas libres",
-    "joinWaitingList": "Apuntarme a la espera"
+    "joinWaitingList": "Apuntarme a la espera",
+    "windowsNotLoaded": "No se han podido cargar las franjas: cierra y vuelve a intentarlo en un momento"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",

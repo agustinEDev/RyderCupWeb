@@ -245,6 +245,85 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     );
   });
 
+  it('con franjas el máximo de jugadores no quita el botón (revisor)', async () => {
+    agenda = { rounds: [FRANJA] };
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        maxPlayers: 1,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      })
+    );
+    mockListEnrollments.mockResolvedValue([
+      { id: 'e9', userId: 'otro', status: 'APPROVED', userName: 'Otro' },
+    ]);
+    renderPage();
+
+    expect(await screen.findByText('detail.actions.request-to-join')).toBeInTheDocument();
+  });
+
+  it('sin la agenda leída no deja enviar: no hay franjas que elegir (revisor)', async () => {
+    agenda = null;
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      })
+    );
+    renderPage();
+
+    await apuntarse();
+
+    expect(screen.getByTestId('franjas-sin-cargar')).toBeInTheDocument();
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeDisabled();
+  });
+
+  it('al elegir otra franja se va el error de antes (revisor)', async () => {
+    agenda = { rounds: [FRANJA, { ...FRANJA, id: 'r2', teeSheet: { ...FRANJA.teeSheet, placesTaken: 0, firstTeeTime: '11:00', lastTeeTime: '11:00' } }] };
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      })
+    );
+    mockRequest.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEE_WINDOW_FULL' })
+    );
+    renderPage();
+
+    await apuntarse();
+    fireEvent.click(await screen.findByTestId('franja-r2'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+    expect(await screen.findByTestId('apuntarse-error')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('franja-r1'));
+
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
+  });
+
+  it('quien solo espera lo ve en su estado, no como inscrito (revisor)', async () => {
+    agenda = {
+      rounds: [{ ...FRANJA, teeSheet: { ...FRANJA.teeSheet, playerIds: [], myWaitingPosition: 2 } }],
+    };
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      })
+    );
+    mockListEnrollments.mockResolvedValue([
+      { id: 'e1', userId: 'player-1', status: 'APPROVED', userName: 'Test Player' },
+    ]);
+    renderPage();
+
+    expect(await screen.findByTestId('estado-en-espera')).toHaveTextContent(
+      'detail.waitingListStatus'
+    );
+  });
+
   it('ya inscrito (409 sin código) cierra y pone la ficha al día, como antes', async () => {
     mockGetCompetitionDetail.mockResolvedValue(ficha());
     mockRequest.mockRejectedValue(Object.assign(new Error('x'), { status: 409 }));
@@ -253,7 +332,9 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     await apuntarse();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
-    await waitFor(() => expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText('competitions:enrollment.confirm')).not.toBeInTheDocument()
+    );
     await waitFor(() => expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(1));
   });
 });

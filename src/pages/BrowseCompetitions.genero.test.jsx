@@ -267,6 +267,32 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     expect(await screen.findByText('browse.card.request-to-join')).not.toBeDisabled();
   });
 
+  it('con la sala de draft abierta se dice en el diálogo y no se quita la tarjeta (revisor)', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'DRAFT_IN_PROGRESS' })
+    );
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'detail.errors.draftInProgress'
+    );
+    expect(screen.getByText('browse.card.request-to-join')).toBeInTheDocument();
+  });
+
+  it('en un stroke play no se pinta el máximo: mandan las franjas (revisor)', async () => {
+    mockUnirse.mockResolvedValue([
+      { ...COMPETICION, hasTeams: false, enrolledCount: 14, maxPlayers: 12 },
+    ]);
+    conRutas();
+
+    await screen.findByText('browse.card.request-to-join');
+    expect(screen.queryByText(/14\s*\/\s*12/)).not.toBeInTheDocument();
+  });
+
   it('en una Ryder se apunta aquí y se le dice que ya está dentro', async () => {
     mockUnirse.mockResolvedValue([COMPETICION]);
     mockPedir.mockResolvedValueOnce({ status: 'APPROVED', waiting: false });

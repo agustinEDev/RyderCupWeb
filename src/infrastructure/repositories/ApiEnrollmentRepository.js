@@ -213,11 +213,12 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   }
 
   /**
-   * Solicitar inscripción (crear enrollment con estado REQUESTED)
+   * Apuntarse a una pública: se entra directamente, con la franja o su espera
+   * (release social 3, 28 oct 2026)
    *
    * @param {string} competitionId
    * @param {Object} data - Datos adicionales (opcional)
-   * @returns {Promise<Enrollment>}
+   * @returns {Promise<{enrollment: Enrollment, roundId: string|null, waiting: boolean}>}
    */
   async requestEnrollment(competitionId, data = {}) {
     // Con los nombres de la API: la barra, y en un stroke play con franjas la

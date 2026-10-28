@@ -440,7 +440,6 @@
       "completed": "Competition completed successfully",
       "cancelled": "Competition cancelled successfully",
       "deleted": "Competition deleted successfully",
-      "enrollmentRequested": "Enrollment request sent successfully",
       "enrollmentsReopened": "Enrollments reopened successfully",
       "statusReverted": "Competition reverted to CLOSED status successfully",
       "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status",
@@ -520,7 +519,8 @@
     "allWindowsClosed": "All tee windows are closed: once you have checked the standings, finish the competition.",
     "onlyFriendsVisible": "For now you only see your friends who have entered.",
     "onlyParticipantsSee": "Only participants can see who has entered.",
-    "removePlayerAria": "Remove {{nombre}}"
+    "removePlayerAria": "Remove {{nombre}}",
+    "waitingListStatus": "Waiting: no. {{position}} for the {{time}} tee window"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -548,7 +548,7 @@
       "created-by": "Created by:",
       "players": "Players:",
       "full": "FULL",
-      "requesting": "Requesting...",
+      "requesting": "Joining...",
       "request-to-join": "Join",
       "view-details": "View Details"
     },
@@ -586,7 +586,8 @@
     "waitingCount_other": "{{count}} waiting",
     "freePlaces_one": "{{count}} place left",
     "freePlaces_other": "{{count}} places left",
-    "joinWaitingList": "Join the waiting list"
+    "joinWaitingList": "Join the waiting list",
+    "windowsNotLoaded": "The tee windows could not be loaded: close and try again in a moment"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",
