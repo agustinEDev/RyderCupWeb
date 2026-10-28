@@ -144,6 +144,14 @@ const BrowseCompetitions = () => {
 
   // Open modal to request enrollment
   const openEnrollModal = (competitionId) => {
+    // En un stroke play la franja se elige en la ficha (release social 3)
+    const competicion = [...exploreCompetitions, ...joinableCompetitions].find(
+      (c) => c.id === competitionId
+    );
+    if (competicion?.hasTeams === false) {
+      navigate(`/competitions/${competitionId}`, { state: { from: 'browse' } });
+      return;
+    }
     setErrorAlApuntarse(null);
     modalAbiertoPara.current = competitionId;
     setEnrollTargetId(competitionId);
@@ -471,6 +479,8 @@ const BrowseCompetitions = () => {
 const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
   const { t, i18n } = useTranslation('competitions');
   const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries, visibility } = competition;
+  // En un stroke play el cupo es de sus franjas, que se ven en la ficha (release social 3)
+  const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
   // lista, y en ellas se entra por invitación (FE #734)
   const sePidePlaza = mode === 'joinable' && visibility === 'PUBLIC';
@@ -543,7 +553,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
             {t('browse.card.players')} <span className="font-medium text-gray-900">{enrolledCount} / {maxPlayers}</span>
-            {enrolledCount >= maxPlayers && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
+            {llena && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
           </span>
         </div>
       </button>
@@ -556,9 +566,9 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
               e.stopPropagation(); // Prevent card click when clicking button
               onRequestEnrollment(id);
             }}
-            disabled={isRequesting || enrolledCount >= maxPlayers}
+            disabled={isRequesting || llena}
             className={`w-full py-2 px-4 rounded-lg font-medium transition ${
-              isRequesting || enrolledCount >= maxPlayers
+              isRequesting || llena
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-primary text-white hover:bg-primary/90'
             }`}
@@ -566,7 +576,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         {/* Get button text */}
         {(() => {
           if (isRequesting) return t('browse.card.requesting');
-          if (enrolledCount >= maxPlayers) return t('browse.card.full');
+          if (llena) return t('browse.card.full');
           return t('browse.card.request-to-join');
         })()}
       </button>

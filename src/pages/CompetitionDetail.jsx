@@ -78,6 +78,16 @@ const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetiti
 const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
 
 // Por qué no se pudo quitar, por el código del servidor
+// Por qué no se pudo apuntar, por su código (release social 3, 28 oct 2026): las
+// de la franja releen la agenda, que estaba vieja
+const MOTIVOS_PARA_NO_APUNTARSE = {
+  TEE_WINDOW_FULL: 'detail.errors.teeWindowFull',
+  TEE_WINDOW_HAS_ROOM: 'detail.errors.teeWindowHasRoom',
+  TEE_WINDOW_REQUIRED: 'detail.errors.teeWindowRequired',
+  TEE_WINDOW_NOT_FOUND: 'detail.errors.teeWindowNotFound',
+  DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
+};
+
 const MOTIVOS_PARA_NO_QUITAR = {
   PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
   DRAFT_IN_PROGRESS: 'detail.errors.removeDraftInProgress',
@@ -679,7 +689,7 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async (color = null, genero = null) => {
+  const handleEnroll = async (color = null, genero = null, eleccion = null) => {
     setErrorAlApuntarse(null);
     setIsProcessing(true);
     let generoGuardado = false;
@@ -689,14 +699,29 @@ const CompetitionDetail = () => {
         await generoParaApuntarse.guardar(genero);
         generoGuardado = true;
       }
-      await requestEnrollmentUseCase.execute(id, null, { color });
+      // En una pública se entra directamente, con la franja o su espera
+      // (release social 3, 28 oct 2026)
+      const hecho = await requestEnrollmentUseCase.execute(id, null, {
+        color,
+        roundId: eleccion?.roundId ?? null,
+        waitingList: eleccion?.waiting ?? false,
+      });
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito
       setShowEnrollModal(false);
-      customToast.success(t('detail.success.enrollmentRequested'));
+      customToast.success(
+        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'detail.success.enrolled')
+      );
+      setVersionFranjas((n) => n + 1);
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
+      const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
+      if (motivo) {
+        setErrorAlApuntarse(t(motivo));
+        if (error.errorCode.startsWith('TEE_WINDOW')) setVersionFranjas((n) => n + 1);
+        return;
+      }
       // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
       // cierra y se pone al día (CodeRabbit en la #721)
       if (error?.status === 409) {
@@ -2105,6 +2130,8 @@ const CompetitionDetail = () => {
         pideGenero={generoParaApuntarse.falta}
         // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
         faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
+        // Las franjas, para elegir en el mismo paso (release social 3)
+        franjas={esStrokePlay ? (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet) : []}
       />
     </div>
   );

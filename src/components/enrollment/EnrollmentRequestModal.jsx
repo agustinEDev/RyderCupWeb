@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
@@ -15,6 +15,10 @@ const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
  *   como segundo argumento, para guardarlo antes de pedir plaza
  * @param {string|null} [props.error=null] - Por qué no se pudo pedir (#710):
  *   el modal sigue abierto y lo dice, en vez de cerrarse como si hubiera ido bien
+ * @param {Array} [props.franjas=[]] - Las franjas de un stroke play (sesiones con
+ *   `teeSheet`). Con ellas se elige en el mismo paso la franja con hueco o la
+ *   espera de una llena (release social 3, 28 oct 2026); `onConfirm` recibe
+ *   `{ roundId, waiting }` como tercer argumento, o null sin franjas
  */
 const EnrollmentRequestModal = ({
   isOpen,
@@ -24,6 +28,7 @@ const EnrollmentRequestModal = ({
   pideGenero = false,
   faltaHandicap = false,
   error = null,
+  franjas = [],
 }) => {
   if (!isOpen) return null;
   return (
@@ -34,19 +39,56 @@ const EnrollmentRequestModal = ({
       pideGenero={pideGenero}
       faltaHandicap={faltaHandicap}
       error={error}
+      franjas={franjas}
     />
   );
 };
 
-const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero, faltaHandicap, error }) => {
-  const { t } = useTranslation(['competitions', 'golfCourses']);
+const llena = (franja) => franja.teeSheet.placesTaken >= franja.teeSheet.capacity;
+
+const EnrollmentRequestModalContent = ({
+  onClose,
+  onConfirm,
+  isProcessing,
+  pideGenero,
+  faltaHandicap,
+  error,
+  franjas,
+}) => {
+  const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
   const [selectedTee, setSelectedTee] = useState('');
   const [genero, setGenero] = useState('');
+  const [elegida, setElegida] = useState(null);
+  // Por día y hora: en el orden en que se juegan
+  const ordenadas = useMemo(
+    () =>
+      [...franjas].sort(
+        (a, b) =>
+          String(a.roundDate).localeCompare(String(b.roundDate)) ||
+          String(a.teeSheet.firstTeeTime).localeCompare(String(b.teeSheet.firstTeeTime))
+      ),
+    [franjas]
+  );
+  const conFranjas = ordenadas.length > 0;
+  const laElegida = ordenadas.find((f) => f.id === elegida) ?? null;
+  const aLaEspera = laElegida !== null && llena(laElegida);
+  const falta = faltaHandicap || (pideGenero && !genero) || (conFranjas && !laElegida);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (faltaHandicap || (pideGenero && !genero)) return;
-    onConfirm(selectedTee || null, pideGenero ? genero : null);
+    if (falta) return;
+    onConfirm(
+      selectedTee || null,
+      pideGenero ? genero : null,
+      laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null
+    );
+  };
+
+  const dia = (fecha) => {
+    const d = new Date(`${fecha}T12:00:00`);
+    return Number.isNaN(d.getTime())
+      ? fecha
+      : d.toLocaleDateString(i18n?.language, { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
   return (
@@ -100,6 +142,47 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
           )}
           {pideGenero && <SelectorDeGenero value={genero} onChange={setGenero} />}
 
+          {/* La franja, o la espera de una llena, en el mismo paso (release
+              social 3): con plaza se entra con ella; llena, a su espera */}
+          {conFranjas && (
+            <fieldset data-testid="elegir-franja" className="space-y-2">
+              <legend className="block text-sm font-medium text-gray-700 mb-1">
+                {t('competitions:enrollment.windowLabel')}
+              </legend>
+              {ordenadas.map((franja) => {
+                const hoja = franja.teeSheet;
+                const sinSitio = llena(franja);
+                const marcada = franja.id === elegida;
+                return (
+                  <button
+                    key={franja.id}
+                    type="button"
+                    data-testid={`franja-${franja.id}`}
+                    aria-pressed={marcada}
+                    onClick={() => setElegida(franja.id)}
+                    className={`w-full min-h-11 text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      marcada ? 'border-primary bg-primary/5' : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="font-medium text-gray-900">
+                      {dia(franja.roundDate)} · {hoja.firstTeeTime}
+                      {hoja.lastTeeTime && hoja.lastTeeTime !== hoja.firstTeeTime
+                        ? `–${hoja.lastTeeTime}`
+                        : ''}
+                    </span>
+                    <span className={`block text-xs ${sinSitio ? 'text-amber-700' : 'text-gray-500'}`}>
+                      {sinSitio
+                        ? `${t('competitions:enrollment.full')} · ${t('competitions:enrollment.waitingCount', { count: hoja.waitingCount ?? 0 })}`
+                        : t('competitions:enrollment.freePlaces', {
+                            count: hoja.capacity - hoja.placesTaken,
+                          })}
+                    </span>
+                  </button>
+                );
+              })}
+            </fieldset>
+          )}
+
           {/* Tee Category Select */}
           <div>
             <label
@@ -137,10 +220,12 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
             </button>
             <button
               type="submit"
-              disabled={isProcessing || faltaHandicap || (pideGenero && !genero)}
+              disabled={isProcessing || falta}
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {isProcessing ? '...' : t('competitions:enrollment.confirm')}
+              {isProcessing
+                ? '...'
+                : t(aLaEspera ? 'competitions:enrollment.joinWaitingList' : 'competitions:enrollment.confirm')}
             </button>
           </div>
         </form>

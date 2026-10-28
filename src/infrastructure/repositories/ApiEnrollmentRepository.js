@@ -220,18 +220,22 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @returns {Promise<Enrollment>}
    */
   async requestEnrollment(competitionId, data = {}) {
-    const body = { ...data };
-    if (data.color) {
-      // La API espera tee_color; el dominio lo llama color
-      body.tee_color = data.color;
-      delete body.color;
-    }
+    // Con los nombres de la API: la barra, y en un stroke play con franjas la
+    // franja y si es a su espera (release social 3, 28 oct 2026)
+    const body = {};
+    if (data.color) body.tee_color = data.color;
+    if (data.roundId) body.round_id = data.roundId;
+    if (data.waitingList) body.waiting_list = true;
     const apiData = await this.#request(`/api/v1/competitions/${competitionId}/enrollments`, {
       method: 'POST',
       body: JSON.stringify(body),
     });
 
-    return EnrollmentMapper.toDomain(apiData);
+    return {
+      enrollment: EnrollmentMapper.toDomain(apiData),
+      roundId: apiData.round_id ?? null,
+      waiting: apiData.waiting === true,
+    };
   }
 
   /**

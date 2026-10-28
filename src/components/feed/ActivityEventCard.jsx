@@ -49,6 +49,11 @@ const ICONOS = {
   ENROLLMENT_REQUEST_CLOSED: XCircle,
   ENROLLMENT_REJECTED: XCircle,
   ENROLLMENT_REMOVED: XCircle,
+  PLAYER_JOINED: UserPlus,
+  PLACE_FROM_WAITING_LIST: CalendarCheck,
+  ENROLLMENT_NO_PLACE: XCircle,
+  TEE_WINDOW_REMOVED: XCircle,
+  TEAMS_CHANGED: Mail,
   ENROLLED_IN_TOURNAMENT: UserPlus,
   TOURNAMENT_MATCH_RESULT: Swords,
   TOURNAMENT_FINAL_STANDING: Medal,
@@ -69,6 +74,11 @@ const TONOS = {
   ENROLLMENT_REQUEST_CLOSED: 'bg-gray-100 text-gray-600',
   ENROLLMENT_REJECTED: 'bg-gray-100 text-gray-600',
   ENROLLMENT_REMOVED: 'bg-gray-100 text-gray-600',
+  PLAYER_JOINED: 'bg-emerald-100 text-emerald-700',
+  PLACE_FROM_WAITING_LIST: 'bg-emerald-100 text-emerald-700',
+  ENROLLMENT_NO_PLACE: 'bg-gray-100 text-gray-600',
+  TEE_WINDOW_REMOVED: 'bg-gray-100 text-gray-600',
+  TEAMS_CHANGED: 'bg-sky-100 text-sky-700',
   TOURNAMENT_MATCH_RESULT: 'bg-indigo-100 text-indigo-700',
   TOURNAMENT_FINAL_STANDING: 'bg-amber-100 text-amber-700',
   QUICK_MATCH_FINISHED: 'bg-primary-100 text-primary-700',
@@ -91,6 +101,33 @@ const AVISOS_DE_INSCRIPCION = new Set([
   'ENROLLMENT_REJECTED',
   'ENROLLMENT_REMOVED',
 ]);
+
+// Los de la inscripción directa y los equipos que cambian (release social 3)
+const AVISOS_DE_LA_ESPERA = new Set([
+  'PLAYER_JOINED',
+  'PLACE_FROM_WAITING_LIST',
+  'ENROLLMENT_NO_PLACE',
+  'TEE_WINDOW_REMOVED',
+  'TEAMS_CHANGED',
+]);
+
+/**
+ * La frase de un aviso de la inscripción directa: quién se apuntó (al
+ * organizador), la plaza que dio la espera, la que no hubo, la franja que se
+ * quitó y los equipos que cambiaron. La hora es la primera salida de la franja.
+ */
+const fraseDeLaEspera = (tipo, payload, t) => {
+  const competition = nombreDelTorneo(payload, t);
+  const time = horaDeSalida(payload.tee_time);
+  if (tipo === 'PLAYER_JOINED') {
+    // `player` y no `name`: fraseCon reserva `name` para las personas con enlace
+    const player = payload.player_name || t('feed:cards.aPlayer');
+    let clave = 'feed:cards.playerJoinedNoWindow';
+    if (time) clave = payload.waiting ? 'feed:cards.playerJoinedWaiting' : 'feed:cards.playerJoined';
+    return fraseCon(t, clave, { competition, player, time });
+  }
+  return fraseCon(t, `feed:cards.${tipo}`, { competition, time });
+};
 
 const HALF_ROUND_HOLES = 9;
 const FULL_ROUND_HOLES = 18;
@@ -552,6 +589,10 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
 
   if (tarjeta.tipo === 'TEE_TIME_ASSIGNED') {
     return { frase: fraseDeSalida(payload, { t, idioma, autores, ahora }), detalles: [] };
+  }
+
+  if (AVISOS_DE_LA_ESPERA.has(tarjeta.tipo)) {
+    return { frase: fraseDeLaEspera(tarjeta.tipo, payload, t), detalles: [] };
   }
 
   if (AVISOS_DE_INSCRIPCION.has(tarjeta.tipo)) {

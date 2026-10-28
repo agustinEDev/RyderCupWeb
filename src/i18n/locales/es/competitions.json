@@ -136,10 +136,10 @@
     "summaryNoHandicapLimit": "sin límite de hándicap",
     "moreOptionsIncomplete": "Faltan datos en las opciones: despliégalas para completarlas",
     "visibility": "¿Quién puede apuntarse?",
-    "visibilityPrivate": "Solo invitados",
-    "visibilityPublic": "Cualquiera",
-    "visibilityPrivateHelp": "No aparece al explorar: entran las personas a las que invites",
-    "visibilityPublicHelp": "Aparece al explorar y cualquiera puede pedir plaza; tú decides a quién aceptas",
+    "visibilityPrivate": "Privada: por invitación",
+    "visibilityPublic": "Pública: inscripción directa",
+    "visibilityPrivateHelp": "No aparece al explorar: solo entran las personas a las que invites",
+    "visibilityPublicHelp": "Aparece al explorar y cualquiera se apunta directamente mientras haya plaza; puedes quitar a quien quieras antes de empezar",
     "setupMode": {
       "title": "Cuánto quieres que haga la app",
       "subtitle": "Puedes cambiarlo mientras las inscripciones sigan abiertas.",
@@ -240,7 +240,7 @@
       "complete": "Completar",
       "cancel": "Cancelar",
       "delete": "Eliminar",
-      "request-to-join": "Solicitar Unirse",
+      "request-to-join": "Apuntarme",
       "manageSchedule": "Equipos y partidos",
       "viewSchedule": "Ver Calendario",
       "manageInvitations": "Invitaciones",
@@ -358,7 +358,12 @@
       "removeNotAllowed": "La competición ya ha empezado: no se puede quitar a nadie.",
       "removeOrganizer": "No se puede quitar al organizador.",
       "removeFailed": "No se pudo quitar al jugador.",
-      "removeGone": "Ya no estaba inscrito."
+      "removeGone": "Ya no estaba inscrito.",
+      "teeWindowFull": "Esa franja se acaba de llenar: elige otra o apúntate a su espera",
+      "teeWindowHasRoom": "Esa franja tiene sitio: apúntate directamente",
+      "teeWindowRequired": "Elige una franja para apuntarte",
+      "teeWindowNotFound": "Esa franja ya no existe: elige otra",
+      "draftInProgress": "Ahora mismo se está haciendo el draft: inténtalo cuando acabe"
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
@@ -441,7 +446,9 @@
       "revertedToInProgress": "Torneo reabierto y de vuelta al estado EN CURSO",
       "captainsNamed": "Capitanes nombrados. Las inscripciones quedan cerradas.",
       "captainsChanged": "Capitanes cambiados.",
-      "playerRemoved": "{{nombre}} ya no está inscrito"
+      "playerRemoved": "{{nombre}} ya no está inscrito",
+      "enrolled": "¡Ya estás inscrito!",
+      "joinedWaitingList": "Estás en la lista de espera: si se libera una plaza, entras solo"
     },
     "failedToApprove": "Error al aprobar la inscripción",
     "competitionFull": "La competición está completa. Se ha alcanzado el número máximo de jugadores ({{max}}).",
@@ -449,7 +456,7 @@
     "failedToUpdateCompetition": "Error al actualizar la competición",
     "failedToDeleteCompetition": "Error al eliminar la competición",
     "unknownUser": "Usuario Desconocido",
-    "failedToEnroll": "Error al solicitar inscripción",
+    "failedToEnroll": "No se pudo completar la inscripción",
     "failedToLoadCompetitions": "Error al cargar las competiciones",
     "golfCourses": {
       "title": "Campos de golf",
@@ -542,17 +549,17 @@
       "players": "Jugadores:",
       "full": "LLENO",
       "requesting": "Solicitando...",
-      "request-to-join": "Solicitar Unirse",
+      "request-to-join": "Apuntarme",
       "view-details": "Ver Detalles"
     },
     "errors": {
       "failedToLoadJoinable": "Error al cargar competiciones disponibles",
       "failedToLoadExplore": "Error al cargar competiciones",
-      "alreadyEnrolled": "Ya tienes una solicitud de inscripción para esta competición",
-      "failedToEnroll": "Error al solicitar inscripción"
+      "alreadyEnrolled": "Ya estás inscrito en esta competición",
+      "failedToEnroll": "No se pudo completar la inscripción"
     },
     "success": {
-      "enrollmentRequested": "¡Solicitud de inscripción enviada! Revisa \"Mis Competiciones\" para seguir el estado."
+      "enrollmentRequested": "¡Ya estás inscrito!"
     }
   },
   "footer": "© {{year}} Agustín Estévez Domínguez",
@@ -565,14 +572,21 @@
     "CANCELLED": "CANCELADA"
   },
   "enrollment": {
-    "modalTitle": "Solicitar inscripción",
+    "modalTitle": "Apuntarme",
     "colorLabel": "Color de barras preferido",
     "colorHint": "Se usará para asignarte el tee adecuado en los partidos",
     "noPreference": "Sin preferencia",
-    "confirm": "Confirmar",
+    "confirm": "Apuntarme",
     "cancel": "Cancelar",
     "needsHandicap": "Para apuntarte a un Stableford o un Medal necesitas tu hándicap en el perfil.",
-    "addHandicap": "Añadirlo"
+    "addHandicap": "Añadirlo",
+    "windowLabel": "Franja",
+    "full": "Llena",
+    "waitingCount_one": "{{count}} en espera",
+    "waitingCount_other": "{{count}} en espera",
+    "freePlaces_one": "{{count}} plaza libre",
+    "freePlaces_other": "{{count}} plazas libres",
+    "joinWaitingList": "Apuntarme a la espera"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",

@@ -24,7 +24,7 @@ describe('EnrollmentRequestModal · el género', () => {
 
     expect(screen.queryByTestId('selector-de-genero')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
-    expect(onConfirm).toHaveBeenCalledWith(null, null);
+    expect(onConfirm).toHaveBeenCalledWith(null, null, null);
   });
 
   it('M2: sin género se pregunta, y no se envía hasta elegirlo', () => {
@@ -38,7 +38,7 @@ describe('EnrollmentRequestModal · el género', () => {
     expect(enviar).not.toBeDisabled();
     fireEvent.click(enviar);
 
-    expect(onConfirm).toHaveBeenCalledWith(null, 'FEMALE');
+    expect(onConfirm).toHaveBeenCalledWith(null, 'FEMALE', null);
   });
 
   it('M3: si pedir plaza falló, el motivo se lee en el modal (#710)', () => {
@@ -80,5 +80,102 @@ describe('EnrollmentRequestModal · el hándicap (FE #824)', () => {
     pinta({});
 
     expect(screen.queryByTestId('falta-handicap')).toBeNull();
+  });
+});
+
+/**
+ * Inscripción directa en las públicas (release social 3, 28 oct 2026): en un
+ * stroke play con franjas se elige en el mismo paso la franja con hueco, o la
+ * espera de una llena (D3-D7). Sin franjas, solo la barra (D1).
+ */
+const franja = (id, dia, hora, capacidad, ocupadas, enEspera = 0) => ({
+  id,
+  roundDate: dia,
+  sessionType: 'MORNING',
+  teeSheet: {
+    firstTeeTime: hora,
+    lastTeeTime: hora,
+    capacity: capacidad,
+    placesTaken: ocupadas,
+    waitingCount: enEspera,
+  },
+});
+
+describe('EnrollmentRequestModal · la franja (release social 3)', () => {
+  it('D1: sin franjas solo se elige la barra', () => {
+    const onConfirm = vi.fn();
+    render(<EnrollmentRequestModal isOpen onClose={() => {}} onConfirm={onConfirm} />);
+
+    expect(screen.queryByTestId('elegir-franja')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+    expect(onConfirm).toHaveBeenCalledWith(null, null, null);
+  });
+
+  it('D4: con franjas no se envía hasta elegir una', () => {
+    const onConfirm = vi.fn();
+    render(
+      <EnrollmentRequestModal
+        isOpen
+        onClose={() => {}}
+        onConfirm={onConfirm}
+        franjas={[franja('r1', '2027-03-03', '09:00', 4, 1)]}
+      />
+    );
+
+    expect(screen.getByTestId('elegir-franja')).toBeInTheDocument();
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeDisabled();
+  });
+
+  it('D3: una con hueco entra con su plaza', () => {
+    const onConfirm = vi.fn();
+    render(
+      <EnrollmentRequestModal
+        isOpen
+        onClose={() => {}}
+        onConfirm={onConfirm}
+        franjas={[franja('r1', '2027-03-03', '09:00', 4, 1)]}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('franja-r1'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(onConfirm).toHaveBeenCalledWith(null, null, { roundId: 'r1', waiting: false });
+  });
+
+  it('D6: una llena ofrece su espera, y se envía a la espera', () => {
+    const onConfirm = vi.fn();
+    render(
+      <EnrollmentRequestModal
+        isOpen
+        onClose={() => {}}
+        onConfirm={onConfirm}
+        franjas={[franja('r1', '2027-03-03', '09:00', 4, 4, 2)]}
+      />
+    );
+
+    expect(screen.getByTestId('franja-r1')).toHaveTextContent('competitions:enrollment.full');
+    fireEvent.click(screen.getByTestId('franja-r1'));
+    fireEvent.click(screen.getByText('competitions:enrollment.joinWaitingList'));
+
+    expect(onConfirm).toHaveBeenCalledWith(null, null, { roundId: 'r1', waiting: true });
+  });
+
+  it('las franjas van por día y hora', () => {
+    render(
+      <EnrollmentRequestModal
+        isOpen
+        onClose={() => {}}
+        onConfirm={() => {}}
+        franjas={[
+          franja('tarde', '2027-03-03', '15:00', 4, 0),
+          franja('domingo', '2027-03-04', '08:00', 4, 0),
+          franja('manana', '2027-03-03', '09:00', 4, 0),
+        ]}
+      />
+    );
+
+    const orden = screen.getAllByTestId(/^franja-/).map((b) => b.dataset.testid);
+    expect(orden).toEqual(['franja-manana', 'franja-tarde', 'franja-domingo']);
   });
 });

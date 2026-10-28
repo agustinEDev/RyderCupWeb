@@ -18,7 +18,7 @@ import EnrollmentAssembler from '../../assemblers/EnrollmentAssembler';
  * @example
  * const useCase = new RequestEnrollmentUseCase(enrollmentRepository);
  * const enrollment = await useCase.execute('comp-123', 'user-456');
- * console.log(enrollment.status); // "REQUESTED"
+ * console.log(enrollment.status); // "APPROVED" (directa desde el 28 oct 2026)
  */
 class RequestEnrollmentUseCase {
   #enrollmentRepository;
@@ -39,6 +39,8 @@ class RequestEnrollmentUseCase {
    * @param {string} competitionId - UUID de la competición
    * @param {string} userId - UUID del usuario (opcional, se obtiene del token JWT)
    * @param {Object} [data={}] - Datos opcionales del enrollment
+   * @param {string} [data.roundId] - La franja, en un stroke play con franjas
+   * @param {boolean} [data.waitingList] - Si es a la espera de esa franja, que está llena
    * @param {string} [data.color] - Color de barras elegido. Ver TeeColor: WHITE, YELLOW, BLUE, RED, BLACK, GREEN, ORANGE, PINK, GOLD, OTHER
    * @returns {Promise<Object>} DTO simple del enrollment creado
    * @throws {Error} Si el usuario ya está inscrito o falla la operación
@@ -61,12 +63,14 @@ class RequestEnrollmentUseCase {
       }
     }
 
-    // Solicitar inscripción (el backend crea el enrollment con estado REQUESTED)
-    // El userId se obtiene automáticamente del JWT token en el backend
-    const enrollment = await this.#enrollmentRepository.requestEnrollment(competitionId, data);
+    // En una pública se entra directamente (release social 3, 28 oct 2026): con
+    // plaza en la franja elegida o en su espera. El userId sale del token
+    const { enrollment, roundId, waiting } = await this.#enrollmentRepository.requestEnrollment(
+      competitionId,
+      data
+    );
 
-    // Convertir a DTO simple para la UI
-    return EnrollmentAssembler.toSimpleDTO(enrollment);
+    return { ...EnrollmentAssembler.toSimpleDTO(enrollment), roundId, waiting };
   }
 }
 

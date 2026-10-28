@@ -126,7 +126,15 @@
     "unfinishedStrokeNoResult": "Partida rápida sin terminar en {{course}}",
     "unfinishedStrokeNoCourseNoResult": "Partida rápida sin terminar",
     "friendUnfinishedStroke": "Partida rápida sin terminar de {{name}} · {{result}}",
-    "ENROLLMENT_CONFIRMED": "Te has inscrito en {{competition}}"
+    "ENROLLMENT_CONFIRMED": "Te has inscrito en {{competition}}",
+    "aPlayer": "Un jugador",
+    "playerJoined": "{{player}} se ha apuntado a {{competition}} (franja de las {{time}})",
+    "playerJoinedWaiting": "{{player}} se ha apuntado a la espera de la franja de las {{time}} de {{competition}}",
+    "playerJoinedNoWindow": "{{player}} se ha apuntado a {{competition}}",
+    "PLACE_FROM_WAITING_LIST": "Has entrado en {{competition}} desde la espera: franja de las {{time}}",
+    "ENROLLMENT_NO_PLACE": "No hubo plaza para ti en {{competition}}: se cerraron las inscripciones",
+    "TEE_WINDOW_REMOVED": "Se ha quitado la franja de las {{time}} de {{competition}} en la que esperabas",
+    "TEAMS_CHANGED": "Los equipos de {{competition}} han cambiado: revisa tu sobre"
   },
   "teeTime": {
     "group": "Ya tienes salida en {{competition}}: {{when}}",
