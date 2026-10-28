@@ -39,7 +39,9 @@
     "decline": "Rechazar",
     "accepting": "Aceptando...",
     "declining": "Rechazando...",
-    "withdraw": "Retirar"
+    "withdraw": "Retirar",
+    "reinvite": "Volver a invitar",
+    "reinviteAria": "Volver a invitar a {{name}}"
   },
   "filter": {
     "allStatuses": "Todos los estados",
@@ -55,7 +57,8 @@
     "respondedAt": "Respondida",
     "message": "Mensaje",
     "withdrawnAt": "Retirada el {{date}}",
-    "noRoomSince": "Sin plaza desde el {{date}}"
+    "noRoomSince": "Sin plaza desde el {{date}}",
+    "viewCompetition": "Ver la competición"
   },
   "success": {
     "sent": "Invitación enviada correctamente",
@@ -100,5 +103,10 @@
     "subtitle": "Ver y responder a invitaciones de competiciones",
     "pendingCount_one": "{{count}} pendiente",
     "pendingCount_other": "{{count}} pendientes"
+  },
+  "inDetail": {
+    "title": "Te han invitado a esta competición",
+    "expiresOn": "Caduca el {{date}}",
+    "notPendingAnymore": "Esa invitación ya no estaba pendiente."
   }
 }

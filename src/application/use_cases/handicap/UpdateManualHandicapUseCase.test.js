@@ -56,6 +56,13 @@ describe('UpdateManualHandicapUseCase', () => {
       .rejects.toThrow('User ID and handicap value are required');
   });
 
+  // Number('') is 0: an empty field was saved as handicap 0 (26 Oct)
+  it.each(['', '   '])('should throw an error if handicap is empty (%j), not save 0', async (vacio) => {
+    await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: vacio }))
+      .rejects.toThrow('User ID and handicap value are required');
+    expect(handicapRepository.updateManual).not.toHaveBeenCalled();
+  });
+
   it('should throw an error if handicap is below the valid range', async () => {
     await expect(updateManualHandicapUseCase.execute({ userId: 'user-123', handicap: -10.1 }))
       .rejects.toThrow('Invalid handicap value. Must be between -10.0 and 54.0');

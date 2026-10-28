@@ -127,6 +127,14 @@ class CompetitionAssembler {
             teeTime: apiData.my_next_session.tee_time ?? null,
           }
         : null,
+      // Mi invitación pendiente, solo si aceptarla puede salir bien: el cuadro
+      // de la ficha (release social 2)
+      myPendingInvitation: apiData?.my_pending_invitation
+        ? {
+            id: apiData.my_pending_invitation.id,
+            expiresAt: apiData.my_pending_invitation.expires_at ?? null,
+          }
+        : null,
       modality: apiData?.modality || 'MATCH_PLAY',
       // Cuánto monta la app por su cuenta (FE #695). De él sale además cómo se
       // reparten los equipos, que ya no se pregunta aparte (RyderCupAm#351).
@@ -136,6 +144,9 @@ class CompetitionAssembler {
       // reabierta se vuelve a cerrar con «Cerrar inscripciones» (FE #692). Solo lo
       // manda la ficha; sin el campo, no se afirma un reparto que nadie ha dicho
       teamsAssigned: apiData?.teams_assigned === true,
+      // Qué ve quien mira de los inscritos: ALL, FRIENDS o NONE (release social 2).
+      // Solo lo manda la ficha
+      enrolledVisibility: apiData?.enrolled_visibility ?? null,
       // Capitanes y subcapitanes, uno por equipo (FE #692, RyderCupAM#320)
       captains: {
         teamA: apiData?.team_a_captain_id ?? null,

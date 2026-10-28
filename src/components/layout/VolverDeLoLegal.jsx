@@ -15,8 +15,8 @@ import { clearUserContext } from '../../utils/sentryHelpers';
  * - Sin ella —enlace directo, pestaña nueva desde la casilla de los Términos—,
  *   se pregunta al backend AL PULSAR: con sesión al panel, si no a la portada.
  *   Si el backend dice que la sesión está muerta, además se tira el `user`
- *   guardado, como en la pantalla de acceso: si no, cada pulsación volvería a
- *   la red. Con el dispositivo revocado se limpia como en su cierre
+ *   guardado, como en la pantalla de acceso: es resto de una sesión anterior.
+ *   Con el dispositivo revocado se limpia como en su cierre
  *   (`handleDeviceRevocationLogout`), pero sin su salida a /login.
  */
 const VolverDeLoLegal = () => {

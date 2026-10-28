@@ -43,7 +43,8 @@ describe('Unauthorized', () => {
   // barra inferior daban 64 px de desplazamiento sobrante. El hueco lo publica
   // App en `--alto-barra-inferior` solo cuando pinta la barra; la página no
   // lee la sesión (antes ignoraba `loading` y no sabía de los Términos)
-  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px))]', 'md:min-h-dvh'];
+  // Y el aviso de instalar, que también flota abajo (revisor de las sobras del QA)
+  const ALTO = ['min-h-[calc(100dvh-var(--alto-barra-inferior,0px)-var(--alto-aviso-instalar,0px))]', 'md:min-h-[calc(100dvh-var(--alto-aviso-instalar,0px))]'];
 
   it('U1: sin sesión, la pantalla menos el hueco que diga App', () => {
     const pagina = abrir();

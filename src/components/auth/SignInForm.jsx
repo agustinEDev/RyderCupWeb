@@ -49,15 +49,15 @@ const SignInForm = () => {
     }
   };
 
-  const validateForm = () => {
+  const validateForm = (datos) => {
     const newErrors = {};
 
-    const emailValidation = validateEmail(formData.email);
+    const emailValidation = validateEmail(datos.email);
     if (!emailValidation.isValid) {
       newErrors.email = t(emailValidation.messageKey, emailValidation.messageOptions);
     }
 
-    if (!formData.password) {
+    if (!datos.password) {
       newErrors.password = t('validation.passwordRequired');
     }
 
@@ -68,7 +68,17 @@ const SignInForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    // Lo que hay en el formulario, no solo lo que llegó por `onChange`: el
+    // gestor de contraseñas puede rellenarlo sin que React se entere, y el
+    // primer envío salía con los campos vacíos (QA, FE #865-12)
+    const enElFormulario = new FormData(e.currentTarget);
+    const datos = {
+      email: String(enElFormulario.get('email') ?? ''),
+      password: String(enElFormulario.get('password') ?? ''),
+    };
+    setFormData(datos);
+
+    if (!validateForm(datos)) {
       return;
     }
 
@@ -84,7 +94,7 @@ const SignInForm = () => {
 
     try {
       // v1.13.0: LoginUseCase now returns { user, csrfToken }
-      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(formData.email, formData.password);
+      const { user: authenticatedUser, csrfToken } = await loginUseCase.execute(datos.email, datos.password);
 
       // Update auth context with user and CSRF token
       setUser(authenticatedUser);

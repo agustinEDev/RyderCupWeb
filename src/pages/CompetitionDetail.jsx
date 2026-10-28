@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, ChevronRight } from 'lucide-react';
+import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, UserMinus, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
 import Plegable from '../components/ui/Plegable';
 import TituloConNumero from '../components/ui/TituloConNumero';
@@ -28,6 +28,7 @@ import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
+import InvitacionEnLaFicha from '../components/invitation/InvitacionEnLaFicha';
 import {
   getCompetitionDetailUseCase,
   getCompetitionGolfCoursesUseCase,
@@ -46,6 +47,7 @@ import {
   requestEnrollmentUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
+  removeEnrolledPlayerUseCase,
   assignTeamsUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
@@ -61,6 +63,7 @@ import { formatCountryName } from '../services/countries';
 import { fechaDeApertura } from '../domain/services/aperturaDeInscripciones';
 import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { mensajeConJugadores } from '../utils/erroresConJugadores';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
@@ -70,6 +73,17 @@ const VUELTAS = {
   invitations: { to: '/player/invitations', clave: 'detail.backToInvitations' },
 };
 const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetitions' };
+
+// Antes de empezar se puede quitar a un inscrito (release social 2)
+const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
+
+// Por qué no se pudo quitar, por el código del servidor
+const MOTIVOS_PARA_NO_QUITAR = {
+  PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
+  DRAFT_IN_PROGRESS: 'detail.errors.removeDraftInProgress',
+  REMOVAL_NOT_ALLOWED: 'detail.errors.removeNotAllowed',
+  CANNOT_REMOVE_ORGANIZER: 'detail.errors.removeOrganizer',
+};
 
 const CompetitionDetail = () => {
   const navigate = useNavigate();
@@ -90,6 +104,8 @@ const CompetitionDetail = () => {
   // Lo que espera un «sí» en el modal de la app, en lugar de `window.confirm`,
   // el diálogo nativo del navegador (FE #730)
   const [pregunta, setPregunta] = useState(null);
+  // La inscripción que se está quitando (release social 2): su botón, desactivado
+  const [quitandoId, setQuitandoId] = useState(null);
   // Mientras borra, el modal desactiva sus botones: eso ya impide un segundo DELETE
   const [borrando, setBorrando] = useState(false);
   // Si la lista de inscripciones no llegó, el modal no puede decir cuántos pierden
@@ -241,6 +257,56 @@ const CompetitionDetail = () => {
   const contestar = (si) => {
     pregunta?.responder(si);
     setPregunta(null);
+  };
+
+  // El organizador quita a un inscrito (release social 2, 27 oct 2026): se le
+  // pregunta, se le avisa en la app y, con equipos formados, se deshacen
+  const handleQuitar = async (enrollment) => {
+    const datos = { nombre: enrollment.userName || t('detail.unknownUser'), competicion: competition.name };
+    const accion = competition.teamsAssigned ? 'removeWithTeams' : 'remove';
+    if (!(await preguntar(accion, { destructiva: true, datos }))) return;
+    setQuitandoId(enrollment.id);
+    try {
+      await removeEnrolledPlayerUseCase.execute(enrollment.id);
+      customToast.success(t('detail.success.playerRemoved', datos));
+      // Su hándicap, si se estaba editando, ya no es de nadie (/code-review)
+      setEditingHandicapId((editando) => (editando === enrollment.id ? null : editando));
+    } catch (error) {
+      customToast.error(
+        t(
+          error?.status === 404
+            ? 'detail.errors.removeGone'
+            : (MOTIVOS_PARA_NO_QUITAR[error?.errorCode] ?? 'detail.errors.removeFailed')
+        )
+      );
+    }
+    // Bien o mal, se relee: la lista (y los equipos, si se deshicieron) ya no
+    // es la de antes. En silencio, sin la espera de pantalla completa: quitar a
+    // varios seguidos hacía parpadear la ficha y la subía arriba (revisor)
+    await releerTrasQuitar();
+    setQuitandoId(null);
+  };
+
+  const releerTrasQuitar = async () => {
+    // Con los mismos guardas que las demás relecturas: una respuesta vieja no
+    // pisa otra más nueva, ni la de otra competición (/code-review)
+    const deEsta = id;
+    const turnoDeLaFicha = lecturasDeLaFicha.turno();
+    const turnoDeLaLista = lecturasDeInscripciones.turno();
+    try {
+      const [ficha, lista] = await Promise.all([
+        getCompetitionDetailUseCase.execute(deEsta),
+        listEnrollmentsUseCase.execute(deEsta),
+      ]);
+      if (deEsta !== idActual.current) return;
+      if (lecturasDeLaFicha.aplicar(turnoDeLaFicha)) setCompetition(ficha);
+      if (lecturasDeInscripciones.aplicar(turnoDeLaLista)) setEnrollments(lista);
+    } catch (error) {
+      // Lo de antes sigue a la vista; el siguiente refresco lo pondrá al día
+      console.error('Error reloading after removing a player:', error);
+    }
+    // Y sus franjas: quitarle no mueve la fecha de la ficha (/code-review)
+    if (deEsta === idActual.current) setVersionFranjas((v) => v + 1);
   };
 
   const handleStatusChange = async (action) => {
@@ -989,13 +1055,30 @@ const CompetitionDetail = () => {
   const conFijado = (e) => esStrokePlay && e.fixedHandicap != null;
   // Un hándicap con un decimal en el idioma de quien mira: «12,3» / «12.3»
   const unDecimal = (n) => n.toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  // Check if competition has reached max players
+  // Quien gestiona tiene la lista entera. Un jugador, desde la release social 2,
+  // solo a sus amigos hasta que se publica: cuenta lo que dice el servidor
+  // Un solo total para todo (cabecera, completa, agenda): nunca menos de las
+  // filas que ve, por si el número aún no está al día (/code-review)
+  const approvedCount = canManage && enrollments.length > 0
+    ? approvedEnrollments.length
+    : Math.max(competition.enrolledCount || 0, approvedEnrollments.length);
+  // Qué ve de los inscritos lo dice el servidor, no se adivina comparando
+  // la lista con el número (/code-review): sus amigos, o nadie (una privada
+  // en la que no está)
+  const soloVeASusAmigos = !canManage && competition.enrolledVisibility === 'FRIENDS';
+  const noVeANadie = !canManage && competition.enrolledVisibility === 'NONE';
+  const listaAMedias = soloVeASusAmigos || noVeANadie;
+  // Con la lista a medias no se sabe qué categorías salieron: se cuentan solo
+  // con la entera, y si no, se dice lo pedido (revisor de la release social 2)
+  const categoriasVistas = listaAMedias ? [] : approvedEnrollments.map((e) => e.category ?? null);
   // Con una sola categoría no se nombra: «1.ª» en todos no dice nada (pasada, FE #824)
-  const hayVariasCategorias = salenDeLosInscritos(approvedEnrollments.map((e) => e.category ?? null)) > 1;
+  const hayVariasCategorias = salenDeLosInscritos(categoriasVistas) > 1;
   const limitesEnTexto = (ajustes) => ajustes.categoryLimits.map(unDecimal).join(' · ');
   // Lo que se pidió frente a lo que salió al cerrar (QA del 11 oct 2026): «3
   // categorías iguales, repartidas: 14,0» eran 2, y con una sola el jugador
   // seguía viendo los límites pedidos
-  const categoriasAsignadas = approvedEnrollments.map((e) => e.category ?? null);
+  const categoriasAsignadas = categoriasVistas;
   const salieron = salenDeLosInscritos(categoriasAsignadas);
   const menosDeLasPedidas = esStrokePlay && competition.strokePlay ? categoriasQueSalen(competition.strokePlay, categoriasAsignadas) : null;
   const textoDeCategorias = (ajustes) => {
@@ -1034,11 +1117,6 @@ const CompetitionDetail = () => {
       )
     : null;
 
-  // Check if competition has reached max players
-  // For creators: use enrollments list. For non-creators: fallback to competition.enrolledCount from API
-  const approvedCount = enrollments.length > 0
-    ? approvedEnrollments.length
-    : (competition.enrolledCount || 0);
   const isFull = competition.maxPlayers && approvedCount >= competition.maxPlayers;
 
   // Check for user enrollment from two sources:
@@ -1278,6 +1356,11 @@ const CompetitionDetail = () => {
               </div>
             </motion.div>
 
+            {/* Mi invitación pendiente: aceptar o rechazar aquí mismo, sin pasar
+                por «Mis invitaciones». Respondida, la ficha se relee (release
+                social 2) */}
+            <InvitacionEnLaFicha invitacion={competition.myPendingInvitation ?? null} alCambiar={loadCompetition} />
+
             {/* Action Buttons */}
             {canManage && (
               <motion.div
@@ -1349,12 +1432,15 @@ const CompetitionDetail = () => {
             )}
 
             {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
-                creó, y con sitio. En una privada se entra por invitación, y el
+                creó, sin invitación pendiente, y con sitio. En una privada se entra por invitación, y el
                 servidor lo rechaza (FE #734) */}
             {!isCreator &&
               competition.status === 'ACTIVE' &&
               competition.visibility === 'PUBLIC' &&
               !hasEnrollment &&
+              // Con invitación pendiente, el cuadro: aceptarla ya inscribe
+              // (decidido el 27 oct)
+              !competition.myPendingInvitation &&
               !isFull && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -1453,8 +1539,10 @@ const CompetitionDetail = () => {
               className="p-4"
             >
               {/* En juego o acabado, plegada: lo que se mira es la clasificación y las partidas */}
+              {/* Algo menor en el móvil: a 360 px partía en dos líneas (QA, FE #865-5) */}
               <Plegable
                 abiertoAlPrincipio={!conClasificacion}
+                claseDelTitulo="text-base sm:text-lg"
                 titulo={
                   <>
                     <Settings className="w-5 h-5 text-primary" />
@@ -1619,6 +1707,7 @@ const CompetitionDetail = () => {
                   el servidor lo rechaza */}
               {esStrokePlay ? (
                 <FranjasDeLaCompeticion
+                  soloAmigos={listaAMedias}
                   competitionId={competition.id}
                   startDate={competition.startDate}
                   endDate={competition.endDate}
@@ -1663,7 +1752,7 @@ const CompetitionDetail = () => {
                 endDate={competition.endDate}
                 // Terminada o cancelada ya no se toca: el servidor lo rechaza
                 canManage={canManage && !['COMPLETED', 'CANCELLED'].includes(competition.status)}
-                jugadores={approvedEnrollments.length}
+                jugadores={canManage ? approvedEnrollments.length : approvedCount}
                 // Cuando cambia la competición —estado, equipos— se vuelve a leer
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
@@ -1699,16 +1788,26 @@ const CompetitionDetail = () => {
                 titulo={
                   <>
                     <Users className="w-5 h-5 flex-none text-green-600" />
-                    <TituloConNumero texto={t('detail.approvedPlayers')} numero={approvedEnrollments.length} />
+                    <TituloConNumero
+                      texto={t('detail.approvedPlayers')}
+                      numero={canManage ? approvedEnrollments.length : approvedCount}
+                    />
                   </>
                 }
               >
 
+                {listaAMedias && (
+                  <p className="mb-3 text-sm text-gray-600">
+                    {t(noVeANadie ? 'detail.onlyParticipantsSee' : 'detail.onlyFriendsVisible')}
+                  </p>
+                )}
                 {approvedEnrollments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>{t('detail.noApprovedPlayers')}</p>
-                  </div>
+                  !listaAMedias && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>{t('detail.noApprovedPlayers')}</p>
+                    </div>
+                  )
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[...approvedEnrollments]
@@ -1766,12 +1865,11 @@ const CompetitionDetail = () => {
                             )}
                             <div className="flex items-center gap-2 mt-1">
                               {editingHandicapId === enrollment.id ? (
-                                <div className="flex items-center gap-1.5">
-                                  <input
-                                    type="text"
-                                    inputMode="decimal"
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <CampoDeHandicap
+                                    aria-label={t('detail.editHandicap')}
                                     value={handicapInput}
-                                    onChange={(e) => setHandicapInput(e.target.value)}
+                                    onChange={setHandicapInput}
                                     autoFocus
                                     className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                   />
@@ -1848,6 +1946,24 @@ const CompetitionDetail = () => {
                               {enrollment.team}
                             </span>
                           )}
+                          {/* Quitarle (release social 2): quien organiza, antes de
+                              empezar, a cualquiera menos a sí mismo */}
+                          {canManage &&
+                            SE_PUEDE_QUITAR.has(competition.status) &&
+                            enrollment.userId !== competition.creatorId && (
+                              <button
+                                type="button"
+                                data-testid={`quitar-${enrollment.userId}`}
+                                onClick={() => handleQuitar(enrollment)}
+                                disabled={quitandoId !== null}
+                                aria-label={t('detail.removePlayerAria', {
+                                  nombre: enrollment.userName || t('detail.unknownUser'),
+                                })}
+                                className="ml-2 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                              >
+                                <UserMinus className="h-5 w-5" aria-hidden="true" />
+                              </button>
+                            )}
                         </div>
                       ))}
                   </div>

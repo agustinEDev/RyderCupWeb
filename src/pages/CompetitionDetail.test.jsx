@@ -25,12 +25,10 @@ vi.mock('../hooks/useAuth', () => ({
   }),
 }));
 
+// Mutable: la release social 2 mira la ficha también como jugador
+const mockRoles = { isAdmin: false, isCreator: true, isLoading: false };
 vi.mock('../hooks/useUserRoles', () => ({
-  useUserRoles: () => ({
-    isAdmin: false,
-    isCreator: true,
-    isLoading: false,
-  }),
+  useUserRoles: () => mockRoles,
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
@@ -182,14 +180,17 @@ describe('CompetitionDetail - edición de hándicap', () => {
     });
   });
 
-  it('muestra error de validación si el valor no es un número tras normalizar', async () => {
+  // Las letras ya no se escriben (26 oct): lo que queda sin número es el vacío
+  it('muestra error de validación si el campo queda sin número', async () => {
     renderPage();
 
     const editButton = await screen.findByTitle('detail.editHandicap');
     fireEvent.click(editButton);
 
     const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: '' } });
     fireEvent.change(input, { target: { value: 'abc' } });
+    expect(input).toHaveValue('');
 
     const saveButton = screen.getByTitle('detail.saveHandicap');
     fireEvent.click(saveButton);
@@ -1322,4 +1323,142 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
     const seccion = await screen.findByTestId('solicitudes-rechazadas');
     expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
   });
+});
+
+
+// Release social 2 (27 oct 2026): el jugador ve de los inscritos solo a sus
+// amigos hasta que se publica; el número es el de todos (enrolled_count)
+describe('CompetitionDetail · lo que ve un jugador de los inscritos', () => {
+  const amiga = { id: 'a1', userId: 'u-amiga', status: 'APPROVED', userName: 'Ana', userHandicap: 10 };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoles.isCreator = false;
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1',
+      name: 'Summer Cup',
+      status: 'ACTIVE',
+      creatorId: 'otra-persona',
+      maxPlayers: 4,
+      enrolledCount: 3,
+      enrolledVisibility: 'FRIENDS',
+      countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([amiga]);
+  });
+
+  afterEach(() => {
+    mockRoles.isCreator = true;
+  });
+
+  const tituloDeAprobados = async () =>
+    (await screen.findByText('detail.approvedPlayers')).closest('h3');
+
+  it('V1: el número es el de todos los inscritos, no el de los que ve', async () => {
+    renderPage();
+
+    const titulo = await tituloDeAprobados();
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('3');
+  });
+
+  it('V2: si ve menos de los que hay, se le dice que solo ve a sus amigos', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.getByText('detail.onlyFriendsVisible')).toBeInTheDocument();
+  });
+
+  it('V3: sin ningún amigo dentro, el aviso y no «aún no hay aprobados»', async () => {
+    mockListEnrollments.mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText('detail.onlyFriendsVisible')).toBeInTheDocument();
+    expect(screen.queryByText('detail.noApprovedPlayers')).not.toBeInTheDocument();
+  });
+
+  it('V4: si los ve a todos, sin aviso, aunque el número aún no esté al día', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
+      maxPlayers: 4, enrolledCount: 3, enrolledVisibility: 'ALL', countries: [],
+    });
+    renderPage();
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [4, false],
+    [3, true],
+  ])('V5: con %i de 4 inscritos (y viendo a una), pedir plaza: %p', async (inscritos, sePide) => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
+      visibility: 'PUBLIC', maxPlayers: 4, enrolledCount: inscritos, countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([amiga]);
+    renderPage();
+
+    await screen.findByText('Ana');
+    expect(Boolean(screen.queryByText('detail.actions.request-to-join'))).toBe(sePide);
+  });
+
+  it('V6: el organizador sigue contando su lista, sin aviso', async () => {
+    mockRoles.isCreator = true;
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1',
+      maxPlayers: 4, enrolledCount: 3, countries: [],
+    });
+    renderPage();
+
+    const titulo = await tituloDeAprobados();
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+  });
+
+  it('V6b: al organizador, con su lista aún vacía, tampoco se le avisa', async () => {
+    mockRoles.isCreator = true;
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1',
+      maxPlayers: 4, enrolledCount: 2, countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText('detail.noApprovedPlayers')).toBeInTheDocument();
+    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+  });
+
+  it('V9: en una privada en la que no está, que solo los ven quienes participan', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
+      maxPlayers: 4, enrolledCount: 3, enrolledVisibility: 'NONE', countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([]);
+    renderPage();
+
+    expect(await screen.findByText('detail.onlyParticipantsSee')).toBeInTheDocument();
+    expect(screen.queryByText('detail.onlyFriendsVisible')).not.toBeInTheDocument();
+    expect(screen.queryByText('detail.noApprovedPlayers')).not.toBeInTheDocument();
+  });
+
+  it('V8: el número nunca baja de las filas que ve', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'otra-persona',
+      maxPlayers: 4, enrolledCount: 0, countries: [],
+    });
+    renderPage();
+
+    const titulo = await tituloDeAprobados();
+    expect(within(titulo).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
+  });
+});
+
+it('V7: el aviso, en los dos idiomas', async () => {
+  const es = (await import('../i18n/locales/es/competitions.json')).default;
+  const en = (await import('../i18n/locales/en/competitions.json')).default;
+
+  expect(es.detail.onlyFriendsVisible).toBe('De momento solo ves a tus amigos inscritos.');
+  expect(en.detail.onlyFriendsVisible).toBe('For now you only see your friends who have entered.');
+  expect(es.detail.onlyParticipantsSee).toBe('Los inscritos solo los ven quienes participan.');
+  expect(en.detail.onlyParticipantsSee).toBe('Only participants can see who has entered.');
 });

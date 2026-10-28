@@ -194,6 +194,51 @@ describe('useLogout · el cierre que llega de otra pestaña no hace eco (FE #865
     expect(loQueQueda()).toEqual([]);
   });
 
+  // QA (FE #865-11): la pestaña que se entera iba siempre a /login, aunque
+  // estuviera en una página que se ve sin sesión. Ahí se queda, recargando
+  it.each([
+    ['/terms', '', '/terms'],
+    ['/competitions/c1/leaderboard', '?categoria=2', '/competitions/c1/leaderboard?categoria=2'],
+    ['/', '', '/'],
+  ])('O9: en una pública (%s%s) se queda en ella', async (pathname, search, destino) => {
+    vi.stubGlobal('location', { href: '', pathname, search });
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+
+    expect(window.location.href).toBe(destino);
+    expect(loQueQueda()).toEqual([]);
+  });
+
+  // /code-review: recargar el enlace del correo volvería a gastar su token
+  it.each(['/verify-email', '/reset-password/abc'])('O9d: en un enlace de un solo uso (%s), a /login', async (pathname) => {
+    vi.stubGlobal('location', { href: '', pathname, search: '?token=x' });
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+
+    expect(window.location.href).toBe('/login');
+  });
+
+  it('O9b: en una privada, a /login como antes', async () => {
+    vi.stubGlobal('location', { href: '', pathname: '/profile', search: '' });
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout({ desdeOtraPestana: true }));
+
+    expect(window.location.href).toBe('/login');
+  });
+
+  it('O9c: quien sale a mano desde una pública sigue yendo a /login', async () => {
+    vi.stubGlobal('location', { href: '', pathname: '/terms', search: '' });
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(() => result.current.logout());
+
+    expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
+    expect(window.location.href).toBe('');
+  });
+
   it('O3: quien sale a mano avisa a las demás y llama al backend, una vez cada cosa', async () => {
     const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
 

@@ -127,6 +127,17 @@ describe('CompetitionAssembler · si ya hay equipos llega a la pantalla (FE #692
   });
 });
 
+// Release social 2: qué ve de los inscritos lo dice el servidor; la ficha no lo adivina
+describe('CompetitionAssembler · qué ve de los inscritos', () => {
+  it.each(['ALL', 'FRIENDS', 'NONE'])('V1: enrolled_visibility %s llega tal cual', (valor) => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ enrolled_visibility: valor })).enrolledVisibility).toBe(valor);
+  });
+
+  it('V2: sin el campo (los listados), null', () => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi()).enrolledVisibility).toBeNull();
+  });
+});
+
 describe('CompetitionAssembler · el modo de configuración llega a la pantalla (FE #695)', () => {
   it('M1: el modo llega tal cual', () => {
     expect(loQueLlegaALaPantalla(respuestaDeLaApi({ setup_mode: 'AUTOMATIC' })).setupMode).toBe(
@@ -136,5 +147,25 @@ describe('CompetitionAssembler · el modo de configuración llega a la pantalla 
 
   it('M2: sin el campo, estilo RyderCup: es lo que son todas hoy', () => {
     expect(loQueLlegaALaPantalla(respuestaDeLaApi()).setupMode).toBe('RYDER_CUP');
+  });
+});
+
+describe('CompetitionAssembler · mi invitación pendiente llega a la ficha (release social 2, I1/I2)', () => {
+  it('con ella, su id y su caducidad', () => {
+    const dto = loQueLlegaALaPantalla(
+      respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1', expires_at: '2026-11-03T10:00:00' } })
+    );
+
+    expect(dto.myPendingInvitation).toEqual({ id: 'inv-1', expiresAt: '2026-11-03T10:00:00' });
+  });
+
+  it('sin caducidad, null en ella', () => {
+    const dto = loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: { id: 'inv-1' } }));
+
+    expect(dto.myPendingInvitation).toEqual({ id: 'inv-1', expiresAt: null });
+  });
+
+  it.each([[null], [undefined]])('sin ella (%s), null', (valor) => {
+    expect(loQueLlegaALaPantalla(respuestaDeLaApi({ my_pending_invitation: valor })).myPendingInvitation).toBeNull();
   });
 });

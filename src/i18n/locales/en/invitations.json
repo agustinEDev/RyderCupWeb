@@ -39,7 +39,9 @@
     "decline": "Decline",
     "accepting": "Accepting...",
     "declining": "Declining...",
-    "withdraw": "Withdraw"
+    "withdraw": "Withdraw",
+    "reinvite": "Invite again",
+    "reinviteAria": "Invite {{name}} again"
   },
   "filter": {
     "allStatuses": "All Statuses",
@@ -55,7 +57,8 @@
     "respondedAt": "Responded",
     "message": "Message",
     "withdrawnAt": "Withdrawn on {{date}}",
-    "noRoomSince": "No place since {{date}}"
+    "noRoomSince": "No place since {{date}}",
+    "viewCompetition": "View the competition"
   },
   "success": {
     "sent": "Invitation sent successfully",
@@ -100,5 +103,10 @@
     "subtitle": "View and respond to competition invitations",
     "pendingCount_one": "{{count}} pending",
     "pendingCount_other": "{{count}} pending"
+  },
+  "inDetail": {
+    "title": "You've been invited to this competition",
+    "expiresOn": "Expires on {{date}}",
+    "notPendingAnymore": "That invitation was no longer pending."
   }
 }

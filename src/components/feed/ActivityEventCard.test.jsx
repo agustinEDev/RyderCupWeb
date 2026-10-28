@@ -320,6 +320,8 @@ describe('ActivityEventCard — texts (case 10)', () => {
     ['INVITED_TO_TOURNAMENT', 'Te han invitado a Ryder Otoño'],
     ['ENROLLMENT_REQUEST_CLOSED', 'Tu solicitud a Ryder Otoño se cerró sin plaza'],
     ['ENROLLMENT_REJECTED', 'El organizador no aceptó tu solicitud a Ryder Otoño'],
+    // N1, release social 2
+    ['ENROLLMENT_REMOVED', 'El organizador te ha quitado de Ryder Otoño'],
   ])('enrolment notice %s: «%s»', (type, texto) => {
     pinta(
       tarjeta(
@@ -602,6 +604,7 @@ describe('ActivityEventCard — where a tap goes (case 12)', () => {
     'INVITED_TO_TOURNAMENT',
     'ENROLLMENT_REQUEST_CLOSED',
     'ENROLLMENT_REJECTED',
+    'ENROLLMENT_REMOVED',
     'ENROLLED_IN_TOURNAMENT',
     'TOURNAMENT_FINAL_STANDING',
   ])('%s → the competition', (type) => {
@@ -1301,13 +1304,27 @@ describe('ActivityEventCard — a friend\'s quick match read-only, and tournamen
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/matches/mt/scoring');
   });
 
-  it("L: a friend's tournament achievement I did not play → the tournament, group or match", () => {
+  it("F4: a friend's tournament achievement I did not play → their card, read-only", () => {
     const a = pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7' }, { userId: 'u2' }));
-    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/groups/g-7?jugador=u2');
     a.unmount();
 
     pinta(logro({ kind: 'MATCH' }, { userId: 'u2' }));
-    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/matches/mt?jugador=u2');
+  });
+
+  it('F4: without an author id, no ?jugador=undefined (/code-review)', () => {
+    const a = pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7' }, { userId: null }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/groups/g-7');
+    a.unmount();
+
+    pinta(logro({ kind: 'TEE_GROUP' }, { userId: null }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/leaderboard');
+  });
+
+  it("F4: a friend's achievement without its group → the standings, on their row", () => {
+    pinta(logro({ kind: 'TEE_GROUP' }, { userId: 'u2' }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/leaderboard?jugador=u2');
   });
 
   it("L: a friend's tournament achievement where I am in player_ids → my card", () => {
@@ -1333,13 +1350,13 @@ describe('ActivityEventCard — a friend\'s quick match read-only, and tournamen
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/player/groups/g-7/scoring?competition=c-1');
   });
 
-  it("L: player_ids without me → the tournament, even if an old field names me", () => {
+  it("L: player_ids without me → their card, even if an old field names me", () => {
     const a = pinta(logro({ kind: 'MATCH', player_ids: ['u2', 'u3'], opponents: [{ user_id: YO }] }, { userId: 'u2' }));
-    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/matches/mt?jugador=u2');
     a.unmount();
 
     pinta(logro({ kind: 'TEE_GROUP', group_id: 'g-7', player_ids: [] }, { userId: 'u2' }));
-    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/groups/g-7?jugador=u2');
   });
 
   it('L: my own achievement goes to my card even if player_ids forgot me', () => {
@@ -1368,5 +1385,86 @@ describe('ActivityEventCard — a friend\'s quick match read-only, and tournamen
 
     pinta(tarjeta(evento({ type: 'BIRDIE', userId: 'u2', sourceMatchId: 'mt', payload: { count: 1, from_tournament: true } })));
     expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/players/u2');
+  });
+});
+
+
+describe("ActivityEventCard — a friend's final standing (social release 2, F1-F5)", () => {
+  const final = (payload = {}, overrides = {}) =>
+    tarjeta(
+      evento({
+        type: 'TOURNAMENT_FINAL_STANDING',
+        userId: 'u2',
+        sourceMatchId: 'c-1',
+        groupKey: null,
+        payload: { competition_id: 'c-1', competition_name: 'Copa X', ...payload },
+        ...overrides,
+      })
+    );
+  const ryder = (payload = {}) =>
+    final({
+      tournament_type: 'RYDER_CUP',
+      team_a_name: 'Europa',
+      team_b_name: 'América',
+      team_a_points: 15.5,
+      team_b_points: 12.5,
+      my_team: 'A',
+      outcome: 'WON',
+      ...payload,
+    });
+
+  it('F1: «Pedro quedó 3.º de 12 en Copa X», and in English', () => {
+    const a = pinta(final({ position: 3, tied: false, total_players: 12 }));
+    expect(frase()).toBe('Pedro quedó 3.º de 12 en Copa X');
+    a.unmount();
+
+    pinta(final({ position: 3, tied: false, total_players: 12 }), { lng: 'en' });
+    expect(frase()).toBe('Pedro finished 3rd of 12 in Copa X');
+  });
+
+  it('F1: tied, and without a position', () => {
+    const a = pinta(final({ position: 2, tied: true, total_players: 8 }));
+    expect(frase()).toBe('Pedro quedó 2.º (empatado) de 8 en Copa X');
+    a.unmount();
+
+    const b = pinta(final({ position: null, total_players: 8, status: 'NR' }));
+    expect(frase()).toBe('Pedro terminó Copa X sin puesto');
+    b.unmount();
+
+    pinta(final({ position: null, total_players: 8, status: 'NR' }), { lng: 'en' });
+    expect(frase()).toBe('Pedro finished Copa X without a position');
+  });
+
+  it.each([
+    ['WON', 'A', 'El equipo de Pedro (Europa) ganó 15½–12½ en Copa X'],
+    ['LOST', 'B', 'El equipo de Pedro (América) perdió 12½–15½ en Copa X'],
+    ['HALVED', 'A', 'El equipo de Pedro (Europa) empató 15½–12½ en Copa X'],
+  ])('F2: Ryder %s: «%s»', (outcome, myTeam, texto) => {
+    pinta(ryder({ outcome, my_team: myTeam }));
+    expect(frase()).toBe(texto);
+  });
+
+  it('F2: without the team name, and in English', () => {
+    const a = pinta(ryder({ team_a_name: null }));
+    expect(frase()).toBe('El equipo de Pedro ganó 15½–12½ en Copa X');
+    a.unmount();
+
+    pinta(ryder(), { lng: 'en' });
+    expect(frase()).toBe("Pedro's team (Europa) won 15½–12½ in Copa X");
+  });
+
+  it('F5: a tap goes to the standings, on their row', () => {
+    const a = pinta(final({ position: 3, tied: false, total_players: 12 }));
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/leaderboard?jugador=u2');
+    a.unmount();
+
+    pinta(ryder());
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1/leaderboard?jugador=u2');
+  });
+
+  it('F3: mine stays as it was: «Clasificación final…» and to the tournament', () => {
+    pinta(final({ position: 3, tied: false, total_players: 12 }, { userId: YO }));
+    expect(frase()).toBe('Clasificación final de Copa X: 3.º de 12');
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
   });
 });

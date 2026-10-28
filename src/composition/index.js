@@ -221,6 +221,7 @@ import RequestEnrollmentUseCase from '../application/use_cases/enrollment/Reques
 import ListEnrollmentsUseCase from '../application/use_cases/enrollment/ListEnrollmentsUseCase';
 import ApproveEnrollmentUseCase from '../application/use_cases/enrollment/ApproveEnrollmentUseCase';
 import RejectEnrollmentUseCase from '../application/use_cases/enrollment/RejectEnrollmentUseCase';
+import RemoveEnrolledPlayerUseCase from '../application/use_cases/enrollment/RemoveEnrolledPlayerUseCase';
 import SetCustomHandicapUseCase from '../application/use_cases/enrollment/SetCustomHandicapUseCase';
 import RemoveCustomHandicapUseCase from '../application/use_cases/enrollment/RemoveCustomHandicapUseCase';
 import SetNamePreferenceUseCase from '../application/use_cases/enrollment/SetNamePreferenceUseCase';
@@ -439,6 +440,7 @@ const getUpcomingMatchesUseCase = new GetUpcomingMatchesUseCase({
 const getUpcomingTeeGroupsUseCase = new GetUpcomingTeeGroupsUseCase({ listUserCompetitionsUseCase, getMyTeeGroupsUseCase });
 const approveEnrollmentUseCase = new ApproveEnrollmentUseCase(apiEnrollmentRepository);
 const rejectEnrollmentUseCase = new RejectEnrollmentUseCase(apiEnrollmentRepository);
+const removeEnrolledPlayerUseCase = new RemoveEnrolledPlayerUseCase(apiEnrollmentRepository);
 const setCustomHandicapUseCase = new SetCustomHandicapUseCase(apiEnrollmentRepository);
 const removeCustomHandicapUseCase = new RemoveCustomHandicapUseCase(apiEnrollmentRepository);
 const setNamePreferenceUseCase = new SetNamePreferenceUseCase(apiEnrollmentRepository);
@@ -597,6 +599,7 @@ export {
   listEnrollmentsUseCase,
   approveEnrollmentUseCase,
   rejectEnrollmentUseCase,
+  removeEnrolledPlayerUseCase,
   setCustomHandicapUseCase,
   removeCustomHandicapUseCase,
   setNamePreferenceUseCase,

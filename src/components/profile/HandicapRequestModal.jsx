@@ -7,6 +7,7 @@ import customToast from '../../utils/toast';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../ui/Pestanas';
 import { updateRfegHandicapUseCase, updateManualHandicapUseCase } from '../../composition';
+import CampoDeHandicap from '../ui/CampoDeHandicap';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 
 /**
@@ -148,16 +149,13 @@ const HandicapRequestModalContent = ({ user, handicapActual, onClose, onSaved })
             {/* Manual tab */}
             <PanelDePestana id="manual" como="form" onSubmit={handleManualSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="handicap-a-mano" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('edit.handicap.manual')}
                 </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="-10"
-                  max="54"
+                <CampoDeHandicap
+                  id="handicap-a-mano"
                   value={manualValue}
-                  onChange={(e) => setManualValue(e.target.value)}
+                  onChange={setManualValue}
                   placeholder={t('edit.handicap.manualPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   required

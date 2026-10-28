@@ -363,6 +363,29 @@ describe('useEditProfile Hook', () => {
     expect(result.current.isSaving).toBe(false);
   });
 
+  // Vacío, `Number('')` daba 0 y se guardaba hándicap 0 (26 oct): no se guarda y avisa
+  it('con el hándicap vacío no guarda y avisa del rango', async () => {
+    useAuth.mockReturnValue({
+      user: { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() => useEditProfile());
+    await act(async () => {});
+    act(() => {
+      result.current.handleInputChange({ target: { name: 'handicap', value: '' } });
+    });
+
+    await act(async () => {
+      await result.current.handleUpdateHandicapManually({ preventDefault: vi.fn() });
+    });
+
+    expect(composition.updateManualHandicapUseCase.execute).not.toHaveBeenCalled();
+    expect(customToast.error).toHaveBeenCalledWith('edit.handicap.manualHelp');
+    expect(result.current.isSaving).toBe(false);
+  });
+
   it('debería llamar a updateRfegHandicapUseCase y actualizar el estado (incluyendo formData) al llamar a handleUpdateHandicapRFEG', async () => {
     // Arrange
     const mockUserPlain = { id: '1', first_name: 'John', last_name: 'Doe', email: 'a@a.com', handicap: 10 };

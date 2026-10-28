@@ -171,6 +171,16 @@ describe('CompetitionDetail · la agenda (FE #654)', () => {
     await vi.waitFor(() => expect(ultimasProps().jugadores).toBe(4));
   });
 
+  it('FA3b: un jugador que solo ve a sus amigos cuenta con todos los inscritos', async () => {
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ creatorId: 'otra', enrolledCount: 12 }));
+    mockListEnrollments.mockResolvedValue([inscrito('org', 'Olga Organiza'), inscrito('ana', 'Ana Alba')]);
+    renderPage();
+
+    await screen.findByTestId('agenda');
+    await vi.waitFor(() => expect(ultimasProps().jugadores).toBe(12));
+  });
+
   it('FA4: cancelada o terminada no se cambia', async () => {
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({ status: 'CANCELLED', startDate: '2026-10-03', endDate: '2026-10-04' })

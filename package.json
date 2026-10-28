@@ -1,7 +1,7 @@
 {
   "name": "rydercup-web",
   "private": true,
-  "version": "2.55.0",
+  "version": "2.56.0",
   "type": "module",
   "description": "Frontend web para Ryder Cup Amateur Manager",
   "scripts": {
@@ -40,6 +40,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.64.1",
+    "@tailwindcss/node": "^4.3.3",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

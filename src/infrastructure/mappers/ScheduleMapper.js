@@ -51,6 +51,10 @@ class ScheduleMapper {
       placesTaken: apiTeeSheet.places_taken ?? 0,
       playerIds: apiTeeSheet.player_ids || [],
       waitingIds: apiTeeSheet.waiting_ids || [],
+      // Los ids son los que deja ver el servidor (release social 2); la cuenta
+      // y el puesto, de la lista entera. De un servidor de antes, de los ids
+      waitingCount: apiTeeSheet.waiting_count ?? (apiTeeSheet.waiting_ids || []).length,
+      myWaitingPosition: apiTeeSheet.my_waiting_position ?? null,
     };
   }
 

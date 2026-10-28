@@ -125,18 +125,6 @@ class IEnrollmentRepository {
   }
 
   /**
-   * Cancelar enrollment (transición REQUESTED/INVITED → CANCELLED)
-   *
-   * @param {string} competitionId - UUID de la competición
-   * @param {string} enrollmentId - UUID del enrollment
-   * @returns {Promise<Enrollment>} Enrollment cancelado
-   * @throws {Error} Si falla la operación
-   */
-  async cancel(competitionId, enrollmentId) {
-    throw new Error('Method cancel() must be implemented');
-  }
-
-  /**
    * Establecer handicap personalizado para enrollment
    *
    * @param {string} competitionId - UUID de la competición
@@ -192,17 +180,14 @@ class IEnrollmentRepository {
   }
 
   /**
-   * Eliminar enrollment (DELETE físico)
+   * El organizador quita a un inscrito (release social 2): POST /enrollments/{id}/remove
    *
-   * NOTA: Usar con precaución. Normalmente se prefiere cambiar a estado final.
-   *
-   * @param {string} competitionId - UUID de la competición
    * @param {string} enrollmentId - UUID del enrollment
    * @returns {Promise<void>}
-   * @throws {Error} Si falla la operación
+   * @throws {Error} Si no se puede, con `status` y `errorCode`
    */
-  async delete(competitionId, enrollmentId) {
-    throw new Error('Method delete() must be implemented');
+  async remove(enrollmentId) {
+    throw new Error('Method remove() must be implemented');
   }
 }
 

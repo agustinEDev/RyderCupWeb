@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 /**
@@ -20,15 +20,17 @@ vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../hooks/useAvatar', () => ({ useAvatar: () => ({}) }));
 
 let usuario;
+let handicapEscrito = '';
+const cambiar = vi.fn();
 vi.mock('../hooks/useEditProfile', () => ({
   useEditProfile: () => ({
     user: usuario,
     formData: {
       firstName: '', lastName: '', alias: '', countryCode: '', gender: '',
-      currentPassword: '', email: '', newPassword: '', confirmPassword: '', handicap: '',
+      currentPassword: '', email: '', newPassword: '', confirmPassword: '', handicap: handicapEscrito,
     },
     countries: [],
-    handleInputChange: vi.fn(),
+    handleInputChange: cambiar,
   }),
 }));
 
@@ -68,8 +70,7 @@ describe('EditProfile · la fecha del hándicap (FE #710)', () => {
   });
 });
 
-// Un hándicap plus se guarda negativo y se lee con «+» (FE #797). El campo
-// donde se escribe no cambia (H5): solo el hándicap actual que se enseña
+// Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
 describe('EditProfile · hándicap plus (FE #797)', () => {
   it('H1: el hándicap actual de un plus se lee con «+»', () => {
     usuario = { handicap: -2, handicap_updated_at: '2026-09-24T10:00:00' };
@@ -104,5 +105,29 @@ describe('EditProfile · fuente del hándicap (F4)', () => {
     pintar();
 
     expect(screen.queryByRole('link', { name: 'source.rfegName' })).toBeNull();
+  });
+});
+
+// QA del 26 oct (FE #938): el plus se escribía «-2», y el teclado decimal del
+// móvil no tiene signo. Ahora va el número y el «+» de al lado
+describe('EditProfile · el «+» del hándicap a mano', () => {
+  it('P1: un plus en el formulario se ve sin signo y con el «+» pulsado', () => {
+    usuario = { handicap: -2, handicap_updated_at: null };
+    handicapEscrito = '-2';
+    pintar();
+
+    expect(screen.getByLabelText('edit.handicap.manual')).toHaveValue('2');
+    expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('P2: pulsar «+» deja en el formulario el hándicap en negativo, como antes', () => {
+    usuario = { handicap: 2, handicap_updated_at: null };
+    handicapEscrito = '2';
+    cambiar.mockClear();
+    pintar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
+
+    expect(cambiar).toHaveBeenCalledWith({ target: { name: 'handicap', value: '-2' } });
   });
 });

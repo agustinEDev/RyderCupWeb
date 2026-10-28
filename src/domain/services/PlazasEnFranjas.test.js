@@ -99,6 +99,16 @@ describe('PlazasEnFranjas (FE #824)', () => {
     expect(accion(s, 'f')).toEqual({ tipo: DEJAR_DE_ESPERAR, posicion: 3 });
   });
 
+  it('7b: con la espera filtrada, su puesto es el que manda el servidor', () => {
+    const s = situacionEnLasFranjas(
+      [llena('f', '2030-10-12', { waitingIds: [YO], myWaitingPosition: 5 })],
+      YO,
+      1
+    );
+
+    expect(accion(s, 'f')).toEqual({ tipo: DEJAR_DE_ESPERAR, posicion: 5 });
+  });
+
   it('una franja sin hoja (de antes) no ofrece nada', () => {
     const s = situacionEnLasFranjas([{ id: 'r', roundDate: '2030-10-12', teeSheet: null }], YO, 1);
 

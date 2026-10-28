@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, Loader } from 'lucide-react';
+import CampoDeHandicap from '../ui/CampoDeHandicap';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -112,12 +113,10 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
 
           <div>
             <label htmlFor="edit-user-handicap" className="block text-sm font-medium text-gray-700 mb-1">{t('editModal.handicap')}</label>
-            <input
+            <CampoDeHandicap
               id="edit-user-handicap"
-              type="number"
-              step="0.1"
               value={formData.handicap}
-              onChange={handleChange('handicap')}
+              onChange={(valor) => setFormData((prev) => ({ ...prev, handicap: valor }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
             />
           </div>

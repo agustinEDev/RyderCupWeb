@@ -109,7 +109,10 @@
     "adminCompetitions": "Competitions",
     "adminGolfCourses": "Golf courses",
     "adminHoles": "Holes",
-    "sharedQuickMatch": "Quick match"
+    "sharedQuickMatch": "Quick match",
+    "leaderboard": "Leaderboard",
+    "friendGroup": "A friend's group",
+    "friendMatch": "A friend's match"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",
@@ -171,5 +174,9 @@
     "attempted": "You tried to access",
     "goToDashboard": "Go to dashboard",
     "goBack": "Go back"
+  },
+  "handicapField": {
+    "plus": "Plus handicap",
+    "outOfRange": "Between +10 and 54"
   }
 }

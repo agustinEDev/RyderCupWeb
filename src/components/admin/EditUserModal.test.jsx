@@ -82,3 +82,35 @@ describe('EditUserModal', () => {
     expect(await screen.findByText('Email already in use')).toBeInTheDocument();
   });
 });
+
+// QA del 26 oct (FE #938): el plus con el «+» de al lado, no con un «-»
+describe('EditUserModal · el «+» del hándicap', () => {
+  it('P5: un plus se ve sin signo y con el «+» pulsado', () => {
+    render(<EditUserModal user={{ ...user, handicap: -1.5 }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByLabelText('editModal.handicap')).toHaveValue('1.5');
+    expect(screen.getByRole('button', { name: 'handicapField.plus' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('P6: con el «+» pulsado se envía en negativo', async () => {
+    const onSubmit = vi.fn().mockResolvedValue();
+    render(<EditUserModal user={{ ...user, handicap: 2 }} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
+    fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].handicap).toBe(-2);
+  });
+
+  it('P7: con coma, «1,5» se envía 1.5', async () => {
+    const onSubmit = vi.fn().mockResolvedValue();
+    render(<EditUserModal user={user} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('editModal.handicap'), { target: { value: '1,5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].handicap).toBe(1.5);
+  });
+});

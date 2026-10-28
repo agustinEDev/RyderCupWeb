@@ -19,7 +19,8 @@ class UpdateManualHandicapUseCase {
   async execute(params = {}) {
     const { userId, handicap } = params;
 
-    if (!userId || handicap === undefined || handicap === null) {
+    // An empty string would become 0 through Number('') and be saved as handicap 0
+    if (!userId || handicap === undefined || handicap === null || String(handicap).trim() === '') {
       throw new Error('User ID and handicap value are required');
     }
 

@@ -119,6 +119,29 @@ describe('MyInvitationsPage', () => {
     expect(screen.getByTestId('decline-button')).toBeInTheDocument();
   });
 
+  it('dos tarjetas: con una respondiendo, la otra también se responde (revisor de la PR 3)', async () => {
+    faltaGenero = false;
+    const tarjeta = (id) => ({
+      id, competitionId: `c-${id}`, competitionName: id, inviterName: 'Creator', inviteeEmail: 'p@test.com',
+      status: 'PENDING', isPending: true, isAccepted: false, isDeclined: false, isExpired: false,
+      personalMessage: null, expiresAt: new Date(Date.now() + 86400000).toISOString(), respondedAt: null,
+    });
+    mockListMyInvitations.mockResolvedValue({ invitations: [tarjeta('inv-a'), tarjeta('inv-b')], totalCount: 2 });
+    mockRespondToInvitation.mockImplementation((id) => (id === 'inv-a' ? new Promise(() => {}) : Promise.resolve({})));
+    renderPage();
+    const [, rechazarB] = await screen.findAllByTestId('decline-button');
+    const [rechazarA] = screen.getAllByTestId('decline-button');
+
+    fireEvent.click(rechazarA);
+    fireEvent.click(rechazarB);
+
+    await waitFor(() => expect(mockRespondToInvitation).toHaveBeenCalledWith('inv-b', 'DECLINE'));
+    expect(mockRespondToInvitation).toHaveBeenCalledTimes(2);
+    // Respondida B, A sigue en curso: su tarjeta, desactivada
+    await waitFor(() => expect(mockListMyInvitations).toHaveBeenCalledTimes(2));
+    expect(screen.getAllByTestId('decline-button')[0]).toBeDisabled();
+  });
+
   it('A4: se puede filtrar por las que se quedaron sin plaza (#710)', async () => {
     renderPage();
     const filtro = await screen.findByTestId('status-filter');
@@ -228,26 +251,29 @@ describe('MyInvitationsPage', () => {
 
     // Un 409 sin código ya no es «otro error»: es que dejó de estar pendiente
     // (I6). Lo de «otro error» se prueba con uno que sí lo es
-    it('I5b: rechazar con otro error sí lo dice, con el mensaje del servidor', async () => {
-      mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Internal error'), { status: 500 })
-      );
+    // El motivo del servidor (4xx) tal cual; un 5xx, el genérico, y no el
+    // fallo en crudo; sin red, el de la app (`mensajeDeError`, CodeRabbit)
+    it.each([
+      ['decline-button', { status: 422, message: 'No se puede' }, 'No se puede'],
+      ['decline-button', { status: 500, message: 'Internal error' }, 'errors.failedToRespond'],
+      ['accept-button', { status: 422, message: 'No se puede' }, 'No se puede'],
+      ['accept-button', { status: 500, message: 'Internal error' }, 'errors.failedToRespond'],
+    ])('I5: %s con otro error (%j) → «%s»', async (boton, fallo, texto) => {
+      mockRespondToInvitation.mockRejectedValueOnce(Object.assign(new Error(fallo.message), { status: fallo.status }));
       renderPage();
 
-      fireEvent.click(await screen.findByTestId('decline-button'));
+      fireEvent.click(await screen.findByTestId(boton));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Internal error'));
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith(texto));
     });
 
-    it('I5: otro error, el mensaje del servidor', async () => {
-      mockRespondToInvitation.mockRejectedValueOnce(
-        Object.assign(new Error('Internal error'), { status: 500 })
-      );
+    it('I5: sin red, el aviso de sin conexión de la app', async () => {
+      mockRespondToInvitation.mockRejectedValueOnce(new TypeError('Failed to fetch'));
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('Internal error'));
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
     });
 
     // Probado en el Kind (5 oct): el organizador la retira con la pantalla del
@@ -312,7 +338,7 @@ describe('MyInvitationsPage', () => {
 
     it('I3: si no se pudo guardar el género, no se acepta', async () => {
       faltaGenero = true;
-      mockGuardarGenero.mockRejectedValueOnce(new Error('sin red'));
+      mockGuardarGenero.mockRejectedValueOnce(new TypeError('Failed to fetch'));
       renderPage();
 
       fireEvent.click(await screen.findByTestId('accept-button'));
@@ -321,7 +347,7 @@ describe('MyInvitationsPage', () => {
       });
       fireEvent.click(screen.getByTestId('genero-confirmar'));
 
-      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('sin red'));
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje'));
       expect(mockRespondToInvitation).not.toHaveBeenCalled();
     });
   });

@@ -67,6 +67,8 @@ const hoja = (extra = {}) => ({
   placesTaken: 12,
   playerIds: [],
   waitingIds: ['u-1', 'u-2', 'u-3'],
+  // Lo pone el mapper: la cuenta de verdad (release social 2)
+  waitingCount: 3,
   ...extra,
 });
 

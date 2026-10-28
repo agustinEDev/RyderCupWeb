@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.56.0] - 2026-10-28
+
+**Release social 2: quién ve a los inscritos.** En una competición pública ves
+a tus amigos inscritos hasta que se publican las partidas; en una privada, si
+no estás dentro, no ves nada. El organizador puede quitar a un inscrito y
+volver a invitar a quien rechazó, la invitación se acepta desde la ficha y,
+desde un logro de un amigo, se abre su tarjeta. Además, los colores de marca
+con transparencia vuelven a verse, y el hándicap se escribe con el teclado
+decimal. Va con el backend **2.42.0**.
+
+**Notas de despliegue.**
+
+- **Backend 2.42.0 antes**: este frontend usa `enrolled_visibility`,
+  `my_pending_invitation` y `POST /enrollments/{id}/remove`.
+- Sin variables nuevas. Arranque **241 KB gzip** de 270.
+
+### Added
+
+- **Quién ve a los inscritos** (#981): la ficha pinta lo que dice el servidor
+  (`enrolled_visibility`). Con solo amigos: «De momento solo ves a tus amigos
+  inscritos.»; en una privada sin estar dentro: «Los inscritos solo los ven
+  quienes participan.». El número de jugadores sale de `enrolled_count`, y en
+  las franjas, «Tus amigos aquí (n)» y tu puesto en la lista de espera. La
+  tarjeta de una invitación pendiente enlaza a su competición.
+- **Aceptar o rechazar la invitación desde la ficha** (#983): un recuadro
+  arriba, con la fecha de caducidad, que se va solo al caducar. Pide el género
+  si falta, como «Mis invitaciones», y en una pública sustituye a «Pedir
+  plaza». Las reglas de responder se comparten con «Mis invitaciones», ahora
+  con un bloqueo por invitación.
+- **Quitar a un inscrito** (#984): «Quitar» en cada jugador aprobado, para quien
+  organiza, antes de empezar y nunca en su propia fila. Pide confirmación (y
+  avisa si se desharán los equipos), recarga sin pantalla de espera y, si no
+  se puede, explica el motivo. El jugador ve en Actividad «El organizador te
+  ha quitado de X».
+- **Volver a invitar** (#984) en las invitaciones rechazadas, caducadas,
+  retiradas o sin plaza, por usuario o por correo. No se ofrece a quien ya
+  está inscrito o tiene otra pendiente, ni con la competición llena o cerrada
+  a invitaciones.
+- **La tarjeta de un amigo, en solo lectura** (#982): tocar el logro de un
+  amigo en un torneo que no jugaste abre su tarjeta; su posición final abre la
+  clasificación en su fila, resaltada. La posición final de un amigo se lee en
+  tercera persona («Pedro quedó 3.º de 12 en Copa X»; en Ryder, «El equipo de
+  Pedro (Europa) ganó 15½–12½»).
+- Una partida o clasificación privada para quien no está dice «Esta partida /
+  clasificación solo la ven quienes participan» en vez de un error (#982).
+
+### Fixed
+
+- **Los colores de marca con transparencia no existían** (#985): Tailwind 4 no
+  generaba `bg-primary/90`, `ring-primary`, `border-primary/30` y demás, usados
+  en unos 70 ficheros. Ahora los bordes de foco son verdes, los botones verdes
+  aclaran al pasar por encima, el botón central de la barra tiene su halo y el
+  dorado de la portada reacciona; se acabaron el borde negro y los botones sin
+  fondo.
+- **El hándicap es un campo de texto con teclado decimal** (#980): «1,5» se
+  guarda como 1.5, «1,» como 1, la coma sobrante se va al salir del campo, y
+  fuera de rango no deja guardar («Entre +10 y 54»). Un campo vacío ya no se
+  guarda como 0.
+- **El «+» del hándicap** (#978, #979) es una pieza compartida en perfil,
+  completar perfil, solicitud de hándicap, admin y hándicap del organizador.
+  Al vaciar el campo se suelta, para que el siguiente número no salga en
+  positivo sin querer.
+- **Restos de QA** (#978): el buscador de invitaciones marca a quien ya está
+  inscrito o invitado; el punto del GPS queda bajo los puntos del mapa; la
+  etiqueta de estado no parte el título a 800 px; la clasificación compartida
+  con sesión trae cabecera y barra inferior, ya no da un 400 con un enlace de
+  stroke play, y ya no tiene scroll de más (#979); el final de página deja
+  sitio al botón de partida rápida; cerrar sesión en otra pestaña no te saca
+  de una página pública; el gestor de contraseñas rellena el inicio de sesión.
+
 ## [2.55.0] - 2026-10-26
 
 **Retirar a un jugador de un fourball de torneo.** El jugador, su pareja o el

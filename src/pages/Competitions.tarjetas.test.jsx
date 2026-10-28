@@ -220,4 +220,18 @@ describe('Mis competiciones · tarjetas (FE #846)', () => {
     expect(within(c).getByText('status.CLOSED')).toBeInTheDocument();
     expect(within(c).getByText(/myCompetitions\.pendingRequests/)).toBeInTheDocument();
   });
+
+  // QA del 26 oct (FE #938): a 800 px la página deja ~215 px por tarjeta y el
+  // estado, al lado, partía el título a mitad de palabra («Privacida d»). El
+  // título se guarda un mínimo y, si no cabe con el estado, este baja de línea
+  it('14 · sin sitio para los dos, el estado baja de línea en vez de partir el título', async () => {
+    const [c] = await tarjeta([competicion({ name: 'QA1021 Enrol Privacidad' })]);
+
+    const titulo = within(c).getByRole('heading', { name: 'QA1021 Enrol Privacidad' });
+    const bloque = titulo.parentElement;
+    const cabecera = bloque.parentElement;
+    expect(cabecera.className.split(' ')).toContain('flex-wrap');
+    expect(bloque.className.split(' ')).toEqual(expect.arrayContaining(['min-w-0', 'flex-[1_1_10rem]']));
+    expect(within(cabecera).getByText('status.CLOSED').className.split(' ')).toContain('shrink-0');
+  });
 });
