@@ -61,6 +61,12 @@ const LeaderboardPage = () => {
   }
   // Si hay sesión, no el objeto: uno nuevo en cada render relanzaría la carga
   const conSesion = Boolean(user);
+  // Quién mira, para la marca de privada (no relanza la carga)
+  const quienMira = useRef(null);
+  const idDeQuienMira = user?.id ?? null;
+  useEffect(() => {
+    quienMira.current = idDeQuienMira;
+  }, [idDeQuienMira]);
   // La ve cualquiera, también sin sesión (release social 3): sin ella se relee
   // con el resumen público
   // Salvo una privada que ya no se puede ver (se perdió la sesión): su aviso, sin
@@ -111,14 +117,17 @@ const LeaderboardPage = () => {
     // Hasta saber si hay sesión no se pide nada: si no, el 400 de un stroke
     // play salía un instante como error (/code-review). Y si la ficha ya dijo
     // que es un stroke play, la de la Ryder no hace falta
-    if (!competitionId || sesionCargando || yaSabida) return undefined;
+    // Sin sesión ya no vale lo que trajo la ficha: se mira el resumen (code-review)
+    if (!competitionId || sesionCargando || (yaSabida && conSesion)) return undefined;
     // La marca es de esa competición: al pasar a otra se olvida, o al volver a
     // la privada la página se quedaba cargando para siempre (CodeRabbit)
     // Privada con sesión lo es también sin ella; pero quien entra (otra pestaña)
     // la mira con la suya (revisor)
-    const marca = { id: competitionId, conSesion };
+    // Y si entra otro, también (code-review)
+    const marca = { id: competitionId, quien: quienMira.current };
     const vista = privadaRef.current;
-    if (vista !== null && (vista.id !== competitionId || (conSesion && !vista.conSesion))) privadaRef.current = null;
+    const entraOtro = conSesion && vista?.quien !== quienMira.current;
+    if (vista !== null && (vista.id !== competitionId || entraOtro)) privadaRef.current = null;
     if (privadaRef.current !== null) return undefined;
     let vigente = true;
 
@@ -161,9 +170,10 @@ const LeaderboardPage = () => {
         resumenLeido.current = { id: competitionId, resumen };
         return resumen;
       } catch (err) {
-        // Con respuesta, aunque sea un error, no se repite en cada refresco (el
-        // cupo es de todos, ADR-038); sin red, sí (revisor)
-        if (!esFalloDeRed(err)) resumenLeido.current = { id: competitionId, resumen: null };
+        // Un no definitivo (un 4xx) no se repite en cada refresco (el cupo es de
+        // todos, ADR-038); sin red, un 429 o un 5xx, sí (revisor, code-review)
+        const definitivo = err?.status >= 400 && err?.status < 500 && err?.status !== 429;
+        if (definitivo) resumenLeido.current = { id: competitionId, resumen: null };
         return null;
       }
     };
