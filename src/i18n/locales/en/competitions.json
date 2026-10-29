@@ -136,10 +136,10 @@
     "summaryNoHandicapLimit": "no handicap limit",
     "moreOptionsIncomplete": "Some options are missing: expand them to fill them in",
     "visibility": "Who can join?",
-    "visibilityPrivate": "Invited only",
-    "visibilityPublic": "Anyone",
-    "visibilityPrivateHelp": "It does not show when exploring: the people you invite are the ones who get in",
-    "visibilityPublicHelp": "It shows when exploring and anyone can ask for a place; you still decide who gets in",
+    "visibilityPrivate": "Private: by invitation",
+    "visibilityPublic": "Public: direct entry",
+    "visibilityPrivateHelp": "It does not show when exploring: only the people you invite get in",
+    "visibilityPublicHelp": "It shows when exploring and anyone joins directly while there is room; you can remove anyone before it starts",
     "setupMode": {
       "title": "How much should the app do",
       "subtitle": "You can change it while enrolment is open.",
@@ -240,7 +240,7 @@
       "complete": "Complete",
       "cancel": "Cancel",
       "delete": "Delete",
-      "request-to-join": "Request to Join",
+      "request-to-join": "Join",
       "manageSchedule": "Teams and matches",
       "viewSchedule": "View Schedule",
       "manageInvitations": "Invitations",
@@ -358,7 +358,12 @@
       "removeNotAllowed": "The competition has already started: nobody can be removed.",
       "removeOrganizer": "The organizer cannot be removed.",
       "removeFailed": "The player could not be removed.",
-      "removeGone": "They were no longer enrolled."
+      "removeGone": "They were no longer enrolled.",
+      "teeWindowFull": "That tee window just filled up: choose another or join its waiting list",
+      "teeWindowHasRoom": "That tee window has room: join it directly",
+      "teeWindowRequired": "Choose a tee window to join",
+      "teeWindowNotFound": "That tee window no longer exists: choose another",
+      "draftInProgress": "The draft is in progress: try again when it ends"
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
@@ -435,13 +440,14 @@
       "completed": "Competition completed successfully",
       "cancelled": "Competition cancelled successfully",
       "deleted": "Competition deleted successfully",
-      "enrollmentRequested": "Enrollment request sent successfully",
       "enrollmentsReopened": "Enrollments reopened successfully",
       "statusReverted": "Competition reverted to CLOSED status successfully",
       "revertedToInProgress": "Tournament reopened and back to IN_PROGRESS status",
       "captainsNamed": "Captains named. Enrolment is now closed.",
       "captainsChanged": "Captains changed.",
-      "playerRemoved": "{{nombre}} is no longer enrolled"
+      "playerRemoved": "{{nombre}} is no longer enrolled",
+      "enrolled": "You're in!",
+      "joinedWaitingList": "You're on the waiting list: if a place frees up, you're in"
     },
     "failedToApprove": "Failed to approve enrollment",
     "competitionFull": "The competition is full. Maximum number of players ({{max}}) has been reached.",
@@ -449,7 +455,7 @@
     "failedToUpdateCompetition": "Failed to update competition",
     "failedToDeleteCompetition": "Failed to delete competition",
     "unknownUser": "Unknown User",
-    "failedToEnroll": "Failed to enroll",
+    "failedToEnroll": "Could not complete the entry",
     "failedToLoadCompetitions": "Failed to load competitions",
     "golfCourses": {
       "title": "Golf courses",
@@ -513,7 +519,8 @@
     "allWindowsClosed": "All tee windows are closed: once you have checked the standings, finish the competition.",
     "onlyFriendsVisible": "For now you only see your friends who have entered.",
     "onlyParticipantsSee": "Only participants can see who has entered.",
-    "removePlayerAria": "Remove {{nombre}}"
+    "removePlayerAria": "Remove {{nombre}}",
+    "waitingListStatus": "Waiting: no. {{position}} for the {{time}} tee window ({{day}})"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -541,18 +548,18 @@
       "created-by": "Created by:",
       "players": "Players:",
       "full": "FULL",
-      "requesting": "Requesting...",
-      "request-to-join": "Request to Join",
+      "requesting": "Joining...",
+      "request-to-join": "Join",
       "view-details": "View Details"
     },
     "errors": {
       "failedToLoadJoinable": "Failed to load available competitions",
       "failedToLoadExplore": "Failed to load competitions",
-      "alreadyEnrolled": "You already have an enrollment request for this competition",
-      "failedToEnroll": "Failed to request enrollment"
+      "alreadyEnrolled": "You are already in this competition",
+      "failedToEnroll": "Could not complete the entry"
     },
     "success": {
-      "enrollmentRequested": "Enrollment request sent! Check \"My Competitions\" to track status."
+      "enrolled": "You're in!"
     }
   },
   "footer": "© {{year}} Agustín Estévez Domínguez",
@@ -565,14 +572,24 @@
     "CANCELLED": "CANCELLED"
   },
   "enrollment": {
-    "modalTitle": "Request to Join",
+    "modalTitle": "Join",
     "colorLabel": "Preferred tee colour",
     "colorHint": "Used to assign the right tees in matches",
     "noPreference": "No preference",
-    "confirm": "Confirm",
+    "confirm": "Join",
     "cancel": "Cancel",
     "needsHandicap": "To join a Stableford or a Medal you need your handicap in your profile.",
-    "addHandicap": "Add it"
+    "addHandicap": "Add it",
+    "windowLabel": "Tee window",
+    "full": "Full",
+    "waitingCount_one": "{{count}} waiting",
+    "waitingCount_other": "{{count}} waiting",
+    "freePlaces_one": "{{count}} place left",
+    "freePlaces_other": "{{count}} places left",
+    "joinWaitingList": "Join the waiting list",
+    "windowsNotLoaded": "The tee windows could not be loaded",
+    "windowsLoading": "Loading the tee windows...",
+    "retryWindows": "Try again"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",

@@ -601,7 +601,7 @@ describe('FranjasDeLaCompeticion (FE #824)', () => {
     const onAgenda = vi.fn();
     pinta({ onAgenda });
 
-    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(expect.objectContaining({ rounds: [expect.anything()] })));
+    await waitFor(() => expect(onAgenda).toHaveBeenLastCalledWith(expect.objectContaining({ rounds: [expect.anything()] }), false));
   });
 });
 

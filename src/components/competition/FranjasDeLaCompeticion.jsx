@@ -281,7 +281,8 @@ const FranjasDeLaCompeticion = ({
   }, [cargarAgenda, version]);
 
   useEffect(() => {
-    onAgenda?.(agenda && !sinCargar ? agenda : null);
+    // El segundo dato dice si falló: con null y sin fallo, aún se está leyendo
+    onAgenda?.(agenda && !sinCargar ? agenda : null, sinCargar);
   }, [agenda, sinCargar, onAgenda]);
 
   const franjas = useMemo(() => agenda?.rounds || [], [agenda]);

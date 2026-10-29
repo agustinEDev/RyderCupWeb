@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import ModalShell, { CAJA_PROPIA } from '../ui/ModalShell';
 import { motion } from 'framer-motion';
 import { X, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import SelectorDeGenero from '../profile/SelectorDeGenero';
+import { franjaLlena, plazasLibres } from '../../domain/services/PlazasEnFranjas';
+
+// Sin franjas: el mismo array siempre, para que el orden no se recalcule
+const SIN_FRANJAS = [];
 
 const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
 
@@ -15,6 +19,17 @@ const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
  *   como segundo argumento, para guardarlo antes de pedir plaza
  * @param {string|null} [props.error=null] - Por qué no se pudo pedir (#710):
  *   el modal sigue abierto y lo dice, en vez de cerrarse como si hubiera ido bien
+ * @param {Array} [props.franjas=[]] - Las franjas de un stroke play (sesiones con
+ *   `teeSheet`). Con ellas se elige en el mismo paso la franja con hueco o la
+ *   espera de una llena (release social 3, 28 oct 2026); `onConfirm` recibe
+ *   `{ roundId, waiting }` como tercer argumento, o null sin franjas
+ * @param {boolean} [props.franjasCargando=false] - Es un stroke play y su agenda
+ *   se está leyendo: se dice y no se deja enviar (code-review)
+ * @param {boolean} [props.franjasSinCargar=false] - Es un stroke play y su agenda
+ *   no se pudo leer: no hay franjas que elegir y no se deja enviar (revisor)
+ * @param {Function} [props.onReintentar] - Volver a leer la agenda
+ * @param {Function} [props.onElegir] - Al cambiar de franja: quien lo abre borra
+ *   el error de la elección anterior (revisor)
  */
 const EnrollmentRequestModal = ({
   isOpen,
@@ -24,6 +39,11 @@ const EnrollmentRequestModal = ({
   pideGenero = false,
   faltaHandicap = false,
   error = null,
+  franjas = SIN_FRANJAS,
+  franjasCargando = false,
+  franjasSinCargar = false,
+  onElegir,
+  onReintentar,
 }) => {
   if (!isOpen) return null;
   return (
@@ -34,19 +54,70 @@ const EnrollmentRequestModal = ({
       pideGenero={pideGenero}
       faltaHandicap={faltaHandicap}
       error={error}
+      franjas={franjas}
+      franjasCargando={franjasCargando}
+      franjasSinCargar={franjasSinCargar}
+      onElegir={onElegir}
+      onReintentar={onReintentar}
     />
   );
 };
 
-const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideGenero, faltaHandicap, error }) => {
-  const { t } = useTranslation(['competitions', 'golfCourses']);
+const llena = (franja) => franjaLlena(franja.teeSheet);
+
+const EnrollmentRequestModalContent = ({
+  onClose,
+  onConfirm,
+  isProcessing,
+  pideGenero,
+  faltaHandicap,
+  error,
+  franjas,
+  franjasCargando,
+  franjasSinCargar,
+  onElegir,
+  onReintentar,
+}) => {
+  const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
   const [selectedTee, setSelectedTee] = useState('');
   const [genero, setGenero] = useState('');
+  const [elegida, setElegida] = useState(null);
+  // Por día y hora: en el orden en que se juegan
+  const ordenadas = useMemo(
+    () =>
+      [...franjas].sort(
+        (a, b) =>
+          String(a.roundDate).localeCompare(String(b.roundDate)) ||
+          String(a.teeSheet.firstTeeTime).localeCompare(String(b.teeSheet.firstTeeTime))
+      ),
+    [franjas]
+  );
+  const conFranjas = ordenadas.length > 0;
+  const laElegida = ordenadas.find((f) => f.id === elegida) ?? null;
+  const aLaEspera = laElegida !== null && llena(laElegida);
+  const falta =
+    faltaHandicap || (pideGenero && !genero) || (conFranjas && !laElegida) || franjasSinCargar || franjasCargando;
+
+  const elegir = (id) => {
+    setElegida(id);
+    onElegir?.();
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (faltaHandicap || (pideGenero && !genero)) return;
-    onConfirm(selectedTee || null, pideGenero ? genero : null);
+    if (falta) return;
+    onConfirm(
+      selectedTee || null,
+      pideGenero ? genero : null,
+      laElegida ? { roundId: laElegida.id, waiting: aLaEspera } : null
+    );
+  };
+
+  const dia = (fecha) => {
+    const d = new Date(`${fecha}T12:00:00`);
+    return Number.isNaN(d.getTime())
+      ? fecha
+      : d.toLocaleDateString(i18n?.language, { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
   return (
@@ -100,6 +171,73 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
           )}
           {pideGenero && <SelectorDeGenero value={genero} onChange={setGenero} />}
 
+          {/* La franja, o la espera de una llena, en el mismo paso (release
+              social 3): con plaza se entra con ella; llena, a su espera */}
+          {franjasCargando && (
+            <p data-testid="franjas-cargando" role="status" className="text-sm text-gray-500">
+              {t('competitions:enrollment.windowsLoading')}
+            </p>
+          )}
+          {franjasSinCargar && (
+            <div data-testid="franjas-sin-cargar" role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+              <p>{t('competitions:enrollment.windowsNotLoaded')}</p>
+              {onReintentar && (
+                <button
+                  type="button"
+                  onClick={onReintentar}
+                  className="mt-2 min-h-11 font-semibold underline"
+                >
+                  {t('competitions:enrollment.retryWindows')}
+                </button>
+              )}
+            </div>
+          )}
+          {conFranjas && (
+            <fieldset data-testid="elegir-franja" className="min-w-0 space-y-2">
+              <legend className="block text-sm font-medium text-gray-700 mb-1">
+                {t('competitions:enrollment.windowLabel')}
+              </legend>
+              {ordenadas.map((franja) => {
+                const hoja = franja.teeSheet;
+                const sinSitio = llena(franja);
+                const marcada = franja.id === elegida;
+                return (
+                  <label
+                    key={franja.id}
+                    data-testid={`franja-${franja.id}`}
+                    className={`flex items-start gap-3 w-full min-h-11 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
+                      marcada ? 'border-primary bg-primary/5' : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="franja"
+                      value={franja.id}
+                      checked={marcada}
+                      onChange={() => elegir(franja.id)}
+                      className="mt-1 accent-primary"
+                    />
+                    <span>
+                      <span className="font-medium text-gray-900">
+                        {dia(franja.roundDate)} · {hoja.firstTeeTime}
+                        {hoja.lastTeeTime && hoja.lastTeeTime !== hoja.firstTeeTime
+                          ? `–${hoja.lastTeeTime}`
+                          : ''}
+                      </span>
+                      <span className={`block text-xs ${sinSitio ? 'text-amber-700' : 'text-gray-500'}`}>
+                        {sinSitio
+                          ? `${t('competitions:enrollment.full')} · ${t('competitions:enrollment.waitingCount', { count: hoja.waitingCount ?? 0 })}`
+                          : t('competitions:enrollment.freePlaces', {
+                              count: plazasLibres(hoja),
+                            })}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
+
           {/* Tee Category Select */}
           <div>
             <label
@@ -137,10 +275,12 @@ const EnrollmentRequestModalContent = ({ onClose, onConfirm, isProcessing, pideG
             </button>
             <button
               type="submit"
-              disabled={isProcessing || faltaHandicap || (pideGenero && !genero)}
+              disabled={isProcessing || falta}
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {isProcessing ? '...' : t('competitions:enrollment.confirm')}
+              {isProcessing
+                ? '...'
+                : t(aLaEspera ? 'competitions:enrollment.joinWaitingList' : 'competitions:enrollment.confirm')}
             </button>
           </div>
         </form>

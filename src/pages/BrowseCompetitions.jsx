@@ -144,6 +144,14 @@ const BrowseCompetitions = () => {
 
   // Open modal to request enrollment
   const openEnrollModal = (competitionId) => {
+    // En un stroke play la franja se elige en la ficha (release social 3)
+    const competicion = [...exploreCompetitions, ...joinableCompetitions].find(
+      (c) => c.id === competitionId
+    );
+    if (competicion?.hasTeams === false) {
+      navigate(`/competitions/${competitionId}`, { state: { from: 'browse' } });
+      return;
+    }
     setErrorAlApuntarse(null);
     modalAbiertoPara.current = competitionId;
     setEnrollTargetId(competitionId);
@@ -167,12 +175,14 @@ const BrowseCompetitions = () => {
       }
 
       // Call RequestEnrollmentUseCase
-      await requestEnrollmentUseCase.execute(competitionId, null, { color });
+      const hecho = await requestEnrollmentUseCase.execute(competitionId, null, { color });
 
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
       if (esSuModal()) setEnrollModalOpen(false);
-      customToast.success(t('browse.success.enrollmentRequested'));
+      customToast.success(
+        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'browse.success.enrolled')
+      );
 
       // Remove competition from UI immediately (optimistic update)
       setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
@@ -199,6 +209,12 @@ const BrowseCompetitions = () => {
     } catch (error) {
       console.error('❌ Error requesting enrollment:', error);
 
+      // Con la sala de draft abierta no entra nadie: se dice en el diálogo, que
+      // sigue abierto, y la tarjeta se queda (release social 3, revisor)
+      if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
+        if (esSuModal()) setErrorAlApuntarse(t('detail.errors.draftInProgress'));
+        return;
+      }
       // Check if it's a duplicate enrollment error (409 Conflict)
       // Por el estado: el texto del servidor no lleva «409» (revisión local)
       if (error?.status === 409) {
@@ -456,11 +472,8 @@ const BrowseCompetitions = () => {
         onConfirm={(tee, genero) => handleRequestEnrollment(enrollTargetId, tee, genero)}
         isProcessing={!!requestingEnrollment[enrollTargetId]}
         pideGenero={generoParaApuntarse.falta}
-        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
-        faltaHandicap={
-          [...exploreCompetitions, ...joinableCompetitions].find((c) => c.id === enrollTargetId)?.hasTeams === false &&
-          (user?.handicap === null || user?.handicap === undefined)
-        }
+        // Un stroke play no abre este diálogo: se apunta en su ficha, que pide el
+        // hándicap (release social 3)
         error={errorAlApuntarse}
       />
     </div>
@@ -471,6 +484,8 @@ const BrowseCompetitions = () => {
 const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails, isRequesting }) => {
   const { t, i18n } = useTranslation('competitions');
   const { id, name, startDate, endDate, status, creator, enrolledCount, maxPlayers, countries, visibility } = competition;
+  // En un stroke play el cupo es de sus franjas, que se ven en la ficha (release social 3)
+  const llena = competition.hasTeams !== false && enrolledCount >= maxPlayers;
   // Solo en una pública se pide plaza: un admin ve también las privadas en esta
   // lista, y en ellas se entra por invitación (FE #734)
   const sePidePlaza = mode === 'joinable' && visibility === 'PUBLIC';
@@ -542,8 +557,12 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-2 text-gray-400" />
           <span>
-            {t('browse.card.players')} <span className="font-medium text-gray-900">{enrolledCount} / {maxPlayers}</span>
-            {enrolledCount >= maxPlayers && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
+            {t('browse.card.players')}{' '}
+            <span className="font-medium text-gray-900">
+              {/* En un stroke play el cupo es de sus franjas (release social 3) */}
+              {competition.hasTeams === false ? enrolledCount : `${enrolledCount} / ${maxPlayers}`}
+            </span>
+            {llena && <span className="ml-2 text-red-600 font-semibold">{t('browse.card.full')}</span>}
           </span>
         </div>
       </button>
@@ -556,9 +575,9 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
               e.stopPropagation(); // Prevent card click when clicking button
               onRequestEnrollment(id);
             }}
-            disabled={isRequesting || enrolledCount >= maxPlayers}
+            disabled={isRequesting || llena}
             className={`w-full py-2 px-4 rounded-lg font-medium transition ${
-              isRequesting || enrolledCount >= maxPlayers
+              isRequesting || llena
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-primary text-white hover:bg-primary/90'
             }`}
@@ -566,7 +585,7 @@ const CompetitionCard = ({ competition, mode, onRequestEnrollment, onViewDetails
         {/* Get button text */}
         {(() => {
           if (isRequesting) return t('browse.card.requesting');
-          if (enrolledCount >= maxPlayers) return t('browse.card.full');
+          if (llena) return t('browse.card.full');
           return t('browse.card.request-to-join');
         })()}
       </button>
