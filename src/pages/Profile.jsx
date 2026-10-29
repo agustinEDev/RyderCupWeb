@@ -21,6 +21,7 @@ import { fetchCountriesUseCase, listUserCompetitionsUseCase } from '../compositi
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { formatCountryName } from '../services/countries';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -117,7 +118,7 @@ const Profile = () => {
   const memberSince = instanteEnTexto(user.created_at, i18n.language, fechaLarga) ?? '';
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 

@@ -20,6 +20,7 @@ import {
   sendInvitationUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 // Ni `/friends/me` ni el listado de invitaciones dan más de 100 filas por
 // página. Pedir una sola dejaba fuera al amigo 101 y a la invitación pendiente
@@ -377,7 +378,7 @@ const InvitationsPage = () => {
   // quedaría el atrás para reintentar
   if (falloAlPedirLosPermisos) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="py-12 text-center" data-testid="roles-error">
@@ -401,7 +402,7 @@ const InvitationsPage = () => {
     // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
     // compartido.
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <BlockLoader texto={t('loading')} />
       </div>
@@ -423,7 +424,7 @@ const InvitationsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">

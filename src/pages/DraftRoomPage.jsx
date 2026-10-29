@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import useDraftRoom from '../hooks/useDraftRoom';
 import { getCompetitionDetailUseCase } from '../composition';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 /**
  * La sala de draft en directo (FE #653).
@@ -102,7 +103,7 @@ const DraftRoomPage = () => {
   if (cargando) return <FullScreenLoader />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       {/* Con la sesión: sin ella la cabecera pintaba «?» y sin la insignia
           de administrador (#710) */}
       <HeaderAuth user={user} title={t('draft.title')} backTo={`/competitions/${id}`} />

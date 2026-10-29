@@ -65,6 +65,7 @@ import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { mensajeConJugadores } from '../utils/erroresConJugadores';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -1216,7 +1217,7 @@ const CompetitionDetail = () => {
   const usaSuAlias = userEnrollment ? !userEnrollment.useRealName : false;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         {/* El nombre del torneo solo se conoce en ejecucion: sustituye al
             titulo generico del mapa de rutas (FE #310).

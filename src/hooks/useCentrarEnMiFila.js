@@ -5,6 +5,20 @@ import { REDUCED_MOTION_QUERY } from './useEntryMotion';
 const GESTOS = ['wheel', 'touchmove', 'keydown', 'pointerdown'];
 
 /**
+ * Lo que le falta a la página para que la fila quede en el centro, como
+ * espacio al final del bloque (FE #988): la fila «tu posición» del scratch va
+ * la última, y la página no podía bajar lo bastante para centrarla.
+ */
+const hacerSitioDebajo = (bloque, fila) => {
+  if (!bloque) return;
+  const caja = fila.getBoundingClientRect();
+  const hastaElCentro = caja.top + globalThis.scrollY + caja.height / 2 - globalThis.innerHeight / 2;
+  const puedeBajar = document.documentElement.scrollHeight - globalThis.innerHeight;
+  const falta = Math.ceil(hastaElCentro - puedeBajar);
+  if (falta > 0) bloque.style.paddingBottom = `${falta}px`;
+};
+
+/**
  * Si participo, la clasificación me lleva a mi fila, centrada y con el foco
  * (14 oct 2026). `modo`: «una», la primera vez que se ve; «alAbrir», cada vez
  * que se abre. Cuenta la primera respuesta llegada después de abrir, buena o
@@ -46,6 +60,7 @@ export const useCentrarEnMiFila = ({ modo, activa, respuestas }) => {
     // También la de debajo del corte (scratch)
     const mia = bloqueRef.current?.querySelector('tr[data-yo="true"]');
     if (!mia) return;
+    hacerSitioDebajo(bloqueRef.current, mia);
     const sinAnimacion = globalThis.matchMedia?.(REDUCED_MOTION_QUERY).matches;
     mia.scrollIntoView({ block: 'center', behavior: sinAnimacion ? 'auto' : 'smooth' });
     // El foco con ella, para el lector de pantalla, sin mover más la vista

@@ -12,6 +12,7 @@ import FullScreenLoader from '../components/ui/FullScreenLoader';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 const EditProfile = () => {
   const { t, i18n } = useTranslation('profile');
@@ -85,7 +86,7 @@ const EditProfile = () => {
   // El JSX que sigue es idéntico al de antes, pero ahora consume los
   // estados y manejadores del hook.
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 

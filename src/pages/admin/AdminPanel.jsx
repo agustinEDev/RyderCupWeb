@@ -36,6 +36,7 @@ import {
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const TRANSITION_USE_CASES = {
   activate: activateCompetitionUseCase,
@@ -307,7 +308,7 @@ const AdminPanel = () => {
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">

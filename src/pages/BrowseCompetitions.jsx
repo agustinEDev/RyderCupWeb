@@ -18,6 +18,7 @@ import { mensajeDeError } from '../utils/sinCobertura';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatDateRange } from '../services/competitions';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 const BrowseCompetitions = () => {
   // El género para apuntarse, solo a quien le falta (#710)
@@ -252,7 +253,7 @@ const BrowseCompetitions = () => {
     // migradas que trae `bg-*` propio, y sin esto la pantalla pasaba de blanco
     // a gris en el instante en que llegan los datos
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50 flex items-center justify-center`}>
         <BlockLoader texto={t('common:loading')} />
       </div>
     );
@@ -337,7 +338,7 @@ const BrowseCompetitions = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

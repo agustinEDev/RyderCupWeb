@@ -19,6 +19,7 @@ import {
 import { porCuandoSeJuega } from '../../utils/elMasCercano';
 import BlockLoader from '../../components/ui/BlockLoader';
 import TarjetaDeLoProximo from '../../components/schedule/TarjetaDeLoProximo';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 // `setTimeout` no aguanta más de 2^31-1 ms: por encima dispara INMEDIATAMENTE y
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
@@ -103,7 +104,7 @@ const UpcomingMatchesPage = () => {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
     // terminar es un salto, y de eso va justamente FE #495
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <BlockLoader texto={t('upcomingMatches.loading')} />
       </div>
@@ -111,7 +112,7 @@ const UpcomingMatchesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">

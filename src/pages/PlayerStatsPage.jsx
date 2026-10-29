@@ -17,6 +17,7 @@ import {
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BlockLoader from '../components/ui/BlockLoader';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 /**
  * Las estadísticas completas del jugador (FE #306, fase 2).
@@ -192,7 +193,7 @@ const PlayerStatsPage = () => {
   const TrendIcon = isSteady ? Minus : isImproving ? TrendingDown : TrendingUp;
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 

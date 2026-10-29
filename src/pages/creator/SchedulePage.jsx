@@ -31,6 +31,7 @@ import {
 } from '../../composition';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -374,7 +375,7 @@ const SchedulePage = () => {
   const hayEquipos = Boolean(teamAssignment);
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 

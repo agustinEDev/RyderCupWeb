@@ -43,6 +43,7 @@ import {
   lanzaElRefrescoDeHandicap,
   recogeElHandicapPorPedir,
 } from '../services/refrescoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 // El panel enseña un resumen, no el historial entero
 const RECENT_MATCHES_SHOWN = 3;
@@ -505,7 +506,7 @@ const Dashboard = () => {
   const firstName = user.alias || user.first_name || 'User';
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       {mostrarAlias && (
         <AliasSheet
           aliasActual={user.alias || ''}
