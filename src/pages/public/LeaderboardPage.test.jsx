@@ -823,6 +823,25 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
     expect(screen.getByRole('link', { name: /leaderboard\.backToHome/ })).toHaveAttribute('href', '/');
   });
 
+  it('V4 (revisor): sin saber aún si hay sesión, sin volver; luego, el suyo', async () => {
+    mockSesionCargando.current = true;
+    mockLocationState.state = { from: 'detail', competicion: { id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' } };
+    try {
+      const { rerender } = render(<LeaderboardPage />);
+
+      expect(screen.getByTestId('general-stroke-play')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /back/ })).not.toBeInTheDocument();
+
+      mockSesionCargando.current = false;
+      mockUser.current = { id: 'u-1' };
+      rerender(<LeaderboardPage />);
+
+      expect(await screen.findByRole('link', { name: /summary\.backToCompetition/ })).toHaveAttribute('href', '/competitions/c-1');
+    } finally {
+      mockSesionCargando.current = false;
+    }
+  });
+
   it('V4: mientras carga, sin volver', () => {
     mockResumen.mockReturnValue(new Promise(() => {}));
 

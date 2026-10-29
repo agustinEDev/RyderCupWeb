@@ -242,8 +242,10 @@ const LeaderboardPage = () => {
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {/* Mientras carga no se sabe adónde: con un enlace compartido cambiaba
-            de texto y de destino al detectar un stroke play (revisor) */}
-        {!isLoading && (
+            de texto y de destino al detectar un stroke play (revisor). Ni sin
+            saber si hay sesión: el visitante va al inicio y quien la tiene, a
+            la ficha (revisor, 29 oct 2026) */}
+        {!isLoading && !sesionCargando && (
           // Con sesión, en el móvil la flecha va en la cabecera (QA, FE #865-4)
           <Link
             to={volverA}
