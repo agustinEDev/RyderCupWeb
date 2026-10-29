@@ -41,6 +41,26 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   }
 
   /**
+   * El resumen público de una competición, sin sesión (release social 3).
+   * @override
+   * @param {string} competitionId - The ID of the competition.
+   * @returns {Promise<Object>} id, name, hasTeams, tournamentType, status, visibility y fechas.
+   */
+  async findSummary(competitionId) {
+    const data = await apiRequest(`/api/v1/competitions/${competitionId}/summary`);
+    return {
+      id: data.id,
+      name: data.name,
+      tournamentType: data.tournament_type,
+      hasTeams: data.has_teams,
+      status: data.status,
+      visibility: data.visibility,
+      startDate: data.start_date,
+      endDate: data.end_date,
+    };
+  }
+
+  /**
    * Finds all competitions for a specific user (creator OR enrolled).
    * @override
    * @param {string} userId - The ID of the user/creator.

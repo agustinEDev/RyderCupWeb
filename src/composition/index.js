@@ -86,6 +86,7 @@ import ScheduleHandicapUpdateUseCase from '../application/use_cases/competition/
 import CancelScheduledHandicapUpdateUseCase from '../application/use_cases/competition/CancelScheduledHandicapUpdateUseCase';
 import ListUserCompetitionsUseCase from '../application/use_cases/competition/ListUserCompetitionsUseCase';
 import GetCompetitionDetailUseCase from '../application/use_cases/competition/GetCompetitionDetailUseCase';
+import GetCompetitionSummaryUseCase from '../application/use_cases/competition/GetCompetitionSummaryUseCase';
 import ActivateCompetitionUseCase from '../application/use_cases/competition/ActivateCompetitionUseCase';
 import CloseEnrollmentsUseCase from '../application/use_cases/competition/CloseEnrollmentsUseCase';
 import NameCaptainsUseCase from '../application/use_cases/competition/NameCaptainsUseCase';
@@ -293,6 +294,7 @@ const scheduleHandicapUpdateUseCase = new ScheduleHandicapUpdateUseCase({ compet
 const cancelScheduledHandicapUpdateUseCase = new CancelScheduledHandicapUpdateUseCase({ competitionRepository: apiCompetitionRepository });
 const listUserCompetitionsUseCase = new ListUserCompetitionsUseCase({ competitionRepository: apiCompetitionRepository });
 const getCompetitionDetailUseCase = new GetCompetitionDetailUseCase({ competitionRepository: apiCompetitionRepository });
+const getCompetitionSummaryUseCase = new GetCompetitionSummaryUseCase({ competitionRepository: apiCompetitionRepository });
 const activateCompetitionUseCase = new ActivateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const closeEnrollmentsUseCase = new CloseEnrollmentsUseCase({ competitionRepository: apiCompetitionRepository });
 const nameCaptainsUseCase = new NameCaptainsUseCase({ competitionRepository: apiCompetitionRepository });
@@ -574,6 +576,7 @@ export {
   cancelScheduledHandicapUpdateUseCase,
   listUserCompetitionsUseCase,
   getCompetitionDetailUseCase,
+  getCompetitionSummaryUseCase,
   activateCompetitionUseCase,
   closeEnrollmentsUseCase,
   nameCaptainsUseCase,

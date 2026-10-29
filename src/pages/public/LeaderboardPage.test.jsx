@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 
-const mockLocationState = { state: null, search: '' };
+const mockLocationState = { state: null, search: '', pathname: '/competitions/c-1/leaderboard' };
 const mockParams = { id: 'c-1' };
 vi.mock('react-router', () => ({
   useParams: () => mockParams,
   useLocation: () => mockLocationState,
   useSearchParams: () => [new URLSearchParams(mockLocationState.search ?? '')],
-  Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
+  Link: ({ children, to, state, ...props }) => (
+    <a href={to} data-from={state?.from?.pathname} {...props}>
+      {children}
+    </a>
+  ),
   Navigate: ({ to, replace }) => <div data-testid="redirige" data-to={to} data-replace={String(Boolean(replace))} />,
 }));
 
@@ -25,8 +29,11 @@ const { mockRyder } = vi.hoisted(() => ({
 }));
 
 const mockDetalle = vi.fn();
+// Sin sesión, el resumen público dice qué pintar (release social 3)
+const mockResumen = vi.fn();
 vi.mock('../../composition', () => ({
   getCompetitionDetailUseCase: { execute: (...a) => mockDetalle(...a) },
+  getCompetitionSummaryUseCase: { execute: (...a) => mockResumen(...a) },
   getLeaderboardUseCase: { execute: vi.fn().mockResolvedValue(mockRyder) },
 }));
 
@@ -49,16 +56,22 @@ vi.mock('../../components/layout/Footer', () => ({
 }));
 
 // La general de un Stableford o un Medal: aquí importa con qué se pinta
-vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', () => ({
-  default: ({ competitionId, userId, enJuego }) => (
+const mockMontajes = vi.fn();
+vi.mock('../../components/scoring/ClasificacionesDeLaCompeticion', async () => {
+  const { useEffect } = await vi.importActual('react');
+  const General = ({ competitionId, userId, enJuego }) => {
+    useEffect(() => mockMontajes(), []);
+    return (
     <div
       data-testid="general-stroke-play"
       data-competition={competitionId}
       data-user={userId}
       data-en-juego={String(enJuego)}
     />
-  ),
-}));
+    );
+  };
+  return { default: General };
+});
 
 vi.mock('../../components/scoring/LeaderboardView', () => ({
   default: ({ leaderboard, jugador }) =>
@@ -74,6 +87,9 @@ describe('LeaderboardPage', () => {
     vi.clearAllMocks();
     // Como el caso de uso: una promesa, que la ficha ya se mira antes (FE #865-6)
     mockDetalle.mockReset().mockResolvedValue(null);
+    mockResumen
+      .mockReset()
+      .mockResolvedValue({ id: 'c-1', name: 'Ryder', hasTeams: true, visibility: 'PUBLIC', status: 'IN_PROGRESS' });
     mockUser.current = null;
     mockLocationState.state = null;
     mockLocationState.search = '';
@@ -90,9 +106,10 @@ describe('LeaderboardPage', () => {
     expect(screen.getByText('leaderboard.title')).toBeInTheDocument();
   });
 
-  it('should call getLeaderboardUseCase with competition id', () => {
+  it('should call getLeaderboardUseCase with competition id', async () => {
     render(<LeaderboardPage />);
-    expect(getLeaderboardUseCase.execute).toHaveBeenCalledWith('c-1');
+    // Sin sesión, tras el resumen público (release social 3)
+    await vi.waitFor(() => expect(getLeaderboardUseCase.execute).toHaveBeenCalledWith('c-1'));
   });
 
   it('should show loading spinner initially', () => {
@@ -101,14 +118,18 @@ describe('LeaderboardPage', () => {
     expect(screen.getByText('loading')).toBeInTheDocument();
   });
 
-  it('should link back to schedule by default', async () => {
+  it('V3: con sesión, should link back to schedule by default', async () => {
+    // V3: con sesión; el visitante vuelve al inicio (29 oct 2026)
+    mockUser.current = { id: 'u-1' };
     mockLocationState.state = null;
     render(<LeaderboardPage />);
     const backLink = await screen.findByText(/summary.backToSchedule/);
     expect(backLink.closest('a')).toHaveAttribute('href', '/competitions/c-1/schedule');
   });
 
-  it('should link back to competition detail when from=detail', async () => {
+  it('V3: con sesión, should link back to competition detail when from=detail', async () => {
+    // V3: con sesión; el visitante vuelve al inicio (29 oct 2026)
+    mockUser.current = { id: 'u-1' };
     mockLocationState.state = { from: 'detail' };
     render(<LeaderboardPage />);
     const backLink = await screen.findByText(/summary.backToCompetition/);
@@ -167,10 +188,10 @@ describe('LeaderboardPage', () => {
     expect(container.firstChild.className.split(' ')).not.toContain('min-h-screen');
   });
 
-  it('H2: sin sesión, como siempre: el título y el volver a la vista', async () => {
+  it('H2: sin sesión, el título y el volver al inicio a la vista', async () => {
     render(<LeaderboardPage />);
 
-    const volver = await screen.findByRole('link', { name: /summary\.back/ });
+    const volver = await screen.findByRole('link', { name: /leaderboard\.backToHome/ });
     expect(volver.className.split(' ')).not.toContain('hidden');
     expect(screen.getByRole('heading', { level: 1, name: 'leaderboard.title' }).className.split(' ')).not.toContain('hidden');
   });
@@ -389,17 +410,20 @@ describe('LeaderboardPage', () => {
       expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
     });
 
-    it('L13 (/code-review): si se pierde la sesión (otra pestaña), la general no se queda releyendo sin ella', async () => {
+    it('L13: si se pierde la sesión (otra pestaña), la general sigue: ya la ve cualquiera (release social 3)', async () => {
       mockUser.current = { id: 'u-1' };
       getLeaderboardUseCase.execute.mockRejectedValue(Object.assign(new Error('llega con sus rondas'), { status: 400 }));
       mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' });
+      mockResumen.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Copa', visibility: 'PUBLIC', status: 'IN_PROGRESS' });
       const { rerender } = render(<LeaderboardPage />);
       await screen.findByTestId('general-stroke-play');
 
       mockUser.current = null;
       rerender(<LeaderboardPage />);
 
-      await vi.waitFor(() => expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument());
+      await vi.waitFor(() => expect(mockResumen).toHaveBeenCalled());
+      expect(screen.getByTestId('general-stroke-play')).toBeInTheDocument();
+      expect(screen.queryByText('llega con sus rondas')).not.toBeInTheDocument();
     });
 
     it('G10: volver lleva a la ficha, venga de donde venga', async () => {
@@ -718,3 +742,291 @@ describe('LeaderboardPage', () => {
   });
 });
 
+
+
+/**
+ * La clasificación por enlace, sin sesión (release social 3, 28 oct 2026): el
+ * resumen público dice si es una Ryder o un stroke play, y si es privada.
+ */
+describe('LeaderboardPage · sin sesión (release social 3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.current = null;
+    mockLocationState.state = null;
+    mockLocationState.search = '';
+    // Lo que otro test dejó puesto no vale aquí
+    getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+    mockDetalle.mockReset().mockResolvedValue(null);
+    mockResumen
+      .mockReset()
+      .mockResolvedValue({ id: 'c-1', name: 'Ryder', hasTeams: true, visibility: 'PUBLIC', status: 'IN_PROGRESS' });
+  });
+
+  it('un stroke play público pinta su general, sin pedir la de la Ryder', async () => {
+    mockResumen.mockResolvedValue({
+      id: 'c-1',
+      name: 'Medal de Otoño',
+      hasTeams: false,
+      visibility: 'PUBLIC',
+      status: 'IN_PROGRESS',
+    });
+
+    render(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'true');
+    expect(screen.getByText('Medal de Otoño')).toBeInTheDocument();
+    expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('una privada dice que solo la ven quienes participan, con Iniciar sesión', async () => {
+    mockResumen.mockResolvedValue({
+      id: 'c-1',
+      name: 'Privada',
+      hasTeams: false,
+      visibility: 'PRIVATE',
+      status: 'IN_PROGRESS',
+    });
+
+    render(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+    expect(screen.getByTestId('iniciar-sesion')).toHaveAttribute('href', '/login');
+    // Tras entrar, vuelve aquí (revisor)
+    expect(screen.getByTestId('iniciar-sesion')).toHaveAttribute('data-from', '/competitions/c-1/leaderboard');
+    expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  // La ficha y la agenda piden sesión: el visitante vuelve a la portada (29 oct 2026)
+  it('V1: en una Ryder pública, volver lleva al inicio', async () => {
+    render(<LeaderboardPage />);
+
+    const volver = await screen.findByRole('link', { name: /leaderboard\.backToHome/ });
+    expect(volver).toHaveAttribute('href', '/');
+    expect(screen.queryByText(/summary\.back/)).not.toBeInTheDocument();
+  });
+
+  it('V1: en un stroke play público, también', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Medal', hasTeams: false, visibility: 'PUBLIC', status: 'COMPLETED' });
+
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('general-stroke-play');
+    expect(screen.getByRole('link', { name: /leaderboard\.backToHome/ })).toHaveAttribute('href', '/');
+  });
+
+  it('V2: en una privada, también al inicio, junto a Iniciar sesión', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Privada', hasTeams: false, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('clasificacion-privada');
+    expect(screen.getByRole('link', { name: /leaderboard\.backToHome/ })).toHaveAttribute('href', '/');
+  });
+
+  it('V4 (revisor): sin saber aún si hay sesión, sin volver; luego, el suyo', async () => {
+    mockSesionCargando.current = true;
+    mockLocationState.state = { from: 'detail', competicion: { id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' } };
+    try {
+      const { rerender } = render(<LeaderboardPage />);
+
+      expect(screen.getByTestId('general-stroke-play')).toBeInTheDocument();
+      expect(screen.queryByTestId('volver')).not.toBeInTheDocument();
+
+      mockSesionCargando.current = false;
+      mockUser.current = { id: 'u-1' };
+      rerender(<LeaderboardPage />);
+
+      expect(await screen.findByRole('link', { name: /summary\.backToCompetition/ })).toHaveAttribute('href', '/competitions/c-1');
+    } finally {
+      mockSesionCargando.current = false;
+    }
+  });
+
+  it('V4: mientras carga, sin volver', () => {
+    mockResumen.mockReturnValue(new Promise(() => {}));
+
+    render(<LeaderboardPage />);
+
+    expect(screen.queryByTestId('volver')).not.toBeInTheDocument();
+  });
+
+  it('V4 (/code-review): la sesión resulta no haberla, y entonces vuelve al inicio', async () => {
+    mockSesionCargando.current = true;
+    mockLocationState.state = { from: 'detail', competicion: { id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' } };
+    try {
+      const { rerender } = render(<LeaderboardPage />);
+      expect(screen.queryByTestId('volver')).not.toBeInTheDocument();
+
+      mockSesionCargando.current = false;
+      rerender(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('volver')).toHaveAttribute('href', '/');
+    } finally {
+      mockSesionCargando.current = false;
+    }
+  });
+
+  it('un stroke play en juego se relee con el resumen, sin la ficha: si acaba, deja de releer', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockResumen
+      .mockResolvedValueOnce({ id: 'c-1', name: 'Medal', hasTeams: false, visibility: 'PUBLIC', status: 'IN_PROGRESS' })
+      .mockResolvedValue({ id: 'c-1', name: 'Medal', hasTeams: false, visibility: 'PUBLIC', status: 'COMPLETED' });
+    try {
+      render(<LeaderboardPage />);
+      expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'true');
+
+      await vi.advanceTimersByTimeAsync(5 * 60000);
+
+      await vi.waitFor(() => expect(screen.getByTestId('general-stroke-play')).toHaveAttribute('data-en-juego', 'false'));
+      expect(mockDetalle).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('una Ryder: el resumen una vez, no en cada refresco de su clasificación', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      render(<LeaderboardPage />);
+      await screen.findByTestId('leaderboard-view');
+
+      await vi.advanceTimersByTimeAsync(30000);
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(getLeaderboardUseCase.execute).toHaveBeenCalledTimes(3);
+      expect(mockResumen).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('si el resumen dice que no (4xx), sigue como antes y no lo repite en cada refresco (revisor)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Un 4xx: no va a cambiar en el siguiente refresco
+    mockResumen.mockRejectedValue(Object.assign(new Error('no está'), { status: 404 }));
+    try {
+      render(<LeaderboardPage />);
+      await screen.findByTestId('leaderboard-view');
+
+      await vi.advanceTimersByTimeAsync(60000);
+
+      expect(getLeaderboardUseCase.execute).toHaveBeenCalledTimes(3);
+      expect(mockResumen).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('una privada no se relee: ni su resumen ni su clasificación', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'P', hasTeams: true, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    try {
+      render(<LeaderboardPage />);
+      await screen.findByTestId('clasificacion-privada');
+
+      await vi.advanceTimersByTimeAsync(6 * 60000);
+
+      expect(mockResumen).toHaveBeenCalledTimes(1);
+      expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('con sesión en una privada y se pierde: un solo aviso de privada, sin su general (revisor)', async () => {
+    mockUser.current = { id: 'u-1' };
+    mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Privada', status: 'IN_PROGRESS' });
+    mockResumen.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Privada', visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByTestId('general-stroke-play');
+
+    mockUser.current = null;
+    rerender(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('clasificacion-privada')).toBeInTheDocument();
+    expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+  });
+
+  it('una privada sin sesión y entra (otra pestaña): se mira con su sesión (revisor)', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Privada', visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByTestId('clasificacion-privada');
+
+    mockUser.current = { id: 'u-1' };
+    mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Privada', status: 'IN_PROGRESS' });
+    rerender(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('general-stroke-play')).toHaveAttribute('data-user', 'u-1');
+    expect(screen.queryByTestId('clasificacion-privada')).not.toBeInTheDocument();
+  });
+
+  it('un stroke play público: al entrar, su general se pide de nuevo, ya con mi fila (revisor)', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Medal', visibility: 'PUBLIC', status: 'COMPLETED' });
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByTestId('general-stroke-play');
+    expect(mockMontajes).toHaveBeenCalledTimes(1);
+
+    mockUser.current = { id: 'u-1' };
+    mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Medal', status: 'COMPLETED' });
+    rerender(<LeaderboardPage />);
+
+    await vi.waitFor(() => expect(mockMontajes).toHaveBeenCalledTimes(2));
+  });
+
+  it('llegó desde la ficha (privada) y se pierde la sesión: su aviso con Iniciar sesión (code-review)', async () => {
+    mockUser.current = { id: 'u-1' };
+    mockLocationState.state = { competicion: { id: 'c-1', hasTeams: false, name: 'Privada', status: 'IN_PROGRESS' } };
+    mockResumen.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Privada', visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    const { rerender } = render(<LeaderboardPage />);
+    expect(screen.getByTestId('general-stroke-play')).toBeInTheDocument();
+    expect(mockResumen).not.toHaveBeenCalled();
+
+    mockUser.current = null;
+    rerender(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('iniciar-sesion')).toBeInTheDocument();
+    expect(screen.queryByTestId('general-stroke-play')).not.toBeInTheDocument();
+  });
+
+  it('un 429 del resumen no se guarda: el siguiente refresco lo vuelve a pedir (code-review)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockResumen
+      .mockRejectedValueOnce(Object.assign(new Error('demasiadas'), { status: 429 }))
+      .mockResolvedValue({ id: 'c-1', name: 'Medal', hasTeams: false, visibility: 'PUBLIC', status: 'IN_PROGRESS' });
+    try {
+      render(<LeaderboardPage />);
+      await screen.findByTestId('leaderboard-view');
+
+      await vi.advanceTimersByTimeAsync(30000);
+
+      expect(await screen.findByTestId('general-stroke-play')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('privada para A con sesión; sale y entra B (otra pestaña): se mira con la de B (code-review)', async () => {
+    mockUser.current = { id: 'a' };
+    getLeaderboardUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 403, errorCode: 'PRIVATE_COMPETITION' })
+    );
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'P', hasTeams: true, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByTestId('clasificacion-privada');
+
+    mockUser.current = null;
+    rerender(<LeaderboardPage />);
+    getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+    mockUser.current = { id: 'b' };
+    rerender(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
+    expect(screen.queryByTestId('clasificacion-privada')).not.toBeInTheDocument();
+  });
+
+  it('una Ryder pública pinta su clasificación', async () => {
+    render(<LeaderboardPage />);
+
+    expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
+  });
+});

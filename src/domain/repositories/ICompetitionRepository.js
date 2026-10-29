@@ -31,6 +31,17 @@ class ICompetitionRepository {
   }
 
   /**
+   * El resumen público de una competición, sin sesión (release social 3): para
+   * que su clasificación sepa qué pintar.
+   * @param {string} competitionId The ID of the competition.
+   * @returns {Promise<Object>} id, name, hasTeams, tournamentType, status, visibility y fechas.
+   * @throws {Error} If the method is not implemented.
+   */
+  async findSummary(competitionId) {
+    throw new Error('ICompetitionRepository.findSummary must be implemented');
+  }
+
+  /**
    * Finds all competitions.
    * @returns {Promise<Competition[]>} A list of all competition entities.
    * @throws {Error} If the method is not implemented.
