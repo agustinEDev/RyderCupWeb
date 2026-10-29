@@ -32,6 +32,7 @@ describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', (
     alto = vi.spyOn(document.documentElement, 'scrollHeight', 'get');
   });
   afterEach(() => {
+    document.documentElement.style.removeProperty('--alto-barra-inferior');
     vi.restoreAllMocks();
     window.HTMLElement.prototype.scrollIntoView = original;
   });
@@ -82,6 +83,18 @@ describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', (
     const { getByTestId } = render(<Tabla respuestas={1} />);
 
     expect(getByTestId('bloque').style.paddingBottom).toBe('');
+  });
+
+  it('la barra inferior tapa: debajo de ella no cuenta como visible (code-review)', () => {
+    // Pantalla de 800 con la barra de 80: se ve hasta 720. La fila acaba en 760
+    document.documentElement.style.setProperty('--alto-barra-inferior', '80px');
+    alto.mockReturnValue(800);
+    filaEn(720);
+
+    const { getByTestId } = render(<Tabla respuestas={1} />);
+
+    // El centro de lo visible está en 360; la fila (740) tiene que subir 380
+    expect(getByTestId('bloque').style.paddingBottom).toBe('380px');
   });
 
   it('con sitio de sobra no añade nada', () => {

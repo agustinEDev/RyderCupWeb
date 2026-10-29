@@ -9,15 +9,26 @@ const GESTOS = ['wheel', 'touchmove', 'keydown', 'pointerdown'];
  * espacio al final del bloque (FE #988): la fila «tu posición» del scratch va
  * la última, y la página no podía bajar lo bastante para centrarla.
  */
+// Lo que tapan por abajo la barra inferior y el aviso de instalar (App los
+// publica en <html>; sin ellos, nada)
+const tapaAbajo = () => {
+  const estilo = globalThis.getComputedStyle?.(document.documentElement);
+  const px = (nombre) => Number.parseFloat(estilo?.getPropertyValue(nombre)) || 0;
+  return px('--alto-barra-inferior') + px('--alto-aviso-instalar');
+};
+
 const hacerSitioDebajo = (bloque, fila) => {
   if (!bloque) return;
   // Lo de una vez anterior no cuenta: se calcula de nuevo
   bloque.style.paddingBottom = '';
   const caja = fila.getBoundingClientRect();
-  // Ya se ve entera: no hace falta mover nada, ni dejar media pantalla en
-  // blanco debajo de una tabla corta (revisor)
-  if (caja.top >= 0 && caja.bottom <= globalThis.innerHeight) return;
-  const hastaElCentro = caja.top + globalThis.scrollY + caja.height / 2 - globalThis.innerHeight / 2;
+  // Lo que se ve: la pantalla sin la barra inferior ni el aviso de instalar,
+  // que la tapan por abajo (code-review)
+  const visible = globalThis.innerHeight - tapaAbajo();
+  // Ya se ve entera: no hace falta espacio, ni dejar media pantalla en blanco
+  // debajo de una tabla corta (revisor)
+  if (caja.top >= 0 && caja.bottom <= visible) return;
+  const hastaElCentro = caja.top + globalThis.scrollY + caja.height / 2 - visible / 2;
   const puedeBajar = document.documentElement.scrollHeight - globalThis.innerHeight;
   const falta = Math.ceil(hastaElCentro - puedeBajar);
   if (falta > 0) bloque.style.paddingBottom = `${falta}px`;
