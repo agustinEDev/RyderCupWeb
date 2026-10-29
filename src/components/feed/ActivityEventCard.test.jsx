@@ -365,6 +365,12 @@ describe('ActivityEventCard — texts (case 10)', () => {
       'Se ha quitado la franja de las 9:00 de Ryder Otoño en la que esperabas',
     ],
     ['TEAMS_CHANGED', {}, 'Los equipos de Ryder Otoño han cambiado: revisa tu sobre'],
+    // Con el día, para saber cuál de las de las 9:00 (code-review)
+    [
+      'PLACE_FROM_WAITING_LIST',
+      { tee_time: '09:00', round_date: '2026-10-24' },
+      'Has entrado en Ryder Otoño desde la espera: franja de las 9:00 (sáb 24 oct)',
+    ],
     // Sin hora: la frase se dice sin ella (revisor)
     ['PLACE_FROM_WAITING_LIST', {}, 'Has entrado en Ryder Otoño desde la espera'],
     ['TEE_WINDOW_REMOVED', {}, 'Se ha quitado una franja de Ryder Otoño en la que esperabas'],

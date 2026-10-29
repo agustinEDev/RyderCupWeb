@@ -5,6 +5,10 @@ import { motion } from 'framer-motion';
 import { X, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import SelectorDeGenero from '../profile/SelectorDeGenero';
+import { franjaLlena, plazasLibres } from '../../domain/services/PlazasEnFranjas';
+
+// Sin franjas: el mismo array siempre, para que el orden no se recalcule
+const SIN_FRANJAS = [];
 
 const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
 
@@ -19,8 +23,11 @@ const TEE_CATEGORIES = ['WHITE', 'YELLOW', 'BLUE', 'RED', 'GREEN'];
  *   `teeSheet`). Con ellas se elige en el mismo paso la franja con hueco o la
  *   espera de una llena (release social 3, 28 oct 2026); `onConfirm` recibe
  *   `{ roundId, waiting }` como tercer argumento, o null sin franjas
+ * @param {boolean} [props.franjasCargando=false] - Es un stroke play y su agenda
+ *   se está leyendo: se dice y no se deja enviar (code-review)
  * @param {boolean} [props.franjasSinCargar=false] - Es un stroke play y su agenda
- *   no se ha leído: no hay franjas que elegir y no se deja enviar (revisor)
+ *   no se pudo leer: no hay franjas que elegir y no se deja enviar (revisor)
+ * @param {Function} [props.onReintentar] - Volver a leer la agenda
  * @param {Function} [props.onElegir] - Al cambiar de franja: quien lo abre borra
  *   el error de la elección anterior (revisor)
  */
@@ -32,9 +39,11 @@ const EnrollmentRequestModal = ({
   pideGenero = false,
   faltaHandicap = false,
   error = null,
-  franjas = [],
+  franjas = SIN_FRANJAS,
+  franjasCargando = false,
   franjasSinCargar = false,
   onElegir,
+  onReintentar,
 }) => {
   if (!isOpen) return null;
   return (
@@ -46,13 +55,15 @@ const EnrollmentRequestModal = ({
       faltaHandicap={faltaHandicap}
       error={error}
       franjas={franjas}
+      franjasCargando={franjasCargando}
       franjasSinCargar={franjasSinCargar}
       onElegir={onElegir}
+      onReintentar={onReintentar}
     />
   );
 };
 
-const llena = (franja) => franja.teeSheet.placesTaken >= franja.teeSheet.capacity;
+const llena = (franja) => franjaLlena(franja.teeSheet);
 
 const EnrollmentRequestModalContent = ({
   onClose,
@@ -62,8 +73,10 @@ const EnrollmentRequestModalContent = ({
   faltaHandicap,
   error,
   franjas,
+  franjasCargando,
   franjasSinCargar,
   onElegir,
+  onReintentar,
 }) => {
   const { t, i18n } = useTranslation(['competitions', 'golfCourses']);
   const [selectedTee, setSelectedTee] = useState('');
@@ -83,7 +96,7 @@ const EnrollmentRequestModalContent = ({
   const laElegida = ordenadas.find((f) => f.id === elegida) ?? null;
   const aLaEspera = laElegida !== null && llena(laElegida);
   const falta =
-    faltaHandicap || (pideGenero && !genero) || (conFranjas && !laElegida) || franjasSinCargar;
+    faltaHandicap || (pideGenero && !genero) || (conFranjas && !laElegida) || franjasSinCargar || franjasCargando;
 
   const elegir = (id) => {
     setElegida(id);
@@ -160,10 +173,24 @@ const EnrollmentRequestModalContent = ({
 
           {/* La franja, o la espera de una llena, en el mismo paso (release
               social 3): con plaza se entra con ella; llena, a su espera */}
-          {franjasSinCargar && (
-            <p data-testid="franjas-sin-cargar" role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-              {t('competitions:enrollment.windowsNotLoaded')}
+          {franjasCargando && (
+            <p data-testid="franjas-cargando" role="status" className="text-sm text-gray-500">
+              {t('competitions:enrollment.windowsLoading')}
             </p>
+          )}
+          {franjasSinCargar && (
+            <div data-testid="franjas-sin-cargar" role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+              <p>{t('competitions:enrollment.windowsNotLoaded')}</p>
+              {onReintentar && (
+                <button
+                  type="button"
+                  onClick={onReintentar}
+                  className="mt-2 min-h-11 font-semibold underline"
+                >
+                  {t('competitions:enrollment.retryWindows')}
+                </button>
+              )}
+            </div>
           )}
           {conFranjas && (
             <fieldset data-testid="elegir-franja" className="min-w-0 space-y-2">
@@ -201,7 +228,7 @@ const EnrollmentRequestModalContent = ({
                         {sinSitio
                           ? `${t('competitions:enrollment.full')} · ${t('competitions:enrollment.waitingCount', { count: hoja.waitingCount ?? 0 })}`
                           : t('competitions:enrollment.freePlaces', {
-                              count: hoja.capacity - hoja.placesTaken,
+                              count: plazasLibres(hoja),
                             })}
                       </span>
                     </span>

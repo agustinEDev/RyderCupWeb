@@ -116,9 +116,12 @@ const AVISOS_DE_LA_ESPERA = new Set([
  * organizador), la plaza que dio la espera, la que no hubo, la franja que se
  * quitó y los equipos que cambiaron. La hora es la primera salida de la franja.
  */
-const fraseDeLaEspera = (tipo, payload, t) => {
+const fraseDeLaEspera = (tipo, payload, t, { ahora, idioma } = {}) => {
   const competition = nombreDelTorneo(payload, t);
-  const time = horaDeSalida(payload.tee_time);
+  const hora = horaDeSalida(payload.tee_time);
+  // Con el día, si viene: para saber cuál de las de esa hora (code-review)
+  const dia = hora && payload.round_date ? diaDeLaVuelta(payload.round_date, ahora ?? new Date(), idioma) : '';
+  const time = dia ? `${hora} (${dia})` : hora;
   if (tipo === 'PLAYER_JOINED') {
     // `player` y no `name`: fraseCon reserva `name` para las personas con enlace
     const player = payload.player_name || t('feed:cards.aPlayer');
@@ -594,7 +597,7 @@ const contenidoDe = (tarjeta, { t, idioma, autores, campos, yoId, ahora }) => {
   }
 
   if (AVISOS_DE_LA_ESPERA.has(tarjeta.tipo)) {
-    return { frase: fraseDeLaEspera(tarjeta.tipo, payload, t), detalles: [] };
+    return { frase: fraseDeLaEspera(tarjeta.tipo, payload, t, { ahora, idioma }), detalles: [] };
   }
 
   if (AVISOS_DE_INSCRIPCION.has(tarjeta.tipo)) {

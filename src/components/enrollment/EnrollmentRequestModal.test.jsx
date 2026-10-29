@@ -179,3 +179,35 @@ describe('EnrollmentRequestModal · la franja (release social 3)', () => {
     expect(orden).toEqual(['franja-manana', 'franja-tarde', 'franja-domingo']);
   });
 });
+
+
+describe('EnrollmentRequestModal · code-review (release social 3)', () => {
+  it('sin capacidad en la hoja la calcula de sus salidas', () => {
+    const sinCapacidad = {
+      ...franja('r1', '2027-03-03', '09:00', undefined, 4),
+      teeSheet: { firstTeeTime: '09:00', lastTeeTime: '09:00', teeTimes: ['09:00'], groupSize: 4, placesTaken: 4, waitingCount: 0 },
+    };
+    render(
+      <EnrollmentRequestModal isOpen onClose={() => {}} onConfirm={() => {}} franjas={[sinCapacidad]} />
+    );
+
+    expect(screen.getByTestId('franja-r1')).toHaveTextContent('competitions:enrollment.full');
+  });
+
+  it('si no se pudieron cargar, se puede volver a intentar', () => {
+    const onReintentar = vi.fn();
+    render(
+      <EnrollmentRequestModal
+        isOpen
+        onClose={() => {}}
+        onConfirm={() => {}}
+        franjasSinCargar
+        onReintentar={onReintentar}
+      />
+    );
+
+    fireEvent.click(screen.getByText('competitions:enrollment.retryWindows'));
+
+    expect(onReintentar).toHaveBeenCalled();
+  });
+});

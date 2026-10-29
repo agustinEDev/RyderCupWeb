@@ -46,11 +46,12 @@ vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
 
 // Las franjas: la ficha recibe la agenda de su bloque (onAgenda)
 let agenda = { rounds: [] };
+let agendaFallo = false;
 vi.mock('../components/competition/FranjasDeLaCompeticion', async () => {
   const { useEffect } = await import('react');
   const Franjas = ({ onAgenda }) => {
     useEffect(() => {
-      onAgenda?.(agenda);
+      onAgenda?.(agenda, agendaFallo);
     }, [onAgenda]);
     return <div data-testid="franjas" />;
   };
@@ -168,6 +169,7 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     agenda = { rounds: [] };
+    agendaFallo = false;
     mockListEnrollments.mockResolvedValue([]);
   });
 
@@ -263,8 +265,27 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     expect(await screen.findByText('detail.actions.request-to-join')).toBeInTheDocument();
   });
 
+  it('mientras se lee la agenda se dice que se están cargando, sin error (code-review)', async () => {
+    agenda = null;
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      })
+    );
+    renderPage();
+
+    await apuntarse();
+
+    expect(screen.getByTestId('franjas-cargando')).toBeInTheDocument();
+    expect(screen.queryByTestId('franjas-sin-cargar')).not.toBeInTheDocument();
+    expect(screen.getByText('competitions:enrollment.confirm')).toBeDisabled();
+  });
+
   it('sin la agenda leída no deja enviar: no hay franjas que elegir (revisor)', async () => {
     agenda = null;
+    agendaFallo = true;
     mockGetCompetitionDetail.mockResolvedValue(
       ficha({
         tournamentType: 'MEDAL',
@@ -322,6 +343,30 @@ describe('CompetitionDetail · apuntarse a una pública', () => {
     expect(await screen.findByTestId('estado-en-espera')).toHaveTextContent(
       'detail.waitingListStatus'
     );
+  });
+
+  it('sin el puesto del servidor, el de la lista (code-review)', async () => {
+    agenda = {
+      rounds: [
+        {
+          ...FRANJA,
+          teeSheet: { ...FRANJA.teeSheet, playerIds: [], waitingIds: ['x', 'player-1'], myWaitingPosition: null },
+        },
+      ],
+    };
+    mockGetCompetitionDetail.mockResolvedValue(
+      ficha({
+        tournamentType: 'MEDAL',
+        hasTeams: false,
+        strokePlay: { categoryLimits: [], maxMatchdaysPerPlayer: 1 },
+      })
+    );
+    mockListEnrollments.mockResolvedValue([
+      { id: 'e1', userId: 'player-1', status: 'APPROVED', userName: 'Test Player' },
+    ]);
+    renderPage();
+
+    expect(await screen.findByTestId('estado-en-espera')).toBeInTheDocument();
   });
 
   it('ya inscrito (409 sin código) cierra y pone la ficha al día, como antes', async () => {

@@ -301,8 +301,19 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     fireEvent.click(await screen.findByText('browse.card.request-to-join'));
     fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
 
+    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('browse.success.enrolled'));
+  });
+
+  it('si la respuesta dice que espera, se le dice (code-review)', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockResolvedValueOnce({ status: 'APPROVED', waiting: true });
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
     await waitFor(() =>
-      expect(customToast.success).toHaveBeenCalledWith('browse.success.enrollmentRequested')
+      expect(customToast.success).toHaveBeenCalledWith('detail.success.joinedWaitingList')
     );
   });
 });

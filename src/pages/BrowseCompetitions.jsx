@@ -175,12 +175,14 @@ const BrowseCompetitions = () => {
       }
 
       // Call RequestEnrollmentUseCase
-      await requestEnrollmentUseCase.execute(competitionId, null, { color });
+      const hecho = await requestEnrollmentUseCase.execute(competitionId, null, { color });
 
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito. Y solo si sigue siendo el suyo (CodeRabbit, #721)
       if (esSuModal()) setEnrollModalOpen(false);
-      customToast.success(t('browse.success.enrollmentRequested'));
+      customToast.success(
+        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'browse.success.enrolled')
+      );
 
       // Remove competition from UI immediately (optimistic update)
       setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));

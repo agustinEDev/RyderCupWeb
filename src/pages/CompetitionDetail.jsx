@@ -77,9 +77,19 @@ const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetiti
 // Antes de empezar se puede quitar a un inscrito (release social 2)
 const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
 
-// Por qué no se pudo quitar, por el código del servidor
 // Por qué no se pudo apuntar, por su código (release social 3, 28 oct 2026): las
 // de la franja releen la agenda, que estaba vieja
+// Sin franjas: el mismo array siempre
+const SIN_FRANJAS = [];
+
+// «sáb 3 mar»: el día de una franja, para saber cuál de las de esa hora
+const diaCorto = (fecha, idioma) => {
+  const d = new Date(`${fecha}T12:00:00`);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString(idioma, { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
 const MOTIVOS_PARA_NO_APUNTARSE = {
   TEE_WINDOW_FULL: 'detail.errors.teeWindowFull',
   TEE_WINDOW_HAS_ROOM: 'detail.errors.teeWindowHasRoom',
@@ -88,6 +98,7 @@ const MOTIVOS_PARA_NO_APUNTARSE = {
   DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
 };
 
+// Por qué no se pudo quitar, por el código del servidor
 const MOTIVOS_PARA_NO_QUITAR = {
   PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
   DRAFT_IN_PROGRESS: 'detail.errors.removeDraftInProgress',
@@ -140,6 +151,22 @@ const CompetitionDetail = () => {
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
   // La agenda que leyó su sección: sesiones y reparto. null mientras no se sabe
   const [agendaLeida, setAgendaLeida] = useState(null);
+  // Si la última lectura de la agenda falló: con una buena ya leída, se sigue
+  // con ella; sin ninguna, el diálogo de apuntarse lo dice (code-review)
+  const [agendaFallo, setAgendaFallo] = useState(false);
+  const recibirAgenda = useCallback((leida, fallo = false) => {
+    if (leida) {
+      setAgendaLeida(leida);
+      setAgendaFallo(false);
+    } else if (fallo) {
+      setAgendaFallo(true);
+    }
+  }, []);
+  // Las franjas de la agenda, una vez por lectura: el diálogo las ordena
+  const franjasDeLaAgenda = useMemo(
+    () => (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet),
+    [agendaLeida]
+  );
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
   const [irASinFranja, setIrASinFranja] = useState(0);
@@ -1153,14 +1180,22 @@ const CompetitionDetail = () => {
   // (release social 3, revisor)
   const rondasLeidas = agendaLeida?.rounds ?? [];
   const conFranjas = esStrokePlay && rondasLeidas.some((r) => r.teeSheet);
-  const bloqueaElMaximo = isFull && !conFranjas;
+  // Sin la agenda aún, en un stroke play no se sabe si hay franjas: no se quita
+  const bloqueaElMaximo = isFull && !(esStrokePlay && (agendaLeida == null || conFranjas));
   // Quien solo espera: sin plaza en ninguna franja y con su puesto en una espera
+  // Su puesto como en las franjas: el del servidor o, si no viene, el de la lista
   const miEspera =
     esStrokePlay && userEnrollment?.status === 'APPROVED'
-      ? rondasLeidas.find((r) => r.teeSheet?.myWaitingPosition)
+      ? rondasLeidas.find(
+          (r) => r.teeSheet?.myWaitingPosition || r.teeSheet?.waitingIds?.includes(user.id)
+        )
       : null;
+  const puestoEnEspera = miEspera
+    ? (miEspera.teeSheet.myWaitingPosition ?? miEspera.teeSheet.waitingIds.indexOf(user.id) + 1)
+    : null;
   const soloEspero =
     miEspera != null && !rondasLeidas.some((r) => r.teeSheet?.playerIds?.includes(user.id));
+  const franjasParaApuntarse = esStrokePlay ? franjasDeLaAgenda : SIN_FRANJAS;
 
   // Elegir entre alias y nombre legal solo tiene sentido si (FE #571):
   // - hay alias: sin él las dos opciones pintan lo mismo,
@@ -1517,8 +1552,9 @@ const CompetitionDetail = () => {
                         className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"
                       >
                         {t('detail.waitingListStatus', {
-                          position: miEspera.teeSheet.myWaitingPosition,
+                          position: puestoEnEspera,
                           time: miEspera.teeSheet.firstTeeTime,
+                          day: diaCorto(miEspera.roundDate, i18n?.language),
                         })}
                       </span>
                     ) : (
@@ -1782,7 +1818,7 @@ const CompetitionDetail = () => {
                   puedeQuitar={canManage && competition.status === 'ACTIVE'}
                   version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
                   versionCampos={versionCampos}
-                  onAgenda={setAgendaLeida}
+                  onAgenda={recibirAgenda}
                   irASinFranja={irASinFranja}
                   // Las partidas (PR 6): existen desde el cierre y se siguen
                   // viendo acabada, sin nada que cambiar (Agustín, 11 oct);
@@ -1806,7 +1842,7 @@ const CompetitionDetail = () => {
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
                 versionCampos={versionCampos}
-                onAgenda={setAgendaLeida}
+                onAgenda={recibirAgenda}
               />
               )}
             </div>
@@ -2155,9 +2191,12 @@ const CompetitionDetail = () => {
         // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
         faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
         // Las franjas, para elegir en el mismo paso (release social 3)
-        franjas={esStrokePlay ? (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet) : []}
-        // Sin la agenda leída no hay franjas que elegir: no se deja enviar
-        franjasSinCargar={esStrokePlay && agendaLeida == null}
+        franjas={franjasParaApuntarse}
+        // Sin la agenda leída no hay franjas que elegir: no se deja enviar;
+        // leyéndose, se dice; si falló, se puede volver a leer (code-review)
+        franjasCargando={esStrokePlay && agendaLeida == null && !agendaFallo}
+        franjasSinCargar={esStrokePlay && agendaLeida == null && agendaFallo}
+        onReintentar={() => setVersionFranjas((n) => n + 1)}
         // Al cambiar de franja, fuera el error de la anterior
         onElegir={() => setErrorAlApuntarse(null)}
       />

@@ -28,6 +28,19 @@ export const DEJAR_DE_ESPERAR = 'DEJAR_DE_ESPERAR';
  * @param {number} [maxJornadas] - Las jornadas por jugador; sin ellas, una
  * @returns {{jornadas: {juega: number, maximo: number}, porFranja: Object<string, Object|null>}}
  */
+/**
+ * El cupo de una franja: el que manda el servidor o, si no llega, el de sus
+ * salidas por jugadores por partida (release social 3, code-review).
+ */
+export const cupoDeLaFranja = (teeSheet) =>
+  teeSheet.capacity ?? (teeSheet.teeTimes?.length ?? 0) * (teeSheet.groupSize ?? 0);
+
+/** Si la franja está llena: entonces se entra a su espera (release social 3). */
+export const franjaLlena = (teeSheet) => teeSheet.placesTaken >= cupoDeLaFranja(teeSheet);
+
+/** Sus plazas libres, nunca menos de cero. */
+export const plazasLibres = (teeSheet) => Math.max(0, cupoDeLaFranja(teeSheet) - teeSheet.placesTaken);
+
 export const situacionEnLasFranjas = (franjas, userId, maxJornadas) => {
   const conHoja = franjas.filter((f) => f.teeSheet);
   const mias = conHoja.filter((f) => f.teeSheet.playerIds.includes(userId));

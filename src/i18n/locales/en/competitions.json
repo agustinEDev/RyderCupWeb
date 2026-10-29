@@ -520,7 +520,7 @@
     "onlyFriendsVisible": "For now you only see your friends who have entered.",
     "onlyParticipantsSee": "Only participants can see who has entered.",
     "removePlayerAria": "Remove {{nombre}}",
-    "waitingListStatus": "Waiting: no. {{position}} for the {{time}} tee window"
+    "waitingListStatus": "Waiting: no. {{position}} for the {{time}} tee window ({{day}})"
   },
   "browse": {
     "title": "Browse Competitions",
@@ -559,7 +559,7 @@
       "failedToEnroll": "Could not complete the entry"
     },
     "success": {
-      "enrollmentRequested": "You're in!"
+      "enrolled": "You're in!"
     }
   },
   "footer": "© {{year}} Agustín Estévez Domínguez",
@@ -587,7 +587,9 @@
     "freePlaces_one": "{{count}} place left",
     "freePlaces_other": "{{count}} places left",
     "joinWaitingList": "Join the waiting list",
-    "windowsNotLoaded": "The tee windows could not be loaded: close and try again in a moment"
+    "windowsNotLoaded": "The tee windows could not be loaded",
+    "windowsLoading": "Loading the tee windows...",
+    "retryWindows": "Try again"
   },
   "enrollmentStatus": {
     "REQUESTED": "REQUESTED",

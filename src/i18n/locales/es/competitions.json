@@ -520,7 +520,7 @@
     "onlyFriendsVisible": "De momento solo ves a tus amigos inscritos.",
     "onlyParticipantsSee": "Los inscritos solo los ven quienes participan.",
     "removePlayerAria": "Quitar a {{nombre}}",
-    "waitingListStatus": "En espera: n.º {{position}} de la franja de las {{time}}"
+    "waitingListStatus": "En espera: n.º {{position}} de la franja de las {{time}} ({{day}})"
   },
   "browse": {
     "title": "Explorar Competiciones",
@@ -559,7 +559,7 @@
       "failedToEnroll": "No se pudo completar la inscripción"
     },
     "success": {
-      "enrollmentRequested": "¡Ya estás inscrito!"
+      "enrolled": "¡Ya estás inscrito!"
     }
   },
   "footer": "© {{year}} Agustín Estévez Domínguez",
@@ -587,7 +587,9 @@
     "freePlaces_one": "{{count}} plaza libre",
     "freePlaces_other": "{{count}} plazas libres",
     "joinWaitingList": "Apuntarme a la espera",
-    "windowsNotLoaded": "No se han podido cargar las franjas: cierra y vuelve a intentarlo en un momento"
+    "windowsNotLoaded": "No se han podido cargar las franjas",
+    "windowsLoading": "Cargando las franjas...",
+    "retryWindows": "Volver a intentarlo"
   },
   "enrollmentStatus": {
     "REQUESTED": "SOLICITADA",
