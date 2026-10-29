@@ -188,7 +188,7 @@ describe('LeaderboardPage', () => {
     expect(container.firstChild.className.split(' ')).not.toContain('min-h-screen');
   });
 
-  it('H2: sin sesión, como siempre: el título y el volver a la vista', async () => {
+  it('H2: sin sesión, el título y el volver al inicio a la vista', async () => {
     render(<LeaderboardPage />);
 
     const volver = await screen.findByRole('link', { name: /leaderboard\.backToHome/ });
@@ -830,7 +830,7 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
       const { rerender } = render(<LeaderboardPage />);
 
       expect(screen.getByTestId('general-stroke-play')).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: /back/ })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('volver')).not.toBeInTheDocument();
 
       mockSesionCargando.current = false;
       mockUser.current = { id: 'u-1' };
@@ -847,7 +847,23 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
 
     render(<LeaderboardPage />);
 
-    expect(screen.queryByRole('link', { name: /back/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('volver')).not.toBeInTheDocument();
+  });
+
+  it('V4 (/code-review): la sesión resulta no haberla, y entonces vuelve al inicio', async () => {
+    mockSesionCargando.current = true;
+    mockLocationState.state = { from: 'detail', competicion: { id: 'c-1', hasTeams: false, name: 'Copa', status: 'IN_PROGRESS' } };
+    try {
+      const { rerender } = render(<LeaderboardPage />);
+      expect(screen.queryByTestId('volver')).not.toBeInTheDocument();
+
+      mockSesionCargando.current = false;
+      rerender(<LeaderboardPage />);
+
+      expect(await screen.findByTestId('volver')).toHaveAttribute('href', '/');
+    } finally {
+      mockSesionCargando.current = false;
+    }
   });
 
   it('un stroke play en juego se relee con el resumen, sin la ficha: si acaba, deja de releer', async () => {
