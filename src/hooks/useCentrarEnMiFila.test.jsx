@@ -32,15 +32,22 @@ describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', (
     alto = vi.spyOn(document.documentElement, 'scrollHeight', 'get');
   });
   afterEach(() => {
-    document.documentElement.style.removeProperty('--alto-barra-inferior');
+    document.querySelectorAll('[data-tapa-abajo]').forEach((hueco) => hueco.remove());
     vi.restoreAllMocks();
     window.HTMLElement.prototype.scrollIntoView = original;
   });
 
-  const filaEn = (top) =>
-    vi
-      .spyOn(window.HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue({ top, height: 40, bottom: top + 40 });
+  // La fila, y lo que tapa por abajo (los huecos de App, con `data-tapa-abajo`)
+  const filaEn = (top, tapa = 0) =>
+    vi.spyOn(window.HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      if (this.hasAttribute('data-tapa-abajo')) return { top: 800 - tapa, height: tapa, bottom: 800 };
+      return { top, height: 40, bottom: top + 40 };
+    });
+  const huecoDeLaBarra = () => {
+    const hueco = document.createElement('div');
+    hueco.setAttribute('data-tapa-abajo', '');
+    document.body.appendChild(hueco);
+  };
 
   it('al final de la página añade el espacio que falta para centrarla', () => {
     // Página de 1000: puede bajar 200. La fila (centro en 960) necesita bajar 560
@@ -86,15 +93,31 @@ describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', (
   });
 
   it('la barra inferior tapa: debajo de ella no cuenta como visible (code-review)', () => {
-    // Pantalla de 800 con la barra de 80: se ve hasta 720. La fila acaba en 760
-    document.documentElement.style.setProperty('--alto-barra-inferior', '80px');
+    // Pantalla de 800 con la barra de 80 (medida en su hueco: su variable es un
+    // calc() que no se puede leer, CodeRabbit): se ve hasta 720. La fila acaba en 760
+    huecoDeLaBarra();
     alto.mockReturnValue(800);
-    filaEn(720);
+    filaEn(720, 80);
 
     const { getByTestId } = render(<Tabla respuestas={1} />);
 
     // El centro de lo visible está en 360; la fila (740) tiene que subir 380
     expect(getByTestId('bloque').style.paddingBottom).toBe('380px');
+  });
+
+  it('se centra en lo visible: lo tapado, como scroll-padding solo mientras se desplaza (CodeRabbit)', () => {
+    huecoDeLaBarra();
+    alto.mockReturnValue(800);
+    filaEn(720, 80);
+    let alDesplazar = null;
+    desplazar.mockImplementation(() => {
+      alDesplazar = document.documentElement.style.scrollPaddingBottom;
+    });
+
+    render(<Tabla respuestas={1} />);
+
+    expect(alDesplazar).toBe('80px');
+    expect(document.documentElement.style.scrollPaddingBottom).toBe('');
   });
 
   it('con sitio de sobra no añade nada', () => {
