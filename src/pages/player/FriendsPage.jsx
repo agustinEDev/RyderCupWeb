@@ -17,6 +17,7 @@ import {
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const TABS = ['friends', 'received', 'sent'];
 
@@ -144,7 +145,7 @@ const FriendsPage = () => {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
     // terminar es un salto, y de eso va justamente FE #495
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <BlockLoader texto={t('loading')} />
       </div>
@@ -155,7 +156,7 @@ const FriendsPage = () => {
   const currentList = listByTab[activeTab];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
 
       <AddFriendModal

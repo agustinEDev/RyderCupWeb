@@ -11,6 +11,7 @@ import QuickMatchScorecardTable from '../../components/quick_match/QuickMatchSco
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 import customToast from '../../utils/toast';
 import { getGolfCourseUseCase, getSharedQuickMatchUseCase } from '../../composition';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const TABS = ['classification', 'scorecard'];
 const HTTP_FORBIDDEN = 403;
@@ -114,7 +115,7 @@ const QuickMatchSharedPage = () => {
 
   if (cargando && !partida) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <BlockLoader texto={t('scoring.matchHeader')} />
       </div>
@@ -123,7 +124,7 @@ const QuickMatchSharedPage = () => {
 
   if (fallo !== null || !partida) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <SinPartida fallo={fallo} onReintentar={carga} onVolver={volver} t={t} />
@@ -143,7 +144,7 @@ const QuickMatchSharedPage = () => {
   const cerrada = !!partida.isCompleted || !!partida.isCancelled;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth />
 
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24">

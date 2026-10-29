@@ -28,6 +28,7 @@ import {
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { formatoDeIndice } from '../../utils/formatoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 // La actividad de un amigo se enseña de 5 en 5 TARJETAS, como las partidas
 // juntos (22 oct). Al servidor se le piden eventos de 20 en 20: los logros de
@@ -316,7 +317,7 @@ const PlayerProfilePage = () => {
     // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
     // compartido.
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <BlockLoader texto={t('playerProfile:loading')} />
       </div>
@@ -325,7 +326,7 @@ const PlayerProfilePage = () => {
 
   if (isNotFound || !profile) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
           <div
@@ -375,7 +376,7 @@ const PlayerProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">

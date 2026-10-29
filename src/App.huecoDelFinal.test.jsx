@@ -83,6 +83,16 @@ describe('App · el hueco del final', () => {
     );
   });
 
+  it('E2b: los dos huecos dicen lo que tapa por abajo, para centrar mi fila (CodeRabbit)', async () => {
+    sesion.usuario = { id: 'u-1' };
+    window.history.pushState({}, '', '/dashboard');
+    render(<App />);
+
+    await screen.findByText('barra inferior');
+    expect(screen.getByTestId('hueco-barra-inferior')).toHaveAttribute('data-tapa-abajo');
+    expect(screen.getByTestId('hueco-aviso-instalar')).toHaveAttribute('data-tapa-abajo');
+  });
+
   it('E3: sin barra, el hueco del aviso en todos los anchos', async () => {
     sesion.usuario = null;
     window.history.pushState({}, '', '/esto-no-existe');

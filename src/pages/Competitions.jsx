@@ -19,6 +19,7 @@ import { formatCountryName } from '../services/countries';
 import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 import { diaCorto } from '../utils/diaDeLaSesion';
 import EtiquetaDelTipo from '../components/competition/EtiquetaDelTipo';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -345,7 +346,7 @@ const Competitions = () => {
   }
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">

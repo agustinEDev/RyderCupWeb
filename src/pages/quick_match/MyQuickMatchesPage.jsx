@@ -21,6 +21,7 @@ import { laUltimaLista, olvidaLoDeEstaCuenta, recuerdaLaLista } from '../../serv
 import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { recorreConTope } from '../../utils/recorreConTope';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 // Cuántos detalles de partida terminada se piden a la vez (FE #418)
 const DETALLES_A_LA_VEZ = 5;
@@ -260,7 +261,7 @@ const MyQuickMatchesPage = () => {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
     // terminar es un salto, y de eso va justamente FE #495
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth user={user} />
         <BlockLoader />
       </div>
@@ -268,7 +269,7 @@ const MyQuickMatchesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth user={user} />
 
       <div className="max-w-2xl mx-auto px-4 py-6">

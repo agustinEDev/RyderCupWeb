@@ -47,6 +47,7 @@ import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { MAX_PLAYERS, MIN_PLAYERS } from '../domain/entities/Competition';
 import { CompetitionName } from '../domain/value_objects/CompetitionName';
 import { diaDeLaSesion } from '../utils/diaDeLaSesion';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 
 // Helper function to get message className
@@ -906,7 +907,7 @@ const CreateCompetition = () => {
   }
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 
