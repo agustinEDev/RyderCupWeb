@@ -514,4 +514,15 @@ describe('Clasificacion · sin sesión', () => {
     expect(error.mock.calls.flat().join(' ')).not.toMatch(/same key/);
     error.mockRestore();
   });
+
+  it('filas sin el campo del id y sin quien mira: ninguna es la mía (revisor)', async () => {
+    const ana = fila('a', { name: 'Ana' });
+    delete ana.userId;
+    const pedir = vi.fn().mockResolvedValue(clasificacion([ana]));
+
+    render(<Clasificacion pedir={pedir} activa />);
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(document.querySelectorAll('tr[data-yo="true"]')).toHaveLength(0);
+  });
 });

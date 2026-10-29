@@ -26,7 +26,7 @@ const CADA_FICHA = 5 * 60000;
 export const TOPE_DE_LA_FICHA_MS = 8000;
 // Sin sesión, una privada se dice sin preguntar por su clasificación: como el
 // 403 que daría (release social 3)
-const PRIVADA = Object.assign(new Error('PRIVATE_COMPETITION'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
+const privada = () => Object.assign(new Error('PRIVATE_COMPETITION'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
 
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
@@ -63,7 +63,9 @@ const LeaderboardPage = () => {
   const conSesion = Boolean(user);
   // La ve cualquiera, también sin sesión (release social 3): sin ella se relee
   // con el resumen público
-  const general = laDeStrokePlay;
+  // Salvo una privada que ya no se puede ver (se perdió la sesión): su aviso, sin
+  // la general de antes debajo (revisor)
+  const general = esDeUnaPrivada(error) ? null : laDeStrokePlay;
   // Se relee mientras se juega o está a punto de jugarse (/code-review)
   const enJuego = ['CLOSED', 'IN_PROGRESS'].includes(general?.status);
 
@@ -112,8 +114,12 @@ const LeaderboardPage = () => {
     if (!competitionId || sesionCargando || yaSabida) return undefined;
     // La marca es de esa competición: al pasar a otra se olvida, o al volver a
     // la privada la página se quedaba cargando para siempre (CodeRabbit)
-    if (privadaRef.current !== null && privadaRef.current !== competitionId) privadaRef.current = null;
-    if (privadaRef.current === competitionId) return undefined;
+    // Privada con sesión lo es también sin ella; pero quien entra (otra pestaña)
+    // la mira con la suya (revisor)
+    const marca = { id: competitionId, conSesion };
+    const vista = privadaRef.current;
+    if (vista !== null && (vista.id !== competitionId || (conSesion && !vista.conSesion))) privadaRef.current = null;
+    if (privadaRef.current !== null) return undefined;
     let vigente = true;
 
     // Sin sesión no se puede leer la ficha (ni entrar en ella): quien llama ni
@@ -154,7 +160,10 @@ const LeaderboardPage = () => {
         const resumen = await getCompetitionSummaryUseCase.execute(competitionId);
         resumenLeido.current = { id: competitionId, resumen };
         return resumen;
-      } catch {
+      } catch (err) {
+        // Con respuesta, aunque sea un error, no se repite en cada refresco (el
+        // cupo es de todos, ADR-038); sin red, sí (revisor)
+        if (!esFalloDeRed(err)) resumenLeido.current = { id: competitionId, resumen: null };
         return null;
       }
     };
@@ -170,7 +179,7 @@ const LeaderboardPage = () => {
         } else {
           const resumen = await delResumen();
           if (!vigente) return;
-          if (resumen?.visibility === 'PRIVATE') throw PRIVADA;
+          if (resumen?.visibility === 'PRIVATE') throw privada();
           competicion = resumen?.hasTeams === false ? resumen : null;
         }
         if (!vigente) return;
@@ -191,7 +200,7 @@ const LeaderboardPage = () => {
         // De una privada sin llave, ni se repite: otro 403 cada 30 s no
         // arregla nada y gasta el cupo compartido (revisor)
         if (esDeUnaPrivada(err)) {
-          privadaRef.current = competitionId;
+          privadaRef.current = marca;
           clearInterval(pollRef.current);
         }
       } finally {
@@ -250,6 +259,8 @@ const LeaderboardPage = () => {
                 {!user && (
                   <Link
                     to="/login"
+                    // Tras entrar, de vuelta aquí (revisor)
+                    state={{ from: location }}
                     data-testid="iniciar-sesion"
                     className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
                   >
@@ -268,7 +279,8 @@ const LeaderboardPage = () => {
             <p className="mb-5 text-sm text-gray-500">{general.name}</p>
             <ClasificacionesDeLaCompeticion
               // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
-              key={competitionId}
+              // Y al entrar o salir: con sesión llega mi fila (revisor)
+              key={`${competitionId}:${conSesion}`}
               competitionId={competitionId}
               userId={jugador || user?.id}
               enJuego={enJuego}

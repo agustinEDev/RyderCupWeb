@@ -136,7 +136,8 @@ const Clasificacion = ({
   // Una línea por jugador, en columnas: POS · JUGADOR · PTS/PAR · THRU, como
   // los leaderboards de los circuitos (decidido con Agustín tras la pasada)
   const pintaFila = (fila, testId) => {
-    const yo = fila.userId === userId;
+    // Sin quien mira (un visitante), ninguna es la mía (revisor)
+    const yo = userId != null && fila.userId === userId;
     const { texto, titulo } = thru(fila);
     return (
       <tr
