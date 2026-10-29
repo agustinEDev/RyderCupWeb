@@ -8,7 +8,11 @@ import LeaderboardView from '../../components/scoring/LeaderboardView';
 import ClasificacionesDeLaCompeticion from '../../components/scoring/ClasificacionesDeLaCompeticion';
 import { esDeUnaPrivada } from '../../utils/competicionPrivada';
 import { useAuth } from '../../hooks/useAuth';
-import { getCompetitionDetailUseCase, getLeaderboardUseCase } from '../../composition';
+import {
+  getCompetitionDetailUseCase,
+  getCompetitionSummaryUseCase,
+  getLeaderboardUseCase,
+} from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { useSondeoMientras } from '../../hooks/useSondeoMientras';
@@ -20,6 +24,9 @@ const CADA_FICHA = 5 * 60000;
 // La ficha se pregunta antes que la clasificación: si no contesta, no puede
 // dejar la página cargando para siempre (CodeRabbit)
 export const TOPE_DE_LA_FICHA_MS = 8000;
+// Sin sesión, una privada se dice sin preguntar por su clasificación: como el
+// 403 que daría (release social 3)
+const PRIVADA = Object.assign(new Error('PRIVATE_COMPETITION'), { status: 403, errorCode: 'PRIVATE_COMPETITION' });
 
 const LeaderboardPage = () => {
   const { id: competitionId } = useParams();
@@ -54,8 +61,9 @@ const LeaderboardPage = () => {
   }
   // Si hay sesión, no el objeto: uno nuevo en cada render relanzaría la carga
   const conSesion = Boolean(user);
-  // Sin sesión no se ve (ni se podría releer): si se pierde, se quita (/code-review)
-  const general = conSesion ? laDeStrokePlay : null;
+  // La ve cualquiera, también sin sesión (release social 3): sin ella se relee
+  // con el resumen público
+  const general = laDeStrokePlay;
   // Se relee mientras se juega o está a punto de jugarse (/code-review)
   const enJuego = ['CLOSED', 'IN_PROGRESS'].includes(general?.status);
 
@@ -74,6 +82,9 @@ const LeaderboardPage = () => {
   // La competición privada que ya dijo 403: relanzar el efecto (cambia la
   // sesión) no vuelve a preguntarla (/code-review)
   const privadaRef = useRef(null);
+  // El resumen público, una vez por competición: sin sesión, cada refresco de
+  // una Ryder no lo vuelve a pedir (release social 3)
+  const resumenLeido = useRef(null);
 
   // Su estado, cada 5 min: que empiece o acabe se sabe sin recargar, y acabada
   // deja de releerse (/code-review). Lo que llegue para otra, no vale
@@ -83,13 +94,14 @@ const LeaderboardPage = () => {
   }, [competitionId]);
   const releerLaFicha = useCallback(() => {
     const para = competitionId;
-    getCompetitionDetailUseCase
+    // La ficha pide sesión; sin ella, el resumen público (release social 3)
+    (conSesion ? getCompetitionDetailUseCase : getCompetitionSummaryUseCase)
       .execute(para)
       .then((competicion) => {
         if (idActual.current === para && competicion?.hasTeams === false) setLaDeStrokePlay(competicion);
       })
       .catch(() => {});
-  }, [competitionId]);
+  }, [competitionId, conSesion]);
   useSondeoMientras(enJuego, releerLaFicha, CADA_FICHA);
 
   const yaSabida = desdeLaFicha !== null;
@@ -134,12 +146,33 @@ const LeaderboardPage = () => {
       return marca.promesa;
     };
 
+    // Sin sesión, el resumen público dice qué es: una privada, un stroke play o
+    // una Ryder. Si no contesta, se sigue como antes (la de la Ryder dirá)
+    const delResumen = async () => {
+      if (resumenLeido.current?.id === competitionId) return resumenLeido.current.resumen;
+      try {
+        const resumen = await getCompetitionSummaryUseCase.execute(competitionId);
+        resumenLeido.current = { id: competitionId, resumen };
+        return resumen;
+      } catch {
+        return null;
+      }
+    };
+
     const fetchLeaderboard = async () => {
       try {
         // Con sesión, la ficha primero: la de la Ryder contesta 400 a un stroke
         // play, y ese 400 acababa en la consola (QA, FE #865-6)
-        // Sin sesión, ni se pregunta (`esDeStrokePlay`), ni se espera
-        const competicion = conSesion ? await esDeStrokePlay() : null;
+        // Sin sesión, la ficha no (`esDeStrokePlay`): el resumen público
+        let competicion;
+        if (conSesion) {
+          competicion = await esDeStrokePlay();
+        } else {
+          const resumen = await delResumen();
+          if (!vigente) return;
+          if (resumen?.visibility === 'PRIVATE') throw PRIVADA;
+          competicion = resumen?.hasTeams === false ? resumen : null;
+        }
         if (!vigente) return;
         if (competicion) {
           setLaDeStrokePlay(competicion);
@@ -209,9 +242,21 @@ const LeaderboardPage = () => {
         {error && !isLoading && (
           <div className="text-center py-8">
             {esDeUnaPrivada(error) ? (
-              <p data-testid="clasificacion-privada" className="text-gray-600">
-                {t('leaderboard.private')}
-              </p>
+              <>
+                <p data-testid="clasificacion-privada" className="text-gray-600">
+                  {t('leaderboard.private')}
+                </p>
+                {/* Sin sesión, quien participa entra y la ve (release social 3) */}
+                {!user && (
+                  <Link
+                    to="/login"
+                    data-testid="iniciar-sesion"
+                    className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    {t('leaderboard.signIn')}
+                  </Link>
+                )}
+              </>
             ) : (
               <p className="text-red-600">{error.message || t('errors.generic')}</p>
             )}

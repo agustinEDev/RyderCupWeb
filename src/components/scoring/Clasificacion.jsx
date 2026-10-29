@@ -233,7 +233,8 @@ const Clasificacion = ({
         // rectángulo blanco plano, y casa con «Tu posición» de debajo (revisor)
         <div className="overflow-hidden rounded-lg bg-white">
           {tabla(
-            clasificacion.rows.map((fila) => pintaFila(fila, `fila-${fila.userId}`)),
+            // Sin sesión las filas llegan sin id (release social 3): su puesto en la lista
+            clasificacion.rows.map((fila, i) => pintaFila(fila, `fila-${fila.userId ?? `n${i}`}`)),
             true,
             t('partida.standingsTable')
           )}
