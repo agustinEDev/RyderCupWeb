@@ -11,7 +11,12 @@ const GESTOS = ['wheel', 'touchmove', 'keydown', 'pointerdown'];
  */
 const hacerSitioDebajo = (bloque, fila) => {
   if (!bloque) return;
+  // Lo de una vez anterior no cuenta: se calcula de nuevo
+  bloque.style.paddingBottom = '';
   const caja = fila.getBoundingClientRect();
+  // Ya se ve entera: no hace falta mover nada, ni dejar media pantalla en
+  // blanco debajo de una tabla corta (revisor)
+  if (caja.top >= 0 && caja.bottom <= globalThis.innerHeight) return;
   const hastaElCentro = caja.top + globalThis.scrollY + caja.height / 2 - globalThis.innerHeight / 2;
   const puedeBajar = document.documentElement.scrollHeight - globalThis.innerHeight;
   const falta = Math.ceil(hastaElCentro - puedeBajar);

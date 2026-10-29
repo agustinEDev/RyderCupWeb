@@ -23,12 +23,18 @@ const Tabla = ({ respuestas }) => {
 
 describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', () => {
   let alto;
+  let desplazar;
+  const original = window.HTMLElement.prototype.scrollIntoView;
   beforeEach(() => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    desplazar = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = desplazar;
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(800);
     alto = vi.spyOn(document.documentElement, 'scrollHeight', 'get');
   });
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.HTMLElement.prototype.scrollIntoView = original;
+  });
 
   const filaEn = (top) =>
     vi
@@ -43,6 +49,39 @@ describe('useCentrarEnMiFila · la última fila también se centra (FE #988)', (
     const { getByTestId } = render(<Tabla respuestas={1} />);
 
     expect(getByTestId('bloque').style.paddingBottom).toBe('360px');
+  });
+
+  it('el espacio ya está puesto cuando se desplaza', () => {
+    alto.mockReturnValue(1000);
+    filaEn(940);
+    let alDesplazar = null;
+    desplazar.mockImplementation(function () {
+      alDesplazar = this.closest('[data-testid="bloque"]').style.paddingBottom;
+    });
+
+    render(<Tabla respuestas={1} />);
+
+    expect(alDesplazar).toBe('360px');
+  });
+
+  it('con la página ya bajada cuenta lo bajado', () => {
+    // Bajada 100: la fila está en 1040 de la página; puede bajar hasta 200
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(100);
+    alto.mockReturnValue(1000);
+    filaEn(940);
+
+    const { getByTestId } = render(<Tabla respuestas={1} />);
+
+    expect(getByTestId('bloque').style.paddingBottom).toBe('460px');
+  });
+
+  it('si la fila ya se ve entera no añade nada (revisor)', () => {
+    alto.mockReturnValue(1000);
+    filaEn(600);
+
+    const { getByTestId } = render(<Tabla respuestas={1} />);
+
+    expect(getByTestId('bloque').style.paddingBottom).toBe('');
   });
 
   it('con sitio de sobra no añade nada', () => {

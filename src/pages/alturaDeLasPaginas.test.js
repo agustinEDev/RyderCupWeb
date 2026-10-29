@@ -40,6 +40,7 @@ describe('Las páginas con barra inferior no ocupan más que la pantalla', () =>
     const codigo = readFileSync(join(AQUI, pagina), 'utf8');
 
     expect(codigo).not.toMatch(/\bmin-h-screen\b/);
-    expect(codigo).toContain('PANTALLA_MENOS_BARRA_INFERIOR');
+    // Usada, no solo importada
+    expect(codigo).toMatch(/\$\{PANTALLA_MENOS_BARRA_INFERIOR\}/);
   });
 });
