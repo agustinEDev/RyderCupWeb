@@ -111,7 +111,8 @@
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No hay partidos disponibles",
     "private": "Esta clasificación solo la ven quienes participan",
-    "signIn": "Iniciar sesión"
+    "signIn": "Iniciar sesión",
+    "backToHome": "Volver al inicio"
   },
   "validation": {
     "match": "Coincide",

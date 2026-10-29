@@ -81,6 +81,9 @@ const LeaderboardPage = () => {
   const aLaFicha = from === 'detail' || general !== null;
   const backTo = aLaFicha ? `/competitions/${competitionId}` : `/competitions/${competitionId}/schedule`;
   const backText = aLaFicha ? t('summary.backToCompetition') : t('summary.backToSchedule');
+  // La ficha y la agenda piden sesión: el visitante vuelve a la portada (29 oct 2026)
+  const volverA = user ? backTo : '/';
+  const volverTexto = user ? backText : t('leaderboard.backToHome');
   // Se pregunta una vez por competición, no en cada refresco: el cubo de
   // límites es el mismo para todo el campo (ADR-038). Con la consulta en
   // curso: quien llega mientras tanto (el doble arranque de React en
@@ -243,10 +246,10 @@ const LeaderboardPage = () => {
         {!isLoading && (
           // Con sesión, en el móvil la flecha va en la cabecera (QA, FE #865-4)
           <Link
-            to={backTo}
+            to={volverA}
             className={`${user ? 'hidden md:inline-flex' : 'inline-flex'} items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3`}
           >
-            &larr; {backText}
+            &larr; {volverTexto}
           </Link>
         )}
         {/* Con sesión, en el móvil lo dice la cabecera: dos <h1> no */}

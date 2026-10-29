@@ -111,7 +111,8 @@
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No matches available",
     "private": "Only participants can see these standings",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "backToHome": "Back to home"
   },
   "validation": {
     "match": "Match",

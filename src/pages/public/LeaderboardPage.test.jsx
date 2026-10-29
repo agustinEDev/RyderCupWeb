@@ -118,14 +118,18 @@ describe('LeaderboardPage', () => {
     expect(screen.getByText('loading')).toBeInTheDocument();
   });
 
-  it('should link back to schedule by default', async () => {
+  it('V3: con sesión, should link back to schedule by default', async () => {
+    // V3: con sesión; el visitante vuelve al inicio (29 oct 2026)
+    mockUser.current = { id: 'u-1' };
     mockLocationState.state = null;
     render(<LeaderboardPage />);
     const backLink = await screen.findByText(/summary.backToSchedule/);
     expect(backLink.closest('a')).toHaveAttribute('href', '/competitions/c-1/schedule');
   });
 
-  it('should link back to competition detail when from=detail', async () => {
+  it('V3: con sesión, should link back to competition detail when from=detail', async () => {
+    // V3: con sesión; el visitante vuelve al inicio (29 oct 2026)
+    mockUser.current = { id: 'u-1' };
     mockLocationState.state = { from: 'detail' };
     render(<LeaderboardPage />);
     const backLink = await screen.findByText(/summary.backToCompetition/);
@@ -187,7 +191,7 @@ describe('LeaderboardPage', () => {
   it('H2: sin sesión, como siempre: el título y el volver a la vista', async () => {
     render(<LeaderboardPage />);
 
-    const volver = await screen.findByRole('link', { name: /summary\.back/ });
+    const volver = await screen.findByRole('link', { name: /leaderboard\.backToHome/ });
     expect(volver.className.split(' ')).not.toContain('hidden');
     expect(screen.getByRole('heading', { level: 1, name: 'leaderboard.title' }).className.split(' ')).not.toContain('hidden');
   });
@@ -790,6 +794,41 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
     // Tras entrar, vuelve aquí (revisor)
     expect(screen.getByTestId('iniciar-sesion')).toHaveAttribute('data-from', '/competitions/c-1/leaderboard');
     expect(getLeaderboardUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  // La ficha y la agenda piden sesión: el visitante vuelve a la portada (29 oct 2026)
+  it('V1: en una Ryder pública, volver lleva al inicio', async () => {
+    render(<LeaderboardPage />);
+
+    const volver = await screen.findByRole('link', { name: /leaderboard\.backToHome/ });
+    expect(volver).toHaveAttribute('href', '/');
+    expect(screen.queryByText(/summary\.back/)).not.toBeInTheDocument();
+  });
+
+  it('V1: en un stroke play público, también', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Medal', hasTeams: false, visibility: 'PUBLIC', status: 'COMPLETED' });
+
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('general-stroke-play');
+    expect(screen.getByRole('link', { name: /leaderboard\.backToHome/ })).toHaveAttribute('href', '/');
+  });
+
+  it('V2: en una privada, también al inicio, junto a Iniciar sesión', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Privada', hasTeams: false, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('clasificacion-privada');
+    expect(screen.getByRole('link', { name: /leaderboard\.backToHome/ })).toHaveAttribute('href', '/');
+  });
+
+  it('V4: mientras carga, sin volver', () => {
+    mockResumen.mockReturnValue(new Promise(() => {}));
+
+    render(<LeaderboardPage />);
+
+    expect(screen.queryByRole('link', { name: /back/ })).not.toBeInTheDocument();
   });
 
   it('un stroke play en juego se relee con el resumen, sin la ficha: si acaba, deja de releer', async () => {
