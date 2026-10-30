@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.57.0] - 2026-10-31
+
+**Release social 3: entrar directamente y equipos que no se mueven.** En una
+competición pública ya no se pide plaza: «Apuntarme» y dentro, eligiendo
+franja en un stroke play. La clasificación se abre por enlace sin sesión. Con
+los equipos formados nadie entra ni sale por su cuenta, y el organizador puede
+deshacerlos desde la agenda mientras no haya partidos. Va con el backend
+**2.43.0**.
+
+**Notas de despliegue.**
+
+- **Backend 2.43.0 antes**: este frontend usa `GET /competitions/{id}/summary`,
+  `DELETE /competitions/{id}/teams` y los 409 `TEAMS_FORMED`, `TEAMS_LOCKED` y
+  `NO_TEAMS`.
+- Sin variables nuevas. Arranque **242 KB gzip** de 270.
+
+### Added
+
+- **Apuntarme en una pública** (#989): entra directamente. En un stroke play
+  con franjas, el diálogo las lista por día y hora: con sitio se entra con su
+  plaza; llena, «Apuntarme a la espera». Mientras carga la agenda lo dice, si
+  falla ofrece reintentar, y nunca envía sin franja. Quien solo está en espera
+  ve «En espera: n.º N para la franja de las HH:MM». Al crear: privada = por
+  invitación, pública = inscripción directa.
+- **Avisos de Actividad** (#989): «X se ha apuntado a…» al organizador, plaza
+  desde la lista de espera, sin plaza al cerrar y franja borrada.
+- **Clasificación sin sesión** (#991): el enlace de una clasificación se abre
+  sin cuenta. Pública: la de la Ryder o la general de un stroke play; privada:
+  «Esta clasificación solo la ven quienes participan» y «Iniciar sesión», que
+  vuelve a la misma página.
+- **Deshacer equipos** (#992): en la agenda, para quien organiza y mientras no
+  haya partidos, con confirmación. Sustituye a «Reasignar».
+
+### Changed
+
+- **Equipos formados = congelados** (#992): sin «Apuntarme» ni invitar, con
+  «Los equipos ya están formados»; el inscrito ve «Si no puedes jugar, avisa
+  al organizador». Cada 409 dice su motivo (equipos formados, esperar al
+  draft, ya hay partidos) y la pantalla se relee.
+
+### Fixed
+
+- **El nombre de la competición en la clasificación de una Ryder** (#993):
+  bajo el título, como ya salía en la de un stroke play; un nombre largo no
+  ensancha la pantalla.
+- **Mi fila del scratch se centra** (#990, cierra #988) aunque sea lo último de
+  la página.
+- **Páginas casi vacías que hacían scroll** bajo la barra inferior (#990): 21
+  páginas pasan de `min-h-screen` a la pantalla menos la barra; un test lo
+  vigila.
+
 ## [2.56.0] - 2026-10-28
 
 **Release social 2: quién ve a los inscritos.** En una competición pública ves
