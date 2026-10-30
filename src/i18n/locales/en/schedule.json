@@ -98,7 +98,14 @@
     "fillCaptainNobody": "Nobody is left enrolled in that team.",
     "captainMissingWithTeams": "One captain is missing. With the teams already assigned, use \"Name a captain\" on the team that needs one.",
     "replaceWarning": "This replaces the current teams. If they came from the draft, changing them here undoes what the captains picked.",
-    "enrollmentsNotLoaded": "The players could not be loaded: reload the page before reassigning, or the teams would come out empty."
+    "enrollmentsNotLoaded": "The players could not be loaded: reload the page before reassigning, or the teams would come out empty.",
+    "undo": "Undo teams",
+    "undoConfirm": {
+      "title": "Undo the teams?",
+      "body": "The teams, the draft and the envelopes will be deleted. Captains stay and the draft will have to be repeated.",
+      "confirm": "Yes, undo them",
+      "keep": "No"
+    }
   },
   "configuration": {
     "title": "Schedule Configuration",
@@ -155,7 +162,11 @@
     "failedToDeclareWalkover": "Failed to declare walkover",
     "failedToReassignPlayers": "Failed to reassign players",
     "failedToLoadMatch": "Failed to load match details",
-    "failedToFillCaptain": "The captain could not be named"
+    "failedToFillCaptain": "The captain could not be named",
+    "teamsLocked": "Matches already exist: the teams can't be undone",
+    "failedToUndoTeams": "The teams couldn't be undone",
+    "teamsFormed": "Teams are already formed: to let someone in, undo them first.",
+    "waitForDraft": "Wait until the draft is over"
   },
   "success": {
     "roundCreated": "Round created successfully",
@@ -166,7 +177,8 @@
     "matchStatusUpdated": "Match status updated successfully",
     "walkoverDeclared": "Walkover declared successfully",
     "playersReassigned": "Players reassigned successfully",
-    "captainFilled": "Captain named"
+    "captainFilled": "Captain named",
+    "teamsUndone": "Teams undone: you can now invite and repeat the draft"
   },
   "generationBlock": {
     "title": "This session's matches could not be created",

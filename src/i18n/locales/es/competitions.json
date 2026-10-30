@@ -333,7 +333,7 @@
       },
       "removeWithTeams": {
         "title": "¿Quitar a {{nombre}}?",
-        "body": "Dejará de estar inscrito en {{competicion}} y se desharán los equipos: tendrás que volver a repartirlos. Se le avisará en la app y podrás volver a invitarle.",
+        "body": "Dejará de estar inscrito en {{competicion}}. Se borrarán los equipos, el draft y los sobres; habrá que repetir el draft. Se le avisará en la app y podrás volver a invitarle.",
         "confirm": "Sí, quitarle",
         "keep": "No, dejarle"
       }
@@ -363,7 +363,11 @@
       "teeWindowHasRoom": "Esa franja tiene sitio: apúntate directamente",
       "teeWindowRequired": "Elige una franja para apuntarte",
       "teeWindowNotFound": "Esa franja ya no existe: elige otra",
-      "draftInProgress": "Ahora mismo se está haciendo el draft: inténtalo cuando acabe"
+      "draftInProgress": "Ahora mismo se está haciendo el draft: inténtalo cuando acabe",
+      "teamsFormed": "Los equipos ya están formados: habla con el organizador.",
+      "teamsFormedOrganizer": "Los equipos ya están formados: para que entre alguien, deshazlos primero.",
+      "waitForDraft": "Espera a que termine el draft",
+      "teamsFormedWithMatches": "Ya hay partidos generados: no puede entrar nadie."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {
@@ -520,7 +524,11 @@
     "onlyFriendsVisible": "De momento solo ves a tus amigos inscritos.",
     "onlyParticipantsSee": "Los inscritos solo los ven quienes participan.",
     "removePlayerAria": "Quitar a {{nombre}}",
-    "waitingListStatus": "En espera: n.º {{position}} de la franja de las {{time}} ({{day}})"
+    "waitingListStatus": "En espera: n.º {{position}} de la franja de las {{time}} ({{day}})",
+    "teamsFormed": {
+      "enrolled": "Los equipos ya están formados. Si no puedes jugar, avisa al organizador.",
+      "closed": "Los equipos ya están formados"
+    }
   },
   "browse": {
     "title": "Explorar Competiciones",

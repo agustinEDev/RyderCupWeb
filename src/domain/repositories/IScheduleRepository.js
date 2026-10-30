@@ -50,6 +50,16 @@ class IScheduleRepository {
   }
 
   /**
+   * Deshace los equipos formados (30 oct 2026).
+   * @param {string} competitionId
+   * @returns {Promise<void>}
+   * @throws {Error} Con `errorCode` NO_TEAMS o TEAMS_LOCKED si no se puede
+   */
+  async undoTeams(competitionId) {
+    throw new Error('Method not implemented');
+  }
+
+  /**
    * Crea una ronda para una competicion.
    * @param {string} competitionId
    * @param {Object} roundData - Datos de la ronda

@@ -283,6 +283,23 @@ describe('BrowseCompetitions · apuntarse (release social 3)', () => {
     expect(screen.getByText('browse.card.request-to-join')).toBeInTheDocument();
   });
 
+  it('con los equipos formados: se cierra, se dice y la tarjeta se va (29 oct 2026)', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+    );
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('detail.errors.teamsFormed')
+    );
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
   it('en un stroke play no se pinta el máximo: mandan las franjas (revisor)', async () => {
     mockUnirse.mockResolvedValue([
       { ...COMPETICION, hasTeams: false, enrolledCount: 14, maxPlayers: 12 },

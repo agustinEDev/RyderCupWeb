@@ -16,6 +16,7 @@ import AssignTeamsModal from '../../components/schedule/AssignTeamsModal';
 import FillCaptainModal from '../../components/schedule/FillCaptainModal';
 import GenerateMatchesModal from '../../components/schedule/GenerateMatchesModal';
 import ResetEnvelopesModal from '../../components/schedule/ResetEnvelopesModal';
+import ConfirmModal from '../../components/modals/ConfirmModal';
 import {
   getScheduleUseCase,
   getCompetitionDetailUseCase,
@@ -23,6 +24,7 @@ import {
   listEnrollmentsUseCase,
   generateMatchesUseCase,
   assignTeamsUseCase,
+  undoTeamsUseCase,
   fillCaptainUseCase,
   updateMatchStatusUseCase,
   declareWalkoverUseCase,
@@ -32,6 +34,7 @@ import {
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDeError } from '../../utils/sinCobertura';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -64,6 +67,7 @@ const SchedulePage = () => {
   const [showMatchDetailModal, setShowMatchDetailModal] = useState(false);
   const [detailMatchId, setDetailMatchId] = useState(null);
   const [showTeamsModal, setShowTeamsModal] = useState(false);
+  const [deshaciendoEquipos, setDeshaciendoEquipos] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generateRound, setGenerateRound] = useState(null);
 
@@ -318,7 +322,49 @@ const SchedulePage = () => {
       await Promise.all([reloadSchedule(), recargarCompeticion()]);
     } catch (error) {
       console.error('Error assigning teams:', error);
-      customToast.error(error.message || t('errors.failedToAssignTeams'));
+      // Con su código, en cristiano (29 oct 2026): formados quedan así, y con
+      // la sala de draft abierta se espera a que termine
+      if (error?.errorCode === 'DRAFT_IN_PROGRESS') {
+        customToast.error(t('errors.waitForDraft'));
+      } else if (error?.errorCode === 'TEAMS_FORMED') {
+        customToast.error(t('errors.teamsFormed'));
+        setShowTeamsModal(false);
+        await Promise.all([reloadSchedule(), recargarCompeticion()]);
+      } else {
+        customToast.error(error.message || t('errors.failedToAssignTeams'));
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Deshacer los equipos para que entre alguien (30 oct 2026): el mismo
+  // reinicio que al quitar a un jugador, y se repite el draft
+  const handleUndoTeams = async () => {
+    setIsProcessing(true);
+    try {
+      await undoTeamsUseCase.execute(id);
+      customToast.success(t('success.teamsUndone'));
+    } catch (error) {
+      console.error('Error undoing teams:', error);
+      // Ya deshechos (otra pestaña, o al quitar a alguien): basta con releer
+      if (error?.errorCode !== 'NO_TEAMS') {
+        customToast.error(
+          error?.errorCode === 'TEAMS_LOCKED'
+            ? t('errors.teamsLocked')
+            : mensajeDeError(error, {
+              sinConexion: t('common:sinConexion.mensaje'),
+              generico: t('errors.failedToUndoTeams'),
+            })
+        );
+      }
+    }
+    setDeshaciendoEquipos(false);
+    // Haya ido bien o no, la agenda al día: sin equipos, o con los partidos
+    // que no se veían. Hasta entonces sigue en curso: si no, el botón volvía
+    // antes y un segundo toque daba NO_TEAMS (revisor)
+    try {
+      await Promise.all([reloadSchedule(), recargarCompeticion()]);
     } finally {
       setIsProcessing(false);
     }
@@ -373,6 +419,11 @@ const SchedulePage = () => {
     [competition.captains?.teamA, competition.captains?.teamB].includes(user.id);
   const entraALosSobres = esCapitan || (Boolean(user?.id) && competition.creatorId === user.id);
   const hayEquipos = Boolean(teamAssignment);
+  // Con partidos, o ya en juego, los equipos son lo jugado: el servidor no los
+  // deshace (TEAMS_LOCKED), así que ni se ofrece
+  const sePuedenDeshacer =
+    ['ACTIVE', 'CLOSED'].includes(competition.status) &&
+    !rounds.some((r) => r.matches?.length > 0);
 
   return (
     <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
@@ -431,6 +482,10 @@ const SchedulePage = () => {
               <TeamAssignmentSection
                 teamAssignment={teamAssignment}
                 onAssignTeams={() => setShowTeamsModal(true)}
+                onUndoTeams={() => {
+                  if (!isProcessing) setDeshaciendoEquipos(true);
+                }}
+                sePuedenDeshacer={sePuedenDeshacer}
                 canManage={canManage}
                 playerNameMap={playerNameMap}
                 enrollments={enrollments}
@@ -583,6 +638,19 @@ const SchedulePage = () => {
           matchFormat={rounds.find((r) => r.matches?.some((m) => m.id === detailMatchId))?.matchFormat ?? null}
         />
       )}
+
+      {/* Deshacer los equipos: siempre con confirmación (F7, 30 oct 2026) */}
+      <ConfirmModal
+        isOpen={deshaciendoEquipos}
+        title={t('teams.undoConfirm.title')}
+        message={t('teams.undoConfirm.body')}
+        confirmText={t('teams.undoConfirm.confirm')}
+        cancelText={t('teams.undoConfirm.keep')}
+        onConfirm={handleUndoTeams}
+        onCancel={() => setDeshaciendoEquipos(false)}
+        isDestructive
+        isLoading={isProcessing}
+      />
 
       {/* Assign Teams Modal */}
       {showTeamsModal && (

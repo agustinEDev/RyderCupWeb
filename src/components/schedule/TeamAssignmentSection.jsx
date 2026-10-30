@@ -4,6 +4,8 @@ import { formatoDeIndice } from '../../utils/formatoDeHandicap';
 const TeamAssignmentSection = ({
   teamAssignment,
   onAssignTeams,
+  onUndoTeams,
+  sePuedenDeshacer,
   onFillCaptain,
   canManage,
   playerNameMap,
@@ -189,13 +191,17 @@ const TeamAssignmentSection = ({
         </div>
       </div>
 
-      {canManage && (
+      {/* Formados, quedan así: para que entre alguien, se deshacen y se
+          repite el draft; con partidos, ya no (decidido el 29-30 oct 2026) */}
+      {canManage && sePuedenDeshacer && onUndoTeams && (
         <div className="mt-4 pt-3 border-t border-gray-200">
           <button
-            onClick={onAssignTeams}
-            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+            type="button"
+            data-testid="deshacer-equipos"
+            onClick={onUndoTeams}
+            className="px-4 py-2 bg-white border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
           >
-            {t('teams.reassign')}
+            {t('teams.undo')}
           </button>
         </div>
       )}

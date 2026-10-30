@@ -99,6 +99,23 @@ const MOTIVOS_PARA_NO_APUNTARSE = {
   DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
 };
 
+// Por qué no se formaron los equipos al cerrar (29 oct 2026)
+const MOTIVOS_PARA_NO_FORMAR = {
+  TEAMS_FORMED: 'detail.errors.teamsFormedOrganizer',
+  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
+};
+
+// Si ya los había, la ficha lo apunta: con equipos no se ofrece cambiar
+// capitanes ni pedir plaza (code-review)
+const yaLosHabia = (error, setCompetition) => {
+  if (error?.errorCode === 'TEAMS_FORMED') setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
+};
+
+const porQueNoSeFormaron = (t, error) => {
+  const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
+  return motivo ? t(motivo) : error?.message || t('detail.errors.teamAssignmentFailed');
+};
+
 // Por qué no se pudo quitar, por el código del servidor
 const MOTIVOS_PARA_NO_QUITAR = {
   PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
@@ -414,13 +431,16 @@ const CompetitionDetail = () => {
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
           customToast.success(t('detail.success.enrollmentsClosed'));
-          if (competition.teamAssignment === 'AUTOMATIC') {
+          // Formados, quedan así (29 oct 2026): al volver a cerrar una reabierta
+          // no se reparten otra vez, que el servidor lo rechaza (revisor)
+          if (competition.teamAssignment === 'AUTOMATIC' && !competition.teamsAssigned) {
             try {
               await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
               customToast.success(t('detail.success.teamsAutoAssigned'));
             } catch (assignError) {
               console.error('Error auto-assigning teams:', assignError);
-              customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+              customToast.error(porQueNoSeFormaron(t, assignError));
+              yaLosHabia(assignError, setCompetition);
             }
           }
           break;
@@ -674,7 +694,8 @@ const CompetitionDetail = () => {
           customToast.success(t('detail.success.teamsAutoAssigned'));
         } catch (assignError) {
           console.error('Error auto-assigning teams:', assignError);
-          customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+          customToast.error(porQueNoSeFormaron(t, assignError));
+          yaLosHabia(assignError, setCompetition);
         }
       }
       refrescarCanDelete();
@@ -750,6 +771,13 @@ const CompetitionDetail = () => {
         if (error.errorCode.startsWith('TEE_WINDOW')) setVersionFranjas((n) => n + 1);
         return;
       }
+      // Con los equipos formados ya no se entra: se dice y se pone al día
+      if (error?.errorCode === 'TEAMS_FORMED') {
+        setShowEnrollModal(false);
+        customToast.error(t('detail.errors.teamsFormed'));
+        await loadCompetition();
+        return;
+      }
       // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
       // cierra y se pone al día (CodeRabbit en la #721)
       if (error?.status === 409) {
@@ -779,11 +807,24 @@ const CompetitionDetail = () => {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
       customToast.success(t('detail.enrollmentApproved'));
+      // Con equipos formados, el servidor los ha reiniciado para que entre
+      // (30 oct 2026): la ficha también, no solo la lista (code-review)
+      if (competition.teamsAssigned) {
+        await releerTrasQuitar();
+        return;
+      }
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
+      // Solo falla así con partidos, que ya no se deshacen (30 oct 2026): se
+      // dice y la ficha, al día
+      if (error?.errorCode === 'TEAMS_FORMED') {
+        customToast.error(t('detail.errors.teamsFormedWithMatches'));
+        await releerTrasQuitar();
+        return;
+      }
       customToast.error(error.message || t('detail.failedToApprove'));
     }
   };
@@ -1514,6 +1555,8 @@ const CompetitionDetail = () => {
               // Con invitación pendiente, el cuadro: aceptarla ya inscribe
               // (decidido el 27 oct)
               !competition.myPendingInvitation &&
+              // Con los equipos formados no entra nadie por su cuenta (29 oct 2026)
+              !competition.teamsAssigned &&
               !bloqueaElMaximo && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -1533,6 +1576,15 @@ const CompetitionDetail = () => {
                   <span>{t('detail.actions.request-to-join')}</span>
                 </button>
               </motion.div>
+            )}
+
+            {!isCreator &&
+              competition.status === 'ACTIVE' &&
+              competition.visibility === 'PUBLIC' &&
+              !hasEnrollment &&
+              !competition.myPendingInvitation &&
+              competition.teamsAssigned && (
+              <p className="px-4 pt-4 text-sm text-gray-600">{t('detail.teamsFormed.closed')}</p>
             )}
 
             {/* User Enrollment Status */}
@@ -1569,6 +1621,13 @@ const CompetitionDetail = () => {
                       </span>
                     )}
                   </div>
+
+                  {/* No sale por su cuenta: quien quita es el organizador (29 oct 2026) */}
+                  {!isCreator &&
+                    competition.teamsAssigned &&
+                    (userEnrollment?.status || competition.enrollment_status) === 'APPROVED' && (
+                    <p className="mt-2 text-sm text-blue-900">{t('detail.teamsFormed.enrolled')}</p>
+                  )}
 
                   {puedeElegirNombre && (
                     <div className="mt-3 pt-3 border-t border-blue-200">

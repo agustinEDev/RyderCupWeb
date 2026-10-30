@@ -98,7 +98,14 @@
     "fillCaptainNobody": "No queda nadie inscrito en ese equipo.",
     "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita.",
     "replaceWarning": "Este reparto sustituye a los equipos de ahora. Si salieron del draft, cambiarlos aquí deshace lo que eligieron los capitanes.",
-    "enrollmentsNotLoaded": "No se han podido cargar los inscritos: recarga la página antes de reasignar, o los equipos saldrían vacíos."
+    "enrollmentsNotLoaded": "No se han podido cargar los inscritos: recarga la página antes de reasignar, o los equipos saldrían vacíos.",
+    "undo": "Deshacer equipos",
+    "undoConfirm": {
+      "title": "¿Deshacer los equipos?",
+      "body": "Se borrarán los equipos, el draft y los sobres. Los capitanes se quedan y habrá que repetir el draft.",
+      "confirm": "Sí, deshacerlos",
+      "keep": "No"
+    }
   },
   "configuration": {
     "title": "Configuración del Calendario",
@@ -155,7 +162,11 @@
     "failedToDeclareWalkover": "Error al declarar el walkover",
     "failedToReassignPlayers": "Error al reasignar los jugadores",
     "failedToLoadMatch": "Error al cargar los detalles del partido",
-    "failedToFillCaptain": "No se ha podido nombrar al capitán"
+    "failedToFillCaptain": "No se ha podido nombrar al capitán",
+    "teamsLocked": "Ya hay partidos: los equipos no se pueden deshacer",
+    "failedToUndoTeams": "No se pudieron deshacer los equipos",
+    "teamsFormed": "Los equipos ya están formados: para que entre alguien, deshazlos primero.",
+    "waitForDraft": "Espera a que termine el draft"
   },
   "success": {
     "roundCreated": "Ronda creada exitosamente",
@@ -166,7 +177,8 @@
     "matchStatusUpdated": "Estado del partido actualizado exitosamente",
     "walkoverDeclared": "Walkover declarado exitosamente",
     "playersReassigned": "Jugadores reasignados exitosamente",
-    "captainFilled": "Capitán nombrado"
+    "captainFilled": "Capitán nombrado",
+    "teamsUndone": "Equipos deshechos: ya puedes invitar y repetir el draft"
   },
   "generationBlock": {
     "title": "No se han podido crear los partidos de esta sesión",
