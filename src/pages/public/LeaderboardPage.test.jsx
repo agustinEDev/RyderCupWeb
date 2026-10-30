@@ -1030,3 +1030,161 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
     expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
   });
 });
+
+/**
+ * El nombre de la competición bajo el título (pasada del Kind, 30 oct 2026):
+ * quien abre el enlace de una Ryder sin sesión no sabía de qué torneo era.
+ *
+ * | #  | Caso                                      | Se ve                     |
+ * |----|-------------------------------------------|---------------------------|
+ * | N1 | Ryder, sin sesión                         | El nombre bajo el título  |
+ * | N2 | Ryder, con sesión                         | También                   |
+ * | N3 | Mientras carga                            | Sin nombre                |
+ * | N4 | Privada, sin sesión                       | Sin nombre                |
+ * | N5 | Error al leer la clasificación            | Sin nombre                |
+ * | N6 | Nombre vacío o nulo                       | Ni un párrafo vacío       |
+ * | N7 | Otra competición sin desmontar            | Nada de la anterior       |
+ * | N8 | Stroke play                               | Un solo nombre            |
+ */
+describe('LeaderboardPage · el nombre de la competición', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.current = null;
+    mockLocationState.state = null;
+    mockLocationState.search = '';
+    getLeaderboardUseCase.execute.mockReset().mockResolvedValue(mockRyder);
+    mockDetalle.mockReset().mockResolvedValue(null);
+    mockResumen
+      .mockReset()
+      .mockResolvedValue({ id: 'c-1', name: 'Ryder', hasTeams: true, visibility: 'PUBLIC', status: 'IN_PROGRESS' });
+  });
+
+  const conNombre = (competitionName) =>
+    getLeaderboardUseCase.execute.mockResolvedValueOnce({ ...mockRyder, competitionName });
+  const titulo = () => screen.getByRole('heading', { level: 1, name: 'leaderboard.title' });
+  const nombre = () => screen.queryByTestId('nombre-de-la-competicion');
+
+  it('N1: una Ryder sin sesión dice su nombre bajo el título', async () => {
+    conNombre('Copa Ryder');
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('leaderboard-view');
+    expect(nombre()).toHaveTextContent('Copa Ryder');
+    expect(titulo().className.split(' ')).toContain('mb-1');
+  });
+
+  it('N2: con sesión, también', async () => {
+    mockUser.current = { id: 'u-1' };
+    conNombre('Copa Ryder');
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('leaderboard-view');
+    expect(nombre()).toHaveTextContent('Copa Ryder');
+  });
+
+  it('N3: mientras carga, sin nombre', async () => {
+    getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+    render(<LeaderboardPage />);
+
+    // Ya contestó el resumen y se espera a la clasificación
+    await vi.waitFor(() => expect(getLeaderboardUseCase.execute).toHaveBeenCalled());
+    expect(screen.getByText('loading')).toBeInTheDocument();
+    expect(nombre()).not.toBeInTheDocument();
+  });
+
+  it('N9: un nombre sin espacios no ensancha la página en el móvil', async () => {
+    conNombre('RyderCupAmigosDeLaSierra2026Invierno');
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('leaderboard-view');
+    expect(nombre().className.split(' ')).toContain('break-words');
+  });
+
+  it('N4: una privada sin sesión no dice su nombre', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Privada', hasTeams: true, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('clasificacion-privada');
+    expect(nombre()).not.toBeInTheDocument();
+    expect(screen.queryByText('Privada')).not.toBeInTheDocument();
+  });
+
+  it('N4b: si con ella pintada se pierde la sesión y es privada, el nombre se va', async () => {
+    mockUser.current = { id: 'u-1' };
+    conNombre('Copa Ryder');
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByText('Copa Ryder');
+
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Copa Ryder', hasTeams: true, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    mockUser.current = null;
+    rerender(<LeaderboardPage />);
+
+    await screen.findByTestId('clasificacion-privada');
+    expect(nombre()).not.toBeInTheDocument();
+  });
+
+  it('N5: con un error al leerla, sin nombre', async () => {
+    getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('caída'), { status: 500 }));
+    render(<LeaderboardPage />);
+
+    await screen.findByText('caída');
+    expect(nombre()).not.toBeInTheDocument();
+    expect(titulo().className.split(' ')).toContain('mb-6');
+  });
+
+  it('N5b: si falla un refresco con ella ya pintada, el nombre se va con ella', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      conNombre('Copa Ryder');
+      render(<LeaderboardPage />);
+      await screen.findByText('Copa Ryder');
+
+      getLeaderboardUseCase.execute.mockRejectedValueOnce(Object.assign(new Error('caída'), { status: 500 }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30000);
+      });
+
+      expect(screen.getByText('caída')).toBeInTheDocument();
+      expect(nombre()).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([[null], ['']])('N6: con el nombre %j, ni un párrafo vacío', async (vacio) => {
+    conNombre(vacio);
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('leaderboard-view');
+    expect(nombre()).not.toBeInTheDocument();
+    expect(titulo().className.split(' ')).toContain('mb-6');
+  });
+
+  it('N7: al pasar a otra competición sin desmontar, no queda el nombre de la anterior', async () => {
+    conNombre('Copa Ryder');
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByText('Copa Ryder');
+
+    getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
+    mockResumen.mockResolvedValue({ id: 'c-2', name: 'Otra', hasTeams: true, visibility: 'PUBLIC', status: 'IN_PROGRESS' });
+    mockParams.id = 'c-2';
+    try {
+      rerender(<LeaderboardPage />);
+
+      expect(screen.getByText('loading')).toBeInTheDocument();
+      expect(screen.queryByText('Copa Ryder')).not.toBeInTheDocument();
+    } finally {
+      mockParams.id = 'c-1';
+    }
+  });
+
+  it('N8: un stroke play dice su nombre una sola vez', async () => {
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Copa', hasTeams: false, visibility: 'PUBLIC', status: 'COMPLETED' });
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('general-stroke-play');
+    expect(nombre()).toHaveTextContent('Copa');
+    expect(screen.getAllByText('Copa')).toHaveLength(1);
+    expect(titulo().className.split(' ')).toContain('mb-1');
+  });
+});
