@@ -366,7 +366,8 @@
       "draftInProgress": "Ahora mismo se está haciendo el draft: inténtalo cuando acabe",
       "teamsFormed": "Los equipos ya están formados: habla con el organizador.",
       "teamsFormedOrganizer": "Los equipos ya están formados: para que entre alguien, deshazlos primero.",
-      "waitForDraft": "Espera a que termine el draft"
+      "waitForDraft": "Espera a que termine el draft",
+      "teamsFormedWithMatches": "Ya hay partidos generados: no puede entrar nadie."
     },
     "enrollmentStatus": "Tu estado de inscripción:",
     "namePreference": {

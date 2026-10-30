@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
+import es from '../../i18n/locales/es/invitations.json';
+import en from '../../i18n/locales/en/invitations.json';
 
 /**
  * Retirar una invitación y no invitar con el torneo lleno (FE #724, BE #359).
@@ -223,6 +225,13 @@ describe('InvitationsPage · con los equipos formados no se invita (F8, 29-30 oc
       'creator.teamsFormed'
     );
     expect(screen.queryByText('creator.sendNew')).not.toBeInTheDocument();
+  });
+
+  it('el motivo vale también con partidos, que ya no se deshacen (30 oct 2026)', () => {
+    const texto = 'Con los equipos formados no se invita. Si aún no hay partidos, puedes deshacerlos en la agenda.';
+    expect(es.creator.teamsFormed).toBe(texto);
+    expect(es.errors.teamsFormedOrganizer).toBe(texto);
+    expect(en.creator.teamsFormed).toBeTruthy();
   });
 
   it('sin equipos formados, el botón sigue', async () => {

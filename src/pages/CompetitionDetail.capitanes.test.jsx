@@ -530,6 +530,25 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     await waitFor(() => expect(customToast.error).toHaveBeenCalledWith(texto));
   });
 
+  it('K17: si el reparto automático da TEAMS_FORMED, es que ya los había: «Cambiar capitanes» desaparece (code-review)', async () => {
+    mockAssignTeams.mockRejectedValueOnce(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+    );
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
+    renderPage();
+    const modal = await abrirModal();
+    elegir(modal, 'Europa', 'ana');
+    elegir(modal, 'América', 'bea');
+
+    confirmar(modal);
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalled());
+    await screen.findByTestId('menu-acciones');
+    abrirMenuDeAcciones();
+    expect(await screen.findByText('detail.actions.start-competition')).toBeInTheDocument();
+    expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
+  });
+
   it('K15: si el reparto automático sale bien, «Cambiar capitanes» desaparece', async () => {
     mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
     renderPage();

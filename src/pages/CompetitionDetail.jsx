@@ -105,6 +105,12 @@ const MOTIVOS_PARA_NO_FORMAR = {
   DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
 };
 
+// Si ya los había, la ficha lo apunta: con equipos no se ofrece cambiar
+// capitanes ni pedir plaza (code-review)
+const yaLosHabia = (error, setCompetition) => {
+  if (error?.errorCode === 'TEAMS_FORMED') setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
+};
+
 const porQueNoSeFormaron = (t, error) => {
   const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
   return motivo ? t(motivo) : error?.message || t('detail.errors.teamAssignmentFailed');
@@ -434,6 +440,7 @@ const CompetitionDetail = () => {
             } catch (assignError) {
               console.error('Error auto-assigning teams:', assignError);
               customToast.error(porQueNoSeFormaron(t, assignError));
+              yaLosHabia(assignError, setCompetition);
             }
           }
           break;
@@ -688,6 +695,7 @@ const CompetitionDetail = () => {
         } catch (assignError) {
           console.error('Error auto-assigning teams:', assignError);
           customToast.error(porQueNoSeFormaron(t, assignError));
+          yaLosHabia(assignError, setCompetition);
         }
       }
       refrescarCanDelete();
@@ -799,14 +807,21 @@ const CompetitionDetail = () => {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
       customToast.success(t('detail.enrollmentApproved'));
+      // Con equipos formados, el servidor los ha reiniciado para que entre
+      // (30 oct 2026): la ficha también, no solo la lista (code-review)
+      if (competition.teamsAssigned) {
+        await releerTrasQuitar();
+        return;
+      }
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
-      // Con equipos y partidos ya no entra nadie (30 oct 2026): la ficha, al día
+      // Solo falla así con partidos, que ya no se deshacen (30 oct 2026): se
+      // dice y la ficha, al día
       if (error?.errorCode === 'TEAMS_FORMED') {
-        customToast.error(t('detail.errors.teamsFormedOrganizer'));
+        customToast.error(t('detail.errors.teamsFormedWithMatches'));
         await releerTrasQuitar();
         return;
       }

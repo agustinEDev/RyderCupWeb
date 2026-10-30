@@ -251,8 +251,10 @@ describe('CompetitionDetail · equipos formados', () => {
 
       fireEvent.click(aprobar);
 
+      // Con equipos y sin partidos el servidor reinicia y entra: solo falla con
+      // partidos, y entonces ya no se pueden deshacer (30 oct 2026)
       await waitFor(() =>
-        expect(mockToast.error).toHaveBeenCalledWith('detail.errors.teamsFormedOrganizer')
+        expect(mockToast.error).toHaveBeenCalledWith('detail.errors.teamsFormedWithMatches')
       );
       await waitFor(() =>
         expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(lecturas)
@@ -260,10 +262,35 @@ describe('CompetitionDetail · equipos formados', () => {
     });
   });
 
+  it('aprobar una solicitud con equipos y sin partidos los reinicia: la ficha se relee (code-review)', async () => {
+    mockAprobar.mockResolvedValueOnce({});
+    await pinta({
+      usuario: 'org-1',
+      inscritos: [
+        { id: 'enr-ana', userId: 'u-ana', status: 'REQUESTED', userName: 'Ana Ruiz', team: null },
+      ],
+    });
+    const aprobar = await screen.findByTitle('detail.approve');
+    const lecturas = mockGetCompetitionDetail.mock.calls.length;
+
+    fireEvent.click(aprobar);
+
+    await waitFor(() =>
+      expect(mockGetCompetitionDetail.mock.calls.length).toBeGreaterThan(lecturas)
+    );
+  });
+
   it('F6: quitar con equipos avisa de que se borran equipos, draft y sobres', () => {
     expect(es.detail.confirmDialogs.removeWithTeams.body).toContain(
       'Se borrarán los equipos, el draft y los sobres; habrá que repetir el draft.'
     );
     expect(en.detail.confirmDialogs.removeWithTeams.body).toContain('the draft and the envelopes');
+  });
+
+  it('con partidos, al aprobar no se manda a deshacer lo que ya no se deshace (30 oct 2026)', () => {
+    expect(es.detail.errors.teamsFormedWithMatches).toBe(
+      'Ya hay partidos generados: no puede entrar nadie.'
+    );
+    expect(en.detail.errors.teamsFormedWithMatches).toBeTruthy();
   });
 });

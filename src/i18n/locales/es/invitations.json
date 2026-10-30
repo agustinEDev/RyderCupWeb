@@ -81,7 +81,7 @@
     "rateLimited_one": "Ya has enviado {{count}} invitación en la última hora en esta competición. Podrás enviar más en un rato.",
     "rateLimited_other": "Ya has enviado {{count}} invitaciones en la última hora en esta competición. Podrás enviar más en un rato.",
     "teamsFormed": "Los equipos ya están formados: habla con el organizador.",
-    "teamsFormedOrganizer": "Los equipos ya están formados: para que entre alguien, deshazlos primero."
+    "teamsFormedOrganizer": "Con los equipos formados no se invita. Si aún no hay partidos, puedes deshacerlos en la agenda."
   },
   "creator": {
     "title": "Invitaciones",
@@ -99,7 +99,7 @@
     },
     "competitionFull_one": "La competición está completa ({{count}} plaza ocupada): no se puede invitar a nadie más.",
     "competitionFull_other": "La competición está completa ({{count}} plazas ocupadas): no se puede invitar a nadie más.",
-    "teamsFormed": "Con los equipos formados no se invita: deshazlos primero en la agenda"
+    "teamsFormed": "Con los equipos formados no se invita. Si aún no hay partidos, puedes deshacerlos en la agenda."
   },
   "player": {
     "title": "Mis invitaciones",
