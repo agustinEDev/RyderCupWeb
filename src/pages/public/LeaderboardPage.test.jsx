@@ -1029,7 +1029,6 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
 
     expect(await screen.findByTestId('leaderboard-view')).toBeInTheDocument();
   });
-
 });
 
 /**
@@ -1097,6 +1096,20 @@ describe('LeaderboardPage · el nombre de la competición', () => {
     await screen.findByTestId('clasificacion-privada');
     expect(nombre()).not.toBeInTheDocument();
     expect(screen.queryByText('Privada')).not.toBeInTheDocument();
+  });
+
+  it('N4b: si con ella pintada se pierde la sesión y es privada, el nombre se va', async () => {
+    mockUser.current = { id: 'u-1' };
+    conNombre('Copa Ryder');
+    const { rerender } = render(<LeaderboardPage />);
+    await screen.findByText('Copa Ryder');
+
+    mockResumen.mockResolvedValue({ id: 'c-1', name: 'Copa Ryder', hasTeams: true, visibility: 'PRIVATE', status: 'IN_PROGRESS' });
+    mockUser.current = null;
+    rerender(<LeaderboardPage />);
+
+    await screen.findByTestId('clasificacion-privada');
+    expect(nombre()).not.toBeInTheDocument();
   });
 
   it('N5: con un error al leerla, sin nombre', async () => {
