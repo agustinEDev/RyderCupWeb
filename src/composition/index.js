@@ -113,6 +113,7 @@ import ApiDraftRepository from '../infrastructure/repositories/ApiDraftRepositor
 import GetScheduleUseCase from '../application/use_cases/schedule/GetScheduleUseCase';
 import ConfigureScheduleUseCase from '../application/use_cases/schedule/ConfigureScheduleUseCase';
 import AssignTeamsUseCase from '../application/use_cases/schedule/AssignTeamsUseCase';
+import UndoTeamsUseCase from '../application/use_cases/schedule/UndoTeamsUseCase';
 import StartDraftUseCase from '../application/use_cases/draft/StartDraftUseCase';
 import GetDraftUseCase from '../application/use_cases/draft/GetDraftUseCase';
 import MakeDraftPickUseCase from '../application/use_cases/draft/MakeDraftPickUseCase';
@@ -321,6 +322,7 @@ const getAdjacentCountriesUseCase = new GetAdjacentCountriesUseCase({ countryRep
 const getScheduleUseCase = new GetScheduleUseCase({ scheduleRepository: apiScheduleRepository });
 const configureScheduleUseCase = new ConfigureScheduleUseCase({ scheduleRepository: apiScheduleRepository });
 const assignTeamsUseCase = new AssignTeamsUseCase({ scheduleRepository: apiScheduleRepository });
+const undoTeamsUseCase = new UndoTeamsUseCase({ scheduleRepository: apiScheduleRepository });
 const createRoundUseCase = new CreateRoundUseCase({ scheduleRepository: apiScheduleRepository });
 const takeTeeWindowPlaceUseCase = new TakeTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
 const releaseTeeWindowPlaceUseCase = new ReleaseTeeWindowPlaceUseCase({ scheduleRepository: apiScheduleRepository });
@@ -648,6 +650,7 @@ export {
   getScheduleUseCase,
   configureScheduleUseCase,
   assignTeamsUseCase,
+  undoTeamsUseCase,
   startDraftUseCase,
   getDraftUseCase,
   makeDraftPickUseCase,

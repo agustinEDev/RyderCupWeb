@@ -99,6 +99,17 @@ const MOTIVOS_PARA_NO_APUNTARSE = {
   DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
 };
 
+// Por qué no se formaron los equipos al cerrar (29 oct 2026)
+const MOTIVOS_PARA_NO_FORMAR = {
+  TEAMS_FORMED: 'detail.errors.teamsFormedOrganizer',
+  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
+};
+
+const porQueNoSeFormaron = (t, error) => {
+  const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
+  return motivo ? t(motivo) : error?.message || t('detail.errors.teamAssignmentFailed');
+};
+
 // Por qué no se pudo quitar, por el código del servidor
 const MOTIVOS_PARA_NO_QUITAR = {
   PLAYER_HAS_MATCHES: 'detail.errors.removePlayerHasMatches',
@@ -420,7 +431,7 @@ const CompetitionDetail = () => {
               customToast.success(t('detail.success.teamsAutoAssigned'));
             } catch (assignError) {
               console.error('Error auto-assigning teams:', assignError);
-              customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+              customToast.error(porQueNoSeFormaron(t, assignError));
             }
           }
           break;
@@ -674,7 +685,7 @@ const CompetitionDetail = () => {
           customToast.success(t('detail.success.teamsAutoAssigned'));
         } catch (assignError) {
           console.error('Error auto-assigning teams:', assignError);
-          customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+          customToast.error(porQueNoSeFormaron(t, assignError));
         }
       }
       refrescarCanDelete();
@@ -750,6 +761,13 @@ const CompetitionDetail = () => {
         if (error.errorCode.startsWith('TEE_WINDOW')) setVersionFranjas((n) => n + 1);
         return;
       }
+      // Con los equipos formados ya no se entra: se dice y se pone al día
+      if (error?.errorCode === 'TEAMS_FORMED') {
+        setShowEnrollModal(false);
+        customToast.error(t('detail.errors.teamsFormed'));
+        await loadCompetition();
+        return;
+      }
       // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
       // cierra y se pone al día (CodeRabbit en la #721)
       if (error?.status === 409) {
@@ -784,6 +802,12 @@ const CompetitionDetail = () => {
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
+      // Con equipos y partidos ya no entra nadie (30 oct 2026): la ficha, al día
+      if (error?.errorCode === 'TEAMS_FORMED') {
+        customToast.error(t('detail.errors.teamsFormedOrganizer'));
+        await releerTrasQuitar();
+        return;
+      }
       customToast.error(error.message || t('detail.failedToApprove'));
     }
   };
@@ -1514,6 +1538,8 @@ const CompetitionDetail = () => {
               // Con invitación pendiente, el cuadro: aceptarla ya inscribe
               // (decidido el 27 oct)
               !competition.myPendingInvitation &&
+              // Con los equipos formados no entra nadie por su cuenta (29 oct 2026)
+              !competition.teamsAssigned &&
               !bloqueaElMaximo && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -1533,6 +1559,15 @@ const CompetitionDetail = () => {
                   <span>{t('detail.actions.request-to-join')}</span>
                 </button>
               </motion.div>
+            )}
+
+            {!isCreator &&
+              competition.status === 'ACTIVE' &&
+              competition.visibility === 'PUBLIC' &&
+              !hasEnrollment &&
+              !competition.myPendingInvitation &&
+              competition.teamsAssigned && (
+              <p className="px-4 pt-4 text-sm text-gray-600">{t('detail.teamsFormed.closed')}</p>
             )}
 
             {/* User Enrollment Status */}
@@ -1569,6 +1604,11 @@ const CompetitionDetail = () => {
                       </span>
                     )}
                   </div>
+
+                  {/* No sale por su cuenta: quien quita es el organizador (29 oct 2026) */}
+                  {!isCreator && competition.teamsAssigned && (
+                    <p className="mt-2 text-sm text-blue-900">{t('detail.teamsFormed.enrolled')}</p>
+                  )}
 
                   {puedeElegirNombre && (
                     <div className="mt-3 pt-3 border-t border-blue-200">

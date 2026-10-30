@@ -79,7 +79,9 @@
     "competitionFull": "The competition is full: there are no places left to invite anyone.",
     "failedToWithdraw": "The invitation could not be withdrawn.",
     "rateLimited_one": "You have already sent {{count}} invitation in the last hour for this competition. You can send more in a while.",
-    "rateLimited_other": "You have already sent {{count}} invitations in the last hour for this competition. You can send more in a while."
+    "rateLimited_other": "You have already sent {{count}} invitations in the last hour for this competition. You can send more in a while.",
+    "teamsFormed": "Teams are already formed: talk to the organizer.",
+    "teamsFormedOrganizer": "Teams are already formed: to let someone in, undo them first."
   },
   "creator": {
     "title": "Invitations",
@@ -96,7 +98,8 @@
       "keep": "Keep it"
     },
     "competitionFull_one": "The competition is full ({{count}} place taken): you cannot invite anyone else.",
-    "competitionFull_other": "The competition is full ({{count}} places taken): you cannot invite anyone else."
+    "competitionFull_other": "The competition is full ({{count}} places taken): you cannot invite anyone else.",
+    "teamsFormed": "With teams formed there are no invitations: undo them first in the schedule"
   },
   "player": {
     "title": "My Invitations",

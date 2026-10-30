@@ -217,10 +217,14 @@ const BrowseCompetitions = () => {
         return;
       }
       // Check if it's a duplicate enrollment error (409 Conflict)
-      // Por el estado: el texto del servidor no lleva «409» (revisión local)
+      // Por el estado: el texto del servidor no lleva «409» (revisión local).
+      // Con los equipos formados, igual pero diciendo por qué (29 oct 2026):
+      // ya no se puede entrar y la tarjeta se va
       if (error?.status === 409) {
         if (esSuModal()) setEnrollModalOpen(false);
-        customToast.error(t('browse.errors.alreadyEnrolled'));
+        customToast.error(
+          t(error?.errorCode === 'TEAMS_FORMED' ? 'detail.errors.teamsFormed' : 'browse.errors.alreadyEnrolled')
+        );
         // Remove from list since user already has enrollment
         setJoinableCompetitions((prev) => prev.filter((comp) => comp.id !== competitionId));
       } else {

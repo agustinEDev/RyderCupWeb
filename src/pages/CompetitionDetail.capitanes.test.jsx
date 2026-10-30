@@ -509,6 +509,22 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     expect(screen.queryByText('detail.actions.changeCaptains')).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['DRAFT_IN_PROGRESS', 'detail.errors.waitForDraft'],
+    ['TEAMS_FORMED', 'detail.errors.teamsFormedOrganizer'],
+  ])('K16: si el reparto automático da %s, dice por qué (29 oct 2026)', async (errorCode, texto) => {
+    mockAssignTeams.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 409, errorCode }));
+    mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
+    renderPage();
+    const modal = await abrirModal();
+    elegir(modal, 'Europa', 'ana');
+    elegir(modal, 'América', 'bea');
+
+    confirmar(modal);
+
+    await waitFor(() => expect(customToast.error).toHaveBeenCalledWith(texto));
+  });
+
   it('K15: si el reparto automático sale bien, «Cambiar capitanes» desaparece', async () => {
     mockGetCompetitionDetail.mockResolvedValue(competicion({ teamAssignment: 'AUTOMATIC' }));
     renderPage();

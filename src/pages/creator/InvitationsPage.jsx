@@ -253,6 +253,12 @@ const InvitationsPage = () => {
       customToast.error(t('errors.competitionFull'));
       setShowSendModal(false);
       loadData({ silencioso: true });
+    // Con los equipos formados no se invita (29-30 oct 2026): igual, que la
+    // pantalla deje de ofrecerlo
+    } else if (error?.errorCode === 'TEAMS_FORMED') {
+      customToast.error(t('errors.teamsFormedOrganizer'));
+      setShowSendModal(false);
+      loadData({ silencioso: true });
     // El freno por hora de la competición: con cuántas admite, y no el «espera
     // un minuto» del 429 general, que es de otro límite (probado en el Kind)
     } else if (error?.errorCode === 'INVITATION_RATE_LIMIT') {
@@ -361,6 +367,9 @@ const InvitationsPage = () => {
   // ofrecerlo era enterarse al enviar
   const inscritos = competition?.enrolledCount ?? 0;
   const lleno = Boolean(competition?.maxPlayers) && inscritos >= competition.maxPlayers;
+  // Formados, los equipos quedan así: para que entre alguien se deshacen en la
+  // agenda, y el servidor rechaza invitar (29-30 oct 2026)
+  const equiposFormados = Boolean(competition?.teamsAssigned);
   // A quién se le ofrece volver a invitar (R1-R3): cerrada, con sitio, y ni
   // dentro ni con otra pendiente
   const puedeReinvitar = (invitation) =>
@@ -369,6 +378,7 @@ const InvitationsPage = () => {
     situacion.de === id &&
     sePuedeInvitar &&
     !lleno &&
+    !equiposFormados &&
     !situacion.inscritos.has(invitation.inviteeUserId) &&
     !clavesDe(invitation).some((clave) => situacion.pendientes.has(clave));
 
@@ -458,6 +468,10 @@ const InvitationsPage = () => {
               <p data-testid="invitar-cerrada" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
                 {t('creator.enrollmentClosed')}
               </p>
+            ) : equiposFormados ? (
+              <p data-testid="invitar-equipos-formados" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
+                {t('creator.teamsFormed')}
+              </p>
             ) : lleno ? (
               <p data-testid="invitar-lleno" className="w-full sm:w-auto sm:max-w-xs text-sm text-gray-500">
                 {t('creator.competitionFull', { count: inscritos })}
@@ -538,7 +552,7 @@ const InvitationsPage = () => {
 
       {/* Send Modal */}
       <SendInvitationModal
-        isOpen={showSendModal && sePuedeInvitar && !lleno}
+        isOpen={showSendModal && sePuedeInvitar && !lleno && !equiposFormados}
         onClose={() => setShowSendModal(false)}
         onSend={handleSendInvitation}
         onSendByUserId={handleSendByUserId}

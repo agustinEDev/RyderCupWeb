@@ -333,7 +333,7 @@
       },
       "removeWithTeams": {
         "title": "Remove {{nombre}}?",
-        "body": "They will no longer be enrolled in {{competicion}} and the teams will be undone: you will have to split them again. They will be told in the app and you can invite them again.",
+        "body": "They will no longer be enrolled in {{competicion}}. The teams, the draft and the envelopes will be deleted; the draft will have to be repeated. They will be notified in the app and you can invite them again.",
         "confirm": "Yes, remove",
         "keep": "No, keep"
       }
@@ -363,7 +363,10 @@
       "teeWindowHasRoom": "That tee window has room: join it directly",
       "teeWindowRequired": "Choose a tee window to join",
       "teeWindowNotFound": "That tee window no longer exists: choose another",
-      "draftInProgress": "The draft is in progress: try again when it ends"
+      "draftInProgress": "The draft is in progress: try again when it ends",
+      "teamsFormed": "Teams are already formed: talk to the organizer.",
+      "teamsFormedOrganizer": "Teams are already formed: to let someone in, undo them first.",
+      "waitForDraft": "Wait until the draft is over"
     },
     "enrollmentStatus": "Your enrollment status:",
     "namePreference": {
@@ -520,7 +523,11 @@
     "onlyFriendsVisible": "For now you only see your friends who have entered.",
     "onlyParticipantsSee": "Only participants can see who has entered.",
     "removePlayerAria": "Remove {{nombre}}",
-    "waitingListStatus": "Waiting: no. {{position}} for the {{time}} tee window ({{day}})"
+    "waitingListStatus": "Waiting: no. {{position}} for the {{time}} tee window ({{day}})",
+    "teamsFormed": {
+      "enrolled": "Teams are already formed. If you can't play, let the organizer know.",
+      "closed": "Teams are already formed"
+    }
   },
   "browse": {
     "title": "Browse Competitions",

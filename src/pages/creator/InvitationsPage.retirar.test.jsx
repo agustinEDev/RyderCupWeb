@@ -209,6 +209,31 @@ describe('InvitationsPage · con el torneo lleno no se invita (FE #724)', () => 
  *   H4  el aviso de lleno, en el móvil                         | debajo, a todo el ancho; no al lado
  *   H5  el aviso de inscripción cerrada (el punto gemelo)      | igual
  */
+describe('InvitationsPage · con los equipos formados no se invita (F8, 29-30 oct 2026)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLista.mockResolvedValue({ invitations: [], totalCount: 0 });
+  });
+
+  it('sin botón y con el motivo: que los deshaga en la agenda', async () => {
+    mockDetalle.mockResolvedValue(competicion({ teamsAssigned: true }));
+    pinta();
+
+    expect(await screen.findByTestId('invitar-equipos-formados')).toHaveTextContent(
+      'creator.teamsFormed'
+    );
+    expect(screen.queryByText('creator.sendNew')).not.toBeInTheDocument();
+  });
+
+  it('sin equipos formados, el botón sigue', async () => {
+    mockDetalle.mockResolvedValue(competicion({ teamsAssigned: false }));
+    pinta();
+
+    expect(await screen.findByText('creator.sendNew')).toBeInTheDocument();
+    expect(screen.queryByTestId('invitar-equipos-formados')).not.toBeInTheDocument();
+  });
+});
+
 describe('InvitationsPage · lo que se dice tras probar en el Kind', () => {
   beforeEach(() => {
     vi.clearAllMocks();

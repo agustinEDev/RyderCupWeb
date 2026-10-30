@@ -40,6 +40,13 @@ class ApiScheduleRepository extends IScheduleRepository {
   }
 
   /**
+   * DELETE /api/v1/competitions/{competitionId}/teams (30 oct 2026)
+   */
+  async undoTeams(competitionId) {
+    await apiRequest(`/api/v1/competitions/${competitionId}/teams`, { method: 'DELETE' });
+  }
+
+  /**
    * POST /api/v1/competitions/{competitionId}/rounds
    */
   async createRound(competitionId, roundData) {

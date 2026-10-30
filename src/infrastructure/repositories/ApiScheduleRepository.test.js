@@ -67,6 +67,18 @@ describe('ApiScheduleRepository', () => {
     });
   });
 
+  describe('undoTeams', () => {
+    it('llama a DELETE /api/v1/competitions/{id}/teams', async () => {
+      apiRequest.mockResolvedValue(null);
+
+      await repo.undoTeams('comp-1');
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/competitions/comp-1/teams', {
+        method: 'DELETE',
+      });
+    });
+  });
+
   describe('createRound', () => {
     it('should call POST and return Round DTO', async () => {
       const roundData = {
