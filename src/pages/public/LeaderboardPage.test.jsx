@@ -1082,11 +1082,22 @@ describe('LeaderboardPage · el nombre de la competición', () => {
     expect(nombre()).toHaveTextContent('Copa Ryder');
   });
 
-  it('N3: mientras carga, sin nombre', () => {
+  it('N3: mientras carga, sin nombre', async () => {
     getLeaderboardUseCase.execute.mockReturnValueOnce(new Promise(() => {}));
     render(<LeaderboardPage />);
 
+    // Ya contestó el resumen y se espera a la clasificación
+    await vi.waitFor(() => expect(getLeaderboardUseCase.execute).toHaveBeenCalled());
+    expect(screen.getByText('loading')).toBeInTheDocument();
     expect(nombre()).not.toBeInTheDocument();
+  });
+
+  it('N9: un nombre sin espacios no ensancha la página en el móvil', async () => {
+    conNombre('RyderCupAmigosDeLaSierra2026Invierno');
+    render(<LeaderboardPage />);
+
+    await screen.findByTestId('leaderboard-view');
+    expect(nombre().className.split(' ')).toContain('break-words');
   });
 
   it('N4: una privada sin sesión no dice su nombre', async () => {

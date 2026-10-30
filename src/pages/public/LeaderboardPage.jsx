@@ -263,7 +263,7 @@ const LeaderboardPage = () => {
           {t('leaderboard.title')}
         </h1>
         {nombre && (
-          <p data-testid="nombre-de-la-competicion" className="mb-5 text-sm text-gray-500">
+          <p data-testid="nombre-de-la-competicion" className="mb-5 text-sm text-gray-500 break-words">
             {nombre}
           </p>
         )}
