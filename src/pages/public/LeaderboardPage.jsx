@@ -74,6 +74,9 @@ const LeaderboardPage = () => {
   const general = esDeUnaPrivada(error) ? null : laDeStrokePlay;
   // Se relee mientras se juega o está a punto de jugarse (/code-review)
   const enJuego = ['CLOSED', 'IN_PROGRESS'].includes(general?.status);
+  // De qué torneo es, bajo el título: la de una Ryder lo trae ella (pasada del
+  // Kind, 30 oct 2026: sin sesión, el enlace no decía de cuál era)
+  const nombre = general ? general.name : !error && leaderboard?.competitionName;
 
   // Dynamic back link based on where the user came from. La general de un
   // stroke play vuelve siempre a su ficha: su agenda es la de la Ryder
@@ -256,9 +259,14 @@ const LeaderboardPage = () => {
           </Link>
         )}
         {/* Con sesión, en el móvil lo dice la cabecera: dos <h1> no */}
-        <h1 className={`${user ? 'hidden md:block' : ''} text-2xl font-bold text-gray-900 ${general ? 'mb-1' : 'mb-6'}`}>
+        <h1 className={`${user ? 'hidden md:block' : ''} text-2xl font-bold text-gray-900 ${nombre ? 'mb-1' : 'mb-6'}`}>
           {t('leaderboard.title')}
         </h1>
+        {nombre && (
+          <p data-testid="nombre-de-la-competicion" className="mb-5 text-sm text-gray-500">
+            {nombre}
+          </p>
+        )}
 
         {isLoading && (
           <BlockLoader texto={t('loading')} />
@@ -291,17 +299,14 @@ const LeaderboardPage = () => {
         )}
 
         {general ? (
-          <>
-            <p className="mb-5 text-sm text-gray-500">{general.name}</p>
-            <ClasificacionesDeLaCompeticion
-              // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
-              // Y al entrar o salir: con sesión llega mi fila (revisor)
-              key={`${competitionId}:${conSesion}`}
-              competitionId={competitionId}
-              userId={jugador || user?.id}
-              enJuego={enJuego}
-            />
-          </>
+          <ClasificacionesDeLaCompeticion
+            // Otra competición, de cero: la pestaña y la categoría elegidas no pasan
+            // Y al entrar o salir: con sesión llega mi fila (revisor)
+            key={`${competitionId}:${conSesion}`}
+            competitionId={competitionId}
+            userId={jugador || user?.id}
+            enJuego={enJuego}
+          />
         ) : (
           !isLoading && !error && <LeaderboardView leaderboard={leaderboard} jugador={jugador} />
         )}
