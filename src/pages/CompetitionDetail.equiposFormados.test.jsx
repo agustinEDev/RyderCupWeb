@@ -181,6 +181,15 @@ describe('CompetitionDetail · equipos formados', () => {
       expect(screen.getByText('detail.teamsFormed.enrolled')).toBeInTheDocument();
     });
 
+    it.each(['REQUESTED', 'REJECTED', 'WITHDRAWN', 'CANCELLED'])(
+      'con la inscripción %s, no: no está dentro (revisor)',
+      async (estado) => {
+        await pinta({ ficha: { enrollment_status: estado } });
+
+        expect(screen.queryByText('detail.teamsFormed.enrolled')).not.toBeInTheDocument();
+      }
+    );
+
     it('sin equipos formados, no', async () => {
       await pinta({ ficha: { enrollment_status: 'APPROVED', teamsAssigned: false } });
 

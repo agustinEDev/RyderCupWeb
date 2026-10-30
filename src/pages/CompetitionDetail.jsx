@@ -425,7 +425,9 @@ const CompetitionDetail = () => {
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
           customToast.success(t('detail.success.enrollmentsClosed'));
-          if (competition.teamAssignment === 'AUTOMATIC') {
+          // Formados, quedan así (29 oct 2026): al volver a cerrar una reabierta
+          // no se reparten otra vez, que el servidor lo rechaza (revisor)
+          if (competition.teamAssignment === 'AUTOMATIC' && !competition.teamsAssigned) {
             try {
               await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
               customToast.success(t('detail.success.teamsAutoAssigned'));
@@ -1606,7 +1608,9 @@ const CompetitionDetail = () => {
                   </div>
 
                   {/* No sale por su cuenta: quien quita es el organizador (29 oct 2026) */}
-                  {!isCreator && competition.teamsAssigned && (
+                  {!isCreator &&
+                    competition.teamsAssigned &&
+                    (userEnrollment?.status || competition.enrollment_status) === 'APPROVED' && (
                     <p className="mt-2 text-sm text-blue-900">{t('detail.teamsFormed.enrolled')}</p>
                   )}
 

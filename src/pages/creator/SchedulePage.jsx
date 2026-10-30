@@ -34,6 +34,7 @@ import {
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
+import { mensajeDeError } from '../../utils/sinCobertura';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -346,16 +347,27 @@ const SchedulePage = () => {
       customToast.success(t('success.teamsUndone'));
     } catch (error) {
       console.error('Error undoing teams:', error);
-      customToast.error(
-        t(error?.errorCode === 'TEAMS_LOCKED' ? 'errors.teamsLocked' : 'errors.failedToUndoTeams')
-      );
+      // Ya deshechos (otra pestaña, o al quitar a alguien): basta con releer
+      if (error?.errorCode !== 'NO_TEAMS') {
+        customToast.error(
+          error?.errorCode === 'TEAMS_LOCKED'
+            ? t('errors.teamsLocked')
+            : mensajeDeError(error, {
+              sinConexion: t('common:sinConexion.mensaje'),
+              generico: t('errors.failedToUndoTeams'),
+            })
+        );
+      }
+    }
+    setDeshaciendoEquipos(false);
+    // Haya ido bien o no, la agenda al día: sin equipos, o con los partidos
+    // que no se veían. Hasta entonces sigue en curso: si no, el botón volvía
+    // antes y un segundo toque daba NO_TEAMS (revisor)
+    try {
+      await Promise.all([reloadSchedule(), recargarCompeticion()]);
     } finally {
       setIsProcessing(false);
-      setDeshaciendoEquipos(false);
     }
-    // Haya ido bien o no, la agenda al día: sin equipos, o con los partidos
-    // que no se veían
-    await Promise.all([reloadSchedule(), recargarCompeticion()]);
   };
 
   // --- UI helpers ---
@@ -470,7 +482,9 @@ const SchedulePage = () => {
               <TeamAssignmentSection
                 teamAssignment={teamAssignment}
                 onAssignTeams={() => setShowTeamsModal(true)}
-                onUndoTeams={() => setDeshaciendoEquipos(true)}
+                onUndoTeams={() => {
+                  if (!isProcessing) setDeshaciendoEquipos(true);
+                }}
                 sePuedenDeshacer={sePuedenDeshacer}
                 canManage={canManage}
                 playerNameMap={playerNameMap}
@@ -625,7 +639,7 @@ const SchedulePage = () => {
         />
       )}
 
-      {/* Assign Teams Modal */}
+      {/* Deshacer los equipos: siempre con confirmación (F7, 30 oct 2026) */}
       <ConfirmModal
         isOpen={deshaciendoEquipos}
         title={t('teams.undoConfirm.title')}
@@ -638,6 +652,7 @@ const SchedulePage = () => {
         isLoading={isProcessing}
       />
 
+      {/* Assign Teams Modal */}
       {showTeamsModal && (
         <AssignTeamsModal
           isOpen={showTeamsModal}

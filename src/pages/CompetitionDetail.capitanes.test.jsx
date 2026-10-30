@@ -337,9 +337,9 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     await waitFor(() => expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' }));
   });
 
-  it('K8e: al volver a cerrar una reabierta, también decide el modo configurado', async () => {
-    // El botón de cerrar solo sale reabierta y con equipos: justo el caso en
-    // que el reparto real puede ser MANUAL en una competición automática
+  it('K8e: al volver a cerrar una reabierta con equipos, quedan así: ni se reparten ni hay error', async () => {
+    // Formados, los equipos no se vuelven a formar (29 oct 2026): repartirlos
+    // daba un 409 TEAMS_FORMED tras un cierre que sí había ido bien (revisor)
     mockGetCompetitionDetail.mockResolvedValue(
       competicion({ teamAssignment: 'AUTOMATIC', actualTeamAssignment: 'MANUAL', teamsAssigned: true })
     );
@@ -350,7 +350,12 @@ describe('CompetitionDetail · nombrar a los capitanes (FE #692)', () => {
     // Se confirma en el modal de la app (FE #730)
     fireEvent.click(await screen.findByTestId('confirm-modal-confirm'));
 
-    await waitFor(() => expect(mockAssignTeams).toHaveBeenCalledWith('comp-1', { mode: 'AUTOMATIC' }));
+    await waitFor(() => expect(mockCloseEnrollments).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith('detail.success.enrollmentsClosed')
+    );
+    expect(mockAssignTeams).not.toHaveBeenCalled();
+    expect(customToast.error).not.toHaveBeenCalled();
   });
 
   it.each([

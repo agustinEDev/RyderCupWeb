@@ -354,6 +354,9 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     pinta();
 
     await screen.findByTestId('invitar-equipos-formados');
+    // Tras saber quién está dentro: antes, el botón no saldría de todos modos
+    await screen.findByText('Player One');
+    await trasSaberLaSituacion();
     expect(screen.queryByTestId('reinvite-button')).not.toBeInTheDocument();
   });
 

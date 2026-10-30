@@ -213,5 +213,44 @@ describe('SchedulePage · equipos formados', () => {
       await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('errors.teamsLocked'));
       await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas));
     });
+
+    it('si ya estaban deshechos (otra pestaña), sin error: se relee y ya (revisor)', async () => {
+      mockDeshacer.mockRejectedValueOnce(fallo('NO_TEAMS'));
+      pintar();
+      await pulsarDeshacer();
+      const lecturas = mockAgenda.mock.calls.length;
+
+      fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
+
+      await waitFor(() => expect(mockAgenda.mock.calls.length).toBeGreaterThan(lecturas));
+      expect(customToast.error).not.toHaveBeenCalled();
+    });
+
+    it('sin conexión, lo dice así y no con el genérico (revisor)', async () => {
+      mockDeshacer.mockRejectedValueOnce(Object.assign(new TypeError('Failed to fetch'), { sinConexion: true }));
+      pintar();
+      await pulsarDeshacer();
+
+      fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
+
+      await waitFor(() =>
+        expect(customToast.error).toHaveBeenCalledWith('common:sinConexion.mensaje')
+      );
+    });
+
+    it('hasta releer la agenda, el botón no vuelve a pulsarse (revisor)', async () => {
+      pintar();
+      await pulsarDeshacer();
+      let soltar;
+      mockAgenda.mockImplementation(() => new Promise((r) => { soltar = r; }));
+
+      fireEvent.click(screen.getByText('teams.undoConfirm.confirm'));
+
+      await waitFor(() => expect(mockDeshacer).toHaveBeenCalled());
+      await waitFor(() => expect(soltar).toBeDefined());
+      fireEvent.click(screen.getByTestId('deshacer-equipos'));
+      expect(screen.queryByText('teams.undoConfirm.body')).not.toBeInTheDocument();
+      soltar({ days: [], rounds: [], teamAssignment: null });
+    });
   });
 });
