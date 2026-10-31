@@ -126,7 +126,19 @@
     "unfinishedStrokeNoResult": "Unfinished quick match at {{course}}",
     "unfinishedStrokeNoCourseNoResult": "Unfinished quick match",
     "friendUnfinishedStroke": "{{name}}'s unfinished quick match · {{result}}",
-    "ENROLLMENT_CONFIRMED": "You signed up for {{competition}}"
+    "ENROLLMENT_CONFIRMED": "You signed up for {{competition}}",
+    "aPlayer": "A player",
+    "playerJoined": "{{player}} joined {{competition}} ({{time}} tee window)",
+    "playerJoinedWaiting": "{{player}} joined the waiting list of the {{time}} tee window of {{competition}}",
+    "playerJoinedNoWindow": "{{player}} joined {{competition}}",
+    "PLACE_FROM_WAITING_LIST": "You're in {{competition}} from the waiting list: {{time}} tee window",
+    "ENROLLMENT_NO_PLACE": "There was no place for you in {{competition}}: entries are closed",
+    "TEE_WINDOW_REMOVED": "The {{time}} tee window of {{competition}} you were waiting for was removed",
+    "TEAMS_CHANGED": "The teams of {{competition}} have changed: check your envelope",
+    "PLACE_FROM_WAITING_LIST_NoTime": "You're in {{competition}} from the waiting list",
+    "TEE_WINDOW_REMOVED_NoTime": "A tee window of {{competition}} you were waiting for was removed",
+    "ENROLLMENT_NO_PLACE_NoTime": "There was no place for you in {{competition}}: entries are closed",
+    "TEAMS_CHANGED_NoTime": "The teams of {{competition}} have changed: check your envelope"
   },
   "teeTime": {
     "group": "You have a tee time in {{competition}}: {{when}}",

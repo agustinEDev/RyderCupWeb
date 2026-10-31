@@ -110,7 +110,9 @@
     "conceded": "{{team}} (Conceded)",
     "walkover": "{{team}} (Walkover)",
     "noMatches": "No matches available",
-    "private": "Only participants can see these standings"
+    "private": "Only participants can see these standings",
+    "signIn": "Sign in",
+    "backToHome": "Back to home"
   },
   "validation": {
     "match": "Match",

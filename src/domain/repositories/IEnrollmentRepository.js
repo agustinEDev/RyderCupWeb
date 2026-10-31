@@ -88,11 +88,12 @@ class IEnrollmentRepository {
   }
 
   /**
-   * Solicitar inscripción (crear enrollment con estado REQUESTED)
+   * Apuntarse a una pública: se entra directamente, con la franja o su espera
+   * (release social 3, 28 oct 2026)
    *
    * @param {string} competitionId - UUID de la competición
    * @param {Object} data - Datos adicionales (opcional)
-   * @returns {Promise<Enrollment>} Enrollment creado con estado REQUESTED
+   * @returns {Promise<{enrollment: Enrollment, roundId: string|null, waiting: boolean}>}
    * @throws {Error} Si falla la operación
    */
   async requestEnrollment(competitionId, data = {}) {

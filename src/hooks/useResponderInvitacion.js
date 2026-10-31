@@ -5,6 +5,13 @@ import { mensajeDeError } from '../utils/sinCobertura';
 import { useGeneroParaApuntarse } from './useGeneroParaApuntarse';
 import { respondToInvitationUseCase } from '../composition';
 
+// Sin plaza, o con los equipos ya formados (29 oct 2026): se dice por qué y
+// la pantalla se pone al día
+const MOTIVOS_PARA_NO_ENTRAR = {
+  INVITATION_NO_ROOM: 'errors.noRoom',
+  TEAMS_FORMED: 'errors.teamsFormed',
+};
+
 /**
  * Aceptar o rechazar una invitación: las mismas reglas en «Mis invitaciones» y
  * en el cuadro de la ficha (release social 2).
@@ -66,8 +73,9 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
     });
 
   const avisarDelFallo = (error) => {
-    if (error?.errorCode === 'INVITATION_NO_ROOM') {
-      customToast.error(t('errors.noRoom'));
+    const motivo = MOTIVOS_PARA_NO_ENTRAR[error?.errorCode];
+    if (motivo) {
+      customToast.error(t(motivo));
       releer(alCambiar);
       return;
     }

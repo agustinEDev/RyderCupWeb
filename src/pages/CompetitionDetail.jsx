@@ -65,6 +65,7 @@ import { CompetitionStatus } from '../domain/value_objects/CompetitionStatus';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { mensajeConJugadores } from '../utils/erroresConJugadores';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -76,6 +77,44 @@ const VUELTA_POR_DEFECTO = { to: '/competitions', clave: 'detail.backToCompetiti
 
 // Antes de empezar se puede quitar a un inscrito (release social 2)
 const SE_PUEDE_QUITAR = new Set(['DRAFT', 'ACTIVE', 'CLOSED']);
+
+// Por qué no se pudo apuntar, por su código (release social 3, 28 oct 2026): las
+// de la franja releen la agenda, que estaba vieja
+// Sin franjas: el mismo array siempre
+const SIN_FRANJAS = [];
+
+// «sáb 3 mar»: el día de una franja, para saber cuál de las de esa hora
+const diaCorto = (fecha, idioma) => {
+  const d = new Date(`${fecha}T12:00:00`);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString(idioma, { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
+const MOTIVOS_PARA_NO_APUNTARSE = {
+  TEE_WINDOW_FULL: 'detail.errors.teeWindowFull',
+  TEE_WINDOW_HAS_ROOM: 'detail.errors.teeWindowHasRoom',
+  TEE_WINDOW_REQUIRED: 'detail.errors.teeWindowRequired',
+  TEE_WINDOW_NOT_FOUND: 'detail.errors.teeWindowNotFound',
+  DRAFT_IN_PROGRESS: 'detail.errors.draftInProgress',
+};
+
+// Por qué no se formaron los equipos al cerrar (29 oct 2026)
+const MOTIVOS_PARA_NO_FORMAR = {
+  TEAMS_FORMED: 'detail.errors.teamsFormedOrganizer',
+  DRAFT_IN_PROGRESS: 'detail.errors.waitForDraft',
+};
+
+// Si ya los había, la ficha lo apunta: con equipos no se ofrece cambiar
+// capitanes ni pedir plaza (code-review)
+const yaLosHabia = (error, setCompetition) => {
+  if (error?.errorCode === 'TEAMS_FORMED') setCompetition((prev) => ({ ...prev, teamsAssigned: true }));
+};
+
+const porQueNoSeFormaron = (t, error) => {
+  const motivo = MOTIVOS_PARA_NO_FORMAR[error?.errorCode];
+  return motivo ? t(motivo) : error?.message || t('detail.errors.teamAssignmentFailed');
+};
 
 // Por qué no se pudo quitar, por el código del servidor
 const MOTIVOS_PARA_NO_QUITAR = {
@@ -130,6 +169,22 @@ const CompetitionDetail = () => {
   const avisarDeLosCampos = useCallback(() => setVersionCampos((v) => v + 1), []);
   // La agenda que leyó su sección: sesiones y reparto. null mientras no se sabe
   const [agendaLeida, setAgendaLeida] = useState(null);
+  // Si la última lectura de la agenda falló: con una buena ya leída, se sigue
+  // con ella; sin ninguna, el diálogo de apuntarse lo dice (code-review)
+  const [agendaFallo, setAgendaFallo] = useState(false);
+  const recibirAgenda = useCallback((leida, fallo = false) => {
+    if (leida) {
+      setAgendaLeida(leida);
+      setAgendaFallo(false);
+    } else if (fallo) {
+      setAgendaFallo(true);
+    }
+  }, []);
+  // Las franjas de la agenda, una vez por lectura: el diálogo las ordena
+  const franjasDeLaAgenda = useMemo(
+    () => (agendaLeida?.rounds ?? []).filter((r) => r.teeSheet),
+    [agendaLeida]
+  );
   // Para releer las franjas cuando el servidor dice que faltan jugadores (FE #824)
   const [versionFranjas, setVersionFranjas] = useState(0);
   const [irASinFranja, setIrASinFranja] = useState(0);
@@ -376,13 +431,16 @@ const CompetitionDetail = () => {
         case 'close-enrollments':
           result = await closeEnrollmentsUseCase.execute(id);
           customToast.success(t('detail.success.enrollmentsClosed'));
-          if (competition.teamAssignment === 'AUTOMATIC') {
+          // Formados, quedan así (29 oct 2026): al volver a cerrar una reabierta
+          // no se reparten otra vez, que el servidor lo rechaza (revisor)
+          if (competition.teamAssignment === 'AUTOMATIC' && !competition.teamsAssigned) {
             try {
               await assignTeamsUseCase.execute(id, { mode: 'AUTOMATIC' });
               customToast.success(t('detail.success.teamsAutoAssigned'));
             } catch (assignError) {
               console.error('Error auto-assigning teams:', assignError);
-              customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+              customToast.error(porQueNoSeFormaron(t, assignError));
+              yaLosHabia(assignError, setCompetition);
             }
           }
           break;
@@ -636,7 +694,8 @@ const CompetitionDetail = () => {
           customToast.success(t('detail.success.teamsAutoAssigned'));
         } catch (assignError) {
           console.error('Error auto-assigning teams:', assignError);
-          customToast.error(assignError.message || t('detail.errors.teamAssignmentFailed'));
+          customToast.error(porQueNoSeFormaron(t, assignError));
+          yaLosHabia(assignError, setCompetition);
         }
       }
       refrescarCanDelete();
@@ -679,7 +738,7 @@ const CompetitionDetail = () => {
     }
   };
 
-  const handleEnroll = async (color = null, genero = null) => {
+  const handleEnroll = async (color = null, genero = null, eleccion = null) => {
     setErrorAlApuntarse(null);
     setIsProcessing(true);
     let generoGuardado = false;
@@ -689,14 +748,36 @@ const CompetitionDetail = () => {
         await generoParaApuntarse.guardar(genero);
         generoGuardado = true;
       }
-      await requestEnrollmentUseCase.execute(id, null, { color });
+      // En una pública se entra directamente, con la franja o su espera
+      // (release social 3, 28 oct 2026)
+      const hecho = await requestEnrollmentUseCase.execute(id, null, {
+        color,
+        roundId: eleccion?.roundId ?? null,
+        waitingList: eleccion?.waiting ?? false,
+      });
       // Se cierra solo si ha ido bien (#710): cerrarlo antes dejaba un fallo
       // con cara de éxito
       setShowEnrollModal(false);
-      customToast.success(t('detail.success.enrollmentRequested'));
+      customToast.success(
+        t(hecho?.waiting ? 'detail.success.joinedWaitingList' : 'detail.success.enrolled')
+      );
+      setVersionFranjas((n) => n + 1);
       await loadCompetition();
     } catch (error) {
       console.error('Error enrolling:', error);
+      const motivo = MOTIVOS_PARA_NO_APUNTARSE[error?.errorCode];
+      if (motivo) {
+        setErrorAlApuntarse(t(motivo));
+        if (error.errorCode.startsWith('TEE_WINDOW')) setVersionFranjas((n) => n + 1);
+        return;
+      }
+      // Con los equipos formados ya no se entra: se dice y se pone al día
+      if (error?.errorCode === 'TEAMS_FORMED') {
+        setShowEnrollModal(false);
+        customToast.error(t('detail.errors.teamsFormed'));
+        await loadCompetition();
+        return;
+      }
       // Ya inscrito: no es un error que corregir, la ficha estaba vieja. Se
       // cierra y se pone al día (CodeRabbit en la #721)
       if (error?.status === 409) {
@@ -726,11 +807,24 @@ const CompetitionDetail = () => {
       // ApproveEnrollmentUseCase expects (competitionId, enrollmentId, teamId?)
       await approveEnrollmentUseCase.execute(competition.id, enrollmentId);
       customToast.success(t('detail.enrollmentApproved'));
+      // Con equipos formados, el servidor los ha reiniciado para que entre
+      // (30 oct 2026): la ficha también, no solo la lista (code-review)
+      if (competition.teamsAssigned) {
+        await releerTrasQuitar();
+        return;
+      }
       // Reload enrollments to update the list
       const enrollmentsData = await listEnrollmentsUseCase.execute(competition.id);
       setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error approving enrollment:', error);
+      // Solo falla así con partidos, que ya no se deshacen (30 oct 2026): se
+      // dice y la ficha, al día
+      if (error?.errorCode === 'TEAMS_FORMED') {
+        customToast.error(t('detail.errors.teamsFormedWithMatches'));
+        await releerTrasQuitar();
+        return;
+      }
       customToast.error(error.message || t('detail.failedToApprove'));
     }
   };
@@ -1124,6 +1218,26 @@ const CompetitionDetail = () => {
   // 2. From competition.enrollment_status (mapped from backend's user_enrollment_status)
   const userEnrollment = enrollments.find((e) => e.userId === user.id);
   const hasEnrollment = userEnrollment || competition.enrollment_status;
+  // Con franjas el cupo es de sus plazas: el máximo no quita el botón
+  // (release social 3, revisor)
+  const rondasLeidas = agendaLeida?.rounds ?? [];
+  const conFranjas = esStrokePlay && rondasLeidas.some((r) => r.teeSheet);
+  // Sin la agenda aún, en un stroke play no se sabe si hay franjas: no se quita
+  const bloqueaElMaximo = isFull && !(esStrokePlay && (agendaLeida == null || conFranjas));
+  // Quien solo espera: sin plaza en ninguna franja y con su puesto en una espera
+  // Su puesto como en las franjas: el del servidor o, si no viene, el de la lista
+  const miEspera =
+    esStrokePlay && userEnrollment?.status === 'APPROVED'
+      ? rondasLeidas.find(
+          (r) => r.teeSheet?.myWaitingPosition || r.teeSheet?.waitingIds?.includes(user.id)
+        )
+      : null;
+  const puestoEnEspera = miEspera
+    ? (miEspera.teeSheet.myWaitingPosition ?? miEspera.teeSheet.waitingIds.indexOf(user.id) + 1)
+    : null;
+  const soloEspero =
+    miEspera != null && !rondasLeidas.some((r) => r.teeSheet?.playerIds?.includes(user.id));
+  const franjasParaApuntarse = esStrokePlay ? franjasDeLaAgenda : SIN_FRANJAS;
 
   // Elegir entre alias y nombre legal solo tiene sentido si (FE #571):
   // - hay alias: sin él las dos opciones pintan lo mismo,
@@ -1144,7 +1258,7 @@ const CompetitionDetail = () => {
   const usaSuAlias = userEnrollment ? !userEnrollment.useRealName : false;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         {/* El nombre del torneo solo se conoce en ejecucion: sustituye al
             titulo generico del mapa de rutas (FE #310).
@@ -1441,7 +1555,9 @@ const CompetitionDetail = () => {
               // Con invitación pendiente, el cuadro: aceptarla ya inscribe
               // (decidido el 27 oct)
               !competition.myPendingInvitation &&
-              !isFull && (
+              // Con los equipos formados no entra nadie por su cuenta (29 oct 2026)
+              !competition.teamsAssigned &&
+              !bloqueaElMaximo && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1462,6 +1578,15 @@ const CompetitionDetail = () => {
               </motion.div>
             )}
 
+            {!isCreator &&
+              competition.status === 'ACTIVE' &&
+              competition.visibility === 'PUBLIC' &&
+              !hasEnrollment &&
+              !competition.myPendingInvitation &&
+              competition.teamsAssigned && (
+              <p className="px-4 pt-4 text-sm text-gray-600">{t('detail.teamsFormed.closed')}</p>
+            )}
+
             {/* User Enrollment Status */}
             {hasEnrollment && (
               <motion.div
@@ -1474,15 +1599,35 @@ const CompetitionDetail = () => {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-blue-600" />
                     <span className="text-blue-900 font-medium">{t('detail.enrollmentStatus')}</span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
-                        userEnrollment?.status || competition.enrollment_status
-                      )}`}
-                    >
-                      {(userEnrollment?.status || competition.enrollment_status) &&
-                        etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, user?.gender)}
-                    </span>
+                    {soloEspero ? (
+                      <span
+                        data-testid="estado-en-espera"
+                        className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"
+                      >
+                        {t('detail.waitingListStatus', {
+                          position: puestoEnEspera,
+                          time: miEspera.teeSheet.firstTeeTime,
+                          day: diaCorto(miEspera.roundDate, i18n?.language),
+                        })}
+                      </span>
+                    ) : (
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getEnrollmentStatusColor(
+                          userEnrollment?.status || competition.enrollment_status
+                        )}`}
+                      >
+                        {(userEnrollment?.status || competition.enrollment_status) &&
+                          etiquetaDeInscripcion(t, userEnrollment?.status || competition.enrollment_status, user?.gender)}
+                      </span>
+                    )}
                   </div>
+
+                  {/* No sale por su cuenta: quien quita es el organizador (29 oct 2026) */}
+                  {!isCreator &&
+                    competition.teamsAssigned &&
+                    (userEnrollment?.status || competition.enrollment_status) === 'APPROVED' && (
+                    <p className="mt-2 text-sm text-blue-900">{t('detail.teamsFormed.enrolled')}</p>
+                  )}
 
                   {puedeElegirNombre && (
                     <div className="mt-3 pt-3 border-t border-blue-200">
@@ -1733,7 +1878,7 @@ const CompetitionDetail = () => {
                   puedeQuitar={canManage && competition.status === 'ACTIVE'}
                   version={`${competition.updatedAt}|${competition.status}|${versionFranjas}`}
                   versionCampos={versionCampos}
-                  onAgenda={setAgendaLeida}
+                  onAgenda={recibirAgenda}
                   irASinFranja={irASinFranja}
                   // Las partidas (PR 6): existen desde el cierre y se siguen
                   // viendo acabada, sin nada que cambiar (Agustín, 11 oct);
@@ -1757,7 +1902,7 @@ const CompetitionDetail = () => {
                 version={`${competition.updatedAt}|${competition.status}|${competition.teamsAssigned}`}
                 // Y sus campos, cuando cambian en la sección de abajo (FE #715)
                 versionCampos={versionCampos}
-                onAgenda={setAgendaLeida}
+                onAgenda={recibirAgenda}
               />
               )}
             </div>
@@ -2105,6 +2250,15 @@ const CompetitionDetail = () => {
         pideGenero={generoParaApuntarse.falta}
         // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
         faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
+        // Las franjas, para elegir en el mismo paso (release social 3)
+        franjas={franjasParaApuntarse}
+        // Sin la agenda leída no hay franjas que elegir: no se deja enviar;
+        // leyéndose, se dice; si falló, se puede volver a leer (code-review)
+        franjasCargando={esStrokePlay && agendaLeida == null && !agendaFallo}
+        franjasSinCargar={esStrokePlay && agendaLeida == null && agendaFallo}
+        onReintentar={() => setVersionFranjas((n) => n + 1)}
+        // Al cambiar de franja, fuera el error de la anterior
+        onElegir={() => setErrorAlApuntarse(null)}
       />
     </div>
   );

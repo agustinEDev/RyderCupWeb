@@ -17,6 +17,7 @@ import {
   respondFriendRequestUseCase,
 } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 
 const PAGE_SIZE = 20;
 
@@ -279,7 +280,7 @@ const FeedPage = () => {
     // terminar es un salto, y de eso va justamente FE #495. El dibujo si es el
     // compartido.
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
         <HeaderAuth />
         <BlockLoader texto={t('feed:loading')} />
       </div>
@@ -292,7 +293,7 @@ const FeedPage = () => {
   const vacio = linea.dias.length === 0 && linea.solicitudes.length === 0 && !nextCursor;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       <HeaderAuth />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">

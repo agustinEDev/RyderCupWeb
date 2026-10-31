@@ -24,6 +24,12 @@ export const TIPOS_DE_ACTIVIDAD = new Set([
   'ENROLLMENT_REJECTED',
   // «El organizador te ha quitado» (release social 2)
   'ENROLLMENT_REMOVED',
+  // Inscripción directa y equipos que cambian (release social 3)
+  'PLAYER_JOINED',
+  'PLACE_FROM_WAITING_LIST',
+  'ENROLLMENT_NO_PLACE',
+  'TEE_WINDOW_REMOVED',
+  'TEAMS_CHANGED',
   'ENROLLED_IN_TOURNAMENT',
   'TOURNAMENT_MATCH_RESULT',
   'TOURNAMENT_FINAL_STANDING',

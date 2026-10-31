@@ -335,6 +335,59 @@ describe('ActivityEventCard — texts (case 10)', () => {
     expect(frase()).toBe(texto);
   });
 
+  // Inscripción directa (release social 3, 28 oct 2026)
+  it.each([
+    [
+      'PLAYER_JOINED',
+      { player_name: 'Ana Gil', tee_time: '09:00', waiting: false },
+      'Ana Gil se ha apuntado a Ryder Otoño (franja de las 9:00)',
+    ],
+    [
+      'PLAYER_JOINED',
+      { player_name: 'Ana Gil', tee_time: '09:00', waiting: true },
+      'Ana Gil se ha apuntado a la espera de la franja de las 9:00 de Ryder Otoño',
+    ],
+    ['PLAYER_JOINED', { player_name: 'Ana Gil' }, 'Ana Gil se ha apuntado a Ryder Otoño'],
+    ['PLAYER_JOINED', {}, 'Un jugador se ha apuntado a Ryder Otoño'],
+    [
+      'PLACE_FROM_WAITING_LIST',
+      { tee_time: '09:00' },
+      'Has entrado en Ryder Otoño desde la espera: franja de las 9:00',
+    ],
+    [
+      'ENROLLMENT_NO_PLACE',
+      {},
+      'No hubo plaza para ti en Ryder Otoño: se cerraron las inscripciones',
+    ],
+    [
+      'TEE_WINDOW_REMOVED',
+      { tee_time: '09:00' },
+      'Se ha quitado la franja de las 9:00 de Ryder Otoño en la que esperabas',
+    ],
+    ['TEAMS_CHANGED', {}, 'Los equipos de Ryder Otoño han cambiado: revisa tu sobre'],
+    // Con el día, para saber cuál de las de las 9:00 (code-review)
+    [
+      'PLACE_FROM_WAITING_LIST',
+      { tee_time: '09:00', round_date: '2026-10-24' },
+      'Has entrado en Ryder Otoño desde la espera: franja de las 9:00 (sáb 24 oct)',
+    ],
+    // Sin hora: la frase se dice sin ella (revisor)
+    ['PLACE_FROM_WAITING_LIST', {}, 'Has entrado en Ryder Otoño desde la espera'],
+    ['TEE_WINDOW_REMOVED', {}, 'Se ha quitado una franja de Ryder Otoño en la que esperabas'],
+  ])('direct entry notice %s', (type, extra, texto) => {
+    pinta(
+      tarjeta(
+        evento({
+          type,
+          payload: { competition_id: 'c-1', competition_name: 'Ryder Otoño', ...extra },
+        })
+      )
+    );
+
+    expect(frase()).toBe(texto);
+    expect(enlaceDeLaTarjeta()).toHaveAttribute('href', '/competitions/c-1');
+  });
+
   it('friend enrolled: «Pedro se ha apuntado al torneo Ryder Otoño (14–15 nov)»', () => {
     pinta(
       tarjeta(

@@ -94,3 +94,20 @@ describe('useResponderInvitacion — I10: dos toques antes de pintar el botón d
     expect(responder).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('useResponderInvitacion — equipos formados (29 oct 2026, F3)', () => {
+  it('aceptar con los equipos formados: se dice y se relee la pantalla', async () => {
+    responder.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+    );
+    const alCambiar = vi.fn();
+    const { result } = renderHook(() => useResponderInvitacion({ alAceptar: vi.fn(), alCambiar }));
+
+    await act(async () => {
+      await result.current.aceptar('inv-1');
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('errors.teamsFormed');
+    expect(alCambiar).toHaveBeenCalledTimes(1);
+  });
+});

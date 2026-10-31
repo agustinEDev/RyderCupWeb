@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 
 /**
  * Pedir plaza desde Explorar pregunta el género solo a quien no lo tiene y lo
@@ -206,13 +206,14 @@ describe('BrowseCompetitions · sin hándicap en un Stableford (FE #824, PR 5)',
     faltaGenero = false;
   });
 
-  it('H1: el modal avisa y lleva al perfil (la sesión no trae hándicap)', async () => {
+  it('H1: en un stroke play no se abre aquí: la ficha lo pide al apuntarse (release social 3)', async () => {
     mockUnirse.mockResolvedValue([{ ...COMPETICION, hasTeams: false, tournamentType: 'STABLEFORD' }]);
     pintar();
 
     fireEvent.click(await screen.findByText('browse.card.request-to-join'));
 
-    expect(await screen.findByTestId('falta-handicap')).toBeInTheDocument();
+    expect(screen.queryByTestId('falta-handicap')).toBeNull();
+    expect(mockPedir).not.toHaveBeenCalled();
   });
 
   it('H2: en una Ryder no se pide', async () => {
@@ -223,5 +224,113 @@ describe('BrowseCompetitions · sin hándicap en un Stableford (FE #824, PR 5)',
 
     await screen.findByText('competitions:enrollment.confirm');
     expect(screen.queryByTestId('falta-handicap')).toBeNull();
+  });
+});
+
+/**
+ * Inscripción directa (release social 3, 28 oct 2026): en un stroke play la
+ * franja se elige en la ficha, así que «Apuntarme» lleva a ella; en una Ryder
+ * se apunta aquí mismo. Y en un stroke play no manda el máximo de jugadores.
+ */
+describe('BrowseCompetitions · apuntarse (release social 3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    faltaGenero = false;
+  });
+
+  const conRutas = () =>
+    render(
+      <MemoryRouter initialEntries={['/browse']}>
+        <Routes>
+          <Route path="/browse" element={<BrowseCompetitions />} />
+          <Route path="/competitions/:id" element={<div data-testid="la-ficha" />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+  it('en un stroke play lleva a la ficha, donde se elige la franja', async () => {
+    mockUnirse.mockResolvedValue([{ ...COMPETICION, hasTeams: false }]);
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+
+    expect(await screen.findByTestId('la-ficha')).toBeInTheDocument();
+    expect(mockPedir).not.toHaveBeenCalled();
+  });
+
+  it('en un stroke play con el máximo lleno no se bloquea: mandan las franjas', async () => {
+    mockUnirse.mockResolvedValue([
+      { ...COMPETICION, hasTeams: false, enrolledCount: 12, maxPlayers: 12 },
+    ]);
+    conRutas();
+
+    expect(await screen.findByText('browse.card.request-to-join')).not.toBeDisabled();
+  });
+
+  it('con la sala de draft abierta se dice en el diálogo y no se quita la tarjeta (revisor)', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'DRAFT_IN_PROGRESS' })
+    );
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    expect(await screen.findByTestId('apuntarse-error')).toHaveTextContent(
+      'detail.errors.draftInProgress'
+    );
+    expect(screen.getByText('browse.card.request-to-join')).toBeInTheDocument();
+  });
+
+  it('con los equipos formados: se cierra, se dice y la tarjeta se va (29 oct 2026)', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockRejectedValueOnce(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+    );
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('detail.errors.teamsFormed')
+    );
+    expect(screen.queryByTestId('apuntarse-error')).not.toBeInTheDocument();
+    expect(screen.queryByText('browse.card.request-to-join')).not.toBeInTheDocument();
+  });
+
+  it('en un stroke play no se pinta el máximo: mandan las franjas (revisor)', async () => {
+    mockUnirse.mockResolvedValue([
+      { ...COMPETICION, hasTeams: false, enrolledCount: 14, maxPlayers: 12 },
+    ]);
+    conRutas();
+
+    await screen.findByText('browse.card.request-to-join');
+    expect(screen.queryByText(/14\s*\/\s*12/)).not.toBeInTheDocument();
+  });
+
+  it('en una Ryder se apunta aquí y se le dice que ya está dentro', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockResolvedValueOnce({ status: 'APPROVED', waiting: false });
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('browse.success.enrolled'));
+  });
+
+  it('si la respuesta dice que espera, se le dice (code-review)', async () => {
+    mockUnirse.mockResolvedValue([COMPETICION]);
+    mockPedir.mockResolvedValueOnce({ status: 'APPROVED', waiting: true });
+    conRutas();
+
+    fireEvent.click(await screen.findByText('browse.card.request-to-join'));
+    fireEvent.click(screen.getByText('competitions:enrollment.confirm'));
+
+    await waitFor(() =>
+      expect(customToast.success).toHaveBeenCalledWith('detail.success.joinedWaitingList')
+    );
   });
 });

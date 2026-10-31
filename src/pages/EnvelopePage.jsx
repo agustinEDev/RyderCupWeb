@@ -15,6 +15,7 @@ import {
 } from '../composition';
 import BloqueoDePartidos from '../components/schedule/BloqueoDePartidos';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 /**
  * El sobre de un capitán (FE #655).
@@ -255,7 +256,7 @@ const EnvelopePage = () => {
   if (cargando) return <FullScreenLoader />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
       {/* Al calendario, que es de donde se entra al sobre: devolver a la
           ficha obliga a volver a entrar para la sesión siguiente */}
       <HeaderAuth user={user} title={titulo} backTo={`/competitions/${id}/schedule`} />

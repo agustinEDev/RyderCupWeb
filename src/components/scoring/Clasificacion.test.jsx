@@ -499,3 +499,30 @@ describe('Clasificacion · de una privada que no se puede ver (release social 2,
     expect(screen.queryByTestId('clasificacion-privada')).not.toBeInTheDocument();
   });
 });
+
+// Un visitante recibe las filas sin id (release social 3): cada una la suya
+describe('Clasificacion · sin sesión', () => {
+  it('filas sin id: se pintan todas, ninguna es la mía, sin keys repetidas', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const pedir = vi.fn().mockResolvedValue(clasificacion([fila('a', { userId: null, name: 'Ana' }), fila('b', { userId: null, name: 'Bea', position: 2 })]));
+
+    render(<Clasificacion pedir={pedir} activa />);
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.getByText('Bea')).toBeInTheDocument();
+    expect(document.querySelectorAll('tr[data-yo="true"]')).toHaveLength(0);
+    expect(error.mock.calls.flat().join(' ')).not.toMatch(/same key/);
+    error.mockRestore();
+  });
+
+  it('filas sin el campo del id y sin quien mira: ninguna es la mía (revisor)', async () => {
+    const ana = fila('a', { name: 'Ana' });
+    delete ana.userId;
+    const pedir = vi.fn().mockResolvedValue(clasificacion([ana]));
+
+    render(<Clasificacion pedir={pedir} activa />);
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(document.querySelectorAll('tr[data-yo="true"]')).toHaveLength(0);
+  });
+});

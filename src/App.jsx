@@ -438,6 +438,7 @@ function AppContent() {
           <div
             aria-hidden="true"
             data-testid="hueco-barra-inferior"
+            data-tapa-abajo=""
             className="md:hidden h-[calc(5rem+env(safe-area-inset-bottom)+var(--alto-aviso-instalar,0px))]"
           />
           <BottomNav />
@@ -450,6 +451,7 @@ function AppContent() {
         <div
           aria-hidden="true"
           data-testid="hueco-aviso-instalar"
+          data-tapa-abajo=""
           className={`${showBottomNav ? 'hidden md:block' : ''} h-[var(--alto-aviso-instalar,0px)]`}
         />
       )}

@@ -10,6 +10,7 @@ import { useTerminosPendientes } from '../hooks/useTerminosPendientes';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { formatDateTime } from '../utils/dateFormatters';
 import BlockLoader from '../components/ui/BlockLoader';
+import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 const DeviceManagement = () => {
   const { t } = useTranslation('devices');
@@ -92,7 +93,7 @@ const DeviceManagement = () => {
   }, []);
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <div className={`relative flex h-auto ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-white`}>
       <div className="layout-container flex h-full grow flex-col">
         <HeaderAuth user={user} />
 

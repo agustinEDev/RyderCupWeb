@@ -348,6 +348,32 @@ describe('InvitationsPage · volver a invitar (release social 2)', () => {
     expect(volverAInvitar()).not.toBeInTheDocument();
   });
 
+  it('R5: con los equipos formados no se ofrece (29-30 oct 2026)', async () => {
+    mockDetalle.mockResolvedValue(competicion({ teamsAssigned: true }));
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    pinta();
+
+    await screen.findByTestId('invitar-equipos-formados');
+    // Tras saber quién está dentro: antes, el botón no saldría de todos modos
+    await screen.findByText('Player One');
+    await trasSaberLaSituacion();
+    expect(screen.queryByTestId('reinvite-button')).not.toBeInTheDocument();
+  });
+
+  it('R6: si el servidor dice que ya están formados, lo dice y se relee', async () => {
+    conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
+    mockEnviar.mockRejectedValue(
+      Object.assign(new Error('x'), { status: 409, errorCode: 'TEAMS_FORMED' })
+    );
+    pinta();
+    fireEvent.click(await screen.findByTestId('reinvite-button'));
+
+    await waitFor(() =>
+      expect(customToast.error).toHaveBeenCalledWith('errors.teamsFormedOrganizer')
+    );
+    await waitFor(() => expect(mockDetalle.mock.calls.length).toBeGreaterThan(1));
+  });
+
   it('R3: si el servidor dice que está llena, lo dice (el aviso de siempre)', async () => {
     conLista([invitacion('DECLINED', { inviteeUserId: 'u-2' })]);
     mockEnviar.mockRejectedValue(Object.assign(new Error('x'), { status: 409, errorCode: 'COMPETITION_FULL' }));
