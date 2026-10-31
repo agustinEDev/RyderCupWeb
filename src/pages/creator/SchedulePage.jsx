@@ -49,6 +49,9 @@ const SchedulePage = () => {
   const [schedule, setSchedule] = useState(null);
   const [golfCourses, setGolfCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
+  // Si la lista de inscritos no se pudo cargar: vacía no es «no hay nadie», y
+  // con ella el reparto manual mandaría solo a los capitanes (31 oct 2026)
+  const [inscritosSinCargar, setInscritosSinCargar] = useState(false);
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,7 +102,10 @@ const SchedulePage = () => {
         getCompetitionDetailUseCase.execute(id),
         getScheduleUseCase.execute(id).catch(() => null),
         getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-        listEnrollmentsUseCase.execute(id).catch(() => []),
+        listEnrollmentsUseCase.execute(id).then(
+          (lista) => ({ ok: true, lista }),
+          () => ({ ok: false, lista: [] })
+        ),
       ]);
 
       setCompetition(compData);
@@ -107,7 +113,9 @@ const SchedulePage = () => {
 
       setGolfCourses(aCamposDeLaCompeticion(coursesResult));
 
-      setEnrollments(enrollmentsData);
+      setEnrollments(enrollmentsData.lista);
+      setInscritosSinCargar(!enrollmentsData.ok);
+      if (!enrollmentsData.ok) customToast.error(t('errors.failedToLoadEnrollments'));
     } catch (error) {
       console.error('Error loading schedule data:', error);
       customToast.error(t('errors.failedToLoadSchedule'));
@@ -218,6 +226,7 @@ const SchedulePage = () => {
           setCompetition(competicion);
           setSchedule(agenda);
           setEnrollments(inscripciones);
+          setInscritosSinCargar(false);
         } catch (recarga) {
           // Sin la sesión recargada no hay motivo que enseñar: la frase del
           // servidor, que también dice quién
@@ -485,6 +494,7 @@ const SchedulePage = () => {
                 captains={competition.captains}
                 status={competition.status}
                 onFillCaptain={setCubriendoCapitan}
+                inscritosSinCargar={inscritosSinCargar}
                 t={t}
               />
             </motion.div>
@@ -653,6 +663,7 @@ const SchedulePage = () => {
           isProcessing={isProcessing}
           teamNames={teamNames}
           captains={competition.captains}
+          inscritosSinCargar={inscritosSinCargar}
           t={t}
         />
       )}

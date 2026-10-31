@@ -88,6 +88,7 @@
     "everyoneNeedsTeam_one": "{{count}} player still has no team: in a Ryder everybody plays.",
     "everyoneNeedsTeam_other": "{{count}} players still have no team: in a Ryder everybody plays.",
     "captainMissing": "One captain is missing. Name them in the competition before assigning the teams.",
+    "enrollmentsNotLoaded": "Without the list of players you cannot assign teams by hand or name a captain: reload the page.",
     "fillCaptain": "Name a captain",
     "fillCaptainTitle": "Name the {{team}} captain",
     "fillCaptainExplanation": "That team has no captain: either they withdrew or none was ever named. Pick a player from that team.",
@@ -149,6 +150,7 @@
   },
   "errors": {
     "failedToLoadSchedule": "Failed to load schedule",
+    "failedToLoadEnrollments": "The players could not be loaded: reload the page.",
     "failedToCreateRound": "Failed to create round",
     "failedToUpdateRound": "Failed to update round",
     "failedToDeleteRound": "Failed to delete round",

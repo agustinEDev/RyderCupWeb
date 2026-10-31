@@ -88,6 +88,7 @@
     "everyoneNeedsTeam_one": "Falta {{count}} jugador por asignar: en una Ryder juegan todos.",
     "everyoneNeedsTeam_other": "Faltan {{count}} jugadores por asignar: en una Ryder juegan todos.",
     "captainMissing": "Falta nombrar un capitán. Hazlo en la competición antes de repartir los equipos.",
+    "enrollmentsNotLoaded": "Sin la lista de inscritos no se puede repartir a mano ni nombrar capitán: recarga la página.",
     "fillCaptain": "Nombrar capitán",
     "fillCaptainTitle": "Nombrar capitán de {{team}}",
     "fillCaptainExplanation": "Ese equipo no tiene capitán: o se dio de baja, o nunca se nombró. Elige a un jugador de ese equipo.",
@@ -149,6 +150,7 @@
   },
   "errors": {
     "failedToLoadSchedule": "Error al cargar el calendario",
+    "failedToLoadEnrollments": "No se han podido cargar los inscritos: recarga la página.",
     "failedToCreateRound": "Error al crear la ronda",
     "failedToUpdateRound": "Error al actualizar la ronda",
     "failedToDeleteRound": "Error al eliminar la ronda",

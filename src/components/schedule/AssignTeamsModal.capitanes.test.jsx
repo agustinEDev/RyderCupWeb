@@ -168,6 +168,13 @@ describe('AssignTeamsModal · los capitanes van fijos en su equipo (FE #692)', (
     expect(screen.getByText('teams.captainMissing')).toBeInTheDocument();
   });
 
+  it('M9b: y en manual también', () => {
+    pintar({ captains: { teamA: 'ana', teamB: null } });
+    aManual();
+
+    expect(screen.getByText('teams.captainMissing')).toBeInTheDocument();
+  });
+
   it('M10: el reparto automático también lo exige, así que el aviso sale igual', () => {
     pintar({ captains: { teamA: null, teamB: 'bea' } });
 

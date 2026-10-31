@@ -10,9 +10,11 @@ import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
  *   #   caso                                   | al abrir
  *   ----|---------------------------------------|----------------------------
  *   C1  sin equipos                            | automático
- *   C4  sin inscritos en la lista              | no se bloquea: el automático
+ *   C2  sin inscritos en la lista              | no se bloquea: el automático
  *       |                                       | lo hace el servidor con los suyos
- *   H1  hándicap plus en el reparto manual     | con «+»
+ *   C3  la lista no se pudo cargar             | manual desactivado y avisado;
+ *       |                                       | el automático, sí
+ *   C4  hándicap plus en el reparto manual     | con «+»
  */
 vi.mock('framer-motion', () => {
   const DE_ANIMACION = new Set(['initial', 'animate', 'exit', 'transition']);
@@ -57,7 +59,7 @@ describe('AssignTeamsModal · al abrirse', () => {
     expect(screen.getByDisplayValue('automatic')).toBeChecked();
   });
 
-  it('C4: sin inscritos en la lista, el automático no se bloquea', () => {
+  it('C2: sin inscritos en la lista, el automático no se bloquea', () => {
     const onConfirm = vi.fn();
     pintar({ enrollments: [], onConfirm });
 
@@ -65,11 +67,25 @@ describe('AssignTeamsModal · al abrirse', () => {
 
     expect(onConfirm).toHaveBeenCalledWith({ mode: 'automatic' });
   });
+
+  it('C3: con la lista sin cargar, el manual no se ofrece y el automático sí', () => {
+    // Vacía por un fallo no es «no hay nadie»: con los capitanes fijos, el
+    // manual mandaría dos equipos de uno
+    const onConfirm = vi.fn();
+    pintar({ enrollments: [], inscritosSinCargar: true, onConfirm });
+
+    expect(screen.getByDisplayValue('manual')).toBeDisabled();
+    expect(screen.getByTestId('reparto-inscritos-sin-cargar')).toHaveTextContent(
+      'teams.enrollmentsNotLoaded'
+    );
+    fireEvent.submit(screen.getByDisplayValue('automatic').closest('form'));
+    expect(onConfirm).toHaveBeenCalledWith({ mode: 'automatic' });
+  });
 });
 
 // Un hándicap plus se guarda negativo y se lee con «+» (FE #797)
 describe('AssignTeamsModal · hándicap plus (FE #797)', () => {
-  it('H1: en el reparto manual, el plus con «+» y el positivo sin signo', () => {
+  it('C4: en el reparto manual, el plus con «+» y el positivo sin signo', () => {
     pintar({ enrollments: [{ ...INSCRITOS[0], userHandicap: -2 }, ...INSCRITOS.slice(1)] });
     fireEvent.click(screen.getByDisplayValue('manual'));
 

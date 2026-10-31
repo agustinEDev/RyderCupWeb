@@ -17,6 +17,7 @@ const AssignTeamsModalContent = ({
   isProcessing,
   teamNames,
   captains,
+  inscritosSinCargar = false,
   t,
 }) => {
   // Con los dos capitanes nombrados, cada uno queda fijo en su equipo (FE #692):
@@ -115,6 +116,11 @@ const AssignTeamsModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {inscritosSinCargar && (
+            <p data-testid="reparto-inscritos-sin-cargar" className="text-sm text-red-700">
+              {t('teams.enrollmentsNotLoaded')}
+            </p>
+          )}
           {faltaUnCapitan && (
             <p className="text-sm text-amber-700">{t('teams.captainMissing')}</p>
           )}
@@ -142,6 +148,9 @@ const AssignTeamsModalContent = ({
                   value="manual"
                   checked={mode === 'manual'}
                   onChange={() => setMode('manual')}
+                  // Sin la lista, el manual mandaría solo a los capitanes; el
+                  // automático lo reparte el servidor con la suya
+                  disabled={inscritosSinCargar}
                   className="text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-medium">{t('teams.manual')}</span>

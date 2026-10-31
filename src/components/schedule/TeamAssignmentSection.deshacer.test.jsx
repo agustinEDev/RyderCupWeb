@@ -63,6 +63,7 @@ describe('TeamAssignmentSection · deshacer los equipos', () => {
   it('con los equipos formados no se vuelven a repartir: se deshacen antes', () => {
     pintar();
 
-    expect(screen.queryByRole('button', { name: 'teams.assign' })).not.toBeInTheDocument();
+    // Se llame como se llame: el único botón es el de deshacerlos
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['teams.undo']);
   });
 });
