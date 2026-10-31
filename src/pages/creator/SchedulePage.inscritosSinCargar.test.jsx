@@ -11,7 +11,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * | E2 | Abrir el reparto así                         | Manual desactivado; automático, sí      |
  * | E3 | Panel de equipos así                         | Sin «Nombrar capitán»; si falta uno, aviso de recargar |
  * | E4 | La lista carga bien                          | Ni toast ni aviso                       |
- * | E5 | Una recarga posterior la trae (la de la página o la de «Generar» bloqueado) | Vuelve todo |
+ * | E5 | Una recarga posterior la trae (la de la página o la de «Generar» bloqueado) | Vuelve todo y se va el toast |
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -48,7 +48,7 @@ vi.mock('../../hooks/useAuth', () => ({ useAuth: () => SESION }));
 vi.mock('../../hooks/useUserRoles', () => ({ useUserRoles: () => ROLES }));
 vi.mock('../../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../../utils/toast', () => ({
-  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
 }));
 
 const mockDetalle = vi.fn();
@@ -216,6 +216,8 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
     expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    // Y el toast de «recarga la página» se va: ya no hace falta
+    expect(customToast.dismiss).toHaveBeenCalledWith('inscritos-sin-cargar');
   });
 
   it('E5b: también la que hace «Generar» cuando vuelve bloqueado', async () => {
@@ -233,5 +235,7 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
     expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    // Y el toast de «recarga la página» se va: ya no hace falta
+    expect(customToast.dismiss).toHaveBeenCalledWith('inscritos-sin-cargar');
   });
 });

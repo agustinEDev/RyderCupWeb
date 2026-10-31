@@ -10,7 +10,7 @@ import TeamAssignmentSection from './TeamAssignmentSection';
  * | Organizador, con equipos y sin partidos      | «Deshacer equipos»         |
  * | Organizador, con partidos                    | Nada: ya no se deshacen    |
  * | Quien no organiza                            | Nada                       |
- * | Nadie, con los equipos formados              | «Repartir equipos»         |
+ * | Nadie, con los equipos formados              | «Repartir»: se deshacen antes |
  */
 const t = (clave) => clave;
 

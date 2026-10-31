@@ -36,6 +36,9 @@ import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { mensajeDeError } from '../../utils/sinCobertura';
 
+// El toast de «no se han podido cargar los inscritos»: uno solo, y se va al volver la lista
+const AVISO_INSCRITOS = 'inscritos-sin-cargar';
+
 const SchedulePage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -116,8 +119,10 @@ const SchedulePage = () => {
       setEnrollments(enrollmentsData.lista);
       setInscritosSinCargar(!enrollmentsData.ok);
       // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
-      if (!enrollmentsData.ok) {
-        customToast.error(t('errors.failedToLoadEnrollments'), { id: 'inscritos-sin-cargar' });
+      if (enrollmentsData.ok) {
+        customToast.dismiss(AVISO_INSCRITOS);
+      } else {
+        customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
       }
     } catch (error) {
       console.error('Error loading schedule data:', error);
@@ -230,6 +235,7 @@ const SchedulePage = () => {
           setSchedule(agenda);
           setEnrollments(inscripciones);
           setInscritosSinCargar(false);
+          customToast.dismiss(AVISO_INSCRITOS);
         } catch (recarga) {
           // Sin la sesión recargada no hay motivo que enseñar: la frase del
           // servidor, que también dice quién
