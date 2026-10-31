@@ -192,7 +192,7 @@ const AssignTeamsModalContent = ({
                     >
                       <div className="min-w-0">
                         <span className="text-sm font-medium text-gray-900">
-                          {player.userName || 'Unknown'}
+                          {player.userName || t('unnamedPlayer')}
                         </span>
                         {player.userHandicap != null && (
                           <span className="text-xs text-gray-500 ml-2">

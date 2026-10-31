@@ -1,4 +1,6 @@
 {
+  "unnamedPlayer": "Jugador",
+  "unnamedPlayerNumbered": "Jugador {{numero}}",
   "title": "Calendario y Partidos",
   "loading": "Cargando calendario...",
   "cancel": "Cancelar",

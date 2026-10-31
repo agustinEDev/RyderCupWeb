@@ -8,8 +8,8 @@ const STATUS_COLORS = {
   WALKOVER: 'bg-orange-100 text-orange-800',
 };
 
-const getPlayerName = (playerId, playerNameMap) => {
-  return playerNameMap.get(playerId) || 'Unknown Player';
+const getPlayerName = (playerId, playerNameMap, t) => {
+  return playerNameMap.get(playerId) || t('unnamedPlayer');
 };
 
 const MatchCard = ({
@@ -49,7 +49,7 @@ const MatchCard = ({
           {/* Que encoja y parta: con «Hcp juego» al lado, un nombre largo sin
               espacios empujaba la fila fuera de la tarjeta a 360 px */}
           <p className={`min-w-0 break-words text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-            {getPlayerName(p.userId, playerNameMap)}
+            {getPlayerName(p.userId, playerNameMap, t)}
           </p>
           <div className="flex items-center gap-1 shrink-0">
             {realHcp != null && (

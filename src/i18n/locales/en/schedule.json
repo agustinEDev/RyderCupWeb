@@ -1,4 +1,6 @@
 {
+  "unnamedPlayer": "Player",
+  "unnamedPlayerNumbered": "Player {{numero}}",
   "title": "Schedule & Matches",
   "loading": "Loading schedule...",
   "cancel": "Cancel",
