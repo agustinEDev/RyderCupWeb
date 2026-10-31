@@ -49,7 +49,7 @@ const MatchDetailModal = ({
 
   if (!isOpen) return null;
 
-  const getPlayerName = (playerId) => playerNameMap.get(playerId) || playerId || '--';
+  const getPlayerName = (playerId) => playerNameMap.get(playerId) || t('unnamedPlayer');
 
   const renderHandicapInfo = (p) => {
     const realHcp = p.playerHandicap ?? playerHandicapMap?.get(p.userId) ?? null;

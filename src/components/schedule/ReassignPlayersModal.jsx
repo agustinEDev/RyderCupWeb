@@ -113,7 +113,7 @@ const ReassignPlayersModalContent = ({
                   }`}
                 >
                   <span className="text-sm font-medium text-gray-900">
-                    {player.userName || 'Unknown'}
+                    {player.userName || t('unnamedPlayer')}
                   </span>
                   <div className="flex gap-2">
                     <button

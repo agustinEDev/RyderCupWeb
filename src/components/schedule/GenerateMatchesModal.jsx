@@ -169,7 +169,7 @@ const GenerateMatchesModalContent = ({
               value={player.userId}
               disabled={isUsed}
             >
-              {playerNameMap.get(player.userId) || player.userName || 'Unknown'}
+              {playerNameMap.get(player.userId) || player.userName || t('unnamedPlayer')}
               {player.userHandicap != null ? ` (${t('handicapLabels.indexWithColon', { value: formatoDeIndice(player.userHandicap) })})` : ''}
               {isUsed ? ` - ${t('matches.pairings.playerAlreadyUsed')}` : ''}
             </option>
