@@ -157,7 +157,7 @@ const SchedulePage = () => {
     );
     return (lista || [])
       .filter((id) => aprobados.has(id))
-      .map((id) => ({ userId: id, name: playerNameMap.get(id) || id }));
+      .map((id) => ({ userId: id, name: playerNameMap.get(id) || t('unnamedPlayer') }));
   };
 
   const cubrirCapitan = async (playerId) => {

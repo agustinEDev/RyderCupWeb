@@ -205,6 +205,21 @@ describe('SchedulePage · cubrir el puesto de un capitán (FE #692)', () => {
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
   });
 
+  // Pasada del Kind (31 oct 2026): sin nombre salía su UUID
+  it('C1: a quien le falta el nombre se le ofrece como «Jugador»', async () => {
+    mockInscripciones.mockResolvedValue(
+      INSCRITOS.map((e) => (e.userId === 'carla' ? { userId: 'carla', status: 'APPROVED' } : e))
+    );
+    pintar();
+
+    const modal = await abrirCubrir();
+
+    const opciones = within(within(modal).getByRole('combobox'))
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    expect(opciones).toEqual(['teams.fillCaptainChoose', 'unnamedPlayer']);
+  });
+
   it('P5: y para el otro equipo se ofrecen los suyos, no los del primero', async () => {
     mockDetalle.mockResolvedValue({
       ...COMPETICION,

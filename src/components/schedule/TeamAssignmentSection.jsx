@@ -59,6 +59,11 @@ const TeamAssignmentSection = ({
     if (playerId === subcapitan) return t('teams.viceCaptainTag');
     return null;
   };
+  // Sin nombre (la lista no cargó), «Jugador N» por su puesto en el equipo:
+  // nunca el UUID
+  const nombreDe = (playerId, posicion) =>
+    playerNameMap.get(playerId) || t('unnamedPlayerNumbered', { numero: posicion + 1 });
+
   // Build handicap lookup from enrollments
   const handicapMap = new Map();
   (enrollments || []).forEach((e) => {
@@ -138,10 +143,10 @@ const TeamAssignmentSection = ({
             {teamNames.teamA} ({t('teams.playersCount', { count: teamA.length })})
           </h4>
           <ul className="space-y-1.5">
-            {teamA.map((playerId) => (
+            {teamA.map((playerId, posicion) => (
               <li key={playerId} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-gray-800 min-w-0">
-                  {playerNameMap.get(playerId) || playerId}
+                  {nombreDe(playerId, posicion)}
                   {papelDe(playerId, 'A') && (
                     <span className="block text-xs text-yellow-800 truncate">
                       {papelDe(playerId, 'A')}
@@ -176,10 +181,10 @@ const TeamAssignmentSection = ({
             {teamNames.teamB} ({t('teams.playersCount', { count: teamB.length })})
           </h4>
           <ul className="space-y-1.5">
-            {teamB.map((playerId) => (
+            {teamB.map((playerId, posicion) => (
               <li key={playerId} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-gray-800 min-w-0">
-                  {playerNameMap.get(playerId) || playerId}
+                  {nombreDe(playerId, posicion)}
                   {papelDe(playerId, 'B') && (
                     <span className="block text-xs text-yellow-800 truncate">
                       {papelDe(playerId, 'B')}
