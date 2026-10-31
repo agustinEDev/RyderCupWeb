@@ -22,6 +22,8 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * | S1 | Con el toast a la vista, salir a la ficha    | Se quita al salir                       |
  * | S2 | Salir con otros toasts                       | Solo se quita ese: nunca todos          |
  * | S3 | Volver con la lista aún sin cargar           | Sale otra vez                           |
+ * | S4 | Salir antes de que la lista falle            | Ya no sale (/code-review)               |
+ * | S5 | En StrictMode (monta, desmonta y monta)      | Sale: sigue en la agenda                |
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -324,6 +326,36 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     const quitado = customToast.dismiss.mock.invocationCallOrder.find((n) => n > primero);
     expect(quitado).toBeLessThan(segundo);
     expect(customToast.error).toHaveBeenLastCalledWith('errors.failedToLoadEnrollments', {
+      id: 'inscritos-sin-cargar',
+    });
+  });
+
+  it('S4 (/code-review): si la lista falla cuando ya se salió, el toast no sale en la ficha', async () => {
+    let fallar;
+    mockInscripciones.mockImplementation(() => new Promise((_, rechazar) => { fallar = rechazar; }));
+    const { unmount } = pintar();
+    await vi.waitFor(() => expect(fallar).toBeDefined());
+
+    // Se sale mientras carga (con «atrás»: la agenda aún no pinta su enlace)
+    unmount();
+    await act(async () => fallar(FALLO));
+
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('S5: en StrictMode (monta, desmonta y vuelve a montar) el toast sale', async () => {
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/competitions/comp-1/schedule']}>
+          <Routes>
+            <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>
+    );
+
+    await screen.findByTestId('deshacer-equipos');
+    expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadEnrollments', {
       id: 'inscritos-sin-cargar',
     });
   });

@@ -40,7 +40,10 @@ const ESTILO = {
   ],
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
-const DOBLE_TOQUE_MS = 400;
+// Los de maplibre: dos toques a menos de 500 ms y 30 px acercan el mapa
+// (MAX_TAP_INTERVAL y MAX_DIST de su tap_recognizer)
+const DOBLE_TOQUE_MS = 500;
+const DOBLE_TOQUE_PX = 30;
 const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
@@ -398,7 +401,7 @@ const MapaDelHoyo = ({
   const salidaRecienTocada = useRef(null);
   // Midiendo, el último toque y lo que había antes de él (lo medido y las
   // gracias): un doble toque acerca y no mide, así que el segundo lo devuelve
-  const toqueDeMedir = useRef({ en: -Infinity, medido: null, gracias: false });
+  const toqueDeMedir = useRef({ en: -Infinity, donde: null, medido: null, gracias: false });
   const enlaceEntero = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
@@ -425,7 +428,7 @@ const MapaDelHoyo = ({
         padding: margen(),
       });
     };
-    alTocar.current = (p) => {
+    alTocar.current = (p, donde) => {
       // Reportando, el mapa no mide: marca la salida y el green que se proponen
       if (reporte) {
         // El segundo toque de un doble toque no es el green (/code-review)
@@ -511,13 +514,17 @@ const MapaDelHoyo = ({
       // Si el primero marcó (y con él se acabó de marcar), el segundo tampoco
       // mide (revisor)
       if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
-      if (ahora - toqueDeMedir.current.en < DOBLE_TOQUE_MS) {
+      // Lejos del anterior, maplibre no acerca: son dos medidas (/code-review)
+      const anterior = toqueDeMedir.current.donde;
+      const cerca = !donde || !anterior || Math.hypot(donde.x - anterior.x, donde.y - anterior.y) <= DOBLE_TOQUE_PX;
+      if (cerca && ahora - toqueDeMedir.current.en < DOBLE_TOQUE_MS) {
         toqueDeMedir.current.en = ahora;
+        toqueDeMedir.current.donde = donde;
         setMedido(toqueDeMedir.current.medido);
         setGracias(toqueDeMedir.current.gracias);
         return;
       }
-      toqueDeMedir.current = { en: ahora, medido, gracias };
+      toqueDeMedir.current = { en: ahora, donde, medido, gracias };
       setGracias(false);
       setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
@@ -699,7 +706,7 @@ const MapaDelHoyo = ({
       if (e.originalEvent) movidoPorElJugador.current = true;
     });
     // Un toque sin arrastrar mide; arrastrar y pellizcar mueven el mapa
-    mapa.on('click', (e) => alTocar.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
+    mapa.on('click', (e) => alTocar.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }, e.point));
     return () => {
       // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
       // en desarrollo) pone los suyos, no mueve los de este

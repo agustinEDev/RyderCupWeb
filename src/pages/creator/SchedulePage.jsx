@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Mail, RotateCcw } from 'lucide-react';
@@ -59,6 +59,8 @@ const SchedulePage = () => {
   // Las lecturas de inscritos pueden cruzarse (StrictMode, cambio de idioma, la
   // recarga tras «Generar»): un fallo viejo no pisa una lista nueva (CodeRabbit)
   const ordenInscritos = useLaMasNueva();
+  // Si ya se salió, una lista que falla tarde no saca su toast fuera (/code-review)
+  const enLaAgenda = useRef(true);
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -127,7 +129,7 @@ const SchedulePage = () => {
         // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
         if (enrollmentsData.ok) {
           customToast.dismiss(AVISO_INSCRITOS);
-        } else {
+        } else if (enLaAgenda.current) {
           customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
         }
       }
@@ -149,7 +151,13 @@ const SchedulePage = () => {
 
   // El toast de los inscritos es de la agenda: al salir se va con ella (pasada
   // del Kind, 31 oct 2026: seguía ~1 s en la ficha)
-  useEffect(() => () => customToast.dismiss(AVISO_INSCRITOS), []);
+  useEffect(() => {
+    enLaAgenda.current = true;
+    return () => {
+      enLaAgenda.current = false;
+      customToast.dismiss(AVISO_INSCRITOS);
+    };
+  }, []);
 
   const jugadoresDelEquipo = (equipo) => {
     const lista =

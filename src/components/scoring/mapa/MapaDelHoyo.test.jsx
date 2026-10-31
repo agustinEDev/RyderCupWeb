@@ -4635,7 +4635,8 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
    * |----|---------------------------------------------|--------------------------------|
    * | D1 | Sin nada medido, doble toque                | Nada medido; la línea vuelve   |
    * | D2 | Con P medido, doble toque en otro sitio     | P, con su línea y sus metros   |
-   * | D3 | Dos toques a más de DOBLE_TOQUE_MS          | El segundo mide                |
+   * | D3 | Dos toques a 500 ms o más (los de maplibre) | El segundo mide                |
+   * | D3d| Dos toques rápidos a más de 30 px           | Dos medidas: maplibre no acerca |
    * | D4 | Triple toque                                | Lo de antes del primero        |
    * | D5 | Un toque suelto tras el doble               | Mide                           |
    * | D6 | Un toque                                    | Mide en el acto, sin esperar   |
@@ -4646,10 +4647,10 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
     const Q = alEste(-20, alNorte(200));
     const R = alEste(10, alNorte(100));
     // A una hora fija: React también lee el reloj, así que una lista de horas
-    // se gastaría antes de tiempo
-    const tocarA = (ms, p) => {
+    // se gastaría antes de tiempo. Y donde cae en la pantalla, en píxeles
+    const tocarA = (ms, p, point = { x: 180, y: 300 }) => {
       reloj.mockImplementation(() => ms);
-      tocar(p);
+      act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon }, point }));
     };
     const lineaDelHoyo = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea');
 
@@ -4692,14 +4693,45 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       expect(medida()).toEqual([[en(T), en(Q)]]);
     });
 
-    it('D3: a DOBLE_TOQUE_MS justos ya no es doble toque', () => {
+    it('D3b: a 500 ms justos (los de maplibre) ya no es doble toque', () => {
       abrirConLinea();
       desde(0);
 
       tocarA(1000, P);
-      tocarA(1400, Q);
+      tocarA(1500, Q);
 
       expect(medida()).toEqual([[en(T), en(Q)]]);
+    });
+
+    it('D3c (/code-review): a 450 ms, maplibre acerca: tampoco mide', () => {
+      abrirConLinea();
+      desde(0);
+      tocarA(1000, P);
+
+      tocarA(5000, Q);
+      tocarA(5450, Q);
+
+      expect(medida()).toEqual([[en(T), en(P)]]);
+    });
+
+    it('D3d (/code-review): dos toques rápidos lejos (maplibre no acerca) son dos medidas', () => {
+      abrirConLinea();
+      desde(0);
+
+      tocarA(1000, P, { x: 100, y: 100 });
+      tocarA(1100, Q, { x: 100, y: 131 });
+
+      expect(medida()).toEqual([[en(T), en(Q)]]);
+    });
+
+    it('D3e: a 30 px aún es doble toque', () => {
+      abrirConLinea();
+      desde(0);
+
+      tocarA(1000, P, { x: 100, y: 100 });
+      tocarA(1100, Q, { x: 118, y: 124 });
+
+      expect(medida()).toEqual([]);
     });
 
     it('D4: un triple toque deja lo de antes del primero', () => {
