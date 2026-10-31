@@ -10,7 +10,7 @@ import TeamAssignmentSection from './TeamAssignmentSection';
  * | Organizador, con equipos y sin partidos      | «Deshacer equipos»         |
  * | Organizador, con partidos                    | Nada: ya no se deshacen    |
  * | Quien no organiza                            | Nada                       |
- * | Nadie                                        | «Reasignar»: ya no existe  |
+ * | Nadie, con los equipos formados              | «Repartir»: se deshacen antes |
  */
 const t = (clave) => clave;
 
@@ -60,9 +60,10 @@ describe('TeamAssignmentSection · deshacer los equipos', () => {
     expect(screen.queryByTestId('deshacer-equipos')).not.toBeInTheDocument();
   });
 
-  it('«Reasignar» ya no se ofrece a nadie', () => {
+  it('con los equipos formados no se vuelven a repartir: se deshacen antes', () => {
     pintar();
 
-    expect(screen.queryByText('teams.reassign')).not.toBeInTheDocument();
+    // Se llame como se llame: el único botón es el de deshacerlos
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['teams.undo']);
   });
 });

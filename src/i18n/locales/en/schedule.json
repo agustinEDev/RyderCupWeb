@@ -73,7 +73,6 @@
   "teams": {
     "title": "Team Assignment",
     "assign": "Assign Teams",
-    "reassign": "Reassign Teams",
     "mode": "Assignment Mode",
     "manual": "Manual",
     "automatic": "Automatic",
@@ -89,6 +88,8 @@
     "everyoneNeedsTeam_one": "{{count}} player still has no team: in a Ryder everybody plays.",
     "everyoneNeedsTeam_other": "{{count}} players still have no team: in a Ryder everybody plays.",
     "captainMissing": "One captain is missing. Name them in the competition before assigning the teams.",
+    "enrollmentsNotLoaded": "Without the list of players you cannot assign teams by hand: reload the page. Automatic assignment still works.",
+    "fillCaptainNeedsEnrollments": "A captain is missing, but without the list of players you cannot name one: reload the page.",
     "fillCaptain": "Name a captain",
     "fillCaptainTitle": "Name the {{team}} captain",
     "fillCaptainExplanation": "That team has no captain: either they withdrew or none was ever named. Pick a player from that team.",
@@ -96,9 +97,6 @@
     "fillCaptainConfirm": "Name them",
     "fillCaptainCancel": "Cancel",
     "fillCaptainNobody": "Nobody is left enrolled in that team.",
-    "captainMissingWithTeams": "One captain is missing. With the teams already assigned, use \"Name a captain\" on the team that needs one.",
-    "replaceWarning": "This replaces the current teams. If they came from the draft, changing them here undoes what the captains picked.",
-    "enrollmentsNotLoaded": "The players could not be loaded: reload the page before reassigning, or the teams would come out empty.",
     "undo": "Undo teams",
     "undoConfirm": {
       "title": "Undo the teams?",
@@ -153,6 +151,7 @@
   },
   "errors": {
     "failedToLoadSchedule": "Failed to load schedule",
+    "failedToLoadEnrollments": "The players could not be loaded: reload the page.",
     "failedToCreateRound": "Failed to create round",
     "failedToUpdateRound": "Failed to update round",
     "failedToDeleteRound": "Failed to delete round",

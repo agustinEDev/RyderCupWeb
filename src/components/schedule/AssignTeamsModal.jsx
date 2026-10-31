@@ -17,8 +17,6 @@ const AssignTeamsModalContent = ({
   isProcessing,
   teamNames,
   captains,
-  hasTeams,
-  currentTeams = null,
   inscritosSinCargar = false,
   t,
 }) => {
@@ -30,21 +28,10 @@ const AssignTeamsModalContent = ({
   // Con uno solo, el servidor rechaza el reparto en los dos modos pidiendo el
   // que falta: mejor decirlo antes que después de rellenar doce nombres
   const faltaUnCapitan = Boolean(captains?.teamA) !== Boolean(captains?.teamB);
-  // Con equipos ya hechos se abre en manual CON ellos (#710): en automático y
-  // vacío, rehacer el draft que eligieron los capitanes era pulsar un botón
-  const reasignando = Boolean(currentTeams);
-  // Solo los que siguen dentro: el reparto guardado no se toca al darse de
-  // baja, y con un retirado el servidor rechaza el reparto (revisión local)
-  const siguen = new Set(enrollments.filter((e) => e.status === 'APPROVED').map((e) => e.userId));
-  const [mode, setMode] = useState(reasignando ? 'manual' : 'automatic');
-  const [manualTeamA, setManualTeamA] = useState(() => {
-    if (reasignando) return currentTeams.teamAPlayerIds.filter((id) => siguen.has(id));
-    return hayCapitanes ? [captains.teamA] : [];
-  });
-  const [manualTeamB, setManualTeamB] = useState(() => {
-    if (reasignando) return currentTeams.teamBPlayerIds.filter((id) => siguen.has(id));
-    return hayCapitanes ? [captains.teamB] : [];
-  });
+  // Solo se abre sin equipos: con ellos formados, se deshacen antes (29-30 oct)
+  const [mode, setMode] = useState('automatic');
+  const [manualTeamA, setManualTeamA] = useState(() => (hayCapitanes ? [captains.teamA] : []));
+  const [manualTeamB, setManualTeamB] = useState(() => (hayCapitanes ? [captains.teamB] : []));
 
   const approvedPlayers = enrollments.filter(e => e.status === 'APPROVED');
   const esCapitan = (playerId) =>
@@ -82,13 +69,8 @@ const AssignTeamsModalContent = ({
     (p) => !manualTeamA.includes(p.userId) && !manualTeamB.includes(p.userId)
   ).length;
 
-  // Sin la lista de inscritos, los equipos de ahora se filtrarían a nada y el
-  // reparto saldría vacío (CodeRabbit en la #720)
-  const noSePuedeReasignar = reasignando && inscritosSinCargar;
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (noSePuedeReasignar) return;
 
     if (mode === 'automatic') {
       onConfirm({ mode: 'automatic' });
@@ -134,23 +116,17 @@ const AssignTeamsModalContent = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {reasignando && (
-            <p data-testid="reasignar-aviso" className="text-sm text-amber-700">
-              {t('teams.replaceWarning')}
-            </p>
-          )}
-          {noSePuedeReasignar && (
-            <p data-testid="reasignar-sin-inscritos" className="text-sm text-red-700">
+          {inscritosSinCargar && (
+            <p
+              id="reparto-inscritos-sin-cargar"
+              data-testid="reparto-inscritos-sin-cargar"
+              className="text-sm text-red-700"
+            >
               {t('teams.enrollmentsNotLoaded')}
             </p>
           )}
-          {/* Con equipos ya repartidos el consejo cambia: ahí el servidor no
-              deja nombrar capitanes, y el puesto se cubre desde el panel de
-              equipos (FE #692) */}
           {faltaUnCapitan && (
-            <p className="text-sm text-amber-700">
-              {t(hasTeams ? 'teams.captainMissingWithTeams' : 'teams.captainMissing')}
-            </p>
+            <p className="text-sm text-amber-700">{t('teams.captainMissing')}</p>
           )}
           {/* Mode selection */}
           <div>
@@ -169,13 +145,21 @@ const AssignTeamsModalContent = ({
                 />
                 <span className="text-sm font-medium">{t('teams.automatic')}</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label
+                className={`flex items-center gap-2 ${
+                  inscritosSinCargar ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                }`}
+              >
                 <input
                   type="radio"
                   name="mode"
                   value="manual"
                   checked={mode === 'manual'}
                   onChange={() => setMode('manual')}
+                  // Sin la lista, el manual mandaría solo a los capitanes; el
+                  // automático lo reparte el servidor con la suya
+                  disabled={inscritosSinCargar}
+                  aria-describedby={inscritosSinCargar ? 'reparto-inscritos-sin-cargar' : undefined}
                   className="text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-medium">{t('teams.manual')}</span>
@@ -282,7 +266,6 @@ const AssignTeamsModalContent = ({
               disabled={
                 isProcessing ||
                 faltaUnCapitan ||
-                noSePuedeReasignar ||
                 (mode === 'manual' && sinEquipo > 0)
               }
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"

@@ -73,7 +73,6 @@
   "teams": {
     "title": "Asignación de Equipos",
     "assign": "Asignar Equipos",
-    "reassign": "Reasignar Equipos",
     "mode": "Modo de Asignación",
     "manual": "Manual",
     "automatic": "Automática",
@@ -89,6 +88,8 @@
     "everyoneNeedsTeam_one": "Falta {{count}} jugador por asignar: en una Ryder juegan todos.",
     "everyoneNeedsTeam_other": "Faltan {{count}} jugadores por asignar: en una Ryder juegan todos.",
     "captainMissing": "Falta nombrar un capitán. Hazlo en la competición antes de repartir los equipos.",
+    "enrollmentsNotLoaded": "Sin la lista de inscritos no se puede repartir a mano: recarga la página. El reparto automático sí funciona.",
+    "fillCaptainNeedsEnrollments": "Falta un capitán, pero sin la lista de inscritos no se puede nombrar: recarga la página.",
     "fillCaptain": "Nombrar capitán",
     "fillCaptainTitle": "Nombrar capitán de {{team}}",
     "fillCaptainExplanation": "Ese equipo no tiene capitán: o se dio de baja, o nunca se nombró. Elige a un jugador de ese equipo.",
@@ -96,9 +97,6 @@
     "fillCaptainConfirm": "Nombrar",
     "fillCaptainCancel": "Cancelar",
     "fillCaptainNobody": "No queda nadie inscrito en ese equipo.",
-    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita.",
-    "replaceWarning": "Este reparto sustituye a los equipos de ahora. Si salieron del draft, cambiarlos aquí deshace lo que eligieron los capitanes.",
-    "enrollmentsNotLoaded": "No se han podido cargar los inscritos: recarga la página antes de reasignar, o los equipos saldrían vacíos.",
     "undo": "Deshacer equipos",
     "undoConfirm": {
       "title": "¿Deshacer los equipos?",
@@ -153,6 +151,7 @@
   },
   "errors": {
     "failedToLoadSchedule": "Error al cargar el calendario",
+    "failedToLoadEnrollments": "No se han podido cargar los inscritos: recarga la página.",
     "failedToCreateRound": "Error al crear la ronda",
     "failedToUpdateRound": "Error al actualizar la ronda",
     "failedToDeleteRound": "Error al eliminar la ronda",

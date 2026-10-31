@@ -14,6 +14,7 @@ const TeamAssignmentSection = ({
   maxPlayingHandicap,
   captains,
   status,
+  inscritosSinCargar = false,
   t,
 }) => {
   // Quién capitanea cada equipo, y quién es su segundo (FE #692): esta es la
@@ -33,10 +34,17 @@ const TeamAssignmentSection = ({
   );
   const sePuedeCubrir = ['ACTIVE', 'CLOSED'].includes(status);
   const sinCapitan = (equipo) => {
-    if (!captains || !sePuedeCubrir) return false;
+    if (!captains || !sePuedeCubrir || inscritosSinCargar) return false;
     const capitan = equipo === 'A' ? captains.teamA : captains.teamB;
     return !capitan || !inscritos.has(capitan);
   };
+  // Sin la lista no se sabe quién sigue: solo consta que falta el que no está
+  // nombrado, y para cubrirlo hay que recargar (31 oct 2026)
+  const faltaSinLista = (equipo) =>
+    inscritosSinCargar &&
+    sePuedeCubrir &&
+    Boolean(captains) &&
+    !(equipo === 'A' ? captains.teamA : captains.teamB);
 
   // Sin el nombre del equipo: cada lista ya lo lleva en su título, y uno largo
   // dejaba la etiqueta en «Capitán de E...»
@@ -145,6 +153,11 @@ const TeamAssignmentSection = ({
             ))}
           </ul>
 
+          {canManage && faltaSinLista('A') && (
+            <p data-testid="capitan-inscritos-sin-cargar-A" className="mt-3 text-sm text-red-700">
+              {t('teams.fillCaptainNeedsEnrollments')}
+            </p>
+          )}
           {canManage && sinCapitan('A') && (
             <button
               type="button"
@@ -178,6 +191,11 @@ const TeamAssignmentSection = ({
             ))}
           </ul>
 
+          {canManage && faltaSinLista('B') && (
+            <p data-testid="capitan-inscritos-sin-cargar-B" className="mt-3 text-sm text-red-700">
+              {t('teams.fillCaptainNeedsEnrollments')}
+            </p>
+          )}
           {canManage && sinCapitan('B') && (
             <button
               type="button"

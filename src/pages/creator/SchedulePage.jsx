@@ -31,10 +31,14 @@ import {
   reassignPlayersUseCase,
   resetEnvelopesUseCase,
 } from '../../composition';
+import { useLaMasNueva } from '../../hooks/useLaMasNueva';
 import FullScreenLoader from '../../components/ui/FullScreenLoader';
 import { aCamposDeLaCompeticion } from '../../utils/camposDeLaCompeticion';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
 import { mensajeDeError } from '../../utils/sinCobertura';
+
+// El toast de «no se han podido cargar los inscritos»: uno solo, y se va al volver la lista
+const AVISO_INSCRITOS = 'inscritos-sin-cargar';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
@@ -49,8 +53,12 @@ const SchedulePage = () => {
   const [schedule, setSchedule] = useState(null);
   const [golfCourses, setGolfCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
-  // Si la lista de inscritos no se pudo cargar: vacía no es «no hay nadie»
+  // Si la lista de inscritos no se pudo cargar: vacía no es «no hay nadie», y
+  // con ella el reparto manual mandaría solo a los capitanes (31 oct 2026)
   const [inscritosSinCargar, setInscritosSinCargar] = useState(false);
+  // Las lecturas de inscritos pueden cruzarse (StrictMode, cambio de idioma, la
+  // recarga tras «Generar»): un fallo viejo no pisa una lista nueva (CodeRabbit)
+  const ordenInscritos = useLaMasNueva();
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,14 +103,13 @@ const SchedulePage = () => {
   const loadData = useCallback(async () => {
     if (!user) return;
 
+    const turno = ordenInscritos.turno();
     setIsLoading(true);
     try {
       const [compData, scheduleData, coursesResult, enrollmentsData] = await Promise.all([
         getCompetitionDetailUseCase.execute(id),
         getScheduleUseCase.execute(id).catch(() => null),
         getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-        // Sin tragarse el fallo: una lista vacía por error haría que reasignar
-        // mandara dos equipos vacíos (CodeRabbit en la #720)
         listEnrollmentsUseCase.execute(id).then(
           (lista) => ({ ok: true, lista }),
           () => ({ ok: false, lista: [] })
@@ -114,8 +121,16 @@ const SchedulePage = () => {
 
       setGolfCourses(aCamposDeLaCompeticion(coursesResult));
 
-      setEnrollments(enrollmentsData.lista);
-      setInscritosSinCargar(!enrollmentsData.ok);
+      if (ordenInscritos.aplicar(turno)) {
+        setEnrollments(enrollmentsData.lista);
+        setInscritosSinCargar(!enrollmentsData.ok);
+        // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
+        if (enrollmentsData.ok) {
+          customToast.dismiss(AVISO_INSCRITOS);
+        } else {
+          customToast.error(t('errors.failedToLoadEnrollments'), { id: AVISO_INSCRITOS });
+        }
+      }
     } catch (error) {
       console.error('Error loading schedule data:', error);
       customToast.error(t('errors.failedToLoadSchedule'));
@@ -123,7 +138,7 @@ const SchedulePage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [id, user, navigate, t]);
+  }, [id, user, navigate, t, ordenInscritos]);
 
   useEffect(() => {
     if (user) {
@@ -217,6 +232,7 @@ const SchedulePage = () => {
         // tiraba los emparejamientos hechos a mano. Con las inscripciones:
         // un retirado no puede seguir ofreciéndose. Y con la competición: si
         // la reabrieron entretanto, «Generar» deja de ofrecerse
+        const turno = ordenInscritos.turno();
         try {
           const [competicion, agenda, inscripciones] = await Promise.all([
             getCompetitionDetailUseCase.execute(id),
@@ -225,8 +241,11 @@ const SchedulePage = () => {
           ]);
           setCompetition(competicion);
           setSchedule(agenda);
-          setEnrollments(inscripciones);
-          setInscritosSinCargar(false);
+          if (ordenInscritos.aplicar(turno)) {
+            setEnrollments(inscripciones);
+            setInscritosSinCargar(false);
+            customToast.dismiss(AVISO_INSCRITOS);
+          }
         } catch (recarga) {
           // Sin la sesión recargada no hay motivo que enseñar: la frase del
           // servidor, que también dice quién
@@ -494,6 +513,7 @@ const SchedulePage = () => {
                 captains={competition.captains}
                 status={competition.status}
                 onFillCaptain={setCubriendoCapitan}
+                inscritosSinCargar={inscritosSinCargar}
                 t={t}
               />
             </motion.div>
@@ -662,8 +682,6 @@ const SchedulePage = () => {
           isProcessing={isProcessing}
           teamNames={teamNames}
           captains={competition.captains}
-          hasTeams={Boolean(teamAssignment)}
-          currentTeams={teamAssignment}
           inscritosSinCargar={inscritosSinCargar}
           t={t}
         />
