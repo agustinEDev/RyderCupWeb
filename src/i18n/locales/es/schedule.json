@@ -73,7 +73,6 @@
   "teams": {
     "title": "Asignación de Equipos",
     "assign": "Asignar Equipos",
-    "reassign": "Reasignar Equipos",
     "mode": "Modo de Asignación",
     "manual": "Manual",
     "automatic": "Automática",
@@ -96,9 +95,6 @@
     "fillCaptainConfirm": "Nombrar",
     "fillCaptainCancel": "Cancelar",
     "fillCaptainNobody": "No queda nadie inscrito en ese equipo.",
-    "captainMissingWithTeams": "Falta nombrar un capitán. Con los equipos ya repartidos se hace desde «Nombrar capitán», en el equipo que lo necesita.",
-    "replaceWarning": "Este reparto sustituye a los equipos de ahora. Si salieron del draft, cambiarlos aquí deshace lo que eligieron los capitanes.",
-    "enrollmentsNotLoaded": "No se han podido cargar los inscritos: recarga la página antes de reasignar, o los equipos saldrían vacíos.",
     "undo": "Deshacer equipos",
     "undoConfirm": {
       "title": "¿Deshacer los equipos?",

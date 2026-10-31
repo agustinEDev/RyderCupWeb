@@ -50,7 +50,6 @@ const SchedulePage = () => {
   const [golfCourses, setGolfCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   // Si la lista de inscritos no se pudo cargar: vacía no es «no hay nadie»
-  const [inscritosSinCargar, setInscritosSinCargar] = useState(false);
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,12 +100,7 @@ const SchedulePage = () => {
         getCompetitionDetailUseCase.execute(id),
         getScheduleUseCase.execute(id).catch(() => null),
         getCompetitionGolfCoursesUseCase.execute(id).catch(() => []),
-        // Sin tragarse el fallo: una lista vacía por error haría que reasignar
-        // mandara dos equipos vacíos (CodeRabbit en la #720)
-        listEnrollmentsUseCase.execute(id).then(
-          (lista) => ({ ok: true, lista }),
-          () => ({ ok: false, lista: [] })
-        ),
+        listEnrollmentsUseCase.execute(id).catch(() => []),
       ]);
 
       setCompetition(compData);
@@ -114,8 +108,7 @@ const SchedulePage = () => {
 
       setGolfCourses(aCamposDeLaCompeticion(coursesResult));
 
-      setEnrollments(enrollmentsData.lista);
-      setInscritosSinCargar(!enrollmentsData.ok);
+      setEnrollments(enrollmentsData);
     } catch (error) {
       console.error('Error loading schedule data:', error);
       customToast.error(t('errors.failedToLoadSchedule'));
@@ -226,7 +219,6 @@ const SchedulePage = () => {
           setCompetition(competicion);
           setSchedule(agenda);
           setEnrollments(inscripciones);
-          setInscritosSinCargar(false);
         } catch (recarga) {
           // Sin la sesión recargada no hay motivo que enseñar: la frase del
           // servidor, que también dice quién
@@ -662,9 +654,6 @@ const SchedulePage = () => {
           isProcessing={isProcessing}
           teamNames={teamNames}
           captains={competition.captains}
-          hasTeams={Boolean(teamAssignment)}
-          currentTeams={teamAssignment}
-          inscritosSinCargar={inscritosSinCargar}
           t={t}
         />
       )}
