@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { StrictMode } from 'react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -12,6 +13,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * | E3 | Panel de equipos así                         | Sin «Nombrar capitán»; si falta uno, aviso de recargar |
  * | E4 | La lista carga bien                          | Ni toast ni aviso                       |
  * | E5 | Una recarga posterior la trae (la de la página o la de «Generar» bloqueado) | Vuelve todo y se va el toast |
+ * | E7 | Dos lecturas cruzadas: la vieja falla al final | Se queda la nueva |
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -237,5 +239,31 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
     // Y el toast de «recarga la página» se va: ya no hace falta
     expect(customToast.dismiss).toHaveBeenCalledWith('inscritos-sin-cargar');
+  });
+
+  it('E7: si dos lecturas se cruzan, un fallo viejo no pisa la lista nueva (CodeRabbit)', async () => {
+    // StrictMode lanza la carga dos veces a la vez, como un cambio de idioma:
+    // la primera falla cuando la segunda ya ha llegado bien
+    let fallarLaPrimera;
+    mockDetalle.mockResolvedValue(SIN_CAPITAN_A);
+    mockInscripciones
+      .mockImplementationOnce(() => new Promise((_, rechazar) => { fallarLaPrimera = rechazar; }))
+      .mockResolvedValue(INSCRITOS);
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/competitions/comp-1/schedule']}>
+          <Routes>
+            <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>
+    );
+    await screen.findByTestId('cubrir-capitan-A');
+
+    await act(async () => fallarLaPrimera(FALLO));
+
+    expect(screen.getByTestId('cubrir-capitan-A')).toBeInTheDocument();
+    expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
+    expect(customToast.error).not.toHaveBeenCalled();
   });
 });
