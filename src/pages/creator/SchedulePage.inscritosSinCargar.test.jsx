@@ -319,6 +319,10 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     await screen.findByTestId('deshacer-equipos');
     expect(customToast.error).toHaveBeenCalledTimes(2);
+    // Se quitó al salir, antes de volver a salir (revisor)
+    const [primero, segundo] = customToast.error.mock.invocationCallOrder;
+    const quitado = customToast.dismiss.mock.invocationCallOrder.find((n) => n > primero);
+    expect(quitado).toBeLessThan(segundo);
     expect(customToast.error).toHaveBeenLastCalledWith('errors.failedToLoadEnrollments', {
       id: 'inscritos-sin-cargar',
     });

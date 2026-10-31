@@ -396,9 +396,9 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   // La salida del último toque, por si un doble toque corta su alejamiento
   const salidaRecienTocada = useRef(null);
-  // Midiendo, el último toque y lo medido antes de él: un doble toque acerca y
-  // no mide, así que el segundo deshace lo que midió el primero
-  const toqueDeMedir = useRef({ en: -Infinity, antes: null });
+  // Midiendo, el último toque y lo que había antes de él (lo medido y las
+  // gracias): un doble toque acerca y no mide, así que el segundo lo devuelve
+  const toqueDeMedir = useRef({ en: -Infinity, medido: null, gracias: false });
   const enlaceEntero = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
@@ -505,15 +505,19 @@ const MapaDelHoyo = ({
         setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
-      // El doble toque acerca el mapa: vuelve lo medido antes (pasada del Kind,
+      // El doble toque acerca el mapa: vuelve lo de antes (pasada del Kind,
       // 31 oct 2026: dejaba el punto donde se tocó)
       const ahora = globalThis.performance.now();
+      // Si el primero marcó (y con él se acabó de marcar), el segundo tampoco
+      // mide (revisor)
+      if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
       if (ahora - toqueDeMedir.current.en < DOBLE_TOQUE_MS) {
         toqueDeMedir.current.en = ahora;
-        setMedido(toqueDeMedir.current.antes);
+        setMedido(toqueDeMedir.current.medido);
+        setGracias(toqueDeMedir.current.gracias);
         return;
       }
-      toqueDeMedir.current = { en: ahora, antes: medido };
+      toqueDeMedir.current = { en: ahora, medido, gracias };
       setGracias(false);
       setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16

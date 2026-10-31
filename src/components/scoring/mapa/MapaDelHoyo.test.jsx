@@ -1256,6 +1256,21 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(mapa().fitBounds).not.toHaveBeenCalled();
     });
 
+    it('D7 (revisor, 31 oct): un doble toque cuyo primero acaba de marcar no mide con el segundo', () => {
+      marcar({ metros: 300 });
+      const tocarA = (ms, p) => {
+        reloj.mockImplementation(() => ms);
+        tocar(p);
+      };
+      tocarA(1000, T);
+
+      tocarA(3000, G);
+      tocarA(3100, G);
+
+      expect(lineaDibujada()).toBeDefined();
+      expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toEqual([]);
+    });
+
     it('P7: mientras se pide, el doble toque no acerca el mapa', () => {
       marcar();
 
@@ -4156,6 +4171,23 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(screen.queryByText('mapa.reporteGracias')).toBeNull();
   });
 
+  it('D8 (revisor, 31 oct): un doble toque tras enviar no se lleva las gracias', () => {
+    abrirConLinea();
+    proponer();
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+    const tocarA = (ms, p) => {
+      reloj.mockImplementation(() => ms);
+      tocar(p);
+    };
+
+    // Muy después del reporte: React también lee el reloj y lo adelanta
+    tocarA(1e9, alNorte(100));
+    tocarA(1e9 + 100, alNorte(100));
+
+    expect(screen.getByText('mapa.reporteGracias')).toBeInTheDocument();
+    expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.punto === 'medido')).toEqual([]);
+  });
+
   it('R-8: reportando, «Marcar hoyo» no está', () => {
     abrirConLinea({ hoyo: { playLine: [T, alNorte(200)], green: null }, porMarcar: 'green' });
     fireEvent.click(screen.getByRole('button', { name: 'mapa.ahoraNo' }));
@@ -4607,6 +4639,8 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
    * | D4 | Triple toque                                | Lo de antes del primero        |
    * | D5 | Un toque suelto tras el doble               | Mide                           |
    * | D6 | Un toque                                    | Mide en el acto, sin esperar   |
+   * | D7 | Doble toque cuyo primero acaba de marcar    | Marcado, y nada medido         |
+   * | D8 | Doble toque tras enviar un reporte          | Siguen las gracias, sin medir  |
    */
   describe('D: el doble toque acerca, no mide', () => {
     const Q = alEste(-20, alNorte(200));
@@ -4624,8 +4658,11 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       desde(0);
 
       tocarA(1000, Q);
+      mapa().fitBounds.mockClear();
       tocarA(1100, Q);
 
+      // Ni vuelve a encuadrar: el acercamiento es del doble toque
+      expect(mapa().fitBounds).not.toHaveBeenCalled();
       expect(elPunto()).toEqual([]);
       expect(medida()).toEqual([]);
       expect(lineaDelHoyo()).toBeDefined();
@@ -4651,6 +4688,16 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
       tocarA(1000, P);
       tocarA(1500, Q);
+
+      expect(medida()).toEqual([[en(T), en(Q)]]);
+    });
+
+    it('D3: a DOBLE_TOQUE_MS justos ya no es doble toque', () => {
+      abrirConLinea();
+      desde(0);
+
+      tocarA(1000, P);
+      tocarA(1400, Q);
 
       expect(medida()).toEqual([[en(T), en(Q)]]);
     });
