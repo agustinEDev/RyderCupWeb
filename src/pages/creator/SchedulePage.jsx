@@ -49,7 +49,6 @@ const SchedulePage = () => {
   const [schedule, setSchedule] = useState(null);
   const [golfCourses, setGolfCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
-  // Si la lista de inscritos no se pudo cargar: vacía no es «no hay nadie»
   // Cubrir el puesto de un capitán que se fue tras el reparto (FE #692)
   const [cubriendoCapitan, setCubriendoCapitan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);

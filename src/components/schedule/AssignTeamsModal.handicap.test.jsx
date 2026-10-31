@@ -10,7 +10,7 @@ import { abreviaturaDeHandicap } from './__fixtures__/abreviaturaDeHandicap';
  *   #   caso                                   | al abrir
  *   ----|---------------------------------------|----------------------------
  *   C1  sin equipos                            | automático
- *   C4  sin poder cargar los inscritos         | no se bloquea: el automático
+ *   C4  sin inscritos en la lista              | no se bloquea: el automático
  *       |                                       | lo hace el servidor con los suyos
  *   H1  hándicap plus en el reparto manual     | con «+»
  */
@@ -57,7 +57,7 @@ describe('AssignTeamsModal · al abrirse', () => {
     expect(screen.getByDisplayValue('automatic')).toBeChecked();
   });
 
-  it('C4: sin poder cargar los inscritos, el automático sigue disponible', () => {
+  it('C4: sin inscritos en la lista, el automático no se bloquea', () => {
     const onConfirm = vi.fn();
     pintar({ enrollments: [], onConfirm });
 
