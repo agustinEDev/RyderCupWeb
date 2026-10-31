@@ -14,6 +14,14 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * | E4 | La lista carga bien                          | Ni toast ni aviso                       |
  * | E5 | Una recarga posterior la trae (la de la página o la de «Generar» bloqueado) | Vuelve todo y se va el toast |
  * | E7 | Dos lecturas cruzadas: la vieja falla al final | Se queda la nueva |
+ *
+ * Al salir de la agenda (pasada del Kind, 31 oct 2026: seguía ~1 s en la ficha)
+ *
+ * | #  | Caso                                         | Queda                                   |
+ * |----|----------------------------------------------|-----------------------------------------|
+ * | S1 | Con el toast a la vista, salir a la ficha    | Se quita al salir                       |
+ * | S2 | Salir con otros toasts                       | Solo se quita ese: nunca todos          |
+ * | S3 | Volver con la lista aún sin cargar           | Sale otra vez                           |
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -122,6 +130,17 @@ const pintar = () =>
     <MemoryRouter initialEntries={['/competitions/comp-1/schedule']}>
       <Routes>
         <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+// La agenda y la ficha, para salir de una a otra por su enlace
+const pintarConFicha = () =>
+  render(
+    <MemoryRouter initialEntries={['/competitions/comp-1/schedule']}>
+      <Routes>
+        <Route path="/competitions/:id/schedule" element={<SchedulePage />} />
+        <Route path="/competitions/:id" element={<p>ficha</p>} />
       </Routes>
     </MemoryRouter>
   );
@@ -265,5 +284,43 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     expect(screen.getByTestId('cubrir-capitan-A')).toBeInTheDocument();
     expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
     expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('S1: al salir de la agenda, el toast se va con ella', async () => {
+    pintarConFicha();
+    await screen.findByTestId('deshacer-equipos');
+    expect(customToast.dismiss).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('agenda-en-la-ficha'));
+
+    expect(await screen.findByText('ficha')).toBeInTheDocument();
+    expect(customToast.dismiss).toHaveBeenCalledWith('inscritos-sin-cargar');
+  });
+
+  it('S2: solo ese: los demás toasts se quedan', async () => {
+    pintarConFicha();
+    await screen.findByTestId('deshacer-equipos');
+
+    fireEvent.click(screen.getByTestId('agenda-en-la-ficha'));
+
+    await screen.findByText('ficha');
+    expect(customToast.dismiss).toHaveBeenCalled();
+    for (const llamada of customToast.dismiss.mock.calls) {
+      expect(llamada).toEqual(['inscritos-sin-cargar']);
+    }
+  });
+
+  it('S3: si se vuelve y sigue sin cargar, sale otra vez', async () => {
+    const { unmount } = pintar();
+    await screen.findByTestId('deshacer-equipos');
+    unmount();
+
+    pintar();
+
+    await screen.findByTestId('deshacer-equipos');
+    expect(customToast.error).toHaveBeenCalledTimes(2);
+    expect(customToast.error).toHaveBeenLastCalledWith('errors.failedToLoadEnrollments', {
+      id: 'inscritos-sin-cargar',
+    });
   });
 });

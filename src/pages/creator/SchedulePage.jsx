@@ -147,6 +147,10 @@ const SchedulePage = () => {
     }
   }, [user, loadData]);
 
+  // El toast de los inscritos es de la agenda: al salir se va con ella (pasada
+  // del Kind, 31 oct 2026: seguía ~1 s en la ficha)
+  useEffect(() => () => customToast.dismiss(AVISO_INSCRITOS), []);
+
   const jugadoresDelEquipo = (equipo) => {
     const lista =
       equipo === 'A' ? teamAssignment?.teamAPlayerIds : teamAssignment?.teamBPlayerIds;
