@@ -75,7 +75,7 @@ describe('AssignTeamsModal · al abrirse', () => {
     pintar({ enrollments: [], inscritosSinCargar: true, onConfirm });
 
     expect(screen.getByDisplayValue('manual')).toBeDisabled();
-    expect(screen.getByTestId('reparto-inscritos-sin-cargar')).toHaveTextContent(
+    expect(screen.getByDisplayValue('manual')).toHaveAccessibleDescription(
       'teams.enrollmentsNotLoaded'
     );
     fireEvent.submit(screen.getByDisplayValue('automatic').closest('form'));

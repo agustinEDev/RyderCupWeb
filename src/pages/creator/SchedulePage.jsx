@@ -115,7 +115,10 @@ const SchedulePage = () => {
 
       setEnrollments(enrollmentsData.lista);
       setInscritosSinCargar(!enrollmentsData.ok);
-      if (!enrollmentsData.ok) customToast.error(t('errors.failedToLoadEnrollments'));
+      // Con id: si la carga se repite (StrictMode, cambio de idioma), un solo aviso
+      if (!enrollmentsData.ok) {
+        customToast.error(t('errors.failedToLoadEnrollments'), { id: 'inscritos-sin-cargar' });
+      }
     } catch (error) {
       console.error('Error loading schedule data:', error);
       customToast.error(t('errors.failedToLoadSchedule'));

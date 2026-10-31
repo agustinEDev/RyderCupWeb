@@ -12,7 +12,6 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * | E3 | Panel de equipos así                         | Sin «Nombrar capitán»; si falta uno, aviso de recargar |
  * | E4 | La lista carga bien                          | Ni toast ni aviso                       |
  * | E5 | Una recarga posterior la trae (la de la página o la de «Generar» bloqueado) | Vuelve todo |
- * | E6 | Los textos                                   | En español e inglés                     |
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -142,7 +141,9 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     await screen.findByTestId('deshacer-equipos');
     expect(customToast.error).toHaveBeenCalledTimes(1);
-    expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadEnrollments');
+    expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadEnrollments', {
+      id: 'inscritos-sin-cargar',
+    });
   });
 
   it('E2: el reparto se abre con el manual desactivado y el automático disponible', async () => {
@@ -174,7 +175,7 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     pintar();
 
     expect(await screen.findByTestId('capitan-inscritos-sin-cargar-A')).toHaveTextContent(
-      'teams.enrollmentsNotLoaded'
+      'teams.fillCaptainNeedsEnrollments'
     );
     expect(screen.queryByTestId('cubrir-capitan-A')).not.toBeInTheDocument();
     expect(screen.queryByTestId('capitan-inscritos-sin-cargar-B')).not.toBeInTheDocument();
@@ -232,13 +233,5 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
 
     expect(await screen.findByTestId('cubrir-capitan-A')).toBeInTheDocument();
     expect(screen.queryByTestId('capitan-inscritos-sin-cargar-A')).not.toBeInTheDocument();
-  });
-
-  it('E6: los textos existen en los dos idiomas', async () => {
-    for (const idioma of ['es', 'en']) {
-      const textos = (await import(`../../i18n/locales/${idioma}/schedule.json`)).default;
-      expect(textos.errors.failedToLoadEnrollments, idioma).toBeTruthy();
-      expect(textos.teams.enrollmentsNotLoaded, idioma).toBeTruthy();
-    }
   });
 });

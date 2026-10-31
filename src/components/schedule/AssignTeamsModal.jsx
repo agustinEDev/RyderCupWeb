@@ -117,7 +117,11 @@ const AssignTeamsModalContent = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {inscritosSinCargar && (
-            <p data-testid="reparto-inscritos-sin-cargar" className="text-sm text-red-700">
+            <p
+              id="reparto-inscritos-sin-cargar"
+              data-testid="reparto-inscritos-sin-cargar"
+              className="text-sm text-red-700"
+            >
               {t('teams.enrollmentsNotLoaded')}
             </p>
           )}
@@ -141,7 +145,11 @@ const AssignTeamsModalContent = ({
                 />
                 <span className="text-sm font-medium">{t('teams.automatic')}</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label
+                className={`flex items-center gap-2 ${
+                  inscritosSinCargar ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                }`}
+              >
                 <input
                   type="radio"
                   name="mode"
@@ -151,6 +159,7 @@ const AssignTeamsModalContent = ({
                   // Sin la lista, el manual mandaría solo a los capitanes; el
                   // automático lo reparte el servidor con la suya
                   disabled={inscritosSinCargar}
+                  aria-describedby={inscritosSinCargar ? 'reparto-inscritos-sin-cargar' : undefined}
                   className="text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-medium">{t('teams.manual')}</span>

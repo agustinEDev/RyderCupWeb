@@ -155,7 +155,7 @@ const TeamAssignmentSection = ({
 
           {canManage && faltaSinLista('A') && (
             <p data-testid="capitan-inscritos-sin-cargar-A" className="mt-3 text-sm text-red-700">
-              {t('teams.enrollmentsNotLoaded')}
+              {t('teams.fillCaptainNeedsEnrollments')}
             </p>
           )}
           {canManage && sinCapitan('A') && (
@@ -193,7 +193,7 @@ const TeamAssignmentSection = ({
 
           {canManage && faltaSinLista('B') && (
             <p data-testid="capitan-inscritos-sin-cargar-B" className="mt-3 text-sm text-red-700">
-              {t('teams.enrollmentsNotLoaded')}
+              {t('teams.fillCaptainNeedsEnrollments')}
             </p>
           )}
           {canManage && sinCapitan('B') && (
