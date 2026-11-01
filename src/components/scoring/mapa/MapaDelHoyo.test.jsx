@@ -211,6 +211,19 @@ describe('MapaDelHoyo', () => {
       expect(mapa().remove).toHaveBeenCalled();
     });
 
+    it('V1 (pasada del Kind, 1 nov 2026): «Ver hoyo» y «Céntrame» no se parten en dos líneas', () => {
+      abrir();
+
+      expect(screen.getByRole('button', { name: 'mapa.verHoyo' })).toHaveClass('whitespace-nowrap');
+      expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass('whitespace-nowrap');
+    });
+
+    it('V1: «Norte» tampoco', () => {
+      abrir({ hoyo: null, porMarcar: null });
+
+      expect(screen.getByRole('button', { name: 'mapa.norte' })).toHaveClass('whitespace-nowrap');
+    });
+
     it('«Cerrar» y la tecla Escape cierran', () => {
       const onCerrar = vi.fn();
       abrir({ onCerrar });

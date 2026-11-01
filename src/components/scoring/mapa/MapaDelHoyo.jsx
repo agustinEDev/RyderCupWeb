@@ -1438,7 +1438,7 @@ const MapaDelHoyo = ({
                 ultimaVista.current = { tipo: 'hoyo' };
                 encuadrarHoyo(true);
               }}
-              className={`${BOTON} pointer-events-auto`}
+              className={`${BOTON} pointer-events-auto whitespace-nowrap`}
             >
               <Maximize2 className="h-4 w-4" aria-hidden="true" />
               {t('mapa.verHoyo')}
@@ -1450,7 +1450,7 @@ const MapaDelHoyo = ({
                 cancelarMedida();
                 mapaRef.current?.resetNorth();
               }}
-              className={`${BOTON} pointer-events-auto`}
+              className={`${BOTON} pointer-events-auto whitespace-nowrap`}
             >
               <Compass className="h-4 w-4" aria-hidden="true" />
               {t('mapa.norte')}
@@ -1464,7 +1464,7 @@ const MapaDelHoyo = ({
                 cancelarMedida();
                 mapaRef.current?.easeTo({ center: lngLat(posicion) });
               }}
-              className={`${BOTON} pointer-events-auto`}
+              className={`${BOTON} pointer-events-auto whitespace-nowrap`}
             >
               <LocateFixed className="h-4 w-4" aria-hidden="true" />
               {t('mapa.centrame')}
