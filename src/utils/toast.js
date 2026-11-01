@@ -6,7 +6,7 @@ import { esUnAvisoSilenciado } from './terminosPendientes';
 /**
  * Custom Toast Content Component
  */
-const ToastContent = ({ message, type, toastId, icon }) => {
+const ToastContent = ({ message, type, toastId, icon, visible }) => {
   const config = {
     success: {
       Icon: CheckCircle2,
@@ -40,7 +40,11 @@ const ToastContent = ({ message, type, toastId, icon }) => {
   return createElement(
     'div',
     {
-      className: `flex items-start gap-3 p-4 pr-2 ${bgClass} border ${borderClass} rounded-lg shadow-lg min-w-[300px] max-w-md`,
+      // Cerrado, se va en el acto: la librería lo retira 1 s después y hasta
+      // entonces seguía a la vista (pasada del Kind, 1 nov 2026)
+      'data-toast': '',
+      'aria-hidden': visible ? undefined : 'true',
+      className: `flex items-start gap-3 p-4 pr-2 ${bgClass} border ${borderClass} rounded-lg shadow-lg min-w-[300px] max-w-md transition-opacity duration-150 motion-reduce:transition-none ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`,
     },
     // Icon (custom emoji or default Icon component)
     createElement('div', { className: 'flex-shrink-0' },
@@ -70,7 +74,7 @@ export const customToast = {
   success: (message, options = {}) => {
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'success', toastId: t.id, icon }),
+      (t) => createElement(ToastContent, { message, type: 'success', toastId: t.id, icon, visible: t.visible }),
       { duration: 4000, ...toastOptions }
     );
   },
@@ -81,7 +85,7 @@ export const customToast = {
     if (esUnAvisoSilenciado(message)) return undefined;
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'error', toastId: t.id, icon }),
+      (t) => createElement(ToastContent, { message, type: 'error', toastId: t.id, icon, visible: t.visible }),
       { duration: 5000, ...toastOptions }
     );
   },
@@ -89,7 +93,7 @@ export const customToast = {
   warning: (message, options = {}) => {
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'warning', toastId: t.id, icon }),
+      (t) => createElement(ToastContent, { message, type: 'warning', toastId: t.id, icon, visible: t.visible }),
       { duration: 5000, ...toastOptions }
     );
   },
@@ -97,7 +101,7 @@ export const customToast = {
   info: (message, options = {}) => {
     const { icon, ...toastOptions } = options;
     return toast.custom(
-      (t) => createElement(ToastContent, { message, type: 'info', toastId: t.id, icon }),
+      (t) => createElement(ToastContent, { message, type: 'info', toastId: t.id, icon, visible: t.visible }),
       { duration: 4000, ...toastOptions }
     );
   },
