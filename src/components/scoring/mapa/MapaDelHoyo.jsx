@@ -1428,6 +1428,8 @@ const MapaDelHoyo = ({
             <button
               type="button"
               onClick={() => {
+                // Lo tocado justo antes no llega después a cambiar lo que se pidió (/code-review)
+                cancelarMedida();
                 // A mitad de hoyo, vuelve también su línea (H3); y lo último
                 // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
                 setLineaOculta(false);
@@ -1440,7 +1442,14 @@ const MapaDelHoyo = ({
               {t('mapa.verHoyo')}
             </button>
           ) : (
-            <button type="button" onClick={() => mapaRef.current?.resetNorth()} className={`${BOTON} pointer-events-auto`}>
+            <button
+              type="button"
+              onClick={() => {
+                cancelarMedida();
+                mapaRef.current?.resetNorth();
+              }}
+              className={`${BOTON} pointer-events-auto`}
+            >
               <Compass className="h-4 w-4" aria-hidden="true" />
               {t('mapa.norte')}
             </button>
@@ -1449,7 +1458,10 @@ const MapaDelHoyo = ({
             <button
               type="button"
               disabled={!posicionEnElCampo}
-              onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
+              onClick={() => {
+                cancelarMedida();
+                mapaRef.current?.easeTo({ center: lngLat(posicion) });
+              }}
               className={`${BOTON} pointer-events-auto`}
             >
               <LocateFixed className="h-4 w-4" aria-hidden="true" />

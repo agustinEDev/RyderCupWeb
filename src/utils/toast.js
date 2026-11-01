@@ -42,7 +42,7 @@ const ToastContent = ({ message, type, toastId, icon, visible }) => {
     {
       // Cerrado, se va en el acto: la librería lo retira 1 s después y hasta
       // entonces seguía a la vista (pasada del Kind, 1 nov 2026)
-      'data-toast': '',
+      'data-testid': 'toast',
       // `inert`: fuera del árbol de accesibilidad y del foco, también la X si
       // se pulsó con el teclado (revisor)
       inert: !visible,

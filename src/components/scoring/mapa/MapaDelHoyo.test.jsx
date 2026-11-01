@@ -4654,7 +4654,7 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
    * | M4  | Dos toques rápidos a más de 30 px                 | Solo el último                  |
    * | M5  | Dos toques a 500 ms o más                         | Dos medidas                     |
    * | M6  | Triple toque                                      | No mide                         |
-   * | M7  | «Quitar», «Marcar el hoyo entero», «⋮», cerrar    | Lo pendiente no llega           |
+   * | M7  | «Quitar», «Marcar…», «⋮», «Ver hoyo», «Céntrame», «Norte», cerrar | Lo pendiente no llega |
    * | M10 | El punto medido                                   | No se queda los toques          |
    */
   describe('M: medir espera al doble toque', () => {
@@ -4854,6 +4854,29 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
       expect(elPunto()).toEqual([]);
       expect(medida()).toEqual([]);
+    });
+
+    it.each(['mapa.verHoyo', 'mapa.centrame'])('M7 (/code-review): «%s» con una medida pendiente: no llega', (boton) => {
+      abrirConLinea();
+      desde(0);
+      pulsarA(1000, P);
+
+      fireEvent.click(screen.getByRole('button', { name: boton }));
+      esperar(1000);
+
+      expect(elPunto()).toEqual([]);
+    });
+
+    it('M7 (/code-review): «Norte» (hoyo sin mapa) con una medida pendiente: no llega', () => {
+      abrir({ hoyo: null, porMarcar: null });
+      act(() => mapa().oyentes.load());
+      desde(0);
+      pulsarA(1000, P);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.norte' }));
+      esperar(1000);
+
+      expect(elPunto()).toEqual([]);
     });
 
     it('M7: al cerrar el mapa, lo pendiente se cancela', () => {

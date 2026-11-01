@@ -15,7 +15,7 @@ import customToast from './toast';
  * | K4 | Oculto                                       | No se puede pulsar ni enfocar       |
  * | K5 | Se cierra uno                                | Los demás, igual                    |
  */
-const caja = (texto) => screen.getByText(texto).closest('[data-toast]');
+const caja = (texto) => screen.getByText(texto).closest('[data-testid="toast"]');
 const oculto = (el) => {
   expect(el).toHaveClass('opacity-0', 'pointer-events-none');
   // `inert`: fuera del árbol de accesibilidad y del foco (con la X pulsada
