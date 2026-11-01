@@ -216,12 +216,20 @@ describe('MapaDelHoyo', () => {
 
       expect(screen.getByRole('button', { name: 'mapa.verHoyo' })).toHaveClass('whitespace-nowrap');
       expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass('whitespace-nowrap');
+      // Juntos: si no caben, bajan los dos y no uno solo (medido en inglés a 360 px)
+      const grupo = screen.getByRole('button', { name: 'mapa.verHoyo' }).parentElement;
+      expect(screen.getByRole('button', { name: 'mapa.centrame' }).parentElement).toBe(grupo);
+      expect(grupo).toHaveClass('flex', 'shrink-0');
     });
 
     it('V1 (revisor): la atribución de al lado encoge y parte, también a 320 px', () => {
       abrir({ atribucion: 'OSM' });
 
-      expect(screen.getByText('mapa.atribucionPnoa').parentElement).toHaveClass('min-w-0', '[overflow-wrap:anywhere]');
+      const atribucion = screen.getByText('mapa.atribucionPnoa').parentElement;
+      // Hasta 64 px se queda al lado y parte; con menos, la fila se parte y baja
+      // a la suya (/code-review: a 320 px quedaba una columna de 12 líneas)
+      expect(atribucion).toHaveClass('min-w-16', 'flex-1', '[overflow-wrap:anywhere]');
+      expect(atribucion.parentElement).toHaveClass('flex-wrap', 'justify-end');
     });
 
     it('V1: «Norte» tampoco', () => {

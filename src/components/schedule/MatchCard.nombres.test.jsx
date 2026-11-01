@@ -34,7 +34,9 @@ describe('MatchCard · nombres a 360 px', () => {
     );
 
     const nombre = screen.getByText('Olga Organiza');
-    expect(nombre.parentElement).toHaveClass('flex-wrap');
+    expect(nombre.parentElement).toHaveClass('flex-wrap', 'gap-y-0.5');
+    // Si baja, el HCP sigue a la derecha, como en las filas que caben (/code-review)
+    expect(nombre.nextElementSibling).toHaveClass('ml-auto');
     expect(nombre).toHaveClass('break-words', 'min-w-0');
   });
 });

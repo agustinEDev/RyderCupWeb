@@ -1413,10 +1413,12 @@ const MapaDelHoyo = ({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          {/* Encoge y parte por donde sea: si no, «OpenStreetMap» no baja de su
-              ancho y a 320 px echaba los botones fuera de la pantalla (revisor) */}
-          <span className="pointer-events-auto min-w-0 flex-1 text-[10px] text-white/80 [overflow-wrap:anywhere] [text-shadow:0_1px_2px_#000]">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* Al lado de los botones encoge y parte por donde sea (si no,
+              «OpenStreetMap» no baja de su ancho y a 320 px echaba los botones
+              fuera; revisor). Con menos de 64 px, la fila se parte y baja a la
+              suya en vez de quedar en una columna de 12 líneas (/code-review) */}
+          <span className="pointer-events-auto min-w-16 flex-1 text-[10px] text-white/80 [overflow-wrap:anywhere] [text-shadow:0_1px_2px_#000]">
             <span>{t('mapa.atribucionPnoa')}</span>
             {atribucionDeLaOrtofoto(comunidad) && <span>{` · ${t(atribucionDeLaOrtofoto(comunidad))}`}</span>}
             {atribucion && (
@@ -1428,49 +1430,53 @@ const MapaDelHoyo = ({
               </>
             )}
           </span>
-          {sinMapa ? null : conMapa || linea ? (
-            <button
-              type="button"
-              onClick={() => {
-                // Lo tocado justo antes no llega después a cambiar lo que se pidió (/code-review)
-                cancelarMedida();
-                // A mitad de hoyo, vuelve también su línea (H3); y lo último
-                // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
-                setLineaOculta(false);
-                ultimaVista.current = { tipo: 'hoyo' };
-                encuadrarHoyo(true);
-              }}
-              className={`${BOTON} pointer-events-auto whitespace-nowrap`}
-            >
-              <Maximize2 className="h-4 w-4" aria-hidden="true" />
-              {t('mapa.verHoyo')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                cancelarMedida();
-                mapaRef.current?.resetNorth();
-              }}
-              className={`${BOTON} pointer-events-auto whitespace-nowrap`}
-            >
-              <Compass className="h-4 w-4" aria-hidden="true" />
-              {t('mapa.norte')}
-            </button>
-          )}
+          {/* Juntos: si no caben al lado de la atribución, bajan los dos y no
+              uno solo (medido en inglés a 360 px) */}
           {!sinMapa && (
-            <button
-              type="button"
-              disabled={!posicionEnElCampo}
-              onClick={() => {
-                cancelarMedida();
-                mapaRef.current?.easeTo({ center: lngLat(posicion) });
-              }}
-              className={`${BOTON} pointer-events-auto whitespace-nowrap`}
-            >
-              <LocateFixed className="h-4 w-4" aria-hidden="true" />
-              {t('mapa.centrame')}
-            </button>
+            <div className="flex shrink-0 gap-2">
+              {conMapa || linea ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Lo tocado justo antes no llega después a cambiar lo que se pidió (/code-review)
+                    cancelarMedida();
+                    // A mitad de hoyo, vuelve también su línea (H3); y lo último
+                    // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
+                    setLineaOculta(false);
+                    ultimaVista.current = { tipo: 'hoyo' };
+                    encuadrarHoyo(true);
+                  }}
+                  className={`${BOTON} pointer-events-auto whitespace-nowrap`}
+                >
+                  <Maximize2 className="h-4 w-4" aria-hidden="true" />
+                  {t('mapa.verHoyo')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    cancelarMedida();
+                    mapaRef.current?.resetNorth();
+                  }}
+                  className={`${BOTON} pointer-events-auto whitespace-nowrap`}
+                >
+                  <Compass className="h-4 w-4" aria-hidden="true" />
+                  {t('mapa.norte')}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={!posicionEnElCampo}
+                onClick={() => {
+                  cancelarMedida();
+                  mapaRef.current?.easeTo({ center: lngLat(posicion) });
+                }}
+                className={`${BOTON} pointer-events-auto whitespace-nowrap`}
+              >
+                <LocateFixed className="h-4 w-4" aria-hidden="true" />
+                {t('mapa.centrame')}
+              </button>
+            </div>
           )}
         </div>
       </div>
