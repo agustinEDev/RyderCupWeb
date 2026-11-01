@@ -211,6 +211,33 @@ describe('MapaDelHoyo', () => {
       expect(mapa().remove).toHaveBeenCalled();
     });
 
+    it('V1 (pasada del Kind, 1 nov 2026): «Ver hoyo» y «Céntrame» no se parten en dos líneas', () => {
+      abrir();
+
+      expect(screen.getByRole('button', { name: 'mapa.verHoyo' })).toHaveClass('whitespace-nowrap');
+      expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass('whitespace-nowrap');
+      // Juntos: si no caben, bajan los dos y no uno solo (medido en inglés a 360 px)
+      const grupo = screen.getByRole('button', { name: 'mapa.verHoyo' }).parentElement;
+      expect(screen.getByRole('button', { name: 'mapa.centrame' }).parentElement).toBe(grupo);
+      expect(grupo).toHaveClass('flex', 'shrink-0');
+    });
+
+    it('V1 (revisor): la atribución de al lado encoge y parte, también a 320 px', () => {
+      abrir({ atribucion: 'OSM' });
+
+      const atribucion = screen.getByText('mapa.atribucionPnoa').parentElement;
+      // Hasta 64 px se queda al lado y parte; con menos, la fila se parte y baja
+      // a la suya (/code-review: a 320 px quedaba una columna de 12 líneas)
+      expect(atribucion).toHaveClass('min-w-16', 'flex-1', '[overflow-wrap:anywhere]');
+      expect(atribucion.parentElement).toHaveClass('flex-wrap', 'justify-end');
+    });
+
+    it('V1: «Norte» tampoco', () => {
+      abrir({ hoyo: null, porMarcar: null });
+
+      expect(screen.getByRole('button', { name: 'mapa.norte' })).toHaveClass('whitespace-nowrap');
+    });
+
     it('«Cerrar» y la tecla Escape cierran', () => {
       const onCerrar = vi.fn();
       abrir({ onCerrar });
@@ -4169,6 +4196,66 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
     expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
+  });
+
+  /**
+   * Escape en el mapa (pasada del Kind, 1 nov 2026: con «⋮» abierto cerraba el mapa entero)
+   *
+   * | #  | Caso                                   | Queda                                  |
+   * |----|----------------------------------------|----------------------------------------|
+   * | E1 | Menú «⋮» abierto                       | Se cierra el menú, foco a «⋮»; mapa abierto |
+   * | E2 | Marcando la propuesta de un reporte    | Se cancela el reporte; mapa abierto    |
+   * | E3 | Sin reporte                            | Se cierra el mapa (test «Cerrar» y Escape) |
+   */
+  it('E1: con «⋮» abierto, Escape cierra el menú y no el mapa', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('group', { name: 'mapa.reporteTitulo' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
+  });
+
+  it('E2: marcando la propuesta, Escape cancela el reporte y vuelve la línea de siempre', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+    motivo('WRONG_LINE');
+    expect(screen.getByText('mapa.reporteSalida')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByText('mapa.reporteSalida')).toBeNull();
+    expect(lineaDibujada()).toBeDefined();
+  });
+
+  it('E2 (revisor): con la propuesta lista, Escape la descarta y vuelve la de siempre', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    const deSiempre = lineaDibujada();
+    proponer();
+    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'mapa.enviarReporte' })).toBeNull();
+    expect(lineaDibujada()).toEqual(deSiempre);
+  });
+
+  it('E3: acabado el reporte, Escape vuelve a cerrar el mapa', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).toHaveBeenCalledTimes(1);
   });
 
   it('R-7: las gracias se anuncian y se van al tocar el mapa', () => {
