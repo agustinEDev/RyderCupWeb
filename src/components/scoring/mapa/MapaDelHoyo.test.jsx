@@ -218,6 +218,12 @@ describe('MapaDelHoyo', () => {
       expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass('whitespace-nowrap');
     });
 
+    it('V1 (revisor): la atribución de al lado encoge y parte, también a 320 px', () => {
+      abrir({ atribucion: 'OSM' });
+
+      expect(screen.getByText('mapa.atribucionPnoa').parentElement).toHaveClass('min-w-0', '[overflow-wrap:anywhere]');
+    });
+
     it('V1: «Norte» tampoco', () => {
       abrir({ hoyo: null, porMarcar: null });
 
@@ -4217,6 +4223,20 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(onCerrar).not.toHaveBeenCalled();
     expect(screen.queryByText('mapa.reporteSalida')).toBeNull();
     expect(lineaDibujada()).toBeDefined();
+  });
+
+  it('E2 (revisor): con la propuesta lista, Escape la descarta y vuelve la de siempre', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    const deSiempre = lineaDibujada();
+    proponer();
+    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'mapa.enviarReporte' })).toBeNull();
+    expect(lineaDibujada()).toEqual(deSiempre);
   });
 
   it('E3: acabado el reporte, Escape vuelve a cerrar el mapa', () => {

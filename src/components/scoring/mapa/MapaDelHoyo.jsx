@@ -1414,7 +1414,9 @@ const MapaDelHoyo = ({
         )}
 
         <div className="flex items-center gap-2">
-          <span className="pointer-events-auto flex-1 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
+          {/* Encoge y parte por donde sea: si no, «OpenStreetMap» no baja de su
+              ancho y a 320 px echaba los botones fuera de la pantalla (revisor) */}
+          <span className="pointer-events-auto min-w-0 flex-1 text-[10px] text-white/80 [overflow-wrap:anywhere] [text-shadow:0_1px_2px_#000]">
             <span>{t('mapa.atribucionPnoa')}</span>
             {atribucionDeLaOrtofoto(comunidad) && <span>{` · ${t(atribucionDeLaOrtofoto(comunidad))}`}</span>}
             {atribucion && (
