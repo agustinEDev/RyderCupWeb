@@ -1236,7 +1236,9 @@ const MapaDelHoyo = ({
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
     // cerrar, no se sale con el tabulador, Escape cierra y debajo no se desplaza
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-black">
+    // Escape a mitad de un reporte lo cancela, como su «Cancelar»; si no, cierra
+    // el mapa (pasada del Kind, 1 nov 2026: con «⋮» abierto se cerraba todo)
+    <ModalShell isOpen onClose={reporte ? acabarElReporte : onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-black">
       <div
         ref={arriba}
         data-testid="mapa-arriba"

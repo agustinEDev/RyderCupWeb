@@ -4171,6 +4171,52 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
   });
 
+  /**
+   * Escape en el mapa (pasada del Kind, 1 nov 2026: con «⋮» abierto cerraba el mapa entero)
+   *
+   * | #  | Caso                                   | Queda                                  |
+   * |----|----------------------------------------|----------------------------------------|
+   * | E1 | Menú «⋮» abierto                       | Se cierra el menú, foco a «⋮»; mapa abierto |
+   * | E2 | Marcando la propuesta de un reporte    | Se cancela el reporte; mapa abierto    |
+   * | E3 | Sin reporte                            | Se cierra el mapa (test «Cerrar» y Escape) |
+   */
+  it('E1: con «⋮» abierto, Escape cierra el menú y no el mapa', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('group', { name: 'mapa.reporteTitulo' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
+  });
+
+  it('E2: marcando la propuesta, Escape cancela el reporte y vuelve la línea de siempre', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+    motivo('WRONG_LINE');
+    expect(screen.getByText('mapa.reporteSalida')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByText('mapa.reporteSalida')).toBeNull();
+    expect(lineaDibujada()).toBeDefined();
+  });
+
+  it('E3: acabado el reporte, Escape vuelve a cerrar el mapa', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).toHaveBeenCalledTimes(1);
+  });
+
   it('R-7: las gracias se anuncian y se van al tocar el mapa', () => {
     abrirConLinea();
     proponer();
