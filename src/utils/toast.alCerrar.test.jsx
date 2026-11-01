@@ -12,18 +12,20 @@ import customToast from './toast';
  * | K1 | Cerrado con su X                             | Oculto en el acto                   |
  * | K2 | Cerrado por código (al salir de la agenda)   | Oculto en el acto                   |
  * | K3 | Abierto                                      | A la vista, como siempre            |
- * | K4 | Oculto                                       | No se puede pulsar                  |
+ * | K4 | Oculto                                       | No se puede pulsar ni enfocar       |
  * | K5 | Se cierra uno                                | Los demás, igual                    |
  */
 const caja = (texto) => screen.getByText(texto).closest('[data-toast]');
 const oculto = (el) => {
   expect(el).toHaveClass('opacity-0', 'pointer-events-none');
-  expect(el).toHaveAttribute('aria-hidden', 'true');
+  // `inert`: fuera del árbol de accesibilidad y del foco (con la X pulsada
+  // con el teclado, el foco no se queda dentro de algo oculto; revisor)
+  expect(el).toHaveAttribute('inert');
 };
 const aLaVista = (el) => {
   expect(el).toHaveClass('opacity-100');
   expect(el).not.toHaveClass('opacity-0', 'pointer-events-none');
-  expect(el).not.toHaveAttribute('aria-hidden');
+  expect(el).not.toHaveAttribute('inert');
 };
 
 describe('customToast · al cerrarlo se va en el acto', () => {

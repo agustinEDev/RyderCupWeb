@@ -43,7 +43,9 @@ const ToastContent = ({ message, type, toastId, icon, visible }) => {
       // Cerrado, se va en el acto: la librería lo retira 1 s después y hasta
       // entonces seguía a la vista (pasada del Kind, 1 nov 2026)
       'data-toast': '',
-      'aria-hidden': visible ? undefined : 'true',
+      // `inert`: fuera del árbol de accesibilidad y del foco, también la X si
+      // se pulsó con el teclado (revisor)
+      inert: !visible,
       className: `flex items-start gap-3 p-4 pr-2 ${bgClass} border ${borderClass} rounded-lg shadow-lg min-w-[300px] max-w-md transition-opacity duration-150 motion-reduce:transition-none ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`,
     },
     // Icon (custom emoji or default Icon component)

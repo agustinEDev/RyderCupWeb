@@ -4760,6 +4760,17 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       expect(medida()).toEqual([[en(T), en(Q)]]);
     });
 
+    it('M1b (revisor): una lectura del GPS mientras espera no la cancela', () => {
+      abrirConLinea();
+      desde(0);
+      pulsarA(1000, P);
+
+      desde(0, 4);
+      esperar(500);
+
+      expect(elPunto()).toHaveLength(1);
+    });
+
     it('M4: dos toques rápidos a más de 30 px: solo el último', () => {
       abrirConLinea();
       desde(0);
