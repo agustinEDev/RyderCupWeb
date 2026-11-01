@@ -45,9 +45,11 @@ const MatchCard = ({
       const ph = p.playingHandicap;
       const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
       return (
-        <div key={p.userId || i} className="flex items-center justify-between gap-2">
+        <div key={p.userId || i} className="flex flex-wrap items-center justify-between gap-x-2">
           {/* Que encoja y parta: con «Hcp juego» al lado, un nombre largo sin
-              espacios empujaba la fila fuera de la tarjeta a 360 px */}
+              espacios empujaba la fila fuera de la tarjeta a 360 px. Si no
+              caben los dos, el HCP baja debajo antes que partir el nombre a
+              mitad de palabra (pasada del Kind, 1 nov 2026) */}
           <p className={`min-w-0 break-words text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
             {getPlayerName(p.userId, playerNameMap, t)}
           </p>
