@@ -648,6 +648,7 @@ const SchedulePage = () => {
           enrollments={enrollments}
           isProcessing={isProcessing}
           teamNames={teamNames}
+          inscritosSinCargar={inscritosSinCargar}
           t={t}
         />
       )}
