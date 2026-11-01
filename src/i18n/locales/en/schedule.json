@@ -36,6 +36,7 @@
     "handicapStrokes": "Handicap Strokes: {{strokes}}",
     "strokesGivenTo": "Strokes given to {{team}}",
     "reassignPlayers": "Reassign Players",
+    "reassignNeedsEnrollments": "Without the list of enrolled players you can't reassign: reload the page.",
     "walkover": "Declare Walkover",
     "startMatch": "Start Match",
     "completeMatch": "Complete Match",

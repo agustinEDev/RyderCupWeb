@@ -36,6 +36,7 @@
     "handicapStrokes": "Golpes de Hándicap: {{strokes}}",
     "strokesGivenTo": "Golpes concedidos a {{team}}",
     "reassignPlayers": "Reasignar Jugadores",
+    "reassignNeedsEnrollments": "Sin la lista de inscritos no se puede reasignar: recarga la página.",
     "walkover": "Declarar Walkover",
     "startMatch": "Iniciar Partido",
     "completeMatch": "Completar Partido",

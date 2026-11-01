@@ -399,9 +399,17 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   // La salida del último toque, por si un doble toque corta su alejamiento
   const salidaRecienTocada = useRef(null);
-  // Midiendo, el último toque y lo que había antes de él (lo medido y las
-  // gracias): un doble toque acerca y no mide, así que el segundo lo devuelve
-  const toqueDeMedir = useRef({ en: -Infinity, donde: null, medido: null, gracias: false });
+  // Midiendo, el último toque: dos seguidos son el doble toque de maplibre, que acerca
+  const toqueDeMedir = useRef({ en: -Infinity, donde: null });
+  // La medida espera a ver si viene el segundo toque (pasada del Kind, 1 nov
+  // 2026): medir al instante cambiaba la pantalla bajo el dedo y maplibre ya no
+  // reconocía el doble toque, así que en el móvil el punto se quedaba
+  const medidaPendiente = useRef(null);
+  const medirAhora = useRef(null);
+  const cancelarMedida = useCallback(() => {
+    globalThis.clearTimeout(medidaPendiente.current);
+    medidaPendiente.current = null;
+  }, []);
   const enlaceEntero = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
@@ -508,23 +516,23 @@ const MapaDelHoyo = ({
         setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
-      // El doble toque acerca el mapa: vuelve lo de antes (pasada del Kind,
-      // 31 oct 2026: dejaba el punto donde se tocó)
       const ahora = globalThis.performance.now();
       // Si el primero marcó (y con él se acabó de marcar), el segundo tampoco
-      // mide (revisor)
+      // mide (revisor, 31 oct)
       if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
-      // Lejos del anterior, maplibre no acerca: son dos medidas (/code-review)
-      const anterior = toqueDeMedir.current.donde;
-      const cerca = !donde || !anterior || Math.hypot(donde.x - anterior.x, donde.y - anterior.y) <= DOBLE_TOQUE_PX;
-      if (cerca && ahora - toqueDeMedir.current.en < DOBLE_TOQUE_MS) {
-        toqueDeMedir.current.en = ahora;
-        toqueDeMedir.current.donde = donde;
-        setMedido(toqueDeMedir.current.medido);
-        setGracias(toqueDeMedir.current.gracias);
-        return;
-      }
-      toqueDeMedir.current = { en: ahora, donde, medido, gracias };
+      // Lejos del anterior, maplibre no acerca: cuenta el último (/code-review)
+      const anterior = toqueDeMedir.current;
+      const cerca = !donde || !anterior.donde || Math.hypot(donde.x - anterior.donde.x, donde.y - anterior.donde.y) <= DOBLE_TOQUE_PX;
+      toqueDeMedir.current = { en: ahora, donde };
+      cancelarMedida();
+      // El segundo de un doble toque (o el tercero): acerca, no mide
+      if (cerca && ahora - anterior.en < DOBLE_TOQUE_MS) return;
+      medidaPendiente.current = globalThis.setTimeout(() => {
+        medidaPendiente.current = null;
+        medirAhora.current(p);
+      }, DOBLE_TOQUE_MS);
+    };
+    medirAhora.current = (p) => {
       setGracias(false);
       setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
@@ -707,6 +715,11 @@ const MapaDelHoyo = ({
     });
     // Un toque sin arrastrar mide; arrastrar y pellizcar mueven el mapa
     mapa.on('click', (e) => alTocar.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }, e.point));
+    // Si el jugador acerca el mapa (su doble toque, que en el móvil no da el
+    // segundo `click`, o un pellizco), lo tocado no se mide
+    mapa.on('zoomstart', (e) => {
+      if (e.originalEvent) cancelarMedida();
+    });
     return () => {
       // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
       // en desarrollo) pone los suyos, no mueve los de este
@@ -723,7 +736,7 @@ const MapaDelHoyo = ({
       mapa.remove();
       mapaRef.current = null;
     };
-  }, [encuadrarHoyo]);
+  }, [encuadrarHoyo, cancelarMedida]);
 
   // En cuanto la ventana está pintada (la cabecera y el panel de abajo ya se
   // pueden medir), y antes de que el jugador pueda tocar nada, el hoyo se
@@ -814,7 +827,12 @@ const MapaDelHoyo = ({
     marcaTocada.current.setLngLat(lngLat(codoAhora));
   }, [codoAhora, desdeMi, menuDeMotivos]);
 
-  // El punto que se mide (19 oct): quieto, se cambia tocando otro
+  // Lo pendiente no llega si cambia lo medido, el marcado o el reporte
+  // («Quitar», «Marcar hoyo», «⋮»…), ni con el mapa cerrado
+  useEffect(() => cancelarMedida, [medido, marca, reporte, cancelarMedida]);
+
+  // El punto que se mide (19 oct): quieto, se cambia tocando otro. Sin
+  // quedarse los toques: el segundo de un doble toque va al mapa, que acerca
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
@@ -824,7 +842,7 @@ const MapaDelHoyo = ({
       return;
     }
     if (!marcaMedida.current) {
-      const elemento = punto('h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow z-[2]');
+      const elemento = punto('pointer-events-none h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow z-[2]');
       elemento.dataset.punto = 'medido';
       marcaMedida.current = new Marker({ element: elemento }).setLngLat(lngLat(medido)).addTo(mapa);
     }
@@ -1410,6 +1428,8 @@ const MapaDelHoyo = ({
             <button
               type="button"
               onClick={() => {
+                // Lo tocado justo antes no llega después a cambiar lo que se pidió (/code-review)
+                cancelarMedida();
                 // A mitad de hoyo, vuelve también su línea (H3); y lo último
                 // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
                 setLineaOculta(false);
@@ -1422,7 +1442,14 @@ const MapaDelHoyo = ({
               {t('mapa.verHoyo')}
             </button>
           ) : (
-            <button type="button" onClick={() => mapaRef.current?.resetNorth()} className={`${BOTON} pointer-events-auto`}>
+            <button
+              type="button"
+              onClick={() => {
+                cancelarMedida();
+                mapaRef.current?.resetNorth();
+              }}
+              className={`${BOTON} pointer-events-auto`}
+            >
               <Compass className="h-4 w-4" aria-hidden="true" />
               {t('mapa.norte')}
             </button>
@@ -1431,7 +1458,10 @@ const MapaDelHoyo = ({
             <button
               type="button"
               disabled={!posicionEnElCampo}
-              onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
+              onClick={() => {
+                cancelarMedida();
+                mapaRef.current?.easeTo({ center: lngLat(posicion) });
+              }}
               className={`${BOTON} pointer-events-auto`}
             >
               <LocateFixed className="h-4 w-4" aria-hidden="true" />

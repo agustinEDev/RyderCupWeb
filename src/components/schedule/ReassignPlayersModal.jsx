@@ -17,6 +17,7 @@ const ReassignPlayersModalContent = ({
   enrollments,
   isProcessing,
   teamNames,
+  inscritosSinCargar = false,
   t,
 }) => {
   const [teamAIds, setTeamAIds] = useState(() =>
@@ -52,7 +53,7 @@ const ReassignPlayersModalContent = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (teamAIds.length === 0 || teamBIds.length === 0) return;
+    if (inscritosSinCargar || teamAIds.length === 0 || teamBIds.length === 0) return;
     onConfirm(teamAIds, teamBIds);
   };
 
@@ -98,6 +99,18 @@ const ReassignPlayersModalContent = ({
           <p className="text-sm text-gray-600 mb-4">
             {t('matches.matchNumber', { number: match.matchNumber })}
           </p>
+
+          {/* Sin la lista no hay a quién elegir: como el reparto manual (pasada
+              del Kind, 1 nov 2026: salía vacía con el botón activo) */}
+          {inscritosSinCargar && (
+            <p
+              id="reasignar-inscritos-sin-cargar"
+              data-testid="reasignar-inscritos-sin-cargar"
+              className="text-sm text-red-700"
+            >
+              {t('matches.reassignNeedsEnrollments')}
+            </p>
+          )}
 
           {/* Player list */}
           <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -165,7 +178,8 @@ const ReassignPlayersModalContent = ({
             </button>
             <button
               type="submit"
-              disabled={isProcessing || teamAIds.length === 0 || teamBIds.length === 0}
+              disabled={inscritosSinCargar || isProcessing || teamAIds.length === 0 || teamBIds.length === 0}
+              aria-describedby={inscritosSinCargar ? 'reasignar-inscritos-sin-cargar' : undefined}
               className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {isProcessing ? '...' : t('matches.reassignPlayers')}

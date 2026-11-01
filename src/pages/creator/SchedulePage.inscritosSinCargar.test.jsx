@@ -24,6 +24,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  * | S3 | Volver con la lista aún sin cargar           | Sale otra vez                           |
  * | S4 | Salir antes de que la lista falle            | Ya no sale (/code-review)               |
  * | S5 | En StrictMode (monta, desmonta y monta)      | Sale: sigue en la agenda                |
+ * | R1 | Reasignar un partido así (1 nov)             | Aviso de recargar y sin poder reasignar |
  */
 // `t` y el objeto que devuelve `useTranslation`, ESTABLES: la carga de la
 // pantalla es un `useCallback` que depende de `t`, así que devolviendo una
@@ -358,5 +359,35 @@ describe('SchedulePage · sin poder cargar los inscritos', () => {
     expect(customToast.error).toHaveBeenCalledWith('errors.failedToLoadEnrollments', {
       id: 'inscritos-sin-cargar',
     });
+  });
+
+  it('R1: «Reasignar» un partido sin la lista avisa y no deja', async () => {
+    const PARTIDO = {
+      id: 'm1',
+      matchNumber: 1,
+      status: 'SCHEDULED',
+      teamAPlayers: [{ userId: 'carla' }],
+      teamBPlayers: [{ userId: 'eva' }],
+    };
+    const conPartido = { ...RONDA, status: 'SCHEDULED', matches: [PARTIDO] };
+    mockAgenda.mockResolvedValue({
+      ...AGENDA,
+      days: [{ date: '2026-06-01', rounds: [conPartido] }],
+      rounds: [conPartido],
+    });
+    pintar();
+    // La ronda se despliega para ver sus partidos
+    const cabecera = await vi.waitFor(() => {
+      const el = document.querySelector('[role="button"][aria-expanded="false"]');
+      expect(el).not.toBeNull();
+      return el;
+    });
+    fireEvent.click(cabecera);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'matches.reassignPlayers' }));
+    const dialogo = await screen.findByRole('dialog');
+
+    expect(within(dialogo).getByTestId('reasignar-inscritos-sin-cargar')).toBeInTheDocument();
+    expect(within(dialogo).getByRole('button', { name: 'matches.reassignPlayers' })).toBeDisabled();
   });
 });
