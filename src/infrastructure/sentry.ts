@@ -272,6 +272,7 @@ if (!SENTRY_CONFIG.dsn) {
       return breadcrumb;
     },
   });
+    instrumentarRouterEnSentry();
   }
 
   // ============================================

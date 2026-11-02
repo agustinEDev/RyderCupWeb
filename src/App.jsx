@@ -489,14 +489,12 @@ export const rutasDeLaApp = createRoutesFromElements(
  */
 function App() {
   // Uno por montaje y no al importar: lee la dirección del momento en que se
-  // abre (los tests montan la aplicación en direcciones distintas). Sentry
-  // sigue sus navegaciones cuando llega su seguimiento, ~2 s después
-  // (`utils/navegacionesEnSentry`)
-  const [router] = useState(() => {
-    const creado = createBrowserRouter(rutasDeLaApp);
-    registrarRouterParaSentry(creado, rutasDeLaApp);
-    return creado;
-  });
+  // abre (los tests montan la aplicación en direcciones distintas)
+  const [router] = useState(() => createBrowserRouter(rutasDeLaApp));
+  // Sentry sigue sus navegaciones cuando llega su seguimiento, ~2 s después
+  // (`utils/navegacionesEnSentry`). En un efecto y no al crearlo: con
+  // StrictMode React lo crea dos veces y se queda con el PRIMERO (revisor)
+  useEffect(() => registrarRouterParaSentry(router, rutasDeLaApp), [router]);
   return (
     <Sentry.ErrorBoundary
       fallback={ErrorFallback}

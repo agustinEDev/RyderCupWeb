@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { StrictMode } from 'react';
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import { matchRoutes } from 'react-router';
 import { RUTAS_DE_LA_APLICACION } from './utils/rutasDeLaAplicacion';
@@ -14,6 +15,7 @@ import { textosDelError } from './components/errors/textosDelError';
  *   R1 | cada ruta de `rutasDeLaAplicacion`                 | la sirve su pantalla, no la comodín
  *   R3 | Sentry                                            | la app registra SU router para el seguimiento
  *      |                                                   | (navegacionesEnSentry; Sentry llega ~2 s después)
+ *   R3b| con StrictMode (desarrollo: crea dos routers)       | se registra el que se usa
  *   R4 | ir a otra pantalla, y volver atrás                 | arriba, como hasta ahora
  *   R5 | cambiar solo el query                              | no sube
  *   R6 | una pantalla que falla al pintarse                 | la pantalla de error de siempre, no la del router
@@ -128,6 +130,23 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     expect(rutas).toBe(rutasDeLaApp);
     // El que sirve la aplicación: navega con ella
     expect(router.state.location.pathname).toBe('/dashboard');
+  });
+
+  it('R3b: con StrictMode, se registra el router que de verdad sirve la app', async () => {
+    window.history.pushState({}, '', '/dashboard');
+    render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+    await screen.findByRole('heading', { name: 'panel' });
+
+    fireEvent.click(screen.getByRole('link', { name: 'a amigos' }));
+    await screen.findByRole('heading', { name: 'amigos' });
+
+    // El último registrado es el que ha navegado: el que usa RouterProvider
+    const [router] = sentry.registrar.mock.calls.at(-1);
+    expect(router.state.location.pathname).toBe('/friends');
   });
 
   it('R4: ir a otra pantalla empieza arriba, y volver atrás también', async () => {

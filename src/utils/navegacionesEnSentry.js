@@ -1,4 +1,5 @@
-import { getClient, wrapCreateBrowserRouterV7 } from '@sentry/react';
+import { getActiveSpan, getClient, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
+import { matchRoutes } from 'react-router';
 
 /**
  * El seguimiento de navegaciones de Sentry sobre el router de datos (FE #647).
@@ -12,7 +13,41 @@ import { getClient, wrapCreateBrowserRouterV7 } from '@sentry/react';
  * Así que la aplicación registra su router, y cuando llega el seguimiento se le
  * pasa a Sentry como si lo creara él (`() => router`): nombra la carga de
  * página con la ruta y abre una navegación en cada cambio, con su propia lógica.
+ *
+ * Menos en un caso: Sentry solo nombra la carga si lo último fue una carga o un
+ * «atrás» (POP). La aplicación instalada abre en `/start` y redirige al momento,
+ * y un toque en esos 2 s es un PUSH: la carga se quedaba como «Pageload»
+ * (revisor). Ahí la nombra esto, con la ruta a la que se llegó.
  */
+const ORIGEN_DEL_NOMBRE = 'sentry.segment.name.source';
+
+// La ruta con parámetros, como la escribe Sentry: las rutas sin `path` (la
+// carcasa) no cuentan, y una relativa se cuelga de la anterior ('*' → '/*')
+const nombreDeLaRuta = (rutas, pathname) => {
+  let nombre = '';
+  for (const { route } of matchRoutes(rutas, pathname) ?? []) {
+    if (!route.path) continue;
+    nombre = route.path.startsWith('/') ? route.path : `${nombre.replace(/\/$/, '')}/${route.path}`;
+  }
+  return nombre || null;
+};
+
+const nombrarLaCarga = (router, rutas) => {
+  if (router.state.historyAction === 'POP') return;
+  const activa = getActiveSpan();
+  if (!activa) return;
+  const carga = getRootSpan(activa);
+  const datos = spanToJSON(carga);
+  const op = datos.op ?? datos.attributes?.['sentry.op'];
+  const origen = datos.data?.[ORIGEN_DEL_NOMBRE] ?? datos.attributes?.[ORIGEN_DEL_NOMBRE];
+  if (op !== 'pageload' || origen === 'route') return;
+  const nombre = nombreDeLaRuta(rutas, router.state.location.pathname);
+  if (!nombre) return;
+  carga.updateName(nombre);
+  carga.setAttribute(ORIGEN_DEL_NOMBRE, 'route');
+  carga.setAttribute('url.template', nombre);
+};
+
 let registrado = null;
 let instrumentado = null;
 
@@ -23,6 +58,7 @@ const intentar = () => {
   instrumentado = registrado.router;
   const { router, rutas } = registrado;
   wrapCreateBrowserRouterV7(() => router)(rutas);
+  nombrarLaCarga(router, rutas);
 };
 
 /** La aplicación, al crear su router. Si Sentry ya está, lo instrumenta ya. */
