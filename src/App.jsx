@@ -36,6 +36,7 @@ import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
@@ -488,9 +489,14 @@ export const rutasDeLaApp = createRoutesFromElements(
  */
 function App() {
   // Uno por montaje y no al importar: lee la dirección del momento en que se
-  // abre (los tests montan la aplicación en direcciones distintas). Sentry lo
-  // envuelve para seguir sabiendo en qué pantalla pasa cada cosa
-  const [router] = useState(() => Sentry.wrapCreateBrowserRouterV7(createBrowserRouter)(rutasDeLaApp));
+  // abre (los tests montan la aplicación en direcciones distintas). Sentry
+  // sigue sus navegaciones cuando llega su seguimiento, ~2 s después
+  // (`utils/navegacionesEnSentry`)
+  const [router] = useState(() => {
+    const creado = createBrowserRouter(rutasDeLaApp);
+    registrarRouterParaSentry(creado, rutasDeLaApp);
+    return creado;
+  });
   return (
     <Sentry.ErrorBoundary
       fallback={ErrorFallback}

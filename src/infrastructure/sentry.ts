@@ -30,6 +30,7 @@ import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, getCli
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 import { sentryScrubbing } from '../utils/sentryScrubbing';
+import { instrumentarRouterEnSentry } from '../utils/navegacionesEnSentry';
 import { sentrySampleRates } from './sentrySampleRates';
 
 // ============================================
@@ -133,6 +134,9 @@ if (!SENTRY_CONFIG.dsn) {
     integrations.forEach(integration => {
       existingClient.addIntegration(integration);
     });
+    // El router de la aplicación ya existe: con el seguimiento puesto, Sentry
+    // lo instrumenta ahora (FE #647; antes lo hacía `withSentryReactRouterV7Routing`)
+    instrumentarRouterEnSentry();
 
     // Note: Sample rates are set in main.jsx early init and cannot be modified here
     // The client will use the rates configured during initialization

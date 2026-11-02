@@ -12,7 +12,8 @@ import { textosDelError } from './components/errors/textosDelError';
  *   #  | caso                                              | esperado
  *   ---|---------------------------------------------------|----------------------------------------
  *   R1 | cada ruta de `rutasDeLaAplicacion`                 | la sirve su pantalla, no la comodín
- *   R3 | Sentry                                            | el router se crea por wrapCreateBrowserRouterV7
+ *   R3 | Sentry                                            | la app registra SU router para el seguimiento
+ *      |                                                   | (navegacionesEnSentry; Sentry llega ~2 s después)
  *   R4 | ir a otra pantalla, y volver atrás                 | arriba, como hasta ahora
  *   R5 | cambiar solo el query                              | no sube
  *   R6 | una pantalla que falla al pintarse                 | la pantalla de error de siempre, no la del router
@@ -23,7 +24,7 @@ import { textosDelError } from './components/errors/textosDelError';
  *
  * R2 (la comodín) y R9 (los demás tests que montan la app) siguen en sus ficheros.
  */
-const sentry = vi.hoisted(() => ({ envuelto: 0 }));
+const sentry = vi.hoisted(() => ({ registrar: vi.fn() }));
 const montajes = vi.hoisted(() => ({ cola: 0 }));
 const fallo = vi.hoisted(() => ({ carcasa: false }));
 
@@ -82,11 +83,8 @@ vi.mock('react-i18next', () => ({
 vi.mock('@sentry/react', async (original) => ({
   ...(await original()),
   withProfiler: (c) => c,
-  wrapCreateBrowserRouterV7: (crear) => {
-    sentry.envuelto += 1;
-    return crear;
-  },
 }));
+vi.mock('./utils/navegacionesEnSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
 
 const { default: App, rutasDeLaApp } = await import('./App');
 
@@ -99,7 +97,7 @@ describe('App · router de datos (FE #647, fase 1)', () => {
   beforeEach(() => {
     window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
     globalThis.scrollTo = vi.fn();
-    sentry.envuelto = 0;
+    sentry.registrar.mockClear();
     montajes.cola = 0;
     fallo.carcasa = false;
   });
@@ -121,11 +119,15 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     expect(matchRoutes(rutasDeLaApp, '/esto-no-existe')?.at(-1)?.route.path).toBe('*');
   });
 
-  it('R3: Sentry envuelve el router que se crea', async () => {
+  it('R3: la app registra su router, con sus rutas, para el seguimiento de Sentry', async () => {
     abrir('/dashboard');
 
     expect(await screen.findByRole('heading', { name: 'panel' })).toBeInTheDocument();
-    expect(sentry.envuelto).toBeGreaterThan(0);
+    expect(sentry.registrar).toHaveBeenCalledTimes(1);
+    const [router, rutas] = sentry.registrar.mock.calls[0];
+    expect(rutas).toBe(rutasDeLaApp);
+    // El que sirve la aplicación: navega con ella
+    expect(router.state.location.pathname).toBe('/dashboard');
   });
 
   it('R4: ir a otra pantalla empieza arriba, y volver atrás también', async () => {

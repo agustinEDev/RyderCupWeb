@@ -15,6 +15,9 @@ const sentry = vi.hoisted(() => ({
   reactRouterV7BrowserTracingIntegration: vi.fn(() => ({ name: 'BrowserTracing' })),
 }));
 
+const navegaciones = vi.hoisted(() => ({ instrumentar: vi.fn() }));
+vi.mock('../utils/navegacionesEnSentry', () => ({ instrumentarRouterEnSentry: navegaciones.instrumentar }));
+
 vi.mock('@sentry/react', () => ({
   init: vi.fn(),
   getClient: () => ({ addIntegration: sentry.addIntegration }),
@@ -44,6 +47,19 @@ describe('infrastructure/sentry', () => {
     expect(sentry.feedbackIntegration).not.toHaveBeenCalled();
     const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
     expect(nombres).not.toContain('Feedback');
+  });
+
+  it('N8 (FE #647): con el seguimiento ya añadido, instrumenta el router de la aplicación', async () => {
+    sentry.addIntegration.mockImplementation((integracion) => {
+      // Lo que importa es el orden: el router, DESPUÉS de tener el seguimiento
+      if (integracion.name === 'BrowserTracing') expect(navegaciones.instrumentar).not.toHaveBeenCalled();
+    });
+
+    await import('./sentry');
+
+    expect(navegaciones.instrumentar).toHaveBeenCalledTimes(1);
+    const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
+    expect(nombres).toContain('BrowserTracing');
   });
 
   it('sigue añadiendo las trazas y la grabación de las sesiones con error', async () => {
