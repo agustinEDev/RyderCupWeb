@@ -55,7 +55,9 @@ describe('rutas de la aplicación', () => {
     // `path` que envuelven el árbol del router de datos: la carcasa y la que
     // devuelve los errores hacia arriba (FE #647)
     const etiquetas = app.match(/<Route[\s>/]/g) ?? [];
-    const envoltorios = app.match(/<Route (element|errorElement)=/g) ?? [];
+    // Sin `path` en su etiqueta: una ruta de verdad con `element` delante de
+    // `path` no cuenta como envoltorio (/code-review)
+    const envoltorios = app.match(/<Route (?:element|errorElement)=(?![^\n]*\bpath=)[^\n]*/g) ?? [];
     expect(envoltorios).toHaveLength(2);
     expect(etiquetas.length - envoltorios.length).toBe(conRuta.length);
   });

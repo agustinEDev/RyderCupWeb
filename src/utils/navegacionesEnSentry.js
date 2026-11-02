@@ -1,4 +1,4 @@
-import { getActiveSpan, getClient, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
+import { getActiveSpan, getClient, getCurrentScope, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
 import { matchRoutes } from 'react-router';
 
 /**
@@ -17,7 +17,21 @@ import { matchRoutes } from 'react-router';
  * Menos en un caso: Sentry solo nombra la carga si lo último fue una carga o un
  * «atrás» (POP). La aplicación instalada abre en `/start` y redirige al momento,
  * y un toque en esos 2 s es un PUSH: la carga se quedaba como «Pageload»
- * (revisor). Ahí la nombra esto, con la ruta a la que se llegó.
+ * (revisor). Ahí la nombra esto, con la ruta a la que se llegó; y también si la
+ * redirección llega con la carga ya nombrada, que Sentry solo sigue PUSH y POP
+ * (/code-review). Como Sentry, pone la ruta de transacción del scope: si no, los
+ * errores de esa carga se agrupaban por la dirección, con sus ids.
+ *
+ * El seguimiento es opcional: si algo de Sentry falla aquí, la aplicación sigue
+ * y se vuelve a intentar cuando llegue otra vez (/code-review).
+ *
+ * Se da por puesto el seguimiento de React Router si hay una integración
+ * `BrowserTracing`: `main.jsx` no añade la genérica de Sentry, que se llama
+ * igual y no lo es (con ella, el envoltorio no instrumentaría nada).
+ *
+ * Los routers no se desechan al desmontar la aplicación: en producción se monta
+ * una vez, y desecharlo en la limpieza de un efecto mataría el router vivo con
+ * StrictMode, que simula desmontar y volver a montar.
  */
 const ORIGEN_DEL_NOMBRE = 'sentry.segment.name.source';
 
@@ -32,20 +46,29 @@ const nombreDeLaRuta = (rutas, pathname) => {
   return nombre || null;
 };
 
-const nombrarLaCarga = (router, rutas) => {
-  if (router.state.historyAction === 'POP') return;
+const nombrarLaCarga = (router, rutas, { aunqueTengaRuta = false } = {}) => {
+  if (!aunqueTengaRuta && router.state.historyAction === 'POP') return;
   const activa = getActiveSpan();
   if (!activa) return;
   const carga = getRootSpan(activa);
   const datos = spanToJSON(carga);
   const op = datos.op ?? datos.attributes?.['sentry.op'];
   const origen = datos.data?.[ORIGEN_DEL_NOMBRE] ?? datos.attributes?.[ORIGEN_DEL_NOMBRE];
-  if (op !== 'pageload' || origen === 'route') return;
+  if (op !== 'pageload' || (origen === 'route' && !aunqueTengaRuta)) return;
   const nombre = nombreDeLaRuta(rutas, router.state.location.pathname);
   if (!nombre) return;
   carga.updateName(nombre);
   carga.setAttribute(ORIGEN_DEL_NOMBRE, 'route');
   carga.setAttribute('url.template', nombre);
+  getCurrentScope().setTransactionName(nombre);
+};
+
+const sinRomper = (hacer) => {
+  try {
+    hacer();
+  } catch {
+    // Sin seguimiento de esta navegación; la aplicación, intacta
+  }
 };
 
 let registrado = null;
@@ -55,10 +78,20 @@ const intentar = () => {
   if (!registrado || instrumentado === registrado.router) return;
   // Sin su integración, el envoltorio no haría nada: se espera a que llegue
   if (!getClient()?.getIntegrationByName?.('BrowserTracing')) return;
-  instrumentado = registrado.router;
   const { router, rutas } = registrado;
-  wrapCreateBrowserRouterV7(() => router)(rutas);
-  nombrarLaCarga(router, rutas);
+  try {
+    wrapCreateBrowserRouterV7(() => router)(rutas);
+  } catch {
+    return;
+  }
+  instrumentado = router;
+  sinRomper(() => nombrarLaCarga(router, rutas));
+  // Una redirección (replace) con la carga aún abierta: Sentry no la sigue
+  router.subscribe((estado) => {
+    if (estado.historyAction === 'REPLACE' && estado.navigation.state === 'idle') {
+      sinRomper(() => nombrarLaCarga(router, rutas, { aunqueTengaRuta: true }));
+    }
+  });
 };
 
 /** La aplicación, al crear su router. Si Sentry ya está, lo instrumenta ya. */

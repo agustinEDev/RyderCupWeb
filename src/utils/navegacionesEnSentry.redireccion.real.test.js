@@ -14,6 +14,7 @@ import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegac
  *   #   | caso                                                  | esperado
  *   ----|-------------------------------------------------------|----------------------------------
  *   S6b | redirección antes de Sentry                           | la carga, con la ruta de destino
+ *   S6e | la transacción del scope                              | con la ruta, para agrupar errores
  *   S6c | después, navegar sigue nombrando con la ruta          | navegación con la ruta
  */
 const RUTAS = [
@@ -57,6 +58,10 @@ describe('navegaciones en Sentry, con redirección antes de que llegue', () => {
     expect(carga.name).toBe('/competitions/:id');
     expect(carga.attributes['sentry.segment.name.source']).toBe('route');
     expect(carga.attributes['url.template']).toBe('/competitions/:id');
+  });
+
+  it('S6e: el scope lleva la ruta como transacción (los errores no se agrupan por id)', () => {
+    expect(Sentry.getCurrentScope().getScopeData().transactionName).toBe('/competitions/:id');
   });
 
   it('S6c: después, navegar sigue nombrando con la ruta', async () => {

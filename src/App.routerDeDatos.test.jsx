@@ -19,6 +19,9 @@ import { textosDelError } from './components/errors/textosDelError';
  *   R4 | ir a otra pantalla, y volver atrás                 | arriba, como hasta ahora
  *   R5 | cambiar solo el query                              | no sube
  *   R6 | una pantalla que falla al pintarse                 | la pantalla de error de siempre, no la del router
+ *   R6c| ese error llega a Sentry                           | con la pila de la pantalla que falló:
+ *      |                                                   | React 19 guarda la pila de cada error la
+ *      |                                                   | primera vez y la reusa al relanzarlo
  *   R6b| falla la carcasa de la app (lo que va fuera de las | la de Sentry.ErrorBoundary, como hasta ahora
  *      | pantallas)                                        |
  *   R7 | navegar                                           | lo que cuelga de la app no se vuelve a montar
@@ -29,6 +32,7 @@ import { textosDelError } from './components/errors/textosDelError';
 const sentry = vi.hoisted(() => ({ registrar: vi.fn() }));
 const montajes = vi.hoisted(() => ({ cola: 0 }));
 const fallo = vi.hoisted(() => ({ carcasa: false }));
+const enviado = vi.hoisted(() => ({ extras: {} }));
 
 vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('./hooks/useAuth', () => ({
@@ -75,7 +79,7 @@ vi.mock('./pages/Dashboard', async () => {
 vi.mock('./pages/player/FriendsPage', () => ({ default: () => <h1>amigos</h1> }));
 vi.mock('./pages/public/Terms', () => ({ default: () => <h1>términos</h1> }));
 vi.mock('./pages/Profile', () => ({
-  default: () => {
+  default: function PerfilQueFalla() {
     throw new Error('boom');
   },
 }));
@@ -85,6 +89,9 @@ vi.mock('react-i18next', () => ({
 vi.mock('@sentry/react', async (original) => ({
   ...(await original()),
   withProfiler: (c) => c,
+  // Lo que LazyLoadErrorBoundary manda a Sentry
+  withScope: (enviar) => enviar({ setTag() {}, setExtra: (clave, valor) => { enviado.extras[clave] = valor; } }),
+  captureException: () => {},
 }));
 vi.mock('./utils/navegacionesEnSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
 
@@ -187,6 +194,16 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     // En el idioma que elija la pantalla de error, que no depende de las traducciones
     expect(await screen.findByRole('heading', { name: textosDelError().sinCargar.titulo })).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
+    consola.mockRestore();
+  });
+
+  it('R6c: el error de pantalla llega a Sentry con la pila de la pantalla que falló', async () => {
+    const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
+    enviado.extras = {};
+    abrir('/profile');
+    await screen.findByRole('heading', { name: textosDelError().sinCargar.titulo });
+
+    expect(enviado.extras.componentStack).toContain('PerfilQueFalla');
     consola.mockRestore();
   });
 

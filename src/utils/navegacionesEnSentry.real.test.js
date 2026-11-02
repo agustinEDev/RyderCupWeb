@@ -12,6 +12,7 @@ import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegac
  *   #  | caso                                     | esperado
  *   ---|------------------------------------------|----------------------------------------
  *   S6 | llega Sentry                              | la carga de página, con la ruta
+ *   S6d | una redirección (replace) con la carga aún abierta     | la carga pasa a la ruta de destino
  *   S1 | navegar después                           | una navegación con la ruta, origen route
  *   S3 | una dirección que no existe               | no se le inventa una ruta de las conocidas
  *
@@ -51,6 +52,14 @@ describe('navegaciones en Sentry, con Sentry de verdad', () => {
 
     expect(carga.name).toBe('/competitions/:id');
     expect(carga.attributes['sentry.segment.name.source']).toBe('route');
+  });
+
+  it('S6d: una redirección con la carga abierta la renombra a la de destino', async () => {
+    await router.navigate('/dashboard', { replace: true });
+
+    const [carga] = deTipo('pageload');
+    expect(carga.name).toBe('/dashboard');
+    expect(carga.attributes['url.template']).toBe('/dashboard');
   });
 
   it('S1: navegar abre una navegación con la ruta, no con la dirección', async () => {
