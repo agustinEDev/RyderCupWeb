@@ -40,10 +40,8 @@ const ESTILO = {
   ],
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
-// Los de maplibre: dos toques a menos de 500 ms y 30 px acercan el mapa
-// (MAX_TAP_INTERVAL y MAX_DIST de su tap_recognizer)
+// Dos toques a menos de esto son un doble toque: marcando, el segundo no cuenta
 const DOBLE_TOQUE_MS = 500;
-const DOBLE_TOQUE_PX = 30;
 const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
@@ -399,17 +397,6 @@ const MapaDelHoyo = ({
   const ultimoToque = useRef(0);
   // La salida del último toque, por si un doble toque corta su alejamiento
   const salidaRecienTocada = useRef(null);
-  // Midiendo, el último toque: dos seguidos son el doble toque de maplibre, que acerca
-  const toqueDeMedir = useRef({ en: -Infinity, donde: null });
-  // La medida espera a ver si viene el segundo toque (pasada del Kind, 1 nov
-  // 2026): medir al instante cambiaba la pantalla bajo el dedo y maplibre ya no
-  // reconocía el doble toque, así que en el móvil el punto se quedaba
-  const medidaPendiente = useRef(null);
-  const medirAhora = useRef(null);
-  const cancelarMedida = useCallback(() => {
-    globalThis.clearTimeout(medidaPendiente.current);
-    medidaPendiente.current = null;
-  }, []);
   const enlaceEntero = useRef(null);
   useLayoutEffect(() => {
     ultimaLinea.current = datosDeLaLinea;
@@ -436,7 +423,7 @@ const MapaDelHoyo = ({
         padding: margen(),
       });
     };
-    alTocar.current = (p, donde) => {
+    alTocar.current = (p) => {
       // Reportando, el mapa no mide: marca la salida y el green que se proponen
       if (reporte) {
         // El segundo toque de un doble toque no es el green (/code-review)
@@ -516,23 +503,9 @@ const MapaDelHoyo = ({
         setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
-      const ahora = globalThis.performance.now();
-      // Si el primero marcó (y con él se acabó de marcar), el segundo tampoco
-      // mide (revisor, 31 oct)
-      if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
-      // Lejos del anterior, maplibre no acerca: cuenta el último (/code-review)
-      const anterior = toqueDeMedir.current;
-      const cerca = !donde || !anterior.donde || Math.hypot(donde.x - anterior.donde.x, donde.y - anterior.donde.y) <= DOBLE_TOQUE_PX;
-      toqueDeMedir.current = { en: ahora, donde };
-      cancelarMedida();
-      // El segundo de un doble toque (o el tercero): acerca, no mide
-      if (cerca && ahora - anterior.en < DOBLE_TOQUE_MS) return;
-      medidaPendiente.current = globalThis.setTimeout(() => {
-        medidaPendiente.current = null;
-        medirAhora.current(p);
-      }, DOBLE_TOQUE_MS);
-    };
-    medirAhora.current = (p) => {
+      // Si el primero de un doble toque marcó (y con él se acabó de marcar), el
+      // segundo no mide (revisor, 31 oct)
+      if (globalThis.performance.now() - ultimoToque.current < DOBLE_TOQUE_MS) return;
       setGracias(false);
       setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
@@ -659,6 +632,9 @@ const MapaDelHoyo = ({
         dragRotate: !orientado,
         pitchWithRotate: false,
         touchPitch: false,
+        // Sin doble toque que acerque: un toque mide en el acto, y se acerca
+        // pellizcando (iPhone, 2 nov 2026: con él, acercaba y medía a la vez)
+        doubleClickZoom: false,
         ...(centro ? { center: lngLat(centro), zoom: ZOOM_SIN_MAPA } : ESPAÑA),
       });
     } catch (error) {
@@ -714,12 +690,7 @@ const MapaDelHoyo = ({
       if (e.originalEvent) movidoPorElJugador.current = true;
     });
     // Un toque sin arrastrar mide; arrastrar y pellizcar mueven el mapa
-    mapa.on('click', (e) => alTocar.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }, e.point));
-    // Si el jugador acerca el mapa (su doble toque, que en el móvil no da el
-    // segundo `click`, o un pellizco), lo tocado no se mide
-    mapa.on('zoomstart', (e) => {
-      if (e.originalEvent) cancelarMedida();
-    });
+    mapa.on('click', (e) => alTocar.current({ lat: e.lngLat.lat, lon: e.lngLat.lng }));
     return () => {
       // Sus marcadores se van con él: el mapa nuevo (React lo monta dos veces
       // en desarrollo) pone los suyos, no mueve los de este
@@ -736,7 +707,7 @@ const MapaDelHoyo = ({
       mapa.remove();
       mapaRef.current = null;
     };
-  }, [encuadrarHoyo, cancelarMedida]);
+  }, [encuadrarHoyo]);
 
   // En cuanto la ventana está pintada (la cabecera y el panel de abajo ya se
   // pueden medir), y antes de que el jugador pueda tocar nada, el hoyo se
@@ -827,12 +798,8 @@ const MapaDelHoyo = ({
     marcaTocada.current.setLngLat(lngLat(codoAhora));
   }, [codoAhora, desdeMi, menuDeMotivos]);
 
-  // Lo pendiente no llega si cambia lo medido, el marcado o el reporte
-  // («Quitar», «Marcar hoyo», «⋮»…), ni con el mapa cerrado
-  useEffect(() => cancelarMedida, [medido, marca, reporte, cancelarMedida]);
-
   // El punto que se mide (19 oct): quieto, se cambia tocando otro. Sin
-  // quedarse los toques: el segundo de un doble toque va al mapa, que acerca
+  // quedarse los toques: tocar encima va al mapa y vuelve a medir
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
@@ -1038,14 +1005,6 @@ const MapaDelHoyo = ({
     if (pedidoEntero) loQueSePide.current?.focus();
   }, [pedidoEntero]);
 
-  // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
-  // (y al proponer la línea de un reporte, igual)
-  const marcandoElReporte = reporte?.fase === 'salida' || reporte?.fase === 'green';
-  useEffect(() => {
-    const zoom = mapaRef.current?.doubleClickZoom;
-    if (pidiendo || marcandoElReporte) zoom?.disable();
-    else zoom?.enable();
-  }, [pidiendo, marcandoElReporte]);
   // El foco: al primer motivo al abrir el menú, y a «⋮» al acabar el reporte
   // (revisor, 18 oct: el botón que se pulsó desaparece)
   const faseDelReporte = reporte?.fase ?? null;
@@ -1438,8 +1397,6 @@ const MapaDelHoyo = ({
                 <button
                   type="button"
                   onClick={() => {
-                    // Lo tocado justo antes no llega después a cambiar lo que se pidió (/code-review)
-                    cancelarMedida();
                     // A mitad de hoyo, vuelve también su línea (H3); y lo último
                     // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
                     setLineaOculta(false);
@@ -1454,10 +1411,7 @@ const MapaDelHoyo = ({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    cancelarMedida();
-                    mapaRef.current?.resetNorth();
-                  }}
+                  onClick={() => mapaRef.current?.resetNorth()}
                   className={`${BOTON} pointer-events-auto whitespace-nowrap`}
                 >
                   <Compass className="h-4 w-4" aria-hidden="true" />
@@ -1467,10 +1421,7 @@ const MapaDelHoyo = ({
               <button
                 type="button"
                 disabled={!posicionEnElCampo}
-                onClick={() => {
-                  cancelarMedida();
-                  mapaRef.current?.easeTo({ center: lngLat(posicion) });
-                }}
+                onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
                 className={`${BOTON} pointer-events-auto whitespace-nowrap`}
               >
                 <LocateFixed className="h-4 w-4" aria-hidden="true" />
