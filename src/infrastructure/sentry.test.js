@@ -15,9 +15,13 @@ const sentry = vi.hoisted(() => ({
   reactRouterV7BrowserTracingIntegration: vi.fn(() => ({ name: 'BrowserTracing' })),
 }));
 
+const navegaciones = vi.hoisted(() => ({ instrumentar: vi.fn() }));
+vi.mock('../utils/navegacionesEnSentry', () => ({ instrumentarRouterEnSentry: navegaciones.instrumentar }));
+
+const cliente = vi.hoisted(() => ({ hay: true }));
 vi.mock('@sentry/react', () => ({
   init: vi.fn(),
-  getClient: () => ({ addIntegration: sentry.addIntegration }),
+  getClient: () => (cliente.hay ? { addIntegration: sentry.addIntegration } : undefined),
   feedbackIntegration: sentry.feedbackIntegration,
   replayIntegration: sentry.replayIntegration,
   reactRouterV7BrowserTracingIntegration: sentry.reactRouterV7BrowserTracingIntegration,
@@ -27,6 +31,7 @@ describe('infrastructure/sentry', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    cliente.hay = true;
     vi.stubEnv('VITE_SENTRY_DSN', 'https://clave@ejemplo.ingest.sentry.io/1');
     vi.spyOn(globalThis.console, 'log').mockImplementation(() => {});
   });
@@ -44,6 +49,27 @@ describe('infrastructure/sentry', () => {
     expect(sentry.feedbackIntegration).not.toHaveBeenCalled();
     const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
     expect(nombres).not.toContain('Feedback');
+  });
+
+  it('N8 (FE #647): con el seguimiento ya añadido, instrumenta el router de la aplicación', async () => {
+    sentry.addIntegration.mockImplementation((integracion) => {
+      // Lo que importa es el orden: el router, DESPUÉS de tener el seguimiento
+      if (integracion.name === 'BrowserTracing') expect(navegaciones.instrumentar).not.toHaveBeenCalled();
+    });
+
+    await import('./sentry');
+
+    expect(navegaciones.instrumentar).toHaveBeenCalledTimes(1);
+    const nombres = sentry.addIntegration.mock.calls.map(([integracion]) => integracion.name);
+    expect(nombres).toContain('BrowserTracing');
+  });
+
+  it('N9: sin cliente previo (init completo aquí), también instrumenta el router', async () => {
+    cliente.hay = false;
+
+    await import('./sentry');
+
+    expect(navegaciones.instrumentar).toHaveBeenCalledTimes(1);
   });
 
   it('sigue añadiendo las trazas y la grabación de las sesiones con error', async () => {
