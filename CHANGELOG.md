@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.59.0] - 2026-11-02
+
+**Dependencias y dos avisos de seguridad.** Va con el backend **2.45.0**
+(solo dependencias).
+
+**Notas de despliegue.**
+
+- Sin cambios de contrato ni variables nuevas. Arranque **243 KB gzip** de 270.
+
+### Changed
+
+- **Dependencias** (#1007): @sentry/react 11.10, framer-motion 14.8, i18next
+  26.5.11, lucide-react 1.65, maplibre-gl 6.16, react-i18next 17.1.9,
+  react-router 8.5.1 y postcss 8.5.32.
+
+### Security
+
+- **minimatch 11 y glob 14** (#1007): cierran GHSA-g3hv-75wg-m249 y
+  GHSA-3g3m-2fjr-6pw4, ambas de herramientas de build (ESLint y workbox). El
+  override de glob va solo en workbox-build: minimatch 11 con su glob 11 dejaba
+  el service worker con 4 ficheros de 251 sin que fallara el build.
+
+### Added
+
+- **El CI comprueba el precache del service worker** (#1007): todo JS/CSS de
+  `dist/assets`, `offline.js` y las dos páginas tienen que estar en `sw.js`,
+  en el build normal y en el que imita a Render.
+
 ## [2.58.0] - 2026-11-02
 
 **Arreglos de la pasada del Kind y un mapa más directo.** En el mapa del hoyo
