@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.58.0] - 2026-11-02
+
+**Arreglos de la pasada del Kind y un mapa más directo.** En el mapa del hoyo
+el doble toque ya no acerca: un toque mide en el acto y se acerca pellizcando.
+La agenda ya no enseña identificadores en lugar de nombres y aguanta que la
+lista de inscritos no cargue. Va con el backend **2.44.0** (solo
+dependencias).
+
+**Notas de despliegue.**
+
+- Sin cambios de contrato ni variables nuevas. Arranque **242 KB gzip** de 270.
+
+### Changed
+
+- **Medir en el mapa** (#1002): sin zoom por doble toque (ni doble clic); un
+  toque mide al instante y un segundo toque en menos de 0,5 s se ignora, que
+  el mapa ya se mueve hacia el punto. Para acercar, el pellizco o la rueda.
+  Sustituye a lo que hacían #999 y #1000 con el doble toque.
+- **Dependencias** (#997): react-router 8.5, maplibre-gl 6.15 y vite 8.3.5.
+
+### Fixed
+
+- **Jugadores sin nombre en la agenda** (#998): «Jugador N» en los equipos y
+  «Jugador», traducido, en partidos, modales y selector de capitán; nunca su
+  identificador.
+- **Inscritos que no cargan en la agenda** (#996, #999, #1000): un aviso que
+  se va al salir de la agenda (y no sale si el fallo llega ya fuera), reparto
+  manual desactivado, sin «Nombrar capitán» y «Reasignar jugadores»
+  desactivado con su motivo. Se quita el modo «reasignar» que no se usaba.
+- **Avisos cerrados** (#1000): al cerrarlos se van en el acto, sin quedarse un
+  segundo encima de la pantalla.
+- **Escape con un reporte de hoyo en marcha** (#1001): cancela el reporte, no
+  cierra el mapa.
+- **A 320–360 px** (#1001): los botones del mapa van juntos en una línea y los
+  nombres de las tarjetas de partido no se parten (el hándicap baja debajo).
+
 ## [2.57.0] - 2026-10-31
 
 **Release social 3: entrar directamente y equipos que no se mueven.** En una

@@ -8,8 +8,8 @@ const STATUS_COLORS = {
   WALKOVER: 'bg-orange-100 text-orange-800',
 };
 
-const getPlayerName = (playerId, playerNameMap) => {
-  return playerNameMap.get(playerId) || 'Unknown Player';
+const getPlayerName = (playerId, playerNameMap, t) => {
+  return playerNameMap.get(playerId) || t('unnamedPlayer');
 };
 
 const MatchCard = ({
@@ -45,13 +45,16 @@ const MatchCard = ({
       const ph = p.playingHandicap;
       const isCapped = maxPlayingHandicap != null && ph != null && ph >= maxPlayingHandicap;
       return (
-        <div key={p.userId || i} className="flex items-center justify-between gap-2">
+        <div key={p.userId || i} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
           {/* Que encoja y parta: con «Hcp juego» al lado, un nombre largo sin
-              espacios empujaba la fila fuera de la tarjeta a 360 px */}
+              espacios empujaba la fila fuera de la tarjeta a 360 px. Si no
+              caben los dos, el HCP baja debajo antes que partir el nombre a
+              mitad de palabra (pasada del Kind, 1 nov 2026) */}
           <p className={`min-w-0 break-words text-sm ${i === 0 ? 'text-gray-900' : 'text-gray-700'}`}>
-            {getPlayerName(p.userId, playerNameMap)}
+            {getPlayerName(p.userId, playerNameMap, t)}
           </p>
-          <div className="flex items-center gap-1 shrink-0">
+          {/* Si baja, a la derecha, como en las filas que caben (/code-review) */}
+          <div className="ml-auto flex items-center gap-1 shrink-0">
             {realHcp != null && (
               <span className={`text-xs ${teamColor} font-medium`}>{t('handicapLabels.index', { value: formatoDeIndice(realHcp) })}</span>
             )}

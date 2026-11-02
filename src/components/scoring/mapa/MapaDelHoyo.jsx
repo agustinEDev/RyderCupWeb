@@ -40,7 +40,8 @@ const ESTILO = {
   ],
 };
 const ESPAÑA = { center: [-3.7, 40.4], zoom: 5 };
-const DOBLE_TOQUE_MS = 400;
+// Dos toques a menos de esto son un doble toque: marcando, el segundo no cuenta
+const DOBLE_TOQUE_MS = 500;
 const ZOOM_SIN_MAPA = 17;
 
 // Lo que tapan la cabecera y el panel de abajo, según el alto de la pantalla:
@@ -502,6 +503,12 @@ const MapaDelHoyo = ({
         setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
+      // El segundo de un doble toque no mide: si el primero marcó (revisor, 31
+      // oct) o si midió, que el mapa ya se mueve hacia el punto y el segundo
+      // caería en otro sitio (/code-review, 2 nov)
+      const ahora = globalThis.performance.now();
+      if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
+      ultimoToque.current = ahora;
       setGracias(false);
       setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
@@ -628,6 +635,11 @@ const MapaDelHoyo = ({
         dragRotate: !orientado,
         pitchWithRotate: false,
         touchPitch: false,
+        // Sin doble toque que acerque: un toque mide en el acto, y se acerca
+        // pellizcando (iPhone, 2 nov 2026: con él, acercaba y medía a la vez).
+        // Tocar y arrastrar con un dedo sigue acercando (va con el pellizco):
+        // mide donde cae el primer toque, aceptado
+        doubleClickZoom: false,
         ...(centro ? { center: lngLat(centro), zoom: ZOOM_SIN_MAPA } : ESPAÑA),
       });
     } catch (error) {
@@ -791,7 +803,8 @@ const MapaDelHoyo = ({
     marcaTocada.current.setLngLat(lngLat(codoAhora));
   }, [codoAhora, desdeMi, menuDeMotivos]);
 
-  // El punto que se mide (19 oct): quieto, se cambia tocando otro
+  // El punto que se mide (19 oct): quieto, se cambia tocando otro. Sin
+  // quedarse los toques: tocar encima va al mapa y vuelve a medir
   useEffect(() => {
     const mapa = mapaRef.current;
     if (!mapa) return;
@@ -801,7 +814,7 @@ const MapaDelHoyo = ({
       return;
     }
     if (!marcaMedida.current) {
-      const elemento = punto('h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow z-[2]');
+      const elemento = punto('pointer-events-none h-3 w-3 rounded-full border-2 border-white bg-yellow-300 shadow z-[2]');
       elemento.dataset.punto = 'medido';
       marcaMedida.current = new Marker({ element: elemento }).setLngLat(lngLat(medido)).addTo(mapa);
     }
@@ -997,14 +1010,6 @@ const MapaDelHoyo = ({
     if (pedidoEntero) loQueSePide.current?.focus();
   }, [pedidoEntero]);
 
-  // Mientras se pide, el doble toque no acerca: marcaría la salida y el green en el mismo sitio
-  // (y al proponer la línea de un reporte, igual)
-  const marcandoElReporte = reporte?.fase === 'salida' || reporte?.fase === 'green';
-  useEffect(() => {
-    const zoom = mapaRef.current?.doubleClickZoom;
-    if (pidiendo || marcandoElReporte) zoom?.disable();
-    else zoom?.enable();
-  }, [pidiendo, marcandoElReporte]);
   // El foco: al primer motivo al abrir el menú, y a «⋮» al acabar el reporte
   // (revisor, 18 oct: el botón que se pulsó desaparece)
   const faseDelReporte = reporte?.fase ?? null;
@@ -1195,7 +1200,9 @@ const MapaDelHoyo = ({
   return (
     // `ModalShell`: el foco entra (por «Cerrar», lo primero) y vuelve a «Mapa» al
     // cerrar, no se sale con el tabulador, Escape cierra y debajo no se desplaza
-    <ModalShell isOpen onClose={onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-black">
+    // Escape a mitad de un reporte lo cancela, como su «Cancelar»; si no, cierra
+    // el mapa (pasada del Kind, 1 nov 2026: con «⋮» abierto se cerraba todo)
+    <ModalShell isOpen onClose={reporte ? acabarElReporte : onCerrar} closeOnBackdrop={false} labelledBy="titulo-del-mapa" boxClassName="fixed inset-x-0 inset-y-0 bg-black">
       <div
         ref={arriba}
         data-testid="mapa-arriba"
@@ -1370,8 +1377,12 @@ const MapaDelHoyo = ({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <span className="pointer-events-auto flex-1 text-[10px] text-white/80 [text-shadow:0_1px_2px_#000]">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* Al lado de los botones encoge y parte por donde sea (si no,
+              «OpenStreetMap» no baja de su ancho y a 320 px echaba los botones
+              fuera; revisor). Con menos de 64 px, la fila se parte y baja a la
+              suya en vez de quedar en una columna de 12 líneas (/code-review) */}
+          <span className="pointer-events-auto min-w-16 flex-1 text-[10px] text-white/80 [overflow-wrap:anywhere] [text-shadow:0_1px_2px_#000]">
             <span>{t('mapa.atribucionPnoa')}</span>
             {atribucionDeLaOrtofoto(comunidad) && <span>{` · ${t(atribucionDeLaOrtofoto(comunidad))}`}</span>}
             {atribucion && (
@@ -1383,37 +1394,45 @@ const MapaDelHoyo = ({
               </>
             )}
           </span>
-          {sinMapa ? null : conMapa || linea ? (
-            <button
-              type="button"
-              onClick={() => {
-                // A mitad de hoyo, vuelve también su línea (H3); y lo último
-                // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
-                setLineaOculta(false);
-                ultimaVista.current = { tipo: 'hoyo' };
-                encuadrarHoyo(true);
-              }}
-              className={`${BOTON} pointer-events-auto`}
-            >
-              <Maximize2 className="h-4 w-4" aria-hidden="true" />
-              {t('mapa.verHoyo')}
-            </button>
-          ) : (
-            <button type="button" onClick={() => mapaRef.current?.resetNorth()} className={`${BOTON} pointer-events-auto`}>
-              <Compass className="h-4 w-4" aria-hidden="true" />
-              {t('mapa.norte')}
-            </button>
-          )}
+          {/* Juntos: si no caben al lado de la atribución, bajan los dos y no
+              uno solo (medido en inglés a 360 px) */}
           {!sinMapa && (
-            <button
-              type="button"
-              disabled={!posicionEnElCampo}
-              onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
-              className={`${BOTON} pointer-events-auto`}
-            >
-              <LocateFixed className="h-4 w-4" aria-hidden="true" />
-              {t('mapa.centrame')}
-            </button>
+            <div className="flex shrink-0 gap-2">
+              {conMapa || linea ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // A mitad de hoyo, vuelve también su línea (H3); y lo último
+                    // orientado es ya el hoyo, que el panel no vuelva a «desde ti» (CodeRabbit)
+                    setLineaOculta(false);
+                    ultimaVista.current = { tipo: 'hoyo' };
+                    encuadrarHoyo(true);
+                  }}
+                  className={`${BOTON} pointer-events-auto whitespace-nowrap`}
+                >
+                  <Maximize2 className="h-4 w-4" aria-hidden="true" />
+                  {t('mapa.verHoyo')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => mapaRef.current?.resetNorth()}
+                  className={`${BOTON} pointer-events-auto whitespace-nowrap`}
+                >
+                  <Compass className="h-4 w-4" aria-hidden="true" />
+                  {t('mapa.norte')}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={!posicionEnElCampo}
+                onClick={() => mapaRef.current?.easeTo({ center: lngLat(posicion) })}
+                className={`${BOTON} pointer-events-auto whitespace-nowrap`}
+              >
+                <LocateFixed className="h-4 w-4" aria-hidden="true" />
+                {t('mapa.centrame')}
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -14,6 +14,7 @@ const TeamAssignmentSection = ({
   maxPlayingHandicap,
   captains,
   status,
+  inscritosSinCargar = false,
   t,
 }) => {
   // Quién capitanea cada equipo, y quién es su segundo (FE #692): esta es la
@@ -33,10 +34,17 @@ const TeamAssignmentSection = ({
   );
   const sePuedeCubrir = ['ACTIVE', 'CLOSED'].includes(status);
   const sinCapitan = (equipo) => {
-    if (!captains || !sePuedeCubrir) return false;
+    if (!captains || !sePuedeCubrir || inscritosSinCargar) return false;
     const capitan = equipo === 'A' ? captains.teamA : captains.teamB;
     return !capitan || !inscritos.has(capitan);
   };
+  // Sin la lista no se sabe quién sigue: solo consta que falta el que no está
+  // nombrado, y para cubrirlo hay que recargar (31 oct 2026)
+  const faltaSinLista = (equipo) =>
+    inscritosSinCargar &&
+    sePuedeCubrir &&
+    Boolean(captains) &&
+    !(equipo === 'A' ? captains.teamA : captains.teamB);
 
   // Sin el nombre del equipo: cada lista ya lo lleva en su título, y uno largo
   // dejaba la etiqueta en «Capitán de E...»
@@ -51,6 +59,11 @@ const TeamAssignmentSection = ({
     if (playerId === subcapitan) return t('teams.viceCaptainTag');
     return null;
   };
+  // Sin nombre (la lista no cargó), «Jugador N» por su puesto en el equipo:
+  // nunca el UUID
+  const nombreDe = (playerId, posicion) =>
+    playerNameMap.get(playerId) || t('unnamedPlayerNumbered', { numero: posicion + 1 });
+
   // Build handicap lookup from enrollments
   const handicapMap = new Map();
   (enrollments || []).forEach((e) => {
@@ -130,10 +143,10 @@ const TeamAssignmentSection = ({
             {teamNames.teamA} ({t('teams.playersCount', { count: teamA.length })})
           </h4>
           <ul className="space-y-1.5">
-            {teamA.map((playerId) => (
+            {teamA.map((playerId, posicion) => (
               <li key={playerId} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-gray-800 min-w-0">
-                  {playerNameMap.get(playerId) || playerId}
+                  {nombreDe(playerId, posicion)}
                   {papelDe(playerId, 'A') && (
                     <span className="block text-xs text-yellow-800 truncate">
                       {papelDe(playerId, 'A')}
@@ -145,6 +158,11 @@ const TeamAssignmentSection = ({
             ))}
           </ul>
 
+          {canManage && faltaSinLista('A') && (
+            <p data-testid="capitan-inscritos-sin-cargar-A" className="mt-3 text-sm text-red-700">
+              {t('teams.fillCaptainNeedsEnrollments')}
+            </p>
+          )}
           {canManage && sinCapitan('A') && (
             <button
               type="button"
@@ -163,10 +181,10 @@ const TeamAssignmentSection = ({
             {teamNames.teamB} ({t('teams.playersCount', { count: teamB.length })})
           </h4>
           <ul className="space-y-1.5">
-            {teamB.map((playerId) => (
+            {teamB.map((playerId, posicion) => (
               <li key={playerId} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-gray-800 min-w-0">
-                  {playerNameMap.get(playerId) || playerId}
+                  {nombreDe(playerId, posicion)}
                   {papelDe(playerId, 'B') && (
                     <span className="block text-xs text-yellow-800 truncate">
                       {papelDe(playerId, 'B')}
@@ -178,6 +196,11 @@ const TeamAssignmentSection = ({
             ))}
           </ul>
 
+          {canManage && faltaSinLista('B') && (
+            <p data-testid="capitan-inscritos-sin-cargar-B" className="mt-3 text-sm text-red-700">
+              {t('teams.fillCaptainNeedsEnrollments')}
+            </p>
+          )}
           {canManage && sinCapitan('B') && (
             <button
               type="button"

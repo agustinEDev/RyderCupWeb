@@ -153,9 +153,13 @@ const abrir = (props = {}) =>
     <MapaDelHoyo golfCourseId="gc-1" numeroDeHoyo={1} par={4} hoyo={HOYO} atribucion={null} onCerrar={() => {}} {...props} />
   );
 const mapa = () => mapas.at(-1);
+const pulsar = (evento) => act(() => mapa().oyentes.click(evento));
+beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }));
+afterEach(() => vi.useRealTimers());
 
 describe('MapaDelHoyo', () => {
   let gps;
+  let reloj;
 
   beforeEach(() => {
     mapas.length = 0;
@@ -163,9 +167,15 @@ describe('MapaDelHoyo', () => {
     mapas.marcas = [];
     gps = gpsFalso();
     vi.stubGlobal('navigator', { ...globalThis.navigator, geolocation: gps });
+    // Un segundo entre toque y toque: así no cuentan como doble toque
+    let ahora = 0;
+    reloj = vi.spyOn(globalThis.performance, 'now').mockImplementation(() => (ahora += 1000));
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    reloj.mockRestore();
+    vi.unstubAllGlobals();
+  });
 
   it('M3 (19 oct): la caja del mapa, en negro', () => {
     abrir();
@@ -191,6 +201,33 @@ describe('MapaDelHoyo', () => {
 
       expect(gps.clearWatch).toHaveBeenCalledWith(3);
       expect(mapa().remove).toHaveBeenCalled();
+    });
+
+    it('V1 (pasada del Kind, 1 nov 2026): «Ver hoyo» y «Céntrame» no se parten en dos líneas', () => {
+      abrir();
+
+      expect(screen.getByRole('button', { name: 'mapa.verHoyo' })).toHaveClass('whitespace-nowrap');
+      expect(screen.getByRole('button', { name: 'mapa.centrame' })).toHaveClass('whitespace-nowrap');
+      // Juntos: si no caben, bajan los dos y no uno solo (medido en inglés a 360 px)
+      const grupo = screen.getByRole('button', { name: 'mapa.verHoyo' }).parentElement;
+      expect(screen.getByRole('button', { name: 'mapa.centrame' }).parentElement).toBe(grupo);
+      expect(grupo).toHaveClass('flex', 'shrink-0');
+    });
+
+    it('V1 (revisor): la atribución de al lado encoge y parte, también a 320 px', () => {
+      abrir({ atribucion: 'OSM' });
+
+      const atribucion = screen.getByText('mapa.atribucionPnoa').parentElement;
+      // Hasta 64 px se queda al lado y parte; con menos, la fila se parte y baja
+      // a la suya (/code-review: a 320 px quedaba una columna de 12 líneas)
+      expect(atribucion).toHaveClass('min-w-16', 'flex-1', '[overflow-wrap:anywhere]');
+      expect(atribucion.parentElement).toHaveClass('flex-wrap', 'justify-end');
+    });
+
+    it('V1: «Norte» tampoco', () => {
+      abrir({ hoyo: null, porMarcar: null });
+
+      expect(screen.getByRole('button', { name: 'mapa.norte' })).toHaveClass('whitespace-nowrap');
     });
 
     it('«Cerrar» y la tecla Escape cierran', () => {
@@ -365,7 +402,7 @@ describe('MapaDelHoyo', () => {
   });
 
   describe('medir tocando', () => {
-    const tocar = (lat, lon) => act(() => mapa().oyentes.click({ lngLat: { lat, lng: lon } }));
+    const tocar = (lat, lon) => pulsar({ lngLat: { lat, lng: lon } });
 
     it('M2 (19 oct: T1): hasta ahí, sin el tramo al green', () => {
       abrir();
@@ -777,7 +814,7 @@ describe('MapaDelHoyo — lejos del campo (16 oct)', () => {
   const CAMPO = { lat: 36.29, lon: -5.33 };
   const EN_CASA = { lat: 36.72, lon: -4.42 }; // ~95 km
   const CERCA = { lat: 36.291, lon: -5.331 };
-  const tocar = (lat, lon) => act(() => mapa().oyentes.click({ lngLat: { lat, lng: lon } }));
+  const tocar = (lat, lon) => pulsar({ lngLat: { lat, lng: lon } });
 
   beforeEach(() => {
     mapas.length = 0;
@@ -985,7 +1022,7 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
   const alEste = (m, de = T) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
   const G = alNorte(300);
   const GREEN_G = { front: alNorte(290), center: G, back: alNorte(310) };
-  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
   const vivas = () => mapas.marcas.filter((m) => !m.quitada);
   const arrastrables = () => vivas().filter((m) => m.opciones.draggable);
   const soltar = (marca, p) =>
@@ -1249,10 +1286,46 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(mapa().fitBounds).not.toHaveBeenCalled();
     });
 
-    it('P7: mientras se pide, el doble toque no acerca el mapa', () => {
-      marcar();
+    it('M8 (31 oct): un doble toque cuyo primero acaba de marcar no mide con el segundo', () => {
+      marcar({ metros: 300 });
+      const pulsarA = (ms, p) => {
+        reloj.mockImplementation(() => ms);
+        pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
+      };
+      pulsarA(1000, T);
 
-      expect(mapa().doubleClickZoom.disable).toHaveBeenCalled();
+      pulsarA(3000, G);
+      pulsarA(3100, G);
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(lineaDibujada()).toBeDefined();
+      expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toEqual([]);
+    });
+
+    it('M8 (revisor, 2 nov): a 500 ms justos del toque que marcó, ya mide', () => {
+      marcar({ metros: 300 });
+      const pulsarA = (ms, p) => {
+        reloj.mockImplementation(() => ms);
+        pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
+      };
+      pulsarA(1000, T);
+      pulsarA(3000, G);
+
+      pulsarA(3500, G);
+
+      expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toHaveLength(1);
+    });
+
+    it('Z2 (2 nov): pedido y marcado el hoyo, el doble toque no vuelve a acercar', () => {
+      marcar({ metros: 300 });
+      reloj.mockImplementation(() => 1000);
+      pulsar({ lngLat: { lat: T.lat, lng: T.lon } });
+      reloj.mockImplementation(() => 3000);
+      pulsar({ lngLat: { lat: G.lat, lng: G.lon } });
+      expect(lineaDibujada()).toBeDefined();
+
+      expect(mapa().opciones.doubleClickZoom).toBe(false);
+      expect(mapa().doubleClickZoom.enable).not.toHaveBeenCalled();
     });
 
     it('P8: «Ahora no» deja medir, y «Marcar hoyo» vuelve a pedirlo', () => {
@@ -1431,7 +1504,7 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
         disconnect() {}
       });
       abrir({ hoyo: hoyoCon([T, G]), par: 3 });
-      act(() => mapa().oyentes.click({ lngLat: { lat: alNorte(150).lat, lng: T.lon } }));
+      pulsar({ lngLat: { lat: alNorte(150).lat, lng: T.lon } });
       mapa().easeTo.mockClear();
       mapa().jumpTo.mockClear();
 
@@ -1931,7 +2004,7 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
   const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
   const T = { lat: 36.28, lon: -5.33 };
   const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
-  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
   const lineaDibujada = () => mapa().fuentes.marcado.data.features.find((f) => f.properties.tipo === 'linea')?.geometry.coordinates;
   const si = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.si' }));
   const no = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.no' }));
@@ -3518,7 +3591,7 @@ describe('MapaDelHoyo — marcar con el GPS y el recuadro desde ti (17 oct)', ()
       const codo = elCodo()[0].p;
       mapa().fitBounds.mockClear();
 
-      act(() => mapa().oyentes.click({ lngLat: { lat: alNorte(100).lat, lng: T.lon + 0.0005 } }));
+      pulsar({ lngLat: { lat: alNorte(100).lat, lng: T.lon + 0.0005 } });
 
       expect(medida()).toEqual([[en(alNorte(50)), [T.lon + 0.0005, alNorte(100).lat]]]);
       expect(mapa().fitBounds).not.toHaveBeenCalled();
@@ -3883,7 +3956,7 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
   const M_POR_GRADO = (6371008.8 * Math.PI) / 180;
   const T = { lat: 36.28, lon: -5.33 };
   const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
-  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
   const lineaDibujada = () => mapa().fuentes.marcado?.data.features.find((f) => f.properties.tipo === 'linea')?.geometry.coordinates;
   const LINEA = { playLine: [T, alNorte(300)], green: { front: alNorte(290), center: alNorte(300), back: alNorte(310) } };
   const menu = () => fireEvent.click(screen.getByRole('button', { name: 'mapa.reportar' }));
@@ -4098,15 +4171,15 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(screen.queryByRole('button', { name: 'mapa.reportar' })).toBeNull();
   });
 
-  it('R-3: marcando la propuesta, el doble toque no acerca; al acabar, sí', () => {
+  it('Z2 (2 nov): marcando la propuesta y al acabar, el doble toque no vuelve a acercar', () => {
     abrirConLinea();
     menu();
     motivo('WRONG_LINE');
-    expect(mapa().doubleClickZoom.disable).toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'mapa.cancelar' }));
 
-    expect(mapa().doubleClickZoom.enable).toHaveBeenCalled();
+    expect(mapa().opciones.doubleClickZoom).toBe(false);
+    expect(mapa().doubleClickZoom.enable).not.toHaveBeenCalled();
   });
 
   it('R-4: en un par 3 (sin codos), la propuesta no habla de codos', () => {
@@ -4137,6 +4210,66 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
   });
 
+  /**
+   * Escape en el mapa (pasada del Kind, 1 nov 2026: con «⋮» abierto cerraba el mapa entero)
+   *
+   * | #  | Caso                                   | Queda                                  |
+   * |----|----------------------------------------|----------------------------------------|
+   * | E1 | Menú «⋮» abierto                       | Se cierra el menú, foco a «⋮»; mapa abierto |
+   * | E2 | Marcando la propuesta de un reporte    | Se cancela el reporte; mapa abierto    |
+   * | E3 | Sin reporte                            | Se cierra el mapa (test «Cerrar» y Escape) |
+   */
+  it('E1: con «⋮» abierto, Escape cierra el menú y no el mapa', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('group', { name: 'mapa.reporteTitulo' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'mapa.reportar' })).toHaveFocus();
+  });
+
+  it('E2: marcando la propuesta, Escape cancela el reporte y vuelve la línea de siempre', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+    motivo('WRONG_LINE');
+    expect(screen.getByText('mapa.reporteSalida')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByText('mapa.reporteSalida')).toBeNull();
+    expect(lineaDibujada()).toBeDefined();
+  });
+
+  it('E2 (revisor): con la propuesta lista, Escape la descarta y vuelve la de siempre', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    const deSiempre = lineaDibujada();
+    proponer();
+    expect(screen.getByRole('button', { name: 'mapa.enviarReporte' })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'mapa.enviarReporte' })).toBeNull();
+    expect(lineaDibujada()).toEqual(deSiempre);
+  });
+
+  it('E3: acabado el reporte, Escape vuelve a cerrar el mapa', () => {
+    const onCerrar = vi.fn();
+    abrirConLinea({ onCerrar });
+    menu();
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onCerrar).toHaveBeenCalledTimes(1);
+  });
+
   it('R-7: las gracias se anuncian y se van al tocar el mapa', () => {
     abrirConLinea();
     proponer();
@@ -4147,6 +4280,23 @@ describe('MapaDelHoyo — reportar un hoyo (entrega 7)', () => {
     tocar(alNorte(100));
 
     expect(screen.queryByText('mapa.reporteGracias')).toBeNull();
+  });
+
+  it('M9 (2 nov): tras enviar, dos toques seguidos miden y se llevan las gracias', () => {
+    abrirConLinea();
+    proponer();
+    fireEvent.click(screen.getByRole('button', { name: 'mapa.enviarReporte' }));
+    const pulsarA = (ms, p) => {
+      reloj.mockImplementation(() => ms);
+      pulsar({ lngLat: { lat: p.lat, lng: p.lon }, point: { x: 100, y: 100 } });
+    };
+
+    // Muy después del reporte: React también lee el reloj y lo adelanta
+    pulsarA(1e9, alNorte(100));
+    pulsarA(1e9 + 100, alNorte(100));
+
+    expect(screen.queryByText('mapa.reporteGracias')).toBeNull();
+    expect(mapas.marcas.filter((m) => !m.quitada && m.opciones.element?.dataset?.punto === 'medido')).toHaveLength(1);
   });
 
   it('R-8: reportando, «Marcar hoyo» no está', () => {
@@ -4242,7 +4392,7 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
   const T = { lat: 36.28, lon: -5.33 };
   const alNorte = (m, de = T) => ({ lat: de.lat + m / M_POR_GRADO, lon: de.lon });
   const alEste = (m, de = T) => ({ lat: de.lat, lon: de.lon + m / (M_POR_GRADO * Math.cos((de.lat * Math.PI) / 180)) });
-  const tocar = (p) => act(() => mapa().oyentes.click({ lngLat: { lat: p.lat, lng: p.lon } }));
+  const tocar = (p) => pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
   const en = (p) => [p.lon, p.lat];
   const medida = () => mapa().fuentes.medida.data.features.map((f) => f.geometry.coordinates);
   const vivas = () => mapas.marcas.filter((m) => !m.quitada);
@@ -4586,5 +4736,126 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
 
     expect(elPunto()).toEqual([]);
     expect(medida()).toEqual([]);
+  });
+
+  /**
+   * Sin zoom por doble toque, medir no espera (iPhone, 2 nov 2026: con la
+   * espera, el doble toque acercaba y medía igual; acercar es pellizcar).
+   *
+   * | #   | Caso                                              | Queda                           |
+   * |-----|---------------------------------------------------|---------------------------------|
+   * | Z1  | El mapa nace                                      | Sin zoom por doble toque/clic   |
+   * | I1  | Un toque suelto                                   | Mide en el acto; nada pendiente |
+   * | I2  | Dos toques rápidos en el mismo sitio              | Un punto, el del segundo        |
+   * | I3  | Dos toques rápidos en sitios distintos            | Se queda el segundo             |
+   * | I4  | Acercar justo después (pellizco, rueda)           | La medida se queda              |
+   * | I5  | «Ver hoyo», «Céntrame», «Norte» justo después     | La medida se queda              |
+   * | M10 | El punto medido                                   | No se queda los toques          |
+   */
+  describe('I: un toque mide al instante', () => {
+    const Q = alEste(-20, alNorte(200));
+    const R = alEste(20, alNorte(150));
+    const pulsarA = (ms, p) => {
+      reloj.mockImplementation(() => ms);
+      pulsar({ lngLat: { lat: p.lat, lng: p.lon }, point: { x: 180, y: 300 } });
+    };
+    // Todo lo que el mapa escuche al moverse, como si lo moviera el jugador
+    const MOVERSE = ['movestart', 'move', 'moveend', 'zoomstart', 'zoom', 'zoomend', 'rotatestart', 'rotate', 'rotateend'];
+    const acercaElJugador = (tipo) =>
+      act(() => MOVERSE.forEach((evento) => mapa().oyentes[evento]?.({ originalEvent: { type: tipo } })));
+    const conP = () => {
+      abrirConLinea();
+      desde(0);
+      pulsarA(1000, P);
+      expect(medida()).toEqual([[en(T), en(P)]]);
+    };
+
+    it('Z1: el mapa nace sin zoom por doble toque ni doble clic', () => {
+      abrirConLinea();
+
+      expect(mapa().opciones.doubleClickZoom).toBe(false);
+    });
+
+    it('I1: un toque mide en el acto, sin esperar', () => {
+      abrirConLinea();
+      desde(0);
+
+      pulsarA(1000, P);
+
+      expect(medida()).toEqual([[en(T), en(P)]]);
+      expect(elPunto()).toHaveLength(1);
+    });
+
+    it('I2 (/code-review): dos toques rápidos: se queda el primero (el segundo cae con el mapa moviéndose)', () => {
+      conP();
+
+      pulsarA(5000, Q);
+      pulsarA(5100, R);
+
+      expect(medida()).toEqual([[en(T), en(Q)]]);
+      expect(elPunto().map((m) => m.p)).toEqual([en(Q)]);
+    });
+
+    it('I2: el ignorado no alarga la espera: a 500 ms del que midió, ya mide', () => {
+      conP();
+
+      pulsarA(5000, Q);
+      pulsarA(5300, R);
+      pulsarA(5500, P);
+
+      expect(medida()).toEqual([[en(T), en(P)]]);
+    });
+
+    it('I3: a 500 ms justos, el segundo ya mide', () => {
+      conP();
+
+      pulsarA(5000, Q);
+      pulsarA(5500, R);
+
+      expect(medida()).toEqual([[en(T), en(R)]]);
+      expect(elPunto()).toHaveLength(1);
+    });
+
+    it.each(['touchmove', 'touchend', 'wheel'])('I4: acercar justo después (%s) no quita la medida', (tipo) => {
+      conP();
+
+      acercaElJugador(tipo);
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(medida()).toEqual([[en(T), en(P)]]);
+    });
+
+    it.each(['mapa.verHoyo', 'mapa.centrame'])('I5: «%s» justo después no quita la medida', (boton) => {
+      conP();
+
+      fireEvent.click(screen.getByRole('button', { name: boton }));
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(elPunto()).toHaveLength(1);
+    });
+
+    it('I5: «Norte» (hoyo sin mapa) justo después no quita la medida', () => {
+      abrir({ hoyo: null, porMarcar: null });
+      act(() => mapa().oyentes.load());
+      desde(0);
+      pulsarA(1000, P);
+
+      fireEvent.click(screen.getByRole('button', { name: 'mapa.norte' }));
+      act(() => vi.advanceTimersByTime(1000));
+
+      expect(elPunto()).toHaveLength(1);
+    });
+
+    it('I1: medir no deja nada pendiente (ni al cerrar)', () => {
+      conP();
+
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('M10: el punto medido no se queda los toques: van al mapa', () => {
+      conP();
+
+      expect(elPunto()[0].opciones.element).toHaveClass('pointer-events-none');
+    });
   });
 });
