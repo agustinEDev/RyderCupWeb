@@ -18,6 +18,9 @@ Tests del «Result» de las tarjetas de licencias y Dependency Review (#777).
 | P1   | build-ci          | arranque en tope, sin problemas            | el arranque gzip y su tope         |
 | P2   | build-ci          | arranque en tope, un trozo se pasa (#374)  | empieza por el fallo, no por «OK»  |
 | P3   | build-ci          | el arranque se pasa                        | el exceso una sola vez             |
+| P4   | build-ci          | el precache del SW se queda corto          | lo dice primero, sin «OK»          |
+| P5   | build-render      | build bien, precache corto                 | el precache, no «npm run build»    |
+| P6   | build-ci/render   | precache entero                            | la tarjeta de siempre              |
 """
 
 import json
@@ -119,6 +122,31 @@ class TarjetaDelBuild(unittest.TestCase):
         r = sr.build_ci({**self.BASE, "size_kb": "272", "problems": problema})
         self.assertEqual(r.count("by 2 KB"), 1, r)
         self.assertNotIn("OK", r)
+
+    def test_P4_el_precache_se_queda_corto(self):
+        r = sr.build_ci({**self.BASE, "problems": "", "precache_outcome": "failure"})
+        self.assertTrue(r.startswith("Production build done, but the service worker does not precache the whole app"), r)
+        self.assertNotIn("OK", r)
+
+    def test_P6_precache_entero_la_tarjeta_de_siempre(self):
+        r = sr.build_ci({**self.BASE, "problems": "", "precache_outcome": "success"})
+        self.assertEqual(r, "Production build OK. Startup JS 240 KB gzip of a 270 KB budget (88%; warns above 255 KB).")
+
+
+class TarjetaDelBuildDeRender(unittest.TestCase):
+    BASE = {"build_outcome": "success", "node": "v22.1.0", "npm": "10.9.0", "lock_packages": "600", "lock_differences": "0"}
+
+    def test_P5_build_bien_precache_corto(self):
+        r = sr.build_render({**self.BASE, "precache_outcome": "failure"})
+        self.assertIn("the service worker does not precache the whole app", r)
+        self.assertNotIn("npm run build failed", r)
+
+    def test_P6_precache_entero_no_lo_menciona(self):
+        r = sr.build_render({**self.BASE, "precache_outcome": "success", "smoke_outcome": "success",
+                             "smoke_resources": "30", "smoke_integrity": "28", "smoke_chunks": "200", "smoke_failures": "0"})
+        self.assertNotIn("precache", r)
+        self.assertIn("Static-site smoke passed", r)
+
 
 
 if __name__ == "__main__":
