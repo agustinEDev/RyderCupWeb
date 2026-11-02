@@ -1302,6 +1302,20 @@ describe('MapaDelHoyo — marcar, mover y la muestra al cerrar', () => {
       expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toEqual([]);
     });
 
+    it('M8 (revisor, 2 nov): a 500 ms justos del toque que marcó, ya mide', () => {
+      marcar({ metros: 300 });
+      const pulsarA = (ms, p) => {
+        reloj.mockImplementation(() => ms);
+        pulsar({ lngLat: { lat: p.lat, lng: p.lon } });
+      };
+      pulsarA(1000, T);
+      pulsarA(3000, G);
+
+      pulsarA(3500, G);
+
+      expect(vivas().filter((m) => m.opciones.element?.dataset?.punto === 'medido')).toHaveLength(1);
+    });
+
     it('Z2 (2 nov): pedido y marcado el hoyo, el doble toque no vuelve a acercar', () => {
       marcar({ metros: 300 });
       reloj.mockImplementation(() => 1000);
