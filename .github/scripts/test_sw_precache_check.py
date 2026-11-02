@@ -113,6 +113,13 @@ class PrecacheDelServiceWorker(unittest.TestCase):
         self.sw(ASSETS + PAGINAS)
         self.assertEqual(self.correr(), 0)
 
+    def test_P7_assets_sin_codigo(self):
+        # Sin código que exigir, solo las dos páginas: no vale como «todo dentro» (revisor)
+        shutil.rmtree(self.dist / "assets")
+        self.sw(PAGINAS)
+        self.assertEqual(self.correr(), 1)
+        self.assertIn("No JS/MJS/CSS found", self.log.getvalue())
+
     def test_sin_argumento(self):
         self.assertEqual(sw_precache_check.main([]), 1)
 

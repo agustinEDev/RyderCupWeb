@@ -725,6 +725,8 @@ jobs:
           # las que han pasado los tests
           python3 .github/scripts/lock_versions_match.py "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
           npm run build
+          # Con el `npm install` de Render, el precache también entero (revisor)
+          python3 .github/scripts/sw_precache_check.py dist
 
       - name: Serve the Render build like a static site
         if: matrix.build == 'render'

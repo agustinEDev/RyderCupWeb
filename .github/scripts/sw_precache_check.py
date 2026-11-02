@@ -42,6 +42,10 @@ def main(argv: list[str]) -> int:
 
     assets = dist / "assets"
     exigidos = [p.relative_to(dist).as_posix() for p in sorted(assets.rglob("*")) if p.is_file() and p.suffix in CODIGO]
+    # Sin código que exigir, quedarían solo las dos páginas y pasaría sin mirar (revisor)
+    if not exigidos:
+        print(f"::error::No JS/MJS/CSS found in {assets}: nothing was checked")
+        return 1
     exigidos += PAGINAS
     faltan = [f for f in exigidos if f not in precache]
 
