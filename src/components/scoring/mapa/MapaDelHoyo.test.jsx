@@ -4754,11 +4754,15 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
    */
   describe('I: un toque mide al instante', () => {
     const Q = alEste(-20, alNorte(200));
+    const R = alEste(20, alNorte(150));
     const pulsarA = (ms, p) => {
       reloj.mockImplementation(() => ms);
       pulsar({ lngLat: { lat: p.lat, lng: p.lon }, point: { x: 180, y: 300 } });
     };
-    const acercaElJugador = (tipo) => act(() => mapa().oyentes.zoomstart?.({ originalEvent: { type: tipo } }));
+    // Todo lo que el mapa escuche al moverse, como si lo moviera el jugador
+    const MOVERSE = ['movestart', 'move', 'moveend', 'zoomstart', 'zoom', 'zoomend', 'rotatestart', 'rotate', 'rotateend'];
+    const acercaElJugador = (tipo) =>
+      act(() => MOVERSE.forEach((evento) => mapa().oyentes[evento]?.({ originalEvent: { type: tipo } })));
     const conP = () => {
       abrirConLinea();
       desde(0);
@@ -4782,24 +4786,33 @@ describe('MapaDelHoyo — medir tocando, de ti al punto (19 oct)', () => {
       expect(elPunto()).toHaveLength(1);
     });
 
-    it('I2: dos toques rápidos en el mismo sitio: un punto, el del segundo', () => {
+    it('I2 (/code-review): dos toques rápidos: se queda el primero (el segundo cae con el mapa moviéndose)', () => {
       conP();
 
       pulsarA(5000, Q);
-      pulsarA(5100, Q);
+      pulsarA(5100, R);
 
       expect(medida()).toEqual([[en(T), en(Q)]]);
       expect(elPunto().map((m) => m.p)).toEqual([en(Q)]);
     });
 
-    it('I3: dos toques rápidos en sitios distintos: se queda el segundo', () => {
-      abrirConLinea();
-      desde(0);
+    it('I2: el ignorado no alarga la espera: a 500 ms del que midió, ya mide', () => {
+      conP();
 
-      pulsarA(1000, P);
-      pulsarA(1100, Q);
+      pulsarA(5000, Q);
+      pulsarA(5300, R);
+      pulsarA(5500, P);
 
-      expect(medida()).toEqual([[en(T), en(Q)]]);
+      expect(medida()).toEqual([[en(T), en(P)]]);
+    });
+
+    it('I3: a 500 ms justos, el segundo ya mide', () => {
+      conP();
+
+      pulsarA(5000, Q);
+      pulsarA(5500, R);
+
+      expect(medida()).toEqual([[en(T), en(R)]]);
       expect(elPunto()).toHaveLength(1);
     });
 

@@ -503,9 +503,12 @@ const MapaDelHoyo = ({
         setVista({ tipo: 'hoyo', porElJugador: true });
         return;
       }
-      // Si el primero de un doble toque marcó (y con él se acabó de marcar), el
-      // segundo no mide (revisor, 31 oct)
-      if (globalThis.performance.now() - ultimoToque.current < DOBLE_TOQUE_MS) return;
+      // El segundo de un doble toque no mide: si el primero marcó (revisor, 31
+      // oct) o si midió, que el mapa ya se mueve hacia el punto y el segundo
+      // caería en otro sitio (/code-review, 2 nov)
+      const ahora = globalThis.performance.now();
+      if (ahora - ultimoToque.current < DOBLE_TOQUE_MS) return;
+      ultimoToque.current = ahora;
       setGracias(false);
       setMedido(p);
       // El mapa gira hacia el punto y os encuadra, contigo abajo (Agustín, 16
@@ -633,7 +636,9 @@ const MapaDelHoyo = ({
         pitchWithRotate: false,
         touchPitch: false,
         // Sin doble toque que acerque: un toque mide en el acto, y se acerca
-        // pellizcando (iPhone, 2 nov 2026: con él, acercaba y medía a la vez)
+        // pellizcando (iPhone, 2 nov 2026: con él, acercaba y medía a la vez).
+        // Tocar y arrastrar con un dedo sigue acercando (va con el pellizco):
+        // mide donde cae el primer toque, aceptado
         doubleClickZoom: false,
         ...(centro ? { center: lngLat(centro), zoom: ZOOM_SIN_MAPA } : ESPAÑA),
       });
