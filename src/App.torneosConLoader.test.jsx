@@ -18,10 +18,11 @@ import { textosDelError } from './components/errors/textosDelError';
  *       |                                                  | arranque ni aviso ni cola hasta tener datos)
  *   T35 | recargar con posiciones guardadas                 | arriba, como hoy, en Torneos y en las demás
  *   T36 | pulsar el enlace de la pantalla en la que estás   | no se mueve, como hoy
+ *   T37 | y si es Torneos                                   | tampoco vuelve a pedir la lista
  *   T26 | Torneos falla al pintarse                         | la pantalla de error de siempre
  *   A1  | solo Torneos restaura su scroll, por ahora        | las demás siguen «siempre arriba»
  */
-const carga = vi.hoisted(() => ({ espera: null, falla: false }));
+const carga = vi.hoisted(() => ({ espera: null, falla: false, pedidas: 0 }));
 
 vi.mock('./hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('./hooks/useAuth', () => ({
@@ -71,7 +72,14 @@ vi.mock('./pages/Dashboard', async () => {
 vi.mock('./pages/Competitions.datos', async () => {
   const { cargaDeLaPantalla } = await import('./utils/cargaDeLaPantalla');
   return {
-    loader: () => cargaDeLaPantalla({ clave: 'competiciones', pedir: () => carga.espera ?? Promise.resolve([]) }),
+    loader: () =>
+      cargaDeLaPantalla({
+        clave: 'competitions',
+        pedir: () => {
+          carga.pedidas += 1;
+          return carga.espera ?? Promise.resolve([]);
+        },
+      }),
   };
 });
 vi.mock('./pages/Competitions', async () => {
@@ -80,7 +88,13 @@ vi.mock('./pages/Competitions', async () => {
     default: function TorneosDePrueba() {
       if (carga.falla) throw new Error('boom');
       const { estado } = useLoaderData();
-      return <main><h1>torneos {estado}</h1><Link to="/dashboard">al panel</Link></main>;
+      return (
+        <main>
+          <h1>torneos {estado}</h1>
+          <Link to="/dashboard">al panel</Link>
+          <Link to="/competitions">a torneos otra vez</Link>
+        </main>
+      );
     },
   };
 });
@@ -108,6 +122,7 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     globalThis.scrollTo = vi.fn();
     carga.espera = null;
     carga.falla = false;
+    carga.pedidas = 0;
     bajaHasta(0);
     // Cada test es una carga de página nueva: la carcasa aún no se ha montado
     marcaElArranque(false);
@@ -211,6 +226,20 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     expect(await screen.findByRole('heading', { name: textosDelError().sinCargar.titulo })).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
     consola.mockRestore();
+  });
+
+  it('T37: pulsar Torneos estando en Torneos no vuelve a pedir la lista', async () => {
+    abrir('/dashboard');
+    await screen.findByRole('heading', { name: 'panel' });
+    fireEvent.click(screen.getByRole('link', { name: 'a torneos' }));
+    await screen.findByRole('heading', { name: 'torneos ok' });
+    expect(carga.pedidas).toBe(1);
+
+    fireEvent.click(screen.getByRole('link', { name: 'a torneos otra vez' }));
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+
+    expect(carga.pedidas).toBe(1);
+    expect(screen.getByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
   });
 
   it('A1: solo Torneos restaura su scroll, por ahora', () => {

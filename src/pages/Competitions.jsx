@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useSinConexion } from '../hooks/useSinConexion';
+import { pideOtraVez } from '../utils/cargaDeLaPantalla';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -94,16 +95,21 @@ const Competitions = () => {
   const usuarioId = user?.id;
   const pedidaPara = useRef(null);
   const faltanLosDatos = estado === 'pendiente' || estado === 'sinSesion';
+  // Con los datos ya puestos se olvida: si más tarde vuelven a faltar (la sesión
+  // superó el tope), se vuelve a pedir otra vez
+  useEffect(() => {
+    if (!faltanLosDatos) pedidaPara.current = null;
+  }, [faltanLosDatos]);
   useEffect(() => {
     if (!faltanLosDatos || !usuarioId || pedidaPara.current === usuarioId) return;
     pedidaPara.current = usuarioId;
-    revalidador.revalidate();
+    pideOtraVez(revalidador);
   }, [faltanLosDatos, usuarioId, revalidador]);
 
   // Al volver la señal, se vuelve a pedir sola (decidido el 2 nov 2026)
   useEffect(() => {
     if (estado !== 'sinRed') return undefined;
-    const alVolver = () => revalidador.revalidate();
+    const alVolver = () => pideOtraVez(revalidador);
     globalThis.addEventListener('online', alVolver);
     return () => globalThis.removeEventListener('online', alVolver);
   }, [estado, revalidador]);
@@ -151,7 +157,7 @@ const Competitions = () => {
     const reintentar = (
       <button
         type="button"
-        onClick={() => revalidador.revalidate()}
+        onClick={() => pideOtraVez(revalidador)}
         disabled={reintentando}
         className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
       >

@@ -26,6 +26,9 @@
  *   T31 | primera carga de la aplicación (pendiente)    | la espera de hoy dentro de la pantalla, y la lista
  *   T32 | la sesión aún no se sabía al cargar           | la lista al saberse; nunca «Aún no hay»
  *   T33 | la lista llega después del tope de 4 s        | aparece sola, sin pedirla otra vez
+ *   T32b| vuelve a faltar la sesión más tarde           | se vuelve a pedir otra vez
+ *   T37 | pulsar Torneos estando en Torneos             | no se pide nada, como hoy (segundo revisor)
+ *   T38 | Reintentar, la señal y la primera carga        | sí piden (no los frena lo de T37)
  *   T34 | al restaurar el scroll                        | las tarjetas ya están pintadas (si no, el
  *       |                                               | navegador recorta la posición)
  *
@@ -59,7 +62,14 @@ vi.mock('../hooks/useAuth', async () => {
   return { useAuth: () => useSyncExternalStore(suscribe, () => sesion.instantanea) };
 });
 vi.mock('../services/sesionCompartida', () => ({
-  consultaLaSesion: () => Promise.resolve(sesion.user),
+  consultaLaSesion: () => {
+    // Una vez sin saber quién es, como cuando la sesión supera el tope
+    if (sesion.sinSaberUnaVez) {
+      sesion.sinSaberUnaVez = false;
+      return Promise.resolve(null);
+    }
+    return Promise.resolve(sesion.user);
+  },
   loQueHaySobreLaSesion: () => ({ user: sesion.user }),
 }));
 vi.mock('../hooks/useAuthContext', () => ({
@@ -77,7 +87,7 @@ vi.mock('../utils/toast', () => ({
 }));
 
 const Competitions = (await import('./Competitions')).default;
-const { loader } = await import('./Competitions.datos');
+const { loader, shouldRevalidate } = await import('./Competitions.datos');
 const { olvidaTodo } = await import('../services/loUltimoConocido');
 const { marcaElArranque } = await import('../utils/cargaDeLaPantalla');
 
@@ -107,6 +117,7 @@ const pinta = () => {
       {
         path: '/competitions',
         loader,
+        shouldRevalidate,
         element: (
           <>
             <Carcasa />
@@ -142,6 +153,7 @@ describe('Torneos con loader', () => {
     mockList.mockReset();
     olvidaTodo();
     ponLaSesion({ id: 'u-1' });
+    sesion.sinSaberUnaVez = false;
     marcaElArranque(true);
     sonda.tarjetas = null;
     enLinea(true);
@@ -328,6 +340,18 @@ describe('Torneos con loader', () => {
     expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
   });
 
+  it('T32b: si más tarde vuelve a faltar la sesión, se vuelve a pedir', async () => {
+    marcaElArranque(false);
+    mockList.mockRejectedValueOnce(sinRed()).mockResolvedValue([TORNEO]);
+    pinta();
+    await screen.findByTestId('competiciones-sin-cobertura');
+
+    sesion.sinSaberUnaVez = true;
+    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+
+    expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
+  });
+
   it('T33: la lista que llega tras el tope aparece sola, sin pedirla otra vez', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let responde;
@@ -350,6 +374,30 @@ describe('Torneos con loader', () => {
     await screen.findByText('Torneo del Club');
 
     expect(sonda.tarjetas).toBe(1);
+  });
+
+  it('T37: pulsar Torneos estando en Torneos no pide nada', async () => {
+    mockList.mockResolvedValue([TORNEO]);
+    const router = pinta();
+    await screen.findByText('Torneo del Club');
+
+    await act(() => router.navigate('/competitions'));
+
+    expect(mockList).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Torneo del Club')).toBeInTheDocument();
+  });
+
+  it('T38: tras T37, Reintentar sigue pidiendo', async () => {
+    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
+    const router = pinta();
+    await screen.findByTestId('competiciones-sin-cargar');
+    await act(() => router.navigate('/competitions'));
+    expect(mockList).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'myCompetitions.reintentar' }));
+
+    expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(2);
   });
 
   it('T23: Torneos y otra pantalla muy seguidas: se queda la última', async () => {

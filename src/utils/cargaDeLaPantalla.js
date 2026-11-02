@@ -39,6 +39,27 @@ export const marcaElArranque = (si = true) => {
 const SIN_RESPUESTA = Symbol('sin respuesta');
 
 /**
+ * Pulsar la pestaña de la pantalla en la que ya se está es una navegación a la
+ * misma dirección, y React Router vuelve a llamar al `loader`: hoy eso no pide
+ * nada, y así se queda (segundo revisor). Solo vuelve a pedir quien lo pide
+ * aquí: «Reintentar», la vuelta de la señal o la primera carga.
+ */
+let seVuelveAPedir = false;
+
+/** @param {{revalidate: () => *}} revalidador El de `useRevalidator()` */
+export const pideOtraVez = (revalidador) => {
+  seVuelveAPedir = true;
+  revalidador.revalidate();
+};
+
+/** El `shouldRevalidate` de las rutas con `cargaDeLaPantalla`. */
+export const soloSiSePideOtraVez = () => {
+  const si = seVuelveAPedir;
+  seVuelveAPedir = false;
+  return si;
+};
+
+/**
  * @param {{clave: string, pedir: (usuario: Object) => Promise<*>}} opciones
  * @returns {Promise<{estado: 'ok'|'sinRed'|'error'|'sinSesion'|'pendiente', datos: *, tardia?: Promise<*>}>}
  */
@@ -55,7 +76,13 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
   let usuario = null;
   let pedida = null;
   try {
-    usuario = await aTiempo(consultaLaSesion());
+    try {
+      usuario = await aTiempo(consultaLaSesion());
+    } catch {
+      // Sin saber aún quién es: la pantalla vuelve a pedir en cuanto se sepa
+      // (con `sinRed` se quedaba ahí; segundo revisor)
+      return { estado: 'sinSesion', datos: null };
+    }
     if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
 
     pedida = Promise.resolve(pedir(usuario)).then((datos) => {
@@ -68,7 +95,8 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
     return { estado: 'ok', datos };
   } catch (error) {
     const sinRespuesta = error === SIN_RESPUESTA;
-    if (!sinRespuesta && !esFalloDeRed(error)) console.error(`Error loading ${clave}:`, error);
+    // Como antes del `loader`, todo fallo a la consola; el tope no es un fallo
+    if (!sinRespuesta) console.error(`Error loading ${clave}:`, error);
     const resultado = {
       estado: sinRespuesta || esFalloDeRed(error) ? 'sinRed' : 'error',
       datos: usuario ? loGuardadoEnMemoria(clave, usuario.id) : null,

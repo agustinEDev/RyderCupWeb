@@ -18,6 +18,11 @@ export const CLAVE_DEL_SCROLL = 'rcf-posiciones-del-scroll';
  * evitarlo es `preventScrollReset` en cada navegación, así que aquí va por
  * defecto en todas: la librería solo actúa al volver atrás, y subir arriba al
  * cambiar de pantalla lo sigue haciendo `useVolverArriba`, como siempre.
+ *
+ * Ojo con los `#`: con la marca, `<ScrollRestoration />` sigue llevando a la
+ * vista el elemento cuyo `id` coincida. Hoy ningún `#` de la aplicación (el
+ * `#mapa` del hoyo) tiene un elemento con ese `id`; el día que lo tenga, abrirlo
+ * moverá la página (segundo revisor).
  */
 export const creaElRouterDeLaAplicacion = (rutas) => {
   try {

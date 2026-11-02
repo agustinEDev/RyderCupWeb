@@ -35,9 +35,10 @@ import ErrorFallback from './components/errors/ErrorFallback';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
-import { cargarConReintento, lazyWithRetry } from './utils/lazyWithRetry';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 import BarraDeCarga from './components/layout/BarraDeCarga';
-import { marcaElArranque } from './utils/cargaDeLaPantalla';
+import { marcaElArranque, soloSiSePideOtraVez } from './utils/cargaDeLaPantalla';
+import { loader as cargaDeTorneos } from './pages/Competitions.datos';
 import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
 
@@ -383,17 +384,10 @@ export const rutasDeLaApp = createRoutesFromElements(
       <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
       <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
       {/* Con sus datos antes de pintarse (FE #647, fase 3): sin ellos, volver
-          atrás no puede devolverte a donde estabas. El `loader` llega con `lazy`
-          para no engordar el arranque */}
+          atrás no puede devolverte a donde estabas */}
       <Route path="/competitions"
-        lazy={async () => {
-          // La pantalla a la vez que sus datos, y no después (revisor)
-          const [datos] = await Promise.all([
-            cargarConReintento(() => import('./pages/Competitions.datos')),
-            cargarConReintento(() => import('./pages/Competitions')),
-          ]);
-          return datos;
-        }}
+        loader={cargaDeTorneos}
+        shouldRevalidate={soloSiSePideOtraVez}
         handle={{ restauraElScroll: true }}
         element={<ProtectedRoute><Competitions /></ProtectedRoute>}
       />

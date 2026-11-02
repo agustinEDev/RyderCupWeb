@@ -25,6 +25,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   T28 | la sesión no contesta en 4 s                  | sinRed: el tope lo cubre todo
  *   T29 | la lista llega después del tope               | se guarda, y `tardia` la entrega
  *   T30 | se cierra sesión mientras se pide             | no se guarda
+ *
+ * Y el segundo revisor:
+ *
+ *   T28 | la sesión no contesta en 4 s                  | sinSesion: la pantalla vuelve a pedir al
+ *       |                                              | saberse quién es (con sinRed se quedaba)
+ *   T39 | cualquier fallo que no sea el tope            | a la consola, como antes, con su nombre
  */
 const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, consulta: null, ahora: undefined }));
 vi.mock('../services/sesionCompartida', () => ({
@@ -127,7 +133,7 @@ describe('cargaDeLaPantalla', () => {
     expect(pedir).not.toHaveBeenCalled();
   });
 
-  it('T28: si la sesión no contesta en 4 s, sinRed', async () => {
+  it('T28: si la sesión no contesta en 4 s, sinSesion', async () => {
     vi.useFakeTimers();
     sesion.consulta = new Promise(() => {});
     const pedir = vi.fn();
@@ -135,7 +141,7 @@ describe('cargaDeLaPantalla', () => {
     const resultado = carga(pedir);
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
 
-    expect(await resultado).toMatchObject({ estado: 'sinRed', datos: null });
+    expect(await resultado).toEqual({ estado: 'sinSesion', datos: null });
     expect(pedir).not.toHaveBeenCalled();
   });
 
@@ -188,6 +194,16 @@ describe('cargaDeLaPantalla', () => {
     });
 
     expect(loGuardadoEnMemoria('competiciones', 'u-1')).toBeNull();
+  });
+
+  it('T39: los fallos van a la consola como antes, también los de red', async () => {
+    const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fallo = sinRed();
+
+    await cargaDeLaPantalla({ clave: 'competitions', pedir: async () => { throw fallo; } });
+
+    expect(consola).toHaveBeenCalledWith('Error loading competitions:', fallo);
+    consola.mockRestore();
   });
 
   it('T13: con los términos sin aceptar no se pide nada', async () => {
