@@ -72,12 +72,20 @@ export const olvidaLoQueEstaEnCamino = () => enCamino.clear();
  *
  * Y entonces con una petición nueva: la que siguiera en camino puede ser
  * justo la que no contesta, o la de antes de cambiar la sesión (tercer revisor).
+ * Una por cada vez que se pide: los toques en la pestaña mientras llega
+ * comparten esa, o cada uno gastaba el cupo de la API (cuarto revisor).
+ *
+ * Es una sola marca para toda la aplicación: vale mientras solo haya una
+ * pantalla con `loader` montada a la vez.
  */
 let seVuelveAPedir = false;
+let vecesPedida = 0;
+let vecesConPeticionNueva = 0;
 
 /** @param {{revalidate: () => *}} revalidador El de `useRevalidator()` */
 export const pideOtraVez = (revalidador) => {
   seVuelveAPedir = true;
+  vecesPedida += 1;
   revalidador.revalidate();
 };
 
@@ -99,6 +107,10 @@ export const soloSiSePideOtraVez = () => seVuelveAPedir;
  */
 export const cargaDeLaPantalla = async ({ clave, pedir }) => {
   if (!arrancada) return { estado: 'pendiente', datos: null };
+  // Antes de esperar a nada: lo que pase mientras con la marca no cambia que
+  // esta carga la vio
+  const nueva = vecesPedida !== vecesConPeticionNueva;
+  vecesConPeticionNueva = vecesPedida;
 
   let reloj;
   const vence = new Promise((_, rechaza) => {
@@ -123,7 +135,7 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
     }
     if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
 
-    compartida = pideUnaVez(clave, usuario, pedir, seVuelveAPedir);
+    compartida = pideUnaVez(clave, usuario, pedir, nueva);
     pedida = compartida.then((datos) => {
       // Solo si la sesión sigue siendo la suya: un cierre de sesión mientras se
       // pedía ya vació la memoria, y esto la volvería a llenar

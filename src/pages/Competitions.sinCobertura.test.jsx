@@ -55,6 +55,9 @@
  *   C5b | Reintentar ya respondió                       | pulsar Torneos en Torneos no pide
  *   C6  | la sesión se confirma durante una carga       | se pide de nuevo, con una petición nueva
  *   C7  | dos toques seguidos desde otra pantalla       | una sola petición
+ *   C7b | toques en la pestaña mientras Reintentar     | una sola petición nueva (cuarto revisor)
+ *       | sigue en camino                               |
+ *   C3b | cerrar sesión y volver a entrar               | sin filtros
  *   C8  | vuelve la señal con una petición vieja colgada| sale una nueva
  *   C9  | filtrar                                       | no toca el historial
  *
@@ -114,7 +117,7 @@ vi.mock('../utils/toast', () => ({
 
 const Competitions = (await import('./Competitions')).default;
 const { loader, shouldRevalidate } = await import('./Competitions.datos');
-const { olvidaTodo } = await import('../services/loUltimoConocido');
+const { olvidaTodo, olvidaLoDeEstaCuenta } = await import('../services/loUltimoConocido');
 const { marcaElArranque, olvidaLoQueEstaEnCamino, pideOtraVez } = await import('../utils/cargaDeLaPantalla');
 
 // Lo que hace la carcasa de la aplicación al montarse
@@ -615,16 +618,20 @@ describe('Torneos con loader', () => {
     expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
   });
 
-  it('C5: si pulsar Torneos en Torneos corta la recarga, esa pulsación carga', async () => {
+  it('C5: si pulsar Torneos en Torneos corta la recarga, esa pulsación carga (con la misma petición)', async () => {
     const segunda = colgada();
-    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa).mockResolvedValue(LISTA);
+    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa);
     const router = pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
-    await act(() => router.navigate('/competitions', { replace: true }));
+    act(() => { router.navigate('/competitions', { replace: true }); });
+    // Que la carga del toque llegue a unirse antes de que conteste
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    await act(async () => segunda.responde(LISTA));
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(2);
   });
 
   it('C5b: con Reintentar ya respondido, pulsar Torneos en Torneos no pide', async () => {
@@ -680,6 +687,33 @@ describe('Torneos con loader', () => {
 
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(1);
+  });
+
+  it('C7b: tocar la pestaña mientras Reintentar sigue en camino no pide más', async () => {
+    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValue(new Promise(() => {}));
+    const router = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    await act(async () => { router.navigate('/competitions', { replace: true }); });
+    await act(async () => { router.navigate('/competitions', { replace: true }); });
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+
+    expect(mockList).toHaveBeenCalledTimes(2);
+  });
+
+  it('C3b: al cerrar sesión los filtros se olvidan', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    await act(async () => {});
+    await act(() => router.navigate('/otra'));
+
+    olvidaLoDeEstaCuenta();
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
   });
 
   it('C8: vuelve la señal otra vez con la petición anterior colgada: sale una nueva', async () => {

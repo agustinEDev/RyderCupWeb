@@ -47,6 +47,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *       |                                              | siguiente sigue pidiendo; la gasta la
  *       |                                              | pantalla al recibir la carga
  *   C8  | con la marca, una petición vieja en camino    | se pide una nueva, no se comparte
+ *   C8c | varias cargas con la misma marca (toques en   | una sola nueva: las demás la comparten
+ *       | la pestaña mientras se vuelve a pedir)        | (cuarto revisor: gastaban el cupo)
+ *   C8d | la marca se olvida antes de que la carga     | la carga que ya la vio pide nueva igual
+ *       | pregunte por la sesión                        |
  *   C10 | la sesión no contesta, se sabía quién era y  | sinSesion: el guardia lleva a aceptarlos
  *       | le faltan los Términos                        |
  */
@@ -349,5 +353,33 @@ describe('cargaDeLaPantalla', () => {
 
     expect(await resultado).toEqual({ estado: 'sinSesion', datos: null });
     expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('C8c: varias cargas con la misma marca, una sola petición nueva', async () => {
+    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockReturnValue(new Promise(() => {}));
+    carga(pedir);
+    await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
+
+    pideOtraVez({ revalidate: () => {} });
+    carga(pedir);
+    carga(pedir);
+    carga(pedir);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(pedir).toHaveBeenCalledTimes(2);
+    olvidaQueSeVuelveAPedir();
+  });
+
+  it('C8d: la carga que vio la marca pide nueva aunque se olvide mientras pregunta por la sesión', async () => {
+    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockResolvedValue([{ id: 'c-1' }]);
+    carga(pedir);
+    await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
+
+    pideOtraVez({ revalidate: () => {} });
+    const nueva = carga(pedir);
+    olvidaQueSeVuelveAPedir();
+
+    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(pedir).toHaveBeenCalledTimes(2);
   });
 });
