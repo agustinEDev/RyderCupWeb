@@ -30,6 +30,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *
  *   T28 | la sesión no contesta en 4 s                  | sinSesion: la pantalla vuelve a pedir al
  *       |                                              | saberse quién es (con sinRed se quedaba)
+ *
+ * Y `/code-review`:
+ *
+ *   T28 | la sesión no contesta en 4 s, ya se sabía      | sinRed, con lo de antes en memoria
+ *       | quién era                                     | (sinSesion lo perdía, y la espera no acababa)
+ *   T28c| ídem, sin saber quién es                      | sinSesion (la pantalla pide al saberse)
+ *   T42 | dos cargas a la vez de la misma lista         | una sola petición
+ *   T42c| una que no contesta, pasado el tope           | la siguiente carga pide de nuevo
+ *   T43 | Reintentar y se navega antes de que pida      | la marca de volver a pedir se olvida
  *   T39 | cualquier fallo que no sea el tope            | a la consola, como antes, con su nombre
  */
 const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, consulta: null, ahora: undefined }));
@@ -38,7 +47,15 @@ vi.mock('../services/sesionCompartida', () => ({
   loQueHaySobreLaSesion: () => ({ user: sesion.ahora === undefined ? sesion.user : sesion.ahora }),
 }));
 
-const { cargaDeLaPantalla, marcaElArranque, TOPE_DE_LA_CARGA_MS } = await import('./cargaDeLaPantalla');
+const {
+  cargaDeLaPantalla,
+  marcaElArranque,
+  olvidaLoQueEstaEnCamino,
+  olvidaQueSeVuelveAPedir,
+  pideOtraVez,
+  soloSiSePideOtraVez,
+  TOPE_DE_LA_CARGA_MS,
+} = await import('./cargaDeLaPantalla');
 const { loGuardadoEnMemoria } = await import('../services/memoriaDeLasListas');
 const { olvidaTodo } = await import('../services/loUltimoConocido');
 
@@ -53,6 +70,7 @@ describe('cargaDeLaPantalla', () => {
     sesion.consulta = null;
     sesion.ahora = undefined;
     marcaElArranque(true);
+    olvidaLoQueEstaEnCamino();
     Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
   });
   afterEach(() => vi.useRealTimers());
@@ -133,9 +151,10 @@ describe('cargaDeLaPantalla', () => {
     expect(pedir).not.toHaveBeenCalled();
   });
 
-  it('T28: si la sesión no contesta en 4 s, sinSesion', async () => {
+  it('T28c: si la sesión no contesta en 4 s y no se sabe quién es, sinSesion', async () => {
     vi.useFakeTimers();
     sesion.consulta = new Promise(() => {});
+    sesion.ahora = null;
     const pedir = vi.fn();
 
     const resultado = carga(pedir);
@@ -143,6 +162,61 @@ describe('cargaDeLaPantalla', () => {
 
     expect(await resultado).toEqual({ estado: 'sinSesion', datos: null });
     expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('T28: si la sesión no contesta en 4 s y ya se sabía quién era, sinRed con lo de antes', async () => {
+    await carga(async () => [{ id: 'c-1' }]);
+    vi.useFakeTimers();
+    sesion.consulta = new Promise(() => {});
+
+    const resultado = carga(vi.fn());
+    await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
+
+    expect(await resultado).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
+  });
+
+  it('T42: dos cargas a la vez de la misma lista, una sola petición', async () => {
+    let responde;
+    const pedir = vi.fn(() => new Promise((r) => { responde = r; }));
+
+    const una = carga(pedir);
+    const otra = carga(pedir);
+    await vi.waitFor(() => expect(pedir).toHaveBeenCalled());
+    responde([{ id: 'c-1' }]);
+
+    expect(await una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(pedir).toHaveBeenCalledTimes(1);
+  });
+
+  it('T42b: acabada una, la siguiente sí pide', async () => {
+    const pedir = vi.fn(async () => []);
+
+    await carga(pedir);
+    await carga(pedir);
+
+    expect(pedir).toHaveBeenCalledTimes(2);
+  });
+
+  it('T42c: pasado el tope, la siguiente carga pide de nuevo', async () => {
+    vi.useFakeTimers();
+    const pedir = vi.fn(() => new Promise(() => {}));
+    const primera = carga(pedir);
+    await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
+    await primera;
+
+    carga(pedir);
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(pedir).toHaveBeenCalledTimes(2);
+  });
+
+  it('T43: la marca de volver a pedir se olvida si no se llegó a usar', () => {
+    pideOtraVez({ revalidate: () => {} });
+
+    olvidaQueSeVuelveAPedir();
+
+    expect(soloSiSePideOtraVez()).toBe(false);
   });
 
   it('T28b: sesión y lista comparten los 4 s', async () => {

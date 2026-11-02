@@ -39,6 +39,32 @@ export const marcaElArranque = (si = true) => {
 const SIN_RESPUESTA = Symbol('sin respuesta');
 
 /**
+ * La petición de cada lista que sigue en camino: dos toques seguidos en la
+ * pestaña son dos navegaciones, y cada una llamaba a su `loader`. Comparten la
+ * misma (`/code-review`): el límite de peticiones de la API es compartido.
+ */
+const enCamino = new Map();
+
+const pideUnaVez = (clave, usuario, pedir) => {
+  const ya = enCamino.get(clave);
+  if (ya && ya.usuarioId === usuario.id) return ya.pedida;
+  const pedida = Promise.resolve(pedir(usuario)).finally(() => {
+    if (enCamino.get(clave)?.pedida === pedida) enCamino.delete(clave);
+  });
+  enCamino.set(clave, { usuarioId: usuario.id, pedida });
+  return pedida;
+};
+
+/** Pasado el tope ya no se comparte: una que no contesta nunca dejaba sin
+ *  volver a pedir a todas las siguientes. */
+const dejaDeCompartir = (clave, pedida) => {
+  if (enCamino.get(clave)?.pedida === pedida) enCamino.delete(clave);
+};
+
+/** Solo para las pruebas: cada una empieza sin nada en camino. */
+export const olvidaLoQueEstaEnCamino = () => enCamino.clear();
+
+/**
  * Pulsar la pestaña de la pantalla en la que ya se está es una navegación a la
  * misma dirección, y React Router vuelve a llamar al `loader`: hoy eso no pide
  * nada, y así se queda (segundo revisor). Solo vuelve a pedir quien lo pide
@@ -50,6 +76,12 @@ let seVuelveAPedir = false;
 export const pideOtraVez = (revalidador) => {
   seVuelveAPedir = true;
   revalidador.revalidate();
+};
+
+/** Al salir de la pantalla: si se navegó antes de que se usara, ya no vale
+ *  (si no, la siguiente pulsación en la pestaña pedía; `/code-review`). */
+export const olvidaQueSeVuelveAPedir = () => {
+  seVuelveAPedir = false;
 };
 
 /** El `shouldRevalidate` de las rutas con `cargaDeLaPantalla`. */
@@ -74,18 +106,23 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
   const aTiempo = (promesa) => Promise.race([promesa, vence]);
 
   let usuario = null;
+  let compartida = null;
   let pedida = null;
   try {
     try {
       usuario = await aTiempo(consultaLaSesion());
     } catch {
-      // Sin saber aún quién es: la pantalla vuelve a pedir en cuanto se sepa
-      // (con `sinRed` se quedaba ahí; segundo revisor)
-      return { estado: 'sinSesion', datos: null };
+      // La sesión no contesta. Si ya se sabía quién es, como sin red y con lo
+      // de antes (`/code-review`); si no, la pantalla pide al saberse quién es
+      const sabido = loQueHaySobreLaSesion().user;
+      return sabido
+        ? { estado: 'sinRed', datos: loGuardadoEnMemoria(clave, sabido.id) }
+        : { estado: 'sinSesion', datos: null };
     }
     if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
 
-    pedida = Promise.resolve(pedir(usuario)).then((datos) => {
+    compartida = pideUnaVez(clave, usuario, pedir);
+    pedida = compartida.then((datos) => {
       // Solo si la sesión sigue siendo la suya: un cierre de sesión mientras se
       // pedía ya vació la memoria, y esto la volvería a llenar
       if (loQueHaySobreLaSesion().user?.id === usuario.id) guardaEnMemoria(clave, usuario.id, datos);
@@ -95,6 +132,7 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
     return { estado: 'ok', datos };
   } catch (error) {
     const sinRespuesta = error === SIN_RESPUESTA;
+    if (sinRespuesta && compartida) dejaDeCompartir(clave, compartida);
     // Como antes del `loader`, todo fallo a la consola; el tope no es un fallo
     if (!sinRespuesta) console.error(`Error loading ${clave}:`, error);
     const resultado = {

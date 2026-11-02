@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useLoaderData, useNavigate, useRevalidator } from 'react-router';
+import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useSinConexion } from '../hooks/useSinConexion';
-import { pideOtraVez } from '../utils/cargaDeLaPantalla';
+import { olvidaQueSeVuelveAPedir, pideOtraVez } from '../utils/cargaDeLaPantalla';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -77,8 +77,35 @@ const Competitions = () => {
   // Sin red, el aviso ya lo da la barra de toda la aplicación; el de aquí es
   // para cuando el móvil cree tener red y el servidor no contesta (dos barras)
   const elMovilSabeQueNoHayRed = useSinConexion();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  // Los filtros viven en la entrada del historial: al volver atrás se repone el
+  // scroll, y sin ellos se caía a esa altura en otra lista, la de sin filtrar
+  // (Agustín, 2 nov 2026). Entrar de nuevo o recargar (la primera carga,
+  // `pendiente`) empieza sin filtros, como siempre
+  const location = useLocation();
+  // Una entrada nueva nunca trae filtros; la de una recarga sí, y se ignoran
+  const [filtrosAlVolver] = useState(() =>
+    resultado.estado !== 'pendiente' ? location.state?.filtros : undefined
+  );
+  const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
+  const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
+  useEffect(() => {
+    const guardados = location.state?.filtros;
+    const sinFiltros = !searchQuery && statusFilter === 'ALL';
+    if (guardados ? guardados.busqueda === searchQuery && guardados.estado === statusFilter : sinFiltros) return;
+    // Sustituye la entrada, no apila: no mueve el scroll ni vuelve a pedir
+    navigate(
+      { pathname: location.pathname, search: location.search },
+      { replace: true, state: { ...location.state, filtros: { busqueda: searchQuery, estado: statusFilter } } }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar los filtros
+  }, [searchQuery, statusFilter]);
+
+  // Al salir, la marca de volver a pedir que no se llegó a usar se olvida
+  useEffect(() => olvidaQueSeVuelveAPedir, []);
+
+  // La sesión se confirma o cambia (otro `user`): se vuelve a pedir, como antes
+  // del `loader`, que dependía de él (`/code-review`)
+  const usuarioVisto = useRef(user);
 
   // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
   // nuevo, también al reintentar (Agustín, 2 nov 2026: como hasta ahora)
@@ -105,6 +132,12 @@ const Competitions = () => {
     pedidaPara.current = usuarioId;
     pideOtraVez(revalidador);
   }, [faltanLosDatos, usuarioId, revalidador]);
+
+  useEffect(() => {
+    if (usuarioVisto.current === user) return;
+    usuarioVisto.current = user;
+    if (user?.id && !faltanLosDatos) pideOtraVez(revalidador);
+  }, [user, faltanLosDatos, revalidador]);
 
   // Al volver la señal, se vuelve a pedir sola (decidido el 2 nov 2026)
   useEffect(() => {

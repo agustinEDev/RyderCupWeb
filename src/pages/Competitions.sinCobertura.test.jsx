@@ -29,6 +29,17 @@
  *   T32b| vuelve a faltar la sesión más tarde           | se vuelve a pedir otra vez
  *   T37 | pulsar Torneos estando en Torneos             | no se pide nada, como hoy (segundo revisor)
  *   T38 | Reintentar, la señal y la primera carga        | sí piden (no los frena lo de T37)
+ *
+ * Y `/code-review` (2 nov 2026):
+ *
+ *   T40 | la sesión se confirma o cambia (otro `user`)  | se vuelve a pedir, como hoy
+ *   T41 | se navega mientras se vuelve a pedir          | luego, pulsar Torneos en Torneos no pide
+ *   F1  | filtrar, entrar en un torneo y volver atrás   | los filtros siguen (Agustín: conservarlos)
+ *   F2  | entrar de nuevo en Torneos                    | sin filtros, como hoy
+ *   F3  | recargar                                      | sin filtros, como hoy
+ *   F4  | filtrar                                       | no pide nada
+ *   F5  | filtrar                                       | no apila entradas en el historial
+ *   T41b| una marca de volver a pedir sin usar          | se olvida al salir de Torneos
  *   T34 | al restaurar el scroll                        | las tarjetas ya están pintadas (si no, el
  *       |                                               | navegador recorta la posición)
  *
@@ -89,7 +100,7 @@ vi.mock('../utils/toast', () => ({
 const Competitions = (await import('./Competitions')).default;
 const { loader, shouldRevalidate } = await import('./Competitions.datos');
 const { olvidaTodo } = await import('../services/loUltimoConocido');
-const { marcaElArranque } = await import('../utils/cargaDeLaPantalla');
+const { marcaElArranque, olvidaLoQueEstaEnCamino, pideOtraVez } = await import('../utils/cargaDeLaPantalla');
 
 // Lo que hace la carcasa de la aplicación al montarse
 const Carcasa = () => {
@@ -111,7 +122,7 @@ const delServidor = (status) => Object.assign(new Error('Rate limit exceeded: 30
 const enLinea = (si) => Object.defineProperty(globalThis.navigator, 'onLine', { value: si, configurable: true });
 
 const pintadas = { cuantas: 0 };
-const pinta = () => {
+const pinta = ({ state, antes = [] } = {}) => {
   const router = createMemoryRouter(
     [
       {
@@ -130,7 +141,7 @@ const pinta = () => {
       },
       { path: '/otra', element: <p>otra pantalla</p> },
     ],
-    { initialEntries: ['/competitions'] }
+    { initialEntries: [...antes, { pathname: '/competitions', state }], initialIndex: antes.length }
   );
   render(<RouterProvider router={router} />);
   return router;
@@ -155,6 +166,7 @@ describe('Torneos con loader', () => {
     ponLaSesion({ id: 'u-1' });
     sesion.sinSaberUnaVez = false;
     marcaElArranque(true);
+    olvidaLoQueEstaEnCamino();
     sonda.tarjetas = null;
     enLinea(true);
   });
@@ -398,6 +410,115 @@ describe('Torneos con loader', () => {
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(2);
+  });
+
+  it('T40: si la sesión se confirma o cambia, se vuelve a pedir, como hoy', async () => {
+    mockList.mockRejectedValueOnce(sinRed()).mockResolvedValue([TORNEO]);
+    pinta();
+    await screen.findByTestId('competiciones-sin-cobertura');
+
+    // Otro objeto `user`: lo que publica la sesión al confirmarse
+    act(() => ponLaSesion({ id: 'u-1' }));
+
+    expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
+  });
+
+  it('T41: si se navega mientras se vuelve a pedir, luego pulsar Torneos en Torneos no pide', async () => {
+    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
+    const router = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await act(() => router.navigate('/otra'));
+    await act(() => router.navigate('/competitions'));
+    await screen.findByText('Torneo del Club');
+    const antes = mockList.mock.calls.length;
+
+    await act(() => router.navigate('/competitions'));
+
+    expect(mockList).toHaveBeenCalledTimes(antes);
+  });
+
+  const filtraPorActivas = () =>
+    fireEvent.change(screen.getByDisplayValue('myCompetitions.allStatuses'), { target: { value: 'ACTIVE' } });
+  const LISTA = [
+    { ...TORNEO, id: 'c-1', name: 'Torneo activo', status: 'ACTIVE' },
+    { ...TORNEO, id: 'c-2', name: 'Torneo cerrado', status: 'CLOSED' },
+  ];
+
+  it('F1: filtrar, salir y volver atrás conserva los filtros', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: 'activo' } });
+    await act(async () => {});
+
+    await act(() => router.navigate('/otra'));
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(screen.queryByText('Torneo cerrado')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('activo');
+    expect(screen.getByDisplayValue('myCompetitions.active')).toBeInTheDocument();
+  });
+
+  it('F5: filtrar no apila entradas: atrás sale de Torneos', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta({ antes: ['/otra'] });
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    await act(async () => {});
+
+    await act(() => router.navigate(-1));
+
+    expect(router.state.location.pathname).toBe('/otra');
+  });
+
+  it('T41b: la marca de volver a pedir que no se usó se olvida al salir', async () => {
+    mockList.mockResolvedValue([TORNEO]);
+    const router = pinta();
+    await screen.findByText('Torneo del Club');
+    // Armada y sin usar: como un «Reintentar» al que adelanta una navegación
+    pideOtraVez({ revalidate: () => {} });
+
+    await act(() => router.navigate('/otra'));
+    await act(() => router.navigate('/competitions'));
+    await screen.findByText('Torneo del Club');
+    const antes = mockList.mock.calls.length;
+    await act(() => router.navigate('/competitions'));
+
+    expect(mockList).toHaveBeenCalledTimes(antes);
+  });
+
+  it('F2: entrar de nuevo en Torneos empieza sin filtros', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    await act(async () => {});
+
+    await act(() => router.navigate('/otra'));
+    await act(() => router.navigate('/competitions'));
+
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
+  });
+
+  it('F3: recargar empieza sin filtros', async () => {
+    marcaElArranque(false);
+    mockList.mockResolvedValue(LISTA);
+    pinta({ state: { filtros: { busqueda: 'activo', estado: 'ACTIVE' } } });
+
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
+  });
+
+  it('F4: filtrar no pide nada', async () => {
+    mockList.mockResolvedValue(LISTA);
+    pinta();
+    await screen.findByText('Torneo cerrado');
+
+    filtraPorActivas();
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+
+    expect(mockList).toHaveBeenCalledTimes(1);
   });
 
   it('T23: Torneos y otra pantalla muy seguidas: se queda la última', async () => {

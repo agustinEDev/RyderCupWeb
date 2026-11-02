@@ -15,7 +15,7 @@ import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegac
  *   S6d | una redirección (replace) con la carga aún abierta     | la carga pasa a la ruta de destino
  *   S1 | navegar después                           | una navegación con la ruta, origen route
  *   S3 | una dirección que no existe               | no se le inventa una ruta de las conocidas
- *   S7 | una ruta con `loader` que llega con `lazy` | la navegación lleva su ruta (FE #647, fase 3: T25)
+ *   S7 | una ruta con `loader`                      | la navegación lleva su ruta (FE #647, fase 3: T25)
  *
  * Sentry 11 envía las spans según acaban («span streaming»): no quedan como span
  * activa, así que se recogen al empezar, con una integración que se engancha
@@ -23,8 +23,8 @@ import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegac
  */
 const RUTAS = [
   { path: '/dashboard' },
-  // Como Torneos: su `loader` llega con `lazy` (fase 3)
-  { path: '/competitions', lazy: async () => ({ loader: async () => ({ estado: 'ok', datos: [] }) }) },
+  // Como Torneos: una ruta con `loader` (fase 3)
+  { path: '/competitions', loader: async () => ({ estado: 'ok', datos: [] }) },
   { path: '/competitions/:id' },
   { path: '*' },
 ];
@@ -79,7 +79,7 @@ describe('navegaciones en Sentry, con Sentry de verdad', () => {
     expect(deTipo('navigation').map((n) => n.name)).toContain('/dashboard');
   });
 
-  it('S7: una ruta con loader que llega con lazy lleva su ruta', async () => {
+  it('S7: una ruta con loader lleva su ruta', async () => {
     await router.navigate('/competitions');
 
     const navegacion = deTipo('navigation').at(-1);

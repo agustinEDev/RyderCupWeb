@@ -37,8 +37,8 @@ import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import BarraDeCarga from './components/layout/BarraDeCarga';
-import { marcaElArranque, soloSiSePideOtraVez } from './utils/cargaDeLaPantalla';
-import { loader as cargaDeTorneos } from './pages/Competitions.datos';
+import { marcaElArranque } from './utils/cargaDeLaPantalla';
+import { loader as cargaDeTorneos, shouldRevalidate as cuandoVolverAPedirTorneos } from './pages/Competitions.datos';
 import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
 
@@ -387,7 +387,7 @@ export const rutasDeLaApp = createRoutesFromElements(
           atrás no puede devolverte a donde estabas */}
       <Route path="/competitions"
         loader={cargaDeTorneos}
-        shouldRevalidate={soloSiSePideOtraVez}
+        shouldRevalidate={cuandoVolverAPedirTorneos}
         handle={{ restauraElScroll: true }}
         element={<ProtectedRoute><Competitions /></ProtectedRoute>}
       />

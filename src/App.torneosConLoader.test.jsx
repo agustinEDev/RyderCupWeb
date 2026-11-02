@@ -72,6 +72,7 @@ vi.mock('./pages/Dashboard', async () => {
 vi.mock('./pages/Competitions.datos', async () => {
   const { cargaDeLaPantalla } = await import('./utils/cargaDeLaPantalla');
   return {
+    shouldRevalidate: () => false,
     loader: () =>
       cargaDeLaPantalla({
         clave: 'competitions',
@@ -100,7 +101,8 @@ vi.mock('./pages/Competitions', async () => {
 });
 
 const { default: App, rutasDeLaApp } = await import('./App');
-const { marcaElArranque } = await import('./utils/cargaDeLaPantalla');
+const { marcaElArranque, olvidaLoQueEstaEnCamino } = await import('./utils/cargaDeLaPantalla');
+const datosDeTorneos = await import('./pages/Competitions.datos');
 
 const abrir = (ruta) => {
   window.history.pushState({}, '', ruta);
@@ -126,6 +128,7 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     bajaHasta(0);
     // Cada test es una carga de página nueva: la carcasa aún no se ha montado
     marcaElArranque(false);
+    olvidaLoQueEstaEnCamino();
   });
 
   afterEach(() => {
@@ -243,6 +246,8 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
   });
 
   it('A1: solo Torneos restaura su scroll, por ahora', () => {
+    // Y vuelve a pedir solo cuando lo pide la pantalla: su propia política
+    expect(rutaDe(rutasDeLaApp, '/competitions').shouldRevalidate).toBe(datosDeTorneos.shouldRevalidate);
     expect(rutaDe(rutasDeLaApp, '/competitions').handle).toEqual({ restauraElScroll: true });
     expect(rutaDe(rutasDeLaApp, '/dashboard').handle).toBeUndefined();
     expect(rutaDe(rutasDeLaApp, '/friends').handle).toBeUndefined();
