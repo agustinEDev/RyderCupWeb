@@ -14,10 +14,11 @@ import { useLocation } from 'react-router';
  * estaba mirando.
  *
  * Lo que NO hace: devolverte a donde estabas al volver atrás. Eso lo resuelve
- * `<ScrollRestoration />` de React Router, que necesita el router moderno
- * (`createBrowserRouter`) — una migración de las 41 rutas de la aplicación, con
- * sus guards y sus Suspense, que va en su propia issue. Hasta entonces, volver
- * atrás también empieza arriba: predecible, aunque no sea lo ideal.
+ * `<ScrollRestoration />` de React Router, y la aplicación ya va sobre su router
+ * de datos (FE #647, fase 1). Pero una pantalla que pide sus datos al montarse
+ * aún no ha pintado nada cuando se restaura, y el navegador recorta el scroll
+ * (volvía a 67 en vez de a 1323): hace falta que cargue con un `loader`. Hasta
+ * que cada pantalla lo tenga, volver atrás también empieza arriba.
  */
 export function useVolverArriba() {
   const { pathname } = useLocation();

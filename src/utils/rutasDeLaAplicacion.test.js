@@ -51,9 +51,15 @@ describe('rutas de la aplicación', () => {
     expect([...RUTAS_DE_LA_APLICACION].sort()).toEqual([...enApp].sort());
     // Y que no se escape ninguna: una <Route> partida en varias lineas o con
     // `path={...}` no la ve la expresion de arriba, y faltaria en los dos lados
-    // sin que nada cantara. `<Router>` y `<Routes>` no cuentan
+    // sin que nada cantara. `<Router>` y `<Routes>` no cuentan, ni las dos sin
+    // `path` que envuelven el árbol del router de datos: la carcasa y la que
+    // devuelve los errores hacia arriba (FE #647)
     const etiquetas = app.match(/<Route[\s>/]/g) ?? [];
-    expect(etiquetas).toHaveLength(conRuta.length);
+    // Sin `path` en su etiqueta: una ruta de verdad con `element` delante de
+    // `path` no cuenta como envoltorio (/code-review)
+    const envoltorios = app.match(/<Route (?:element|errorElement)=(?![^\n]*\bpath=)[^\n]*/g) ?? [];
+    expect(envoltorios).toHaveLength(2);
+    expect(etiquetas.length - envoltorios.length).toBe(conRuta.length);
   });
 
   it('R4: en una dirección desconocida, sin usuario guardado, no se refresca', () => {
