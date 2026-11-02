@@ -61,8 +61,13 @@ const dejaDeCompartir = (clave, pedida) => {
   if (enCamino.get(clave)?.pedida === pedida) enCamino.delete(clave);
 };
 
-/** Solo para las pruebas: cada una empieza sin nada en camino. */
-export const olvidaLoQueEstaEnCamino = () => enCamino.clear();
+/** Solo para las pruebas: cada una empieza sin nada en camino ni pedido. */
+export const olvidaLoQueEstaEnCamino = () => {
+  enCamino.clear();
+  seVuelveAPedir = false;
+  vecesPedida = 0;
+  vecesConPeticionNueva = 0;
+};
 
 /**
  * Pulsar la pestaña de la pantalla en la que ya se está es una navegación a la

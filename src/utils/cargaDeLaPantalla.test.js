@@ -356,17 +356,19 @@ describe('cargaDeLaPantalla', () => {
   });
 
   it('C8c: varias cargas con la misma marca, una sola petición nueva', async () => {
-    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockReturnValue(new Promise(() => {}));
+    let responde;
+    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockImplementation(() => new Promise((r) => { responde = r; }));
     carga(pedir);
     await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
 
     pideOtraVez({ revalidate: () => {} });
-    carga(pedir);
-    carga(pedir);
-    carga(pedir);
+    const cargas = [carga(pedir), carga(pedir), carga(pedir)];
     await new Promise((r) => setTimeout(r, 0));
-
     expect(pedir).toHaveBeenCalledTimes(2);
+    responde([{ id: 'c-1' }]);
+
+    // Todas con la nueva, ninguna con la vieja que no contesta
+    for (const una of await Promise.all(cargas)) expect(una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
     olvidaQueSeVuelveAPedir();
   });
 
