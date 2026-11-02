@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLoaderData, useNavigate, useRevalidator } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
@@ -18,6 +18,7 @@ import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 import { diaCorto } from '../utils/diaDeLaSesion';
 import EtiquetaDelTipo from '../components/competition/EtiquetaDelTipo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import BlockLoader from '../components/ui/BlockLoader';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -54,7 +55,20 @@ const Competitions = () => {
   // lo que deja a «atrás» devolverte a donde estabas (FE #647, fase 3). Sin red
   // o con error, `datos` es lo último que se cargó en esta visita, o `null`
   const resultado = useLoaderData();
-  const { estado, datos } = resultado;
+  // La lista que llegó después del tope de 4 s: se pinta sin volver a pedirla
+  // (Agustín, 2 nov 2026). Vale solo para la carga de la que vino
+  const [llegoTarde, setLlegoTarde] = useState(null);
+  useEffect(() => {
+    if (!resultado.tardia) return undefined;
+    let vigente = true;
+    resultado.tardia.then((lista) => {
+      if (vigente) setLlegoTarde({ de: resultado, datos: lista });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [resultado]);
+  const { estado, datos } = llegoTarde?.de === resultado ? { estado: 'ok', datos: llegoTarde.datos } : resultado;
   // Memorizada: un `[]` nuevo en cada pintada rehacía los filtros sin parar
   const competitions = useMemo(() => datos ?? [], [datos]);
   const revalidador = useRevalidator();
@@ -62,7 +76,6 @@ const Competitions = () => {
   // Sin red, el aviso ya lo da la barra de toda la aplicación; el de aquí es
   // para cuando el móvil cree tener red y el servidor no contesta (dos barras)
   const elMovilSabeQueNoHayRed = useSinConexion();
-  const [filteredCompetitions, setFilteredCompetitions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -74,6 +87,19 @@ const Competitions = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar otra carga, no si cambia el idioma
   }, [resultado]);
 
+  // Sin datos todavía: la primera carga de la aplicación (`pendiente`) o una
+  // sesión que aún no se sabía (`sinSesion`; si no la hay, el guardia ya lleva
+  // a entrar). Se pide en cuanto se sabe quién es, una vez por persona: esperar
+  // aquí, con la carcasa puesta, es como cargaba siempre (revisor)
+  const usuarioId = user?.id;
+  const pedidaPara = useRef(null);
+  const faltanLosDatos = estado === 'pendiente' || estado === 'sinSesion';
+  useEffect(() => {
+    if (!faltanLosDatos || !usuarioId || pedidaPara.current === usuarioId) return;
+    pedidaPara.current = usuarioId;
+    revalidador.revalidate();
+  }, [faltanLosDatos, usuarioId, revalidador]);
+
   // Al volver la señal, se vuelve a pedir sola (decidido el 2 nov 2026)
   useEffect(() => {
     if (estado !== 'sinRed') return undefined;
@@ -82,8 +108,11 @@ const Competitions = () => {
     return () => globalThis.removeEventListener('online', alVolver);
   }, [estado, revalidador]);
 
-  const applyFilters = useCallback(() => {
-    let filtered = [...competitions];
+  // En el mismo pintado que la lista, y no en un efecto: un efecto la dejaba un
+  // pintado vacía, justo cuando el router restaura el scroll al volver atrás,
+  // y el navegador recortaba la posición sobre una página corta (revisor)
+  const filteredCompetitions = useMemo(() => {
+    let filtered = competitions;
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -106,13 +135,8 @@ const Competitions = () => {
       filtered = filtered.filter((comp) => comp.status === statusFilter);
     }
 
-    setFilteredCompetitions(filtered);
+    return filtered;
   }, [competitions, searchQuery, statusFilter, i18n.language]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    applyFilters();
-  }, [competitions, searchQuery, statusFilter, applyFilters]);
 
   const handleCreateCompetition = () => {
     navigate('/competitions/create');
@@ -135,6 +159,9 @@ const Competitions = () => {
         {t('myCompetitions.reintentar')}
       </button>
     );
+    if (faltanLosDatos) {
+      return <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />;
+    }
     // Un error del servidor —429, 5xx— tampoco es «no tienes ninguna»: no se
     // ha podido preguntar. Antes se vaciaba la lista y lo decía (FE #647, T6)
     if (estado === 'error' && datos === null) {

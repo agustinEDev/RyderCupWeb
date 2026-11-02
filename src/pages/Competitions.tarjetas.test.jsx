@@ -33,7 +33,10 @@ vi.mock('../composition', () => ({
 // El MISMO objeto en cada render: uno nuevo recrea la carga y no para
 const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, loading: false }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
-vi.mock('../services/sesionCompartida', () => ({ consultaLaSesion: () => Promise.resolve(sesion.user) }));
+vi.mock('../services/sesionCompartida', () => ({
+  consultaLaSesion: () => Promise.resolve(sesion.user),
+  loQueHaySobreLaSesion: () => ({ user: sesion.user }),
+}));
 vi.mock('../hooks/useAuthContext', () => ({
   useAuthContext: () => ({ user: { id: 'u-1' }, clearAuth: vi.fn() }),
 }));
@@ -51,6 +54,8 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 const Competitions = (await import('./Competitions')).default;
 // Con su `loader`, como en la aplicación (FE #647, fase 3: T17)
 const { loader } = await import('./Competitions.datos');
+// La carcasa ya montada, como en la aplicación tras arrancar
+(await import('../utils/cargaDeLaPantalla')).marcaElArranque(true);
 
 const competicion = (extra = {}) => ({
   id: 'c-1',

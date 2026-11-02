@@ -21,12 +21,20 @@
  *   T16 | un filtro sin coincidencias                   | «No se encontraron», no «sin conexión»
  *   T23 | Torneos y otra pantalla muy seguidas          | se queda la última
  *
+ * Lo que añadió el revisor (2 nov 2026):
+ *
+ *   T31 | primera carga de la aplicación (pendiente)    | la espera de hoy dentro de la pantalla, y la lista
+ *   T32 | la sesión aún no se sabía al cargar           | la lista al saberse; nunca «Aún no hay»
+ *   T33 | la lista llega después del tope de 4 s        | aparece sola, sin pedirla otra vez
+ *   T34 | al restaurar el scroll                        | las tarjetas ya están pintadas (si no, el
+ *       |                                               | navegador recorta la posición)
+ *
  * Vacío porque no se ha podido preguntar no es vacío: decir «Aún no hay» y
  * ofrecer «Crear Tu Primera Competición» es afirmar algo que nadie ha
  * comprobado, y quien tenga las suyas las ve desaparecer.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Profiler } from 'react';
+import { Profiler, useLayoutEffect } from 'react';
 import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
@@ -35,9 +43,25 @@ vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: (...a) => mockList(...a) },
 }));
 
-const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, loading: false }));
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
-vi.mock('../services/sesionCompartida', () => ({ consultaLaSesion: () => Promise.resolve(sesion.user) }));
+// La sesión como en la aplicación: una instantánea que avisa al cambiar
+const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, oyentes: new Set(), instantanea: null }));
+const ponLaSesion = (user) => {
+  sesion.user = user;
+  sesion.instantanea = { user, loading: false };
+  sesion.oyentes.forEach((o) => o());
+};
+vi.mock('../hooks/useAuth', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const suscribe = (o) => {
+    sesion.oyentes.add(o);
+    return () => sesion.oyentes.delete(o);
+  };
+  return { useAuth: () => useSyncExternalStore(suscribe, () => sesion.instantanea) };
+});
+vi.mock('../services/sesionCompartida', () => ({
+  consultaLaSesion: () => Promise.resolve(sesion.user),
+  loQueHaySobreLaSesion: () => ({ user: sesion.user }),
+}));
 vi.mock('../hooks/useAuthContext', () => ({
   useAuthContext: () => ({ user: { id: 'u-1' }, clearAuth: vi.fn() }),
 }));
@@ -55,6 +79,21 @@ vi.mock('../utils/toast', () => ({
 const Competitions = (await import('./Competitions')).default;
 const { loader } = await import('./Competitions.datos');
 const { olvidaTodo } = await import('../services/loUltimoConocido');
+const { marcaElArranque } = await import('../utils/cargaDeLaPantalla');
+
+// Lo que hace la carcasa de la aplicación al montarse
+const Carcasa = () => {
+  useLayoutEffect(() => marcaElArranque(true), []);
+  return null;
+};
+// Cuántas tarjetas había en el primer pintado: ahí restaura el scroll el router
+const sonda = { tarjetas: null };
+const Sonda = () => {
+  useLayoutEffect(() => {
+    sonda.tarjetas ??= document.querySelectorAll('[data-testid="tarjeta-competicion"]').length;
+  });
+  return null;
+};
 
 const TORNEO = { id: 'c-1', name: 'Torneo del Club', status: 'IN_PROGRESS', creatorId: 'u-1', participants: [] };
 const sinRed = () => new TypeError('Failed to fetch');
@@ -69,9 +108,13 @@ const pinta = () => {
         path: '/competitions',
         loader,
         element: (
-          <Profiler id="torneos" onRender={() => { pintadas.cuantas += 1; }}>
-            <Competitions />
-          </Profiler>
+          <>
+            <Carcasa />
+            <Profiler id="torneos" onRender={() => { pintadas.cuantas += 1; }}>
+              <Competitions />
+            </Profiler>
+            <Sonda />
+          </>
         ),
       },
       { path: '/otra', element: <p>otra pantalla</p> },
@@ -98,7 +141,9 @@ describe('Torneos con loader', () => {
     toasts.length = 0;
     mockList.mockReset();
     olvidaTodo();
-    sesion.user = { id: 'u-1' };
+    ponLaSesion({ id: 'u-1' });
+    marcaElArranque(true);
+    sonda.tarjetas = null;
     enLinea(true);
   });
 
@@ -254,6 +299,57 @@ describe('Torneos con loader', () => {
 
     expect(await screen.findByText('myCompetitions.noCompetitionsFound')).toBeInTheDocument();
     expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+  });
+
+  it('T31: en la primera carga, la espera de hoy y luego la lista', async () => {
+    marcaElArranque(false);
+    let responde;
+    mockList.mockReturnValue(new Promise((r) => { responde = r; }));
+    pinta();
+
+    expect(await screen.findByText('myCompetitions.loadingCompetitions')).toBeInTheDocument();
+    await act(async () => responde([TORNEO]));
+    expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(1);
+  });
+
+  it('T32: con la sesión aún sin saber, la espera, y la lista al saberse', async () => {
+    ponLaSesion(null);
+    mockList.mockResolvedValue([TORNEO]);
+    pinta();
+    // Sin usuario la pantalla no se pinta (en la aplicación, el guardia espera)
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
+    expect(mockList).not.toHaveBeenCalled();
+
+    act(() => ponLaSesion({ id: 'u-1' }));
+
+    expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
+    expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
+  });
+
+  it('T33: la lista que llega tras el tope aparece sola, sin pedirla otra vez', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let responde;
+    mockList.mockReturnValue(new Promise((r) => { responde = r; }));
+    pinta();
+    await act(() => vi.advanceTimersByTimeAsync(4000));
+    expect(await screen.findByTestId('competiciones-sin-cobertura')).toBeInTheDocument();
+
+    await act(async () => responde([TORNEO]));
+
+    expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
+    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('T34: en el primer pintado las tarjetas ya están', async () => {
+    mockList.mockResolvedValue([TORNEO]);
+    pinta();
+    await screen.findByText('Torneo del Club');
+
+    expect(sonda.tarjetas).toBe(1);
   });
 
   it('T23: Torneos y otra pantalla muy seguidas: se queda la última', async () => {

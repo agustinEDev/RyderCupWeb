@@ -97,7 +97,7 @@ const AdminPanel = () => {
   const pestanasDe = (id) => PESTAÑAS[id].map((p) => ({ id: p.id, label: t(p.label) }));
   const elegirPestaña = (id) => {
     const { ver } = deLaSeccion.find((p) => p.id === id);
-    setParametros(ver ? { ver } : {}, { replace: true, preventScrollReset: true });
+    setParametros(ver ? { ver } : {}, { replace: true });
   };
 
   // Overview

@@ -1,7 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useLayoutEffect, useCallback, Suspense, useState } from 'react';
 import {
-  createBrowserRouter,
   createRoutesFromElements,
   Outlet,
   Route,
@@ -38,6 +37,8 @@ import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 import { cargarConReintento, lazyWithRetry } from './utils/lazyWithRetry';
 import BarraDeCarga from './components/layout/BarraDeCarga';
+import { marcaElArranque } from './utils/cargaDeLaPantalla';
+import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
@@ -131,6 +132,10 @@ function AppContent() {
   // Va aquí arriba, colgado del router y no de cada pantalla: el defecto no era
   // de una pantalla concreta, eran las 24
   useVolverArriba();
+
+  // Desde aquí, los `loader` ya no están en la primera carga: antes de montarse
+  // la carcasa, la pantalla carga dentro, como siempre (`cargaDeLaPantalla`)
+  useLayoutEffect(() => marcaElArranque(true), []);
 
   // Una página que vuelve desde la caché del historial del navegador se recarga:
   // volvía congelada, en «Loading...» tras salir o con la cuenta de antes (FE #865)
@@ -298,7 +303,7 @@ function AppContent() {
         )}
         {/* Volver atrás te deja donde estabas en las pantallas con `loader`;
             en las demás, `useVolverArriba` (que corre después) sube arriba */}
-        <ScrollRestoration />
+        <ScrollRestoration storageKey={CLAVE_DEL_SCROLL} />
         <BarraDeCarga />
         <Outlet />
       {showBottomNav && (
@@ -381,7 +386,14 @@ export const rutasDeLaApp = createRoutesFromElements(
           atrás no puede devolverte a donde estabas. El `loader` llega con `lazy`
           para no engordar el arranque */}
       <Route path="/competitions"
-        lazy={() => cargarConReintento(() => import('./pages/Competitions.datos'))}
+        lazy={async () => {
+          // La pantalla a la vez que sus datos, y no después (revisor)
+          const [datos] = await Promise.all([
+            cargarConReintento(() => import('./pages/Competitions.datos')),
+            cargarConReintento(() => import('./pages/Competitions')),
+          ]);
+          return datos;
+        }}
         handle={{ restauraElScroll: true }}
         element={<ProtectedRoute><Competitions /></ProtectedRoute>}
       />
@@ -503,7 +515,7 @@ export const rutasDeLaApp = createRoutesFromElements(
 function App() {
   // Uno por montaje y no al importar: lee la dirección del momento en que se
   // abre (los tests montan la aplicación en direcciones distintas)
-  const [router] = useState(() => createBrowserRouter(rutasDeLaApp));
+  const [router] = useState(() => creaElRouterDeLaAplicacion(rutasDeLaApp));
   // Sentry sigue sus navegaciones cuando llega su seguimiento, ~2 s después
   // (`utils/navegacionesEnSentry`). En un efecto y no al crearlo: con
   // StrictMode React lo crea dos veces y se queda con el PRIMERO (revisor)

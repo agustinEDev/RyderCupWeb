@@ -72,9 +72,10 @@ vi.mock('./pages/Dashboard', async () => {
       <main>
         <h1>panel</h1>
         <Link to="/friends">a amigos</Link>
-        {/* Como los filtros del admin y el mapa del hoyo (fase 3) */}
-        <Link to="/dashboard?filtro=hoy" preventScrollReset>filtrar</Link>
-        <Link to="/dashboard#mapa" preventScrollReset>abrir el mapa</Link>
+        {/* Como los filtros del admin y el mapa del hoyo, sin ninguna marca:
+            no mover el scroll es lo de por defecto (fase 3) */}
+        <Link to="/dashboard?filtro=hoy">filtrar</Link>
+        <Link to="/dashboard#mapa">abrir el mapa</Link>
       </main>
     ),
   };

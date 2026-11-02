@@ -1,4 +1,4 @@
-import { consultaLaSesion } from '../services/sesionCompartida';
+import { consultaLaSesion, loQueHaySobreLaSesion } from '../services/sesionCompartida';
 import { guardaEnMemoria, loGuardadoEnMemoria } from '../services/memoriaDeLasListas';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import { esFalloDeRed } from './sinCobertura';
@@ -13,41 +13,70 @@ import { esFalloDeRed } from './sinCobertura';
  *
  * - **Nunca lanza.** Un error en un `loader` cambia la pantalla entera por la de
  *   error; aquí lo que pasó va en `estado` y la pantalla decide qué enseñar.
- * - **Espera 4 s como mucho.** Con dos barras la petición se queda colgada sin
- *   fallar, y el jugador vería que pulsar no hace nada. Pasado el tope se entra
- *   como sin red; la petición sigue y su respuesta se pierde.
+ * - **En la primera carga no espera nada** (`pendiente`): la pantalla carga
+ *   dentro, como siempre. Si esperase, la carcasa —el aviso de sin conexión, la
+ *   cola de golpes sin enviar— no se montaría hasta tener los datos, y sin red
+ *   en el arranque eso es mucho rato (revisor).
+ * - **Espera 4 s como mucho**, sesión incluida. Con dos barras la petición se
+ *   queda colgada sin fallar, y el jugador vería que pulsar no hace nada. Pasado
+ *   el tope se entra como sin red; si la lista llega después, se guarda y la
+ *   entrega `tardia`, para que la pantalla la pinte sin volver a pedirla.
  * - **Sin red, o con un error del servidor, lo último que se cargó** en esta
  *   visita (`memoriaDeLasListas`). Nunca se dice «no tienes ninguna» por no
  *   haber podido preguntar.
  * - **Sin sesión no se pide nada:** lleva a entrar (o a aceptar los Términos)
  *   el guardia de la ruta, como siempre, sin una petición que acabe en 401/403.
- *
- * @param {{clave: string, pedir: (usuario: Object) => Promise<*>}} opciones
- * @returns {Promise<{estado: 'ok'|'sinRed'|'error'|'sinSesion', datos: *}>}
  */
 export const TOPE_DE_LA_CARGA_MS = 4000;
 
+let arrancada = false;
+
+/** La carcasa de la aplicación, al montarse; antes, todo es la primera carga. */
+export const marcaElArranque = (si = true) => {
+  arrancada = si;
+};
+
 const SIN_RESPUESTA = Symbol('sin respuesta');
 
-const conTope = (promesa) => {
+/**
+ * @param {{clave: string, pedir: (usuario: Object) => Promise<*>}} opciones
+ * @returns {Promise<{estado: 'ok'|'sinRed'|'error'|'sinSesion'|'pendiente', datos: *, tardia?: Promise<*>}>}
+ */
+export const cargaDeLaPantalla = async ({ clave, pedir }) => {
+  if (!arrancada) return { estado: 'pendiente', datos: null };
+
   let reloj;
   const vence = new Promise((_, rechaza) => {
     reloj = setTimeout(() => rechaza(SIN_RESPUESTA), TOPE_DE_LA_CARGA_MS);
   });
-  return Promise.race([promesa, vence]).finally(() => clearTimeout(reloj));
-};
+  // Un solo tope para todo: la sesión y la lista comparten los 4 s
+  const aTiempo = (promesa) => Promise.race([promesa, vence]);
 
-export const cargaDeLaPantalla = async ({ clave, pedir }) => {
-  const usuario = await consultaLaSesion();
-  if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
-
+  let usuario = null;
+  let pedida = null;
   try {
-    const datos = await conTope(pedir(usuario));
-    guardaEnMemoria(clave, usuario.id, datos);
+    usuario = await aTiempo(consultaLaSesion());
+    if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
+
+    pedida = Promise.resolve(pedir(usuario)).then((datos) => {
+      // Solo si la sesión sigue siendo la suya: un cierre de sesión mientras se
+      // pedía ya vació la memoria, y esto la volvería a llenar
+      if (loQueHaySobreLaSesion().user?.id === usuario.id) guardaEnMemoria(clave, usuario.id, datos);
+      return datos;
+    });
+    const datos = await aTiempo(pedida);
     return { estado: 'ok', datos };
   } catch (error) {
-    const sinRed = error === SIN_RESPUESTA || esFalloDeRed(error);
-    if (!sinRed) console.error(`Error loading ${clave}:`, error);
-    return { estado: sinRed ? 'sinRed' : 'error', datos: loGuardadoEnMemoria(clave, usuario.id) };
+    const sinRespuesta = error === SIN_RESPUESTA;
+    if (!sinRespuesta && !esFalloDeRed(error)) console.error(`Error loading ${clave}:`, error);
+    const resultado = {
+      estado: sinRespuesta || esFalloDeRed(error) ? 'sinRed' : 'error',
+      datos: usuario ? loGuardadoEnMemoria(clave, usuario.id) : null,
+    };
+    // La que sigue en camino tras el tope; si al final falla, no entrega nada
+    if (sinRespuesta && pedida) resultado.tardia = pedida.catch(() => new Promise(() => {}));
+    return resultado;
+  } finally {
+    clearTimeout(reloj);
   }
 };

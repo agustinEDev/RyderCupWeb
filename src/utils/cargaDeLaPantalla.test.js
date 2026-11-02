@@ -17,13 +17,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   T12 | sin sesión                                  | sinSesion, sin pedir nada
  *   T13 | términos sin aceptar                        | sinSesion, sin pedir nada
  *   C2  | pide con el usuario de la sesión            | `pedir` lo recibe
+ *
+ * Lo que añadió el revisor (2 nov 2026):
+ *
+ *   T27 | la primera carga de la aplicación            | pendiente, al momento y sin pedir nada: la
+ *       |                                              | pantalla carga como hoy, con la carcasa puesta
+ *   T28 | la sesión no contesta en 4 s                  | sinRed: el tope lo cubre todo
+ *   T29 | la lista llega después del tope               | se guarda, y `tardia` la entrega
+ *   T30 | se cierra sesión mientras se pide             | no se guarda
  */
-const sesion = vi.hoisted(() => ({ user: { id: 'u-1' } }));
+const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, consulta: null, ahora: undefined }));
 vi.mock('../services/sesionCompartida', () => ({
-  consultaLaSesion: () => Promise.resolve(sesion.user),
+  consultaLaSesion: () => sesion.consulta ?? Promise.resolve(sesion.user),
+  loQueHaySobreLaSesion: () => ({ user: sesion.ahora === undefined ? sesion.user : sesion.ahora }),
 }));
 
-const { cargaDeLaPantalla, TOPE_DE_LA_CARGA_MS } = await import('./cargaDeLaPantalla');
+const { cargaDeLaPantalla, marcaElArranque, TOPE_DE_LA_CARGA_MS } = await import('./cargaDeLaPantalla');
+const { loGuardadoEnMemoria } = await import('../services/memoriaDeLasListas');
 const { olvidaTodo } = await import('../services/loUltimoConocido');
 
 const sinRed = () => new TypeError('Failed to fetch');
@@ -34,6 +44,9 @@ describe('cargaDeLaPantalla', () => {
   beforeEach(() => {
     olvidaTodo();
     sesion.user = { id: 'u-1' };
+    sesion.consulta = null;
+    sesion.ahora = undefined;
+    marcaElArranque(true);
     Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
   });
   afterEach(() => vi.useRealTimers());
@@ -67,7 +80,7 @@ describe('cargaDeLaPantalla', () => {
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
 
     expect(TOPE_DE_LA_CARGA_MS).toBe(4000);
-    expect(await resultado).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
+    expect(await resultado).toMatchObject({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
   });
 
   it('T5b: antes de los 4 s aún espera', async () => {
@@ -103,6 +116,78 @@ describe('cargaDeLaPantalla', () => {
 
     expect(await carga(pedir)).toEqual({ estado: 'sinSesion', datos: null });
     expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('T27: en la primera carga de la aplicación, pendiente al momento y sin pedir nada', async () => {
+    marcaElArranque(false);
+    sesion.consulta = new Promise(() => {});
+    const pedir = vi.fn();
+
+    expect(await carga(pedir)).toEqual({ estado: 'pendiente', datos: null });
+    expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('T28: si la sesión no contesta en 4 s, sinRed', async () => {
+    vi.useFakeTimers();
+    sesion.consulta = new Promise(() => {});
+    const pedir = vi.fn();
+
+    const resultado = carga(pedir);
+    await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
+
+    expect(await resultado).toMatchObject({ estado: 'sinRed', datos: null });
+    expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('T28b: sesión y lista comparten los 4 s', async () => {
+    vi.useFakeTimers();
+    let sesionLista;
+    sesion.consulta = new Promise((r) => { sesionLista = r; });
+    const resultado = carga(() => new Promise(() => {}));
+
+    await vi.advanceTimersByTimeAsync(3000);
+    sesionLista({ id: 'u-1' });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(await resultado).toMatchObject({ estado: 'sinRed' });
+  });
+
+  it('T29: la lista que llega tras el tope se guarda y la entrega `tardia`', async () => {
+    vi.useFakeTimers();
+    let responde;
+    const resultado = carga(() => new Promise((r) => { responde = r; }));
+    await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
+    const { estado, tardia } = await resultado;
+
+    responde([{ id: 'c-9' }]);
+
+    expect(estado).toBe('sinRed');
+    expect(await tardia).toEqual([{ id: 'c-9' }]);
+    expect(loGuardadoEnMemoria('competiciones', 'u-1')).toEqual([{ id: 'c-9' }]);
+  });
+
+  it('T29b: si al final falla, `tardia` no entrega nada y no rompe', async () => {
+    vi.useFakeTimers();
+    let falla;
+    const resultado = carga(() => new Promise((_, r) => { falla = r; }));
+    await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
+    const { tardia } = await resultado;
+    let entregada = false;
+    tardia.then(() => { entregada = true; });
+
+    falla(sinRed());
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(entregada).toBe(false);
+  });
+
+  it('T30: si se cierra sesión mientras se pide, no se guarda', async () => {
+    await carga(async () => {
+      sesion.ahora = null;
+      return [{ id: 'c-1' }];
+    });
+
+    expect(loGuardadoEnMemoria('competiciones', 'u-1')).toBeNull();
   });
 
   it('T13: con los términos sin aceptar no se pide nada', async () => {

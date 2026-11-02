@@ -13,7 +13,11 @@ import { textosDelError } from './components/errors/textosDelError';
  *   T19 | entrar en Torneos                                 | arriba
  *   T20 | volver atrás a una pantalla sin loader            | arriba (R4 en App.routerDeDatos)
  *   T21 | la espera de Torneos pasa de 150 ms               | la barra fina arriba; al llegar, se va
- *   T22 | abrir la app directamente en /competitions        | la pantalla de espera, y luego la lista
+ *   T22 | abrir la app directamente en /competitions        | como hoy: la carcasa al momento y la pantalla
+ *       |                                                  | carga dentro (revisor: si no, sin red en el
+ *       |                                                  | arranque ni aviso ni cola hasta tener datos)
+ *   T35 | recargar con posiciones guardadas                 | arriba, como hoy, en Torneos y en las demás
+ *   T36 | pulsar el enlace de la pantalla en la que estás   | no se mueve, como hoy
  *   T26 | Torneos falla al pintarse                         | la pantalla de error de siempre
  *   A1  | solo Torneos restaura su scroll, por ahora        | las demás siguen «siempre arriba»
  */
@@ -46,13 +50,30 @@ vi.mock('@sentry/react', async (original) => ({
   withScope: (enviar) => enviar({ setTag() {}, setExtra() {} }),
   captureException: () => {},
 }));
+vi.mock('./services/sesionCompartida', async (original) => ({
+  ...(await original()),
+  consultaLaSesion: async () => ({ id: 'u-1' }),
+  loQueHaySobreLaSesion: () => ({ user: { id: 'u-1' } }),
+}));
 vi.mock('./pages/Dashboard', async () => {
   const { Link } = await import('react-router');
-  return { default: () => <main><h1>panel</h1><Link to="/competitions">a torneos</Link></main> };
+  return {
+    default: () => (
+      <main>
+        <h1>panel</h1>
+        <Link to="/competitions">a torneos</Link>
+        <Link to="/dashboard">al panel otra vez</Link>
+      </main>
+    ),
+  };
 });
-vi.mock('./pages/Competitions.datos', () => ({
-  loader: () => (carga.espera ? carga.espera : { estado: 'ok', datos: [] }),
-}));
+// El `loader` de verdad, con lo que pide simulado
+vi.mock('./pages/Competitions.datos', async () => {
+  const { cargaDeLaPantalla } = await import('./utils/cargaDeLaPantalla');
+  return {
+    loader: () => cargaDeLaPantalla({ clave: 'competiciones', pedir: () => carga.espera ?? Promise.resolve([]) }),
+  };
+});
 vi.mock('./pages/Competitions', async () => {
   const { Link, useLoaderData } = await import('react-router');
   return {
@@ -65,6 +86,7 @@ vi.mock('./pages/Competitions', async () => {
 });
 
 const { default: App, rutasDeLaApp } = await import('./App');
+const { marcaElArranque } = await import('./utils/cargaDeLaPantalla');
 
 const abrir = (ruta) => {
   window.history.pushState({}, '', ruta);
@@ -87,6 +109,8 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     carga.espera = null;
     carga.falla = false;
     bajaHasta(0);
+    // Cada test es una carga de página nueva: la carcasa aún no se ha montado
+    marcaElArranque(false);
   });
 
   afterEach(() => {
@@ -108,7 +132,9 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
   });
 
   it('T18: volver atrás a Torneos la deja donde estaba', async () => {
-    abrir('/competitions');
+    abrir('/dashboard');
+    await screen.findByRole('heading', { name: 'panel' });
+    fireEvent.click(screen.getByRole('link', { name: 'a torneos' }));
     await screen.findByRole('heading', { name: 'torneos ok' });
     bajaHasta(1323);
 
@@ -138,21 +164,43 @@ describe('App · Torneos con loader (FE #647, fase 3)', () => {
     // Mientras, se sigue viendo la pantalla de antes
     expect(screen.getByRole('heading', { name: 'panel' })).toBeInTheDocument();
 
-    await act(async () => responde({ estado: 'ok', datos: [] }));
+    await act(async () => responde([]));
 
     expect(await screen.findByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
     expect(screen.queryByTestId('barra-de-carga')).not.toBeInTheDocument();
   });
 
-  it('T22: abrir directamente en /competitions: la espera, y luego la lista', async () => {
-    let responde;
-    carga.espera = new Promise((r) => { responde = r; });
+  it('T22: abrir directamente en /competitions: la carcasa al momento, y la pantalla carga dentro', async () => {
+    carga.espera = new Promise(() => {});
     abrir('/competitions');
 
-    expect(await screen.findByText('pantalla de espera')).toBeInTheDocument();
+    // Sin esperar a la lista: la pantalla sabe que tiene que pedirla
+    expect(await screen.findByRole('heading', { name: 'torneos pendiente' })).toBeInTheDocument();
+    expect(await screen.findByText('barra inferior')).toBeInTheDocument();
+  });
 
-    await act(async () => responde({ estado: 'ok', datos: [] }));
-    expect(await screen.findByRole('heading', { name: 'torneos ok' })).toBeInTheDocument();
+  it.each(['/dashboard', '/competitions'])('T35: recargar %s con una posición guardada empieza arriba', async (ruta) => {
+    window.history.replaceState({ usr: null, key: 'k1', idx: 0 }, '', ruta);
+    sessionStorage.setItem('react-router-scroll-positions', JSON.stringify({ k1: 900 }));
+    sessionStorage.setItem('rcf-posiciones-del-scroll', JSON.stringify({ k1: 900 }));
+    render(<App />);
+    await screen.findByRole('heading', { name: ruta === '/dashboard' ? 'panel' : 'torneos pendiente' });
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+
+    expect(globalThis.scrollTo).not.toHaveBeenCalledWith(0, 900);
+    expect(globalThis.scrollTo).toHaveBeenLastCalledWith(0, 0);
+  });
+
+  it('T36: pulsar el enlace de la pantalla en la que estás no la mueve', async () => {
+    abrir('/dashboard');
+    await screen.findByRole('heading', { name: 'panel' });
+    bajaHasta(700);
+    globalThis.scrollTo.mockClear();
+
+    fireEvent.click(screen.getByRole('link', { name: 'al panel otra vez' }));
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+
+    expect(globalThis.scrollTo).not.toHaveBeenCalled();
   });
 
   it('T26: si Torneos falla al pintarse, la pantalla de error de siempre', async () => {
