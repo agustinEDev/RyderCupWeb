@@ -768,6 +768,11 @@ jobs:
         # pantallas diferidas como MapLibre (1 MB) y castigaba dividir el código.
         # Los topes y su historia, en .github/scripts/bundle_budget.py
         run: python3 .github/scripts/bundle_budget.py dist
+      - name: Check service worker precache
+        if: matrix.build == 'ci'
+        # minimatch 11 con el glob 11 de workbox dejaba el precache en 4 ficheros
+        # de 251 sin fallar el build (2 nov 2026). Detalle en el propio script
+        run: python3 .github/scripts/sw_precache_check.py dist
       - name: Check build output
         if: matrix.build == 'ci'
         id: dist
