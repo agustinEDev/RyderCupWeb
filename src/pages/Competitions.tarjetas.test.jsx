@@ -56,6 +56,8 @@ const Competitions = (await import('./Competitions')).default;
 const { loader } = await import('./Competitions.datos');
 // La carcasa ya montada, como en la aplicación tras arrancar
 (await import('../utils/cargaDeLaPantalla')).marcaElArranque(true);
+// Lo de cada prueba (la lista y sus filtros) no pasa a la siguiente
+const { olvidaTodo } = await import('../services/loUltimoConocido');
 
 const competicion = (extra = {}) => ({
   id: 'c-1',
@@ -88,6 +90,7 @@ const tarjeta = async (lista) => {
 describe('Mis competiciones · tarjetas (FE #846)', () => {
   beforeEach(() => {
     mockList.mockReset();
+    olvidaTodo();
     Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
   });
 

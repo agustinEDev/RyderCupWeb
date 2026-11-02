@@ -5,6 +5,7 @@ import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, Wifi
 import customToast from '../utils/toast';
 import { useSinConexion } from '../hooks/useSinConexion';
 import { olvidaQueSeVuelveAPedir, pideOtraVez } from '../utils/cargaDeLaPantalla';
+import { guardaLosFiltros, losFiltrosGuardados } from '../services/memoriaDeLasListas';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -34,6 +35,9 @@ const getEnrollmentStatusClasses = (status) => {
       return 'bg-gray-100 text-gray-800 border border-gray-200';
   }
 };
+
+// La de `Competitions.datos`, en su memoria y en la de sus filtros
+const LISTA = 'competitions';
 
 const Competitions = () => {
   const navigate = useNavigate();
@@ -77,35 +81,30 @@ const Competitions = () => {
   // Sin red, el aviso ya lo da la barra de toda la aplicación; el de aquí es
   // para cuando el móvil cree tener red y el servidor no contesta (dos barras)
   const elMovilSabeQueNoHayRed = useSinConexion();
-  // Los filtros viven en la entrada del historial: al volver atrás se repone el
+  // Los filtros, por entrada del historial: al volver atrás se repone el
   // scroll, y sin ellos se caía a esa altura en otra lista, la de sin filtrar
-  // (Agustín, 2 nov 2026). Entrar de nuevo o recargar (la primera carga,
-  // `pendiente`) empieza sin filtros, como siempre
-  const location = useLocation();
-  // Una entrada nueva nunca trae filtros; la de una recarga sí, y se ignoran
+  // (Agustín, 2 nov 2026). Entrar de nuevo es otra entrada y empieza sin
+  // filtros; recargar, también, porque viven en memoria (`memoriaDeLasListas`)
+  const { key: entrada } = useLocation();
+  const usuarioId = user?.id;
   const [filtrosAlVolver] = useState(() =>
-    resultado.estado !== 'pendiente' ? location.state?.filtros : undefined
+    usuarioId ? losFiltrosGuardados(LISTA, usuarioId, entrada) : null
   );
   const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
   const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
+  // También al cambiar de entrada sin salir: pulsar Torneos en Torneos crea
+  // otra, y la pantalla sigue filtrada
   useEffect(() => {
-    const guardados = location.state?.filtros;
-    const sinFiltros = !searchQuery && statusFilter === 'ALL';
-    if (guardados ? guardados.busqueda === searchQuery && guardados.estado === statusFilter : sinFiltros) return;
-    // Sustituye la entrada, no apila: no mueve el scroll ni vuelve a pedir
-    navigate(
-      { pathname: location.pathname, search: location.search },
-      { replace: true, state: { ...location.state, filtros: { busqueda: searchQuery, estado: statusFilter } } }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar los filtros
-  }, [searchQuery, statusFilter]);
+    if (!usuarioId) return;
+    const conFiltros = searchQuery || statusFilter !== 'ALL';
+    guardaLosFiltros(LISTA, usuarioId, entrada, conFiltros ? { busqueda: searchQuery, estado: statusFilter } : null);
+  }, [searchQuery, statusFilter, entrada, usuarioId]);
 
-  // Al salir, la marca de volver a pedir que no se llegó a usar se olvida
+  // La marca de volver a pedir se gasta al llegar una carga: hasta entonces,
+  // si otra navegación corta la recarga, esa sigue pidiendo (tercer revisor).
+  // Y al salir se olvida, si no se llegó a usar
+  useEffect(() => olvidaQueSeVuelveAPedir(), [resultado]);
   useEffect(() => olvidaQueSeVuelveAPedir, []);
-
-  // La sesión se confirma o cambia (otro `user`): se vuelve a pedir, como antes
-  // del `loader`, que dependía de él (`/code-review`)
-  const usuarioVisto = useRef(user);
 
   // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
   // nuevo, también al reintentar (Agustín, 2 nov 2026: como hasta ahora)
@@ -117,26 +116,21 @@ const Competitions = () => {
 
   // Sin datos todavía: la primera carga de la aplicación (`pendiente`) o una
   // sesión que aún no se sabía (`sinSesion`; si no la hay, el guardia ya lleva
-  // a entrar). Se pide en cuanto se sabe quién es, una vez por persona: esperar
-  // aquí, con la carcasa puesta, es como cargaba siempre (revisor)
-  const usuarioId = user?.id;
-  const pedidaPara = useRef(null);
+  // a entrar). Esperar aquí, con la carcasa puesta, es como cargaba siempre
   const faltanLosDatos = estado === 'pendiente' || estado === 'sinSesion';
-  // Con los datos ya puestos se olvida: si más tarde vuelven a faltar (la sesión
-  // superó el tope), se vuelve a pedir otra vez
+  // Se pide en cuanto se sabe quién es, y otra vez cada vez que la sesión se
+  // confirma o cambia (otro `user`), como antes del `loader`, que dependía de
+  // él (`/code-review`). También con una carga en camino: gana la última
+  // (tercer revisor). Si los datos vuelven a faltar más tarde (la sesión
+  // superó el tope), una vez más, pero no en cada carga que siga sin ellos
+  const pedidaCon = useRef(faltanLosDatos ? null : user);
+  const faltabanYa = useRef(faltanLosDatos);
   useEffect(() => {
-    if (!faltanLosDatos) pedidaPara.current = null;
-  }, [faltanLosDatos]);
-  useEffect(() => {
-    if (!faltanLosDatos || !usuarioId || pedidaPara.current === usuarioId) return;
-    pedidaPara.current = usuarioId;
+    const vuelvenAFaltar = faltanLosDatos && !faltabanYa.current;
+    faltabanYa.current = faltanLosDatos;
+    if (!user?.id || (pedidaCon.current === user && !vuelvenAFaltar)) return;
+    pedidaCon.current = user;
     pideOtraVez(revalidador);
-  }, [faltanLosDatos, usuarioId, revalidador]);
-
-  useEffect(() => {
-    if (usuarioVisto.current === user) return;
-    usuarioVisto.current = user;
-    if (user?.id && !faltanLosDatos) pideOtraVez(revalidador);
   }, [user, faltanLosDatos, revalidador]);
 
   // Al volver la señal, se vuelve a pedir sola (decidido el 2 nov 2026)

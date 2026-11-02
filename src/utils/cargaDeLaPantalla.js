@@ -45,9 +45,9 @@ const SIN_RESPUESTA = Symbol('sin respuesta');
  */
 const enCamino = new Map();
 
-const pideUnaVez = (clave, usuario, pedir) => {
+const pideUnaVez = (clave, usuario, pedir, nueva) => {
   const ya = enCamino.get(clave);
-  if (ya && ya.usuarioId === usuario.id) return ya.pedida;
+  if (!nueva && ya && ya.usuarioId === usuario.id) return ya.pedida;
   const pedida = Promise.resolve(pedir(usuario)).finally(() => {
     if (enCamino.get(clave)?.pedida === pedida) enCamino.delete(clave);
   });
@@ -69,6 +69,9 @@ export const olvidaLoQueEstaEnCamino = () => enCamino.clear();
  * misma dirección, y React Router vuelve a llamar al `loader`: hoy eso no pide
  * nada, y así se queda (segundo revisor). Solo vuelve a pedir quien lo pide
  * aquí: «Reintentar», la vuelta de la señal o la primera carga.
+ *
+ * Y entonces con una petición nueva: la que siguiera en camino puede ser
+ * justo la que no contesta, o la de antes de cambiar la sesión (tercer revisor).
  */
 let seVuelveAPedir = false;
 
@@ -78,18 +81,17 @@ export const pideOtraVez = (revalidador) => {
   revalidador.revalidate();
 };
 
-/** Al salir de la pantalla: si se navegó antes de que se usara, ya no vale
- *  (si no, la siguiente pulsación en la pestaña pedía; `/code-review`). */
+/** La gasta la pantalla al recibir la carga, y al salir: si se navegó antes de
+ *  que se usara, ya no vale (si no, la siguiente pulsación en la pestaña pedía;
+ *  `/code-review`). */
 export const olvidaQueSeVuelveAPedir = () => {
   seVuelveAPedir = false;
 };
 
-/** El `shouldRevalidate` de las rutas con `cargaDeLaPantalla`. */
-export const soloSiSePideOtraVez = () => {
-  const si = seVuelveAPedir;
-  seVuelveAPedir = false;
-  return si;
-};
+/** El `shouldRevalidate` de las rutas con `cargaDeLaPantalla`. No la gasta:
+ *  si otra navegación corta la recarga, el router desecha lo que traiga, y
+ *  esa navegación tiene que seguir pidiendo (tercer revisor). */
+export const soloSiSePideOtraVez = () => seVuelveAPedir;
 
 /**
  * @param {{clave: string, pedir: (usuario: Object) => Promise<*>}} opciones
@@ -115,13 +117,13 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
       // La sesión no contesta. Si ya se sabía quién es, como sin red y con lo
       // de antes (`/code-review`); si no, la pantalla pide al saberse quién es
       const sabido = loQueHaySobreLaSesion().user;
-      return sabido
+      return sabido && !debeAceptarLosTerminos(sabido)
         ? { estado: 'sinRed', datos: loGuardadoEnMemoria(clave, sabido.id) }
         : { estado: 'sinSesion', datos: null };
     }
     if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
 
-    compartida = pideUnaVez(clave, usuario, pedir);
+    compartida = pideUnaVez(clave, usuario, pedir, seVuelveAPedir);
     pedida = compartida.then((datos) => {
       // Solo si la sesión sigue siendo la suya: un cierre de sesión mientras se
       // pedía ya vació la memoria, y esto la volvería a llenar

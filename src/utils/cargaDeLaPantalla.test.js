@@ -40,6 +40,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   T42c| una que no contesta, pasado el tope           | la siguiente carga pide de nuevo
  *   T43 | Reintentar y se navega antes de que pida      | la marca de volver a pedir se olvida
  *   T39 | cualquier fallo que no sea el tope            | a la consola, como antes, con su nombre
+ *
+ * Y el tercer revisor (2 nov 2026):
+ *
+ *   C5  | la comprobación del router no gasta la marca  | si otra navegación corta la recarga, la
+ *       |                                              | siguiente sigue pidiendo; la gasta la
+ *       |                                              | pantalla al recibir la carga
+ *   C8  | con la marca, una petición vieja en camino    | se pide una nueva, no se comparte
+ *   C10 | la sesión no contesta, se sabía quién era y  | sinSesion: el guardia lleva a aceptarlos
+ *       | le faltan los Términos                        |
  */
 const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, consulta: null, ahora: undefined }));
 vi.mock('../services/sesionCompartida', () => ({
@@ -285,6 +294,60 @@ describe('cargaDeLaPantalla', () => {
     const pedir = vi.fn();
 
     expect(await carga(pedir)).toEqual({ estado: 'sinSesion', datos: null });
+    expect(pedir).not.toHaveBeenCalled();
+  });
+
+  it('C5: la comprobación del router no gasta la marca', () => {
+    pideOtraVez({ revalidate: () => {} });
+
+    expect(soloSiSePideOtraVez()).toBe(true);
+    expect(soloSiSePideOtraVez()).toBe(true);
+    olvidaQueSeVuelveAPedir();
+    expect(soloSiSePideOtraVez()).toBe(false);
+  });
+
+  it('C8: con la marca puesta, una petición vieja en camino no se comparte', async () => {
+    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockResolvedValue([{ id: 'c-1' }]);
+    carga(pedir);
+    await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
+
+    pideOtraVez({ revalidate: () => {} });
+
+    expect(await carga(pedir)).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(pedir).toHaveBeenCalledTimes(2);
+    olvidaQueSeVuelveAPedir();
+  });
+
+  it('C8b: la nueva queda para compartir con la siguiente sin marca', async () => {
+    let responde;
+    const pedir = vi.fn().mockReturnValueOnce(new Promise(() => {})).mockImplementation(() => new Promise((r) => { responde = r; }));
+    carga(pedir);
+    await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(1));
+    pideOtraVez({ revalidate: () => {} });
+    const nueva = carga(pedir);
+    await vi.waitFor(() => expect(pedir).toHaveBeenCalledTimes(2));
+    olvidaQueSeVuelveAPedir();
+
+    const otra = carga(pedir);
+    // Que llegue a unirse antes de que conteste
+    await new Promise((r) => setTimeout(r, 0));
+    responde([{ id: 'c-1' }]);
+
+    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(pedir).toHaveBeenCalledTimes(2);
+  });
+
+  it('C10: la sesión no contesta y a quien se sabía le faltan los Términos: sinSesion', async () => {
+    vi.useFakeTimers();
+    sesion.consulta = new Promise(() => {});
+    sesion.ahora = { id: 'u-1', terms_accepted: false };
+    const pedir = vi.fn();
+
+    const resultado = carga(pedir);
+    await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
+
+    expect(await resultado).toEqual({ estado: 'sinSesion', datos: null });
     expect(pedir).not.toHaveBeenCalled();
   });
 });

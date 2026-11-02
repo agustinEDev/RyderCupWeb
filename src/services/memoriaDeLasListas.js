@@ -8,7 +8,8 @@
  * si ya se cargó en esta visita.
  *
  * Va por cuenta: si entra otra persona sin recargar la página, no ve la lista
- * de la anterior. Y se vacía al cerrar sesión, con lo demás de la cuenta.
+ * de la anterior. Y se vacía al cerrar sesión, con lo demás de la cuenta. Lo
+ * mismo con los filtros de cada lista.
  */
 const listas = new Map();
 
@@ -23,4 +24,33 @@ export const loGuardadoEnMemoria = (clave, usuarioId) => {
   return guardado && guardado.usuarioId === usuarioId ? guardado.datos : null;
 };
 
-export const vaciaLaMemoriaDeLasListas = () => listas.clear();
+/**
+ * Los filtros de cada lista, por entrada del historial: al volver atrás se
+ * reponen, y así el scroll cae en la misma lista (Agustín, 2 nov 2026). Entrar
+ * de nuevo es otra entrada, y empieza sin filtros. Antes iban en el propio
+ * historial, y escribirlo cortaba la recarga que estuviera en camino, dejaba lo
+ * buscado a la vista de la siguiente cuenta y Safari lo frena si se escribe en
+ * cada tecla (tercer revisor).
+ */
+export const MAXIMO_DE_FILTROS = 50;
+const filtros = new Map();
+const deLosFiltros = (clave, usuarioId, entrada) => JSON.stringify([clave, usuarioId, entrada]);
+
+/** @param {{busqueda: string, estado: string}|null} losFiltros `null`, sin filtros */
+export const guardaLosFiltros = (clave, usuarioId, entrada, losFiltros) => {
+  const donde = deLosFiltros(clave, usuarioId, entrada);
+  filtros.delete(donde);
+  if (!losFiltros) return;
+  filtros.set(donde, losFiltros);
+  // Los más viejos fuera: el Map guarda el orden en que entraron
+  if (filtros.size > MAXIMO_DE_FILTROS) filtros.delete(filtros.keys().next().value);
+};
+
+/** @returns {{busqueda: string, estado: string}|null} */
+export const losFiltrosGuardados = (clave, usuarioId, entrada) =>
+  filtros.get(deLosFiltros(clave, usuarioId, entrada)) ?? null;
+
+export const vaciaLaMemoriaDeLasListas = () => {
+  listas.clear();
+  filtros.clear();
+};

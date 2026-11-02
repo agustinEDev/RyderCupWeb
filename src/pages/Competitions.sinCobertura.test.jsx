@@ -36,12 +36,27 @@
  *   T41 | se navega mientras se vuelve a pedir          | luego, pulsar Torneos en Torneos no pide
  *   F1  | filtrar, entrar en un torneo y volver atrás   | los filtros siguen (Agustín: conservarlos)
  *   F2  | entrar de nuevo en Torneos                    | sin filtros, como hoy
- *   F3  | recargar                                      | sin filtros, como hoy
+ *   F3  | recargar                                      | sin filtros, como hoy (viven en memoria)
  *   F4  | filtrar                                       | no pide nada
  *   F5  | filtrar                                       | no apila entradas en el historial
  *   T41b| una marca de volver a pedir sin usar          | se olvida al salir de Torneos
  *   T34 | al restaurar el scroll                        | las tarjetas ya están pintadas (si no, el
  *       |                                               | navegador recorta la posición)
+ *
+ * Y el tercer revisor (2 nov 2026), con el diseño aprobado ese día: los filtros
+ * dejan de escribirse en el historial y viven en memoria por cuenta y entrada:
+ *
+ *   C2  | filtrar, pulsar Torneos en Torneos, salir y  | los filtros siguen
+ *       | volver atrás                                  |
+ *   C3  | otra cuenta en el mismo móvil vuelve atrás    | sin filtros
+ *   C4  | filtrar durante una recarga (Reintentar, la   | la recarga llega y se pinta
+ *       | señal)                                        |
+ *   C5  | otra navegación corta una recarga             | la siguiente sí carga
+ *   C5b | Reintentar ya respondió                       | pulsar Torneos en Torneos no pide
+ *   C6  | la sesión se confirma durante una carga       | se pide de nuevo, con una petición nueva
+ *   C7  | dos toques seguidos desde otra pantalla       | una sola petición
+ *   C8  | vuelve la señal con una petición vieja colgada| sale una nueva
+ *   C9  | filtrar                                       | no toca el historial
  *
  * Vacío porque no se ha podido preguntar no es vacío: decir «Aún no hay» y
  * ofrecer «Crear Tu Primera Competición» es afirmar algo que nadie ha
@@ -502,14 +517,6 @@ describe('Torneos con loader', () => {
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
   });
 
-  it('F3: recargar empieza sin filtros', async () => {
-    marcaElArranque(false);
-    mockList.mockResolvedValue(LISTA);
-    pinta({ state: { filtros: { busqueda: 'activo', estado: 'ACTIVE' } } });
-
-    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
-  });
-
   it('F4: filtrar no pide nada', async () => {
     mockList.mockResolvedValue(LISTA);
     pinta();
@@ -535,5 +542,170 @@ describe('Torneos con loader', () => {
 
     expect(router.state.location.pathname).toBe('/otra');
     expect(screen.getByText('otra pantalla')).toBeInTheDocument();
+  });
+
+  const busca = (texto) =>
+    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: texto } });
+  const colgada = () => {
+    const pendiente = {};
+    pendiente.promesa = new Promise((r, f) => { pendiente.responde = r; pendiente.falla = f; });
+    return pendiente;
+  };
+
+  it('C2: tras pulsar Torneos en Torneos, salir y volver atrás conserva los filtros', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    await act(async () => {});
+
+    await act(() => router.navigate('/competitions', { replace: true }));
+    expect(screen.queryByText('Torneo cerrado')).not.toBeInTheDocument();
+    await act(() => router.navigate('/otra'));
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(screen.queryByText('Torneo cerrado')).not.toBeInTheDocument();
+  });
+
+  it('C3: otra cuenta en el mismo móvil, al volver atrás, sin filtros', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    busca('activo');
+    await act(async () => {});
+    await act(() => router.navigate('/otra'));
+
+    act(() => ponLaSesion({ id: 'u-2' }));
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
+  });
+
+  it('C4: filtrar mientras Reintentar está en camino no la corta', async () => {
+    const segunda = colgada();
+    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa);
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    busca('torneo');
+    await act(async () => {});
+    await act(async () => segunda.responde(LISTA));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(screen.queryByTestId('competiciones-sin-cargar')).not.toBeInTheDocument();
+  });
+
+  it('C4b: filtrar mientras se pide al volver la señal no la corta', async () => {
+    const segunda = colgada();
+    mockList.mockRejectedValueOnce(sinRed()).mockReturnValueOnce(segunda.promesa);
+    pinta();
+    await screen.findByTestId('competiciones-sin-cobertura');
+    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    filtraPorActivas();
+    await act(async () => {});
+    await act(async () => segunda.responde(LISTA));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
+  });
+
+  it('C5: si pulsar Torneos en Torneos corta la recarga, esa pulsación carga', async () => {
+    const segunda = colgada();
+    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa).mockResolvedValue(LISTA);
+    const router = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    await act(() => router.navigate('/competitions', { replace: true }));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+  });
+
+  it('C5b: con Reintentar ya respondido, pulsar Torneos en Torneos no pide', async () => {
+    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue(LISTA);
+    const router = pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await screen.findByText('Torneo activo');
+
+    await act(() => router.navigate('/competitions', { replace: true }));
+
+    expect(mockList).toHaveBeenCalledTimes(2);
+  });
+
+  it('C6: la sesión se confirma durante la primera carga y esta falla: se pide de nuevo', async () => {
+    marcaElArranque(false);
+    const primera = colgada();
+    mockList.mockReturnValueOnce(primera.promesa).mockResolvedValue(LISTA);
+    pinta();
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
+
+    act(() => ponLaSesion({ id: 'u-1' }));
+    await act(async () => primera.falla(sinRed()));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(2);
+  });
+
+  it('C6b: la sesión cambia durante un Reintentar: petición nueva, no la que ya iba', async () => {
+    const segunda = colgada();
+    mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa).mockResolvedValue(LISTA);
+    pinta();
+    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    act(() => ponLaSesion({ id: 'u-1' }));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(3);
+  });
+
+  it('C7: dos toques seguidos en la pestaña desde otra pantalla, una sola petición', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta({ antes: ['/otra'] });
+    await screen.findByText('Torneo cerrado');
+    await act(() => router.navigate('/otra'));
+    mockList.mockClear();
+    const enCamino = colgada();
+    mockList.mockReturnValue(enCamino.promesa);
+
+    act(() => { router.navigate('/competitions'); });
+    await act(() => { router.navigate('/competitions'); });
+    await act(async () => enCamino.responde(LISTA));
+
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(1);
+  });
+
+  it('C8: vuelve la señal otra vez con la petición anterior colgada: sale una nueva', async () => {
+    mockList.mockRejectedValueOnce(sinRed()).mockReturnValueOnce(new Promise(() => {})).mockResolvedValue(LISTA);
+    pinta();
+    await screen.findByTestId('competiciones-sin-cobertura');
+    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+
+    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(mockList).toHaveBeenCalledTimes(3);
+  });
+
+  it('C9: filtrar no toca el historial', async () => {
+    mockList.mockResolvedValue(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    const { key } = router.state.location;
+
+    filtraPorActivas();
+    busca('activo');
+    await act(async () => {});
+
+    expect(router.state.location.key).toBe(key);
+    expect(router.state.location.state).toBeFalsy();
   });
 });
