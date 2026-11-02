@@ -110,7 +110,8 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
     pinta();
 
     expect(screen.getByRole('button', { name: 'handicaps.update' })).toBeEnabled();
-    expect(await screen.findByTestId('handicaps-ventana')).toHaveTextContent(/^handicaps\.openUntil .*7:40/);
+    // Hasta que llega la zona del campo se dice en la del dispositivo
+    await waitFor(() => expect(screen.getByTestId('handicaps-ventana')).toHaveTextContent(/^handicaps\.openUntil .*7:40/));
   });
 
   it('10b: sin cierre de ventana, hasta iniciar', async () => {
@@ -163,7 +164,7 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
   it('13: programada, cuándo en la hora del campo y anular', async () => {
     const releer = pinta({ handicapUpdateWindow: { ...ABIERTA, scheduledAt: '2030-10-12T01:00:00Z' } });
 
-    expect(await screen.findByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduled .*3:00.*Europe\/Madrid/);
+    await waitFor(() => expect(screen.getByTestId('handicaps-programada')).toHaveTextContent(/^handicaps\.scheduled .*3:00.*Europe\/Madrid/));
     fireEvent.click(screen.getByRole('button', { name: 'handicaps.cancelSchedule' }));
 
     await waitFor(() => expect(mockAnular).toHaveBeenCalledWith('c-1'));
@@ -274,7 +275,8 @@ describe('HandicapsDeLaCompeticion (FE #824, PR 5)', () => {
 
   it('15e: una hora que no existe en el campo (cambio de hora) no se puede guardar', async () => {
     pinta();
-    await waitFor(() => expect(mockCampos).toHaveBeenCalled());
+    // Pedida no basta: el hueco del cambio de hora es el de la zona del campo
+    await waitFor(() => expect(screen.getByTestId('handicaps-ventana')).toHaveTextContent(/^handicaps\.openUntil /));
     fireEvent.click(await screen.findByRole('button', { name: 'handicaps.schedule' }));
 
     fireEvent.change(await screen.findByLabelText(/^handicaps\.scheduleAt/), { target: { value: '2030-03-31T02:30' } });
