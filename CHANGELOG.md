@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.60.0] - 2026-11-02
+
+**La aplicación pasa al router de datos de React Router, sin cambios a la
+vista.** Es la fase 1 de #647: prepara que volver atrás te deje donde estabas
+(fase 3, con la carga de datos en cada pantalla). Sin backend nuevo: sigue el
+**2.45.0**.
+
+**Notas de despliegue.**
+
+- Sin cambios de contrato ni variables nuevas. Arranque **262 KB gzip** de 270:
+  +19 KB por el código del router de datos (aceptado).
+
+### Changed
+
+- **Router de datos** (#1010): `createBrowserRouter` + `RouterProvider`, con
+  las rutas de siempre bajo una ruta raíz que es la carcasa de la aplicación
+  (sesión, cola sin conexión, avisos, barra inferior), que ya no se vuelve a
+  montar al navegar. Los errores siguen saliendo con las pantallas de siempre
+  (nunca la del router), y cada navegación sigue empezando arriba.
+- **Seguimiento de navegaciones en Sentry** (#1010): se mantiene con el router
+  nuevo aunque Sentry cargue su seguimiento ~2 s después del arranque; la carga
+  de página toma el nombre de la ruta también tras la redirección de `/start` de
+  la aplicación instalada.
+
 ## [2.59.0] - 2026-11-02
 
 **Dependencias y dos avisos de seguridad.** Va con el backend **2.45.0**
