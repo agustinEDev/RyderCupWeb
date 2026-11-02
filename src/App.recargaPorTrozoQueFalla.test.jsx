@@ -79,7 +79,6 @@ vi.mock('react-i18next', () => ({
 vi.mock('@sentry/react', async (original) => ({
   ...(await original()),
   withProfiler: (c) => c,
-  withSentryReactRouterV7Routing: (c) => c,
   withScope: () => {},
 }));
 
