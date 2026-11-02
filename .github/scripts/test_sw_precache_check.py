@@ -15,6 +15,10 @@ sin un error en el build (2 nov 2026): la app instalada se quedaba sin la app.
 | P4   | no hay sw.js                                                | 1    |
 | P5   | sw.js sin lista de precache que leer                        | 1    |
 | P6   | las fuentes que se dejan fuera a propósito no cuentan       | 0    |
+| P7   | assets sin código que exigir                                | 1    |
+| P8   | un `url:` fuera de la lista de precacheAndRoute no cuenta   | 1    |
+| P9   | un .js de la raíz (offline.js) es obligatorio; sw.js y      | 1/0  |
+|      | workbox-*.js, no                                            |      |
 """
 
 import io
@@ -27,7 +31,7 @@ from unittest import mock
 import sw_precache_check
 
 ASSETS = ["assets/index-AbC123.js", "assets/teselas-XyZ789.js", "assets/maplibre-gl-worker-Q1.mjs", "assets/index-Dpg.css"]
-PAGINAS = ["index.html", "offline.html"]
+PAGINAS = ["index.html", "offline.html", "offline.js"]
 
 
 class PrecacheDelServiceWorker(unittest.TestCase):
@@ -35,7 +39,7 @@ class PrecacheDelServiceWorker(unittest.TestCase):
         self.dist = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.dist)
         (self.dist / "assets").mkdir()
-        for fichero in ASSETS + PAGINAS:
+        for fichero in ASSETS + PAGINAS + ["sw.js", "workbox-7e79c025.js"]:
             (self.dist / fichero).write_text("x")
         # Sin esto, los «::error::» de los casos rojos salen como anotaciones en el CI
         self.log = io.StringIO()
@@ -98,8 +102,9 @@ class PrecacheDelServiceWorker(unittest.TestCase):
         self.assertIn("offline.html", self.log.getvalue())
 
     def test_P4_sin_sw_js(self):
+        (self.dist / "sw.js").unlink()
         self.assertEqual(self.correr(), 1)
-        self.assertIn("::error::", self.log.getvalue())
+        self.assertIn("Could not read", self.log.getvalue())
 
     def test_P5_sw_js_sin_lista_que_leer(self):
         (self.dist / "sw.js").write_text("self.addEventListener('install', () => self.skipWaiting());")
@@ -119,6 +124,23 @@ class PrecacheDelServiceWorker(unittest.TestCase):
         self.sw(PAGINAS)
         self.assertEqual(self.correr(), 1)
         self.assertIn("No JS/MJS/CSS found", self.log.getvalue())
+
+    def test_P8_un_url_fuera_de_la_lista_no_cuenta(self):
+        lista = ",".join(f'{{url:"{u}",revision:null}}' for u in ASSETS + ["offline.html", "offline.js"])
+        (self.dist / "sw.js").write_text(
+            f'e.precacheAndRoute([{lista}],{{}}),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html"),{{fallbackurl:"index.html",url:"index.html"}}))'
+        )
+        self.assertEqual(self.correr(), 1)
+        self.assertIn("missing: index.html", self.log.getvalue())
+
+    def test_P9_falta_offline_js(self):
+        self.sw(ASSETS + ["index.html", "offline.html"])
+        self.assertEqual(self.correr(), 1)
+        self.assertIn("missing: offline.js", self.log.getvalue())
+
+    def test_P9_sw_y_workbox_no_se_exigen(self):
+        self.sw(ASSETS + PAGINAS)
+        self.assertEqual(self.correr(), 0)
 
     def test_sin_argumento(self):
         self.assertEqual(sw_precache_check.main([]), 1)

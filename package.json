@@ -75,6 +75,8 @@
   "license": "UNLICENSED",
   "overrides": {
     "minimatch": "^11.0.1",
-    "glob": "^14.0.2"
+    "workbox-build": {
+      "glob": "^14.0.2"
+    }
   }
 }

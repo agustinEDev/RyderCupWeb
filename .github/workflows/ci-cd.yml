@@ -725,8 +725,13 @@ jobs:
           # las que han pasado los tests
           python3 .github/scripts/lock_versions_match.py "$RUNNER_TEMP/lock-del-repo.json" package-lock.json
           npm run build
-          # Con el `npm install` de Render, el precache también entero (revisor)
-          python3 .github/scripts/sw_precache_check.py dist
+
+      - name: Check service worker precache (Render build)
+        if: matrix.build == 'render'
+        # Con el `npm install` de Render, el precache también entero (revisor);
+        # paso propio para que la tarjeta no culpe a `npm run build` (/code-review)
+        id: render_precache
+        run: python3 .github/scripts/sw_precache_check.py dist
 
       - name: Serve the Render build like a static site
         if: matrix.build == 'render'
@@ -772,6 +777,7 @@ jobs:
         run: python3 .github/scripts/bundle_budget.py dist
       - name: Check service worker precache
         if: matrix.build == 'ci'
+        id: precache
         # minimatch 11 con el glob 11 de workbox dejaba el precache en 4 ficheros
         # de 251 sin fallar el build (2 nov 2026). Detalle en el propio script
         run: python3 .github/scripts/sw_precache_check.py dist
@@ -809,6 +815,8 @@ jobs:
           WARNING_KB: ${{ steps.bundle.outputs.warning_kb }}
           BUNDLE_PROBLEMS: ${{ steps.bundle.outputs.problems }}
           DIST_OUTCOME: ${{ steps.dist.outcome }}
+          PRECACHE_OUTCOME: ${{ steps.precache.outcome }}
+          RENDER_PRECACHE_OUTCOME: ${{ steps.render_precache.outcome }}
           # Entrada «Deploy like Render»
           RENDER_OUTCOME: ${{ steps.render.outcome }}
           NODE_VERSION: ${{ steps.render.outputs.node }}
@@ -828,15 +836,16 @@ jobs:
               lock_packages="$LOCK_PACKAGES" lock_differences="$LOCK_DIFFERENCES" \
               smoke_outcome="$SMOKE_OUTCOME" smoke_resources="$SMOKE_RESOURCES" \
               smoke_integrity="$SMOKE_INTEGRITY" smoke_chunks="$SMOKE_CHUNKS" \
-              smoke_failures="$SMOKE_FAILURES" smoke_version="$SMOKE_VERSION")
+              smoke_failures="$SMOKE_FAILURES" smoke_version="$SMOKE_VERSION" \
+              precache_outcome="$RENDER_PRECACHE_OUTCOME")
             WHAT="Repeats Render's build on a clean machine: the Node from .nvmrc with its bundled npm, 'npm install' and 'npm run build' with Render's variable names. Then checks that npm installed the lockfile's exact versions and serves dist/ as a static site to prove the app loads."
             IF_FAILS="Render would ship a broken site or a different build from the one tested. A version difference: update package-lock.json with that npm. A smoke failure: a missing chunk, an integrity hash or version.json in dist/."
           else
             RESULT=$(python3 .github/scripts/summary_results.py build-ci build_outcome="$VITE_OUTCOME" \
               size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" \
-              problems="$BUNDLE_PROBLEMS" output_outcome="$DIST_OUTCOME")
-            WHAT="Builds the production bundle with Vite and checks what opening the app downloads (the JS index.html loads, gzip) and the size of each chunk against the budgets in .github/scripts/bundle_budget.py. The build is kept as the build-output artifact."
-            IF_FAILS="If the build broke, run 'npm run build' locally. If a budget was exceeded, lazy-load what the first screen does not need or split the chunk, or raise the budget in bundle_budget.py with its reason."
+              problems="$BUNDLE_PROBLEMS" output_outcome="$DIST_OUTCOME" precache_outcome="$PRECACHE_OUTCOME")
+            WHAT="Builds the production bundle with Vite and checks what opening the app downloads (the JS index.html loads, gzip) and the size of each chunk against the budgets in .github/scripts/bundle_budget.py, and that the service worker precaches every JS/CSS file and both pages. The build is kept as the build-output artifact."
+            IF_FAILS="If the build broke, run 'npm run build' locally. If a budget was exceeded, lazy-load what the first screen does not need or split the chunk, or raise the budget in bundle_budget.py with its reason. If the precache is short, a dependency of workbox-build (glob, minimatch) changed: see sw_precache_check.py."
           fi
           python3 .github/scripts/summary_card.py \
             --title "$TITLE" --what "$WHAT" \

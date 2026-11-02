@@ -6,7 +6,12 @@ de 251, y el build salía en verde: la app instalada se quedaba sin sus pantalla
 al abrirse sin conexión. Aquí se exige que estén en el precache de `sw.js`:
 
 - todo `.js`, `.mjs` y `.css` de `dist/assets` (también en subcarpetas);
+- los `.js` de la raíz (`offline.js`, que carga la página sin conexión), salvo
+  el propio `sw.js` y el `workbox-*.js` que lo acompaña;
 - `index.html` y `offline.html`.
+
+Solo cuenta lo que hay en la lista que recibe `precacheAndRoute`: un `url:` de
+otra parte del fichero (una ruta, un fallback) no es precache.
 
 Las fuentes de otros alfabetos se dejan fuera a propósito (`globIgnores` de
 `vite.config.js`), por eso no se mira nada más que código, estilos y páginas.
@@ -20,7 +25,9 @@ from pathlib import Path
 
 CODIGO = {".js", ".mjs", ".css"}
 PAGINAS = ["index.html", "offline.html"]
-# `url:"…"` minificado o `"url": "…"` sin minificar
+# La lista que recibe precacheAndRoute; dentro, `url:"…"` minificado o
+# `"url": "…"` sin minificar
+LISTA = re.compile(r"precacheAndRoute\(\s*(\[[^\]]*\])")
 URL = re.compile(r"""["']?url["']?\s*:\s*["']([^"']+)["']""")
 
 
@@ -35,7 +42,7 @@ def main(argv: list[str]) -> int:
     except OSError as error:
         print(f"::error::Could not read {sw}: {error}")
         return 1
-    precache = {url.lstrip("/") for url in URL.findall(texto)}
+    precache = {url.lstrip("/") for lista in LISTA.findall(texto) for url in URL.findall(lista)}
     if not precache:
         print(f"::error::No precache list found in {sw}: nothing was checked")
         return 1
@@ -46,10 +53,11 @@ def main(argv: list[str]) -> int:
     if not exigidos:
         print(f"::error::No JS/MJS/CSS found in {assets}: nothing was checked")
         return 1
+    exigidos += [p.name for p in sorted(dist.glob("*.js")) if p.name != "sw.js" and not p.name.startswith("workbox-")]
     exigidos += PAGINAS
     faltan = [f for f in exigidos if f not in precache]
 
-    print(f"Service worker precache: {len(precache)} entries; {len(exigidos)} required (JS/MJS/CSS in assets + pages)")
+    print(f"Service worker precache: {len(precache)} entries; {len(exigidos)} required (JS/MJS/CSS in assets, root JS, pages)")
     if faltan:
         print(f"::error::{len(faltan)} of {len(exigidos)} required files are not precached by sw.js: the installed app would miss them offline")
         for fichero in faltan:

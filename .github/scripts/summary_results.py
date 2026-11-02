@@ -329,6 +329,11 @@ def build_ci(p: dict) -> str:
         texto = f"Production build done, but the bundle check failed: {p['problems']}."
         if tope:
             texto += f" Startup JS {tam} KB gzip of a {tope} KB budget."
+    elif p.get("precache_outcome") == "failure":
+        # Va después del presupuesto: con el precache corto, el build no está «OK» (2 nov 2026)
+        texto = f"Production build done, but the service worker does not precache the whole app — {VER_LOG}."
+        if tope:
+            texto += f" Startup JS {tam} KB gzip of a {tope} KB budget."
     else:
         texto = f"Production build OK. Startup JS {tam} KB gzip"
         if tope:
@@ -360,6 +365,8 @@ def build_render(p: dict) -> str:
         if iguales is not None and not distintos:
             partes.append(f"npm run build failed — {VER_LOG}.")
         return " ".join(partes)
+    if p.get("precache_outcome") == "failure":
+        partes.append(f"Built, but the service worker does not precache the whole app — {VER_LOG}.")
     recursos, con_hash, trozos = (_entero(p.get(k)) for k in ("smoke_resources", "smoke_integrity", "smoke_chunks"))
     fallos = _entero(p.get("smoke_failures"))
     if p.get("smoke_outcome") not in ("success", "failure"):
