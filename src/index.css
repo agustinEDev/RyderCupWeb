@@ -343,3 +343,10 @@
     border-top-color: #ffffff;
   }
 }
+
+/* La barra fina de arriba mientras la pantalla siguiente espera sus datos
+   (BarraDeCarga, FE #647 fase 3): un tramo que cruza de lado a lado */
+@keyframes barra-de-carga {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}

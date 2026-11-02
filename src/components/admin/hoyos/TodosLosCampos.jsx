@@ -74,8 +74,9 @@ const TodosLosCampos = () => {
     alElegir();
   }, [idDelCampo]);
 
-  const elegir = (curso) => setParametros({ ver: 'campos', campo: curso.id });
-  const cambiarDeCampo = () => setParametros({ ver: 'campos' });
+  // Cambiar el query no mueve el scroll, como antes de `<ScrollRestoration />`
+  const elegir = (curso) => setParametros({ ver: 'campos', campo: curso.id }, { preventScrollReset: true });
+  const cambiarDeCampo = () => setParametros({ ver: 'campos' }, { preventScrollReset: true });
   const alCerrar = ({ cambiado } = {}) => {
     setAbierto(null);
     if (cambiado) pedir(idDelCampo);

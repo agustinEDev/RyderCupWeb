@@ -24,6 +24,8 @@
  *   golpes sin enviar vive ahí también. Perder eso sí sería grave.
  */
 
+import { vaciaLaMemoriaDeLasListas } from './memoriaDeLasListas';
+
 const CLAVE = 'rydercup-ultimo-conocido';
 
 /** Las últimas que se abrieron. Con una sola, volver a la anterior sin
@@ -239,6 +241,8 @@ const borra = () => {
   } catch {
     // Nada que hacer
   }
+  // Y las listas que se cargaron en esta visita (FE #647, fase 3)
+  vaciaLaMemoriaDeLasListas();
 };
 
 export const olvidaLoDeEstaCuenta = () => {

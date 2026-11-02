@@ -1,12 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLoaderData, useNavigate, useRevalidator } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff } from 'lucide-react';
+import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
 import customToast from '../utils/toast';
-import { esFalloDeRed } from '../utils/sinCobertura';
+import { useSinConexion } from '../hooks/useSinConexion';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { listUserCompetitionsUseCase } from '../composition';
 import {
   getStatusColor,
   formatDateRange
@@ -14,7 +13,6 @@ import {
 import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
-import BlockLoader from '../components/ui/BlockLoader';
 import { formatCountryName } from '../services/countries';
 import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 import { diaCorto } from '../utils/diaDeLaSesion';
@@ -52,44 +50,37 @@ const Competitions = () => {
     [diaCorto(date, i18n.language), teeTime ?? tSchedule(`sessions.${sessionType}`)].filter(Boolean).join(' · ');
   const nombreDelPais = (competition, code) =>
     formatCountryName((competition.countries ?? []).find((c) => c.code === code), i18n.language) || code;
-  const [competitions, setCompetitions] = useState([]);
-  const [sinCobertura, setSinCobertura] = useState(false);
+  // Los trae el `loader` de la ruta (`Competitions.datos`) antes de pintar: es
+  // lo que deja a «atrás» devolverte a donde estabas (FE #647, fase 3). Sin red
+  // o con error, `datos` es lo último que se cargó en esta visita, o `null`
+  const resultado = useLoaderData();
+  const { estado, datos } = resultado;
+  // Memorizada: un `[]` nuevo en cada pintada rehacía los filtros sin parar
+  const competitions = useMemo(() => datos ?? [], [datos]);
+  const revalidador = useRevalidator();
+  const reintentando = revalidador.state !== 'idle';
+  // Sin red, el aviso ya lo da la barra de toda la aplicación; el de aquí es
+  // para cuando el móvil cree tener red y el servidor no contesta (dos barras)
+  const elMovilSabeQueNoHayRed = useSinConexion();
   const [filteredCompetitions, setFilteredCompetitions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  const loadCompetitions = useCallback(async () => {
-    if (!user?.id) {
-      return;
-    }
+  // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
+  // nuevo, también al reintentar (Agustín, 2 nov 2026: como hasta ahora)
+  useEffect(() => {
+    if (resultado.estado === 'sinRed') customToast.error(tComun('sinConexion.mensaje'));
+    if (resultado.estado === 'error') customToast.error(t('detail.failedToLoadCompetitions'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar otra carga, no si cambia el idioma
+  }, [resultado]);
 
-    setIsLoading(true);
-
-    try {
-      // Use the use case instead of direct service call
-      const data = await listUserCompetitionsUseCase.execute(user.id);
-      setCompetitions(data);
-      // Y se baja la bandera: sin esto, una carga buena después de un rato sin
-      // señal dejaba la pantalla diciendo «sin conexión» mientras el aviso de
-      // arriba ya había desaparecido, contradiciéndose
-      setSinCobertura(false);
-    } catch (error) {
-      console.error('Error loading competitions:', error);
-      // Sin red no se sabe si hay competiciones o no, asi que NO se vacia la
-      // lista: hacerlo pintaba «Mostrando 0 de 0» y ofrecia «crear tu primera»
-      // a quien tiene las suyas, que es afirmar algo que nadie ha comprobado.
-      // Y el aviso lleva texto propio, no el `message` del error: sin cobertura
-      // ahi venia el mensaje crudo del service worker, en ingles y con la URL
-      const deRed = esFalloDeRed(error);
-      setSinCobertura(deRed);
-      customToast.error(deRed ? tComun('sinConexion.mensaje') : t('detail.failedToLoadCompetitions'));
-      if (!deRed) setCompetitions([]);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Al volver la señal, se vuelve a pedir sola (decidido el 2 nov 2026)
+  useEffect(() => {
+    if (estado !== 'sinRed') return undefined;
+    const alVolver = () => revalidador.revalidate();
+    globalThis.addEventListener('online', alVolver);
+    return () => globalThis.removeEventListener('online', alVolver);
+  }, [estado, revalidador]);
 
   const applyFilters = useCallback(() => {
     let filtered = [...competitions];
@@ -119,13 +110,6 @@ const Competitions = () => {
   }, [competitions, searchQuery, statusFilter, i18n.language]);
 
   useEffect(() => {
-    if (user?.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetitions();
-    }
-  }, [user, loadCompetitions]);
-
-  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
     applyFilters();
   }, [competitions, searchQuery, statusFilter, applyFilters]);
@@ -140,9 +124,30 @@ const Competitions = () => {
 
   // Renderiza el contenido de la lista de competiciones
   const renderCompetitionsList = () => {
-    if (isLoading) {
+    const reintentar = (
+      <button
+        type="button"
+        onClick={() => revalidador.revalidate()}
+        disabled={reintentando}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+      >
+        <RotateCw className="w-4 h-4" aria-hidden="true" />
+        {t('myCompetitions.reintentar')}
+      </button>
+    );
+    // Un error del servidor —429, 5xx— tampoco es «no tienes ninguna»: no se
+    // ha podido preguntar. Antes se vaciaba la lista y lo decía (FE #647, T6)
+    if (estado === 'error' && datos === null) {
       return (
-        <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />
+        <div
+          data-testid="competiciones-sin-cargar"
+          className="flex flex-col items-center justify-center py-12 bg-gray-50 border border-gray-200 rounded-xl"
+        >
+          <AlertCircle className="w-16 h-16 text-gray-400 mb-4" aria-hidden="true" />
+          <p className="text-gray-900 font-semibold text-lg mb-2">{t('myCompetitions.noSePudoCargar')}</p>
+          <p className="text-gray-500 text-sm mb-6 max-w-md text-center">{t('myCompetitions.noSePudoCargarDetalle')}</p>
+          {reintentar}
+        </div>
       );
     }
     // Vacio porque no se ha podido preguntar NO es vacio: decir «no tienes
@@ -151,7 +156,7 @@ const Competitions = () => {
     // Por la lista entera, no por lo filtrado: sin cobertura la lista se
     // conserva, así que un filtro que no casa con nada no es falta de red —se
     // consultó, y no había coincidencias— y merece su propio mensaje
-    if (competitions.length === 0 && sinCobertura) {
+    if (estado === 'sinRed' && datos === null) {
       return (
         <div
           data-testid="competiciones-sin-cobertura"
@@ -199,8 +204,28 @@ const Competitions = () => {
         </motion.div>
       );
     }
-    // Renderizado normal de la lista de competiciones
+    // Renderizado normal de la lista de competiciones: con lo último que se
+    // cargó, si ahora no se ha podido, y diciéndolo
     return (
+      <>
+      {estado === 'error' && (
+        <div
+          data-testid="aviso-lista-sin-actualizar"
+          className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900"
+        >
+          <span>{t('myCompetitions.noSePudoActualizar')}</span>
+          {reintentar}
+        </div>
+      )}
+      {estado === 'sinRed' && !elMovilSabeQueNoHayRed && (
+        <div
+          data-testid="aviso-lista-sin-respuesta"
+          className="flex items-center gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700"
+        >
+          <WifiOff className="w-4 h-4 shrink-0" aria-hidden="true" />
+          <span>{tComun('sinConexion.aviso')}</span>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredCompetitions.map((competition, index) => {
           // Una vez por tarjeta (`/code-review`)
@@ -338,6 +363,7 @@ const Competitions = () => {
           );
         })}
       </div>
+      </>
     );
   };
 
@@ -419,7 +445,8 @@ const Competitions = () => {
                   </div>
                 </div>
                 {/* Results Count */}
-                {!isLoading && (
+                {/* Sin lista que enseñar no hay «0 de 0»: no se ha podido preguntar */}
+                {datos !== null && (
                   <div className="mt-3 text-sm text-gray-500">
                     {t('myCompetitions.showing', { filtered: filteredCompetitions.length, total: competitions.length })}
                   </div>

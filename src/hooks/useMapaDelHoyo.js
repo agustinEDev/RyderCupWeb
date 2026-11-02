@@ -38,14 +38,19 @@ export function useMapaDelHoyo({ golfCourseId, cerrarSi = false, pais = null }) 
   // sabe en qué hoyo estaba; se quita y se queda en la tarjeta
   useEffect(() => {
     if (location.hash === ANCLA && !abiertoAqui) {
-      navigate({ search: location.search, hash: '' }, { replace: true, state: location.state });
+      navigate({ search: location.search, hash: '' }, { replace: true, state: location.state, preventScrollReset: true });
     }
   }, [location.hash, abiertoAqui, location.search, location.state, navigate]);
 
   const abrir = useCallback(() => {
     if (!disponible || navegando.current || abierto) return;
     navegando.current = true;
-    navigate({ search: location.search, hash: ANCLA }, { state: { ...location.state, mapaAbiertoAqui: ESTA_CARGA } });
+    // `preventScrollReset`: abrir el mapa no mueve la tarjeta de debajo, como
+    // antes de `<ScrollRestoration />` (FE #647, fase 3)
+    navigate(
+      { search: location.search, hash: ANCLA },
+      { state: { ...location.state, mapaAbiertoAqui: ESTA_CARGA }, preventScrollReset: true }
+    );
   }, [navigate, disponible, abierto, location.search, location.state]);
 
   const cerrar = useCallback(() => {

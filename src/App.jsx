@@ -6,6 +6,7 @@ import {
   Outlet,
   Route,
   RouterProvider,
+  ScrollRestoration,
   useLocation,
   useRouteError,
 } from 'react-router';
@@ -35,7 +36,8 @@ import ErrorFallback from './components/errors/ErrorFallback';
 import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
-import { lazyWithRetry } from './utils/lazyWithRetry';
+import { cargarConReintento, lazyWithRetry } from './utils/lazyWithRetry';
+import BarraDeCarga from './components/layout/BarraDeCarga';
 import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
@@ -294,6 +296,10 @@ function AppContent() {
         {!esPuertaDeEntrada(location.pathname) && (
           <InstallBanner aboveBottomNav={showBottomNav} />
         )}
+        {/* Volver atrás te deja donde estabas en las pantallas con `loader`;
+            en las demás, `useVolverArriba` (que corre después) sube arriba */}
+        <ScrollRestoration />
+        <BarraDeCarga />
         <Outlet />
       {showBottomNav && (
         <>
@@ -341,7 +347,7 @@ function RelanzarElError() {
 // Las rutas siguen escritas como JSX (`createRoutesFromElements`); `rutasDeLaAplicacion`
 // es su copia sin la comodín, y un test vigila que no se separen
 export const rutasDeLaApp = createRoutesFromElements(
-  <Route element={<AppContent />} errorElement={<RelanzarElError />}>
+  <Route element={<AppContent />} errorElement={<RelanzarElError />} hydrateFallbackElement={<FullScreenLoader />}>
     <Route errorElement={<RelanzarElError />}>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
@@ -371,7 +377,14 @@ export const rutasDeLaApp = createRoutesFromElements(
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
       <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
-      <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
+      {/* Con sus datos antes de pintarse (FE #647, fase 3): sin ellos, volver
+          atrás no puede devolverte a donde estabas. El `loader` llega con `lazy`
+          para no engordar el arranque */}
+      <Route path="/competitions"
+        lazy={() => cargarConReintento(() => import('./pages/Competitions.datos'))}
+        handle={{ restauraElScroll: true }}
+        element={<ProtectedRoute><Competitions /></ProtectedRoute>}
+      />
       <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
