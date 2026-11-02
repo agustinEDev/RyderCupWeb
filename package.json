@@ -74,6 +74,7 @@
   "author": "Agustín Estévez",
   "license": "UNLICENSED",
   "overrides": {
-    "minimatch": "^10.2.1"
+    "minimatch": "^11.0.1",
+    "glob": "^14.0.2"
   }
 }
