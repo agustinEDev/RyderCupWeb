@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useSinConexion } from '../hooks/useSinConexion';
 import { olvidaQueSeVuelveAPedir, pideOtraVez } from '../utils/cargaDeLaPantalla';
-import { guardaLosFiltros, losFiltrosGuardados } from '../services/memoriaDeLasListas';
+import { apuntaQueSePinto, guardaLosFiltros, losFiltrosGuardados, yaSePinto } from '../services/memoriaDeLasListas';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -98,6 +98,12 @@ const Competitions = () => {
   const [filtrosAlVolver] = useState(() =>
     usuarioId ? losFiltrosGuardados(LISTA, usuarioId, entrada) : null
   );
+  // Volver (atrás o adelante) a una entrada en que ya se vieron las tarjetas:
+  // salen ya pintadas, sin su animación de entrada, que a la altura de la
+  // séptima dejaba la pantalla en blanco un momento (Agustín, 3 nov 2026).
+  // Las que entren después (un filtro) sí se animan, como siempre
+  // (una entrada nueva nunca está apuntada: entrar desde la pestaña anima)
+  const [vuelveAUnaPintada] = useState(() => yaSePinto(LISTA, usuarioId, entrada));
   const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
   const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
   // También al cambiar de entrada sin salir: pulsar Torneos en Torneos crea
@@ -180,6 +186,12 @@ const Competitions = () => {
 
     return filtered;
   }, [competitions, searchQuery, statusFilter, i18n.language]);
+
+  // Que en esta entrada ya se vieron tarjetas, para no animarlas al volver
+  const hayTarjetas = filteredCompetitions.length > 0;
+  useEffect(() => {
+    if (usuarioId && hayTarjetas) apuntaQueSePinto(LISTA, usuarioId, entrada);
+  }, [usuarioId, entrada, hayTarjetas]);
 
   const handleCreateCompetition = () => {
     navigate('/competitions/create');
@@ -297,6 +309,7 @@ const Competitions = () => {
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AnimatePresence initial={!vuelveAUnaPintada}>
         {filteredCompetitions.map((competition, index) => {
           // Una vez por tarjeta (`/code-review`)
           const papel = papelEn(competition);
@@ -432,6 +445,7 @@ const Competitions = () => {
           </motion.div>
           );
         })}
+        </AnimatePresence>
       </div>
       </>
     );

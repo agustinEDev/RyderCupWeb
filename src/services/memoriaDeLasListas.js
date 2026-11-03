@@ -50,7 +50,26 @@ export const guardaLosFiltros = (clave, usuarioId, entrada, losFiltros) => {
 export const losFiltrosGuardados = (clave, usuarioId, entrada) =>
   filtros.get(deLosFiltros(clave, usuarioId, entrada)) ?? null;
 
+/**
+ * Las entradas del historial en que cada lista ya se pintó con tarjetas. Al
+ * volver a una, sus tarjetas salen ya pintadas, sin la animación de entrada:
+ * el router deja el scroll a la altura de la séptima, y su retraso dejaba la
+ * pantalla en blanco un momento (Agustín, 3 nov 2026, en el iPhone). Recargar
+ * es otra visita: sin nada apuntado, anima como siempre.
+ */
+const pintadas = new Set();
+
+export const apuntaQueSePinto = (clave, usuarioId, entrada) => {
+  const donde = deLosFiltros(clave, usuarioId, entrada);
+  pintadas.delete(donde);
+  pintadas.add(donde);
+  if (pintadas.size > MAXIMO_DE_FILTROS) pintadas.delete(pintadas.values().next().value);
+};
+
+export const yaSePinto = (clave, usuarioId, entrada) => pintadas.has(deLosFiltros(clave, usuarioId, entrada));
+
 export const vaciaLaMemoriaDeLasListas = () => {
+  pintadas.clear();
   listas.clear();
   filtros.clear();
 };
