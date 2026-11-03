@@ -102,8 +102,10 @@ const Competitions = () => {
   // salen ya pintadas, sin su animación de entrada, que a la altura de la
   // séptima dejaba la pantalla en blanco un momento (Agustín, 3 nov 2026).
   // Las que entren después (un filtro) sí se animan, como siempre
-  // (una entrada nueva nunca está apuntada: entrar desde la pestaña anima)
-  const [vuelveAUnaPintada] = useState(() => yaSePinto(LISTA, usuarioId, entrada));
+  // (una entrada nueva nunca está apuntada: entrar desde la pestaña anima).
+  // Solo hasta que se busque o filtre: si eso vacía la lista y luego la
+  // vuelve a llenar, la rejilla se monta de nuevo y anima, como siempre (revisor)
+  const [vuelveAUnaPintada, setVuelveAUnaPintada] = useState(() => yaSePinto(LISTA, usuarioId, entrada));
   const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
   const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
   // También al cambiar de entrada sin salir: pulsar Torneos en Torneos crea
@@ -503,7 +505,10 @@ const Competitions = () => {
                         type="text"
                         placeholder={t('myCompetitions.searchPlaceholder')}
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          setVuelveAUnaPintada(false);
+                          setSearchQuery(e.target.value);
+                        }}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
@@ -514,7 +519,10 @@ const Competitions = () => {
                       <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) => {
+                          setVuelveAUnaPintada(false);
+                          setStatusFilter(e.target.value);
+                        }}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white cursor-pointer"
                       >
                         <option value="ALL">{t('myCompetitions.allStatuses')}</option>

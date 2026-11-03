@@ -15,6 +15,11 @@
  *   C5   recargar estando en Torneos             | con animación, como hoy
  *   C6   abrir la aplicación en /competitions    | con animación, como hoy
  *   C7   tras volver, un filtro saca otras       | las nuevas, con animación
+ *   C7b  tras volver, un filtro sin resultados y | con animación (revisor: la
+ *        quitarlo                                | rejilla se vuelve a montar)
+ *   C7c  volver con un filtro que no casa con    | con animación: al volver no
+ *        nada, y quitarlo                        | había ninguna pintada
+ *   C7d  ídem C7b con el filtro de estado        | con animación
  *   C8   volver sin la lista pintada (sin red) y | con animación: no había nada
  *        llega después                           | pintado que conservar
  *
@@ -198,6 +203,46 @@ describe('Torneos · sin animación de entrada al volver atrás', () => {
     fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: '' } });
     await screen.findByText('Torneo Beta');
     expect(animada('Torneo Beta')).toBe(true);
+  });
+
+  it('C7b: tras volver, un filtro sin resultados y quitarlo vuelve a animar', async () => {
+    const { router } = await pintadaYFuera();
+    await act(() => router.navigate(-1));
+    await screen.findByText('Torneo Alfa');
+    const buscador = screen.getByPlaceholderText('myCompetitions.searchPlaceholder');
+    fireEvent.change(buscador, { target: { value: 'zzz' } });
+    expect(screen.queryByText('Torneo Alfa')).toBeNull();
+    empiezaDeNuevo();
+    fireEvent.change(buscador, { target: { value: '' } });
+    await screen.findByText('Torneo Alfa');
+    expect(animada('Torneo Alfa')).toBe(true);
+  });
+
+  it('C7c: volver con un filtro que no casa con nada y quitarlo, anima', async () => {
+    const { router } = pinta();
+    await screen.findByText('Torneo Alfa');
+    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: 'zzz' } });
+    await act(() => router.navigate('/otra'));
+    await screen.findByText('otra pantalla');
+    empiezaDeNuevo();
+    await act(() => router.navigate(-1));
+    await screen.findByText('myCompetitions.noCompetitionsFound');
+    fireEvent.change(screen.getByPlaceholderText('myCompetitions.searchPlaceholder'), { target: { value: '' } });
+    await screen.findByText('Torneo Alfa');
+    expect(animada('Torneo Alfa')).toBe(true);
+  });
+
+  it('C7d: tras volver, el filtro de estado sin resultados y quitarlo vuelve a animar', async () => {
+    const { router } = await pintadaYFuera();
+    await act(() => router.navigate(-1));
+    await screen.findByText('Torneo Alfa');
+    const estado = screen.getByRole('combobox');
+    fireEvent.change(estado, { target: { value: 'DRAFT' } });
+    expect(screen.queryByText('Torneo Alfa')).toBeNull();
+    empiezaDeNuevo();
+    fireEvent.change(estado, { target: { value: 'ALL' } });
+    await screen.findByText('Torneo Alfa');
+    expect(animada('Torneo Alfa')).toBe(true);
   });
 
   it('C8: volver sin la lista pintada y que llegue después la anima', async () => {
