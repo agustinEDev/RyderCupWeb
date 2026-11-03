@@ -20,8 +20,12 @@
  *   C7c  volver con un filtro que no casa con    | con animación: al volver no
  *        nada, y quitarlo                        | había ninguna pintada
  *   C7d  ídem C7b con el filtro de estado        | con animación
+ *   C7e  tras volver, un filtro oculta una y     | esa, con animación: se montó
+ *        quitarlo la enseña de nuevo             | otra vez (/code-review)
  *   C8   volver sin la lista pintada (sin red) y | con animación: no había nada
  *        llega después                           | pintado que conservar
+ *   C8b  se vio vacía y, al volver, ya hay        | con animación: no se habían
+ *        competiciones                           | visto
  *
  * La flecha de la app es `navigate(-1)`, el mismo atrás que el del navegador:
  * C2 y C3 son una sola prueba.
@@ -245,6 +249,19 @@ describe('Torneos · sin animación de entrada al volver atrás', () => {
     expect(animada('Torneo Alfa')).toBe(true);
   });
 
+  it('C7e: tras volver, una tarjeta que un filtro oculta y vuelve a enseñar, anima', async () => {
+    const { router } = await pintadaYFuera();
+    await act(() => router.navigate(-1));
+    await screen.findByText('Torneo Alfa');
+    const buscador = screen.getByPlaceholderText('myCompetitions.searchPlaceholder');
+    fireEvent.change(buscador, { target: { value: 'Beta' } });
+    expect(screen.queryByText('Torneo Alfa')).toBeNull();
+    empiezaDeNuevo();
+    fireEvent.change(buscador, { target: { value: '' } });
+    await screen.findByText('Torneo Alfa');
+    expect(animada('Torneo Alfa')).toBe(true);
+  });
+
   it('C8: volver sin la lista pintada y que llegue después la anima', async () => {
     mockList.mockRejectedValue(sinRed());
     const { router } = pinta({ entradas: ['/otra'] });
@@ -262,5 +279,18 @@ describe('Torneos · sin animación de entrada al volver atrás', () => {
     });
     await screen.findByText('Torneo Alfa');
     expect(alAparecer.get('Torneo Alfa')).toBe('0');
+  });
+
+  it('C8b: se vio vacía y al volver ya hay competiciones: animan', async () => {
+    mockList.mockResolvedValue([]);
+    const { router } = pinta({ entradas: ['/otra'] });
+    await act(() => router.navigate('/competitions'));
+    await screen.findByText('myCompetitions.noCompetitionsYet');
+    await act(() => router.navigate('/otra'));
+    await screen.findByText('otra pantalla');
+    mockList.mockResolvedValue(LISTA);
+    await act(() => router.navigate(-1));
+    await screen.findByText('Torneo Alfa');
+    expect(animada('Torneo Alfa')).toBe(true);
   });
 });

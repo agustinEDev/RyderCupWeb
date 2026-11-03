@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { apuntaQueSePinto, guardaEnMemoria, guardaLosFiltros, loGuardadoEnMemoria, losFiltrosGuardados, MAXIMO_DE_FILTROS, yaSePinto } from './memoriaDeLasListas';
+import { apuntaQueSePinto, guardaEnMemoria, guardaLosFiltros, loGuardadoEnMemoria, losFiltrosGuardados, MAXIMO_DE_FILTROS, MAXIMO_DE_PINTADAS, yaSePinto } from './memoriaDeLasListas';
 import { olvidaLoDeEstaCuenta, olvidaTodo } from './loUltimoConocido';
 
 /**
@@ -130,7 +130,7 @@ describe('memoria de las listas', () => {
 
   it('MP4: con muchas entradas se quedan las últimas (y la que se vuelve a ver, sube)', () => {
     // 52 apuntadas: salen las dos más viejas, salvo la que se volvió a ver
-    for (let i = 0; i <= MAXIMO_DE_FILTROS + 1; i += 1) {
+    for (let i = 0; i <= MAXIMO_DE_PINTADAS + 1; i += 1) {
       apuntaQueSePinto('competiciones', 'u-1', `k-${i}`);
       if (i === 5) apuntaQueSePinto('competiciones', 'u-1', 'k-1');
     }
@@ -138,6 +138,6 @@ describe('memoria de las listas', () => {
     expect(yaSePinto('competiciones', 'u-1', 'k-1')).toBe(true);
     expect(yaSePinto('competiciones', 'u-1', 'k-2')).toBe(false);
     expect(yaSePinto('competiciones', 'u-1', 'k-3')).toBe(true);
-    expect(yaSePinto('competiciones', 'u-1', `k-${MAXIMO_DE_FILTROS + 1}`)).toBe(true);
+    expect(yaSePinto('competiciones', 'u-1', `k-${MAXIMO_DE_PINTADAS + 1}`)).toBe(true);
   });
 });

@@ -34,16 +34,23 @@ export const loGuardadoEnMemoria = (clave, usuarioId) => {
  */
 export const MAXIMO_DE_FILTROS = 50;
 const filtros = new Map();
+
+/** El último, al final; si se pasa del tope, fuera el más viejo (el Map guarda el orden en que entraron). */
+const recuerdaConTope = (mapa, donde, valor, tope) => {
+  mapa.delete(donde);
+  mapa.set(donde, valor);
+  if (mapa.size > tope) mapa.delete(mapa.keys().next().value);
+};
 const deLosFiltros = (clave, usuarioId, entrada) => JSON.stringify([clave, usuarioId, entrada]);
 
 /** @param {{busqueda: string, estado: string}|null} losFiltros `null`, sin filtros */
 export const guardaLosFiltros = (clave, usuarioId, entrada, losFiltros) => {
   const donde = deLosFiltros(clave, usuarioId, entrada);
-  filtros.delete(donde);
-  if (!losFiltros) return;
-  filtros.set(donde, losFiltros);
-  // Los más viejos fuera: el Map guarda el orden en que entraron
-  if (filtros.size > MAXIMO_DE_FILTROS) filtros.delete(filtros.keys().next().value);
+  if (!losFiltros) {
+    filtros.delete(donde);
+    return;
+  }
+  recuerdaConTope(filtros, donde, losFiltros, MAXIMO_DE_FILTROS);
 };
 
 /** @returns {{busqueda: string, estado: string}|null} */
@@ -57,14 +64,11 @@ export const losFiltrosGuardados = (clave, usuarioId, entrada) =>
  * pantalla en blanco un momento (Agustín, 3 nov 2026, en el iPhone). Recargar
  * es otra visita: sin nada apuntado, anima como siempre.
  */
-const pintadas = new Set();
+export const MAXIMO_DE_PINTADAS = 50;
+const pintadas = new Map();
 
-export const apuntaQueSePinto = (clave, usuarioId, entrada) => {
-  const donde = deLosFiltros(clave, usuarioId, entrada);
-  pintadas.delete(donde);
-  pintadas.add(donde);
-  if (pintadas.size > MAXIMO_DE_FILTROS) pintadas.delete(pintadas.values().next().value);
-};
+export const apuntaQueSePinto = (clave, usuarioId, entrada) =>
+  recuerdaConTope(pintadas, deLosFiltros(clave, usuarioId, entrada), true, MAXIMO_DE_PINTADAS);
 
 export const yaSePinto = (clave, usuarioId, entrada) => pintadas.has(deLosFiltros(clave, usuarioId, entrada));
 

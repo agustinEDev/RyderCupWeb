@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
 import customToast from '../utils/toast';
 import { useSinConexion } from '../hooks/useSinConexion';
@@ -37,6 +37,9 @@ const getEnrollmentStatusClasses = (status) => {
 };
 
 // La de `Competitions.datos`, en su memoria y en la de sus filtros
+// Al volver: todas las que se vean en la primera pintura, o ninguna
+const TODAS = 'todas';
+const NINGUNA = new Set();
 const LISTA = 'competitions';
 
 const Competitions = () => {
@@ -99,13 +102,12 @@ const Competitions = () => {
     usuarioId ? losFiltrosGuardados(LISTA, usuarioId, entrada) : null
   );
   // Volver (atrás o adelante) a una entrada en que ya se vieron las tarjetas:
-  // salen ya pintadas, sin su animación de entrada, que a la altura de la
-  // séptima dejaba la pantalla en blanco un momento (Agustín, 3 nov 2026).
-  // Las que entren después (un filtro) sí se animan, como siempre
-  // (una entrada nueva nunca está apuntada: entrar desde la pestaña anima).
-  // Solo hasta que se busque o filtre: si eso vacía la lista y luego la
-  // vuelve a llenar, la rejilla se monta de nuevo y anima, como siempre (revisor)
-  const [vuelveAUnaPintada, setVuelveAUnaPintada] = useState(() => yaSePinto(LISTA, usuarioId, entrada));
+  // las que se ven al volver salen ya pintadas, sin su animación de entrada,
+  // que a la altura de la séptima dejaba la pantalla en blanco un momento
+  // (Agustín, 3 nov 2026). Una entrada nueva nunca está apuntada: entrar desde
+  // la pestaña anima. Y una tarjeta que deja de verse (un filtro, una recarga)
+  // sale de las quietas: si vuelve, anima, como siempre (revisor y `/code-review`)
+  const [quietas, setQuietas] = useState(() => (yaSePinto(LISTA, usuarioId, entrada) ? TODAS : NINGUNA));
   const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
   const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
   // También al cambiar de entrada sin salir: pulsar Torneos en Torneos crea
@@ -191,6 +193,15 @@ const Competitions = () => {
 
   // Que en esta entrada ya se vieron tarjetas, para no animarlas al volver
   const hayTarjetas = filteredCompetitions.length > 0;
+  // Ajustadas durante el render, no en un efecto: ninguna tarjeta llega a
+  // montarse con la marca de quieta de una que ya había dejado de verse
+  const visibles = new Set(filteredCompetitions.map((c) => c.id));
+  if (quietas === TODAS) {
+    setQuietas(visibles);
+  } else if ([...quietas].some((id) => !visibles.has(id))) {
+    setQuietas(new Set([...quietas].filter((id) => visibles.has(id))));
+  }
+  const estaQuieta = (id) => quietas === TODAS || quietas.has(id);
   useEffect(() => {
     if (usuarioId && hayTarjetas) apuntaQueSePinto(LISTA, usuarioId, entrada);
   }, [usuarioId, entrada, hayTarjetas]);
@@ -311,7 +322,6 @@ const Competitions = () => {
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence initial={!vuelveAUnaPintada}>
         {filteredCompetitions.map((competition, index) => {
           // Una vez por tarjeta (`/code-review`)
           const papel = papelEn(competition);
@@ -319,7 +329,8 @@ const Competitions = () => {
 
           <motion.div
             key={competition.id}
-            initial={{ opacity: 0, y: 20 }}
+            // Se lee solo al montarse: las que ya estaban al volver, quietas
+            initial={estaQuieta(competition.id) ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
             onClick={() => handleViewCompetition(competition.id)}
@@ -447,7 +458,6 @@ const Competitions = () => {
           </motion.div>
           );
         })}
-        </AnimatePresence>
       </div>
       </>
     );
@@ -505,10 +515,7 @@ const Competitions = () => {
                         type="text"
                         placeholder={t('myCompetitions.searchPlaceholder')}
                         value={searchQuery}
-                        onChange={(e) => {
-                          setVuelveAUnaPintada(false);
-                          setSearchQuery(e.target.value);
-                        }}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                       />
                     </div>
@@ -519,10 +526,7 @@ const Competitions = () => {
                       <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <select
                         value={statusFilter}
-                        onChange={(e) => {
-                          setVuelveAUnaPintada(false);
-                          setStatusFilter(e.target.value);
-                        }}
+                        onChange={(e) => setStatusFilter(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none bg-white cursor-pointer"
                       >
                         <option value="ALL">{t('myCompetitions.allStatuses')}</option>

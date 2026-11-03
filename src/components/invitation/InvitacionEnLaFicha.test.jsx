@@ -58,15 +58,12 @@ const pinta = (props = {}) => {
 // la fecha: los relojes de verdad siguen, que de ellos tiran las esperas
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-27T12:00:00Z') });
-});
-afterEach(() => vi.useRealTimers());
-
-beforeEach(() => {
   vi.clearAllMocks();
   genero.falta = false;
   genero.guardar.mockResolvedValue(undefined);
   responder.mockResolvedValue({ competitionId: 'c-1' });
 });
+afterEach(() => vi.useRealTimers());
 
 describe('InvitacionEnLaFicha — el cuadro', () => {
   it('I1: dice que me han invitado, cuándo caduca y ofrece Aceptar y Rechazar', () => {
