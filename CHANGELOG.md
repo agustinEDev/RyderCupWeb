@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.61.0] - 2026-11-03
+
+**Volver atrás a Torneos te deja donde estabas, y las pantallas salen ya
+pintadas.** Es la primera pantalla de la fase 3 de #647: Torneos carga sus
+datos con el router (`loader`). Además, ninguna pantalla aparece desde
+invisible al entrar, que en el iPhone se veía como un parpadeo. Sin backend
+nuevo: sigue el **2.45.0**.
+
+**Notas de despliegue.**
+
+- Sin cambios de contrato ni variables nuevas. Arranque **264 KB gzip** de 270.
+
+### Added
+
+- **Torneos recuerda dónde estabas** (#1013): al volver atrás, con la flecha de
+  la aplicación o la del navegador, la lista queda a la misma altura y con los
+  mismos filtros. Entrar de nuevo por la pestaña, recargar o cerrar sesión
+  empiezan sin filtros y arriba, como hasta ahora.
+- **Barra fina verde arriba** (#1013) cuando una carga tarda más de ~150 ms.
+
+### Changed
+
+- **Las pantallas salen ya pintadas** (#1017, #1018). Antes arrancaban
+  invisibles y entraban con un fundido, y al pulsar una pestaña la pantalla se
+  quedaba en blanco un instante. Las tarjetas de Torneos ya no se animan, ni al
+  entrar ni al volver.
+  - Conservan su fundido las pantallas de acceso (Login con su aviso verde,
+    Registro, ¿Olvidaste la contraseña?, Restablecer y Completar perfil).
+  - También lo conservan la caja de los modales al abrirse, los errores de los
+    campos, los requisitos de la contraseña y los bloques de la portada y de
+    Precios que aparecen al bajar.
+  - Un test guardián lee el código para que no vuelva ningún fundido de
+    entrada fuera de esa lista.
+
+### Fixed
+
+- **Con un 429 o un error del servidor, Torneos ya no dice «Aún no hay
+  competiciones»** (#1013). Sin nada cargado, sale «No se pudo cargar» con
+  Reintentar. Con la lista ya cargada, se queda la lista y un aviso de «No se
+  pudo actualizar». El aviso de error de siempre se mantiene.
+- **Sin red, Torneos enseña lo último cargado en esta visita** (#1013), y vuelve
+  a pedirlo solo cuando vuelve la señal. Lo cargado se guarda en memoria por
+  cuenta y se borra al cerrar sesión.
+- **La flecha de la aplicación en una competición abierta desde la lista**
+  vuelve de verdad atrás, como el botón del sistema (#1013).
+- **Otra cuenta que entra sin salir de Torneos** no ve la lista, los filtros ni
+  el aviso de error de la anterior (#1013).
+- **Tests que dependían de la fecha o del tiempo** (#1013, #1017): la invitación
+  de prueba caducaba el 3 nov a las 10:00 y tumbaba 18 tests en cualquier rama;
+  y dos bloques lentos (zona horaria del campo y anotación) tienen más margen.
+
 ## [2.60.0] - 2026-11-02
 
 **La aplicación pasa al router de datos de React Router, sin cambios a la
