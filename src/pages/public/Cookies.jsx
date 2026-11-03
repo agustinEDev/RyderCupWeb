@@ -13,8 +13,7 @@ const Cookies = () => {
       <div className="layout-container flex h-full grow flex-col">
         <Header />
         <main className="flex-1 max-w-4xl mx-auto px-4 md:px-8 py-12 w-full">
-          <div
-          >
+          <div>
             <VolverDeLoLegal />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               {t('cookies.title')}

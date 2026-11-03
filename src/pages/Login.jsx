@@ -1,5 +1,4 @@
 import { Link, useLocation } from 'react-router';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import SignInForm from '../components/auth/SignInForm';
@@ -123,9 +122,7 @@ const Login = () => {
 
               {/* Success Message */}
               {successMessage && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <div
                   className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
@@ -134,7 +131,7 @@ const Login = () => {
                     </svg>
                     <p className="text-green-700 text-sm font-medium">{successMessage}</p>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               <SignInForm />

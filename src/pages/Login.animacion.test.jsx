@@ -7,7 +7,7 @@ import { MemoryRouter } from 'react-router';
  * formulario entraba desplazándose y creciendo, y un clic en ese medio segundo
  * podía soltarse fuera del botón, que se había movido. Luego solo aparecía, y
  * desde el 3 nov 2026 sale ya pintada: ninguna pantalla entra desde invisible
- * (`sinFundidoAlEntrar.test.js`). El aviso de arriba sí conserva su fundido.
+ * (`sinFundidoAlEntrar.test.js`). El aviso verde de arriba, tampoco.
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -36,7 +36,6 @@ vi.mock('framer-motion', () => ({
 
 const Login = (await import('./Login')).default;
 
-const conQueEntra = (el) => JSON.parse(el.closest('[data-initial]').getAttribute('data-initial'));
 
 describe('Login · la caja del formulario sale ya pintada', () => {
   it('A1: sin desplazarse, ni crecer, ni fundido', () => {
@@ -49,13 +48,13 @@ describe('Login · la caja del formulario sale ya pintada', () => {
     expect(screen.getByTestId('formulario').closest('[data-initial]')).toBeNull();
   });
 
-  it('A2: el aviso de arriba tampoco', () => {
+  it('A2: el aviso verde con el que se llega, tampoco (revisor, 3 nov 2026)', () => {
     render(
       <MemoryRouter initialEntries={[{ pathname: '/login', state: { message: 'cuenta creada' } }]}>
         <Login />
       </MemoryRouter>
     );
 
-    expect(conQueEntra(screen.getByText('cuenta creada'))).toEqual({ opacity: 0 });
+    expect(screen.getByText('cuenta creada').closest('[data-initial]')).toBeNull();
   });
 });

@@ -360,8 +360,7 @@ const AdminPanel = () => {
                 {/* En el móvil el título lo pone la cabecera: un solo h1 */}
                 <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
                 {activeTab === 'overview' && (
-                  <div
-                  >
+                  <div>
                     {isLoadingStats ? (
                       <BlockLoader />
                     ) : (

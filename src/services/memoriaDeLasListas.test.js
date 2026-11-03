@@ -24,7 +24,6 @@ import { olvidaLoDeEstaCuenta, olvidaTodo } from './loUltimoConocido';
  *   MF4 | al cerrar sesión                             | se vacían
  *   MF5 | quitarlos (sin filtros)                      | null
  *   MF6 | muchas entradas                              | se quedan las últimas
-
  */
 describe('memoria de las listas', () => {
   beforeEach(() => olvidaTodo());

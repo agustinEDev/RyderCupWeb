@@ -1892,8 +1892,7 @@ const CompetitionDetail = () => {
             </div>
 
             {/* Golf Courses Section */}
-            <div
-            >
+            <div>
               <CompetitionGolfCoursesSection
                 competition={competition}
                 canManage={canManage}
