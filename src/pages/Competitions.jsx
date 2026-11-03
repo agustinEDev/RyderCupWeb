@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router';
 import { motion } from 'framer-motion';
 import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
@@ -110,8 +110,10 @@ const Competitions = () => {
 
   // La marca de volver a pedir se gasta al llegar una carga: hasta entonces,
   // si otra navegación corta la recarga, esa sigue pidiendo (tercer revisor).
-  // Y al salir se olvida, si no se llegó a usar
-  useEffect(() => olvidaQueSeVuelveAPedir(), [resultado]);
+  // En el mismo commit que la pinta (de layout): con un efecto normal, en un
+  // móvil lento un toque en Torneos podía llegar antes y pedir otra vez
+  // (revisor, 3 nov 2026). Y al salir se olvida, si no se llegó a usar
+  useLayoutEffect(() => olvidaQueSeVuelveAPedir(), [resultado]);
   useEffect(() => olvidaQueSeVuelveAPedir, []);
 
   // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
