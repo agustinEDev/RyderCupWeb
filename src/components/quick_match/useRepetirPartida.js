@@ -41,7 +41,7 @@ export const useRepetirPartida = (currentUser) => {
       setPreparando(true);
       let leido;
       try {
-        const partida = partidaOResumen.participants
+        const partida = partidaOResumen.participants?.length
           ? partidaOResumen
           : await getQuickMatchUseCase.execute(partidaOResumen.id);
         const [campo, amigos] = await Promise.all([

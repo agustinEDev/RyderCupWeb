@@ -18,6 +18,7 @@
  *        |                                           | siguientes y la barra inferior)
  *   D4   el icono                                   | dice qué partida repite
  *   D5   desde Inicio llega solo el id              | se pide la partida antes
+ *   D5b  llega con la lista de jugadores vacía       | también se pide (CodeRabbit)
  *   D6   el servidor falla al leer el campo (500)   | el aviso genérico; no se abre ni
  *        |                                           | se da el campo por perdido
  */
@@ -170,6 +171,15 @@ describe('RepetirPartida', () => {
   it('D5: con solo el id (desde Inicio), pide la partida antes', async () => {
     mockGetQuickMatch.mockResolvedValue(PARTIDA);
     pinta({ id: 'qm-1', name: 'Domingo' });
+    fireEvent.click(boton());
+
+    expect((await screen.findByTestId('asistente')).dataset.paso).toBe('4');
+    expect(mockGetQuickMatch).toHaveBeenCalledWith('qm-1');
+  });
+
+  it('D5b: con la lista de jugadores vacía (lo guardado en el móvil), también la pide', async () => {
+    mockGetQuickMatch.mockResolvedValue(PARTIDA);
+    pinta({ ...PARTIDA, participants: [] });
     fireEvent.click(boton());
 
     expect((await screen.findByTestId('asistente')).dataset.paso).toBe('4');
