@@ -20,7 +20,10 @@
  *   R    reintentar lo mismo tras un fallo          | el MISMO id (el servidor devuelve
  *        |                                           | la que ya creó)
  *   12b  un equipo ya completo                      | se avisa en el momento, sin añadir
- *   14b  volver al paso 1                           | la plantilla empieza de nuevo
+ *   14b  volver al paso 1 sin cambiar campo ni      | la plantilla se conserva (Agustín,
+ *        | formato                                   | 3 nov 2026, al repetir partidas)
+ *   14c  volver al paso 1 y cambiar el formato      | la plantilla empieza de nuevo
+ *   14d  ídem, de individual a fourball             | también
  *
  * Y lo que añadió la revisión (14 oct):
  *
@@ -346,13 +349,41 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     expect(screen.queryByTestId('quick-match-remove-user-3')).toBeNull();
   });
 
-  it('14b · volver al paso 1 empieza la plantilla de nuevo', async () => {
+  it('14b · volver al paso 1 sin cambiar campo ni formato conserva la plantilla', async () => {
     abre();
     await alPaso2();
     anadeInvitado('Ana', 'Pérez');
     expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+    fireEvent.click(await screen.findByTestId('quick-match-course-next'));
+
+    await screen.findByTestId('quick-match-participants-next');
+    expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
+  });
+
+  it('14c · volver al paso 1 y cambiar el formato empieza la plantilla de nuevo', async () => {
+    abre();
+    await alPaso2();
+    anadeInvitado('Ana', 'Pérez');
+    expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+    fireEvent.click(await screen.findByTestId('mode-option-MATCH_PLAY'));
+    fireEvent.click(await screen.findByTestId('quick-match-course-next'));
+
+    await screen.findByTestId('quick-match-participants-next');
+    expect(screen.queryByText('Ana Pérez')).not.toBeInTheDocument();
+  });
+
+  it('14d · de individual a fourball, también empieza de nuevo', async () => {
+    abre();
+    await alPaso2({ libre: false });
+    anadeInvitado('Ana', 'Pérez');
+    expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+    fireEvent.click(await screen.findByTestId('format-option-FOURBALL'));
     fireEvent.click(await screen.findByTestId('quick-match-course-next'));
 
     await screen.findByTestId('quick-match-participants-next');

@@ -40,6 +40,10 @@ vi.mock('../../components/scoring/mapa/VentanaDelMapa', () => ({
     return null;
   },
 }));
+// Repetir tiene sus propias pruebas: aquí solo importa cuándo sale (FE #1021)
+vi.mock('../../components/quick_match/RepetirPartida', () => ({
+  default: () => <button type="button" data-testid="repetir-stub">repetir</button>,
+}));
 vi.mock('../../hooks/useQuickMatchScoring', () => ({
   useQuickMatchScoring: (...args) => {
     const estado = mockUseQuickMatchScoring(...args);
@@ -174,6 +178,21 @@ describe('QuickMatchScoringPage', () => {
     renderPage();
 
     expect(screen.queryByTestId('campo-de-la-partida')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['terminada', { status: 'COMPLETED', isCompleted: true, isCancelled: false }, true],
+    ['cancelada', { status: 'CANCELLED', isCompleted: false, isCancelled: true }, true],
+    ['en juego', { status: 'IN_PROGRESS', isCompleted: false, isCancelled: false }, false],
+  ])('R1/R2 (FE #1021): repetir, con la partida %s', (_, estado, sale) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...mockUseQuickMatchScoring(),
+      quickMatch: { ...baseQuickMatch, ...estado },
+    });
+
+    renderPage();
+
+    expect(!!screen.queryByTestId('repetir-stub')).toBe(sale);
   });
 
   it('should navigate back to the quick matches list, not the dashboard', async () => {

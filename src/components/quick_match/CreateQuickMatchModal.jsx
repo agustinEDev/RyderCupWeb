@@ -13,7 +13,6 @@ import ScorersStep from './ScorersStep';
 import SummaryStep from './SummaryStep';
 import {
   createAndStartQuickMatchUseCase,
-  listFriendsUseCase,
   getGolfCourseUseCase,
 } from '../../composition';
 import {
@@ -29,23 +28,7 @@ import {
   parseTeeKey,
   teeKey,
 } from './createQuickMatchModalConstants';
-
-const AMIGOS_POR_PAGINA = 100;
-
-/** La lista de amigos entera, página a página. */
-const leeTodosLosAmigos = async (userId) => {
-  const amigos = [];
-  for (let page = 1; ; page += 1) {
-    const { friendships, totalCount } = await listFriendsUseCase.execute(userId, {
-      limit: AMIGOS_POR_PAGINA,
-      page,
-    });
-    amigos.push(...friendships);
-    // Ya están todos; o una página vacía, por si el total no cuadra: sin
-    // eso, un total mal contado pediría páginas para siempre
-    if (amigos.length >= totalCount || friendships.length === 0) return amigos;
-  }
-};
+import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 
 // Por qué no se pudo empezar, por el código del servidor (FE #848): todo se
 // comprueba al confirmar, así que el motivo se dice en el resumen
@@ -54,6 +37,15 @@ const MOTIVO_POR_CODIGO = {
   404: 'create.errors.notFound',
   409: 'create.errors.conflict',
   422: 'create.errors.invalid',
+};
+
+// El texto de cada aviso de lo que no se pudo copiar al repetir (FE #1021)
+const textoDelAviso = (t, tCampos, aviso) => {
+  const barra = aviso.color ? tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color }) : '';
+  if (aviso.tipo === 'campo') return t('create.repetir.avisoCampo');
+  if (aviso.tipo === 'noAmigo') return t('create.repetir.avisoNoAmigo', { nombre: aviso.nombre });
+  if (aviso.propia) return t('create.repetir.avisoMiBarra', { barra });
+  return t('create.repetir.avisoBarra', { nombre: aviso.nombre, barra });
 };
 
 /**
@@ -65,29 +57,46 @@ const MOTIVO_POR_CODIGO = {
  * los pasos los pinten igual); `participantId` es el UserId de un registrado,
  * y uno local para un invitado. `profileHandicap` es el del perfil: si el
  * hándicap no se cambió, no viaja como override.
+ *
+ * Con `borrador` (repetir una partida, FE #1021) arranca relleno, en el paso
+ * que diga, y enseña los avisos de lo que no se pudo copiar.
  */
-const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
+const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = null }) => {
   const { t } = useTranslation('quickMatch');
   const { t: tComun } = useTranslation('common');
+  const { t: tCampos } = useTranslation('golfCourses');
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1);
-  const [matchName, setMatchName] = useState('');
-  const [mode, setMode] = useState('MATCH_PLAY');
-  const [matchFormat, setMatchFormat] = useState('SINGLES');
-  const [scoringFormat, setScoringFormat] = useState('STABLEFORD');
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const copia = borrador?.inicial ?? null;
+  const [step, setStep] = useState(borrador?.paso ?? 1);
+  const [matchName, setMatchName] = useState(copia?.matchName ?? '');
+  const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
+  const [matchFormat, setMatchFormat] = useState(copia?.matchFormat ?? 'SINGLES');
+  const [scoringFormat, setScoringFormat] = useState(copia?.scoringFormat ?? 'STABLEFORD');
+  const [selectedCourse, setSelectedCourse] = useState(copia?.selectedCourse ?? null);
   const [courseTees, setCourseTees] = useState([]);
   // Lo dice la ficha completa del campo, que es la que trae su procedencia
   const [courseFromRfeg, setCourseFromRfeg] = useState(false);
   const [teesLoading, setTeesLoading] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
-  const [allowanceOverride, setAllowanceOverride] = useState(null);
+  const [allowanceOverride, setAllowanceOverride] = useState(copia?.allowanceOverride ?? null);
   // Por defecto con hándicap: es como se juega normalmente, y el scratch es
   // la excepción que hay que pedir a propósito.
-  const [playMode, setPlayMode] = useState('HANDICAP');
-  const [creatorTeeKey, setCreatorTeeKey] = useState(NO_TEE_KEY);
-  const [participants, setParticipants] = useState([]);
+  const [playMode, setPlayMode] = useState(copia?.playMode ?? 'HANDICAP');
+  const [creatorTeeKey, setCreatorTeeKey] = useState(copia?.creatorTeeKey ?? NO_TEE_KEY);
+  const [participants, setParticipants] = useState(copia?.participants ?? []);
+  // Lo que no se pudo copiar al repetir (FE #1021), hasta cerrar el asistente
+  const avisosAlRepetir = borrador?.avisos ?? [];
+  // La barra copiada sobrevive a la primera carga de las barras del campo,
+  // que la pone a cero (cambiar de campo sí la borra, como siempre)
+  const barraCopiada = useRef(copia?.selectedCourse ? copia.creatorTeeKey : null);
+  // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
+  // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
+  const plantillaDe = useRef(
+    copia?.participants?.length
+      ? { campo: copia.selectedCourse?.id, mode: copia.mode, matchFormat: copia.matchFormat }
+      : null
+  );
   // El id del último intento y lo que se mandó: reintentar LO MISMO tras un
   // fallo reusa el id —si la respuesta se perdió, el servidor devuelve la que
   // ya creó—; cualquier cambio en el borrador estrena uno
@@ -107,7 +116,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   const [guestTeeKey, setGuestTeeKey] = useState(NO_TEE_KEY);
   const [guestForm, setGuestForm] = useState(initialGuestForm);
 
-  const [scorerIds, setScorerIds] = useState([]);
+  const [scorerIds, setScorerIds] = useState(copia?.scorerIds ?? []);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -124,8 +133,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
   }, [step, currentUser?.id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset tee/tees state on every course change (including to none), mirrors useQuickMatchScoring's course-fetch pattern
-    setCreatorTeeKey(NO_TEE_KEY);
+    // Reset tee/tees state on every course change (including to none),
+    // mirrors useQuickMatchScoring's course-fetch pattern
+    setCreatorTeeKey(barraCopiada.current ?? NO_TEE_KEY);
+    barraCopiada.current = null;
     setCourseFromRfeg(false);
     if (!selectedCourse?.id) {
       setCourseTees([]);
@@ -199,6 +210,24 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
     }
     setError('');
     const { color, teeGender } = parseTeeKey(creatorTeeKey);
+    const plantilla = { campo: selectedCourse.id, mode, matchFormat };
+    const misma = plantillaDe.current;
+    if (
+      misma &&
+      participants.length > 0 &&
+      misma.campo === plantilla.campo &&
+      misma.mode === plantilla.mode &&
+      (plantilla.mode === 'FREE_PLAY' || misma.matchFormat === plantilla.matchFormat)
+    ) {
+      // La misma plantilla: se conserva, con la barra que quien crea haya
+      // podido cambiar en este paso
+      setParticipants((prev) =>
+        prev.map((p) => (p.userId === currentUser.id ? { ...p, color, teeGender } : p))
+      );
+      setStep(2);
+      return;
+    }
+    plantillaDe.current = plantilla;
     // Quien crea, el primero, con su hándicap del perfil y su salida
     const handicap = currentUser?.handicap ?? null;
     setParticipants([
@@ -514,7 +543,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div>
-            <h2 id="quick-match-modal-title" className="text-lg font-semibold text-gray-900">{t('create.title')}</h2>
+            <h2 id="quick-match-modal-title" className="text-lg font-semibold text-gray-900">
+              {borrador ? t('create.repetir.titulo') : t('create.title')}
+            </h2>
             <p className="text-xs text-gray-500">{t('create.step', { current: step, total: 4 })}</p>
           </div>
           <button
@@ -536,6 +567,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser }) => {
           >
             {error}
           </div>
+        )}
+
+        {avisosAlRepetir.length > 0 && (
+          <ul
+            className="mx-4 mt-4 space-y-1 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900"
+            data-testid="avisos-al-repetir"
+          >
+            {avisosAlRepetir.map((aviso) => (
+              <li key={`${aviso.tipo}-${aviso.nombre ?? ''}-${aviso.color ?? ''}`}>{textoDelAviso(t, tCampos, aviso)}</li>
+            ))}
+          </ul>
         )}
 
         {step === 1 && (

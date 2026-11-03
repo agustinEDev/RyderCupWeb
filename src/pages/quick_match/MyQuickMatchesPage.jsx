@@ -5,6 +5,7 @@ import { Zap, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
+import RepetirPartida from '../../components/quick_match/RepetirPartida';
 import {
   listMyQuickMatchesUseCase,
   getQuickMatchUseCase,
@@ -400,6 +401,10 @@ const MyQuickMatchesPage = () => {
                       {t(`history.status.${qm.status}`, qm.status)}
                     </span>
                     <div className="pointer-events-auto flex items-center gap-2">
+                      {/* Una que ya acabó se puede repetir (FE #1021) */}
+                      {(qm.status === 'COMPLETED' || qm.status === 'CANCELLED') && user && (
+                        <RepetirPartida partida={qm} usuario={user} como="icono" />
+                      )}
                       {/* El ojo solo en las terminadas: una partida a medias no
                           cuenta todavia en ninguna estadistica, asi que el
                           control no diria nada —y el servidor lo rechaza con un

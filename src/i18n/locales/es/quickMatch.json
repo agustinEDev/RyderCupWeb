@@ -114,7 +114,16 @@
       "female": "Femeninas",
       "mixed": "Mixtas"
     },
-    "alreadyCreated": "La partida ya se había creado con lo que mandaste antes; los cambios no se han aplicado."
+    "alreadyCreated": "La partida ya se había creado con lo que mandaste antes; los cambios no se han aplicado.",
+    "repetir": {
+      "titulo": "Repetir partida",
+      "avisoCampo": "El campo de aquella partida ya no está disponible: elige otro.",
+      "avisoMiBarra": "Tu barra ({{barra}}) ya no existe en el campo: elige otra.",
+      "avisoBarra": "La barra de {{nombre}} ({{barra}}) ya no existe en el campo: vuelve a añadirlo con otra.",
+      "avisoNoAmigo": "{{nombre}} ya no es tu amigo: no se ha copiado.",
+      "boton": "Repetir partida",
+      "botonCorto": "Repetir"
+    }
   },
   "dashboard": {
     "ctaTitle": "¿Partido improvisado?",
