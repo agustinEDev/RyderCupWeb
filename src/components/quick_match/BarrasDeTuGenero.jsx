@@ -14,18 +14,18 @@ import { barrasDeMiGenero } from '../../utils/barraPorDefecto';
  * notarlo (por eso existe el panel, `TeeSelectField`). Sin género en el
  * perfil se queda ese campo, tal cual.
  */
+const SUFIJO = { MALE: ' (M)', FEMALE: ' (F)' };
+
 const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
   const { t: tCampos } = useTranslation('golfCourses');
   const [otrasAbiertas, setOtrasAbiertas] = useState(false);
-  // Su nombre para el lector de pantalla: el propio, o el color, y el género
-  const GENERO = { MALE: 'male', FEMALE: 'female' };
+  // El sufijo (M)/(F) solo en la del otro género: todas las demás son tuyas
+  // (o mixtas), y ponerlo en cada botón era ruido. El nombre accesible es
+  // exactamente lo que se ve, para que el control por voz lo encuentre
+  const generoVisible = (tee) => (tee.gender && tee.gender !== genero ? tee.gender : null);
   const nombreDe = (tee) =>
-    [
-      tee.identifier || tCampos(`form.teeColors.${tee.color}`, { defaultValue: tee.color }),
-      GENERO[tee.gender] ? t(`create.teePanel.${GENERO[tee.gender]}`) : null,
-    ]
-      .filter(Boolean)
-      .join(', ');
+    (tee.identifier || tCampos(`form.teeColors.${tee.color}`, { defaultValue: tee.color })) +
+    (SUFIJO[generoVisible(tee)] ?? '');
   const mias = barrasDeMiGenero(courseTees, genero);
 
   if (!mias) {
@@ -64,7 +64,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
               elegida ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-gray-200 hover:border-gray-300'
             }`}
           >
-            <TeeColorBadge color={tee.color} identifier={tee.identifier} gender={tee.gender} />
+            <TeeColorBadge color={tee.color} identifier={tee.identifier} gender={generoVisible(tee)} />
           </button>
         );
       })}

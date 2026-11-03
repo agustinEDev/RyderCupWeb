@@ -21,11 +21,31 @@
  *   P8   un amigo (paso 2)                          | el panel trae marcada su última
  *   P10  campo sin barras                           | sin «Tu barra»
  *   P11  sin poder leer tus partidas                | la de tu género
+ *
+ * Lo que añadió el revisor (4 nov 2026), decidido con Agustín:
+ *
+ *   R1   tus partidas llegan tarde (poca cobertura) | no se marca ninguna hasta saberlo;
+ *        |                                           | luego la buena, y es la que viaja
+ *   R2   no llegan en 2 s                           | la de tu género, y ya no cambia
+ *        |                                           | aunque lleguen después
+ *   R3   un % a mano y se cambia entre match y     | vuelve al de por defecto y «Más
+ *        | stroke play                               | opciones» se abre para que se vea
+ *   R4   al repetir                                 | la barra copiada es la que viaja
+ *
+ * El nombre por defecto (Agustín, 4 nov 2026): «Modalidad - dd/mm/aa»
+ *
+ *   N3   al abrir                                   | escrito en el campo, y viaja
+ *   N4   cambiar de formato                         | lo sigue; no sale en la cabecera
+ *   N5   escribir uno                               | se queda aunque cambie el formato
+ *   N6   vaciarlo                                   | viaja el de por defecto
+ *   N7   repetir una con nombre propio              | se copia
+ *   N8   repetir una con el de por defecto          | el de hoy, siguiendo al formato
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
+import { nombrePorDefecto } from '../../utils/nombrePorDefecto';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -152,6 +172,19 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
     expect(peticion()).toMatchObject({ creatorTeeColor: 'RED', creatorTeeGender: 'FEMALE' });
   });
 
+  it('P4: el (M)/(F) solo en la del otro género, y el nombre accesible es lo que se ve', async () => {
+    abre();
+    await eligeCampo();
+    fireEvent.click(screen.getByTestId('quick-match-creator-tee-otras'));
+    fireEvent.click(screen.getByTestId('quick-match-tee-panel-option-RED|FEMALE'));
+
+    const mia = screen.getByTestId('quick-match-creator-tee-option-YELLOW|MALE');
+    const otra = screen.getByTestId('quick-match-creator-tee-option-RED|FEMALE');
+    expect(mia.textContent).not.toMatch(/\((M|F)\)/);
+    expect(otra.textContent).toMatch(/\(F\)$/);
+    expect(otra.getAttribute('aria-label')).toBe(otra.textContent);
+  });
+
   it('P4: sin género en el perfil, el campo con el panel de siempre', async () => {
     abre({ currentUser: yo(null) });
     await eligeCampo();
@@ -235,5 +268,151 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
     await eligeCampo();
 
     await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+  });
+
+  describe('lo que añadió el revisor', () => {
+    afterEach(() => vi.useRealTimers());
+    const colgada = () => {
+      let responde;
+      const promesa = new Promise((r) => { responde = r; });
+      return { promesa, responde };
+    };
+
+    it('R1: con tus partidas en camino no se marca ninguna; luego la buena, y es la que viaja', async () => {
+      const lista = colgada();
+      mockListMine.mockReturnValue(lista.promesa);
+      abre();
+      await eligeCampo();
+
+      expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
+
+      await act(async () => lista.responde({ quickMatches: [partidaEn('gc-1', [jugador('yo', 'WHITE', 'MALE')])] }));
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-WHITE|MALE')).toBe(true));
+      await hastaElResumen();
+      expect(peticion()).toMatchObject({ creatorTeeColor: 'WHITE', creatorTeeGender: 'MALE' });
+    });
+
+    it('R2: sin respuesta en 2 s, la de tu género, y ya no cambia aunque lleguen después', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const lista = colgada();
+      mockListMine.mockReturnValue(lista.promesa);
+      abre();
+      await eligeCampo();
+
+      await act(() => vi.advanceTimersByTimeAsync(2000));
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+
+      await act(async () => lista.responde({ quickMatches: [partidaEn('gc-1', [jugador('yo', 'WHITE', 'MALE')])] }));
+      expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true);
+      expect(pulsada('quick-match-creator-tee-option-WHITE|MALE')).toBe(false);
+      await hastaElResumen();
+      expect(peticion()).toMatchObject({ creatorTeeColor: 'YELLOW', creatorTeeGender: 'MALE' });
+    });
+
+    it('R3: un % a mano y se cruza a stroke play: vuelve al de por defecto y se ve', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
+      fireEvent.click(screen.getByTestId('quick-match-allowance-option-100'));
+      const mas = screen.getByTestId('quick-match-mas-opciones');
+      expect(mas.open).toBe(false);
+
+      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+
+      expect(mas.open).toBe(true);
+      expect(pulsada('quick-match-allowance-option-95')).toBe(true);
+    });
+
+    it('R3: sin % a mano, cambiar de modalidad no abre nada', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+      expect(screen.getByTestId('quick-match-mas-opciones').open).toBe(false);
+    });
+
+    it('R4: al repetir, la barra copiada es la que viaja', async () => {
+      mockListMine.mockResolvedValue({ quickMatches: [partidaEn('gc-1', [jugador('yo', 'WHITE', 'MALE')])] });
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [],
+          inicial: {
+            matchName: '', mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'STABLEFORD', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: 'YELLOW|FEMALE', participants: [], scorerIds: [],
+          },
+        },
+      });
+      await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+
+      await hastaElResumen();
+      expect(peticion()).toMatchObject({ creatorTeeColor: 'YELLOW', creatorTeeGender: 'FEMALE' });
+    });
+  });
+
+  describe('el nombre por defecto', () => {
+    const hoy = (formato) => nombrePorDefecto(`create.course.corto.${formato}`, new Date());
+    const nombre = () => screen.getByTestId('quick-match-name-input').value;
+    const cabecera = () => screen.getByTestId('quick-match-mas-opciones').querySelector('summary').textContent;
+    const repite = (matchName) =>
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [],
+          inicial: {
+            matchName, mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: 'YELLOW|MALE', participants: [], scorerIds: [],
+          },
+        },
+      });
+
+    it('N3: al abrir, escrito en el campo, y viaja', async () => {
+      abre();
+      expect(nombre()).toBe(hoy('SINGLES'));
+      await eligeCampo();
+      await hastaElResumen();
+      expect(peticion().name).toBe(hoy('STABLEFORD'));
+    });
+
+    it('N4: sigue al formato y no sale en la cabecera', () => {
+      abre();
+      fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
+      expect(nombre()).toBe(hoy('FOURBALL'));
+      expect(cabecera()).toBe('create.course.masOpciones');
+    });
+
+    it('N5: uno escrito se queda aunque cambie el formato, y sale en la cabecera', async () => {
+      abre();
+      fireEvent.change(screen.getByTestId('quick-match-name-input'), { target: { value: 'Domingo' } });
+      fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
+      expect(nombre()).toBe('Domingo');
+      expect(cabecera()).toBe('create.course.masOpciones · Domingo');
+      await eligeCampo();
+      await hastaElResumen();
+      expect(peticion().name).toBe('Domingo');
+    });
+
+    it('N6: vaciado, viaja el de por defecto', async () => {
+      abre();
+      fireEvent.change(screen.getByTestId('quick-match-name-input'), { target: { value: '   ' } });
+      await eligeCampo();
+      await hastaElResumen();
+      expect(peticion().name).toBe(hoy('STABLEFORD'));
+    });
+
+    it('N7: al repetir una con nombre propio, se copia', async () => {
+      repite('Liga de los martes');
+      await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+      expect(nombre()).toBe('Liga de los martes');
+    });
+
+    it('N8: al repetir una con el de por defecto, el de hoy y siguiendo al formato', async () => {
+      repite('create.course.corto.MEDAL - 28/10/26');
+      await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+      expect(nombre()).toBe(hoy('MEDAL'));
+      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+      expect(nombre()).toBe(hoy('STABLEFORD'));
+      await hastaElResumen();
+      expect(peticion().name).toBe(hoy('STABLEFORD'));
+    });
   });
 });

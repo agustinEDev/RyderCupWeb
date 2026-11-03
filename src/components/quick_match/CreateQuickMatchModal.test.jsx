@@ -45,6 +45,8 @@ vi.mock('../../composition', () => ({
   createAndStartQuickMatchUseCase: { execute: (...args) => mockIniciar(...args) },
   listFriendsUseCase: { execute: (...args) => mockListFriends(...args) },
   getGolfCourseUseCase: { execute: (...args) => mockGetGolfCourse(...args) },
+  // Sin partidas anteriores: la barra no se sugiere por «la última vez» (FE #1025)
+  listMyQuickMatchesUseCase: { execute: () => Promise.resolve({ quickMatches: [] }) },
 }));
 
 const currentUser = { id: 'user-1', country_code: 'ES', display_name: 'Me', handicap: 10 };
@@ -131,7 +133,7 @@ describe('CreateQuickMatchModal', () => {
     });
   });
 
-  it('should send null when no name is entered', async () => {
+  it('without a typed name, sends the default one: format - dd/mm/yy (FE #1025)', async () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -141,7 +143,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
     await finishFromParticipants(1);
 
-    expect(peticion().name).toBeNull();
+    expect(peticion().name).toMatch(/^create\.course\.corto\.\w+ - \d{2}\/\d{2}\/\d{2}$/);
   });
 
   it('should create a free-play quick match with the selected scoring format', async () => {

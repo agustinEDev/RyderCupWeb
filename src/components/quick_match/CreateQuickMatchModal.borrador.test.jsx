@@ -87,6 +87,8 @@ vi.mock('../../composition', () => ({
   createAndStartQuickMatchUseCase: { execute: (...a) => mockIniciar(...a) },
   listFriendsUseCase: { execute: (...a) => mockListFriends(...a) },
   getGolfCourseUseCase: { execute: (...a) => mockGetGolfCourse(...a) },
+  // Sin partidas anteriores: la barra no se sugiere por «la última vez» (FE #1025)
+  listMyQuickMatchesUseCase: { execute: () => Promise.resolve({ quickMatches: [] }) },
   cancelQuickMatchUseCase: { execute: (...a) => mockCancel(...a) },
 }));
 
@@ -228,7 +230,7 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
       golfCourseId: 'course-1',
       matchFormat: null,
       scoringFormat: 'STABLEFORD',
-      name: null,
+      name: expect.stringMatching(/^create\.course\.corto\.\w+ - \d{2}\/\d{2}\/\d{2}$/),
       allowancePercentage: 95,
       playMode: 'HANDICAP',
       creatorTeeColor: null,

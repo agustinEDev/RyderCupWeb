@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
 import BarrasDeTuGenero from './BarrasDeTuGenero';
@@ -25,6 +26,7 @@ const OPCIONES = [
 const CourseStep = ({
   t,
   matchName,
+  nombreAMano = false,
   onMatchNameChange,
   mode,
   onModeChange,
@@ -52,15 +54,20 @@ const CourseStep = ({
   onClose,
   onNext,
 }) => {
+  const masOpciones = useRef(null);
   const elegida = (op) => op.modo === mode && (isFreePlay ? scoringFormat : matchFormat) === op.formato;
   const elige = (op) => {
+    // Al cruzar entre match play y stroke play, el % a mano vuelve al de por
+    // defecto (sus opciones son otras): se abre «Más opciones» para que se vea
+    // (Agustín, 4 nov 2026)
+    if (op.modo !== mode && allowanceAMano && masOpciones.current) masOpciones.current.open = true;
     if (op.modo !== mode) onModeChange(op.modo);
     if (op.modo === 'FREE_PLAY') onScoringFormatChange(op.formato);
     else onMatchFormatChange(op.formato);
   };
   // Lo que no es lo de por defecto, a la vista aunque esté plegado
   const fueraDeLoNormal = [
-    matchName.trim() || null,
+    nombreAMano ? matchName.trim() : null,
     playMode === 'SCRATCH' ? t('create.course.playModeScratch') : null,
     playMode !== 'SCRATCH' && allowanceAMano ? `${allowancePercentage}%` : null,
   ].filter(Boolean);
@@ -98,7 +105,12 @@ const CourseStep = ({
 
     <div>
       <p className="block text-sm font-medium text-gray-700 mb-1">{t('create.course.queJugais')}</p>
-      <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('create.course.queJugais')}>
+      <div
+        className="grid grid-cols-3 gap-2"
+        role="group"
+        aria-label={t('create.course.queJugais')}
+        aria-describedby="quick-match-que-jugais-detalle"
+      >
         {OPCIONES.map((op) => (
           <button
             key={op.testId}
@@ -116,12 +128,12 @@ const CourseStep = ({
           </button>
         ))}
       </div>
-      <p className="mt-1 text-xs text-gray-500">
+      <p id="quick-match-que-jugais-detalle" className="mt-1 text-xs text-gray-500">
         {t(`create.course.${OPCIONES.find(elegida)?.etiqueta ?? FORMAT_LABEL_KEY.SINGLES}`)}
       </p>
     </div>
 
-    <details className="rounded-lg border border-gray-200" data-testid="quick-match-mas-opciones">
+    <details ref={masOpciones} className="rounded-lg border border-gray-200" data-testid="quick-match-mas-opciones">
       <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
         {t('create.course.masOpciones')}
         {fueraDeLoNormal.length > 0 && (
