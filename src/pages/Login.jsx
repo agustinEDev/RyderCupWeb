@@ -23,10 +23,7 @@ const Login = () => {
       <div className="flex w-full">
 
         {/* Left Side - Hero Image/Brand (Hidden on Mobile) */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
+        <div
           className="hidden lg:flex lg:w-1/2 relative bg-primary overflow-hidden"
         >
           {/* Background Pattern */}
@@ -73,19 +70,16 @@ const Login = () => {
                   { icon: '⛳', text: t('login.features.statistics') },
                   { icon: '📊', text: t('login.features.liveScoring') },
                   { icon: '👥', text: t('login.features.friends') }
-                ].map((item, idx) => (
-                  <motion.div
+                ].map((item) => (
+                  <div
                     key={item.text}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + idx * 0.1 }}
                     className="flex items-center gap-3"
                   >
                     <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-xl">
                       {item.icon}
                     </div>
                     <span className="text-white/90">{item.text}</span>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -95,16 +89,13 @@ const Login = () => {
               {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
           {/* Solo aparece: entrando desplazada, un clic en ese medio segundo
               podía soltarse fuera del botón, que se había movido (QA, FE #865-12) */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
+          <div
             className="w-full max-w-md"
           >
 
@@ -161,7 +152,7 @@ const Login = () => {
               <span className="text-sm font-medium">{t('login.backToHome')}</span>
             </Link>
 
-          </motion.div>
+          </div>
         </div>
 
       </div>

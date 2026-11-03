@@ -114,6 +114,27 @@ const abrirMenuDeAcciones = () => {
   }
 };
 
+
+// Cada elemento que aparece a opacidad 0 al entrar en la página (3 nov 2026:
+// ninguna pantalla entra desde invisible, `sinFundidoAlEntrar.test.js`)
+const aparecenInvisibles = () => {
+  const vistos = [];
+  const mira = (el) => {
+    if (el.style?.opacity === '0') vistos.push(el.tagName + (el.dataset.testid ? `#${el.dataset.testid}` : ''));
+  };
+  const observador = new globalThis.MutationObserver((cambios) => {
+    for (const c of cambios) {
+      for (const n of c.addedNodes) {
+        if (n.nodeType !== 1) continue;
+        mira(n);
+        n.querySelectorAll('*').forEach(mira);
+      }
+    }
+  });
+  observador.observe(document.body, { childList: true, subtree: true });
+  return { vistos, para: () => observador.disconnect() };
+};
+
 const renderPage = () => {
   return render(
     <MemoryRouter initialEntries={['/competitions/comp-1']}>
@@ -123,6 +144,20 @@ const renderPage = () => {
     </MemoryRouter>
   );
 };
+
+describe('CompetitionDetail - sale ya pintada (3 nov 2026)', () => {
+  it('A1: ninguna sección aparece invisible al entrar', async () => {
+    mockGetCompetitionDetail.mockResolvedValue({
+      id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1', maxPlayers: 20, countries: [],
+    });
+    mockListEnrollments.mockResolvedValue([]);
+    const sonda = aparecenInvisibles();
+    renderPage();
+    await screen.findAllByText('Summer Cup');
+    sonda.para();
+    expect(sonda.vistos).toEqual([]);
+  });
+});
 
 describe('CompetitionDetail - edición de hándicap', () => {
   beforeEach(() => {

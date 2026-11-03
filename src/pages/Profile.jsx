@@ -125,10 +125,7 @@ const Profile = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Page Title */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="flex flex-wrap justify-between gap-3 p-4"
             >
               <div>
@@ -139,13 +136,10 @@ const Profile = () => {
                   {t('subtitle')}
                 </p>
               </div>
-            </motion.div>
+            </div>
 
             {/* Profile Header Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <div
               className="p-4"
             >
               <div className="relative overflow-hidden bg-primary-50 rounded-xl border border-primary-200 p-6 shadow-md">
@@ -276,13 +270,10 @@ const Profile = () => {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Action Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+            <div
               className="p-4"
             >
               {/* Móvil: lista de ajustes (FE #324). La botonera de cuatro
@@ -392,7 +383,7 @@ const Profile = () => {
                   <span>{t('actions.logOut')}</span>
                 </motion.button>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>

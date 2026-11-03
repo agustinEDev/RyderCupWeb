@@ -5,7 +5,7 @@ import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, Wifi
 import customToast from '../utils/toast';
 import { useSinConexion } from '../hooks/useSinConexion';
 import { olvidaQueSeVuelveAPedir, pideOtraVez } from '../utils/cargaDeLaPantalla';
-import { apuntaQueSePinto, guardaLosFiltros, losFiltrosGuardados, yaSePinto } from '../services/memoriaDeLasListas';
+import { guardaLosFiltros, losFiltrosGuardados } from '../services/memoriaDeLasListas';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import {
@@ -37,9 +37,6 @@ const getEnrollmentStatusClasses = (status) => {
 };
 
 // La de `Competitions.datos`, en su memoria y en la de sus filtros
-// Al volver: todas las que se vean en la primera pintura, o ninguna
-const TODAS = 'todas';
-const NINGUNA = new Set();
 const LISTA = 'competitions';
 
 const Competitions = () => {
@@ -101,13 +98,6 @@ const Competitions = () => {
   const [filtrosAlVolver] = useState(() =>
     usuarioId ? losFiltrosGuardados(LISTA, usuarioId, entrada) : null
   );
-  // Volver (atrás o adelante) a una entrada en que ya se vieron las tarjetas:
-  // las que se ven al volver salen ya pintadas, sin su animación de entrada,
-  // que a la altura de la séptima dejaba la pantalla en blanco un momento
-  // (Agustín, 3 nov 2026). Una entrada nueva nunca está apuntada: entrar desde
-  // la pestaña anima. Y una tarjeta que deja de verse (un filtro, una recarga)
-  // sale de las quietas: si vuelve, anima, como siempre (revisor y `/code-review`)
-  const [quietas, setQuietas] = useState(() => (yaSePinto(LISTA, usuarioId, entrada) ? TODAS : NINGUNA));
   const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
   const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
   // También al cambiar de entrada sin salir: pulsar Torneos en Torneos crea
@@ -191,21 +181,6 @@ const Competitions = () => {
     return filtered;
   }, [competitions, searchQuery, statusFilter, i18n.language]);
 
-  // Que en esta entrada ya se vieron tarjetas, para no animarlas al volver
-  const hayTarjetas = filteredCompetitions.length > 0;
-  // Ajustadas durante el render, no en un efecto: ninguna tarjeta llega a
-  // montarse con la marca de quieta de una que ya había dejado de verse
-  const visibles = new Set(filteredCompetitions.map((c) => c.id));
-  if (quietas === TODAS) {
-    setQuietas(visibles);
-  } else if ([...quietas].some((id) => !visibles.has(id))) {
-    setQuietas(new Set([...quietas].filter((id) => visibles.has(id))));
-  }
-  const estaQuieta = (id) => quietas === TODAS || quietas.has(id);
-  useEffect(() => {
-    if (usuarioId && hayTarjetas) apuntaQueSePinto(LISTA, usuarioId, entrada);
-  }, [usuarioId, entrada, hayTarjetas]);
-
   const handleCreateCompetition = () => {
     navigate('/competitions/create');
   };
@@ -269,9 +244,7 @@ const Competitions = () => {
     }
     if (filteredCompetitions.length === 0) {
       return (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="flex flex-col items-center justify-center py-12 bg-gray-50 border border-gray-200 rounded-xl"
         >
           <AlertCircle className="w-16 h-16 text-gray-400 mb-4" />
@@ -296,7 +269,7 @@ const Competitions = () => {
               <span>{t('myCompetitions.createYourFirstCompetition')}</span>
             </motion.button>
           )}
-        </motion.div>
+        </div>
       );
     }
     // Renderizado normal de la lista de competiciones: con lo último que se
@@ -322,17 +295,13 @@ const Competitions = () => {
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCompetitions.map((competition, index) => {
+        {filteredCompetitions.map((competition) => {
           // Una vez por tarjeta (`/code-review`)
           const papel = papelEn(competition);
           return (
 
-          <motion.div
+          <div
             key={competition.id}
-            // Se lee solo al montarse: las que ya estaban al volver, quietas
-            initial={estaQuieta(competition.id) ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
             onClick={() => handleViewCompetition(competition.id)}
             data-testid="tarjeta-competicion"
             className="min-w-0 bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group"
@@ -455,7 +424,7 @@ const Competitions = () => {
                 </span>
               </div>
             </div>
-          </motion.div>
+          </div>
           );
         })}
       </div>
@@ -474,10 +443,7 @@ const Competitions = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="flex flex-wrap justify-between items-center gap-3 p-4"
             >
               <div>
@@ -497,12 +463,9 @@ const Competitions = () => {
                 <Plus className="w-4 h-4" />
                 <span>{t('myCompetitions.createCompetition')}</span>
               </motion.button>
-            </motion.div>
+            </div>
             {/* Filters */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <div
               className="p-4"
             >
               <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -548,7 +511,7 @@ const Competitions = () => {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
             {/* Competitions List */}
             <div className="p-4">
               {renderCompetitionsList()}

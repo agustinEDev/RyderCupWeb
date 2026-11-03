@@ -244,9 +244,7 @@ const ResetPassword = () => {
   if (tokenState === 'validating') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center"
         >
           {/* El mismo dibujo que el resto de las esperas (FE #495). La tarjeta
@@ -257,7 +255,7 @@ const ResetPassword = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('resetPassword.validatingToken')}</h2>
           <p className="text-gray-600">{t('resetPassword.validatingMessage')}</p>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -269,9 +267,7 @@ const ResetPassword = () => {
   if (tokenState === 'unchecked') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full"
         >
           <div className="flex justify-center mb-4">
@@ -311,7 +307,7 @@ const ResetPassword = () => {
               {t('resetPassword.backToLoginButton')}
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -322,9 +318,7 @@ const ResetPassword = () => {
   if (tokenState === 'invalid') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full"
         >
           {/* Error Icon */}
@@ -365,7 +359,7 @@ const ResetPassword = () => {
               {t('resetPassword.backToLoginButton')}
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -377,10 +371,7 @@ const ResetPassword = () => {
     <div className="relative flex min-h-screen w-full bg-white">
       <div className="flex w-full">
         {/* Left Side - Hero Image/Brand (Hidden on Mobile) */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
+        <div
           className="hidden lg:flex lg:w-1/2 relative bg-primary overflow-hidden"
         >
           {/* Background Pattern */}
@@ -426,19 +417,16 @@ const ResetPassword = () => {
                   { icon: '🔤', text: t('resetPassword.securityTips.tip2') },
                   { icon: '🔢', text: t('resetPassword.securityTips.tip3') },
                   { icon: '⚡', text: t('resetPassword.securityTips.tip4') },
-                ].map((item, idx) => (
-                  <motion.div
+                ].map((item) => (
+                  <div
                     key={item.text}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + idx * 0.1 }}
                     className="flex items-center gap-3"
                   >
                     <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-xl">
                       {item.icon}
                     </div>
                     <span className="text-white/90">{item.text}</span>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -446,14 +434,11 @@ const ResetPassword = () => {
             {/* Footer */}
             <div className="text-white/70 text-sm">{t('common:footer.copyrightShort', { year: new Date().getFullYear() })}</div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Right Side - Reset Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <div
             className="w-full max-w-md"
           >
             {/* Mobile Logo */}
@@ -697,7 +682,7 @@ const ResetPassword = () => {
               </svg>
               <span className="text-sm font-medium">{t('resetPassword.backToHome')}</span>
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

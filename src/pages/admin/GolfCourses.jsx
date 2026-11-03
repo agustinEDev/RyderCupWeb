@@ -162,10 +162,7 @@ const GolfCourses = ({ embedded = false }) => {
   const content = (
     <div className={embedded ? undefined : 'layout-content-container flex flex-col max-w-[1200px] flex-1'}>
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="flex flex-wrap justify-between items-center gap-3 p-4"
       >
         <div>
@@ -189,13 +186,10 @@ const GolfCourses = ({ embedded = false }) => {
           <Plus className="w-4 h-4" />
           <span>{t('pages.admin.createCourse')}</span>
         </motion.button>
-      </motion.div>
+      </div>
 
       {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
+      <div
         className="p-4"
       >
         <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
@@ -203,13 +197,10 @@ const GolfCourses = ({ embedded = false }) => {
             {t('pages.admin.totalCourses')}: <span className="font-bold text-gray-900">{courses.length}</span>
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
+      <div
         className="p-4"
       >
         <div className="relative bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -231,7 +222,7 @@ const GolfCourses = ({ embedded = false }) => {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 

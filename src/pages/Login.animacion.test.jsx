@@ -5,7 +5,9 @@ import { MemoryRouter } from 'react-router';
 /**
  * El primer «Iniciar Sesión» a veces se perdía (QA, FE #865-12): la caja del
  * formulario entraba desplazándose y creciendo, y un clic en ese medio segundo
- * podía soltarse fuera del botón, que se había movido. Ahora solo aparece.
+ * podía soltarse fuera del botón, que se había movido. Luego solo aparecía, y
+ * desde el 3 nov 2026 sale ya pintada: ninguna pantalla entra desde invisible
+ * (`sinFundidoAlEntrar.test.js`). El aviso de arriba sí conserva su fundido.
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -36,15 +38,15 @@ const Login = (await import('./Login')).default;
 
 const conQueEntra = (el) => JSON.parse(el.closest('[data-initial]').getAttribute('data-initial'));
 
-describe('Login · la caja del formulario solo aparece', () => {
-  it('A1: sin desplazarse ni crecer', () => {
+describe('Login · la caja del formulario sale ya pintada', () => {
+  it('A1: sin desplazarse, ni crecer, ni fundido', () => {
     render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     );
 
-    expect(conQueEntra(screen.getByTestId('formulario'))).toEqual({ opacity: 0 });
+    expect(screen.getByTestId('formulario').closest('[data-initial]')).toBeNull();
   });
 
   it('A2: el aviso de arriba tampoco', () => {
