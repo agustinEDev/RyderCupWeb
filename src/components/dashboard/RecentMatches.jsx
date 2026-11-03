@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router';
 import { Zap, Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../ui/BlockLoader';
-import RepetirPartida from '../quick_match/RepetirPartida';
+import { AsistenteDeRepetir, IconoRepetir } from '../quick_match/RepetirPartida';
+import { useRepetirPartida } from '../quick_match/useRepetirPartida';
 
 /**
  * Las últimas partidas del jugador: la respuesta a "¿cómo quedó lo último?".
@@ -21,7 +22,7 @@ const RESULT_TONES = {
   UNFINISHED: 'bg-gray-100 text-gray-500',
 };
 
-const MatchRow = ({ match, onOpen, t, formatDate, usuario }) => {
+const MatchRow = ({ match, onOpen, t, formatDate, repetir }) => {
   // Sin terminar no hay tanteo: un 6UP de seis hoyos no es un resultado
   const score = match.shownScore;
   const opponents = match.opponents.join(', ');
@@ -67,7 +68,7 @@ const MatchRow = ({ match, onOpen, t, formatDate, usuario }) => {
   // Una partida rápida (aquí solo llegan terminadas) se puede repetir (FE
   // #1021). El icono va AL LADO de la fila, no dentro: un botón dentro de
   // otro no es válido y el lector de pantalla no los distingue
-  const sePuedeRepetir = usuario && !match.isFromTournament();
+  const sePuedeRepetir = repetir && !match.isFromTournament();
 
   return (
     <div className="flex items-center border-b border-gray-100 last:border-b-0">
@@ -157,7 +158,9 @@ const MatchRow = ({ match, onOpen, t, formatDate, usuario }) => {
         <span className="text-[10px] text-gray-400">{formatDate(match.playedAt ?? match.date)}</span>
       </span>
     </button>
-    {sePuedeRepetir && <RepetirPartida partida={{ id: match.id, name: match.matchName }} usuario={usuario} />}
+    {sePuedeRepetir && (
+      <IconoRepetir partida={{ id: match.id, name: match.matchName }} onRepetir={repetir.repetir} preparando={repetir.preparando} />
+    )}
     </div>
   );
 };
@@ -174,13 +177,21 @@ const RecentMatches = ({
   usuario = null,
 }) => {
   const { t, i18n } = useTranslation('dashboard');
+  // Aquí y no en cada fila: al recargar la lista, las filas se desmontan, y el
+  // asistente abierto se iba con ellas (`/code-review`)
+  const repetir = useRepetirPartida(usuario);
   const navigate = useNavigate();
 
   const formatDate = (date) =>
     date ? new Date(date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) : '';
 
+  // El asistente de repetir, siempre en el mismo sitio (hermano de la
+  // sección): así sigue abierto, con lo editado, aunque la lista se recargue
+  const asistente = <AsistenteDeRepetir borrador={repetir.borrador} usuario={usuario} cierra={repetir.cierra} />;
+
   if (isLoading) {
     return (
+      <>
       <section data-testid="recent-matches" aria-busy="true">
         <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
         {/* El dibujo compartido, no tres rectangulos grises: la aplicacion
@@ -189,10 +200,13 @@ const RecentMatches = ({
             «Cargando...» dos veces seguidas */}
         <BlockLoader silencioso={esperaSilenciosa} />
       </section>
+      {asistente}
+      </>
     );
   }
 
   return (
+    <>
     <section data-testid="recent-matches">
       <h2 className="mb-3 text-xl font-bold text-gray-900">{t(titleKey)}</h2>
 
@@ -224,12 +238,14 @@ const RecentMatches = ({
               onOpen={(target) => navigate(target.detailPath)}
               t={t}
               formatDate={formatDate}
-              usuario={usuario}
+              repetir={usuario ? repetir : null}
             />
           ))}
         </div>
       )}
     </section>
+    {asistente}
+    </>
   );
 };
 

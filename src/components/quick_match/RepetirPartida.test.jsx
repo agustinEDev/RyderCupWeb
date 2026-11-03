@@ -115,7 +115,7 @@ describe('RepetirPartida', () => {
 
     const asistente = await screen.findByTestId('asistente');
     expect(asistente.dataset.paso).toBe('1');
-    expect(JSON.parse(asistente.dataset.avisos)).toEqual([{ tipo: 'campo' }]);
+    expect(JSON.parse(asistente.dataset.avisos)).toEqual([{ tipo: 'campo', paso: 1 }]);
   });
 
   it('R12: al empezar la nueva, se va a anotarla', async () => {

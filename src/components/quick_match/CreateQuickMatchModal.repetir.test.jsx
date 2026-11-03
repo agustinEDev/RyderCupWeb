@@ -15,6 +15,8 @@
  *   E1   en modo estricto (desarrollo, el iPhone   | la barra copiada no se pierde
  *        | por Vite): los efectos se montan dos veces| (revisor)
  *   E2   cambiar de campo                           | la barra copiada sí se va
+ *   C3   cada aviso                                 | solo en el paso donde se arregla
+ *        |                                           | (`/code-review`)
  *
  * Todo se monta en `<StrictMode>`, como la aplicación.
  */
@@ -146,8 +148,8 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
       borrador: borrador({
         paso: 2,
         avisos: [
-          { tipo: 'noAmigo', nombre: 'Luis' },
-          { tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED' },
+          { tipo: 'noAmigo', nombre: 'Luis', paso: 2 },
+          { tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED', genero: 'FEMALE', paso: 2 },
         ],
       }),
     });
@@ -160,6 +162,26 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     // Se anuncian: quien usa lector de pantalla oye que alguien se quedó fuera
     expect(avisos.closest('[role="status"]')).not.toBeNull();
     expect(screen.getByTestId('quick-match-participants-next')).toBeInTheDocument();
+  });
+
+  it('C3: cada aviso, solo en su paso', async () => {
+    abre({
+      borrador: borrador({
+        paso: 2,
+        avisos: [
+          { tipo: 'sinBarra', propia: true, color: null, genero: null, paso: 1 },
+          { tipo: 'noAmigo', nombre: 'Luis', paso: 2 },
+        ],
+      }),
+    });
+
+    const enJugadores = await screen.findByTestId('avisos-al-repetir');
+    expect(within(enJugadores).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['create.repetir.avisoNoAmigo']);
+
+    fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+
+    const enElCampo = await screen.findByTestId('avisos-al-repetir');
+    expect(within(enElCampo).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['create.repetir.avisoMiBarraNueva']);
   });
 
   it('R13: cerrar no crea nada', async () => {

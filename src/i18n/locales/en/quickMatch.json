@@ -122,9 +122,11 @@
       "avisoBarra": "{{nombre}}'s tee ({{barra}}) no longer exists on the course: add them again with another.",
       "avisoNoAmigo": "{{nombre}} is no longer your friend: not copied.",
       "boton": "Repeat match",
-      "sinBarra": "no tee",
       "avisoInvitado": "{{nombre}} could not be copied: add them again.",
-      "botonDe": "Repeat «{{nombre}}»"
+      "botonDe": "Repeat «{{nombre}}»",
+      "avisoFaltan": "This format needs more players: add them.",
+      "avisoMiBarraNueva": "The course now has tees: choose yours.",
+      "avisoBarraNueva": "The course now has tees: add {{nombre}} again with theirs."
     }
   },
   "dashboard": {

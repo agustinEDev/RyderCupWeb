@@ -54,8 +54,14 @@ export const useRepetirPartida = (currentUser) => {
       } finally {
         setPreparando(false);
       }
-      // Fuera del try: un fallo aquí sería del código, no de la red
-      if (leido) setBorrador(borradorParaRepetir({ ...leido, yo: currentUser }));
+      if (!leido) return;
+      // Aparte: un fallo aquí sería de los datos o del código, no de la red, y
+      // no debe salir como «sin conexión»; pero tampoco callado (`/code-review`)
+      try {
+        setBorrador(borradorParaRepetir({ ...leido, yo: currentUser }));
+      } catch {
+        customToast.error(t('create.errors.generic'));
+      }
     },
     [currentUser, t, tComun]
   );

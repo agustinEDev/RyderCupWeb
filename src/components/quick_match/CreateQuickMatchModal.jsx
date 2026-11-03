@@ -29,6 +29,7 @@ import {
   teeKey,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
+import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
 
 // Por qué no se pudo empezar, por el código del servidor (FE #848): todo se
 // comprueba al confirmar, así que el motivo se dice en el resumen
@@ -43,7 +44,6 @@ const MOTIVO_POR_CODIGO = {
 // puede tener las amarillas de hombre y no las de mujer), o «sin barra»
 const GENERO_DE_LA_BARRA = { MALE: 'male', FEMALE: 'female', MIXED: 'mixed' };
 const nombreDeLaBarra = (t, tCampos, aviso) => {
-  if (!aviso.color) return t('create.repetir.sinBarra');
   const color = tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color });
   const genero = GENERO_DE_LA_BARRA[aviso.genero];
   return genero ? `${color} ${t(`create.teePanel.${genero}`).toLowerCase()}` : color;
@@ -54,6 +54,12 @@ const textoDelAviso = (t, tCampos, aviso) => {
   if (aviso.tipo === 'campo') return t('create.repetir.avisoCampo');
   if (aviso.tipo === 'noAmigo') return t('create.repetir.avisoNoAmigo', { nombre: aviso.nombre });
   if (aviso.tipo === 'invitado') return t('create.repetir.avisoInvitado', { nombre: aviso.nombre });
+  if (aviso.tipo === 'faltan') return t('create.repetir.avisoFaltan');
+  if (aviso.tipo === 'sinBarra') {
+    return aviso.propia
+      ? t('create.repetir.avisoMiBarraNueva')
+      : t('create.repetir.avisoBarraNueva', { nombre: aviso.nombre });
+  }
   const barra = nombreDeLaBarra(t, tCampos, aviso);
   if (aviso.propia) return t('create.repetir.avisoMiBarra', { barra });
   return t('create.repetir.avisoBarra', { nombre: aviso.nombre, barra });
@@ -97,7 +103,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [creatorTeeKey, setCreatorTeeKey] = useState(copia?.creatorTeeKey ?? NO_TEE_KEY);
   const [participants, setParticipants] = useState(copia?.participants ?? []);
   // Lo que no se pudo copiar al repetir (FE #1021), hasta cerrar el asistente
-  const avisosAlRepetir = borrador?.avisos ?? [];
+  const avisosDelBorrador = borrador?.avisos ?? [];
+  // Cada uno, solo en el paso donde se arregla: fuera de él ya no dice nada
+  // útil, y seguía a la vista con lo descrito ya arreglado (`/code-review`)
+  const avisosAlRepetir = avisosDelBorrador.filter((aviso) => aviso.paso === step);
   // De qué campo es la barra elegida: solo al cambiar de campo se borra. Con
   // un «solo la primera vez» se perdía la copiada en desarrollo, donde React
   // monta los efectos dos veces (revisor)
@@ -244,19 +253,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     }
     plantillaDe.current = plantilla;
     // Quien crea, el primero, con su hándicap del perfil y su salida
-    const handicap = currentUser?.handicap ?? null;
     setParticipants([
-      {
-        participantId: currentUser.id,
+      jugadorRegistrado({
         userId: currentUser.id,
         name: nombreVisible(currentUser),
-        handicap,
-        profileHandicap: handicap,
+        handicap: currentUser?.handicap ?? null,
         team: isTeamFormat ? 'A' : null,
-        isGuest: false,
         color,
         teeGender,
-      },
+      }),
     ]);
     setStep(2);
   };
@@ -281,20 +286,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     }
     setError('');
     const { color, teeGender } = parseTeeKey(friendTeeKeyValue ?? NO_TEE_KEY);
-    const handicap = friend.otherUserHandicap ?? null;
     setParticipants((prev) => [
       ...prev,
-      {
-        participantId: friend.otherUserId,
+      jugadorRegistrado({
         userId: friend.otherUserId,
         name: friend.otherUserName,
-        handicap,
-        profileHandicap: handicap,
+        handicap: friend.otherUserHandicap ?? null,
         team: isTeamFormat ? selectedTeam : null,
-        isGuest: false,
         color,
         teeGender,
-      },
+      }),
     ]);
   };
 
@@ -329,19 +330,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     const { color, teeGender } = parseTeeKey(guestTeeKey);
     setParticipants((prev) => [
       ...prev,
-      {
-        // Sin cuenta: un id solo del borrador, que no viaja
-        participantId: `invitado-${idAleatorio()}`,
-        userId: null,
-        name: `${firstName} ${lastName}`,
+      jugadorInvitado({
         firstName,
         lastName,
         handicap: guestForm.handicap.trim() ? Number(guestForm.handicap) : null,
         team: isTeamFormat ? selectedTeam : null,
-        isGuest: true,
         color,
         teeGender,
-      },
+      }),
     ]);
     setGuestForm(initialGuestForm);
     setGuestTeeKey(NO_TEE_KEY);
@@ -354,8 +350,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   };
 
   // Volver a elegir campo o formato deja la plantilla sin sentido (equipos,
-  // salidas): se empieza de nuevo al avanzar otra vez, como antes, pero sin
-  // nada que cancelar
+  // salidas): si se cambia alguno, se empieza de nuevo al avanzar otra vez;
+  // si no, se conserva (`handleCourseNext`, 3 nov 2026)
   const handleBackToCourse = () => {
     setError('');
     setGuestTeeKey(NO_TEE_KEY);

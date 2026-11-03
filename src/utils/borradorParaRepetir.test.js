@@ -31,9 +31,17 @@ import { borradorParaRepetir } from './borradorParaRepetir';
  *
  *   V1   el % copiado es el de por defecto          | no cuenta como elegido a mano
  *   V2   un campo que ya no tiene barras            | nadie lleva la de antes
- *   V3   invitado sin nombre y apellidos aparte     | se parte el nombre por el primer
- *        | (servidor anterior, o lo guardado)        | espacio; sin espacio, fuera y aviso
+ *   V3   invitado sin nombre y apellidos aparte     | fuera y aviso: no se adivina
+ *        | (servidor anterior, o lo guardado)        | (`/code-review`)
  *   V4   el aviso de una barra                      | con su color y su género
+ *
+ * Y lo que añadió `/code-review`:
+ *
+ *   C1   match play con jugadores de menos (una     | paso 2, aviso «faltan»
+ *        | cancelada a medias)                       |
+ *   C2   quien no llevaba barra, en un campo que    | aviso «sinBarra», no «la barra ya
+ *        | ahora tiene                               | no existe»
+ *   C3   cada aviso                                 | dice en qué paso se arregla
  */
 
 const tee = (color, gender = 'MALE') => ({ color, gender });
@@ -155,7 +163,7 @@ describe('borradorParaRepetir', () => {
 
     expect(nombres(b)).toEqual(['Yo Mismo', 'Pepe Pérez']);
     expect(b.paso).toBe(2);
-    expect(b.avisos).toEqual([{ tipo: 'noAmigo', nombre: 'u-ana' }]);
+    expect(b.avisos).toEqual([{ tipo: 'noAmigo', nombre: 'u-ana', paso: 2 }]);
   });
 
   it.each([
@@ -165,7 +173,7 @@ describe('borradorParaRepetir', () => {
     const b = repite({ campo: elCampo });
 
     expect(b.paso).toBe(1);
-    expect(b.avisos).toEqual([{ tipo: 'campo' }]);
+    expect(b.avisos).toEqual([{ tipo: 'campo', paso: 1 }]);
     expect(b.inicial.selectedCourse).toBeNull();
     expect(b.inicial.creatorTeeKey).toBe('');
     expect(b.inicial.participants).toEqual([]);
@@ -177,7 +185,7 @@ describe('borradorParaRepetir', () => {
 
     expect(b.paso).toBe(1);
     expect(b.inicial.creatorTeeKey).toBe('');
-    expect(b.avisos).toEqual([{ tipo: 'barra', propia: true, color: 'YELLOW', genero: 'MALE' }]);
+    expect(b.avisos).toEqual([{ tipo: 'barra', propia: true, color: 'YELLOW', genero: 'MALE', paso: 1 }]);
   });
 
   it('R9b: la barra de otro ya no existe, fuera y aviso, en Jugadores', () => {
@@ -185,7 +193,7 @@ describe('borradorParaRepetir', () => {
 
     expect(nombres(b)).toEqual(['Yo Mismo', 'Pepe Pérez']);
     expect(b.paso).toBe(2);
-    expect(b.avisos).toEqual([{ tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED', genero: 'FEMALE' }]);
+    expect(b.avisos).toEqual([{ tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED', genero: 'FEMALE', paso: 2 }]);
   });
 
   it('R9/V2: un campo sin barras no quita a nadie, y nadie lleva la de antes', () => {
@@ -243,22 +251,45 @@ describe('borradorParaRepetir', () => {
     expect(repite({ partida: partida(extra) }).inicial.allowanceOverride).toBe(esperado);
   });
 
-  it('V3: sin nombre y apellidos aparte, se parte el nombre por el primer espacio', () => {
+  it.each([
+    ['nulos', { firstName: null, lastName: null }],
+    ['sin los campos', { firstName: undefined, lastName: undefined }],
+    ['solo el nombre', { lastName: null }],
+  ])('V3: sin nombre y apellidos aparte (%s), fuera y aviso, sin adivinar', (_, extra) => {
     const b = repite({
-      partida: partida({ participants: [jugador('u-yo'), invitado({ firstName: null, lastName: null, name: 'María José de la Fuente' })] }),
-    });
-
-    expect(b.inicial.participants[1]).toMatchObject({ firstName: 'María', lastName: 'José de la Fuente', name: 'María José de la Fuente' });
-    expect(b.avisos).toEqual([]);
-  });
-
-  it('V3: un nombre sin espacio no se puede partir: fuera y aviso', () => {
-    const b = repite({
-      partida: partida({ participants: [jugador('u-yo'), invitado({ firstName: undefined, lastName: undefined, name: 'Pepe' })] }),
+      partida: partida({ participants: [jugador('u-yo'), invitado({ ...extra, name: 'Juan Carlos Pérez' })] }),
     });
 
     expect(nombres(b)).toEqual(['Yo Mismo']);
     expect(b.paso).toBe(2);
-    expect(b.avisos).toEqual([{ tipo: 'invitado', nombre: 'Pepe' }]);
+    expect(b.avisos).toEqual([{ tipo: 'invitado', nombre: 'Juan Carlos Pérez', paso: 2 }]);
+  });
+
+  it('C1: match play con jugadores de menos (cancelada a medias), a Jugadores con aviso', () => {
+    const b = repite({
+      partida: partida({ matchFormat: 'FOURBALL', scoringFormat: null, participants: [jugador('u-yo', { team: 'A' }), jugador('u-ana', { team: 'B' })] }),
+    });
+
+    expect(b.paso).toBe(2);
+    expect(b.avisos).toEqual([{ tipo: 'faltan', paso: 2 }]);
+  });
+
+  it('C1: en juego libre no hay mínimo', () => {
+    const b = repite({ partida: partida({ participants: [jugador('u-yo')] }) });
+
+    expect(b.paso).toBe(4);
+    expect(b.avisos).toEqual([]);
+  });
+
+  it('C2: quien no llevaba barra, en un campo que ahora tiene, no la «ha perdido»', () => {
+    const b = repite({
+      partida: partida({ participants: [jugador('u-yo', { color: null, teeGender: null }), jugador('u-ana', { color: null, teeGender: null })] }),
+    });
+
+    expect(b.paso).toBe(1);
+    expect(b.avisos).toEqual([
+      { tipo: 'sinBarra', propia: true, color: null, genero: null, paso: 1 },
+      { tipo: 'sinBarra', propia: false, nombre: 'Ana', color: null, genero: null, paso: 2 },
+    ]);
   });
 });
