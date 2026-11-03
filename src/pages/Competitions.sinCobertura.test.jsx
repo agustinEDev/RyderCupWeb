@@ -107,7 +107,9 @@ const Testigo = () => {
   return null;
 };
 // (Solo vigila lo que llega por el loader: un cambio de `estado` sin carga
-// nueva, como `deOtraCuenta`, no lo ve. Y solo vale en Torneos)
+// nueva, como `deOtraCuenta`, no lo ve. Y solo vale en Torneos. El testigo y
+// la pantalla leen el mismo contexto del router: si un día la pantalla fuera
+// `lazy` dentro de la ruta, podría pintarse en otra pasada y esto no valdría)
 const efectosAlDia = () =>
   waitFor(
     () => {
@@ -117,7 +119,8 @@ const efectosAlDia = () =>
         throw new Error(`efectosAlDia solo vale en Torneos, y la ruta es ${router.state.location.pathname}`);
       }
       expect(router.state.navigation.state).toBe('idle');
-      expect(router.state.revalidation).toBe('idle');
+      // Una recarga en camino no se espera: C6b y C8 actúan a propósito con
+      // una pendiente (CodeRabbit). Basta con los efectos de lo ya pintado
       expect(testigo.vio).toBe(router.state.loaderData[actual.route.id]);
     },
     // Con holgura: es justo la máquina cargada lo que viene a cubrir
