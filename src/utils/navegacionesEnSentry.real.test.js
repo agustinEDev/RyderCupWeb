@@ -15,12 +15,19 @@ import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegac
  *   S6d | una redirección (replace) con la carga aún abierta     | la carga pasa a la ruta de destino
  *   S1 | navegar después                           | una navegación con la ruta, origen route
  *   S3 | una dirección que no existe               | no se le inventa una ruta de las conocidas
+ *   S7 | una ruta con `loader`                      | la navegación lleva su ruta (FE #647, fase 3: T25)
  *
  * Sentry 11 envía las spans según acaban («span streaming»): no quedan como span
  * activa, así que se recogen al empezar, con una integración que se engancha
  * antes de que Sentry abra la carga de página.
  */
-const RUTAS = [{ path: '/dashboard' }, { path: '/competitions/:id' }, { path: '*' }];
+const RUTAS = [
+  { path: '/dashboard' },
+  // Como Torneos: una ruta con `loader` (fase 3)
+  { path: '/competitions', loader: async () => ({ estado: 'ok', datos: [] }) },
+  { path: '/competitions/:id' },
+  { path: '*' },
+];
 const spans = [];
 const recoger = { name: 'RecogerSpans', setup: (cliente) => cliente.on('spanStart', (s) => spans.push(s)) };
 const datos = (span) => Sentry.spanToJSON(span);
@@ -70,6 +77,15 @@ describe('navegaciones en Sentry, con Sentry de verdad', () => {
     expect(navegacion.name).toBe('/competitions/:id');
     expect(navegacion.attributes['sentry.segment.name.source']).toBe('route');
     expect(deTipo('navigation').map((n) => n.name)).toContain('/dashboard');
+  });
+
+  it('S7: una ruta con loader lleva su ruta', async () => {
+    await router.navigate('/competitions');
+
+    const navegacion = deTipo('navigation').at(-1);
+    expect(router.state.location.pathname).toBe('/competitions');
+    expect(navegacion.name).toBe('/competitions');
+    expect(navegacion.attributes['sentry.segment.name.source']).toBe('route');
   });
 
   it('S3: una dirección que no existe no se convierte en una ruta conocida', async () => {

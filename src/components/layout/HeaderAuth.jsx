@@ -32,8 +32,11 @@ const NAVEGACION = [
  *   pantallas cuyo nombre solo se conoce en ejecucion (el de un torneo).
  * @param {string|null} [backTo] - Sustituye al destino de la flecha. `null`
  *   explicito la retira.
+ * @param {Function} [alVolver] - La flecha hace esto en vez de ir a `backTo`:
+ *   el detalle de un torneo al que se llegó desde Torneos vuelve atrás de
+ *   verdad, para que Torneos quede donde estaba (FE #647, fase 3).
  */
-const HeaderAuth = ({ user, title, backTo }) => {
+const HeaderAuth = ({ user, title, backTo, alVolver }) => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const location = useLocation();
@@ -118,7 +121,17 @@ const HeaderAuth = ({ user, title, backTo }) => {
           marca, que es el comportamiento anterior */}
       {screenTitle ? (
         <div className="md:hidden flex items-center gap-2 min-w-0 flex-1">
-          {screenBackTo && (
+          {screenBackTo && alVolver && (
+            <button
+              type="button"
+              onClick={alVolver}
+              aria-label={t('back')}
+              className={`-ml-2 ${backArrowClasses}`}
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+          {screenBackTo && !alVolver && (
             <Link
               to={screenBackTo}
               aria-label={t('back')}

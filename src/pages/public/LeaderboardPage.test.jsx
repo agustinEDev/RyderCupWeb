@@ -964,7 +964,8 @@ describe('LeaderboardPage · sin sesión (release social 3)', () => {
     mockResumen.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Medal', visibility: 'PUBLIC', status: 'COMPLETED' });
     const { rerender } = render(<LeaderboardPage />);
     await screen.findByTestId('general-stroke-play');
-    expect(mockMontajes).toHaveBeenCalledTimes(1);
+    // Su efecto de montaje puede ir justo después de pintarse (en el CI llegó tarde)
+    await vi.waitFor(() => expect(mockMontajes).toHaveBeenCalledTimes(1));
 
     mockUser.current = { id: 'u-1' };
     mockDetalle.mockResolvedValue({ id: 'c-1', hasTeams: false, name: 'Medal', status: 'COMPLETED' });

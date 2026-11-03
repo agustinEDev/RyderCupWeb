@@ -66,6 +66,7 @@ import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { mensajeConJugadores } from '../utils/erroresConJugadores';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { hayHistorialPropio } from '../hooks/useGoBack';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -211,6 +212,11 @@ const CompetitionDetail = () => {
   const vuelta = Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
   const backLink = vuelta.to;
   const backText = t(vuelta.clave);
+  // Desde Torneos, volver es volver atrás de verdad, como el atrás del sistema:
+  // así Torneos queda donde estaba (FE #647, fase 3; Agustín, 2 nov 2026). Sin
+  // nada detrás —se entró por un enlace—, a Torneos como siempre
+  const vuelveAtras = origen === 'my-competitions' && hayHistorialPropio(location);
+  const volver = () => (vuelveAtras ? navigate(-1) : navigate(backLink));
 
   // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
   // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
@@ -1266,7 +1272,7 @@ const CompetitionDetail = () => {
             pantalla sabe si se llego desde explorar, y esa vuelta es mejor. Sin
             pasarsela, ocultar el enlace de la pagina en movil perderia
             comportamiento en lugar de quitar ruido (FE #338) */}
-        <HeaderAuth user={user} title={competition.name} backTo={backLink} />
+        <HeaderAuth user={user} title={competition.name} backTo={backLink} alVolver={vuelveAtras ? volver : undefined} />
 
         <ConfirmModal
           isOpen={Boolean(pregunta)}
@@ -1331,7 +1337,7 @@ const CompetitionDetail = () => {
               className="p-4"
             >
               <button
-                onClick={() => navigate(backLink)}
+                onClick={volver}
                 className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />

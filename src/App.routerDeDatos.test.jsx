@@ -18,6 +18,7 @@ import { textosDelError } from './components/errors/textosDelError';
  *   R3b| con StrictMode (desarrollo: crea dos routers)       | se registra el que se usa
  *   R4 | ir a otra pantalla, y volver atrás                 | arriba, como hasta ahora
  *   R5 | cambiar solo el query                              | no sube
+ *   R5b| cambiar solo el # (el mapa del hoyo)               | no sube
  *   R6 | una pantalla que falla al pintarse                 | la pantalla de error de siempre, no la del router
  *   R6c| ese error llega a Sentry                           | con la pila de la pantalla que falló:
  *      |                                                   | React 19 guarda la pila de cada error la
@@ -71,7 +72,10 @@ vi.mock('./pages/Dashboard', async () => {
       <main>
         <h1>panel</h1>
         <Link to="/friends">a amigos</Link>
+        {/* Como los filtros del admin y el mapa del hoyo, sin ninguna marca:
+            no mover el scroll es lo de por defecto (fase 3) */}
         <Link to="/dashboard?filtro=hoy">filtrar</Link>
+        <Link to="/dashboard#mapa">abrir el mapa</Link>
       </main>
     ),
   };
@@ -184,6 +188,18 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     await act(async () => {});
 
     expect(window.location.search).toBe('?filtro=hoy');
+    expect(globalThis.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('R5b: cambiar solo el # (abrir el mapa del hoyo) no sube', async () => {
+    abrir('/dashboard');
+    await screen.findByRole('heading', { name: 'panel' });
+    globalThis.scrollTo.mockClear();
+
+    fireEvent.click(screen.getByRole('link', { name: 'abrir el mapa' }));
+    await act(async () => {});
+
+    expect(window.location.hash).toBe('#mapa');
     expect(globalThis.scrollTo).not.toHaveBeenCalled();
   });
 

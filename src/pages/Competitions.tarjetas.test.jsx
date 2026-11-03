@@ -23,7 +23,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 
 const mockList = vi.fn();
 vi.mock('../composition', () => ({
@@ -31,8 +31,12 @@ vi.mock('../composition', () => ({
 }));
 
 // El MISMO objeto en cada render: uno nuevo recrea la carga y no para
-const sesion = { user: { id: 'u-1' }, loading: false };
+const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, loading: false }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => sesion }));
+vi.mock('../services/sesionCompartida', () => ({
+  consultaLaSesion: () => Promise.resolve(sesion.user),
+  loQueHaySobreLaSesion: () => ({ user: sesion.user }),
+}));
 vi.mock('../hooks/useAuthContext', () => ({
   useAuthContext: () => ({ user: { id: 'u-1' }, clearAuth: vi.fn() }),
 }));
@@ -48,6 +52,12 @@ vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn() }
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 
 const Competitions = (await import('./Competitions')).default;
+// Con su `loader`, como en la aplicación (FE #647, fase 3: T17)
+const { loader } = await import('./Competitions.datos');
+// La carcasa ya montada, como en la aplicación tras arrancar
+(await import('../utils/cargaDeLaPantalla')).marcaElArranque(true);
+// Lo de cada prueba (la lista y sus filtros) no pasa a la siguiente
+const { olvidaTodo } = await import('../services/loUltimoConocido');
 
 const competicion = (extra = {}) => ({
   id: 'c-1',
@@ -72,13 +82,15 @@ const competicion = (extra = {}) => ({
 
 const tarjeta = async (lista) => {
   mockList.mockResolvedValue(lista);
-  render(<MemoryRouter><Competitions /></MemoryRouter>);
+  const router = createMemoryRouter([{ path: '/', loader, element: <Competitions /> }]);
+  render(<RouterProvider router={router} />);
   return screen.findAllByTestId('tarjeta-competicion');
 };
 
 describe('Mis competiciones · tarjetas (FE #846)', () => {
   beforeEach(() => {
     mockList.mockReset();
+    olvidaTodo();
     Object.defineProperty(globalThis.navigator, 'onLine', { value: true, configurable: true });
   });
 

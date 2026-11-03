@@ -81,6 +81,18 @@ describe('HeaderAuth', () => {
     expect(screen.queryByRole('link', { name: 'back' })).not.toBeInTheDocument();
   });
 
+  it('lets a page decide how the arrow goes back (FE #647, fase 3)', () => {
+    // El detalle de un torneo al que se llegó desde Torneos: vuelve atrás de
+    // verdad, para que Torneos quede donde estaba
+    const alVolver = vi.fn();
+    renderHeader('/competitions/abc', { title: 'Summer Cup', backTo: '/competitions', alVolver });
+
+    fireEvent.click(screen.getByRole('button', { name: 'back' }));
+
+    expect(alVolver).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('link', { name: 'back' })).not.toBeInTheDocument();
+  });
+
   it('keeps the brand on a route outside the map', () => {
     // Alta de perfil: no es una pantalla de la aplicacion todavia
     renderHeader('/auth/complete-profile');

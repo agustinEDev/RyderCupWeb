@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, Link } from 'react-router';
+import { MemoryRouter, Route, Routes, Link, useNavigationType } from 'react-router';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -32,7 +32,12 @@ vi.mock('../hooks/useUserRoles', () => ({
 }));
 
 vi.mock('../components/layout/HeaderAuth', () => ({
-  default: ({ backTo }) => <div data-testid="header-auth" data-back-to={backTo}>Header</div>,
+  default: ({ backTo, alVolver }) => (
+    <div data-testid="header-auth" data-back-to={backTo}>
+      Header
+      {alVolver && <button type="button" onClick={alVolver}>flecha de la cabecera</button>}
+    </div>
+  ),
 }));
 
 vi.mock('../components/competition/CompetitionGolfCoursesSection', () => ({
@@ -865,8 +870,11 @@ describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
 });
 
 
+// Cómo se llegó a Torneos: POP es volver atrás de verdad (FE #647, fase 3)
+const EnCompeticiones = () => <div data-testid="en-competiciones">{useNavigationType()}</div>;
+
 describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => {
-  const desde = (state) => {
+  const desde = (state, { conTorneosDetras = false } = {}) => {
     mockGetCompetitionDetail.mockResolvedValue({
       id: 'comp-1',
       name: 'Summer Cup',
@@ -876,11 +884,17 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
       countries: [],
     });
     return render(
-      <MemoryRouter initialEntries={[{ pathname: '/competitions/comp-1', state }]}>
+      <MemoryRouter
+        initialEntries={[
+          ...(conTorneosDetras ? ['/competitions'] : []),
+          { pathname: '/competitions/comp-1', state },
+        ]}
+        initialIndex={conTorneosDetras ? 1 : 0}
+      >
         <Routes>
           <Route path="/competitions/:id" element={<CompetitionDetail />} />
           <Route path="/player/invitations" element={<div data-testid="en-invitaciones" />} />
-          <Route path="/competitions" element={<div data-testid="en-competiciones" />} />
+          <Route path="/competitions" element={<EnCompeticiones />} />
           <Route path="/browse-competitions" element={<div data-testid="en-explorar" />} />
         </Routes>
       </MemoryRouter>
@@ -913,6 +927,43 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
     fireEvent.click(await screen.findByText('detail.backToBrowse'));
 
     expect(await screen.findByTestId('en-explorar')).toBeInTheDocument();
+  });
+
+  /**
+   * Desde Torneos, la flecha vuelve atrás de verdad, como el atrás del sistema,
+   * para que Torneos quede donde estaba (FE #647, fase 3; Agustín, 2 nov 2026).
+   * Sin historial detrás (se entró por un enlace), a Torneos como siempre.
+   */
+  it('V5: desde Torneos, la vuelta es volver atrás de verdad', async () => {
+    desde({ from: 'my-competitions' }, { conTorneosDetras: true });
+
+    fireEvent.click(await screen.findByText('detail.backToCompetitions'));
+
+    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent('POP');
+  });
+
+  it('V5b: y la flecha de la cabecera móvil, también', async () => {
+    desde({ from: 'my-competitions' }, { conTorneosDetras: true });
+
+    fireEvent.click(await screen.findByText('flecha de la cabecera'));
+
+    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent('POP');
+  });
+
+  it('V6: desde Torneos pero sin nada detrás, a Torneos como siempre', async () => {
+    desde({ from: 'my-competitions' });
+
+    fireEvent.click(await screen.findByText('detail.backToCompetitions'));
+
+    expect(await screen.findByTestId('en-competiciones')).toHaveTextContent('PUSH');
+    expect(screen.queryByText('flecha de la cabecera')).not.toBeInTheDocument();
+  });
+
+  it('V7: desde explorar, aunque haya historial, a explorar como siempre', async () => {
+    desde({ from: 'browse' }, { conTorneosDetras: true });
+
+    await screen.findByText('Summer Cup');
+    expect(screen.queryByText('flecha de la cabecera')).not.toBeInTheDocument();
   });
 
   it('V3: sin origen, a competiciones como siempre', async () => {
