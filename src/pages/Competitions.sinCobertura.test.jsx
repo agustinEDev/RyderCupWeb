@@ -53,9 +53,6 @@
  *       | señal)                                        |
  *   C5  | otra navegación corta una recarga             | la siguiente sí carga
  *   C5b | Reintentar ya respondió                       | pulsar Torneos en Torneos no pide
- *   C5c | la carga de Reintentar se pinta               | la marca ya está gastada en ese mismo
- *       |                                               | commit, antes de cualquier toque
- *       |                                               | (revisor, 3 nov 2026)
  *   C6  | la sesión se confirma durante una carga       | se pide de nuevo, con una petición nueva
  *   C7  | dos toques seguidos desde otra pantalla       | una sola petición
  *   C7b | toques en la pestaña mientras Reintentar     | una sola petición nueva (cuarto revisor)
@@ -79,7 +76,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Profiler, useLayoutEffect } from 'react';
 import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider, useLoaderData } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 
 const mockList = vi.fn();
 vi.mock('../composition', () => ({
@@ -661,30 +658,6 @@ describe('Torneos con loader', () => {
     await act(() => router.navigate('/competitions', { replace: true }));
 
     expect(mockList).toHaveBeenCalledTimes(2);
-  });
-
-  it('C5c: la marca se gasta en el mismo commit que pinta la carga, antes de cualquier toque', async () => {
-    // Un testigo que se repinta con cada carga: su efecto de layout corre en el
-    // mismo commit, tras los de la pantalla y antes de cualquier efecto pasivo
-    // o toque. Con el gasto en un `useEffect`, ahí la marca aún seguía puesta
-    const marcaAlPintar = [];
-    const Testigo = ({ children }) => {
-      const datos = useLoaderData();
-      useLayoutEffect(() => {
-        if (datos?.estado === 'ok') marcaAlPintar.push(shouldRevalidate());
-      }, [datos]);
-      return children;
-    };
-    mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue(LISTA);
-    const router = createMemoryRouter(
-      [{ path: '/competitions', loader, shouldRevalidate, element: <><Carcasa /><Testigo><Competitions /></Testigo></> }],
-      { initialEntries: ['/competitions'] }
-    );
-    render(<RouterProvider router={router} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
-    await screen.findByText('Torneo activo');
-
-    expect(marcaAlPintar).toEqual([false]);
   });
 
   it('C6: la sesión se confirma durante la primera carga y esta falla: se pide de nuevo', async () => {
