@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
@@ -8,19 +9,18 @@ import { useRepetirPartida } from './useRepetirPartida';
 const CreateQuickMatchModal = lazy(() => import('./CreateQuickMatchModal'));
 
 /**
- * «Repetir partida» (FE #1021): un botón con texto en la pantalla de la
- * partida, o un icono en la tarjeta de «Mis partidas rápidas». Prepara el
+ * El icono ↻ «Repetir» de una partida rápida que ya acabó (FE #1021), en
+ * «Mis partidas rápidas» y en «Las últimas partidas» de Inicio. Prepara el
  * borrador y abre el asistente con él; al empezar, se va a anotar la nueva.
  *
- * Solo para partidas que ya acabaron (terminadas o canceladas): quien la pinta
- * decide si se ofrece.
+ * El asistente se pinta en `body`: dentro de la tarjeta, su capa quedaba
+ * debajo de las tarjetas siguientes y de la barra inferior (revisor).
  *
  * @param {Object} props
- * @param {Object} props.partida La partida rápida que se repite
+ * @param {Object} props.partida La partida (o, desde Inicio, solo su `id` y su `name`)
  * @param {Object} props.usuario Quien repite
- * @param {'boton'|'icono'} [props.como]
  */
-const RepetirPartida = ({ partida, usuario, como = 'boton' }) => {
+const RepetirPartida = ({ partida, usuario }) => {
   const { t } = useTranslation('quickMatch');
   const navigate = useNavigate();
   const { borrador, preparando, repetir, cierra } = useRepetirPartida(usuario);
@@ -30,43 +30,28 @@ const RepetirPartida = ({ partida, usuario, como = 'boton' }) => {
     navigate(`/quick-matches/${quickMatchId}/scoring`);
   };
 
-  const pulsa = (e) => {
-    // En la tarjeta, que el toque no la abra
-    e.stopPropagation();
-    repetir(partida);
-  };
+  const nombre = partida.name ? t('create.repetir.botonDe', { nombre: partida.name }) : t('create.repetir.boton');
 
   return (
     <>
-      {como === 'icono' ? (
-        <button
-          type="button"
-          onClick={pulsa}
-          disabled={preparando}
-          aria-label={t('create.repetir.boton')}
-          title={t('create.repetir.boton')}
-          data-testid={`repetir-partida-${partida.id}`}
-          className="p-3 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-        >
-          <RotateCcw className="w-4 h-4" aria-hidden="true" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={pulsa}
-          disabled={preparando}
-          data-testid="repetir-partida"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
-        >
-          <RotateCcw className="w-4 h-4" aria-hidden="true" />
-          {t('create.repetir.boton')}
-        </button>
-      )}
-      {borrador && (
-        <Suspense fallback={null}>
-          <CreateQuickMatchModal onClose={cierra} onStarted={alEmpezar} currentUser={usuario} borrador={borrador} />
-        </Suspense>
-      )}
+      <button
+        type="button"
+        onClick={() => repetir(partida)}
+        disabled={preparando}
+        aria-label={nombre}
+        title={nombre}
+        data-testid={`repetir-partida-${partida.id}`}
+        className="p-3 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+      >
+        <RotateCcw className="w-4 h-4" aria-hidden="true" />
+      </button>
+      {borrador &&
+        createPortal(
+          <Suspense fallback={null}>
+            <CreateQuickMatchModal onClose={cierra} onStarted={alEmpezar} currentUser={usuario} borrador={borrador} />
+          </Suspense>,
+          document.body
+        )}
     </>
   );
 };

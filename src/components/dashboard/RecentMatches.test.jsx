@@ -29,6 +29,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Repetir tiene sus propias pruebas: aquí solo importa en qué filas sale
+vi.mock('../quick_match/RepetirPartida', () => ({
+  default: ({ partida }) => <button type="button" data-testid={`repetir-${partida.id}`}>repetir</button>,
+}));
+
 const tournamentWin = RecentMatch.fromPersistence({
   id: 'match-1',
   date: '2026-08-01',
@@ -66,6 +71,19 @@ const renderList = (props = {}) =>
 
 describe('RecentMatches', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('FE #1021: «Repetir» al lado de las partidas rápidas, no en las de torneo ni sin usuario', () => {
+    const { unmount } = renderList({ matches: [tournamentWin, stablefordRound], usuario: { id: 'u-1' } });
+
+    expect(screen.queryByTestId('repetir-match-1')).not.toBeInTheDocument();
+    const repetir = screen.getByTestId('repetir-qm-1');
+    // Al lado de la fila, no dentro de su botón
+    expect(screen.getByTestId('recent-match-qm-1').contains(repetir)).toBe(false);
+
+    unmount();
+    renderList({ matches: [stablefordRound] });
+    expect(screen.queryByTestId('repetir-qm-1')).not.toBeInTheDocument();
+  });
 
   it('shows a row per match with its course', () => {
     renderList({ matches: [tournamentWin, stablefordRound] });

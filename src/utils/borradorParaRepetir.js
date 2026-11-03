@@ -1,6 +1,8 @@
 import { idAleatorio } from './idAleatorio';
 import { nombreVisible } from './nombreVisible';
 import {
+  DEFAULT_ALLOWANCE_BY_MATCH_FORMAT,
+  DEFAULT_FREE_PLAY_ALLOWANCE,
   MAX_SCORERS,
   NO_TEE_KEY,
   TEAM_FORMATS,
@@ -22,14 +24,30 @@ import {
  * @param {Object|null} opciones.campo El campo (`GolfCourse`), o nulo si ya no está
  * @returns {{inicial: Object, paso: number, avisos: Array<Object>}}
  */
+// Nombre y apellidos de un invitado: los que mandó el servidor, o, si es uno
+// anterior a BE #717 (o lo guardado en el móvil antes), partiendo el nombre
+// por el primer espacio. Sin espacio no hay apellidos: no se puede copiar
+const nombreDelInvitado = (p) => {
+  if (p.firstName && p.lastName) return { firstName: p.firstName, lastName: p.lastName };
+  const [firstName, ...resto] = (p.name ?? '').trim().split(/\s+/);
+  const lastName = resto.join(' ');
+  return firstName && lastName ? { firstName, lastName } : null;
+};
+
 export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   const juegoLibre = Boolean(partida.scoringFormat);
+  // El % que el asistente pone por defecto a ese formato: si es el copiado, no
+  // cuenta como elegido a mano, y cambiar de formato lo sigue moviendo (revisor)
+  const porDefecto = juegoLibre
+    ? DEFAULT_FREE_PLAY_ALLOWANCE
+    : DEFAULT_ALLOWANCE_BY_MATCH_FORMAT[partida.matchFormat] ?? 100;
+  const copiado = partida.allowancePercentage ?? null;
   const comun = {
     matchName: partida.name ?? '',
     mode: juegoLibre ? 'FREE_PLAY' : 'MATCH_PLAY',
     matchFormat: partida.matchFormat ?? 'SINGLES',
     scoringFormat: partida.scoringFormat ?? 'STABLEFORD',
-    allowanceOverride: partida.allowancePercentage ?? null,
+    allowanceOverride: copiado === porDefecto ? null : copiado,
     playMode: partida.playMode ?? 'HANDICAP',
   };
 
@@ -43,15 +61,19 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
   }
 
   const barras = new Set((campo.tees || []).map((t) => teeKey(t.color, t.gender)));
-  // Un campo sin barras no pide ninguna, como al crear la partida
-  const barraVale = (p) => barras.size === 0 || barras.has(teeKey(p.color, p.teeGender));
+  // Un campo sin barras no pide ninguna, como al crear la partida: nadie lleva
+  // la de antes (el servidor rechazaría una que el campo no tiene)
+  const sinBarras = barras.size === 0;
+  const barraVale = (p) => sinBarras || barras.has(teeKey(p.color, p.teeGender));
+  const barraDe = (p) => (sinBarras ? { color: null, teeGender: null } : { color: p.color, teeGender: p.teeGender });
+  const avisoDeBarra = (p, nombre) => ({ tipo: 'barra', propia: !nombre, ...(nombre ? { nombre } : {}), color: p.color, genero: p.teeGender });
   const porEquipos = !juegoLibre && TEAM_FORMATS.includes(partida.matchFormat);
   const equipo = (p) => (porEquipos ? p.team ?? null : null);
   const avisos = [];
 
   const mio = partida.participants.find((p) => p.userId === yo.id);
   const miBarraVale = mio && barraVale(mio);
-  if (mio && !miBarraVale) avisos.push({ tipo: 'barra', propia: true, color: mio.color });
+  if (mio && !miBarraVale) avisos.push(avisoDeBarra(mio));
   const handicapDeHoy = yo.handicap ?? null;
   const jugadores = [
     {
@@ -62,29 +84,31 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
       profileHandicap: handicapDeHoy,
       team: mio ? equipo(mio) : null,
       isGuest: false,
-      color: miBarraVale ? mio.color : null,
-      teeGender: miBarraVale ? mio.teeGender : null,
+      ...(miBarraVale ? barraDe(mio) : { color: null, teeGender: null }),
     },
   ];
 
   for (const p of partida.participants) {
     if (p.userId === yo.id) continue;
     if (p.isGuest) {
+      const nombre = nombreDelInvitado(p);
+      if (!nombre) {
+        avisos.push({ tipo: 'invitado', nombre: p.name });
+        continue;
+      }
       if (!barraVale(p)) {
-        avisos.push({ tipo: 'barra', propia: false, nombre: p.name, color: p.color });
+        avisos.push(avisoDeBarra(p, p.name));
         continue;
       }
       jugadores.push({
         participantId: `invitado-${idAleatorio()}`,
         userId: null,
-        name: p.name,
-        firstName: p.firstName,
-        lastName: p.lastName,
+        name: `${nombre.firstName} ${nombre.lastName}`,
+        ...nombre,
         handicap: p.handicap ?? null,
         team: equipo(p),
         isGuest: true,
-        color: p.color,
-        teeGender: p.teeGender,
+        ...barraDe(p),
       });
       continue;
     }
@@ -94,7 +118,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
       continue;
     }
     if (!barraVale(p)) {
-      avisos.push({ tipo: 'barra', propia: false, nombre: amigo.otherUserName, color: p.color });
+      avisos.push(avisoDeBarra(p, amigo.otherUserName));
       continue;
     }
     const handicap = amigo.otherUserHandicap ?? null;
@@ -106,8 +130,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
       profileHandicap: handicap,
       team: equipo(p),
       isGuest: false,
-      color: p.color,
-      teeGender: p.teeGender,
+      ...barraDe(p),
     });
   }
 
@@ -130,7 +153,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     inicial: {
       ...comun,
       selectedCourse: campo,
-      creatorTeeKey: miBarraVale ? teeKey(mio.color, mio.teeGender) : NO_TEE_KEY,
+      creatorTeeKey: miBarraVale && !sinBarras ? teeKey(mio.color, mio.teeGender) : NO_TEE_KEY,
       participants: jugadores,
       scorerIds,
     },

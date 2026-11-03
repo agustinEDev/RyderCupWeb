@@ -11,11 +11,17 @@
  *   R7   avisos de lo que no se copió               | a la vista, en su texto
  *   R12  confirmar                                  | la petición lleva lo copiado
  *   R13  cerrar                                     | no se crea nada
- *   14b  volver al paso 1 y avanzar sin cambiar     | los copiados siguen
+ *   14b  del Resumen al paso 1 y avanzar sin cambiar| los copiados siguen
+ *   E1   en modo estricto (desarrollo, el iPhone   | la barra copiada no se pierde
+ *        | por Vite): los efectos se montan dos veces| (revisor)
+ *   E2   cambiar de campo                           | la barra copiada sí se va
+ *
+ * Todo se monta en `<StrictMode>`, como la aplicación.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import { StrictMode } from 'react';
 import CreateQuickMatchModal from './CreateQuickMatchModal';
 
 vi.mock('react-i18next', () => ({
@@ -34,7 +40,7 @@ vi.mock('../golf_course/GolfCourseSearchBox', () => ({
     <button
       type="button"
       data-testid="select-course-stub"
-      onClick={() => onCourseSelect({ id: 'course-1', name: 'St Andrews' })}
+      onClick={() => onCourseSelect({ id: 'course-2', name: 'Otro campo' })}
     >
       Select course
     </button>
@@ -84,9 +90,11 @@ const borrador = (extra = {}) => ({
 const abre = (props = {}) => {
   const onClose = vi.fn();
   render(
-    <MemoryRouter>
-      <CreateQuickMatchModal onClose={onClose} onStarted={vi.fn()} currentUser={yo} borrador={borrador()} {...props} />
-    </MemoryRouter>
+    <StrictMode>
+      <MemoryRouter>
+        <CreateQuickMatchModal onClose={onClose} onStarted={vi.fn()} currentUser={yo} borrador={borrador()} {...props} />
+      </MemoryRouter>
+    </StrictMode>
   );
   return { onClose };
 };
@@ -149,6 +157,8 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
       'create.repetir.avisoNoAmigo',
       'create.repetir.avisoBarra',
     ]);
+    // Se anuncian: quien usa lector de pantalla oye que alguien se quedó fuera
+    expect(avisos.closest('[role="status"]')).not.toBeNull();
     expect(screen.getByTestId('quick-match-participants-next')).toBeInTheDocument();
   });
 
@@ -162,9 +172,12 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     expect(mockIniciar).not.toHaveBeenCalled();
   });
 
-  it('14b: volver al paso 1 y avanzar sin cambiar nada conserva a los copiados', async () => {
-    abre({ borrador: borrador({ paso: 1 }) });
+  it('14b: del Resumen al paso 1 y otra vez adelante, sin cambiar nada, siguen los copiados', async () => {
+    abre();
     await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+    fireEvent.click(await screen.findByTestId('quick-match-summary-back'));
+    fireEvent.click(await screen.findByTestId('quick-match-scorers-back'));
+    fireEvent.click(await screen.findByTestId('quick-match-participants-back'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
 
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -172,5 +185,17 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     await screen.findByTestId('quick-match-participants-next');
     expect(screen.getByText('Rafa')).toBeInTheDocument();
     expect(screen.getByText('Pepe Pérez')).toBeInTheDocument();
+  });
+
+  it('E2: cambiar de campo sí borra la barra copiada', async () => {
+    abre({ borrador: borrador({ paso: 1 }) });
+    await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalledWith('course-2'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent('create.course.errorTeeRequired');
   });
 });

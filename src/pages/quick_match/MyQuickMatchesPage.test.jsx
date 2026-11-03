@@ -126,9 +126,6 @@ describe('MyQuickMatchesPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/quick-matches/qm-1/scoring');
   });
 
-  // El control de navegar es una capa que cubre la tarjeta y ya no contiene el
-  // texto, asi que sin `aria-label` propio se quedaria sin nombre accesible:
-  // un lector de pantalla anunciaria «boton» a secas en cada partida.
   it('R2/R3 (FE #1021): repetir sale en las terminadas y canceladas, no en juego ni pendientes', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [
@@ -151,6 +148,9 @@ describe('MyQuickMatchesPage', () => {
     expect(screen.queryByTestId('repetir-qm-4')).not.toBeInTheDocument();
   });
 
+  // El control de navegar es una capa que cubre la tarjeta y ya no contiene el
+  // texto, asi que sin `aria-label` propio se quedaria sin nombre accesible:
+  // un lector de pantalla anunciaria «boton» a secas en cada partida.
   it('should give the row link an accessible name even though it holds no text', async () => {
     mockListMyQuickMatches.mockResolvedValue({
       quickMatches: [

@@ -1,18 +1,29 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getGolfCourseUseCase } from '../../composition';
+import { getGolfCourseUseCase, getQuickMatchUseCase } from '../../composition';
 import { esFalloDeRed } from '../../utils/sinCobertura';
 import { borradorParaRepetir } from '../../utils/borradorParaRepetir';
 import customToast from '../../utils/toast';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 
+// El campo ya no está (o ya no lo puede ver): eso, y solo eso, es «elige otro»
+const CAMPO_QUE_YA_NO_ESTA = new Set([403, 404]);
+
+const leeElCampo = (id) =>
+  getGolfCourseUseCase.execute(id).catch((err) => {
+    if (CAMPO_QUE_YA_NO_ESTA.has(err?.status)) return null;
+    throw err;
+  });
+
 /**
- * Repetir una partida rápida (FE #1021): pide el campo y los amigos de hoy,
- * monta el borrador y lo deja listo para abrir el asistente con él.
+ * Repetir una partida rápida (FE #1021): pide el campo y los amigos de hoy
+ * (y la partida, si solo llega su id, como desde Inicio), monta el borrador y
+ * lo deja listo para abrir el asistente con él.
  *
  * Sin red no se abre nada a medias: se dice, como en el resto de la
- * aplicación (R14). Un campo que ya no se puede leer cuenta como que ya no
- * está: el borrador lo avisa y empieza por elegir otro (R8).
+ * aplicación (R14). Un campo que ya no está (404/403) lo avisa el borrador y
+ * empieza por elegir otro (R8); cualquier otro fallo del servidor es el aviso
+ * genérico, sin descartar nada (revisor).
  *
  * @param {Object|null} currentUser Quien repite
  * @returns {{borrador: Object|null, preparando: boolean, repetir: Function, cierra: Function}}
@@ -25,23 +36,26 @@ export const useRepetirPartida = (currentUser) => {
   const [preparando, setPreparando] = useState(false);
 
   const repetir = useCallback(
-    async (partida) => {
+    async (partidaOResumen) => {
       if (!currentUser?.id) return;
       setPreparando(true);
+      let leido;
       try {
+        const partida = partidaOResumen.participants
+          ? partidaOResumen
+          : await getQuickMatchUseCase.execute(partidaOResumen.id);
         const [campo, amigos] = await Promise.all([
-          getGolfCourseUseCase.execute(partida.golfCourseId).catch((err) => {
-            if (esFalloDeRed(err)) throw err;
-            return null;
-          }),
+          leeElCampo(partida.golfCourseId),
           leeTodosLosAmigos(currentUser.id),
         ]);
-        setBorrador(borradorParaRepetir({ partida, yo: currentUser, amigos, campo }));
+        leido = { partida, campo, amigos };
       } catch (err) {
         customToast.error(esFalloDeRed(err) ? tComun('sinConexion.mensaje') : t('create.errors.generic'));
       } finally {
         setPreparando(false);
       }
+      // Fuera del try: un fallo aquí sería del código, no de la red
+      if (leido) setBorrador(borradorParaRepetir({ ...leido, yo: currentUser }));
     },
     [currentUser, t, tComun]
   );

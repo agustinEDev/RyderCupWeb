@@ -122,7 +122,9 @@
       "avisoBarra": "La barra de {{nombre}} ({{barra}}) ya no existe en el campo: vuelve a añadirlo con otra.",
       "avisoNoAmigo": "{{nombre}} ya no es tu amigo: no se ha copiado.",
       "boton": "Repetir partida",
-      "botonCorto": "Repetir"
+      "sinBarra": "sin barra",
+      "avisoInvitado": "No se ha podido copiar a {{nombre}}: vuelve a añadirlo.",
+      "botonDe": "Repetir «{{nombre}}»"
     }
   },
   "dashboard": {

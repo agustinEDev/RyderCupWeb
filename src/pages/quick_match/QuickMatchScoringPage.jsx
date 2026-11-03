@@ -19,7 +19,6 @@ import VentanaDelMapa from '../../components/scoring/mapa/VentanaDelMapa';
 import { claveDelAvisoDelVaciado } from '../../utils/erroresDeAnotacion';
 import { conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import QuickMatchHoleSelector from '../../components/quick_match/QuickMatchHoleSelector';
-import RepetirPartida from '../../components/quick_match/RepetirPartida';
 import QuickMatchHoleInput from '../../components/quick_match/QuickMatchHoleInput';
 import CampoDeLaPartida from '../../components/scoring/CampoDeLaPartida';
 import QuickMatchClassificationTable from '../../components/quick_match/QuickMatchClassificationTable';
@@ -591,16 +590,12 @@ const QuickMatchScoringPage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <button
-            onClick={() => navigate('/quick-matches')}
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary"
-          >
-            &larr; {t('scoring.backToMyQuickMatches')}
-          </button>
-          {/* Una partida que ya acabó se puede repetir (FE #1021) */}
-          {yaCerrada && user && <RepetirPartida partida={quickMatch} usuario={user} />}
-        </div>
+        <button
+          onClick={() => navigate('/quick-matches')}
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-3"
+        >
+          &larr; {t('scoring.backToMyQuickMatches')}
+        </button>
 
         <div className="flex items-center justify-between gap-3 mb-4">
           {/* min-w-0: sin él, un nombre de campo largo no se recorta y la cabecera se sale */}

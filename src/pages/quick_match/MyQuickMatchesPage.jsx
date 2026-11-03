@@ -403,7 +403,7 @@ const MyQuickMatchesPage = () => {
                     <div className="pointer-events-auto flex items-center gap-2">
                       {/* Una que ya acabó se puede repetir (FE #1021) */}
                       {(qm.status === 'COMPLETED' || qm.status === 'CANCELLED') && user && (
-                        <RepetirPartida partida={qm} usuario={user} como="icono" />
+                        <RepetirPartida partida={qm} usuario={user} />
                       )}
                       {/* El ojo solo en las terminadas: una partida a medias no
                           cuenta todavia en ninguna estadistica, asi que el

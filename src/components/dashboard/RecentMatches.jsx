@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { Zap, Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import BlockLoader from '../ui/BlockLoader';
+import RepetirPartida from '../quick_match/RepetirPartida';
 
 /**
  * Las últimas partidas del jugador: la respuesta a "¿cómo quedó lo último?".
@@ -20,7 +21,7 @@ const RESULT_TONES = {
   UNFINISHED: 'bg-gray-100 text-gray-500',
 };
 
-const MatchRow = ({ match, onOpen, t, formatDate }) => {
+const MatchRow = ({ match, onOpen, t, formatDate, usuario }) => {
   // Sin terminar no hay tanteo: un 6UP de seis hoyos no es un resultado
   const score = match.shownScore;
   const opponents = match.opponents.join(', ');
@@ -63,12 +64,18 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
         : t('recentMatches.strokesOnly', { strokes: match.totalStrokes })
       : null;
 
+  // Una partida rápida (aquí solo llegan terminadas) se puede repetir (FE
+  // #1021). El icono va AL LADO de la fila, no dentro: un botón dentro de
+  // otro no es válido y el lector de pantalla no los distingue
+  const sePuedeRepetir = usuario && !match.isFromTournament();
+
   return (
+    <div className="flex items-center border-b border-gray-100 last:border-b-0">
     <button
       type="button"
       onClick={() => onOpen(match)}
       data-testid={`recent-match-${match.id}`}
-      className="flex w-full items-center gap-3 border-b border-gray-100 px-1 py-3 text-left last:border-b-0 hover:bg-gray-50"
+      className="flex min-w-0 flex-1 items-center gap-3 px-1 py-3 text-left hover:bg-gray-50"
     >
       {match.hasResult() ? (
         <span
@@ -150,6 +157,8 @@ const MatchRow = ({ match, onOpen, t, formatDate }) => {
         <span className="text-[10px] text-gray-400">{formatDate(match.playedAt ?? match.date)}</span>
       </span>
     </button>
+    {sePuedeRepetir && <RepetirPartida partida={{ id: match.id, name: match.matchName }} usuario={usuario} />}
+    </div>
   );
 };
 
@@ -161,6 +170,8 @@ const RecentMatches = ({
   // Cuando otra espera de la misma pantalla ya se anuncia. Sin esto, un lector
   // de pantalla oye «Cargando...» dos veces seguidas sin nada que las distinga
   esperaSilenciosa = false,
+  // Con quien mira, sus partidas rápidas ofrecen «Repetir» (FE #1021)
+  usuario = null,
 }) => {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
@@ -213,6 +224,7 @@ const RecentMatches = ({
               onOpen={(target) => navigate(target.detailPath)}
               t={t}
               formatDate={formatDate}
+              usuario={usuario}
             />
           ))}
         </div>

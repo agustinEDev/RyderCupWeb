@@ -39,11 +39,22 @@ const MOTIVO_POR_CODIGO = {
   422: 'create.errors.invalid',
 };
 
+// La barra de un aviso, como la pinta el selector: color y género (el campo
+// puede tener las amarillas de hombre y no las de mujer), o «sin barra»
+const GENERO_DE_LA_BARRA = { MALE: 'male', FEMALE: 'female', MIXED: 'mixed' };
+const nombreDeLaBarra = (t, tCampos, aviso) => {
+  if (!aviso.color) return t('create.repetir.sinBarra');
+  const color = tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color });
+  const genero = GENERO_DE_LA_BARRA[aviso.genero];
+  return genero ? `${color} ${t(`create.teePanel.${genero}`).toLowerCase()}` : color;
+};
+
 // El texto de cada aviso de lo que no se pudo copiar al repetir (FE #1021)
 const textoDelAviso = (t, tCampos, aviso) => {
-  const barra = aviso.color ? tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color }) : '';
   if (aviso.tipo === 'campo') return t('create.repetir.avisoCampo');
   if (aviso.tipo === 'noAmigo') return t('create.repetir.avisoNoAmigo', { nombre: aviso.nombre });
+  if (aviso.tipo === 'invitado') return t('create.repetir.avisoInvitado', { nombre: aviso.nombre });
+  const barra = nombreDeLaBarra(t, tCampos, aviso);
   if (aviso.propia) return t('create.repetir.avisoMiBarra', { barra });
   return t('create.repetir.avisoBarra', { nombre: aviso.nombre, barra });
 };
@@ -87,9 +98,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [participants, setParticipants] = useState(copia?.participants ?? []);
   // Lo que no se pudo copiar al repetir (FE #1021), hasta cerrar el asistente
   const avisosAlRepetir = borrador?.avisos ?? [];
-  // La barra copiada sobrevive a la primera carga de las barras del campo,
-  // que la pone a cero (cambiar de campo sí la borra, como siempre)
-  const barraCopiada = useRef(copia?.selectedCourse ? copia.creatorTeeKey : null);
+  // De qué campo es la barra elegida: solo al cambiar de campo se borra. Con
+  // un «solo la primera vez» se perdía la copiada en desarrollo, donde React
+  // monta los efectos dos veces (revisor)
+  const campoDeLaBarra = useRef(copia?.selectedCourse?.id ?? null);
   // Con qué campo y formato se hizo la plantilla: volver al paso 1 sin
   // cambiarlos la conserva (Agustín, 3 nov 2026); cambiarlos la vacía
   const plantillaDe = useRef(
@@ -133,10 +145,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   }, [step, currentUser?.id]);
 
   useEffect(() => {
-    // Reset tee/tees state on every course change (including to none),
-    // mirrors useQuickMatchScoring's course-fetch pattern
-    setCreatorTeeKey(barraCopiada.current ?? NO_TEE_KEY);
-    barraCopiada.current = null;
+    // Otro campo (también ninguno): la barra elegida ya no vale
+    const campo = selectedCourse?.id ?? null;
+    if (campo !== campoDeLaBarra.current) {
+      campoDeLaBarra.current = campo;
+      setCreatorTeeKey(NO_TEE_KEY);
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset tee/tees state on every course change (including to none), mirrors useQuickMatchScoring's course-fetch pattern
     setCourseFromRfeg(false);
     if (!selectedCourse?.id) {
       setCourseTees([]);
@@ -570,14 +585,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
         )}
 
         {avisosAlRepetir.length > 0 && (
-          <ul
-            className="mx-4 mt-4 space-y-1 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900"
-            data-testid="avisos-al-repetir"
-          >
-            {avisosAlRepetir.map((aviso) => (
-              <li key={`${aviso.tipo}-${aviso.nombre ?? ''}-${aviso.color ?? ''}`}>{textoDelAviso(t, tCampos, aviso)}</li>
-            ))}
-          </ul>
+          <div role="status" className="mx-4 mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
+            <ul className="space-y-1" data-testid="avisos-al-repetir">
+              {avisosAlRepetir.map((aviso, i) => (
+                // Por posición (no cambia mientras está abierto): dos
+                // invitados pueden llamarse igual
+                <li key={i}>{textoDelAviso(t, tCampos, aviso)}</li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {step === 1 && (

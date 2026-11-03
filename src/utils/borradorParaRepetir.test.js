@@ -26,6 +26,14 @@ import { borradorParaRepetir } from './borradorParaRepetir';
  *        |                                           | repite (el servidor lo exige)
  *   R12  un invitado                                | id nuevo del borrador; nombre y
  *        |                                           | apellidos por separado
+ *
+ * Lo que añadió el revisor (3 nov 2026):
+ *
+ *   V1   el % copiado es el de por defecto          | no cuenta como elegido a mano
+ *   V2   un campo que ya no tiene barras            | nadie lleva la de antes
+ *   V3   invitado sin nombre y apellidos aparte     | se parte el nombre por el primer
+ *        | (servidor anterior, o lo guardado)        | espacio; sin espacio, fuera y aviso
+ *   V4   el aviso de una barra                      | con su color y su género
  */
 
 const tee = (color, gender = 'MALE') => ({ color, gender });
@@ -71,7 +79,7 @@ const partida = (extra = {}) => ({
   golfCourseId: 'gc-1',
   matchFormat: null,
   scoringFormat: 'STABLEFORD',
-  allowancePercentage: 95,
+  allowancePercentage: 80,
   playMode: 'HANDICAP',
   participants: [jugador('u-yo'), jugador('u-ana', { color: 'RED', teeGender: 'FEMALE' }), invitado()],
   scorerIds: ['u-yo', 'u-ana'],
@@ -91,7 +99,7 @@ describe('borradorParaRepetir', () => {
       matchName: 'Domingo en El Prat',
       mode: 'FREE_PLAY',
       scoringFormat: 'STABLEFORD',
-      allowanceOverride: 95,
+      allowanceOverride: 80,
       playMode: 'HANDICAP',
       creatorTeeKey: 'YELLOW|MALE',
     });
@@ -169,7 +177,7 @@ describe('borradorParaRepetir', () => {
 
     expect(b.paso).toBe(1);
     expect(b.inicial.creatorTeeKey).toBe('');
-    expect(b.avisos).toEqual([{ tipo: 'barra', propia: true, color: 'YELLOW' }]);
+    expect(b.avisos).toEqual([{ tipo: 'barra', propia: true, color: 'YELLOW', genero: 'MALE' }]);
   });
 
   it('R9b: la barra de otro ya no existe, fuera y aviso, en Jugadores', () => {
@@ -177,14 +185,20 @@ describe('borradorParaRepetir', () => {
 
     expect(nombres(b)).toEqual(['Yo Mismo', 'Pepe Pérez']);
     expect(b.paso).toBe(2);
-    expect(b.avisos).toEqual([{ tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED' }]);
+    expect(b.avisos).toEqual([{ tipo: 'barra', propia: false, nombre: 'Ana', color: 'RED', genero: 'FEMALE' }]);
   });
 
-  it('R9: un campo sin barras no quita a nadie', () => {
+  it('R9/V2: un campo sin barras no quita a nadie, y nadie lleva la de antes', () => {
     const b = repite({ campo: campo([]) });
 
     expect(b.paso).toBe(4);
     expect(nombres(b)).toEqual(['Yo Mismo', 'Ana', 'Pepe Pérez']);
+    expect(b.inicial.creatorTeeKey).toBe('');
+    expect(b.inicial.participants.map((p) => [p.color, p.teeGender])).toEqual([
+      [null, null],
+      [null, null],
+      [null, null],
+    ]);
   });
 
   it('R10: por parejas y falta uno, en Jugadores', () => {
@@ -218,5 +232,33 @@ describe('borradorParaRepetir', () => {
     expect(pepe.participantId).not.toBe('p-pepe');
     expect(pepe.participantId).toMatch(/^invitado-/);
     expect(pepe).toMatchObject({ userId: null, isGuest: true, firstName: 'Pepe', lastName: 'Pérez' });
+  });
+
+  it.each([
+    ['juego libre al 95 (el suyo)', { scoringFormat: 'STABLEFORD', allowancePercentage: 95 }, null],
+    ['juego libre al 80', { scoringFormat: 'STABLEFORD', allowancePercentage: 80 }, 80],
+    ['fourball al 90 (el suyo)', { scoringFormat: null, matchFormat: 'FOURBALL', allowancePercentage: 90 }, null],
+    ['individual al 90', { scoringFormat: null, matchFormat: 'SINGLES', allowancePercentage: 90 }, 90],
+  ])('V1: %s', (_, extra, esperado) => {
+    expect(repite({ partida: partida(extra) }).inicial.allowanceOverride).toBe(esperado);
+  });
+
+  it('V3: sin nombre y apellidos aparte, se parte el nombre por el primer espacio', () => {
+    const b = repite({
+      partida: partida({ participants: [jugador('u-yo'), invitado({ firstName: null, lastName: null, name: 'María José de la Fuente' })] }),
+    });
+
+    expect(b.inicial.participants[1]).toMatchObject({ firstName: 'María', lastName: 'José de la Fuente', name: 'María José de la Fuente' });
+    expect(b.avisos).toEqual([]);
+  });
+
+  it('V3: un nombre sin espacio no se puede partir: fuera y aviso', () => {
+    const b = repite({
+      partida: partida({ participants: [jugador('u-yo'), invitado({ firstName: undefined, lastName: undefined, name: 'Pepe' })] }),
+    });
+
+    expect(nombres(b)).toEqual(['Yo Mismo']);
+    expect(b.paso).toBe(2);
+    expect(b.avisos).toEqual([{ tipo: 'invitado', nombre: 'Pepe' }]);
   });
 });

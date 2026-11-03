@@ -10,7 +10,16 @@
  *   R12  empieza la nueva                           | se va a anotarla
  *   R14  sin red (campo o amigos)                   | el aviso de sin conexión; no se abre
  *   D1   dos toques seguidos                        | se prepara una sola vez
- *   D2   el icono en una tarjeta                    | el toque no abre la tarjeta
+ *
+ * Lo que añadió el revisor (3 nov 2026):
+ *
+ *   D3   el asistente                               | se pinta en `body`, fuera de la
+ *        |                                           | tarjeta (si no, la tapaban las
+ *        |                                           | siguientes y la barra inferior)
+ *   D4   el icono                                   | dice qué partida repite
+ *   D5   desde Inicio llega solo el id              | se pide la partida antes
+ *   D6   el servidor falla al leer el campo (500)   | el aviso genérico; no se abre ni
+ *        |                                           | se da el campo por perdido
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -23,9 +32,11 @@ vi.mock('react-i18next', () => ({
 
 const mockGetGolfCourse = vi.fn();
 const mockListFriends = vi.fn();
+const mockGetQuickMatch = vi.fn();
 vi.mock('../../composition', () => ({
   getGolfCourseUseCase: { execute: (...a) => mockGetGolfCourse(...a) },
   listFriendsUseCase: { execute: (...a) => mockListFriends(...a) },
+  getQuickMatchUseCase: { execute: (...a) => mockGetQuickMatch(...a) },
 }));
 
 const mockToastError = vi.fn();
@@ -59,16 +70,15 @@ const PARTIDA = {
 const CAMPO = { id: 'gc-1', tees: [{ color: 'YELLOW', gender: 'MALE' }], isApproved: () => true };
 const sinRed = () => new TypeError('Failed to fetch');
 
-const pinta = (como) => {
-  const abreLaTarjeta = vi.fn();
+const pinta = (partida = PARTIDA) =>
   render(
     <MemoryRouter initialEntries={['/quick-matches']}>
       <Routes>
         <Route
           path="/quick-matches"
           element={
-            <div onClick={abreLaTarjeta}>
-              <RepetirPartida partida={PARTIDA} usuario={yo} como={como} />
+            <div data-testid="tarjeta">
+              <RepetirPartida partida={partida} usuario={yo} />
             </div>
           }
         />
@@ -76,10 +86,8 @@ const pinta = (como) => {
       </Routes>
     </MemoryRouter>
   );
-  return { abreLaTarjeta };
-};
 
-const boton = () => screen.getByRole('button', { name: 'create.repetir.boton' });
+const boton = () => screen.getByRole('button', { name: 'create.repetir.botonDe' });
 
 describe('RepetirPartida', () => {
   beforeEach(() => {
@@ -140,11 +148,40 @@ describe('RepetirPartida', () => {
     expect(mockGetGolfCourse).toHaveBeenCalledTimes(1);
   });
 
-  it('D2: el icono de la tarjeta no la abre al pulsarlo', async () => {
-    const { abreLaTarjeta } = pinta('icono');
+  it('D3: el asistente se pinta en body, fuera de la tarjeta', async () => {
+    pinta();
     fireEvent.click(boton());
 
-    await screen.findByTestId('asistente');
-    expect(abreLaTarjeta).not.toHaveBeenCalled();
+    const asistente = await screen.findByTestId('asistente');
+    expect(screen.getByTestId('tarjeta').contains(asistente)).toBe(false);
+    expect(asistente.parentElement).toBe(document.body);
+  });
+
+  it('D4: el icono dice qué partida repite (y sin nombre, solo «Repetir partida»)', () => {
+    pinta();
+    expect(boton()).toBeInTheDocument();
+  });
+
+  it('D4: sin nombre, solo «Repetir partida»', () => {
+    pinta({ ...PARTIDA, name: null });
+    expect(screen.getByRole('button', { name: 'create.repetir.boton' })).toBeInTheDocument();
+  });
+
+  it('D5: con solo el id (desde Inicio), pide la partida antes', async () => {
+    mockGetQuickMatch.mockResolvedValue(PARTIDA);
+    pinta({ id: 'qm-1', name: 'Domingo' });
+    fireEvent.click(boton());
+
+    expect((await screen.findByTestId('asistente')).dataset.paso).toBe('4');
+    expect(mockGetQuickMatch).toHaveBeenCalledWith('qm-1');
+  });
+
+  it('D6: un 500 al leer el campo es el aviso genérico, sin abrir nada', async () => {
+    mockGetGolfCourse.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+    pinta();
+    fireEvent.click(boton());
+
+    await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('create.errors.generic'));
+    expect(screen.queryByTestId('asistente')).not.toBeInTheDocument();
   });
 });
