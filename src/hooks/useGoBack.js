@@ -1,6 +1,12 @@
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
+/** Si hay una entrada propia detrás de esta: ver `useGoBack`, abajo. */
+export const hayHistorialPropio = (location) => {
+  const historyIndex = window.history.state?.idx;
+  return historyIndex !== undefined ? historyIndex > 0 : location.key !== 'default';
+};
+
 /**
  * Vuelta por historial para pantallas sin padre unico.
  *
@@ -25,8 +31,7 @@ export function useGoBack(fallback = '/feed') {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const historyIndex = window.history.state?.idx;
-  const hasHistory = historyIndex !== undefined ? historyIndex > 0 : location.key !== 'default';
+  const hasHistory = hayHistorialPropio(location);
 
   return useCallback(() => {
     if (hasHistory) navigate(-1);

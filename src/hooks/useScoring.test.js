@@ -2695,7 +2695,9 @@ describe('useScoring · de dónde viene el fallo (FE #626)', () => {
   const rechazo = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
   const monta = async () => {
     const app = renderHook(() => useScoring('m-1', 'u1'));
-    await waitFor(() => expect(app.result.current.isLoading).toBe(false));
+    // Con más margen que el segundo de siempre: con la batería entera, la
+    // carga ha llegado a pasar de él (2 nov 2026)
+    await waitFor(() => expect(app.result.current.isLoading).toBe(false), { timeout: 5000 });
     return app;
   };
 

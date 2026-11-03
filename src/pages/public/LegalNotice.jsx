@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
@@ -46,11 +45,7 @@ const LegalNotice = () => {
       <div className="layout-container flex h-full grow flex-col">
         <Header />
         <main className="flex-1 max-w-4xl mx-auto px-4 md:px-8 py-12 w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div>
             <VolverDeLoLegal />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               {t('legalNotice.title')}
@@ -89,7 +84,7 @@ const LegalNotice = () => {
             {DESPUES_DE_LAS_FUENTES.map((clave) => (
               <Seccion key={clave} t={t} clave={clave} />
             ))}
-          </motion.div>
+          </div>
         </main>
         <Footer />
       </div>

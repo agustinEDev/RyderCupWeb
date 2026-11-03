@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router';
 import { motion } from 'framer-motion';
-import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff } from 'lucide-react';
+import { Users, Calendar, Clock, MapPin, Plus, Filter, Search, AlertCircle, WifiOff, RotateCw } from 'lucide-react';
 import customToast from '../utils/toast';
-import { esFalloDeRed } from '../utils/sinCobertura';
+import { useSinConexion } from '../hooks/useSinConexion';
+import { olvidaQueSeVuelveAPedir, pideOtraVez } from '../utils/cargaDeLaPantalla';
+import { guardaLosFiltros, losFiltrosGuardados } from '../services/memoriaDeLasListas';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
-import { listUserCompetitionsUseCase } from '../composition';
 import {
   getStatusColor,
   formatDateRange
@@ -14,12 +15,12 @@ import {
 import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { CountryFlag } from '../utils/countryUtils';
-import BlockLoader from '../components/ui/BlockLoader';
 import { formatCountryName } from '../services/countries';
 import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
 import { diaCorto } from '../utils/diaDeLaSesion';
 import EtiquetaDelTipo from '../components/competition/EtiquetaDelTipo';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import BlockLoader from '../components/ui/BlockLoader';
 
 // Helper function to get enrollment status classes
 const getEnrollmentStatusClasses = (status) => {
@@ -34,6 +35,9 @@ const getEnrollmentStatusClasses = (status) => {
       return 'bg-gray-100 text-gray-800 border border-gray-200';
   }
 };
+
+// La de `Competitions.datos`, en su memoria y en la de sus filtros
+const LISTA = 'competitions';
 
 const Competitions = () => {
   const navigate = useNavigate();
@@ -52,47 +56,106 @@ const Competitions = () => {
     [diaCorto(date, i18n.language), teeTime ?? tSchedule(`sessions.${sessionType}`)].filter(Boolean).join(' · ');
   const nombreDelPais = (competition, code) =>
     formatCountryName((competition.countries ?? []).find((c) => c.code === code), i18n.language) || code;
-  const [competitions, setCompetitions] = useState([]);
-  const [sinCobertura, setSinCobertura] = useState(false);
-  const [filteredCompetitions, setFilteredCompetitions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  // Los trae el `loader` de la ruta (`Competitions.datos`) antes de pintar: es
+  // lo que deja a «atrás» devolverte a donde estabas (FE #647, fase 3). Sin red
+  // o con error, `datos` es lo último que se cargó en esta visita, o `null`
+  const resultado = useLoaderData();
+  // La lista que llegó después del tope de 4 s: se pinta sin volver a pedirla
+  // (Agustín, 2 nov 2026). Vale solo para la carga de la que vino
+  const [llegoTarde, setLlegoTarde] = useState(null);
+  useEffect(() => {
+    if (!resultado.tardia) return undefined;
+    let vigente = true;
+    resultado.tardia.then((lista) => {
+      if (vigente) setLlegoTarde({ de: resultado, datos: lista });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [resultado]);
+  // Los datos de otra cuenta no se enseñan: si entra otra persona sin salir de
+  // aquí, espera como en la primera carga hasta tener los suyos (CodeRabbit;
+  // antes del `loader`, cambiar de cuenta también tapaba la lista con la espera)
+  // (`pendiente` y `sinSesion` no traen cuenta, y se esperan igual)
+  const deOtraCuenta = resultado.usuarioId !== user?.id;
+  const { estado, datos } = (() => {
+    if (deOtraCuenta) return { estado: 'pendiente', datos: null };
+    return llegoTarde?.de === resultado ? { estado: 'ok', datos: llegoTarde.datos } : resultado;
+  })();
+  // Memorizada: un `[]` nuevo en cada pintada rehacía los filtros sin parar
+  const competitions = useMemo(() => datos ?? [], [datos]);
+  const revalidador = useRevalidator();
+  const reintentando = revalidador.state !== 'idle';
+  // Sin red, el aviso ya lo da la barra de toda la aplicación; el de aquí es
+  // para cuando el móvil cree tener red y el servidor no contesta (dos barras)
+  const elMovilSabeQueNoHayRed = useSinConexion();
+  // Los filtros, por entrada del historial: al volver atrás se repone el
+  // scroll, y sin ellos se caía a esa altura en otra lista, la de sin filtrar
+  // (Agustín, 2 nov 2026). Entrar de nuevo es otra entrada y empieza sin
+  // filtros; recargar, también, porque viven en memoria (`memoriaDeLasListas`)
+  const { key: entrada } = useLocation();
+  const usuarioId = user?.id;
+  const [filtrosAlVolver] = useState(() =>
+    usuarioId ? losFiltrosGuardados(LISTA, usuarioId, entrada) : null
+  );
+  const [searchQuery, setSearchQuery] = useState(filtrosAlVolver?.busqueda ?? '');
+  const [statusFilter, setStatusFilter] = useState(filtrosAlVolver?.estado ?? 'ALL');
+  // También al cambiar de entrada sin salir: pulsar Torneos en Torneos crea
+  // otra, y la pantalla sigue filtrada
+  useEffect(() => {
+    if (!usuarioId) return;
+    const conFiltros = searchQuery || statusFilter !== 'ALL';
+    guardaLosFiltros(LISTA, usuarioId, entrada, conFiltros ? { busqueda: searchQuery, estado: statusFilter } : null);
+  }, [searchQuery, statusFilter, entrada, usuarioId]);
 
-  const loadCompetitions = useCallback(async () => {
-    if (!user?.id) {
-      return;
-    }
+  // La marca de volver a pedir se gasta al llegar una carga: hasta entonces,
+  // si otra navegación corta la recarga, esa sigue pidiendo (tercer revisor).
+  // Y al salir se olvida, si no se llegó a usar
+  useEffect(() => olvidaQueSeVuelveAPedir(), [resultado]);
+  useEffect(() => olvidaQueSeVuelveAPedir, []);
 
-    setIsLoading(true);
+  // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
+  // nuevo, también al reintentar (Agustín, 2 nov 2026: como hasta ahora)
+  // (de su cuenta: la de otra que entra sin salir de aquí no es suya)
+  useEffect(() => {
+    if (deOtraCuenta) return;
+    if (resultado.estado === 'sinRed') customToast.error(tComun('sinConexion.mensaje'));
+    if (resultado.estado === 'error') customToast.error(t('detail.failedToLoadCompetitions'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar otra carga, no si cambia el idioma
+  }, [resultado]);
 
-    try {
-      // Use the use case instead of direct service call
-      const data = await listUserCompetitionsUseCase.execute(user.id);
-      setCompetitions(data);
-      // Y se baja la bandera: sin esto, una carga buena después de un rato sin
-      // señal dejaba la pantalla diciendo «sin conexión» mientras el aviso de
-      // arriba ya había desaparecido, contradiciéndose
-      setSinCobertura(false);
-    } catch (error) {
-      console.error('Error loading competitions:', error);
-      // Sin red no se sabe si hay competiciones o no, asi que NO se vacia la
-      // lista: hacerlo pintaba «Mostrando 0 de 0» y ofrecia «crear tu primera»
-      // a quien tiene las suyas, que es afirmar algo que nadie ha comprobado.
-      // Y el aviso lleva texto propio, no el `message` del error: sin cobertura
-      // ahi venia el mensaje crudo del service worker, en ingles y con la URL
-      const deRed = esFalloDeRed(error);
-      setSinCobertura(deRed);
-      customToast.error(deRed ? tComun('sinConexion.mensaje') : t('detail.failedToLoadCompetitions'));
-      if (!deRed) setCompetitions([]);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Sin datos todavía: la primera carga de la aplicación (`pendiente`) o una
+  // sesión que aún no se sabía (`sinSesion`; si no la hay, el guardia ya lleva
+  // a entrar). Esperar aquí, con la carcasa puesta, es como cargaba siempre
+  const faltanLosDatos = estado === 'pendiente' || estado === 'sinSesion';
+  // Se pide en cuanto se sabe quién es, y otra vez cada vez que la sesión se
+  // confirma o cambia (otro `user`), como antes del `loader`, que dependía de
+  // él (`/code-review`). También con una carga en camino: gana la última
+  // (tercer revisor). Si los datos vuelven a faltar más tarde (la sesión
+  // superó el tope), una vez más, pero no en cada carga que siga sin ellos
+  const pedidaCon = useRef(faltanLosDatos ? null : user);
+  const faltabanYa = useRef(faltanLosDatos);
+  useEffect(() => {
+    const vuelvenAFaltar = faltanLosDatos && !faltabanYa.current;
+    faltabanYa.current = faltanLosDatos;
+    if (!user?.id || (pedidaCon.current === user && !vuelvenAFaltar)) return;
+    pedidaCon.current = user;
+    pideOtraVez(revalidador);
+  }, [user, faltanLosDatos, revalidador]);
 
-  const applyFilters = useCallback(() => {
-    let filtered = [...competitions];
+  // Al volver la señal, se vuelve a pedir sola (decidido el 2 nov 2026)
+  useEffect(() => {
+    if (estado !== 'sinRed') return undefined;
+    const alVolver = () => pideOtraVez(revalidador);
+    globalThis.addEventListener('online', alVolver);
+    return () => globalThis.removeEventListener('online', alVolver);
+  }, [estado, revalidador]);
+
+  // En el mismo pintado que la lista, y no en un efecto: un efecto la dejaba un
+  // pintado vacía, justo cuando el router restaura el scroll al volver atrás,
+  // y el navegador recortaba la posición sobre una página corta (revisor)
+  const filteredCompetitions = useMemo(() => {
+    let filtered = competitions;
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -115,20 +178,8 @@ const Competitions = () => {
       filtered = filtered.filter((comp) => comp.status === statusFilter);
     }
 
-    setFilteredCompetitions(filtered);
+    return filtered;
   }, [competitions, searchQuery, statusFilter, i18n.language]);
-
-  useEffect(() => {
-    if (user?.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-      loadCompetitions();
-    }
-  }, [user, loadCompetitions]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern surfaced by eslint-plugin-react-hooks 7.1.1 bump; needs dedicated review (tracked in follow-up)
-    applyFilters();
-  }, [competitions, searchQuery, statusFilter, applyFilters]);
 
   const handleCreateCompetition = () => {
     navigate('/competitions/create');
@@ -140,9 +191,33 @@ const Competitions = () => {
 
   // Renderiza el contenido de la lista de competiciones
   const renderCompetitionsList = () => {
-    if (isLoading) {
+    const reintentar = (
+      <button
+        type="button"
+        onClick={() => pideOtraVez(revalidador)}
+        disabled={reintentando}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+      >
+        <RotateCw className="w-4 h-4" aria-hidden="true" />
+        {t('myCompetitions.reintentar')}
+      </button>
+    );
+    if (faltanLosDatos) {
+      return <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />;
+    }
+    // Un error del servidor —429, 5xx— tampoco es «no tienes ninguna»: no se
+    // ha podido preguntar. Antes se vaciaba la lista y lo decía (FE #647, T6)
+    if (estado === 'error' && datos === null) {
       return (
-        <BlockLoader texto={t('myCompetitions.loadingCompetitions')} />
+        <div
+          data-testid="competiciones-sin-cargar"
+          className="flex flex-col items-center justify-center py-12 bg-gray-50 border border-gray-200 rounded-xl"
+        >
+          <AlertCircle className="w-16 h-16 text-gray-400 mb-4" aria-hidden="true" />
+          <p className="text-gray-900 font-semibold text-lg mb-2">{t('myCompetitions.noSePudoCargar')}</p>
+          <p className="text-gray-500 text-sm mb-6 max-w-md text-center">{t('myCompetitions.noSePudoCargarDetalle')}</p>
+          {reintentar}
+        </div>
       );
     }
     // Vacio porque no se ha podido preguntar NO es vacio: decir «no tienes
@@ -151,7 +226,7 @@ const Competitions = () => {
     // Por la lista entera, no por lo filtrado: sin cobertura la lista se
     // conserva, así que un filtro que no casa con nada no es falta de red —se
     // consultó, y no había coincidencias— y merece su propio mensaje
-    if (competitions.length === 0 && sinCobertura) {
+    if (estado === 'sinRed' && datos === null) {
       return (
         <div
           data-testid="competiciones-sin-cobertura"
@@ -169,9 +244,7 @@ const Competitions = () => {
     }
     if (filteredCompetitions.length === 0) {
       return (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="flex flex-col items-center justify-center py-12 bg-gray-50 border border-gray-200 rounded-xl"
         >
           <AlertCircle className="w-16 h-16 text-gray-400 mb-4" />
@@ -196,22 +269,39 @@ const Competitions = () => {
               <span>{t('myCompetitions.createYourFirstCompetition')}</span>
             </motion.button>
           )}
-        </motion.div>
+        </div>
       );
     }
-    // Renderizado normal de la lista de competiciones
+    // Renderizado normal de la lista de competiciones: con lo último que se
+    // cargó, si ahora no se ha podido, y diciéndolo
     return (
+      <>
+      {estado === 'error' && (
+        <div
+          data-testid="aviso-lista-sin-actualizar"
+          className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900"
+        >
+          <span>{t('myCompetitions.noSePudoActualizar')}</span>
+          {reintentar}
+        </div>
+      )}
+      {estado === 'sinRed' && !elMovilSabeQueNoHayRed && (
+        <div
+          data-testid="aviso-lista-sin-respuesta"
+          className="flex items-center gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700"
+        >
+          <WifiOff className="w-4 h-4 shrink-0" aria-hidden="true" />
+          <span>{tComun('sinConexion.aviso')}</span>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCompetitions.map((competition, index) => {
+        {filteredCompetitions.map((competition) => {
           // Una vez por tarjeta (`/code-review`)
           const papel = papelEn(competition);
           return (
 
-          <motion.div
+          <div
             key={competition.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
             onClick={() => handleViewCompetition(competition.id)}
             data-testid="tarjeta-competicion"
             className="min-w-0 bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group"
@@ -334,10 +424,11 @@ const Competitions = () => {
                 </span>
               </div>
             </div>
-          </motion.div>
+          </div>
           );
         })}
       </div>
+      </>
     );
   };
 
@@ -352,10 +443,7 @@ const Competitions = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="flex flex-wrap justify-between items-center gap-3 p-4"
             >
               <div>
@@ -375,12 +463,9 @@ const Competitions = () => {
                 <Plus className="w-4 h-4" />
                 <span>{t('myCompetitions.createCompetition')}</span>
               </motion.button>
-            </motion.div>
+            </div>
             {/* Filters */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <div
               className="p-4"
             >
               <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -419,13 +504,14 @@ const Competitions = () => {
                   </div>
                 </div>
                 {/* Results Count */}
-                {!isLoading && (
+                {/* Sin lista que enseñar no hay «0 de 0»: no se ha podido preguntar */}
+                {datos !== null && (
                   <div className="mt-3 text-sm text-gray-500">
                     {t('myCompetitions.showing', { filtered: filteredCompetitions.length, total: competitions.length })}
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
             {/* Competitions List */}
             <div className="p-4">
               {renderCompetitionsList()}
@@ -443,4 +529,11 @@ const Competitions = () => {
   );
 };
 
-export default Competitions;
+// Una por cuenta: si entra otra sin salir de aquí, la pantalla empieza de cero,
+// sin lo que buscó la anterior ni su estado (revisor, 3 nov 2026)
+const CompetitionsDeLaCuenta = () => {
+  const { user } = useAuth();
+  return <Competitions key={user?.id ?? ''} />;
+};
+
+export default CompetitionsDeLaCuenta;

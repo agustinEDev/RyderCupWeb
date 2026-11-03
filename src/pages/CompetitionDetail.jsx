@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
-import { motion } from 'framer-motion';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, UserMinus, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
 import Plegable from '../components/ui/Plegable';
@@ -66,6 +65,7 @@ import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { mensajeConJugadores } from '../utils/erroresConJugadores';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { hayHistorialPropio } from '../hooks/useGoBack';
 
 // «Volver» lleva a donde se vino: explorar, las invitaciones (FE #682) o, por
 // defecto, las competiciones propias
@@ -211,6 +211,11 @@ const CompetitionDetail = () => {
   const vuelta = Object.hasOwn(VUELTAS, origen ?? '') ? VUELTAS[origen] : VUELTA_POR_DEFECTO;
   const backLink = vuelta.to;
   const backText = t(vuelta.clave);
+  // Desde Torneos, volver es volver atrás de verdad, como el atrás del sistema:
+  // así Torneos queda donde estaba (FE #647, fase 3; Agustín, 2 nov 2026). Sin
+  // nada detrás —se entró por un enlace—, a Torneos como siempre
+  const vuelveAtras = origen === 'my-competitions' && hayHistorialPropio(location);
+  const volver = () => (vuelveAtras ? navigate(-1) : navigate(backLink));
 
   // Por el id y no por el objeto: refrescar la sesión crea un `user` nuevo con el
   // mismo id, y la ficha se recargaba entera tras apuntarse (CodeRabbit, #720)
@@ -1266,7 +1271,7 @@ const CompetitionDetail = () => {
             pantalla sabe si se llego desde explorar, y esa vuelta es mejor. Sin
             pasarsela, ocultar el enlace de la pagina en movil perderia
             comportamiento en lugar de quitar ruido (FE #338) */}
-        <HeaderAuth user={user} title={competition.name} backTo={backLink} />
+        <HeaderAuth user={user} title={competition.name} backTo={backLink} alVolver={vuelveAtras ? volver : undefined} />
 
         <ConfirmModal
           isOpen={Boolean(pregunta)}
@@ -1324,14 +1329,11 @@ const CompetitionDetail = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="p-4"
             >
               <button
-                onClick={() => navigate(backLink)}
+                onClick={volver}
                 className="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary transition-colors mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -1468,7 +1470,7 @@ const CompetitionDetail = () => {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Mi invitación pendiente: aceptar o rechazar aquí mismo, sin pasar
                 por «Mis invitaciones». Respondida, la ficha se relee (release
@@ -1477,10 +1479,7 @@ const CompetitionDetail = () => {
 
             {/* Action Buttons */}
             {canManage && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <div
                 className="p-4"
               >
                 <AccionesDeLaFicha
@@ -1502,7 +1501,7 @@ const CompetitionDetail = () => {
                       : t('detail.invitingOpensEnrollment')}
                   </p>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {/* La clasificación, para todo el mundo. A quien organiza NO se le
@@ -1510,10 +1509,7 @@ const CompetitionDetail = () => {
                 ofrecerla dos veces es lo que venía a arreglar el FE #705 */}
             {!canManage &&
               (competition.status === 'IN_PROGRESS' || competition.status === 'COMPLETED') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <div
                 className="p-4"
               >
                 <button
@@ -1523,16 +1519,13 @@ const CompetitionDetail = () => {
                   <BarChart3 className="w-5 h-5" />
                   <span>{t('detail.actions.leaderboard')}</span>
                 </button>
-              </motion.div>
+              </div>
             )}
 
             {/* View Schedule Button - For enrolled players (not creators/admins) */}
             {!canManage && !esStrokePlay && competition.status !== 'DRAFT' && competition.status !== 'CANCELLED' &&
               (userEnrollment?.status === 'APPROVED' || competition.enrollment_status === 'APPROVED') && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <div
                 className="p-4"
               >
                 <button
@@ -1542,7 +1535,7 @@ const CompetitionDetail = () => {
                   <Calendar className="w-5 h-5" />
                   <span>{t('detail.actions.viewSchedule')}</span>
                 </button>
-              </motion.div>
+              </div>
             )}
 
             {/* Pedir plaza: abierta, pública, sin estar ya dentro ni ser quien la
@@ -1558,10 +1551,7 @@ const CompetitionDetail = () => {
               // Con los equipos formados no entra nadie por su cuenta (29 oct 2026)
               !competition.teamsAssigned &&
               !bloqueaElMaximo && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <div
                 className="p-4"
               >
                 <button
@@ -1575,7 +1565,7 @@ const CompetitionDetail = () => {
                   <UserPlus className="w-5 h-5" />
                   <span>{t('detail.actions.request-to-join')}</span>
                 </button>
-              </motion.div>
+              </div>
             )}
 
             {!isCreator &&
@@ -1589,10 +1579,7 @@ const CompetitionDetail = () => {
 
             {/* User Enrollment Status */}
             {hasEnrollment && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <div
                 className="p-4"
               >
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1673,14 +1660,11 @@ const CompetitionDetail = () => {
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Competition Details */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+            <div
               className="p-4"
             >
               {/* En juego o acabado, plegada: lo que se mira es la clasificación y las partidas */}
@@ -1800,7 +1784,7 @@ const CompetitionDetail = () => {
                   </div>
                 </div>
               </Plegable>
-            </motion.div>
+            </div>
 
             {/* Los hándicaps del organizador, desde el cierre (FE #824, PR 5):
                 cómo fue la última actualización con la RFEG, el botón y la
@@ -1908,23 +1892,16 @@ const CompetitionDetail = () => {
             </div>
 
             {/* Golf Courses Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.25 }}
-            >
+            <div>
               <CompetitionGolfCoursesSection
                 competition={competition}
                 canManage={canManage}
                 onCamposCambiados={avisarDeLosCampos}
               />
-            </motion.div>
+            </div>
 
             {/* Approved Players Section - Visible to all authenticated users */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+            <div
               className="p-4"
             >
               <Plegable
@@ -2114,14 +2091,11 @@ const CompetitionDetail = () => {
                   </div>
                 )}
               </Plegable>
-            </motion.div>
+            </div>
 
             {/* Pending & Rejected Enrollments - Only visible to creator/admin */}
             {canManage && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.35 }}
+              <div
                 className="px-4 space-y-4"
               >
                 {/* Pending Requests Section */}
@@ -2228,7 +2202,7 @@ const CompetitionDetail = () => {
                     </div>
                   </details>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {/* Footer */}

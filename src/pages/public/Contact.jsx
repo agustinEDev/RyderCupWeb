@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Mail, Clock, CheckCircle } from 'lucide-react';
 import Header from '../../components/layout/Header';
@@ -97,11 +96,8 @@ const Contact = () => {
         <Header />
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16">
-            <motion.div
+            <div
               className="text-center mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
             >
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                 {t('title')}
@@ -109,15 +105,12 @@ const Contact = () => {
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 {t('subtitle')}
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
               {/* Form */}
-              <motion.div
+              <div
                 className="lg:col-span-2"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
               >
                 {isSuccess ? (
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-12 text-center">
@@ -240,14 +233,11 @@ const Contact = () => {
                     </button>
                   </form>
                 )}
-              </motion.div>
+              </div>
 
               {/* Info Panel */}
-              <motion.div
+              <div
                 className="lg:col-span-1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
               >
                 <div className="bg-gray-50 rounded-2xl p-8">
                   <h3 className="text-lg font-bold text-gray-900 mb-6">
@@ -287,7 +277,7 @@ const Contact = () => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </main>

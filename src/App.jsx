@@ -1,11 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useLayoutEffect, useCallback, Suspense, useState } from 'react';
 import {
-  createBrowserRouter,
   createRoutesFromElements,
   Outlet,
   Route,
   RouterProvider,
+  ScrollRestoration,
   useLocation,
   useRouteError,
 } from 'react-router';
@@ -36,6 +36,10 @@ import { useCortinaDeArranque } from './hooks/useCortinaDeArranque';
 import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import BarraDeCarga from './components/layout/BarraDeCarga';
+import { marcaElArranque } from './utils/cargaDeLaPantalla';
+import { loader as cargaDeTorneos, shouldRevalidate as cuandoVolverAPedirTorneos } from './pages/Competitions.datos';
+import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
@@ -129,6 +133,10 @@ function AppContent() {
   // Va aquí arriba, colgado del router y no de cada pantalla: el defecto no era
   // de una pantalla concreta, eran las 24
   useVolverArriba();
+
+  // Desde aquí, los `loader` ya no están en la primera carga: antes de montarse
+  // la carcasa, la pantalla carga dentro, como siempre (`cargaDeLaPantalla`)
+  useLayoutEffect(() => marcaElArranque(true), []);
 
   // Una página que vuelve desde la caché del historial del navegador se recarga:
   // volvía congelada, en «Loading...» tras salir o con la cuenta de antes (FE #865)
@@ -294,6 +302,10 @@ function AppContent() {
         {!esPuertaDeEntrada(location.pathname) && (
           <InstallBanner aboveBottomNav={showBottomNav} />
         )}
+        {/* Volver atrás te deja donde estabas en las pantallas con `loader`;
+            en las demás, `useVolverArriba` (que corre después) sube arriba */}
+        <ScrollRestoration storageKey={CLAVE_DEL_SCROLL} />
+        <BarraDeCarga />
         <Outlet />
       {showBottomNav && (
         <>
@@ -341,7 +353,7 @@ function RelanzarElError() {
 // Las rutas siguen escritas como JSX (`createRoutesFromElements`); `rutasDeLaAplicacion`
 // es su copia sin la comodín, y un test vigila que no se separen
 export const rutasDeLaApp = createRoutesFromElements(
-  <Route element={<AppContent />} errorElement={<RelanzarElError />}>
+  <Route element={<AppContent />} errorElement={<RelanzarElError />} hydrateFallbackElement={<FullScreenLoader />}>
     <Route errorElement={<RelanzarElError />}>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
@@ -371,7 +383,14 @@ export const rutasDeLaApp = createRoutesFromElements(
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
       <Route path="/profile/devices" element={<ProtectedRoute><DeviceManagement /></ProtectedRoute>} />
-      <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
+      {/* Con sus datos antes de pintarse (FE #647, fase 3): sin ellos, volver
+          atrás no puede devolverte a donde estabas */}
+      <Route path="/competitions"
+        loader={cargaDeTorneos}
+        shouldRevalidate={cuandoVolverAPedirTorneos}
+        handle={{ restauraElScroll: true }}
+        element={<ProtectedRoute><Competitions /></ProtectedRoute>}
+      />
       <Route path="/competitions/create" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       <Route path="/competitions/:id/edit" element={<ProtectedRoute><CreateCompetition /></ProtectedRoute>} />
       <Route path="/competitions/:id" element={<ProtectedRoute><CompetitionDetail /></ProtectedRoute>} />
@@ -490,7 +509,7 @@ export const rutasDeLaApp = createRoutesFromElements(
 function App() {
   // Uno por montaje y no al importar: lee la dirección del momento en que se
   // abre (los tests montan la aplicación en direcciones distintas)
-  const [router] = useState(() => createBrowserRouter(rutasDeLaApp));
+  const [router] = useState(() => creaElRouterDeLaAplicacion(rutasDeLaApp));
   // Sentry sigue sus navegaciones cuando llega su seguimiento, ~2 s después
   // (`utils/navegacionesEnSentry`). En un efecto y no al crearlo: con
   // StrictMode React lo crea dos veces y se queda con el PRIMERO (revisor)

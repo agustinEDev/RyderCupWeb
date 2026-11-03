@@ -199,10 +199,7 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
     <div className={embedded ? undefined : 'layout-content-container flex flex-col max-w-[1200px] flex-1'}>
       {/* Header */}
       {!embedded && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <div
           className="p-4"
         >
           <h1 className="text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
@@ -211,14 +208,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
           <p className="text-gray-500 text-sm mt-1">
             {t('pages.pending.subtitle')}
           </p>
-        </motion.div>
+        </div>
       )}
 
       {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
+      <div
         className="p-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -233,14 +227,11 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
             </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Tabs: las dos comparten la tabla, que es su panel */}
       <GrupoDePestanas actual={activeTab} onElegir={setActiveTab} panelUnico>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+        <div
           className="p-4"
         >
           <ListaDePestanas
@@ -258,16 +249,10 @@ const PendingGolfCourses = ({ embedded = false, onCambio }) => {
               }`
             }
           />
-        </motion.div>
+        </div>
 
         {/* Table */}
-        <PanelDePestana
-          como={motion.div}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="p-4"
-        >
+        <PanelDePestana className="p-4">
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <GolfCourseTable
               courses={currentCourses}
