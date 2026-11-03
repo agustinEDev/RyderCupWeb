@@ -73,7 +73,15 @@ const Competitions = () => {
       vigente = false;
     };
   }, [resultado]);
-  const { estado, datos } = llegoTarde?.de === resultado ? { estado: 'ok', datos: llegoTarde.datos } : resultado;
+  // Los datos de otra cuenta no se enseñan: si entra otra persona sin salir de
+  // aquí, espera como en la primera carga hasta tener los suyos (CodeRabbit;
+  // antes del `loader`, cambiar de cuenta también tapaba la lista con la espera)
+  // (`pendiente` y `sinSesion` no traen cuenta, y se esperan igual)
+  const deOtraCuenta = resultado.usuarioId !== user?.id;
+  const { estado, datos } = (() => {
+    if (deOtraCuenta) return { estado: 'pendiente', datos: null };
+    return llegoTarde?.de === resultado ? { estado: 'ok', datos: llegoTarde.datos } : resultado;
+  })();
   // Memorizada: un `[]` nuevo en cada pintada rehacía los filtros sin parar
   const competitions = useMemo(() => datos ?? [], [datos]);
   const revalidador = useRevalidator();

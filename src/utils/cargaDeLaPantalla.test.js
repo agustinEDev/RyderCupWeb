@@ -89,7 +89,7 @@ describe('cargaDeLaPantalla', () => {
   afterEach(() => vi.useRealTimers());
 
   it('T1: responde: ok con los datos', async () => {
-    expect(await carga(async () => [{ id: 'c-1' }])).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await carga(async () => [{ id: 'c-1' }])).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('C2: pide con el usuario de la sesión', async () => {
@@ -100,13 +100,13 @@ describe('cargaDeLaPantalla', () => {
   });
 
   it('T3: sin red y nada en memoria: sinRed sin datos', async () => {
-    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: null });
+    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: null, usuarioId: 'u-1' });
   });
 
   it('T4: sin red con lo de antes: sinRed con lo de antes', async () => {
     await carga(async () => [{ id: 'c-1' }]);
 
-    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
+    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('T5: sin respuesta en 4 s: sinRed, con lo de antes', async () => {
@@ -131,20 +131,20 @@ describe('cargaDeLaPantalla', () => {
   });
 
   it('T6: 429 y nada en memoria: error sin datos', async () => {
-    expect(await carga(async () => { throw delServidor(429); })).toEqual({ estado: 'error', datos: null });
+    expect(await carga(async () => { throw delServidor(429); })).toEqual({ estado: 'error', datos: null, usuarioId: 'u-1' });
   });
 
   it('T7: 500 con lo de antes: error con lo de antes', async () => {
     await carga(async () => [{ id: 'c-1' }]);
 
-    expect(await carga(async () => { throw delServidor(500); })).toEqual({ estado: 'error', datos: [{ id: 'c-1' }] });
+    expect(await carga(async () => { throw delServidor(500); })).toEqual({ estado: 'error', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('C1: un fallo no borra lo de antes', async () => {
     await carga(async () => [{ id: 'c-1' }]);
     await carga(async () => { throw delServidor(500); });
 
-    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
+    expect(await carga(async () => { throw sinRed(); })).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('T12: sin sesión no se pide nada', async () => {
@@ -185,7 +185,7 @@ describe('cargaDeLaPantalla', () => {
     const resultado = carga(vi.fn());
     await vi.advanceTimersByTimeAsync(TOPE_DE_LA_CARGA_MS);
 
-    expect(await resultado).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }] });
+    expect(await resultado).toEqual({ estado: 'sinRed', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
   });
 
   it('T42: dos cargas a la vez de la misma lista, una sola petición', async () => {
@@ -197,8 +197,8 @@ describe('cargaDeLaPantalla', () => {
     await vi.waitFor(() => expect(pedir).toHaveBeenCalled());
     responde([{ id: 'c-1' }]);
 
-    expect(await una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
-    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
     expect(pedir).toHaveBeenCalledTimes(1);
   });
 
@@ -317,7 +317,7 @@ describe('cargaDeLaPantalla', () => {
 
     pideOtraVez({ revalidate: () => {} });
 
-    expect(await carga(pedir)).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await carga(pedir)).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
     expect(pedir).toHaveBeenCalledTimes(2);
     olvidaQueSeVuelveAPedir();
   });
@@ -337,8 +337,8 @@ describe('cargaDeLaPantalla', () => {
     await new Promise((r) => setTimeout(r, 0));
     responde([{ id: 'c-1' }]);
 
-    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
-    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
+    expect(await otra).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
     expect(pedir).toHaveBeenCalledTimes(2);
   });
 
@@ -368,7 +368,7 @@ describe('cargaDeLaPantalla', () => {
     responde([{ id: 'c-1' }]);
 
     // Todas con la nueva, ninguna con la vieja que no contesta
-    for (const una of await Promise.all(cargas)) expect(una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    for (const una of await Promise.all(cargas)) expect(una).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
     olvidaQueSeVuelveAPedir();
   });
 
@@ -381,7 +381,7 @@ describe('cargaDeLaPantalla', () => {
     const nueva = carga(pedir);
     olvidaQueSeVuelveAPedir();
 
-    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }] });
+    expect(await nueva).toEqual({ estado: 'ok', datos: [{ id: 'c-1' }], usuarioId: 'u-1' });
     expect(pedir).toHaveBeenCalledTimes(2);
   });
 });

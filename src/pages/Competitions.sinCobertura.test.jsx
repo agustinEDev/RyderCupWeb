@@ -61,11 +61,16 @@
  *   C8  | vuelve la señal con una petición vieja colgada| sale una nueva
  *   C9  | filtrar                                       | no toca el historial
  *
+ * Y CodeRabbit (3 nov 2026):
+ *
+ *   C11 | otra cuenta entra sin salir de Torneos        | nunca ve la lista de la anterior: la
+ *       |                                               | espera hasta que llega la suya
+ *
  * Vacío porque no se ha podido preguntar no es vacío: decir «Aún no hay» y
  * ofrecer «Crear Tu Primera Competición» es afirmar algo que nadie ha
  * comprobado, y quien tenga las suyas las ve desaparecer.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Profiler, useLayoutEffect } from 'react';
 import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -188,6 +193,9 @@ describe('Torneos con loader', () => {
     sonda.tarjetas = null;
     enLinea(true);
   });
+
+  // También si una prueba con relojes falsos falla a medias (CodeRabbit)
+  afterEach(() => vi.useRealTimers());
 
   it('T1: con red, la lista', async () => {
     mockList.mockResolvedValue([TORNEO]);
@@ -395,7 +403,6 @@ describe('Torneos con loader', () => {
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
   });
 
   it('T34: en el primer pintado las tarjetas ya están', async () => {
@@ -741,5 +748,21 @@ describe('Torneos con loader', () => {
 
     expect(router.state.location.key).toBe(key);
     expect(router.state.location.state).toBeFalsy();
+  });
+
+  it('C11: otra cuenta sin salir de Torneos no ve la lista de la anterior', async () => {
+    mockList.mockResolvedValueOnce([TORNEO]);
+    pinta();
+    await screen.findByText('Torneo del Club');
+    const suya = colgada();
+    mockList.mockReturnValueOnce(suya.promesa);
+
+    act(() => ponLaSesion({ id: 'u-2' }));
+
+    expect(screen.queryByText('Torneo del Club')).not.toBeInTheDocument();
+    expect(screen.getByText('myCompetitions.loadingCompetitions')).toBeInTheDocument();
+    await act(async () => suya.responde(LISTA));
+    expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
+    expect(mockList).toHaveBeenLastCalledWith('u-2');
   });
 });

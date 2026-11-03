@@ -108,7 +108,9 @@ export const soloSiSePideOtraVez = () => seVuelveAPedir;
 
 /**
  * @param {{clave: string, pedir: (usuario: Object) => Promise<*>}} opciones
- * @returns {Promise<{estado: 'ok'|'sinRed'|'error'|'sinSesion'|'pendiente', datos: *, tardia?: Promise<*>}>}
+ * @returns {Promise<{estado: 'ok'|'sinRed'|'error'|'sinSesion'|'pendiente', datos: *, usuarioId?: string, tardia?: Promise<*>}>}
+ *   `usuarioId`, la cuenta de la que son los datos: si entra otra sin salir de
+ *   la pantalla, no los ve mientras llegan los suyos (CodeRabbit)
  */
 export const cargaDeLaPantalla = async ({ clave, pedir }) => {
   if (!arrancada) return { estado: 'pendiente', datos: null };
@@ -135,7 +137,7 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
       // de antes (`/code-review`); si no, la pantalla pide al saberse quién es
       const sabido = loQueHaySobreLaSesion().user;
       return sabido && !debeAceptarLosTerminos(sabido)
-        ? { estado: 'sinRed', datos: loGuardadoEnMemoria(clave, sabido.id) }
+        ? { estado: 'sinRed', datos: loGuardadoEnMemoria(clave, sabido.id), usuarioId: sabido.id }
         : { estado: 'sinSesion', datos: null };
     }
     if (!usuario || debeAceptarLosTerminos(usuario)) return { estado: 'sinSesion', datos: null };
@@ -148,7 +150,7 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
       return datos;
     });
     const datos = await aTiempo(pedida);
-    return { estado: 'ok', datos };
+    return { estado: 'ok', datos, usuarioId: usuario.id };
   } catch (error) {
     const sinRespuesta = error === SIN_RESPUESTA;
     if (sinRespuesta && compartida) dejaDeCompartir(clave, compartida);
@@ -157,6 +159,7 @@ export const cargaDeLaPantalla = async ({ clave, pedir }) => {
     const resultado = {
       estado: sinRespuesta || esFalloDeRed(error) ? 'sinRed' : 'error',
       datos: usuario ? loGuardadoEnMemoria(clave, usuario.id) : null,
+      usuarioId: usuario?.id,
     };
     // La que sigue en camino tras el tope; si al final falla, no entrega nada
     if (sinRespuesta && pedida) resultado.tardia = pedida.catch(() => new Promise(() => {}));
