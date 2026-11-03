@@ -24,6 +24,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
+import { aparecenInvisibles } from '../pruebas/aparecenInvisibles';
 
 const mockList = vi.fn();
 vi.mock('../composition', () => ({
@@ -245,5 +246,24 @@ describe('Mis competiciones · tarjetas (FE #846)', () => {
     expect(cabecera.className.split(' ')).toContain('flex-wrap');
     expect(bloque.className.split(' ')).toEqual(expect.arrayContaining(['min-w-0', 'flex-[1_1_10rem]']));
     expect(within(cabecera).getByText('status.CLOSED').className.split(' ')).toContain('shrink-0');
+  });
+});
+
+describe('Mis competiciones · sale ya pintada (3 nov 2026)', () => {
+  it('A1/A4: la cabecera, los filtros y las tarjetas no aparecen invisibles', async () => {
+    const sonda = aparecenInvisibles();
+    await tarjeta([competicion(), competicion({ id: 'c-2', name: 'Fourball de invierno' })]);
+    sonda.para();
+    expect(sonda.vistos).toEqual([]);
+  });
+
+  it('A3: el vacío tampoco', async () => {
+    const sonda = aparecenInvisibles();
+    mockList.mockResolvedValue([]);
+    const router = createMemoryRouter([{ path: '/', loader, element: <Competitions /> }]);
+    render(<RouterProvider router={router} />);
+    await screen.findByText('myCompetitions.noCompetitionsYet');
+    sonda.para();
+    expect(sonda.vistos).toEqual([]);
   });
 });

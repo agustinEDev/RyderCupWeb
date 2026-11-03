@@ -313,17 +313,14 @@ const AdminPanel = () => {
         <HeaderAuth user={user} />
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[1200px] flex-1 min-w-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className={`p-4 ${abierta ? 'hidden md:block' : ''}`}
             >
               <h1 className="hidden md:block text-gray-900 tracking-tight text-3xl md:text-[32px] font-bold leading-tight">
                 {t('title')}
               </h1>
               <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
-            </motion.div>
+            </div>
 
             <div className="md:flex md:items-start md:gap-6 px-4">
               {/* En el móvil, con una sección abierta, el menú se esconde */}
@@ -363,11 +360,7 @@ const AdminPanel = () => {
                 {/* En el móvil el título lo pone la cabecera: un solo h1 */}
                 <h2 className="hidden md:block mb-4 text-xl font-bold text-gray-900">{t((abierta ?? SECCIONES[0]).label)}</h2>
                 {activeTab === 'overview' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                  >
+                  <div>
                     {isLoadingStats ? (
                       <BlockLoader />
                     ) : (
@@ -394,14 +387,11 @@ const AdminPanel = () => {
                         </div>
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 )}
 
                 {activeTab === 'users' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
+                  <div
                     className="space-y-4"
                   >
                     <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-3 items-end">
@@ -502,14 +492,11 @@ const AdminPanel = () => {
                         )}
                       </>
                     )}
-                  </motion.div>
+                  </div>
                 )}
 
                 {activeTab === 'competitions' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
+                  <div
                     className="space-y-4"
                   >
                     <form onSubmit={handleCompetitionSearchSubmit} className="flex flex-wrap gap-3 items-end">
@@ -570,7 +557,7 @@ const AdminPanel = () => {
                         )}
                       </>
                     )}
-                  </motion.div>
+                  </div>
                 )}
 
                 {activeTab === 'golfCourses' && (

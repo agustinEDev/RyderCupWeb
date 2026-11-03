@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
-import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Mail, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
@@ -464,10 +463,7 @@ const SchedulePage = () => {
         <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="p-4"
             >
               <button
@@ -500,14 +496,11 @@ const SchedulePage = () => {
                   </Link>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Team Assignment Section: solo una Ryder tiene equipos (FE #791) */}
             {competition.hasTeams && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <div
               className="p-4"
             >
               <TeamAssignmentSection
@@ -528,14 +521,11 @@ const SchedulePage = () => {
                 inscritosSinCargar={inscritosSinCargar}
                 t={t}
               />
-            </motion.div>
+            </div>
             )}
 
             {/* Rounds List */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+            <div
               className="p-4"
             >
               <h2 className="text-gray-900 font-bold text-xl mb-4 flex items-center gap-2">
@@ -607,7 +597,7 @@ const SchedulePage = () => {
                   ))}
                 </div>
               )}
-            </motion.div>
+            </div>
 
             {/* Footer */}
             <footer className="flex flex-col gap-6 px-5 py-10 text-center">
