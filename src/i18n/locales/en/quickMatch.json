@@ -37,7 +37,17 @@
       "playModeScratchHint": "Nobody receives strokes: everyone plays off zero.",
       "allowanceNotApplied": "Not applied in a scratch match.",
       "yourTeePlaceholder": "Pick your tee",
-      "yourTeePanelTitle": "your tee"
+      "yourTeePanelTitle": "your tee",
+      "queJugais": "What are you playing?",
+      "masOpciones": "More options",
+      "otrasBarras": "Others",
+      "corto": {
+        "SINGLES": "Singles",
+        "FOURBALL": "Fourball",
+        "FOURSOMES": "Foursomes",
+        "STABLEFORD": "Stableford",
+        "MEDAL": "Medal"
+      }
     },
     "participants": {
       "heading": "Add participants",

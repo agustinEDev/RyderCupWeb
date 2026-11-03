@@ -28,6 +28,8 @@ const ParticipantsStep = ({
   onParticipantTabChange,
   availableFriends,
   courseTees,
+  // La barra que llevó cada amigo la última vez en este campo (FE #1025, P8)
+  barraDeAmigo = () => '',
   onAddFriend,
   guestForm,
   onGuestFirstNameChange,
@@ -289,6 +291,7 @@ const ParticipantsStep = ({
       <TeeSelectPanel
         courseTees={courseTees}
         playerName={friendPickingTee.otherUserName}
+        selectedKey={barraDeAmigo(friendPickingTee.otherUserId)}
         onSelect={handleTeeChosen}
         onClose={() => setFriendPickingTee(null)}
       />

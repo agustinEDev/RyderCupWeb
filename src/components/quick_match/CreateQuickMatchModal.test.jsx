@@ -147,7 +147,7 @@ describe('CreateQuickMatchModal', () => {
   it('should create a free-play quick match with the selected scoring format', async () => {
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
@@ -167,7 +167,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
@@ -202,7 +202,7 @@ describe('CreateQuickMatchModal', () => {
   it('should only offer 90/95/100 allowance options in free play', async () => {
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
 
     expect(screen.getByTestId('quick-match-allowance-option-90')).toBeInTheDocument();
     expect(screen.getByTestId('quick-match-allowance-option-95')).toBeInTheDocument();
@@ -219,7 +219,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
 
     await waitFor(() => {
@@ -358,7 +358,7 @@ describe('CreateQuickMatchModal', () => {
     renderModal();
 
     // Free play (capacity 4) so the roster isn't already full after adding just Alice
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();
@@ -512,7 +512,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
@@ -538,7 +538,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled();
@@ -565,7 +565,7 @@ describe('CreateQuickMatchModal', () => {
   it('should set a participant handicap via the keypad panel in the summary step', async () => {
     renderModal({ currentUser: { ...currentUser, handicap: null } });
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -592,7 +592,7 @@ describe('CreateQuickMatchModal', () => {
   it('shows a plus handicap with its plus sign in the summary step', async () => {
     renderModal({ currentUser: { ...currentUser, handicap: -2 } });
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -607,7 +607,7 @@ describe('CreateQuickMatchModal', () => {
   it('should not send an override when confirming without changing the value', async () => {
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -630,7 +630,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal({ onStarted });
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -644,7 +644,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
@@ -682,7 +682,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     fireEvent.click(screen.getByTestId('quick-match-play-mode-option-SCRATCH'));
     await goToSummary();
@@ -699,7 +699,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await goToSummary();
 
@@ -716,7 +716,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument());
     pickCreatorTee('YELLOW|FEMALE');
@@ -738,7 +738,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await goToSummary();
 
@@ -756,7 +756,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     fireEvent.click(screen.getByTestId('quick-match-play-mode-option-SCRATCH'));
     await goToSummary();
@@ -775,7 +775,7 @@ describe('CreateQuickMatchModal', () => {
 
     renderModal();
 
-    fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+    fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
     await waitFor(() => {
       expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument();

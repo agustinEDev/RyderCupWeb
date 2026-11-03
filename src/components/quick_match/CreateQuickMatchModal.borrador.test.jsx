@@ -107,7 +107,7 @@ const abre = (props = {}) =>
   );
 
 const alPaso2 = async ({ libre = true, formato } = {}) => {
-  if (libre) fireEvent.click(screen.getByTestId('mode-option-FREE_PLAY'));
+  if (libre) fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
   if (formato) fireEvent.click(screen.getByTestId(`format-option-${formato}`));
   fireEvent.click(screen.getByTestId('select-course-stub'));
   await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
@@ -369,7 +369,7 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
     expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('quick-match-participants-back'));
-    fireEvent.click(await screen.findByTestId('mode-option-MATCH_PLAY'));
+    fireEvent.click(await screen.findByTestId('format-option-SINGLES'));
     fireEvent.click(await screen.findByTestId('quick-match-course-next'));
 
     await screen.findByTestId('quick-match-participants-next');

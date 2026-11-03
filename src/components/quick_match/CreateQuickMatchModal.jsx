@@ -14,7 +14,9 @@ import SummaryStep from './SummaryStep';
 import {
   createAndStartQuickMatchUseCase,
   getGolfCourseUseCase,
+  listMyQuickMatchesUseCase,
 } from '../../composition';
+import { barraPorDefecto, ultimasBarras } from '../../utils/barraPorDefecto';
 import {
   DEFAULT_ALLOWANCE_BY_MATCH_FORMAT,
   DEFAULT_FREE_PLAY_ALLOWANCE,
@@ -153,6 +155,39 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     }
   }, [step, currentUser?.id]);
 
+  // Tus partidas rápidas, para saber qué barra llevó cada uno la última vez
+  // en cada campo (FE #1025). Sin poder leerlas (sin red), por tu género
+  const [misPartidas, setMisPartidas] = useState(null);
+  useEffect(() => {
+    let vigente = true;
+    Promise.resolve()
+      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 50 }))
+      .then((r) => {
+        if (vigente) setMisPartidas(r?.quickMatches ?? []);
+      })
+      .catch(() => {
+        if (vigente) setMisPartidas([]);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+  const ultimas = ultimasBarras(misPartidas, selectedCourse?.id);
+  // La que sale elegida: la de la última vez en ese campo; si no, la de tu
+  // género. Solo si no hay ninguna elegida: la copiada al repetir (P7) o la
+  // que hayas tocado tú mandan
+  const barraSugerida = barraPorDefecto({
+    tees: courseTees,
+    genero: currentUser?.gender ?? null,
+    ultima: ultimas.get(currentUser?.id) ?? null,
+  });
+  const barraElegida = creatorTeeKey === NO_TEE_KEY && !teesLoading ? barraSugerida : creatorTeeKey;
+  // La de cada amigo, para preelegirla al añadirlo (P8)
+  const barraDeAmigo = (userId) => {
+    const ultima = ultimas.get(userId);
+    return ultima && courseTees.some((t) => teeKey(t.color, t.gender) === ultima) ? ultima : NO_TEE_KEY;
+  };
+
   useEffect(() => {
     // Otro campo (también ninguno): la barra elegida ya no vale
     const campo = selectedCourse?.id ?? null;
@@ -227,13 +262,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       setError(t('create.course.errorTeeRequired'));
       return;
     }
-    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === creatorTeeKey);
+    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === barraElegida);
     if (courseTees.length > 0 && !creatorTeeIsValid) {
       setError(t('create.course.errorTeeRequired'));
       return;
     }
     setError('');
-    const { color, teeGender } = parseTeeKey(creatorTeeKey);
+    const { color, teeGender } = parseTeeKey(barraElegida);
     const plantilla = { campo: selectedCourse.id, mode, matchFormat };
     const misma = plantillaDe.current;
     if (
@@ -457,7 +492,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const peticionDelBorrador = () => {
     const creador = participants.find((p) => p.userId === currentUser.id);
-    const { color: creatorTeeColor, teeGender: creatorTeeGender } = parseTeeKey(creatorTeeKey);
+    const { color: creatorTeeColor, teeGender: creatorTeeGender } = parseTeeKey(barraElegida);
     return {
       golfCourseId: selectedCourse.id,
       matchFormat: isFreePlay ? null : matchFormat,
@@ -610,7 +645,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onRequestNewCourse={handleRequestNewCourse}
             courseTees={courseTees}
             courseFromRfeg={courseFromRfeg}
-            creatorTeeKey={creatorTeeKey}
+            creatorTeeKey={barraElegida}
+            generoDeQuienCrea={currentUser?.gender ?? null}
+            allowanceAMano={allowanceOverride !== null}
             onCreatorTeeKeyChange={setCreatorTeeKey}
             allowancePercentage={allowancePercentage}
             onAllowanceChange={setAllowanceOverride}
@@ -641,6 +678,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onParticipantTabChange={setParticipantTab}
             availableFriends={availableFriends}
             courseTees={courseTees}
+            barraDeAmigo={barraDeAmigo}
             onAddFriend={handleAddFriend}
             guestForm={guestForm}
             onGuestFirstNameChange={handleGuestFirstNameChange}
