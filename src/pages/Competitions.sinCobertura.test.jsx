@@ -651,8 +651,10 @@ describe('Torneos con loader', () => {
     await screen.findByText('Torneo activo');
     // Los efectos de esa pintada, ya corridos: uno gasta la marca de volver a
     // pedir, y en un runner lento el toque llegaba antes y el router volvía a
-    // pedir (CI de la release 2.61.0, 3 nov 2026). Se vacían, sin esperar a la
-    // marca: así, si un día se gastara tarde, este test lo vería (revisor)
+    // pedir (CI de la release 2.61.0, 3 nov 2026). Se vacían los pendientes y
+    // no se espera a la marca: un gasto que se retrasara más allá de ellos (un
+    // temporizador, algo asíncrono) haría fallar el test (revisor). La ventana
+    // que queda en la app, entre el router y la pintada, va en la FE #1022
     await act(async () => {});
 
     await act(() => router.navigate('/competitions', { replace: true }));
