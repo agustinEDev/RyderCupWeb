@@ -649,6 +649,11 @@ describe('Torneos con loader', () => {
     const router = pinta();
     fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
     await screen.findByText('Torneo activo');
+    // Que la pantalla haya gastado la marca de volver a pedir: la gasta un
+    // efecto tras pintar, y en un runner lento el toque llegaba antes y el
+    // router volvía a pedir (CI de la release 2.61.0, 3 nov 2026). En el móvil
+    // no pasa: React ejecuta los efectos antes del siguiente toque
+    await waitFor(() => expect(shouldRevalidate()).toBe(false));
 
     await act(() => router.navigate('/competitions', { replace: true }));
 
