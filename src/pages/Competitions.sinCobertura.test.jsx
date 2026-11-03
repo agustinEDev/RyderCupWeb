@@ -74,9 +74,9 @@
  * comprobado, y quien tenga las suyas las ve desaparecer.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Profiler, useLayoutEffect } from 'react';
+import { Profiler, useEffect, useLayoutEffect } from 'react';
 import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import { createMemoryRouter, RouterProvider, useLoaderData } from 'react-router';
 
 const mockList = vi.fn();
 vi.mock('../composition', () => ({
@@ -90,6 +90,58 @@ const ponLaSesion = (user) => {
   sesion.instantanea = { user, loading: false };
   sesion.oyentes.forEach((o) => o());
 };
+// El router pinta cada carga en una transición, y los efectos de esa pintada
+// (escuchar la señal, gastar la marca de volver a pedir, el toast) corren un
+// instante después. Con la máquina cargada, el test actuaba antes: el «vuelve
+// la señal» no lo oía nadie, el gasto tardío borraba la marca de Reintentar o
+// el toast aún no había salido (T9, T32b, C8, C5, T10, C11c; 3 nov 2026).
+// Un testigo en la ruta anota, en un efecto, qué carga ha pintado; React
+// ejecuta juntos todos los efectos de una pintada, así que cuando el testigo
+// ha visto la carga de ahora, los de la pantalla para ella también han corrido
+const testigo = { vio: null, router: null };
+const Testigo = () => {
+  const datos = useLoaderData();
+  useEffect(() => {
+    testigo.vio = datos;
+  });
+  return null;
+};
+// (Solo vigila lo que llega por el loader: un cambio de `estado` sin carga
+// nueva, como `deOtraCuenta`, no lo ve. Y solo vale en Torneos)
+const efectosAlDia = () =>
+  waitFor(
+    () => {
+      const { router } = testigo;
+      const actual = router.state.matches.at(-1);
+      if (actual?.route.path !== '/competitions') {
+        throw new Error(`efectosAlDia solo vale en Torneos, y la ruta es ${router.state.location.pathname}`);
+      }
+      expect(router.state.navigation.state).toBe('idle');
+      expect(router.state.revalidation).toBe('idle');
+      expect(testigo.vio).toBe(router.state.loaderData[actual.route.id]);
+    },
+    // Con holgura: es justo la máquina cargada lo que viene a cubrir
+    { timeout: 5000 }
+  );
+// Con los efectos de la última pintada ya corridos: «vuelve la señal»
+const vuelveLaSenal = async () => {
+  await efectosAlDia();
+  act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+};
+// Reintentar, sin que el gasto tardío de la carga anterior borre su marca
+// (C5; la ventana de la app está en FE #1022)
+const pulsaReintentar = async () => {
+  await screen.findByRole('button', { name: 'myCompetitions.reintentar' });
+  await efectosAlDia();
+  // Buscado otra vez tras esperar: el de antes pudo cambiar en otra pintada
+  fireEvent.click(screen.getByRole('button', { name: 'myCompetitions.reintentar' }));
+};
+// Otra cuenta (o la misma, confirmada), tras la última pintada
+const cambiaLaSesion = async (user) => {
+  await efectosAlDia();
+  act(() => ponLaSesion(user));
+};
+
 vi.mock('../hooks/useAuth', async () => {
   const { useSyncExternalStore } = await import('react');
   const suscribe = (o) => {
@@ -162,6 +214,7 @@ const pinta = ({ state, antes = [] } = {}) => {
               <Competitions />
             </Profiler>
             <Sonda />
+            <Testigo />
           </>
         ),
       },
@@ -169,6 +222,8 @@ const pinta = ({ state, antes = [] } = {}) => {
     ],
     { initialEntries: [...antes, { pathname: '/competitions', state }], initialIndex: antes.length }
   );
+  testigo.router = router;
+  testigo.vio = null;
   render(<RouterProvider router={router} />);
   return router;
 };
@@ -278,7 +333,7 @@ describe('Torneos con loader', () => {
   it('T8: Reintentar vuelve a pedir y, si sale bien, el aviso se va', async () => {
     mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(screen.queryByTestId('competiciones-sin-cargar')).not.toBeInTheDocument();
@@ -290,7 +345,7 @@ describe('Torneos con loader', () => {
     pinta();
     await screen.findByTestId('competiciones-sin-cobertura');
 
-    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await vuelveLaSenal();
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(screen.queryByTestId('competiciones-sin-cobertura')).not.toBeInTheDocument();
@@ -301,7 +356,7 @@ describe('Torneos con loader', () => {
     pinta();
     await screen.findByText('Torneo del Club');
 
-    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await vuelveLaSenal();
     await act(async () => { await Promise.resolve(); });
 
     expect(mockList).toHaveBeenCalledTimes(1);
@@ -311,6 +366,7 @@ describe('Torneos con loader', () => {
     mockList.mockRejectedValue(delServidor(429));
     pinta();
     await screen.findByTestId('competiciones-sin-cargar');
+    await efectosAlDia();
 
     expect(toasts).toEqual(['detail.failedToLoadCompetitions']);
     expect(screen.queryByText(/Rate limit exceeded/)).not.toBeInTheDocument();
@@ -320,6 +376,7 @@ describe('Torneos con loader', () => {
     mockList.mockRejectedValue(sinRed());
     pinta();
     await screen.findByTestId('competiciones-sin-cobertura');
+    await efectosAlDia();
 
     expect(toasts).toEqual(['sinConexion.mensaje']);
     expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
@@ -328,7 +385,7 @@ describe('Torneos con loader', () => {
   it('T10c: uno por carga fallida: reintentar y volver a fallar lo repite', async () => {
     mockList.mockRejectedValue(delServidor(500));
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await act(async () => { await Promise.resolve(); });
 
     await waitFor(() => expect(toasts).toHaveLength(2));
@@ -338,6 +395,7 @@ describe('Torneos con loader', () => {
     mockList.mockResolvedValue([TORNEO]);
     pinta();
     await screen.findByText('Torneo del Club');
+    await efectosAlDia();
 
     expect(toasts).toEqual([]);
   });
@@ -375,7 +433,7 @@ describe('Torneos con loader', () => {
     expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
     expect(mockList).not.toHaveBeenCalled();
 
-    act(() => ponLaSesion({ id: 'u-1' }));
+    await cambiaLaSesion({ id: 'u-1' });
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(screen.queryByText('myCompetitions.noCompetitionsYet')).not.toBeInTheDocument();
@@ -388,7 +446,7 @@ describe('Torneos con loader', () => {
     await screen.findByTestId('competiciones-sin-cobertura');
 
     sesion.sinSaberUnaVez = true;
-    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await vuelveLaSenal();
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
   });
@@ -434,7 +492,7 @@ describe('Torneos con loader', () => {
     await act(() => router.navigate('/competitions'));
     expect(mockList).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(2);
@@ -446,7 +504,7 @@ describe('Torneos con loader', () => {
     await screen.findByTestId('competiciones-sin-cobertura');
 
     // Otro objeto `user`: lo que publica la sesión al confirmarse
-    act(() => ponLaSesion({ id: 'u-1' }));
+    await cambiaLaSesion({ id: 'u-1' });
 
     expect(await screen.findByText('Torneo del Club')).toBeInTheDocument();
   });
@@ -454,7 +512,7 @@ describe('Torneos con loader', () => {
   it('T41: si se navega mientras se vuelve a pedir, luego pulsar Torneos en Torneos no pide', async () => {
     mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue([TORNEO]);
     const router = pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await act(() => router.navigate('/otra'));
     await act(() => router.navigate('/competitions'));
     await screen.findByText('Torneo del Club');
@@ -601,7 +659,7 @@ describe('Torneos con loader', () => {
     const segunda = colgada();
     mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa);
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
     busca('torneo');
@@ -617,7 +675,7 @@ describe('Torneos con loader', () => {
     mockList.mockRejectedValueOnce(sinRed()).mockReturnValueOnce(segunda.promesa);
     pinta();
     await screen.findByTestId('competiciones-sin-cobertura');
-    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await vuelveLaSenal();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
     filtraPorActivas();
@@ -632,7 +690,7 @@ describe('Torneos con loader', () => {
     const segunda = colgada();
     mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa);
     const router = pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
     act(() => { router.navigate('/competitions', { replace: true }); });
@@ -647,15 +705,14 @@ describe('Torneos con loader', () => {
   it('C5b: con Reintentar ya respondido, pulsar Torneos en Torneos no pide', async () => {
     mockList.mockRejectedValueOnce(delServidor(500)).mockResolvedValue(LISTA);
     const router = pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await screen.findByText('Torneo activo');
     // Los efectos de esa pintada, ya corridos: uno gasta la marca de volver a
     // pedir, y en un runner lento el toque llegaba antes y el router volvía a
-    // pedir (CI de la release 2.61.0, 3 nov 2026). Se vacían los pendientes y
-    // no se espera a la marca: un gasto que se retrasara más allá de ellos (un
-    // temporizador, algo asíncrono) haría fallar el test (revisor). La ventana
-    // que queda en la app, entre el router y la pintada, va en la FE #1022
-    await act(async () => {});
+    // pedir (CI de la release 2.61.0, 3 nov 2026). Un gasto que se retrasara
+    // más allá de la pintada (un temporizador) haría fallar el test. La
+    // ventana que queda en la app va en la FE #1022
+    await efectosAlDia();
 
     await act(() => router.navigate('/competitions', { replace: true }));
 
@@ -669,7 +726,7 @@ describe('Torneos con loader', () => {
     pinta();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
 
-    act(() => ponLaSesion({ id: 'u-1' }));
+    await cambiaLaSesion({ id: 'u-1' });
     await act(async () => primera.falla(sinRed()));
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
@@ -680,10 +737,10 @@ describe('Torneos con loader', () => {
     const segunda = colgada();
     mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValueOnce(segunda.promesa).mockResolvedValue(LISTA);
     pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
-    act(() => ponLaSesion({ id: 'u-1' }));
+    await cambiaLaSesion({ id: 'u-1' });
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(3);
@@ -709,7 +766,7 @@ describe('Torneos con loader', () => {
   it('C7b: tocar la pestaña mientras Reintentar sigue en camino no pide más', async () => {
     mockList.mockRejectedValueOnce(delServidor(500)).mockReturnValue(new Promise(() => {}));
     const router = pinta();
-    fireEvent.click(await screen.findByRole('button', { name: 'myCompetitions.reintentar' }));
+    await pulsaReintentar();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
     await act(async () => { router.navigate('/competitions', { replace: true }); });
@@ -737,10 +794,10 @@ describe('Torneos con loader', () => {
     mockList.mockRejectedValueOnce(sinRed()).mockReturnValueOnce(new Promise(() => {})).mockResolvedValue(LISTA);
     pinta();
     await screen.findByTestId('competiciones-sin-cobertura');
-    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await vuelveLaSenal();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
 
-    act(() => globalThis.dispatchEvent(new globalThis.Event('online')));
+    await vuelveLaSenal();
 
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
     expect(mockList).toHaveBeenCalledTimes(3);
@@ -767,7 +824,7 @@ describe('Torneos con loader', () => {
     const suya = colgada();
     mockList.mockReturnValueOnce(suya.promesa);
 
-    act(() => ponLaSesion({ id: 'u-2' }));
+    await cambiaLaSesion({ id: 'u-2' });
 
     expect(screen.queryByText('Torneo del Club')).not.toBeInTheDocument();
     expect(screen.getByText('myCompetitions.loadingCompetitions')).toBeInTheDocument();
@@ -785,7 +842,7 @@ describe('Torneos con loader', () => {
     await act(async () => {});
     mockList.mockResolvedValue(LISTA);
 
-    act(() => ponLaSesion({ id: 'u-2' }));
+    await cambiaLaSesion({ id: 'u-2' });
 
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
@@ -800,10 +857,11 @@ describe('Torneos con loader', () => {
     mockList.mockRejectedValueOnce(delServidor(500));
     pinta();
     await screen.findByTestId('competiciones-sin-cargar');
+    await efectosAlDia();
     toasts.length = 0;
     mockList.mockReturnValue(new Promise(() => {}));
 
-    act(() => ponLaSesion({ id: 'u-2' }));
+    await cambiaLaSesion({ id: 'u-2' });
     await act(async () => {});
 
     expect(toasts).toEqual([]);
