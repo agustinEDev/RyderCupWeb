@@ -39,21 +39,21 @@ import { describe, it, expect } from 'vitest';
  */
 const PERMITIDOS = {
   // B1: la caja del modal
-  'components/admin/AdminEditCompetitionModal.jsx': { 'motion.div': 1 },
-  'components/admin/EditUserModal.jsx': { 'motion.div': 1 },
-  'components/admin/ManageAccountModal.jsx': { 'motion.div': 1 },
-  'components/enrollment/EnrollmentRequestModal.jsx': { 'motion.div': 1 },
-  'components/profile/HandicapRequestModal.jsx': { 'motion.div': 1 },
-  'components/schedule/AssignTeamsModal.jsx': { 'motion.div': 1 },
-  'components/schedule/GenerateMatchesModal.jsx': { 'motion.div': 1 },
-  'components/schedule/MatchDetailModal.jsx': { 'motion.div': 1 },
-  'components/schedule/ReassignPlayersModal.jsx': { 'motion.div': 1 },
-  'components/schedule/WalkoverModal.jsx': { 'motion.div': 1 },
-  'pages/admin/AdminPanel.jsx': { 'motion.div': 1 },
-  'pages/admin/GolfCourses.jsx': { 'motion.div': 2 },
-  'pages/admin/PendingGolfCourses.jsx': { 'motion.div': 2 },
+  'components/admin/AdminEditCompetitionModal.jsx': { modal: 1 },
+  'components/admin/EditUserModal.jsx': { modal: 1 },
+  'components/admin/ManageAccountModal.jsx': { modal: 1 },
+  'components/enrollment/EnrollmentRequestModal.jsx': { modal: 1 },
+  'components/profile/HandicapRequestModal.jsx': { modal: 1 },
+  'components/schedule/AssignTeamsModal.jsx': { modal: 1 },
+  'components/schedule/GenerateMatchesModal.jsx': { modal: 1 },
+  'components/schedule/MatchDetailModal.jsx': { modal: 1 },
+  'components/schedule/ReassignPlayersModal.jsx': { modal: 1 },
+  'components/schedule/WalkoverModal.jsx': { modal: 1 },
+  'pages/admin/AdminPanel.jsx': { modal: 1 },
+  'pages/admin/GolfCourses.jsx': { modal: 2 },
+  'pages/admin/PendingGolfCourses.jsx': { modal: 2 },
   // B1 + B2: la caja y el «enviado» tras mandar la solicitud
-  'components/golf_course/GolfCourseRequestModal.jsx': { 'motion.div': 2 },
+  'components/golf_course/GolfCourseRequestModal.jsx': { modal: 1, 'motion.div': 1 },
   // B2: el error de cada campo y los requisitos de la contraseña
   'components/auth/SignInForm.jsx': { 'motion.p': 2 },
   'components/ui/PasswordRequirements.jsx': { 'motion.div': 1 },
@@ -102,7 +102,13 @@ const fundidosDe = (codigo) => {
   const encontrados = [];
   const apunta = (i, etiqueta, como) =>
     encontrados.push({ linea: codigo.slice(0, i).split('\n').length, etiqueta, como });
-  const etiquetaEn = (i) => /^<([\w.]+)/.exec(codigo.slice(codigo.lastIndexOf('<', i)))?.[1] ?? '?';
+  // La caja de un modal (lo que sigue a su `boxClassName`) cuenta aparte: así
+  // un fundido de pantalla no ocupa su hueco en el mismo fichero (CodeRabbit)
+  const etiquetaEn = (i) => {
+    const desde = codigo.lastIndexOf('<', i);
+    if (/boxClassName=[^<]*>\s*$/.test(codigo.slice(Math.max(0, desde - 200), desde))) return 'modal';
+    return /^<([\w.]+)/.exec(codigo.slice(desde))?.[1] ?? '?';
+  };
   for (const m of codigo.matchAll(/\b(initial|animate|variants|style)=\{/g)) {
     const llave = m.index + m[0].length - 1;
     const valor = codigo.slice(llave, finDeLlaves(codigo, llave));
@@ -182,6 +188,13 @@ describe('ninguna pantalla aparece desde invisible al entrar', () => {
       'const sube = { initial: { y: 20 }, animate: { y: 0 } };',
     ];
     for (const forma of formas) expect(fundidosDe(forma), forma).toEqual([]);
+  });
+
+  it('la caja de un modal cuenta aparte: un fundido de pantalla no ocupa su hueco', () => {
+    const modal = '<Modal boxClassName={CAJA_PROPIA}>\n  <motion.div initial={{ opacity: 0, scale: 0.95 }} />\n</Modal>';
+    const pantalla = '<main>\n  <motion.div initial={{ opacity: 0, y: 20 }} />\n</main>';
+    expect(cuenta(fundidosDe(modal))).toEqual({ modal: 1 });
+    expect(cuenta(fundidosDe(pantalla))).toEqual({ 'motion.div': 1 });
   });
 
   it('cuenta por etiqueta: una caja de pantalla no ocupa el hueco de un error de campo', () => {
