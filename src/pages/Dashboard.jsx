@@ -671,6 +671,7 @@ const Dashboard = () => {
             {/* Recent matches */}
             <motion.div variants={slideUp} className="px-4 pt-2">
               <RecentMatches
+                usuario={user}
                 matches={recentMatches}
                 isLoading={isLoadingRecent}
                 esperaSilenciosa

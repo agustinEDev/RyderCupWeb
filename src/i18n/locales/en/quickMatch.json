@@ -114,7 +114,20 @@
       "female": "Women's",
       "mixed": "Mixed"
     },
-    "alreadyCreated": "The match had already been created with what you sent before; your changes were not applied."
+    "alreadyCreated": "The match had already been created with what you sent before; your changes were not applied.",
+    "repetir": {
+      "titulo": "Repeat match",
+      "avisoCampo": "That match's course is no longer available: choose another.",
+      "avisoMiBarra": "Your tee ({{barra}}) no longer exists on the course: choose another.",
+      "avisoBarra": "{{nombre}}'s tee ({{barra}}) no longer exists on the course: add them again with another.",
+      "avisoNoAmigo": "{{nombre}} is no longer your friend: not copied.",
+      "boton": "Repeat match",
+      "avisoInvitado": "{{nombre}} could not be copied: add them again.",
+      "botonDe": "Repeat «{{nombre}}»",
+      "avisoFaltan": "This format needs more players: add them.",
+      "avisoMiBarraNueva": "The course now has tees: choose yours.",
+      "avisoBarraNueva": "The course now has tees: add {{nombre}} again with theirs."
+    }
   },
   "dashboard": {
     "ctaTitle": "Impromptu round?",

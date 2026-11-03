@@ -18,6 +18,20 @@ const baseApiData = () => ({
 
 describe('QuickMatchMapper', () => {
   describe('toDomain', () => {
+    it('reads the guest first and last name apart; null for a registered player (FE #1021)', () => {
+      const quickMatch = QuickMatchMapper.toDomain({
+        ...baseApiData(),
+        participants: [
+          ...baseApiData().participants,
+          { participant_id: 'p-2', user_id: null, name: 'María José de la Fuente', first_name: 'María José', last_name: 'de la Fuente', is_guest: true },
+        ],
+      });
+      expect(quickMatch.participants.map((p) => [p.firstName, p.lastName])).toEqual([
+        [null, null],
+        ['María José', 'de la Fuente'],
+      ]);
+    });
+
     it('reads a created_at with no timezone as UTC (FE #710)', () => {
       const quickMatch = QuickMatchMapper.toDomain({
         ...baseApiData(),
@@ -35,6 +49,8 @@ describe('QuickMatchMapper', () => {
         participantId: 'p-1',
         userId: 'user-1',
         name: 'Creator',
+        firstName: null,
+        lastName: null,
         handicap: 10,
         team: null,
         isGuest: false,

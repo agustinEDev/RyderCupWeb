@@ -29,6 +29,19 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Repetir tiene sus propias pruebas: aquí solo importa en qué filas sale y
+// dónde vive el asistente
+const mockRepetir = vi.hoisted(() => ({ borrador: null, preparando: false, repetir: vi.fn(), cierra: vi.fn() }));
+vi.mock('../quick_match/useRepetirPartida', () => ({ useRepetirPartida: () => mockRepetir }));
+vi.mock('../quick_match/RepetirPartida', () => ({
+  IconoRepetir: ({ partida, onRepetir }) => (
+    <button type="button" data-testid={`repetir-${partida.id}`} onClick={() => onRepetir(partida)}>
+      repetir
+    </button>
+  ),
+  AsistenteDeRepetir: ({ borrador }) => (borrador ? <div data-testid="asistente-de-repetir" /> : null),
+}));
+
 const tournamentWin = RecentMatch.fromPersistence({
   id: 'match-1',
   date: '2026-08-01',
@@ -66,6 +79,41 @@ const renderList = (props = {}) =>
 
 describe('RecentMatches', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('FE #1021: «Repetir» al lado de las partidas rápidas, no en las de torneo ni sin usuario', () => {
+    const { unmount } = renderList({ matches: [tournamentWin, stablefordRound], usuario: { id: 'u-1' } });
+
+    expect(screen.queryByTestId('repetir-match-1')).not.toBeInTheDocument();
+    const repetir = screen.getByTestId('repetir-qm-1');
+    // Al lado de la fila, no dentro de su botón
+    expect(screen.getByTestId('recent-match-qm-1').contains(repetir)).toBe(false);
+
+    fireEvent.click(repetir);
+    expect(mockRepetir.repetir).toHaveBeenCalledWith({ id: 'qm-1', name: null });
+
+    unmount();
+    renderList({ matches: [stablefordRound] });
+    expect(screen.queryByTestId('repetir-qm-1')).not.toBeInTheDocument();
+  });
+
+  it('FE #1021: el asistente abierto sigue mientras la lista se recarga (vive en la lista, no en la fila)', () => {
+    mockRepetir.borrador = { paso: 4, avisos: [], inicial: {} };
+    try {
+      const { rerender } = renderList({ matches: [stablefordRound], usuario: { id: 'u-1' } });
+      expect(screen.getByTestId('asistente-de-repetir')).toBeInTheDocument();
+
+      rerender(
+        <MemoryRouter>
+          <RecentMatches matches={[stablefordRound]} usuario={{ id: 'u-1' }} isLoading />
+        </MemoryRouter>
+      );
+
+      expect(screen.queryByTestId('repetir-qm-1')).not.toBeInTheDocument();
+      expect(screen.getByTestId('asistente-de-repetir')).toBeInTheDocument();
+    } finally {
+      mockRepetir.borrador = null;
+    }
+  });
 
   it('shows a row per match with its course', () => {
     renderList({ matches: [tournamentWin, stablefordRound] });
