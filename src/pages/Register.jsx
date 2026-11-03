@@ -196,7 +196,10 @@ const Register = () => {
       <div className="flex w-full">
 
         {/* Left Side - Hero Image/Brand (Hidden on Mobile) */}
-        <div
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
           className="hidden lg:flex lg:w-1/2 relative bg-accent overflow-hidden"
         >
           {/* Background Pattern */}
@@ -243,16 +246,19 @@ const Register = () => {
                   { icon: '🎯', text: t('register.benefits.fairHandicap') },
                   { icon: '📱', text: t('register.benefits.mobileFriendly') },
                   { icon: '🤝', text: t('register.benefits.friendships') }
-                ].map((item) => (
-                  <div
+                ].map((item, idx) => (
+                  <motion.div
                     key={item.text}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + idx * 0.1 }}
                     className="flex items-center gap-3"
                   >
                     <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-xl">
                       {item.icon}
                     </div>
                     <span className="text-white/90">{item.text}</span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
@@ -278,11 +284,14 @@ const Register = () => {
               {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Side - Register Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             className="w-full max-w-md"
           >
 
@@ -636,7 +645,7 @@ const Register = () => {
               <span className="text-sm font-medium">{t('register.backToHome')}</span>
             </Link>
 
-          </div>
+          </motion.div>
         </div>
 
       </div>

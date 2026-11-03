@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
  * El 3 nov 2026, en el iPhone, Agustín vio parpadear Torneos al pulsar su
  * pestaña: el título, el buscador y las tarjetas arrancaban a opacidad 0 y
  * entraban con un fundido, y durante un instante la pantalla se quedaba en
- * blanco. Lo mismo pasaba en otras 16 pantallas. Decidido con él: cada
+ * blanco. Lo mismo pasaba en otras 11 pantallas, sin contar las de acceso. Decidido con él: cada
  * pantalla sale ya pintada. Este test lee el código para que no vuelva a
  * colarse.
  *
@@ -15,9 +15,7 @@ import { describe, it, expect } from 'vitest';
  *   #   | qué                                          | fundido
  *   ----|----------------------------------------------|-------------------
  *   A1  | al entrar en una pantalla de la aplicación   | no
- *   A2  | al entrar en las públicas y las de acceso,   | no
- *       | también el aviso verde con el que se llega   |
- *       | a Login (revisor)                            |
+ *   A2  | al entrar en las públicas                    | no
  *   A3  | el vacío de Torneos                          | no
  *   A4  | las tarjetas de Torneos                      | no, nunca
  *   B1  | la caja de un modal, al abrirlo              | sí: lo abre un gesto
@@ -26,6 +24,9 @@ import { describe, it, expect } from 'vitest';
  *   B3  | filas de barras de `GolfCourseForm`          | sí: obsoleto, no se toca
  *   P2  | los bloques de la portada y de Precios que   | sí: no es al entrar,
  *       | aparecen al bajar (`fadeInUp`)               | es al hacer scroll
+ *   A5  | las de acceso: Login, Registro, ¿Olvidaste   | sí, como siempre
+ *       | la contraseña?, Restablecer y Completar      | (Agustín, 3 nov 2026,
+ *       | perfil, con el aviso verde de Login          | al verlas en el iPhone)
  *
  * Los permitidos van por fichero, por etiqueta y con su número exacto (revisor
  * y `/code-review`): uno nuevo, aunque sea un modal, obliga a pasar por aquí y
@@ -55,10 +56,13 @@ const PERMITIDOS = {
   'components/golf_course/GolfCourseRequestModal.jsx': { 'motion.div': 2 },
   // B2: el error de cada campo y los requisitos de la contraseña
   'components/auth/SignInForm.jsx': { 'motion.p': 2 },
-  'pages/Register.jsx': { 'motion.p': 5 },
-  'pages/ResetPassword.jsx': { 'motion.p': 2 },
-  'pages/ForgotPassword.jsx': { 'motion.p': 1 },
   'components/ui/PasswordRequirements.jsx': { 'motion.div': 1 },
+  // A5: las de acceso conservan su entrada (div) y los errores de sus campos (p)
+  'pages/Login.jsx': { 'motion.div': 4 },
+  'pages/Register.jsx': { 'motion.div': 3, 'motion.p': 5 },
+  'pages/ForgotPassword.jsx': { 'motion.div': 5, 'motion.p': 1 },
+  'pages/ResetPassword.jsx': { 'motion.div': 6, 'motion.p': 2 },
+  'pages/CompleteProfile.jsx': { 'motion.div': 1 },
   // B3: obsoleto
   'components/golf_course/GolfCourseForm.jsx': { 'motion.div': 1 },
   // P2: al bajar, no al entrar; y la variante que usan

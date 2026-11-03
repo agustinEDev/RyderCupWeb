@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 import SignInForm from '../components/auth/SignInForm';
@@ -22,7 +23,10 @@ const Login = () => {
       <div className="flex w-full">
 
         {/* Left Side - Hero Image/Brand (Hidden on Mobile) */}
-        <div
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
           className="hidden lg:flex lg:w-1/2 relative bg-primary overflow-hidden"
         >
           {/* Background Pattern */}
@@ -69,16 +73,19 @@ const Login = () => {
                   { icon: '⛳', text: t('login.features.statistics') },
                   { icon: '📊', text: t('login.features.liveScoring') },
                   { icon: '👥', text: t('login.features.friends') }
-                ].map((item) => (
-                  <div
+                ].map((item, idx) => (
+                  <motion.div
                     key={item.text}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + idx * 0.1 }}
                     className="flex items-center gap-3"
                   >
                     <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-xl">
                       {item.icon}
                     </div>
                     <span className="text-white/90">{item.text}</span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -88,14 +95,16 @@ const Login = () => {
               {t('common:footer.copyrightShort', { year: new Date().getFullYear() })}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-          {/* Ya pintada, sin moverse ni fundirse: entrando desplazada, un clic
-              en ese medio segundo podía soltarse fuera del botón (QA, FE
-              #865-12), y ninguna pantalla entra desde invisible (3 nov 2026) */}
-          <div
+          {/* Solo aparece: entrando desplazada, un clic en ese medio segundo
+              podía soltarse fuera del botón, que se había movido (QA, FE #865-12) */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
             className="w-full max-w-md"
           >
 
@@ -123,7 +132,9 @@ const Login = () => {
 
               {/* Success Message */}
               {successMessage && (
-                <div
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
@@ -132,7 +143,7 @@ const Login = () => {
                     </svg>
                     <p className="text-green-700 text-sm font-medium">{successMessage}</p>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               <SignInForm />
@@ -150,7 +161,7 @@ const Login = () => {
               <span className="text-sm font-medium">{t('login.backToHome')}</span>
             </Link>
 
-          </div>
+          </motion.div>
         </div>
 
       </div>

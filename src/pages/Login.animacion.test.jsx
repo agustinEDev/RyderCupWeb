@@ -5,9 +5,7 @@ import { MemoryRouter } from 'react-router';
 /**
  * El primer «Iniciar Sesión» a veces se perdía (QA, FE #865-12): la caja del
  * formulario entraba desplazándose y creciendo, y un clic en ese medio segundo
- * podía soltarse fuera del botón, que se había movido. Luego solo aparecía, y
- * desde el 3 nov 2026 sale ya pintada: ninguna pantalla entra desde invisible
- * (`sinFundidoAlEntrar.test.js`). El aviso verde de arriba, tampoco.
+ * podía soltarse fuera del botón, que se había movido. Ahora solo aparece.
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
@@ -36,25 +34,26 @@ vi.mock('framer-motion', () => ({
 
 const Login = (await import('./Login')).default;
 
+const conQueEntra = (el) => JSON.parse(el.closest('[data-initial]').getAttribute('data-initial'));
 
-describe('Login · la caja del formulario sale ya pintada', () => {
-  it('A1: sin desplazarse, ni crecer, ni fundido', () => {
+describe('Login · la caja del formulario solo aparece', () => {
+  it('A1: sin desplazarse ni crecer', () => {
     render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId('formulario').closest('[data-initial]')).toBeNull();
+    expect(conQueEntra(screen.getByTestId('formulario'))).toEqual({ opacity: 0 });
   });
 
-  it('A2: el aviso verde con el que se llega, tampoco (revisor, 3 nov 2026)', () => {
+  it('A2: el aviso de arriba tampoco', () => {
     render(
       <MemoryRouter initialEntries={[{ pathname: '/login', state: { message: 'cuenta creada' } }]}>
         <Login />
       </MemoryRouter>
     );
 
-    expect(screen.getByText('cuenta creada').closest('[data-initial]')).toBeNull();
+    expect(conQueEntra(screen.getByText('cuenta creada'))).toEqual({ opacity: 0 });
   });
 });
