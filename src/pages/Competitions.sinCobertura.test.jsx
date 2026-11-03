@@ -65,6 +65,8 @@
  *
  *   C11 | otra cuenta entra sin salir de Torneos        | nunca ve la lista de la anterior: la
  *       |                                               | espera hasta que llega la suya
+ *   C11b| ídem, con algo buscado por la anterior        | sin sus filtros, ni en pantalla ni
+ *       |                                               | guardados como suyos (revisor)
  *
  * Vacío porque no se ha podido preguntar no es vacío: decir «Aún no hay» y
  * ofrecer «Crear Tu Primera Competición» es afirmar algo que nadie ha
@@ -764,5 +766,25 @@ describe('Torneos con loader', () => {
     await act(async () => suya.responde(LISTA));
     expect(await screen.findByText('Torneo activo')).toBeInTheDocument();
     expect(mockList).toHaveBeenLastCalledWith('u-2');
+  });
+
+  it('C11b: otra cuenta sin salir de Torneos no hereda lo que buscó la anterior', async () => {
+    mockList.mockResolvedValueOnce(LISTA);
+    const router = pinta();
+    await screen.findByText('Torneo cerrado');
+    filtraPorActivas();
+    busca('activo');
+    await act(async () => {});
+    mockList.mockResolvedValue(LISTA);
+
+    act(() => ponLaSesion({ id: 'u-2' }));
+
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
+    // Ni guardados para ella: al volver atrás a esta entrada, sin filtros
+    await act(() => router.navigate('/otra'));
+    await act(() => router.navigate(-1));
+    expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
   });
 });

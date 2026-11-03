@@ -538,4 +538,11 @@ const Competitions = () => {
   );
 };
 
-export default Competitions;
+// Una por cuenta: si entra otra sin salir de aquí, la pantalla empieza de cero,
+// sin lo que buscó la anterior ni su estado (revisor, 3 nov 2026)
+const CompetitionsDeLaCuenta = () => {
+  const { user } = useAuth();
+  return <Competitions key={user?.id ?? ''} />;
+};
+
+export default CompetitionsDeLaCuenta;
