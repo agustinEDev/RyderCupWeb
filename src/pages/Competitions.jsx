@@ -116,7 +116,9 @@ const Competitions = () => {
 
   // El aviso de siempre, uno por carga fallida: cada carga trae un resultado
   // nuevo, también al reintentar (Agustín, 2 nov 2026: como hasta ahora)
+  // (de su cuenta: la de otra que entra sin salir de aquí no es suya)
   useEffect(() => {
+    if (deOtraCuenta) return;
     if (resultado.estado === 'sinRed') customToast.error(tComun('sinConexion.mensaje'));
     if (resultado.estado === 'error') customToast.error(t('detail.failedToLoadCompetitions'));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar otra carga, no si cambia el idioma

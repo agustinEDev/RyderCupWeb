@@ -67,6 +67,7 @@
  *       |                                               | espera hasta que llega la suya
  *   C11b| ídem, con algo buscado por la anterior        | sin sus filtros, ni en pantalla ni
  *       |                                               | guardados como suyos (revisor)
+ *   C11c| ídem, con la carga de la anterior fallida     | sin el aviso de esa carga
  *
  * Vacío porque no se ha podido preguntar no es vacío: decir «Aún no hay» y
  * ofrecer «Crear Tu Primera Competición» es afirmar algo que nadie ha
@@ -786,5 +787,18 @@ describe('Torneos con loader', () => {
     await act(() => router.navigate(-1));
     expect(await screen.findByText('Torneo cerrado')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('myCompetitions.searchPlaceholder')).toHaveValue('');
+  });
+
+  it('C11c: otra cuenta sin salir de Torneos no recibe el aviso de la carga fallida de la anterior', async () => {
+    mockList.mockRejectedValueOnce(delServidor(500));
+    pinta();
+    await screen.findByTestId('competiciones-sin-cargar');
+    toasts.length = 0;
+    mockList.mockReturnValue(new Promise(() => {}));
+
+    act(() => ponLaSesion({ id: 'u-2' }));
+    await act(async () => {});
+
+    expect(toasts).toEqual([]);
   });
 });
