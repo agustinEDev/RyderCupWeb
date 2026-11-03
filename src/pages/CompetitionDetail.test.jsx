@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, Link, useNavigationType } from 'react-router';
+import { aparecenInvisibles } from '../pruebas/aparecenInvisibles';
 import CompetitionDetail from './CompetitionDetail';
 
 vi.mock('react-i18next', () => ({
@@ -104,7 +105,6 @@ vi.mock('../utils/toast', () => ({
 
 import customToast from '../utils/toast';
 
-
 // Desde FE #705 la ficha ofrece UNA acción y el resto vive en el menú «···»:
 // para verlas hay que abrirlo. Tolerante a que no exista, porque algunos casos
 // comprueban justo que la acción NO se ofrece
@@ -112,27 +112,6 @@ const abrirMenuDeAcciones = () => {
   for (const boton of screen.queryAllByTestId('menu-acciones')) {
     if (boton.getAttribute('aria-expanded') === 'false') fireEvent.click(boton);
   }
-};
-
-
-// Cada elemento que aparece a opacidad 0 al entrar en la página (3 nov 2026:
-// ninguna pantalla entra desde invisible, `sinFundidoAlEntrar.test.js`)
-const aparecenInvisibles = () => {
-  const vistos = [];
-  const mira = (el) => {
-    if (el.style?.opacity === '0') vistos.push(el.tagName + (el.dataset.testid ? `#${el.dataset.testid}` : ''));
-  };
-  const observador = new globalThis.MutationObserver((cambios) => {
-    for (const c of cambios) {
-      for (const n of c.addedNodes) {
-        if (n.nodeType !== 1) continue;
-        mira(n);
-        n.querySelectorAll('*').forEach(mira);
-      }
-    }
-  });
-  observador.observe(document.body, { childList: true, subtree: true });
-  return { vistos, para: () => observador.disconnect() };
 };
 
 const renderPage = () => {
@@ -147,10 +126,11 @@ const renderPage = () => {
 
 describe('CompetitionDetail - sale ya pintada (3 nov 2026)', () => {
   it('A1: ninguna sección aparece invisible al entrar', async () => {
-    mockGetCompetitionDetail.mockResolvedValue({
+    // Solo para esta prueba: `clearAllMocks` no quita lo que se deja puesto
+    mockGetCompetitionDetail.mockResolvedValueOnce({
       id: 'comp-1', name: 'Summer Cup', status: 'ACTIVE', creatorId: 'creator-1', maxPlayers: 20, countries: [],
     });
-    mockListEnrollments.mockResolvedValue([]);
+    mockListEnrollments.mockResolvedValueOnce([]);
     const sonda = aparecenInvisibles();
     renderPage();
     await screen.findAllByText('Summer Cup');
@@ -521,7 +501,6 @@ describe('CompetitionDetail - reabrir torneo completado', () => {
   });
 });
 
-
 // FE #571: elegir alias o nombre legal en ESTA competición
 describe('CompetitionDetail - alias o nombre real', () => {
   const miInscripcion = (overrides = {}) => ({
@@ -786,7 +765,6 @@ describe('CompetitionDetail - invitar desde el borrador (FE #660)', () => {
   });
 });
 
-
 describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
   const conVisibilidad = (visibility) => {
     mockGetCompetitionDetail.mockResolvedValue({
@@ -825,7 +803,6 @@ describe('CompetitionDetail - de quién es el torneo (FE #664)', () => {
     );
   });
 });
-
 
 describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
   const programada = ({ status = 'DRAFT', dias = 5, creatorId = 'creator-1', isCreator = true } = {}) => {
@@ -903,7 +880,6 @@ describe('CompetitionDetail - cuándo abre una programada (FE #678)', () => {
     );
   });
 });
-
 
 // Cómo se llegó a Torneos: POP es volver atrás de verdad (FE #647, fase 3)
 const EnCompeticiones = () => <div data-testid="en-competiciones">{useNavigationType()}</div>;
@@ -1009,7 +985,6 @@ describe('CompetitionDetail - la vuelta lleva a donde se vino (FE #682)', () => 
     expect(await screen.findByTestId('en-competiciones')).toBeInTheDocument();
   });
 });
-
 
 describe('CompetitionDetail - borrar con confirmación (FE #667)', () => {
   const ficha = (extra = {}) => {
@@ -1410,7 +1385,6 @@ describe('CompetitionDetail · títulos con su número aparte', () => {
     expect(within(seccion).getByTestId('numero-de-la-seccion')).toHaveTextContent('1');
   });
 });
-
 
 // Release social 2 (27 oct 2026): el jugador ve de los inscritos solo a sus
 // amigos hasta que se publica; el número es el de todos (enrolled_count)

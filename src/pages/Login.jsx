@@ -92,8 +92,9 @@ const Login = () => {
 
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-          {/* Solo aparece: entrando desplazada, un clic en ese medio segundo
-              podía soltarse fuera del botón, que se había movido (QA, FE #865-12) */}
+          {/* Ya pintada, sin moverse ni fundirse: entrando desplazada, un clic
+              en ese medio segundo podía soltarse fuera del botón (QA, FE
+              #865-12), y ninguna pantalla entra desde invisible (3 nov 2026) */}
           <div
             className="w-full max-w-md"
           >

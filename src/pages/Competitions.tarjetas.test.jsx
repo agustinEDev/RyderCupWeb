@@ -24,6 +24,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
+import { aparecenInvisibles } from '../pruebas/aparecenInvisibles';
 
 const mockList = vi.fn();
 vi.mock('../composition', () => ({
@@ -58,27 +59,6 @@ const { loader } = await import('./Competitions.datos');
 (await import('../utils/cargaDeLaPantalla')).marcaElArranque(true);
 // Lo de cada prueba (la lista y sus filtros) no pasa a la siguiente
 const { olvidaTodo } = await import('../services/loUltimoConocido');
-
-
-// Cada elemento que aparece a opacidad 0 al entrar en la página (3 nov 2026:
-// ninguna pantalla entra desde invisible, `sinFundidoAlEntrar.test.js`)
-const aparecenInvisibles = () => {
-  const vistos = [];
-  const mira = (el) => {
-    if (el.style?.opacity === '0') vistos.push(el.tagName + (el.dataset.testid ? `#${el.dataset.testid}` : ''));
-  };
-  const observador = new globalThis.MutationObserver((cambios) => {
-    for (const c of cambios) {
-      for (const n of c.addedNodes) {
-        if (n.nodeType !== 1) continue;
-        mira(n);
-        n.querySelectorAll('*').forEach(mira);
-      }
-    }
-  });
-  observador.observe(document.body, { childList: true, subtree: true });
-  return { vistos, para: () => observador.disconnect() };
-};
 
 const competicion = (extra = {}) => ({
   id: 'c-1',
@@ -287,4 +267,3 @@ describe('Mis competiciones · sale ya pintada (3 nov 2026)', () => {
     expect(sonda.vistos).toEqual([]);
   });
 });
-
