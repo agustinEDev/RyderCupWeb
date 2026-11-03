@@ -15,7 +15,7 @@
  * | I10 | Mientras responde                            | Los dos botones desactivados                      |
  * | I11 | Sin conexión u otro fallo                    | Aviso; el cuadro sigue, se puede reintentar       |
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import InvitacionEnLaFicha from './InvitacionEnLaFicha';
 import es from '../../i18n/locales/es/invitations.json';
@@ -53,12 +53,17 @@ const pinta = (props = {}) => {
   return { alCambiar };
 };
 
+// El día de hoy, fijo: la invitación de las pruebas caduca el 3 nov a las 10:00
+// y, pasada esa hora, el cuadro ya no salía y fallaban todas (3 nov 2026). Solo
+// la fecha: los relojes de verdad siguen, que de ellos tiran las esperas
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-27T12:00:00Z') });
   vi.clearAllMocks();
   genero.falta = false;
   genero.guardar.mockResolvedValue(undefined);
   responder.mockResolvedValue({ competitionId: 'c-1' });
 });
+afterEach(() => vi.useRealTimers());
 
 describe('InvitacionEnLaFicha — el cuadro', () => {
   it('I1: dice que me han invitado, cuándo caduca y ofrece Aceptar y Rechazar', () => {

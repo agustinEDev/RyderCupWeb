@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { guardaEnMemoria, guardaLosFiltros, loGuardadoEnMemoria, losFiltrosGuardados, MAXIMO_DE_FILTROS } from './memoriaDeLasListas';
+import { apuntaQueSePinto, guardaEnMemoria, guardaLosFiltros, loGuardadoEnMemoria, losFiltrosGuardados, MAXIMO_DE_FILTROS, MAXIMO_DE_PINTADAS, yaSePinto } from './memoriaDeLasListas';
 import { olvidaLoDeEstaCuenta, olvidaTodo } from './loUltimoConocido';
 
 /**
@@ -24,6 +24,14 @@ import { olvidaLoDeEstaCuenta, olvidaTodo } from './loUltimoConocido';
  *   MF4 | al cerrar sesión                             | se vacían
  *   MF5 | quitarlos (sin filtros)                      | null
  *   MF6 | muchas entradas                              | se quedan las últimas
+ *
+ * Las entradas en que ya se vieron tarjetas, para no animarlas al volver
+ * (3 nov 2026, el parpadeo en el iPhone):
+ *
+ *   MP1 | apuntada y preguntada en la misma entrada    | sí
+ *   MP2 | otra entrada, otra lista u otra cuenta       | no
+ *   MP3 | al cerrar sesión                             | se olvidan
+ *   MP4 | muchas entradas                              | se quedan las últimas
  */
 describe('memoria de las listas', () => {
   beforeEach(() => olvidaTodo());
@@ -100,5 +108,36 @@ describe('memoria de las listas', () => {
     expect(losFiltrosGuardados('competiciones', 'u-1', 'k-0')).toBeNull();
     expect(losFiltrosGuardados('competiciones', 'u-1', 'k-1')).toEqual(ACTIVAS);
     expect(losFiltrosGuardados('competiciones', 'u-1', `k-${MAXIMO_DE_FILTROS}`)).toEqual(ACTIVAS);
+  });
+
+  it('MP1: una entrada apuntada se recuerda', () => {
+    apuntaQueSePinto('competiciones', 'u-1', 'k-1');
+    expect(yaSePinto('competiciones', 'u-1', 'k-1')).toBe(true);
+  });
+
+  it('MP2: ni otra entrada, ni otra lista, ni otra cuenta', () => {
+    apuntaQueSePinto('competiciones', 'u-1', 'k-1');
+    expect(yaSePinto('competiciones', 'u-1', 'k-2')).toBe(false);
+    expect(yaSePinto('amigos', 'u-1', 'k-1')).toBe(false);
+    expect(yaSePinto('competiciones', 'u-2', 'k-1')).toBe(false);
+  });
+
+  it('MP3: al cerrar sesión se olvidan', () => {
+    apuntaQueSePinto('competiciones', 'u-1', 'k-1');
+    olvidaLoDeEstaCuenta();
+    expect(yaSePinto('competiciones', 'u-1', 'k-1')).toBe(false);
+  });
+
+  it('MP4: con muchas entradas se quedan las últimas (y la que se vuelve a ver, sube)', () => {
+    // 52 apuntadas: salen las dos más viejas, salvo la que se volvió a ver
+    for (let i = 0; i <= MAXIMO_DE_PINTADAS + 1; i += 1) {
+      apuntaQueSePinto('competiciones', 'u-1', `k-${i}`);
+      if (i === 5) apuntaQueSePinto('competiciones', 'u-1', 'k-1');
+    }
+    expect(yaSePinto('competiciones', 'u-1', 'k-0')).toBe(false);
+    expect(yaSePinto('competiciones', 'u-1', 'k-1')).toBe(true);
+    expect(yaSePinto('competiciones', 'u-1', 'k-2')).toBe(false);
+    expect(yaSePinto('competiciones', 'u-1', 'k-3')).toBe(true);
+    expect(yaSePinto('competiciones', 'u-1', `k-${MAXIMO_DE_PINTADAS + 1}`)).toBe(true);
   });
 });
