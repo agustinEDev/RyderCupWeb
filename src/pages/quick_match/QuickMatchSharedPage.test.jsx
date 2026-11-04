@@ -124,6 +124,14 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     expect(submit).not.toHaveBeenCalled();
   });
 
+  // Twin of the scoring page header (Kind pass, 4 Nov 2026): it showed «STABLEFORD», the raw value
+  it('K4b: the header shows the translated format', async () => {
+    pinta();
+
+    await screen.findByTestId('quick-match-classification-table');
+    expect(screen.getByText(/create\.course\.corto\.STABLEFORD/)).toBeInTheDocument();
+  });
+
   it('shows the classification and the scorecard, with the course and a read-only label', async () => {
     pinta();
 

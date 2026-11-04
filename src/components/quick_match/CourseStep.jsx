@@ -58,10 +58,13 @@ const CourseStep = ({
   // Un % copiado al repetir que no está entre los botones sale como uno más,
   // marcado: si no, no se veía cuál iba (pasada del Kind, 4 nov 2026)
   const base = isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS;
-  const [porcentajeCopiado] = useState(() => (base.includes(allowancePercentage) ? null : allowancePercentage));
+  const [copiado] = useState(() =>
+    base.includes(allowancePercentage) ? null : { pct: allowancePercentage, libre: isFreePlay }
+  );
+  // Solo en la modalidad en que se copió: en la otra sería un botón fantasma
   const opcionesDePorcentaje =
-    porcentajeCopiado !== null && !base.includes(porcentajeCopiado)
-      ? [...base, porcentajeCopiado].sort((a, b) => a - b)
+    copiado && copiado.libre === isFreePlay && !base.includes(copiado.pct)
+      ? [...base, copiado.pct].sort((a, b) => a - b)
       : base;
   const elegida = (op) => op.modo === mode && (isFreePlay ? scoringFormat : matchFormat) === op.formato;
   const elige = (op) => {

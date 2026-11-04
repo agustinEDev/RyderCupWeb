@@ -155,8 +155,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // Con qué jugadores se eligieron los anotadores: si al volver al paso 3 son
   // los mismos, se conservan (al repetir se perdían los copiados en silencio;
   // pasada del Kind, 4 nov 2026). Si cambia alguien, se vuelven a elegir
-  const firmaDe = (lista) => lista.map((p) => `${p.participantId}:${p.team ?? ''}`).join('|');
-  const anotadoresElegidosCon = useRef(copia ? firmaDe(copia.participants ?? []) : null);
+  // También el formato: con los mismos jugadores, pasar de fourball a
+  // foursomes cambia quién puede anotar (revisor, 4 nov 2026)
+  const firmaDe = (lista, modo, formatoDeJuego, formatoLibre) =>
+    `${modo}:${formatoDeJuego}:${formatoLibre}|` + lista.map((p) => `${p.participantId}:${p.team ?? ''}`).join('|');
+  const anotadoresElegidosCon = useRef(
+    copia ? firmaDe(copia.participants ?? [], copia.mode, copia.matchFormat, copia.scoringFormat) : null
+  );
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -471,7 +476,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
-    const firma = firmaDe(participants);
+    const firma = firmaDe(participants, mode, matchFormat, scoringFormat);
     if (anotadoresElegidosCon.current === firma) {
       setError('');
       setStep(3);

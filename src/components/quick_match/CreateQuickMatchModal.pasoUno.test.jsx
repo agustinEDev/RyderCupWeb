@@ -550,6 +550,26 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
     });
 
+    it('K6 (revisor): con los mismos jugadores pero otro formato, los anotadores se vuelven a elegir', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
+      fireEvent.click(await screen.findByTestId('quick-match-tee-panel-option-RED|FEMALE'));
+      fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Ana' }));
+      fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+      fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+      fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      // Dentro de stroke play los jugadores se quedan: misma lista, otro formato
+      await screen.findByTestId('quick-match-participants-next');
+      fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+      expect(screen.getByRole('checkbox', { name: 'Ana' })).not.toBeChecked();
+    });
+
     it('C2: al repetir, un nombre propio con la forma de uno de por defecto se copia', async () => {
       abre({
         borrador: {

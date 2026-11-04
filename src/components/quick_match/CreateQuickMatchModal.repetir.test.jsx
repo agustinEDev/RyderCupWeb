@@ -213,8 +213,9 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
 
   // Pasada en el Kind (4 nov 2026):
   //   K1  volver al paso 2 y avanzar sin cambiar a nadie | siguen los anotadores
-  //   K2  volver al paso 2 y quitar a un jugador         | se vuelven a elegir
-  //   K3  un % copiado que no está entre los botones     | sale como uno más, marcado
+  //   K2b volver al paso 2 y quitar a un jugador         | se vuelven a elegir
+  //   K3  un % copiado que no está entre los botones     | sale como uno más, marcado,
+  //       solo en la modalidad en que se copió
   it('K1: volver a los jugadores y avanzar sin cambiar a nadie conserva los anotadores', async () => {
     abre();
     await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
@@ -228,7 +229,7 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     expect(mockIniciar.mock.calls[0][0].scorerUserIds).toEqual(['user-1', 'user-2']);
   });
 
-  it('K2: si se cambia a alguien, los anotadores se vuelven a elegir', async () => {
+  it('K2b: si se cambia a alguien, los anotadores se vuelven a elegir', async () => {
     abre();
     await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
     fireEvent.click(await screen.findByTestId('quick-match-summary-back'));
@@ -250,6 +251,15 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     expect(ochenta.getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByTestId('quick-match-allowance-option-90'));
     expect(screen.getByTestId('quick-match-allowance-option-80')).toBeInTheDocument();
+  });
+
+  it('K3b: el % copiado no se ofrece en la otra modalidad', async () => {
+    abre({ borrador: borrador({ paso: 1, inicial: { ...borrador().inicial, allowanceOverride: 80 } }) });
+    await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByTestId('format-option-SINGLES'));
+
+    expect(screen.queryByTestId('quick-match-allowance-option-80')).not.toBeInTheDocument();
   });
 
   it('E2: cambiar de campo sí borra la barra copiada', async () => {
