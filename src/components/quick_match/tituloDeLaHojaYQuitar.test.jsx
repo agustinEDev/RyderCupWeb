@@ -24,6 +24,7 @@ import TeeSelectPanel from './TeeSelectPanel';
 import ParticipantsStep from './ParticipantsStep';
 import es from '../../i18n/locales/es/quickMatch.json';
 import en from '../../i18n/locales/en/quickMatch.json';
+import i18next from 'i18next';
 
 // Una traducción que deja ver la clave y lo que se le mete
 const t = (clave, opciones) => (opciones?.name === undefined ? clave : `${clave}[${opciones.name}]`);
@@ -164,5 +165,28 @@ describe('Botón de quitar jugador', () => {
   it('los textos: «Quitar a {{name}}» y «Remove {{name}}»', () => {
     expect(es.create.participants.remove).toBe('Quitar a {{name}}');
     expect(en.create.participants.remove).toBe('Remove {{name}}');
+  });
+});
+
+describe('Los textos con i18next de verdad (revisor)', () => {
+  const traduce = async (idioma) => {
+    const i18n = i18next.createInstance();
+    await i18n.init({
+      lng: idioma,
+      resources: { es: { quickMatch: es }, en: { quickMatch: en } },
+      interpolation: { escapeValue: false },
+    });
+    return i18n.getFixedT(idioma, 'quickMatch');
+  };
+
+  it.each([
+    ['es', 'Tu salida', 'Quitar a Jugador 12', 'Salida de Jugador 23'],
+    ['en', 'Your tee', 'Remove Jugador 12', "Jugador 23's tee"],
+  ])('%s: «%s», «%s» y la hoja del amigo «%s»', async (idioma, tuya, quitar, amigo) => {
+    const tr = await traduce(idioma);
+
+    expect(tr('create.course.yourTeePanelTitle')).toBe(tuya);
+    expect(tr('create.participants.remove', { name: 'Jugador 12' })).toBe(quitar);
+    expect(tr('create.teePanel.title', { name: 'Jugador 23' })).toBe(amigo);
   });
 });
