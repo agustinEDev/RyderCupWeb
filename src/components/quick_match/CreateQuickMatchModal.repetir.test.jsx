@@ -61,6 +61,8 @@ vi.mock('../../composition', () => ({
   createAndStartQuickMatchUseCase: { execute: (...a) => mockIniciar(...a) },
   listFriendsUseCase: { execute: (...a) => mockListFriends(...a) },
   getGolfCourseUseCase: { execute: (...a) => mockGetGolfCourse(...a) },
+  // Sin partidas anteriores: la barra no se sugiere por «la última vez» (FE #1025)
+  listMyQuickMatchesUseCase: { execute: () => Promise.resolve({ quickMatches: [] }) },
   cancelQuickMatchUseCase: { execute: (...a) => mockCancel(...a) },
 }));
 

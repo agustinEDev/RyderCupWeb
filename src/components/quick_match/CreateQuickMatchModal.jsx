@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
@@ -14,7 +14,10 @@ import SummaryStep from './SummaryStep';
 import {
   createAndStartQuickMatchUseCase,
   getGolfCourseUseCase,
+  listMyQuickMatchesUseCase,
 } from '../../composition';
+import { esNombrePorDefecto, nombrePorDefecto } from '../../utils/nombrePorDefecto';
+import { barraPorDefecto, ultimasBarras } from '../../utils/barraPorDefecto';
 import {
   DEFAULT_ALLOWANCE_BY_MATCH_FORMAT,
   DEFAULT_FREE_PLAY_ALLOWANCE,
@@ -30,6 +33,9 @@ import {
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
+
+// Cuánto se espera a tus partidas antes de sugerir la barra por tu género
+export const ESPERA_DE_TUS_PARTIDAS_MS = 2000;
 
 // Por qué no se pudo empezar, por el código del servidor (FE #848): todo se
 // comprueba al confirmar, así que el motivo se dice en el resumen
@@ -86,11 +92,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const copia = borrador?.inicial ?? null;
   const [step, setStep] = useState(borrador?.paso ?? 1);
-  const [matchName, setMatchName] = useState(copia?.matchName ?? '');
+  // El nombre lleva escrito «Campo · dd/mm» y sigue al campo hasta
+  // que alguien escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al
+  // repetir, uno de por defecto no se copia: llevaría la fecha de aquella
+  const [matchName, setMatchName] = useState(() =>
+    esNombrePorDefecto(copia?.matchName, copia?.selectedCourse?.name) ? '' : (copia?.matchName ?? '')
+  );
+  const [nombreAMano, setNombreAMano] = useState(() => Boolean(copia?.matchName) && !esNombrePorDefecto(copia.matchName, copia?.selectedCourse?.name));
+  const [abiertoEl] = useState(() => new Date());
   const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
   const [matchFormat, setMatchFormat] = useState(copia?.matchFormat ?? 'SINGLES');
   const [scoringFormat, setScoringFormat] = useState(copia?.scoringFormat ?? 'STABLEFORD');
   const [selectedCourse, setSelectedCourse] = useState(copia?.selectedCourse ?? null);
+  const nombreSugerido = selectedCourse?.name ? nombrePorDefecto(selectedCourse.name, abiertoEl) : '';
   const [courseTees, setCourseTees] = useState([]);
   // Lo dice la ficha completa del campo, que es la que trae su procedencia
   const [courseFromRfeg, setCourseFromRfeg] = useState(false);
@@ -152,6 +166,61 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
         .catch(() => setFriends([]));
     }
   }, [step, currentUser?.id]);
+
+  // Tus partidas rápidas, para saber qué barra llevó cada uno la última vez
+  // en cada campo (FE #1025). Sin poder leerlas (sin red), por tu género
+  const [misPartidas, setMisPartidas] = useState(null);
+  // Sin respuesta en 2 s (poca cobertura), se sugiere por tu género: la barra
+  // no se queda sin marcar esperando (Agustín, 4 nov 2026)
+  const [plazoAgotado, setPlazoAgotado] = useState(false);
+  useEffect(() => {
+    const plazo = setTimeout(() => setPlazoAgotado(true), ESPERA_DE_TUS_PARTIDAS_MS);
+    return () => clearTimeout(plazo);
+  }, []);
+  useEffect(() => {
+    let vigente = true;
+    Promise.resolve()
+      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 50 }))
+      .then((r) => {
+        if (vigente) setMisPartidas(r?.quickMatches ?? []);
+      })
+      .catch(() => {
+        if (vigente) setMisPartidas([]);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+  const ultimas = useMemo(() => ultimasBarras(misPartidas, selectedCourse?.id), [misPartidas, selectedCourse?.id]);
+  // La que sale elegida: la de la última vez en ese campo; si no, la de tu
+  // género. Solo si no hay ninguna elegida: la copiada al repetir (P7) o la
+  // que hayas tocado tú mandan
+  const barraSugerida = barraPorDefecto({
+    tees: courseTees,
+    genero: currentUser?.gender ?? null,
+    ultima: ultimas.get(currentUser?.id) ?? null,
+  });
+  // La sugerida no se marca hasta saber tus partidas (o agotar el plazo), y en
+  // cuanto se marca se fija: así no salta delante de ti cuando llegan tarde,
+  // ni viaja una distinta de la que enseña el resumen (revisor, 4 nov 2026).
+  // Ajuste durante el render (no en un efecto); al cambiar de campo vuelve a
+  // `NO_TEE_KEY` y se sugiere otra vez
+  // Al repetir con el aviso de que tu barra ya no vale, no se marca ninguna:
+  // el aviso pide elegirla (Agustín, 4 nov 2026). Solo en el campo copiado
+  const avisoDeTuBarra =
+    avisosDelBorrador.some((a) => a.propia && (a.tipo === 'barra' || a.tipo === 'sinBarra')) &&
+    selectedCourse?.id === copia?.selectedCourse?.id;
+  const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
+  if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
+    setCreatorTeeKey(barraSugerida);
+    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review)
+    if (error === t('create.course.errorTeeRequired')) setError('');
+  }
+  // La de cada amigo, para preelegirla al añadirlo (P8)
+  const barraDeAmigo = (userId) => {
+    const ultima = ultimas.get(userId);
+    return ultima && courseTees.some((t) => teeKey(t.color, t.gender) === ultima) ? ultima : NO_TEE_KEY;
+  };
 
   useEffect(() => {
     // Otro campo (también ninguno): la barra elegida ya no vale
@@ -462,7 +531,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       golfCourseId: selectedCourse.id,
       matchFormat: isFreePlay ? null : matchFormat,
       scoringFormat: isFreePlay ? scoringFormat : null,
-      name: matchName.trim() || null,
+      name: matchName.trim() || nombreSugerido || null,
       allowancePercentage,
       playMode,
       creatorTeeColor,
@@ -595,8 +664,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
         {step === 1 && (
           <CourseStep
             t={t}
-            matchName={matchName}
-            onMatchNameChange={setMatchName}
+            matchName={nombreAMano ? matchName : nombreSugerido}
+            nombreAMano={nombreAMano && matchName.trim() !== ''}
+            onMatchNameChange={(nombre) => {
+              setNombreAMano(true);
+              setMatchName(nombre);
+            }}
             mode={mode}
             onModeChange={handleModeChange}
             isFreePlay={isFreePlay}
@@ -611,9 +684,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             courseTees={courseTees}
             courseFromRfeg={courseFromRfeg}
             creatorTeeKey={creatorTeeKey}
+            generoDeQuienCrea={currentUser?.gender ?? null}
+            allowanceAMano={allowancePercentage !== defaultAllowance}
             onCreatorTeeKeyChange={setCreatorTeeKey}
             allowancePercentage={allowancePercentage}
-            onAllowanceChange={setAllowanceOverride}
+            // El de por defecto elegido a mano no es «a mano»: así no sale en
+            // la cabecera ni se pierde al cruzar de modalidad
+            onAllowanceChange={(valor) => setAllowanceOverride(valor === defaultAllowance ? null : valor)}
             playMode={playMode}
             onPlayModeChange={setPlayMode}
             isProcessing={isProcessing}
@@ -641,6 +718,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onParticipantTabChange={setParticipantTab}
             availableFriends={availableFriends}
             courseTees={courseTees}
+            barraDeAmigo={barraDeAmigo}
             onAddFriend={handleAddFriend}
             guestForm={guestForm}
             onGuestFirstNameChange={handleGuestFirstNameChange}

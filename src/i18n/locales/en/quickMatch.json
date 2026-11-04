@@ -14,10 +14,6 @@
       "heading": "Course and format",
       "nameLabel": "Name (optional)",
       "namePlaceholder": "E.g. Friday round with the club",
-      "modeLabel": "Form of play",
-      "modeMatchPlay": "Match play",
-      "modeFreePlay": "Stroke play",
-      "formatLabel": "Format",
       "formatSingles": "Singles (1 vs 1)",
       "formatFourball": "Fourball (2 vs 2, best ball)",
       "formatFoursomes": "Foursomes (2 vs 2, alternate shot)",
@@ -37,7 +33,17 @@
       "playModeScratchHint": "Nobody receives strokes: everyone plays off zero.",
       "allowanceNotApplied": "Not applied in a scratch match.",
       "yourTeePlaceholder": "Pick your tee",
-      "yourTeePanelTitle": "your tee"
+      "yourTeePanelTitle": "your tee",
+      "queJugais": "What are you playing?",
+      "masOpciones": "More options",
+      "otrasBarras": "Others",
+      "corto": {
+        "SINGLES": "Singles",
+        "FOURBALL": "Fourball",
+        "FOURSOMES": "Foursomes",
+        "STABLEFORD": "Stableford",
+        "MEDAL": "Medal"
+      }
     },
     "participants": {
       "heading": "Add participants",
