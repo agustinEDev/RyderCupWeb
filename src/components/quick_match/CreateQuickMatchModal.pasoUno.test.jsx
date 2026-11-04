@@ -32,14 +32,22 @@
  *        | stroke play                               | opciones» se abre para que se vea
  *   R4   al repetir                                 | la barra copiada es la que viaja
  *
- * El nombre por defecto (Agustín, 4 nov 2026): «Modalidad - dd/mm/aa»
+ * El nombre por defecto (Agustín, 4 nov 2026): «Campo · dd/mm»
  *
- *   N3   al abrir                                   | escrito en el campo, y viaja
- *   N4   cambiar de formato                         | lo sigue; no sale en la cabecera
- *   N5   escribir uno                               | se queda aunque cambie el formato
+ *   N3   al elegir campo                            | escrito en el campo, y viaja
+ *   N4   sin campo                                  | vacío
+ *   N4b  cambiar de campo                           | lo sigue; el formato no lo toca;
+ *        |                                           | no sale en la cabecera
+ *   N5   escribir uno                               | se queda aunque cambie el campo
  *   N6   vaciarlo                                   | viaja el de por defecto
  *   N7   repetir una con nombre propio              | se copia
- *   N8   repetir una con el de por defecto          | el de hoy, siguiendo al formato
+ *   N8   repetir una con el de por defecto          | el de hoy
+ *
+ * Y de la segunda revisión (4 nov 2026):
+ *
+ *   R5   repetir con aviso «elige tu barra»         | no se marca ninguna
+ *   R6   elegir a mano el % por defecto             | no cuenta como «a mano»
+ *   R7   «Otras»                                    | dice si su panel está abierto
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -279,6 +287,8 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
     };
 
     it('R1: con tus partidas en camino no se marca ninguna; luego la buena, y es la que viaja', async () => {
+      // Reloj falso: con uno real, una máquina cargada agota los 2 s antes
+      vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 1 });
       const lista = colgada();
       mockListMine.mockReturnValue(lista.promesa);
       abre();
@@ -350,14 +360,14 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
   });
 
   describe('el nombre por defecto', () => {
-    const hoy = (formato) => nombrePorDefecto(`create.course.corto.${formato}`, new Date());
+    const hoy = (campo) => nombrePorDefecto(campo, new Date());
     const nombre = () => screen.getByTestId('quick-match-name-input').value;
     const cabecera = () => screen.getByTestId('quick-match-mas-opciones').querySelector('summary').textContent;
-    const repite = (matchName) =>
+    const repite = (matchName, avisos = []) =>
       abre({
         borrador: {
           paso: 1,
-          avisos: [],
+          avisos,
           inicial: {
             matchName, mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
             selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: 'YELLOW|MALE', participants: [], scorerIds: [],
@@ -365,38 +375,46 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
         },
       });
 
-    it('N3: al abrir, escrito en el campo, y viaja', async () => {
+    it('N3: al elegir campo, escrito, y viaja', async () => {
       abre();
-      expect(nombre()).toBe(hoy('SINGLES'));
-      await eligeCampo();
+      await eligeCampo('gc-1');
+      expect(nombre()).toBe(hoy('gc-1'));
       await hastaElResumen();
-      expect(peticion().name).toBe(hoy('STABLEFORD'));
+      expect(peticion().name).toBe(hoy('gc-1'));
     });
 
-    it('N4: sigue al formato y no sale en la cabecera', () => {
+    it('N4: sin campo, vacío', () => {
       abre();
+      expect(nombre()).toBe('');
+    });
+
+    it('N4b: sigue al campo, el formato no lo toca, y no sale en la cabecera', async () => {
+      abre();
+      await eligeCampo('gc-1');
       fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
-      expect(nombre()).toBe(hoy('FOURBALL'));
+      expect(nombre()).toBe(hoy('gc-1'));
+      await eligeCampo('gc-2');
+      expect(nombre()).toBe(hoy('gc-2'));
       expect(cabecera()).toBe('create.course.masOpciones');
     });
 
-    it('N5: uno escrito se queda aunque cambie el formato, y sale en la cabecera', async () => {
+    it('N5: uno escrito se queda aunque cambie el campo, y sale en la cabecera', async () => {
       abre();
+      await eligeCampo('gc-1');
       fireEvent.change(screen.getByTestId('quick-match-name-input'), { target: { value: 'Domingo' } });
-      fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
+      await eligeCampo('gc-2');
       expect(nombre()).toBe('Domingo');
       expect(cabecera()).toBe('create.course.masOpciones · Domingo');
-      await eligeCampo();
       await hastaElResumen();
       expect(peticion().name).toBe('Domingo');
     });
 
     it('N6: vaciado, viaja el de por defecto', async () => {
       abre();
+      await eligeCampo('gc-1');
       fireEvent.change(screen.getByTestId('quick-match-name-input'), { target: { value: '   ' } });
-      await eligeCampo();
       await hastaElResumen();
-      expect(peticion().name).toBe(hoy('STABLEFORD'));
+      expect(peticion().name).toBe(hoy('gc-1'));
     });
 
     it('N7: al repetir una con nombre propio, se copia', async () => {
@@ -405,14 +423,62 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       expect(nombre()).toBe('Liga de los martes');
     });
 
-    it('N8: al repetir una con el de por defecto, el de hoy y siguiendo al formato', async () => {
-      repite('create.course.corto.MEDAL - 28/10/26');
+    it('N8: al repetir una con el de por defecto, el de hoy, y es el que viaja', async () => {
+      repite('gc-1 · 28/10');
       await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
-      expect(nombre()).toBe(hoy('MEDAL'));
-      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
-      expect(nombre()).toBe(hoy('STABLEFORD'));
+      expect(nombre()).toBe(hoy('gc-1'));
       await hastaElResumen();
-      expect(peticion().name).toBe(hoy('STABLEFORD'));
+      expect(peticion().name).toBe(hoy('gc-1'));
+    });
+  });
+
+  describe('de la segunda revisión', () => {
+    it('R5: al repetir con el aviso de elegir tu barra, no se marca ninguna', async () => {
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [{ tipo: 'barra', propia: true, color: 'BLACK', genero: 'MALE', paso: 1 }],
+          inicial: {
+            matchName: '', mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: '', participants: [], scorerIds: [],
+          },
+        },
+      });
+      await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+      await act(() => new Promise((r) => setTimeout(r, 50)));
+
+      expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
+    });
+
+    it('R5: el aviso de la barra de otro jugador no impide sugerir la tuya', async () => {
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [{ tipo: 'barra', propia: false, nombre: 'Ana', color: 'BLACK', genero: 'FEMALE', paso: 2 }],
+          inicial: {
+            matchName: '', mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: '', participants: [], scorerIds: [],
+          },
+        },
+      });
+
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+    });
+
+    it('R6: elegir a mano el % que ya es el de por defecto no cuenta como a mano', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('quick-match-allowance-option-100'));
+      expect(screen.getByTestId('quick-match-mas-opciones').querySelector('summary').textContent).toBe('create.course.masOpciones');
+    });
+
+    it('R7: «Otras» dice si su panel está abierto', async () => {
+      abre();
+      await eligeCampo();
+      const otras = screen.getByTestId('quick-match-creator-tee-otras');
+      expect(otras.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.click(otras);
+      expect(otras.getAttribute('aria-expanded')).toBe('true');
     });
   });
 });

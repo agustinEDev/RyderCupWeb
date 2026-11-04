@@ -230,7 +230,7 @@ describe('CreateQuickMatchModal · borrador hasta «Confirmar e iniciar» (FE #8
       golfCourseId: 'course-1',
       matchFormat: null,
       scoringFormat: 'STABLEFORD',
-      name: expect.stringMatching(/^create\.course\.corto\.\w+ - \d{2}\/\d{2}\/\d{2}$/),
+      name: expect.stringMatching(/^.+ · \d{2}\/\d{2}$/),
       allowancePercentage: 95,
       playMode: 'HANDICAP',
       creatorTeeColor: null,

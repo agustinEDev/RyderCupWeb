@@ -92,7 +92,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const copia = borrador?.inicial ?? null;
   const [step, setStep] = useState(borrador?.paso ?? 1);
-  // El nombre lleva escrito «Modalidad - dd/mm/aa» y sigue al formato hasta
+  // El nombre lleva escrito «Campo · dd/mm» y sigue al campo hasta
   // que alguien escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al
   // repetir, uno de por defecto no se copia: llevaría la fecha de aquella
   const [matchName, setMatchName] = useState(() =>
@@ -103,11 +103,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
   const [matchFormat, setMatchFormat] = useState(copia?.matchFormat ?? 'SINGLES');
   const [scoringFormat, setScoringFormat] = useState(copia?.scoringFormat ?? 'STABLEFORD');
-  const nombreSugerido = nombrePorDefecto(
-    t(`create.course.corto.${mode === 'FREE_PLAY' ? scoringFormat : matchFormat}`),
-    abiertoEl
-  );
   const [selectedCourse, setSelectedCourse] = useState(copia?.selectedCourse ?? null);
+  const nombreSugerido = selectedCourse ? nombrePorDefecto(selectedCourse.name, abiertoEl) : '';
   const [courseTees, setCourseTees] = useState([]);
   // Lo dice la ficha completa del campo, que es la que trae su procedencia
   const [courseFromRfeg, setCourseFromRfeg] = useState(false);
@@ -208,7 +205,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // ni viaja una distinta de la que enseña el resumen (revisor, 4 nov 2026).
   // Ajuste durante el render (no en un efecto); al cambiar de campo vuelve a
   // `NO_TEE_KEY` y se sugiere otra vez
-  const sugerenciaLista = !teesLoading && (misPartidas !== null || plazoAgotado);
+  // Al repetir con el aviso de que tu barra ya no vale, no se marca ninguna:
+  // el aviso pide elegirla (Agustín, 4 nov 2026). Solo en el campo copiado
+  const avisoDeTuBarra =
+    (borrador?.avisos ?? []).some((a) => a.propia && (a.tipo === 'barra' || a.tipo === 'sinBarra')) &&
+    selectedCourse?.id === copia?.selectedCourse?.id;
+  const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
   if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
     setCreatorTeeKey(barraSugerida);
   }
@@ -528,7 +530,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       golfCourseId: selectedCourse.id,
       matchFormat: isFreePlay ? null : matchFormat,
       scoringFormat: isFreePlay ? scoringFormat : null,
-      name: matchName.trim() || nombreSugerido,
+      name: matchName.trim() || nombreSugerido || null,
       allowancePercentage,
       playMode,
       creatorTeeColor,
@@ -685,7 +687,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             allowanceAMano={allowanceOverride !== null}
             onCreatorTeeKeyChange={setCreatorTeeKey}
             allowancePercentage={allowancePercentage}
-            onAllowanceChange={setAllowanceOverride}
+            // El de por defecto elegido a mano no es «a mano»: así no sale en
+            // la cabecera ni se pierde al cruzar de modalidad
+            onAllowanceChange={(valor) => setAllowanceOverride(valor === defaultAllowance ? null : valor)}
             playMode={playMode}
             onPlayModeChange={setPlayMode}
             isProcessing={isProcessing}

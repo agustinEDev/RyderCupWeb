@@ -73,6 +73,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
           type="button"
           onClick={() => setOtrasAbiertas(true)}
           aria-haspopup="dialog"
+          aria-expanded={otrasAbiertas}
           data-testid="quick-match-creator-tee-otras"
           className="px-3 py-1 rounded-lg border border-dashed border-gray-300 text-sm text-gray-600 hover:border-gray-400"
         >

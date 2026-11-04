@@ -133,7 +133,7 @@ describe('CreateQuickMatchModal', () => {
     });
   });
 
-  it('without a typed name, sends the default one: format - dd/mm/yy (FE #1025)', async () => {
+  it('without a typed name, sends the default one: course · dd/mm (FE #1025)', async () => {
     renderModal();
 
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -143,7 +143,7 @@ describe('CreateQuickMatchModal', () => {
     fireEvent.click(screen.getByTestId('quick-match-course-next'));
     await finishFromParticipants(1);
 
-    expect(peticion().name).toMatch(/^create\.course\.corto\.\w+ - \d{2}\/\d{2}\/\d{2}$/);
+    expect(peticion().name).toMatch(/^.+ · \d{2}\/\d{2}$/);
   });
 
   it('should create a free-play quick match with the selected scoring format', async () => {
