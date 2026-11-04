@@ -18,8 +18,10 @@ import { renderHook } from '@testing-library/react';
 const refreshAccessToken = vi.fn();
 const getLastRefreshAt = vi.fn();
 
+// El hook pide el refresco compartido (hotfix 2.63.1); el nombre del doble se
+// queda, que es lo que cuentan todos los tests de abajo
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
-  refreshAccessToken: (...args) => refreshAccessToken(...args),
+  refrescoCompartido: (...args) => refreshAccessToken(...args),
   getLastRefreshAt: () => getLastRefreshAt(),
 }));
 
