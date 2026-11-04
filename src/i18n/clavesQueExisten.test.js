@@ -14,7 +14,8 @@ import { resolve, join, relative } from 'node:path';
  *   y las de `i18nKey: '…'` / `i18nKey="…"`;
  * - dónde se buscan: con prefijo (`common:cancel`) o `{ ns: 'x' }`, en ese
  *   espacio; con una `t` sacada de `useTranslation` en el mismo fichero, en
- *   sus espacios; si no se sabe de dónde viene (la `t` llega por props, o un
+ *   el primero de su lista (o en `common` sin argumento), que es donde busca
+ *   i18next; si no se sabe de dónde viene (la `t` llega por props, o un
  *   `i18nKey` suelto), en alguno.
  * Solo se miran los textos en español: que el inglés tenga los mismos lo
  * exige `paridadDeIdiomas.test.js`. Las claves armadas con variables
@@ -30,6 +31,8 @@ const espacios = Object.fromEntries(
     .map((f) => [f.replace('.json', ''), JSON.parse(readFileSync(resolve(LOCALES, f), 'utf8'))])
 );
 const TODOS = Object.keys(espacios);
+// `defaultNS` de `src/i18n/config.js`
+const POR_DEFECTO = 'common';
 
 // Un texto, no un grupo: plurales y contextos de i18next van como `clave_one`…
 const existe = (espacio, clave) => {
@@ -69,7 +72,10 @@ const espaciosDeCadaT = (codigo) => {
     const alias = destructurado.match(/(?:^|,)\s*t\s*(?::\s*(\w+))?\s*(?:,|$)/);
     if (!alias) continue;
     const variable = alias[1] || 't';
-    const suyos = argumento ? [...argumento.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]) : TODOS;
+    // i18next busca solo en el primero de la lista, o en `common` sin
+    // argumento (`defaultNS`; no hay `fallbackNS`) (CodeRabbit)
+    const primero = argumento?.match(/['"]([^'"]+)['"]/)?.[1];
+    const suyos = [primero ?? POR_DEFECTO];
     mapa.set(variable, [...(mapa.get(variable) ?? []), ...suyos]);
   }
   return mapa;

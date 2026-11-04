@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import LeaderboardView from './LeaderboardView';
+import scheduleEs from '../../i18n/locales/es/schedule.json';
+import scheduleEn from '../../i18n/locales/en/schedule.json';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -84,6 +86,13 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
 });
 
 describe('LeaderboardView', () => {
+  it.each([
+    ['es', scheduleEs, { SINGLES: 'Individuales', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' }],
+    ['en', scheduleEn, { SINGLES: 'Singles', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' }],
+  ])('los formatos que pinta tienen texto en %s (no solo la clave; CodeRabbit)', (_, schedule, esperados) => {
+    expect(schedule.formats).toMatchObject(esperados);
+  });
+
   it('el formato de cada partido sale traducido, como en el resto de la competición', () => {
     render(<LeaderboardView leaderboard={mockLeaderboard} />);
 
