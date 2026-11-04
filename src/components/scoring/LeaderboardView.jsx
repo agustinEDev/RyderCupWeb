@@ -78,7 +78,8 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
               </span>
             )}
             #{match.matchNumber}
-            {match.matchFormat && ` - ${t(`formats.${match.matchFormat}`, { ns: 'schedule' })}`}
+            {/* Uno sin traducir sale tal cual, no «formats.X» (`/code-review`) */}
+            {match.matchFormat && ` - ${t(`formats.${match.matchFormat}`, { ns: 'schedule', defaultValue: match.matchFormat })}`}
           </span>
           {match.status === 'IN_PROGRESS' && match.currentHole && (
             <span className="text-xs text-gray-500">{t('leaderboard.hole')} {match.currentHole}</span>

@@ -3,18 +3,22 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 
 /**
- * Cada `t('una.clave')` existe en algún JSON (4 nov 2026). Con un texto de
- * respaldo, `t('searchBox.searching', 'Searching...')`, una clave que falta no
- * se nota en los tests ni en la pantalla en inglés: el buscador de campos
- * decía «Searching...» en español desde hacía meses, y el botón de cerrar de
- * los campos pendientes, «Close».
+ * Cada clave de traducción escrita en el código existe (4 nov 2026). Con un
+ * texto de respaldo, `t('searchBox.searching', 'Searching...')`, una clave que
+ * falta no se nota en los tests ni en la pantalla en inglés: el buscador de
+ * campos decía «Searching...» en español desde hacía meses, y el botón de
+ * cerrar de los campos pendientes, «Close».
  *
- * Se recogen las claves literales de cualquier `t(...)` o alias (`tComun`,
- * `tSchedule`…), venga la `t` de `useTranslation` o de las props. Saber en qué
- * espacio busca cada `t` no se puede sin ejecutar el código, así que la regla
- * es: con prefijo (`common:cancel`), en ese espacio; sin él, en alguno. Atrapa
- * la que no está en ninguno, que es el fallo que se veía. Las armadas con
- * plantilla (`formats.${x}`) no entran.
+ * Qué se mira, sin ejecutar el código:
+ * - las claves literales de `t(...)` y sus alias (`tComun`, `tSchedule`…),
+ *   y las de `i18nKey: '…'` / `i18nKey="…"`;
+ * - dónde se buscan: con prefijo (`common:cancel`) o `{ ns: 'x' }`, en ese
+ *   espacio; con una `t` sacada de `useTranslation` en el mismo fichero, en
+ *   sus espacios; si no se sabe de dónde viene (la `t` llega por props, o un
+ *   `i18nKey` suelto), en alguno.
+ * Solo se miran los textos en español: que el inglés tenga los mismos lo
+ * exige `paridadDeIdiomas.test.js`. Las claves armadas con variables
+ * (`formats.${x}`) no entran.
  */
 
 const SRC = resolve(process.cwd(), 'src');
@@ -25,6 +29,7 @@ const espacios = Object.fromEntries(
     .filter((f) => f.endsWith('.json'))
     .map((f) => [f.replace('.json', ''), JSON.parse(readFileSync(resolve(LOCALES, f), 'utf8'))])
 );
+const TODOS = Object.keys(espacios);
 
 // Un texto, no un grupo: plurales y contextos de i18next van como `clave_one`…
 const existe = (espacio, clave) => {
@@ -40,11 +45,6 @@ const existe = (espacio, clave) => {
   return Object.keys(nodo).some((k) => k.startsWith(`${ultima}_`) && typeof nodo[k] === 'string');
 };
 
-const existeEnAlguno = (clave) => {
-  const [espacio, resto] = clave.includes(':') ? clave.split(':') : [null, clave];
-  return espacio ? existe(espacio, resto) : Object.keys(espacios).some((e) => existe(e, resto));
-};
-
 const ficheros = (dir) =>
   readdirSync(dir).flatMap((nombre) => {
     const ruta = join(dir, nombre);
@@ -52,19 +52,51 @@ const ficheros = (dir) =>
     return /\.jsx?$/.test(nombre) && !/\.test\./.test(nombre) ? [ruta] : [];
   });
 
-// `t('…')`, `tComun('…')`, `props.t("…")`; no `toast('…')` ni `obj.trim('…')`
-const LLAMADA = /(?<![\w$])t(?:[A-Z]\w*)?\(\s*(['"])([\w.:-]+)\1/g;
+// Sin comentarios: una llamada comentada no es una clave en uso
+const sinComentarios = (codigo) => codigo.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+
+// `const { t } = useTranslation('ns')`, `{ t: tComun }`, `{ i18n, t }`, listas de espacios
+const DECLARACION = /const\s*\{([^}]*)\}\s*=\s*useTranslation\(\s*(\[[^\]]*\]|['"][^'"]*['"])?/g;
+// `t('…')`, `tComun("…")`, `t(\`…\`)` sin variables, con `{ ns: 'x' }` opcional;
+// no `toast('…')` ni `obj.trim('…')`
+const LLAMADA =
+  /(?<![\w$.])(t(?:[A-Z]\w*)?)\(\s*(['"`])([\w.:-]+)\2(?:\s*,\s*\{[^}]*?\bns:\s*['"](\w+)['"])?/g;
+const I18N_KEY = /\bi18nKey\s*[:=]\s*\{?\s*(['"`])([\w.:-]+)\1/g;
+
+const espaciosDeCadaT = (codigo) => {
+  const mapa = new Map();
+  for (const [, destructurado, argumento] of codigo.matchAll(DECLARACION)) {
+    const alias = destructurado.match(/(?:^|,)\s*t\s*(?::\s*(\w+))?\s*(?:,|$)/);
+    if (!alias) continue;
+    const variable = alias[1] || 't';
+    const suyos = argumento ? [...argumento.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]) : TODOS;
+    mapa.set(variable, [...(mapa.get(variable) ?? []), ...suyos]);
+  }
+  return mapa;
+};
+
+const dondeBuscar = (clave, opcionNs, candidatos) => {
+  const dosPuntos = clave.indexOf(':');
+  if (dosPuntos >= 0) return { espacios: [clave.slice(0, dosPuntos)], clave: clave.slice(dosPuntos + 1) };
+  if (opcionNs) return { espacios: [opcionNs], clave };
+  return { espacios: candidatos ?? TODOS, clave };
+};
 
 const clavesQueFaltan = () =>
-  ficheros(SRC).flatMap((fichero) =>
-    [...readFileSync(fichero, 'utf8').matchAll(LLAMADA)]
-      .map((m) => m[2])
-      .filter((clave) => !existeEnAlguno(clave))
-      .map((clave) => `${relative(SRC, fichero)}: '${clave}'`)
-  );
+  ficheros(SRC).flatMap((fichero) => {
+    const codigo = sinComentarios(readFileSync(fichero, 'utf8'));
+    const deCadaT = espaciosDeCadaT(codigo);
+    const usos = [
+      ...[...codigo.matchAll(LLAMADA)].map(([, variable, , clave, ns]) => dondeBuscar(clave, ns, deCadaT.get(variable))),
+      ...[...codigo.matchAll(I18N_KEY)].map(([, , clave]) => dondeBuscar(clave, null, null)),
+    ];
+    return usos
+      .filter(({ espacios: suyos, clave }) => !suyos.some((e) => existe(e, clave)))
+      .map(({ espacios: suyos, clave }) => `${relative(SRC, fichero)}: '${clave}' en ${suyos.length === TODOS.length ? 'ninguno' : suyos.join(', ')}`);
+  });
 
 describe('Las claves de traducción existen', () => {
-  it("cada t('clave') literal está en algún JSON (o en el de su prefijo)", () => {
+  it('cada clave literal está en el JSON donde se busca', () => {
     expect([...new Set(clavesQueFaltan())]).toEqual([]);
   });
 });
