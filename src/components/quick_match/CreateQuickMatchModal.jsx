@@ -148,7 +148,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // se quita uno concreto sin comparar textos traducidos, y cambia de idioma
   // con la página
   const [error, setErrorDelAsistente] = useState(null);
-  const setError = (clave) => setErrorDelAsistente(clave ? { clave } : null);
+  // La misma clave conserva el aviso: repetirlo no vuelve a hacer scroll (revisor)
+  const setError = (clave) => setErrorDelAsistente((e) => (!clave ? null : e?.clave === clave ? e : { clave }));
   const quitaElAviso = (clave) => setErrorDelAsistente((e) => (e?.clave === clave ? null : e));
   // El aviso va arriba y el botón que lo provoca, abajo: en un móvil se
   // pintaba fuera de la vista y parecía que no pasaba nada
@@ -646,11 +647,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     } catch (err) {
       if (ultimoIntento.current) ultimoIntento.current.quizaCreada = pudoLlegar(err);
       const motivo = MOTIVO_POR_CODIGO[err?.status];
-      setErrorDelAsistente(
-        motivo
-          ? { clave: motivo }
-          : { texto: mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') }) }
-      );
+      // Los nuestros, por clave (cambian de idioma con la página); solo el
+      // motivo que manda el servidor va como texto (revisor)
+      const aviso = motivo
+        ? { clave: motivo }
+        : mensajeDeError(err, {
+            sinConexion: { clave: 'sinConexion.mensaje', comun: true },
+            generico: { clave: 'create.errors.generic' },
+          });
+      setErrorDelAsistente(typeof aviso === 'string' ? { texto: aviso } : aviso);
     } finally {
       setIsProcessing(false);
     }
@@ -693,7 +698,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600"
             data-testid="quick-match-modal-error"
           >
-            {error.clave ? t(error.clave) : error.texto}
+            {error.clave ? (error.comun ? tComun : t)(error.clave) : error.texto}
           </div>
         )}
 

@@ -98,4 +98,37 @@ describe('CreateQuickMatchModal · el aviso, por su clave', () => {
 
     expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent('es:create.errors.notFriends');
   });
+
+  it('«sin conexión» también cambia de idioma (es nuestro, no del servidor; revisor)', async () => {
+    mockIniciar.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { rerender } = render(pinta({ borrador: BORRADOR }));
+    fireEvent.click(await screen.findByTestId('quick-match-start'));
+    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent('es:sinConexion.mensaje');
+
+    idioma = 'en';
+    rerender(pinta({ borrador: BORRADOR }));
+
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('en:sinConexion.mensaje');
+  });
+
+  it('el motivo que manda el servidor sale tal cual', async () => {
+    mockIniciar.mockRejectedValue({ status: 400, message: 'Motivo del servidor' });
+    render(pinta({ borrador: BORRADOR }));
+
+    fireEvent.click(await screen.findByTestId('quick-match-start'));
+
+    expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent(/^Motivo del servidor$/);
+  });
+
+  it('repetir el mismo aviso no vuelve a hacer scroll (revisor)', () => {
+    const scroll = vi.fn();
+    globalThis.Element.prototype.scrollIntoView = scroll;
+    render(pinta());
+
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+
+    expect(scroll).toHaveBeenCalledTimes(1);
+    delete globalThis.Element.prototype.scrollIntoView;
+  });
 });
