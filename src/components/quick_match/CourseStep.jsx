@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
 import BarrasDeTuGenero from './BarrasDeTuGenero';
@@ -55,6 +55,14 @@ const CourseStep = ({
   onNext,
 }) => {
   const masOpciones = useRef(null);
+  // Un % copiado al repetir que no está entre los botones sale como uno más,
+  // marcado: si no, no se veía cuál iba (pasada del Kind, 4 nov 2026)
+  const base = isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS;
+  const [porcentajeCopiado] = useState(() => (base.includes(allowancePercentage) ? null : allowancePercentage));
+  const opcionesDePorcentaje =
+    porcentajeCopiado !== null && !base.includes(porcentajeCopiado)
+      ? [...base, porcentajeCopiado].sort((a, b) => a - b)
+      : base;
   const elegida = (op) => op.modo === mode && (isFreePlay ? scoringFormat : matchFormat) === op.formato;
   const elige = (op) => {
     // Al cruzar entre match play y stroke play, el % a mano vuelve al de por
@@ -196,7 +204,7 @@ const CourseStep = ({
         {t('create.course.allowanceLabel')}
       </label>
       <div className="flex gap-2" role="group" aria-label={t('create.course.allowanceLabel')}>
-        {(isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS).map((pct) => (
+        {opcionesDePorcentaje.map((pct) => (
           <button
             key={pct}
             type="button"

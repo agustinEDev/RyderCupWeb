@@ -152,6 +152,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [guestForm, setGuestForm] = useState(initialGuestForm);
 
   const [scorerIds, setScorerIds] = useState(copia?.scorerIds ?? []);
+  // Con qué jugadores se eligieron los anotadores: si al volver al paso 3 son
+  // los mismos, se conservan (al repetir se perdían los copiados en silencio;
+  // pasada del Kind, 4 nov 2026). Si cambia alguien, se vuelven a elegir
+  const firmaDe = (lista) => lista.map((p) => `${p.participantId}:${p.team ?? ''}`).join('|');
+  const anotadoresElegidosCon = useRef(copia ? firmaDe(copia.participants ?? []) : null);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -466,6 +471,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
+    const firma = firmaDe(participants);
+    if (anotadoresElegidosCon.current === firma) {
+      setError('');
+      setStep(3);
+      return;
+    }
+    anotadoresElegidosCon.current = firma;
     if (isFoursomes) {
       // Las dos parejas por defecto; si enfrente no hay ninguna cuenta con la
       // que anotar, esa opcion ni se ofrece y se queda la del creador. Con los
@@ -686,7 +698,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             creatorTeeKey={creatorTeeKey}
             generoDeQuienCrea={currentUser?.gender ?? null}
             allowanceAMano={allowancePercentage !== defaultAllowance}
-            onCreatorTeeKeyChange={setCreatorTeeKey}
+            onCreatorTeeKeyChange={(clave) => {
+              setCreatorTeeKey(clave);
+              if (error === t('create.course.errorTeeRequired')) setError('');
+            }}
             allowancePercentage={allowancePercentage}
             // El de por defecto elegido a mano no es «a mano»: así no sale en
             // la cabecera ni se pierde al cruzar de modalidad
