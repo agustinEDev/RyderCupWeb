@@ -13,6 +13,7 @@
  *   30 ya se refrescó después de que saliera      | el token nuevo
  *   31 una petición sin cabecera CSRF (un GET)    | sigue sin ella
  *   32 cabeceras como `Headers`                   | el token nuevo
+ *   35 la cabecera en minúsculas (`x-csrf-token`) | una sola, con el token nuevo
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
@@ -118,5 +119,16 @@ describe('reintento tras 401 con el token al día', () => {
     await post(new globalThis.Headers({ 'X-CSRF-Token': 'VIEJO' }));
 
     expect(cabeceraDe(peticiones().at(-1)[1])).toBe('NUEVO');
+  });
+
+  it('35: una cabecera en minúsculas también se pone al día, sin duplicarla', async () => {
+    conRefresco(r401);
+
+    await post({ 'x-csrf-token': 'VIEJO' });
+
+    const cabeceras = peticiones().at(-1)[1].headers;
+    const csrf = Object.keys(cabeceras).filter((k) => k.toLowerCase() === 'x-csrf-token');
+    expect(csrf).toHaveLength(1);
+    expect(cabeceras[csrf[0]]).toBe('NUEVO');
   });
 });

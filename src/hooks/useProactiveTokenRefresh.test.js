@@ -22,6 +22,8 @@ const getLastRefreshAt = vi.fn();
 // queda, que es lo que cuentan todos los tests de abajo
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
   refrescoCompartido: (...args) => refreshAccessToken(...args),
+  // Lo que se hace con un fallo es del interceptor; aquí solo se cuenta
+  trataElFalloDelRefresco: () => {},
   getLastRefreshAt: () => getLastRefreshAt(),
 }));
 

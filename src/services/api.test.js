@@ -10,6 +10,7 @@ import * as TokenRefreshInterceptor from '../utils/tokenRefreshInterceptor';
 
 // Mock modules
 vi.mock('../contexts/csrfTokenSync', () => ({
+  getCsrfCookie: () => null,
   getCsrfToken: vi.fn(),
 }));
 

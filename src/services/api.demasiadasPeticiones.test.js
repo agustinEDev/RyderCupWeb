@@ -11,7 +11,7 @@ const llamarAlBackend = vi.fn();
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
 }));
-vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfToken: () => 'csrf' }));
+vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 import comunEs from '../i18n/locales/es/common.json';

@@ -13,12 +13,22 @@
  *   8  otro en vuelo (un 401, la sonda)       | ninguno más: espera a ese
  *   9  el compartido falla                    | descansa 30 s antes de otro
  *   10 el compartido va bien                  | queda anotada su hora
+ *   36 el compartido da 401 (sesión muerta)   | cierre de sesión con su aviso: quien
+ *                                               esperaba a este refresco no lo cierra
+ *                                               (`/code-review`)
+ *   37 el compartido falla por la red         | la sesión se queda
  *
  * Aquí el interceptor es el de verdad y lo falso es `fetch`: lo que se cuenta
  * son las peticiones que salen.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+
+const handleSessionExpiredLogout = vi.fn();
+vi.mock('../utils/deviceRevocationLogout', async (original) => ({
+  ...(await original()),
+  handleSessionExpiredLogout: (...args) => handleSessionExpiredLogout(...args),
+}));
 
 // El interceptor guarda en el módulo la hora del último refresco y el que hay
 // en vuelo: cada test los carga de cero, o el anterior le deja su refresco
@@ -51,6 +61,7 @@ describe('refresco proactivo por el compartido', () => {
     PRIMERA = hook.REFRESH_BEFORE_MS;
     ({ refrescoCompartido, getLastRefreshAt } = await import('../utils/tokenRefreshInterceptor'));
     vi.useFakeTimers();
+    handleSessionExpiredLogout.mockReset();
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -142,5 +153,30 @@ describe('refresco proactivo por el compartido', () => {
     });
 
     expect(getLastRefreshAt()).toBe(Date.now());
+  });
+
+  it('36: si el compartido da 401, cierra la sesión con su aviso', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: false, status: 401, statusText: 'x', json: async () => ({ detail: 'Invalid refresh token' }) }))
+    );
+    renderHook(() => useProactiveTokenRefresh({ enabled: true }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PRIMERA);
+    });
+
+    expect(handleSessionExpiredLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('37: si falla por la red, la sesión se queda', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Load failed'); }));
+    renderHook(() => useProactiveTokenRefresh({ enabled: true }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PRIMERA);
+    });
+
+    expect(handleSessionExpiredLogout).not.toHaveBeenCalled();
   });
 });

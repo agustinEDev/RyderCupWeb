@@ -13,7 +13,7 @@ let currentCsrfToken = null;
  *
  * @returns {string|null} CSRF token from cookie or null
  */
-const getCsrfTokenFromCookie = () => {
+export const getCsrfCookie = () => {
   // La ÚLTIMA si hay dos (una puesta por otro subdominio, p. ej.): Starlette
   // se queda con la última al leer la cabecera `Cookie`, y es con la que va a
   // comparar (hotfix 2.63.1). Ojo: `document.cookie` en `www` y la cabecera
@@ -43,7 +43,7 @@ const getCsrfTokenFromCookie = () => {
  *
  * @returns {string|null} Current CSRF token or null
  */
-export const getCsrfToken = () => getCsrfTokenFromCookie() ?? currentCsrfToken ?? null;
+export const getCsrfToken = () => getCsrfCookie() ?? currentCsrfToken ?? null;
 
 /**
  * Set CSRF token in global variable

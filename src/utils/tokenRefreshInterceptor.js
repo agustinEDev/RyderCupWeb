@@ -180,27 +180,89 @@ export const refrescoCompartido = () => {
   return refrescoEnCurso;
 };
 
+const CABECERA_CSRF = 'X-CSRF-Token';
+
 /**
- * Las opciones del reintento, con el token CSRF de AHORA: el refresco rota la
+ * Las opciones de un reintento, con el token CSRF de AHORA: el refresco rota la
  * cookie, y repetir con el de la petición original volvía con un 403 CSRF
- * (hotfix 2.63.1). Solo si la petición lo llevaba: un GET sigue sin él.
+ * (hotfix 2.63.1). Solo si la petición lo llevaba —un GET sigue sin él—, salvo
+ * con `siempre`. El nombre de la cabecera no distingue mayúsculas: se quitan
+ * todas sus formas y queda una. Sin token, la cabecera se quita.
+ *
+ * La usan los reintentos de aquí y el de `apiRequest` tras un 403 CSRF.
  */
-const conElTokenAlDia = (opciones) => {
+export const conElTokenAlDia = (opciones, { siempre = false } = {}) => {
   const { headers } = opciones;
   if (headers instanceof globalThis.Headers) {
-    if (!headers.has('X-CSRF-Token')) return opciones;
-    const nuevas = new globalThis.Headers(headers);
+    if (!siempre && !headers.has(CABECERA_CSRF)) return opciones;
     const token = getCsrfToken();
-    if (token) nuevas.set('X-CSRF-Token', token);
-    else nuevas.delete('X-CSRF-Token');
+    const nuevas = new globalThis.Headers(headers);
+    if (token) nuevas.set(CABECERA_CSRF, token);
+    else nuevas.delete(CABECERA_CSRF);
     return { ...opciones, headers: nuevas };
   }
-  if (!headers || !('X-CSRF-Token' in headers)) return opciones;
-  const nuevas = { ...headers };
+  const nombres = Object.keys(headers ?? {}).filter((k) => k.toLowerCase() === CABECERA_CSRF.toLowerCase());
+  if (!siempre && nombres.length === 0) return opciones;
   const token = getCsrfToken();
-  if (token) nuevas['X-CSRF-Token'] = token;
-  else delete nuevas['X-CSRF-Token'];
+  const nuevas = { ...headers };
+  for (const nombre of nombres) delete nuevas[nombre];
+  if (token) nuevas[CABECERA_CSRF] = token;
   return { ...opciones, headers: nuevas };
+};
+
+/**
+ * Lo que se hace cuando falla un refresco que alguien arrancó para seguir
+ * trabajando: con el «no» del servidor, cerrar sesión con su aviso (revocado o
+ * caducada, sin duplicados); sin respuesta, conservarla (FE #514). No lanza:
+ * quien llama decide qué error sube.
+ *
+ * La usan el interceptor, el refresco proactivo —quien espera a un refresco en
+ * vuelo da por hecho que el que lo arrancó ya lo trató (`/code-review`)— y el
+ * reintento de `apiRequest` tras un 403 CSRF. La sonda de sesión no: en una
+ * página pública no se cierra ni se redirige.
+ *
+ * @param {Error & {response?: Response, errorData?: object}} refreshError
+ */
+export const trataElFalloDelRefresco = (refreshError) => {
+  // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
+  // o un 5xx significan que no se ha podido preguntar, no que la respuesta
+  // sea que no, y tratarlos igual echaba al jugador de la aplicación en
+  // mitad de una vuelta cada vez que el campo se quedaba sin cobertura
+  // (FE #514). El token de acceso dura 15 minutos y el marcador pregunta
+  // cada 10 segundos, así que la ocasión se presentaba muchas veces.
+  const respuestaDelServidor = refreshError?.response ?? null;
+  const credencialesRechazadas = respuestaDelServidor?.status === 401;
+
+  // v2.0.4: Properly differentiate between device revocation and session expiration
+  if (respuestaDelServidor && refreshError.errorData) {
+    // Check if refresh failed due to EXPLICIT device revocation
+    if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
+      console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
+      handleDeviceRevocationLogout(refreshError.errorData);
+      return;
+    }
+
+    // Check if refresh failed due to session expiration (refresh token expired)
+    if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
+      console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
+      handleSessionExpiredLogout(refreshError.errorData);
+      return;
+    }
+  }
+
+  // Un 401 del propio refresco es la única respuesta que significa "estas
+  // credenciales ya no sirven". Se comprueba el estado y no solo el texto
+  // porque `isSessionExpired` exige además que el `detail` hable del
+  // refresh token, y un 401 con otro mensaje también cierra la sesión
+  if (credencialesRechazadas) {
+    console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
+    handleSessionExpiredLogout(refreshError.errorData || null);
+  } else {
+    // Nadie ha dicho que la sesión no valga: se conserva. El marcador
+    // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
+    // sigue donde estaba
+    console.log('📡 [TokenRefresh] Refresh unreachable - keeping the session');
+  }
 };
 
 /**
@@ -335,45 +397,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       return retryResponse;
 
     } catch (refreshError) {
-      // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
-      // o un 5xx significan que no se ha podido preguntar, no que la respuesta
-      // sea que no, y tratarlos igual echaba al jugador de la aplicación en
-      // mitad de una vuelta cada vez que el campo se quedaba sin cobertura
-      // (FE #514). El token de acceso dura 15 minutos y el marcador pregunta
-      // cada 10 segundos, así que la ocasión se presentaba muchas veces.
-      const respuestaDelServidor = refreshError.response ?? null;
-      const credencialesRechazadas = respuestaDelServidor?.status === 401;
-
-      // v2.0.4: Properly differentiate between device revocation and session expiration
-      if (respuestaDelServidor && refreshError.errorData) {
-        // Check if refresh failed due to EXPLICIT device revocation
-        if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
-          console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
-          handleDeviceRevocationLogout(refreshError.errorData);
-          throw refreshError;
-        }
-
-        // Check if refresh failed due to session expiration (refresh token expired)
-        if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
-          console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
-          handleSessionExpiredLogout(refreshError.errorData);
-          throw refreshError;
-        }
-      }
-
-      // Un 401 del propio refresco es la única respuesta que significa "estas
-      // credenciales ya no sirven". Se comprueba el estado y no solo el texto
-      // porque `isSessionExpired` exige además que el `detail` hable del
-      // refresh token, y un 401 con otro mensaje también cierra la sesión
-      if (credencialesRechazadas) {
-        console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
-        handleSessionExpiredLogout(refreshError.errorData || null);
-      } else {
-        // Nadie ha dicho que la sesión no valga: se conserva. El marcador
-        // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
-        // sigue donde estaba
-        console.log('📡 [TokenRefresh] Refresh unreachable - keeping the session');
-      }
+      trataElFalloDelRefresco(refreshError);
 
       // Todas las salidas de aquí terminan igual: el error sube a quien llamó.
       // Antes cada rama esperaba a que la redirección interrumpiera, con un

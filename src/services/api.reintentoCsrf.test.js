@@ -22,8 +22,19 @@
  * Tras el revisor:
  *   24 la cookie ya cambió (otra pestaña)        | repite SIN refrescar
  *   25 tras el refresco no hay token             | cierre de sesión, sin mandar «null»
- *   26 el refresco da 401 por dispositivo revocado | el aviso de revocado, no el de CSRF
+ *   26 (dispositivo revocado: lo trata el interceptor, ver 13)
  *   27 vence el tope durante el reintento        | «sin conexión»
+ *
+ * Tras `/code-review`:
+ *   13 el refresco da 401                         | lo trata el interceptor (aviso de
+ *                                                  sesión caducada o de revocado), y el
+ *                                                  error sale marcado para la cola
+ *   14 el refresco falla por la red              | «sin conexión», sin cierre
+ *   34 el refresco da 429 / 503                  | ese estado, con su texto; sin cierre
+ *   24b sin cookie y la memoria distinta         | refresca: la memoria no dice que otra
+ *                                                  pestaña haya rotado nada
+ *   23c sin cookie al salir (caducó a los 15 min) | sin aviso a Sentry: es lo normal
+ *   33 el refresco no cambia el token            | cierre, sin mandar el reintento
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
@@ -32,18 +43,22 @@ const refrescoCompartido = vi.fn();
 const getCsrfToken = vi.fn();
 const handleCsrfLogout = vi.fn();
 const captureError = vi.fn();
-const handleDeviceRevocationLogout = vi.fn();
+const getCsrfCookie = vi.fn();
+const trataElFalloDelRefresco = vi.fn();
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+// `conElTokenAlDia` es el de verdad: el reintento lo usa para poner el token
+vi.mock('../utils/tokenRefreshInterceptor', async (original) => ({
+  ...(await original()),
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
   refrescoCompartido: (...args) => refrescoCompartido(...args),
+  trataElFalloDelRefresco: (...args) => trataElFalloDelRefresco(...args),
 }));
-vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfToken: () => getCsrfToken() }));
+vi.mock('../contexts/csrfTokenSync', () => ({
+  getCsrfToken: () => getCsrfToken(),
+  getCsrfCookie: () => getCsrfCookie(),
+  setCsrfTokenGlobal: () => {},
+}));
 vi.mock('../utils/csrfLogout', () => ({ handleCsrfLogout: (...args) => handleCsrfLogout(...args) }));
-vi.mock('../utils/deviceRevocationLogout', async (original) => ({
-  ...(await original()),
-  handleDeviceRevocationLogout: (...args) => handleDeviceRevocationLogout(...args),
-}));
 vi.mock('../utils/sentryHelpers', () => ({ captureError: (...args) => captureError(...args) }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
@@ -69,6 +84,8 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     // Antes del refresco, el viejo; después, el que trajo el refresco
     getCsrfToken.mockReturnValue('VIEJO');
+    // Por defecto la cookie existe y es la que se manda
+    getCsrfCookie.mockImplementation(() => getCsrfToken());
     refrescoCompartido.mockImplementation(async () => {
       getCsrfToken.mockReturnValue('NUEVO');
       return true;
@@ -116,20 +133,24 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     expect(refrescoCompartido).toHaveBeenCalledTimes(1);
   });
 
-  it('13: si el refresco da 401, la sesión está muerta: cierra sin reintentar', async () => {
+  it('13: si el refresco da 401, lo trata el interceptor y el error sale marcado', async () => {
     llamarAlBackend.mockResolvedValueOnce(csrf403());
-    refrescoCompartido.mockRejectedValue(Object.assign(new Error('expired'), { response: { status: 401 } }));
+    const rechazo = Object.assign(new Error('expired'), { response: { status: 401 }, errorData: { detail: 'x' } });
+    refrescoCompartido.mockRejectedValue(rechazo);
 
     const error = await crea().catch((e) => e);
 
+    // El aviso de sesión caducada (o de revocado) y su cierre sin duplicados
+    // son del interceptor: aquí no se cierra por CSRF encima
+    expect(trataElFalloDelRefresco).toHaveBeenCalledWith(rechazo);
+    expect(handleCsrfLogout).not.toHaveBeenCalled();
     expect(error.errorCode).toBe('CSRF_VALIDATION_FAILED');
-    expect(handleCsrfLogout).toHaveBeenCalledTimes(1);
     expect(llamarAlBackend).toHaveBeenCalledTimes(1);
   });
 
   it.each([
     ['la red', new TypeError('Load failed')],
-    ['un 503 del servidor', Object.assign(new Error('Failed to refresh token'), { response: { status: 503 } })],
+    ['el tope propio del refresco', Object.assign(new Error('aborted'), { name: 'AbortError' })],
   ])('14: si el refresco falla por %s, «sin conexión» y SIN cerrar sesión', async (_, fallo) => {
     llamarAlBackend.mockResolvedValueOnce(csrf403());
     refrescoCompartido.mockRejectedValue(fallo);
@@ -242,6 +263,60 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
 
     expect(captureError).not.toHaveBeenCalled();
   });
+  it.each([
+    [429, 't(common:demasiadasPeticiones)'],
+    [503, 'HTTP 503: Service Unavailable'],
+  ])('34: si el refresco da %s, sale ese estado y SIN cerrar sesión', async (estado, mensaje) => {
+    llamarAlBackend.mockResolvedValueOnce(csrf403());
+    refrescoCompartido.mockRejectedValue(
+      Object.assign(new Error('Failed to refresh token'), {
+        response: { status: estado, statusText: 'Service Unavailable' },
+        errorData: {},
+      })
+    );
+
+    const error = await crea().catch((e) => e);
+
+    expect(error.status).toBe(estado);
+    expect(error.message).toBe(mensaje);
+    expect(esFalloDeRedDeLaApi(error)).toBe(false);
+    expect(handleCsrfLogout).not.toHaveBeenCalled();
+    expect(trataElFalloDelRefresco).not.toHaveBeenCalled();
+  });
+
+  it('24b: sin cookie, que la memoria sea otra no dice nada: refresca', async () => {
+    getCsrfCookie.mockReturnValue(null);
+    llamarAlBackend.mockImplementationOnce(async () => {
+      getCsrfToken.mockReturnValue('MEMORIA_VIEJA');
+      return csrf403();
+    }).mockResolvedValueOnce(ok());
+
+    await crea();
+
+    expect(refrescoCompartido).toHaveBeenCalledTimes(1);
+    expect(tokenEnviado(1)).toBe('NUEVO');
+  });
+
+  it('23c: sin cookie al salir (caducó a los 15 min), ningún aviso: es lo normal', async () => {
+    getCsrfCookie.mockReturnValue(null);
+    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockResolvedValueOnce(ok());
+
+    await crea();
+
+    expect(captureError).not.toHaveBeenCalled();
+  });
+
+  it('33: si el refresco no cambia el token, cierra sin mandar un reintento perdido', async () => {
+    llamarAlBackend.mockResolvedValueOnce(csrf403());
+    refrescoCompartido.mockResolvedValue(true);
+
+    const error = await crea().catch((e) => e);
+
+    expect(error.errorCode).toBe('CSRF_VALIDATION_FAILED');
+    expect(handleCsrfLogout).toHaveBeenCalledTimes(1);
+    expect(llamarAlBackend).toHaveBeenCalledTimes(1);
+  });
+
   it('24: si la cookie ya cambió (otra pestaña refrescó), repite sin refrescar', async () => {
     llamarAlBackend.mockImplementationOnce(async () => {
       getCsrfToken.mockReturnValue('DE_LA_OTRA');
@@ -267,18 +342,6 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     expect(error.errorCode).toBe('CSRF_VALIDATION_FAILED');
     expect(handleCsrfLogout).toHaveBeenCalledTimes(1);
     expect(llamarAlBackend).toHaveBeenCalledTimes(1);
-  });
-
-  it('26: un dispositivo revocado al refrescar ve su aviso, no el de CSRF', async () => {
-    llamarAlBackend.mockResolvedValueOnce(csrf403());
-    const respuesta = { status: 401, headers: new globalThis.Headers() };
-    const errorData = { detail: 'Device revoked. Please sign in again.' };
-    refrescoCompartido.mockRejectedValue(Object.assign(new Error('revoked'), { response: respuesta, errorData }));
-
-    await crea().catch(() => {});
-
-    expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(errorData);
-    expect(handleCsrfLogout).not.toHaveBeenCalled();
   });
 
   it('27: si vence el tope durante el reintento, «sin conexión»', async () => {

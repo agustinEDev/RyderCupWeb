@@ -3,11 +3,15 @@
  * v1.13.0: Added CSRF Protection for POST/PUT/PATCH/DELETE requests
  */
 
-import { fetchWithTokenRefresh, refrescoCompartido } from '../utils/tokenRefreshInterceptor.js';
-import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import {
+  fetchWithTokenRefresh,
+  refrescoCompartido,
+  trataElFalloDelRefresco,
+  conElTokenAlDia,
+} from '../utils/tokenRefreshInterceptor.js';
+import { getCsrfToken, getCsrfCookie } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
 import { captureError } from '../utils/sentryHelpers';
-import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
 import i18next from 'i18next';
@@ -52,28 +56,41 @@ const esRechazoCsrf = (response, errorData) =>
  */
 const cierraPorCsrf = (errorData) => {
   handleCsrfLogout(errorData);
-  const csrfError = new Error('CSRF validation failed. Please log in again.');
-  csrfError.errorCode = 'CSRF_VALIDATION_FAILED';
-  throw csrfError;
+  throw errorDeCsrf();
 };
 
+/** El error de cierre de sesión por CSRF, marcado para la cola (FE #521) */
+const errorDeCsrf = () =>
+  Object.assign(new Error('CSRF validation failed. Please log in again.'), {
+    errorCode: 'CSRF_VALIDATION_FAILED',
+  });
+
 /**
- * Tras un 403 CSRF, el refresco compartido: rota la cookie y el token a la vez.
- * Un 401 es la sesión muerta y se cierra, como antes. Cualquier otro fallo —la
- * red, un 5xx— no dice nada de la sesión: es no haber podido, y sale como falta
- * de cobertura, que la cola guarda (hotfix 2.63.1)
+ * Tras un 403 CSRF, el refresco compartido: rota la cookie y el token a la vez
+ * (hotfix 2.63.1). Si falla:
+ * - el servidor dijo 401: la sesión está muerta. Lo trata el interceptor
+ *   —aviso de caducada o de revocado, y sin cierres duplicados— y sube el
+ *   error marcado, que la cola reconoce como de toda la sesión;
+ * - el servidor contestó otra cosa (429, 5xx): ese estado, con su texto. La
+ *   cola los guarda para después, y no es falta de cobertura;
+ * - sin respuesta (red, tope del refresco): falta de cobertura.
  */
-const renuevaTrasCsrf = async (errorData) => {
+const renuevaTrasCsrf = async () => {
   try {
     await refrescoCompartido();
   } catch (error) {
-    // Un dispositivo revocado ve su aviso, como en el camino del 401 (revisor)
-    if (isDeviceRevoked(error?.response, error?.errorData)) {
-      handleDeviceRevocationLogout(error.errorData);
-      throw error;
+    const respuesta = error?.response;
+    if (!respuesta) throw sinConexion(error);
+    if (respuesta.status === 401) {
+      trataElFalloDelRefresco(error);
+      throw errorDeCsrf();
     }
-    if (error?.response?.status === 401) cierraPorCsrf(errorData);
-    throw sinConexion(error);
+    const fallo = new Error(
+      respuesta.status === 429
+        ? i18next.t('common:demasiadasPeticiones')
+        : `HTTP ${respuesta.status}: ${respuesta.statusText}`
+    );
+    throw Object.assign(fallo, { status: respuesta.status, statusCode: respuesta.status, errorCode: null });
   }
 };
 
@@ -172,6 +189,11 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
 
   try {
+    // Lo que había en la cookie al salir: si no había, el rechazo es la
+    // cookie caducada a los 15 minutos, lo normal tras un rato quieto
+    const cookieAlSalir = requiresCsrf ? getCsrfCookie() : null;
+    const enviado = config.headers['X-CSRF-Token'] ?? null;
+
     // Use interceptor that handles automatic token refresh on 401
     let response = await aTiempo(llamaAlBackend(url, config));
     let errorData = response.ok ? null : await leeElError(response);
@@ -181,27 +203,26 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
     // memoria se quedaba atrás cuando otra pestaña rotaba la cookie, y eso
     // echaba de la aplicación (hotfix 2.63.1, pasada del iPhone del 4 nov)
     if (!response.ok && esRechazoCsrf(response, errorData)) {
-      // Si la cookie ya no es la que se mandó —otra pestaña refrescó—, basta
-      // con repetir: otro refresco solo la rotaría otra vez (revisor)
-      const enviado = config.headers['X-CSRF-Token'];
-      const actual = getCsrfToken();
-      if (!actual || actual === enviado) await aTiempo(renuevaTrasCsrf(errorData));
-      // Que se vea si pasa a menudo: antes se notaba porque echaba. Método y
-      // ruta, nunca el token
-      captureError('CSRF token rejected: refreshed and retried once', {
-        level: 'warning',
-        tags: { module: 'csrf' },
-        extra: { method, ruta: endpoint.split('?')[0] },
-      });
-      // Sin token no hay nada que repetir: mandaría la cabecera «null» y el
-      // servidor la rechazaría igual (revisor)
+      // Si la COOKIE ya no es la que se mandó —otra pestaña refrescó—, basta
+      // con repetir: otro refresco solo la rotaría otra vez. La memoria no
+      // vale para esto: sin cookie puede ser más vieja que lo enviado
+      const cookie = getCsrfCookie();
+      const yaRotada = cookie !== null && cookie !== enviado;
+      if (!yaRotada) await aTiempo(renuevaTrasCsrf());
       const nuevo = getCsrfToken();
-      if (!nuevo) cierraPorCsrf(errorData);
-      const reintento = {
-        ...config,
-        headers: { ...config.headers, 'X-CSRF-Token': nuevo },
-      };
-      response = await aTiempo(llamaAlBackend(url, reintento));
+      // Sin token, o con el mismo que se rechazó, el reintento solo puede
+      // fallar otra vez: se cierra sin mandarlo
+      if (!nuevo || nuevo === enviado) cierraPorCsrf(errorData);
+      // Que se vea si pasa a menudo, pero solo lo raro: con cookie al salir y
+      // aun así rechazada. Método y ruta, nunca el token
+      if (cookieAlSalir !== null) {
+        captureError('CSRF token rejected with a cookie present: retried once', {
+          level: 'warning',
+          tags: { module: 'csrf' },
+          extra: { method, ruta: endpoint.split('?')[0] },
+        });
+      }
+      response = await aTiempo(llamaAlBackend(url, conElTokenAlDia(config, { siempre: true })));
       errorData = response.ok ? null : await leeElError(response);
       if (!response.ok && esRechazoCsrf(response, errorData)) cierraPorCsrf(errorData);
     }
