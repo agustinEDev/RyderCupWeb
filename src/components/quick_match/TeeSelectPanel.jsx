@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { teeKey, resolveTeeColor } from './createQuickMatchModalConstants';
 import { useFocoRetenido } from '../../hooks/useFocoRetenido';
+import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 
 /**
  * Bottom-sheet tee picker, opened from the + of each friend — same pattern as
@@ -95,7 +96,7 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey
                   // Dentro de un grupo el sufijo (M)/(F) sobra: el encabezado ya
                   // distingue las dos "Rojas", que es justo para lo que se
                   // añadió el sufijo en las listas donde van mezcladas
-                  const name = tee.identifier || tCourses(`form.teeColors.${tee.color}`, { defaultValue: tee.color });
+                  const name = nombreDeLaBarra(tCourses, { color: tee.color, identifier: tee.identifier });
 
                   const isSelected = key === selectedKey;
 

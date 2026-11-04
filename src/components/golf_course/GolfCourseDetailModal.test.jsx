@@ -170,6 +170,15 @@ describe('GolfCourseDetailModal', () => {
       expect(within(fila).getAllByText('4').length).toBeGreaterThan(0);
     });
 
+    it('cada salida del selector lleva su género, (M) o (F), como en el resto de pantallas', () => {
+      abrir();
+
+      expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+        'form.teeColors.WHITE (M)',
+        'form.teeColors.YELLOW (F)',
+      ]);
+    });
+
     it('no ofrece selector cuando el campo tiene una sola salida', () => {
       const curso = campo();
       curso.tees = [curso.tees[0]];
