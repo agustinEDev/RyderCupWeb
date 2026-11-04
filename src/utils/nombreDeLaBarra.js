@@ -1,5 +1,3 @@
-const SUFIJO_DE_GENERO = { MALE: ' (M)', FEMALE: ' (F)' };
-
 /**
  * El nombre de una barra, igual en todas las pantallas (4 nov 2026): su nombre
  * propio si lo tiene («Campeonato») o su color traducido, y el género detrás,
@@ -11,4 +9,10 @@ const SUFIJO_DE_GENERO = { MALE: ' (M)', FEMALE: ' (F)' };
  * @returns {string}
  */
 export const nombreDeLaBarra = (t, { color, identifier, gender }) =>
-  (identifier || t(`form.teeColors.${color}`, { defaultValue: color })) + (SUFIJO_DE_GENERO[gender] ?? '');
+  (identifier || t(`form.teeColors.${color}`, { defaultValue: color })) + sufijo(gender);
+
+const sufijo = (gender) => {
+  if (gender === 'MALE') return ' (M)';
+  if (gender === 'FEMALE') return ' (F)';
+  return '';
+};

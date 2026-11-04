@@ -29,4 +29,12 @@ describe('nombreDeLaBarra', () => {
   ])('con género %s: %s', (gender, esperado) => {
     expect(nombreDeLaBarra(t, { color: 'YELLOW', gender })).toBe(esperado);
   });
+
+  it('el nombre propio también lleva su género: «Campeonato (M)» (revisor)', () => {
+    expect(nombreDeLaBarra(t, { color: 'YELLOW', identifier: 'Campeonato', gender: 'MALE' })).toBe('Campeonato (M)');
+  });
+
+  it('un género que no es MALE ni FEMALE no añade nada (revisor)', () => {
+    expect(nombreDeLaBarra(t, { color: 'YELLOW', gender: 'toString' })).toBe('Amarillas');
+  });
 });
