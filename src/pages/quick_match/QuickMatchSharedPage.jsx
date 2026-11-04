@@ -165,7 +165,8 @@ const QuickMatchSharedPage = () => {
             </h2>
             <p className="text-sm text-gray-500">
               {partida.name ? `${t('scoring.matchHeader')} · ` : ''}
-              {partida.matchFormat ?? partida.scoringFormat}
+              {(partida.matchFormat ?? partida.scoringFormat) &&
+                t(`history.format.${partida.matchFormat ?? partida.scoringFormat}`, partida.matchFormat ?? partida.scoringFormat)}
             </p>
             <CampoDeLaPartida nombre={campo?.name ?? null} />
           </div>

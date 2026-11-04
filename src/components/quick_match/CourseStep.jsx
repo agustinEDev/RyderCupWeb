@@ -1,6 +1,7 @@
+import { useRef } from 'react';
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
-import TeeSelectField from './TeeSelectField';
+import BarrasDeTuGenero from './BarrasDeTuGenero';
 import {
   FORMAT_CAPACITY,
   FORMAT_LABEL_KEY,
@@ -9,13 +10,23 @@ import {
   SCORING_FORMAT_LABEL_KEY,
 } from './createQuickMatchModalConstants';
 
+// «¿A qué jugáis?»: los tres de match play y los dos de stroke play, en una
+// sola pregunta (FE #1025). Conservan los `data-testid` de antes
+const OPCIONES = [
+  ...Object.keys(FORMAT_CAPACITY).map((formato) => ({ modo: 'MATCH_PLAY', formato, testId: `format-option-${formato}`, etiqueta: FORMAT_LABEL_KEY[formato] })),
+  ...Object.keys(SCORING_FORMAT_LABEL_KEY).map((formato) => ({ modo: 'FREE_PLAY', formato, testId: `scoring-format-option-${formato}`, etiqueta: SCORING_FORMAT_LABEL_KEY[formato] })),
+];
+
 /**
- * Wizard step 1: match name, mode (match play / free play), format,
- * golf course + creator tee, and allowance percentage.
+ * Paso 1 del asistente (FE #1025, tabla aprobada el 3 nov 2026): el campo y
+ * tu barra arriba, luego a qué jugáis, y lo que casi nunca se toca (nombre,
+ * scratch, %) en «Más opciones», plegado. Si algo de ahí no es lo de por
+ * defecto, se dice en su cabecera para que no quede escondido.
  */
 const CourseStep = ({
   t,
   matchName,
+  nombreAMano = false,
   onMatchNameChange,
   mode,
   onModeChange,
@@ -32,7 +43,10 @@ const CourseStep = ({
   courseFromRfeg = false,
   creatorTeeKey,
   onCreatorTeeKeyChange,
+  generoDeQuienCrea = null,
   allowancePercentage,
+  allowanceAMano = false,
+  porcentajeCopiado = null,
   onAllowanceChange,
   playMode = 'HANDICAP',
   onPlayModeChange,
@@ -40,99 +54,35 @@ const CourseStep = ({
   teesLoading,
   onClose,
   onNext,
-}) => (
+}) => {
+  const masOpciones = useRef(null);
+  // Un % copiado al repetir que no está entre los botones sale como uno más,
+  // marcado, y solo en la modalidad en que se copió (pasada del Kind y
+  // revisiones, 4 nov 2026). Viene del borrador: el paso se vuelve a montar
+  const base = isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS;
+  const opcionesDePorcentaje =
+    porcentajeCopiado?.libre === isFreePlay && !base.includes(porcentajeCopiado.pct)
+      ? [...base, porcentajeCopiado.pct].sort((a, b) => a - b)
+      : base;
+  const elegida = (op) => op.modo === mode && (isFreePlay ? scoringFormat : matchFormat) === op.formato;
+  const elige = (op) => {
+    // Al cruzar entre match play y stroke play, el % a mano vuelve al de por
+    // defecto (sus opciones son otras): se abre «Más opciones» para que se vea
+    // (Agustín, 4 nov 2026)
+    if (op.modo !== mode && allowanceAMano && masOpciones.current) masOpciones.current.open = true;
+    if (op.modo !== mode) onModeChange(op.modo);
+    if (op.modo === 'FREE_PLAY') onScoringFormatChange(op.formato);
+    else onMatchFormatChange(op.formato);
+  };
+  // Lo que no es lo de por defecto, a la vista aunque esté plegado
+  const fueraDeLoNormal = [
+    nombreAMano ? matchName.trim() : null,
+    playMode === 'SCRATCH' ? t('create.course.playModeScratch') : null,
+    playMode !== 'SCRATCH' && allowanceAMano ? `${allowancePercentage}%` : null,
+  ].filter(Boolean);
+
+  return (
   <div className="p-4 space-y-4">
-    <div>
-      <label htmlFor="quick-match-name" className="block text-sm font-medium text-gray-700 mb-1">
-        {t('create.course.nameLabel')}
-      </label>
-      <input
-        id="quick-match-name"
-        type="text"
-        value={matchName}
-        onChange={(e) => onMatchNameChange(e.target.value)}
-        placeholder={t('create.course.namePlaceholder')}
-        maxLength={100}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        data-testid="quick-match-name-input"
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {t('create.course.modeLabel')}
-      </label>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => onModeChange('MATCH_PLAY')}
-          data-testid="mode-option-MATCH_PLAY"
-          className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-            mode === 'MATCH_PLAY'
-              ? 'border-primary bg-primary/5 text-primary font-medium'
-              : 'border-gray-200 text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          {t('create.course.modeMatchPlay')}
-        </button>
-        <button
-          type="button"
-          onClick={() => onModeChange('FREE_PLAY')}
-          data-testid="mode-option-FREE_PLAY"
-          className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-            mode === 'FREE_PLAY'
-              ? 'border-primary bg-primary/5 text-primary font-medium'
-              : 'border-gray-200 text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          {t('create.course.modeFreePlay')}
-        </button>
-      </div>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {t('create.course.formatLabel')}
-      </label>
-      {isFreePlay ? (
-        <div className="grid grid-cols-1 gap-2">
-          {Object.keys(SCORING_FORMAT_LABEL_KEY).map((format) => (
-            <button
-              key={format}
-              type="button"
-              onClick={() => onScoringFormatChange(format)}
-              data-testid={`scoring-format-option-${format}`}
-              className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                scoringFormat === format
-                  ? 'border-primary bg-primary/5 text-primary font-medium'
-                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {t(`create.course.${SCORING_FORMAT_LABEL_KEY[format]}`)}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-2">
-          {Object.keys(FORMAT_CAPACITY).map((format) => (
-            <button
-              key={format}
-              type="button"
-              onClick={() => onMatchFormatChange(format)}
-              data-testid={`format-option-${format}`}
-              className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                matchFormat === format
-                  ? 'border-primary bg-primary/5 text-primary font-medium'
-                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {t(`create.course.${FORMAT_LABEL_KEY[format]}`)}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {t('create.course.courseLabel')}
@@ -151,19 +101,70 @@ const CourseStep = ({
 
     {courseTees.length > 0 && (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {t('create.course.yourTeeLabel')}
-        </label>
-        <TeeSelectField
+        <p className="block text-sm font-medium text-gray-700 mb-1">{t('create.course.yourTeeLabel')}</p>
+        <BarrasDeTuGenero
+          t={t}
+          courseTees={courseTees}
+          genero={generoDeQuienCrea}
           value={creatorTeeKey}
           onChange={onCreatorTeeKeyChange}
-          courseTees={courseTees}
-          placeholder={t('create.course.yourTeePlaceholder')}
-          playerName={t('create.course.yourTeePanelTitle')}
-          testIdPrefix="quick-match-creator-tee"
         />
       </div>
     )}
+
+    <div>
+      <p className="block text-sm font-medium text-gray-700 mb-1">{t('create.course.queJugais')}</p>
+      <div
+        className="grid grid-cols-3 gap-2"
+        role="group"
+        aria-label={t('create.course.queJugais')}
+        aria-describedby="quick-match-que-jugais-detalle"
+      >
+        {OPCIONES.map((op) => (
+          <button
+            key={op.testId}
+            type="button"
+            onClick={() => elige(op)}
+            aria-pressed={elegida(op)}
+            data-testid={op.testId}
+            className={`px-2 py-2 rounded-lg border text-sm transition-colors ${
+              elegida(op)
+                ? 'border-primary bg-primary/5 text-primary font-medium'
+                : 'border-gray-200 text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            {t(`create.course.corto.${op.formato}`)}
+          </button>
+        ))}
+      </div>
+      <p id="quick-match-que-jugais-detalle" className="mt-1 text-xs text-gray-500">
+        {t(`create.course.${OPCIONES.find(elegida)?.etiqueta ?? FORMAT_LABEL_KEY.SINGLES}`)}
+      </p>
+    </div>
+
+    <details ref={masOpciones} className="rounded-lg border border-gray-200" data-testid="quick-match-mas-opciones">
+      <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
+        {t('create.course.masOpciones')}
+        {fueraDeLoNormal.length > 0 && (
+          <span className="font-normal text-gray-500 wrap-anywhere"> · {fueraDeLoNormal.join(' · ')}</span>
+        )}
+      </summary>
+      <div className="px-3 pb-3 space-y-4">
+    <div>
+      <label htmlFor="quick-match-name" className="block text-sm font-medium text-gray-700 mb-1">
+        {t('create.course.nameLabel')}
+      </label>
+      <input
+        id="quick-match-name"
+        type="text"
+        value={matchName}
+        onChange={(e) => onMatchNameChange(e.target.value)}
+        placeholder={t('create.course.namePlaceholder')}
+        maxLength={100}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        data-testid="quick-match-name-input"
+      />
+    </div>
 
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -204,7 +205,7 @@ const CourseStep = ({
         {t('create.course.allowanceLabel')}
       </label>
       <div className="flex gap-2" role="group" aria-label={t('create.course.allowanceLabel')}>
-        {(isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS).map((pct) => (
+        {opcionesDePorcentaje.map((pct) => (
           <button
             key={pct}
             type="button"
@@ -229,6 +230,9 @@ const CourseStep = ({
       )}
     </div>
 
+      </div>
+    </details>
+
     <div className="flex justify-end gap-3 pt-2">
       <button
         type="button"
@@ -249,6 +253,7 @@ const CourseStep = ({
       </button>
     </div>
   </div>
-);
+  );
+};
 
 export default CourseStep;

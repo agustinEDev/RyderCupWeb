@@ -32,6 +32,9 @@ class QuickMatchMapper {
       participantId: p.participant_id,
       userId: p.user_id ?? null,
       name: p.name,
+      // Solo los invitados: para repetir la partida sin partir `name` (FE #1021)
+      firstName: p.first_name ?? null,
+      lastName: p.last_name ?? null,
       handicap: p.handicap ?? null,
       team: p.team ?? null,
       isGuest: !!p.is_guest,

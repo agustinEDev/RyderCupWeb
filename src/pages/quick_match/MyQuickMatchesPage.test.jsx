@@ -23,6 +23,11 @@ vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockAuthValue,
 }));
 
+// Repetir tiene sus propias pruebas: aquí solo importa en qué tarjetas sale
+vi.mock('../../components/quick_match/RepetirPartida', () => ({
+  default: ({ partida }) => <button type="button" data-testid={`repetir-${partida.id}`}>repetir</button>,
+}));
+
 vi.mock('../../components/layout/HeaderAuth', () => ({
   default: () => <div data-testid="header-auth">Header</div>,
 }));
@@ -119,6 +124,28 @@ describe('MyQuickMatchesPage', () => {
 
     fireEvent.click(screen.getByTestId('quick-match-history-item-qm-1'));
     expect(mockNavigate).toHaveBeenCalledWith('/quick-matches/qm-1/scoring');
+  });
+
+  it('R2/R3 (FE #1021): repetir sale en las terminadas y canceladas, no en juego ni pendientes', async () => {
+    mockListMyQuickMatches.mockResolvedValue({
+      quickMatches: [
+        { id: 'qm-1', matchFormat: 'SINGLES', status: 'IN_PROGRESS', createdAt: '2026-07-27T10:00:00Z' },
+        { id: 'qm-2', matchFormat: 'SINGLES', status: 'COMPLETED', createdAt: '2026-07-20T10:00:00Z' },
+        { id: 'qm-3', matchFormat: 'SINGLES', status: 'CANCELLED', createdAt: '2026-07-19T10:00:00Z' },
+        { id: 'qm-4', matchFormat: 'SINGLES', status: 'PENDING', createdAt: '2026-07-18T10:00:00Z' },
+      ],
+      totalCount: 4,
+      page: 1,
+      limit: 50,
+    });
+
+    renderPage();
+
+    await screen.findByTestId('quick-match-history-item-qm-1');
+    expect(screen.queryByTestId('repetir-qm-1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('repetir-qm-2')).toBeInTheDocument();
+    expect(screen.getByTestId('repetir-qm-3')).toBeInTheDocument();
+    expect(screen.queryByTestId('repetir-qm-4')).not.toBeInTheDocument();
   });
 
   // El control de navegar es una capa que cubre la tarjeta y ya no contiene el

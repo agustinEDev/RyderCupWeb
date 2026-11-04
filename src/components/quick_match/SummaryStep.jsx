@@ -53,31 +53,27 @@ const SummaryStep = ({
   <div className="p-4 space-y-4">
     <div>
       <h3 className="text-sm font-medium text-gray-700 mb-1">{t('create.summary.heading')}</h3>
-      <p className="text-xs text-gray-500 mb-3">{t('create.summary.description')}</p>
-
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-4">
-        <dt className="text-gray-500">{t('create.summary.courseLabel')}</dt>
-        <dd className="text-gray-900 text-right truncate">{selectedCourse?.name}</dd>
-        <dt className="text-gray-500">{t('create.summary.formatLabel')}</dt>
-        <dd className="text-gray-900 text-right">
+      {/* En dos líneas cortas y sin la frase de «revisa antes de confirmar»
+          (el título ya lo dice): con cuatro jugadores el resumen cabe en el
+          móvil sin desplazarse (Agustín, 3 nov 2026) */}
+      <div className="text-sm text-gray-900 mb-3 space-y-0.5">
+        <p className="truncate">
+          {selectedCourse?.name} ·{' '}
           {isFreePlay
             ? t(`create.course.${SCORING_FORMAT_LABEL_KEY[scoringFormat]}`)
             : t(`create.course.${FORMAT_LABEL_KEY[matchFormat]}`)}
-        </dd>
-        <dt className="text-gray-500">{t('create.course.playModeLabel')}</dt>
-        <dd className="text-gray-900 text-right" data-testid="quick-match-summary-play-mode">
-          {isScratch
-            ? t('create.course.playModeScratch')
-            : t('create.course.playModeHandicap')}
-        </dd>
-        <dt className="text-gray-500">{t('create.summary.allowanceLabel')}</dt>
-        <dd
-          className={`text-right ${isScratch ? 'text-gray-600' : 'text-gray-900'}`}
-          data-testid="quick-match-summary-allowance"
-        >
-          {isScratch ? t('create.summary.allowanceNotApplied') : `${allowancePercentage}%`}
-        </dd>
-      </dl>
+        </p>
+        <p>
+          <span data-testid="quick-match-summary-play-mode">
+            {isScratch ? t('create.course.playModeScratch') : t('create.course.playModeHandicap')}
+          </span>
+          {' · '}
+          <span className={isScratch ? 'text-gray-600' : undefined} data-testid="quick-match-summary-allowance">
+            {t('create.summary.allowanceLabel')}{' '}
+            {isScratch ? t('create.summary.allowanceNotApplied') : `${allowancePercentage}%`}
+          </span>
+        </p>
+      </div>
     </div>
 
     <div>
@@ -109,7 +105,10 @@ const SummaryStep = ({
                 en un móvil estrecho el nombre se recorta hasta desaparecer
                 antes de que las etiquetas cedan un píxel. Mismo criterio que el
                 paso 2. */}
-            <div className="mt-1" data-testid={`quick-match-summary-tee-${p.participantId}`}>
+            {/* La barra y el hándicap, en una sola fila: con cuatro jugadores
+                el resumen cabe en el móvil sin desplazarse (Agustín, 3 nov 2026) */}
+            <div className="mt-1 flex items-center justify-between gap-3">
+            <div className="min-w-0" data-testid={`quick-match-summary-tee-${p.participantId}`}>
               {p.color ? (
                 (() => {
                   const tee = teeFor(p);
@@ -143,12 +142,13 @@ const SummaryStep = ({
               disabled={isProcessing}
               aria-label={t('create.summary.editHandicapNamed', { name: p.name })}
               data-testid={`quick-match-handicap-button-${p.participantId}`}
-              className={`px-3 py-1 border border-gray-300 rounded-md text-sm hover:border-gray-400 disabled:opacity-50 ${
+              className={`flex-shrink-0 min-w-[3.5rem] text-center px-3 py-1 border border-gray-300 rounded-md text-sm hover:border-gray-400 disabled:opacity-50 ${
                 p.handicap != null ? 'text-gray-900' : 'text-gray-400'
               }`}
             >
               {p.handicap != null ? formatoDeIndice(p.handicap) : t('create.summary.handicapPlaceholder')}
             </button>
+            </div>
           </li>
         ))}
       </ul>
@@ -162,7 +162,9 @@ const SummaryStep = ({
         .join(', ')}
     </p>
 
-    <div className="flex items-center justify-between gap-3 pt-2">
+    {/* Fijos abajo: en un móvil pequeño con cuatro jugadores la lista aún
+        puede desplazarse, y Confirmar tiene que verse siempre */}
+    <div className="sticky bottom-0 -mx-4 -mb-4 px-4 py-3 bg-white border-t border-gray-100 flex items-center justify-between gap-3">
       <button
         type="button"
         onClick={onBack}

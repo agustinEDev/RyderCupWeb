@@ -14,10 +14,6 @@
       "heading": "Campo y formato",
       "nameLabel": "Nombre (opcional)",
       "namePlaceholder": "Ej. Viernes con los del club",
-      "modeLabel": "Modalidad",
-      "modeMatchPlay": "Match play",
-      "modeFreePlay": "Stroke play",
-      "formatLabel": "Formato",
       "formatSingles": "Individual (1 contra 1)",
       "formatFourball": "Fourball (2 contra 2, mejor bola)",
       "formatFoursomes": "Foursomes (2 contra 2, bola alterna)",
@@ -37,7 +33,17 @@
       "playModeScratchHint": "Nadie recibe golpes: se juega con el hándicap a cero.",
       "allowanceNotApplied": "No se aplica en una partida scratch.",
       "yourTeePlaceholder": "Elige tus barras",
-      "yourTeePanelTitle": "tus barras"
+      "yourTeePanelTitle": "tus barras",
+      "queJugais": "¿A qué jugáis?",
+      "masOpciones": "Más opciones",
+      "otrasBarras": "Otras",
+      "corto": {
+        "SINGLES": "Individual",
+        "FOURBALL": "Fourball",
+        "FOURSOMES": "Foursomes",
+        "STABLEFORD": "Stableford",
+        "MEDAL": "Medal"
+      }
     },
     "participants": {
       "heading": "Añadir participantes",
@@ -114,7 +120,20 @@
       "female": "Femeninas",
       "mixed": "Mixtas"
     },
-    "alreadyCreated": "La partida ya se había creado con lo que mandaste antes; los cambios no se han aplicado."
+    "alreadyCreated": "La partida ya se había creado con lo que mandaste antes; los cambios no se han aplicado.",
+    "repetir": {
+      "titulo": "Repetir partida",
+      "avisoCampo": "El campo de aquella partida ya no está disponible: elige otro.",
+      "avisoMiBarra": "Tu barra ({{barra}}) ya no existe en el campo: elige otra.",
+      "avisoBarra": "La barra de {{nombre}} ({{barra}}) ya no existe en el campo: vuelve a añadirlo con otra.",
+      "avisoNoAmigo": "{{nombre}} ya no es tu amigo: no se ha copiado.",
+      "boton": "Repetir partida",
+      "avisoInvitado": "No se ha podido copiar a {{nombre}}: vuelve a añadirlo.",
+      "botonDe": "Repetir «{{nombre}}»",
+      "avisoFaltan": "Faltan jugadores para este formato: añádelos.",
+      "avisoMiBarraNueva": "El campo ahora tiene barras: elige la tuya.",
+      "avisoBarraNueva": "El campo ahora tiene barras: vuelve a añadir a {{nombre}} con la suya."
+    }
   },
   "dashboard": {
     "ctaTitle": "¿Partido improvisado?",

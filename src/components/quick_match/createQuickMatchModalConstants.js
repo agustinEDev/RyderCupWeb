@@ -65,3 +65,13 @@ export const TEE_COLOR_STYLES = {
 export const resolveTeeColor = (color) => TEE_COLOR_STYLES[color?.toLowerCase()] ?? null;
 
 export const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
+
+/**
+ * Cuándo se conservan los anotadores al volver al paso 3 (4 nov 2026): con los
+ * mismos jugadores (y su equipo) y la misma forma de anotar. En match play el
+ * formato cambia quién puede anotar (foursomes va por parejas); en stroke
+ * play da igual Stableford o Medal.
+ */
+export const firmaDeLosAnotadores = (jugadores, modo, formatoDeJuego) =>
+  `${modo}:${modo === 'MATCH_PLAY' ? formatoDeJuego : ''}|` +
+  jugadores.map((p) => `${p.participantId}:${p.team ?? ''}`).join('|');
