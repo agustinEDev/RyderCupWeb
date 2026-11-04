@@ -89,7 +89,7 @@
     "position_ordinal_few": "{{count}}rd",
     "position_ordinal_other": "{{count}}th",
     "format": {
-      "SINGLES": "Singles",
+      "SINGLES": "Match Play",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes",
       "STABLEFORD": "Stableford",
