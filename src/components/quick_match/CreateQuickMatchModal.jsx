@@ -196,30 +196,47 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     }
   }, [step, currentUser?.id]);
 
-  // Tus partidas rápidas, para saber qué barra llevó cada uno la última vez
-  // en cada campo (FE #1025). Sin poder leerlas (sin red), por tu género
-  const [misPartidas, setMisPartidas] = useState(null);
-  // Sin respuesta en 2 s (poca cobertura), se sugiere por tu género: la barra
-  // no se queda sin marcar esperando (Agustín, 4 nov 2026)
-  const [plazoAgotado, setPlazoAgotado] = useState(false);
+  // Tus partidas rápidas en el campo elegido, para saber qué barra llevó cada
+  // uno la última vez (FE #1025). Solo las 5 últimas de ese campo (Agustín,
+  // 4 nov 2026): antes se bajaban las 50 últimas al abrir. Sin poder leerlas
+  // (sin red), por tu género.
+  //
+  // Todo va por ELECCIÓN de campo, no por campo: volver al mismo cuenta como
+  // otra, con su petición y sus 2 s (revisor). La respuesta de una elección
+  // anterior se descarta (`vigente`) y, mientras no llega la de la actual,
+  // no hay partidas (`partidasDe.eleccion`)
+  const campoElegido = selectedCourse?.id ?? null;
+  const [eleccionDeCampo, setEleccionDeCampo] = useState(0);
+  const eligeCampo = (campo) => {
+    setSelectedCourse(campo);
+    setEleccionDeCampo((n) => n + 1);
+  };
+  const [partidasDe, setPartidasDe] = useState({ eleccion: null, partidas: null });
+  const misPartidas = campoElegido && partidasDe.eleccion === eleccionDeCampo ? partidasDe.partidas : null;
+  // Sin respuesta en 2 s desde que se elige el campo (poca cobertura), se
+  // sugiere por tu género: la barra no se queda sin marcar esperando
+  const [plazoAgotadoEn, setPlazoAgotadoEn] = useState(null);
+  const plazoAgotado = campoElegido !== null && plazoAgotadoEn === eleccionDeCampo;
   useEffect(() => {
-    const plazo = setTimeout(() => setPlazoAgotado(true), ESPERA_DE_TUS_PARTIDAS_MS);
-    return () => clearTimeout(plazo);
-  }, []);
-  useEffect(() => {
+    if (!campoElegido) return undefined;
     let vigente = true;
+    const eleccion = eleccionDeCampo;
+    const plazo = setTimeout(() => setPlazoAgotadoEn(eleccion), ESPERA_DE_TUS_PARTIDAS_MS);
     Promise.resolve()
-      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 50 }))
+      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 5, golfCourseId: campoElegido }))
       .then((r) => {
-        if (vigente) setMisPartidas(r?.quickMatches ?? []);
+        if (vigente) setPartidasDe({ eleccion, partidas: r?.quickMatches ?? [] });
       })
       .catch(() => {
-        if (vigente) setMisPartidas([]);
-      });
+        if (vigente) setPartidasDe({ eleccion, partidas: [] });
+      })
+      // Con la respuesta, el plazo ya no hace falta (`/code-review`)
+      .finally(() => clearTimeout(plazo));
     return () => {
       vigente = false;
+      clearTimeout(plazo);
     };
-  }, []);
+  }, [campoElegido, eleccionDeCampo]);
   const ultimas = useMemo(() => ultimasBarras(misPartidas, selectedCourse?.id), [misPartidas, selectedCourse?.id]);
   // La que sale elegida: la de la última vez en ese campo; si no, la de tu
   // género. Solo si no hay ninguna elegida: la copiada al repetir (P7) o la
@@ -737,7 +754,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onMatchFormatChange={setMatchFormat}
             countryCode={currentUser?.country_code}
             selectedCourse={selectedCourse}
-            onCourseSelect={setSelectedCourse}
+            onCourseSelect={eligeCampo}
             onRequestNewCourse={handleRequestNewCourse}
             courseTees={courseTees}
             courseFromRfeg={courseFromRfeg}

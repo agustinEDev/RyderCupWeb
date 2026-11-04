@@ -287,6 +287,107 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
     await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
   });
 
+  describe('tus partidas, solo las 5 últimas del campo elegido (4 nov 2026)', () => {
+    afterEach(() => vi.useRealTimers());
+    const colgada = () => {
+      let responde;
+      const promesa = new Promise((r) => { responde = r; });
+      return { promesa, responde };
+    };
+
+    it('F5: al abrir no se pide nada; al elegir el campo, las 5 últimas de ese campo', async () => {
+      abre();
+      await waitFor(() => expect(screen.getByTestId('select-course-stub')).toBeInTheDocument());
+      expect(mockListMine).not.toHaveBeenCalled();
+
+      await eligeCampo('gc-1');
+
+      expect(mockListMine).toHaveBeenCalledWith({ page: 1, limit: 5, golfCourseId: 'gc-1' });
+    });
+
+    it('F6: otro campo, otra petición; y el plazo de 2 s empieza de nuevo', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockListMine.mockReturnValue(colgada().promesa);
+      abre();
+      await eligeCampo('gc-1');
+      // En el primero se agota y se marca la de tu género
+      await act(() => vi.advanceTimersByTimeAsync(2500));
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+
+      await eligeCampo('gc-2');
+      expect(mockListMine).toHaveBeenLastCalledWith({ page: 1, limit: 5, golfCourseId: 'gc-2' });
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
+
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+    });
+
+    it('F6: la respuesta tardía del campo anterior no cuenta como la del nuevo', async () => {
+      const primera = colgada();
+      mockListMine.mockReturnValueOnce(primera.promesa).mockReturnValueOnce(colgada().promesa);
+      abre();
+      await eligeCampo('gc-1');
+      await eligeCampo('gc-2');
+
+      await act(async () => primera.responde({ quickMatches: [partidaEn('gc-1', [jugador('yo', 'WHITE', 'MALE')])] }));
+
+      // Sigue esperando las de gc-2: ninguna marcada todavía
+      expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
+    });
+
+    it('F6 (revisor): la del campo anterior que llega DESPUÉS de la del nuevo no la pisa', async () => {
+      const primera = colgada();
+      mockListMine
+        .mockReturnValueOnce(primera.promesa)
+        .mockResolvedValueOnce({ quickMatches: [partidaEn('gc-2', [jugador('yo', 'YELLOW', 'MALE'), jugador('ana', 'RED', 'FEMALE')])] });
+      abre();
+      await eligeCampo('gc-1');
+      await eligeCampo('gc-2');
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+
+      await act(async () => primera.responde({ quickMatches: [] }));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
+
+      // La de Ana sale de las de gc-2: la tardía de gc-1 no las borró
+      expect(pulsada('quick-match-tee-panel-option-RED|FEMALE')).toBe(true);
+    });
+
+    it('F6 (revisor): volver a un campo cuyo plazo ya se agotó espera otros 2 s', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockListMine
+        .mockReturnValueOnce(colgada().promesa)
+        .mockResolvedValueOnce({ quickMatches: [] })
+        .mockReturnValueOnce(colgada().promesa);
+      abre();
+      await eligeCampo('gc-1');
+      await act(() => vi.advanceTimersByTimeAsync(2500));
+      await eligeCampo('gc-2');
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+
+      await eligeCampo('gc-1');
+      await act(() => vi.advanceTimersByTimeAsync(500));
+
+      expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
+    });
+
+    it('F7: al repetir, el campo ya viene: se pide al abrir', async () => {
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [],
+          inicial: {
+            matchName: '', mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: 'YELLOW|MALE', participants: [], scorerIds: [],
+          },
+        },
+      });
+
+      await waitFor(() => expect(mockListMine).toHaveBeenCalledWith({ page: 1, limit: 5, golfCourseId: 'gc-1' }));
+    });
+  });
+
   describe('lo que añadió el revisor', () => {
     afterEach(() => vi.useRealTimers());
     const colgada = () => {
