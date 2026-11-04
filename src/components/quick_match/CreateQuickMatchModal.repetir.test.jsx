@@ -17,6 +17,9 @@
  *   E2   cambiar de campo                           | la barra copiada sí se va
  *   C3   cada aviso                                 | solo en el paso donde se arregla
  *        |                                           | (`/code-review`)
+ *   A1   quitar a uno que anotaba, también al abrir | anotan los demás que anotaban
+ *        | en Jugadores por un aviso                  | (`anotadoresAlVolver`, 4 nov)
+ *   A3   quitar a uno que no anotaba                | los anotadores, igual
  *
  * Todo se monta en `<StrictMode>`, como la aplicación.
  */
@@ -229,7 +232,7 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     expect(mockIniciar.mock.calls[0][0].scorerUserIds).toEqual(['user-1', 'user-2']);
   });
 
-  it('K2b: si se cambia a alguien, los anotadores se vuelven a elegir', async () => {
+  it('K2b y A3: quitar a uno que no anotaba (el invitado) conserva los anotadores', async () => {
     abre();
     await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
     fireEvent.click(await screen.findByTestId('quick-match-summary-back'));
@@ -240,7 +243,39 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     fireEvent.click(await screen.findByTestId('quick-match-start'));
 
     await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
-    expect(mockIniciar.mock.calls[0][0].scorerUserIds).toEqual(['user-1']);
+    expect(mockIniciar.mock.calls[0][0].scorerUserIds).toEqual(['user-1', 'user-2']);
+  });
+
+  it('A1: quitar a uno que anotaba deja anotando a los demás que anotaban', async () => {
+    const conAna = borrador();
+    conAna.inicial.participants.push({
+      participantId: 'user-3', userId: 'user-3', name: 'Ana', handicap: 8, profileHandicap: 8, team: null, isGuest: false, color: 'RED', teeGender: 'FEMALE',
+    });
+    conAna.inicial.participants = conAna.inicial.participants.filter((p) => !p.isGuest);
+    conAna.inicial.scorerIds = ['user-1', 'user-2', 'user-3'];
+    abre({ borrador: conAna });
+    await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+    fireEvent.click(await screen.findByTestId('quick-match-summary-back'));
+    fireEvent.click(await screen.findByTestId('quick-match-scorers-back'));
+    fireEvent.click(await screen.findByTestId('quick-match-remove-user-2'));
+    fireEvent.click(await screen.findByTestId('quick-match-participants-next'));
+    fireEvent.click(await screen.findByTestId('quick-match-scorers-next'));
+    fireEvent.click(await screen.findByTestId('quick-match-start'));
+
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(mockIniciar.mock.calls[0][0].scorerUserIds).toEqual(['user-1', 'user-3']);
+  });
+
+  it('A1: al repetir con un aviso (se abre en Jugadores), corregir no pierde los anotadores copiados', async () => {
+    abre({ borrador: borrador({ paso: 2, avisos: [{ tipo: 'noAmigo', nombre: 'Luis', paso: 2 }] }) });
+    await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());
+    fireEvent.click(await screen.findByTestId('quick-match-remove-invitado-x'));
+    fireEvent.click(await screen.findByTestId('quick-match-participants-next'));
+    fireEvent.click(await screen.findByTestId('quick-match-scorers-next'));
+    fireEvent.click(await screen.findByTestId('quick-match-start'));
+
+    await waitFor(() => expect(mockIniciar).toHaveBeenCalled());
+    expect(mockIniciar.mock.calls[0][0].scorerUserIds).toEqual(['user-1', 'user-2']);
   });
 
   it('K3: un % copiado que no está entre los botones sale como uno más, marcado', async () => {

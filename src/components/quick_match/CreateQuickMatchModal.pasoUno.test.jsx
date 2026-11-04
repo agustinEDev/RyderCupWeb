@@ -543,11 +543,11 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
       fireEvent.click(await screen.findByTestId('quick-match-tee-panel-option-RED|FEMALE'));
       fireEvent.click(screen.getByTestId('quick-match-participants-next'));
-      fireEvent.click(screen.getByRole('checkbox', { name: 'Ana' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Ana' }));
       fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
       fireEvent.click(screen.getByTestId('quick-match-participants-next'));
 
-      expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
+      expect(screen.getByRole('button', { name: 'Ana' })).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('K6b (code review): en stroke play, pasar de Stableford a Medal con los mismos jugadores conserva los anotadores', async () => {
@@ -558,7 +558,7 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
       fireEvent.click(await screen.findByTestId('quick-match-tee-panel-option-RED|FEMALE'));
       fireEvent.click(screen.getByTestId('quick-match-participants-next'));
-      fireEvent.click(screen.getByRole('checkbox', { name: 'Ana' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Ana' }));
       fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
       fireEvent.click(screen.getByTestId('quick-match-participants-back'));
       fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
@@ -567,7 +567,7 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       await screen.findByTestId('quick-match-participants-next');
       fireEvent.click(screen.getByTestId('quick-match-participants-next'));
 
-      expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
+      expect(screen.getByRole('button', { name: 'Ana' })).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('C2: al repetir, un nombre propio con la forma de uno de por defecto se copia', async () => {

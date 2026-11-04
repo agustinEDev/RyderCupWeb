@@ -10,6 +10,7 @@ import HandicapInputPanel from './HandicapInputPanel';
 import CourseStep from './CourseStep';
 import ParticipantsStep from './ParticipantsStep';
 import ScorersStep from './ScorersStep';
+import { anotadoresAlVolver } from './anotadoresAlVolver';
 import SummaryStep from './SummaryStep';
 import {
   createAndStartQuickMatchUseCase,
@@ -31,6 +32,7 @@ import {
   parseTeeKey,
   teeKey,
   firmaDeLosAnotadores,
+  formaDeAnotar,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
@@ -159,10 +161,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [scorerIds, setScorerIds] = useState(copia?.scorerIds ?? []);
   // Con qué jugadores se eligieron los anotadores: si al volver al paso 3 son
   // los mismos, se conservan (al repetir se perdían los copiados en silencio;
-  // pasada del Kind, 4 nov 2026). Si cambia alguien, se vuelven a elegir
+  // pasada del Kind, 4 nov 2026). Si cambia alguien, se conserva lo elegido
+  // con quien juega ahora (`anotadoresAlVolver`)
+  // Sin jugadores copiados (el campo ya no valía), la primera entrada al paso
+  // 3 es la primera vez (revisor). La pareja elegida en foursomes, en cambio,
+  // sí se copia: es de la partida, no de sus jugadores (A5)
   const anotadoresElegidosCon = useRef(
-    copia ? firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat) : null
+    copia?.participants?.length
+      ? { jugadores: copia.participants, modo: copia.mode, formato: copia.matchFormat }
+      : null
   );
+  // En foursomes, si quien crea eligió «las dos parejas» o «solo la mía» (o
+  // la copiada al repetir). Lo que la app pone sola no cuenta como elección
+  const parejasElegidas = useRef(copia?.parejasDeAnotadores ?? null);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -425,7 +436,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleRemoveParticipant = (participantId) => {
     setError('');
-    // Los anotadores se vuelven a elegir al entrar en el paso 3
+    // Los anotadores se ajustan al entrar en el paso 3 (`goToScorers`)
     setParticipants((prev) => prev.filter((p) => p.participantId !== participantId));
   };
 
@@ -477,10 +488,23 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
-    const firma = firmaDeLosAnotadores(participants, mode, matchFormat);
-    if (anotadoresElegidosCon.current !== firma) {
-      anotadoresElegidosCon.current = firma;
-      eligeLosAnotadoresDePorDefecto(creatorParticipant);
+    const antes = anotadoresElegidosCon.current;
+    const ahora = { jugadores: participants, modo: mode, formato: matchFormat };
+    const firmaDe = (f) => firmaDeLosAnotadores(f.jugadores, f.modo, f.formato);
+    if (!antes || firmaDe(antes) !== firmaDe(ahora)) {
+      // Con otra forma de anotar, lo de por defecto, también en foursomes: una
+      // pareja elegida antes ya no se ha visto (`/code-review`)
+      if (antes && formaDeAnotar(antes.modo, antes.formato) !== formaDeAnotar(mode, matchFormat)) {
+        parejasElegidas.current = null;
+      }
+      anotadoresElegidosCon.current = ahora;
+      const conservados =
+        !isFoursomes && creatorParticipant
+          ? anotadoresAlVolver({ antes, ahora, anotadores: scorerIds, yo: creatorParticipant.participantId })
+          : null;
+      if (conservados) setScorerIds(conservados);
+      else if (isFoursomes && parejasElegidas.current) chooseScoringSides(parejasElegidas.current);
+      else eligeLosAnotadoresDePorDefecto(creatorParticipant);
     }
     setError('');
     setStep(3);
@@ -771,7 +795,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             isFoursomes={isFoursomes}
             rivalCanScore={rivalCanScore()}
             partnerCanScore={partnerCanScore()}
-            onChooseScoringSides={chooseScoringSides}
+            onChooseScoringSides={(eleccion) => {
+              parejasElegidas.current = eleccion;
+              chooseScoringSides(eleccion);
+            }}
             isProcessing={isProcessing}
             onBack={handleBackToParticipants}
             onClose={handleClose}
