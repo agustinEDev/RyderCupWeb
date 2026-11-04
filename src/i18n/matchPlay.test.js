@@ -8,7 +8,9 @@
  *   #  dónde                                          | es / en
  *   ---|---------------------------------------------|--------------------------
  *   20 botón del paso 1 (`create.course.corto`)      | «Match Play»
- *   21 línea gris del paso 1 y resumen del paso 4    | «Match Play (1 vs 1)»
+ *   21 línea gris del paso 1 y resumen del paso 4    | «Match Play (1 contra 1)» /
+ *                                                    «Match Play (1 vs 1)», como
+ *                                                    los «2 contra 2» de al lado
  *   —  historial, panel (3), «Jugáis juntos»          | «Match Play»
  *   —  sesión del calendario del torneo (`schedule`)  | sin cambios: «Individuales»
  *
@@ -26,17 +28,17 @@ import esCalendario from './locales/es/schedule.json';
 import enCalendario from './locales/en/schedule.json';
 
 const IDIOMAS = [
-  ['es', esQuickMatch, esDashboard, esPerfil],
-  ['en', enQuickMatch, enDashboard, enPerfil],
+  ['es', esQuickMatch, esDashboard, esPerfil, 'Match Play (1 contra 1)'],
+  ['en', enQuickMatch, enDashboard, enPerfil, 'Match Play (1 vs 1)'],
 ];
 
-describe.each(IDIOMAS)('%s: Match Play', (_, quickMatch, dashboard, perfil) => {
+describe.each(IDIOMAS)('%s: Match Play', (_, quickMatch, dashboard, perfil, explicacion) => {
   it('20: el botón del paso 1', () => {
     expect(quickMatch.create.course.corto.SINGLES).toBe('Match Play');
   });
 
   it('21: la línea gris del paso 1, que es también la del resumen', () => {
-    expect(quickMatch.create.course.formatSingles).toBe('Match Play (1 vs 1)');
+    expect(quickMatch.create.course.formatSingles).toBe(explicacion);
   });
 
   it.each([

@@ -34,7 +34,7 @@ backend; va solo el frontend.
 ### Changed
 
 - **«Individual» pasa a llamarse «Match Play»** en el paso 1 de la partida
-  rápida, con «Match Play (1 vs 1)» debajo y en el resumen, y en el historial,
+  rápida, con «Match Play (1 contra 1)» debajo y en el resumen, y en el historial,
   el panel y el perfil, también para los partidos de torneo. El nombre de la
   sesión del calendario del torneo («Individuales») no cambia.
 
