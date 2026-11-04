@@ -392,6 +392,21 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       expect(peticion().name).toBe(hoy('gc-1'));
     });
 
+    it('N4c: un campo sin nombre, sin nombre por defecto (y sin romperse)', async () => {
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [],
+          inicial: {
+            matchName: '', mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1' }, creatorTeeKey: 'YELLOW|MALE', participants: [], scorerIds: [],
+          },
+        },
+      });
+      await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+      expect(nombre()).toBe('');
+    });
+
     it('N4: sin campo, vacío', () => {
       abre();
       expect(nombre()).toBe('');

@@ -104,7 +104,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [matchFormat, setMatchFormat] = useState(copia?.matchFormat ?? 'SINGLES');
   const [scoringFormat, setScoringFormat] = useState(copia?.scoringFormat ?? 'STABLEFORD');
   const [selectedCourse, setSelectedCourse] = useState(copia?.selectedCourse ?? null);
-  const nombreSugerido = selectedCourse ? nombrePorDefecto(selectedCourse.name, abiertoEl) : '';
+  const nombreSugerido = selectedCourse?.name ? nombrePorDefecto(selectedCourse.name, abiertoEl) : '';
   const [courseTees, setCourseTees] = useState([]);
   // Lo dice la ficha completa del campo, que es la que trae su procedencia
   const [courseFromRfeg, setCourseFromRfeg] = useState(false);
