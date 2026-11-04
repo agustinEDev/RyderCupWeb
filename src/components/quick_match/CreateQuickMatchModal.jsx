@@ -162,8 +162,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // los mismos, se conservan (al repetir se perdían los copiados en silencio;
   // pasada del Kind, 4 nov 2026). Si cambia alguien, se conserva lo elegido
   // con quien juega ahora (`anotadoresAlVolver`)
+  // Sin jugadores copiados (el campo ya no valía) no hubo elección: la
+  // primera entrada al paso 3 es la primera vez (revisor)
   const anotadoresElegidosCon = useRef(
-    copia
+    copia?.participants?.length
       ? {
           firma: firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat),
           jugadores: copia.participants ?? [],
@@ -172,6 +174,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
         }
       : null
   );
+  // En foursomes, si quien crea eligió «las dos parejas» o «solo la mía» (o
+  // la copiada al repetir). Lo que la app pone sola no cuenta como elección
+  const parejasElegidas = useRef(copia?.parejasDeAnotadores ?? null);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -495,6 +500,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             ahora,
             anotadores: scorerIds,
             yo: creatorParticipant.participantId,
+            parejas: parejasElegidas.current,
           })
         : null;
       anotadoresElegidosCon.current = { firma, ...ahora };
@@ -790,7 +796,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             isFoursomes={isFoursomes}
             rivalCanScore={rivalCanScore()}
             partnerCanScore={partnerCanScore()}
-            onChooseScoringSides={chooseScoringSides}
+            onChooseScoringSides={(eleccion) => {
+              parejasElegidas.current = eleccion;
+              chooseScoringSides(eleccion);
+            }}
             isProcessing={isProcessing}
             onBack={handleBackToParticipants}
             onClose={handleClose}

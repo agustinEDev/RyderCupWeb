@@ -826,7 +826,7 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
 
   // El roster se monta en el asistente, como lo haría quien juega: amigos
   // registrados (Socio, Rival Uno) e invitados, cada uno en su pareja
-  const goToScorersStep = async (roster) => {
+  const goToScorersStep = async (roster, props = {}) => {
     mockListFriends.mockResolvedValue({
       friendships: [
         { id: 'f-2', otherUserId: 'user-2', otherUserName: 'Socio' },
@@ -836,7 +836,7 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
     });
     mockIniciar.mockResolvedValue({ id: 'qm-1' });
 
-    renderModal({ currentUser: { ...currentUser, display_name: 'Yo' } });
+    renderModal({ currentUser: { ...currentUser, display_name: 'Yo' }, ...props });
 
     fireEvent.click(screen.getByTestId('format-option-FOURSOMES'));
     fireEvent.click(screen.getByTestId('select-course-stub'));
@@ -922,6 +922,73 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
 
     expect(await screen.findByTestId('quick-match-scorers-my-pair')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('quick-match-scorers-both-pairs')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  const vuelveYCambia = async (quitar, poner) => {
+    fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+    fireEvent.click(quitar());
+    fireEvent.click(screen.getByTestId(`quick-match-team-${poner.team}`));
+    if (poner.friend) {
+      fireEvent.click(screen.getByTestId('quick-match-tab-friends'));
+      fireEvent.click(await screen.findByTestId(`quick-match-add-friend-${poner.friend}`));
+    } else {
+      addGuest(poner.guest, 'Doe');
+    }
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await screen.findByTestId('quick-match-scorers-my-pair');
+  };
+  const pulsada = (testId) => screen.getByTestId(testId).getAttribute('aria-pressed');
+  const quitaUnInvitado = () => screen.getAllByTestId(/^quick-match-remove-invitado-/)[0];
+
+  it('A5 (revisor): «solo mi pareja» puesta por la app (enfrente solo invitados) no es una elección: con un registrado enfrente, las dos', async () => {
+    await goToScorersStep([SOCIO, { guest: 'Rival Uno', team: 'B' }, { guest: 'Rival Dos', team: 'B' }]);
+
+    await vuelveYCambia(quitaUnInvitado, RIVAL_UNO);
+
+    expect(pulsada('quick-match-scorers-both-pairs')).toBe('true');
+  });
+
+  it('A5 (revisor): «las dos parejas» elegida vuelve cuando enfrente hay otra vez un registrado', async () => {
+    await goToScorersStep(withRegisteredRival);
+    fireEvent.click(screen.getByTestId('quick-match-scorers-my-pair'));
+    fireEvent.click(screen.getByTestId('quick-match-scorers-both-pairs'));
+
+    await vuelveYCambia(() => screen.getByTestId('quick-match-remove-user-3'), { guest: 'Rival Tres', team: 'B' });
+    expect(screen.queryByTestId('quick-match-scorers-both-pairs')).not.toBeInTheDocument();
+    await vuelveYCambia(quitaUnInvitado, RIVAL_UNO);
+
+    expect(pulsada('quick-match-scorers-both-pairs')).toBe('true');
+  });
+
+  describe('al repetir un foursomes cuyo campo ya no vale (se empieza sin jugadores; revisor)', () => {
+    const borrador = (parejasDeAnotadores) => ({
+      paso: 1,
+      avisos: [{ tipo: 'campo', paso: 1 }],
+      inicial: {
+        matchName: '',
+        mode: 'MATCH_PLAY',
+        matchFormat: 'FOURSOMES',
+        scoringFormat: 'STABLEFORD',
+        allowanceOverride: null,
+        playMode: 'HANDICAP',
+        selectedCourse: null,
+        creatorTeeKey: '',
+        participants: [],
+        scorerIds: [],
+        parejasDeAnotadores,
+      },
+    });
+
+    it('sin elección copiada, la primera vez: los de por defecto (las dos parejas)', async () => {
+      await goToScorersStep(withRegisteredRival, { borrador: borrador(null) });
+      expect(pulsada('quick-match-scorers-both-pairs')).toBe('true');
+    });
+
+    it('con «solo la mía» copiada: se respeta', async () => {
+      await goToScorersStep(withRegisteredRival, { borrador: borrador('MINE') });
+      expect(pulsada('quick-match-scorers-my-pair')).toBe('true');
+    });
   });
 
   /**
