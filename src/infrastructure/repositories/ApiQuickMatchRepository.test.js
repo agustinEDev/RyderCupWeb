@@ -190,6 +190,14 @@ describe('ApiQuickMatchRepository', () => {
       expect(result.totalCount).toBe(1);
     });
 
+    it('pide solo las de un campo con golfCourseId (4 nov 2026)', async () => {
+      apiRequest.mockResolvedValue({ quick_matches: [], total_count: 0, page: 1, limit: 5 });
+
+      await repo.listMine({ page: 1, limit: 5, golfCourseId: 'gc-1' });
+
+      expect(apiRequest).toHaveBeenCalledWith('/api/v1/quick-matches/me?page=1&limit=5&golf_course_id=gc-1');
+    });
+
     it('should default to an empty query string when no filters are given', async () => {
       apiRequest.mockResolvedValue({ quick_matches: [], total_count: 0, page: 1, limit: 20 });
 

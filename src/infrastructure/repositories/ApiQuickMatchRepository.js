@@ -162,6 +162,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
     if (filters.status) apiFilters.status = filters.status;
     if (filters.page) apiFilters.page = filters.page;
     if (filters.limit) apiFilters.limit = filters.limit;
+    if (filters.golfCourseId) apiFilters.golf_course_id = filters.golfCourseId;
 
     const queryString = this.#buildQueryString(apiFilters);
     const response = await apiRequest(`/api/v1/quick-matches/me${queryString}`);
