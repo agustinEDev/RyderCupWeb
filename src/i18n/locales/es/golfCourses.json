@@ -106,7 +106,8 @@
     "locationTimeout": "Se tardó demasiado en localizarte. Inténtalo de nuevo o busca por nombre.",
     "distanceAway": "a {{distance}} km",
     "allAlreadyAdded": "Ya has añadido todos los campos que coinciden",
-    "showingSome": "Mostrando {{shown}} de {{total}}. Sigue escribiendo para afinar."
+    "showingSome": "Mostrando {{shown}} de {{total}}. Sigue escribiendo para afinar.",
+    "searching": "Buscando..."
   },
   "requestModal": {
     "title": "Solicitar Nuevo Campo de Golf",
@@ -162,7 +163,8 @@
       "characters": "caracteres",
       "cancel": "Cancelar",
       "confirmReject": "Rechazar Campo",
-      "tabsLabel": "Tipo de solicitud"
+      "tabsLabel": "Tipo de solicitud",
+      "close": "Cerrar"
     }
   },
   "detail": {
