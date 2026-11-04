@@ -3,9 +3,10 @@
  * v1.13.0: Added CSRF Protection for POST/PUT/PATCH/DELETE requests
  */
 
-import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor.js';
+import { fetchWithTokenRefresh, refrescoCompartido } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
+import { captureError } from '../utils/sentryHelpers';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
 import i18next from 'i18next';
@@ -38,6 +39,47 @@ const sinConexion = (causa) =>
   Object.assign(new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: causa }), {
     sinConexion: true,
   });
+
+const esRechazoCsrf = (response, errorData) =>
+  response.status === 403 && errorData?.error_code === 'CSRF_VALIDATION_FAILED';
+
+/**
+ * Cierra la sesión por CSRF y lanza el error MARCADO: quien vacía la cola de
+ * anotaciones necesita distinguirlo de un error sin código cualquiera, porque
+ * este vale para toda la sesión y no para una anotación. Sin la marca, cada
+ * golpe de la cola disparaba su propio cierre de sesión (FE #521)
+ */
+const cierraPorCsrf = (errorData) => {
+  handleCsrfLogout(errorData);
+  const csrfError = new Error('CSRF validation failed. Please log in again.');
+  csrfError.errorCode = 'CSRF_VALIDATION_FAILED';
+  throw csrfError;
+};
+
+/**
+ * Tras un 403 CSRF, el refresco compartido: rota la cookie y el token a la vez.
+ * Un 401 es la sesión muerta y se cierra, como antes. Cualquier otro fallo —la
+ * red, un 5xx— no dice nada de la sesión: es no haber podido, y sale como falta
+ * de cobertura, que la cola guarda (hotfix 2.63.1)
+ */
+const renuevaTrasCsrf = async (errorData) => {
+  try {
+    await refrescoCompartido();
+  } catch (error) {
+    if (error?.response?.status === 401) cierraPorCsrf(errorData);
+    throw sinConexion(error);
+  }
+};
+
+const leeElError = async (response) => {
+  try {
+    return await response.json();
+  } catch (jsonError) {
+    // If parsing fails, errorData remains empty object
+    console.warn('Failed to parse error response as JSON:', jsonError);
+    return {};
+  }
+};
 
 // Prioridad: 1. Runtime config (globalThis.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
 // Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
@@ -125,32 +167,32 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
 
   try {
     // Use interceptor that handles automatic token refresh on 401
-    const response = await aTiempo(llamaAlBackend(url, config));
+    let response = await aTiempo(llamaAlBackend(url, config));
+    let errorData = response.ok ? null : await leeElError(response);
+
+    // Un 403 CSRF lo da el middleware ANTES de ejecutar nada: repetir es
+    // seguro. Se refresca y se repite UNA vez con el token nuevo; el token de
+    // memoria se quedaba atrás cuando otra pestaña rotaba la cookie, y eso
+    // echaba de la aplicación (hotfix 2.63.1, pasada del iPhone del 4 nov)
+    if (!response.ok && esRechazoCsrf(response, errorData)) {
+      await aTiempo(renuevaTrasCsrf(errorData));
+      // Que se vea si pasa a menudo: antes se notaba porque echaba. Método y
+      // ruta, nunca el token
+      captureError('CSRF token rejected: refreshed and retried once', {
+        level: 'warning',
+        tags: { module: 'csrf' },
+        extra: { method, ruta: endpoint.split('?')[0] },
+      });
+      const reintento = {
+        ...config,
+        headers: { ...config.headers, 'X-CSRF-Token': getCsrfToken() },
+      };
+      response = await aTiempo(llamaAlBackend(url, reintento));
+      errorData = response.ok ? null : await leeElError(response);
+      if (!response.ok && esRechazoCsrf(response, errorData)) cierraPorCsrf(errorData);
+    }
 
     if (!response.ok) {
-      // Try to parse error response from backend
-      let errorData = {};
-      try {
-        errorData = await response.json();
-      } catch (jsonError) {
-        // If parsing fails, errorData remains empty object
-        console.warn('Failed to parse error response as JSON:', jsonError);
-      }
-
-      // v1.13.0: Handle CSRF validation errors
-      if (response.status === 403 && errorData.error_code === 'CSRF_VALIDATION_FAILED') {
-        // Use centralized CSRF logout handler
-        handleCsrfLogout(errorData);
-        // Throw error after initiating logout (error will be caught by caller).
-        // El error va MARCADO: quien vacía la cola de anotaciones necesita
-        // distinguirlo de un error sin código cualquiera, porque este vale
-        // para toda la sesión y no para una anotación. Sin la marca, cada
-        // golpe de la cola disparaba su propio cierre de sesión (FE #521)
-        const csrfError = new Error('CSRF validation failed. Please log in again.');
-        csrfError.errorCode = 'CSRF_VALIDATION_FAILED';
-        throw csrfError;
-      }
-
       // Términos sin aceptar (F4): a la pantalla de aceptarlos, una sola vez y
       // recargando. La llamada NO se queda colgada (ese patrón se retiró del
       // interceptor): sigue abajo como un error marcado, que la cola guarda para
