@@ -26,12 +26,13 @@ import es from '../../i18n/locales/es/quickMatch.json';
 import en from '../../i18n/locales/en/quickMatch.json';
 import i18next from 'i18next';
 
-// Una traducción que deja ver la clave y lo que se le mete
-const t = (clave, opciones) => (opciones?.name === undefined ? clave : `${clave}[${opciones.name}]`);
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave, opciones) => (opciones?.name === undefined ? clave : `${clave}[${opciones.name}]`) }),
+// Una traducción que deja ver la clave y lo que se le mete. La misma para el
+// `t` que llega por props y el del hook (`vi.hoisted`, `/code-review`)
+const { t } = vi.hoisted(() => ({
+  t: (clave, opciones) => (opciones?.name === undefined ? clave : `${clave}[${opciones.name}]`),
 }));
+
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t }) }));
 
 const TEES = [
   { color: 'YELLOW', gender: 'MALE' },
@@ -39,9 +40,12 @@ const TEES = [
   { color: 'RED', gender: 'FEMALE' },
 ];
 
-const tituloDeLaHoja = () => {
+// El título, visible y como nombre de la hoja: se busca el texto esperado, no
+// «el primero que haya» (`/code-review`)
+const esperaElTitulo = (titulo) => {
   const hoja = screen.getByTestId('quick-match-tee-panel');
-  return { nombre: hoja.getAttribute('aria-label'), visto: within(hoja).getAllByText(/./)[0].textContent };
+  expect(hoja).toHaveAttribute('aria-label', titulo);
+  expect(within(hoja).getByText(titulo, { exact: true })).toBeVisible();
 };
 
 describe('Título de la hoja de barras', () => {
@@ -49,29 +53,20 @@ describe('Título de la hoja de barras', () => {
     render(<BarrasDeTuGenero t={t} courseTees={TEES} genero="MALE" value="" onChange={vi.fn()} />);
     fireEvent.click(screen.getByTestId('quick-match-creator-tee-otras'));
 
-    expect(tituloDeLaHoja()).toEqual({
-      nombre: 'create.course.yourTeePanelTitle',
-      visto: 'create.course.yourTeePanelTitle',
-    });
+    esperaElTitulo('create.course.yourTeePanelTitle');
   });
 
   it('2: sin tu género, el panel de siempre también se titula «Tu salida»', () => {
     render(<BarrasDeTuGenero t={t} courseTees={TEES} genero={null} value="" onChange={vi.fn()} />);
     fireEvent.click(screen.getByTestId('quick-match-creator-tee'));
 
-    expect(tituloDeLaHoja()).toEqual({
-      nombre: 'create.course.yourTeePanelTitle',
-      visto: 'create.course.yourTeePanelTitle',
-    });
+    esperaElTitulo('create.course.yourTeePanelTitle');
   });
 
   it('3: la hoja de un amigo sigue siendo «Salida de» su nombre', () => {
     render(<TeeSelectPanel courseTees={TEES} playerName="Jugador 23" selectedKey="" onSelect={vi.fn()} onClose={vi.fn()} />);
 
-    expect(tituloDeLaHoja()).toEqual({
-      nombre: 'create.teePanel.title[Jugador 23]',
-      visto: 'create.teePanel.title[Jugador 23]',
-    });
+    esperaElTitulo('create.teePanel.title[Jugador 23]');
   });
 
   it('los textos: «Tu salida» y «Your tee», sin hueco para un nombre', () => {
@@ -117,14 +112,14 @@ describe('Hoja del invitado (sin cambios)', () => {
     render(<Paso guestForm={{ firstName: 'Prueba', lastName: 'Kind', handicap: '' }} />);
     fireEvent.click(screen.getByTestId('quick-match-guest-tee'));
 
-    expect(tituloDeLaHoja().nombre).toBe('create.teePanel.title[Prueba Kind]');
+    esperaElTitulo('create.teePanel.title[Prueba Kind]');
   });
 
   it('5: sin nombre, «Salida de» el nombre genérico', () => {
     render(<Paso />);
     fireEvent.click(screen.getByTestId('quick-match-guest-tee'));
 
-    expect(tituloDeLaHoja().nombre).toBe('create.teePanel.title[create.participants.guestFallbackName]');
+    esperaElTitulo('create.teePanel.title[create.participants.guestFallbackName]');
   });
 });
 
