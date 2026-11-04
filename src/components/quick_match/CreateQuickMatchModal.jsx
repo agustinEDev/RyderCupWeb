@@ -10,6 +10,7 @@ import HandicapInputPanel from './HandicapInputPanel';
 import CourseStep from './CourseStep';
 import ParticipantsStep from './ParticipantsStep';
 import ScorersStep from './ScorersStep';
+import { anotadoresAlVolver } from './anotadoresAlVolver';
 import SummaryStep from './SummaryStep';
 import {
   createAndStartQuickMatchUseCase,
@@ -159,9 +160,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [scorerIds, setScorerIds] = useState(copia?.scorerIds ?? []);
   // Con qué jugadores se eligieron los anotadores: si al volver al paso 3 son
   // los mismos, se conservan (al repetir se perdían los copiados en silencio;
-  // pasada del Kind, 4 nov 2026). Si cambia alguien, se vuelven a elegir
+  // pasada del Kind, 4 nov 2026). Si cambia alguien, se conserva lo elegido
+  // con quien juega ahora (`anotadoresAlVolver`)
   const anotadoresElegidosCon = useRef(
-    copia ? firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat) : null
+    copia
+      ? {
+          firma: firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat),
+          jugadores: copia.participants ?? [],
+          modo: copia.mode,
+          formato: copia.matchFormat,
+        }
+      : null
   );
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
@@ -425,7 +434,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleRemoveParticipant = (participantId) => {
     setError('');
-    // Los anotadores se vuelven a elegir al entrar en el paso 3
+    // Los anotadores se ajustan al entrar en el paso 3 (`goToScorers`)
     setParticipants((prev) => prev.filter((p) => p.participantId !== participantId));
   };
 
@@ -478,9 +487,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
     const firma = firmaDeLosAnotadores(participants, mode, matchFormat);
-    if (anotadoresElegidosCon.current !== firma) {
-      anotadoresElegidosCon.current = firma;
-      eligeLosAnotadoresDePorDefecto(creatorParticipant);
+    if (anotadoresElegidosCon.current?.firma !== firma) {
+      const ahora = { jugadores: participants, modo: mode, formato: matchFormat };
+      const conservados = creatorParticipant
+        ? anotadoresAlVolver({
+            antes: anotadoresElegidosCon.current,
+            ahora,
+            anotadores: scorerIds,
+            yo: creatorParticipant.participantId,
+          })
+        : null;
+      anotadoresElegidosCon.current = { firma, ...ahora };
+      if (conservados) setScorerIds(conservados);
+      else eligeLosAnotadoresDePorDefecto(creatorParticipant);
     }
     setError('');
     setStep(3);

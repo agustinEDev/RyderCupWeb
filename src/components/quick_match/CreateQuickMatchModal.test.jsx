@@ -909,6 +909,21 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
     );
   });
 
+  it('A9 y A5: al crear, volver a Jugadores y cambiar al rival invitado conserva «solo mi pareja»', async () => {
+    await goToScorersStep(withRegisteredRival);
+    fireEvent.click(screen.getByTestId('quick-match-scorers-my-pair'));
+
+    fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+    fireEvent.click(screen.getAllByTestId(/^quick-match-remove-invitado-/)[0]);
+    fireEvent.click(screen.getByTestId('quick-match-team-B'));
+    addGuest('Rival Tres', 'Doe');
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+    expect(await screen.findByTestId('quick-match-scorers-my-pair')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('quick-match-scorers-both-pairs')).toHaveAttribute('aria-pressed', 'false');
+  });
+
   /**
    * Con «las dos parejas», anotan los registrados de las dos, y nadie más: un
    * invitado no tiene cuenta con la que anotar. Por su UserId (FE #848).
