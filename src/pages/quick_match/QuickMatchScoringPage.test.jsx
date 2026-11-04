@@ -127,8 +127,8 @@ describe('QuickMatchScoringPage', () => {
 
   // Pasada en el Kind (4 nov 2026): salía «SINGLES», el valor interno
   it.each([
-    [{ matchFormat: 'SINGLES', scoringFormat: null }, 'create.course.corto.SINGLES'],
-    [{ matchFormat: null, scoringFormat: 'STABLEFORD' }, 'create.course.corto.STABLEFORD'],
+    [{ matchFormat: 'SINGLES', scoringFormat: null }, /history\.format\.SINGLES/],
+    [{ matchFormat: null, scoringFormat: 'STABLEFORD' }, /history\.format\.STABLEFORD/],
   ])('K4: la cabecera dice el formato traducido (%o)', (formato, esperado) => {
     mockUseQuickMatchScoring.mockReturnValue({
       ...baseHookState,

@@ -550,7 +550,7 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
     });
 
-    it('K6 (revisor): con los mismos jugadores pero otro formato, los anotadores se vuelven a elegir', async () => {
+    it('K6b (code review): en stroke play, pasar de Stableford a Medal con los mismos jugadores conserva los anotadores', async () => {
       abre();
       await eligeCampo();
       fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
@@ -567,7 +567,7 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       await screen.findByTestId('quick-match-participants-next');
       fireEvent.click(screen.getByTestId('quick-match-participants-next'));
 
-      expect(screen.getByRole('checkbox', { name: 'Ana' })).not.toBeChecked();
+      expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
     });
 
     it('C2: al repetir, un nombre propio con la forma de uno de por defecto se copia', async () => {

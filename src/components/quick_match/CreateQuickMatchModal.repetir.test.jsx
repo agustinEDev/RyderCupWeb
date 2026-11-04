@@ -253,6 +253,16 @@ describe('CreateQuickMatchModal · repetir una partida (FE #1021)', () => {
     expect(screen.getByTestId('quick-match-allowance-option-80')).toBeInTheDocument();
   });
 
+  it('K3c: el % copiado sigue ofreciéndose tras ir al paso 2 y volver', async () => {
+    abre({ borrador: borrador({ paso: 1, inicial: { ...borrador().inicial, allowanceOverride: 80 } }) });
+    await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-allowance-option-90'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    fireEvent.click(await screen.findByTestId('quick-match-participants-back'));
+
+    expect(await screen.findByTestId('quick-match-allowance-option-80')).toBeInTheDocument();
+  });
+
   it('K3b: el % copiado no se ofrece en la otra modalidad', async () => {
     abre({ borrador: borrador({ paso: 1, inicial: { ...borrador().inicial, allowanceOverride: 80 } }) });
     await waitFor(() => expect(mockGetGolfCourse).toHaveBeenCalled());

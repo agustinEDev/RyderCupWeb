@@ -606,7 +606,7 @@ const QuickMatchScoringPage = () => {
             <p className="text-sm text-gray-500">
               {quickMatch?.name ? `${t('scoring.matchHeader')} · ` : ''}
               {(quickMatch?.matchFormat ?? quickMatch?.scoringFormat) &&
-                t(`create.course.corto.${quickMatch.matchFormat ?? quickMatch.scoringFormat}`)}
+                t(`history.format.${quickMatch.matchFormat ?? quickMatch.scoringFormat}`, quickMatch.matchFormat ?? quickMatch.scoringFormat)}
             </p>
             <CampoDeLaPartida nombre={courseName} />
           </div>

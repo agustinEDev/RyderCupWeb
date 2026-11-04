@@ -129,7 +129,7 @@ describe('QuickMatchSharedPage — a friend\'s finished quick match, read-only (
     pinta();
 
     await screen.findByTestId('quick-match-classification-table');
-    expect(screen.getByText(/create\.course\.corto\.STABLEFORD/)).toBeInTheDocument();
+    expect(screen.getByText(/history\.format\.STABLEFORD/)).toBeInTheDocument();
   });
 
   it('shows the classification and the scorecard, with the course and a read-only label', async () => {

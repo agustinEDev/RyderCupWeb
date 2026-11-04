@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
 import FuenteRfeg from '../golf_course/FuenteRfeg';
 import BarrasDeTuGenero from './BarrasDeTuGenero';
@@ -46,6 +46,7 @@ const CourseStep = ({
   generoDeQuienCrea = null,
   allowancePercentage,
   allowanceAMano = false,
+  porcentajeCopiado = null,
   onAllowanceChange,
   playMode = 'HANDICAP',
   onPlayModeChange,
@@ -56,15 +57,12 @@ const CourseStep = ({
 }) => {
   const masOpciones = useRef(null);
   // Un % copiado al repetir que no está entre los botones sale como uno más,
-  // marcado: si no, no se veía cuál iba (pasada del Kind, 4 nov 2026)
+  // marcado, y solo en la modalidad en que se copió (pasada del Kind y
+  // revisiones, 4 nov 2026). Viene del borrador: el paso se vuelve a montar
   const base = isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS;
-  const [copiado] = useState(() =>
-    base.includes(allowancePercentage) ? null : { pct: allowancePercentage, libre: isFreePlay }
-  );
-  // Solo en la modalidad en que se copió: en la otra sería un botón fantasma
   const opcionesDePorcentaje =
-    copiado && copiado.libre === isFreePlay && !base.includes(copiado.pct)
-      ? [...base, copiado.pct].sort((a, b) => a - b)
+    porcentajeCopiado?.libre === isFreePlay && !base.includes(porcentajeCopiado.pct)
+      ? [...base, porcentajeCopiado.pct].sort((a, b) => a - b)
       : base;
   const elegida = (op) => op.modo === mode && (isFreePlay ? scoringFormat : matchFormat) === op.formato;
   const elige = (op) => {
