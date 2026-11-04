@@ -1,4 +1,26 @@
+import { Smartphone } from 'lucide-react';
 import { MAX_SCORERS, oppositeTeam } from './createQuickMatchModalConstants';
+
+/**
+ * Si anota, móvil verde; si no, móvil rojo y tachado (Agustín, 4 nov 2026).
+ * La raya es para que se distinga sin el color: verde y rojo se confunden
+ * con daltonismo, y al sol. El estado lo lee el lector de pantalla del
+ * `aria-pressed` del botón, así que el icono va oculto.
+ */
+const IconoDelAnotador = ({ anota }) =>
+  anota ? (
+    <span data-testid="quick-match-scorer-anota" aria-hidden="true" className="shrink-0 text-green-600">
+      <Smartphone className="w-6 h-6" />
+    </span>
+  ) : (
+    <span data-testid="quick-match-scorer-no-anota" aria-hidden="true" className="relative shrink-0 text-red-600">
+      <Smartphone className="w-6 h-6" />
+      <span
+        data-tachado
+        className="absolute left-1/2 top-1/2 h-0.5 w-7 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded bg-red-600 ring-2 ring-white"
+      />
+    </span>
+  );
 
 /**
  * En foursomes apuntan las dos parejas cuando hay algun anotador del bando de
@@ -98,23 +120,21 @@ const ScorersStep = ({
           const checked = scorerIds.includes(p.participantId);
           return (
             <li key={p.participantId}>
-              <label
-                className={`flex items-center gap-3 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${
-                  checked ? 'border-primary bg-primary/5' : 'border-gray-200'
+              <button
+                type="button"
+                aria-pressed={checked}
+                disabled={isCreatorParticipant || (scorerIds.length >= MAX_SCORERS && !checked)}
+                onClick={() => onToggleScorer(p.participantId)}
+                className={`w-full min-h-12 flex items-center gap-3 px-4 py-3 border rounded-lg text-left transition-colors disabled:cursor-default ${
+                  checked ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={isCreatorParticipant || (scorerIds.length >= MAX_SCORERS && !checked)}
-                  onChange={() => onToggleScorer(p.participantId)}
-                  className="rounded text-primary focus:ring-primary"
-                />
+                <IconoDelAnotador anota={checked} />
                 <span className="text-sm text-gray-900">{p.name}</span>
                 {isCreatorParticipant && (
-                  <span className="text-xs text-gray-400">({t('create.participants.creatorBadge')})</span>
+                  <span className="text-xs text-gray-500">({t('create.participants.creatorBadge')})</span>
                 )}
-              </label>
+              </button>
             </li>
           );
         })}
