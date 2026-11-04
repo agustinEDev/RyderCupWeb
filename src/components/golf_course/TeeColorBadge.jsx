@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import TeeColor from '../../domain/value_objects/TeeColor';
+import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 
 /**
  * TeeColorBadge Component
@@ -13,8 +14,7 @@ const TeeColorBadge = ({ color, identifier, gender }) => {
   const { t } = useTranslation('golfCourses');
 
   const swatch = TeeColor.swatchFor(color);
-  const label = identifier || t(`form.teeColors.${color}`, { defaultValue: color });
-  const genderSuffix = gender === 'MALE' ? ' (M)' : gender === 'FEMALE' ? ' (F)' : '';
+  const label = nombreDeLaBarra(t, { color, identifier, gender });
 
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-gray-50 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600">
@@ -24,7 +24,6 @@ const TeeColorBadge = ({ color, identifier, gender }) => {
         style={{ backgroundColor: swatch }}
       />
       {label}
-      {genderSuffix}
     </span>
   );
 };

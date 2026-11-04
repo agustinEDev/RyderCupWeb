@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import LeaderboardView from './LeaderboardView';
+import scheduleEs from '../../i18n/locales/es/schedule.json';
+import scheduleEn from '../../i18n/locales/en/schedule.json';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -84,6 +86,21 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
 });
 
 describe('LeaderboardView', () => {
+  it.each([
+    ['es', scheduleEs, { SINGLES: 'Individuales', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' }],
+    ['en', scheduleEn, { SINGLES: 'Singles', FOURBALL: 'Fourball', FOURSOMES: 'Foursomes' }],
+  ])('los formatos que pinta tienen texto en %s (no solo la clave; CodeRabbit)', (_, schedule, esperados) => {
+    expect(schedule.formats).toMatchObject(esperados);
+  });
+
+  it('el formato de cada partido sale traducido, como en el resto de la competición', () => {
+    render(<LeaderboardView leaderboard={mockLeaderboard} />);
+
+    expect(screen.getAllByText(/formats\.SINGLES \{"ns":"schedule"/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/formats\.FOURBALL \{"ns":"schedule"/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/- FOURBALL$/)).not.toBeInTheDocument();
+  });
+
   it('should return null when leaderboard is null', () => {
     const { container } = render(<LeaderboardView leaderboard={null} />);
     expect(container.firstChild).toBeNull();
@@ -316,8 +333,22 @@ describe('LeaderboardView', () => {
 
       expect(screen.queryByTestId('sesion-viejo')).not.toBeInTheDocument();
       const tarjeta = screen.getByTestId('leaderboard-match-viejo');
-      expect(tarjeta).toHaveTextContent('#2 - SINGLES');
+      expect(tarjeta).toHaveTextContent('#2 - formats.SINGLES {"ns":"schedule","defaultValue":"SINGLES"}');
       expect(tarjeta).not.toHaveTextContent('undefined');
+    });
+
+    it('L6: un formato sin traducción sale tal cual, no «formats.X» (`/code-review`)', () => {
+      render(<LeaderboardView leaderboard={{ ...mockLeaderboard, matches: [partido('raro', { matchFormat: 'GREENSOME' })] }} />);
+
+      expect(screen.getByTestId('leaderboard-match-raro')).toHaveTextContent('"defaultValue":"GREENSOME"');
+    });
+
+    it('L5: un partido sin formato no pinta «formats.undefined» (revisor)', () => {
+      render(<LeaderboardView leaderboard={{ ...mockLeaderboard, matches: [partido('sin', { matchFormat: null })] }} />);
+
+      const tarjeta = screen.getByTestId('leaderboard-match-sin');
+      expect(tarjeta).not.toHaveTextContent('formats.');
+      expect(tarjeta).toHaveTextContent('#2');
     });
   });
 });

@@ -4,6 +4,7 @@ import {
   FORMAT_CAPACITY,
   MAX_SCORERS,
   NO_TEE_KEY,
+  oppositeTeam,
   TEAM_FORMATS,
   teeKey,
 } from '../components/quick_match/createQuickMatchModalConstants';
@@ -42,6 +43,7 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
     scoringFormat: partida.scoringFormat ?? 'STABLEFORD',
     allowanceOverride: copiado === porDefecto ? null : copiado,
     playMode: partida.playMode ?? 'HANDICAP',
+    parejasDeAnotadores: parejasElegidas(partida, yo),
   };
 
   // Sin campo no hay barras ni plantilla que valgan: se empieza por él (R8)
@@ -158,4 +160,24 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
       scorerIds,
     },
   };
+};
+
+/**
+ * En foursomes se elige si anotan «las dos parejas» o «solo la mía», y esa
+ * elección es lo que se conserva al cambiar jugadores (`anotadoresAlVolver`):
+ * deducirla de los anotadores que siguen fallaba si el rival que anotaba ya no
+ * es amigo (revisor, 4 nov 2026). Si enfrente no había ningún registrado, no
+ * se ofreció la opción, así que no hubo elección. Se copia también si el campo
+ * ya no vale (sin jugadores): es de la partida, no de sus jugadores.
+ */
+const parejasElegidas = (partida, yo) => {
+  if (partida.scoringFormat || partida.matchFormat !== 'FOURSOMES') return null;
+  // La eligió quien la creó: a otro que la repite no le toca heredarla
+  // (`/code-review`)
+  if (partida.creatorId !== yo.id) return null;
+  const mio = partida.participants.find((p) => p.userId === yo.id);
+  if (!mio?.team) return null;
+  const rivales = partida.participants.filter((p) => !p.isGuest && p.userId && p.team === oppositeTeam(mio.team));
+  if (rivales.length === 0) return null;
+  return rivales.some((p) => partida.scorerIds.includes(p.userId)) ? 'BOTH' : 'MINE';
 };

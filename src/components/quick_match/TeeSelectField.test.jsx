@@ -26,7 +26,7 @@ const renderField = (props = {}) =>
       courseTees={meisTees}
       label="Tus barras"
       placeholder="Elige tus barras"
-      playerName="tus barras"
+      title="Tu salida"
       testIdPrefix="quick-match-creator-tee"
       {...props}
     />

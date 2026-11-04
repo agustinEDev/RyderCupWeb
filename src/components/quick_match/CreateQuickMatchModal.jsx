@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
+import { esFalloDeRed, motivoDelError } from '../../utils/sinCobertura';
 import { idAleatorio } from '../../utils/idAleatorio';
 import customToast from '../../utils/toast';
 import { nombreVisible } from '../../utils/nombreVisible';
@@ -10,6 +10,7 @@ import HandicapInputPanel from './HandicapInputPanel';
 import CourseStep from './CourseStep';
 import ParticipantsStep from './ParticipantsStep';
 import ScorersStep from './ScorersStep';
+import { anotadoresAlVolver } from './anotadoresAlVolver';
 import SummaryStep from './SummaryStep';
 import {
   createAndStartQuickMatchUseCase,
@@ -31,6 +32,7 @@ import {
   parseTeeKey,
   teeKey,
   firmaDeLosAnotadores,
+  formaDeAnotar,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
@@ -47,10 +49,13 @@ const MOTIVO_POR_CODIGO = {
   422: 'create.errors.invalid',
 };
 
-// La barra de un aviso, como la pinta el selector: color y género (el campo
-// puede tener las amarillas de hombre y no las de mujer), o «sin barra»
+// La barra de un aviso: color y género (el campo puede tener las amarillas de
+// hombre y no las de mujer), o «sin barra». No es `nombreDeLaBarra`: va dentro
+// de una frase, así que el género se escribe («amarillas de hombre») en vez
+// de «(M)»; y el aviso guarda solo color y género, no el nombre propio que
+// tenía la barra (ya no está en el campo)
 const GENERO_DE_LA_BARRA = { MALE: 'male', FEMALE: 'female', MIXED: 'mixed' };
-const nombreDeLaBarra = (t, tCampos, aviso) => {
+const barraDelAviso = (t, tCampos, aviso) => {
   const color = tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color });
   const genero = GENERO_DE_LA_BARRA[aviso.genero];
   return genero ? `${color} ${t(`create.teePanel.${genero}`).toLowerCase()}` : color;
@@ -67,7 +72,7 @@ const textoDelAviso = (t, tCampos, aviso) => {
       ? t('create.repetir.avisoMiBarraNueva')
       : t('create.repetir.avisoBarraNueva', { nombre: aviso.nombre });
   }
-  const barra = nombreDeLaBarra(t, tCampos, aviso);
+  const barra = barraDelAviso(t, tCampos, aviso);
   if (aviso.propia) return t('create.repetir.avisoMiBarra', { barra });
   return t('create.repetir.avisoBarra', { nombre: aviso.nombre, barra });
 };
@@ -142,7 +147,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // ya creó—; cualquier cambio en el borrador estrena uno
   const ultimoIntento = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
+  // El aviso, por su clave (o el texto ya hecho de un fallo del servidor): así
+  // se quita uno concreto sin comparar textos traducidos, y cambia de idioma
+  // con la página
+  const [error, setErrorDelAsistente] = useState(null);
+  // Un aviso nuevo cada vez, también si se repite: así vuelve a la vista (ver
+  // el efecto de abajo)
+  const setError = (clave) => setErrorDelAsistente(clave ? { clave } : null);
+  const quitaElAviso = (clave) => setErrorDelAsistente((e) => (e?.clave === clave ? null : e));
   // El aviso va arriba y el botón que lo provoca, abajo: en un móvil se
   // pintaba fuera de la vista y parecía que no pasaba nada
   const avisoDeError = useRef(null);
@@ -159,10 +171,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [scorerIds, setScorerIds] = useState(copia?.scorerIds ?? []);
   // Con qué jugadores se eligieron los anotadores: si al volver al paso 3 son
   // los mismos, se conservan (al repetir se perdían los copiados en silencio;
-  // pasada del Kind, 4 nov 2026). Si cambia alguien, se vuelven a elegir
+  // pasada del Kind, 4 nov 2026). Si cambia alguien, se conserva lo elegido
+  // con quien juega ahora (`anotadoresAlVolver`)
+  // Sin jugadores copiados (el campo ya no valía), la primera entrada al paso
+  // 3 es la primera vez (revisor). La pareja elegida en foursomes, en cambio,
+  // sí se copia: es de la partida, no de sus jugadores (A5)
   const anotadoresElegidosCon = useRef(
-    copia ? firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat) : null
+    copia?.participants?.length
+      ? { jugadores: copia.participants, modo: copia.mode, formato: copia.matchFormat }
+      : null
   );
+  // En foursomes, si quien crea eligió «las dos parejas» o «solo la mía» (o
+  // la copiada al repetir). Lo que la app pone sola no cuenta como elección
+  const parejasElegidas = useRef(copia?.parejasDeAnotadores ?? null);
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -178,30 +199,47 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     }
   }, [step, currentUser?.id]);
 
-  // Tus partidas rápidas, para saber qué barra llevó cada uno la última vez
-  // en cada campo (FE #1025). Sin poder leerlas (sin red), por tu género
-  const [misPartidas, setMisPartidas] = useState(null);
-  // Sin respuesta en 2 s (poca cobertura), se sugiere por tu género: la barra
-  // no se queda sin marcar esperando (Agustín, 4 nov 2026)
-  const [plazoAgotado, setPlazoAgotado] = useState(false);
+  // Tus partidas rápidas en el campo elegido, para saber qué barra llevó cada
+  // uno la última vez (FE #1025). Solo las 5 últimas de ese campo (Agustín,
+  // 4 nov 2026): antes se bajaban las 50 últimas al abrir. Sin poder leerlas
+  // (sin red), por tu género.
+  //
+  // Todo va por ELECCIÓN de campo, no por campo: volver al mismo cuenta como
+  // otra, con su petición y sus 2 s (revisor). La respuesta de una elección
+  // anterior se descarta (`vigente`) y, mientras no llega la de la actual,
+  // no hay partidas (`partidasDe.eleccion`)
+  const campoElegido = selectedCourse?.id ?? null;
+  const [eleccionDeCampo, setEleccionDeCampo] = useState(0);
+  const eligeCampo = (campo) => {
+    setSelectedCourse(campo);
+    setEleccionDeCampo((n) => n + 1);
+  };
+  const [partidasDe, setPartidasDe] = useState({ eleccion: null, partidas: null });
+  const misPartidas = campoElegido && partidasDe.eleccion === eleccionDeCampo ? partidasDe.partidas : null;
+  // Sin respuesta en 2 s desde que se elige el campo (poca cobertura), se
+  // sugiere por tu género: la barra no se queda sin marcar esperando
+  const [plazoAgotadoEn, setPlazoAgotadoEn] = useState(null);
+  const plazoAgotado = campoElegido !== null && plazoAgotadoEn === eleccionDeCampo;
   useEffect(() => {
-    const plazo = setTimeout(() => setPlazoAgotado(true), ESPERA_DE_TUS_PARTIDAS_MS);
-    return () => clearTimeout(plazo);
-  }, []);
-  useEffect(() => {
+    if (!campoElegido) return undefined;
     let vigente = true;
+    const eleccion = eleccionDeCampo;
+    const plazo = setTimeout(() => setPlazoAgotadoEn(eleccion), ESPERA_DE_TUS_PARTIDAS_MS);
     Promise.resolve()
-      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 50 }))
+      .then(() => listMyQuickMatchesUseCase.execute({ page: 1, limit: 5, golfCourseId: campoElegido }))
       .then((r) => {
-        if (vigente) setMisPartidas(r?.quickMatches ?? []);
+        if (vigente) setPartidasDe({ eleccion, partidas: r?.quickMatches ?? [] });
       })
       .catch(() => {
-        if (vigente) setMisPartidas([]);
-      });
+        if (vigente) setPartidasDe({ eleccion, partidas: [] });
+      })
+      // Con la respuesta, el plazo ya no hace falta (`/code-review`)
+      .finally(() => clearTimeout(plazo));
     return () => {
       vigente = false;
+      clearTimeout(plazo);
     };
-  }, []);
+  }, [campoElegido, eleccionDeCampo]);
   const ultimas = useMemo(() => ultimasBarras(misPartidas, selectedCourse?.id), [misPartidas, selectedCourse?.id]);
   // La que sale elegida: la de la última vez en ese campo; si no, la de tu
   // género. Solo si no hay ninguna elegida: la copiada al repetir (P7) o la
@@ -224,8 +262,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
   if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
     setCreatorTeeKey(barraSugerida);
-    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review)
-    if (error === t('create.course.errorTeeRequired')) setError('');
+    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review). Solo
+    // si es ese, para no encolar nada durante el render sin motivo
+    if (error?.clave === 'create.course.errorTeeRequired') setError(null);
   }
   // La de cada amigo, para preelegirla al añadirlo (P8)
   const barraDeAmigo = (userId) => {
@@ -300,19 +339,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleCourseNext = () => {
     if (!selectedCourse) {
-      setError(t('create.course.errorCourseRequired'));
+      setError('create.course.errorCourseRequired');
       return;
     }
     if (teesLoading) {
-      setError(t('create.course.errorTeeRequired'));
+      setError('create.course.errorTeeRequired');
       return;
     }
     const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === creatorTeeKey);
     if (courseTees.length > 0 && !creatorTeeIsValid) {
-      setError(t('create.course.errorTeeRequired'));
+      setError('create.course.errorTeeRequired');
       return;
     }
-    setError('');
+    setError(null);
     const { color, teeGender } = parseTeeKey(creatorTeeKey);
     const plantilla = { campo: selectedCourse.id, mode, matchFormat };
     const misma = plantillaDe.current;
@@ -357,14 +396,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleAddFriend = (friend, friendTeeKeyValue) => {
     if (courseTees.length > 0 && (!friendTeeKeyValue || friendTeeKeyValue === NO_TEE_KEY)) {
-      setError(t('create.participants.errorTeeRequired'));
+      setError('create.participants.errorTeeRequired');
       return;
     }
     if (teamIsFull()) {
-      setError(t('create.participants.errorTeamFull'));
+      setError('create.participants.errorTeamFull');
       return;
     }
-    setError('');
+    setError(null);
     const { color, teeGender } = parseTeeKey(friendTeeKeyValue ?? NO_TEE_KEY);
     setParticipants((prev) => [
       ...prev,
@@ -381,11 +420,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   // Al corregirlo, el aviso de nombre en blanco ya no tiene razón de ser
   const handleGuestFirstNameChange = (value) => {
-    setError('');
+    setError(null);
     setGuestForm((g) => ({ ...g, firstName: value }));
   };
   const handleGuestLastNameChange = (value) => {
-    setError('');
+    setError(null);
     setGuestForm((g) => ({ ...g, lastName: value }));
   };
 
@@ -395,18 +434,18 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     const lastName = guestForm.lastName.trim();
     // Solo espacios pasan el `required` del navegador: se dice, no se calla
     if (!firstName || !lastName) {
-      setError(t('create.participants.errorGuestName'));
+      setError('create.participants.errorGuestName');
       return;
     }
     if (courseTees.length > 0 && guestTeeKey === NO_TEE_KEY) {
-      setError(t('create.participants.errorTeeRequired'));
+      setError('create.participants.errorTeeRequired');
       return;
     }
     if (teamIsFull()) {
-      setError(t('create.participants.errorTeamFull'));
+      setError('create.participants.errorTeamFull');
       return;
     }
-    setError('');
+    setError(null);
     const { color, teeGender } = parseTeeKey(guestTeeKey);
     setParticipants((prev) => [
       ...prev,
@@ -424,8 +463,8 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   };
 
   const handleRemoveParticipant = (participantId) => {
-    setError('');
-    // Los anotadores se vuelven a elegir al entrar en el paso 3
+    setError(null);
+    // Los anotadores se ajustan al entrar en el paso 3 (`goToScorers`)
     setParticipants((prev) => prev.filter((p) => p.participantId !== participantId));
   };
 
@@ -433,14 +472,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // salidas): si se cambia alguno, se empieza de nuevo al avanzar otra vez;
   // si no, se conserva (`handleCourseNext`, 3 nov 2026)
   const handleBackToCourse = () => {
-    setError('');
+    setError(null);
     setGuestTeeKey(NO_TEE_KEY);
     setGuestForm(initialGuestForm);
     setStep(1);
   };
 
   const handleBackToParticipants = () => {
-    setError('');
+    setError(null);
     setStep(2);
   };
 
@@ -477,12 +516,25 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
-    const firma = firmaDeLosAnotadores(participants, mode, matchFormat);
-    if (anotadoresElegidosCon.current !== firma) {
-      anotadoresElegidosCon.current = firma;
-      eligeLosAnotadoresDePorDefecto(creatorParticipant);
+    const antes = anotadoresElegidosCon.current;
+    const ahora = { jugadores: participants, modo: mode, formato: matchFormat };
+    const firmaDe = (f) => firmaDeLosAnotadores(f.jugadores, f.modo, f.formato);
+    if (!antes || firmaDe(antes) !== firmaDe(ahora)) {
+      // Con otra forma de anotar, lo de por defecto, también en foursomes: una
+      // pareja elegida antes ya no se ha visto (`/code-review`)
+      if (antes && formaDeAnotar(antes.modo, antes.formato) !== formaDeAnotar(mode, matchFormat)) {
+        parejasElegidas.current = null;
+      }
+      anotadoresElegidosCon.current = ahora;
+      const conservados =
+        !isFoursomes && creatorParticipant
+          ? anotadoresAlVolver({ antes, ahora, anotadores: scorerIds, yo: creatorParticipant.participantId })
+          : null;
+      if (conservados) setScorerIds(conservados);
+      else if (isFoursomes && parejasElegidas.current) chooseScoringSides(parejasElegidas.current);
+      else eligeLosAnotadoresDePorDefecto(creatorParticipant);
     }
-    setError('');
+    setError(null);
     setStep(3);
   };
 
@@ -509,15 +561,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToSummary = () => {
     if (scorerIds.length === 0) {
-      setError(t('create.scorers.errorMinScorers'));
+      setError('create.scorers.errorMinScorers');
       return;
     }
-    setError('');
+    setError(null);
     setStep(4);
   };
 
   const handleBackToScorers = () => {
-    setError('');
+    setError(null);
     setStep(3);
   };
 
@@ -603,7 +655,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleStart = async () => {
     setIsProcessing(true);
-    setError('');
+    setError(null);
     try {
       const peticion = peticionDelBorrador();
       const quickMatchId = idDelIntento(peticion);
@@ -617,10 +669,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     } catch (err) {
       if (ultimoIntento.current) ultimoIntento.current.quizaCreada = pudoLlegar(err);
       const motivo = MOTIVO_POR_CODIGO[err?.status];
-      setError(
+      // Los nuestros, por clave (cambian de idioma con la página); solo el
+      // motivo que manda el servidor va como texto (revisor)
+      const deLaRegla = motivoDelError(err);
+      setErrorDelAsistente(
         motivo
-          ? t(motivo)
-          : mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') })
+          ? { clave: motivo }
+          : deLaRegla === 'sinConexion'
+            ? { clave: 'sinConexion.mensaje', comun: true }
+            : deLaRegla === 'generico'
+              ? { clave: 'create.errors.generic' }
+              : { texto: deLaRegla.delServidor }
       );
     } finally {
       setIsProcessing(false);
@@ -664,7 +723,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600"
             data-testid="quick-match-modal-error"
           >
-            {error}
+            {error.clave ? (error.comun ? tComun : t)(error.clave) : error.texto}
           </div>
         )}
 
@@ -698,7 +757,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onMatchFormatChange={setMatchFormat}
             countryCode={currentUser?.country_code}
             selectedCourse={selectedCourse}
-            onCourseSelect={setSelectedCourse}
+            onCourseSelect={eligeCampo}
             onRequestNewCourse={handleRequestNewCourse}
             courseTees={courseTees}
             courseFromRfeg={courseFromRfeg}
@@ -708,7 +767,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             porcentajeCopiado={porcentajeCopiado}
             onCreatorTeeKeyChange={(clave) => {
               setCreatorTeeKey(clave);
-              if (error === t('create.course.errorTeeRequired')) setError('');
+              quitaElAviso('create.course.errorTeeRequired');
             }}
             allowancePercentage={allowancePercentage}
             // El de por defecto elegido a mano no es «a mano»: así no sale en
@@ -735,7 +794,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             selectedTeam={selectedTeam}
             onSelectedTeamChange={(team) => {
               setSelectedTeam(team);
-              setError('');
+              setError(null);
             }}
             participantTab={participantTab}
             onParticipantTabChange={setParticipantTab}
@@ -751,7 +810,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             guestTeeKey={guestTeeKey}
             onGuestTeeKeyChange={(clave) => {
               setGuestTeeKey(clave);
-              if (error === t('create.participants.errorTeeRequired')) setError('');
+              quitaElAviso('create.participants.errorTeeRequired');
             }}
             onRemoveParticipant={handleRemoveParticipant}
             isProcessing={isProcessing}
@@ -771,7 +830,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             isFoursomes={isFoursomes}
             rivalCanScore={rivalCanScore()}
             partnerCanScore={partnerCanScore()}
-            onChooseScoringSides={chooseScoringSides}
+            onChooseScoringSides={(eleccion) => {
+              parejasElegidas.current = eleccion;
+              chooseScoringSides(eleccion);
+            }}
             isProcessing={isProcessing}
             onBack={handleBackToParticipants}
             onClose={handleClose}

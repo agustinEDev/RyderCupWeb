@@ -5,6 +5,7 @@ import TeeSelectField from './TeeSelectField';
 import TeeSelectPanel from './TeeSelectPanel';
 import { teeKey } from './createQuickMatchModalConstants';
 import { barrasDeMiGenero } from '../../utils/barraPorDefecto';
+import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 
 /**
  * «Tu barra» en el paso 1 (FE #1025): las de tu género (y las mixtas) como
@@ -14,8 +15,6 @@ import { barrasDeMiGenero } from '../../utils/barraPorDefecto';
  * notarlo (por eso existe el panel, `TeeSelectField`). Sin género en el
  * perfil se queda ese campo, tal cual.
  */
-const SUFIJO = { MALE: ' (M)', FEMALE: ' (F)' };
-
 const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
   const { t: tCampos } = useTranslation('golfCourses');
   const [otrasAbiertas, setOtrasAbiertas] = useState(false);
@@ -23,9 +22,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
   // (o mixtas), y ponerlo en cada botón era ruido. El nombre accesible es
   // exactamente lo que se ve, para que el control por voz lo encuentre
   const generoVisible = (tee) => (tee.gender && tee.gender !== genero ? tee.gender : null);
-  const nombreDe = (tee) =>
-    (tee.identifier || tCampos(`form.teeColors.${tee.color}`, { defaultValue: tee.color })) +
-    (SUFIJO[generoVisible(tee)] ?? '');
+  const nombreDe = (tee) => nombreDeLaBarra(tCampos, { ...tee, gender: generoVisible(tee) });
   const mias = barrasDeMiGenero(courseTees, genero);
 
   if (!mias) {
@@ -35,7 +32,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
         onChange={onChange}
         courseTees={courseTees}
         placeholder={t('create.course.yourTeePlaceholder')}
-        playerName={t('create.course.yourTeePanelTitle')}
+        title={t('create.course.yourTeePanelTitle')}
         testIdPrefix="quick-match-creator-tee"
       />
     );
@@ -83,7 +80,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
       {otrasAbiertas && (
         <TeeSelectPanel
           courseTees={courseTees}
-          playerName={t('create.course.yourTeePanelTitle')}
+          title={t('create.course.yourTeePanelTitle')}
           selectedKey={value}
           onSelect={(clave) => {
             setOtrasAbiertas(false);

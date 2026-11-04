@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.63.0] - 2026-11-04
+
+**Crear partida rápida, pulido: los anotadores se conservan, la barra se
+preelige con las partidas del campo elegido y textos sin traducir.** Necesita
+el backend **2.47.0** (mis partidas rápidas de un campo), que va antes.
+
+**Notas de despliegue.**
+
+- Backend 2.47.0 primero y luego este. El cambio de contrato es aditivo: con
+  un backend viejo, que ignora el filtro, la barra se sigue eligiendo bien
+  (aquí también se filtra por campo). Sin variables nuevas. Arranque **264 KB
+  gzip** de 270.
+
+### Added
+
+- **Elegir anotadores con botones** (#1031): un botón grande por jugador, con
+  el móvil verde y el fondo coloreado si anota, y el móvil rojo tachado y
+  fondo blanco si no (el tachado se lee sin color). El tuyo, fijo, con «(tú)».
+
+### Changed
+
+- **Los anotadores se conservan al cambiar jugadores** (#1031): al volver al
+  paso de jugadores (o al repetir una partida que se abre allí con avisos),
+  quien se va deja de anotar, quien entra no anota y el resto se queda; tú
+  siempre. En foursomes se guarda la pareja elegida («las dos» / «la mía»), se
+  copia al repetir una partida tuya y no cuenta la que forzó la app. Otra
+  modalidad o formato de match play vuelve a lo de por defecto. Antes se
+  volvía en silencio a «solo tú».
+- **La barra preelegida, con las partidas del campo elegido** (#1034): al
+  elegir campo se piden tus 5 últimas partidas en él, en vez de bajarse las 50
+  últimas al abrir. Cada elección de campo tiene su petición y sus 2 s de
+  espera; la respuesta de una elección anterior no cuenta. Con 5, a un amigo
+  solo se le preelige la barra si jugó contigo en ese campo en alguna de ellas.
+- **El aviso del asistente se guarda por su clave** (#1033): se traduce al
+  pintarlo, así que sigue al idioma, y cada aviso vuelve a la vista aunque se
+  repita (en el móvil queda arriba, fuera de la pantalla).
+- **Un solo nombre para cada barra** (#1035): el identificador o el color
+  traducido, con (M)/(F) donde toca, sale del mismo sitio en todas las
+  pantallas (insignia, tus barras, panel, ficha del campo y tarjeta).
+- **El botón de quitar jugador dice a quién quita** (#1036): «Quitar a
+  Jugador 12» para el lector de pantalla, en vez de «Quitar» en cada fila.
+
+### Fixed
+
+- **«Salida de tus barras»** (#1036): la hoja «Otras» de tu barra en el paso 1
+  se titula «Tu salida» («Your tee»; antes «your tee's tee»). Las de amigos e
+  invitados siguen con «Salida de {nombre}».
+- **Textos sin traducir** (#1032): «Searching...» en el buscador de campos en
+  español, «Close» en los campos pendientes del admin y el formato en crudo
+  (SINGLES, FOURBALL) en la clasificación del torneo. Un test vigila ahora que
+  cada clave de traducción del código exista en su espacio de nombres, y se
+  quitan los textos de reserva en inglés que lo tapaban.
+
 ## [2.62.0] - 2026-11-04
 
 **Repetir una partida rápida con un toque, y un primer paso más sencillo para

@@ -16,6 +16,7 @@ import MatchPlayStrokeAllocator from '../../domain/services/MatchPlayStrokeAlloc
 import { conLaMiaPrimero, conMiNombrePrimero } from '../../utils/ordenDeLasTarjetas';
 import PlayingHandicapCalculator from '../../domain/services/PlayingHandicapCalculator';
 import { formatoDeHandicapDeJuego } from '../../utils/formatoDeHandicap';
+import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 
 const MAX_STROKE_DOTS = 2;
 
@@ -272,12 +273,8 @@ const QuickMatchScorecardTable = ({
   const renderTeeLabel = (participant) => {
     const tee = MatchPlayStrokeAllocator.findTee(participant, tees);
     if (!tee) return null;
-    const name =
-      tee.identifier || tCourses(`form.teeColors.${tee.color}`, { defaultValue: tee.color });
-    // Mismo sufijo (M)/(F) que TeeColorBadge y el selector, para no tener dos
-    // convenciones según la pantalla
-    const suffix = tee.gender === 'MALE' ? ' (M)' : tee.gender === 'FEMALE' ? ' (F)' : '';
-    return `${name}${suffix}`;
+    // El mismo nombre que en el resto de pantallas, con su (M)/(F)
+    return nombreDeLaBarra(tCourses, tee);
   };
 
   const sumStrokes = (holeRange, card) =>

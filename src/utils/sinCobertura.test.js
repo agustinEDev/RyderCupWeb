@@ -9,7 +9,7 @@
  *   el navegador dice que no hay red   | sí, aunque el error no lo parezca
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } from './sinCobertura';
+import { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError, motivoDelError } from './sinCobertura';
 
 const fingeConexion = (hay) =>
   Object.defineProperty(globalThis.navigator, 'onLine', { value: hay, configurable: true });
@@ -121,5 +121,17 @@ describe('esFalloDeRedDeLaApi', () => {
     expect(esFalloDeRedDeLaApi(null)).toBe(false);
     expect(esFalloDeRedDeLaApi(undefined)).toBe(false);
     expect(esFalloDeRed(null)).toBe(false);
+  });
+});
+
+describe('motivoDelError · la misma regla, sin textos (4 nov 2026)', () => {
+  it.each([
+    ['sin red', new TypeError('Failed to fetch'), 'sinConexion'],
+    ['un 5xx', { status: 503, message: 'Service Unavailable' }, 'generico'],
+    ['un 4xx con motivo', { status: 409, message: 'Ya es participante' }, { delServidor: 'Ya es participante' }],
+    ['un 4xx sin motivo', { status: 400 }, 'generico'],
+    ['sin estado', new Error('boom'), 'generico'],
+  ])('%s', (_, err, esperado) => {
+    expect(motivoDelError(err)).toEqual(esperado);
   });
 });

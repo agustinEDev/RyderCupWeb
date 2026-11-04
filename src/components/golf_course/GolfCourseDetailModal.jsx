@@ -6,6 +6,7 @@ import ModalShell from '../ui/ModalShell';
 import { CountryFlag } from '../../utils/countryUtils';
 import TeeColorBadge from './TeeColorBadge';
 import FuenteRfeg from './FuenteRfeg';
+import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';
 
 // Fuera del componente a proposito: definido dentro, React lo trata como un
 // tipo nuevo en cada render y desmonta y vuelve a montar lo que hay debajo.
@@ -185,8 +186,7 @@ const GolfCourseDetailModal = ({ course, onClose }) => {
                 >
                   {tees.map((salida, i) => (
                     <option key={i} value={i}>
-                      {salida.identifier || t(`form.teeColors.${salida.color}`, { defaultValue: salida.color })}
-                      {generoDe(salida) === 'MALE' ? ' (M)' : generoDe(salida) === 'FEMALE' ? ' (F)' : ''}
+                      {nombreDeLaBarra(t, { color: salida.color, identifier: salida.identifier, gender: generoDe(salida) })}
                     </option>
                   ))}
                 </select>

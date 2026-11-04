@@ -106,7 +106,8 @@
     "locationTimeout": "Locating you took too long. Try again or search by name.",
     "distanceAway": "{{distance}} km away",
     "allAlreadyAdded": "You have already added every course that matches",
-    "showingSome": "Showing {{shown}} of {{total}}. Keep typing to narrow it down."
+    "showingSome": "Showing {{shown}} of {{total}}. Keep typing to narrow it down.",
+    "searching": "Searching..."
   },
   "requestModal": {
     "title": "Request New Golf Course",
@@ -162,7 +163,8 @@
       "characters": "characters",
       "cancel": "Cancel",
       "confirmReject": "Reject Course",
-      "tabsLabel": "Request type"
+      "tabsLabel": "Request type",
+      "close": "Close"
     }
   },
   "detail": {

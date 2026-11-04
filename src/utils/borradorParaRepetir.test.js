@@ -234,6 +234,45 @@ describe('borradorParaRepetir', () => {
     expect(repite({ partida: partida({ scorerIds: ['u-ana'] }) }).inicial.scorerIds).toEqual(['u-yo', 'u-ana']);
   });
 
+  describe('R11b: en foursomes se copia la elección de parejas (revisor, 4 nov)', () => {
+    const foursomes = (scorerIds, rival = jugador('u-luis', { team: 'B' })) =>
+      partida({
+        matchFormat: 'FOURSOMES',
+        scoringFormat: null,
+        creatorId: 'u-yo',
+        scorerIds,
+        participants: [jugador('u-yo', { team: 'A' }), jugador('u-ana', { team: 'A' }), rival, invitado({ team: 'B' })],
+      });
+
+    it('anotaba alguien de enfrente: «las dos parejas», aunque ya no sea amigo', () => {
+      expect(repite({ partida: foursomes(['u-yo', 'u-luis']) }).inicial.parejasDeAnotadores).toBe('BOTH');
+      expect(repite({ partida: foursomes(['u-yo', 'u-luis']), amigos: [] }).inicial.parejasDeAnotadores).toBe('BOTH');
+    });
+
+    it('enfrente había registrado y no anotaba: «solo la mía»', () => {
+      expect(repite({ partida: foursomes(['u-yo', 'u-ana']) }).inicial.parejasDeAnotadores).toBe('MINE');
+    });
+
+    it('enfrente no había registrados (no se eligió nada), u otro formato: sin elección', () => {
+      const soloInvitados = foursomes(['u-yo'], invitado({ team: 'B', participantId: 'p-otro' }));
+      expect(repite({ partida: soloInvitados }).inicial.parejasDeAnotadores).toBeNull();
+      expect(repite().inicial.parejasDeAnotadores).toBeNull();
+      const fourball = { ...foursomes(['u-yo', 'u-luis']), matchFormat: 'FOURBALL' };
+      expect(repite({ partida: fourball }).inicial.parejasDeAnotadores).toBeNull();
+    });
+
+    it('si la repite quien no la creó: sin elección (no la hizo él; `/code-review`)', () => {
+      const deOtro = { ...foursomes(['u-yo', 'u-luis']), creatorId: 'u-luis' };
+      expect(repite({ partida: deOtro }).inicial.parejasDeAnotadores).toBeNull();
+    });
+
+    it('también si el campo ya no vale (se empieza por el paso 1)', () => {
+      const b = repite({ partida: foursomes(['u-yo', 'u-luis']), campo: campo(undefined, false) });
+      expect(b.paso).toBe(1);
+      expect(b.inicial.parejasDeAnotadores).toBe('BOTH');
+    });
+  });
+
   it('R12: el invitado lleva un id nuevo y su nombre y apellidos por separado', () => {
     const pepe = repite().inicial.participants[2];
 
