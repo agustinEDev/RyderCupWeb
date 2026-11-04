@@ -113,7 +113,9 @@ const ParticipantsStep = ({
                 disabled={isProcessing}
                 data-testid={`quick-match-remove-${p.participantId}`}
                 className="text-gray-400 hover:text-red-600 flex-shrink-0"
-                aria-label={t('create.participants.remove')}
+                // Con el nombre: «Quitar» a secas era igual en cada fila, y el
+                // lector de pantalla no decía a quién quita (pasada del Kind)
+                aria-label={t('create.participants.remove', { name: p.name })}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

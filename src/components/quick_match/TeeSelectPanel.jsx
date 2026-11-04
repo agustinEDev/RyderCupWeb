@@ -34,9 +34,14 @@ const GENDER_LABEL_KEY = {
   null: 'create.teePanel.mixed',
 };
 
-const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey = null }) => {
+// `title` sustituye al «Salida de {nombre}» de siempre cuando la hoja no es
+// de otro jugador: la tuya se titulaba «Salida de tus barras» («your tee's
+// tee» en inglés) al meterle «tus barras» como nombre (pasada del Kind, 4 nov
+// 2026)
+const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, title, selectedKey = null }) => {
   const { t } = useTranslation('quickMatch');
   const { t: tCourses } = useTranslation('golfCourses');
+  const titulo = title ?? t('create.teePanel.title', { name: playerName });
 
   // Modal de verdad: el foco entra, no se sale y vuelve al disparador (#389).
   // Escape exclusivo: se abre sobre el modal de crear partida, que tiene su
@@ -62,7 +67,7 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey
         ref={hojaRef}
         role="dialog"
         aria-modal="true"
-        aria-label={t('create.teePanel.title', { name: playerName })}
+        aria-label={titulo}
         data-testid="quick-match-tee-panel"
         className="bg-white rounded-t-2xl w-full max-w-md p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-xl max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -71,7 +76,7 @@ const TeeSelectPanel = ({ courseTees, onSelect, onClose, playerName, selectedKey
           {/* `truncate` no recorta nada sin `min-w-0`: sin él un nombre largo
               empujaría la cruz de cerrar fuera del panel en vez de acortarse */}
           <span className="min-w-0 truncate text-sm font-semibold text-gray-600">
-            {t('create.teePanel.title', { name: playerName })}
+            {titulo}
           </span>
           <button
             type="button"
