@@ -49,10 +49,13 @@ const MOTIVO_POR_CODIGO = {
   422: 'create.errors.invalid',
 };
 
-// La barra de un aviso, como la pinta el selector: color y género (el campo
-// puede tener las amarillas de hombre y no las de mujer), o «sin barra»
+// La barra de un aviso: color y género (el campo puede tener las amarillas de
+// hombre y no las de mujer), o «sin barra». No es `nombreDeLaBarra`: va dentro
+// de una frase, así que el género se escribe («amarillas de hombre») en vez
+// de «(M)»; y el aviso guarda solo color y género, no el nombre propio que
+// tenía la barra (ya no está en el campo)
 const GENERO_DE_LA_BARRA = { MALE: 'male', FEMALE: 'female', MIXED: 'mixed' };
-const nombreDeLaBarra = (t, tCampos, aviso) => {
+const barraDelAviso = (t, tCampos, aviso) => {
   const color = tCampos(`form.teeColors.${aviso.color}`, { defaultValue: aviso.color });
   const genero = GENERO_DE_LA_BARRA[aviso.genero];
   return genero ? `${color} ${t(`create.teePanel.${genero}`).toLowerCase()}` : color;
@@ -69,7 +72,7 @@ const textoDelAviso = (t, tCampos, aviso) => {
       ? t('create.repetir.avisoMiBarraNueva')
       : t('create.repetir.avisoBarraNueva', { nombre: aviso.nombre });
   }
-  const barra = nombreDeLaBarra(t, tCampos, aviso);
+  const barra = barraDelAviso(t, tCampos, aviso);
   if (aviso.propia) return t('create.repetir.avisoMiBarra', { barra });
   return t('create.repetir.avisoBarra', { nombre: aviso.nombre, barra });
 };
