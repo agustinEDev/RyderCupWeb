@@ -120,15 +120,19 @@ describe('CreateQuickMatchModal · el aviso, por su clave', () => {
     expect(await screen.findByTestId('quick-match-modal-error')).toHaveTextContent(/^Motivo del servidor$/);
   });
 
-  it('repetir el mismo aviso no vuelve a hacer scroll (revisor)', () => {
+  it('repetir el mismo aviso lo vuelve a traer a la vista (en el móvil queda arriba, fuera de ella)', () => {
+    const original = globalThis.Element.prototype.scrollIntoView;
     const scroll = vi.fn();
     globalThis.Element.prototype.scrollIntoView = scroll;
-    render(pinta());
+    try {
+      render(pinta());
 
-    fireEvent.click(screen.getByTestId('quick-match-course-next'));
-    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
 
-    expect(scroll).toHaveBeenCalledTimes(1);
-    delete globalThis.Element.prototype.scrollIntoView;
+      expect(scroll).toHaveBeenCalledTimes(2);
+    } finally {
+      globalThis.Element.prototype.scrollIntoView = original;
+    }
   });
 });

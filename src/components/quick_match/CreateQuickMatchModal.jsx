@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
+import { esFalloDeRed, motivoDelError } from '../../utils/sinCobertura';
 import { idAleatorio } from '../../utils/idAleatorio';
 import customToast from '../../utils/toast';
 import { nombreVisible } from '../../utils/nombreVisible';
@@ -148,8 +148,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // se quita uno concreto sin comparar textos traducidos, y cambia de idioma
   // con la página
   const [error, setErrorDelAsistente] = useState(null);
-  // La misma clave conserva el aviso: repetirlo no vuelve a hacer scroll (revisor)
-  const setError = (clave) => setErrorDelAsistente((e) => (!clave ? null : e?.clave === clave ? e : { clave }));
+  // Un aviso nuevo cada vez, también si se repite: así vuelve a la vista (ver
+  // el efecto de abajo)
+  const setError = (clave) => setErrorDelAsistente(clave ? { clave } : null);
   const quitaElAviso = (clave) => setErrorDelAsistente((e) => (e?.clave === clave ? null : e));
   // El aviso va arriba y el botón que lo provoca, abajo: en un móvil se
   // pintaba fuera de la vista y parecía que no pasaba nada
@@ -241,8 +242,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
   if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
     setCreatorTeeKey(barraSugerida);
-    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review)
-    quitaElAviso('create.course.errorTeeRequired');
+    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review). Solo
+    // si es ese, para no encolar nada durante el render sin motivo
+    if (error?.clave === 'create.course.errorTeeRequired') setError(null);
   }
   // La de cada amigo, para preelegirla al añadirlo (P8)
   const barraDeAmigo = (userId) => {
@@ -649,13 +651,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       const motivo = MOTIVO_POR_CODIGO[err?.status];
       // Los nuestros, por clave (cambian de idioma con la página); solo el
       // motivo que manda el servidor va como texto (revisor)
-      const aviso = motivo
-        ? { clave: motivo }
-        : mensajeDeError(err, {
-            sinConexion: { clave: 'sinConexion.mensaje', comun: true },
-            generico: { clave: 'create.errors.generic' },
-          });
-      setErrorDelAsistente(typeof aviso === 'string' ? { texto: aviso } : aviso);
+      const deLaRegla = motivoDelError(err);
+      setErrorDelAsistente(
+        motivo
+          ? { clave: motivo }
+          : deLaRegla === 'sinConexion'
+            ? { clave: 'sinConexion.mensaje', comun: true }
+            : deLaRegla === 'generico'
+              ? { clave: 'create.errors.generic' }
+              : { texto: deLaRegla.delServidor }
+      );
     } finally {
       setIsProcessing(false);
     }
