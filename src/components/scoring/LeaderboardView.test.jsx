@@ -84,6 +84,14 @@ describe('LeaderboardView — los partidos de un jugador (release social 2, /cod
 });
 
 describe('LeaderboardView', () => {
+  it('el formato de cada partido sale traducido, como en el resto de la competición', () => {
+    render(<LeaderboardView leaderboard={mockLeaderboard} />);
+
+    expect(screen.getAllByText(/formats\.SINGLES \{"ns":"schedule"\}/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/formats\.FOURBALL \{"ns":"schedule"\}/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/- FOURBALL$/)).not.toBeInTheDocument();
+  });
+
   it('should return null when leaderboard is null', () => {
     const { container } = render(<LeaderboardView leaderboard={null} />);
     expect(container.firstChild).toBeNull();
@@ -316,7 +324,7 @@ describe('LeaderboardView', () => {
 
       expect(screen.queryByTestId('sesion-viejo')).not.toBeInTheDocument();
       const tarjeta = screen.getByTestId('leaderboard-match-viejo');
-      expect(tarjeta).toHaveTextContent('#2 - SINGLES');
+      expect(tarjeta).toHaveTextContent('#2 - formats.SINGLES {"ns":"schedule"}');
       expect(tarjeta).not.toHaveTextContent('undefined');
     });
   });
