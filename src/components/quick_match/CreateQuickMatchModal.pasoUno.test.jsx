@@ -336,6 +336,42 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
     });
 
+    it('F6 (revisor): la del campo anterior que llega DESPUÉS de la del nuevo no la pisa', async () => {
+      const primera = colgada();
+      mockListMine
+        .mockReturnValueOnce(primera.promesa)
+        .mockResolvedValueOnce({ quickMatches: [partidaEn('gc-2', [jugador('yo', 'YELLOW', 'MALE'), jugador('ana', 'RED', 'FEMALE')])] });
+      abre();
+      await eligeCampo('gc-1');
+      await eligeCampo('gc-2');
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+
+      await act(async () => primera.responde({ quickMatches: [] }));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
+
+      // La de Ana sale de las de gc-2: la tardía de gc-1 no las borró
+      expect(pulsada('quick-match-tee-panel-option-RED|FEMALE')).toBe(true);
+    });
+
+    it('F6 (revisor): volver a un campo cuyo plazo ya se agotó espera otros 2 s', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockListMine
+        .mockReturnValueOnce(colgada().promesa)
+        .mockResolvedValueOnce({ quickMatches: [] })
+        .mockReturnValueOnce(colgada().promesa);
+      abre();
+      await eligeCampo('gc-1');
+      await act(() => vi.advanceTimersByTimeAsync(2500));
+      await eligeCampo('gc-2');
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+
+      await eligeCampo('gc-1');
+      await act(() => vi.advanceTimersByTimeAsync(500));
+
+      expect(screen.getAllByTestId(/^quick-match-creator-tee-option-/).some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
+    });
+
     it('F7: al repetir, el campo ya viene: se pide al abrir', async () => {
       abre({
         borrador: {
