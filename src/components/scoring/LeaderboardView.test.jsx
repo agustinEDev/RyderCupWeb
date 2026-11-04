@@ -327,5 +327,13 @@ describe('LeaderboardView', () => {
       expect(tarjeta).toHaveTextContent('#2 - formats.SINGLES {"ns":"schedule"}');
       expect(tarjeta).not.toHaveTextContent('undefined');
     });
+
+    it('L5: un partido sin formato no pinta «formats.undefined» (revisor)', () => {
+      render(<LeaderboardView leaderboard={{ ...mockLeaderboard, matches: [partido('sin', { matchFormat: null })] }} />);
+
+      const tarjeta = screen.getByTestId('leaderboard-match-sin');
+      expect(tarjeta).not.toHaveTextContent('formats.');
+      expect(tarjeta).toHaveTextContent('#2');
+    });
   });
 });

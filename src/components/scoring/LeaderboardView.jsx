@@ -77,7 +77,8 @@ const LeaderboardView = ({ leaderboard, jugador = null }) => {
                 {t(`sessions.${match.sessionType}`, { ns: 'schedule' })} ·{' '}
               </span>
             )}
-            #{match.matchNumber} - {t(`formats.${match.matchFormat}`, { ns: 'schedule' })}
+            #{match.matchNumber}
+            {match.matchFormat && ` - ${t(`formats.${match.matchFormat}`, { ns: 'schedule' })}`}
           </span>
           {match.status === 'IN_PROGRESS' && match.currentHole && (
             <span className="text-xs text-gray-500">{t('leaderboard.hole')} {match.currentHole}</span>
