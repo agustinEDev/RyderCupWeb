@@ -14,7 +14,7 @@
       "heading": "Course and format",
       "nameLabel": "Name (optional)",
       "namePlaceholder": "E.g. Friday round with the club",
-      "formatSingles": "Match Play (1 vs 1)",
+      "formatSingles": "Singles match play (1 vs 1)",
       "formatFourball": "Fourball (2 vs 2, best ball)",
       "formatFoursomes": "Foursomes (2 vs 2, alternate shot)",
       "formatMedal": "Medal (lowest net score wins)",
@@ -38,7 +38,7 @@
       "masOpciones": "More options",
       "otrasBarras": "Others",
       "corto": {
-        "SINGLES": "Match Play",
+        "SINGLES": "1 vs 1",
         "FOURBALL": "Fourball",
         "FOURSOMES": "Foursomes",
         "STABLEFORD": "Stableford",
@@ -145,7 +145,7 @@
     "title": "My Quick Matches",
     "empty": "You haven't played any quick matches yet.",
     "format": {
-      "SINGLES": "Match Play",
+      "SINGLES": "Singles",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",

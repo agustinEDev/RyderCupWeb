@@ -33,10 +33,11 @@ backend; va solo el frontend.
 
 ### Changed
 
-- **«Individual» pasa a llamarse «Match Play»** en el paso 1 de la partida
-  rápida, con «Match Play (1 contra 1)» debajo y en el resumen, y en el historial,
-  el panel y el perfil, también para los partidos de torneo. El nombre de la
-  sesión del calendario del torneo («Individuales») no cambia.
+- **El botón «Individual» del paso 1 dice «1 contra 1»** («1 vs 1» en inglés)
+  en la partida rápida, para que se vea que hacen falta dos. Debajo y en el
+  resumen va «Match play individual (1 contra 1)». No se llama «Match Play» a
+  secas porque Fourball y Foursomes también lo son. El resto de pantallas
+  sigue diciendo «Individual».
 
 ## [2.63.0] - 2026-11-04
 

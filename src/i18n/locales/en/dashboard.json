@@ -45,7 +45,7 @@
     "handicapDesc": "Complete your golf profile to participate in tournaments",
     "quickMatchInProgress": "Quick Match In Progress",
     "quickMatchFormat": {
-      "SINGLES": "Match Play",
+      "SINGLES": "Singles",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",
@@ -94,7 +94,7 @@
       "EVENING": "Evening"
     },
     "format": {
-      "SINGLES": "Match Play",
+      "SINGLES": "Singles",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes"
     },
@@ -126,7 +126,7 @@
       "UNFINISHED": "U"
     },
     "format": {
-      "SINGLES": "Match Play",
+      "SINGLES": "Singles",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",

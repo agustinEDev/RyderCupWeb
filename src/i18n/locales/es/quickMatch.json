@@ -14,7 +14,7 @@
       "heading": "Campo y formato",
       "nameLabel": "Nombre (opcional)",
       "namePlaceholder": "Ej. Viernes con los del club",
-      "formatSingles": "Match Play (1 contra 1)",
+      "formatSingles": "Match play individual (1 contra 1)",
       "formatFourball": "Fourball (2 contra 2, mejor bola)",
       "formatFoursomes": "Foursomes (2 contra 2, bola alterna)",
       "formatMedal": "Medal (gana quien menos golpes netos hace)",
@@ -38,7 +38,7 @@
       "masOpciones": "Más opciones",
       "otrasBarras": "Otras",
       "corto": {
-        "SINGLES": "Match Play",
+        "SINGLES": "1 contra 1",
         "FOURBALL": "Fourball",
         "FOURSOMES": "Foursomes",
         "STABLEFORD": "Stableford",
@@ -145,7 +145,7 @@
     "title": "Mis Partidas Rápidas",
     "empty": "Todavía no has jugado ninguna partida rápida.",
     "format": {
-      "SINGLES": "Match Play",
+      "SINGLES": "Individual",
       "FOURBALL": "Fourball",
       "FOURSOMES": "Foursomes",
       "MEDAL": "Medal",
