@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.63.1] - 2026-11-04
+
+**Hotfix: crear una partida ya no te saca de la aplicación.** Sin cambios en el
+backend; va solo el frontend.
+
+### Fixed
+
+- **Un 403 CSRF echaba al usuario** (pasada del iPhone del 4 nov):
+  - **El token sale de la cookie.** La app mandaba la copia que guardaba en
+    memoria, que se queda atrás cuando otra pestaña renueva la sesión o cuando
+    se cruzan dos renovaciones. Si hay dos cookies, se manda la última, que es
+    la que lee el servidor.
+  - **El refresco proactivo usa el refresco compartido**, así que nunca hay dos
+    renovaciones a la vez desde una pestaña. Si la renovación dice que la
+    sesión está muerta, cierra la sesión con su aviso: antes, quien esperaba a
+    esa renovación no la cerraba.
+  - **Ante un 403 CSRF se renueva y se repite una vez.** Solo se cierra la
+    sesión si vuelve a fallar o si la renovación dice que está muerta. Sin
+    respuesta del servidor, es «sin conexión» y la cola de golpes guarda el
+    suyo; un 429 o un 5xx salen con su estado. Si otra pestaña ya cambió la
+    cookie, se repite sin renovar.
+  - **Las repeticiones tras un 401 llevan el token nuevo**, no el de antes de
+    la renovación.
+  - Un aviso en Sentry cuando se rechaza un token con la cookie presente (el
+    caso raro), con método y ruta, nunca el token.
+
+### Changed
+
+- **«Individual» pasa a llamarse «Match Play»** en el paso 1 de la partida
+  rápida, con «Match Play (1 vs 1)» debajo y en el resumen, y en el historial,
+  el panel y el perfil, también para los partidos de torneo. El nombre de la
+  sesión del calendario del torneo («Individuales») no cambia.
+
 ## [2.63.0] - 2026-11-04
 
 **Crear partida rápida, pulido: los anotadores se conservan, la barra se
