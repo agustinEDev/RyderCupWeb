@@ -30,6 +30,7 @@ import {
   initialGuestForm,
   parseTeeKey,
   teeKey,
+  firmaDeLosAnotadores,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
@@ -111,6 +112,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [teesLoading, setTeesLoading] = useState(false);
   // null while following the WHS default for the current format; a number once the user overrides it
   const [allowanceOverride, setAllowanceOverride] = useState(copia?.allowanceOverride ?? null);
+  // El % de la partida repetida, con su modalidad: el paso 1 lo ofrece como un
+  // botón más aunque no sea de los habituales (pasada del Kind, 4 nov 2026)
+  const porcentajeCopiado =
+    copia?.allowanceOverride != null ? { pct: copia.allowanceOverride, libre: copia.mode === 'FREE_PLAY' } : null;
   // Por defecto con hándicap: es como se juega normalmente, y el scratch es
   // la excepción que hay que pedir a propósito.
   const [playMode, setPlayMode] = useState(copia?.playMode ?? 'HANDICAP');
@@ -152,6 +157,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const [guestForm, setGuestForm] = useState(initialGuestForm);
 
   const [scorerIds, setScorerIds] = useState(copia?.scorerIds ?? []);
+  // Con qué jugadores se eligieron los anotadores: si al volver al paso 3 son
+  // los mismos, se conservan (al repetir se perdían los copiados en silencio;
+  // pasada del Kind, 4 nov 2026). Si cambia alguien, se vuelven a elegir
+  const anotadoresElegidosCon = useRef(
+    copia ? firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat) : null
+  );
   // Which participant's handicap keypad is open (step 4 summary), or null when closed.
   const [editingHandicapParticipant, setEditingHandicapParticipant] = useState(null);
   // Whether the guest-form handicap keypad (step 2) is open.
@@ -466,6 +477,16 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
+    const firma = firmaDeLosAnotadores(participants, mode, matchFormat);
+    if (anotadoresElegidosCon.current !== firma) {
+      anotadoresElegidosCon.current = firma;
+      eligeLosAnotadoresDePorDefecto(creatorParticipant);
+    }
+    setError('');
+    setStep(3);
+  };
+
+  const eligeLosAnotadoresDePorDefecto = (creatorParticipant) => {
     if (isFoursomes) {
       // Las dos parejas por defecto; si enfrente no hay ninguna cuenta con la
       // que anotar, esa opcion ni se ofrece y se queda la del creador. Con los
@@ -476,8 +497,6 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     } else {
       setScorerIds(creatorParticipant ? [creatorParticipant.participantId] : []);
     }
-    setError('');
-    setStep(3);
   };
 
   const toggleScorer = (participantId) => {
@@ -686,7 +705,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             creatorTeeKey={creatorTeeKey}
             generoDeQuienCrea={currentUser?.gender ?? null}
             allowanceAMano={allowancePercentage !== defaultAllowance}
-            onCreatorTeeKeyChange={setCreatorTeeKey}
+            porcentajeCopiado={porcentajeCopiado}
+            onCreatorTeeKeyChange={(clave) => {
+              setCreatorTeeKey(clave);
+              if (error === t('create.course.errorTeeRequired')) setError('');
+            }}
             allowancePercentage={allowancePercentage}
             // El de por defecto elegido a mano no es «a mano»: así no sale en
             // la cabecera ni se pierde al cruzar de modalidad
@@ -726,7 +749,10 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onAddGuest={handleAddGuest}
             onOpenGuestHandicapPanel={() => setShowGuestHandicapPanel(true)}
             guestTeeKey={guestTeeKey}
-            onGuestTeeKeyChange={setGuestTeeKey}
+            onGuestTeeKeyChange={(clave) => {
+              setGuestTeeKey(clave);
+              if (error === t('create.participants.errorTeeRequired')) setError('');
+            }}
             onRemoveParticipant={handleRemoveParticipant}
             isProcessing={isProcessing}
             onBack={handleBackToCourse}

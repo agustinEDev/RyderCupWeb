@@ -125,6 +125,21 @@ describe('QuickMatchScoringPage', () => {
     });
   });
 
+  // Pasada en el Kind (4 nov 2026): salía «SINGLES», el valor interno
+  it.each([
+    [{ matchFormat: 'SINGLES', scoringFormat: null }, /history\.format\.SINGLES/],
+    [{ matchFormat: null, scoringFormat: 'STABLEFORD' }, /history\.format\.STABLEFORD/],
+  ])('K4: la cabecera dice el formato traducido (%o)', (formato, esperado) => {
+    mockUseQuickMatchScoring.mockReturnValue({
+      ...baseHookState,
+      quickMatch: { ...baseQuickMatch, ...formato },
+      setCurrentHole: vi.fn(), submitScore: vi.fn(), completeMatch: vi.fn(), cancelMatch: vi.fn(), refetch: vi.fn(),
+    });
+    renderPage();
+
+    expect(screen.getByText(esperado)).toBeInTheDocument();
+  });
+
   it('FE #658: las vistas son pestañas de verdad, con su nombre, su panel y las flechas', async () => {
     renderPage();
 

@@ -46,6 +46,7 @@ const CourseStep = ({
   generoDeQuienCrea = null,
   allowancePercentage,
   allowanceAMano = false,
+  porcentajeCopiado = null,
   onAllowanceChange,
   playMode = 'HANDICAP',
   onPlayModeChange,
@@ -55,6 +56,14 @@ const CourseStep = ({
   onNext,
 }) => {
   const masOpciones = useRef(null);
+  // Un % copiado al repetir que no está entre los botones sale como uno más,
+  // marcado, y solo en la modalidad en que se copió (pasada del Kind y
+  // revisiones, 4 nov 2026). Viene del borrador: el paso se vuelve a montar
+  const base = isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS;
+  const opcionesDePorcentaje =
+    porcentajeCopiado?.libre === isFreePlay && !base.includes(porcentajeCopiado.pct)
+      ? [...base, porcentajeCopiado.pct].sort((a, b) => a - b)
+      : base;
   const elegida = (op) => op.modo === mode && (isFreePlay ? scoringFormat : matchFormat) === op.formato;
   const elige = (op) => {
     // Al cruzar entre match play y stroke play, el % a mano vuelve al de por
@@ -196,7 +205,7 @@ const CourseStep = ({
         {t('create.course.allowanceLabel')}
       </label>
       <div className="flex gap-2" role="group" aria-label={t('create.course.allowanceLabel')}>
-        {(isFreePlay ? FREE_PLAY_ALLOWANCE_OPTIONS : MATCH_PLAY_ALLOWANCE_OPTIONS).map((pct) => (
+        {opcionesDePorcentaje.map((pct) => (
           <button
             key={pct}
             type="button"

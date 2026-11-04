@@ -491,6 +491,24 @@ describe('CreateQuickMatchModal', () => {
     expect(mockIniciar).not.toHaveBeenCalled();
   });
 
+  it('K7 (code review): the guest tee error clears once the guest tee is picked', async () => {
+    mockGetGolfCourse.mockResolvedValue({
+      tees: [{ color: 'YELLOW', gender: 'MALE', identifier: 'White', courseRating: 71, slopeRating: 128 }],
+    });
+    renderModal();
+    fireEvent.click(screen.getByTestId('select-course-stub'));
+    await waitFor(() => expect(screen.getByTestId('quick-match-creator-tee')).toBeInTheDocument());
+    pickCreatorTee('YELLOW|MALE');
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    await screen.findByTestId('quick-match-participants-next');
+    addGuest();
+    expect(screen.getByTestId('quick-match-modal-error')).toHaveTextContent('create.participants.errorTeeRequired');
+
+    pickGuestTee('YELLOW|MALE');
+
+    expect(screen.queryByTestId('quick-match-modal-error')).not.toBeInTheDocument();
+  });
+
   it('should return to step 1 when going back from participants, with nothing to cancel', async () => {
     renderModal();
 

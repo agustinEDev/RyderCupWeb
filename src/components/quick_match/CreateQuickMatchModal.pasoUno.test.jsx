@@ -523,6 +523,53 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       vi.useRealTimers();
     });
 
+    it('K5 (pasada del Kind): el error de elegir tu barra se va al elegirla a mano', async () => {
+      mockGetGolfCourse.mockResolvedValue({ tees: [tee('GREEN', null)], isFromRfeg: () => false });
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      expect(screen.getByText('create.course.errorTeeRequired')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('quick-match-creator-tee-option-GREEN|'));
+
+      expect(screen.queryByText('create.course.errorTeeRequired')).not.toBeInTheDocument();
+    });
+
+    it('K2 (pasada del Kind): al crear, los anotadores elegidos siguen tras volver al paso 2 sin cambiar a nadie', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
+      fireEvent.click(await screen.findByTestId('quick-match-tee-panel-option-RED|FEMALE'));
+      fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Ana' }));
+      fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+      fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+      expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
+    });
+
+    it('K6b (code review): en stroke play, pasar de Stableford a Medal con los mismos jugadores conserva los anotadores', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('scoring-format-option-STABLEFORD'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      fireEvent.click(await screen.findByTestId('quick-match-add-friend-f-1'));
+      fireEvent.click(await screen.findByTestId('quick-match-tee-panel-option-RED|FEMALE'));
+      fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Ana' }));
+      fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+      fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+      fireEvent.click(screen.getByTestId('scoring-format-option-MEDAL'));
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      // Dentro de stroke play los jugadores se quedan: misma lista, otro formato
+      await screen.findByTestId('quick-match-participants-next');
+      fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+
+      expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeChecked();
+    });
+
     it('C2: al repetir, un nombre propio con la forma de uno de por defecto se copia', async () => {
       abre({
         borrador: {
