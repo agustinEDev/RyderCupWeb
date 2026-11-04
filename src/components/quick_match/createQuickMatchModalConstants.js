@@ -67,12 +67,17 @@ export const resolveTeeColor = (color) => TEE_COLOR_STYLES[color?.toLowerCase()]
 export const initialGuestForm = { firstName: '', lastName: '', handicap: '' };
 
 /**
+ * La forma de anotar: en match play el formato cambia quién puede anotar
+ * (foursomes va por parejas); en stroke play da igual Stableford o Medal.
+ *
  * Si al volver al paso 3 hay que ajustar los anotadores (4 nov 2026): con los
  * mismos jugadores (y su equipo) y la misma forma de anotar se dejan tal cual;
- * si algo cambió, los ajusta `anotadoresAlVolver`. En match play el formato
- * cambia quién puede anotar (foursomes va por parejas); en stroke play da
- * igual Stableford o Medal.
+ * si algo cambió, se ajustan (`anotadoresAlVolver`; en foursomes, la pareja
+ * elegida).
  */
+export const formaDeAnotar = (modo, formatoDeJuego) =>
+  `${modo}:${modo === 'MATCH_PLAY' ? formatoDeJuego : ''}`;
+
 export const firmaDeLosAnotadores = (jugadores, modo, formatoDeJuego) =>
-  `${modo}:${modo === 'MATCH_PLAY' ? formatoDeJuego : ''}|` +
+  `${formaDeAnotar(modo, formatoDeJuego)}|` +
   jugadores.map((p) => `${p.participantId}:${p.team ?? ''}`).join('|');

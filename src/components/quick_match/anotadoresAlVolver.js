@@ -1,4 +1,4 @@
-import { oppositeTeam } from './createQuickMatchModalConstants';
+import { formaDeAnotar } from './createQuickMatchModalConstants';
 
 /**
  * Los anotadores al volver al paso 3 después de cambiar los jugadores (tabla
@@ -7,11 +7,10 @@ import { oppositeTeam } from './createQuickMatchModalConstants';
  * también los que seguían.
  *
  * Se conserva lo elegido con quien juega ahora: quien se fue deja de anotar y
- * quien entra no anota (lo de por defecto). En foursomes no se elige a
- * personas sino parejas, y se conserva esa elección: la que hizo quien crea,
- * no lo que la app dejó puesto porque enfrente no había registrados (revisor).
- * Con otra modalidad u otro formato de match play cambia la forma de anotar:
- * los de por defecto.
+ * quien entra no anota (lo de por defecto). Con otra modalidad u otro formato
+ * de match play cambia la forma de anotar: los de por defecto. Foursomes no
+ * pasa por aquí: se eligen parejas, no personas, y el modal vuelve a aplicar
+ * la pareja elegida (`chooseScoringSides`).
  *
  * @param {Object} opciones
  * @param {{jugadores: Array, modo: string, formato: string}|null} opciones.antes
@@ -19,27 +18,12 @@ import { oppositeTeam } from './createQuickMatchModalConstants';
  * @param {{jugadores: Array, modo: string, formato: string}} opciones.ahora
  * @param {string[]} opciones.anotadores Los elegidos (participantId)
  * @param {string} opciones.yo El participantId de quien crea la partida
- * @param {'BOTH'|'MINE'|null} [opciones.parejas] En foursomes, lo que eligió
- *   quien crea (o se copió al repetir); `null` si no eligió
  * @returns {string[]|null} Los anotadores, o `null` para los de por defecto
  */
-export const anotadoresAlVolver = ({ antes, ahora, anotadores, yo, parejas = null }) => {
-  if (antes && formaDeAnotar(antes) !== formaDeAnotar(ahora)) return null;
-
-  const registrados = ahora.jugadores.filter((p) => !p.isGuest);
-
-  if (ahora.modo === 'MATCH_PLAY' && ahora.formato === 'FOURSOMES') {
-    if (!parejas) return null;
-    const miEquipo = ahora.jugadores.find((p) => p.participantId === yo)?.team ?? null;
-    const deEquipo = (team) => registrados.filter((p) => (p.team ?? null) === team);
-    const enfrente = parejas === 'BOTH' ? deEquipo(oppositeTeam(miEquipo)) : [];
-    return [...deEquipo(miEquipo), ...enfrente].map((p) => p.participantId);
-  }
-
+export const anotadoresAlVolver = ({ antes, ahora, anotadores, yo }) => {
   if (!antes) return null;
-  const siguen = new Set(registrados.map((p) => p.participantId));
+  if (formaDeAnotar(antes.modo, antes.formato) !== formaDeAnotar(ahora.modo, ahora.formato)) return null;
+  // Los anotadores son siempre registrados: basta con ver quién sigue jugando
+  const siguen = new Set(ahora.jugadores.map((p) => p.participantId));
   return [yo, ...anotadores.filter((id) => id !== yo && siguen.has(id))];
 };
-
-// En stroke play da igual el formato; en match play, foursomes anota por parejas
-const formaDeAnotar = ({ modo, formato }) => `${modo}:${modo === 'MATCH_PLAY' ? formato : ''}`;

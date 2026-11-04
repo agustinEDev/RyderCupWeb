@@ -239,6 +239,7 @@ describe('borradorParaRepetir', () => {
       partida({
         matchFormat: 'FOURSOMES',
         scoringFormat: null,
+        creatorId: 'u-yo',
         scorerIds,
         participants: [jugador('u-yo', { team: 'A' }), jugador('u-ana', { team: 'A' }), rival, invitado({ team: 'B' })],
       });
@@ -258,6 +259,11 @@ describe('borradorParaRepetir', () => {
       expect(repite().inicial.parejasDeAnotadores).toBeNull();
       const fourball = { ...foursomes(['u-yo', 'u-luis']), matchFormat: 'FOURBALL' };
       expect(repite({ partida: fourball }).inicial.parejasDeAnotadores).toBeNull();
+    });
+
+    it('si la repite quien no la creó: sin elección (no la hizo él; `/code-review`)', () => {
+      const deOtro = { ...foursomes(['u-yo', 'u-luis']), creatorId: 'u-luis' };
+      expect(repite({ partida: deOtro }).inicial.parejasDeAnotadores).toBeNull();
     });
 
     it('también si el campo ya no vale (se empieza por el paso 1)', () => {

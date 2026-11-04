@@ -961,6 +961,46 @@ describe('CreateQuickMatchModal · el paso 3 en foursomes, con el asistente ente
     expect(pulsada('quick-match-scorers-both-pairs')).toBe('true');
   });
 
+  it('A6 (`/code-review`): tras pasar por el paso 3 en otro formato, la pareja elegida antes ya no cuenta', async () => {
+    await goToScorersStep(withRegisteredRival);
+    fireEvent.click(screen.getByTestId('quick-match-scorers-my-pair'));
+
+    // A fourball (otra forma de anotar, se empieza de nuevo con los jugadores)
+    fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+    fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+    fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    for (const jugador of [SOCIO, RIVAL_UNO, { guest: 'Rival Dos', team: 'B' }]) {
+      fireEvent.click(screen.getByTestId(`quick-match-team-${jugador.team}`));
+      if (jugador.friend) {
+        fireEvent.click(screen.getByTestId('quick-match-tab-friends'));
+        fireEvent.click(await screen.findByTestId(`quick-match-add-friend-${jugador.friend}`));
+      } else addGuest(jugador.guest, 'Doe');
+    }
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    await screen.findByTestId('quick-match-scorers-next');
+
+    // Y otra vez a foursomes: lo de por defecto, y sigue así al cambiar a un jugador
+    fireEvent.click(screen.getByTestId('quick-match-scorers-back'));
+    fireEvent.click(screen.getByTestId('quick-match-participants-back'));
+    fireEvent.click(screen.getByTestId('format-option-FOURSOMES'));
+    fireEvent.click(screen.getByTestId('quick-match-course-next'));
+    for (const jugador of withRegisteredRival) {
+      fireEvent.click(screen.getByTestId(`quick-match-team-${jugador.team}`));
+      if (jugador.friend) {
+        fireEvent.click(screen.getByTestId('quick-match-tab-friends'));
+        fireEvent.click(await screen.findByTestId(`quick-match-add-friend-${jugador.friend}`));
+      } else addGuest(jugador.guest, 'Doe');
+    }
+    await waitFor(() => expect(screen.getByTestId('quick-match-participants-next')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('quick-match-participants-next'));
+    expect(await screen.findByTestId('quick-match-scorers-both-pairs')).toHaveAttribute('aria-pressed', 'true');
+    await vuelveYCambia(quitaUnInvitado, { guest: 'Rival Tres', team: 'B' });
+
+    expect(pulsada('quick-match-scorers-both-pairs')).toBe('true');
+  });
+
   describe('al repetir un foursomes cuyo campo ya no vale (se empieza sin jugadores; revisor)', () => {
     const borrador = (parejasDeAnotadores) => ({
       paso: 1,

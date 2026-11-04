@@ -13,12 +13,7 @@ import { anotadoresAlVolver } from './anotadoresAlVolver';
  *   A2   metes a uno nuevo                          | no anota; los demás, igual
  *   A3   quitas a uno que no anotaba                | igual
  *   A4   cambias a alguien de equipo (no foursomes) | igual
- *   A5   foursomes                                  | se conserva «las dos parejas» o
- *        |                                           | «solo la mía» con quien juega
- *        |                                           | ahora; sin registrado enfrente,
- *        |                                           | «solo la mía». Lo que puso la app
- *        |                                           | sin preguntar no es una elección:
- *        |                                           | los de por defecto (revisor)
+ *   A5   foursomes: en el modal (se aplica la pareja elegida)
  *   A6   otra modalidad u otro formato de match play| los de por defecto
  *   A8   tú anotas siempre                          | también si no estabas en la lista
  *   A10  la primera vez (no hubo elección)          | los de por defecto
@@ -54,32 +49,6 @@ describe('anotadoresAlVolver', () => {
     const antes = fourball([{ ...yo, team: 'A' }, { ...ana, team: 'A' }, { ...luis, team: 'B' }, { ...pedro, team: 'B' }]);
     const ahora = fourball([{ ...yo, team: 'A' }, { ...ana, team: 'B' }, { ...luis, team: 'A' }, { ...pedro, team: 'B' }]);
     expect(anotadoresAlVolver({ antes, ahora, anotadores: ['yo', 'ana'], yo: 'yo' })).toEqual(['yo', 'ana']);
-  });
-
-  describe('A5: foursomes (se conserva la elección de parejas, no se deduce de quién anota)', () => {
-    const foursomes = (jugadores) => ({ jugadores, modo: 'MATCH_PLAY', formato: 'FOURSOMES' });
-    const conEquipo = (p, team) => ({ ...p, team });
-    const conRivalRegistrado = foursomes([conEquipo(yo, 'A'), conEquipo(pepe, 'A'), conEquipo(pedro, 'B'), conEquipo(ana, 'B')]);
-    const antes = foursomes([conEquipo(yo, 'A'), conEquipo(pepe, 'A'), conEquipo(luis, 'B'), conEquipo(ana, 'B')]);
-
-    it('«las dos parejas» se conserva con quien juega ahora enfrente', () => {
-      expect(anotadoresAlVolver({ antes, ahora: conRivalRegistrado, anotadores: ['yo', 'luis', 'ana'], yo: 'yo', parejas: 'BOTH' })).toEqual(['yo', 'pedro', 'ana']);
-    });
-
-    it('«solo la mía» se conserva, con mi pareja de ahora (aunque cambie de letra)', () => {
-      const ahora = foursomes([conEquipo(yo, 'B'), conEquipo(pedro, 'B'), conEquipo(luis, 'A'), conEquipo(ana, 'A')]);
-      expect(anotadoresAlVolver({ antes, ahora, anotadores: ['yo'], yo: 'yo', parejas: 'MINE' })).toEqual(['yo', 'pedro']);
-    });
-
-    it('«las dos parejas» sin nadie registrado enfrente: «solo la mía» (sin olvidar la elección)', () => {
-      const otroInvitado = { ...pepe, participantId: 'invitado-2' };
-      const ahora = foursomes([conEquipo(yo, 'A'), conEquipo(ana, 'A'), conEquipo(otroInvitado, 'B'), conEquipo(pepe, 'B')]);
-      expect(anotadoresAlVolver({ antes, ahora, anotadores: ['yo', 'ana', 'luis'], yo: 'yo', parejas: 'BOTH' })).toEqual(['yo', 'ana']);
-    });
-
-    it('sin elección (la puso la app porque enfrente no había registrados): los de por defecto', () => {
-      expect(anotadoresAlVolver({ antes, ahora: conRivalRegistrado, anotadores: ['yo'], yo: 'yo', parejas: null })).toBeNull();
-    });
   });
 
   it.each([

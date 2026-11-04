@@ -32,6 +32,7 @@ import {
   parseTeeKey,
   teeKey,
   firmaDeLosAnotadores,
+  formaDeAnotar,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
 import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
@@ -162,16 +163,12 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // los mismos, se conservan (al repetir se perdían los copiados en silencio;
   // pasada del Kind, 4 nov 2026). Si cambia alguien, se conserva lo elegido
   // con quien juega ahora (`anotadoresAlVolver`)
-  // Sin jugadores copiados (el campo ya no valía) no hubo elección: la
-  // primera entrada al paso 3 es la primera vez (revisor)
+  // Sin jugadores copiados (el campo ya no valía), la primera entrada al paso
+  // 3 es la primera vez (revisor). La pareja elegida en foursomes, en cambio,
+  // sí se copia: es de la partida, no de sus jugadores (A5)
   const anotadoresElegidosCon = useRef(
     copia?.participants?.length
-      ? {
-          firma: firmaDeLosAnotadores(copia.participants ?? [], copia.mode, copia.matchFormat),
-          jugadores: copia.participants ?? [],
-          modo: copia.mode,
-          formato: copia.matchFormat,
-        }
+      ? { jugadores: copia.participants, modo: copia.mode, formato: copia.matchFormat }
       : null
   );
   // En foursomes, si quien crea eligió «las dos parejas» o «solo la mía» (o
@@ -491,20 +488,22 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToScorers = () => {
     const creatorParticipant = participants.find((p) => p.userId === currentUser.id);
-    const firma = firmaDeLosAnotadores(participants, mode, matchFormat);
-    if (anotadoresElegidosCon.current?.firma !== firma) {
-      const ahora = { jugadores: participants, modo: mode, formato: matchFormat };
-      const conservados = creatorParticipant
-        ? anotadoresAlVolver({
-            antes: anotadoresElegidosCon.current,
-            ahora,
-            anotadores: scorerIds,
-            yo: creatorParticipant.participantId,
-            parejas: parejasElegidas.current,
-          })
-        : null;
-      anotadoresElegidosCon.current = { firma, ...ahora };
+    const antes = anotadoresElegidosCon.current;
+    const ahora = { jugadores: participants, modo: mode, formato: matchFormat };
+    const firmaDe = (f) => firmaDeLosAnotadores(f.jugadores, f.modo, f.formato);
+    if (!antes || firmaDe(antes) !== firmaDe(ahora)) {
+      // Con otra forma de anotar, lo de por defecto, también en foursomes: una
+      // pareja elegida antes ya no se ha visto (`/code-review`)
+      if (antes && formaDeAnotar(antes.modo, antes.formato) !== formaDeAnotar(mode, matchFormat)) {
+        parejasElegidas.current = null;
+      }
+      anotadoresElegidosCon.current = ahora;
+      const conservados =
+        !isFoursomes && creatorParticipant
+          ? anotadoresAlVolver({ antes, ahora, anotadores: scorerIds, yo: creatorParticipant.participantId })
+          : null;
       if (conservados) setScorerIds(conservados);
+      else if (isFoursomes && parejasElegidas.current) chooseScoringSides(parejasElegidas.current);
       else eligeLosAnotadoresDePorDefecto(creatorParticipant);
     }
     setError('');

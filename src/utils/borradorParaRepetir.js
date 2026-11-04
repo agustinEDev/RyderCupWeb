@@ -167,10 +167,14 @@ export const borradorParaRepetir = ({ partida, yo, amigos, campo }) => {
  * elección es lo que se conserva al cambiar jugadores (`anotadoresAlVolver`):
  * deducirla de los anotadores que siguen fallaba si el rival que anotaba ya no
  * es amigo (revisor, 4 nov 2026). Si enfrente no había ningún registrado, no
- * se ofreció la opción, así que no hubo elección.
+ * se ofreció la opción, así que no hubo elección. Se copia también si el campo
+ * ya no vale (sin jugadores): es de la partida, no de sus jugadores.
  */
 const parejasElegidas = (partida, yo) => {
   if (partida.scoringFormat || partida.matchFormat !== 'FOURSOMES') return null;
+  // La eligió quien la creó: a otro que la repite no le toca heredarla
+  // (`/code-review`)
+  if (partida.creatorId !== yo.id) return null;
   const mio = partida.participants.find((p) => p.userId === yo.id);
   if (!mio?.team) return null;
   const rivales = partida.participants.filter((p) => !p.isGuest && p.userId && p.team === oppositeTeam(mio.team));
