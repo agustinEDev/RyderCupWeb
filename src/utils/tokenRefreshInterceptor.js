@@ -17,7 +17,7 @@
 import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
-import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { setCsrfTokenGlobal, getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 
 import {
   isDeviceRevoked,
@@ -180,6 +180,91 @@ export const refrescoCompartido = () => {
   return refrescoEnCurso;
 };
 
+const CABECERA_CSRF = 'X-CSRF-Token';
+
+/**
+ * Las opciones de un reintento, con el token CSRF de AHORA: el refresco rota la
+ * cookie, y repetir con el de la petición original volvía con un 403 CSRF
+ * (hotfix 2.63.1). Solo si la petición lo llevaba —un GET sigue sin él—, salvo
+ * con `siempre`. El nombre de la cabecera no distingue mayúsculas: se quitan
+ * todas sus formas y queda una. Sin token, la cabecera se quita.
+ *
+ * La usan los reintentos de aquí y el de `apiRequest` tras un 403 CSRF.
+ */
+export const conElTokenAlDia = (opciones, { siempre = false } = {}) => {
+  const { headers } = opciones;
+  if (headers instanceof globalThis.Headers) {
+    if (!siempre && !headers.has(CABECERA_CSRF)) return opciones;
+    const token = getCsrfToken();
+    const nuevas = new globalThis.Headers(headers);
+    if (token) nuevas.set(CABECERA_CSRF, token);
+    else nuevas.delete(CABECERA_CSRF);
+    return { ...opciones, headers: nuevas };
+  }
+  const nombres = Object.keys(headers ?? {}).filter((k) => k.toLowerCase() === CABECERA_CSRF.toLowerCase());
+  if (!siempre && nombres.length === 0) return opciones;
+  const token = getCsrfToken();
+  const nuevas = { ...headers };
+  for (const nombre of nombres) delete nuevas[nombre];
+  if (token) nuevas[CABECERA_CSRF] = token;
+  return { ...opciones, headers: nuevas };
+};
+
+/**
+ * Lo que se hace cuando falla un refresco que alguien arrancó para seguir
+ * trabajando: con el «no» del servidor, cerrar sesión con su aviso (revocado o
+ * caducada, sin duplicados); sin respuesta, conservarla (FE #514). No lanza:
+ * quien llama decide qué error sube.
+ *
+ * La usan el interceptor, el refresco proactivo —quien espera a un refresco en
+ * vuelo da por hecho que el que lo arrancó ya lo trató (`/code-review`)— y el
+ * reintento de `apiRequest` tras un 403 CSRF. La sonda de sesión no: en una
+ * página pública no se cierra ni se redirige.
+ *
+ * @param {Error & {response?: Response, errorData?: object}} refreshError
+ */
+export const trataElFalloDelRefresco = (refreshError) => {
+  // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
+  // o un 5xx significan que no se ha podido preguntar, no que la respuesta
+  // sea que no, y tratarlos igual echaba al jugador de la aplicación en
+  // mitad de una vuelta cada vez que el campo se quedaba sin cobertura
+  // (FE #514). El token de acceso dura 15 minutos y el marcador pregunta
+  // cada 10 segundos, así que la ocasión se presentaba muchas veces.
+  const respuestaDelServidor = refreshError?.response ?? null;
+  const credencialesRechazadas = respuestaDelServidor?.status === 401;
+
+  // v2.0.4: Properly differentiate between device revocation and session expiration
+  if (respuestaDelServidor && refreshError.errorData) {
+    // Check if refresh failed due to EXPLICIT device revocation
+    if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
+      console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
+      handleDeviceRevocationLogout(refreshError.errorData);
+      return;
+    }
+
+    // Check if refresh failed due to session expiration (refresh token expired)
+    if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
+      console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
+      handleSessionExpiredLogout(refreshError.errorData);
+      return;
+    }
+  }
+
+  // Un 401 del propio refresco es la única respuesta que significa "estas
+  // credenciales ya no sirven". Se comprueba el estado y no solo el texto
+  // porque `isSessionExpired` exige además que el `detail` hable del
+  // refresh token, y un 401 con otro mensaje también cierra la sesión
+  if (credencialesRechazadas) {
+    console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
+    handleSessionExpiredLogout(refreshError.errorData || null);
+  } else {
+    // Nadie ha dicho que la sesión no valga: se conserva. El marcador
+    // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
+    // sigue donde estaba
+    console.log('📡 [TokenRefresh] Refresh unreachable - keeping the session');
+  }
+};
+
 /**
  * Interceptor for fetch requests that handles 401 responses with automatic token refresh
  *
@@ -281,7 +366,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     const yaSeRefrescoDespues = refrescosCompletados > refrescosAlSalir;
     if (!refrescoEnCurso && yaSeRefrescoDespues) {
       console.log('🔄 [TokenRefresh] A refresh already happened after this request left. Retrying...');
-      return await fetch(url, fetchOptions);
+      return await fetch(url, conElTokenAlDia(fetchOptions));
     }
 
     // Si ya hay un refresco en vuelo, esta peticion se engancha a el en vez de
@@ -294,7 +379,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // `return await` y no `return` a secas: sin esperar aqui, un fallo de red
       // en este reintento se escapa del catch de abajo y el mismo suceso deja
       // dos rastros distintos segun quien lo sufra
-      return await fetch(url, fetchOptions);
+      return await fetch(url, conElTokenAlDia(fetchOptions));
     }
 
     try {
@@ -307,50 +392,12 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       // Retry the original request
       console.log('🔄 [TokenRefresh] Retrying original request...');
-      const retryResponse = await fetch(url, fetchOptions);
+      const retryResponse = await fetch(url, conElTokenAlDia(fetchOptions));
 
       return retryResponse;
 
     } catch (refreshError) {
-      // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
-      // o un 5xx significan que no se ha podido preguntar, no que la respuesta
-      // sea que no, y tratarlos igual echaba al jugador de la aplicación en
-      // mitad de una vuelta cada vez que el campo se quedaba sin cobertura
-      // (FE #514). El token de acceso dura 15 minutos y el marcador pregunta
-      // cada 10 segundos, así que la ocasión se presentaba muchas veces.
-      const respuestaDelServidor = refreshError.response ?? null;
-      const credencialesRechazadas = respuestaDelServidor?.status === 401;
-
-      // v2.0.4: Properly differentiate between device revocation and session expiration
-      if (respuestaDelServidor && refreshError.errorData) {
-        // Check if refresh failed due to EXPLICIT device revocation
-        if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
-          console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
-          handleDeviceRevocationLogout(refreshError.errorData);
-          throw refreshError;
-        }
-
-        // Check if refresh failed due to session expiration (refresh token expired)
-        if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
-          console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
-          handleSessionExpiredLogout(refreshError.errorData);
-          throw refreshError;
-        }
-      }
-
-      // Un 401 del propio refresco es la única respuesta que significa "estas
-      // credenciales ya no sirven". Se comprueba el estado y no solo el texto
-      // porque `isSessionExpired` exige además que el `detail` hable del
-      // refresh token, y un 401 con otro mensaje también cierra la sesión
-      if (credencialesRechazadas) {
-        console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
-        handleSessionExpiredLogout(refreshError.errorData || null);
-      } else {
-        // Nadie ha dicho que la sesión no valga: se conserva. El marcador
-        // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
-        // sigue donde estaba
-        console.log('📡 [TokenRefresh] Refresh unreachable - keeping the session');
-      }
+      trataElFalloDelRefresco(refreshError);
 
       // Todas las salidas de aquí terminan igual: el error sube a quien llamó.
       // Antes cada rama esperaba a que la redirección interrumpiera, con un

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { refreshAccessToken, getLastRefreshAt } from '../utils/tokenRefreshInterceptor';
+import { refrescoCompartido, getLastRefreshAt, trataElFalloDelRefresco } from '../utils/tokenRefreshInterceptor';
 
 /**
  * Vida util de la cookie del access token: 15 minutos.
@@ -119,7 +119,10 @@ const useProactiveTokenRefresh = ({
     isRefreshingRef.current = true;
 
     try {
-      await refreshAccessToken();
+      // El COMPARTIDO, no uno propio: si un 401 o la sonda ya están
+      // refrescando, se espera a ese. Dos a la vez rotaban la cookie CSRF dos
+      // veces, y la memoria podía quedarse con el token del otro (hotfix 2.63.1)
+      await refrescoCompartido();
       lastRefreshRef.current = Date.now();
       lastFailedRefreshRef.current = 0;
       console.log('✅ [ProactiveRefresh] Token refreshed successfully');
@@ -127,6 +130,10 @@ const useProactiveTokenRefresh = ({
       // If refresh fails, let the normal 401 handling take over
       lastFailedRefreshRef.current = Date.now();
       console.warn('⚠️ [ProactiveRefresh] Proactive refresh failed:', error.message);
+      // Con el «no» del servidor, se cierra la sesión con su aviso. Hace falta
+      // aquí: una petición con un 401 que se enganchó a ESTE refresco no lo
+      // trata, porque da por hecho que lo hizo quien lo arrancó (`/code-review`)
+      trataElFalloDelRefresco(error);
     } finally {
       isRefreshingRef.current = false;
     }
