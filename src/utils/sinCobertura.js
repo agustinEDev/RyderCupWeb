@@ -47,10 +47,25 @@ export function esFalloDeRedDeLaApi(err) {
  * @param {{sinConexion: string, generico: string}} textos ya traducidos
  */
 export const mensajeDeError = (err, { sinConexion, generico }) => {
-  if (esFalloDeRed(err)) return sinConexion;
+  const motivo = motivoDelError(err);
+  if (motivo === 'sinConexion') return sinConexion;
+  if (motivo === 'generico') return generico;
+  return motivo.delServidor;
+};
+
+/**
+ * La misma regla, sin textos: `'sinConexion'`, `'generico'` o
+ * `{ delServidor: mensaje }`. Para quien guarda el aviso por su clave y lo
+ * traduce al pintarlo (el asistente de partida rápida, 4 nov 2026).
+ *
+ * @param {Error} err
+ * @returns {'sinConexion'|'generico'|{delServidor: string}}
+ */
+export const motivoDelError = (err) => {
+  if (esFalloDeRed(err)) return 'sinConexion';
   // Un 5xx no trae un motivo para quien mira, sino el fallo del servidor en
   // crudo —«Internal Server Error», o el 503 del service worker— (FE #710)
-  if (err?.status >= 500) return generico;
-  if (err?.status && err?.message) return err.message;
-  return generico;
+  if (err?.status >= 500) return 'generico';
+  if (err?.status && err?.message) return { delServidor: err.message };
+  return 'generico';
 };

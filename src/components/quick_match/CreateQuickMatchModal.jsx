@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
+import { esFalloDeRed, motivoDelError } from '../../utils/sinCobertura';
 import { idAleatorio } from '../../utils/idAleatorio';
 import customToast from '../../utils/toast';
 import { nombreVisible } from '../../utils/nombreVisible';
@@ -144,7 +144,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // ya creó—; cualquier cambio en el borrador estrena uno
   const ultimoIntento = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
+  // El aviso, por su clave (o el texto ya hecho de un fallo del servidor): así
+  // se quita uno concreto sin comparar textos traducidos, y cambia de idioma
+  // con la página
+  const [error, setErrorDelAsistente] = useState(null);
+  // Un aviso nuevo cada vez, también si se repite: así vuelve a la vista (ver
+  // el efecto de abajo)
+  const setError = (clave) => setErrorDelAsistente(clave ? { clave } : null);
+  const quitaElAviso = (clave) => setErrorDelAsistente((e) => (e?.clave === clave ? null : e));
   // El aviso va arriba y el botón que lo provoca, abajo: en un móvil se
   // pintaba fuera de la vista y parecía que no pasaba nada
   const avisoDeError = useRef(null);
@@ -235,8 +242,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
   if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
     setCreatorTeeKey(barraSugerida);
-    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review)
-    if (error === t('create.course.errorTeeRequired')) setError('');
+    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review). Solo
+    // si es ese, para no encolar nada durante el render sin motivo
+    if (error?.clave === 'create.course.errorTeeRequired') setError(null);
   }
   // La de cada amigo, para preelegirla al añadirlo (P8)
   const barraDeAmigo = (userId) => {
@@ -311,19 +319,19 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleCourseNext = () => {
     if (!selectedCourse) {
-      setError(t('create.course.errorCourseRequired'));
+      setError('create.course.errorCourseRequired');
       return;
     }
     if (teesLoading) {
-      setError(t('create.course.errorTeeRequired'));
+      setError('create.course.errorTeeRequired');
       return;
     }
     const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === creatorTeeKey);
     if (courseTees.length > 0 && !creatorTeeIsValid) {
-      setError(t('create.course.errorTeeRequired'));
+      setError('create.course.errorTeeRequired');
       return;
     }
-    setError('');
+    setError(null);
     const { color, teeGender } = parseTeeKey(creatorTeeKey);
     const plantilla = { campo: selectedCourse.id, mode, matchFormat };
     const misma = plantillaDe.current;
@@ -368,14 +376,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleAddFriend = (friend, friendTeeKeyValue) => {
     if (courseTees.length > 0 && (!friendTeeKeyValue || friendTeeKeyValue === NO_TEE_KEY)) {
-      setError(t('create.participants.errorTeeRequired'));
+      setError('create.participants.errorTeeRequired');
       return;
     }
     if (teamIsFull()) {
-      setError(t('create.participants.errorTeamFull'));
+      setError('create.participants.errorTeamFull');
       return;
     }
-    setError('');
+    setError(null);
     const { color, teeGender } = parseTeeKey(friendTeeKeyValue ?? NO_TEE_KEY);
     setParticipants((prev) => [
       ...prev,
@@ -392,11 +400,11 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   // Al corregirlo, el aviso de nombre en blanco ya no tiene razón de ser
   const handleGuestFirstNameChange = (value) => {
-    setError('');
+    setError(null);
     setGuestForm((g) => ({ ...g, firstName: value }));
   };
   const handleGuestLastNameChange = (value) => {
-    setError('');
+    setError(null);
     setGuestForm((g) => ({ ...g, lastName: value }));
   };
 
@@ -406,18 +414,18 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     const lastName = guestForm.lastName.trim();
     // Solo espacios pasan el `required` del navegador: se dice, no se calla
     if (!firstName || !lastName) {
-      setError(t('create.participants.errorGuestName'));
+      setError('create.participants.errorGuestName');
       return;
     }
     if (courseTees.length > 0 && guestTeeKey === NO_TEE_KEY) {
-      setError(t('create.participants.errorTeeRequired'));
+      setError('create.participants.errorTeeRequired');
       return;
     }
     if (teamIsFull()) {
-      setError(t('create.participants.errorTeamFull'));
+      setError('create.participants.errorTeamFull');
       return;
     }
-    setError('');
+    setError(null);
     const { color, teeGender } = parseTeeKey(guestTeeKey);
     setParticipants((prev) => [
       ...prev,
@@ -435,7 +443,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   };
 
   const handleRemoveParticipant = (participantId) => {
-    setError('');
+    setError(null);
     // Los anotadores se ajustan al entrar en el paso 3 (`goToScorers`)
     setParticipants((prev) => prev.filter((p) => p.participantId !== participantId));
   };
@@ -444,14 +452,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // salidas): si se cambia alguno, se empieza de nuevo al avanzar otra vez;
   // si no, se conserva (`handleCourseNext`, 3 nov 2026)
   const handleBackToCourse = () => {
-    setError('');
+    setError(null);
     setGuestTeeKey(NO_TEE_KEY);
     setGuestForm(initialGuestForm);
     setStep(1);
   };
 
   const handleBackToParticipants = () => {
-    setError('');
+    setError(null);
     setStep(2);
   };
 
@@ -506,7 +514,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       else if (isFoursomes && parejasElegidas.current) chooseScoringSides(parejasElegidas.current);
       else eligeLosAnotadoresDePorDefecto(creatorParticipant);
     }
-    setError('');
+    setError(null);
     setStep(3);
   };
 
@@ -533,15 +541,15 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const goToSummary = () => {
     if (scorerIds.length === 0) {
-      setError(t('create.scorers.errorMinScorers'));
+      setError('create.scorers.errorMinScorers');
       return;
     }
-    setError('');
+    setError(null);
     setStep(4);
   };
 
   const handleBackToScorers = () => {
-    setError('');
+    setError(null);
     setStep(3);
   };
 
@@ -627,7 +635,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const handleStart = async () => {
     setIsProcessing(true);
-    setError('');
+    setError(null);
     try {
       const peticion = peticionDelBorrador();
       const quickMatchId = idDelIntento(peticion);
@@ -641,10 +649,17 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
     } catch (err) {
       if (ultimoIntento.current) ultimoIntento.current.quizaCreada = pudoLlegar(err);
       const motivo = MOTIVO_POR_CODIGO[err?.status];
-      setError(
+      // Los nuestros, por clave (cambian de idioma con la página); solo el
+      // motivo que manda el servidor va como texto (revisor)
+      const deLaRegla = motivoDelError(err);
+      setErrorDelAsistente(
         motivo
-          ? t(motivo)
-          : mensajeDeError(err, { sinConexion: tComun('sinConexion.mensaje'), generico: t('create.errors.generic') })
+          ? { clave: motivo }
+          : deLaRegla === 'sinConexion'
+            ? { clave: 'sinConexion.mensaje', comun: true }
+            : deLaRegla === 'generico'
+              ? { clave: 'create.errors.generic' }
+              : { texto: deLaRegla.delServidor }
       );
     } finally {
       setIsProcessing(false);
@@ -688,7 +703,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600"
             data-testid="quick-match-modal-error"
           >
-            {error}
+            {error.clave ? (error.comun ? tComun : t)(error.clave) : error.texto}
           </div>
         )}
 
@@ -732,7 +747,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             porcentajeCopiado={porcentajeCopiado}
             onCreatorTeeKeyChange={(clave) => {
               setCreatorTeeKey(clave);
-              if (error === t('create.course.errorTeeRequired')) setError('');
+              quitaElAviso('create.course.errorTeeRequired');
             }}
             allowancePercentage={allowancePercentage}
             // El de por defecto elegido a mano no es «a mano»: así no sale en
@@ -759,7 +774,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             selectedTeam={selectedTeam}
             onSelectedTeamChange={(team) => {
               setSelectedTeam(team);
-              setError('');
+              setError(null);
             }}
             participantTab={participantTab}
             onParticipantTabChange={setParticipantTab}
@@ -775,7 +790,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             guestTeeKey={guestTeeKey}
             onGuestTeeKeyChange={(clave) => {
               setGuestTeeKey(clave);
-              if (error === t('create.participants.errorTeeRequired')) setError('');
+              quitaElAviso('create.participants.errorTeeRequired');
             }}
             onRemoveParticipant={handleRemoveParticipant}
             isProcessing={isProcessing}
