@@ -17,7 +17,7 @@
 import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
-import { setCsrfTokenGlobal } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { setCsrfTokenGlobal, getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 
 import {
   isDeviceRevoked,
@@ -181,6 +181,29 @@ export const refrescoCompartido = () => {
 };
 
 /**
+ * Las opciones del reintento, con el token CSRF de AHORA: el refresco rota la
+ * cookie, y repetir con el de la petición original volvía con un 403 CSRF
+ * (hotfix 2.63.1). Solo si la petición lo llevaba: un GET sigue sin él.
+ */
+const conElTokenAlDia = (opciones) => {
+  const { headers } = opciones;
+  if (headers instanceof globalThis.Headers) {
+    if (!headers.has('X-CSRF-Token')) return opciones;
+    const nuevas = new globalThis.Headers(headers);
+    const token = getCsrfToken();
+    if (token) nuevas.set('X-CSRF-Token', token);
+    else nuevas.delete('X-CSRF-Token');
+    return { ...opciones, headers: nuevas };
+  }
+  if (!headers || !('X-CSRF-Token' in headers)) return opciones;
+  const nuevas = { ...headers };
+  const token = getCsrfToken();
+  if (token) nuevas['X-CSRF-Token'] = token;
+  else delete nuevas['X-CSRF-Token'];
+  return { ...opciones, headers: nuevas };
+};
+
+/**
  * Interceptor for fetch requests that handles 401 responses with automatic token refresh
  *
  * Flow:
@@ -281,7 +304,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     const yaSeRefrescoDespues = refrescosCompletados > refrescosAlSalir;
     if (!refrescoEnCurso && yaSeRefrescoDespues) {
       console.log('🔄 [TokenRefresh] A refresh already happened after this request left. Retrying...');
-      return await fetch(url, fetchOptions);
+      return await fetch(url, conElTokenAlDia(fetchOptions));
     }
 
     // Si ya hay un refresco en vuelo, esta peticion se engancha a el en vez de
@@ -294,7 +317,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // `return await` y no `return` a secas: sin esperar aqui, un fallo de red
       // en este reintento se escapa del catch de abajo y el mismo suceso deja
       // dos rastros distintos segun quien lo sufra
-      return await fetch(url, fetchOptions);
+      return await fetch(url, conElTokenAlDia(fetchOptions));
     }
 
     try {
@@ -307,7 +330,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
 
       // Retry the original request
       console.log('🔄 [TokenRefresh] Retrying original request...');
-      const retryResponse = await fetch(url, fetchOptions);
+      const retryResponse = await fetch(url, conElTokenAlDia(fetchOptions));
 
       return retryResponse;
 

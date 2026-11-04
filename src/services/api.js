@@ -7,6 +7,7 @@ import { fetchWithTokenRefresh, refrescoCompartido } from '../utils/tokenRefresh
 import { getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
 import { captureError } from '../utils/sentryHelpers';
+import { isDeviceRevoked, handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
 import i18next from 'i18next';
@@ -66,6 +67,11 @@ const renuevaTrasCsrf = async (errorData) => {
   try {
     await refrescoCompartido();
   } catch (error) {
+    // Un dispositivo revocado ve su aviso, como en el camino del 401 (revisor)
+    if (isDeviceRevoked(error?.response, error?.errorData)) {
+      handleDeviceRevocationLogout(error.errorData);
+      throw error;
+    }
     if (error?.response?.status === 401) cierraPorCsrf(errorData);
     throw sinConexion(error);
   }
@@ -175,7 +181,11 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
     // memoria se quedaba atrás cuando otra pestaña rotaba la cookie, y eso
     // echaba de la aplicación (hotfix 2.63.1, pasada del iPhone del 4 nov)
     if (!response.ok && esRechazoCsrf(response, errorData)) {
-      await aTiempo(renuevaTrasCsrf(errorData));
+      // Si la cookie ya no es la que se mandó —otra pestaña refrescó—, basta
+      // con repetir: otro refresco solo la rotaría otra vez (revisor)
+      const enviado = config.headers['X-CSRF-Token'];
+      const actual = getCsrfToken();
+      if (!actual || actual === enviado) await aTiempo(renuevaTrasCsrf(errorData));
       // Que se vea si pasa a menudo: antes se notaba porque echaba. Método y
       // ruta, nunca el token
       captureError('CSRF token rejected: refreshed and retried once', {
@@ -183,9 +193,13 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
         tags: { module: 'csrf' },
         extra: { method, ruta: endpoint.split('?')[0] },
       });
+      // Sin token no hay nada que repetir: mandaría la cabecera «null» y el
+      // servidor la rechazaría igual (revisor)
+      const nuevo = getCsrfToken();
+      if (!nuevo) cierraPorCsrf(errorData);
       const reintento = {
         ...config,
-        headers: { ...config.headers, 'X-CSRF-Token': getCsrfToken() },
+        headers: { ...config.headers, 'X-CSRF-Token': nuevo },
       };
       response = await aTiempo(llamaAlBackend(url, reintento));
       errorData = response.ok ? null : await leeElError(response);

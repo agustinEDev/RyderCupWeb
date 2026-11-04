@@ -13,11 +13,17 @@
  *   13 el refresco da 401 (sesión muerta)        | cierre de sesión, sin reintento
  *   14 el refresco falla por la red              | «sin conexión», sin cierre
  *   15 el reintento da otro error (409)          | ese error, tal cual
- *   16 tres 403 CSRF a la vez                    | un solo refresco, cada uno repite
+ *   16 tres 403 CSRF a la vez                    | un solo refresco, cada una repite una vez
  *   17 vence el tope durante el refresco         | «sin conexión»
  *   18 un 403 que no es CSRF                     | sin reintento ni refresco
  *   19 un GET                                    | no lleva token: nada cambia
  *   23 cada reintento                            | aviso en Sentry, sin el token
+ *
+ * Tras el revisor:
+ *   24 la cookie ya cambió (otra pestaña)        | repite SIN refrescar
+ *   25 tras el refresco no hay token             | cierre de sesión, sin mandar «null»
+ *   26 el refresco da 401 por dispositivo revocado | el aviso de revocado, no el de CSRF
+ *   27 vence el tope durante el reintento        | «sin conexión»
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
@@ -26,6 +32,7 @@ const refrescoCompartido = vi.fn();
 const getCsrfToken = vi.fn();
 const handleCsrfLogout = vi.fn();
 const captureError = vi.fn();
+const handleDeviceRevocationLogout = vi.fn();
 
 vi.mock('../utils/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
@@ -33,6 +40,10 @@ vi.mock('../utils/tokenRefreshInterceptor', () => ({
 }));
 vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfToken: () => getCsrfToken() }));
 vi.mock('../utils/csrfLogout', () => ({ handleCsrfLogout: (...args) => handleCsrfLogout(...args) }));
+vi.mock('../utils/deviceRevocationLogout', async (original) => ({
+  ...(await original()),
+  handleDeviceRevocationLogout: (...args) => handleDeviceRevocationLogout(...args),
+}));
 vi.mock('../utils/sentryHelpers', () => ({ captureError: (...args) => captureError(...args) }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
@@ -146,8 +157,21 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
   });
 
   it('16: tres 403 a la vez piden el refresco compartido y cada una se repite una vez', async () => {
-    // El compartido de verdad junta las tres en un POST; aquí se comprueba que
-    // las tres van por él y no por otro camino
+    // Un doble que comparte como el de verdad: quien llega con uno en vuelo
+    // espera a ese. Se cuentan los refrescos que SALEN, no las llamadas (revisor)
+    let enVuelo = null;
+    let refrescosHechos = 0;
+    refrescoCompartido.mockImplementation(() => {
+      enVuelo ??= (async () => {
+        refrescosHechos += 1;
+        await Promise.resolve();
+        getCsrfToken.mockReturnValue('NUEVO');
+        return true;
+      })().finally(() => {
+        enVuelo = null;
+      });
+      return enVuelo;
+    });
     llamarAlBackend.mockImplementation(async (_url, config) =>
       config.headers['X-CSRF-Token'] === 'NUEVO' ? ok() : csrf403()
     );
@@ -155,8 +179,9 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     const resultados = await Promise.all([crea(), crea(), crea()]);
 
     expect(resultados).toEqual([{ id: 'qm1' }, { id: 'qm1' }, { id: 'qm1' }]);
+    expect(refrescosHechos).toBe(1);
+    // Cada una sale dos veces: la rechazada y su único reintento
     expect(llamarAlBackend).toHaveBeenCalledTimes(6);
-    expect(refrescoCompartido).toHaveBeenCalledTimes(3);
     expect(handleCsrfLogout).not.toHaveBeenCalled();
   });
 
@@ -216,5 +241,56 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     await crea();
 
     expect(captureError).not.toHaveBeenCalled();
+  });
+  it('24: si la cookie ya cambió (otra pestaña refrescó), repite sin refrescar', async () => {
+    llamarAlBackend.mockImplementationOnce(async () => {
+      getCsrfToken.mockReturnValue('DE_LA_OTRA');
+      return csrf403();
+    }).mockResolvedValueOnce(ok());
+
+    await expect(crea()).resolves.toEqual({ id: 'qm1' });
+
+    expect(refrescoCompartido).not.toHaveBeenCalled();
+    expect(tokenEnviado(1)).toBe('DE_LA_OTRA');
+    expect(handleCsrfLogout).not.toHaveBeenCalled();
+  });
+
+  it('25: si tras el refresco no hay token, cierra sesión sin mandar la cabecera «null»', async () => {
+    llamarAlBackend.mockResolvedValueOnce(csrf403());
+    refrescoCompartido.mockImplementation(async () => {
+      getCsrfToken.mockReturnValue(null);
+      return true;
+    });
+
+    const error = await crea().catch((e) => e);
+
+    expect(error.errorCode).toBe('CSRF_VALIDATION_FAILED');
+    expect(handleCsrfLogout).toHaveBeenCalledTimes(1);
+    expect(llamarAlBackend).toHaveBeenCalledTimes(1);
+  });
+
+  it('26: un dispositivo revocado al refrescar ve su aviso, no el de CSRF', async () => {
+    llamarAlBackend.mockResolvedValueOnce(csrf403());
+    const respuesta = { status: 401, headers: new globalThis.Headers() };
+    const errorData = { detail: 'Device revoked. Please sign in again.' };
+    refrescoCompartido.mockRejectedValue(Object.assign(new Error('revoked'), { response: respuesta, errorData }));
+
+    await crea().catch(() => {});
+
+    expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(errorData);
+    expect(handleCsrfLogout).not.toHaveBeenCalled();
+  });
+
+  it('27: si vence el tope durante el reintento, «sin conexión»', async () => {
+    vi.useFakeTimers();
+    llamarAlBackend.mockResolvedValueOnce(csrf403()).mockImplementationOnce(() => new Promise(() => {}));
+
+    const promesa = apiRequest('/api/v1/x', { method: 'POST', body: '{}', topeMs: 5000 }).catch((e) => e);
+    await vi.advanceTimersByTimeAsync(5000);
+    const error = await promesa;
+
+    expect(esFalloDeRedDeLaApi(error)).toBe(true);
+    expect(llamarAlBackend).toHaveBeenCalledTimes(2);
+    expect(handleCsrfLogout).not.toHaveBeenCalled();
   });
 });

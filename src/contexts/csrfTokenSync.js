@@ -16,7 +16,10 @@ let currentCsrfToken = null;
 const getCsrfTokenFromCookie = () => {
   // La ÚLTIMA si hay dos (una puesta por otro subdominio, p. ej.): Starlette
   // se queda con la última al leer la cabecera `Cookie`, y es con la que va a
-  // comparar (hotfix 2.63.1)
+  // comparar (hotfix 2.63.1). Ojo: `document.cookie` en `www` y la cabecera
+  // que llega a `api` no tienen por qué traer las mismas: una `csrf_token`
+  // solo de `www` la vería aquí y no el servidor. Hoy no pasa, porque el
+  // frontend nunca pone cookies; firmar el token lo cierra del todo (BE #724)
   const valores = document.cookie
     .split('; ')
     .filter((row) => row.startsWith('csrf_token='))
