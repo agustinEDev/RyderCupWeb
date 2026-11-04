@@ -61,7 +61,7 @@
       "team": "Team",
       "teamA": "Team A",
       "teamB": "Team B",
-      "remove": "Remove",
+      "remove": "Remove {{name}}",
       "rosterFull": "This match already has the maximum players for this format",
       "errorTeeRequired": "Select a tee before adding the player",
       "back": "Back",

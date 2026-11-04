@@ -126,3 +126,43 @@ describe('Hoja del invitado (sin cambios)', () => {
     expect(tituloDeLaHoja().nombre).toBe('create.teePanel.title[create.participants.guestFallbackName]');
   });
 });
+
+const YO = { participantId: 'u1', userId: 'u1', name: 'Trinx' };
+const AMIGO = { participantId: 'u12', userId: 'u12', name: 'Jugador 12' };
+const INVITADO = { participantId: 'g1', userId: null, isGuest: true, name: 'Prueba Kind Blancas' };
+
+describe('Botón de quitar jugador', () => {
+  it('6: el de un amigo dice a quién quita', () => {
+    render(<Paso participants={[YO, AMIGO]} />);
+
+    expect(screen.getByTestId('quick-match-remove-u12')).toHaveAccessibleName('create.participants.remove[Jugador 12]');
+  });
+
+  it('7: el de un invitado, también', () => {
+    render(<Paso participants={[YO, INVITADO]} />);
+
+    expect(screen.getByTestId('quick-match-remove-g1')).toHaveAccessibleName(
+      'create.participants.remove[Prueba Kind Blancas]'
+    );
+  });
+
+  it('8: con dos jugadores, cada botón lleva el suyo', () => {
+    render(<Paso participants={[YO, AMIGO, INVITADO]} />);
+
+    const nombres = [screen.getByTestId('quick-match-remove-u12'), screen.getByTestId('quick-match-remove-g1')].map(
+      (b) => b.getAttribute('aria-label')
+    );
+    expect(new Set(nombres).size).toBe(2);
+  });
+
+  it('9: tu fila no tiene botón de quitar', () => {
+    render(<Paso participants={[YO, AMIGO]} />);
+
+    expect(screen.queryByTestId('quick-match-remove-u1')).toBeNull();
+  });
+
+  it('los textos: «Quitar a {{name}}» y «Remove {{name}}»', () => {
+    expect(es.create.participants.remove).toBe('Quitar a {{name}}');
+    expect(en.create.participants.remove).toBe('Remove {{name}}');
+  });
+});

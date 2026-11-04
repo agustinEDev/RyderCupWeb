@@ -61,7 +61,7 @@
       "team": "Equipo",
       "teamA": "Equipo A",
       "teamB": "Equipo B",
-      "remove": "Quitar",
+      "remove": "Quitar a {{name}}",
       "rosterFull": "La partida ya tiene el máximo de jugadores para este formato",
       "errorTeeRequired": "Selecciona un tee antes de añadir al jugador",
       "back": "Atrás",
