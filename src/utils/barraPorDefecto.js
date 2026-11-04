@@ -1,4 +1,5 @@
 import { NO_TEE_KEY, teeKey } from '../components/quick_match/createQuickMatchModalConstants';
+import TeeColor from '../domain/value_objects/TeeColor';
 
 /**
  * La barra que sale elegida y las que se ven al crear una partida rápida
@@ -8,7 +9,7 @@ import { NO_TEE_KEY, teeKey } from '../components/quick_match/createQuickMatchMo
  */
 
 // La habitual de cada género: amarillas los hombres y rojas las mujeres
-const COLOR_HABITUAL = { MALE: 'YELLOW', FEMALE: 'RED' };
+const COLOR_HABITUAL = { MALE: TeeColor.YELLOW, FEMALE: TeeColor.RED };
 
 const delGenero = (tee, genero) => (tee.gender ?? null) === genero || (tee.gender ?? null) === null;
 

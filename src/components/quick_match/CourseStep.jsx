@@ -137,7 +137,7 @@ const CourseStep = ({
       <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
         {t('create.course.masOpciones')}
         {fueraDeLoNormal.length > 0 && (
-          <span className="font-normal text-gray-500"> · {fueraDeLoNormal.join(' · ')}</span>
+          <span className="font-normal text-gray-500 wrap-anywhere"> · {fueraDeLoNormal.join(' · ')}</span>
         )}
       </summary>
       <div className="px-3 pb-3 space-y-4">

@@ -48,6 +48,15 @@
  *   R5   repetir con aviso «elige tu barra»         | no se marca ninguna
  *   R6   elegir a mano el % por defecto             | no cuenta como «a mano»
  *   R7   «Otras»                                    | dice si su panel está abierto
+ *
+ * Y de /code-review (4 nov 2026):
+ *
+ *   C1   «elige tu barra» y luego se marca sola     | el error se va
+ *   C2   repetir con un nombre propio de la misma   | se copia
+ *        | forma («Liga · 12/10»)                    |
+ *   C3   el % a mano pasa a ser el de por defecto   | no sale en la cabecera
+ *        | al cambiar de formato                     |
+ *   C4   un nombre largo sin espacios               | la cabecera lo parte
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -479,6 +488,59 @@ describe('CreateQuickMatchModal · paso 1 más sencillo (FE #1025)', () => {
       expect(otras.getAttribute('aria-expanded')).toBe('false');
       fireEvent.click(otras);
       expect(otras.getAttribute('aria-expanded')).toBe('true');
+    });
+  });
+
+  describe('de /code-review', () => {
+    it('C1: el error de elegir tu barra se va cuando se marca sola', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 1 });
+      const lista = { promesa: new Promise(() => {}) };
+      mockListMine.mockReturnValue(lista.promesa);
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('quick-match-course-next'));
+      expect(screen.getByText('create.course.errorTeeRequired')).toBeInTheDocument();
+
+      await act(() => vi.advanceTimersByTimeAsync(2000));
+
+      await waitFor(() => expect(pulsada('quick-match-creator-tee-option-YELLOW|MALE')).toBe(true));
+      expect(screen.queryByText('create.course.errorTeeRequired')).not.toBeInTheDocument();
+      vi.useRealTimers();
+    });
+
+    it('C2: al repetir, un nombre propio con la forma de uno de por defecto se copia', async () => {
+      abre({
+        borrador: {
+          paso: 1,
+          avisos: [],
+          inicial: {
+            matchName: 'Liga del club · 12/10', mode: 'FREE_PLAY', matchFormat: 'SINGLES', scoringFormat: 'MEDAL', allowanceOverride: null, playMode: 'HANDICAP',
+            selectedCourse: { id: 'gc-1', name: 'gc-1' }, creatorTeeKey: 'YELLOW|MALE', participants: [], scorerIds: [],
+          },
+        },
+      });
+      await waitFor(() => expect(screen.getByTestId('quick-match-course-next')).not.toBeDisabled());
+      expect(screen.getByTestId('quick-match-name-input').value).toBe('Liga del club · 12/10');
+    });
+
+    it('C3: un % a mano que pasa a ser el de por defecto no sale en la cabecera', async () => {
+      abre();
+      await eligeCampo();
+      fireEvent.click(screen.getByTestId('format-option-FOURBALL'));
+      fireEvent.click(screen.getByTestId('quick-match-allowance-option-100'));
+      const cabecera = () => screen.getByTestId('quick-match-mas-opciones').querySelector('summary').textContent;
+      expect(cabecera()).toContain('100%');
+
+      fireEvent.click(screen.getByTestId('format-option-SINGLES'));
+
+      expect(cabecera()).toBe('create.course.masOpciones');
+    });
+
+    it('C4: la cabecera parte un nombre largo sin espacios', async () => {
+      abre();
+      fireEvent.change(screen.getByTestId('quick-match-name-input'), { target: { value: 'x'.repeat(100) } });
+      const resumen = screen.getByTestId('quick-match-mas-opciones').querySelector('summary span');
+      expect(resumen.className).toMatch(/wrap-anywhere/);
     });
   });
 });

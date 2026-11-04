@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { esFalloDeRed, mensajeDeError } from '../../utils/sinCobertura';
@@ -96,9 +96,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // que alguien escribe el suyo; vacío, viaja ese (Agustín, 4 nov 2026). Al
   // repetir, uno de por defecto no se copia: llevaría la fecha de aquella
   const [matchName, setMatchName] = useState(() =>
-    esNombrePorDefecto(copia?.matchName) ? '' : (copia?.matchName ?? '')
+    esNombrePorDefecto(copia?.matchName, copia?.selectedCourse?.name) ? '' : (copia?.matchName ?? '')
   );
-  const [nombreAMano, setNombreAMano] = useState(() => Boolean(copia?.matchName) && !esNombrePorDefecto(copia.matchName));
+  const [nombreAMano, setNombreAMano] = useState(() => Boolean(copia?.matchName) && !esNombrePorDefecto(copia.matchName, copia?.selectedCourse?.name));
   const [abiertoEl] = useState(() => new Date());
   const [mode, setMode] = useState(copia?.mode ?? 'MATCH_PLAY');
   const [matchFormat, setMatchFormat] = useState(copia?.matchFormat ?? 'SINGLES');
@@ -191,7 +191,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       vigente = false;
     };
   }, []);
-  const ultimas = ultimasBarras(misPartidas, selectedCourse?.id);
+  const ultimas = useMemo(() => ultimasBarras(misPartidas, selectedCourse?.id), [misPartidas, selectedCourse?.id]);
   // La que sale elegida: la de la última vez en ese campo; si no, la de tu
   // género. Solo si no hay ninguna elegida: la copiada al repetir (P7) o la
   // que hayas tocado tú mandan
@@ -208,13 +208,14 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
   // Al repetir con el aviso de que tu barra ya no vale, no se marca ninguna:
   // el aviso pide elegirla (Agustín, 4 nov 2026). Solo en el campo copiado
   const avisoDeTuBarra =
-    (borrador?.avisos ?? []).some((a) => a.propia && (a.tipo === 'barra' || a.tipo === 'sinBarra')) &&
+    avisosDelBorrador.some((a) => a.propia && (a.tipo === 'barra' || a.tipo === 'sinBarra')) &&
     selectedCourse?.id === copia?.selectedCourse?.id;
   const sugerenciaLista = !teesLoading && !avisoDeTuBarra && (misPartidas !== null || plazoAgotado);
   if (creatorTeeKey === NO_TEE_KEY && sugerenciaLista && barraSugerida !== NO_TEE_KEY) {
     setCreatorTeeKey(barraSugerida);
+    // Si ya se pidió elegirla, el aviso sobra: ya hay una (/code-review)
+    if (error === t('create.course.errorTeeRequired')) setError('');
   }
-  const barraElegida = creatorTeeKey;
   // La de cada amigo, para preelegirla al añadirlo (P8)
   const barraDeAmigo = (userId) => {
     const ultima = ultimas.get(userId);
@@ -295,13 +296,13 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       setError(t('create.course.errorTeeRequired'));
       return;
     }
-    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === barraElegida);
+    const creatorTeeIsValid = courseTees.some((tee) => teeKey(tee.color, tee.gender) === creatorTeeKey);
     if (courseTees.length > 0 && !creatorTeeIsValid) {
       setError(t('create.course.errorTeeRequired'));
       return;
     }
     setError('');
-    const { color, teeGender } = parseTeeKey(barraElegida);
+    const { color, teeGender } = parseTeeKey(creatorTeeKey);
     const plantilla = { campo: selectedCourse.id, mode, matchFormat };
     const misma = plantillaDe.current;
     if (
@@ -525,7 +526,7 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
 
   const peticionDelBorrador = () => {
     const creador = participants.find((p) => p.userId === currentUser.id);
-    const { color: creatorTeeColor, teeGender: creatorTeeGender } = parseTeeKey(barraElegida);
+    const { color: creatorTeeColor, teeGender: creatorTeeGender } = parseTeeKey(creatorTeeKey);
     return {
       golfCourseId: selectedCourse.id,
       matchFormat: isFreePlay ? null : matchFormat,
@@ -682,9 +683,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
             onRequestNewCourse={handleRequestNewCourse}
             courseTees={courseTees}
             courseFromRfeg={courseFromRfeg}
-            creatorTeeKey={barraElegida}
+            creatorTeeKey={creatorTeeKey}
             generoDeQuienCrea={currentUser?.gender ?? null}
-            allowanceAMano={allowanceOverride !== null}
+            allowanceAMano={allowancePercentage !== defaultAllowance}
             onCreatorTeeKeyChange={setCreatorTeeKey}
             allowancePercentage={allowancePercentage}
             // El de por defecto elegido a mano no es «a mano»: así no sale en

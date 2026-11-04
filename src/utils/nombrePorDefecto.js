@@ -14,7 +14,13 @@ export const nombrePorDefecto = (campo, fecha) => {
   return campo.slice(0, LARGO_MAXIMO_DEL_NOMBRE - cuando.length) + cuando;
 };
 
-// Uno de por defecto (de cualquier día): al repetir no se copia, que lleva
-// la fecha de aquella partida
-const DE_POR_DEFECTO = /^.+ · \d{2}\/\d{2}$/;
-export const esNombrePorDefecto = (nombre) => DE_POR_DEFECTO.test(nombre ?? '');
+// Uno de por defecto de ese campo (de cualquier día): al repetir no se copia,
+// que lleva la fecha de aquella partida. Se compara con el campo, no solo con
+// la forma: «Liga del club · 12/10» lo escribió alguien (/code-review)
+const FECHA = /^\d{2}\/\d{2}$/;
+export const esNombrePorDefecto = (nombre, campo) => {
+  if (!nombre || !campo) return false;
+  const ejemplo = nombrePorDefecto(campo, new Date(2000, 0, 1));
+  const prefijo = ejemplo.slice(0, -'01/01'.length);
+  return nombre.startsWith(prefijo) && FECHA.test(nombre.slice(prefijo.length));
+};
