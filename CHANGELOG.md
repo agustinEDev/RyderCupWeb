@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.62.0] - 2026-11-04
+
+**Repetir una partida rápida con un toque, y un primer paso más sencillo para
+crearla.** Necesita el backend **2.46.0** (nombre y apellidos del invitado por
+separado), que va antes.
+
+**Notas de despliegue.**
+
+- Backend 2.46.0 primero y luego este. El cambio de contrato es aditivo: un
+  front viejo con el backend nuevo no nota nada. Sin variables nuevas.
+  Arranque **264 KB gzip** de 270.
+
+### Added
+
+- **Repetir una partida rápida** (#1021, #1024): ↻ en las tarjetas terminadas o
+  canceladas de «Mis partidas rápidas» y junto a las partidas rápidas de «Las
+  últimas partidas» de Inicio. Abre el asistente en el Resumen con todo copiado
+  (nombre, modalidad, formato, campo, %, modo de juego, barras, equipos,
+  invitados y anotadores): un toque más y empieza. Los registrados llevan su
+  hándicap de hoy; los invitados, el de aquella partida. Quien repite pasa a
+  crearla y anota siempre. Lo que ya no vale se queda fuera, con un aviso en el
+  paso donde se arregla: campo no aprobado, barra que ya no existe o campo que
+  ahora tiene barras, quien ya no es amigo, invitado sin nombre y apellidos
+  separados, o un match play al que le falta gente. No hay botón dentro de la
+  partida ni se repiten torneos.
+- **La barra sale elegida** (#1025, #1027): la que llevaste la última vez en ese
+  campo; si no, amarillas los hombres y rojas las mujeres; si no, ninguna. No se
+  marca hasta saber tus partidas (o 2 s sin respuesta, entonces por género) y,
+  una vez marcada, no cambia sola. Al añadir un amigo, su panel trae marcada la
+  que llevó allí la última vez.
+- **Nombre por defecto «Campo · dd/mm»** (#1027), por ejemplo «Abama · 04/11»:
+  igual en todos los idiomas, sigue al campo hasta que escribes uno. Al
+  repetir se copia el nombre propio; uno por defecto viejo pasa al de hoy.
+
+### Changed
+
+- **El primer paso de crear partida rápida** (#1025, #1027): campo → tu barra →
+  «¿A qué jugáis?» (Individual, Fourball, Foursomes, Medal, Stableford: un
+  toque fija modalidad y formato) → «Más opciones» plegado (nombre, scratch,
+  %), cuya cabecera dice lo que no está por defecto. Las barras de tu género y
+  las mixtas van como botones; las demás, en «Otras». Si cambias entre match
+  play y stroke play con un % elegido a mano, vuelve al de por defecto y «Más
+  opciones» se abre para que lo veas.
+- **Resumen compacto** (#1024): barra y hándicap en una fila y botones fijos;
+  con 4 jugadores cabe a 360×740 sin desplazarse.
+- **Volver al paso 1 sin cambiar campo ni formato conserva los jugadores**
+  (#1024), y volver al paso 2 sin cambiar a nadie conserva los anotadores
+  (#1028).
+
+### Fixed
+
+- **La anotación y la vista compartida dicen el formato traducido**
+  («Individual») en vez de `SINGLES` (#1028).
+- **El aviso «Selecciona un tee» se va al elegir la barra**, la tuya y la de un
+  invitado (#1027, #1028).
+- **Tests de Torneos estables** (#1023, #1026): esperan a que corran los
+  efectos de cada pintada antes de actuar.
+
 ## [2.61.0] - 2026-11-03
 
 **Volver atrás a Torneos te deja donde estabas, y las pantallas salen ya
