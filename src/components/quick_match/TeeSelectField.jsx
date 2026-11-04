@@ -23,6 +23,7 @@ const TeeSelectField = ({
   courseTees,
   placeholder,
   playerName,
+  title,
   testIdPrefix,
 }) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -72,6 +73,7 @@ const TeeSelectField = ({
         <TeeSelectPanel
           courseTees={courseTees}
           playerName={playerName}
+          title={title}
           selectedKey={value}
           onSelect={handleSelect}
           onClose={() => setIsPanelOpen(false)}

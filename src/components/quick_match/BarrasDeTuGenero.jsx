@@ -35,7 +35,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
         onChange={onChange}
         courseTees={courseTees}
         placeholder={t('create.course.yourTeePlaceholder')}
-        playerName={t('create.course.yourTeePanelTitle')}
+        title={t('create.course.yourTeePanelTitle')}
         testIdPrefix="quick-match-creator-tee"
       />
     );
@@ -83,7 +83,7 @@ const BarrasDeTuGenero = ({ t, courseTees, genero, value, onChange }) => {
       {otrasAbiertas && (
         <TeeSelectPanel
           courseTees={courseTees}
-          playerName={t('create.course.yourTeePanelTitle')}
+          title={t('create.course.yourTeePanelTitle')}
           selectedKey={value}
           onSelect={(clave) => {
             setOtrasAbiertas(false);
