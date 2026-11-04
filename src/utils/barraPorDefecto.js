@@ -34,7 +34,9 @@ export const barraPorDefecto = ({ tees, genero, ultima }) => {
 
 /**
  * La barra que llevó cada jugador registrado la última vez que jugó en ese
- * campo, de las partidas rápidas de quien crea la nueva.
+ * campo, de las partidas rápidas de quien crea la nueva. El asistente ya las
+ * pide solo de ese campo (BE, 4 nov 2026); filtrar aquí también protege de un
+ * servidor anterior, que ignora el filtro y manda las de cualquier campo.
  *
  * @param {Array|null} partidas Sus partidas rápidas
  * @param {string} golfCourseId

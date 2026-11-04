@@ -222,7 +222,9 @@ const CreateQuickMatchModal = ({ onClose, onStarted, currentUser, borrador = nul
       })
       .catch(() => {
         if (vigente) setPartidasDe({ eleccion, partidas: [] });
-      });
+      })
+      // Con la respuesta, el plazo ya no hace falta (`/code-review`)
+      .finally(() => clearTimeout(plazo));
     return () => {
       vigente = false;
       clearTimeout(plazo);
