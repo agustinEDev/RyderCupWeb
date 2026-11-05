@@ -421,7 +421,13 @@ describe('useRedirectIfAuthenticated', () => {
 
       const { result } = renderHook(() => useRedirectIfAuthenticated());
 
-      await waitFor(() => expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(detalle));
+      await waitFor(() =>
+        expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(detalle, {
+          metodo: 'GET',
+          endpoint: '/api/v1/auth/current-user',
+          estado: 401,
+        })
+      );
       expect(refrescoCompartido).toHaveBeenCalledTimes(1);
       expect(result.current).toBe(false);
     });

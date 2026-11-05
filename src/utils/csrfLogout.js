@@ -13,6 +13,7 @@
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
+import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
 
 /**
  * Handle CSRF validation failure
@@ -22,7 +23,10 @@ import { olvidaLasNovedades } from '../services/novedadesDeActividad';
  *
  * @param {Object} errorData - Error data from backend (optional)
  */
-export const handleCsrfLogout = (errorData = {}) => {
+export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
+  // Que se vea en Sentry (FE #1042), con la ruta que no se pudo recuperar
+  avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, ...contexto });
+
   if (import.meta.env.DEV) {
     console.error('🔒 [CSRF] Validation failed:', errorData.detail || 'No details provided');
     console.warn('🚪 [CSRF] Forcing logout and redirect to login');

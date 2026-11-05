@@ -56,7 +56,7 @@ export const clearUserContext = () => {
  * });
  */
 export const captureError = (error, context = {}) => {
-  const { level = 'error', tags = {}, extra = {} } = context;
+  const { level = 'error', tags = {}, extra = {}, fingerprint = null } = context;
 
   Sentry.withScope((scope) => {
     scope.setLevel(level);
@@ -72,6 +72,9 @@ export const captureError = (error, context = {}) => {
     });
 
     // Capturar error
+    // Agrupación propia, si la pide quien llama (los avisos de cierre, FE #1042)
+    if (fingerprint) scope.setFingerprint(fingerprint);
+
     if (error instanceof Error) {
       Sentry.captureException(error);
     } else {
