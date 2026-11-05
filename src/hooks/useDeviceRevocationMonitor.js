@@ -1,15 +1,19 @@
 /**
  * Device Revocation Monitor Hook
  *
- * Monitors if the current device has been revoked from another browser/device.
- * Uses an event-driven approach with fallback polling for optimal performance.
+ * Makes sure a revoked device finds out, even when the user only reads screens.
+ * The backend checks the token's device on every request (FE #1046 / BE #737):
+ * if it was revoked, any request gets a 401 «Dispositivo revocado», which the
+ * token refresh interceptor turns into handleDeviceRevocationLogout(). This hook
+ * only makes sure such a request happens. It does NOT read the device list to
+ * decide: a list without the current device was a lost cookie, not a revocation.
  *
  * Detection triggers:
  * 1. Page navigation (React Router location change)
  * 2. Tab becomes active (user switches back from another app)
  * 3. Fallback polling every 5 minutes (for edge cases)
  *
- * When revocation is detected, calls handleDeviceRevocationLogout() which:
+ * On revocation, the interceptor calls handleDeviceRevocationLogout(), which:
  * - Clears localStorage and Sentry context
  * - Shows translated toast message
  * - Redirects to /login
@@ -37,10 +41,8 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
   const fallbackTimerRef = useRef(null);
 
   /**
-   * Check if current device is still active
-   * - Calls GET /api/v1/users/me/devices
-   * - Looks for device with is_current_device: true
-   * - If not found, device was revoked → logout
+   * Make an authenticated request so the backend can say the device was revoked
+   * - Calls GET /api/v1/users/me/devices; its 401 is handled by the interceptor
    *
    * Throttling: Max 1 check every 5 seconds
    */

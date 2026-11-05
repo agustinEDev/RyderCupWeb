@@ -17,7 +17,7 @@
  * @param {string} language
  * @returns {string} El codigo base en minusculas, o '' si no hay etiqueta
  */
-const toBaseLanguage = (language) =>
+export const toBaseLanguage = (language) =>
   typeof language === 'string' ? language.toLowerCase().split(/[-_]/)[0] : '';
 
 /**

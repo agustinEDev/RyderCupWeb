@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   M3  si detectarlo lanza | sin cabecera, y no lanza
  */
 const instalada = vi.hoisted(() => ({ valor: false, lanza: false }));
-vi.mock('../hooks/useStandalone', () => ({
+vi.mock('./standalone', () => ({
   detectStandalone: () => {
     if (instalada.lanza) throw new Error('sin window');
     return instalada.valor;

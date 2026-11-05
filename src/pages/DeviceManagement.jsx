@@ -10,6 +10,7 @@ import { useTerminosPendientes } from '../hooks/useTerminosPendientes';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { Laptop, Smartphone, Tablet, HelpCircle } from 'lucide-react';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
+import { toBaseLanguage } from '../services/countries';
 import { iconoDelDispositivo, nombreDelDispositivo, paisDelDispositivo } from '../utils/descripcionDelDispositivo';
 import BlockLoader from '../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
@@ -29,7 +30,8 @@ const IconoDelDispositivo = ({ tipo }) => {
 
 const DeviceManagement = () => {
   const { t, i18n } = useTranslation('devices');
-  const idioma = i18n?.language;
+  // «es_ES» y similares, al idioma base: Intl no los entiende y caería al del navegador
+  const idioma = toBaseLanguage(i18n?.language) || undefined;
   const { user } = useAuth();
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
@@ -81,14 +83,15 @@ const DeviceManagement = () => {
     // Backend already invalidated tokens during revocation, so we skip backend logout call
     // 2500ms delay allows user to read the success toast
     if (success && isCurrent) {
-      // Set revocation flag to prevent monitor from triggering handleDeviceRevocationLogout() again
-      // This tells handleDeviceRevocationLogout() that we're already handling the logout gracefully
+      // Set revocation flag so a 401 «Dispositivo revocado» from any request in these
+      // 2.5 s (the interceptor, FE #1046) does not trigger handleDeviceRevocationLogout()
+      // again: we're already handling the logout gracefully
       // Flag will be cleared on next successful login (see useAuth.js line 74)
       localStorage.setItem('device_revocation_handled', 'true');
 
       timeoutRef.current = setTimeout(() => {
         // Skip backend call because device is already revoked (tokens already invalidated)
-        // This prevents 401 response that would trigger handleDeviceRevocationLogout() again
+        // This prevents a 401 that would trigger handleDeviceRevocationLogout() again
         logout({ skipBackendCall: true });
       }, 2500);
     }

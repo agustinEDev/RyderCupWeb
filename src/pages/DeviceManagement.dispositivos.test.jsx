@@ -13,7 +13,9 @@ import { MemoryRouter } from 'react-router';
  *                                              |   un Mac, icono de ordenador
  *   P3  el dispositivo desde el que se mira    | marcado «Este dispositivo»
  *   P4  la IP y el país                        | la IP tapada que manda la API y el país
+ *   P5  el idioma guardado como «es_ES»         | el país, en castellano igualmente
  */
+const idiomaApp = vi.hoisted(() => ({ valor: 'es' }));
 vi.mock('../utils/cortinaDeArranque', () => ({ laPantallaEstaLista: vi.fn() }));
 vi.mock('../hooks/useTerminosPendientes', () => ({ useTerminosPendientes: () => false }));
 vi.mock('react-i18next', () => ({
@@ -25,7 +27,7 @@ vi.mock('react-i18next', () => ({
         'browser.safari': 'Safari',
         'device.current': 'Este dispositivo',
       })[k] ?? k,
-    i18n: { language: 'es' },
+    i18n: { language: idiomaApp.valor },
   }),
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
@@ -73,7 +75,10 @@ afterAll(() => {
 });
 
 describe('DeviceManagement · lo que enseña cada dispositivo', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    idiomaApp.valor = 'es';
+  });
 
   it('P1: las horas, en la zona del que mira, aunque la API las mande sin «Z»', () => {
     abrir();
@@ -104,6 +109,13 @@ describe('DeviceManagement · lo que enseña cada dispositivo', () => {
     abrir();
 
     expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('90.71.66.***')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('España')).length).toBe(1);
+  });
+
+  it('P5: con el idioma guardado como «es_ES», el país sale en castellano', () => {
+    idiomaApp.valor = 'es_ES';
+    abrir();
+
     expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('España')).length).toBe(1);
   });
 });

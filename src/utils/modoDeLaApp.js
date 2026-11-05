@@ -1,4 +1,4 @@
-import { detectStandalone } from '../hooks/useStandalone';
+import { detectStandalone } from './standalone';
 
 /**
  * La cabecera que dice si la petición sale de la app instalada (FE #1046).
