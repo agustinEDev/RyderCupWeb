@@ -14,10 +14,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   C4  ya tratado antes en esta página                 | ninguno (sin duplicados)
  *   C5  handleCsrfLogout(datos, contexto)               | csrf_unrecovered, con su contexto
  *   C6  el refresco: dispositivo revocado               | revocado, ruta y estado del refresco
- *   C7  el refresco: sesión caducada (su texto)         | session_expired
- *   C8  el refresco: 401 con otro texto                 | refresh_rejected
+ *   C7  el refresco: 401 con un código normal            | session_expired, con su código
+ *       (MISSING, EXPIRED, IDLE)                        |
+ *   C8  el refresco: 401 con un código raro (REVOKED…)  | refresh_rejected, con su código
+ *   C8b el refresco: 401 sin código                     | refresh_rejected
  *   C9  el refresco: 5xx o sin red                      | ninguno: la sesión se conserva
- *   C10 cerrar sesión a petición del usuario            | ninguno (useLogout no pasa por aquí)
+ *   C10 cerrar sesión a petición del usuario            | useLogout calla los avisos antes de salir
  */
 const aviso = vi.hoisted(() => ({ avisaDelCierreForzado: vi.fn() }));
 vi.mock('./avisoDeCierreForzado', async (original) => ({
@@ -36,10 +38,10 @@ const { MOTIVO_DEL_CIERRE } = await import('./avisoDeCierreForzado');
 
 const REFRESCO = 'https://api.rydercupfriends.com/api/v1/auth/refresh-token';
 
-const falloDelRefresco = (status, detail) =>
+const falloDelRefresco = (status, detail, error_code) =>
   Object.assign(new Error('refresh failed'), {
     response: { status, url: REFRESCO },
-    errorData: detail ? { detail } : undefined,
+    errorData: detail ? { detail, ...(error_code ? { error_code } : {}) } : undefined,
   });
 
 describe('quién avisa de un cierre de sesión forzado', () => {
@@ -122,15 +124,37 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     });
   });
 
-  it('C7: el refresco con la sesión caducada avisa como session_expired', () => {
-    trataElFalloDelRefresco(falloDelRefresco(401, 'Refresh token inválido o expirado'));
+  it.each([
+    ['Refresh token no proporcionado. Por favor, inicia sesión nuevamente.', 'REFRESH_TOKEN_MISSING'],
+    ['Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.', 'REFRESH_TOKEN_EXPIRED'],
+    ['Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.', 'SESSION_IDLE'],
+  ])('C7: el refresco con «%s» y %s avisa como session_expired', (detail, codigo) => {
+    trataElFalloDelRefresco(falloDelRefresco(401, detail, codigo));
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
-      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, endpoint: REFRESCO, estado: 401 })
+      expect.objectContaining({
+        motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA,
+        endpoint: REFRESCO,
+        estado: 401,
+        codigo,
+      })
     );
   });
 
-  it('C8: un 401 del refresco con otro texto avisa como refresh_rejected', () => {
+  it.each(['REFRESH_TOKEN_REVOKED', 'REFRESH_TOKEN_INVALID', 'REFRESH_TOKEN_NOT_FOUND', 'USER_NOT_FOUND'])(
+    'C8: el refresco con el código %s avisa como refresh_rejected',
+    (codigo) => {
+      trataElFalloDelRefresco(
+        falloDelRefresco(401, 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.', codigo)
+      );
+
+      expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
+        expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, codigo })
+      );
+    }
+  );
+
+  it('C8b: un 401 del refresco sin código avisa como refresh_rejected', () => {
     trataElFalloDelRefresco(falloDelRefresco(401, 'Usuario no encontrado'));
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
@@ -147,9 +171,12 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     expect(aviso.avisaDelCierreForzado).not.toHaveBeenCalled();
   });
 
-  it('C10: el cierre de sesión que pide el usuario no importa el aviso', async () => {
-    const fuente = await import('../hooks/useLogout.js?raw');
+  it('C10: el cierre de sesión que pide el usuario calla los avisos antes de llamar al backend', async () => {
+    const fuente = (await import('../hooks/useLogout.js?raw')).default;
 
-    expect(fuente.default).not.toMatch(/avisoDeCierreForzado|deviceRevocationLogout|csrfLogout/);
+    // Su POST /auth/logout puede pasar por el interceptor y un refresco que ya
+    // no vale: eso no es un cierre forzado (revisor, 5 nov)
+    expect(fuente).toMatch(/noAvisesDeCierres\(\)/);
+    expect(fuente.indexOf('noAvisesDeCierres()')).toBeLessThan(fuente.indexOf('logoutUseCase.execute'));
   });
 });

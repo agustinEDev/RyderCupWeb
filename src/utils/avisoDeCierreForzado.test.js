@@ -23,6 +23,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   A10 el mismo motivo dos veces en la página     | un solo aviso
  *   A11 un motivo que no existe                    | no se manda nada
  *   A12 nada de datos personales                   | ni el cuerpo del error ni extras
+ *
+ * Tras el revisor (5 nov):
+ *   A13 el error_code del refresco                 | normal (MISSING, EXPIRED, IDLE) →
+ *                                                  |   session_expired; el resto → refresh_rejected
+ *   A14 sesión perdida tras refrescar bien          | session_lost, su título
+ *   A15 el usuario pidió cerrar la sesión           | nada durante 30 s; después, sí
+ *   A16 un endpoint que no se deja leer             | no lanza
+ *   A17 el código del backend                      | etiqueta logout.code ('none' sin él)
  */
 const sentry = vi.hoisted(() => {
   const scope = { setLevel: vi.fn(), setTag: vi.fn(), setFingerprint: vi.fn() };
@@ -91,6 +99,7 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
       'logout.reason': 'csrf_unrecovered',
       'logout.route': 'POST /api/v1/quick-matches/start',
       'logout.status': '403',
+      'logout.code': 'none',
     });
   });
 
@@ -124,6 +133,7 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
       'logout.reason': 'device_revoked',
       'logout.route': 'unknown',
       'logout.status': 'none',
+      'logout.code': 'none',
     });
   });
 
@@ -154,7 +164,7 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     expect(sentry.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('A12: no manda nada más que el título y las tres etiquetas', async () => {
+  it('A12: no manda nada más que el título y las cuatro etiquetas', async () => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
     avisaDelCierreForzado({
@@ -165,8 +175,75 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
       errorData: { detail: 'ana@example.com' },
     });
 
-    expect(sentry.scope.setTag).toHaveBeenCalledTimes(3);
+    expect(sentry.scope.setTag).toHaveBeenCalledTimes(4);
     expect(JSON.stringify(sentry.captureMessage.mock.calls)).not.toContain('ana@example.com');
     expect(JSON.stringify(sentry.scope.setTag.mock.calls)).not.toContain('ana@example.com');
+  });
+
+  it.each([
+    ['REFRESH_TOKEN_MISSING', 'session_expired'],
+    ['REFRESH_TOKEN_EXPIRED', 'session_expired'],
+    ['SESSION_IDLE', 'session_expired'],
+    ['REFRESH_TOKEN_REVOKED', 'refresh_rejected'],
+    ['REFRESH_TOKEN_INVALID', 'refresh_rejected'],
+    ['REFRESH_TOKEN_NOT_FOUND', 'refresh_rejected'],
+    ['USER_NOT_FOUND', 'refresh_rejected'],
+    [undefined, 'refresh_rejected'],
+  ])('A13: el refresco rechazado con %s es %s', async (codigo, motivo) => {
+    const { motivoDelRefrescoRechazado } = await cargar();
+
+    expect(motivoDelRefrescoRechazado({ detail: 'x', error_code: codigo })).toBe(motivo);
+  });
+
+  it('A13b: sin cuerpo, es un rechazo', async () => {
+    const { motivoDelRefrescoRechazado } = await cargar();
+
+    expect(motivoDelRefrescoRechazado(undefined)).toBe('refresh_rejected');
+  });
+
+  it('A14: la sesión perdida tras refrescar bien tiene su motivo y su título', async () => {
+    const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
+
+    expect(MOTIVO_DEL_CIERRE.SESION_PERDIDA).toBe('session_lost');
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA });
+
+    expect(sentry.captureMessage).toHaveBeenCalledWith(
+      'Forced logout: session lost after a good refresh / Cierre de sesión forzado: sesión perdida tras refrescar bien',
+      'warning'
+    );
+  });
+
+  it('A15: si el usuario pidió cerrar la sesión, nada durante 30 s; después vuelve a avisar', async () => {
+    const { avisaDelCierreForzado, noAvisesDeCierres, MOTIVO_DEL_CIERRE } = await cargar();
+    const ahora = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+
+    noAvisesDeCierres();
+    ahora.mockReturnValue(1_000_000 + 29_000);
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
+    expect(sentry.captureMessage).not.toHaveBeenCalled();
+
+    ahora.mockReturnValue(1_000_000 + 31_000);
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
+    expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
+    ahora.mockRestore();
+  });
+
+  it('A16: un endpoint que lanza al leerlo no hace lanzar al aviso', async () => {
+    const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
+    const raro = {
+      toString() {
+        throw new Error('no');
+      },
+    };
+
+    expect(() => avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, endpoint: raro })).not.toThrow();
+  });
+
+  it('A17: lleva el código del backend en logout.code', async () => {
+    const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
+
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO, codigo: 'REFRESH_TOKEN_REVOKED' });
+
+    expect(etiquetas()['logout.code']).toBe('REFRESH_TOKEN_REVOKED');
   });
 });

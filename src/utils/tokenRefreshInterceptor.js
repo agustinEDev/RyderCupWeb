@@ -25,7 +25,7 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout
 } from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
-import { MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
+import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE, motivoDelRefrescoRechazado } from './avisoDeCierreForzado';
 
 // La ruta del refresco, para el aviso cuando la respuesta no trae su URL
 const REFRESH_ENDPOINT = '/api/v1/auth/refresh-token';
@@ -241,7 +241,10 @@ export const trataElFalloDelRefresco = (refreshError) => {
     metodo: 'POST',
     endpoint: respuestaDelServidor?.url || REFRESH_ENDPOINT,
     estado: respuestaDelServidor?.status,
+    codigo: refreshError?.errorData?.error_code,
   };
+  // Por el `error_code`: el final normal de la sesión o un rechazo de verdad
+  const motivo = motivoDelRefrescoRechazado(refreshError?.errorData);
 
   // v2.0.4: Properly differentiate between device revocation and session expiration
   if (respuestaDelServidor && refreshError.errorData) {
@@ -255,7 +258,7 @@ export const trataElFalloDelRefresco = (refreshError) => {
     // Check if refresh failed due to session expiration (refresh token expired)
     if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
       console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
-      handleSessionExpiredLogout(refreshError.errorData, delRefresco);
+      handleSessionExpiredLogout(refreshError.errorData, { ...delRefresco, motivo });
       return;
     }
   }
@@ -266,10 +269,7 @@ export const trataElFalloDelRefresco = (refreshError) => {
   // refresh token, y un 401 con otro mensaje también cierra la sesión
   if (credencialesRechazadas) {
     console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
-    handleSessionExpiredLogout(refreshError.errorData || null, {
-      ...delRefresco,
-      motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
-    });
+    handleSessionExpiredLogout(refreshError.errorData || null, { ...delRefresco, motivo });
   } else {
     // Nadie ha dicho que la sesión no valga: se conserva. El marcador
     // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
@@ -410,6 +410,17 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // Retry the original request
       console.log('🔄 [TokenRefresh] Retrying original request...');
       const retryResponse = await fetch(url, conElTokenAlDia(fetchOptions));
+
+      // El refresco fue bien y aun así 401: la cookie nueva no llegó. Que se vea
+      // (FE #1042): es la clase de fallo que echaba a la gente sin dejar rastro
+      if (retryResponse.status === 401) {
+        avisaDelCierreForzado({
+          motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA,
+          metodo: fetchOptions?.method ?? options?.method,
+          endpoint: url,
+          estado: 401,
+        });
+      }
 
       return retryResponse;
 

@@ -20,6 +20,11 @@
 
 import { refrescoCompartido } from '../utils/tokenRefreshInterceptor';
 import { isDeviceRevoked } from '../utils/deviceRevocationLogout';
+import {
+  avisaDelCierreForzado,
+  esFinalNormalDelRefresco,
+  MOTIVO_DEL_CIERRE,
+} from '../utils/avisoDeCierreForzado';
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco pueden
@@ -90,6 +95,17 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
     if (error?.response?.status === 401) {
       const detalle = error.errorData ?? {};
       if (isDeviceRevoked(error.response, detalle)) return { estado: 'revocada', detalle };
+      // Al abrir la app con la sesión rechazada por algo raro, que se vea (FE #1042).
+      // El final normal no: lo da cada visitante anónimo, sin cookie
+      if (!esFinalNormalDelRefresco(detalle)) {
+        avisaDelCierreForzado({
+          motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+          metodo: 'POST',
+          endpoint: error.response.url || '/api/v1/auth/refresh-token',
+          estado: 401,
+          codigo: detalle.error_code,
+        });
+      }
       return { estado: 'rechazada' };
     }
     return { estado: 'fallo', error };
