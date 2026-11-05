@@ -116,6 +116,9 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     ['https://api.rydercupfriends.com/api/v1/auth/refresh-token', '/api/v1/auth/refresh-token'],
     ['/api/v1/matches/42/status?token=secreto&x=1', '/api/v1/matches/{id}/status'],
     ['/api/v1/golf-courses/abc/hole-map/samples/7#frag', '/api/v1/golf-courses/abc/hole-map/samples/{id}'],
+    ['/api/v1/auth/validate-reset-token/AbC-x_9zQ', '/api/v1/auth/validate-reset-token/{id}'],
+    ['/api/v1/auth/current-user#token=AbC', '/api/v1/auth/current-user'],
+    ['/api/v1/auth/verify/abcdefghijklmnopqrstuvwxyzabcdefghij', '/api/v1/auth/verify/{id}'],
   ])('A7: la ruta %s sale como %s', async (endpoint, esperada) => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
@@ -226,6 +229,41 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
     expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
     ahora.mockRestore();
+  });
+
+  it('A15b: el silencio sobrevive a recargar la página (useLogout recarga al salir)', async () => {
+    const guardado = new Map();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    });
+    const primera = await cargar();
+    primera.noAvisesDeCierres();
+
+    const trasRecargar = await cargar();
+    trasRecargar.avisaDelCierreForzado({ motivo: trasRecargar.MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
+
+    expect(sentry.captureMessage).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('A15c: si sessionStorage lanza, el silencio sigue en memoria y nada se rompe', async () => {
+    vi.stubGlobal('sessionStorage', {
+      getItem: () => {
+        throw new Error('bloqueado');
+      },
+      setItem: () => {
+        throw new Error('bloqueado');
+      },
+    });
+    const { avisaDelCierreForzado, noAvisesDeCierres, MOTIVO_DEL_CIERRE } = await cargar();
+
+    expect(() => noAvisesDeCierres()).not.toThrow();
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO });
+
+    expect(sentry.captureMessage).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 
   it('A16: un endpoint que lanza al leerlo no hace lanzar al aviso', async () => {

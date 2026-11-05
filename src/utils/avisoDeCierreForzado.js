@@ -13,7 +13,7 @@
  * silenciarla sin perder las demás. Sin datos personales: ni el cuerpo del error
  * ni ids en la ruta.
  */
-import * as Sentry from '@sentry/react';
+import { captureError } from './sentryHelpers';
 
 export const MOTIVO_DEL_CIERRE = Object.freeze({
   REFRESCO_RECHAZADO: 'refresh_rejected',
@@ -35,11 +35,23 @@ const FINAL_NORMAL = new Set(['REFRESH_TOKEN_MISSING', 'REFRESH_TOKEN_EXPIRED', 
  *
  * @param {{error_code?: string}|undefined} errorData
  */
-export const motivoDelRefrescoRechazado = (errorData) =>
-  FINAL_NORMAL.has(errorData?.error_code) ? MOTIVO_DEL_CIERRE.SESION_CADUCADA : MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
-
 /** Si el `error_code` del refresco es el final normal de una sesión. */
 export const esFinalNormalDelRefresco = (errorData) => FINAL_NORMAL.has(errorData?.error_code);
+
+export const motivoDelRefrescoRechazado = (errorData) =>
+  esFinalNormalDelRefresco(errorData) ? MOTIVO_DEL_CIERRE.SESION_CADUCADA : MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
+
+// Los 401 de `get_current_user` cuando falla el token de acceso (RyderCupAm
+// src/config/dependencies.py). Otro 401 —una contraseña actual mal escrita— no
+// dice nada de la sesión
+const DE_TOKEN = new Set([
+  'credenciales de autenticación no proporcionadas',
+  'token inválido o expirado',
+  'token inválido: falta subject',
+]);
+
+/** Si un 401 es porque el token de acceso no llegó o no vale. */
+export const esUn401DeToken = (errorData) => DE_TOKEN.has(String(errorData?.detail ?? '').trim().toLowerCase());
 
 const TITULO = Object.freeze({
   refresh_rejected: 'Forced logout: refresh rejected / Cierre de sesión forzado: refresco rechazado',
@@ -54,15 +66,38 @@ const TITULO = Object.freeze({
 // Tras pedir el usuario cerrar la sesión, su POST /auth/logout y lo que esté en
 // vuelo pueden acabar en un refresco que ya no vale: no es un cierre forzado
 const SILENCIO_TRAS_EL_LOGOUT_MS = 30_000;
+// También en sessionStorage: useLogout sale recargando, y la sonda de /login
+// puede tropezar con el refresh ya revocado (/code-review, 5 nov)
+const CLAVE_DEL_SILENCIO = 'avisos-de-cierre-callados-hasta';
 let silencioHasta = 0;
+
+const silenciadoAhora = () => {
+  let guardado = 0;
+  try {
+    guardado = Number(globalThis.sessionStorage?.getItem(CLAVE_DEL_SILENCIO)) || 0;
+  } catch {
+    // Sin almacenamiento, vale el de memoria
+  }
+  return Date.now() < Math.max(silencioHasta, guardado);
+};
 
 /** El usuario pidió cerrar la sesión: nada de avisos durante un rato. */
 export const noAvisesDeCierres = () => {
   silencioHasta = Date.now() + SILENCIO_TRAS_EL_LOGOUT_MS;
+  try {
+    globalThis.sessionStorage?.setItem(CLAVE_DEL_SILENCIO, String(silencioHasta));
+  } catch {
+    // Sin almacenamiento, vale el de memoria
+  }
 };
 
 // Un tramo que es un id: un UUID, un número o un hexadecimal largo
-const ES_UN_ID = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+|[0-9a-f]{16,})$/i;
+// Un tramo que no es una palabra de la API. Las de la API van en minúsculas y con
+// guiones (`quick-matches`, `hole-map`), más la versión (`v1`). Lo demás —con
+// cifras, mayúsculas o `_`, o muy largo— es un id o un token: un `token_urlsafe`
+// no es hexadecimal, y sin esto se colaba entero en la etiqueta (/code-review)
+const ES_PALABRA_DE_LA_API = /^(?:[a-z][a-z-]{0,22}|v\d{1,2})$/;
+const ES_UN_ID = (tramo) => tramo !== '' && !ES_PALABRA_DE_LA_API.test(tramo);
 
 /**
  * La ruta sin nada que identifique a nadie: sin origen, sin query ni fragmento,
@@ -74,7 +109,7 @@ const rutaSinDatos = (endpoint) => {
   const sinQuery = sinOrigen.split(/[?#]/)[0];
   return sinQuery
     .split('/')
-    .map((tramo) => (ES_UN_ID.test(tramo) ? '{id}' : tramo))
+    .map((tramo) => (ES_UN_ID(tramo) ? '{id}' : tramo))
     .join('/');
 };
 
@@ -90,18 +125,19 @@ const yaAvisados = new Set();
  */
 export const avisaDelCierreForzado = ({ motivo, metodo, endpoint, estado, codigo } = {}) => {
   const titulo = TITULO[motivo];
-  if (!titulo || yaAvisados.has(motivo) || Date.now() < silencioHasta) return;
+  if (!titulo || yaAvisados.has(motivo) || silenciadoAhora()) return;
   yaAvisados.add(motivo);
   try {
     const ruta = rutaSinDatos(endpoint);
-    Sentry.withScope((scope) => {
-      scope.setLevel('warning');
-      scope.setTag('logout.reason', motivo);
-      scope.setTag('logout.route', ruta ? `${String(metodo ?? 'GET').toUpperCase()} ${ruta}` : 'unknown');
-      scope.setTag('logout.status', estado == null ? 'none' : String(estado));
-      scope.setTag('logout.code', codigo ? String(codigo) : 'none');
-      scope.setFingerprint(['forced-logout', motivo]);
-      Sentry.captureMessage(titulo, 'warning');
+    captureError(titulo, {
+      level: 'warning',
+      tags: {
+        'logout.reason': motivo,
+        'logout.route': ruta ? `${String(metodo ?? 'GET').toUpperCase()} ${ruta}` : 'unknown',
+        'logout.status': estado == null ? 'none' : String(estado),
+        'logout.code': codigo ? String(codigo) : 'none',
+      },
+      fingerprint: ['forced-logout', motivo],
     });
   } catch {
     // Sin Sentry no hay aviso; el cierre de sesión sigue
