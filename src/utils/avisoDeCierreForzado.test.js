@@ -284,4 +284,16 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
 
     expect(etiquetas()['logout.code']).toBe('REFRESH_TOKEN_REVOKED');
   });
+
+  it.each([
+    [{ tags: { 'logout.reason': 'session_expired' } }, false],
+    [{ tags: { 'logout.reason': 'refresh_rejected' } }, true],
+    [{ tags: { 'logout.reason': 'csrf_unrecovered' } }, true],
+    [{ tags: {} }, true],
+    [{}, true],
+  ])('A18: la grabación de Replay, para %j: %s', async (evento, graba) => {
+    const { grabaSoloLoQueNoEsNormal } = await cargar();
+
+    expect(grabaSoloLoQueNoEsNormal(evento)).toBe(graba);
+  });
 });

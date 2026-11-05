@@ -113,6 +113,15 @@ const rutaSinDatos = (endpoint) => {
     .join('/');
 };
 
+/**
+ * Si un evento sube su grabación de Replay (`beforeErrorSampling`). Cada aviso es
+ * un evento de error para Replay: sin esto, cada caducidad normal de sesión subía la
+ * suya, gastando cupo y tapando los errores de verdad (auditoría OWASP, 5 nov 2026).
+ * Los cierres raros sí la conservan: ahí es donde sirve para depurar.
+ */
+export const grabaSoloLoQueNoEsNormal = (evento) =>
+  evento?.tags?.['logout.reason'] !== MOTIVO_DEL_CIERRE.SESION_CADUCADA;
+
 // Un aviso por motivo y carga de página: tras el cierre la página se va, y
 // varias peticiones a la vez no deben dar varios avisos de lo mismo
 const yaAvisados = new Set();
