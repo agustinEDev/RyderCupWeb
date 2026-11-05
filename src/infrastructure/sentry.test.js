@@ -91,4 +91,16 @@ describe('infrastructure/sentry', () => {
       expect.objectContaining({ maskAllText: true, blockAllMedia: true })
     );
   });
+
+  // R2 (auditoría OWASP, 5 nov 2026): cada caducidad normal subía su grabación
+  it('R2: la grabación no se sube por un aviso de caducidad normal, sí por los raros', async () => {
+    vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'development');
+    const { grabaSoloLoQueNoEsNormal } = await import('../utils/avisoDeCierreForzado');
+
+    await import('./sentry');
+
+    expect(sentry.replayIntegration).toHaveBeenCalledWith(
+      expect.objectContaining({ beforeErrorSampling: grabaSoloLoQueNoEsNormal })
+    );
+  });
 });

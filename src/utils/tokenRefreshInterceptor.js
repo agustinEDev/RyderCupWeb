@@ -25,6 +25,14 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout
 } from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
+import {
+  avisaDelCierreForzado,
+  esUn401DeToken,
+  MOTIVO_DEL_CIERRE,
+  motivoDelRefrescoRechazado,
+} from './avisoDeCierreForzado';
+
+import { RUTA_DEL_REFRESCO } from './rutasDeLaSesion';
 
 /**
  * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios
@@ -232,20 +240,29 @@ export const trataElFalloDelRefresco = (refreshError) => {
   // cada 10 segundos, así que la ocasión se presentaba muchas veces.
   const respuestaDelServidor = refreshError?.response ?? null;
   const credencialesRechazadas = respuestaDelServidor?.status === 401;
+  // Para el aviso a Sentry (FE #1042): lo que contestó el refresco
+  const delRefresco = {
+    metodo: 'POST',
+    endpoint: respuestaDelServidor?.url || RUTA_DEL_REFRESCO,
+    estado: respuestaDelServidor?.status,
+    codigo: refreshError?.errorData?.error_code,
+  };
+  // Por el `error_code`: el final normal de la sesión o un rechazo de verdad
+  const motivo = motivoDelRefrescoRechazado(refreshError?.errorData);
 
   // v2.0.4: Properly differentiate between device revocation and session expiration
   if (respuestaDelServidor && refreshError.errorData) {
     // Check if refresh failed due to EXPLICIT device revocation
     if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
       console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
-      handleDeviceRevocationLogout(refreshError.errorData);
+      handleDeviceRevocationLogout(refreshError.errorData, delRefresco);
       return;
     }
 
     // Check if refresh failed due to session expiration (refresh token expired)
     if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
       console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
-      handleSessionExpiredLogout(refreshError.errorData);
+      handleSessionExpiredLogout(refreshError.errorData, { ...delRefresco, motivo });
       return;
     }
   }
@@ -256,13 +273,44 @@ export const trataElFalloDelRefresco = (refreshError) => {
   // refresh token, y un 401 con otro mensaje también cierra la sesión
   if (credencialesRechazadas) {
     console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
-    handleSessionExpiredLogout(refreshError.errorData || null);
+    handleSessionExpiredLogout(refreshError.errorData || null, { ...delRefresco, motivo });
   } else {
     // Nadie ha dicho que la sesión no valga: se conserva. El marcador
     // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
     // sigue donde estaba
     console.log('📡 [TokenRefresh] Refresh unreachable - keeping the session');
   }
+};
+
+/**
+ * Lo que dice una petición repetida tras un refresco que fue bien (FE #1042).
+ *
+ * - «Dispositivo revocado»: se trata como la revocación que es, igual que si
+ *   hubiera llegado a la primera, y sube su error.
+ * - Un 401 de token (no llegó o no vale): la cookie nueva no llegó. Es la clase de
+ *   fallo que echaba a la gente sin dejar rastro, y se avisa como sesión perdida.
+ * - Cualquier otro 401 (una contraseña actual mal escrita) no dice nada de la sesión.
+ *
+ * La usan las tres esperas a un refresco: la que lo arranca, la que se engancha al
+ * de otra y la que llega cuando otra ya refrescó.
+ */
+const vigilaLaRepetida = async (url, opciones, repetida) => {
+  if (repetida?.status !== 401) return repetida;
+  let datos = {};
+  try {
+    datos = (await repetida.clone().json()) ?? {};
+  } catch {
+    return repetida;
+  }
+  const contexto = { metodo: opciones?.method, endpoint: url, estado: 401 };
+  if (isDeviceRevoked(repetida, datos)) {
+    handleDeviceRevocationLogout(datos, contexto);
+    throw Object.assign(new Error('Device revoked'), { response: repetida, errorData: datos });
+  }
+  if (esUn401DeToken(datos)) {
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA, ...contexto });
+  }
+  return repetida;
 };
 
 /**
@@ -319,7 +367,11 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       const isRevoked = isDeviceRevoked(response, errorData);
 
       if (isRevoked) {
-        handleDeviceRevocationLogout(errorData);
+        handleDeviceRevocationLogout(errorData, {
+          metodo: options?.method,
+          endpoint: url,
+          estado: response.status,
+        });
         revocado = true;
       }
     } catch {
@@ -366,7 +418,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     const yaSeRefrescoDespues = refrescosCompletados > refrescosAlSalir;
     if (!refrescoEnCurso && yaSeRefrescoDespues) {
       console.log('🔄 [TokenRefresh] A refresh already happened after this request left. Retrying...');
-      return await fetch(url, conElTokenAlDia(fetchOptions));
+      return await vigilaLaRepetida(url, fetchOptions, await fetch(url, conElTokenAlDia(fetchOptions)));
     }
 
     // Si ya hay un refresco en vuelo, esta peticion se engancha a el en vez de
@@ -379,7 +431,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       // `return await` y no `return` a secas: sin esperar aqui, un fallo de red
       // en este reintento se escapa del catch de abajo y el mismo suceso deja
       // dos rastros distintos segun quien lo sufra
-      return await fetch(url, conElTokenAlDia(fetchOptions));
+      return await vigilaLaRepetida(url, fetchOptions, await fetch(url, conElTokenAlDia(fetchOptions)));
     }
 
     try {
@@ -394,7 +446,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       console.log('🔄 [TokenRefresh] Retrying original request...');
       const retryResponse = await fetch(url, conElTokenAlDia(fetchOptions));
 
-      return retryResponse;
+      return await vigilaLaRepetida(url, fetchOptions, retryResponse);
 
     } catch (refreshError) {
       trataElFalloDelRefresco(refreshError);

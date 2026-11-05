@@ -10,6 +10,7 @@
  *   ---|-----------------------------------------|---------------------------------
  *   11 403 CSRF y el reintento va bien           | la respuesta, sin cerrar sesión
  *   12 el reintento vuelve a dar 403 CSRF        | cierre de sesión, error marcado
+ *   12b ... y el cierre lleva método, ruta y 403  | para el aviso a Sentry (FE #1042)
  *   13 el refresco da 401 (sesión muerta)        | cierre de sesión, sin reintento
  *   14 el refresco falla por la red              | «sin conexión», sin cierre
  *   15 el reintento da otro error (409)          | ese error, tal cual
@@ -131,6 +132,18 @@ describe('apiRequest · 403 CSRF con un reintento', () => {
     expect(handleCsrfLogout).toHaveBeenCalledTimes(1);
     expect(llamarAlBackend).toHaveBeenCalledTimes(2);
     expect(refrescoCompartido).toHaveBeenCalledTimes(1);
+  });
+
+  it('12b: el cierre lleva el método, la ruta y el 403 para el aviso a Sentry (FE #1042)', async () => {
+    llamarAlBackend.mockResolvedValue(csrf403());
+
+    await crea().catch(() => {});
+
+    expect(handleCsrfLogout).toHaveBeenCalledWith(expect.anything(), {
+      metodo: 'POST',
+      endpoint: '/api/v1/quick-matches/start',
+      estado: 403,
+    });
   });
 
   it('13: si el refresco da 401, lo trata el interceptor y el error sale marcado', async () => {

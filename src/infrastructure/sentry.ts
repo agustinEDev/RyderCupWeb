@@ -27,6 +27,7 @@
  */
 
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
+import { grabaSoloLoQueNoEsNormal } from '../utils/avisoDeCierreForzado';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 import { sentryScrubbing } from '../utils/sentryScrubbing';
@@ -110,6 +111,9 @@ if (!SENTRY_CONFIG.dsn) {
       // clic, las navegaciones) sin pasar por beforeSend: el token del enlace
       // de restablecimiento y el code de Google salian por aqui
       beforeAddRecordingEvent: sentryScrubbing.beforeAddRecordingEvent,
+
+      // La caducidad normal de una sesión no sube grabación; los cierres raros, sí
+      beforeErrorSampling: grabaSoloLoQueNoEsNormal,
 
       // Sample rates (ya configurados en init)
     }),

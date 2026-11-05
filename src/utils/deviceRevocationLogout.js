@@ -26,6 +26,7 @@ import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
+import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -121,8 +122,8 @@ export const requiresReAuthentication = (response, errorData = {}) => {
  *
  * @param {Object} errorData - Optional error data
  */
-export const handleDeviceRevocationLogout = (errorData = null) => {
-  handleLogout(errorData, 'revocation');
+export const handleDeviceRevocationLogout = (errorData = null, contexto = {}) => {
+  handleLogout(errorData, 'revocation', { ...contexto, motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO });
 };
 
 /**
@@ -131,8 +132,8 @@ export const handleDeviceRevocationLogout = (errorData = null) => {
  *
  * @param {Object} errorData - Optional error data
  */
-export const handleSessionExpiredLogout = (errorData = null) => {
-  handleLogout(errorData, 'expiration');
+export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
+  handleLogout(errorData, 'expiration', { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
 };
 
 /**
@@ -141,7 +142,7 @@ export const handleSessionExpiredLogout = (errorData = null) => {
  * @param {Object} errorData - Optional error data to determine logout reason
  * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
  */
-const handleLogout = (errorData = null, reason = 'unknown') => {
+const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
   // If already on login page and already handled, do nothing
@@ -157,6 +158,9 @@ const handleLogout = (errorData = null, reason = 'unknown') => {
 
   // First time handling - do full logout flow
   localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
+
+  // Que se vea en Sentry (FE #1042): solo la primera vez, como el aviso al usuario
+  avisaDelCierreForzado(aviso);
 
   // Clear localStorage
   localStorage.removeItem('user');

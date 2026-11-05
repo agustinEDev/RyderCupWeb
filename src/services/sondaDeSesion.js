@@ -19,7 +19,23 @@
  */
 
 import { refrescoCompartido } from '../utils/tokenRefreshInterceptor';
+import { RUTA_DEL_REFRESCO, RUTA_DEL_USUARIO_ACTUAL } from '../utils/rutasDeLaSesion';
 import { isDeviceRevoked } from '../utils/deviceRevocationLogout';
+import {
+  avisaDelCierreForzado,
+  esFinalNormalDelRefresco,
+  esUn401DeToken,
+  MOTIVO_DEL_CIERRE,
+} from '../utils/avisoDeCierreForzado';
+
+/** El aviso del dispositivo revocado que ve la sonda (FE #1042). */
+const avisaDeLaRevocacion = () =>
+  avisaDelCierreForzado({
+    motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO,
+    metodo: 'GET',
+    endpoint: RUTA_DEL_USUARIO_ACTUAL,
+    estado: 401,
+  });
 
 // Misma prioridad que `api.js` y el interceptor: la configuración de ejecución
 // manda sobre la del build. Sin esto, `/current-user` y el refresco pueden
@@ -59,6 +75,7 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
     if (respuesta.status === 401) {
       const detalle = await cuerpoDelRechazo(respuesta);
       if (isDeviceRevoked(respuesta, detalle)) {
+        avisaDeLaRevocacion();
         return { estado: 'revocada', detalle };
       }
 
@@ -72,7 +89,17 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
       if (respuesta.status === 401) {
         const detalleTrasRefrescar = await cuerpoDelRechazo(respuesta);
         if (isDeviceRevoked(respuesta, detalleTrasRefrescar)) {
+          avisaDeLaRevocacion();
           return { estado: 'revocada', detalle: detalleTrasRefrescar };
+        }
+        // El refresco fue bien y aun así 401 de token: la cookie nueva no llegó
+        if (esUn401DeToken(detalleTrasRefrescar)) {
+          avisaDelCierreForzado({
+            motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA,
+            metodo: 'GET',
+            endpoint: RUTA_DEL_USUARIO_ACTUAL,
+            estado: 401,
+          });
         }
         return { estado: 'rechazada' };
       }
@@ -90,6 +117,17 @@ export const preguntaLaSesionSinInterceptor = async (signal) => {
     if (error?.response?.status === 401) {
       const detalle = error.errorData ?? {};
       if (isDeviceRevoked(error.response, detalle)) return { estado: 'revocada', detalle };
+      // Al abrir la app con la sesión rechazada por algo raro, que se vea (FE #1042).
+      // El final normal no: lo da cada visitante anónimo, sin cookie
+      if (!esFinalNormalDelRefresco(detalle)) {
+        avisaDelCierreForzado({
+          motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+          metodo: 'POST',
+          endpoint: error.response.url || RUTA_DEL_REFRESCO,
+          estado: 401,
+          codigo: detalle.error_code,
+        });
+      }
       return { estado: 'rechazada' };
     }
     return { estado: 'fallo', error };

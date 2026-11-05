@@ -93,3 +93,21 @@ describe('useDeviceRevocationMonitor · respuesta malformada', () => {
     aviso.mockRestore();
   });
 });
+
+// FE #1042: el cierre lleva su contexto para el aviso a Sentry
+describe('useDeviceRevocationMonitor · el dispositivo ya no está', () => {
+  it('cierra la sesión con la ruta de la lista de dispositivos para el aviso', async () => {
+    const { handleDeviceRevocationLogout } = await import('../utils/deviceRevocationLogout');
+    api.apiRequest.mockResolvedValue({ devices: [{ id: '2', is_current_device: false }] });
+
+    renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
+
+    await vi.waitFor(() =>
+      expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(null, {
+        metodo: 'GET',
+        endpoint: '/api/v1/users/me/devices',
+        estado: 200,
+      })
+    );
+  });
+});

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
 import { clearUserContext } from '../utils/sentryHelpers';
+import { noAvisesDeCierres } from '../utils/avisoDeCierreForzado';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { logoutUseCase } from '../composition';
 import { laPaginaSeVa } from '../services/sesionCompartida';
@@ -58,6 +59,10 @@ export const useLogout = () => {
     // 200 reescribía los datos de quien salía o un 401 acababa en «sesión
     // caducada» (FE #865, /code-review)
     const recargarEn = desdeOtraPestana ? salidaDeEstaPestana() : destino;
+
+    // Lo pide el usuario: lo que falle de aquí en adelante (su POST /auth/logout,
+    // un sondeo en vuelo) no es un cierre forzado y no se avisa a Sentry (FE #1042)
+    noAvisesDeCierres();
 
     // A las demas pestañas primero: son las que no se enteran de nada, y así
     // lo saben aunque esta se cierre mientras espera al servidor
