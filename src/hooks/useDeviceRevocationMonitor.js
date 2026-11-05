@@ -26,6 +26,8 @@ import { useLocation } from 'react-router';
 import { apiRequest } from '../services/api';
 
 const FALLBACK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+// La ruta con sesión más ligera: el backend comprueba en ella el dispositivo del token
+const CON_SESION = '/api/v1/auth/current-user';
 const THROTTLE_INTERVAL = 5 * 1000; // 5 seconds (prevent spam)
 
 /**
@@ -42,7 +44,9 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
 
   /**
    * Make an authenticated request so the backend can say the device was revoked
-   * - Calls GET /api/v1/users/me/devices; its 401 is handled by the interceptor
+   * - Calls GET /api/v1/auth/current-user, the lightest authenticated route: the
+   *   backend checks the token's device there too, and its 401 is handled by the
+   *   interceptor. The device list was the most expensive query (FE #1046)
    *
    * Throttling: Max 1 check every 5 seconds
    */
@@ -62,25 +66,11 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
     try {
       lastCheckRef.current = now;
 
-      const response = await apiRequest('/api/v1/users/me/devices');
-
-      // Validate API response shape before processing
-      if (!response || !Array.isArray(response.devices)) {
-        // Malformed response - log for debugging but don't logout. Solo la
-        // forma: Sentry recoge la consola como migas, y la respuesta trae los
-        // dispositivos del usuario (25 oct 2026)
-        console.warn('[DeviceMonitor] Malformed API response:', {
-          type: response === null ? 'null' : typeof response,
-          keys: response && typeof response === 'object' ? Object.keys(response) : [],
-        });
-        return;
-      }
-
-      // Que la lista no traiga el actual YA NO es una revocación (FE #1046): pasaba
-      // al perderse la cookie del dispositivo y echaba con un «revocado» falso. La
-      // revocación de verdad llega como 401 «Dispositivo revocado» del backend, que
-      // comprueba el dispositivo del token en cada petición, y la trata el
+      // La respuesta no decide nada (FE #1046): antes, que la lista de dispositivos no
+      // trajera el actual echaba con un «revocado» falso al perderse la cookie. La
+      // revocación de verdad llega como 401 «Dispositivo revocado», que trata el
       // interceptor. Esta llamada periódica basta para que llegue
+      await apiRequest(CON_SESION);
     } catch {
       // If 401, the token refresh interceptor will handle it
       // If refresh token was also revoked, isDeviceRevoked() will detect it

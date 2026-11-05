@@ -17,11 +17,6 @@ vi.mock('../services/api', () => ({
   apiRequest: vi.fn(),
 }));
 
-// Mock device revocation logout
-vi.mock('../utils/deviceRevocationLogout', () => ({
-  handleDeviceRevocationLogout: vi.fn(),
-}));
-
 // Wrapper with React Router
 const wrapper = ({ children }) => (
   <BrowserRouter>{children}</BrowserRouter>
@@ -38,10 +33,8 @@ describe('useDeviceRevocationMonitor', () => {
       value: false,
     });
 
-    // Default mock: device is active
-    api.apiRequest.mockResolvedValue({
-      devices: [{ id: '1', is_current_device: true, device_name: 'Chrome' }],
-    });
+    // Default mock: the session is fine
+    api.apiRequest.mockResolvedValue({ id: 'u-1' });
   });
 
   it('should return checkDeviceStatus function', () => {
@@ -75,37 +68,13 @@ describe('useDeviceRevocationMonitor', () => {
   });
 });
 
-// U7 (25 oct 2026): Sentry recoge la consola como migas, y la respuesta entera
-// llevaba los dispositivos del usuario (navegador, quizá IP)
-describe('useDeviceRevocationMonitor · respuesta malformada', () => {
-  it('U7: el aviso dice el tipo y las claves, nunca el contenido', async () => {
-    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    api.apiRequest.mockResolvedValue({ devices: 'roto', ip_address: '203.0.113.7', user_agent: 'Navegador secreto' });
-
+// FE #1046: el monitor solo provoca una petición con sesión; la revocación la trata
+// el interceptor con el 401 «Dispositivo revocado»
+describe('useDeviceRevocationMonitor · la petición que hace', () => {
+  it('pide la ruta con sesión más ligera, no la lista de dispositivos', async () => {
     renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
 
-    await vi.waitFor(() => expect(aviso).toHaveBeenCalled());
-    const escrito = JSON.stringify(aviso.mock.calls);
-    expect(escrito).not.toContain('203.0.113.7');
-    expect(escrito).not.toContain('Navegador secreto');
-    expect(escrito).not.toContain('roto');
-    expect(escrito).toContain('ip_address');
-    aviso.mockRestore();
-  });
-});
-
-// FE #1046: perder la cookie del dispositivo no es una revocación. La revocación de
-// verdad llega como 401 «Dispositivo revocado» del backend, que trata el interceptor
-describe('useDeviceRevocationMonitor · sin el dispositivo actual en la lista', () => {
-  it('no cierra la sesión: ya no lo decide la lista', async () => {
-    const { handleDeviceRevocationLogout } = await import('../utils/deviceRevocationLogout');
-    handleDeviceRevocationLogout.mockClear();
-    api.apiRequest.mockResolvedValue({ devices: [{ id: '2', is_current_device: false }] });
-
-    renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
-
-    await vi.waitFor(() => expect(api.apiRequest).toHaveBeenCalled());
-    await new Promise((r) => setTimeout(r, 20));
-    expect(handleDeviceRevocationLogout).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(api.apiRequest).toHaveBeenCalledWith('/api/v1/auth/current-user'));
+    expect(api.apiRequest).not.toHaveBeenCalledWith('/api/v1/users/me/devices');
   });
 });
