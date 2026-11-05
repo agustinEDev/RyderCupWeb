@@ -81,8 +81,13 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
       const currentDevice = devices.find(d => d.is_current_device === true);
 
       if (!currentDevice) {
-        // Device was revoked → logout immediately
-        handleDeviceRevocationLogout();
+        // Device was revoked → logout immediately. El contexto, para el aviso
+        // a Sentry (FE #1042): la lista de dispositivos ya no trae el actual
+        handleDeviceRevocationLogout(null, {
+          metodo: 'GET',
+          endpoint: '/api/v1/users/me/devices',
+          estado: 200,
+        });
       }
     } catch {
       // If 401, the token refresh interceptor will handle it

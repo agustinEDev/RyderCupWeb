@@ -25,6 +25,10 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout
 } from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
+import { MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
+
+// La ruta del refresco, para el aviso cuando la respuesta no trae su URL
+const REFRESH_ENDPOINT = '/api/v1/auth/refresh-token';
 
 /**
  * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios
@@ -232,20 +236,26 @@ export const trataElFalloDelRefresco = (refreshError) => {
   // cada 10 segundos, así que la ocasión se presentaba muchas veces.
   const respuestaDelServidor = refreshError?.response ?? null;
   const credencialesRechazadas = respuestaDelServidor?.status === 401;
+  // Para el aviso a Sentry (FE #1042): lo que contestó el refresco
+  const delRefresco = {
+    metodo: 'POST',
+    endpoint: respuestaDelServidor?.url || REFRESH_ENDPOINT,
+    estado: respuestaDelServidor?.status,
+  };
 
   // v2.0.4: Properly differentiate between device revocation and session expiration
   if (respuestaDelServidor && refreshError.errorData) {
     // Check if refresh failed due to EXPLICIT device revocation
     if (isDeviceRevoked(respuestaDelServidor, refreshError.errorData)) {
       console.log('🔒 [TokenRefresh] Device was revoked - logging out with revocation message');
-      handleDeviceRevocationLogout(refreshError.errorData);
+      handleDeviceRevocationLogout(refreshError.errorData, delRefresco);
       return;
     }
 
     // Check if refresh failed due to session expiration (refresh token expired)
     if (isSessionExpired(respuestaDelServidor, refreshError.errorData)) {
       console.log('⏱️ [TokenRefresh] Session expired - logging out with expiration message');
-      handleSessionExpiredLogout(refreshError.errorData);
+      handleSessionExpiredLogout(refreshError.errorData, delRefresco);
       return;
     }
   }
@@ -256,7 +266,10 @@ export const trataElFalloDelRefresco = (refreshError) => {
   // refresh token, y un 401 con otro mensaje también cierra la sesión
   if (credencialesRechazadas) {
     console.log('⏱️ [TokenRefresh] Refresh rejected with 401 - logging out');
-    handleSessionExpiredLogout(refreshError.errorData || null);
+    handleSessionExpiredLogout(refreshError.errorData || null, {
+      ...delRefresco,
+      motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO,
+    });
   } else {
     // Nadie ha dicho que la sesión no valga: se conserva. El marcador
     // vuelve a preguntar en su siguiente vuelta y lo anotado sin conexión
@@ -319,7 +332,11 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       const isRevoked = isDeviceRevoked(response, errorData);
 
       if (isRevoked) {
-        handleDeviceRevocationLogout(errorData);
+        handleDeviceRevocationLogout(errorData, {
+          metodo: options?.method,
+          endpoint: url,
+          estado: response.status,
+        });
         revocado = true;
       }
     } catch {

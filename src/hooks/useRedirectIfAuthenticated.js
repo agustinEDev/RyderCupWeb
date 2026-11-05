@@ -129,7 +129,11 @@ export const useRedirectIfAuthenticated = ({
       if (resultado.estado === 'revocada') {
         // Sin esto el dispositivo revocado desde otro navegador aterriza en un
         // formulario pelado, sin el aviso que da el interceptor
-        handleDeviceRevocationLogout(resultado.detalle);
+        handleDeviceRevocationLogout(resultado.detalle, {
+          metodo: 'GET',
+          endpoint: '/api/v1/auth/current-user',
+          estado: 401,
+        });
         if (cancelled || settled) return;
         clearAuth();
         showForm();

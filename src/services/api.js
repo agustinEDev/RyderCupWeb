@@ -54,8 +54,8 @@ const esRechazoCsrf = (response, errorData) =>
  * este vale para toda la sesión y no para una anotación. Sin la marca, cada
  * golpe de la cola disparaba su propio cierre de sesión (FE #521)
  */
-const cierraPorCsrf = (errorData) => {
-  handleCsrfLogout(errorData);
+const cierraPorCsrf = (errorData, contexto) => {
+  handleCsrfLogout(errorData, contexto);
   throw errorDeCsrf();
 };
 
@@ -203,6 +203,8 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
     // memoria se quedaba atrás cuando otra pestaña rotaba la cookie, y eso
     // echaba de la aplicación (hotfix 2.63.1, pasada del iPhone del 4 nov)
     if (!response.ok && esRechazoCsrf(response, errorData)) {
+      // Para el aviso a Sentry si no se recupera (FE #1042)
+      const delAviso = { metodo: method, endpoint, estado: 403 };
       // Si la COOKIE ya no es la que se mandó —otra pestaña refrescó—, basta
       // con repetir: otro refresco solo la rotaría otra vez. La memoria no
       // vale para esto: sin cookie puede ser más vieja que lo enviado
@@ -212,7 +214,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       const nuevo = getCsrfToken();
       // Sin token, o con el mismo que se rechazó, el reintento solo puede
       // fallar otra vez: se cierra sin mandarlo
-      if (!nuevo || nuevo === enviado) cierraPorCsrf(errorData);
+      if (!nuevo || nuevo === enviado) cierraPorCsrf(errorData, delAviso);
       // Que se vea si pasa a menudo, pero solo lo raro: con cookie al salir y
       // aun así rechazada. Método y ruta, nunca el token
       if (cookieAlSalir !== null) {
@@ -224,7 +226,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       }
       response = await aTiempo(llamaAlBackend(url, conElTokenAlDia(config, { siempre: true })));
       errorData = response.ok ? null : await leeElError(response);
-      if (!response.ok && esRechazoCsrf(response, errorData)) cierraPorCsrf(errorData);
+      if (!response.ok && esRechazoCsrf(response, errorData)) cierraPorCsrf(errorData, delAviso);
     }
 
     if (!response.ok) {
