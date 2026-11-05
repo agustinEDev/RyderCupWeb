@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.64.0] - 2026-11-05
+
+**Sentry se entera de cada cierre de sesión que hace la aplicación por su
+cuenta** (#1042). El 4 nov un 403 CSRF echaba a la gente al crear una partida y
+no quedó rastro: el backend solo informa de los errores 5xx, y estos cierres no
+informaban de nada. Va con el backend **2.49.0**, que da el motivo de cada
+rechazo del refresco; hay que desplegarlo antes.
+
+### Added
+
+- **Un aviso a Sentry por cada cierre de sesión forzado**, de nivel `warning`.
+  - Título en inglés y castellano, con estos motivos:
+    - `csrf_unrecovered`: un 403 CSRF que falla también tras el reintento;
+    - `device_revoked`;
+    - `refresh_rejected`: un rechazo raro del refresco;
+    - `session_lost`: el refresco fue bien y la petición vuelve con 401 de
+      token, señal de que la cookie nueva no llegó;
+    - `session_expired`: el final normal, aparte para poder silenciarlo.
+  - Etiquetas para filtrar: `logout.reason`, `logout.route` (sin ids, tokens ni
+    query), `logout.status` y `logout.code` (el `error_code` del backend).
+  - Un aviso por motivo y carga de página, agrupado por motivo.
+  - Regresión de punta a punta del caso del 4 nov: el 403 CSRF que no se
+    recupera al crear una partida rápida llega a Sentry con su ruta.
+
+### Changed
+
+- **Qué no avisa:**
+  - Las caducidades normales no suben grabación de Replay: no gastan cupo ni
+    tapan los errores de verdad.
+  - Al abrir la app o una página pública, el final normal de una sesión no
+    avisa, porque lo da cada visitante sin cookie. Un rechazo raro, sí.
+  - El cierre de sesión que pide el usuario calla los avisos 30 s, también tras
+    recargar.
+  - Un 401 que no es de token tras renovar la sesión no cuenta como cierre
+    forzado; por ejemplo, la contraseña actual mal escrita.
+- **Si una petición repetida tras renovar dice «dispositivo revocado»,** se
+  trata como la revocación que es.
+
 ## [2.63.1] - 2026-11-04
 
 **Hotfix: crear una partida ya no te saca de la aplicación.** Sin cambios en el
