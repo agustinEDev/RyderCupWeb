@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
@@ -62,8 +62,15 @@ vi.mock('../hooks/useDeviceManagement', () => ({
 const { default: DeviceManagement } = await import('./DeviceManagement');
 const abrir = () => render(<MemoryRouter><DeviceManagement /></MemoryRouter>);
 
-const enLaZonaDelQueMira = (iso) =>
-  new Date(iso).toLocaleString('es', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+// En una zona fija distinta de UTC: el CI corre en UTC, y ahí leer la fecha sin «Z»
+// como hora local da lo mismo que leerla como UTC, así que el test no probaría nada
+const ZONA_ORIGINAL = process.env.TZ;
+beforeAll(() => {
+  process.env.TZ = 'Europe/Madrid';
+});
+afterAll(() => {
+  process.env.TZ = ZONA_ORIGINAL;
+});
 
 describe('DeviceManagement · lo que enseña cada dispositivo', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -71,8 +78,10 @@ describe('DeviceManagement · lo que enseña cada dispositivo', () => {
   it('P1: las horas, en la zona del que mira, aunque la API las mande sin «Z»', () => {
     abrir();
 
-    expect(screen.getAllByText((_, el) => el?.textContent?.includes(enLaZonaDelQueMira('2026-11-05T19:07:00Z'))).length).toBeGreaterThan(0);
-    expect(screen.getAllByText((_, el) => el?.textContent?.includes(enLaZonaDelQueMira('2026-11-05T19:04:00Z'))).length).toBeGreaterThan(0);
+    // 19:07 y 19:04 UTC son las 20:07 y 20:04 en Madrid (noviembre, UTC+1)
+    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('20:07')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('20:04')).length).toBeGreaterThan(0);
+    expect(screen.queryAllByText((_, el) => el?.tagName === 'SPAN' && el.textContent.includes('19:07'))).toHaveLength(0);
   });
 
   it('P2: el nombre traducido y el icono por tipo', () => {
