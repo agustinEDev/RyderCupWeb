@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   #   camino                                          | aviso
  *   ----|------------------------------------------------|-----------------------------
  *   C1  handleDeviceRevocationLogout(datos, contexto)   | device_revoked, con su contexto
+ *   C1b ... con otro motivo en el contexto              | sigue siendo device_revoked
  *   C2  handleSessionExpiredLogout(datos)               | session_expired
  *   C3  ... con contexto.motivo = refresh_rejected      | refresh_rejected
  *   C4  ya tratado antes en esta página                 | ninguno (sin duplicados)
@@ -65,6 +66,14 @@ describe('quién avisa de un cierre de sesión forzado', () => {
       endpoint: '/api/v1/x',
       estado: 401,
     });
+  });
+
+  it('C1b: un revocado es siempre device_revoked, aunque el contexto traiga otro motivo', () => {
+    handleDeviceRevocationLogout(null, { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA });
+
+    expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
+      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO })
+    );
   });
 
   it('C2: la sesión caducada avisa como session_expired', () => {

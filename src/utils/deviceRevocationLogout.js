@@ -123,7 +123,7 @@ export const requiresReAuthentication = (response, errorData = {}) => {
  * @param {Object} errorData - Optional error data
  */
 export const handleDeviceRevocationLogout = (errorData = null, contexto = {}) => {
-  handleLogout(errorData, 'revocation', { motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO, ...contexto });
+  handleLogout(errorData, 'revocation', { ...contexto, motivo: MOTIVO_DEL_CIERRE.DISPOSITIVO_REVOCADO });
 };
 
 /**
