@@ -115,10 +115,11 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     ['/api/v1/quick-matches/3f2a1c9e-1b2d-4c3e-8f9a-0b1c2d3e4f5a/start', '/api/v1/quick-matches/{id}/start'],
     ['https://api.rydercupfriends.com/api/v1/auth/refresh-token', '/api/v1/auth/refresh-token'],
     ['/api/v1/matches/42/status?token=secreto&x=1', '/api/v1/matches/{id}/status'],
-    ['/api/v1/golf-courses/abc/hole-map/samples/7#frag', '/api/v1/golf-courses/abc/hole-map/samples/{id}'],
+    ['/api/v1/golf-courses/abc/hole-map/samples/7#frag', '/api/v1/golf-courses/{id}/hole-map/samples/{id}'],
+    ['/api/v1/golf-courses/idenminusculas/hole-map/samples', '/api/v1/golf-courses/{id}/hole-map/samples'],
     ['/api/v1/auth/validate-reset-token/AbC-x_9zQ', '/api/v1/auth/validate-reset-token/{id}'],
     ['/api/v1/auth/current-user#token=AbC', '/api/v1/auth/current-user'],
-    ['/api/v1/auth/verify/abcdefghijklmnopqrstuvwxyzabcdefghij', '/api/v1/auth/verify/{id}'],
+    ['/api/v1/auth/verify-email/abcdefghijklmnopqrstuvwxyzabcdefghij', '/api/v1/auth/verify-email/{id}'],
   ])('A7: la ruta %s sale como %s', async (endpoint, esperada) => {
     const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
 
@@ -295,5 +296,35 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     const { grabaSoloLoQueNoEsNormal } = await cargar();
 
     expect(grabaSoloLoQueNoEsNormal(evento)).toBe(graba);
+  });
+
+  it('A19: todos los tramos fijos de las rutas del front están en la lista; si no, saldrían como {id}', async () => {
+    const fuentes = import.meta.glob(['../**/*.{js,jsx,ts}', '!../**/*.test.*'], {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    });
+    const { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } = await cargar();
+    const tramos = new Set();
+    for (const codigo of Object.values(fuentes)) {
+      for (const [, ruta] of codigo.matchAll(/['`"](\/api\/v1\/[^'`"?]*)/g)) {
+        ruta
+          .replace(/\$\{[^}]*\}/g, '{x}')
+          .split('/')
+          .filter((t) => t && !/[{}$<>]/.test(t))
+          .forEach((t) => tramos.add(t));
+      }
+    }
+
+    expect(tramos.size).toBeGreaterThan(50);
+    for (const tramo of tramos) {
+      sentry.scope.setTag.mockClear();
+      vi.resetModules();
+      const modulo = await cargar();
+      modulo.avisaDelCierreForzado({ motivo: modulo.MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, metodo: 'GET', endpoint: `/${tramo}` });
+      expect(etiquetas()['logout.route'], tramo).toBe(`GET /${tramo}`);
+    }
+    expect(avisaDelCierreForzado).toBeTypeOf('function');
+    expect(MOTIVO_DEL_CIERRE).toBeDefined();
   });
 });
