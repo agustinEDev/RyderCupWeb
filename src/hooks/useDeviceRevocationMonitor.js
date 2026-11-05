@@ -20,7 +20,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router';
 import { apiRequest } from '../services/api';
-import { handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 
 const FALLBACK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const THROTTLE_INTERVAL = 5 * 1000; // 5 seconds (prevent spam)
@@ -75,20 +74,11 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
         return;
       }
 
-      const devices = response.devices;
-
-      // Look for current device in the list
-      const currentDevice = devices.find(d => d.is_current_device === true);
-
-      if (!currentDevice) {
-        // Device was revoked → logout immediately. El contexto, para el aviso
-        // a Sentry (FE #1042): la lista de dispositivos ya no trae el actual
-        handleDeviceRevocationLogout(null, {
-          metodo: 'GET',
-          endpoint: '/api/v1/users/me/devices',
-          estado: 200,
-        });
-      }
+      // Que la lista no traiga el actual YA NO es una revocación (FE #1046): pasaba
+      // al perderse la cookie del dispositivo y echaba con un «revocado» falso. La
+      // revocación de verdad llega como 401 «Dispositivo revocado» del backend, que
+      // comprueba el dispositivo del token en cada petición, y la trata el
+      // interceptor. Esta llamada periódica basta para que llegue
     } catch {
       // If 401, the token refresh interceptor will handle it
       // If refresh token was also revoked, isDeviceRevoked() will detect it

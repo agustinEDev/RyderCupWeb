@@ -94,20 +94,18 @@ describe('useDeviceRevocationMonitor · respuesta malformada', () => {
   });
 });
 
-// FE #1042: el cierre lleva su contexto para el aviso a Sentry
-describe('useDeviceRevocationMonitor · el dispositivo ya no está', () => {
-  it('cierra la sesión con la ruta de la lista de dispositivos para el aviso', async () => {
+// FE #1046: perder la cookie del dispositivo no es una revocación. La revocación de
+// verdad llega como 401 «Dispositivo revocado» del backend, que trata el interceptor
+describe('useDeviceRevocationMonitor · sin el dispositivo actual en la lista', () => {
+  it('no cierra la sesión: ya no lo decide la lista', async () => {
     const { handleDeviceRevocationLogout } = await import('../utils/deviceRevocationLogout');
+    handleDeviceRevocationLogout.mockClear();
     api.apiRequest.mockResolvedValue({ devices: [{ id: '2', is_current_device: false }] });
 
     renderHook(() => useDeviceRevocationMonitor({ enabled: true }), { wrapper });
 
-    await vi.waitFor(() =>
-      expect(handleDeviceRevocationLogout).toHaveBeenCalledWith(null, {
-        metodo: 'GET',
-        endpoint: '/api/v1/users/me/devices',
-        estado: 200,
-      })
-    );
+    await vi.waitFor(() => expect(api.apiRequest).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(handleDeviceRevocationLogout).not.toHaveBeenCalled();
   });
 });

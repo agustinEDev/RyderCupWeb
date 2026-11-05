@@ -10,7 +10,8 @@ import {
   conElTokenAlDia,
 } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken, getCsrfCookie } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
-import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
+import { handleCsrfLogout } from '../utils/csrfLogout';
+import { cabeceraDelModoDeLaApp } from '../utils/modoDeLaApp'; // v1.13.0: Centralized CSRF logout
 import { captureError } from '../utils/sentryHelpers';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
@@ -144,6 +145,8 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
   const isFormData = options.body instanceof FormData;
   const defaultHeaders = isFormData ? {} : {
     'Content-Type': 'application/json',
+    // La app instalada se distingue del navegador del mismo móvil (FE #1046)
+    ...cabeceraDelModoDeLaApp(),
   };
 
   // v1.13.0: CSRF Protection - Add X-CSRF-Token header for state-changing requests
