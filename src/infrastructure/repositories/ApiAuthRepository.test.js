@@ -26,7 +26,7 @@ describe('ApiAuthRepository - Account Lockout', () => {
   });
 
   describe('login - HTTP 423 Account Lockout', () => {
-    it('should throw specific error message for account lockout (HTTP 423)', async () => {
+    it('should throw a LOGIN_LOCKED error for a lockout (HTTP 423)', async () => {
       const email = new Email('locked@example.com');
       const password = new Password('Password123', { validateStrength: false });
 
@@ -35,9 +35,8 @@ describe('ApiAuthRepository - Account Lockout', () => {
       error.status = 423;
       mockApiRequest.mockRejectedValue(error);
 
-      await expect(repository.login(email, password)).rejects.toThrow(
-        'Account locked due to too many failed login attempts. Please try again after 30 minutes.'
-      );
+      // Con su código: el texto lo pone la pantalla, traducido (BE #732)
+      await expect(repository.login(email, password)).rejects.toMatchObject({ code: 'LOGIN_LOCKED' });
 
       expect(mockApiRequest).toHaveBeenCalledWith('/api/v1/auth/login', {
         method: 'POST',
@@ -56,9 +55,7 @@ describe('ApiAuthRepository - Account Lockout', () => {
       error.status = 423;
       mockApiRequest.mockRejectedValue(error);
 
-      await expect(repository.login(email, password)).rejects.toThrow(
-        'Account locked due to too many failed login attempts. Please try again after 30 minutes.'
-      );
+      await expect(repository.login(email, password)).rejects.toMatchObject({ code: 'LOGIN_LOCKED' });
     });
 
     it('should distinguish HTTP 423 from HTTP 401', async () => {

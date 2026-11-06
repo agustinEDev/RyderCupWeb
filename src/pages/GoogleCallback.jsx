@@ -80,9 +80,8 @@ const GoogleCallback = () => {
       } catch (err) {
         console.error('Google OAuth callback error:', err);
 
-        if (err.status === 423) {
-          setError(t('google.accountLocked'));
-        } else if (err.status === 429) {
+        // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
+        if (err.status === 429) {
           setError(t('google.rateLimited'));
         } else if (err.status === 409) {
           setError(t('google.alreadyLinked'));

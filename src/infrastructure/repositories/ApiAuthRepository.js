@@ -23,9 +23,12 @@ class ApiAuthRepository extends IAuthRepository {
         csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
       };
     } catch (error) {
-      // v1.13.0: Handle Account Lockout (HTTP 423)
+      // HTTP 423: demasiados fallos desde esta red para esta cuenta (BE #732). Con su
+      // código: el texto, traducido, lo pone la pantalla
       if (error.status === 423 || error.statusCode === 423) {
-        throw new Error('Account locked due to too many failed login attempts. Please try again after 30 minutes.');
+        const bloqueo = new Error('Too many failed attempts from this network');
+        bloqueo.code = 'LOGIN_LOCKED';
+        throw bloqueo;
       }
 
       // Standardize error message for 401

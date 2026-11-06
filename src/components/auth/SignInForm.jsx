@@ -130,9 +130,10 @@ const SignInForm = () => {
         password: ''
       }));
 
-      // v1.13.0: Handle Account Lockout (HTTP 423) with special UI treatment
-      if (error.message && error.message.includes('Account locked')) {
-        customToast.error(error.message, {
+      // HTTP 423: bloqueada esta red para esta cuenta (BE #732). Se puede entrar desde
+      // otra red o desde un dispositivo en el que ya se haya entrado
+      if (error.code === 'LOGIN_LOCKED') {
+        customToast.error(t('login.lockedFromThisNetwork'), {
           duration: 10000, // Longer duration for important security message
           icon: '🔒',
         });
