@@ -159,6 +159,23 @@ describe('SignInForm', () => {
     expect(campoCorreo()).toHaveValue('alguien@ejemplo.com');
   });
 
+  it('B1: con la red bloqueada (423) dice qué hacer, traducido (BE #732)', async () => {
+    const bloqueo = new Error('Too many failed attempts from this network');
+    bloqueo.code = 'LOGIN_LOCKED';
+    ejecutarLogin.mockRejectedValue(bloqueo);
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(errorToast).toHaveBeenCalled());
+    expect(errorToast).toHaveBeenCalledWith(
+      'login.lockedFromThisNetwork',
+      expect.objectContaining({ duration: 10000 })
+    );
+  });
+
   it('corta al sexto intento sin llamar al backend', async () => {
     window.localStorage.setItem(
       'ratelimit_login',
