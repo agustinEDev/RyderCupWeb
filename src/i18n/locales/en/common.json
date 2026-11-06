@@ -112,7 +112,8 @@
     "sharedQuickMatch": "Quick match",
     "leaderboard": "Leaderboard",
     "friendGroup": "A friend's group",
-    "friendMatch": "A friend's match"
+    "friendMatch": "A friend's match",
+    "confirmEmail": "Confirm email"
   },
   "footer": {
     "description": "The ultimate platform for managing amateur golf tournaments in Ryder Cup format. Connect with friends and enjoy the spirit of friendly competition.",

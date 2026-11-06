@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../../utils/validation';
-import { safeLog, resolvePostAuthTarget } from '../../utils/auth';
+import { safeLog, rutaDeVuelta } from '../../utils/auth';
 import PasswordInput from '../ui/PasswordInput';
 import GoogleSignInButton from '../ui/GoogleSignInButton';
 import { loginUseCase } from '../../composition';
@@ -119,7 +119,7 @@ const SignInForm = () => {
         });
       }
 
-      navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+      navigate(rutaDeVuelta(location.state?.from), { replace: true });
 
     } catch (error) {
       console.error('Login error:', error);

@@ -79,7 +79,7 @@
     },
     "security": {
       "title": "Configuración de Seguridad",
-      "subtitle": "Actualiza tu email y/o contraseña. Se requiere contraseña actual.",
+      "subtitle": "Actualiza tu email y/o contraseña. Se requiere contraseña actual. El correo nuevo no se usa hasta que lo confirmes desde esa dirección.",
       "currentPassword": "Contraseña Actual *",
       "currentPasswordPlaceholder": "Requerida para actualizar configuración de seguridad",
       "currentPasswordHelp": "Ingresa tu contraseña actual para autorizar cambios",
@@ -92,7 +92,9 @@
       "confirmPassword": "Confirmar Nueva Contraseña",
       "confirmPasswordPlaceholder": "Confirma tu nueva contraseña",
       "updating": "Actualizando...",
-      "update": "Actualizar Configuración de Seguridad"
+      "update": "Actualizar Configuración de Seguridad",
+      "pendingEmail": "Pendiente de confirmar: {{email}}",
+      "cancelPendingEmail": "Anular"
     },
     "handicap": {
       "title": "Gestión de Hándicap",
@@ -152,7 +154,9 @@
     "avatarInvalidImage": "Ese archivo no es una imagen válida (JPEG, PNG o WEBP).",
     "avatarRemoved": "Foto de perfil eliminada.",
     "failedToRemoveAvatar": "Error al quitar la foto de perfil",
-    "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar."
+    "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar.",
+    "emailChangePending": "Te hemos enviado un enlace a {{nuevo}}. Tu correo sigue siendo {{actual}} hasta que lo confirmes (tienes 24 horas).",
+    "emailChangeCancelled": "Cambio de correo anulado"
   },
   "handicapLabel": "Hándicap",
   "tournamentsLabel": "Torneos",
@@ -193,5 +197,14 @@
     "title": "Antes de apuntarte, indica tu género",
     "cancel": "Cancelar",
     "confirm": "Guardar y aceptar"
+  },
+  "confirmEmailChange": {
+    "title": "Confirmar tu correo nuevo",
+    "confirming": "Confirmando tu correo nuevo…",
+    "done": "Listo: tu correo es ahora {{email}}",
+    "expired": "El enlace ha caducado. Pide el cambio de nuevo en Seguridad.",
+    "invalid": "Este enlace no vale para tu cuenta. ¿Has entrado con la cuenta correcta?",
+    "inUse": "Ese correo ya lo usa otra cuenta. El cambio se ha anulado.",
+    "toProfile": "Ir a mi perfil"
   }
 }

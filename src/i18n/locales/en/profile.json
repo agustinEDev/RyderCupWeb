@@ -79,7 +79,7 @@
     },
     "security": {
       "title": "Security Settings",
-      "subtitle": "Update your email and/or password. Current password required.",
+      "subtitle": "Update your email and/or password. Current password required. The new email is not used until you confirm it from that address.",
       "currentPassword": "Current Password *",
       "currentPasswordPlaceholder": "Required to update security settings",
       "currentPasswordHelp": "Enter your current password to authorize changes",
@@ -92,7 +92,9 @@
       "confirmPassword": "Confirm New Password",
       "confirmPasswordPlaceholder": "Confirm your new password",
       "updating": "Updating...",
-      "update": "Update Security Settings"
+      "update": "Update Security Settings",
+      "pendingEmail": "Pending confirmation: {{email}}",
+      "cancelPendingEmail": "Cancel"
     },
     "handicap": {
       "title": "Handicap Management",
@@ -152,7 +154,9 @@
     "avatarInvalidImage": "That file isn't a valid image (JPEG, PNG or WEBP).",
     "avatarRemoved": "Profile photo removed.",
     "failedToRemoveAvatar": "Failed to remove profile photo",
-    "failedToLoadAvatarOptions": "Failed to load avatar options."
+    "failedToLoadAvatarOptions": "Failed to load avatar options.",
+    "emailChangePending": "We sent a link to {{nuevo}}. Your email stays {{actual}} until you confirm it (you have 24 hours).",
+    "emailChangeCancelled": "Email change cancelled"
   },
   "handicapLabel": "Handicap",
   "tournamentsLabel": "Tournaments",
@@ -193,5 +197,14 @@
     "title": "Before you enter, tell us your gender",
     "cancel": "Cancel",
     "confirm": "Save and accept"
+  },
+  "confirmEmailChange": {
+    "title": "Confirm your new email",
+    "confirming": "Confirming your new email…",
+    "done": "Done: your email is now {{email}}",
+    "expired": "This link has expired. Ask for the change again in Security.",
+    "invalid": "This link is not valid for your account. Are you signed in to the right account?",
+    "inUse": "That email is already used by another account. The change was cancelled.",
+    "toProfile": "Go to my profile"
   }
 }

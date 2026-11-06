@@ -7,6 +7,7 @@ import { passwordErrorMessage, validatePassword } from '../utils/validation';
 import {
   updateUserProfileUseCase,
   updateUserSecurityUseCase,
+  cancelEmailChangeUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
   fetchCountriesUseCase,
@@ -379,7 +380,17 @@ export const useEditProfile = () => {
         confirmPassword: '',
       }));
 
-      customToast.success(t('toasts.securityUpdated'));
+      if (isEmailChanged) {
+        // El correo nuevo queda pendiente hasta confirmarlo desde su dirección
+        // (RyderCupAm #749): la cuenta sigue con el de antes
+        const correos = { nuevo: trimmedEmail, actual: user.email };
+        customToast.success(t('toasts.emailChangePending', correos), {
+          ...correos,
+          duration: 8000,
+        });
+      } else {
+        customToast.success(t('toasts.securityUpdated'));
+      }
     } catch (error) {
       console.error('Error updating security:', error);
 
@@ -407,7 +418,19 @@ export const useEditProfile = () => {
     }
   };
 
+  const handleCancelEmailChange = async () => {
+    try {
+      await cancelEmailChangeUseCase.execute();
+      await refetchUser();
+      customToast.success(t('toasts.emailChangeCancelled'));
+    } catch (error) {
+      console.error('Error cancelling the email change:', error);
+      customToast.error(t('toasts.failedToUpdateSecurity'));
+    }
+  };
+
   return {
+    handleCancelEmailChange,
     // Public state
     user,
     refetchUser,

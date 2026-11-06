@@ -30,6 +30,7 @@ export const RUTAS_DE_LA_APLICACION = Object.freeze([
   '/competitions/:id/leaderboard',
   '/auth/complete-profile',
   '/accept-terms',
+  '/confirm-email-change',
   '/dashboard',
   '/stats',
   '/profile',

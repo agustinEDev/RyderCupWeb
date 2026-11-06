@@ -59,3 +59,12 @@ export const safeLog = (level, message, data = null) => {
     logFn(`[${level.toUpperCase()}]`, message);
   }
 };
+
+/**
+ * A dónde volver tras entrar, desde la ruta protegida de la que venía (su
+ * `location`), CON su búsqueda: el enlace que confirma un correo nuevo lleva el
+ * token en `?token=` (RyderCupAm #749) y antes se perdía al pasar por el login.
+ * Las mismas protecciones que resolvePostAuthTarget.
+ */
+export const rutaDeVuelta = (from) =>
+  resolvePostAuthTarget(from?.pathname ? `${from.pathname}${from.search || ''}` : undefined);
