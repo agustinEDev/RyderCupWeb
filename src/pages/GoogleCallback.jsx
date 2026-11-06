@@ -85,6 +85,9 @@ const GoogleCallback = () => {
           // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
           // del registro con Google)
           setError(t('google.emailNotVerified'));
+        } else if (err.errorCode === 'ACCOUNT_DEACTIVATED') {
+          // Reintentar no sirve: que lo diga
+          setError(t('google.accountDeactivated'));
         } else if (err.status === 429) {
           setError(t('google.rateLimited'));
         } else if (err.status === 409) {

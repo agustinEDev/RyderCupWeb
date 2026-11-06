@@ -14,6 +14,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   G3  falla la vinculación (500)     | google.linkErrorTitle + google.linkError (estaba vinculando)
  *   G4  falla el login con su mensaje  | google.genericError, no el texto del backend sin traducir
  *   G5  Google no verificó el correo   | google.emailNotVerified (RyderCupAm: ni alta ni vínculo)
+ *   G6  la cuenta está desactivada     | google.accountDeactivated, no invitar a reintentar
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
@@ -88,6 +89,18 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     );
     abrir('?code=abc&state=ok');
     expect(await screen.findByText('google.emailNotVerified')).toBeInTheDocument();
+    expect(screen.queryByText('google.genericError')).toBeNull();
+  });
+
+  it('G6: la cuenta está desactivada: lo dice, sin invitar a reintentar', async () => {
+    googleLoginUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('This account has been deactivated.'), {
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.accountDeactivated')).toBeInTheDocument();
     expect(screen.queryByText('google.genericError')).toBeNull();
   });
 });
