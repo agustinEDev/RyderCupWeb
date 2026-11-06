@@ -26,3 +26,18 @@ describe('rutaDeVuelta', () => {
     expect(rutaDeVuelta({ pathname: '//evil.example', search: '' })).toBe('/dashboard');
   });
 });
+
+describe('rutaDeVuelta · solo rutas propias (revisión del front)', () => {
+  it.each([
+    ['barra invertida', '/\\evil.example'],
+    ['tabulador', '/\t/evil.example'],
+    ['esquema', 'javascript:alert(1)'],
+    ['relativa', 'friends'],
+  ])('%s: al panel', (_caso, pathname) => {
+    expect(rutaDeVuelta({ pathname, search: '' })).toBe('/dashboard');
+  });
+
+  it('conserva también el hash', () => {
+    expect(rutaDeVuelta({ pathname: '/stats', search: '?a=1', hash: '#x' })).toBe('/stats?a=1#x');
+  });
+});

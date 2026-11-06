@@ -12,7 +12,11 @@ import { useEditProfile } from './useEditProfile';
  *   H3  anular el pendiente          | cancelEmailChangeUseCase, recarga y emailChangeCancelled
  */
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
+  // Con los valores: así se ve que el texto lleva los dos correos
+  useTranslation: () => ({
+    t: (clave, o) => (o?.nuevo ? `${clave}:${o.nuevo}:${o.actual}` : clave),
+    i18n: { language: 'es' },
+  }),
 }));
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: vi.fn() },
@@ -61,10 +65,10 @@ describe('useEditProfile · correo pendiente', () => {
 
   it('H1: pedir un correo nuevo dice que queda pendiente', async () => {
     await pide({ email: 'ana@trabajo.com' });
-    expect(toast.success).toHaveBeenCalledWith('toasts.emailChangePending', expect.anything());
-    const [, opciones] = toast.success.mock.calls.at(-1);
-    expect(opciones.nuevo).toBe('ana@trabajo.com');
-    expect(opciones.actual).toBe('ana@gmail.com');
+    expect(toast.success).toHaveBeenCalledWith(
+      'toasts.emailChangePending:ana@trabajo.com:ana@gmail.com',
+      { duration: 8000 }
+    );
   });
 
   it('H2: solo la contraseña, el aviso de siempre', async () => {

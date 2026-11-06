@@ -5,6 +5,7 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { confirmEmailChangeUseCase } from '../composition';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
+import { readStrippedSecret, stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
 // Cada rechazo del backend, con su texto (RyderCupAm #749)
@@ -22,7 +23,8 @@ const ConfirmEmailChange = () => {
   const { t } = useTranslation('profile');
   const { user, refetch } = useAuth();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  // Tras quitarlo de la barra, una recarga lo recupera del historial
+  const token = searchParams.get('token') || readStrippedSecret('token');
   const [estado, setEstado] = useState(token ? { clave: 'confirmEmailChange.confirming' } : {
     clave: 'confirmEmailChange.invalid',
   });
@@ -31,6 +33,9 @@ const ConfirmEmailChange = () => {
 
   useEffect(() => {
     laPantallaEstaLista();
+    // Leído: fuera de la barra y del historial, antes de que Replay grabe el href
+    // y de que acabe en el Referer (como al verificar el correo)
+    stripSecretsFromAddressBar();
   }, []);
 
   useEffect(() => {
@@ -38,12 +43,16 @@ const ConfirmEmailChange = () => {
     enviado.current = true;
     confirmEmailChangeUseCase
       .execute(token)
-      .then(async (confirmado) => {
+      .then((confirmado) => {
         setEstado({ clave: 'confirmEmailChange.done', email: confirmado?.email, bien: true });
-        await refetch?.();
+        // La sesión, con el correo nuevo; si falla, el cambio ya está hecho
+        Promise.resolve(refetch?.()).catch(() => {});
       })
       .catch((error) => {
         setEstado({ clave: TEXTO_DEL_RECHAZO[error?.errorCode] || 'confirmEmailChange.invalid' });
+        // Caducado u ocupado: el backend lo anuló, y Seguridad no debe seguir
+        // mostrándolo pendiente
+        Promise.resolve(refetch?.()).catch(() => {});
       });
   }, [token, refetch]);
 
@@ -53,7 +62,10 @@ const ConfirmEmailChange = () => {
       <main className="max-w-md mx-auto px-4 py-10 text-center">
         {/* En el móvil el título va en la cabecera (screenTitles) */}
         <h1 className="hidden md:block text-xl font-semibold text-gray-900 mb-4">{t('confirmEmailChange.title')}</h1>
-        <p className="text-gray-700 wrap-anywhere" role="status">
+        <p
+          className="text-gray-700 wrap-anywhere"
+          role={estado.bien || estado.clave === 'confirmEmailChange.confirming' ? 'status' : 'alert'}
+        >
           {t(estado.clave, { email: estado.email })}
         </p>
         {estado.clave !== 'confirmEmailChange.confirming' && (

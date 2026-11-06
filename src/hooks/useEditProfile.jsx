@@ -384,10 +384,7 @@ export const useEditProfile = () => {
         // El correo nuevo queda pendiente hasta confirmarlo desde su dirección
         // (RyderCupAm #749): la cuenta sigue con el de antes
         const correos = { nuevo: trimmedEmail, actual: user.email };
-        customToast.success(t('toasts.emailChangePending', correos), {
-          ...correos,
-          duration: 8000,
-        });
+        customToast.success(t('toasts.emailChangePending', correos), { duration: 8000 });
       } else {
         customToast.success(t('toasts.securityUpdated'));
       }

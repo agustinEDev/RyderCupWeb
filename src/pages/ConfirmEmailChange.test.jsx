@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { StrictMode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
@@ -14,6 +15,9 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   P4  409 EMAIL_ALREADY_IN_USE         | confirmEmailChange.inUse
  *   P5  sin token en el enlace           | confirmEmailChange.invalid, sin llamar
  *   P6  confirmado                       | la sesión se recarga (el correo de la cabecera)
+ *   P7  caducado u ocupado               | también se recarga: el backend lo anuló
+ *   P8  StrictMode                       | se confirma UNA vez (el token se gasta)
+ *   P9  el token                         | fuera de la barra de direcciones
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -25,18 +29,24 @@ const refetch = vi.fn();
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ refetch }) }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../composition', () => ({ confirmEmailChangeUseCase: { execute: vi.fn() } }));
+vi.mock('../utils/stripSecretsFromAddressBar', () => ({
+  stripSecretsFromAddressBar: vi.fn(),
+  readStrippedSecret: () => null,
+}));
 
 const { confirmEmailChangeUseCase } = await import('../composition');
 const { default: ConfirmEmailChange } = await import('./ConfirmEmailChange');
 
-const abrir = (query) =>
-  render(
+const abrir = (query, { estricto = false } = {}) => {
+  const arbol = (
     <MemoryRouter initialEntries={[`/confirm-email-change${query}`]}>
       <Routes>
         <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
       </Routes>
     </MemoryRouter>
   );
+  return render(estricto ? <StrictMode>{arbol}</StrictMode> : arbol);
+};
 
 const rechazo = (status, errorCode) =>
   Object.assign(new Error('rechazado'), { status, errorCode });
@@ -60,6 +70,38 @@ describe('ConfirmEmailChange', () => {
     confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(status, codigo));
     abrir('?token=tok-1');
     expect(await screen.findByText(texto)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['caducado', 400, 'EMAIL_CHANGE_EXPIRED'],
+    ['ocupado', 409, 'EMAIL_ALREADY_IN_USE'],
+  ])('P7: %s también recarga la sesión (ya no queda pendiente)', async (_n, status, codigo) => {
+    confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(status, codigo));
+    abrir('?token=tok-1');
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('P8: en StrictMode se confirma una sola vez', async () => {
+    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    abrir('?token=tok-1', { estricto: true });
+    await screen.findByText('confirmEmailChange.done:ana@trabajo.com');
+    expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('P6b: si recargar la sesión falla, sigue diciendo que está hecho', async () => {
+    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    refetch.mockRejectedValueOnce(new Error('sin red'));
+    abrir('?token=tok-1');
+    expect(await screen.findByText('confirmEmailChange.done:ana@trabajo.com')).toBeInTheDocument();
+  });
+
+  it('P9: el token sale de la barra de direcciones', async () => {
+    const quita = await import('../utils/stripSecretsFromAddressBar');
+    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'ana@trabajo.com' });
+    abrir('?token=tok-1');
+    await screen.findByText('confirmEmailChange.done:ana@trabajo.com');
+    expect(quita.stripSecretsFromAddressBar).toHaveBeenCalled();
   });
 
   it('P5: sin token no se llama al backend', async () => {
