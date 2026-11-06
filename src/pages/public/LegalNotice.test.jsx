@@ -87,7 +87,7 @@ describe('Aviso Legal · los textos', () => {
     expect(titular).toContain('76826889N');
     expect(titular).toContain('Germán Adrio Sobrido, 10 - 1D');
     expect(titular).toContain('36003 Pontevedra');
-    expect(titular).toContain('agustin.estevez.dominguez@gmail.com');
+    expect(titular).toContain('admin@rydercupfriends.com');
   });
 
   it.each([

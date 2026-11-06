@@ -33,7 +33,8 @@ const IDIOMAS = [
 const texto = (bloque) => JSON.stringify(bloque);
 
 const TITULAR = ['Agustín Estévez Domínguez', '76826889N', 'Germán Adrio Sobrido, 10 - 1D', '36003 Pontevedra'];
-const CORREO = 'agustin.estevez.dominguez@gmail.com';
+// El de contacto; los datos personales del titular, solo en el Aviso Legal (6 nov 2026)
+const CORREO = 'admin@rydercupfriends.com';
 
 describe('cada página pinta todas las secciones de su texto', () => {
   // Las páginas recorren una lista de secciones escrita a mano: una sección
@@ -79,10 +80,12 @@ describe('L1 · salir del documento sin pasar por la portada', () => {
 });
 
 describe('Política de Privacidad', () => {
-  it.each(IDIOMAS)('P1 (%s): identifica al responsable con nombre, NIF, domicilio y correo', (_i, textos) => {
+  it.each(IDIOMAS)('P1 (%s): identifica al responsable con su nombre y el correo, y remite al Aviso Legal', (_i, textos) => {
     const p = texto(textos.privacy);
 
-    for (const dato of [...TITULAR, CORREO]) expect(p).toContain(dato);
+    for (const dato of [TITULAR[0], CORREO]) expect(p).toContain(dato);
+    for (const dato of TITULAR.slice(1)) expect(p).not.toContain(dato);
+    expect(p).toMatch(/Aviso Legal|Legal Notice/);
   });
 
   it.each([
@@ -155,10 +158,12 @@ describe('Política de Privacidad', () => {
 });
 
 describe('Términos de Servicio', () => {
-  it.each(IDIOMAS)('T1 (%s): identifican al titular', (_i, textos) => {
+  it.each(IDIOMAS)('T1 (%s): remiten al titular del Aviso Legal, sin sus datos personales', (_i, textos) => {
     const t = texto(textos.terms);
 
-    for (const dato of ['Agustín Estévez Domínguez', '76826889N', CORREO]) expect(t).toContain(dato);
+    expect(t).toContain(CORREO);
+    expect(t).toMatch(/Aviso Legal|Legal Notice/);
+    for (const dato of TITULAR) expect(t).not.toContain(dato);
     expect(t).not.toMatch(/operado por RyderCupFriends|operated by RyderCupFriends/i);
   });
 
