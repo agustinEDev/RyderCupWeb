@@ -13,6 +13,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   G2  un state que no cuadra         | lo mismo
  *   G3  falla la vinculación (500)     | google.linkErrorTitle + google.linkError (estaba vinculando)
  *   G4  falla el login con su mensaje  | google.genericError, no el texto del backend sin traducir
+ *   G5  Google no verificó el correo   | google.emailNotVerified (RyderCupAm: ni alta ni vínculo)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
@@ -76,6 +77,18 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     abrir('?code=abc&state=ok');
     expect(await screen.findByText('google.genericError')).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('Error interno del servidor');
+  });
+
+  it('G5: Google no ha verificado el correo: dice qué hacer', async () => {
+    googleLoginUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Your Google account email is not verified.'), {
+        status: 400,
+        errorCode: 'GOOGLE_EMAIL_NOT_VERIFIED',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.emailNotVerified')).toBeInTheDocument();
+    expect(screen.queryByText('google.genericError')).toBeNull();
   });
 });
 
