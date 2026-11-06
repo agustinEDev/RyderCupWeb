@@ -2,7 +2,7 @@
   "volver": "Volver",
   "terms": {
     "title": "Términos y condiciones",
-    "lastUpdated": "Última actualización: 20 de octubre de 2026",
+    "lastUpdated": "Última actualización: 6 de noviembre de 2026",
     "section1": {
       "title": "1. Titular y aceptación",
       "content": "RyderCupFriends (\"el Servicio\") lo presta su titular, una persona física. Sus datos están en el Aviso Legal, y puedes escribirle a admin@rydercupfriends.com.\n\nAl registrarte aceptas estos Términos y condiciones. Si no estás de acuerdo con ellos, no uses el Servicio."
@@ -46,7 +46,7 @@
   },
   "privacy": {
     "title": "Política de Privacidad",
-    "lastUpdated": "Última actualización: 20 de octubre de 2026",
+    "lastUpdated": "Última actualización: 6 de noviembre de 2026",
     "section1": {
       "title": "1. Responsable del tratamiento",
       "content": "El responsable del tratamiento de tus datos es:\n\n- Agustín Estévez Domínguez (persona física), el titular del Servicio; sus datos completos están en el Aviso Legal\n- Correo electrónico: admin@rydercupfriends.com\n\nRyderCupFriends (\"el Servicio\") es el nombre de la aplicación, no una sociedad."
@@ -73,7 +73,7 @@
     },
     "section7": {
       "title": "7. Proveedores y transferencias internacionales",
-      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos (región de la UE).\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n- GitHub: recepción de los mensajes del formulario de contacto (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea.\n\nAdemás, al ver el mapa de un hoyo, tu navegador descarga las ortofotos directamente de los servidores públicos que las publican (IGN/PNOA, ICGC, geoEuskadi e IDENA), que reciben la dirección IP de tu dispositivo, como al visitar cualquier web."
+      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos, también los mensajes del formulario de contacto (región de la UE).\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea.\n\nAdemás, al ver el mapa de un hoyo, tu navegador descarga las ortofotos directamente de los servidores públicos que las publican (IGN/PNOA, ICGC, geoEuskadi e IDENA), que reciben la dirección IP de tu dispositivo, como al visitar cualquier web."
     },
     "section8": {
       "title": "8. Cookies, almacenamiento local y Session Replay",
@@ -98,7 +98,7 @@
   },
   "cookies": {
     "title": "Política de Cookies",
-    "lastUpdated": "Última actualización: 20 de octubre de 2026",
+    "lastUpdated": "Última actualización: 6 de noviembre de 2026",
     "section1": {
       "title": "1. Qué son las cookies",
       "content": "Las cookies son pequeños archivos de texto que un sitio web guarda en tu dispositivo. Además de cookies, el Servicio usa el almacenamiento local del navegador (localStorage y sessionStorage). Todo lo que guarda ahí es técnico y necesario para que el Servicio funcione, por lo que no requiere consentimiento:\n\n- Los datos de tu usuario, para mostrar tu sesión sin esperar al servidor. Se borran al cerrar sesión.\n- Las partidas y competiciones que necesitas para anotar sin cobertura, y los avisos pendientes sobre tu hándicap. Se borran al cerrar sesión.\n- Las anotaciones pendientes de enviar cuando no hay cobertura y los avisos de golpes que no se pudieron guardar. No se borran al cerrar sesión, para no perder ningún golpe: las anotaciones se envían cuando vuelve la conexión, y cada aviso solo lo ve su dueño.\n- Los reportes y muestras de hoyos pendientes de enviar, guardados por usuario. No se borran al cerrar sesión: se envían cuando vuelve la conexión.\n- Cachés del mapa del hoyo y de la ubicación de los campos, para que funcionen sin conexión. No se borran al cerrar sesión.\n- Preferencias: el idioma, el orden elegido en algunas listas y si descartaste el aviso de instalar la aplicación. No se borran al cerrar sesión.\n- Datos de funcionamiento: contadores que limitan los intentos repetidos en algunos formularios y el bloqueo de la sesión de anotación. En sessionStorage, que se borra al cerrar la pestaña, solo se guardan: la comprobación de seguridad del inicio de sesión con Google, una marca de arranque, la última ruta desde la que se te llevó a aceptar los Términos (para evitar bucles) y una marca que evita recargar en bucle si falla la carga de una pantalla.\n\nEl service worker guarda además los ficheros de la propia aplicación, para que abra sin conexión."
@@ -126,7 +126,7 @@
   },
   "legalNotice": {
     "title": "Aviso Legal",
-    "lastUpdated": "Última actualización: 20 de octubre de 2026",
+    "lastUpdated": "Última actualización: 6 de noviembre de 2026",
     "section1": {
       "title": "1. Titular del sitio web",
       "content": "En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), estos son los datos del titular de este sitio web y de la aplicación RyderCupFriends (\"el Servicio\"):\n\n- Titular: Agustín Estévez Domínguez (persona física)\n- NIF: 76826889N\n- Domicilio: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (España)\n- Correo electrónico: admin@rydercupfriends.com\n\nRyderCupFriends es el nombre del Servicio, no una sociedad: lo presta su titular como persona física."

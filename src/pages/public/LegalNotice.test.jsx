@@ -91,8 +91,8 @@ describe('Aviso Legal · los textos', () => {
   });
 
   it.each([
-    ['es', es, '20 de octubre de 2026'],
-    ['en', en, '20 October 2026'],
+    ['es', es, '6 de noviembre de 2026'],
+    ['en', en, '6 November 2026'],
   ])('A1 (%s): fecha de la última actualización', (_idioma, textos, fecha) => {
     expect(textos.legalNotice.lastUpdated).toContain(fecha);
   });
