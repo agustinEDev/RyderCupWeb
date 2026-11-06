@@ -33,6 +33,7 @@ import {
 } from './avisoDeCierreForzado';
 
 import { RUTA_DEL_REFRESCO } from './rutasDeLaSesion';
+import { cabeceraDelModoDeLaApp } from './modoDeLaApp';
 
 /**
  * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios
@@ -115,6 +116,8 @@ export const refreshAccessToken = async () => {
         credentials: 'include', // Critical: sends httpOnly cookies
         headers: {
           'Content-Type': 'application/json',
+          // El refresco también registra el dispositivo (FE #1046)
+          ...cabeceraDelModoDeLaApp(),
         },
         signal: corte.signal,
       });

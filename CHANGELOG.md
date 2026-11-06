@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.65.0] - 2026-11-06
+
+**La pantalla de dispositivos dice la verdad: la hora buena, qué dispositivo es
+cada uno y sin falsos «revocado»** (#1046). Va con el backend **2.50.0**, que
+acepta la cabecera `X-App-Mode` en CORS: hay que desplegarlo antes. Probado en el
+Kind a 360 px.
+
+### Fixed
+
+- **Las horas salen en la zona del que mira**, también cuando la API manda la
+  fecha sin «Z» (es UTC). Antes salían con una hora menos, dos en verano.
+- **Cada dispositivo con su icono y su nombre en castellano**: «iPhone · Safari»,
+  «iPhone · app instalada», «Android · Samsung Internet», «Windows · Chrome»…, con
+  icono de móvil, tablet u ordenador. Antes, siempre un monitor y el nombre en
+  inglés que fijaba el backend, que se equivocaba (Chrome en el iPhone era
+  «Safari on iOS»).
+- **El país, en el idioma de la app**, también con el idioma guardado como
+  `es_ES`. La IP sale tapada por el final.
+- **El vigilante de la revocación ya no echa con un falso «revocado»**: pregunta a
+  la ruta con sesión más ligera (`/auth/current-user`) en vez de buscarse en la
+  lista de dispositivos.
+- **Cada 403 de la pantalla de dispositivos se lee por su `errorCode`.**
+
+### Added
+
+- **La cabecera `X-App-Mode`** en cada petición (también las de FormData) y en el
+  refresco: con ella, la app instalada del iPhone es un dispositivo propio y no
+  se mezcla con Safari.
+
 ## [2.64.0] - 2026-11-05
 
 **Sentry se entera de cada cierre de sesión que hace la aplicación por su

@@ -8,7 +8,7 @@
   },
   "info": {
     "title": "Acerca de la Gestión de Dispositivos",
-    "description": "Revocar un dispositivo cerrará inmediatamente todas las sesiones en ese dispositivo. El dispositivo necesitará iniciar sesión nuevamente para recuperar el acceso. Si ves un dispositivo desconocido, revócalo inmediatamente y cambia tu contraseña."
+    "description": "Aquí salen los dispositivos con la sesión abierta. Al revocar uno, se cierra su sesión en cuanto haga cualquier cosa en la app y tendrá que volver a entrar. Si ves un dispositivo que no reconoces, revócalo y cambia tu contraseña."
   },
   "confirmations": {
     "revokeCurrent": "Este es tu dispositivo ACTUAL. Revocarlo te desconectará inmediatamente. ¿Estás seguro?",
@@ -19,11 +19,13 @@
     "revokeOtherTitle": "Revocar Dispositivo"
   },
   "device": {
-    "current": "Dispositivo Actual",
+    "current": "Este dispositivo",
     "ip": "IP",
     "lastUsed": "Último uso",
     "firstSeen": "Visto por primera vez",
-    "never": "Nunca"
+    "never": "Nunca",
+    "unknown": "Dispositivo desconocido",
+    "noIp": "IP desconocida"
   },
   "empty": {
     "title": "No se encontraron dispositivos activos",
@@ -40,12 +42,35 @@
     "DEVICE_ALREADY_REVOKED": "Dispositivo ya revocado",
     "FAILED_TO_REVOKE_DEVICE": "Error al revocar dispositivo",
     "DEVICE_ID_REQUIRED": "Se requiere el ID del dispositivo",
-    "FAILED_TO_LOAD_DEVICES": "Error al cargar dispositivos"
+    "FAILED_TO_LOAD_DEVICES": "Error al cargar dispositivos",
+    "FORBIDDEN": "No puedes revocar este dispositivo",
+    "TERMS_NOT_ACCEPTED": "Acepta los términos de uso para continuar"
   },
   "success": {
     "deviceRevoked": "Dispositivo revocado correctamente"
   },
   "aria": {
     "closeErrorMessage": "Cerrar mensaje de error"
+  },
+  "platform": {
+    "iphone": "iPhone",
+    "ipad": "iPad",
+    "mac": "Mac",
+    "android": "Android",
+    "windows": "Windows",
+    "chromebook": "Chromebook",
+    "linux": "Linux"
+  },
+  "browser": {
+    "safari": "Safari",
+    "chrome": "Chrome",
+    "firefox": "Firefox",
+    "edge": "Edge",
+    "opera": "Opera",
+    "samsung": "Samsung Internet",
+    "instagram": "navegador de Instagram",
+    "google": "app de Google",
+    "facebook": "navegador de Facebook",
+    "installedApp": "app instalada"
   }
 }

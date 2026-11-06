@@ -11,6 +11,7 @@ import {
 } from '../utils/tokenRefreshInterceptor.js';
 import { getCsrfToken, getCsrfCookie } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
+import { cabeceraDelModoDeLaApp } from '../utils/modoDeLaApp';
 import { captureError } from '../utils/sentryHelpers';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../domain/services/aceptacionDeTerminos';
@@ -142,8 +143,11 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
   // FormData (file uploads): the browser must set its own Content-Type header
   // with the multipart boundary — setting it manually here would break parsing.
   const isFormData = options.body instanceof FormData;
-  const defaultHeaders = isFormData ? {} : {
-    'Content-Type': 'application/json',
+  const defaultHeaders = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    // La app instalada se distingue del navegador del mismo móvil (FE #1046),
+    // también al subir ficheros
+    ...cabeceraDelModoDeLaApp(),
   };
 
   // v1.13.0: CSRF Protection - Add X-CSRF-Token header for state-changing requests

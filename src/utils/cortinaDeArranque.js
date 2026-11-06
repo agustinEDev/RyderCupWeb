@@ -23,7 +23,7 @@
  * avisan retiran la cortina al llegar, y ademas hay un plazo maximo.
  */
 
-import { detectStandalone } from '../hooks/useStandalone';
+import { detectStandalone } from './standalone';
 
 const ID_DE_LA_CAPA = 'arranque';
 

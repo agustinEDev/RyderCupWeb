@@ -8,7 +8,7 @@
   },
   "info": {
     "title": "About Device Management",
-    "description": "Revoking a device will immediately close all sessions on that device. The device will need to log in again to regain access. If you see an unfamiliar device, revoke it immediately and change your password."
+    "description": "These are the devices with an open session. Revoking one closes its session as soon as it does anything in the app, and it will have to sign in again. If you see a device you don't recognise, revoke it and change your password."
   },
   "confirmations": {
     "revokeCurrent": "This is your CURRENT device. Revoking it will log you out immediately. Are you sure?",
@@ -19,11 +19,13 @@
     "revokeOtherTitle": "Revoke Device"
   },
   "device": {
-    "current": "Current Device",
+    "current": "This device",
     "ip": "IP",
     "lastUsed": "Last used",
     "firstSeen": "First seen",
-    "never": "Never"
+    "never": "Never",
+    "unknown": "Unknown device",
+    "noIp": "Unknown IP"
   },
   "empty": {
     "title": "No active devices found",
@@ -40,12 +42,35 @@
     "DEVICE_ALREADY_REVOKED": "Device already revoked",
     "FAILED_TO_REVOKE_DEVICE": "Failed to revoke device",
     "DEVICE_ID_REQUIRED": "Device ID is required",
-    "FAILED_TO_LOAD_DEVICES": "Failed to load devices"
+    "FAILED_TO_LOAD_DEVICES": "Failed to load devices",
+    "FORBIDDEN": "You can't revoke this device",
+    "TERMS_NOT_ACCEPTED": "Accept the terms of use to continue"
   },
   "success": {
     "deviceRevoked": "Device revoked successfully"
   },
   "aria": {
     "closeErrorMessage": "Close error message"
+  },
+  "platform": {
+    "iphone": "iPhone",
+    "ipad": "iPad",
+    "mac": "Mac",
+    "android": "Android",
+    "windows": "Windows",
+    "chromebook": "Chromebook",
+    "linux": "Linux"
+  },
+  "browser": {
+    "safari": "Safari",
+    "chrome": "Chrome",
+    "firefox": "Firefox",
+    "edge": "Edge",
+    "opera": "Opera",
+    "samsung": "Samsung Internet",
+    "instagram": "Instagram browser",
+    "google": "Google app",
+    "facebook": "Facebook browser",
+    "installedApp": "installed app"
   }
 }

@@ -7,6 +7,8 @@ import apiRequest from '../../services/api.js';
  * API implementation of Device Repository
  * v1.13.0: Device Fingerprinting feature
  */
+const MOTIVOS_DE_UN_403 = new Set(['CSRF_VALIDATION_FAILED', 'TERMS_NOT_ACCEPTED']);
+
 class ApiDeviceRepository extends IDeviceRepository {
   constructor() {
     super();
@@ -73,8 +75,11 @@ class ApiDeviceRepository extends IDeviceRepository {
 
       // Transform HTTP status codes to domain error codes
       if (statusCode === 403) {
-        const domainError = new Error('CSRF_VALIDATION_FAILED');
-        domainError.code = 'CSRF_VALIDATION_FAILED';
+        // Cada 403 con su motivo (FE #1046): antes todos eran «CSRF», también los
+        // Términos pendientes o un dispositivo que no es tuyo
+        const codigo = MOTIVOS_DE_UN_403.has(error.errorCode) ? error.errorCode : 'FORBIDDEN';
+        const domainError = new Error(codigo);
+        domainError.code = codigo;
         throw domainError;
       } else if (statusCode === 404) {
         const domainError = new Error('DEVICE_NOT_FOUND');

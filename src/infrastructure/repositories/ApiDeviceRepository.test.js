@@ -256,11 +256,24 @@ describe('ApiDeviceRepository', () => {
   });
 
   describe('revokeDevice - HTTP to Domain Error Transformation', () => {
-    it('should transform HTTP 403 to domain error code CSRF_VALIDATION_FAILED', async () => {
+    // FE #1046: cada 403 con su motivo; antes todos salían como CSRF
+    it.each([
+      ['CSRF_VALIDATION_FAILED', 'CSRF_VALIDATION_FAILED'],
+      ['TERMS_NOT_ACCEPTED', 'TERMS_NOT_ACCEPTED'],
+      [undefined, 'FORBIDDEN'],
+    ])('un 403 con error_code %s es el error %s', async (codigo, esperado) => {
+      const httpError = Object.assign(new Error('Forbidden'), { status: 403, statusCode: 403, errorCode: codigo });
+      apiRequestMock.mockRejectedValue(httpError);
+
+      await expect(repository.revokeDevice('device-123')).rejects.toMatchObject({ message: esperado, code: esperado });
+    });
+
+    it('should transform HTTP 403 with the CSRF code to CSRF_VALIDATION_FAILED', async () => {
       const deviceId = 'device-123';
       const httpError = new Error('Forbidden');
       httpError.status = 403;
       httpError.statusCode = 403;
+      httpError.errorCode = 'CSRF_VALIDATION_FAILED';
 
       apiRequestMock.mockRejectedValue(httpError);
 
