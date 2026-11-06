@@ -47,7 +47,7 @@ describe('ApiAuthRepository - Account Lockout', () => {
       });
     });
 
-    it('should handle HTTP 423 with full error message from backend', async () => {
+    it('should give the same LOGIN_LOCKED code whatever message the backend sends', async () => {
       const email = new Email('test@example.com');
       const password = new Password('Password123', { validateStrength: false });
 
