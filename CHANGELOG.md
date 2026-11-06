@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.66.0] - 2026-11-06
+
+**La pantalla de entrada dice qué hacer cuando un login se bloquea, en el idioma de
+la app** (RyderCupAm #732). Va con el backend **2.51.0**: hay que desplegarlo antes.
+
+### Fixed
+
+- **El 423 del login muestra un texto traducido**: «Demasiados intentos. Prueba
+  dentro de 30 minutos o desde un dispositivo en el que ya hayas entrado.» Antes salía
+  en inglés y decía que la cuenta entera estaba bloqueada 30 minutos; ahora un 423 es
+  esta red bloqueada para la cuenta, o el respaldo de la cuenta, y en los dos casos el
+  dispositivo de siempre del dueño entra.
+
+### Removed
+
+- El caso del 423 en el login con Google: el backend ya no lo devuelve.
+
 ## [2.65.0] - 2026-11-06
 
 **La pantalla de dispositivos dice la verdad: la hora buena, qué dispositivo es
