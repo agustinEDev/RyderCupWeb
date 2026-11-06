@@ -5,9 +5,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // coinciden, y ese desacuerdo es lo que se prueba abajo
 const equipo = { instalada: true };
 
-vi.mock('../hooks/useStandalone', () => ({
+vi.mock('./standalone', () => ({
   detectStandalone: () => equipo.instalada,
-  useStandalone: () => equipo.instalada,
 }));
 import {
   elArranqueHaTerminado,

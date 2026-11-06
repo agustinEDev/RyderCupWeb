@@ -486,6 +486,11 @@ describe('Device Entity', () => {
         created_at: '2026-01-05T08:15:00Z',
         is_active: true,
         is_current_device: false,
+        device_type: 'unknown',
+        platform: 'unknown',
+        browser: 'unknown',
+        installed_app: false,
+        country_code: null,
       });
     });
 
@@ -501,5 +506,28 @@ describe('Device Entity', () => {
       expect(persistence.last_used_at).toBeNull();
       expect(persistence.created_at).toBeNull();
     });
+  });
+});
+
+// FE #1046: lo que la pantalla necesita para el nombre, el icono y el país
+describe('Device · los campos de la pantalla', () => {
+  const base = { id: 'd-1', device_name: 'x', ip_address: '90.71.66.***', last_used_at: '2026-11-05T19:07:00Z', created_at: '2026-11-05T19:04:00Z' };
+
+  it('conserva tipo, plataforma, navegador, app instalada y país, y los devuelve en toPersistence', () => {
+    const device = new Device({ ...base, device_type: 'phone', platform: 'iphone', browser: 'safari', installed_app: true, country_code: 'ES' });
+
+    expect([device.deviceType, device.platform, device.browser, device.installedApp, device.countryCode]).toEqual(['phone', 'iphone', 'safari', true, 'ES']);
+    expect(device.toPersistence()).toMatchObject({ device_type: 'phone', platform: 'iphone', browser: 'safari', installed_app: true, country_code: 'ES' });
+  });
+
+  it('sin esos campos (una API anterior), «unknown» y sin país', () => {
+    const device = new Device(base);
+
+    expect([device.deviceType, device.platform, device.browser, device.installedApp, device.countryCode]).toEqual(['unknown', 'unknown', 'unknown', false, null]);
+  });
+
+  it('acepta la IP vacía: sin IP real no hay nada que tapar', () => {
+    expect(() => new Device({ ...base, ip_address: '' })).not.toThrow();
+    expect(() => new Device({ ...base, ip_address: undefined })).toThrow();
   });
 });

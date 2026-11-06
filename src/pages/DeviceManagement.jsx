@@ -8,12 +8,30 @@ import { useAuth } from '../hooks/useAuth';
 import { useLogout } from '../hooks/useLogout';
 import { useTerminosPendientes } from '../hooks/useTerminosPendientes';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
-import { formatDateTime } from '../utils/dateFormatters';
+import { Laptop, Smartphone, Tablet, HelpCircle } from 'lucide-react';
+import { instanteEnTexto } from '../utils/instanteDeLaApi';
+import { toBaseLanguage } from '../services/countries';
+import { iconoDelDispositivo, nombreDelDispositivo, paisDelDispositivo } from '../utils/descripcionDelDispositivo';
 import BlockLoader from '../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 
+// En la zona horaria de quien mira y en el idioma de la app (FE #1046). La API
+// manda la hora en UTC: el formateador de antes la leía como hora local, y salía una hora
+// menos en España (dos en verano)
+const FORMATO_DE_FECHA = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+
+const ICONOS = { phone: Smartphone, tablet: Tablet, computer: Laptop };
+
+/** El icono de cada tipo de dispositivo: móvil, tablet u ordenador. */
+const IconoDelDispositivo = ({ tipo }) => {
+  const Icono = ICONOS[tipo] ?? HelpCircle;
+  return <Icono className="w-5 h-5 text-gray-600 flex-shrink-0" aria-hidden="true" data-testid={`icono-${tipo}`} />;
+};
+
 const DeviceManagement = () => {
-  const { t } = useTranslation('devices');
+  const { t, i18n } = useTranslation('devices');
+  // «es_ES» y similares, al idioma base: Intl no los entiende y caería al del navegador
+  const idioma = toBaseLanguage(i18n?.language) || undefined;
   const { user } = useAuth();
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
@@ -65,14 +83,15 @@ const DeviceManagement = () => {
     // Backend already invalidated tokens during revocation, so we skip backend logout call
     // 2500ms delay allows user to read the success toast
     if (success && isCurrent) {
-      // Set revocation flag to prevent monitor from triggering handleDeviceRevocationLogout() again
-      // This tells handleDeviceRevocationLogout() that we're already handling the logout gracefully
+      // Set revocation flag so a 401 «Dispositivo revocado» from any request in these
+      // 2.5 s (the interceptor, FE #1046) does not trigger handleDeviceRevocationLogout()
+      // again: we're already handling the logout gracefully
       // Flag will be cleared on next successful login (see useAuth.js line 74)
       localStorage.setItem('device_revocation_handled', 'true');
 
       timeoutRef.current = setTimeout(() => {
         // Skip backend call because device is already revoked (tokens already invalidated)
-        // This prevents 401 response that would trigger handleDeviceRevocationLogout() again
+        // This prevents a 401 that would trigger handleDeviceRevocationLogout() again
         logout({ skipBackendCall: true });
       }, 2500);
     }
@@ -167,11 +186,9 @@ const DeviceManagement = () => {
                           {/* Device Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <svg className="w-5 h-5 text-gray-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
-                              </svg>
+                              <IconoDelDispositivo tipo={iconoDelDispositivo(device)} />
                               <h3 className="text-base font-semibold text-gray-900 break-words">
-                                {device.deviceName}
+                                {nombreDelDispositivo(device, t)}
                               </h3>
                               {isCurrent && (
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
@@ -185,19 +202,26 @@ const DeviceManagement = () => {
                                 <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                                 </svg>
-                                <span className="break-all">{t('device.ip')}: {device.ipAddress}</span>
+                                <span className="break-words">
+                                  {[
+                                    device.ipAddress && `${t('device.ip')}: ${device.ipAddress}`,
+                                    paisDelDispositivo(device.countryCode, idioma),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ') || t('device.noIp')}
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="break-words">{t('device.lastUsed')}: {formatDateTime(device.lastUsedAt, t('device.never'))}</span>
+                                <span className="break-words">{t('device.lastUsed')}: {instanteEnTexto(device.lastUsedAt, idioma, FORMATO_DE_FECHA) ?? t('device.never')}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <span className="break-words">{t('device.firstSeen')}: {formatDateTime(device.createdAt, t('device.never'))}</span>
+                                <span className="break-words">{t('device.firstSeen')}: {instanteEnTexto(device.createdAt, idioma, FORMATO_DE_FECHA) ?? t('device.never')}</span>
                               </div>
                             </div>
                           </div>
