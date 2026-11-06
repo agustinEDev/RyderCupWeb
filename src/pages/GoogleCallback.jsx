@@ -81,7 +81,10 @@ const GoogleCallback = () => {
         console.error('Google OAuth callback error:', err);
 
         // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
-        if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
+        if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {
+          // Vincular Google pide el correo de la cuenta verificado (RyderCupAm #749)
+          setError(t('google.linkNeedsVerifiedEmail'));
+        } else if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
           // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
           // del registro con Google)
           setError(t('google.emailNotVerified'));

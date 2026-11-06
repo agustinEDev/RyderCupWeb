@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   G4  falla el login con su mensaje  | google.genericError, no el texto del backend sin traducir
  *   G5  Google no verificó el correo   | google.emailNotVerified (RyderCupAm: ni alta ni vínculo)
  *   G6  la cuenta está desactivada     | google.accountDeactivated, no invitar a reintentar
+ *   G7  vincular sin el correo verificado | google.linkNeedsVerifiedEmail (RyderCupAm #749)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
@@ -90,6 +91,19 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     abrir('?code=abc&state=ok');
     expect(await screen.findByText('google.emailNotVerified')).toBeInTheDocument();
     expect(screen.queryByText('google.genericError')).toBeNull();
+  });
+
+  it('G7: vincular sin el correo verificado: dice que lo verifique', async () => {
+    estado.flow = 'link';
+    linkGoogleAccountUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Verify your email before linking a Google account.'), {
+        status: 403,
+        errorCode: 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.linkNeedsVerifiedEmail')).toBeInTheDocument();
+    expect(screen.queryByText('google.linkError')).toBeNull();
   });
 
   it('G6: la cuenta está desactivada: lo dice, sin invitar a reintentar', async () => {
