@@ -12,11 +12,6 @@ function generateNonce() {
   return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Build Google OAuth 2.0 authorization URL with CSRF-safe state.
- * @param {'login'|'link'} flow - The OAuth flow type. 'login' for sign-in/register, 'link' for account linking.
- * @returns {string} The full Google OAuth authorization URL.
- */
 // La página a la que volver tras entrar con Google (RyderCupAm #753): sin esto, el
 // enlace de confirmar el cambio de correo abierto sin sesión se perdía, porque la vuelta
 // de Google va al panel. Solo esas páginas: cualquier otra ruta sería una redirección
@@ -58,6 +53,11 @@ export function recogeLaVueltaDeGoogle() {
   return esVueltaPermitida(ruta) ? ruta : null;
 }
 
+/**
+ * Build Google OAuth 2.0 authorization URL with CSRF-safe state.
+ * @param {'login'|'link'} flow - The OAuth flow type. 'login' for sign-in/register, 'link' for account linking.
+ * @returns {string} The full Google OAuth authorization URL.
+ */
 export function buildGoogleOAuthUrl(flow = 'login') {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
