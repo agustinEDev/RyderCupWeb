@@ -23,13 +23,13 @@
  *        (S11a interceptor, S11b sonda,            |   sonda = fallo, apiRequest =
  *        S11c apiRequest, S11d CSRF)               |   sin cobertura, también CSRF)
  *   S13  el tope de 15 s es por intento            | el reintento tiene los suyos
- *   S15  reintento con 200 de OTRA cuenta          | no se repite la petición, la pestaña
- *        (también las enganchadas)                 |   recarga, sin cierre ni refresco anotado
+ *   S15  200 de OTRA cuenta, en el reintento o a   | no se repite la petición, la pestaña
+ *        la primera (también las enganchadas)      |   recarga, sin cierre ni refresco anotado
  *   S15b reintento con 200 de la misma cuenta      | sigue, sin recargar
  *   S15c la pestaña no sabe quién es / 200 sin     | sigue, sin recargar
  *        usuario                                   |
- *   S15d refresco normal (sin REPLACED) de otra    | sigue como hoy, sin recargar
- *        cuenta                                    |
+ *   S16  401 con el cuerpo cortado por la red      | fallo sin respuesta: conserva la sesión
+ *   S16b 401 con un cuerpo que no es JSON          | es un 401: cierra, como hoy
  *   S14  cuerpo del 200 o del 401 parado           | el tope lo corta, se suelta el refresco
  *        y la sesión se conserva                   | y el siguiente pide el suyo
  */
@@ -355,14 +355,16 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
       expect(recarga).not.toHaveBeenCalled();
     });
 
-    it('S15d: un refresco normal de otra cuenta sigue como hoy', async () => {
+    it('S15: también si el refresco sale bien a la primera con otra cuenta', async () => {
       await conPestanaDe(CUENTA_A);
       conRefrescos(OK_DE(CUENTA_B));
 
-      const { valor } = await hastaElFinal(pide());
+      const { error } = await hastaElFinal(pide());
 
-      expect(valor.status).toBe(200);
-      expect(recarga).not.toHaveBeenCalled();
+      expect(recarga).toHaveBeenCalledTimes(1);
+      expect(peticiones()).toBe(1);
+      expect(error).toBeInstanceOf(TypeError);
+      expect(interceptor.getLastRefreshAt()).toBeNull();
     });
 
     it('S15: la sesión compartida le dice al interceptor quién es la pestaña', async () => {
@@ -374,6 +376,29 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
 
       expect(recarga).toHaveBeenCalledTimes(1);
       expect(peticiones()).toBe(1);
+    });
+  });
+
+  describe('S16: un 401 con el cuerpo ilegible', () => {
+    const conCuerpo = (falla) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({ ...respuesta(401), json: async () => { throw falla; } }))
+      );
+    };
+
+    it('S16: cortado por la red: conserva la sesión', async () => {
+      conCuerpo(new TypeError('network error'));
+      const error = await refrescaYTrata();
+      expect(error.response).toBeUndefined();
+      expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
+    });
+
+    it('S16b: no es JSON: es un 401, y cierra', async () => {
+      conCuerpo(new SyntaxError('Unexpected token'));
+      const error = await refrescaYTrata();
+      expect(error.response?.status).toBe(401);
+      expect(cierre.handleSessionExpiredLogout).toHaveBeenCalledTimes(1);
     });
   });
 

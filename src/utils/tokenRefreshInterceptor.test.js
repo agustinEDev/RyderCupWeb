@@ -100,6 +100,7 @@ describe('tokenRefreshInterceptor', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
+        json: async () => { throw new SyntaxError('not JSON'); },
       });
 
       await expect(refreshAccessToken()).rejects.toThrow('Refresh token expired');
@@ -111,6 +112,7 @@ describe('tokenRefreshInterceptor', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
+        json: async () => { throw new SyntaxError('not JSON'); },
       });
 
       await expect(refreshAccessToken()).rejects.toThrow('Failed to refresh token');

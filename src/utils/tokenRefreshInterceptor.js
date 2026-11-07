@@ -148,9 +148,9 @@ const pideElRefresco = async () => {
       try {
         errorData = await response.json();
       } catch (errorDelCuerpo) {
-        // Un cuerpo que no es JSON se ignora. Uno cortado por el tope no es una
-        // respuesta: sin saber el código, no se cierra la sesión por él
-        if (corte.signal.aborted) throw errorDelCuerpo;
+        // Un cuerpo que no es JSON se ignora. Uno cortado, por la red o por el tope,
+        // no es una respuesta: sin saber el código, no se cierra la sesión por él
+        if (!(errorDelCuerpo instanceof SyntaxError)) throw errorDelCuerpo;
       }
 
       // Refresh token expired or invalid
@@ -189,7 +189,7 @@ const pideElRefresco = async () => {
 };
 
 /**
- * Refresh the access token using the refresh token cookie
+ * El POST al refresco, y uno más si contesta `SESSION_REPLACED`.
  *
  * Con `SESSION_REPLACED` (BE #734) el navegador ya tiene una sesión más nueva y el
  * servidor no ha borrado la cookie: se repite UNA vez con la cookie nueva. Si vuelve a
@@ -198,31 +198,38 @@ const pideElRefresco = async () => {
  * esperan un refresco ya saben tratar conservando la sesión. La ventana del backend
  * dura 5 minutos: pasados, contesta un rechazo normal y ahí sí se cierra.
  *
- * @returns {Promise<boolean>} - True if refresh was successful
- * @throws {Error} - If refresh fails
+ * @returns {Promise<object>} Lo que contestó el servidor
  */
-export const refreshAccessToken = async () => {
+const pideConUnReintento = async () => {
   try {
-    await pideElRefresco();
-    anotaElRefresco();
-    return true;
+    return await pideElRefresco();
   } catch (error) {
     if (!esSesionSustituida(error)) throw error;
   }
 
   await new Promise((resolve) => setTimeout(resolve, ESPERA_TRAS_SUSTITUIDA_MS));
 
-  let data;
   try {
-    data = await pideElRefresco();
+    return await pideElRefresco();
   } catch (error) {
     if (!esSesionSustituida(error)) throw error;
     throw new TypeError('The session was replaced and the new cookie has not arrived yet', { cause: error });
   }
+};
 
-  // La cookie nueva es de otra cuenta que entró en este navegador. Lo que estaba en
-  // vuelo era de la cuenta de esta pestaña: repetirlo lo haría a nombre de la otra. No
-  // se anota el refresco, para que nada lo repita, y la pestaña recarga con la nueva
+/**
+ * Refresh the access token using the refresh token cookie
+ *
+ * @returns {Promise<boolean>} - True if refresh was successful
+ * @throws {Error} - If refresh fails
+ */
+export const refreshAccessToken = async () => {
+  const data = await pideConUnReintento();
+
+  // La cookie es de otra cuenta que entró en este navegador. Lo que estaba en vuelo era
+  // de la cuenta de esta pestaña: repetirlo lo haría a nombre de la otra. No se anota el
+  // refresco, para que nada lo repita, y la pestaña recarga con la nueva. Sin bucle: al
+  // recargar, la sesión compartida aún no sabe quién es y no compara
   if (esDeOtraCuenta(data)) {
     globalThis.location.reload();
     throw new TypeError('The session now belongs to another account');
