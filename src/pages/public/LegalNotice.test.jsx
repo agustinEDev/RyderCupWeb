@@ -87,12 +87,12 @@ describe('Aviso Legal · los textos', () => {
     expect(titular).toContain('76826889N');
     expect(titular).toContain('Germán Adrio Sobrido, 10 - 1D');
     expect(titular).toContain('36003 Pontevedra');
-    expect(titular).toContain('agustin.estevez.dominguez@gmail.com');
+    expect(titular).toContain('admin@rydercupfriends.com');
   });
 
   it.each([
-    ['es', es, '20 de octubre de 2026'],
-    ['en', en, '20 October 2026'],
+    ['es', es, '6 de noviembre de 2026'],
+    ['en', en, '6 November 2026'],
   ])('A1 (%s): fecha de la última actualización', (_idioma, textos, fecha) => {
     expect(textos.legalNotice.lastUpdated).toContain(fecha);
   });

@@ -2,6 +2,8 @@ import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository'
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
 import AcceptTermsUseCase from '../application/use_cases/user/AcceptTermsUseCase';
+import CancelEmailChangeUseCase from '../application/use_cases/user/CancelEmailChangeUseCase';
+import ConfirmEmailChangeUseCase from '../application/use_cases/user/ConfirmEmailChangeUseCase';
 import UpdateUserSecurityUseCase from '../application/use_cases/user/UpdateUserSecurityUseCase';
 import GetUserRolesUseCase from '../application/use_cases/user/GetUserRolesUseCase';
 import SearchUsersUseCase from '../application/use_cases/user/SearchUsersUseCase';
@@ -267,6 +269,8 @@ const apiQuickMatchRepository = new ApiQuickMatchRepository();
 // --- Casos de Uso ---
 const updateUserProfileUseCase = new UpdateUserProfileUseCase({ userRepository: apiUserRepository });
 const acceptTermsUseCase = new AcceptTermsUseCase({ userRepository: apiUserRepository });
+const confirmEmailChangeUseCase = new ConfirmEmailChangeUseCase({ userRepository: apiUserRepository });
+const cancelEmailChangeUseCase = new CancelEmailChangeUseCase({ userRepository: apiUserRepository });
 const updateUserSecurityUseCase = new UpdateUserSecurityUseCase({ userRepository: apiUserRepository });
 const getUserRolesUseCase = new GetUserRolesUseCase({ userRepository: apiUserRepository });
 const searchUsersUseCase = new SearchUsersUseCase({ userRepository: apiUserRepository });
@@ -553,6 +557,8 @@ const deleteAdminUserUseCase = new DeleteAdminUserUseCase({ adminRepository: api
 export {
   updateUserProfileUseCase,
   acceptTermsUseCase,
+  confirmEmailChangeUseCase,
+  cancelEmailChangeUseCase,
   updateUserSecurityUseCase,
   getUserRolesUseCase,
   searchUsersUseCase,

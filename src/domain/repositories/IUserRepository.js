@@ -62,6 +62,24 @@ class IUserRepository {
   async acceptTerms() {
     throw new Error('Method not implemented: acceptTerms');
   }
+
+  /**
+   * Confirma el correo nuevo pendiente con el token de su enlace (RyderCupAm #749).
+   * Solo con la sesión de la cuenta.
+   * @param {string} _token
+   * @returns {Promise<Object>} El usuario, tal como lo devuelve el backend
+   */
+  async confirmEmailChange(_token) {
+    throw new Error('Method not implemented: confirmEmailChange');
+  }
+
+  /**
+   * Anula el correo nuevo pendiente (RyderCupAm #749).
+   * @returns {Promise<Object>} El usuario, tal como lo devuelve el backend
+   */
+  async cancelEmailChange() {
+    throw new Error('Method not implemented: cancelEmailChange');
+  }
 }
 
 export default IUserRepository;

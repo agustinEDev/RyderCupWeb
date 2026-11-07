@@ -185,6 +185,10 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
   });
 
   it.each([
+    // Los dos de RyderCupAm #733: los únicos que manda el backend desde la 2.52
+    ['SESSION_ENDED', 'session_expired'],
+    ['SESSION_REJECTED', 'refresh_rejected'],
+    // Los de antes: hasta que el backend se despliegue (el front sale primero)
     ['REFRESH_TOKEN_MISSING', 'session_expired'],
     ['REFRESH_TOKEN_EXPIRED', 'session_expired'],
     ['SESSION_IDLE', 'session_expired'],

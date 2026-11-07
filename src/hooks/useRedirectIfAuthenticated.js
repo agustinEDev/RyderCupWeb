@@ -34,7 +34,7 @@ import { useAuthContext } from './useAuthContext';
 import { handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
 // El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
 // copias de una comprobación de seguridad acaban divergiendo
-import { resolvePostAuthTarget } from '../utils/auth';
+import { rutaDeVuelta } from '../utils/auth';
 import { anotaLaSesion } from '../services/sesionCompartida';
 // La pregunta sin interceptor, compartida con «Volver» de los documentos legales
 import { preguntaLaSesionSinInterceptor } from '../services/sondaDeSesion';
@@ -97,7 +97,7 @@ export const useRedirectIfAuthenticated = ({
         // rápido, se queda colgada hasta agotar el plazo. Tratarlo distinto del
         // rechazo de red dejaba el arreglo cubriendo solo el caso raro.
         settled = true;
-        navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+        navigate(rutaDeVuelta(location.state?.from), { replace: true });
         return;
       }
 
@@ -116,7 +116,7 @@ export const useRedirectIfAuthenticated = ({
         // sin conexión es el caso de uso, no un extra. La sesión no se ha
         // rechazado —solo no se ha podido preguntar—, así que se entra con la
         // que hay guardada.
-        navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+        navigate(rutaDeVuelta(location.state?.from), { replace: true });
         return;
       }
 
@@ -177,7 +177,7 @@ export const useRedirectIfAuthenticated = ({
       // volver a preguntarlo. Sin esto, `ProtectedRoute` pintaba su espera
       // gris a pantalla completa en cada arranque con sesion (FE #489)
       anotaLaSesion(resultado.usuario);
-      navigate(resolvePostAuthTarget(location.state?.from?.pathname), { replace: true });
+      navigate(rutaDeVuelta(location.state?.from), { replace: true });
       // `isChecking` se queda arriba a propósito: la página se está yendo y
       // bajarlo pintaría el formulario un instante
     };

@@ -31,6 +31,8 @@ const EditProfile = () => {
     handleInputChange,
     handleUpdateProfile,
     handleUpdateSecurity,
+    handleCancelEmailChange,
+    isCancellingEmail,
     handleUpdateHandicapManually,
     handleUpdateHandicapRFEG,
     handleRefreshUserData,
@@ -334,6 +336,23 @@ const EditProfile = () => {
                     <p className="text-xs text-gray-500 mt-1 wrap-anywhere">
                       {t('edit.security.currentEmail', { email: user.email })}
                     </p>
+                    {/* El correo nuevo, pendiente de confirmar desde su dirección (RyderCupAm
+                        #749): entero, para ver una errata */}
+                    {user.pending_email && (
+                      <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                        <p className="text-xs text-amber-800 wrap-anywhere">
+                          {t('edit.security.pendingEmail', { email: user.pending_email })}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleCancelEmailChange}
+                          disabled={isCancellingEmail}
+                          className="shrink-0 text-xs font-medium text-amber-900 underline disabled:opacity-50"
+                        >
+                          {t('edit.security.cancelPendingEmail')}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-3 border-t border-gray-200">

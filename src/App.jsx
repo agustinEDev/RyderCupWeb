@@ -87,6 +87,7 @@ const MyQuickMatchesPage = lazyWithRetry(() => import('./pages/quick_match/MyQui
 const GoogleCallback = lazyWithRetry(() => import('./pages/GoogleCallback'));
 const CompleteProfile = lazyWithRetry(() => import('./pages/CompleteProfile'));
 const AcceptTerms = lazyWithRetry(() => import('./pages/AcceptTerms'));
+const ConfirmEmailChange = lazyWithRetry(() => import('./pages/ConfirmEmailChange'));
 
 // Public pages
 const LeaderboardPage = lazyWithRetry(() => import('./pages/public/LeaderboardPage'));
@@ -378,6 +379,8 @@ export const rutasDeLaApp = createRoutesFromElements(
       {/* Protected routes */}
       <Route path="/auth/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
       <Route path="/accept-terms" element={<ProtectedRoute><AcceptTerms /></ProtectedRoute>} />
+      {/* El enlace del correo nuevo, solo con sesión (RyderCupAm #749) */}
+      <Route path="/confirm-email-change" element={<ProtectedRoute><ConfirmEmailChange /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/stats" element={<ProtectedRoute><PlayerStatsPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

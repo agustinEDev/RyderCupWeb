@@ -8,14 +8,11 @@ import { anotaLaSesion } from '../services/sesionCompartida';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
 import AceptacionDeTerminos from '../components/auth/AceptacionDeTerminos';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
+import { rutaPropia } from '../utils/auth';
 import { olvidaLaMarcaDeTerminos } from '../utils/terminosPendientes';
 
 const PANEL = '/dashboard';
 
-// Barras invertidas y caracteres de control: el navegador los normaliza (una
-// `\` pasa a `/`, un tabulador desaparece), y `/\evil.com` acaba en `//evil.com`
-// eslint-disable-next-line no-control-regex
-const RAROS = /[\\\u0000-\u001f\u007f]/;
 
 /**
  * A dónde volver tras aceptar. Llega por el estado de la navegación —desde
@@ -30,17 +27,9 @@ const destinoDe = (location) => {
   const candidato = delEstado
     ? `${delEstado.pathname ?? ''}${delEstado.search ?? ''}${delEstado.hash ?? ''}`
     : new URLSearchParams(location.search).get('from');
-  if (!candidato || !candidato.startsWith('/') || candidato.startsWith('//') || RAROS.test(candidato)) return PANEL;
-
-  const origen = globalThis.location.origin;
-  let url;
-  try {
-    url = new globalThis.URL(candidato, origen);
-  } catch {
-    return PANEL;
-  }
-  if (url.origin !== origen || url.pathname.startsWith('/accept-terms')) return PANEL;
-  return `${url.pathname}${url.search}${url.hash}`;
+  const propia = rutaPropia(candidato);
+  if (!propia || propia.startsWith('/accept-terms')) return PANEL;
+  return propia;
 };
 
 /**

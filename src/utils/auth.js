@@ -59,3 +59,40 @@ export const safeLog = (level, message, data = null) => {
     logFn(`[${level.toUpperCase()}]`, message);
   }
 };
+
+// Barras invertidas y caracteres de control: el navegador los normaliza (una
+// `\` pasa a `/`, un tabulador desaparece), y `/\evil.com` acaba en `//evil.com`
+// eslint-disable-next-line no-control-regex
+const RAROS = /[\\\u0000-\u001f\u007f]/;
+
+/**
+ * Una ruta PROPIA (pathname, búsqueda y hash), o null. Se resuelve contra el
+ * origen propio y se compara: es la forma de no depender de cómo normalice cada
+ * navegador. La usan la vuelta tras entrar y la de aceptar los Términos.
+ */
+export const rutaPropia = (candidato) => {
+  if (!candidato || !candidato.startsWith('/') || candidato.startsWith('//') || RAROS.test(candidato)) {
+    return null;
+  }
+  const origen = globalThis.location.origin;
+  let url;
+  try {
+    url = new globalThis.URL(candidato, origen);
+  } catch {
+    return null;
+  }
+  return url.origin === origen ? `${url.pathname}${url.search}${url.hash}` : null;
+};
+
+/**
+ * A dónde volver tras entrar, desde la ruta protegida de la que venía (su
+ * `location`), CON su búsqueda: el enlace que confirma un correo nuevo lleva el
+ * token en `?token=` (RyderCupAm #749) y antes se perdía al pasar por el login.
+ * Las mismas protecciones que resolvePostAuthTarget.
+ */
+export const rutaDeVuelta = (from) => {
+  const propia = rutaPropia(
+    from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : undefined
+  );
+  return resolvePostAuthTarget(propia ?? undefined);
+};

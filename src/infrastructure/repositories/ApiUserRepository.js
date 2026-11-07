@@ -119,6 +119,25 @@ class ApiUserRepository extends IUserRepository {
 
   /**
    * @override
+   * El correo nuevo pendiente, confirmado con el token de su enlace (RyderCupAm #749).
+   */
+  async confirmEmailChange(token) {
+    return apiRequest('/api/v1/users/me/email-change/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  /**
+   * @override
+   * El correo nuevo pendiente, anulado (RyderCupAm #749).
+   */
+  async cancelEmailChange() {
+    return apiRequest('/api/v1/users/me/email-change', { method: 'DELETE' });
+  }
+
+  /**
+   * @override
    * Uses GET /api/v1/users/search-autocomplete?query=... for partial name matching.
    */
   async searchUsers(query) {
