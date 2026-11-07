@@ -520,9 +520,9 @@ describe('revisión de la release', () => {
   // envía desde la UE; Brevo registra aperturas y clics sin asociarlos a cada destinatario
   // (el seguimiento anónimo de su cuenta), y nunca lleva avisos de seguridad
   it.each([
-    ['es', es, /respaldo/i, /UE/, /EE\. UU\./, /sin asociarlos a cada destinatario/, /ni son de seguridad/],
-    ['en', en, /backup/i, /EU/, /US/, /without linking them to each recipient/, /nor security/],
-  ])('P1 (%s): Resend y Brevo, respaldos de los correos', (_i, textos, respaldo, ue, eeuu, anonimo, seguridad) => {
+    ['es', es, /respaldo/i, /UE/, /EE\. UU\./, /sin asociarlos a cada destinatario/, /ni son de seguridad/, /formulario de contacto/],
+    ['en', en, /backup/i, /EU/, /US/, /without linking them to each recipient/, /nor security/, /contact form/],
+  ])('P1 (%s): Resend y Brevo, respaldos de los correos', (_i, textos, respaldo, ue, eeuu, anonimo, seguridad, contacto) => {
     const resend = linea(textos.privacy.section7.content, /Resend/);
     const brevo = linea(textos.privacy.section7.content, /Brevo/);
     for (const enProveedores of [resend, brevo]) {
@@ -530,6 +530,8 @@ describe('revisión de la release', () => {
       expect(enProveedores).toMatch(ue);
     }
     expect(resend).toMatch(eeuu);
+    // Los dos pueden llevar también los mensajes del formulario de contacto (revisor)
+    for (const enProveedores of [resend, brevo]) expect(enProveedores).toMatch(contacto);
     expect(brevo).toMatch(anonimo);
     expect(brevo).toMatch(seguridad);
     expect(brevo).not.toMatch(/anónima|anonymously/i);
