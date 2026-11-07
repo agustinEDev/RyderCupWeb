@@ -148,6 +148,8 @@
     "securityUpdated": "¡Configuración de seguridad actualizada correctamente!",
     "passwordReused": "No puedes reutilizar ninguna de tus últimas 5 contraseñas. Por favor, elige una contraseña diferente.",
     "failedToUpdateSecurity": "Error al actualizar la configuración de seguridad",
+    "tooManySecurityChanges": "Demasiados intentos. Espera un rato y vuelve a intentarlo.",
+    "tooManyEmailChanges": "Has pedido demasiados cambios de correo. Espera un rato y vuelve a intentarlo.",
     "avatarUpdated": "¡Foto de perfil actualizada!",
     "failedToUpdateAvatar": "Error al actualizar la foto de perfil",
     "avatarFileTooLarge": "Esa foto es demasiado grande (máx. 10MB).",

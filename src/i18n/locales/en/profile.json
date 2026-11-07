@@ -148,6 +148,8 @@
     "securityUpdated": "Security settings updated successfully!",
     "passwordReused": "Cannot reuse any of your last 5 passwords. Please choose a different password.",
     "failedToUpdateSecurity": "Failed to update security settings",
+    "tooManySecurityChanges": "Too many attempts. Wait a while and try again.",
+    "tooManyEmailChanges": "You have asked for too many email changes. Wait a while and try again.",
     "avatarUpdated": "Profile photo updated!",
     "failedToUpdateAvatar": "Failed to update profile photo",
     "avatarFileTooLarge": "That photo is too large (max 10MB).",
