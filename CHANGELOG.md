@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.67.0] - 2026-11-07
+
+**El cambio de correo queda pendiente hasta confirmarlo, el login con Google dice qué
+pasa y los textos legales solo llevan los datos del titular donde la ley los pide**
+(#1053; RyderCupAm #744, #733). Va con el backend **2.52.0**, y se despliega ANTES:
+funciona con el 2.51.0, y el back nuevo necesita esta versión. Probado en el Kind a
+360 px.
+
+### Added
+
+- **Correo nuevo pendiente**: en Editar perfil, al pedir otro correo sale «Pendiente
+  de confirmar: …» con el botón «Anular»; el correo de la cuenta no cambia hasta
+  confirmar. Página `/confirm-email-change` (con sesión): quita el token de la barra,
+  hace una sola petición por intento y, si falla la red, ofrece «Reintentar». Tras
+  entrar, vuelve a esa página.
+
+### Changed
+
+- **El refresco lee los dos códigos públicos** del backend (`SESSION_ENDED`,
+  `SESSION_REJECTED`) para el aviso de cierre de sesión.
+- **Datos de contacto**: el correo de contacto es `admin@rydercupfriends.com`. Nombre,
+  NIF y domicilio del titular, solo en el Aviso Legal (LSSI); Privacidad nombra al
+  responsable; Términos remite al Aviso Legal; el pie dice «© RyderCupFriends».
+- **Privacidad**: los mensajes del formulario de contacto llegan por correo (Mailgun)
+  y ya no por GitHub. Los cuatro textos legales, con fecha del 6 nov 2026; la versión
+  de los Términos aceptados no cambia.
+
+### Fixed
+
+- **Login con Google**: textos propios cuando Google no ha verificado el correo, cuando
+  la cuenta está desactivada y cuando hay que verificar el correo antes de vincular
+  Google.
+- Los avisos largos (correos) parten la línea en vez de salirse.
+
 ## [2.66.0] - 2026-11-06
 
 **La pantalla de entrada dice qué hacer cuando un login se bloquea, en el idioma de
