@@ -176,6 +176,22 @@ describe('SignInForm', () => {
     );
   });
 
+  it('B2: una cuenta desactivada lo dice traducido, como Google (RyderCupAm #750)', async () => {
+    const desactivada = Object.assign(
+      new Error('This account has been deactivated. Contact an administrator.'),
+      { status: 403, errorCode: 'ACCOUNT_DEACTIVATED' }
+    );
+    ejecutarLogin.mockRejectedValue(desactivada);
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(errorToast).toHaveBeenCalled());
+    expect(errorToast).toHaveBeenCalledWith('google.accountDeactivated', expect.any(Object));
+  });
+
   it('corta al sexto intento sin llamar al backend', async () => {
     window.localStorage.setItem(
       'ratelimit_login',

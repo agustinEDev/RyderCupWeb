@@ -85,6 +85,20 @@ describe('VerifyEmail · textos traducidos (FE #776)', () => {
     sinIngles();
   });
 
+  it('E7: cuenta desactivada: el correo SÍ se verificó, pero no entra (RyderCupAm #750)', async () => {
+    verifyEmailUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('deactivated'), { status: 403, errorCode: 'ACCOUNT_DEACTIVATED' })
+    );
+    abrir();
+
+    expect(await screen.findByText('verifyEmail.successTitle', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByText('google.accountDeactivated')).toBeInTheDocument();
+    expect(screen.queryByText('verifyEmail.errorTitle')).not.toBeInTheDocument();
+    expect(screen.queryByText('verifyEmail.redirecting')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'verifyEmail.goToHome' })).toHaveAttribute('href', '/');
+    sinIngles();
+  });
+
   it('E4 y E5: la verificación falla y el mensaje es el propio', async () => {
     verifyEmailUseCase.execute.mockRejectedValue(new Error('Token de verificación inválido'));
     abrir();
