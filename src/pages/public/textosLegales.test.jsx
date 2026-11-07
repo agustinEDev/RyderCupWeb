@@ -33,7 +33,8 @@ const IDIOMAS = [
 const texto = (bloque) => JSON.stringify(bloque);
 
 const TITULAR = ['Agustín Estévez Domínguez', '76826889N', 'Germán Adrio Sobrido, 10 - 1D', '36003 Pontevedra'];
-const CORREO = 'agustin.estevez.dominguez@gmail.com';
+// El de contacto; los datos personales del titular, solo en el Aviso Legal (6 nov 2026)
+const CORREO = 'admin@rydercupfriends.com';
 
 describe('cada página pinta todas las secciones de su texto', () => {
   // Las páginas recorren una lista de secciones escrita a mano: una sección
@@ -79,10 +80,12 @@ describe('L1 · salir del documento sin pasar por la portada', () => {
 });
 
 describe('Política de Privacidad', () => {
-  it.each(IDIOMAS)('P1 (%s): identifica al responsable con nombre, NIF, domicilio y correo', (_i, textos) => {
+  it.each(IDIOMAS)('P1 (%s): identifica al responsable con su nombre y el correo, y remite al Aviso Legal', (_i, textos) => {
     const p = texto(textos.privacy);
 
-    for (const dato of [...TITULAR, CORREO]) expect(p).toContain(dato);
+    for (const dato of [TITULAR[0], CORREO]) expect(p).toContain(dato);
+    for (const dato of TITULAR.slice(1)) expect(p).not.toContain(dato);
+    expect(p).toMatch(/Aviso Legal|Legal Notice/);
   });
 
   it.each([
@@ -145,8 +148,8 @@ describe('Política de Privacidad', () => {
   });
 
   it.each([
-    ['es', es, '20 de octubre de 2026'],
-    ['en', en, '20 October 2026'],
+    ['es', es, '6 de noviembre de 2026'],
+    ['en', en, '6 November 2026'],
   ])('fecha de la última actualización (%s)', (_i, textos, fecha) => {
     expect(textos.privacy.lastUpdated).toContain(fecha);
     expect(textos.terms.lastUpdated).toContain(fecha);
@@ -155,10 +158,12 @@ describe('Política de Privacidad', () => {
 });
 
 describe('Términos de Servicio', () => {
-  it.each(IDIOMAS)('T1 (%s): identifican al titular', (_i, textos) => {
+  it.each(IDIOMAS)('T1 (%s): remiten al titular del Aviso Legal, sin sus datos personales', (_i, textos) => {
     const t = texto(textos.terms);
 
-    for (const dato of ['Agustín Estévez Domínguez', '76826889N', CORREO]) expect(t).toContain(dato);
+    expect(t).toContain(CORREO);
+    expect(t).toMatch(/Aviso Legal|Legal Notice/);
+    for (const dato of TITULAR) expect(t).not.toContain(dato);
     expect(t).not.toMatch(/operado por RyderCupFriends|operated by RyderCupFriends/i);
   });
 
@@ -490,17 +495,19 @@ describe('revisión de la release', () => {
     expect(conLicencia).not.toMatch(/RFEG|campos|course data/i);
   });
 
-  // B2: el formulario de contacto acaba como issue en GitHub
+  // B2: el formulario de contacto llega por correo, con Mailgun (UE); ya no va a
+  // GitHub, donde las issues eran públicas (6 nov 2026)
   it.each([
-    ['es', es, /formulario de contacto/i, [/nombre/i, /correo|email/i, /mensaje/i], /GitHub/, /EE\. UU\./, /interés legítimo|consentimiento/i],
-    ['en', en, /contact form/i, [/name/i, /email/i, /message/i], /GitHub/, /US/, /legitimate interest|consent/i],
-  ])('B2 (%s): contacto en datos (§2), proveedores (§7) y base (§3)', (_i, textos, contacto, datos, github, eeuu, base) => {
+    ['es', es, /formulario de contacto/i, [/nombre/i, /correo|email/i, /mensaje/i], /Mailgun/, /UE/, /interés legítimo|consentimiento/i],
+    ['en', en, /contact form/i, [/name/i, /email/i, /message/i], /Mailgun/, /EU/, /legitimate interest|consent/i],
+  ])('B2 (%s): contacto en datos (§2), proveedores (§7) y base (§3)', (_i, textos, contacto, datos, mailgun, ue, base) => {
     const enDatos = linea(textos.privacy.section2.content, contacto);
     for (const patron of datos) expect(enDatos).toMatch(patron);
 
-    const enProveedores = linea(textos.privacy.section7.content, github);
+    const enProveedores = linea(textos.privacy.section7.content, mailgun);
     expect(enProveedores).toMatch(contacto);
-    expect(enProveedores).toMatch(eeuu);
+    expect(enProveedores).toMatch(ue);
+    expect(textos.privacy.section7.content).not.toMatch(/GitHub/);
 
     expect(linea(textos.privacy.section3.content, contacto)).toMatch(base);
   });

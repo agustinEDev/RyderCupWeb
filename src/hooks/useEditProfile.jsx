@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
@@ -7,6 +7,7 @@ import { passwordErrorMessage, validatePassword } from '../utils/validation';
 import {
   updateUserProfileUseCase,
   updateUserSecurityUseCase,
+  cancelEmailChangeUseCase,
   updateManualHandicapUseCase,
   updateRfegHandicapUseCase,
   fetchCountriesUseCase,
@@ -363,7 +364,7 @@ export const useEditProfile = () => {
         securityData.confirm_password = formData.confirmPassword;
       }
 
-      await updateUserSecurityUseCase.execute({
+      const actualizado = await updateUserSecurityUseCase.execute({
         userId: user.id,
         securityData,
       });
@@ -379,7 +380,15 @@ export const useEditProfile = () => {
         confirmPassword: '',
       }));
 
-      customToast.success(t('toasts.securityUpdated'));
+      if (isEmailChanged && actualizado?.pendingEmail) {
+        // El correo nuevo queda pendiente hasta confirmarlo desde su dirección
+        // (RyderCupAm #749): la cuenta sigue con el de antes. Con el backend de
+        // antes, sin pendiente, se cambia al momento: el aviso de siempre
+        const correos = { nuevo: trimmedEmail, actual: user.email };
+        customToast.success(t('toasts.emailChangePending', correos), { duration: 8000 });
+      } else {
+        customToast.success(t('toasts.securityUpdated'));
+      }
     } catch (error) {
       console.error('Error updating security:', error);
 
@@ -407,7 +416,29 @@ export const useEditProfile = () => {
     }
   };
 
+  const [isCancellingEmail, setIsCancellingEmail] = useState(false);
+  // Uno a la vez: un doble toque no manda dos anulaciones
+  const anulando = useRef(false);
+  const handleCancelEmailChange = async () => {
+    if (anulando.current) return;
+    anulando.current = true;
+    setIsCancellingEmail(true);
+    try {
+      await cancelEmailChangeUseCase.execute();
+      await refetchUser();
+      customToast.success(t('toasts.emailChangeCancelled'));
+    } catch (error) {
+      console.error('Error cancelling the email change:', error);
+      customToast.error(t('toasts.failedToCancelEmailChange'));
+    } finally {
+      anulando.current = false;
+      setIsCancellingEmail(false);
+    }
+  };
+
   return {
+    handleCancelEmailChange,
+    isCancellingEmail,
     // Public state
     user,
     refetchUser,

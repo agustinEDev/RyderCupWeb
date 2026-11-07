@@ -28,6 +28,7 @@ const SCREENS = [
 
   { pattern: '/profile/edit', titleKey: 'screens.editProfile', parent: '/profile' },
   { pattern: '/profile/devices', titleKey: 'screens.devices', parent: '/profile' },
+  { pattern: '/confirm-email-change', titleKey: 'screens.confirmEmail', parent: '/profile/edit' },
   { pattern: '/admin', titleKey: 'screens.admin', parent: '/profile' },
   { pattern: '/admin/resumen', titleKey: 'screens.adminOverview', parent: '/admin' },
   { pattern: '/admin/usuarios', titleKey: 'screens.adminUsers', parent: '/admin' },

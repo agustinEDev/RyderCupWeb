@@ -245,6 +245,7 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
+    // Sin pendiente en la respuesta (el backend de antes): el aviso de siempre
     expect(customToast.success).toHaveBeenCalledWith('toasts.securityUpdated');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
 

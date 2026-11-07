@@ -25,9 +25,16 @@ export const MOTIVO_DEL_CIERRE = Object.freeze({
   SESION_PERDIDA: 'session_lost',
 });
 
-// Los `error_code` del 401 del refresco que son el final normal de una sesión
-// (RyderCupAm `RefreshRejection`): sin cookie, caducada o 24 h sin usar
-const FINAL_NORMAL = new Set(['REFRESH_TOKEN_MISSING', 'REFRESH_TOKEN_EXPIRED', 'SESSION_IDLE']);
+// Los `error_code` del 401 del refresco que son el final normal de una sesión. Desde
+// RyderCupAm #733 el backend solo manda SESSION_ENDED o SESSION_REJECTED (el motivo
+// exacto decía el estado de la cuenta). Los de antes siguen aquí mientras el backend
+// no se despliega: este front sale primero. Se pueden quitar después
+const FINAL_NORMAL = new Set([
+  'SESSION_ENDED',
+  'REFRESH_TOKEN_MISSING',
+  'REFRESH_TOKEN_EXPIRED',
+  'SESSION_IDLE',
+]);
 
 /**
  * El motivo de un 401 del refresco según su `error_code`: el final normal de la
@@ -122,11 +129,13 @@ const TRAMOS_FIJOS = new Set([
   'complete',
   'concede',
   'configure',
+  'confirm',
   'countries',
   'current-user',
   'devices',
   'direct',
   'draft',
+  'email-change',
   'enrollments',
   'envelope',
   'envelopes',

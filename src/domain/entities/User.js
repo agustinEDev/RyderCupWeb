@@ -17,6 +17,7 @@ class User {
     created_at = null,
     updated_at = null,
     email_verified = false, // Valor por defecto para bool
+    pending_email = null, // El correo nuevo, pendiente de confirmar (RyderCupAm #749)
     verification_token = null,
     country_code = null, // Nacionalidad opcional del usuario
     gender = null, // Gender: 'MALE', 'FEMALE', or null
@@ -55,6 +56,7 @@ class User {
     this.createdAt = created_at; // Mantener como string de fecha o null
     this.updatedAt = updated_at; // Mantener como string de fecha o null
     this.emailVerified = email_verified;
+    this.pendingEmail = pending_email;
     this.verificationToken = verification_token;
     // Country code es opcional: puede ser null, string o CountryCode VO
     this.countryCode = country_code

@@ -99,9 +99,10 @@ describe('Footer', () => {
   it.each([
     ['es', commonEs],
     ['en', commonEn],
-  ])('A4 (%s): el copyright nombra al titular, una persona fisica, y no a la marca', (_idioma, common) => {
+  ])('A4 (%s): el copyright dice RyderCupFriends, sin datos del titular (6 nov 2026)', (_idioma, common) => {
     for (const clave of ['copyright', 'copyrightShort']) {
-      expect(common.footer[clave]).toContain('© {{year}} Agustín Estévez Domínguez');
+      expect(common.footer[clave]).toContain('© {{year}} RyderCupFriends');
+      expect(common.footer[clave]).not.toContain('Estévez');
       expect(common.footer[clave]).not.toContain('RCF');
     }
     expect(common.footer.legalNotice).toBeTruthy();

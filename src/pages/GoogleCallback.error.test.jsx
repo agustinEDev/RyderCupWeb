@@ -13,6 +13,9 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   G2  un state que no cuadra         | lo mismo
  *   G3  falla la vinculación (500)     | google.linkErrorTitle + google.linkError (estaba vinculando)
  *   G4  falla el login con su mensaje  | google.genericError, no el texto del backend sin traducir
+ *   G5  Google no verificó el correo   | google.emailNotVerified (RyderCupAm: ni alta ni vínculo)
+ *   G6  la cuenta está desactivada     | google.accountDeactivated, no invitar a reintentar
+ *   G7  vincular sin el correo verificado | google.linkNeedsVerifiedEmail (RyderCupAm #749)
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
@@ -76,6 +79,43 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     abrir('?code=abc&state=ok');
     expect(await screen.findByText('google.genericError')).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('Error interno del servidor');
+  });
+
+  it('G5: Google no ha verificado el correo: dice qué hacer', async () => {
+    googleLoginUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Your Google account email is not verified.'), {
+        status: 400,
+        errorCode: 'GOOGLE_EMAIL_NOT_VERIFIED',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.emailNotVerified')).toBeInTheDocument();
+    expect(screen.queryByText('google.genericError')).toBeNull();
+  });
+
+  it('G7: vincular sin el correo verificado: dice que lo verifique', async () => {
+    estado.flow = 'link';
+    linkGoogleAccountUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Verify your email before linking a Google account.'), {
+        status: 403,
+        errorCode: 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.linkNeedsVerifiedEmail')).toBeInTheDocument();
+    expect(screen.queryByText('google.linkError')).toBeNull();
+  });
+
+  it('G6: la cuenta está desactivada: lo dice, sin invitar a reintentar', async () => {
+    googleLoginUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('This account has been deactivated.'), {
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.accountDeactivated')).toBeInTheDocument();
+    expect(screen.queryByText('google.genericError')).toBeNull();
   });
 });
 

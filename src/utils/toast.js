@@ -55,7 +55,7 @@ const ToastContent = ({ message, type, toastId, icon, visible }) => {
         : createElement(Icon, { className: `w-5 h-5 ${textClass}` })
     ),
     // Message
-    createElement('div', { className: 'flex-1 text-sm text-gray-900 leading-relaxed' }, message),
+    createElement('div', { className: 'flex-1 min-w-0 wrap-anywhere text-sm text-gray-900 leading-relaxed' }, message),
     // Close Button
     createElement(
       'button',

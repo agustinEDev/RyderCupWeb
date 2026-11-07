@@ -2,10 +2,10 @@
   "volver": "Back",
   "terms": {
     "title": "Terms and Conditions",
-    "lastUpdated": "Last updated: 20 October 2026",
+    "lastUpdated": "Last updated: 6 November 2026",
     "section1": {
       "title": "1. Provider and acceptance",
-      "content": "RyderCupFriends (\"the Service\") is provided by Agustín Estévez Domínguez, a private individual with tax ID (NIF) 76826889N and address at c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain), email agustin.estevez.dominguez@gmail.com. The full details are in the Legal Notice.\n\nBy signing up you accept these Terms and Conditions. If you do not agree with them, do not use the Service."
+      "content": "RyderCupFriends (\"the Service\") is provided by its owner, a private individual. Their details are in the Legal Notice, and you can write to admin@rydercupfriends.com.\n\nBy signing up you accept these Terms and Conditions. If you do not agree with them, do not use the Service."
     },
     "section2": {
       "title": "2. Eligibility",
@@ -17,7 +17,7 @@
     },
     "section4": {
       "title": "4. Conduct and reporting content",
-      "content": "You agree not to use the Service to:\n\n- Break the law\n- Impersonate another person\n- Harass, insult or harm other users\n- Upload malicious content or try to compromise the Service\n- Access the Service with automated systems without permission\n- Interfere with its operation\n\nIf you see content that is unlawful or breaches these terms (for example, a name, an alias or a photo), you can report it by writing to agustin.estevez.dominguez@gmail.com. We will review it and, where appropriate, remove it."
+      "content": "You agree not to use the Service to:\n\n- Break the law\n- Impersonate another person\n- Harass, insult or harm other users\n- Upload malicious content or try to compromise the Service\n- Access the Service with automated systems without permission\n- Interfere with its operation\n\nIf you see content that is unlawful or breaches these terms (for example, a name, an alias or a photo), you can report it by writing to admin@rydercupfriends.com. We will review it and, where appropriate, remove it."
     },
     "section5": {
       "title": "5. Golf competitions",
@@ -33,7 +33,7 @@
     },
     "section8": {
       "title": "8. Closing and suspending accounts",
-      "content": "You can stop using the Service whenever you want and ask to close your account by writing to agustin.estevez.dominguez@gmail.com from your account's address. When you ask, we deactivate your account (it can no longer be used) and, within one month, we reply to your request and manually erase the personal data that is not linked to other players' results or competitions; your results, your scorecards and the competitions you have created are kept for as long as those competitions need them, as explained in the Privacy Policy.\n\nWe may suspend or close an account that breaches these terms seriously or repeatedly. Except in urgent cases (for example, a risk to other users' security), we will give you notice beforehand and explain why."
+      "content": "You can stop using the Service whenever you want and ask to close your account by writing to admin@rydercupfriends.com from your account's address. When you ask, we deactivate your account (it can no longer be used) and, within one month, we reply to your request and manually erase the personal data that is not linked to other players' results or competitions; your results, your scorecards and the competitions you have created are kept for as long as those competitions need them, as explained in the Privacy Policy.\n\nWe may suspend or close an account that breaches these terms seriously or repeatedly. Except in urgent cases (for example, a risk to other users' security), we will give you notice beforehand and explain why."
     },
     "section9": {
       "title": "9. Changes to these terms",
@@ -41,15 +41,15 @@
     },
     "section10": {
       "title": "10. Governing law and contact",
-      "content": "These terms are governed by Spanish law. If you are a consumer, this does not deprive you of the protection granted by the mandatory rules of your country of residence, and you may go to the courts where you live.\n\nFor any question about these terms, write to agustin.estevez.dominguez@gmail.com or use the Contact page."
+      "content": "These terms are governed by Spanish law. If you are a consumer, this does not deprive you of the protection granted by the mandatory rules of your country of residence, and you may go to the courts where you live.\n\nFor any question about these terms, write to admin@rydercupfriends.com or use the Contact page."
     }
   },
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdated": "Last updated: 20 October 2026",
+    "lastUpdated": "Last updated: 6 November 2026",
     "section1": {
       "title": "1. Data controller",
-      "content": "The controller of your data is:\n\n- Agustín Estévez Domínguez (private individual)\n- Tax ID (NIF): 76826889N\n- Address: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain)\n- Email: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends (\"the Service\") is the name of the application, not a company."
+      "content": "The controller of your data is:\n\n- Agustín Estévez Domínguez (private individual), the owner of the Service; the full details are in the Legal Notice\n- Email: admin@rydercupfriends.com\n\nRyderCupFriends (\"the Service\") is the name of the application, not a company."
     },
     "section2": {
       "title": "2. Data we process",
@@ -73,7 +73,7 @@
     },
     "section7": {
       "title": "7. Providers and international transfers",
-      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery (EU region).\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n- GitHub: receiving the messages from the contact form (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission.\n\nIn addition, when you view a hole map, your browser downloads the orthophotos directly from the public servers that publish them (IGN/PNOA, ICGC, geoEuskadi and IDENA), which receive your device's IP address, as with any website you visit."
+      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery, including the messages from the contact form (EU region).\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission.\n\nIn addition, when you view a hole map, your browser downloads the orthophotos directly from the public servers that publish them (IGN/PNOA, ICGC, geoEuskadi and IDENA), which receive your device's IP address, as with any website you visit."
     },
     "section8": {
       "title": "8. Cookies, local storage and Session Replay",
@@ -85,11 +85,11 @@
     },
     "section10": {
       "title": "10. Your rights",
-      "content": "You can exercise your rights of access, rectification, erasure, objection, restriction of processing and portability. You can view and correct much of your data yourself from your profile. Closing your account and portability (receiving your data in a structured format) are requested by email to agustin.estevez.dominguez@gmail.com, from your account's address. We reply to your request within one month; section 9 explains what is erased and what is kept when you close your account.\n\nIf you believe we have not handled your request properly, you have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD), at www.aepd.es."
+      "content": "You can exercise your rights of access, rectification, erasure, objection, restriction of processing and portability. You can view and correct much of your data yourself from your profile. Closing your account and portability (receiving your data in a structured format) are requested by email to admin@rydercupfriends.com, from your account's address. We reply to your request within one month; section 9 explains what is erased and what is kept when you close your account.\n\nIf you believe we have not handled your request properly, you have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD), at www.aepd.es."
     },
     "section11": {
       "title": "11. Children",
-      "content": "The Service is not intended for children under 16 and signing up below that age is not allowed. If you believe a child under 16 has given us data, write to agustin.estevez.dominguez@gmail.com and we will delete it."
+      "content": "The Service is not intended for children under 16 and signing up below that age is not allowed. If you believe a child under 16 has given us data, write to admin@rydercupfriends.com and we will delete it."
     },
     "section12": {
       "title": "12. Changes to this policy",
@@ -98,7 +98,7 @@
   },
   "cookies": {
     "title": "Cookie Policy",
-    "lastUpdated": "Last updated: 20 October 2026",
+    "lastUpdated": "Last updated: 6 November 2026",
     "section1": {
       "title": "1. What cookies are",
       "content": "Cookies are small text files that a website stores on your device. Besides cookies, the Service uses your browser's local storage (localStorage and sessionStorage). Everything it keeps there is technical and needed for the Service to work, so it does not require consent:\n\n- Your user data, to show your session without waiting for the server. It is deleted when you log out.\n- The matches and competitions you need to keep scoring offline, and pending notices about your handicap. They are deleted when you log out.\n- Scores waiting to be sent when there is no coverage and warnings about strokes that could not be saved. They are not deleted when you log out, so that no stroke is lost: scores are sent when the connection returns, and each warning is only shown to its owner.\n- Hole reports and samples waiting to be sent, kept per user. They are not deleted when you log out: they are sent when the connection returns.\n- Caches of the hole map and of the location of courses, so that they work offline. They are not deleted when you log out.\n- Preferences: the language, the order chosen in some lists and whether you dismissed the install prompt. They are not deleted when you log out.\n- Operational data: counters that limit repeated attempts in some forms and the scoring session lock. In sessionStorage, which is cleared when you close the tab, we only keep: the security check for signing in with Google, a start-up marker, the last route from which you were taken to accept the Terms (to avoid loops) and a marker that avoids reloading in a loop if a screen fails to load.\n\nThe service worker also stores the application's own files, so that it opens offline."
@@ -121,15 +121,15 @@
     },
     "section6": {
       "title": "6. Contact",
-      "content": "If you have questions about our use of cookies, write to agustin.estevez.dominguez@gmail.com or use the Contact page."
+      "content": "If you have questions about our use of cookies, write to admin@rydercupfriends.com or use the Contact page."
     }
   },
   "legalNotice": {
     "title": "Legal Notice",
-    "lastUpdated": "Last updated: 20 October 2026",
+    "lastUpdated": "Last updated: 6 November 2026",
     "section1": {
       "title": "1. Website owner",
-      "content": "In accordance with article 10 of Spanish Law 34/2002 on information society services and electronic commerce (LSSI), these are the details of the owner of this website and of the RyderCupFriends application (\"the Service\"):\n\n- Owner: Agustín Estévez Domínguez (private individual)\n- Tax ID (NIF): 76826889N\n- Address: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain)\n- Email: agustin.estevez.dominguez@gmail.com\n\nRyderCupFriends is the name of the Service, not a company: it is provided by its owner as a private individual."
+      "content": "In accordance with article 10 of Spanish Law 34/2002 on information society services and electronic commerce (LSSI), these are the details of the owner of this website and of the RyderCupFriends application (\"the Service\"):\n\n- Owner: Agustín Estévez Domínguez (private individual)\n- Tax ID (NIF): 76826889N\n- Address: c/ Germán Adrio Sobrido, 10 - 1D, 36003 Pontevedra (Spain)\n- Email: admin@rydercupfriends.com\n\nRyderCupFriends is the name of the Service, not a company: it is provided by its owner as a private individual."
     },
     "section2": {
       "title": "2. Purpose",
@@ -187,7 +187,7 @@
     },
     "section7": {
       "title": "7. Governing law and contact",
-      "content": "This Legal Notice is governed by Spanish law. If you are a consumer living in another country, you keep the protection granted by the mandatory rules of your country of residence and may go to the courts where you live.\n\nFor any question or complaint, write to agustin.estevez.dominguez@gmail.com."
+      "content": "This Legal Notice is governed by Spanish law. If you are a consumer living in another country, you keep the protection granted by the mandatory rules of your country of residence and may go to the courts where you live.\n\nFor any question or complaint, write to admin@rydercupfriends.com."
     }
   }
 }
