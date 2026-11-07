@@ -26,8 +26,11 @@ vi.mock('../composition', () => ({
   googleLoginUseCase: { execute: vi.fn() },
   linkGoogleAccountUseCase: { execute: vi.fn() },
 }));
-const estado = vi.hoisted(() => ({ valid: true, flow: 'login' }));
-vi.mock('../utils/googleOAuth', () => ({ verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }) }));
+const estado = vi.hoisted(() => ({ valid: true, flow: 'login', vuelta: null }));
+vi.mock('../utils/googleOAuth', () => ({
+  verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }),
+  recogeLaVueltaDeGoogle: () => estado.vuelta,
+}));
 
 const { googleLoginUseCase, linkGoogleAccountUseCase } = await import('../composition');
 const { default: GoogleCallback } = await import('./GoogleCallback');
@@ -150,6 +153,7 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/auth/complete-profile" element={<p>completar perfil</p>} />
           <Route path="/dashboard" element={<p>panel</p>} />
+          <Route path="/confirm-email-change" element={<p>confirmar el correo</p>} />
         </Routes>
       </BrowserRouter>
     );
@@ -162,6 +166,16 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(screen.queryByText('completar perfil')).toBeNull();
+  });
+
+  it('con la vuelta guardada, vuelve a confirmar el cambio de correo (RyderCupAm #753)', async () => {
+    estado.vuelta = '/confirm-email-change?token=abc';
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('confirmar el correo')).toBeInTheDocument();
+    estado.vuelta = null;
   });
 
   it('un usuario nuevo va a completar el perfil, donde acepta los Términos', async () => {

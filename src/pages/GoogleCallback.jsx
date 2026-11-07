@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
-import { verifyOAuthState } from '../utils/googleOAuth';
+import { verifyOAuthState, recogeLaVueltaDeGoogle } from '../utils/googleOAuth';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -74,7 +74,8 @@ const GoogleCallback = () => {
             navigate('/auth/complete-profile', { replace: true });
           } else {
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
-            navigate('/dashboard', { replace: true });
+            // A la página de la que se vino, si lo pide (RyderCupAm #753); si no, al panel
+            navigate(recogeLaVueltaDeGoogle() ?? '/dashboard', { replace: true });
           }
         }
       } catch (err) {

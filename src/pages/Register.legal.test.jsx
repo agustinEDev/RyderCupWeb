@@ -20,7 +20,10 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../hooks/useRedirectIfAuthenticated', () => ({ useRedirectIfAuthenticated: () => false }));
-vi.mock('../utils/googleOAuth', () => ({ buildGoogleOAuthUrl: (...a) => urlDeGoogle(...a) }));
+vi.mock('../utils/googleOAuth', () => ({
+  buildGoogleOAuthUrl: (...a) => urlDeGoogle(...a),
+  guardaLaVueltaDeGoogle: () => {},
+}));
 vi.mock('../composition', () => ({
   registerUseCase: { execute: (...a) => registrar(...a) },
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
