@@ -148,4 +148,33 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
     expect(ruta).toBe('/api/v1/auth/register');
     expect(JSON.parse(opciones.body)).toMatchObject({ accept_terms: true });
   });
+
+  // RyderCupAm #750: el 403 de cuenta desactivada llega a la pantalla con su código
+  describe('cuenta desactivada (403 ACCOUNT_DEACTIVATED)', () => {
+    const desactivada = () =>
+      Object.assign(new Error('This account has been deactivated. Contact an administrator.'), {
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      });
+
+    it('el login lo deja pasar con su errorCode', async () => {
+      api.default.mockRejectedValue(desactivada());
+
+      await expect(
+        new ApiAuthRepository().login(
+          new Email('baja@example.com'),
+          new Password('Password123', { validateStrength: false })
+        )
+      ).rejects.toMatchObject({ status: 403, errorCode: 'ACCOUNT_DEACTIVATED' });
+    });
+
+    it('la verificación del correo también', async () => {
+      api.default.mockRejectedValue(desactivada());
+
+      await expect(new ApiAuthRepository().verifyEmail('token')).rejects.toMatchObject({
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      });
+    });
+  });
 });
