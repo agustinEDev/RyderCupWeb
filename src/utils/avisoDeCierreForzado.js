@@ -27,8 +27,9 @@ export const MOTIVO_DEL_CIERRE = Object.freeze({
 
 // Los `error_code` del 401 del refresco que son el final normal de una sesión. Desde
 // RyderCupAm #733 el backend solo manda SESSION_ENDED o SESSION_REJECTED (el motivo
-// exacto decía el estado de la cuenta). Los de antes siguen aquí mientras el backend
-// no se despliega: este front sale primero. Se pueden quitar después
+// exacto decía el estado de la cuenta), además de SESSION_REPLACED (#734), que no llega
+// aquí: el refresco lo reintenta. Los de antes siguen aquí mientras el backend no se
+// despliega: este front sale primero. Se pueden quitar después
 const FINAL_NORMAL = new Set([
   'SESSION_ENDED',
   'REFRESH_TOKEN_MISSING',

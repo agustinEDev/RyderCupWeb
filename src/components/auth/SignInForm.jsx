@@ -137,6 +137,9 @@ const SignInForm = () => {
           duration: 10000, // Longer duration for important security message
           icon: '🔒',
         });
+      } else if (error.errorCode === 'ACCOUNT_DEACTIVATED') {
+        // Con su código, como la vuelta de Google: el texto, traducido (RyderCupAm #750)
+        customToast.error(t('google.accountDeactivated'), { duration: 10000 });
       } else {
         customToast.error(error.message || t('login.error'), {
           duration: 5000,
