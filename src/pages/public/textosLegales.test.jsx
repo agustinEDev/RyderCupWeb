@@ -103,7 +103,9 @@ describe('Política de Privacidad', () => {
   ])('P3 (%s): nombra a los proveedores y las transferencias internacionales', (_i, textos, patrones) => {
     const p = texto(textos.privacy);
 
-    for (const proveedor of ['Render', 'Sentry', 'Mailgun', 'Cloudflare', 'Google']) expect(p).toContain(proveedor);
+    for (const proveedor of ['Render', 'Sentry', 'Mailgun', 'Resend', 'Brevo', 'Cloudflare', 'Google']) {
+      expect(p).toContain(proveedor);
+    }
     for (const patron of patrones) expect(p).toMatch(patron);
   });
 
@@ -147,13 +149,14 @@ describe('Política de Privacidad', () => {
     expect(p).toContain('www.aepd.es');
   });
 
+  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Términos y Cookies, no
   it.each([
-    ['es', es, '6 de noviembre de 2026'],
-    ['en', en, '6 November 2026'],
-  ])('fecha de la última actualización (%s)', (_i, textos, fecha) => {
-    expect(textos.privacy.lastUpdated).toContain(fecha);
-    expect(textos.terms.lastUpdated).toContain(fecha);
-    expect(textos.cookies.lastUpdated).toContain(fecha);
+    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026'],
+    ['en', en, '7 November 2026', '6 November 2026'],
+  ])('fecha de la última actualización (%s)', (_i, textos, privacidad, resto) => {
+    expect(textos.privacy.lastUpdated).toContain(privacidad);
+    expect(textos.terms.lastUpdated).toContain(resto);
+    expect(textos.cookies.lastUpdated).toContain(resto);
   });
 });
 
@@ -510,6 +513,19 @@ describe('revisión de la release', () => {
     expect(textos.privacy.section7.content).not.toMatch(/GitHub/);
 
     expect(linea(textos.privacy.section3.content, contacto)).toMatch(base);
+  });
+
+  // P1 (7 nov 2026): Resend y Brevo, respaldos de Mailgun para enviar correos, cada uno
+  // en su línea de proveedores con su región (los dos en la UE)
+  it.each([
+    ['es', es, /respaldo/i, /UE/],
+    ['en', en, /backup/i, /EU/],
+  ])('P1 (%s): Resend y Brevo, respaldos de los correos en la UE', (_i, textos, respaldo, ue) => {
+    for (const proveedor of [/Resend/, /Brevo/]) {
+      const enProveedores = linea(textos.privacy.section7.content, proveedor);
+      expect(enProveedores).toMatch(respaldo);
+      expect(enProveedores).toMatch(ue);
+    }
   });
 
   // Cookies §1: todas las claves de sessionStorage
