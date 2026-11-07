@@ -34,6 +34,7 @@ import {
 
 import { RUTA_DEL_REFRESCO } from './rutasDeLaSesion';
 import { cabeceraDelModoDeLaApp } from './modoDeLaApp';
+import { usuarioDeLaPestana } from './usuarioDeLaPestana';
 
 /**
  * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios
@@ -96,41 +97,48 @@ export const getLastRefreshAt = () => lastRefreshAt;
 // en el acto volvería a mandar la cookie vieja
 const ESPERA_TRAS_SUSTITUIDA_MS = 500;
 
+const esDeOtraCuenta = (data) => {
+  const dePestana = usuarioDeLaPestana()?.id;
+  const delRefresco = data?.user?.id;
+  return Boolean(dePestana && delRefresco && dePestana !== delRefresco);
+};
+
+const anotaElRefresco = () => {
+  lastRefreshAt = Date.now();
+  refrescosCompletados += 1;
+};
+
 const esSesionSustituida = (error) => error?.errorData?.error_code === 'SESSION_REPLACED';
 
 /**
  * Un POST al refresco, con su tope de tiempo.
- * @returns {Promise<boolean>}
+ * @returns {Promise<object>} Lo que contestó el servidor
  * @throws {Error} - Si falla; con `.response` y `.errorData` si contestó el servidor
  */
 const pideElRefresco = async () => {
+  // Con tope de tiempo, y no es un adorno: desde FE #518 TODA peticion que
+  // reciba un 401 espera a este refresco. Un `fetch` que se queda colgado
+  // —lo normal en un movil con mala cobertura, donde la conexion no falla,
+  // simplemente no contesta— dejaria esperando indefinidamente a todas. Que
+  // es exactamente el fallo que aquella issue vino a cerrar, alcanzado por
+  // otro camino. Cubre tambien la lectura del cuerpo, que puede pararse igual
+  // con las cabeceras ya recibidas
+  const corte = new AbortController();
+  const temporizador = setTimeout(() => corte.abort(), TOPE_DEL_REFRESCO_MS);
+
   try {
     console.log('🔄 [TokenRefresh] Attempting to refresh access token...');
 
-    // Con tope de tiempo, y no es un adorno: desde FE #518 TODA peticion que
-    // reciba un 401 espera a este refresco. Un `fetch` que se queda colgado
-    // —lo normal en un movil con mala cobertura, donde la conexion no falla,
-    // simplemente no contesta— dejaria esperando indefinidamente a todas. Que
-    // es exactamente el fallo que aquella issue vino a cerrar, alcanzado por
-    // otro camino
-    const corte = new AbortController();
-    const temporizador = setTimeout(() => corte.abort(), TOPE_DEL_REFRESCO_MS);
-
-    let response;
-    try {
-      response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
-        method: 'POST',
-        credentials: 'include', // Critical: sends httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
-          // El refresco también registra el dispositivo (FE #1046)
-          ...cabeceraDelModoDeLaApp(),
-        },
-        signal: corte.signal,
-      });
-    } finally {
-      clearTimeout(temporizador);
-    }
+    const response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
+      method: 'POST',
+      credentials: 'include', // Critical: sends httpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+        // El refresco también registra el dispositivo (FE #1046)
+        ...cabeceraDelModoDeLaApp(),
+      },
+      signal: corte.signal,
+    });
 
     if (!response.ok) {
       console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
@@ -139,8 +147,10 @@ const pideElRefresco = async () => {
       let errorData = {};
       try {
         errorData = await response.json();
-      } catch {
-        // Ignore JSON parse errors
+      } catch (errorDelCuerpo) {
+        // Un cuerpo que no es JSON se ignora. Uno cortado por el tope no es una
+        // respuesta: sin saber el código, no se cierra la sesión por él
+        if (corte.signal.aborted) throw errorDelCuerpo;
       }
 
       // Refresh token expired or invalid
@@ -169,13 +179,12 @@ const pideElRefresco = async () => {
     // Backend sets new access_token cookie automatically (httpOnly)
     // No need to handle token manually
 
-    lastRefreshAt = Date.now();
-    refrescosCompletados += 1;
-
-    return true;
+    return data;
   } catch (error) {
     console.error('❌ [TokenRefresh] Error refreshing token:', error);
     throw error;
+  } finally {
+    clearTimeout(temporizador);
   }
 };
 
@@ -194,19 +203,33 @@ const pideElRefresco = async () => {
  */
 export const refreshAccessToken = async () => {
   try {
-    return await pideElRefresco();
+    await pideElRefresco();
+    anotaElRefresco();
+    return true;
   } catch (error) {
     if (!esSesionSustituida(error)) throw error;
   }
 
   await new Promise((resolve) => setTimeout(resolve, ESPERA_TRAS_SUSTITUIDA_MS));
 
+  let data;
   try {
-    return await pideElRefresco();
+    data = await pideElRefresco();
   } catch (error) {
     if (!esSesionSustituida(error)) throw error;
     throw new TypeError('The session was replaced and the new cookie has not arrived yet', { cause: error });
   }
+
+  // La cookie nueva es de otra cuenta que entró en este navegador. Lo que estaba en
+  // vuelo era de la cuenta de esta pestaña: repetirlo lo haría a nombre de la otra. No
+  // se anota el refresco, para que nada lo repita, y la pestaña recarga con la nueva
+  if (esDeOtraCuenta(data)) {
+    globalThis.location.reload();
+    throw new TypeError('The session now belongs to another account');
+  }
+
+  anotaElRefresco();
+  return true;
 };
 
 /**
@@ -506,21 +529,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);
     // Re-throw to let the caller handle the error appropriately
     throw error;
-  }
-};
-
-/**
- * Check if the current session is valid by attempting a refresh
- * Useful for checking session status on app startup
- *
- * @returns {Promise<boolean>} - True if session is valid
- */
-export const isSessionValid = async () => {
-  try {
-    await refreshAccessToken();
-    return true;
-  } catch {
-    return false;
   }
 };
 

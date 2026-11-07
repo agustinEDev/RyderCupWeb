@@ -23,6 +23,15 @@
  *        (S11a interceptor, S11b sonda,            |   sonda = fallo, apiRequest =
  *        S11c apiRequest, S11d CSRF)               |   sin cobertura, también CSRF)
  *   S13  el tope de 15 s es por intento            | el reintento tiene los suyos
+ *   S15  reintento con 200 de OTRA cuenta          | no se repite la petición, la pestaña
+ *        (también las enganchadas)                 |   recarga, sin cierre ni refresco anotado
+ *   S15b reintento con 200 de la misma cuenta      | sigue, sin recargar
+ *   S15c la pestaña no sabe quién es / 200 sin     | sigue, sin recargar
+ *        usuario                                   |
+ *   S15d refresco normal (sin REPLACED) de otra    | sigue como hoy, sin recargar
+ *        cuenta                                    |
+ *   S14  cuerpo del 200 o del 401 parado           | el tope lo corta, se suelta el refresco
+ *        y la sesión se conserva                   | y el siguiente pide el suyo
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
@@ -241,6 +250,130 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
       await vi.advanceTimersByTimeAsync(1);
       expect(abortado).toBe(true);
       await enCurso;
+    });
+  });
+
+  describe('S14: el tope cubre también la lectura del cuerpo', () => {
+    const conCuerpoParado = (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url, { signal }) => ({
+          ...respuesta(status),
+          json: () =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () => reject(new globalThis.DOMException('Aborted', 'AbortError')));
+            }),
+        }))
+      );
+    };
+
+    it.each([
+      ['del 200', 200],
+      ['del 401', 401],
+    ])('S14: con el cuerpo %s parado, a los 15 s falla sin respuesta y no cierra', async (_caso, status) => {
+      conCuerpoParado(status);
+      const resultado = interceptor.refrescoCompartido().then(
+        () => ({ acabo: 'bien' }),
+        (error) => ({ acabo: 'mal', error })
+      );
+      await vi.advanceTimersByTimeAsync(14999);
+      expect(posts()).toBe(1);
+      await vi.advanceTimersByTimeAsync(1);
+
+      const { acabo, error } = await resultado;
+      expect(acabo).toBe('mal');
+      expect(error.response).toBeUndefined();
+      interceptor.trataElFalloDelRefresco(error);
+      expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
+
+      // Se ha soltado: el siguiente pide el suyo
+      conRefrescos(OK);
+      await expect(interceptor.refrescoCompartido()).resolves.toBe(true);
+    });
+  });
+
+  describe('S15: el reintento trae la sesión de otra cuenta', () => {
+    const CUENTA_A = { id: 'cuenta-a' };
+    const CUENTA_B = { id: 'cuenta-b' };
+    const OK_DE = (user) => () => respuesta(200, { csrf_token: 'NUEVO', user });
+    let recarga;
+
+    beforeEach(() => {
+      recarga = vi.fn();
+      vi.stubGlobal('location', { pathname: '/dashboard', reload: recarga });
+    });
+
+    const conPestanaDe = async (usuario) => {
+      const { registraElUsuarioDeLaPestana } = await import('./usuarioDeLaPestana');
+      registraElUsuarioDeLaPestana(() => usuario);
+    };
+
+    it('S15: no repite la petición y recarga, sin cerrar ni anotar el refresco', async () => {
+      await conPestanaDe(CUENTA_A);
+      conRefrescos(r401(REPLACED), OK_DE(CUENTA_B));
+
+      const { error } = await hastaElFinal(pide());
+
+      expect(recarga).toHaveBeenCalledTimes(1);
+      expect(peticiones()).toBe(1);
+      expect(error).toBeInstanceOf(TypeError);
+      expect(error.response).toBeUndefined();
+      expect(interceptor.getLastRefreshAt()).toBeNull();
+      expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
+    });
+
+    it('S15: las enganchadas tampoco repiten, y recarga una sola vez', async () => {
+      await conPestanaDe(CUENTA_A);
+      conRefrescos(r401(REPLACED), OK_DE(CUENTA_B));
+
+      await hastaElFinal(Promise.allSettled([pide(), pide(), pide()]));
+
+      expect(recarga).toHaveBeenCalledTimes(1);
+      expect(peticiones()).toBe(3);
+    });
+
+    it('S15b: de la misma cuenta, sigue sin recargar', async () => {
+      await conPestanaDe(CUENTA_A);
+      conRefrescos(r401(REPLACED), OK_DE(CUENTA_A));
+
+      const { valor } = await hastaElFinal(pide());
+
+      expect(valor.status).toBe(200);
+      expect(recarga).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['la pestaña no sabe quién es', null, CUENTA_B],
+      ['el 200 no trae usuario', CUENTA_A, undefined],
+    ])('S15c: %s: sigue sin recargar', async (_caso, deLaPestana, delRefresco) => {
+      await conPestanaDe(deLaPestana);
+      conRefrescos(r401(REPLACED), OK_DE(delRefresco));
+
+      const { valor } = await hastaElFinal(pide());
+
+      expect(valor.status).toBe(200);
+      expect(recarga).not.toHaveBeenCalled();
+    });
+
+    it('S15d: un refresco normal de otra cuenta sigue como hoy', async () => {
+      await conPestanaDe(CUENTA_A);
+      conRefrescos(OK_DE(CUENTA_B));
+
+      const { valor } = await hastaElFinal(pide());
+
+      expect(valor.status).toBe(200);
+      expect(recarga).not.toHaveBeenCalled();
+    });
+
+    it('S15: la sesión compartida le dice al interceptor quién es la pestaña', async () => {
+      const { anotaLaSesion } = await import('../services/sesionCompartida');
+      anotaLaSesion(CUENTA_A);
+      conRefrescos(r401(REPLACED), OK_DE(CUENTA_B));
+
+      await hastaElFinal(pide());
+
+      expect(recarga).toHaveBeenCalledTimes(1);
+      expect(peticiones()).toBe(1);
     });
   });
 

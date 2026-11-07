@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { refreshAccessToken, fetchWithTokenRefresh, isSessionValid } from './tokenRefreshInterceptor';
+import { refreshAccessToken, fetchWithTokenRefresh } from './tokenRefreshInterceptor';
 
 // Mock deviceRevocationLogout module
 // v2.0.4: Now uses separate handlers for revocation vs expiration
@@ -296,35 +296,6 @@ describe('tokenRefreshInterceptor', () => {
           method: 'POST',
         })
       );
-    });
-  });
-
-  describe('isSessionValid', () => {
-    it('should return true if refresh succeeds', async () => {
-      // Mock successful refresh
-      globalThis.fetch.mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        status: 200,
-        json: async () => ({ message: 'Token refreshed', csrf_token: 'new-token' }),
-      }));
-
-      const result = await isSessionValid();
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false if refresh fails', async () => {
-      // Mock failed refresh - must reject or return non-ok response
-      globalThis.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        json: async () => ({ detail: 'Refresh token expired' }),
-      });
-
-      const result = await isSessionValid();
-
-      expect(result).toBe(false);
     });
   });
 
