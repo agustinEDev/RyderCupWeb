@@ -516,16 +516,23 @@ describe('revisión de la release', () => {
   });
 
   // P1 (7 nov 2026): Resend y Brevo, respaldos de Mailgun para enviar correos, cada uno
-  // en su línea de proveedores con su región (los dos en la UE)
+  // en su línea de proveedores. Tras las revisiones, preciso: Resend es de EE. UU. y
+  // envía desde la UE; Brevo registra aperturas y clics sin asociarlos a cada destinatario
+  // (el seguimiento anónimo de su cuenta), y nunca lleva avisos de seguridad
   it.each([
-    ['es', es, /respaldo/i, /UE/],
-    ['en', en, /backup/i, /EU/],
-  ])('P1 (%s): Resend y Brevo, respaldos de los correos en la UE', (_i, textos, respaldo, ue) => {
-    for (const proveedor of [/Resend/, /Brevo/]) {
-      const enProveedores = linea(textos.privacy.section7.content, proveedor);
+    ['es', es, /respaldo/i, /UE/, /EE\. UU\./, /sin asociarlos a cada destinatario/, /ni son de seguridad/],
+    ['en', en, /backup/i, /EU/, /US/, /without linking them to each recipient/, /nor security/],
+  ])('P1 (%s): Resend y Brevo, respaldos de los correos', (_i, textos, respaldo, ue, eeuu, anonimo, seguridad) => {
+    const resend = linea(textos.privacy.section7.content, /Resend/);
+    const brevo = linea(textos.privacy.section7.content, /Brevo/);
+    for (const enProveedores of [resend, brevo]) {
       expect(enProveedores).toMatch(respaldo);
       expect(enProveedores).toMatch(ue);
     }
+    expect(resend).toMatch(eeuu);
+    expect(brevo).toMatch(anonimo);
+    expect(brevo).toMatch(seguridad);
+    expect(brevo).not.toMatch(/anónima|anonymously/i);
   });
 
   // Cookies §1: todas las claves de sessionStorage
