@@ -22,7 +22,10 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
 vi.mock('../hooks/useAuthContext', () => ({ useAuthContext: () => ({ login: vi.fn() }) }));
-vi.mock('../utils/googleOAuth', () => ({ verifyOAuthState: () => ({ flow: 'login', valid: true }) }));
+vi.mock('../utils/googleOAuth', () => ({
+  verifyOAuthState: () => ({ flow: 'login', valid: true }),
+  recogeLaVueltaDeGoogle: () => null,
+}));
 // Pendientes: lo que importa es con qué se llaman, no lo que pasa después
 const pendiente = () => new Promise(() => {});
 vi.mock('../composition', () => ({
