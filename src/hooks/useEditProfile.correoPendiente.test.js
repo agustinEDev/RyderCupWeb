@@ -8,6 +8,7 @@ import { useEditProfile } from './useEditProfile';
  *   #   Caso                         | Se ve
  *   ----|------------------------------|---------------------------------------------
  *   H1  pedir un correo nuevo        | toasts.emailChangePending con el nuevo y el actual
+ *   H1b contra el backend de antes   | (lo cambia al momento, sin pendiente): securityUpdated
  *   H2  solo la contraseña           | toasts.securityUpdated, como siempre
  *   H3  anular el pendiente          | cancelEmailChangeUseCase, recarga y emailChangeCancelled
  *   H4  anular falla                 | toasts.failedToCancelEmailChange
@@ -66,11 +67,18 @@ describe('useEditProfile · correo pendiente', () => {
   };
 
   it('H1: pedir un correo nuevo dice que queda pendiente', async () => {
+    composition.updateUserSecurityUseCase.execute.mockResolvedValue({ pendingEmail: 'ana@trabajo.com' });
     await pide({ email: 'ana@trabajo.com' });
     expect(toast.success).toHaveBeenCalledWith(
       'toasts.emailChangePending:ana@trabajo.com:ana@gmail.com',
       { duration: 8000 }
     );
+  });
+
+  it('H1b: el backend de antes (sin pendiente) cambia el correo: el aviso de siempre', async () => {
+    composition.updateUserSecurityUseCase.execute.mockResolvedValue({ pendingEmail: null });
+    await pide({ email: 'ana@trabajo.com' });
+    expect(toast.success).toHaveBeenCalledWith('toasts.securityUpdated');
   });
 
   it('H2: solo la contraseña, el aviso de siempre', async () => {

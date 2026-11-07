@@ -364,7 +364,7 @@ export const useEditProfile = () => {
         securityData.confirm_password = formData.confirmPassword;
       }
 
-      await updateUserSecurityUseCase.execute({
+      const actualizado = await updateUserSecurityUseCase.execute({
         userId: user.id,
         securityData,
       });
@@ -380,9 +380,10 @@ export const useEditProfile = () => {
         confirmPassword: '',
       }));
 
-      if (isEmailChanged) {
+      if (isEmailChanged && actualizado?.pendingEmail) {
         // El correo nuevo queda pendiente hasta confirmarlo desde su dirección
-        // (RyderCupAm #749): la cuenta sigue con el de antes
+        // (RyderCupAm #749): la cuenta sigue con el de antes. Con el backend de
+        // antes, sin pendiente, se cambia al momento: el aviso de siempre
         const correos = { nuevo: trimmedEmail, actual: user.email };
         customToast.success(t('toasts.emailChangePending', correos), { duration: 8000 });
       } else {

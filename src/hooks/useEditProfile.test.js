@@ -245,8 +245,8 @@ describe('useEditProfile Hook', () => {
     });
 
     expect(mockRefetch).toHaveBeenCalled();
-    // Con correo nuevo: queda pendiente hasta confirmarlo (RyderCupAm #749)
-    expect(customToast.success).toHaveBeenCalledWith('toasts.emailChangePending', expect.anything());
+    // Sin pendiente en la respuesta (el backend de antes): el aviso de siempre
+    expect(customToast.success).toHaveBeenCalledWith('toasts.securityUpdated');
     expect(result.current.isSaving).toBe(false); // Asegurarse de que el estado de guardado se resetea
 
     // Verificar que los campos de contraseña se han limpiado
