@@ -12,7 +12,10 @@ import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
 const TEXTO_DEL_RECHAZO = {
   EMAIL_CHANGE_EXPIRED: 'confirmEmailChange.expired',
   EMAIL_ALREADY_IN_USE: 'confirmEmailChange.inUse',
+  EMAIL_CHANGE_INVALID: 'confirmEmailChange.invalid',
 };
+// Cualquier otro fallo (sin red, el servidor): el token sigue valiendo, se reintenta
+const FALLO = 'confirmEmailChange.failed';
 
 /**
  * El enlace que confirma un correo nuevo (RyderCupAm #749). Va dentro de la
@@ -28,8 +31,9 @@ const ConfirmEmailChange = () => {
   const [estado, setEstado] = useState(token ? { clave: 'confirmEmailChange.confirming' } : {
     clave: 'confirmEmailChange.invalid',
   });
-  // Una sola vez: el token se gasta al confirmarlo
-  const enviado = useRef(false);
+  // Una vez por intento: el token se gasta al confirmarlo, pero un fallo de red no
+  const [intento, setIntento] = useState(0);
+  const enviado = useRef(-1);
 
   useEffect(() => {
     laPantallaEstaLista();
@@ -39,8 +43,8 @@ const ConfirmEmailChange = () => {
   }, []);
 
   useEffect(() => {
-    if (!token || enviado.current) return;
-    enviado.current = true;
+    if (!token || enviado.current === intento) return;
+    enviado.current = intento;
     confirmEmailChangeUseCase
       .execute(token)
       .then((confirmado) => {
@@ -49,12 +53,17 @@ const ConfirmEmailChange = () => {
         Promise.resolve(refetch?.()).catch(() => {});
       })
       .catch((error) => {
-        setEstado({ clave: TEXTO_DEL_RECHAZO[error?.errorCode] || 'confirmEmailChange.invalid' });
+        setEstado({ clave: TEXTO_DEL_RECHAZO[error?.errorCode] || FALLO });
         // Caducado u ocupado: el backend lo anuló, y Seguridad no debe seguir
         // mostrándolo pendiente
         Promise.resolve(refetch?.()).catch(() => {});
       });
-  }, [token, refetch]);
+  }, [token, refetch, intento]);
+
+  const reintenta = () => {
+    setEstado({ clave: 'confirmEmailChange.confirming' });
+    setIntento((n) => n + 1);
+  };
 
   return (
     <div className={`${PANTALLA_MENOS_BARRA_INFERIOR} bg-gray-50`}>
@@ -68,6 +77,15 @@ const ConfirmEmailChange = () => {
         >
           {t(estado.clave, { email: estado.email })}
         </p>
+        {estado.clave === FALLO && (
+          <button
+            type="button"
+            onClick={reintenta}
+            className="inline-block mt-6 mr-2 px-4 py-2 rounded-lg border border-primary text-primary font-medium"
+          >
+            {t('confirmEmailChange.retry')}
+          </button>
+        )}
         {estado.clave !== 'confirmEmailChange.confirming' && (
           <Link
             to="/profile/edit"

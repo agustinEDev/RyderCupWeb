@@ -156,7 +156,8 @@
     "failedToRemoveAvatar": "Error al quitar la foto de perfil",
     "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar.",
     "emailChangePending": "Te hemos enviado un enlace a {{nuevo}}. Tu correo sigue siendo {{actual}} hasta que lo confirmes (tienes 24 horas).",
-    "emailChangeCancelled": "Cambio de correo anulado"
+    "emailChangeCancelled": "Cambio de correo anulado",
+    "failedToCancelEmailChange": "No se ha podido anular el cambio de correo."
   },
   "handicapLabel": "Hándicap",
   "tournamentsLabel": "Torneos",
@@ -205,6 +206,8 @@
     "expired": "El enlace ha caducado. Pide el cambio de nuevo en Seguridad.",
     "invalid": "Este enlace no vale para tu cuenta. ¿Has entrado con la cuenta correcta?",
     "inUse": "Ese correo ya lo usa otra cuenta. El cambio se ha anulado.",
-    "toProfile": "Ir a mi perfil"
+    "toProfile": "Ir a mi perfil",
+    "failed": "No hemos podido confirmar el correo. Comprueba la conexión e inténtalo de nuevo.",
+    "retry": "Reintentar"
   }
 }

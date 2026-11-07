@@ -156,7 +156,8 @@
     "failedToRemoveAvatar": "Failed to remove profile photo",
     "failedToLoadAvatarOptions": "Failed to load avatar options.",
     "emailChangePending": "We sent a link to {{nuevo}}. Your email stays {{actual}} until you confirm it (you have 24 hours).",
-    "emailChangeCancelled": "Email change cancelled"
+    "emailChangeCancelled": "Email change cancelled",
+    "failedToCancelEmailChange": "The email change couldn't be cancelled."
   },
   "handicapLabel": "Handicap",
   "tournamentsLabel": "Tournaments",
@@ -205,6 +206,8 @@
     "expired": "This link has expired. Ask for the change again in Security.",
     "invalid": "This link is not valid for your account. Are you signed in to the right account?",
     "inUse": "That email is already used by another account. The change was cancelled.",
-    "toProfile": "Go to my profile"
+    "toProfile": "Go to my profile",
+    "failed": "We couldn't confirm the email. Check your connection and try again.",
+    "retry": "Try again"
   }
 }

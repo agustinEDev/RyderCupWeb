@@ -32,6 +32,7 @@ const EditProfile = () => {
     handleUpdateProfile,
     handleUpdateSecurity,
     handleCancelEmailChange,
+    isCancellingEmail,
     handleUpdateHandicapManually,
     handleUpdateHandicapRFEG,
     handleRefreshUserData,
@@ -345,7 +346,8 @@ const EditProfile = () => {
                         <button
                           type="button"
                           onClick={handleCancelEmailChange}
-                          className="shrink-0 text-xs font-medium text-amber-900 underline"
+                          disabled={isCancellingEmail}
+                          className="shrink-0 text-xs font-medium text-amber-900 underline disabled:opacity-50"
                         >
                           {t('edit.security.cancelPendingEmail')}
                         </button>

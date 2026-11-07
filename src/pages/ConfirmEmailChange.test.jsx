@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { StrictMode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 /**
@@ -18,6 +18,8 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   P7  caducado u ocupado               | también se recarga: el backend lo anuló
  *   P8  StrictMode                       | se confirma UNA vez (el token se gasta)
  *   P9  el token                         | fuera de la barra de direcciones
+ *   P10 un fallo de red o del servidor    | confirmEmailChange.failed y «Reintentar»,
+ *                                        |   que vuelve a probar con el mismo token
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -102,6 +104,22 @@ describe('ConfirmEmailChange', () => {
     abrir('?token=tok-1');
     await screen.findByText('confirmEmailChange.done:ana@trabajo.com');
     expect(quita.stripSecretsFromAddressBar).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['sin red', Object.assign(new Error('Failed to fetch'), { status: undefined })],
+    ['500', Object.assign(new Error('Error del servidor'), { status: 500 })],
+  ])('P10: %s: no dice que el enlace no vale, y deja reintentar', async (_n, fallo) => {
+    confirmEmailChangeUseCase.execute.mockRejectedValueOnce(fallo);
+    confirmEmailChangeUseCase.execute.mockResolvedValueOnce({ email: 'ana@trabajo.com' });
+    abrir('?token=tok-1');
+    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
+    expect(screen.queryByText('confirmEmailChange.invalid')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'confirmEmailChange.retry' }));
+
+    expect(await screen.findByText('confirmEmailChange.done:ana@trabajo.com')).toBeInTheDocument();
+    expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(2);
   });
 
   it('P5: sin token no se llama al backend', async () => {

@@ -10,6 +10,8 @@ import { useEditProfile } from './useEditProfile';
  *   H1  pedir un correo nuevo        | toasts.emailChangePending con el nuevo y el actual
  *   H2  solo la contraseña           | toasts.securityUpdated, como siempre
  *   H3  anular el pendiente          | cancelEmailChangeUseCase, recarga y emailChangeCancelled
+ *   H4  anular falla                 | toasts.failedToCancelEmailChange
+ *   H5  mientras anula               | isCancellingEmail (el botón, desactivado)
  */
 vi.mock('react-i18next', () => ({
   // Con los valores: así se ve que el texto lleva los dos correos
@@ -86,5 +88,36 @@ describe('useEditProfile · correo pendiente', () => {
     expect(composition.cancelEmailChangeUseCase.execute).toHaveBeenCalled();
     expect(refetch).toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalledWith('toasts.emailChangeCancelled');
+  });
+
+  it('H4: si anular falla, su propio aviso', async () => {
+    composition.cancelEmailChangeUseCase.execute.mockRejectedValue(new Error('sin red'));
+    const { result } = renderHook(() => useEditProfile());
+    await act(async () => {});
+    await act(async () => {
+      await result.current.handleCancelEmailChange();
+    });
+    expect(toast.error).toHaveBeenCalledWith('toasts.failedToCancelEmailChange');
+  });
+
+  it('H5: mientras anula, isCancellingEmail; un segundo toque no repite', async () => {
+    let termina;
+    composition.cancelEmailChangeUseCase.execute.mockReturnValue(new Promise((r) => { termina = r; }));
+    const { result } = renderHook(() => useEditProfile());
+    await act(async () => {});
+    let primera;
+    act(() => {
+      primera = result.current.handleCancelEmailChange();
+    });
+    expect(result.current.isCancellingEmail).toBe(true);
+    await act(async () => {
+      await result.current.handleCancelEmailChange();
+    });
+    expect(composition.cancelEmailChangeUseCase.execute).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      termina({});
+      await primera;
+    });
+    expect(result.current.isCancellingEmail).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loQueHayQueMandar, queLePasaAlAlias } from '../utils/alias';
 import customToast from '../utils/toast';
@@ -415,19 +415,29 @@ export const useEditProfile = () => {
     }
   };
 
+  const [isCancellingEmail, setIsCancellingEmail] = useState(false);
+  // Uno a la vez: un doble toque no manda dos anulaciones
+  const anulando = useRef(false);
   const handleCancelEmailChange = async () => {
+    if (anulando.current) return;
+    anulando.current = true;
+    setIsCancellingEmail(true);
     try {
       await cancelEmailChangeUseCase.execute();
       await refetchUser();
       customToast.success(t('toasts.emailChangeCancelled'));
     } catch (error) {
       console.error('Error cancelling the email change:', error);
-      customToast.error(t('toasts.failedToUpdateSecurity'));
+      customToast.error(t('toasts.failedToCancelEmailChange'));
+    } finally {
+      anulando.current = false;
+      setIsCancellingEmail(false);
     }
   };
 
   return {
     handleCancelEmailChange,
+    isCancellingEmail,
     // Public state
     user,
     refetchUser,
