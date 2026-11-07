@@ -176,6 +176,7 @@ const TRAMOS_FIJOS = new Set([
   'preset',
   'profile',
   'quick-matches',
+  'reauthenticate',
   'refresh-mine',
   'refresh-token',
   'register',
