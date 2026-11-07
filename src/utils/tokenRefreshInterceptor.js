@@ -91,12 +91,19 @@ let refrescosCompletados = 0;
  */
 export const getLastRefreshAt = () => lastRefreshAt;
 
+// Lo que se espera antes de repetir un refresco con `SESSION_REPLACED`: si el que
+// ganó ya está en la BD pero su `Set-Cookie` aún no ha llegado al navegador, repetir
+// en el acto volvería a mandar la cookie vieja
+const ESPERA_TRAS_SUSTITUIDA_MS = 500;
+
+const esSesionSustituida = (error) => error?.errorData?.error_code === 'SESSION_REPLACED';
+
 /**
- * Refresh the access token using the refresh token cookie
- * @returns {Promise<boolean>} - True if refresh was successful
- * @throws {Error} - If refresh fails
+ * Un POST al refresco, con su tope de tiempo.
+ * @returns {Promise<boolean>}
+ * @throws {Error} - Si falla; con `.response` y `.errorData` si contestó el servidor
  */
-export const refreshAccessToken = async () => {
+const pideElRefresco = async () => {
   try {
     console.log('🔄 [TokenRefresh] Attempting to refresh access token...');
 
@@ -169,6 +176,36 @@ export const refreshAccessToken = async () => {
   } catch (error) {
     console.error('❌ [TokenRefresh] Error refreshing token:', error);
     throw error;
+  }
+};
+
+/**
+ * Refresh the access token using the refresh token cookie
+ *
+ * Con `SESSION_REPLACED` (BE #734) el navegador ya tiene una sesión más nueva y el
+ * servidor no ha borrado la cookie: se repite UNA vez con la cookie nueva. Si vuelve a
+ * contestar lo mismo, no es un «no» a la sesión: sube como un fallo sin respuesta —un
+ * `TypeError` sin `.response`, igual que el de `fetch` sin red—, que todos los que
+ * esperan un refresco ya saben tratar conservando la sesión. La ventana del backend
+ * dura 5 minutos: pasados, contesta un rechazo normal y ahí sí se cierra.
+ *
+ * @returns {Promise<boolean>} - True if refresh was successful
+ * @throws {Error} - If refresh fails
+ */
+export const refreshAccessToken = async () => {
+  try {
+    return await pideElRefresco();
+  } catch (error) {
+    if (!esSesionSustituida(error)) throw error;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, ESPERA_TRAS_SUSTITUIDA_MS));
+
+  try {
+    return await pideElRefresco();
+  } catch (error) {
+    if (!esSesionSustituida(error)) throw error;
+    throw new TypeError('The session was replaced and the new cookie has not arrived yet', { cause: error });
   }
 };
 
