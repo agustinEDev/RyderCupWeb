@@ -22,7 +22,7 @@ const VerifyEmail = () => {
     stripSecretsFromAddressBar();
   }, []);
 
-  // verifying | success | deactivated | error | invalid
+  // verifying | success | verifiedSignIn | deactivated | error | invalid
   const [status, setStatus] = useState('verifying');
   const redirectTimeoutRef = useRef(null);
   const hasVerifiedRef = useRef(false); // Usar ref para prevenir doble ejecución
@@ -48,12 +48,16 @@ const VerifyEmail = () => {
       }
 
       try {
-        await verifyEmailUseCase.execute(token);
-
-        // El backend establece automáticamente la cookie httpOnly
-        // No necesitamos guardar nada en el frontend
+        const { sesionAbierta } = await verifyEmailUseCase.execute(token);
 
         await new Promise(resolve => setTimeout(resolve, 1500));
+        // Desde RyderCupAm #753 verificar no abre sesión: se entra con la contraseña.
+        // Con una sesión ya abierta, el enlace de iniciar sesión lleva al panel
+        if (!sesionAbierta) {
+          setStatus('verifiedSignIn');
+          return;
+        }
+        // El backend de antes sí la abría (cookie httpOnly): al panel
         setStatus('success');
         redirectTimeoutRef.current = setTimeout(() => {
           // Forzar recarga completa para garantizar que la cookie httpOnly esté disponible
@@ -98,6 +102,29 @@ const VerifyEmail = () => {
                   <p className="text-gray-600 text-center">
                     {t('verifyEmail.verifyingBody')}
                   </p>
+                </>
+              )}
+
+              {/* Verificado, sin sesión: a iniciar sesión (RyderCupAm #753) */}
+              {status === 'verifiedSignIn' && (
+                <>
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                    <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
+                    {t('verifyEmail.successTitle')}
+                  </h1>
+                  <p className="text-gray-600 text-center mb-6">
+                    {t('verifyEmail.signInNow')}
+                  </p>
+                  <Link
+                    to="/login"
+                    className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
+                  >
+                    {t('verifyEmail.goToLogin')}
+                  </Link>
                 </>
               )}
 

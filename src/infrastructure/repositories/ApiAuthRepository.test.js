@@ -177,4 +177,26 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
       });
     });
   });
+
+  describe('verificar el correo, con la respuesta de antes y la nueva (RyderCupAm #753)', () => {
+    it('el backend nuevo solo verifica: sin sesión', async () => {
+      api.default.mockResolvedValue({ message: 'Email verified. Please sign in.', email_verified: true });
+
+      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ sesionAbierta: false });
+    });
+
+    it('el de antes abre sesión, con su usuario', async () => {
+      api.default.mockResolvedValue({
+        access_token: 'acceso',
+        csrf_token: 'csrf',
+        user: { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' },
+      });
+
+      const resultado = await new ApiAuthRepository().verifyEmail('token');
+
+      expect(resultado.sesionAbierta).toBe(true);
+      expect(resultado.user).toBeInstanceOf(User);
+      expect(resultado.csrfToken).toBe('csrf');
+    });
+  });
 });

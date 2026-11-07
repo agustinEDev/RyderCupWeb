@@ -73,9 +73,13 @@ class ApiAuthRepository extends IAuthRepository {
       body: JSON.stringify({ token }),
     });
 
-    // La API ahora devuelve { access_token, token_type, user: {...}, csrf_token }
-    // Igual que el endpoint de login
+    // Desde RyderCupAm #753 verificar no abre sesión: solo { message, email_verified }.
+    // Este front sale antes y acepta también la respuesta de antes, que la abría
+    if (!data?.access_token) {
+      return { sesionAbierta: false };
+    }
     return {
+      sesionAbierta: true,
       user: new User(data.user),
       token: data.access_token,
       csrfToken: data.csrf_token, // v1.13.0: CSRF token for email verification
