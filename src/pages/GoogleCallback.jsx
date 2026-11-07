@@ -84,6 +84,10 @@ const GoogleCallback = () => {
         if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {
           // Vincular Google pide el correo de la cuenta verificado (RyderCupAm #749)
           setError(t('google.linkNeedsVerifiedEmail'));
+        } else if (err.errorCode === 'REAUTHENTICATION_REQUIRED') {
+          // Vincular pide la contraseña confirmada hace menos de 5 minutos
+          // (RyderCupAm #753): caducó o no se confirmó. Desde el perfil se vuelve a pedir
+          setError(t('google.reauthRequired'));
         } else if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
           // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
           // del registro con Google)

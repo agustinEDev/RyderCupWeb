@@ -12,6 +12,7 @@ import {
   updateRfegHandicapUseCase,
   fetchCountriesUseCase,
   unlinkGoogleAccountUseCase,
+  reauthenticateUseCase,
 } from '../composition';
 import { buildGoogleOAuthUrl } from '../utils/googleOAuth';
 
@@ -291,8 +292,38 @@ export const useEditProfile = () => {
   const isGoogleLinked = user?.auth_providers?.includes('google') || false;
   const hasPassword = user?.has_password ?? true;
 
+  // Vincular Google pide la contraseña actual a quien la tiene (RyderCupAm #753): con
+  // solo la sesión, una robada podía añadir un Google que sobrevive al restablecimiento
+  const [isGooglePasswordOpen, setIsGooglePasswordOpen] = useState(false);
+
+  const vaAGoogle = () => {
+    globalThis.location.href = buildGoogleOAuthUrl('link');
+  };
+
   const handleLinkGoogle = () => {
-    window.location.href = buildGoogleOAuthUrl('link');
+    if (hasPassword) {
+      setIsGooglePasswordOpen(true);
+      return;
+    }
+    vaAGoogle();
+  };
+
+  const cierraContrasenaParaGoogle = () => setIsGooglePasswordOpen(false);
+
+  /**
+   * Comprueba la contraseña y, si vale, se va a Google (con la marca de 5 minutos).
+   * @returns {Promise<string|null>} La clave del error que enseñar, o null
+   */
+  const confirmaContrasenaParaGoogle = async (password) => {
+    try {
+      await reauthenticateUseCase.execute(password);
+    } catch (error) {
+      if (error?.errorCode === 'CURRENT_PASSWORD_INCORRECT') return 'edit.linkedAccounts.wrongPassword';
+      if (error?.errorCode === 'TOO_MANY_SECURITY_CHANGES') return 'toasts.tooManySecurityChanges';
+      return 'edit.linkedAccounts.passwordCheckFailed';
+    }
+    vaAGoogle();
+    return null;
   };
 
   const handleUnlinkGoogle = async () => {
@@ -469,6 +500,9 @@ export const useEditProfile = () => {
     handleUpdateProfile,
     handleUpdateSecurity,
     handleLinkGoogle,
+    isGooglePasswordOpen,
+    cierraContrasenaParaGoogle,
+    confirmaContrasenaParaGoogle,
     handleUnlinkGoogle,
   };
 };

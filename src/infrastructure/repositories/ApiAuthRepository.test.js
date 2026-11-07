@@ -199,4 +199,18 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
       expect(resultado.csrfToken).toBe('csrf');
     });
   });
+
+  describe('reauthenticate (RyderCupAm #753)', () => {
+    it('manda la contraseña y devuelve cuánto dura la marca', async () => {
+      api.default.mockResolvedValue({ expires_in: 300 });
+
+      const resultado = await new ApiAuthRepository().reauthenticate('Actual123!');
+
+      expect(api.default).toHaveBeenCalledWith('/api/v1/auth/reauthenticate', {
+        method: 'POST',
+        body: JSON.stringify({ password: 'Actual123!' }),
+      });
+      expect(resultado).toEqual({ expiresIn: 300 });
+    });
+  });
 });

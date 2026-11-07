@@ -166,6 +166,17 @@ class ApiAuthRepository extends IAuthRepository {
   /**
    * @override
    */
+  async reauthenticate(password) {
+    const data = await apiRequest('/api/v1/auth/reauthenticate', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    return { expiresIn: data.expires_in };
+  }
+
+  /**
+   * @override
+   */
   async linkGoogleAccount(authorizationCode) {
     const data = await apiRequest('/api/v1/auth/google/link', {
       method: 'POST',

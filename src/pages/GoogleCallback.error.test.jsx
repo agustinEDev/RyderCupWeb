@@ -106,6 +106,19 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     expect(screen.queryByText('google.linkError')).toBeNull();
   });
 
+  it('G8: vincular sin haber confirmado la contraseña: dice que la confirme (RyderCupAm #753)', async () => {
+    estado.flow = 'link';
+    linkGoogleAccountUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Verify your email before linking a Google account.'), {
+        status: 403,
+        errorCode: 'REAUTHENTICATION_REQUIRED',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.reauthRequired')).toBeInTheDocument();
+    expect(screen.queryByText('google.linkError')).toBeNull();
+  });
+
   it('G6: la cuenta está desactivada: lo dice, sin invitar a reintentar', async () => {
     googleLoginUseCase.execute.mockRejectedValue(
       Object.assign(new Error('This account has been deactivated.'), {
