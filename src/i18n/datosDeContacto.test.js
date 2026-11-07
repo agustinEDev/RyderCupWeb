@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import legalEs from './locales/es/legal.json';
-import legalEn from './locales/en/legal.json';
-import commonEs from './locales/es/common.json';
-import commonEn from './locales/en/common.json';
-import contactEs from './locales/es/contact.json';
-import contactEn from './locales/en/contact.json';
-import competitionsEs from './locales/es/competitions.json';
-import competitionsEn from './locales/en/competitions.json';
+
+// Todos los ficheros de cada idioma: un dato personal en cualquier texto debe saltar
+const locales = import.meta.glob('./locales/*/*.json', { eager: true, import: 'default' });
 
 /**
  * Datos de contacto y datos personales del titular (6 nov 2026).
@@ -29,10 +24,14 @@ const textos = (objeto, ruta = '') =>
     ? [[ruta, objeto]]
     : Object.entries(objeto).flatMap(([clave, valor]) => textos(valor, `${ruta}.${clave}`));
 
-const idiomas = [
-  ['es', { legal: legalEs, common: commonEs, contact: contactEs, competitions: competitionsEs }],
-  ['en', { legal: legalEn, common: commonEn, contact: contactEn, competitions: competitionsEn }],
-];
+const idiomas = ['es', 'en'].map((idioma) => [
+  idioma,
+  Object.fromEntries(
+    Object.entries(locales)
+      .filter(([ruta]) => ruta.startsWith(`./locales/${idioma}/`))
+      .map(([ruta, fichero]) => [ruta.split('/').pop().replace(/\.json$/, ''), fichero]),
+  ),
+]);
 
 describe.each(idiomas)('Datos de contacto (%s)', (_idioma, ficheros) => {
   const todos = Object.entries(ficheros).flatMap(([nombre, f]) => textos(f, nombre));
