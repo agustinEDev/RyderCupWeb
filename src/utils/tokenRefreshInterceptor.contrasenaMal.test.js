@@ -87,6 +87,15 @@ describe('el interceptor no repite un 401 por contraseña mal escrita', () => {
     expect(peticiones()).toBe(2);
   });
 
+  it('W5: «falta el dispositivo» es de token: se refresca (BE #737, el refresco trae did)', async () => {
+    con({ detail: 'Token inválido: falta el dispositivo' });
+
+    const r = await fetchWithTokenRefresh('/api/v1/auth/reauthenticate', { method: 'POST', headers: {} });
+
+    expect(r.status).toBe(200);
+    expect(refrescos()).toBe(1);
+  });
+
   it('W4: otra ruta se refresca como siempre', async () => {
     con(CONTRASENA_MAL);
 

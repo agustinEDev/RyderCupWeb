@@ -26,10 +26,13 @@ vi.mock('../composition', () => ({
   googleLoginUseCase: { execute: vi.fn() },
   linkGoogleAccountUseCase: { execute: vi.fn() },
 }));
-const estado = vi.hoisted(() => ({ valid: true, flow: 'login', vuelta: null }));
+const estado = vi.hoisted(() => ({ valid: true, flow: 'login', vuelta: null, recogidas: 0 }));
 vi.mock('../utils/googleOAuth', () => ({
   verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }),
-  recogeLaVueltaDeGoogle: () => estado.vuelta,
+  recogeLaVueltaDeGoogle: () => {
+    estado.recogidas += 1;
+    return estado.vuelta;
+  },
 }));
 
 const { googleLoginUseCase, linkGoogleAccountUseCase } = await import('../composition');
@@ -179,10 +182,13 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
   });
 
   it('un usuario nuevo va a completar el perfil, donde acepta los Términos', async () => {
+    estado.recogidas = 0;
     googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: true });
 
     abrirConRutas();
 
     expect(await screen.findByText('completar perfil')).toBeInTheDocument();
+    // La vuelta guardada (con el token del enlace) no se queda en el almacenamiento
+    expect(estado.recogidas).toBe(1);
   });
 });

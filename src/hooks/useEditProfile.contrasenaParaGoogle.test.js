@@ -15,7 +15,8 @@ import { useEditProfile } from './useEditProfile';
 import * as composition from '../composition';
 import * as useAuthHook from './useAuth';
 
-vi.mock('../utils/googleOAuth', () => ({ buildGoogleOAuthUrl: () => 'https://google/vincular' }));
+vi.mock('../utils/googleOAuth', () => ({ buildGoogleOAuthUrl: vi.fn(() => 'https://google/vincular') }));
+import * as googleOAuth from '../utils/googleOAuth';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -108,6 +109,7 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
 
   it('H3: con la contraseña correcta, va a Google', async () => {
     const result = await monta(true);
+    act(() => result.current.handleLinkGoogle());
     composition.reauthenticateUseCase.execute.mockResolvedValue({ expiresIn: 300 });
 
     let fallo;
@@ -118,6 +120,41 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
     expect(composition.reauthenticateUseCase.execute).toHaveBeenCalledWith('Actual123!');
     expect(fallo).toBeNull();
     expect(globalThis.location.href).toBe('https://google/vincular');
+  });
+
+  it('H7: si se cancela mientras comprueba, no va a Google aunque la contraseña valga', async () => {
+    const result = await monta(true);
+    let suelta;
+    composition.reauthenticateUseCase.execute.mockReturnValue(new Promise((r) => { suelta = r; }));
+    act(() => result.current.handleLinkGoogle());
+
+    let pendiente;
+    act(() => {
+      pendiente = result.current.confirmaContrasenaParaGoogle('Actual123!');
+    });
+    act(() => result.current.cierraContrasenaParaGoogle());
+    await act(async () => {
+      suelta({ expiresIn: 300 });
+      await pendiente;
+    });
+
+    expect(globalThis.location.href).toBe('/profile/edit');
+  });
+
+  it('H8: si no se puede montar la ida a Google, lo dice en vez de quedarse comprobando', async () => {
+    const result = await monta(true);
+    composition.reauthenticateUseCase.execute.mockResolvedValue({ expiresIn: 300 });
+    googleOAuth.buildGoogleOAuthUrl.mockImplementationOnce(() => {
+      throw new Error('VITE_GOOGLE_CLIENT_ID environment variable is not configured');
+    });
+    act(() => result.current.handleLinkGoogle());
+
+    let fallo;
+    await act(async () => {
+      fallo = await result.current.confirmaContrasenaParaGoogle('Actual123!');
+    });
+
+    expect(fallo).toBe('auth:google.genericError');
   });
 
   it.each([

@@ -62,7 +62,9 @@ const GoogleCallback = () => {
           customToast.success(t('google.linkSuccess'));
           navigate('/profile/edit', { replace: true });
         } else {
-          // Login/register flow
+          // Login/register flow. La vuelta se recoge siempre: lleva el token del enlace y
+          // no se queda guardada aunque no se use (alta nueva o fallo)
+          const vuelta = recogeLaVueltaDeGoogle();
           const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code);
 
           // Update auth context
@@ -75,7 +77,7 @@ const GoogleCallback = () => {
           } else {
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
             // A la página de la que se vino, si lo pide (RyderCupAm #753); si no, al panel
-            navigate(recogeLaVueltaDeGoogle() ?? '/dashboard', { replace: true });
+            navigate(vuelta ?? '/dashboard', { replace: true });
           }
         }
       } catch (err) {

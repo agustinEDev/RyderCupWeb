@@ -56,6 +56,8 @@ const DE_TOKEN = new Set([
   'credenciales de autenticación no proporcionadas',
   'token inválido o expirado',
   'token inválido: falta subject',
+  // El token de antes de BE #737, sin `did`: el refresco lo trae
+  'token inválido: falta el dispositivo',
 ]);
 
 /** Si un 401 es porque el token de acceso no llegó o no vale. */

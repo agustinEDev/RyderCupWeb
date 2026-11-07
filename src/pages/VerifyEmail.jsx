@@ -119,12 +119,14 @@ const VerifyEmail = () => {
                   <p className="text-gray-600 text-center mb-6">
                     {t('verifyEmail.signInNow')}
                   </p>
-                  <Link
-                    to="/login"
+                  {/* Con recarga: con una sesión ya abierta, el login lleva al panel y este
+                      ya pregunta el usuario verificado, sin el aviso de verificar */}
+                  <a
+                    href="/login"
                     className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
                   >
                     {t('verifyEmail.goToLogin')}
-                  </Link>
+                  </a>
                 </>
               )}
 

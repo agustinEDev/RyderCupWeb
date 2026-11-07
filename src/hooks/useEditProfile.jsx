@@ -295,6 +295,8 @@ export const useEditProfile = () => {
   // Vincular Google pide la contraseña actual a quien la tiene (RyderCupAm #753): con
   // solo la sesión, una robada podía añadir un Google que sobrevive al restablecimiento
   const [isGooglePasswordOpen, setIsGooglePasswordOpen] = useState(false);
+  // Si se cierra la ventana mientras comprueba, la respuesta ya no lleva a Google
+  const ventanaAbierta = useRef(false);
 
   const vaAGoogle = () => {
     globalThis.location.href = buildGoogleOAuthUrl('link');
@@ -302,13 +304,17 @@ export const useEditProfile = () => {
 
   const handleLinkGoogle = () => {
     if (hasPassword) {
+      ventanaAbierta.current = true;
       setIsGooglePasswordOpen(true);
       return;
     }
     vaAGoogle();
   };
 
-  const cierraContrasenaParaGoogle = () => setIsGooglePasswordOpen(false);
+  const cierraContrasenaParaGoogle = () => {
+    ventanaAbierta.current = false;
+    setIsGooglePasswordOpen(false);
+  };
 
   /**
    * Comprueba la contraseña y, si vale, se va a Google (con la marca de 5 minutos).
@@ -322,7 +328,14 @@ export const useEditProfile = () => {
       if (error?.errorCode === 'TOO_MANY_SECURITY_CHANGES') return 'toasts.tooManySecurityChanges';
       return 'edit.linkedAccounts.passwordCheckFailed';
     }
-    vaAGoogle();
+    if (!ventanaAbierta.current) return null;
+    try {
+      vaAGoogle();
+    } catch (error) {
+      // Sin la configuración de Google no hay a dónde ir: que no se quede comprobando
+      console.error('Google OAuth URL error:', error);
+      return 'auth:google.genericError';
+    }
     return null;
   };
 
