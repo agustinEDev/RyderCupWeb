@@ -227,7 +227,13 @@ const AdminPanel = () => {
   const handleUpdateUser = async (formData) => {
     const updated = await updateAdminUserUseCase.execute(editingUser.id, formData);
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    customToast.success(t('editModal.success'));
+    // Un correo nuevo no se aplica: queda pendiente hasta que el usuario lo confirme
+    // desde esa dirección (RyderCupAm #753)
+    customToast.success(
+      updated.pendingEmail
+        ? t('editModal.emailPending', { email: updated.pendingEmail })
+        : t('editModal.success')
+    );
     setEditingUser(null);
   };
 

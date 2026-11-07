@@ -85,6 +85,18 @@ describe('EditUserModal', () => {
 
 // QA del 26 oct (FE #938): el plus con el «+» de al lado, no con un «-»
 describe('EditUserModal · el «+» del hándicap', () => {
+  it('con un correo pendiente, lo enseña debajo del campo (RyderCupAm #753)', () => {
+    render(<EditUserModal user={{ ...user, pendingEmail: 'nuevo@test.com' }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByText('editModal.pendingEmail')).toBeInTheDocument();
+  });
+
+  it('sin pendiente, no dice nada', () => {
+    render(<EditUserModal user={user} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.queryByText('editModal.pendingEmail')).toBeNull();
+  });
+
   it('P5: un plus se ve sin signo y con el «+» pulsado', () => {
     render(<EditUserModal user={{ ...user, handicap: -1.5 }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 

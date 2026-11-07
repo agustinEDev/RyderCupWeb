@@ -86,6 +86,7 @@ describe('ApiAdminRepository', () => {
         lastName: 'Estevez',
         alias: null,
         email: 'agus@test.com',
+        pendingEmail: null,
         handicap: 17.7,
         isAdmin: true,
         isActive: true,
@@ -158,6 +159,26 @@ describe('ApiAdminRepository', () => {
       });
       expect(result.firstName).toBe('Agus');
       expect(result.isAdmin).toBe(false);
+      expect(result.pendingEmail).toBeNull();
+    });
+
+    it('trae el correo pendiente que pidió el admin (RyderCupAm #753)', async () => {
+      apiRequestMock.mockResolvedValue({
+        id: 'u1',
+        first_name: 'Agus',
+        last_name: 'Estevez',
+        email: 'agus@test.com',
+        pending_email: 'nuevo@test.com',
+        is_admin: false,
+        is_active: true,
+        email_verified: true,
+        created_at: '2026-07-27T00:00:00Z',
+      });
+
+      const result = await repository.updateUser('u1', { email: 'nuevo@test.com' });
+
+      expect(result.email).toBe('agus@test.com');
+      expect(result.pendingEmail).toBe('nuevo@test.com');
     });
   });
 
