@@ -125,6 +125,24 @@ describe('SignInForm', () => {
     expect(navegar).toHaveBeenCalledWith('/dashboard', { replace: true });
   });
 
+  it('tras una redirección dura, vuelve a la página guardada (probador de la release)', async () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/confirm-email-change?token=abc');
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
+    expect(navegar).toHaveBeenCalledWith('/confirm-email-change?token=abc', { replace: true });
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
   it('deja el boton utilizable tras entrar, sin depender de que la pantalla se desmonte', async () => {
     // El camino de exito no puede dar por hecho que `navigate` desmonte el
     // formulario: en una pantalla que siguiera en pie, el boton se quedaria

@@ -72,4 +72,23 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
     expect(localStorage.getItem('refrescar_handicap')).toBeNull();
     expect(localStorage.getItem('pedir_handicap')).toBeNull();
   });
+
+  it('guarda la página para volver a ella tras entrar (probador de la release)', () => {
+    sessionStorage.clear();
+    let destino = '';
+    window.location = {
+      pathname: '/competitions/7',
+      search: '',
+      hash: '',
+      origin: 'http://localhost:3000',
+      set href(v) { destino = v; },
+      get href() { return destino; },
+    };
+
+    handleCsrfLogout();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(destino).toBe('/login');
+  });
 });
+

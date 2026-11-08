@@ -411,3 +411,34 @@ describe('deviceRevocationLogout utilities', () => {
     });
   });
 });
+
+describe('la redirección dura guarda la página para volver tras entrar (probador de la release)', () => {
+  const desdeElEnlace = () => {
+    sessionStorage.clear();
+    window.location = {
+      href: '',
+      pathname: '/confirm-email-change',
+      search: '?token=abc',
+      hash: '',
+      origin: 'http://localhost:3000',
+    };
+  };
+
+  it.each([
+    ['la primera vez', null],
+    ['ya tratada antes', 'true'],
+  ])('desde el enlace de confirmar, con su token: %s', async (_caso, tratada) => {
+    desdeElEnlace();
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => tratada),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+
+    handleSessionExpiredLogout({ detail: 'expired' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    vi.unstubAllGlobals();
+  });
+});

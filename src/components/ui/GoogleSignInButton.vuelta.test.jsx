@@ -18,6 +18,8 @@ vi.mock('framer-motion', () => ({
   },
 }));
 const google = vi.hoisted(() => ({ guardaLaVueltaDeGoogle: vi.fn(), buildGoogleOAuthUrl: vi.fn(() => '#google') }));
+const vuelta = vi.hoisted(() => ({ leeLaVueltaTrasEntrar: vi.fn(() => null) }));
+vi.mock('../../utils/vueltaTrasEntrar', () => vuelta);
 vi.mock('../../utils/googleOAuth', () => google);
 
 const { default: GoogleSignInButton } = await import('./GoogleSignInButton');
@@ -38,4 +40,19 @@ describe('GoogleSignInButton · la vuelta tras Google', () => {
     expect(google.guardaLaVueltaDeGoogle).toHaveBeenCalledWith(from);
     expect(google.buildGoogleOAuthUrl).toHaveBeenCalledWith('login');
   });
+
+  it('sin state.from (redirección dura), usa la página guardada', () => {
+    const guardada = { pathname: '/confirm-email-change', search: '?token=abc', hash: '' };
+    vuelta.leeLaVueltaTrasEntrar.mockReturnValueOnce(guardada);
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <GoogleSignInButton />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(google.guardaLaVueltaDeGoogle).toHaveBeenCalledWith(guardada);
+  });
 });
+

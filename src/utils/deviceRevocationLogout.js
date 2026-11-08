@@ -27,6 +27,7 @@ import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
+import { guardaLaVueltaTrasEntrar } from './vueltaTrasEntrar';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -152,6 +153,7 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
   // If already handled but not on login, just redirect (no toast to avoid spam)
   if (alreadyHandled) {
+    guardaLaVueltaTrasEntrar();
     window.location.href = '/login';
     return;
   }
@@ -214,6 +216,9 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   });
 
   // Redirect to login after a short delay (allow toast to be visible)
+  // La página en la que estaba, para volver a ella tras entrar: la redirección dura
+  // pierde el `state.from` de ProtectedRoute
+  guardaLaVueltaTrasEntrar();
   setTimeout(() => {
     window.location.href = '/login';
   }, 500);
