@@ -31,10 +31,9 @@ import { redirigeAlLogin } from './vueltaTrasEntrar';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
-// Quién la puso (probador, 8 nov 2026). Un cierre forzado avisa dos veces al recargar
-// (dos peticiones fallan a la vez): la segunda vuelta guarda la misma página, no la
-// borra. Revocar el propio dispositivo es salir a propósito: no se guarda. Una marca
-// de antes (`'true'`) se trata como propia, lo conservador
+// Quién la puso (8 nov 2026): revocar el propio dispositivo es salir a propósito
+// («propia»: no se guarda la página); un cierre forzado deja «forzado». Una marca de
+// antes (`'true'`) es la de un cierre: la pestaña que la encuentre hace el suyo (C4)
 const MARCA_DEL_CIERRE_FORZADO = 'forzado';
 const MARCA_DE_LA_REVOCACION_PROPIA = 'propia';
 
@@ -148,35 +147,19 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   handleLogout(errorData, 'expiration', { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
 };
 
-/**
- * Internal function to handle logout with different reasons
- *
- * @param {Object} errorData - Optional error data to determine logout reason
- * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
- */
-const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
-  const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
+// El cierre de ESTA carga de página (C1, 8 nov 2026): al recargar con la sesión muerta
+// fallan dos peticiones a la vez; la primera ya guardó la página, enseñó el toast y
+// sale a los 500 ms, así que la segunda no hace nada. La marca de localStorage no
+// sirve para esto: la comparten las pestañas y sobrevive a la carga
+let cierreEnEstaCarga = false;
 
-  // If already on login page and already handled, do nothing
-  if (alreadyHandled && window.location.pathname === '/login') {
-    return;
-  }
+/** Una carga de página nueva, para los tests: el navegador lo hace al salir a /login. */
+export const olvidaElCierreDeEstaCarga = () => {
+  cierreEnEstaCarga = false;
+};
 
-  // If already handled but not on login, just redirect (no toast to avoid spam)
-  if (alreadyHandled) {
-    // La segunda vuelta de un cierre forzado guarda la misma página; tras revocar el
-    // propio dispositivo, o con una marca de antes, no se guarda
-    redirigeAlLogin({ guardar: alreadyHandled === MARCA_DEL_CIERRE_FORZADO });
-    return;
-  }
-
-  // First time handling - do full logout flow
-  localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
-
-  // Que se vea en Sentry (FE #1042): solo la primera vez, como el aviso al usuario
-  avisaDelCierreForzado(aviso);
-
-  // Clear localStorage
+/** Lo de la cuenta que sale, también al revocar el propio dispositivo (C3). */
+const limpiaLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
   // Y las partidas guardadas para anotar sin cobertura (FE #524). Este camino
@@ -189,10 +172,49 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   olvidaElRefrescoDeHandicap();
   // Y el número de Actividad y el del icono de la aplicación (FE-1)
   olvidaLasNovedades();
-
   // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
   // nadie y esta línea no hacía nada (25 oct 2026)
   clearUserContext();
+};
+
+/**
+ * Internal function to handle logout with different reasons
+ *
+ * Los caminos (tabla C1-C5, aprobada por Agustín el 8 nov 2026):
+ * - C1 segundo aviso en la misma carga: nada (el primero ya sale)
+ * - C2 ya en /login con la marca: nada
+ * - C3 marca «propia» (revocó su dispositivo): limpia y sale, sin toast ni guardar
+ * - C4 marca de otra pestaña o carga («forzado», o la «true» de antes): el cierre
+ *   completo de esta pestaña, como la primera vez
+ *
+ * @param {Object} errorData - Optional error data to determine logout reason
+ * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
+ */
+const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
+  if (cierreEnEstaCarga) return;
+  const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
+
+  // If already on login page and already handled, do nothing
+  if (marca && window.location.pathname === '/login') {
+    return;
+  }
+  cierreEnEstaCarga = true;
+
+  // Salió a propósito: se limpia lo de la cuenta (DeviceManagement espera 2,5 s antes
+  // de su logout, y un 401 o salir de la página se lo saltaban: /code-review), sin
+  // aviso ni página guardada
+  if (marca === MARCA_DE_LA_REVOCACION_PROPIA) {
+    limpiaLaCuenta();
+    redirigeAlLogin({ guardar: false });
+    return;
+  }
+
+  localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
+
+  // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario
+  avisaDelCierreForzado(aviso);
+
+  limpiaLaCuenta();
 
   // Determine reason if not explicitly provided
   if (reason === 'unknown' && errorData?.detail) {

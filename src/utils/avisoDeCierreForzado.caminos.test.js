@@ -31,7 +31,9 @@ vi.mock('./sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((k) => k) } }));
 vi.mock('./toast', () => ({ default: { error: vi.fn() } }));
 
-const { handleDeviceRevocationLogout, handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+const { handleDeviceRevocationLogout, handleSessionExpiredLogout, olvidaElCierreDeEstaCarga } = await import(
+  './deviceRevocationLogout'
+);
 const { handleCsrfLogout } = await import('./csrfLogout');
 const { trataElFalloDelRefresco } = await import('./tokenRefreshInterceptor');
 const { MOTIVO_DEL_CIERRE } = await import('./avisoDeCierreForzado');
@@ -49,6 +51,8 @@ describe('quién avisa de un cierre de sesión forzado', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Cada test, una carga de página nueva (C1)
+    olvidaElCierreDeEstaCarga();
     guardado = new Map();
     vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),

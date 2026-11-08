@@ -12,6 +12,7 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout,
   clearDeviceRevocationFlag,
+  olvidaElCierreDeEstaCarga,
 } from './deviceRevocationLogout';
 import customToast from './toast';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
@@ -42,6 +43,8 @@ vi.mock('./toast', () => ({
 describe('deviceRevocationLogout utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Cada test, una carga de página nueva
+    olvidaElCierreDeEstaCarga();
     // Mock window.location.href
     delete window.location;
     window.location = { href: '', pathname: '' };
@@ -397,16 +400,20 @@ describe('deviceRevocationLogout utilities', () => {
       expect(customToast.error).not.toHaveBeenCalled();
     });
 
-    it('should redirect without toast if already handled but not on login page', () => {
+    // C4 (8 nov 2026): una marca de otra pestaña o de una carga anterior no ahorra el
+    // cierre de esta: limpia, avisa y se va, como la primera vez
+    it.each([['forzado'], ['true']])('con la marca «%s» de otra carga, el cierre completo', (marca) => {
       localStorage.getItem.mockImplementation((key) => {
-        if (key === 'device_revocation_handled') return 'true';
+        if (key === 'device_revocation_handled') return marca;
         return null;
       });
       window.location.pathname = '/dashboard';
 
       handleDeviceRevocationLogout();
+      vi.advanceTimersByTime(500);
 
-      expect(customToast.error).not.toHaveBeenCalled();
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
       expect(window.location.href).toBe('/login');
     });
   });
@@ -426,9 +433,10 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
 
   it.each([
     ['la primera vez: la guarda', null, '/confirm-email-change?token=abc'],
-    // Marca de una versión anterior: se trata como revocación propia, lo conservador.
-    // No guarda, y borra una anterior (revisión)
-    ['marca vieja «true»: no la guarda', 'true', null],
+    // Marca de otra carga, o de una versión anterior: el cierre de esta guarda (C4)
+    ['marca vieja «true»: la guarda', 'true', '/confirm-email-change?token=abc'],
+    ['marca de otra pestaña: la guarda', 'forzado', '/confirm-email-change?token=abc'],
+    // Revocó su propio dispositivo: no guarda, y borra una anterior (C3)
     ['revocación propia: no la guarda', 'propia', null],
   ])('desde el enlace de confirmar, con su token: %s', async (_caso, tratada, esperado) => {
     desdeElEnlace();
@@ -438,7 +446,8 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
       setItem: vi.fn(),
       removeItem: vi.fn(),
     });
-    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+    const { handleSessionExpiredLogout, olvidaElCierreDeEstaCarga } = await import('./deviceRevocationLogout');
+    olvidaElCierreDeEstaCarga();
 
     handleSessionExpiredLogout({ detail: 'expired' });
 
@@ -461,28 +470,47 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
     return datos;
   };
 
-  it('R2: dos fallos a la vez al recargar: el segundo no borra la página guardada (probador, 8 nov)', async () => {
+  // Una carga de página nueva: el módulo, sin el cierre de esta carga
+  const deUnaCargaNueva = async () => {
+    vi.resetModules();
+    return import('./deviceRevocationLogout');
+  };
+
+  it('C1: dos fallos en la misma carga: el segundo no hace nada (probador y /code-review, 8 nov)', async () => {
+    vi.useFakeTimers();
     desdeElEnlace();
-    conAlmacen();
-    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+    const datos = conAlmacen();
+    const { handleSessionExpiredLogout } = await deUnaCargaNueva();
+    const toast = (await import('./toast')).default;
+    toast.error.mockClear();
 
     handleSessionExpiredLogout({ detail: 'expired' });
     handleSessionExpiredLogout({ detail: 'expired' });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    // El toast se lee: la salida espera sus 500 ms, no la adelanta el segundo
+    expect(window.location.href).toBe('');
+    vi.advanceTimersByTime(500);
     expect(window.location.href).toBe('/login');
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(datos.device_revocation_handled).toBe('forzado');
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  it('R1: tras revocar el propio dispositivo, el aviso que llegue no guarda la página', async () => {
+  it('C3: tras revocar el propio dispositivo, el aviso que llegue limpia la cuenta y no guarda', async () => {
     desdeElEnlace();
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
-    conAlmacen();
-    const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } = await import('./deviceRevocationLogout');
+    const datos = conAlmacen({ user: '{"id":"u-1"}' });
+    const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } = await deUnaCargaNueva();
+    const toast = (await import('./toast')).default;
+    toast.error.mockClear();
 
     marcaLaRevocacionPropia();
     handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
 
+    expect(datos.user).toBeUndefined();
+    expect(toast.error).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
     expect(window.location.href).toBe('/login');
     vi.unstubAllGlobals();
