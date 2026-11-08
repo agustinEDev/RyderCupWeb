@@ -88,7 +88,8 @@ export const leeLaVueltaTrasEntrar = () => {
 /**
  * A dónde ir tras entrar: la ruta de la que vino (`state.from`, o la que trae Google) o,
  * si una redirección dura la perdió, la guardada. La guardada se gasta siempre.
- * Toda entrada pasa por aquí: también acaba el silencio de un cierre de sesión anterior.
+ * Toda entrada que vuelve a una página pasa por aquí, y acaba el silencio de un cierre de
+ * sesión anterior; el alta con Google, que no vuelve a ninguna, lo acaba aparte.
  */
 export const vueltaTrasEntrar = (from) => {
   const guardada = leeLaVueltaTrasEntrar();

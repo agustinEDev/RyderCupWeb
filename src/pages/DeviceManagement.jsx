@@ -87,7 +87,8 @@ const DeviceManagement = () => {
       // Set revocation flag so a 401 «Dispositivo revocado» from any request in these
       // 2.5 s (the interceptor, FE #1046) does not trigger handleDeviceRevocationLogout()
       // again: we're already handling the logout gracefully
-      // Flag will be cleared on next successful login (see useAuth.js line 74)
+      // «propia»: sale a propósito, no se guarda la página. Se borra al confirmarse la
+      // sesión siguiente (sesionCompartida: publicaConfirmada y anotaLaSesion)
       marcaLaRevocacionPropia();
 
       timeoutRef.current = setTimeout(() => {

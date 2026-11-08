@@ -426,9 +426,10 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
 
   it.each([
     ['la primera vez: la guarda', null, '/confirm-email-change?token=abc'],
-    // Ya tratada: p. ej. el usuario revocó su propio dispositivo. No guarda, y borra
-    // una anterior (revisión)
-    ['ya tratada antes: no la guarda', 'true', null],
+    // Marca de una versión anterior: se trata como revocación propia, lo conservador.
+    // No guarda, y borra una anterior (revisión)
+    ['marca vieja «true»: no la guarda', 'true', null],
+    ['revocación propia: no la guarda', 'propia', null],
   ])('desde el enlace de confirmar, con su token: %s', async (_caso, tratada, esperado) => {
     desdeElEnlace();
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');

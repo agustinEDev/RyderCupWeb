@@ -17,6 +17,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   G6  la cuenta está desactivada     | google.accountDeactivated, no invitar a reintentar
  *   G7  vincular sin el correo verificado | google.linkNeedsVerifiedEmail (RyderCupAm #749)
  */
+import { noAvisesDeCierres, seCierraLaSesionAPeticion } from '../utils/avisoDeCierreForzado';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
@@ -67,6 +68,7 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
   it.each([
     ['cancela en Google', '?error=access_denied&state=x', true],
     ['el state no cuadra', '?code=abc&state=otro', false],
+    ['sin code', '?state=x', true],
   ])('G1b: %s: la página guardada se olvida (probador, 8 nov)', async (_caso, query, valido) => {
     estado.valid = valido;
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
@@ -213,6 +215,16 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
 
     expect(await screen.findByText('completar perfil')).toBeInTheDocument();
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
+  it('un alta nueva acaba el silencio de un cierre de sesión anterior (revisión, 8 nov)', async () => {
+    noAvisesDeCierres();
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: true });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('completar perfil')).toBeInTheDocument();
+    expect(seCierraLaSesionAPeticion()).toBe(false);
   });
 
   it('un usuario nuevo va a completar el perfil, donde acepta los Términos', async () => {

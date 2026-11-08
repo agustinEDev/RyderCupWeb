@@ -5,6 +5,7 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
 import { verifyOAuthState, recogeLaVueltaDeGoogle } from '../utils/googleOAuth';
 import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
+import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -76,8 +77,10 @@ const GoogleCallback = () => {
           updateCsrfToken(csrfToken);
 
           if (isNewUser) {
-            // Un alta no vuelve a ninguna página: la guardada se olvida
+            // Un alta no vuelve a ninguna página: la guardada se olvida, y el silencio de
+            // un cierre de sesión anterior se acaba, como en toda entrada
             olvidaLaVueltaTrasEntrar();
+            vuelvenLosAvisosDeCierre();
             customToast.info(t('google.welcomeNewUser'));
             navigate('/auth/complete-profile', { replace: true });
           } else {
