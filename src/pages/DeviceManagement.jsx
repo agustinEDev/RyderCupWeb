@@ -84,16 +84,15 @@ const DeviceManagement = () => {
     // Backend already invalidated tokens during revocation, so we skip backend logout call
     // 2500ms delay allows user to read the success toast
     if (success && isCurrent) {
-      // Set revocation flag so a 401 «Dispositivo revocado» from any request in these
-      // 2.5 s (the interceptor, FE #1046) does not trigger handleDeviceRevocationLogout()
-      // again: we're already handling the logout gracefully
-      // «propia»: sale a propósito, no se guarda la página. Se borra al confirmarse la
-      // sesión siguiente (sesionCompartida: publicaConfirmada y anotaLaSesion)
+      // Marca «propia»: sale a propósito. Si en estos 2,5 s llega un 401 «Dispositivo
+      // revocado» (el interceptor, FE #1046), o se sale de la página antes, el cierre
+      // va por el camino C3: limpia la cuenta y va a /login sin toast ni página
+      // guardada. Se borra al confirmarse la sesión siguiente (sesionCompartida)
       marcaLaRevocacionPropia();
 
       timeoutRef.current = setTimeout(() => {
-        // Skip backend call because device is already revoked (tokens already invalidated)
-        // This prevents a 401 that would trigger handleDeviceRevocationLogout() again
+        // Skip backend call because device is already revoked (tokens already invalidated):
+        // the call would only get a 401
         logout({ skipBackendCall: true });
       }, 2500);
     }

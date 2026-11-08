@@ -106,6 +106,14 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledTimes(1);
   });
 
+  it('C4b: tras revocar el propio dispositivo (marca «propia»), no avisa: salió a propósito', () => {
+    guardado.set('device_revocation_handled', 'propia');
+
+    handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
+
+    expect(aviso.avisaDelCierreForzado).not.toHaveBeenCalled();
+  });
+
   it('C5: el cierre por CSRF avisa como csrf_unrecovered con su ruta', () => {
     handleCsrfLogout({ detail: 'x' }, { metodo: 'POST', endpoint: '/api/v1/quick-matches/start', estado: 403 });
 

@@ -153,7 +153,10 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
 // sirve para esto: la comparten las pestañas y sobrevive a la carga
 let cierreEnEstaCarga = false;
 
-/** Una carga de página nueva, para los tests: el navegador lo hace al salir a /login. */
+/**
+ * SOLO para los tests: una carga de página nueva. En el navegador lo hace la salida a
+ * /login, que descarga la página; ningún código de la aplicación lo llama.
+ */
 export const olvidaElCierreDeEstaCarga = () => {
   cierreEnEstaCarga = false;
 };
@@ -204,52 +207,60 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   // de su logout, y un 401 o salir de la página se lo saltaban: /code-review), sin
   // aviso ni página guardada
   if (marca === MARCA_DE_LA_REVOCACION_PROPIA) {
-    limpiaLaCuenta();
-    redirigeAlLogin({ guardar: false });
+    try {
+      limpiaLaCuenta();
+    } finally {
+      redirigeAlLogin({ guardar: false });
+    }
     return;
   }
 
-  localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
+  // Pase lo que pase dentro, se sale (revisión, 8 nov): con el cierre de esta carga ya
+  // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
+  // con la sesión muerta y sin otro aviso que la sacara
+  try {
+    localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
 
-  // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario
-  avisaDelCierreForzado(aviso);
+    // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario
+    avisaDelCierreForzado(aviso);
 
-  limpiaLaCuenta();
+    limpiaLaCuenta();
 
-  // Determine reason if not explicitly provided
-  if (reason === 'unknown' && errorData?.detail) {
-    const detail = String(errorData.detail).toLowerCase();
-    if (detail.includes('revocado') || detail.includes('revoked')) {
-      reason = 'revocation';
-    } else if (detail.includes('expirado') || detail.includes('expired') ||
-               detail.includes('inválido') || detail.includes('invalid')) {
-      reason = 'expiration';
+    // Determine reason if not explicitly provided
+    if (reason === 'unknown' && errorData?.detail) {
+      const detail = String(errorData.detail).toLowerCase();
+      if (detail.includes('revocado') || detail.includes('revoked')) {
+        reason = 'revocation';
+      } else if (detail.includes('expirado') || detail.includes('expired') ||
+                 detail.includes('inválido') || detail.includes('invalid')) {
+        reason = 'expiration';
+      }
     }
+
+    // Choose message and icon based on reason using i18n
+    let messageKey;
+    let icon;
+
+    if (reason === 'revocation') {
+      messageKey = 'errors.deviceRevoked';
+      icon = '🔒';
+    } else if (reason === 'expiration') {
+      messageKey = 'errors.sessionExpired';
+      icon = '⏱️';
+    } else {
+      messageKey = 'errors.sessionEnded';
+      icon = 'ℹ️';
+    }
+
+    const message = i18next.t(messageKey, { ns: 'auth' });
+
+    customToast.error(message, {
+      duration: 8000,
+      icon,
+    });
+  } finally {
+    // Redirect to login after a short delay (allow toast to be visible), con la página
+    // en la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
+    redirigeAlLogin({ retraso: 500 });
   }
-
-  // Choose message and icon based on reason using i18n
-  let messageKey;
-  let icon;
-
-  if (reason === 'revocation') {
-    messageKey = 'errors.deviceRevoked';
-    icon = '🔒';
-  } else if (reason === 'expiration') {
-    messageKey = 'errors.sessionExpired';
-    icon = '⏱️';
-  } else {
-    messageKey = 'errors.sessionEnded';
-    icon = 'ℹ️';
-  }
-
-  const message = i18next.t(messageKey, { ns: 'auth' });
-
-  customToast.error(message, {
-    duration: 8000,
-    icon,
-  });
-
-  // Redirect to login after a short delay (allow toast to be visible), con la página en
-  // la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
-  redirigeAlLogin({ retraso: 500 });
 };

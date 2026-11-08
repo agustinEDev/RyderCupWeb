@@ -388,16 +388,43 @@ describe('deviceRevocationLogout utilities', () => {
       vi.useRealTimers();
     });
 
-    it('should not show toast if already handled and on login page', () => {
+    it.each([['true'], ['forzado'], ['propia']])('C2: ya en /login con la marca «%s», nada', (marca) => {
       localStorage.getItem.mockImplementation((key) => {
-        if (key === 'device_revocation_handled') return 'true';
+        if (key === 'device_revocation_handled') return marca;
         return null;
       });
       window.location.pathname = '/login';
 
       handleDeviceRevocationLogout();
+      vi.advanceTimersByTime(500);
 
       expect(customToast.error).not.toHaveBeenCalled();
+      expect(localStorage.removeItem).not.toHaveBeenCalled();
+      expect(window.location.href).toBe('');
+    });
+
+    it('C3: si limpiar falla tras revocar el propio dispositivo, sale igualmente a /login', () => {
+      localStorage.getItem.mockImplementation((key) => (key === 'device_revocation_handled' ? 'propia' : null));
+      localStorage.removeItem.mockImplementation(() => {
+        throw new Error('SecurityError');
+      });
+      window.location.pathname = '/dashboard';
+
+      expect(() => handleDeviceRevocationLogout()).toThrow('SecurityError');
+
+      expect(window.location.href).toBe('/login');
+    });
+
+    it('si algo falla dentro del cierre (almacenamiento lleno), sale igualmente a /login', () => {
+      localStorage.setItem.mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+      window.location.pathname = '/dashboard';
+
+      expect(() => handleDeviceRevocationLogout()).toThrow('QuotaExceededError');
+      vi.advanceTimersByTime(500);
+
+      expect(window.location.href).toBe('/login');
     });
 
     // C4 (8 nov 2026): una marca de otra pestaña o de una carga anterior no ahorra el
