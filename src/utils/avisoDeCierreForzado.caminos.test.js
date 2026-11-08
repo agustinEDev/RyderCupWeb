@@ -106,6 +106,17 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledTimes(1);
   });
 
+  it('C1c: avisa a Sentry ANTES de quitarle el usuario: el evento dice de quién es', async () => {
+    const { clearUserContext } = await import('./sentryHelpers');
+
+    handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado' });
+
+    expect(aviso.avisaDelCierreForzado).toHaveBeenCalled();
+    expect(aviso.avisaDelCierreForzado.mock.invocationCallOrder[0]).toBeLessThan(
+      clearUserContext.mock.invocationCallOrder[0]
+    );
+  });
+
   it('C4b: tras revocar el propio dispositivo (marca «propia»), no avisa: salió a propósito', () => {
     guardado.set('device_revocation_handled', 'propia');
 

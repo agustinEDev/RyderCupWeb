@@ -425,7 +425,11 @@ describe('deviceRevocationLogout utilities', () => {
       vi.advanceTimersByTime(500);
 
       expect(window.location.href).toBe('/login');
+      // Y la cuenta ya se limpió: lo primero, antes de la marca (CodeRabbit)
+      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+      expect(sentryHelpers.clearUserContext).toHaveBeenCalled();
     });
+
 
     // C4 (8 nov 2026): una marca de otra pestaña o de una carga anterior no ahorra el
     // cierre de esta: limpia, avisa y se va, como la primera vez

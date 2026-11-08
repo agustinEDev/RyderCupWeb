@@ -219,12 +219,15 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
   // con la sesión muerta y sin otro aviso que la sacara
   try {
-    localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
-
-    // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario
+    // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario. Antes
+    // de limpiar, que quita el usuario de Sentry y el evento saldría sin él; no lanza
     avisaDelCierreForzado(aviso);
 
+    // La cuenta antes que la marca: un almacenamiento lleno al escribirla no deja sus
+    // datos en el dispositivo (CodeRabbit), y limpiar le hace sitio
     limpiaLaCuenta();
+
+    localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
 
     // Determine reason if not explicitly provided
     if (reason === 'unknown' && errorData?.detail) {
