@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.68.0] - 2026-11-08
+
+**Tras un cierre de sesión se vuelve a la página en la que se estaba, vincular Google
+pide la contraseña, verificar el correo ya no abre sesión y una sesión sustituida se
+reintenta en vez de cerrarse** (RyderCupAm #753, #734). Va con el backend **2.53.0**, y
+se despliega ANTES: acepta las dos respuestas de `/verify-email`, la vieja y la nueva.
+Probado en el Kind a 360 px, con una batería de punta a punta.
+
+### Added
+
+- **Vuelta a la página tras entrar**: si la sesión se cierra (caducada, dispositivo
+  revocado, fallo de CSRF), la página se guarda antes de ir a `/login` y, al entrar con
+  contraseña o con Google, se vuelve a ella; también el enlace de confirmar el cambio de
+  correo. Solo una entrada con éxito la gasta: cancelar o fallar con Google la conserva.
+  Cerrar sesión o revocar el propio dispositivo no guardan nada.
+- **Contraseña antes de vincular Google**: un diálogo la pide y solo va a Google cuando
+  el backend la acepta. Contraseña mal, demasiados intentos y confirmación caducada dicen
+  cada uno lo que pasa; las cuentas sin contraseña van directas a Google.
+- **Registro con un correo que ya tiene cuenta**: junto al campo dice cómo recuperarla
+  (entrar con Google o «Olvidé mi contraseña», con enlace), en vez del texto del backend.
+- **Panel de administración**: el correo pendiente sale en el diálogo de edición y en el
+  aviso al guardar, solo si es el que escribió el administrador.
+
+### Changed
+
+- **Verificar el correo** ya no abre sesión: dice que está verificado y enlaza a
+  iniciar sesión.
+- **Cierre forzado de la sesión**: un solo aviso por carga de página, que da tiempo a
+  leerlo; revocar el propio dispositivo limpia los datos de la cuenta aunque llegue un
+  401 o se salga de la página antes; una marca de otra pestaña no ahorra el cierre de
+  esta; ir a `/login` ocurre aunque falle la limpieza.
+- **Privacidad** nombra a Resend y Brevo como respaldos del correo (fecha 7 nov 2026; la
+  versión de los Términos aceptados no cambia).
+- **Contacto** ya no enlaza a GitHub.
+
+### Fixed
+
+- **Sesión sustituida** (`SESSION_REPLACED`): el refresco espera 500 ms y reintenta una
+  vez en vez de cerrar la sesión; si se repite, la sesión se conserva.
+- **Nunca se repite una petición a nombre de otra cuenta**: si un refresco devuelve otro
+  usuario, la pestaña se recarga.
+- El plazo de 15 s del refresco cubre también leer la respuesta, y un 401 con el cuerpo
+  cortado ya no cierra la sesión.
+- Una contraseña actual incorrecta en Seguridad o al reautenticar no se refresca y
+  repite: gastaba dos intentos del límite.
+- Textos traducidos por código: contraseña actual incorrecta, correo ya en uso, cuenta
+  desactivada y los dos límites de Seguridad.
+- El correo pendiente largo parte la línea en el diálogo del administrador a 360 px.
+
 ## [2.67.0] - 2026-11-07
 
 **El cambio de correo queda pendiente hasta confirmarlo, el login con Google dice qué
