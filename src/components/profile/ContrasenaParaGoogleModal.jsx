@@ -22,11 +22,15 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
   const [error, setError] = useState(null);
   const [comprobando, setComprobando] = useState(false);
   const inputRef = useRef(null);
+  // Cuál es la comprobación en curso: lo que responda una anterior, o una de antes de
+  // cancelar, ya no toca la ventana (CodeRabbit en FE #1058)
+  const comprobacion = useRef(0);
   const titulo = useId();
   const explicacion = useId();
   const campo = useId();
 
   const cierra = () => {
+    comprobacion.current += 1;
     setPassword('');
     setError(null);
     setComprobando(false);
@@ -36,9 +40,17 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
   const envia = async (e) => {
     e.preventDefault();
     if (!password || comprobando) return;
+    const esta = ++comprobacion.current;
     setComprobando(true);
     setError(null);
-    const fallo = await alConfirmar(password);
+    let fallo;
+    try {
+      fallo = await alConfirmar(password);
+    } catch (errorAlComprobar) {
+      console.error('Password check failed:', errorAlComprobar);
+      fallo = 'edit.linkedAccounts.passwordCheckFailed';
+    }
+    if (esta !== comprobacion.current) return;
     if (fallo) {
       setError(fallo);
       setComprobando(false);
@@ -72,7 +84,11 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
           type="password"
           autoComplete="current-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            // Lo escrito ya no es lo que falló
+            setError(null);
+          }}
           aria-invalid={error ? 'true' : 'false'}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:outline-none focus-visible:border-primary"
         />
