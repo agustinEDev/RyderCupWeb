@@ -67,6 +67,9 @@ export const useRedirectIfAuthenticated = ({
   // Se congela el valor del primer render. Después del login `user` cambia, y
   // sin esto el efecto volvería a dispararse sobre una página que ya se va.
   const [hadStoredUser] = useState(() => enabled && Boolean(user));
+  // Y su cuenta: entrar sin red vuelve a la página guardada solo si es suya (regla 6 de
+  // `vueltaTrasEntrar`)
+  const [cuentaGuardada] = useState(() => user?.id ?? null);
   const [isChecking, setIsChecking] = useState(hadStoredUser);
 
   useEffect(() => {
@@ -98,7 +101,7 @@ export const useRedirectIfAuthenticated = ({
         // rápido, se queda colgada hasta agotar el plazo. Tratarlo distinto del
         // rechazo de red dejaba el arreglo cubriendo solo el caso raro.
         settled = true;
-        navigate(vueltaTrasEntrar(location.state?.from), { replace: true });
+        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada }), { replace: true });
         return;
       }
 
@@ -117,7 +120,7 @@ export const useRedirectIfAuthenticated = ({
         // sin conexión es el caso de uso, no un extra. La sesión no se ha
         // rechazado —solo no se ha podido preguntar—, así que se entra con la
         // que hay guardada.
-        navigate(vueltaTrasEntrar(location.state?.from), { replace: true });
+        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada }), { replace: true });
         return;
       }
 
@@ -181,7 +184,7 @@ export const useRedirectIfAuthenticated = ({
       // Sesión confirmada: acaba el silencio de un cierre anterior (C5). La entrada sin
       // red de arriba no: no se ha confirmado nada
       vuelvenLosAvisosDeCierre();
-      navigate(vueltaTrasEntrar(location.state?.from), { replace: true });
+      navigate(vueltaTrasEntrar(location.state?.from, { cuenta: currentUser.id }), { replace: true });
       // `isChecking` se queda arriba a propósito: la página se está yendo y
       // bajarlo pintaría el formulario un instante
     };
@@ -205,7 +208,7 @@ export const useRedirectIfAuthenticated = ({
       clearTimeout(deadline);
       controller.abort();
     };
-  }, [hadStoredUser, navigate, location.state, setUser, clearAuth, entrarSinRed]);
+  }, [hadStoredUser, cuentaGuardada, navigate, location.state, setUser, clearAuth, entrarSinRed]);
 
   return isChecking;
 };

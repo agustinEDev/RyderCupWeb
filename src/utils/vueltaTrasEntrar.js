@@ -16,31 +16,51 @@
  *    cuenta). Un fallo o cancelar Google la conservan: quien entra después con contraseña
  *    vuelve al enlace (Agustín, 8 nov 2026).
  * 5. Solo una ruta propia, ni login ni registro ni una página pública.
+ * 6. Va con la cuenta que estaba dentro: si entra OTRA, va al panel y se borra; guardada
+ *    sin cuenta (de antes, o sin saber quién estaba), vale para cualquiera (Agustín, 8 nov
+ *    2026). En un móvil compartido, la siguiente persona no aterriza en la página de la
+ *    anterior.
  */
 import { rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
 import { seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
 
 const CLAVE = 'vuelta_tras_entrar';
+const CLAVE_DE_LA_CUENTA = 'vuelta_tras_entrar_cuenta';
 
 const lugarActual = () => {
   const { pathname = '', search = '', hash = '' } = globalThis.location ?? {};
   return `${pathname}${search}${hash}`;
 };
 
-/** La olvida: al cerrar sesión, al salir sin guardar y una vez usada. */
+/** La olvida, con su cuenta: al cerrar sesión, al salir sin guardar y una vez usada. */
 export const olvidaLaVueltaTrasEntrar = () => {
   try {
     globalThis.sessionStorage.removeItem(CLAVE);
+    globalThis.sessionStorage.removeItem(CLAVE_DE_LA_CUENTA);
   } catch {
     // Nada que borrar
   }
 };
 
 /**
- * Guarda la página en la que se está, o nada si no vale: siempre sustituye a la anterior.
+ * El id de la cuenta guardada en este dispositivo, o `null` si no se sabe. Los cierres
+ * forzados lo leen ANTES de limpiar la cuenta, para guardar la página con él (regla 6).
  */
-export const guardaLaVueltaTrasEntrar = () => {
+export const quienEstaDentro = () => {
+  try {
+    const id = JSON.parse(globalThis.localStorage.getItem('user'))?.id;
+    return id === undefined || id === null ? null : String(id);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Guarda la página en la que se está, con la cuenta que estaba dentro si se sabe, o nada
+ * si no vale: siempre sustituye a la anterior, cuenta incluida.
+ */
+export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   olvidaLaVueltaTrasEntrar();
   // Al cerrar sesión a petición no hay a dónde volver: un sondeo en vuelo que reciba un
   // 401 en ese momento no deja la página para quien entre después
@@ -51,6 +71,10 @@ export const guardaLaVueltaTrasEntrar = () => {
   if (!ruta || rutaDeVuelta({ pathname: ruta }) === '/dashboard') return;
   if (esRutaPublica(globalThis.location?.pathname ?? '')) return;
   try {
+    // La cuenta primero: si escribir la página falla, no queda una página sin su cuenta
+    if (cuenta !== null && cuenta !== undefined) {
+      globalThis.sessionStorage.setItem(CLAVE_DE_LA_CUENTA, String(cuenta));
+    }
     globalThis.sessionStorage.setItem(CLAVE, ruta);
   } catch {
     // Sin almacenamiento, se vuelve al panel como siempre
@@ -61,8 +85,8 @@ export const guardaLaVueltaTrasEntrar = () => {
  * La redirección dura al login, la única: guarda la página (o la olvida, si se sale a
  * propósito) y se va, al momento o tras `retraso` ms (para que se lea un aviso).
  */
-export const redirigeAlLogin = ({ guardar = true, retraso = 0 } = {}) => {
-  if (guardar) guardaLaVueltaTrasEntrar();
+export const redirigeAlLogin = ({ guardar = true, retraso = 0, cuenta = null } = {}) => {
+  if (guardar) guardaLaVueltaTrasEntrar({ cuenta });
   else olvidaLaVueltaTrasEntrar();
   const vete = () => {
     globalThis.location.href = '/login';
@@ -87,14 +111,26 @@ export const leeLaVueltaTrasEntrar = () => {
   return { pathname: url.pathname, search: url.search, hash: url.hash };
 };
 
+/** La cuenta con la que se guardó la página, o `null` si se guardó sin ella. */
+const cuentaDeLaVuelta = () => {
+  try {
+    return globalThis.sessionStorage.getItem(CLAVE_DE_LA_CUENTA);
+  } catch {
+    return null;
+  }
+};
+
 /**
  * A dónde ir tras entrar: la ruta de la que vino (`state.from`, o la que trae Google) o,
- * si una redirección dura la perdió, la guardada. La guardada se gasta siempre.
+ * si una redirección dura la perdió, la guardada, solo si es de la cuenta que entra
+ * (`cuenta`; regla 6). La guardada se gasta siempre.
  * Solo calcula: el silencio de un cierre anterior lo acaba quien entra de verdad (C5),
  * no la entrada sin red de la aplicación instalada, que también pasa por aquí.
  */
-export const vueltaTrasEntrar = (from) => {
-  const guardada = leeLaVueltaTrasEntrar();
+export const vueltaTrasEntrar = (from, { cuenta = null } = {}) => {
+  const deQuien = cuentaDeLaVuelta();
+  const esSuya = deQuien === null || (cuenta !== null && cuenta !== undefined && deQuien === String(cuenta));
+  const guardada = esSuya ? leeLaVueltaTrasEntrar() : null;
   olvidaLaVueltaTrasEntrar();
   return rutaDeVuelta(from ?? guardada ?? undefined);
 };
