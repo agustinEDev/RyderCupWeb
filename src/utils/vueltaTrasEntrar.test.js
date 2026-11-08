@@ -361,3 +361,47 @@ describe('la cuenta de esta pestaña', () => {
     expect(quienEstaDentro()).toBe('u-3');
   });
 });
+
+/**
+ * B (Agustín, 8 nov 2026): si la pestaña sabe que no hay nadie dentro (cerró la sesión),
+ * un cierre forzado tardío no guarda la página: no hay a quién devolver, y sin cuenta
+ * valdría para cualquiera.
+ */
+describe('sin nadie dentro de esta pestaña', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    olvidaLaCuentaDeEstaPestana();
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('redirigeAlLogin no guarda la página y borra la que hubiera', () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    anotaLaCuentaDeEstaPestana(null);
+    en('/competitions/7');
+
+    redirigeAlLogin();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(globalThis.location.href).toBe('/login');
+  });
+
+  it('con una cuenta anotada, sí la guarda', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    en('/competitions/7');
+
+    redirigeAlLogin({ cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+
+  it('sin anotar nada (no se sabe), la guarda como hasta ahora', () => {
+    en('/competitions/7');
+
+    redirigeAlLogin();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+});

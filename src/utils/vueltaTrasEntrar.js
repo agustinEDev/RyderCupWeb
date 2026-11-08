@@ -19,7 +19,7 @@
  * 6. Va con la cuenta que estaba dentro: si entra OTRA, va al panel y se borra; guardada
  *    sin cuenta (de antes, o sin saber quién estaba), vale para cualquiera (Agustín, 8 nov
  *    2026). En un móvil compartido, la siguiente persona no aterriza en la página de la
- *    anterior.
+ *    anterior. Si la pestaña sabe que no hay nadie dentro, no se guarda.
  */
 import { rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
@@ -86,6 +86,10 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   // Al cerrar sesión a petición no hay a dónde volver: un sondeo en vuelo que reciba un
   // 401 en ese momento no deja la página para quien entre después
   if (seCierraLaSesionAPeticion()) return;
+  // Esta pestaña sabe que no hay nadie dentro (cerró la sesión): un cierre forzado tardío
+  // no tiene a quién devolver, y sin cuenta la página valdría para cualquiera (Agustín,
+  // 8 nov 2026)
+  if (cuentaDeEstaPestana === null) return;
   const ruta = rutaPropia(lugarActual());
   // Ni login ni registro (`rutaDeVuelta` ya los descarta), ni una página pública: la
   // portada, verificar o restablecer, que además llevan su token
