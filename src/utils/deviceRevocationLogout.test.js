@@ -363,6 +363,31 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
+    // B1-B2 (8 nov 2026): el refresco no dice por qué se rechaza (BE #733); un rechazo
+    // (dispositivo revocado, contraseña cambiada…) no es una sesión caducada
+    it('B1: un refresco rechazado (SESSION_REJECTED) dice que la sesión ha terminado', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+        error_code: 'SESSION_REJECTED',
+      });
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+      expect(i18next.t).not.toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+    });
+
+    it('B2: una sesión que acaba sin más (SESSION_ENDED) sigue diciendo que ha expirado', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+        error_code: 'SESSION_ENDED',
+      });
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+    });
+
     it('A1: el aviso del cierre lleva su marca para salir aunque el cierre esté en marcha', () => {
       handleSessionExpiredLogout();
 

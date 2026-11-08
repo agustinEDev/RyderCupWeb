@@ -149,7 +149,11 @@ export const handleDeviceRevocationLogout = (errorData = null, contexto = {}) =>
  * @param {Object} errorData - Optional error data
  */
 export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
-  handleLogout(errorData, 'expiration', { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
+  // Un refresco RECHAZADO (dispositivo revocado, contraseña cambiada, cuenta
+  // desactivada…) no es una sesión caducada; el backend no dice cuál (BE #733), así que
+  // el aviso es el neutro de «ha terminado» (B1, 8 nov 2026). El final normal, «expirado»
+  const reason = errorData?.error_code === 'SESSION_REJECTED' ? 'ended' : 'expiration';
+  handleLogout(errorData, reason, { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
 };
 
 // El freno de un cierre por carga vive en su módulo (cierreDeEstaCarga.js); se reexporta
