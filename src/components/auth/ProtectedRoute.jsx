@@ -12,11 +12,12 @@ import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
  */
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, sinConfirmar } = useAuth();
   // La cuenta que confirma el backend es la de esta pestaña, aunque falte el usuario
   // guardado (otra pestaña lo borró): un cierre forzado sabrá de quién es la página que
-  // guarda y avisará de que la sesión terminó (revisión de FE #1064)
-  const idDeLaSesion = user?.id;
+  // guarda y avisará de que la sesión terminó (revisión de FE #1064). Solo confirmada: la
+  // guardada que aún se está preguntando no cuenta (CodeRabbit en #1070)
+  const idDeLaSesion = sinConfirmar ? null : user?.id;
   useEffect(() => {
     if (idDeLaSesion != null) anotaLaCuentaDeEstaPestana(idDeLaSesion);
   }, [idDeLaSesion]);

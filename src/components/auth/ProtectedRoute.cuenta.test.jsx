@@ -7,8 +7,10 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  * la última cuenta que estuvo dentro de la pestaña; si entra otra, irá a su panel. Ir a
  * aceptar los Términos (ya hay cuenta) no la lleva.
  */
-const sesion = vi.hoisted(() => ({ user: null }));
-vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loading: false }) }));
+const sesion = vi.hoisted(() => ({ user: null, sinConfirmar: false }));
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: sesion.user, loading: false, sinConfirmar: sesion.sinConfirmar }),
+}));
 const cuenta = vi.hoisted(() => ({ ultima: vi.fn(() => 'u-1'), anota: vi.fn() }));
 vi.mock('../../utils/vueltaTrasEntrar', () => ({
   estadoParaElLogin: (location) => ({ from: { ...location, cuenta: cuenta.ultima() } }),
@@ -43,6 +45,8 @@ const abrir = (ruta) =>
 describe('la página de la que venía lleva su cuenta', () => {
   beforeEach(() => {
     sesion.user = null;
+    sesion.sinConfirmar = false;
+    cuenta.anota.mockClear();
     cuenta.ultima.mockReturnValue('u-1');
   });
 
@@ -83,6 +87,15 @@ describe('la página de la que venía lleva su cuenta', () => {
 
     expect(screen.getByText('ficha')).toBeInTheDocument();
     expect(cuenta.anota).toHaveBeenCalledWith('u-7');
+  });
+
+  it('con la sesión guardada SIN confirmar por el backend, no apunta nada (CodeRabbit #1070)', () => {
+    sesion.user = { id: 'u-7', terms_accepted: true };
+    sesion.sinConfirmar = true;
+
+    abrir('/competitions/7');
+
+    expect(cuenta.anota).not.toHaveBeenCalled();
   });
 });
 
