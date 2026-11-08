@@ -66,10 +66,12 @@ export const useRedirectIfAuthenticated = ({
   //
   // Se congela el valor del primer render. Después del login `user` cambia, y
   // sin esto el efecto volvería a dispararse sobre una página que ya se va.
-  const [hadStoredUser] = useState(() => enabled && Boolean(user));
   // Y su cuenta: entrar sin red vuelve a la página guardada solo si es suya (regla 6 de
   // `vueltaTrasEntrar`)
-  const [cuentaGuardada] = useState(() => user?.id ?? null);
+  const [{ hadStoredUser, cuentaGuardada }] = useState(() => ({
+    hadStoredUser: enabled && Boolean(user),
+    cuentaGuardada: enabled ? (user?.id ?? null) : null,
+  }));
   const [isChecking, setIsChecking] = useState(hadStoredUser);
 
   useEffect(() => {

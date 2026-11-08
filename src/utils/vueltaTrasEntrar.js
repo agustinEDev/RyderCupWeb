@@ -50,9 +50,12 @@ export const olvidaLaVueltaTrasEntrar = () => {
 // `undefined` = nadie la ha anotado todavía
 let cuentaDeEstaPestana;
 
+/** Un id de cuenta como texto, o `null` si no hay: la única forma de compararlos. */
+const aIdDeCuenta = (id) => (id == null ? null : String(id));
+
 /** `AuthContext`: la cuenta de esta pestaña, o `null` al salir. */
 export const anotaLaCuentaDeEstaPestana = (id) => {
-  cuentaDeEstaPestana = id === undefined || id === null ? null : String(id);
+  cuentaDeEstaPestana = aIdDeCuenta(id);
 };
 
 /** SOLO para los tests: una pestaña recién abierta, sin nada anotado. */
@@ -68,8 +71,7 @@ export const olvidaLaCuentaDeEstaPestana = () => {
 export const quienEstaDentro = () => {
   if (cuentaDeEstaPestana !== undefined) return cuentaDeEstaPestana;
   try {
-    const id = JSON.parse(globalThis.localStorage.getItem('user'))?.id;
-    return id === undefined || id === null ? null : String(id);
+    return aIdDeCuenta(JSON.parse(globalThis.localStorage.getItem('user'))?.id);
   } catch {
     return null;
   }
@@ -91,9 +93,8 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   if (esRutaPublica(globalThis.location?.pathname ?? '')) return;
   try {
     // La cuenta primero: si escribir la página falla, no queda una página sin su cuenta
-    if (cuenta !== null && cuenta !== undefined) {
-      globalThis.sessionStorage.setItem(CLAVE_DE_LA_CUENTA, String(cuenta));
-    }
+    const id = aIdDeCuenta(cuenta);
+    if (id !== null) globalThis.sessionStorage.setItem(CLAVE_DE_LA_CUENTA, id);
     globalThis.sessionStorage.setItem(CLAVE, ruta);
   } catch {
     // Sin almacenamiento, se vuelve al panel como siempre
@@ -148,7 +149,7 @@ const cuentaDeLaVuelta = () => {
  */
 export const vueltaTrasEntrar = (from, { cuenta = null } = {}) => {
   const deQuien = cuentaDeLaVuelta();
-  const esSuya = deQuien === null || (cuenta !== null && cuenta !== undefined && deQuien === String(cuenta));
+  const esSuya = deQuien === null || (aIdDeCuenta(cuenta) !== null && deQuien === aIdDeCuenta(cuenta));
   const guardada = esSuya ? leeLaVueltaTrasEntrar() : null;
   olvidaLaVueltaTrasEntrar();
   return rutaDeVuelta(from ?? guardada ?? undefined);

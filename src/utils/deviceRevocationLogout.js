@@ -213,14 +213,14 @@ export const limpiaLaCuenta = () => {
  * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
  */
 const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
-  if (cierreEnEstaCarga) return;
+  if (seEstaCerrandoLaSesion()) return;
   const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
-  // If already on login page and already handled, do nothing
+  // If already on login page and already handled, do nothing (sin anotar el cierre: C2)
   if (marca && window.location.pathname === '/login') {
     return;
   }
-  empiezaElCierreDeEstaCarga();
+  if (!empiezaElCierreDeEstaCarga()) return;
 
   // Salió a propósito: se limpia lo de la cuenta (DeviceManagement espera 2,5 s antes
   // de su logout, y un 401 o salir de la página se lo saltaban: /code-review), sin

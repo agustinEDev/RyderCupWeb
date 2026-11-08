@@ -38,11 +38,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        const guardado = JSON.parse(storedUser);
-        // La cuenta de esta pestaña, en memoria: si otra pestaña la borra del
-        // almacenamiento, un cierre forzado aquí sigue sabiendo de quién es la página
-        anotaLaCuentaDeEstaPestana(guardado?.id);
-        return guardado;
+        return JSON.parse(storedUser);
       }
     } catch (error) {
       console.error('Failed to parse stored user:', error);
@@ -54,6 +50,13 @@ export const AuthProvider = ({ children }) => {
     return null;
   });
 
+  // La cuenta de esta pestaña, en memoria, al arrancar, al entrar y al salir: si otra
+  // pestaña borra o pisa el usuario de `localStorage`, un cierre forzado aquí sigue
+  // sabiendo de quién es la página que guarda (regla 6 de `vueltaTrasEntrar`)
+  useEffect(() => {
+    anotaLaCuentaDeEstaPestana(user?.id);
+  }, [user]);
+
   const [csrfToken, setCsrfToken] = useState(null);
   const [isInitialized] = useState(true); // Always true since we use lazy initializer
 
@@ -63,8 +66,6 @@ export const AuthProvider = ({ children }) => {
    */
   const setUserData = useCallback((userData) => {
     setUser(userData);
-    // La cuenta de esta pestaña (o nadie al salir): la de `localStorage` la pisa otra
-    anotaLaCuentaDeEstaPestana(userData?.id);
     // Entrar o salir INVALIDAN la consulta compartida, las dos (FE #489). Al
     // entrar no se siembra con esto aunque ahorraria un viaje: aqui llega una
     // **entidad de dominio** —camelCase, con el correo como objeto— y quien lee
@@ -104,7 +105,6 @@ export const AuthProvider = ({ children }) => {
    */
   const clearAuth = useCallback(() => {
     setUser(null);
-    anotaLaCuentaDeEstaPestana(null);
     setCsrfToken(null);
     // Sin esto, lo que la consulta compartida tuviera guardado sobreviviria al
     // cierre de sesion y el siguiente componente que montara veria un usuario
