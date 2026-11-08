@@ -155,8 +155,12 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   // el aviso es el neutro de «ha terminado» (B1, 8 nov 2026). El final normal, «expirado»
   // La misma regla que el motivo de Sentry (`esFinalNormalDelRefresco`): todo lo que no
   // es el final normal es un rechazo, también un código antiguo o un 401 sin código. Sin
-  // datos del servidor, como siempre
-  const rechazado = errorData != null && !esFinalNormalDelRefresco(errorData);
+  // datos del servidor, el motivo que trae quien llama (CodeRabbit en #1065); sin él,
+  // como siempre
+  const rechazado =
+    errorData != null
+      ? !esFinalNormalDelRefresco(errorData)
+      : false;
   handleLogout(errorData, rechazado ? 'ended' : 'expiration', {
     motivo: rechazado ? MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO : MOTIVO_DEL_CIERRE.SESION_CADUCADA,
     ...contexto,

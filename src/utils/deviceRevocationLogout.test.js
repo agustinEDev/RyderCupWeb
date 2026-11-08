@@ -399,6 +399,14 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
     });
 
+    it('B1: sin datos del servidor y con el motivo de un rechazo, dice que ha terminado (CodeRabbit #1065)', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout(null, { motivo: 'refresh_rejected', estado: 401 });
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+    });
+
     it('B1: sin datos del servidor, como siempre: ha expirado', async () => {
       const i18next = (await import('i18next')).default;
 
