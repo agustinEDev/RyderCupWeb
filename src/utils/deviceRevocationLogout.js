@@ -26,8 +26,14 @@ import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
-import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
+import {
+  avisaDelCierreForzado,
+  esFinalNormalDelRefresco,
+  MOTIVO_DEL_CIERRE,
+} from './avisoDeCierreForzado';
 import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
+// El freno de un cierre por carga vive en su módulo (C1, S1)
+import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from './cierreDeEstaCarga';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -144,37 +150,21 @@ export const handleDeviceRevocationLogout = (errorData = null, contexto = {}) =>
  * @param {Object} errorData - Optional error data
  */
 export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
-  handleLogout(errorData, 'expiration', { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
-};
-
-// El cierre de ESTA carga de página (C1, 8 nov 2026): al recargar con la sesión muerta
-// fallan dos peticiones a la vez; la primera ya guardó la página, enseñó el toast y
-// sale a los 500 ms, así que la segunda no hace nada. La marca de localStorage no
-// sirve para esto: la comparten las pestañas y sobrevive a la carga. Lo comparte el
-// cierre por CSRF (S1): uno por carga, venga de donde venga
-let cierreEnEstaCarga = false;
-
-/**
- * Anota el cierre de esta carga. `false` si ya había uno: quien llama no hace nada (C1, S1).
- */
-export const empiezaElCierreDeEstaCarga = () => {
-  if (cierreEnEstaCarga) return false;
-  cierreEnEstaCarga = true;
-  return true;
-};
-
-/**
- * Si un cierre forzado ya está en marcha en esta carga: la redirección llega enseguida, y
- * quien pinta un fallo de la petición que lo provocó no lo enseña (3c, 8 nov 2026).
- */
-export const seEstaCerrandoLaSesion = () => cierreEnEstaCarga;
-
-/**
- * SOLO para los tests: una carga de página nueva. En el navegador lo hace la salida a
- * /login, que descarga la página; ningún código de la aplicación lo llama.
- */
-export const olvidaElCierreDeEstaCarga = () => {
-  cierreEnEstaCarga = false;
+  // Un refresco RECHAZADO (dispositivo revocado, contraseña cambiada, cuenta
+  // desactivada…) no es una sesión caducada; el backend no dice cuál (BE #733), así que
+  // el aviso es el neutro de «ha terminado» (B1, 8 nov 2026). El final normal, «expirado»
+  // La misma regla que el motivo de Sentry (`esFinalNormalDelRefresco`): todo lo que no
+  // es el final normal es un rechazo, también un código antiguo o un 401 sin código. Sin
+  // datos del servidor, el motivo que trae quien llama (CodeRabbit en #1065); sin él,
+  // como siempre
+  const rechazado =
+    errorData != null
+      ? !esFinalNormalDelRefresco(errorData)
+      : contexto.motivo === MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
+  handleLogout(errorData, rechazado ? 'ended' : 'expiration', {
+    motivo: rechazado ? MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO : MOTIVO_DEL_CIERRE.SESION_CADUCADA,
+    ...contexto,
+  });
 };
 
 /**
@@ -280,9 +270,11 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
     const message = i18next.t(messageKey, { ns: 'auth' });
 
+    // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
     customToast.error(message, {
       duration: 8000,
       icon,
+      delCierre: true,
     });
   } finally {
     // Redirect to login after a short delay (allow toast to be visible), con la página

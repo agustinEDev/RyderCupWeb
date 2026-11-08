@@ -25,7 +25,7 @@ vi.mock('../utils/avisoDeCierreForzado', async (original) => ({
 
 const { confirmEmailChangeUseCase } = await import('../composition');
 const { handleCsrfLogout } = await import('../utils/csrfLogout');
-const { olvidaElCierreDeEstaCarga } = await import('../utils/deviceRevocationLogout');
+const { olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
 const { default: ConfirmEmailChange } = await import('./ConfirmEmailChange');
 
 describe('ConfirmEmailChange con el cierre por CSRF de verdad', () => {

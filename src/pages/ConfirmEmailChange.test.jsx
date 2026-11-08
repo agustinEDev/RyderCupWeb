@@ -36,10 +36,12 @@ vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ refetch }) }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../composition', () => ({ confirmEmailChangeUseCase: { execute: vi.fn() } }));
 const cierre = vi.hoisted(() => ({ enMarcha: vi.fn(() => false) }));
-vi.mock('../utils/deviceRevocationLogout', () => ({ seEstaCerrandoLaSesion: cierre.enMarcha }));
+vi.mock('../utils/cierreDeEstaCarga', () => ({ seEstaCerrandoLaSesion: cierre.enMarcha }));
+const secretos = vi.hoisted(() => ({ olvida: vi.fn() }));
 vi.mock('../utils/stripSecretsFromAddressBar', () => ({
   stripSecretsFromAddressBar: vi.fn(),
   readStrippedSecret: () => null,
+  forgetStrippedSecret: secretos.olvida,
 }));
 
 const { confirmEmailChangeUseCase } = await import('../composition');
@@ -159,5 +161,31 @@ describe('ConfirmEmailChange', () => {
 
     expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'confirmEmailChange.retry' })).toBeInTheDocument();
+  });
+
+  // Usado el token, se olvida del historial (revisión, 8 nov 2026): si luego la sesión
+  // se cierra, la página guardada no lo repite y no sale «enlace no válido» con el
+  // correo ya cambiado. Un fallo de red lo conserva: «Reintentar» lo necesita
+  it.each([
+    ['confirmado', () => confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'a@b.c' }), 'confirmEmailChange.done:a@b.c'],
+    ['caducado', () => confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(400, 'EMAIL_CHANGE_EXPIRED')), 'confirmEmailChange.expired'],
+    ['no vale', () => confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(400, 'EMAIL_CHANGE_INVALID')), 'confirmEmailChange.invalid'],
+    ['ocupado', () => confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(409, 'EMAIL_ALREADY_IN_USE')), 'confirmEmailChange.inUse'],
+  ])('con respuesta final (%s), olvida el token', async (_n, prepara, texto) => {
+    cierre.enMarcha.mockReturnValue(false);
+    prepara();
+    abrir('?token=tok-1');
+
+    expect(await screen.findByText(texto)).toBeInTheDocument();
+    expect(secretos.olvida).toHaveBeenCalledWith('token');
+  });
+
+  it('con un fallo de red, conserva el token para reintentar', async () => {
+    cierre.enMarcha.mockReturnValue(false);
+    confirmEmailChangeUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    abrir('?token=tok-1');
+
+    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
+    expect(secretos.olvida).not.toHaveBeenCalled();
   });
 });

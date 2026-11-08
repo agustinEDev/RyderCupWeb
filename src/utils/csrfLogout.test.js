@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleCsrfLogout } from './csrfLogout';
-import { olvidaElCierreDeEstaCarga } from './deviceRevocationLogout';
+import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
 import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../services/loUltimoConocido';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 

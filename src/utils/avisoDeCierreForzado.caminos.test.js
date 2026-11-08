@@ -31,7 +31,8 @@ vi.mock('./sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((k) => k) } }));
 vi.mock('./toast', () => ({ default: { error: vi.fn() } }));
 
-const { handleDeviceRevocationLogout, handleSessionExpiredLogout, olvidaElCierreDeEstaCarga } = await import(
+const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
+const { handleDeviceRevocationLogout, handleSessionExpiredLogout } = await import(
   './deviceRevocationLogout'
 );
 const { handleCsrfLogout } = await import('./csrfLogout');
@@ -82,11 +83,19 @@ describe('quién avisa de un cierre de sesión forzado', () => {
     );
   });
 
-  it('C2: la sesión caducada avisa como session_expired', () => {
-    handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado' });
+  it('C2: la sesión que acaba sin más (SESSION_ENDED) avisa como session_expired', () => {
+    handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
 
     expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
       expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA })
+    );
+  });
+
+  it('C2b: un 401 sin código es un rechazo, con la misma regla que el aviso al usuario (8 nov)', () => {
+    handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado' });
+
+    expect(aviso.avisaDelCierreForzado).toHaveBeenCalledWith(
+      expect.objectContaining({ motivo: MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO })
     );
   });
 

@@ -2,6 +2,7 @@ import toast from 'react-hot-toast';
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { createElement } from 'react';
 import { esUnAvisoSilenciado } from './terminosPendientes';
+import { seEstaCerrandoLaSesion } from './cierreDeEstaCarga';
 
 /**
  * Custom Toast Content Component
@@ -85,7 +86,11 @@ export const customToast = {
     // El de una llamada cortada por irse a aceptar los Términos: la página se
     // va y no dice nada útil. Solo ESE; cualquier otro error se sigue viendo
     if (esUnAvisoSilenciado(message)) return undefined;
-    const { icon, ...toastOptions } = options;
+    const { icon, delCierre, ...toastOptions } = options;
+    // Con un cierre forzado en marcha, la página se va al login en un momento: el error
+    // de una pantalla que falla por eso no dice nada útil y tapaba el aviso del cierre,
+    // que es el único que sale (`delCierre`; A1, 8 nov 2026)
+    if (seEstaCerrandoLaSesion() && !delCierre) return undefined;
     return toast.custom(
       (t) => createElement(ToastContent, { message, type: 'error', toastId: t.id, icon, visible: t.visible }),
       { duration: 5000, ...toastOptions }
