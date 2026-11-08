@@ -91,6 +91,9 @@ const silenciadoAhora = () => {
   return Date.now() < Math.max(silencioHasta, guardado);
 };
 
+/** Si el usuario acaba de pedir cerrar la sesión (los avisos están callados). */
+export const seCierraLaSesionAPeticion = () => silenciadoAhora();
+
 /** El usuario pidió cerrar la sesión: nada de avisos durante un rato. */
 export const noAvisesDeCierres = () => {
   silencioHasta = Date.now() + SILENCIO_TRAS_EL_LOGOUT_MS;

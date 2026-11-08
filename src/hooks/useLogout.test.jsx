@@ -94,6 +94,16 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     vi.stubGlobal('location', { href: '' });
   });
 
+  it('cerrar sesión olvida la página a la que volver tras entrar (revisión)', async () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    logoutUseCase.execute.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
   it('la salida con recarga se lleva lo de la cuenta', async () => {
     // Es por donde salen la cabecera y el perfil, y antes hacían su petición y
     // redirigían sin limpiar: en un móvil compartido quedaban el nombre, el

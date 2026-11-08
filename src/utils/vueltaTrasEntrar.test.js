@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { guardaLaVueltaTrasEntrar, leeLaVueltaTrasEntrar, vueltaTrasEntrar } from './vueltaTrasEntrar';
+import {
+  gastaLaVueltaTrasEntrar,
+  guardaLaVueltaTrasEntrar,
+  leeLaVueltaTrasEntrar,
+  olvidaLaVueltaTrasEntrar,
+  vueltaTrasEntrar,
+} from './vueltaTrasEntrar';
+import { noAvisesDeCierres } from './avisoDeCierreForzado';
 
 /**
  * La vuelta tras una redirección dura a /login (probador de la release, 8 nov 2026).
@@ -9,6 +16,11 @@ import { guardaLaVueltaTrasEntrar, leeLaVueltaTrasEntrar, vueltaTrasEntrar } fro
  *   V3 se gasta: la segunda vez, al panel
  *   V4 desde /login o /register: no se guarda
  *   V5 lo escrito a mano que no es propio: no vale
+ * Tras las revisiones:
+ *   V6 desde una página pública (portada, /start, verificar, restablecer): no se guarda
+ *   V7 mientras se cierra la sesión a petición: no se guarda
+ *   V8 Google la gasta al leerla; cerrar sesión la olvida
+ *   V2 también la gasta cuando gana state.from
  */
 const en = (pathname, search = '') =>
   vi.stubGlobal('location', { ...globalThis.location, pathname, search, hash: '', origin: 'http://localhost:3000' });
@@ -30,6 +42,7 @@ describe('la vuelta tras una redirección dura', () => {
     guardaLaVueltaTrasEntrar();
 
     expect(vueltaTrasEntrar({ pathname: '/profile/edit' })).toBe('/profile/edit');
+    expect(leeLaVueltaTrasEntrar()).toBeNull();
   });
 
   it('V3: se gasta', () => {
@@ -59,4 +72,35 @@ describe('la vuelta tras una redirección dura', () => {
       expect(vueltaTrasEntrar(undefined)).toBe('/dashboard');
     }
   );
+
+  it.each([['/'], ['/start'], ['/verify-email'], ['/reset-password/tok']])('V6: desde %s no se guarda', (ruta) => {
+    en(ruta, ruta === '/verify-email' ? '?token=abc' : '');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
+  it('V8: Google la gasta al leerla, y cerrar sesión la olvida', () => {
+    en('/confirm-email-change', '?token=abc');
+    guardaLaVueltaTrasEntrar();
+
+    expect(gastaLaVueltaTrasEntrar()).toEqual({ pathname: '/confirm-email-change', search: '?token=abc', hash: '' });
+    expect(leeLaVueltaTrasEntrar()).toBeNull();
+
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar();
+    olvidaLaVueltaTrasEntrar();
+    expect(leeLaVueltaTrasEntrar()).toBeNull();
+  });
+  // El último: el silencio de cerrar sesión dura 30 s en memoria del módulo
+  it('V7: mientras se cierra la sesión a petición, no se guarda', () => {
+    en('/competitions/7');
+    noAvisesDeCierres();
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
 });
+

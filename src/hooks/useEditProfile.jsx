@@ -437,16 +437,17 @@ export const useEditProfile = () => {
       console.error('Error updating security:', error);
 
       const contrasena = passwordErrorMessage(error, t);
-      // Los límites de Seguridad, con su motivo (RyderCupAm #753)
-      const limite = {
+      // Los errores de Seguridad con código: los límites (RyderCupAm #753) y los que
+      // venían en inglés del backend
+      const porCodigo = {
         TOO_MANY_SECURITY_CHANGES: 'toasts.tooManySecurityChanges',
         TOO_MANY_EMAIL_CHANGE_REQUESTS: 'toasts.tooManyEmailChanges',
         // Con su código desde el backend: su texto venía en inglés (probador de la release)
         CURRENT_PASSWORD_INCORRECT: 'toasts.currentPasswordIncorrect',
         EMAIL_ALREADY_IN_USE: 'toasts.emailAlreadyInUse',
       }[error.errorCode];
-      if (limite) {
-        customToast.error(t(limite));
+      if (porCodigo) {
+        customToast.error(t(porCodigo));
       } else if (error.errorCode === 'PASSWORD_REUSED') {
         // v1.13.0, por su código desde la BE #519: antes se buscaba el texto en
         // inglés del backend, que se rompía en cuanto cambiara una palabra
