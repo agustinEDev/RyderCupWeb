@@ -9,7 +9,11 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider } from './AuthContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { getCsrfToken, setCsrfTokenGlobal } from './csrfTokenSync';
-import { olvidaLaCuentaDeEstaPestana, quienEstaDentro } from '../utils/vueltaTrasEntrar';
+import {
+  olvidaLaCuentaDeEstaPestana,
+  quienEstaDentro,
+  ultimaCuentaDeEstaPestana,
+} from '../utils/vueltaTrasEntrar';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -390,4 +394,16 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
 
     expect(quienEstaDentro()).toBeNull();
   });
+
+  it('R2 (FE #1064): tras salir (clearAuth), la última cuenta de la pestaña sigue', () => {
+    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    act(() => result.current.setUser({ id: 'u-2' }));
+
+    act(() => result.current.clearAuth());
+    localStorage.clear();
+
+    expect(quienEstaDentro()).toBeNull();
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
+  });
 });
+

@@ -5,6 +5,7 @@ import {
   olvidaLaVueltaTrasEntrar,
   anotaLaCuentaDeEstaPestana,
   olvidaLaCuentaDeEstaPestana,
+  estadoParaElLogin,
   olvidaLaUltimaCuenta,
   ultimaCuentaDeEstaPestana,
   quienEstaDentro,
@@ -613,6 +614,27 @@ describe('la página de la que venía, con su cuenta (R4-R6)', () => {
     expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-2' })).toBe(
       '/dashboard'
     );
+  });
+});
+
+describe('estadoParaElLogin (R1: la única forma de ir al login con la página de la que venía)', () => {
+  beforeEach(() => olvidaLaCuentaDeEstaPestana());
+  afterEach(() => olvidaLaCuentaDeEstaPestana());
+
+  it('lleva la página y la última cuenta de la pestaña', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    anotaLaCuentaDeEstaPestana(null);
+
+    expect(estadoParaElLogin({ pathname: '/competitions/7', search: '?a=1', hash: '' })).toEqual({
+      from: { pathname: '/competitions/7', search: '?a=1', hash: '', cuenta: 'u-1' },
+    });
+  });
+
+  it('sin cuenta en la pestaña, la página sin cuenta', () => {
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() });
+
+    expect(estadoParaElLogin({ pathname: '/stats' }).from.cuenta).toBeNull();
+    vi.unstubAllGlobals();
   });
 });
 

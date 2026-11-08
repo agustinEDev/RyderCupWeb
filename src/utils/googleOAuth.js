@@ -39,33 +39,39 @@ export function guardaLaVueltaDeGoogle(from) {
       sessionStorage.removeItem(VUELTA_KEY);
       return;
     }
-    sessionStorage.setItem(VUELTA_KEY, ruta);
+    sessionStorage.removeItem(VUELTA_KEY);
+    // La cuenta antes que la ruta: si escribirla falla, no queda una ruta sin su cuenta
+    // que valdría para cualquiera (revisión, FE #1064)
     if (from?.cuenta != null) sessionStorage.setItem(VUELTA_CUENTA_KEY, String(from.cuenta));
+    sessionStorage.setItem(VUELTA_KEY, ruta);
   } catch {
     // Sin almacenamiento, se vuelve al panel como siempre
   }
 }
 
 /**
- * La vuelta guardada, una sola vez: se borra al leerla. Null si no hay o no vale.
- * @returns {string|null}
- */
-/**
  * La vuelta guardada y la cuenta que la apuntó (o `null` si no apuntó ninguna), una sola
  * vez: se borran al leerlas. Null si no hay vuelta o no vale (FE #1064, R7).
  * @returns {{ruta: string, cuenta: string|null}|null}
  */
 export function recogeLaVueltaDeGoogleConSuCuenta() {
-  let cuenta = null;
+  let cuenta;
   try {
     cuenta = sessionStorage.getItem(VUELTA_CUENTA_KEY);
     sessionStorage.removeItem(VUELTA_CUENTA_KEY);
   } catch {
-    cuenta = null;
+    // Sin saber de quién era, la vuelta no vale para nadie: se descarta (revisión)
+    recogeLaVueltaDeGoogle();
+    return null;
   }
   const ruta = recogeLaVueltaDeGoogle();
   return ruta ? { ruta, cuenta } : null;
 }
+
+/**
+ * La vuelta guardada, una sola vez: se borra al leerla. Null si no hay o no vale.
+ * @returns {string|null}
+ */
 
 export function recogeLaVueltaDeGoogle() {
   let ruta = null;

@@ -106,6 +106,9 @@ export const useLogout = () => {
 
     // Clear client-side state
     clearAuth();
+    // Otra vez tras limpiar: un guardado que llegara durante la espera la habría vuelto a
+    // anotar (revisión, FE #1064)
+    olvidaLaUltimaCuenta();
     clearUserContext();
     // El número de Actividad y el del icono son de esta cuenta (FE-1)
     olvidaLasNovedades();

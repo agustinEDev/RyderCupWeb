@@ -89,17 +89,8 @@ export const olvidaLaUltimaCuenta = () => {
   ultimaCuenta = null;
 };
 
-/**
- * El id de la cuenta de esta pestaña, o `null` si no se sabe: la anotada en memoria y, si
- * nadie la anotó, la del usuario guardado. Los cierres forzados lo leen ANTES de limpiar
- * la cuenta, para guardar la página con él (regla 6).
- */
-/**
- * La última cuenta que estuvo dentro de esta pestaña, o `null`: la que lleva la página de
- * la que venía al ir al login (R1). Si nadie la anotó aún, la del usuario guardado.
- */
-export const ultimaCuentaDeEstaPestana = () => {
-  if (ultimaCuenta !== undefined) return ultimaCuenta;
+/** El id del usuario guardado en el dispositivo, o `null`. */
+const cuentaDelUsuarioGuardado = () => {
   try {
     return aIdDeCuenta(JSON.parse(globalThis.localStorage.getItem('user'))?.id);
   } catch {
@@ -107,13 +98,38 @@ export const ultimaCuentaDeEstaPestana = () => {
   }
 };
 
+/**
+ * La última cuenta que estuvo dentro de esta pestaña, o `null`: la que lleva la página de
+ * la que venía al ir al login (R1). Si nadie la anotó aún, la del usuario guardado.
+ */
+export const ultimaCuentaDeEstaPestana = () => {
+  if (ultimaCuenta !== undefined) return ultimaCuenta;
+  return cuentaDelUsuarioGuardado();
+};
+
+/**
+ * El estado con el que se va al login: la página de la que venía y la última cuenta de la
+ * pestaña (R1). La única forma de construirlo, para que ninguna redirección al login se
+ * olvide de la cuenta (revisión, FE #1064).
+ * @param {{pathname: string, search?: string, hash?: string}} location
+ */
+export const estadoParaElLogin = (location) => ({
+  from: {
+    pathname: location.pathname,
+    search: location.search ?? '',
+    hash: location.hash ?? '',
+    cuenta: ultimaCuentaDeEstaPestana(),
+  },
+});
+
+/**
+ * El id de la cuenta de esta pestaña, o `null` si no se sabe: la anotada en memoria y, si
+ * nadie la anotó, la del usuario guardado. Los cierres forzados lo leen ANTES de limpiar
+ * la cuenta, para guardar la página con él (regla 6).
+ */
 export const quienEstaDentro = () => {
   if (cuentaDeEstaPestana !== undefined) return cuentaDeEstaPestana;
-  try {
-    return aIdDeCuenta(JSON.parse(globalThis.localStorage.getItem('user'))?.id);
-  } catch {
-    return null;
-  }
+  return cuentaDelUsuarioGuardado();
 };
 
 /**

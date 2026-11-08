@@ -93,4 +93,19 @@ describe('ResetPassword · demasiados intentos', () => {
       expect(document.body.textContent).toContain('resetPassword.invalidTokenTitle')
     );
   });
+
+  it('R3 (FE #1064): restablecer la contraseña olvida la última cuenta de la pestaña', async () => {
+    const { anotaLaCuentaDeEstaPestana, ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
+      await import('../utils/vueltaTrasEntrar');
+    olvidaLaCuentaDeEstaPestana();
+    anotaLaCuentaDeEstaPestana('u-1');
+    restablecer.mockResolvedValue({});
+
+    await enviarContrasena();
+
+    await waitFor(() => expect(restablecer).toHaveBeenCalled());
+    await waitFor(() => expect(ultimaCuentaDeEstaPestana()).toBeNull());
+    olvidaLaCuentaDeEstaPestana();
+  });
 });
+

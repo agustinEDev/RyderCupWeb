@@ -117,6 +117,23 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     expect(ultimaCuentaDeEstaPestana()).toBeNull();
   });
 
+  it('R3 (FE #1064): un guardado que vuelve a anotar la cuenta durante la espera no la deja', async () => {
+    const { anotaLaCuentaDeEstaPestana, ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
+      await import('../utils/vueltaTrasEntrar');
+    olvidaLaCuentaDeEstaPestana();
+    anotaLaCuentaDeEstaPestana('u-1');
+    // Mientras se espera al servidor, termina un guardado del perfil y AuthContext anota
+    logoutUseCase.execute.mockImplementation(async () => {
+      anotaLaCuentaDeEstaPestana('u-1');
+    });
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+
+    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+    olvidaLaCuentaDeEstaPestana();
+  });
+
   it('la salida con recarga se lleva lo de la cuenta', async () => {
     // Es por donde salen la cabecera y el perfil, y antes hacían su petición y
     // redirigían sin limpiar: en un móvil compartido quedaban el nombre, el

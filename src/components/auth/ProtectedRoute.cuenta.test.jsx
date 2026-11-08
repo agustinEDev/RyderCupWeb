@@ -10,7 +10,9 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 const sesion = vi.hoisted(() => ({ user: null }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loading: false }) }));
 const cuenta = vi.hoisted(() => ({ ultima: vi.fn(() => 'u-1') }));
-vi.mock('../../utils/vueltaTrasEntrar', () => ({ ultimaCuentaDeEstaPestana: cuenta.ultima }));
+vi.mock('../../utils/vueltaTrasEntrar', () => ({
+  estadoParaElLogin: (location) => ({ from: { ...location, cuenta: cuenta.ultima() } }),
+}));
 
 const { default: ProtectedRoute } = await import('./ProtectedRoute');
 const { default: RoleGuard } = await import('./RoleGuard');
