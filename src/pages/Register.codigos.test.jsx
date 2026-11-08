@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 /**
@@ -54,10 +54,39 @@ describe('Register · el rechazo del backend en su idioma', () => {
   });
 
   it('otro error sigue enseñando su mensaje', async () => {
-    registrar.mockRejectedValue(Object.assign(new Error('El email ya está registrado'), { status: 409 }));
+    registrar.mockRejectedValue(Object.assign(new Error('Error interno'), { status: 500 }));
 
     await enviar();
 
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('El email ya está registrado'));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Error interno'));
+  });
+});
+
+describe('Register · correo que ya tiene cuenta (Agustín, 8 nov 2026)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // Quien registró una cuenta con un correo ajeno no la pierde sola (ADR-045): el dueño
+  // la recupera entrando con Google o con «Olvidé mi contraseña», y aquí se le dice
+  it('dice cómo recuperarla, con el enlace a «Olvidé mi contraseña», sin toast', async () => {
+    registrar.mockRejectedValue(Object.assign(new Error('User already exists'), { status: 409 }));
+
+    await enviar();
+
+    expect(await screen.findByText(/register.emailHasAccount$/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'register.emailHasAccountLink' })).toHaveAttribute(
+      'href',
+      '/forgot-password'
+    );
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('el aviso se quita al cambiar el correo', async () => {
+    registrar.mockRejectedValue(Object.assign(new Error('User already exists'), { status: 409 }));
+    await enviar();
+    await screen.findByText(/register.emailHasAccount$/);
+
+    fireEvent.change(document.querySelector('[name="email"]'), { target: { name: 'email', value: 'otro@example.com' } });
+
+    expect(screen.queryByText(/register.emailHasAccount$/)).not.toBeInTheDocument();
   });
 });

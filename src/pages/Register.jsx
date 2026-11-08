@@ -34,6 +34,8 @@ const Register = () => {
     gender: '' // Campo opcional para género
   });
   const [errors, setErrors] = useState({});
+  // El correo ya tiene cuenta (409): se dice cómo recuperarla (Agustín, 8 nov 2026)
+  const [correoConCuenta, setCorreoConCuenta] = useState(false);
   // Los Términos se aceptan con un gesto expreso, y con ellos la edad mínima
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,6 +101,7 @@ const Register = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+    if (name === 'email') setCorreoConCuenta(false);
   };
 
   const validateForm = () => {
@@ -178,6 +181,13 @@ const Register = () => {
       }, 1000);
 
     } catch (error) {
+      // El correo ya tiene cuenta: quizá la registró otro con él (ADR-045). El dueño la
+      // recupera entrando con Google o con «Olvidé mi contraseña», y se le dice aquí,
+      // junto al campo, en vez de un toast que se va. Que el correo existe ya lo decía
+      if (error?.status === 409) {
+        setCorreoConCuenta(true);
+        return;
+      }
       // El backend dice por qué rechaza la contraseña con un código (BE #519):
       // su texto va en español, así que se dice con la clave del idioma de la app
       customToast.error(passwordErrorMessage(error, t) || error.message || t('register.error'));
@@ -454,6 +464,17 @@ const Register = () => {
                       </svg>
                       {errors.email}
                     </motion.p>
+                  )}
+                  {correoConCuenta && (
+                    <p
+                      role="status"
+                      className="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg text-sm mt-2 px-3 py-2 break-words"
+                    >
+                      <span>{t('register.emailHasAccount')}</span>{' '}
+                      <Link to="/forgot-password" className="font-semibold underline">
+                        {t('register.emailHasAccountLink')}
+                      </Link>
+                    </p>
                   )}
                 </div>
 
