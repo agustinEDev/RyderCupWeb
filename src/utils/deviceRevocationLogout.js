@@ -31,6 +31,17 @@ import { redirigeAlLogin } from './vueltaTrasEntrar';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
+// Quién la puso (probador, 8 nov 2026). Un cierre forzado avisa dos veces al recargar
+// (dos peticiones fallan a la vez): la segunda vuelta guarda la misma página, no la
+// borra. Revocar el propio dispositivo es salir a propósito: no se guarda. Una marca
+// de antes (`'true'`) se trata como propia, lo conservador
+const MARCA_DEL_CIERRE_FORZADO = 'forzado';
+const MARCA_DE_LA_REVOCACION_PROPIA = 'propia';
+
+/** El usuario revoca su propio dispositivo desde Dispositivos: sale a propósito. */
+export const marcaLaRevocacionPropia = () => {
+  localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DE_LA_REVOCACION_PROPIA);
+};
 
 /**
  * Clear the device revocation handled flag
@@ -153,14 +164,14 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
   // If already handled but not on login, just redirect (no toast to avoid spam)
   if (alreadyHandled) {
-    // Ya tratada: o la revocó el propio usuario desde Dispositivos (sale a propósito) o
-    // es la segunda vuelta de un cierre ya guardado. No se guarda (revisión)
-    redirigeAlLogin({ guardar: false });
+    // La segunda vuelta de un cierre forzado guarda la misma página; tras revocar el
+    // propio dispositivo, o con una marca de antes, no se guarda
+    redirigeAlLogin({ guardar: alreadyHandled === MARCA_DEL_CIERRE_FORZADO });
     return;
   }
 
   // First time handling - do full logout flow
-  localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
+  localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
 
   // Que se vea en Sentry (FE #1042): solo la primera vez, como el aviso al usuario
   avisaDelCierreForzado(aviso);

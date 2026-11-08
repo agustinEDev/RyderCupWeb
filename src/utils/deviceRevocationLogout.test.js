@@ -444,4 +444,46 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(esperado);
     vi.unstubAllGlobals();
   });
+
+  // Un almacén de verdad: los dos avisos comparten la marca, como en el navegador
+  const conAlmacen = (inicial = {}) => {
+    const datos = { ...inicial };
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => datos[k] ?? null),
+      setItem: vi.fn((k, v) => {
+        datos[k] = String(v);
+      }),
+      removeItem: vi.fn((k) => {
+        delete datos[k];
+      }),
+    });
+    return datos;
+  };
+
+  it('R2: dos fallos a la vez al recargar: el segundo no borra la página guardada (probador, 8 nov)', async () => {
+    desdeElEnlace();
+    conAlmacen();
+    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+
+    handleSessionExpiredLogout({ detail: 'expired' });
+    handleSessionExpiredLogout({ detail: 'expired' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(window.location.href).toBe('/login');
+    vi.unstubAllGlobals();
+  });
+
+  it('R1: tras revocar el propio dispositivo, el aviso que llegue no guarda la página', async () => {
+    desdeElEnlace();
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    conAlmacen();
+    const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } = await import('./deviceRevocationLogout');
+
+    marcaLaRevocacionPropia();
+    handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(window.location.href).toBe('/login');
+    vi.unstubAllGlobals();
+  });
 });

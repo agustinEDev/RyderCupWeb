@@ -10,6 +10,7 @@ import { useTerminosPendientes } from '../hooks/useTerminosPendientes';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { Laptop, Smartphone, Tablet, HelpCircle } from 'lucide-react';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
+import { marcaLaRevocacionPropia } from '../utils/deviceRevocationLogout';
 import { toBaseLanguage } from '../services/countries';
 import { iconoDelDispositivo, nombreDelDispositivo, paisDelDispositivo } from '../utils/descripcionDelDispositivo';
 import BlockLoader from '../components/ui/BlockLoader';
@@ -87,7 +88,7 @@ const DeviceManagement = () => {
       // 2.5 s (the interceptor, FE #1046) does not trigger handleDeviceRevocationLogout()
       // again: we're already handling the logout gracefully
       // Flag will be cleared on next successful login (see useAuth.js line 74)
-      localStorage.setItem('device_revocation_handled', 'true');
+      marcaLaRevocacionPropia();
 
       timeoutRef.current = setTimeout(() => {
         // Skip backend call because device is already revoked (tokens already invalidated)
