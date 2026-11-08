@@ -89,7 +89,7 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   // Esta pestaña sabe que no hay nadie dentro (cerró la sesión): un cierre forzado tardío
   // no tiene a quién devolver, y sin cuenta la página valdría para cualquiera (Agustín,
   // 8 nov 2026)
-  if (cuentaDeEstaPestana === null) return;
+  if (aIdDeCuenta(cuenta) === null && cuentaDeEstaPestana === null) return;
   const ruta = rutaPropia(lugarActual());
   // Ni login ni registro (`rutaDeVuelta` ya los descarta), ni una página pública: la
   // portada, verificar o restablecer, que además llevan su token

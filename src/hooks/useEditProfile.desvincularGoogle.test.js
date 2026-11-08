@@ -224,4 +224,96 @@ describe('useEditProfile · la contraseña antes de desvincular Google', () => {
     expect(composition.unlinkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
     expect(globalThis.location.href).toBe('https://google/vincular');
   });
+
+  it('una comprobación de «Vincular» cancelada no desvincula si luego se abre «Desvincular»', async () => {
+    useAuthHook.useAuth.mockReturnValue({ user: usuario, refetch: vi.fn() });
+    const { result } = renderHook(() => useEditProfile());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let suelta;
+    composition.reauthenticateUseCase.execute.mockReturnValueOnce(new Promise((r) => { suelta = r; }));
+
+    act(() => result.current.handleLinkGoogle());
+    let vieja;
+    act(() => {
+      vieja = result.current.confirmaContrasenaParaGoogle('Actual123!');
+    });
+    act(() => result.current.cierraContrasenaParaGoogle());
+    act(() => result.current.handleUnlinkGoogle());
+    await act(async () => {
+      suelta({ expiresIn: 300 });
+      await vieja;
+    });
+
+    expect(composition.unlinkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
+    expect(globalThis.location.href).toBe('/profile/edit');
+    expect(result.current.isGooglePasswordOpen).toBe(true);
+  });
+
+  it('una comprobación de «Desvincular» cancelada no va a Google si luego se abre «Vincular»', async () => {
+    useAuthHook.useAuth.mockReturnValue({ user: usuario, refetch: vi.fn() });
+    const { result } = renderHook(() => useEditProfile());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let suelta;
+    composition.reauthenticateUseCase.execute.mockReturnValueOnce(new Promise((r) => { suelta = r; }));
+
+    act(() => result.current.handleUnlinkGoogle());
+    let vieja;
+    act(() => {
+      vieja = result.current.confirmaContrasenaParaGoogle('Actual123!');
+    });
+    act(() => result.current.cierraContrasenaParaGoogle());
+    act(() => result.current.handleLinkGoogle());
+    await act(async () => {
+      suelta({ expiresIn: 300 });
+      await vieja;
+    });
+
+    expect(globalThis.location.href).toBe('/profile/edit');
+    expect(composition.unlinkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('si recargar la sesión falla tras desvincular, avisa del éxito igual', async () => {
+    const result = await monta();
+    refetch.mockRejectedValue(new Error('red'));
+    act(() => result.current.handleUnlinkGoogle());
+
+    expect(await confirma(result)).toBeNull();
+
+    expect(customToast.success).toHaveBeenCalledWith('edit.linkedAccounts.unlinkSuccess');
+    expect(customToast.error).not.toHaveBeenCalled();
+  });
+
+  it('sin contraseña, «Desvincular» no abre una ventana que no se puede completar', async () => {
+    useAuthHook.useAuth.mockReturnValue({
+      user: { ...usuario, has_password: false },
+      refetch: vi.fn(),
+    });
+    const { result } = renderHook(() => useEditProfile());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.handleUnlinkGoogle());
+
+    expect(result.current.isGooglePasswordOpen).toBe(false);
+  });
+
+  it('una comprobación de «Desvincular» cancelada no desvincula si se vuelve a abrir «Desvincular»', async () => {
+    const result = await monta();
+    let suelta;
+    composition.reauthenticateUseCase.execute.mockReturnValueOnce(new Promise((r) => { suelta = r; }));
+
+    act(() => result.current.handleUnlinkGoogle());
+    let vieja;
+    act(() => {
+      vieja = result.current.confirmaContrasenaParaGoogle('Actual123!');
+    });
+    act(() => result.current.cierraContrasenaParaGoogle());
+    act(() => result.current.handleUnlinkGoogle());
+    await act(async () => {
+      suelta({ expiresIn: 300 });
+      await vieja;
+    });
+
+    expect(composition.unlinkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
+    expect(customToast.success).not.toHaveBeenCalled();
+  });
 });
