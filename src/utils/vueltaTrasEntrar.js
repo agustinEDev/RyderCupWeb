@@ -27,18 +27,21 @@ import { seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
 import { readStrippedSecret } from './stripSecretsFromAddressBar';
 
 const CLAVE = 'vuelta_tras_entrar';
+// La única página protegida que quita su token de la barra (ConfirmEmailChange)
+const RUTA_CON_TOKEN = '/confirm-email-change';
 const CLAVE_DE_LA_CUENTA = 'vuelta_tras_entrar_cuenta';
 
 const lugarActual = () => {
   const { pathname = '', search = '', hash = '' } = globalThis.location ?? {};
-  // El token que la página quitó de la barra y guardó en el historial (confirmar el
-  // correo): sin él, la página guardada no valía al volver (T1-T2, 8 nov 2026). Solo el
-  // token: el code y el state de Google son de un solo uso
-  const token = readStrippedSecret('token');
-  const params = new URLSearchParams(search);
-  if (!token || params.has('token')) return `${pathname}${search}${hash}`;
-  params.append('token', token);
-  return `${pathname}?${params.toString()}${hash}`;
+  // El token que la página de confirmar el correo quitó de la barra y guardó en el
+  // historial: sin él, la página guardada no valía al volver (T1-T2, 8 nov 2026). Solo
+  // en esa página y solo el token (el code y el state de Google son de un solo uso), y
+  // añadido sin reescribir el resto de la barra (`%20`, `?flag`)
+  const token = pathname === RUTA_CON_TOKEN ? readStrippedSecret('token') : null;
+  if (!token || new URLSearchParams(search).has('token')) return `${pathname}${search}${hash}`;
+  const separador = search && search !== '?' ? '&' : '?';
+  const base = search === '?' ? '' : search;
+  return `${pathname}${base}${separador}token=${encodeURIComponent(token)}${hash}`;
 };
 
 /** La olvida, con su cuenta: al cerrar sesión, al salir sin guardar y una vez usada. */

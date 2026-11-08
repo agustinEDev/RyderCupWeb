@@ -12,8 +12,8 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout,
   clearDeviceRevocationFlag,
-  olvidaElCierreDeEstaCarga,
 } from './deviceRevocationLogout';
+import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
 import customToast from './toast';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
@@ -388,6 +388,25 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
+    it.each([
+      ['un código de rechazo antiguo', { detail: 'Refresh token inválido o expirado', error_code: 'REFRESH_TOKEN_REVOKED' }],
+      ['un 401 con detalle y sin código', { detail: 'Refresh token inválido o expirado' }],
+    ])('B1: %s también dice que la sesión ha terminado (la misma regla que Sentry)', async (_caso, datos) => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout(datos);
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+    });
+
+    it('B1: sin datos del servidor, como siempre: ha expirado', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout(null);
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+    });
+
     it('A1: el aviso del cierre lleva su marca para salir aunque el cierre esté en marcha', () => {
       handleSessionExpiredLogout();
 
@@ -511,7 +530,8 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
       setItem: vi.fn(),
       removeItem: vi.fn(),
     });
-    const { handleSessionExpiredLogout, olvidaElCierreDeEstaCarga } = await import('./deviceRevocationLogout');
+    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+    const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
     olvidaElCierreDeEstaCarga();
 
     handleSessionExpiredLogout({ detail: 'expired' });

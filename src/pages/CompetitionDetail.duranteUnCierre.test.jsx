@@ -14,21 +14,22 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }) => children,
 }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
-vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'creator-1' }, loading: false }) }));
 vi.mock('../hooks/useUserRoles', () => ({ useUserRoles: () => ({ isAdmin: false, isCreator: true, isLoading: false }) }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() }));
 vi.mock('../utils/toast', () => ({ default: toast }));
 const cierre = vi.hoisted(() => ({ enMarcha: vi.fn(() => false) }));
 vi.mock('../utils/cierreDeEstaCarga', () => ({ seEstaCerrandoLaSesion: cierre.enMarcha }));
+const carga = vi.hoisted(() => ({
+  execute: vi.fn(async () => {
+    throw new Error('Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.');
+  }),
+}));
+vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => <p>cargando</p> }));
 vi.mock('../composition', () =>
   new Proxy(
     {
-      getCompetitionDetailUseCase: {
-        execute: async () => {
-          throw new Error('Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.');
-        },
-      },
+      getCompetitionDetailUseCase: carga,
     },
     { get: (o, k) => o[k] ?? { execute: vi.fn().mockResolvedValue(null) }, has: () => true }
   )
@@ -51,14 +52,18 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
-it('A2: con un cierre en marcha, ni avisa ni salta a la lista', async () => {
+it('A2: con un cierre en marcha, ni avisa ni salta a la lista, y sigue la espera', async () => {
   cierre.enMarcha.mockReturnValue(true);
 
   abre();
-  await new Promise((r) => setTimeout(r, 50));
+  // La carga ha fallado de verdad antes de mirar nada
+  await vi.waitFor(() => expect(carga.execute).toHaveBeenCalled());
+  await vi.waitFor(() => expect(console.error).toHaveBeenCalled());
 
   expect(screen.queryByText('la-lista')).toBeNull();
   expect(toast.error).not.toHaveBeenCalled();
+  // Ni una página en blanco hasta la redirección: la espera se queda
+  expect(screen.getByText('cargando')).toBeInTheDocument();
 });
 
 it('A3: sin cierre, avisa y va a la lista como siempre', async () => {

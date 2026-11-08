@@ -26,13 +26,14 @@ import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
-import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
-import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
 import {
-  empiezaElCierreDeEstaCarga,
-  seEstaCerrandoLaSesion,
-  olvidaElCierreDeEstaCarga,
-} from './cierreDeEstaCarga';
+  avisaDelCierreForzado,
+  esFinalNormalDelRefresco,
+  MOTIVO_DEL_CIERRE,
+} from './avisoDeCierreForzado';
+import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
+// El freno de un cierre por carga vive en su módulo (C1, S1)
+import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from './cierreDeEstaCarga';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -152,13 +153,15 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   // Un refresco RECHAZADO (dispositivo revocado, contraseña cambiada, cuenta
   // desactivada…) no es una sesión caducada; el backend no dice cuál (BE #733), así que
   // el aviso es el neutro de «ha terminado» (B1, 8 nov 2026). El final normal, «expirado»
-  const reason = errorData?.error_code === 'SESSION_REJECTED' ? 'ended' : 'expiration';
-  handleLogout(errorData, reason, { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
+  // La misma regla que el motivo de Sentry (`esFinalNormalDelRefresco`): todo lo que no
+  // es el final normal es un rechazo, también un código antiguo o un 401 sin código. Sin
+  // datos del servidor, como siempre
+  const rechazado = errorData != null && !esFinalNormalDelRefresco(errorData);
+  handleLogout(errorData, rechazado ? 'ended' : 'expiration', {
+    motivo: rechazado ? MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO : MOTIVO_DEL_CIERRE.SESION_CADUCADA,
+    ...contexto,
+  });
 };
-
-// El freno de un cierre por carga vive en su módulo (cierreDeEstaCarga.js); se reexporta
-// para quien ya lo importaba de aquí
-export { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion, olvidaElCierreDeEstaCarga };
 
 /**
  * Lo de la cuenta que sale, también al revocar el propio dispositivo (C3) y en el cierre

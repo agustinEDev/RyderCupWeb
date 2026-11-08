@@ -34,9 +34,8 @@ const { handleCsrfLogout } = await import('./csrfLogout');
 const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('./vueltaTrasEntrar');
 const {
   handleDeviceRevocationLogout,
-  olvidaElCierreDeEstaCarga,
-  seEstaCerrandoLaSesion,
 } = await import('./deviceRevocationLogout');
+const { olvidaElCierreDeEstaCarga, seEstaCerrandoLaSesion } = await import('./cierreDeEstaCarga');
 
 describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
   let almacen;

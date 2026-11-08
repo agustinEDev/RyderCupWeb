@@ -5,9 +5,13 @@ import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
 import { confirmEmailChangeUseCase } from '../composition';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
-import { readStrippedSecret, stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
+import {
+  forgetStrippedSecret,
+  readStrippedSecret,
+  stripSecretsFromAddressBar,
+} from '../utils/stripSecretsFromAddressBar';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
-import { seEstaCerrandoLaSesion } from '../utils/deviceRevocationLogout';
+import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
 
 // Cada rechazo del backend, con su texto (RyderCupAm #749)
 const TEXTO_DEL_RECHAZO = {
@@ -49,6 +53,8 @@ const ConfirmEmailChange = () => {
     confirmEmailChangeUseCase
       .execute(token)
       .then((confirmado) => {
+        // Gastado: ni una recarga ni la vuelta tras un cierre lo repiten
+        forgetStrippedSecret('token');
         setEstado({ clave: 'confirmEmailChange.done', email: confirmado?.email, bien: true });
         // La sesión, con el correo nuevo; si falla, el cambio ya está hecho
         Promise.resolve(refetch?.()).catch(() => {});
@@ -57,6 +63,9 @@ const ConfirmEmailChange = () => {
         // Falló porque la sesión se está cerrando: la redirección al login llega ya, y
         // «Comprueba la conexión» sería mentira (3c, 8 nov 2026). Sigue «Confirmando…»
         if (seEstaCerrandoLaSesion()) return;
+        // Una respuesta final (caducado, no vale, ocupado) también lo gasta; un fallo de
+        // red no: «Reintentar» lo necesita
+        if (TEXTO_DEL_RECHAZO[error?.errorCode]) forgetStrippedSecret('token');
         setEstado({ clave: TEXTO_DEL_RECHAZO[error?.errorCode] || FALLO });
         // Caducado u ocupado: el backend lo anuló, y Seguridad no debe seguir
         // mostrándolo pendiente

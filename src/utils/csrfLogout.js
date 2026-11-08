@@ -11,7 +11,8 @@
  */
 
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
-import { empiezaElCierreDeEstaCarga, limpiaLaCuenta } from './deviceRevocationLogout';
+import { empiezaElCierreDeEstaCarga } from './cierreDeEstaCarga';
+import { limpiaLaCuenta } from './deviceRevocationLogout';
 import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
 
 /**

@@ -459,6 +459,26 @@ describe('el token que la página quitó de la barra', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
   });
 
+  it('T2: no reescribe el resto de la barra (%20, ?flag)', () => {
+    window.history.replaceState({ secretosDeLaUrl: { token: 'abc' } }, '');
+    en('/confirm-email-change', '?flag&x=a%20b');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?flag&x=a%20b&token=abc'
+    );
+  });
+
+  it('T2: solo en la página de confirmar el correo', () => {
+    window.history.replaceState({ secretosDeLaUrl: { token: 'abc' } }, '');
+    en('/competitions/7');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+
   it('T2: solo el token: ni el code ni el state de Google', () => {
     window.history.replaceState({ secretosDeLaUrl: { code: 'c', state: 's' } }, '');
     en('/competitions/7');
