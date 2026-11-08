@@ -14,6 +14,7 @@ import {
   clearDeviceRevocationFlag,
 } from './deviceRevocationLogout';
 import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
+import { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } from './vueltaTrasEntrar';
 import customToast from './toast';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
@@ -56,6 +57,9 @@ describe('deviceRevocationLogout utilities', () => {
     });
     // Mock Sentry
     window.Sentry = { setUser: vi.fn() };
+    // Una cuenta que estuvo dentro: el aviso del cierre es para quien tenía sesión
+    olvidaLaCuentaDeEstaPestana();
+    anotaLaCuentaDeEstaPestana('u-1');
   });
 
   afterEach(() => {
@@ -415,6 +419,56 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
+    it('sin ninguna cuenta conocida en la pestaña, no avisa «ha expirado»: no había sesión', () => {
+      olvidaLaCuentaDeEstaPestana();
+      anotaLaCuentaDeEstaPestana(null);
+
+      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+
+      expect(customToast.error).not.toHaveBeenCalled();
+      expect(window.location.href).toBe('');
+    });
+
+    it('sin ninguna cuenta conocida, un dispositivo revocado de verdad sí avisa', () => {
+      olvidaLaCuentaDeEstaPestana();
+      anotaLaCuentaDeEstaPestana(null);
+
+      handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
+
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('con la cuenta solo en el usuario guardado (nada anotado aún), avisa', () => {
+      olvidaLaCuentaDeEstaPestana();
+      localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
+
+      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('tras cerrar sesión a propósito, el usuario guardado no cuenta: sin aviso', async () => {
+      const { olvidaLaUltimaCuenta } = await import('./vueltaTrasEntrar');
+      olvidaLaUltimaCuenta();
+      localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
+
+      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+
+      expect(customToast.error).not.toHaveBeenCalled();
+    });
+
+    it('sin ninguna cuenta conocida, va al login igual', () => {
+      vi.useFakeTimers();
+      olvidaLaCuentaDeEstaPestana();
+      anotaLaCuentaDeEstaPestana(null);
+
+      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+      vi.runAllTimers();
+
+      expect(window.location.href).toBe('/login');
+      vi.useRealTimers();
+    });
+
     it('A1: el aviso del cierre lleva su marca para salir aunque el cierre esté en marcha', () => {
       handleSessionExpiredLogout();
 
@@ -572,7 +626,8 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
   it('C1: dos fallos en la misma carga: el segundo no hace nada (probador y /code-review, 8 nov)', async () => {
     vi.useFakeTimers();
     desdeElEnlace();
-    const datos = conAlmacen();
+    // Con sesión de antes: el usuario guardado (sin él no habría aviso que contar)
+    const datos = conAlmacen({ user: JSON.stringify({ id: 'u-1' }) });
     const { handleSessionExpiredLogout } = await deUnaCargaNueva();
     const toast = (await import('./toast')).default;
     toast.error.mockClear();

@@ -8,7 +8,6 @@ import {
   estadoParaElLogin,
   olvidaLaUltimaCuenta,
   ultimaCuentaDeEstaPestana,
-  quienEstaDentro,
   redirigeAlLogin,
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
@@ -272,51 +271,7 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
   });
 });
 
-describe('quienEstaDentro', () => {
-  let almacen;
-  beforeEach(() => {
-    olvidaLaCuentaDeEstaPestana();
-    almacen = {};
-    vi.stubGlobal('localStorage', {
-      getItem: vi.fn((k) => almacen[k] ?? null),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-    });
-  });
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('lee el id del usuario guardado', () => {
-    almacen.user = JSON.stringify({ id: 'u-9', firstName: 'Ana' });
-    expect(quienEstaDentro()).toBe('u-9');
-  });
-
-  it.each([
-    ['sin usuario', undefined],
-    ['un usuario sin id', JSON.stringify({ firstName: 'Ana' })],
-    ['un JSON roto', '{no'],
-    ['un null guardado', 'null'],
-  ])('con %s, no se sabe (null)', (_caso, valor) => {
-    if (valor !== undefined) almacen.user = valor;
-    expect(quienEstaDentro()).toBeNull();
-  });
-
-  it('sin almacenamiento, no se sabe (null)', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => {
-        throw new Error('SecurityError');
-      },
-    });
-    expect(quienEstaDentro()).toBeNull();
-  });
-});
-
-/**
- * La cuenta de ESTA pestaña, en memoria (revisión, 8 nov 2026): `localStorage` lo comparten
- * las pestañas. Con dos abiertas, el cierre de la primera borra el usuario y la segunda
- * guardaba su página sin cuenta, válida para cualquiera; y si en otra pestaña entró otra
- * cuenta, la etiquetaba con esa.
- */
-describe('la cuenta de esta pestaña', () => {
+describe('ultimaCuentaDeEstaPestana · el usuario guardado', () => {
   let almacen;
   beforeEach(() => {
     olvidaLaCuentaDeEstaPestana();
@@ -332,45 +287,55 @@ describe('la cuenta de esta pestaña', () => {
     vi.unstubAllGlobals();
   });
 
+  it('sin anotar nada, lee el id del usuario guardado', () => {
+    almacen.user = JSON.stringify({ id: 'u-9', firstName: 'Ana' });
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-9');
+  });
+
+  it.each([
+    ['sin usuario', undefined],
+    ['un usuario sin id', JSON.stringify({ firstName: 'Ana' })],
+    ['un JSON roto', '{no'],
+    ['un null guardado', 'null'],
+  ])('con %s, ninguna (null)', (_caso, valor) => {
+    if (valor !== undefined) almacen.user = valor;
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
+  it('sin almacenamiento, ninguna (null)', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+    });
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
   it('anotada, gana aunque otra pestaña ya borrara el usuario guardado', () => {
     anotaLaCuentaDeEstaPestana('u-1');
-
-    expect(quienEstaDentro()).toBe('u-1');
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-1');
   });
 
   it('anotada, gana aunque en otra pestaña entrara otra cuenta', () => {
     anotaLaCuentaDeEstaPestana('u-1');
     almacen.user = JSON.stringify({ id: 'u-2' });
-
-    expect(quienEstaDentro()).toBe('u-1');
-  });
-
-  it('anotada como nadie (salió en esta pestaña), no se sabe aunque haya usuario guardado', () => {
-    anotaLaCuentaDeEstaPestana(null);
-    almacen.user = JSON.stringify({ id: 'u-2' });
-
-    expect(quienEstaDentro()).toBeNull();
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-1');
   });
 
   it('un id numérico se anota como texto', () => {
     anotaLaCuentaDeEstaPestana(42);
-
-    expect(quienEstaDentro()).toBe('42');
-  });
-
-  it('sin anotar, la del almacenamiento, como antes', () => {
-    almacen.user = JSON.stringify({ id: 'u-3' });
-
-    expect(quienEstaDentro()).toBe('u-3');
+    expect(ultimaCuentaDeEstaPestana()).toBe('42');
   });
 });
 
 /**
- * B (Agustín, 8 nov 2026): si la pestaña sabe que no hay nadie dentro (cerró la sesión),
- * un cierre forzado tardío no guarda la página: no hay a quién devolver, y sin cuenta
- * valdría para cualquiera.
+ * Sin la regla B (Agustín, 8 nov 2026, tras la batería de FE #1064): «si la pestaña sabe
+ * que no hay nadie dentro, no se guarda» no distinguía «salió en esta pestaña» de «nunca
+ * hubo nadie», y un enlace abierto sin sesión (el de confirmar el correo, en otro
+ * navegador o tras cerrar sesión) se perdía al entrar. Ahora el cierre guarda la página
+ * con la ÚLTIMA cuenta de la pestaña: si la hubo, solo para ella; si no, para cualquiera.
  */
-describe('sin nadie dentro de esta pestaña', () => {
+describe('el cierre guarda la página con la última cuenta de la pestaña', () => {
   beforeEach(() => {
     sessionStorage.clear();
     olvidaLaCuentaDeEstaPestana();
@@ -380,32 +345,29 @@ describe('sin nadie dentro de esta pestaña', () => {
     vi.unstubAllGlobals();
   });
 
-  it('redirigeAlLogin no guarda la página y borra la que hubiera', () => {
-    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+  it('tras caerse la sesión en esta pestaña, la guarda solo para quien estaba', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
     anotaLaCuentaDeEstaPestana(null);
     en('/competitions/7');
 
-    redirigeAlLogin();
-
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
-    expect(globalThis.location.href).toBe('/login');
-  });
-
-  it('con una cuenta anotada, sí la guarda', () => {
-    anotaLaCuentaDeEstaPestana('u-1');
-    en('/competitions/7');
-
-    redirigeAlLogin({ cuenta: 'u-1' });
+    redirigeAlLogin({ cuenta: ultimaCuentaDeEstaPestana() });
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-1');
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/dashboard');
   });
 
-  it('sin anotar nada (no se sabe), la guarda como hasta ahora', () => {
-    en('/competitions/7');
+  it('si nunca hubo nadie, la guarda para quien entre (el enlace abierto sin sesión)', () => {
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() });
+    // Lo que hace AuthContext al arrancar sin usuario guardado
+    anotaLaCuentaDeEstaPestana(null);
+    en('/confirm-email-change', '?token=abc');
 
-    redirigeAlLogin();
+    redirigeAlLogin({ cuenta: ultimaCuentaDeEstaPestana() });
 
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/confirm-email-change?token=abc');
   });
 });
 
@@ -635,6 +597,58 @@ describe('estadoParaElLogin (R1: la única forma de ir al login con la página d
 
     expect(estadoParaElLogin({ pathname: '/stats' }).from.cuenta).toBeNull();
     vi.unstubAllGlobals();
+  });
+});
+
+/**
+ * Los tres estados de la pestaña (code-review, 9 nov 2026): «no se sabe» (nada anotado: se
+ * mira el usuario guardado), «aquí no hay nadie» (arrancó sin usuario, o se cerró sesión a
+ * propósito) y «estuvo tal cuenta» (se conserva aunque la sesión caiga).
+ */
+describe('los tres estados de la última cuenta de la pestaña', () => {
+  let almacen;
+  beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    almacen = {};
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => almacen[k] ?? null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('arrancó sin usuario: nadie, aunque luego otra pestaña guarde el suyo', () => {
+    anotaLaCuentaDeEstaPestana(null);
+    almacen.user = JSON.stringify({ id: 'u-otra' });
+
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
+  it('estuvo una cuenta y la sesión cae: se conserva', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    anotaLaCuentaDeEstaPestana(null);
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-1');
+  });
+
+  it('se cerró sesión a propósito: nadie, aunque otra pestaña guarde el suyo', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    olvidaLaUltimaCuenta();
+    almacen.user = JSON.stringify({ id: 'u-otra' });
+
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
+  it('tras cerrar sesión, entra otra cuenta: esa es la última', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    olvidaLaUltimaCuenta();
+    anotaLaCuentaDeEstaPestana('u-2');
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
   });
 });
 
