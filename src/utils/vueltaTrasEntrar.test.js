@@ -405,3 +405,67 @@ describe('sin nadie dentro de esta pestaña', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
   });
 });
+
+/**
+ * T1-T2 (8 nov 2026): la página quitó el token de la barra y lo guardó en el historial;
+ * si la sesión muere a mitad de confirmar el correo, la página guardada lo vuelve a
+ * llevar. Sin él, al entrar salía «Este enlace no vale para tu cuenta».
+ */
+describe('el token que la página quitó de la barra', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    olvidaLaCuentaDeEstaPestana();
+  });
+  afterEach(() => {
+    window.history.replaceState(null, '');
+    vi.unstubAllGlobals();
+  });
+
+  it('T1: vuelve a la página guardada', () => {
+    window.history.replaceState({ secretosDeLaUrl: { token: 'abc' } }, '');
+    en('/confirm-email-change');
+
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+  });
+
+  it('T1: junto a lo que ya llevara la barra', () => {
+    window.history.replaceState({ secretosDeLaUrl: { token: 'abc' } }, '');
+    en('/confirm-email-change', '?origen=correo');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(
+      '/confirm-email-change?origen=correo&token=abc'
+    );
+  });
+
+  it('T2: si la barra ya lleva el token, no se duplica', () => {
+    window.history.replaceState({ secretosDeLaUrl: { token: 'abc' } }, '');
+    en('/confirm-email-change', '?token=abc');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+  });
+
+  it('T2: sin token guardado, la página como estaba', () => {
+    window.history.replaceState({}, '');
+    en('/competitions/7');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+
+  it('T2: solo el token: ni el code ni el state de Google', () => {
+    window.history.replaceState({ secretosDeLaUrl: { code: 'c', state: 's' } }, '');
+    en('/competitions/7');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+});
+

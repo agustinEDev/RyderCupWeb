@@ -24,13 +24,21 @@
 import { rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
 import { seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
+import { readStrippedSecret } from './stripSecretsFromAddressBar';
 
 const CLAVE = 'vuelta_tras_entrar';
 const CLAVE_DE_LA_CUENTA = 'vuelta_tras_entrar_cuenta';
 
 const lugarActual = () => {
   const { pathname = '', search = '', hash = '' } = globalThis.location ?? {};
-  return `${pathname}${search}${hash}`;
+  // El token que la página quitó de la barra y guardó en el historial (confirmar el
+  // correo): sin él, la página guardada no valía al volver (T1-T2, 8 nov 2026). Solo el
+  // token: el code y el state de Google son de un solo uso
+  const token = readStrippedSecret('token');
+  const params = new URLSearchParams(search);
+  if (!token || params.has('token')) return `${pathname}${search}${hash}`;
+  params.append('token', token);
+  return `${pathname}?${params.toString()}${hash}`;
 };
 
 /** La olvida, con su cuenta: al cerrar sesión, al salir sin guardar y una vez usada. */
