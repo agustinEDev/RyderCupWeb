@@ -106,6 +106,15 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   // portada, verificar o restablecer, que además llevan su token
   if (!ruta || rutaDeVuelta({ pathname: ruta }) === '/dashboard') return;
   if (esRutaPublica(globalThis.location?.pathname ?? '')) return;
+  // La de confirmar el correo sin su token (ya usado y olvidado) no lleva a nada: al
+  // volver diría «Este enlace no vale» con el correo ya cambiado. Mejor el panel
+  // (Agustín, 8 nov 2026)
+  if (
+    globalThis.location?.pathname === RUTA_CON_TOKEN &&
+    !new URLSearchParams(new globalThis.URL(ruta, 'http://x').search).has('token')
+  ) {
+    return;
+  }
   try {
     // La cuenta primero: si escribir la página falla, no queda una página sin su cuenta
     const id = aIdDeCuenta(cuenta);

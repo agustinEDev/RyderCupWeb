@@ -470,6 +470,26 @@ describe('el token que la página quitó de la barra', () => {
     );
   });
 
+  it('T3: la página de confirmar sin token (ya usado) no se guarda, y borra la anterior', () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    window.history.replaceState({ secretosDeLaUrl: {} }, '');
+    en('/confirm-email-change');
+
+    redirigeAlLogin({ cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
+  it('T3: con el token en la barra, sí se guarda', () => {
+    window.history.replaceState(null, '');
+    en('/confirm-email-change', '?token=abc');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+  });
+
   it('T2: solo en la página de confirmar el correo', () => {
     window.history.replaceState({ secretosDeLaUrl: { token: 'abc' } }, '');
     en('/competitions/7');
