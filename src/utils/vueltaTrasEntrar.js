@@ -20,15 +20,16 @@
  *    sin cuenta (de antes, o sin saber quién estaba), vale para cualquiera (Agustín, 8 nov
  *    2026). En un móvil compartido, la siguiente persona no aterriza en la página de la
  *    anterior. Si la pestaña sabe que no hay nadie dentro, no se guarda.
+ * 7. La de confirmar el correo sin su token (ya usado) no se guarda ni se vuelve a ella,
+ *    venga la vuelta de donde venga (`rutaDeVuelta`): diría «Este enlace no vale» con el
+ *    correo ya cambiado (Agustín, 8 nov 2026).
  */
-import { rutaDeVuelta, rutaPropia } from './auth';
+import { esLaPaginaDeConfirmar, rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
 import { seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
 import { readStrippedSecret } from './stripSecretsFromAddressBar';
 
 const CLAVE = 'vuelta_tras_entrar';
-// La única página protegida que quita su token de la barra (ConfirmEmailChange)
-const RUTA_CON_TOKEN = '/confirm-email-change';
 const CLAVE_DE_LA_CUENTA = 'vuelta_tras_entrar_cuenta';
 
 const lugarActual = () => {
@@ -37,7 +38,7 @@ const lugarActual = () => {
   // historial: sin él, la página guardada no valía al volver (T1-T2, 8 nov 2026). Solo
   // en esa página y solo el token (el code y el state de Google son de un solo uso), y
   // añadido sin reescribir el resto de la barra (`%20`, `?flag`)
-  const token = pathname === RUTA_CON_TOKEN ? readStrippedSecret('token') : null;
+  const token = esLaPaginaDeConfirmar(pathname) ? readStrippedSecret('token') : null;
   if (!token || new URLSearchParams(search).has('token')) return `${pathname}${search}${hash}`;
   const separador = search && search !== '?' ? '&' : '?';
   const base = search === '?' ? '' : search;
@@ -102,19 +103,11 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   // 8 nov 2026)
   if (aIdDeCuenta(cuenta) === null && cuentaDeEstaPestana === null) return;
   const ruta = rutaPropia(lugarActual());
-  // Ni login ni registro (`rutaDeVuelta` ya los descarta), ni una página pública: la
+  // Ni login ni registro (`rutaDeVuelta` ya los descarta), ni la de confirmar el correo
+  // sin su token (regla 7, también en `rutaDeVuelta`), ni una página pública: la
   // portada, verificar o restablecer, que además llevan su token
   if (!ruta || rutaDeVuelta({ pathname: ruta }) === '/dashboard') return;
   if (esRutaPublica(globalThis.location?.pathname ?? '')) return;
-  // La de confirmar el correo sin su token (ya usado y olvidado) no lleva a nada: al
-  // volver diría «Este enlace no vale» con el correo ya cambiado. Mejor el panel
-  // (Agustín, 8 nov 2026)
-  if (
-    globalThis.location?.pathname === RUTA_CON_TOKEN &&
-    !new URLSearchParams(new globalThis.URL(ruta, 'http://x').search).has('token')
-  ) {
-    return;
-  }
   try {
     // La cuenta primero: si escribir la página falla, no queda una página sin su cuenta
     const id = aIdDeCuenta(cuenta);
