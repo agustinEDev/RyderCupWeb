@@ -10,46 +10,49 @@
  * @see docs/FRONTEND_INTEGRATION_v1.13.0.md - CSRF Protection section
  */
 
-import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
-import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
-import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
-import { redirigeAlLogin } from './vueltaTrasEntrar';
+import { empiezaElCierreDeEstaCarga } from './cierreDeEstaCarga';
+import { limpiaLaCuenta } from './deviceRevocationLogout';
+import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
 
 /**
  * Handle CSRF validation failure
- * - Clears authentication state from localStorage
- * - Performs a hard redirect to login page
- * - Logs error in development mode
+ *
+ * Los caminos del cierre forzado (tabla aprobada por Agustín el 8 nov 2026, punto 3a):
+ * - S1 un cierre por carga, venga de donde venga: si ya hay uno (otro CSRF, o un
+ *   dispositivo revocado), nada
+ * - S2 aviso a Sentry, la cuenta fuera (también el usuario de Sentry) y la redirección en
+ *   `finally`: si una limpieza falla, se llega igual al login, y el fallo no sale de aquí
+ * - S3 la misma limpieza que el dispositivo revocado; sin toast ni marca, como antes
  *
  * @param {Object} errorData - Error data from backend (optional)
  */
 export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
-  // Que se vea en Sentry (FE #1042), con la ruta que no se pudo recuperar
-  avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, ...contexto });
+  if (!empiezaElCierreDeEstaCarga()) return;
+  // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (3b)
+  const cuenta = quienEstaDentro();
 
-  if (import.meta.env.DEV) {
-    console.error('🔒 [CSRF] Validation failed:', errorData.detail || 'No details provided');
-    console.warn('🚪 [CSRF] Forcing logout and redirect to login');
+  try {
+    // Que se vea en Sentry (FE #1042), con la ruta que no se pudo recuperar. Antes de
+    // limpiar, que quita el usuario de Sentry; no lanza
+    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, ...contexto });
+
+    if (import.meta.env.DEV) {
+      console.error('🔒 [CSRF] Validation failed:', errorData?.detail || 'No details provided');
+      console.warn('🚪 [CSRF] Forcing logout and redirect to login');
+    }
+
+    // Las cookies httpOnly las sustituye el siguiente login; lo de la cuenta en el
+    // dispositivo se va aquí: una redirección no vacía el almacenamiento
+    limpiaLaCuenta();
+  } catch (error) {
+    // No sale de aquí (revisión, 8 nov 2026): quien llama lanza después el error MARCADO
+    // de CSRF, el que la cola de anotaciones reconoce como de toda la sesión (FE #521);
+    // con este, cada golpe de la cola lo tomaría por un fallo suyo
+    console.error('[CSRF] Logout cleanup failed:', error);
+  } finally {
+    // This is intentional - CSRF failures require a complete app reset. Con la página
+    // guardada y su cuenta, para volver a ella tras entrar
+    redirigeAlLogin({ cuenta });
   }
-
-  // Clear auth state (legacy localStorage cleanup)
-  // NOTE: httpOnly cookies are managed by the browser and will be cleared on next login
-  localStorage.removeItem('user');
-  localStorage.removeItem('access_token'); // Legacy cleanup
-  // Y las partidas guardadas para anotar sin cobertura (FE #524). Es el cuarto
-  // camino de salida, y como el del dispositivo revocado tampoco pasa por
-  // `clearAuth`: sin esto, tras un fallo de CSRF en un móvil compartido la
-  // siguiente persona que se quedara sin señal vería las partidas de la anterior
-  olvidaLoDeEstaCuenta();
-  // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
-  // saldría con el hándicap de esta cuenta
-  olvidaElRefrescoDeHandicap();
-  // Y el número de Actividad y el del icono de la aplicación (FE-1)
-  olvidaLasNovedades();
-
-  // Hard redirect to login page
-  // This is intentional - CSRF failures require a complete app reset. Con la página
-  // guardada, para volver a ella tras entrar
-  redirigeAlLogin();
 };

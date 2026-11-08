@@ -229,6 +229,35 @@ describe('useRedirectIfAuthenticated', () => {
       vuelvenLosAvisosDeCierre();
     });
 
+    it.each([
+      ['la misma cuenta vuelve a la página', BACKEND_USER.id, '/competitions/7'],
+      ['otra cuenta va al panel', 'otra-cuenta', '/dashboard'],
+    ])('3b: sesión confirmada y página guardada por una cuenta: %s', async (_caso, deQuien, destino) => {
+      sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+      sessionStorage.setItem('vuelta_tras_entrar_cuenta', deQuien);
+      globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+
+      renderHook(() => useRedirectIfAuthenticated());
+
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(destino, { replace: true }));
+      sessionStorage.clear();
+    });
+
+    it.each([
+      ['la misma cuenta guardada vuelve a la página', 'u-1', '/competitions/7'],
+      ['otra cuenta guardada va al panel', 'u-2', '/dashboard'],
+    ])('3b: sin red, con la sesión guardada: %s', async (_caso, guardada, destino) => {
+      storedUser = { id: guardada, firstName: 'Ana' };
+      sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+      sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
+      globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(destino, { replace: true }));
+      sessionStorage.clear();
+    });
+
     it('lleva al dashboard cuando el backend confirma la sesión', async () => {
       globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
 

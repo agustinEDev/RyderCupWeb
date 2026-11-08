@@ -41,3 +41,27 @@ describe('rutaDeVuelta · solo rutas propias (revisión del front)', () => {
     expect(rutaDeVuelta({ pathname: '/stats', search: '?a=1', hash: '#x' })).toBe('/stats?a=1#x');
   });
 });
+
+/**
+ * T3 (Agustín, 8 nov 2026): la página de confirmar el correo sin su token (ya usado) no
+ * lleva a nada: al volver diría «Este enlace no vale» con el correo ya cambiado. Por
+ * cualquier camino (la página guardada, la de la que venía, la que trae Google), al panel.
+ */
+describe('rutaDeVuelta · confirmar el correo sin token', () => {
+  it.each([
+    ['sin token', { pathname: '/confirm-email-change', search: '' }],
+    ['con el token vacío', { pathname: '/confirm-email-change', search: '?token=' }],
+    ['con otra búsqueda y sin token', { pathname: '/confirm-email-change', search: '?origen=correo' }],
+    ['con la barra final', { pathname: '/confirm-email-change/', search: '' }],
+    ['en otra capitalización', { pathname: '/Confirm-Email-Change', search: '' }],
+  ])('%s, al panel', (_caso, from) => {
+    expect(rutaDeVuelta(from)).toBe('/dashboard');
+  });
+
+  it('con su token, a la página', () => {
+    expect(rutaDeVuelta({ pathname: '/confirm-email-change/', search: '?token=abc' })).toBe(
+      '/confirm-email-change/?token=abc'
+    );
+  });
+});
+

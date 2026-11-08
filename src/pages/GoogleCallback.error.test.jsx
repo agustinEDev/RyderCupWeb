@@ -223,6 +223,24 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
+  it.each([
+    ['la misma cuenta vuelve a la página', 'u-1', 'la competición'],
+    ['otra cuenta va al panel', 'u-2', 'panel'],
+  ])('3b: la página guardada por la cuenta u-1: %s', async (_caso, quien, pantalla) => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
+    googleLoginUseCase.execute.mockResolvedValue({
+      user: { id: quien, firstName: 'Ana' },
+      csrfToken: 't',
+      isNewUser: false,
+    });
+
+    abrirConRutas();
+
+    expect(await screen.findByText(pantalla)).toBeInTheDocument();
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
   it('un alta nueva olvida la página guardada', async () => {
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
     googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: true });

@@ -86,7 +86,7 @@ const GoogleCallback = () => {
             // A la página de la que se vino: la que trae Google (confirmar el correo) o
             // la guardada por una redirección dura, que se gasta; si no, al panel
             const desdeGoogle = vuelta ? new globalThis.URL(vuelta, globalThis.location.origin) : null;
-            navigate(vueltaTrasEntrar(desdeGoogle ?? undefined), { replace: true });
+            navigate(vueltaTrasEntrar(desdeGoogle ?? undefined, { cuenta: user?.id }), { replace: true });
           }
         }
       } catch (err) {

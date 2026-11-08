@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router';
 import { Users, Calendar, CalendarClock, MapPin, Settings, ArrowLeft, Edit, Trash2, Play, CheckCircle, XCircle, AlertCircle, UserPlus, Shield, Mail, BarChart3, Undo2, Crown, Pause, Swords, UserX, UserMinus, ChevronRight } from 'lucide-react';
 import customToast from '../utils/toast';
+import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
 import Plegable from '../components/ui/Plegable';
 import TituloConNumero from '../components/ui/TituloConNumero';
 import AccionesDeLaFicha from '../components/competition/AccionesDeLaFicha';
@@ -241,6 +242,9 @@ const CompetitionDetail = () => {
       }
     } catch (error) {
       console.error('Error loading competition:', error);
+      // Falló porque se está cerrando la sesión: la redirección al login llega ya; ir a la
+      // lista solo enseñaba otro fallo (A2, 8 nov 2026)
+      if (seEstaCerrandoLaSesion()) return;
       customToast.error(error.message || t('detail.failedToLoadCompetition'));
       navigate('/competitions');
     } finally {

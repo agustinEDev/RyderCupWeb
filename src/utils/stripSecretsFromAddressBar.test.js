@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   stripSecretsFromAddressBar,
   readStrippedSecret,
+  forgetStrippedSecret,
   whenAddressBarIsClean,
 } from './stripSecretsFromAddressBar';
 
@@ -141,3 +142,26 @@ describe('stripSecretsFromAddressBar', () => {
     expect(cargar).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('forgetStrippedSecret', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('F1: olvida el secreto guardado y conserva el resto del estado y la barra', () => {
+    ir('/confirm-email-change?token=abc', { usr: { de: 'router' } });
+    stripSecretsFromAddressBar();
+
+    forgetStrippedSecret('token');
+
+    expect(readStrippedSecret('token')).toBeNull();
+    expect(window.history.state.usr).toEqual({ de: 'router' });
+    expect(barra()).toBe('/confirm-email-change');
+  });
+
+  it('F2: sin nada guardado, no rompe nada', () => {
+    ir('/confirm-email-change', null);
+
+    expect(() => forgetStrippedSecret('token')).not.toThrow();
+    expect(readStrippedSecret('token')).toBeNull();
+  });
+});
+

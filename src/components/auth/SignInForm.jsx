@@ -123,7 +123,9 @@ const SignInForm = () => {
 
       // Se entró: acaba el silencio de un cierre de sesión anterior (C5)
       vuelvenLosAvisosDeCierre();
-      navigate(vueltaTrasEntrar(location.state?.from), { replace: true });
+      navigate(vueltaTrasEntrar(location.state?.from, { cuenta: authenticatedUser.id }), {
+        replace: true,
+      });
 
     } catch (error) {
       console.error('Login error:', error);

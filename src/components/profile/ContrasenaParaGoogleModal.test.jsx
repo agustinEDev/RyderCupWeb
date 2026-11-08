@@ -128,3 +128,60 @@ describe('ContrasenaParaGoogleModal', () => {
   });
 });
 
+/**
+ * Para desvincular (tabla D aprobada por Agustín el 8 nov 2026):
+ *   MD1 su texto y su botón («Desvincular»)
+ *   MD2 si va bien, se cierra y olvida lo escrito (la página se queda)
+ *   MD3 si `alConfirmar` devuelve un error (contraseña, o la confirmación caducada), lo
+ *       dice en la ventana; un fallo general del desvincular lo avisa el hook con un toast
+ *       y devuelve null, así que la ventana se cierra (tabla D9)
+ *   MD4 para vincular, si va bien, NO se cierra (la página se va a Google)
+ */
+describe('ContrasenaParaGoogleModal · para desvincular', () => {
+  const abrePara = (para, alConfirmar = vi.fn().mockResolvedValue(null), onClose = vi.fn()) => {
+    render(
+      <ContrasenaParaGoogleModal isOpen onClose={onClose} alConfirmar={alConfirmar} para={para} />
+    );
+    return { alConfirmar, onClose };
+  };
+
+  it('MD1: su explicación y su botón', () => {
+    abrePara('desvincular');
+
+    expect(screen.getByText('edit.linkedAccounts.unlinkPasswordExplanation')).toBeInTheDocument();
+    expect(screen.queryByText('edit.linkedAccounts.passwordExplanation')).toBeNull();
+    expect(screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' })).toBeInTheDocument();
+  });
+
+  it('MD2: si va bien, se cierra', async () => {
+    const { onClose } = abrePara('desvincular');
+    escribe('Actual123!');
+
+    fireEvent.click(screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('MD3: si falla, lo dice en la ventana y no se cierra', async () => {
+    const alConfirmar = vi.fn().mockResolvedValue('edit.linkedAccounts.reauthExpired');
+    const { onClose } = abrePara('desvincular', alConfirmar);
+    escribe('Actual123!');
+
+    fireEvent.click(screen.getByRole('button', { name: 'edit.linkedAccounts.unlink' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('edit.linkedAccounts.reauthExpired');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('MD4: para vincular, si va bien no se cierra (se va a Google)', async () => {
+    const { alConfirmar, onClose } = abrePara('vincular');
+    escribe('Actual123!');
+
+    fireEvent.click(continuar());
+
+    await waitFor(() => expect(alConfirmar).toHaveBeenCalled());
+    await act(async () => {});
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('edit.linkedAccounts.passwordExplanation')).toBeInTheDocument();
+  });
+});

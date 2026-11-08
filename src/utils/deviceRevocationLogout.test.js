@@ -12,8 +12,8 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout,
   clearDeviceRevocationFlag,
-  olvidaElCierreDeEstaCarga,
 } from './deviceRevocationLogout';
+import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
 import customToast from './toast';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
@@ -363,6 +363,67 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
+    // B1-B2 (8 nov 2026): el refresco no dice por qué se rechaza (BE #733); un rechazo
+    // (dispositivo revocado, contraseña cambiada…) no es una sesión caducada
+    it('B1: un refresco rechazado (SESSION_REJECTED) dice que la sesión ha terminado', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+        error_code: 'SESSION_REJECTED',
+      });
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+      expect(i18next.t).not.toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+    });
+
+    it('B2: una sesión que acaba sin más (SESSION_ENDED) sigue diciendo que ha expirado', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout({
+        detail: 'Refresh token inválido o expirado. Por favor, inicia sesión nuevamente.',
+        error_code: 'SESSION_ENDED',
+      });
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+    });
+
+    it.each([
+      ['un código de rechazo antiguo', { detail: 'Refresh token inválido o expirado', error_code: 'REFRESH_TOKEN_REVOKED' }],
+      ['un 401 con detalle y sin código', { detail: 'Refresh token inválido o expirado' }],
+    ])('B1: %s también dice que la sesión ha terminado (la misma regla que Sentry)', async (_caso, datos) => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout(datos);
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+    });
+
+    it('B1: sin datos del servidor y con el motivo de un rechazo, dice que ha terminado (CodeRabbit #1065)', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout(null, { motivo: 'refresh_rejected', estado: 401 });
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionEnded', { ns: 'auth' });
+    });
+
+    it('B1: sin datos del servidor, como siempre: ha expirado', async () => {
+      const i18next = (await import('i18next')).default;
+
+      handleSessionExpiredLogout(null);
+
+      expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
+    });
+
+    it('A1: el aviso del cierre lleva su marca para salir aunque el cierre esté en marcha', () => {
+      handleSessionExpiredLogout();
+
+      expect(customToast.error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ delCierre: true })
+      );
+    });
+
   });
 
   // ============================================
@@ -477,7 +538,8 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
       setItem: vi.fn(),
       removeItem: vi.fn(),
     });
-    const { handleSessionExpiredLogout, olvidaElCierreDeEstaCarga } = await import('./deviceRevocationLogout');
+    const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
+    const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
     olvidaElCierreDeEstaCarga();
 
     handleSessionExpiredLogout({ detail: 'expired' });

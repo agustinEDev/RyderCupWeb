@@ -83,6 +83,21 @@ export const stripSecretsFromAddressBar = () => {
 export const readStrippedSecret = (nombre) => window.history.state?.[HISTORY_KEY]?.[nombre] ?? null;
 
 /**
+ * Olvida un secreto guardado de esta entrada del historial, una vez usado: si no, una
+ * recarga o la página guardada al cerrar la sesión lo repetirían ya gastado (revisión,
+ * 8 nov 2026). El resto del estado y la barra no se tocan.
+ *
+ * @param {string} nombre p. ej. 'token'
+ */
+export const forgetStrippedSecret = (nombre) => {
+  const estado = window.history.state;
+  if (!estado?.[HISTORY_KEY]?.[nombre]) return;
+  const guardados = { ...estado[HISTORY_KEY] };
+  delete guardados[nombre];
+  window.history.replaceState({ ...estado, [HISTORY_KEY]: guardados }, '');
+};
+
+/**
  * Llama a `callback` cuando la barra no lleve secretos: Replay graba el href
  * de la pagina al empezar, sin pasar por ningun gancho, asi que no se carga
  * mientras la pagina no haya limpiado la barra. Si nunca la limpia (su trozo

@@ -94,5 +94,24 @@ export const rutaDeVuelta = (from) => {
   const propia = rutaPropia(
     from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : undefined
   );
+  // La de confirmar el correo sin su token (ya usado) no lleva a nada: al volver diría
+  // «Este enlace no vale» con el correo ya cambiado. Al panel, venga por donde venga: la
+  // página guardada, la de la que venía o la que trae Google (Agustín, 8 nov 2026)
+  if (propia && esLaDeConfirmarSinToken(propia)) return '/dashboard';
   return resolvePostAuthTarget(propia ?? undefined);
+};
+
+const PAGINA_DE_CONFIRMAR_EL_CORREO = '/confirm-email-change';
+
+/**
+ * Si un camino es la página de confirmar el correo, como la reconoce el router: sin
+ * distinguir mayúsculas y con o sin barra final.
+ */
+export const esLaPaginaDeConfirmar = (pathname = '') =>
+  pathname.replace(/\/+$/, '').toLowerCase() === PAGINA_DE_CONFIRMAR_EL_CORREO;
+
+/** La página de confirmar el correo sin un token con valor. */
+const esLaDeConfirmarSinToken = (ruta) => {
+  const url = new globalThis.URL(ruta, globalThis.location.origin);
+  return esLaPaginaDeConfirmar(url.pathname) && !url.searchParams.get('token');
 };

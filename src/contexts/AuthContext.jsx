@@ -11,6 +11,7 @@ import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
+import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -48,6 +49,13 @@ export const AuthProvider = ({ children }) => {
     }
     return null;
   });
+
+  // La cuenta de esta pestaña, en memoria, al arrancar, al entrar y al salir: si otra
+  // pestaña borra o pisa el usuario de `localStorage`, un cierre forzado aquí sigue
+  // sabiendo de quién es la página que guarda (regla 6 de `vueltaTrasEntrar`)
+  useEffect(() => {
+    anotaLaCuentaDeEstaPestana(user?.id);
+  }, [user]);
 
   const [csrfToken, setCsrfToken] = useState(null);
   const [isInitialized] = useState(true); // Always true since we use lazy initializer

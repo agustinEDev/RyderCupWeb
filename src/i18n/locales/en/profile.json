@@ -135,7 +135,9 @@
       "checking": "Checking...",
       "cancel": "Cancel",
       "wrongPassword": "The password is not correct.",
-      "passwordCheckFailed": "The password could not be checked. Please try again."
+      "passwordCheckFailed": "The password could not be checked. Please try again.",
+      "unlinkPasswordExplanation": "To unlink Google, enter your account password. That way nobody can remove it with just your open session.",
+      "reauthExpired": "The confirmation has expired. Enter your password again."
     }
   },
   "toasts": {
