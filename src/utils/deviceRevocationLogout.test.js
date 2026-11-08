@@ -363,6 +363,15 @@ describe('deviceRevocationLogout utilities', () => {
       expect(i18next.t).toHaveBeenCalledWith('errors.sessionExpired', { ns: 'auth' });
     });
 
+    it('A1: el aviso del cierre lleva su marca para salir aunque el cierre esté en marcha', () => {
+      handleSessionExpiredLogout();
+
+      expect(customToast.error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ delCierre: true })
+      );
+    });
+
   });
 
   // ============================================

@@ -28,6 +28,11 @@ import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
 import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
+import {
+  empiezaElCierreDeEstaCarga,
+  seEstaCerrandoLaSesion,
+  olvidaElCierreDeEstaCarga,
+} from './cierreDeEstaCarga';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -147,35 +152,9 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   handleLogout(errorData, 'expiration', { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
 };
 
-// El cierre de ESTA carga de página (C1, 8 nov 2026): al recargar con la sesión muerta
-// fallan dos peticiones a la vez; la primera ya guardó la página, enseñó el toast y
-// sale a los 500 ms, así que la segunda no hace nada. La marca de localStorage no
-// sirve para esto: la comparten las pestañas y sobrevive a la carga. Lo comparte el
-// cierre por CSRF (S1): uno por carga, venga de donde venga
-let cierreEnEstaCarga = false;
-
-/**
- * Anota el cierre de esta carga. `false` si ya había uno: quien llama no hace nada (C1, S1).
- */
-export const empiezaElCierreDeEstaCarga = () => {
-  if (cierreEnEstaCarga) return false;
-  cierreEnEstaCarga = true;
-  return true;
-};
-
-/**
- * Si un cierre forzado ya está en marcha en esta carga: la redirección llega enseguida, y
- * quien pinta un fallo de la petición que lo provocó no lo enseña (3c, 8 nov 2026).
- */
-export const seEstaCerrandoLaSesion = () => cierreEnEstaCarga;
-
-/**
- * SOLO para los tests: una carga de página nueva. En el navegador lo hace la salida a
- * /login, que descarga la página; ningún código de la aplicación lo llama.
- */
-export const olvidaElCierreDeEstaCarga = () => {
-  cierreEnEstaCarga = false;
-};
+// El freno de un cierre por carga vive en su módulo (cierreDeEstaCarga.js); se reexporta
+// para quien ya lo importaba de aquí
+export { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion, olvidaElCierreDeEstaCarga };
 
 /**
  * Lo de la cuenta que sale, también al revocar el propio dispositivo (C3) y en el cierre
@@ -280,9 +259,11 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
     const message = i18next.t(messageKey, { ns: 'auth' });
 
+    // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
     customToast.error(message, {
       duration: 8000,
       icon,
+      delCierre: true,
     });
   } finally {
     // Redirect to login after a short delay (allow toast to be visible), con la página
