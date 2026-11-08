@@ -160,7 +160,7 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   const rechazado =
     errorData != null
       ? !esFinalNormalDelRefresco(errorData)
-      : false;
+      : contexto.motivo === MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
   handleLogout(errorData, rechazado ? 'ended' : 'expiration', {
     motivo: rechazado ? MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO : MOTIVO_DEL_CIERRE.SESION_CADUCADA,
     ...contexto,
