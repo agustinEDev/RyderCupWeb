@@ -107,5 +107,18 @@ describe('ResetPassword · demasiados intentos', () => {
     await waitFor(() => expect(ultimaCuentaDeEstaPestana()).toBeNull());
     olvidaLaCuentaDeEstaPestana();
   });
+
+  it('R3 (CodeRabbit #1069): también quita el usuario guardado, que una recarga volvería a leer', async () => {
+    const { ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('../utils/vueltaTrasEntrar');
+    localStorage.setItem('user', JSON.stringify({ id: 'u-1' }));
+    restablecer.mockResolvedValue({});
+
+    await enviarContrasena();
+
+    await waitFor(() => expect(localStorage.getItem('user')).toBeNull());
+    // Como tras una recarga: sin nada en memoria, se leería lo guardado
+    olvidaLaCuentaDeEstaPestana();
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
 });
 
