@@ -175,6 +175,29 @@ describe('SignInForm', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
+  it.each([
+    ['la misma cuenta vuelve a la página', 'u-1', '/competitions/7'],
+    ['otra cuenta va al panel', 'u-2', '/dashboard'],
+  ])('3b: la página guardada por la cuenta u-1: %s', async (_caso, quien, destino) => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    sessionStorage.setItem('vuelta_tras_entrar_cuenta', 'u-1');
+    ejecutarLogin.mockResolvedValue({
+      user: { id: quien, firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
+    expect(navegar).toHaveBeenCalledWith(destino, { replace: true });
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+    vuelvenLosAvisosDeCierre();
+  });
+
   it('deja el boton utilizable tras entrar, sin depender de que la pantalla se desmonte', async () => {
     // El camino de exito no puede dar por hecho que `navigate` desmonte el
     // formulario: en una pantalla que siguiera en pie, el boton se quedaria

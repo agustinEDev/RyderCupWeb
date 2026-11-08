@@ -20,6 +20,10 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   P9  el token                         | fuera de la barra de direcciones
  *   P10 un fallo de red o del servidor    | confirmEmailChange.failed y «Reintentar»,
  *                                        |   que vuelve a probar con el mismo token
+ * Durante un cierre de sesión (tabla del 8 nov 2026, punto 3c):
+ *   E1  falla porque la sesión se cierra  | sigue «Confirmando…», sin «Reintentar» ni
+ *                                        |   recargar la sesión: la redirección llega ya
+ *   E2  un 401 sin cierre en marcha       | confirmEmailChange.failed, como P10
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -31,6 +35,8 @@ const refetch = vi.fn();
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ refetch }) }));
 vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../composition', () => ({ confirmEmailChangeUseCase: { execute: vi.fn() } }));
+const cierre = vi.hoisted(() => ({ enMarcha: vi.fn(() => false) }));
+vi.mock('../utils/deviceRevocationLogout', () => ({ seEstaCerrandoLaSesion: cierre.enMarcha }));
 vi.mock('../utils/stripSecretsFromAddressBar', () => ({
   stripSecretsFromAddressBar: vi.fn(),
   readStrippedSecret: () => null,
@@ -126,5 +132,32 @@ describe('ConfirmEmailChange', () => {
     abrir('');
     expect(await screen.findByText('confirmEmailChange.invalid')).toBeInTheDocument();
     expect(confirmEmailChangeUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['401', 401, undefined],
+    ['403 de CSRF', 403, 'CSRF_VALIDATION_FAILED'],
+  ])('E1: con la sesión cerrándose (%s), sigue «Confirmando…»', async (_n, status, codigo) => {
+    cierre.enMarcha.mockReturnValue(true);
+    confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(status, codigo));
+    abrir('?token=tok-1');
+
+    await vi.waitFor(() => expect(confirmEmailChangeUseCase.execute).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(screen.getByText('confirmEmailChange.confirming')).toBeInTheDocument();
+    expect(screen.queryByText('confirmEmailChange.failed')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'confirmEmailChange.retry' })).toBeNull();
+    expect(refetch).not.toHaveBeenCalled();
+    cierre.enMarcha.mockReturnValue(false);
+  });
+
+  it('E2: un 401 sin cierre en marcha enseña el fallo con «Reintentar»', async () => {
+    cierre.enMarcha.mockReturnValue(false);
+    confirmEmailChangeUseCase.execute.mockRejectedValue(rechazo(401));
+    abrir('?token=tok-1');
+
+    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'confirmEmailChange.retry' })).toBeInTheDocument();
   });
 });

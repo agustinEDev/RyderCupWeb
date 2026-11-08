@@ -7,6 +7,7 @@ import { confirmEmailChangeUseCase } from '../composition';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { readStrippedSecret, stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import { seEstaCerrandoLaSesion } from '../utils/deviceRevocationLogout';
 
 // Cada rechazo del backend, con su texto (RyderCupAm #749)
 const TEXTO_DEL_RECHAZO = {
@@ -53,6 +54,9 @@ const ConfirmEmailChange = () => {
         Promise.resolve(refetch?.()).catch(() => {});
       })
       .catch((error) => {
+        // Falló porque la sesión se está cerrando: la redirección al login llega ya, y
+        // «Comprueba la conexión» sería mentira (3c, 8 nov 2026). Sigue «Confirmando…»
+        if (seEstaCerrandoLaSesion()) return;
         setEstado({ clave: TEXTO_DEL_RECHAZO[error?.errorCode] || FALLO });
         // Caducado u ocupado: el backend lo anuló, y Seguridad no debe seguir
         // mostrándolo pendiente

@@ -27,7 +27,7 @@ import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
-import { redirigeAlLogin } from './vueltaTrasEntrar';
+import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -150,8 +150,24 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
 // El cierre de ESTA carga de página (C1, 8 nov 2026): al recargar con la sesión muerta
 // fallan dos peticiones a la vez; la primera ya guardó la página, enseñó el toast y
 // sale a los 500 ms, así que la segunda no hace nada. La marca de localStorage no
-// sirve para esto: la comparten las pestañas y sobrevive a la carga
+// sirve para esto: la comparten las pestañas y sobrevive a la carga. Lo comparte el
+// cierre por CSRF (S1): uno por carga, venga de donde venga
 let cierreEnEstaCarga = false;
+
+/**
+ * Anota el cierre de esta carga. `false` si ya había uno: quien llama no hace nada (C1, S1).
+ */
+export const empiezaElCierreDeEstaCarga = () => {
+  if (cierreEnEstaCarga) return false;
+  cierreEnEstaCarga = true;
+  return true;
+};
+
+/**
+ * Si un cierre forzado ya está en marcha en esta carga: la redirección llega enseguida, y
+ * quien pinta un fallo de la petición que lo provocó no lo enseña (3c, 8 nov 2026).
+ */
+export const seEstaCerrandoLaSesion = () => cierreEnEstaCarga;
 
 /**
  * SOLO para los tests: una carga de página nueva. En el navegador lo hace la salida a
@@ -161,8 +177,11 @@ export const olvidaElCierreDeEstaCarga = () => {
   cierreEnEstaCarga = false;
 };
 
-/** Lo de la cuenta que sale, también al revocar el propio dispositivo (C3). */
-const limpiaLaCuenta = () => {
+/**
+ * Lo de la cuenta que sale, también al revocar el propio dispositivo (C3) y en el cierre
+ * por CSRF (S3): una sola limpieza para los cierres duros.
+ */
+export const limpiaLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
   // Y las partidas guardadas para anotar sin cobertura (FE #524). Este camino
@@ -194,14 +213,14 @@ const limpiaLaCuenta = () => {
  * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
  */
 const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
-  if (cierreEnEstaCarga) return;
+  if (seEstaCerrandoLaSesion()) return;
   const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
-  // If already on login page and already handled, do nothing
+  // If already on login page and already handled, do nothing (sin anotar el cierre: C2)
   if (marca && window.location.pathname === '/login') {
     return;
   }
-  cierreEnEstaCarga = true;
+  if (!empiezaElCierreDeEstaCarga()) return;
 
   // Salió a propósito: se limpia lo de la cuenta (DeviceManagement espera 2,5 s antes
   // de su logout, y un 401 o salir de la página se lo saltaban: /code-review), sin
@@ -214,6 +233,10 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
     }
     return;
   }
+
+  // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (regla 6 de
+  // `vueltaTrasEntrar`) y otra cuenta que entre en esta pestaña no vuelve a ella
+  const cuenta = quienEstaDentro();
 
   // Pase lo que pase dentro, se sale (revisión, 8 nov): con el cierre de esta carga ya
   // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
@@ -264,6 +287,6 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   } finally {
     // Redirect to login after a short delay (allow toast to be visible), con la página
     // en la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
-    redirigeAlLogin({ retraso: 500 });
+    redirigeAlLogin({ retraso: 500, cuenta });
   }
 };

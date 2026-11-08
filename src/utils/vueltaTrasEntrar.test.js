@@ -3,6 +3,9 @@ import {
   guardaLaVueltaTrasEntrar,
   leeLaVueltaTrasEntrar,
   olvidaLaVueltaTrasEntrar,
+  anotaLaCuentaDeEstaPestana,
+  olvidaLaCuentaDeEstaPestana,
+  quienEstaDentro,
   redirigeAlLogin,
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
@@ -137,3 +140,268 @@ describe('la vuelta tras una redirección dura', () => {
   });
 });
 
+/**
+ * La página guardada va con la cuenta que estaba dentro (tabla aprobada por Agustín el
+ * 8 nov 2026, punto 3b): en un móvil compartido, quien entra con OTRA cuenta en la misma
+ * pestaña no aterriza en la página de la anterior.
+ *
+ *   VC1 se guarda con el id de quien estaba dentro
+ *   VC2 entra la misma cuenta: vuelve a la página
+ *   VC3 entra otra cuenta: al panel, y la guardada se borra
+ *   VC4 guardada sin id (de antes de este cambio, o sin saber quién estaba): vale para
+ *       cualquiera, como hasta ahora
+ *   VC5 guardada con id y quien entra sin id conocido: al panel (no se puede decir que
+ *       sea la misma)
+ *   VC6 guardar sustituye también el id; olvidar se lleva los dos
+ *   VC7 state.from gana siempre: el id solo frena la guardada
+ */
+describe('la página guardada, de la cuenta que estaba dentro', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('VC1: redirigeAlLogin guarda la página con el id de la cuenta', () => {
+    en('/competitions/7');
+
+    redirigeAlLogin({ cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-1');
+  });
+
+  it('VC2: entra la misma cuenta y vuelve a la página', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+    en('/login');
+
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-1' })).toBe('/competitions/7');
+  });
+
+  it('VC3: entra otra cuenta, va al panel y la guardada se borra', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+    en('/login');
+
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/dashboard');
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-1' })).toBe('/dashboard');
+  });
+
+  it('VC3: compara como texto (un id numérico guardado vuelve como texto)', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 42 });
+    en('/login');
+
+    expect(vueltaTrasEntrar(undefined, { cuenta: 42 })).toBe('/competitions/7');
+  });
+
+  it('VC4: una guardada sin id vale para cualquier cuenta', () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    en('/login');
+
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/competitions/7');
+  });
+
+  it('VC4: guardar sin saber quién estaba no deja id', () => {
+    en('/competitions/7');
+
+    redirigeAlLogin();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
+  it('VC5: guardada con id y quien entra sin id conocido, al panel', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+    en('/login');
+
+    expect(vueltaTrasEntrar(undefined)).toBe('/dashboard');
+  });
+
+  it('VC6: guardar sin id tras una con id no deja el id de antes', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+    en('/competitions/8');
+    guardaLaVueltaTrasEntrar();
+    en('/login');
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-2' })).toBe('/competitions/8');
+  });
+
+  it('VC6: guardar desde una página que no vale se lleva también el id', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+    en('/login');
+
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
+  it('VC6: olvidar se lleva la página y el id', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+
+    olvidaLaVueltaTrasEntrar();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
+  it('VC6: salir sin guardar (revocar el propio) se lleva también el id', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+
+    redirigeAlLogin({ guardar: false, cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
+  it('VC7: state.from gana aunque la guardada sea de otra cuenta, y la gasta', () => {
+    en('/competitions/7');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+
+    expect(vueltaTrasEntrar({ pathname: '/profile/edit' }, { cuenta: 'u-2' })).toBe('/profile/edit');
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+});
+
+describe('quienEstaDentro', () => {
+  let almacen;
+  beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    almacen = {};
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => almacen[k] ?? null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('lee el id del usuario guardado', () => {
+    almacen.user = JSON.stringify({ id: 'u-9', firstName: 'Ana' });
+    expect(quienEstaDentro()).toBe('u-9');
+  });
+
+  it.each([
+    ['sin usuario', undefined],
+    ['un usuario sin id', JSON.stringify({ firstName: 'Ana' })],
+    ['un JSON roto', '{no'],
+    ['un null guardado', 'null'],
+  ])('con %s, no se sabe (null)', (_caso, valor) => {
+    if (valor !== undefined) almacen.user = valor;
+    expect(quienEstaDentro()).toBeNull();
+  });
+
+  it('sin almacenamiento, no se sabe (null)', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+    });
+    expect(quienEstaDentro()).toBeNull();
+  });
+});
+
+/**
+ * La cuenta de ESTA pestaña, en memoria (revisión, 8 nov 2026): `localStorage` lo comparten
+ * las pestañas. Con dos abiertas, el cierre de la primera borra el usuario y la segunda
+ * guardaba su página sin cuenta, válida para cualquiera; y si en otra pestaña entró otra
+ * cuenta, la etiquetaba con esa.
+ */
+describe('la cuenta de esta pestaña', () => {
+  let almacen;
+  beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    almacen = {};
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => almacen[k] ?? null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('anotada, gana aunque otra pestaña ya borrara el usuario guardado', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+
+    expect(quienEstaDentro()).toBe('u-1');
+  });
+
+  it('anotada, gana aunque en otra pestaña entrara otra cuenta', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    almacen.user = JSON.stringify({ id: 'u-2' });
+
+    expect(quienEstaDentro()).toBe('u-1');
+  });
+
+  it('anotada como nadie (salió en esta pestaña), no se sabe aunque haya usuario guardado', () => {
+    anotaLaCuentaDeEstaPestana(null);
+    almacen.user = JSON.stringify({ id: 'u-2' });
+
+    expect(quienEstaDentro()).toBeNull();
+  });
+
+  it('un id numérico se anota como texto', () => {
+    anotaLaCuentaDeEstaPestana(42);
+
+    expect(quienEstaDentro()).toBe('42');
+  });
+
+  it('sin anotar, la del almacenamiento, como antes', () => {
+    almacen.user = JSON.stringify({ id: 'u-3' });
+
+    expect(quienEstaDentro()).toBe('u-3');
+  });
+});
+
+/**
+ * B (Agustín, 8 nov 2026): si la pestaña sabe que no hay nadie dentro (cerró la sesión),
+ * un cierre forzado tardío no guarda la página: no hay a quién devolver, y sin cuenta
+ * valdría para cualquiera.
+ */
+describe('sin nadie dentro de esta pestaña', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    olvidaLaCuentaDeEstaPestana();
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('redirigeAlLogin no guarda la página y borra la que hubiera', () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    anotaLaCuentaDeEstaPestana(null);
+    en('/competitions/7');
+
+    redirigeAlLogin();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(globalThis.location.href).toBe('/login');
+  });
+
+  it('con una cuenta anotada, sí la guarda', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    en('/competitions/7');
+
+    redirigeAlLogin({ cuenta: 'u-1' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+
+  it('sin anotar nada (no se sabe), la guarda como hasta ahora', () => {
+    en('/competitions/7');
+
+    redirigeAlLogin();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+});
