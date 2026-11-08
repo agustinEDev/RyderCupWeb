@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleCsrfLogout } from './csrfLogout';
+import { olvidaElCierreDeEstaCarga } from './deviceRevocationLogout';
 import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../services/loUltimoConocido';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
@@ -17,6 +18,8 @@ describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
   let href;
 
   beforeEach(() => {
+    // Cada test, una carga de página nueva: el cierre es uno por carga (S1)
+    olvidaElCierreDeEstaCarga();
     const guardado = new Map();
     vi.stubGlobal('localStorage', {
       getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
