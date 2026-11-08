@@ -39,6 +39,9 @@ const GoogleCallback = () => {
       const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
       setFlow(parsedFlow);
 
+      // Un fallo, también cancelar en Google, gasta la página guardada (probador, 8 nov)
+      if (!valid || errorParam || !code) olvidaLaVueltaTrasEntrar();
+
       if (!valid) {
         setError(t('google.callbackError'));
         return;

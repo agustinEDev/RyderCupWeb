@@ -64,6 +64,19 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     expect(screen.getAllByText('google.callbackError')).toHaveLength(1);
   });
 
+  it.each([
+    ['cancela en Google', '?error=access_denied&state=x', true],
+    ['el state no cuadra', '?code=abc&state=otro', false],
+  ])('G1b: %s: la página guardada se olvida (probador, 8 nov)', async (_caso, query, valido) => {
+    estado.valid = valido;
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+
+    abrir(query);
+
+    expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
   it('G2: el state no cuadra', async () => {
     estado.valid = false;
     abrir('?code=abc&state=otro');
