@@ -31,6 +31,7 @@ const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn(
 vi.mock('./toast', () => ({ default: toast }));
 
 const { handleCsrfLogout } = await import('./csrfLogout');
+const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('./vueltaTrasEntrar');
 const {
   handleDeviceRevocationLogout,
   olvidaElCierreDeEstaCarga,
@@ -46,6 +47,7 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
     orden.length = 0;
     vi.clearAllMocks();
     olvidaElCierreDeEstaCarga();
+    olvidaLaCuentaDeEstaPestana();
     sessionStorage.clear();
     almacen = { user: JSON.stringify({ id: 'u-7' }), access_token: 'x' };
     vi.stubGlobal('localStorage', {
@@ -115,15 +117,18 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
     expect(orden.indexOf('sentry fuera')).toBeGreaterThan(0);
   });
 
-  it('S2: si una limpieza falla, se llega igual al login', () => {
+  it('S2: si una limpieza falla, se llega igual al login y el fallo no sale (la cola espera el error de CSRF)', () => {
+    const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
     cuenta.olvida.mockImplementationOnce(() => {
       throw new Error('almacenamiento roto');
     });
 
-    expect(() => handleCsrfLogout({ detail: 'CSRF token missing' })).toThrow('almacenamiento roto');
+    expect(() => handleCsrfLogout({ detail: 'CSRF token missing' })).not.toThrow();
     vi.runAllTimers();
 
     expect(idas).toEqual(['/login']);
+    expect(consola).toHaveBeenCalledWith('[CSRF] Logout cleanup failed:', expect.any(Error));
+    consola.mockRestore();
   });
 
   it('S3: limpia lo mismo que el dispositivo revocado', () => {
@@ -152,6 +157,21 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
   it('3b: el dispositivo revocado también la guarda con la cuenta', () => {
     handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
 
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
+  });
+
+  it.each([
+    ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
+    ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
+  ])('3b: con dos pestañas, la segunda (%s) guarda con SU cuenta aunque la primera ya limpiara', (_n, cierra) => {
+    anotaLaCuentaDeEstaPestana('u-7');
+    // La otra pestaña ya cerró: el usuario guardado no está
+    delete almacen.user;
+    almacen.device_revocation_handled = 'forzado';
+
+    cierra();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
   });
 

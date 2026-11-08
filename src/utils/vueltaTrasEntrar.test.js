@@ -3,6 +3,8 @@ import {
   guardaLaVueltaTrasEntrar,
   leeLaVueltaTrasEntrar,
   olvidaLaVueltaTrasEntrar,
+  anotaLaCuentaDeEstaPestana,
+  olvidaLaCuentaDeEstaPestana,
   quienEstaDentro,
   redirigeAlLogin,
   vueltaTrasEntrar,
@@ -270,6 +272,7 @@ describe('la página guardada, de la cuenta que estaba dentro', () => {
 describe('quienEstaDentro', () => {
   let almacen;
   beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
     almacen = {};
     vi.stubGlobal('localStorage', {
       getItem: vi.fn((k) => almacen[k] ?? null),
@@ -301,5 +304,60 @@ describe('quienEstaDentro', () => {
       },
     });
     expect(quienEstaDentro()).toBeNull();
+  });
+});
+
+/**
+ * La cuenta de ESTA pestaña, en memoria (revisión, 8 nov 2026): `localStorage` lo comparten
+ * las pestañas. Con dos abiertas, el cierre de la primera borra el usuario y la segunda
+ * guardaba su página sin cuenta, válida para cualquiera; y si en otra pestaña entró otra
+ * cuenta, la etiquetaba con esa.
+ */
+describe('la cuenta de esta pestaña', () => {
+  let almacen;
+  beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    almacen = {};
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => almacen[k] ?? null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('anotada, gana aunque otra pestaña ya borrara el usuario guardado', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+
+    expect(quienEstaDentro()).toBe('u-1');
+  });
+
+  it('anotada, gana aunque en otra pestaña entrara otra cuenta', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    almacen.user = JSON.stringify({ id: 'u-2' });
+
+    expect(quienEstaDentro()).toBe('u-1');
+  });
+
+  it('anotada como nadie (salió en esta pestaña), no se sabe aunque haya usuario guardado', () => {
+    anotaLaCuentaDeEstaPestana(null);
+    almacen.user = JSON.stringify({ id: 'u-2' });
+
+    expect(quienEstaDentro()).toBeNull();
+  });
+
+  it('un id numérico se anota como texto', () => {
+    anotaLaCuentaDeEstaPestana(42);
+
+    expect(quienEstaDentro()).toBe('42');
+  });
+
+  it('sin anotar, la del almacenamiento, como antes', () => {
+    almacen.user = JSON.stringify({ id: 'u-3' });
+
+    expect(quienEstaDentro()).toBe('u-3');
   });
 });

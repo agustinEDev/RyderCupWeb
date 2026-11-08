@@ -9,6 +9,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider } from './AuthContext';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { getCsrfToken, setCsrfTokenGlobal } from './csrfTokenSync';
+import { olvidaLaCuentaDeEstaPestana, quienEstaDentro } from '../utils/vueltaTrasEntrar';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -346,5 +347,47 @@ describe('AuthContext y la consulta compartida', () => {
     olvido.mockClear();
     act(() => result.current.setUser(null));
     expect(olvido, 'salir tambien').toHaveBeenCalled();
+  });
+});
+
+/**
+ * La cuenta de esta pestaña, en memoria (revisión, 8 nov 2026): los cierres forzados la
+ * leen para guardar la página con su dueño, y `localStorage` lo comparte otra pestaña.
+ */
+describe('AuthContext · la cuenta de esta pestaña', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    olvidaLaCuentaDeEstaPestana();
+  });
+
+  it('al arrancar con un usuario guardado, lo anota aunque luego otra pestaña lo borre', () => {
+    localStorage.setItem('user', JSON.stringify({ id: 'u-1', firstName: 'Ana' }));
+    renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+    localStorage.removeItem('user');
+
+    expect(quienEstaDentro()).toBe('u-1');
+  });
+
+  it('al entrar, anota la cuenta que entra', () => {
+    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+    act(() => result.current.setUser({ id: 'u-2', firstName: 'Eva' }));
+    localStorage.setItem('user', JSON.stringify({ id: 'u-9' }));
+
+    expect(quienEstaDentro()).toBe('u-2');
+  });
+
+  it.each([
+    ['setUser(null)', (r) => r.current.setUser(null)],
+    ['clearAuth', (r) => r.current.clearAuth()],
+  ])('al salir (%s), nadie', (_n, sal) => {
+    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+    act(() => result.current.setUser({ id: 'u-2' }));
+
+    act(() => sal(result));
+    localStorage.setItem('user', JSON.stringify({ id: 'u-9' }));
+
+    expect(quienEstaDentro()).toBeNull();
   });
 });

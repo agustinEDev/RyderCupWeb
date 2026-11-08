@@ -21,7 +21,7 @@ import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
  * - S1 un cierre por carga, venga de donde venga: si ya hay uno (otro CSRF, o un
  *   dispositivo revocado), nada
  * - S2 aviso a Sentry, la cuenta fuera (también el usuario de Sentry) y la redirección en
- *   `finally`: si una limpieza falla, se llega igual al login
+ *   `finally`: si una limpieza falla, se llega igual al login, y el fallo no sale de aquí
  * - S3 la misma limpieza que el dispositivo revocado; sin toast ni marca, como antes
  *
  * @param {Object} errorData - Error data from backend (optional)
@@ -44,6 +44,11 @@ export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
     // Las cookies httpOnly las sustituye el siguiente login; lo de la cuenta en el
     // dispositivo se va aquí: una redirección no vacía el almacenamiento
     limpiaLaCuenta();
+  } catch (error) {
+    // No sale de aquí (revisión, 8 nov 2026): quien llama lanza después el error MARCADO
+    // de CSRF, el que la cola de anotaciones reconoce como de toda la sesión (FE #521);
+    // con este, cada golpe de la cola lo tomaría por un fallo suyo
+    console.error('[CSRF] Logout cleanup failed:', error);
   } finally {
     // This is intentional - CSRF failures require a complete app reset. Con la página
     // guardada y su cuenta, para volver a ella tras entrar

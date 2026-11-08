@@ -43,11 +43,30 @@ export const olvidaLaVueltaTrasEntrar = () => {
   }
 };
 
+// La cuenta de ESTA pestaña, en memoria (revisión, 8 nov 2026): `localStorage` lo
+// comparten las pestañas. Con dos abiertas, el cierre de la primera borra el usuario y la
+// segunda guardaba su página sin cuenta (válida para cualquiera), o con la de otra cuenta
+// que entrara en otra pestaña. La anota `AuthContext` al arrancar, al entrar y al salir;
+// `undefined` = nadie la ha anotado todavía
+let cuentaDeEstaPestana;
+
+/** `AuthContext`: la cuenta de esta pestaña, o `null` al salir. */
+export const anotaLaCuentaDeEstaPestana = (id) => {
+  cuentaDeEstaPestana = id === undefined || id === null ? null : String(id);
+};
+
+/** SOLO para los tests: una pestaña recién abierta, sin nada anotado. */
+export const olvidaLaCuentaDeEstaPestana = () => {
+  cuentaDeEstaPestana = undefined;
+};
+
 /**
- * El id de la cuenta guardada en este dispositivo, o `null` si no se sabe. Los cierres
- * forzados lo leen ANTES de limpiar la cuenta, para guardar la página con él (regla 6).
+ * El id de la cuenta de esta pestaña, o `null` si no se sabe: la anotada en memoria y, si
+ * nadie la anotó, la del usuario guardado. Los cierres forzados lo leen ANTES de limpiar
+ * la cuenta, para guardar la página con él (regla 6).
  */
 export const quienEstaDentro = () => {
+  if (cuentaDeEstaPestana !== undefined) return cuentaDeEstaPestana;
   try {
     const id = JSON.parse(globalThis.localStorage.getItem('user'))?.id;
     return id === undefined || id === null ? null : String(id);
