@@ -13,7 +13,7 @@
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
 import { empiezaElCierreDeEstaCarga } from './cierreDeEstaCarga';
 import { limpiaLaCuenta } from './deviceRevocationLogout';
-import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
+import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from './vueltaTrasEntrar';
 
 /**
  * Handle CSRF validation failure
@@ -30,7 +30,7 @@ import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
 export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
   if (!empiezaElCierreDeEstaCarga()) return;
   // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (3b)
-  const cuenta = quienEstaDentro();
+  const cuenta = ultimaCuentaDeEstaPestana();
 
   try {
     // Que se vea en Sentry (FE #1042), con la ruta que no se pudo recuperar. Antes de

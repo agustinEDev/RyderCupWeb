@@ -174,6 +174,33 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
   });
 
+  it.each([
+    ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
+    ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
+  ])('sin regla B: si nunca hubo cuenta en la pestaña (%s), guarda la página para cualquiera', (_n, cierra) => {
+    delete almacen.user;
+    // Lo que hace AuthContext al arrancar sin usuario guardado
+    anotaLaCuentaDeEstaPestana(null);
+
+    cierra();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBeNull();
+  });
+
+  it.each([
+    ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
+    ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
+  ])('sin regla B: tras salir en la pestaña (%s), la guarda con la última cuenta', (_n, cierra) => {
+    anotaLaCuentaDeEstaPestana('u-7');
+    anotaLaCuentaDeEstaPestana(null);
+    delete almacen.user;
+
+    cierra();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar_cuenta')).toBe('u-7');
+  });
+
   it('3c: seEstaCerrandoLaSesion, falso al cargar y cierto tras un CSRF', () => {
     expect(seEstaCerrandoLaSesion()).toBe(false);
 

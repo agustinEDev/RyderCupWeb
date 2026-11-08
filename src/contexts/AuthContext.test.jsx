@@ -11,7 +11,6 @@ import { useAuthContext } from '../hooks/useAuthContext';
 import { getCsrfToken, setCsrfTokenGlobal } from './csrfTokenSync';
 import {
   olvidaLaCuentaDeEstaPestana,
-  quienEstaDentro,
   ultimaCuentaDeEstaPestana,
 } from '../utils/vueltaTrasEntrar';
 
@@ -370,7 +369,7 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
 
     localStorage.removeItem('user');
 
-    expect(quienEstaDentro()).toBe('u-1');
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-1');
   });
 
   it('al entrar, anota la cuenta que entra', () => {
@@ -379,20 +378,7 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
     act(() => result.current.setUser({ id: 'u-2', firstName: 'Eva' }));
     localStorage.setItem('user', JSON.stringify({ id: 'u-9' }));
 
-    expect(quienEstaDentro()).toBe('u-2');
-  });
-
-  it.each([
-    ['setUser(null)', (r) => r.current.setUser(null)],
-    ['clearAuth', (r) => r.current.clearAuth()],
-  ])('al salir (%s), nadie', (_n, sal) => {
-    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
-    act(() => result.current.setUser({ id: 'u-2' }));
-
-    act(() => sal(result));
-    localStorage.setItem('user', JSON.stringify({ id: 'u-9' }));
-
-    expect(quienEstaDentro()).toBeNull();
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
   });
 
   it('R2 (FE #1064): tras salir (clearAuth), la última cuenta de la pestaña sigue', () => {
@@ -402,7 +388,6 @@ describe('AuthContext · la cuenta de esta pestaña', () => {
     act(() => result.current.clearAuth());
     localStorage.clear();
 
-    expect(quienEstaDentro()).toBeNull();
     expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
   });
 });

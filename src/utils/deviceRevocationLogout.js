@@ -31,7 +31,7 @@ import {
   esFinalNormalDelRefresco,
   MOTIVO_DEL_CIERRE,
 } from './avisoDeCierreForzado';
-import { quienEstaDentro, redirigeAlLogin } from './vueltaTrasEntrar';
+import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from './vueltaTrasEntrar';
 // El freno de un cierre por carga vive en su módulo (C1, S1)
 import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from './cierreDeEstaCarga';
 
@@ -226,7 +226,7 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
   // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (regla 6 de
   // `vueltaTrasEntrar`) y otra cuenta que entre en esta pestaña no vuelve a ella
-  const cuenta = quienEstaDentro();
+  const cuenta = ultimaCuentaDeEstaPestana();
 
   // Pase lo que pase dentro, se sale (revisión, 8 nov): con el cierre de esta carga ya
   // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
@@ -271,11 +271,15 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
     const message = i18next.t(messageKey, { ns: 'auth' });
 
     // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
-    customToast.error(message, {
-      duration: 8000,
-      icon,
-      delCierre: true,
-    });
+    // Sin ninguna cuenta conocida en la pestaña no había sesión que terminara: quien abre
+    // un enlace sin haber entrado no lee «Tu sesión ha expirado» (Agustín, 8 nov 2026)
+    if (cuenta !== null) {
+      customToast.error(message, {
+        duration: 8000,
+        icon,
+        delCierre: true,
+      });
+    }
   } finally {
     // Redirect to login after a short delay (allow toast to be visible), con la página
     // en la que estaba para volver tras entrar: la redirección dura pierde el `state.from`

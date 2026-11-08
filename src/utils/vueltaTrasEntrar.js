@@ -19,7 +19,9 @@
  * 6. Va con la cuenta que estaba dentro: si entra OTRA, va al panel y se borra; guardada
  *    sin cuenta (de antes, o sin saber quién estaba), vale para cualquiera (Agustín, 8 nov
  *    2026). En un móvil compartido, la siguiente persona no aterriza en la página de la
- *    anterior. Si la pestaña sabe que no hay nadie dentro, no se guarda.
+ *    anterior. La cuenta es la ÚLTIMA que estuvo dentro de la pestaña (regla 8): tras
+ *    salir en ella, la página es solo de esa cuenta; si nunca hubo nadie (un enlace abierto
+ *    sin sesión), vale para quien entre.
  * 7. La de confirmar el correo sin su token (ya usado) no se guarda ni se vuelve a ella,
  *    venga la vuelta de donde venga (`rutaDeVuelta`): diría «Este enlace no vale» con el
  *    correo ya cambiado (Agustín, 8 nov 2026).
@@ -57,13 +59,6 @@ export const olvidaLaVueltaTrasEntrar = () => {
   }
 };
 
-// La cuenta de ESTA pestaña, en memoria (revisión, 8 nov 2026): `localStorage` lo
-// comparten las pestañas. Con dos abiertas, el cierre de la primera borra el usuario y la
-// segunda guardaba su página sin cuenta (válida para cualquiera), o con la de otra cuenta
-// que entrara en otra pestaña. La anota `AuthContext` al arrancar, al entrar y al salir;
-// `undefined` = nadie la ha anotado todavía
-let cuentaDeEstaPestana;
-
 /** Un id de cuenta como texto, o `null` si no hay: la única forma de compararlos. */
 const aIdDeCuenta = (id) => (id == null ? null : String(id));
 
@@ -74,13 +69,12 @@ let ultimaCuenta;
 
 /** `AuthContext`: la cuenta de esta pestaña, o `null` al salir. */
 export const anotaLaCuentaDeEstaPestana = (id) => {
-  cuentaDeEstaPestana = aIdDeCuenta(id);
-  if (cuentaDeEstaPestana !== null) ultimaCuenta = cuentaDeEstaPestana;
+  const cuenta = aIdDeCuenta(id);
+  if (cuenta !== null) ultimaCuenta = cuenta;
 };
 
 /** SOLO para los tests: una pestaña recién abierta, sin nada anotado. */
 export const olvidaLaCuentaDeEstaPestana = () => {
-  cuentaDeEstaPestana = undefined;
   ultimaCuenta = undefined;
 };
 
@@ -123,16 +117,6 @@ export const estadoParaElLogin = (location) => ({
 });
 
 /**
- * El id de la cuenta de esta pestaña, o `null` si no se sabe: la anotada en memoria y, si
- * nadie la anotó, la del usuario guardado. Los cierres forzados lo leen ANTES de limpiar
- * la cuenta, para guardar la página con él (regla 6).
- */
-export const quienEstaDentro = () => {
-  if (cuentaDeEstaPestana !== undefined) return cuentaDeEstaPestana;
-  return cuentaDelUsuarioGuardado();
-};
-
-/**
  * Guarda la página en la que se está, con la cuenta que estaba dentro si se sabe, o nada
  * si no vale: siempre sustituye a la anterior, cuenta incluida.
  */
@@ -141,10 +125,6 @@ export const guardaLaVueltaTrasEntrar = ({ cuenta = null } = {}) => {
   // Al cerrar sesión a petición no hay a dónde volver: un sondeo en vuelo que reciba un
   // 401 en ese momento no deja la página para quien entre después
   if (seCierraLaSesionAPeticion()) return;
-  // Esta pestaña sabe que no hay nadie dentro (cerró la sesión): un cierre forzado tardío
-  // no tiene a quién devolver, y sin cuenta la página valdría para cualquiera (Agustín,
-  // 8 nov 2026)
-  if (aIdDeCuenta(cuenta) === null && cuentaDeEstaPestana === null) return;
   const ruta = rutaPropia(lugarActual());
   // Ni login ni registro (`rutaDeVuelta` ya los descarta), ni la de confirmar el correo
   // sin su token (regla 7, también en `rutaDeVuelta`), ni una página pública: la
