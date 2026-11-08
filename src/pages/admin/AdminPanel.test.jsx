@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import AdminPanel from './AdminPanel';
+import customToast from '../../utils/toast';
 
 // El panel va por rutas desde el 17 oct: se abre en /admin y cada sección se
 // toca en el menú
@@ -22,6 +23,11 @@ const { TRADUCCION } = vi.hoisted(() => ({
     i18n: { language: 'en' },
   },
 }));
+vi.mock('../../utils/toast', () => ({
+  default: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+  customToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => TRADUCCION,
 }));
@@ -191,6 +197,33 @@ describe('AdminPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
 
     await waitFor(() => expect(mockUpdateAdminUser).toHaveBeenCalledWith('u1', expect.any(Object)));
+  });
+
+  it('si el correo queda pendiente, el aviso lo dice (RyderCupAm #753)', async () => {
+    mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], pendingEmail: 'nuevo@test.com' });
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
+    await enLaTabla('Agus Estevez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
+    fireEvent.change(screen.getByLabelText('editModal.email'), { target: { value: 'nuevo@test.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
+
+    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('editModal.emailPending'));
+  });
+
+  it('si el admin no tocó el correo, un pendiente del propio usuario no cambia el aviso', async () => {
+    mockUpdateAdminUser.mockResolvedValue({ ...usersResponse.users[0], pendingEmail: 'suyo@test.com' });
+    renderPanel();
+    await waitFor(() => expect(mockGetAdminStats).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('link', { name: /screens.adminUsers/ }));
+    await enLaTabla('Agus Estevez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'users.editTooltip' }));
+    fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
+
+    await waitFor(() => expect(customToast.success).toHaveBeenCalledWith('editModal.success'));
   });
 
   it('opens the manage modal and calls setAdminUserActiveUseCase on confirm', async () => {

@@ -97,6 +97,8 @@ class ApiAdminRepository extends IAdminRepository {
       // filas donde no aparece por ningún lado lo que se buscó
       alias: userData.alias ?? null,
       email: userData.email,
+      // El correo que se pidió y aún no se ha confirmado (RyderCupAm #753)
+      pendingEmail: userData.pending_email ?? null,
       handicap: userData.handicap ?? null,
       isAdmin: userData.is_admin,
       isActive: userData.is_active,

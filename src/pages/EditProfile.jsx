@@ -13,6 +13,7 @@ import { instanteEnTexto } from '../utils/instanteDeLaApi';
 import CampoDeHandicap from '../components/ui/CampoDeHandicap';
 import { formatoDeIndice } from '../utils/formatoDeHandicap';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../utils/barraInferior';
+import ContrasenaParaGoogleModal from '../components/profile/ContrasenaParaGoogleModal';
 
 const EditProfile = () => {
   const { t, i18n } = useTranslation('profile');
@@ -41,6 +42,9 @@ const EditProfile = () => {
     isUnlinkingGoogle,
     handleLinkGoogle,
     handleUnlinkGoogle,
+    isGooglePasswordOpen,
+    cierraContrasenaParaGoogle,
+    confirmaContrasenaParaGoogle,
   } = useEditProfile();
 
   const {
@@ -554,6 +558,11 @@ const EditProfile = () => {
           </div>
         </div>
       </div>
+      <ContrasenaParaGoogleModal
+        isOpen={isGooglePasswordOpen}
+        onClose={cierraContrasenaParaGoogle}
+        alConfirmar={confirmaContrasenaParaGoogle}
+      />
     </div>
   );
 };

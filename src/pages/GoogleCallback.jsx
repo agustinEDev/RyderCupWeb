@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
-import { verifyOAuthState } from '../utils/googleOAuth';
+import { verifyOAuthState, recogeLaVueltaDeGoogle } from '../utils/googleOAuth';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -62,7 +62,9 @@ const GoogleCallback = () => {
           customToast.success(t('google.linkSuccess'));
           navigate('/profile/edit', { replace: true });
         } else {
-          // Login/register flow
+          // Login/register flow. La vuelta se recoge siempre: lleva el token del enlace y
+          // no se queda guardada aunque no se use (alta nueva o fallo)
+          const vuelta = recogeLaVueltaDeGoogle();
           const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code);
 
           // Update auth context
@@ -74,7 +76,8 @@ const GoogleCallback = () => {
             navigate('/auth/complete-profile', { replace: true });
           } else {
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
-            navigate('/dashboard', { replace: true });
+            // A la página de la que se vino, si lo pide (RyderCupAm #753); si no, al panel
+            navigate(vuelta ?? '/dashboard', { replace: true });
           }
         }
       } catch (err) {
@@ -84,6 +87,10 @@ const GoogleCallback = () => {
         if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {
           // Vincular Google pide el correo de la cuenta verificado (RyderCupAm #749)
           setError(t('google.linkNeedsVerifiedEmail'));
+        } else if (err.errorCode === 'REAUTHENTICATION_REQUIRED') {
+          // Vincular pide la contraseña confirmada hace menos de 5 minutos
+          // (RyderCupAm #753): caducó o no se confirmó. Desde el perfil se vuelve a pedir
+          setError(t('google.reauthRequired'));
         } else if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
           // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
           // del registro con Google)

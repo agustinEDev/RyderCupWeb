@@ -12,6 +12,7 @@ import {
   updateRfegHandicapUseCase,
   fetchCountriesUseCase,
   unlinkGoogleAccountUseCase,
+  reauthenticateUseCase,
 } from '../composition';
 import { buildGoogleOAuthUrl } from '../utils/googleOAuth';
 
@@ -291,8 +292,51 @@ export const useEditProfile = () => {
   const isGoogleLinked = user?.auth_providers?.includes('google') || false;
   const hasPassword = user?.has_password ?? true;
 
+  // Vincular Google pide la contraseña actual a quien la tiene (RyderCupAm #753): con
+  // solo la sesión, una robada podía añadir un Google que sobrevive al restablecimiento
+  const [isGooglePasswordOpen, setIsGooglePasswordOpen] = useState(false);
+  // Si se cierra la ventana mientras comprueba, la respuesta ya no lleva a Google
+  const ventanaAbierta = useRef(false);
+
+  const vaAGoogle = () => {
+    globalThis.location.href = buildGoogleOAuthUrl('link');
+  };
+
   const handleLinkGoogle = () => {
-    window.location.href = buildGoogleOAuthUrl('link');
+    if (hasPassword) {
+      ventanaAbierta.current = true;
+      setIsGooglePasswordOpen(true);
+      return;
+    }
+    vaAGoogle();
+  };
+
+  const cierraContrasenaParaGoogle = () => {
+    ventanaAbierta.current = false;
+    setIsGooglePasswordOpen(false);
+  };
+
+  /**
+   * Comprueba la contraseña y, si vale, se va a Google (con la marca de 5 minutos).
+   * @returns {Promise<string|null>} La clave del error que enseñar, o null
+   */
+  const confirmaContrasenaParaGoogle = async (password) => {
+    try {
+      await reauthenticateUseCase.execute(password);
+    } catch (error) {
+      if (error?.errorCode === 'CURRENT_PASSWORD_INCORRECT') return 'edit.linkedAccounts.wrongPassword';
+      if (error?.errorCode === 'TOO_MANY_SECURITY_CHANGES') return 'toasts.tooManySecurityChanges';
+      return 'edit.linkedAccounts.passwordCheckFailed';
+    }
+    if (!ventanaAbierta.current) return null;
+    try {
+      vaAGoogle();
+    } catch (error) {
+      // Sin la configuración de Google no hay a dónde ir: que no se quede comprobando
+      console.error('Google OAuth URL error:', error);
+      return 'auth:google.genericError';
+    }
+    return null;
   };
 
   const handleUnlinkGoogle = async () => {
@@ -393,7 +437,14 @@ export const useEditProfile = () => {
       console.error('Error updating security:', error);
 
       const contrasena = passwordErrorMessage(error, t);
-      if (error.errorCode === 'PASSWORD_REUSED') {
+      // Los límites de Seguridad, con su motivo (RyderCupAm #753)
+      const limite = {
+        TOO_MANY_SECURITY_CHANGES: 'toasts.tooManySecurityChanges',
+        TOO_MANY_EMAIL_CHANGE_REQUESTS: 'toasts.tooManyEmailChanges',
+      }[error.errorCode];
+      if (limite) {
+        customToast.error(t(limite));
+      } else if (error.errorCode === 'PASSWORD_REUSED') {
         // v1.13.0, por su código desde la BE #519: antes se buscaba el texto en
         // inglés del backend, que se rompía en cuanto cambiara una palabra
         customToast.error(
@@ -462,6 +513,9 @@ export const useEditProfile = () => {
     handleUpdateProfile,
     handleUpdateSecurity,
     handleLinkGoogle,
+    isGooglePasswordOpen,
+    cierraContrasenaParaGoogle,
+    confirmaContrasenaParaGoogle,
     handleUnlinkGoogle,
   };
 };

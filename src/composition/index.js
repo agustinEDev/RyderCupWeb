@@ -17,6 +17,7 @@ import ResetPasswordUseCase from '../application/use_cases/user/ResetPasswordUse
 import GoogleLoginUseCase from '../application/use_cases/user/GoogleLoginUseCase';
 import LinkGoogleAccountUseCase from '../application/use_cases/user/LinkGoogleAccountUseCase';
 import UnlinkGoogleAccountUseCase from '../application/use_cases/user/UnlinkGoogleAccountUseCase';
+import ReauthenticateUseCase from '../application/use_cases/user/ReauthenticateUseCase';
 import LogoutUseCase from '../application/use_cases/user/LogoutUseCase';
 import ResendVerificationEmailUseCase from '../application/use_cases/user/ResendVerificationEmailUseCase';
 
@@ -289,6 +290,7 @@ const resetPasswordUseCase = new ResetPasswordUseCase({ authRepository: apiAuthR
 const googleLoginUseCase = new GoogleLoginUseCase({ authRepository: apiAuthRepository });
 const linkGoogleAccountUseCase = new LinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
 const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authRepository: apiAuthRepository });
+const reauthenticateUseCase = new ReauthenticateUseCase({ authRepository: apiAuthRepository });
 const logoutUseCase = new LogoutUseCase({ authRepository: apiAuthRepository });
 const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ authRepository: apiAuthRepository });
 const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
@@ -574,6 +576,7 @@ export {
   googleLoginUseCase,
   linkGoogleAccountUseCase,
   unlinkGoogleAccountUseCase,
+  reauthenticateUseCase,
   logoutUseCase,
   resendVerificationEmailUseCase,
   createCompetitionWithGolfCoursesUseCase,

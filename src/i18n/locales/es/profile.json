@@ -127,7 +127,15 @@
       "unlinking": "Desvinculando...",
       "unlinkSuccess": "Cuenta de Google desvinculada exitosamente.",
       "unlinkError": "Error al desvincular la cuenta de Google.",
-      "cannotUnlinkOnly": "Establece una contraseña antes de desvincular tu único método de inicio de sesión."
+      "cannotUnlinkOnly": "Establece una contraseña antes de desvincular tu único método de inicio de sesión.",
+      "passwordTitle": "Confirma tu contraseña",
+      "passwordExplanation": "Para vincular Google, escribe la contraseña de tu cuenta. Así nadie puede vincularlo solo con tu sesión abierta.",
+      "currentPassword": "Contraseña actual",
+      "continue": "Continuar",
+      "checking": "Comprobando...",
+      "cancel": "Cancelar",
+      "wrongPassword": "La contraseña no es correcta.",
+      "passwordCheckFailed": "No se ha podido comprobar la contraseña. Inténtalo de nuevo."
     }
   },
   "toasts": {
@@ -148,6 +156,8 @@
     "securityUpdated": "¡Configuración de seguridad actualizada correctamente!",
     "passwordReused": "No puedes reutilizar ninguna de tus últimas 5 contraseñas. Por favor, elige una contraseña diferente.",
     "failedToUpdateSecurity": "Error al actualizar la configuración de seguridad",
+    "tooManySecurityChanges": "Demasiados intentos. Espera un rato y vuelve a intentarlo.",
+    "tooManyEmailChanges": "Has pedido demasiados cambios de correo. Espera un rato y vuelve a intentarlo.",
     "avatarUpdated": "¡Foto de perfil actualizada!",
     "failedToUpdateAvatar": "Error al actualizar la foto de perfil",
     "avatarFileTooLarge": "Esa foto es demasiado grande (máx. 10MB).",

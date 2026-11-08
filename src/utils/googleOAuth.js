@@ -12,6 +12,47 @@ function generateNonce() {
   return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// La página a la que volver tras entrar con Google (RyderCupAm #753): sin esto, el
+// enlace de confirmar el cambio de correo abierto sin sesión se perdía, porque la vuelta
+// de Google va al panel. Solo esas páginas: cualquier otra ruta sería una redirección
+// abierta guardada a la espera
+const VUELTA_KEY = 'google_oauth_vuelta';
+const VUELTAS_PERMITIDAS = ['/confirm-email-change'];
+
+const esVueltaPermitida = (ruta) =>
+  typeof ruta === 'string' &&
+  VUELTAS_PERMITIDAS.some((base) => ruta === base || ruta.startsWith(`${base}?`));
+
+/**
+ * Guarda a dónde volver tras Google, si es una página permitida. Va en sessionStorage:
+ * dura lo que la ida y vuelta, en esa pestaña.
+ * @param {{pathname?: string, search?: string}|undefined} from La ruta de la que vino
+ */
+export function guardaLaVueltaDeGoogle(from) {
+  const ruta = from?.pathname ? `${from.pathname}${from.search || ''}` : null;
+  try {
+    if (esVueltaPermitida(ruta)) sessionStorage.setItem(VUELTA_KEY, ruta);
+    else sessionStorage.removeItem(VUELTA_KEY);
+  } catch {
+    // Sin almacenamiento, se vuelve al panel como siempre
+  }
+}
+
+/**
+ * La vuelta guardada, una sola vez: se borra al leerla. Null si no hay o no vale.
+ * @returns {string|null}
+ */
+export function recogeLaVueltaDeGoogle() {
+  let ruta = null;
+  try {
+    ruta = sessionStorage.getItem(VUELTA_KEY);
+    sessionStorage.removeItem(VUELTA_KEY);
+  } catch {
+    return null;
+  }
+  return esVueltaPermitida(ruta) ? ruta : null;
+}
+
 /**
  * Build Google OAuth 2.0 authorization URL with CSRF-safe state.
  * @param {'login'|'link'} flow - The OAuth flow type. 'login' for sign-in/register, 'link' for account linking.

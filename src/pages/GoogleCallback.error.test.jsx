@@ -26,8 +26,14 @@ vi.mock('../composition', () => ({
   googleLoginUseCase: { execute: vi.fn() },
   linkGoogleAccountUseCase: { execute: vi.fn() },
 }));
-const estado = vi.hoisted(() => ({ valid: true, flow: 'login' }));
-vi.mock('../utils/googleOAuth', () => ({ verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }) }));
+const estado = vi.hoisted(() => ({ valid: true, flow: 'login', vuelta: null, recogidas: 0 }));
+vi.mock('../utils/googleOAuth', () => ({
+  verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }),
+  recogeLaVueltaDeGoogle: () => {
+    estado.recogidas += 1;
+    return estado.vuelta;
+  },
+}));
 
 const { googleLoginUseCase, linkGoogleAccountUseCase } = await import('../composition');
 const { default: GoogleCallback } = await import('./GoogleCallback');
@@ -106,6 +112,19 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     expect(screen.queryByText('google.linkError')).toBeNull();
   });
 
+  it('G8: vincular sin haber confirmado la contraseña: dice que la confirme (RyderCupAm #753)', async () => {
+    estado.flow = 'link';
+    linkGoogleAccountUseCase.execute.mockRejectedValue(
+      Object.assign(new Error('Verify your email before linking a Google account.'), {
+        status: 403,
+        errorCode: 'REAUTHENTICATION_REQUIRED',
+      })
+    );
+    abrir('?code=abc&state=ok');
+    expect(await screen.findByText('google.reauthRequired')).toBeInTheDocument();
+    expect(screen.queryByText('google.linkError')).toBeNull();
+  });
+
   it('G6: la cuenta está desactivada: lo dice, sin invitar a reintentar', async () => {
     googleLoginUseCase.execute.mockRejectedValue(
       Object.assign(new Error('This account has been deactivated.'), {
@@ -137,6 +156,7 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/auth/complete-profile" element={<p>completar perfil</p>} />
           <Route path="/dashboard" element={<p>panel</p>} />
+          <Route path="/confirm-email-change" element={<p>confirmar el correo</p>} />
         </Routes>
       </BrowserRouter>
     );
@@ -151,11 +171,24 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
     expect(screen.queryByText('completar perfil')).toBeNull();
   });
 
+  it('con la vuelta guardada, vuelve a confirmar el cambio de correo (RyderCupAm #753)', async () => {
+    estado.vuelta = '/confirm-email-change?token=abc';
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('confirmar el correo')).toBeInTheDocument();
+    estado.vuelta = null;
+  });
+
   it('un usuario nuevo va a completar el perfil, donde acepta los Términos', async () => {
+    estado.recogidas = 0;
     googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: true });
 
     abrirConRutas();
 
     expect(await screen.findByText('completar perfil')).toBeInTheDocument();
+    // La vuelta guardada (con el token del enlace) no se queda en el almacenamiento
+    expect(estado.recogidas).toBe(1);
   });
 });

@@ -74,6 +74,10 @@ let refrescoEnCurso = null;
 // vuelta (FE #514). Lo que no puede es esperar para siempre
 const TOPE_DEL_REFRESCO_MS = 15000;
 
+// Las rutas que piden la contraseña actual y contestan 401 si está mal: ese 401 no es
+// de la sesión, y no se refresca ni se repite (RyderCupAm #753)
+const RUTAS_CON_CONTRASENA_ACTUAL = ['/api/v1/users/security', '/api/v1/auth/reauthenticate'];
+
 // Momento del ultimo refresco con exito en esta carga de la pagina, o null si
 // todavia no ha habido ninguno. Lo consulta el refresco proactivo, que de otro
 // modo solo puede suponer la edad del token: la cookie es httpOnly y no se
@@ -458,6 +462,13 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       revocacion.response = response;
       revocacion.errorData = errorData;
       throw revocacion;
+    }
+
+    // La contraseña actual mal escrita no es una sesión caducada (RyderCupAm #753):
+    // repetirla gastaba dos intentos del límite por usuario de esas dos rutas. Solo
+    // un 401 de token se refresca allí
+    if (RUTAS_CON_CONTRASENA_ACTUAL.some((ruta) => url.includes(ruta)) && !esUn401DeToken(errorData)) {
+      return response;
     }
 
     // Special case: Don't retry login endpoint - let it fail naturally

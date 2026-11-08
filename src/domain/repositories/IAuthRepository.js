@@ -45,6 +45,16 @@ class IAuthRepository {
   }
 
   /**
+   * Confirma la contraseña actual antes de vincular Google (RyderCupAm #753): deja una
+   * marca de 5 minutos en una cookie httpOnly.
+   * @param {string} password
+   * @returns {Promise<{expiresIn: number}>}
+   */
+  async reauthenticate(password) {
+    throw new Error('Method not implemented: reauthenticate');
+  }
+
+  /**
    * Link a Google account to an existing authenticated user.
    * @param {string} authorizationCode - The authorization code from Google.
    * @returns {Promise<{message: string, provider: string, providerEmail: string}>}
