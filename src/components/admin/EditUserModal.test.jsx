@@ -91,6 +91,23 @@ describe('EditUserModal · el «+» del hándicap', () => {
     expect(screen.getByText('editModal.pendingEmail')).toBeInTheDocument();
   });
 
+  it('un correo pendiente largo parte la línea en vez de desbordar a 360 px', () => {
+    render(<EditUserModal user={{ ...user, pendingEmail: 'una.direccion.muy.larga@example.com' }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByText('editModal.pendingEmail').className).toMatch(/break-all|break-words/);
+  });
+
+  it('un correo de otra cuenta lo dice en el idioma de la app, no con el texto del backend', async () => {
+    const onSubmit = vi.fn().mockRejectedValue(
+      Object.assign(new Error('That email is already used by another account.'), { errorCode: 'EMAIL_ALREADY_IN_USE' })
+    );
+    render(<EditUserModal user={user} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'editModal.save' }));
+
+    expect(await screen.findByText('editModal.emailAlreadyInUse')).toBeInTheDocument();
+  });
+
   it('sin pendiente, no dice nada', () => {
     render(<EditUserModal user={user} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 

@@ -167,7 +167,8 @@
     "failedToLoadAvatarOptions": "Failed to load avatar options.",
     "emailChangePending": "We sent a link to {{nuevo}}. Your email stays {{actual}} until you confirm it (you have 24 hours).",
     "emailChangeCancelled": "Email change cancelled",
-    "failedToCancelEmailChange": "The email change couldn't be cancelled."
+    "failedToCancelEmailChange": "The email change couldn't be cancelled.",
+    "emailAlreadyInUse": "That email is already used by another account."
   },
   "handicapLabel": "Handicap",
   "tournamentsLabel": "Tournaments",

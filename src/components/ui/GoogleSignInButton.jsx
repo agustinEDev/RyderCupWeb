@@ -15,7 +15,8 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
   const handleClick = () => {
     try {
       // Si se vino al login desde una página que lo pide (confirmar el cambio de
-      // correo), a ella se vuelve tras Google (RyderCupAm #753)
+      // correo), a ella se vuelve tras Google (RyderCupAm #753). La guardada por una
+      // redirección dura no se toca aquí: la usa y la gasta la vuelta de Google
       guardaLaVueltaDeGoogle(location.state?.from);
       window.location.href = buildGoogleOAuthUrl(flow);
     } catch (error) {

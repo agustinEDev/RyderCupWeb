@@ -14,6 +14,7 @@ import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
+import { redirigeAlLogin } from './vueltaTrasEntrar';
 
 /**
  * Handle CSRF validation failure
@@ -48,6 +49,7 @@ export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
   olvidaLasNovedades();
 
   // Hard redirect to login page
-  // This is intentional - CSRF failures require a complete app reset
-  window.location.href = '/login';
+  // This is intentional - CSRF failures require a complete app reset. Con la página
+  // guardada, para volver a ella tras entrar
+  redirigeAlLogin();
 };

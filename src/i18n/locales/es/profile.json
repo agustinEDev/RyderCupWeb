@@ -167,7 +167,8 @@
     "failedToLoadAvatarOptions": "Error al cargar las opciones de avatar.",
     "emailChangePending": "Te hemos enviado un enlace a {{nuevo}}. Tu correo sigue siendo {{actual}} hasta que lo confirmes (tienes 24 horas).",
     "emailChangeCancelled": "Cambio de correo anulado",
-    "failedToCancelEmailChange": "No se ha podido anular el cambio de correo."
+    "failedToCancelEmailChange": "No se ha podido anular el cambio de correo.",
+    "emailAlreadyInUse": "Ese correo ya lo usa otra cuenta."
   },
   "handicapLabel": "Hándicap",
   "tournamentsLabel": "Torneos",

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
 import { clearUserContext } from '../utils/sentryHelpers';
 import { noAvisesDeCierres } from '../utils/avisoDeCierreForzado';
+import { olvidaLaVueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { logoutUseCase } from '../composition';
 import { laPaginaSeVa } from '../services/sesionCompartida';
@@ -63,6 +64,8 @@ export const useLogout = () => {
     // Lo pide el usuario: lo que falle de aquí en adelante (su POST /auth/logout,
     // un sondeo en vuelo) no es un cierre forzado y no se avisa a Sentry (FE #1042)
     noAvisesDeCierres();
+    // Y sin página a la que volver: la siguiente persona entra al panel (revisión)
+    olvidaLaVueltaTrasEntrar();
 
     // A las demas pestañas primero: son las que no se enteran de nada, y así
     // lo saben aunque esta se cierre mientras espera al servidor

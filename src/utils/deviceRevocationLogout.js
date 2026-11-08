@@ -27,6 +27,7 @@ import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
 import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
+import { redirigeAlLogin } from './vueltaTrasEntrar';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -152,7 +153,9 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
   // If already handled but not on login, just redirect (no toast to avoid spam)
   if (alreadyHandled) {
-    window.location.href = '/login';
+    // Ya tratada: o la revocó el propio usuario desde Dispositivos (sale a propósito) o
+    // es la segunda vuelta de un cierre ya guardado. No se guarda (revisión)
+    redirigeAlLogin({ guardar: false });
     return;
   }
 
@@ -213,8 +216,7 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
     icon,
   });
 
-  // Redirect to login after a short delay (allow toast to be visible)
-  setTimeout(() => {
-    window.location.href = '/login';
-  }, 500);
+  // Redirect to login after a short delay (allow toast to be visible), con la página en
+  // la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
+  redirigeAlLogin({ retraso: 500 });
 };

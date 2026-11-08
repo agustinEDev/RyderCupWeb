@@ -38,4 +38,19 @@ describe('GoogleSignInButton · la vuelta tras Google', () => {
     expect(google.guardaLaVueltaDeGoogle).toHaveBeenCalledWith(from);
     expect(google.buildGoogleOAuthUrl).toHaveBeenCalledWith('login');
   });
+
+  it('sin state.from (redirección dura), no toca la página guardada: la usa la vuelta de Google', () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <GoogleSignInButton />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(google.guardaLaVueltaDeGoogle).toHaveBeenCalledWith(undefined);
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
 });
+
