@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
+import { ultimaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
 import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
 import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 
@@ -37,7 +38,8 @@ const ProtectedRoute = ({ children }) => {
 
   // If no user, redirect to login
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Con la última cuenta de la pestaña: si entra otra, irá a su panel (FE #1064, R1)
+    return <Navigate to="/login" state={{ from: { ...location, cuenta: ultimaCuentaDeEstaPestana() } }} replace />;
   }
 
   // Términos sin aceptar (solo con `false` estricto: un backend antiguo no

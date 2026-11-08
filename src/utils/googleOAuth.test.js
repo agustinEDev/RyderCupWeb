@@ -185,3 +185,51 @@ describe('la vuelta tras Google (RyderCupAm #753)', () => {
   });
 });
 
+describe('la vuelta de Google con su cuenta (FE #1064, R7)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('guarda y devuelve la cuenta de la página de la que venía, una vez', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc', cuenta: 'u-1' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
+      ruta: '/confirm-email-change?token=abc',
+      cuenta: 'u-1',
+    });
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toBeNull();
+  });
+
+  it('sin cuenta apuntada, la vuelta sin cuenta (vale para cualquiera)', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
+      ruta: '/confirm-email-change?token=abc',
+      cuenta: null,
+    });
+  });
+
+  it('guardar otra vuelta sin cuenta no deja la cuenta de antes', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=a', cuenta: 'u-1' });
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=b' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
+      ruta: '/confirm-email-change?token=b',
+      cuenta: null,
+    });
+  });
+
+  it('una página no permitida no guarda nada, tampoco la cuenta', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/competitions/7', cuenta: 'u-1' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toBeNull();
+    expect(sessionStorage.getItem('google_oauth_vuelta_cuenta')).toBeNull();
+  });
+});
+
