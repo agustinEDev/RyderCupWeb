@@ -6,7 +6,7 @@ import {
   redirigeAlLogin,
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
-import { noAvisesDeCierres } from './avisoDeCierreForzado';
+import { noAvisesDeCierres, seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
 
 /**
  * La vuelta tras una redirección dura a /login (probador de la release, 8 nov 2026).
@@ -23,6 +23,7 @@ import { noAvisesDeCierres } from './avisoDeCierreForzado';
  *   V9 guardar sustituye: desde una página que no vale, la anterior se borra
  *   V10 redirigeAlLogin guarda y se va; sin guardar, la olvida y se va
  *   V2 también la gasta cuando gana state.from
+ *   V11 entrar acaba el silencio de cerrar sesión: el siguiente cierre forzado guarda (probador, 8 nov)
  */
 const en = (pathname, search = '') =>
   vi.stubGlobal('location', { ...globalThis.location, pathname, search, hash: '', origin: 'http://localhost:3000' });
@@ -123,6 +124,17 @@ describe('la vuelta tras una redirección dura', () => {
     guardaLaVueltaTrasEntrar();
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
+  it('V11: entrar acaba el silencio de cerrar sesión: el siguiente cierre forzado guarda', () => {
+    en('/competitions/7');
+    noAvisesDeCierres();
+
+    vueltaTrasEntrar(undefined);
+    guardaLaVueltaTrasEntrar();
+
+    expect(seCierraLaSesionAPeticion()).toBe(false);
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
   });
 });
 

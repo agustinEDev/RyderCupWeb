@@ -17,7 +17,7 @@
  */
 import { rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
-import { seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
+import { seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from './avisoDeCierreForzado';
 
 const CLAVE = 'vuelta_tras_entrar';
 
@@ -88,9 +88,11 @@ export const leeLaVueltaTrasEntrar = () => {
 /**
  * A dónde ir tras entrar: la ruta de la que vino (`state.from`, o la que trae Google) o,
  * si una redirección dura la perdió, la guardada. La guardada se gasta siempre.
+ * Toda entrada pasa por aquí: también acaba el silencio de un cierre de sesión anterior.
  */
 export const vueltaTrasEntrar = (from) => {
   const guardada = leeLaVueltaTrasEntrar();
   olvidaLaVueltaTrasEntrar();
+  vuelvenLosAvisosDeCierre();
   return rutaDeVuelta(from ?? guardada ?? undefined);
 };
