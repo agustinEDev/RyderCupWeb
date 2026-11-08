@@ -104,6 +104,19 @@ export const noAvisesDeCierres = () => {
   }
 };
 
+/**
+ * Se entró de nuevo: el silencio del cierre anterior se acaba. Si no, un cierre forzado
+ * en esos 30 s no guardaría la página para volver (probador, 8 nov 2026).
+ */
+export const vuelvenLosAvisosDeCierre = () => {
+  silencioHasta = 0;
+  try {
+    globalThis.sessionStorage?.removeItem(CLAVE_DEL_SILENCIO);
+  } catch {
+    // Sin almacenamiento, vale el de memoria
+  }
+};
+
 // Un tramo que es un id: un UUID, un número o un hexadecimal largo
 // Los tramos fijos de las rutas de la API que usa el front: todo lo demás es un id
 // o un token y sale como `{id}`. Una lista cerrada y no una forma (CodeRabbit,

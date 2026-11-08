@@ -12,7 +12,9 @@
  * 1. Guardar SUSTITUYE: o la página de ahora o nada; nunca queda una anterior.
  * 2. Toda redirección dura pasa por `redirigeAlLogin`: ningún camino se olvida de guardar.
  * 3. Salir a propósito no guarda nada: cerrar sesión, o revocar el propio dispositivo.
- * 4. Toda entrada la gasta, con contraseña o con Google, y también un alta o un fallo.
+ * 4. Solo una entrada con éxito la gasta, con contraseña o con Google, o un alta (otra
+ *    cuenta). Un fallo o cancelar Google la conservan: quien entra después con contraseña
+ *    vuelve al enlace (Agustín, 8 nov 2026).
  * 5. Solo una ruta propia, ni login ni registro ni una página pública.
  */
 import { rutaDeVuelta, rutaPropia } from './auth';
@@ -88,6 +90,8 @@ export const leeLaVueltaTrasEntrar = () => {
 /**
  * A dónde ir tras entrar: la ruta de la que vino (`state.from`, o la que trae Google) o,
  * si una redirección dura la perdió, la guardada. La guardada se gasta siempre.
+ * Solo calcula: el silencio de un cierre anterior lo acaba quien entra de verdad (C5),
+ * no la entrada sin red de la aplicación instalada, que también pasa por aquí.
  */
 export const vueltaTrasEntrar = (from) => {
   const guardada = leeLaVueltaTrasEntrar();

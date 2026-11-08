@@ -31,6 +31,16 @@ import { redirigeAlLogin } from './vueltaTrasEntrar';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
+// Quién la puso (8 nov 2026): revocar el propio dispositivo es salir a propósito
+// («propia»: no se guarda la página); un cierre forzado deja «forzado». Una marca de
+// antes (`'true'`) es la de un cierre: la pestaña que la encuentre hace el suyo (C4)
+const MARCA_DEL_CIERRE_FORZADO = 'forzado';
+const MARCA_DE_LA_REVOCACION_PROPIA = 'propia';
+
+/** El usuario revoca su propio dispositivo desde Dispositivos: sale a propósito. */
+export const marcaLaRevocacionPropia = () => {
+  localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DE_LA_REVOCACION_PROPIA);
+};
 
 /**
  * Clear the device revocation handled flag
@@ -137,35 +147,22 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   handleLogout(errorData, 'expiration', { motivo: MOTIVO_DEL_CIERRE.SESION_CADUCADA, ...contexto });
 };
 
+// El cierre de ESTA carga de página (C1, 8 nov 2026): al recargar con la sesión muerta
+// fallan dos peticiones a la vez; la primera ya guardó la página, enseñó el toast y
+// sale a los 500 ms, así que la segunda no hace nada. La marca de localStorage no
+// sirve para esto: la comparten las pestañas y sobrevive a la carga
+let cierreEnEstaCarga = false;
+
 /**
- * Internal function to handle logout with different reasons
- *
- * @param {Object} errorData - Optional error data to determine logout reason
- * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
+ * SOLO para los tests: una carga de página nueva. En el navegador lo hace la salida a
+ * /login, que descarga la página; ningún código de la aplicación lo llama.
  */
-const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
-  const alreadyHandled = localStorage.getItem(REVOCATION_HANDLED_KEY);
+export const olvidaElCierreDeEstaCarga = () => {
+  cierreEnEstaCarga = false;
+};
 
-  // If already on login page and already handled, do nothing
-  if (alreadyHandled && window.location.pathname === '/login') {
-    return;
-  }
-
-  // If already handled but not on login, just redirect (no toast to avoid spam)
-  if (alreadyHandled) {
-    // Ya tratada: o la revocó el propio usuario desde Dispositivos (sale a propósito) o
-    // es la segunda vuelta de un cierre ya guardado. No se guarda (revisión)
-    redirigeAlLogin({ guardar: false });
-    return;
-  }
-
-  // First time handling - do full logout flow
-  localStorage.setItem(REVOCATION_HANDLED_KEY, 'true');
-
-  // Que se vea en Sentry (FE #1042): solo la primera vez, como el aviso al usuario
-  avisaDelCierreForzado(aviso);
-
-  // Clear localStorage
+/** Lo de la cuenta que sale, también al revocar el propio dispositivo (C3). */
+const limpiaLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
   // Y las partidas guardadas para anotar sin cobertura (FE #524). Este camino
@@ -178,45 +175,95 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   olvidaElRefrescoDeHandicap();
   // Y el número de Actividad y el del icono de la aplicación (FE-1)
   olvidaLasNovedades();
-
   // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
   // nadie y esta línea no hacía nada (25 oct 2026)
   clearUserContext();
+};
 
-  // Determine reason if not explicitly provided
-  if (reason === 'unknown' && errorData?.detail) {
-    const detail = String(errorData.detail).toLowerCase();
-    if (detail.includes('revocado') || detail.includes('revoked')) {
-      reason = 'revocation';
-    } else if (detail.includes('expirado') || detail.includes('expired') ||
-               detail.includes('inválido') || detail.includes('invalid')) {
-      reason = 'expiration';
+/**
+ * Internal function to handle logout with different reasons
+ *
+ * Los caminos (tabla C1-C5, aprobada por Agustín el 8 nov 2026):
+ * - C1 segundo aviso en la misma carga: nada (el primero ya sale)
+ * - C2 ya en /login con la marca: nada
+ * - C3 marca «propia» (revocó su dispositivo): limpia y sale, sin toast ni guardar
+ * - C4 marca de otra pestaña o carga («forzado», o la «true» de antes): el cierre
+ *   completo de esta pestaña, como la primera vez
+ *
+ * @param {Object} errorData - Optional error data to determine logout reason
+ * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
+ */
+const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
+  if (cierreEnEstaCarga) return;
+  const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
+
+  // If already on login page and already handled, do nothing
+  if (marca && window.location.pathname === '/login') {
+    return;
+  }
+  cierreEnEstaCarga = true;
+
+  // Salió a propósito: se limpia lo de la cuenta (DeviceManagement espera 2,5 s antes
+  // de su logout, y un 401 o salir de la página se lo saltaban: /code-review), sin
+  // aviso ni página guardada
+  if (marca === MARCA_DE_LA_REVOCACION_PROPIA) {
+    try {
+      limpiaLaCuenta();
+    } finally {
+      redirigeAlLogin({ guardar: false });
     }
+    return;
   }
 
-  // Choose message and icon based on reason using i18n
-  let messageKey;
-  let icon;
+  // Pase lo que pase dentro, se sale (revisión, 8 nov): con el cierre de esta carga ya
+  // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
+  // con la sesión muerta y sin otro aviso que la sacara
+  try {
+    // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario. Antes
+    // de limpiar, que quita el usuario de Sentry y el evento saldría sin él; no lanza
+    avisaDelCierreForzado(aviso);
 
-  if (reason === 'revocation') {
-    messageKey = 'errors.deviceRevoked';
-    icon = '🔒';
-  } else if (reason === 'expiration') {
-    messageKey = 'errors.sessionExpired';
-    icon = '⏱️';
-  } else {
-    messageKey = 'errors.sessionEnded';
-    icon = 'ℹ️';
+    // La cuenta antes que la marca: un almacenamiento lleno al escribirla no deja sus
+    // datos en el dispositivo (CodeRabbit), y limpiar le hace sitio
+    limpiaLaCuenta();
+
+    localStorage.setItem(REVOCATION_HANDLED_KEY, MARCA_DEL_CIERRE_FORZADO);
+
+    // Determine reason if not explicitly provided
+    if (reason === 'unknown' && errorData?.detail) {
+      const detail = String(errorData.detail).toLowerCase();
+      if (detail.includes('revocado') || detail.includes('revoked')) {
+        reason = 'revocation';
+      } else if (detail.includes('expirado') || detail.includes('expired') ||
+                 detail.includes('inválido') || detail.includes('invalid')) {
+        reason = 'expiration';
+      }
+    }
+
+    // Choose message and icon based on reason using i18n
+    let messageKey;
+    let icon;
+
+    if (reason === 'revocation') {
+      messageKey = 'errors.deviceRevoked';
+      icon = '🔒';
+    } else if (reason === 'expiration') {
+      messageKey = 'errors.sessionExpired';
+      icon = '⏱️';
+    } else {
+      messageKey = 'errors.sessionEnded';
+      icon = 'ℹ️';
+    }
+
+    const message = i18next.t(messageKey, { ns: 'auth' });
+
+    customToast.error(message, {
+      duration: 8000,
+      icon,
+    });
+  } finally {
+    // Redirect to login after a short delay (allow toast to be visible), con la página
+    // en la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
+    redirigeAlLogin({ retraso: 500 });
   }
-
-  const message = i18next.t(messageKey, { ns: 'auth' });
-
-  customToast.error(message, {
-    duration: 8000,
-    icon,
-  });
-
-  // Redirect to login after a short delay (allow toast to be visible), con la página en
-  // la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
-  redirigeAlLogin({ retraso: 500 });
 };
