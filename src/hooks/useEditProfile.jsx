@@ -297,6 +297,16 @@ export const useEditProfile = () => {
   const [isGooglePasswordOpen, setIsGooglePasswordOpen] = useState(false);
   // Si se cierra la ventana mientras comprueba, la respuesta ya no lleva a Google
   const ventanaAbierta = useRef(false);
+  // Para qué se abrió: desvincular también pide la contraseña (tabla D, 8 nov 2026). En
+  // estado para la ventana y en una referencia para la comprobación en curso
+  const [accionDeGoogle, setAccionDeGoogle] = useState('vincular');
+  const accion = useRef('vincular');
+  const abreLaVentanaPara = (para) => {
+    accion.current = para;
+    setAccionDeGoogle(para);
+    ventanaAbierta.current = true;
+    setIsGooglePasswordOpen(true);
+  };
 
   const vaAGoogle = () => {
     globalThis.location.href = buildGoogleOAuthUrl('link');
@@ -304,8 +314,7 @@ export const useEditProfile = () => {
 
   const handleLinkGoogle = () => {
     if (hasPassword) {
-      ventanaAbierta.current = true;
-      setIsGooglePasswordOpen(true);
+      abreLaVentanaPara('vincular');
       return;
     }
     vaAGoogle();
@@ -317,7 +326,30 @@ export const useEditProfile = () => {
   };
 
   /**
-   * Comprueba la contraseña y, si vale, se va a Google (con la marca de 5 minutos).
+   * Desvincula, ya con la contraseña confirmada (D6, D9).
+   * @returns {Promise<string|null>} La clave del error que enseñar en la ventana, o null
+   */
+  const desvincula = async () => {
+    setIsUnlinkingGoogle(true);
+    try {
+      await unlinkGoogleAccountUseCase.execute();
+      await refetchUser();
+      customToast.success(t('edit.linkedAccounts.unlinkSuccess'));
+      return null;
+    } catch (error) {
+      // La marca caducó o ya se usó: que la confirme otra vez, en la ventana
+      if (error?.errorCode === 'REAUTHENTICATION_REQUIRED') return 'edit.linkedAccounts.reauthExpired';
+      console.error('Error unlinking Google:', error);
+      customToast.error(error.message || t('edit.linkedAccounts.unlinkError'));
+      return null;
+    } finally {
+      setIsUnlinkingGoogle(false);
+    }
+  };
+
+  /**
+   * Comprueba la contraseña y, si vale, se va a Google (con la marca de 5 minutos) o
+   * desvincula, según para qué se abrió la ventana.
    * @returns {Promise<string|null>} La clave del error que enseñar, o null
    */
   const confirmaContrasenaParaGoogle = async (password) => {
@@ -329,6 +361,7 @@ export const useEditProfile = () => {
       return 'edit.linkedAccounts.passwordCheckFailed';
     }
     if (!ventanaAbierta.current) return null;
+    if (accion.current === 'desvincular') return desvincula();
     try {
       vaAGoogle();
     } catch (error) {
@@ -339,18 +372,11 @@ export const useEditProfile = () => {
     return null;
   };
 
-  const handleUnlinkGoogle = async () => {
-    setIsUnlinkingGoogle(true);
-    try {
-      await unlinkGoogleAccountUseCase.execute();
-      await refetchUser();
-      customToast.success(t('edit.linkedAccounts.unlinkSuccess'));
-    } catch (error) {
-      console.error('Error unlinking Google:', error);
-      customToast.error(error.message || t('edit.linkedAccounts.unlinkError'));
-    } finally {
-      setIsUnlinkingGoogle(false);
-    }
+  // Desvincular pide antes la contraseña, como vincular: con solo una sesión robada se
+  // quitaba el Google del dueño (tabla D, Agustín, 8 nov 2026). El botón solo sale a
+  // quien tiene contraseña
+  const handleUnlinkGoogle = () => {
+    abreLaVentanaPara('desvincular');
   };
 
   const handleUpdateSecurity = async (e) => {
@@ -518,6 +544,7 @@ export const useEditProfile = () => {
     handleUpdateSecurity,
     handleLinkGoogle,
     isGooglePasswordOpen,
+    accionDeGoogle,
     cierraContrasenaParaGoogle,
     confirmaContrasenaParaGoogle,
     handleUnlinkGoogle,

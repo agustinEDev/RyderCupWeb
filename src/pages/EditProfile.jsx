@@ -43,6 +43,7 @@ const EditProfile = () => {
     handleLinkGoogle,
     handleUnlinkGoogle,
     isGooglePasswordOpen,
+    accionDeGoogle,
     cierraContrasenaParaGoogle,
     confirmaContrasenaParaGoogle,
   } = useEditProfile();
@@ -562,6 +563,7 @@ const EditProfile = () => {
         isOpen={isGooglePasswordOpen}
         onClose={cierraContrasenaParaGoogle}
         alConfirmar={confirmaContrasenaParaGoogle}
+        para={accionDeGoogle}
       />
     </div>
   );

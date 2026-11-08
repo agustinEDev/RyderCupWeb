@@ -135,7 +135,9 @@
       "checking": "Comprobando...",
       "cancel": "Cancelar",
       "wrongPassword": "La contraseña no es correcta.",
-      "passwordCheckFailed": "No se ha podido comprobar la contraseña. Inténtalo de nuevo."
+      "passwordCheckFailed": "No se ha podido comprobar la contraseña. Inténtalo de nuevo.",
+      "unlinkPasswordExplanation": "Para desvincular Google, escribe la contraseña de tu cuenta. Así nadie puede quitarlo solo con tu sesión abierta.",
+      "reauthExpired": "La confirmación ha caducado. Escribe otra vez tu contraseña."
     }
   },
   "toasts": {

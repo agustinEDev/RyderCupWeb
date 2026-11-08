@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import ModalShell from '../ui/ModalShell';
 
 /**
- * Pide la contraseña actual antes de ir a Google a vincularlo (RyderCupAm #753). Con
- * solo la sesión, una robada podía añadir un Google que sobrevive a restablecer la
- * contraseña.
+ * Pide la contraseña actual antes de ir a Google a vincularlo (RyderCupAm #753), o antes
+ * de desvincularlo (tabla D, 8 nov 2026). Con solo la sesión, una robada podía añadir un
+ * Google que sobrevive a restablecer la contraseña, o quitar el del dueño.
  *
  * De un modal se sale siempre: «Cancelar» y Escape cierran también mientras comprueba;
  * lo escrito no se pierde por un toque en el fondo.
@@ -14,9 +14,13 @@ import ModalShell from '../ui/ModalShell';
  * @param {boolean} props.isOpen
  * @param {Function} props.onClose
  * @param {(password: string) => Promise<string|null>} props.alConfirmar Devuelve la
- *   clave del error que enseñar, o null si fue bien (entonces la página se va a Google)
+ *   clave del error que enseñar, o null si fue bien
+ * @param {'vincular'|'desvincular'} [props.para] Para vincular, si va bien la página se va
+ *   a Google y la ventana se queda; para desvincular, la página se queda y la ventana se
+ *   cierra
  */
-const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
+const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar, para = 'vincular' }) => {
+  const desvincular = para === 'desvincular';
   const { t } = useTranslation('profile');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -54,6 +58,9 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
     if (fallo) {
       setError(fallo);
       setComprobando(false);
+    } else if (desvincular) {
+      // Desvinculado: la página se queda, la ventana se cierra y olvida lo escrito
+      cierra();
     }
   };
 
@@ -73,7 +80,7 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
           {t('edit.linkedAccounts.passwordTitle')}
         </h2>
         <p id={explicacion} className="text-sm text-gray-600 mb-4">
-          {t('edit.linkedAccounts.passwordExplanation')}
+          {t(desvincular ? 'edit.linkedAccounts.unlinkPasswordExplanation' : 'edit.linkedAccounts.passwordExplanation')}
         </p>
         <label htmlFor={campo} className="block text-sm font-medium text-gray-700 mb-1">
           {t('edit.linkedAccounts.currentPassword')}
@@ -110,7 +117,9 @@ const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar }) => {
             disabled={!password || comprobando}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {comprobando ? t('edit.linkedAccounts.checking') : t('edit.linkedAccounts.continue')}
+            {comprobando
+              ? t('edit.linkedAccounts.checking')
+              : t(desvincular ? 'edit.linkedAccounts.unlink' : 'edit.linkedAccounts.continue')}
           </button>
         </div>
       </form>
