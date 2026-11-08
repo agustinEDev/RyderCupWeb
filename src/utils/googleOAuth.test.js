@@ -185,3 +185,88 @@ describe('la vuelta tras Google (RyderCupAm #753)', () => {
   });
 });
 
+describe('la vuelta de Google con su cuenta (FE #1064, R7)', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('guarda y devuelve la cuenta de la página de la que venía, una vez', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc', cuenta: 'u-1' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
+      ruta: '/confirm-email-change?token=abc',
+      cuenta: 'u-1',
+    });
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toBeNull();
+  });
+
+  it('sin cuenta apuntada, la vuelta sin cuenta (vale para cualquiera)', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
+      ruta: '/confirm-email-change?token=abc',
+      cuenta: null,
+    });
+  });
+
+  it('guardar otra vuelta sin cuenta no deja la cuenta de antes', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=a', cuenta: 'u-1' });
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=b' });
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toEqual({
+      ruta: '/confirm-email-change?token=b',
+      cuenta: null,
+    });
+  });
+
+  it('una página no permitida no guarda nada, tampoco la cuenta', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/competitions/7', cuenta: 'u-1' });
+
+    // Antes de recogerla, que también la borra
+    expect(sessionStorage.getItem('google_oauth_vuelta_cuenta')).toBeNull();
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toBeNull();
+  });
+});
+
+describe('la vuelta de Google ante un almacenamiento que falla (revisión, FE #1064)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('escribe la cuenta antes que la ruta: si la cuenta no cabe, no queda ruta sin cuenta', async () => {
+    const guardado = {};
+    vi.stubGlobal('sessionStorage', {
+      getItem: (k) => guardado[k] ?? null,
+      removeItem: (k) => delete guardado[k],
+      setItem: (k, v) => {
+        if (k === 'google_oauth_vuelta_cuenta') throw new Error('QuotaExceededError');
+        guardado[k] = v;
+      },
+    });
+    const { guardaLaVueltaDeGoogle } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=a', cuenta: 'u-1' });
+
+    expect(guardado.google_oauth_vuelta).toBeUndefined();
+  });
+
+  it('si no puede leer la cuenta, descarta la vuelta en vez de dejarla para cualquiera', async () => {
+    const guardado = { google_oauth_vuelta: '/confirm-email-change?token=a', google_oauth_vuelta_cuenta: 'u-1' };
+    vi.stubGlobal('sessionStorage', {
+      getItem: (k) => {
+        if (k === 'google_oauth_vuelta_cuenta') throw new Error('SecurityError');
+        return guardado[k] ?? null;
+      },
+      removeItem: (k) => delete guardado[k],
+      setItem: (k, v) => (guardado[k] = v),
+    });
+    const { recogeLaVueltaDeGoogleConSuCuenta } = await import('./googleOAuth');
+
+    expect(recogeLaVueltaDeGoogleConSuCuenta()).toBeNull();
+  });
+});
+

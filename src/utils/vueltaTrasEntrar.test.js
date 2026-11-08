@@ -5,6 +5,9 @@ import {
   olvidaLaVueltaTrasEntrar,
   anotaLaCuentaDeEstaPestana,
   olvidaLaCuentaDeEstaPestana,
+  estadoParaElLogin,
+  olvidaLaUltimaCuenta,
+  ultimaCuentaDeEstaPestana,
   quienEstaDentro,
   redirigeAlLogin,
   vueltaTrasEntrar,
@@ -517,6 +520,121 @@ describe('el token que la página quitó de la barra', () => {
     guardaLaVueltaTrasEntrar();
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+  });
+});
+
+/**
+ * FE #1064 (tabla R1-R8, Agustín, 8 nov 2026): la página de la que venía (`state.from`) y la
+ * vuelta de Google llevan la última cuenta que estuvo dentro de la pestaña; si entra otra,
+ * a su panel.
+ */
+describe('la última cuenta de esta pestaña (R2, R3)', () => {
+  let almacen;
+  beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    almacen = {};
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => almacen[k] ?? null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('R2: no se borra cuando la sesión cae (la cuenta pasa a nadie)', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    anotaLaCuentaDeEstaPestana(null);
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-1');
+  });
+
+  it('R2: la sustituye otra cuenta que entra', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    anotaLaCuentaDeEstaPestana('u-2');
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
+  });
+
+  it('R3: cerrar sesión a propósito la olvida', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+
+    olvidaLaUltimaCuenta();
+
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
+  it('R2: sin nada anotado aún, la del usuario guardado', () => {
+    almacen.user = JSON.stringify({ id: 'u-9' });
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-9');
+  });
+
+  it('R6: sin nada anotado ni guardado, ninguna', () => {
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+});
+
+describe('la página de la que venía, con su cuenta (R4-R6)', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('R4: entra la misma cuenta, vuelve a ella', () => {
+    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-1' })).toBe(
+      '/competitions/7'
+    );
+  });
+
+  it('R5: entra otra cuenta, a su panel', () => {
+    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-2' })).toBe(
+      '/dashboard'
+    );
+  });
+
+  it('R5: compara como texto', () => {
+    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: '42' }, { cuenta: 42 })).toBe(
+      '/competitions/7'
+    );
+  });
+
+  it('R5: con cuenta apuntada y quien entra sin cuenta conocida, al panel', () => {
+    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' })).toBe('/dashboard');
+  });
+
+  it('R6: sin cuenta apuntada, la página para cualquiera, como hasta ahora', () => {
+    expect(vueltaTrasEntrar({ pathname: '/competitions/7' }, { cuenta: 'u-2' })).toBe('/competitions/7');
+  });
+
+  it('R5: la de otra cuenta tampoco cae en la guardada de esa otra cuenta', () => {
+    en('/competitions/9');
+    guardaLaVueltaTrasEntrar({ cuenta: 'u-1' });
+
+    expect(vueltaTrasEntrar({ pathname: '/competitions/7', cuenta: 'u-1' }, { cuenta: 'u-2' })).toBe(
+      '/dashboard'
+    );
+  });
+});
+
+describe('estadoParaElLogin (R1: la única forma de ir al login con la página de la que venía)', () => {
+  beforeEach(() => olvidaLaCuentaDeEstaPestana());
+  afterEach(() => olvidaLaCuentaDeEstaPestana());
+
+  it('lleva la página y la última cuenta de la pestaña', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    anotaLaCuentaDeEstaPestana(null);
+
+    expect(estadoParaElLogin({ pathname: '/competitions/7', search: '?a=1', hash: '' })).toEqual({
+      from: { pathname: '/competitions/7', search: '?a=1', hash: '', cuenta: 'u-1' },
+    });
+  });
+
+  it('sin cuenta en la pestaña, la página sin cuenta', () => {
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() });
+
+    expect(estadoParaElLogin({ pathname: '/stats' }).from.cuenta).toBeNull();
+    vi.unstubAllGlobals();
   });
 });
 

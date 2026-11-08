@@ -6,6 +6,7 @@ import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSe
 import { useTranslation } from 'react-i18next';
 import { passwordErrorMessage, validatePassword } from '../utils/validation';
 import { broadcastLogout } from '../utils/broadcastAuth';
+import { olvidaLaUltimaCuenta } from '../utils/vueltaTrasEntrar';
 import PasswordInput from '../components/ui/PasswordInput';
 import PasswordStrengthIndicator from '../components/ui/PasswordStrengthIndicator';
 import BrandMark from '../components/ui/BrandMark';
@@ -196,6 +197,15 @@ const ResetPassword = () => {
         broadcastLogout();
       } catch {
         // Non-critical: only affects multi-tab sync
+      }
+      // Ni la última cuenta de esta pestaña: es el final de esa sesión (FE #1064, R3). Y
+      // el usuario guardado, que una recarga en los dos segundos de antes de ir al login
+      // volvería a leer: el backend ya cerró todas sus sesiones (CodeRabbit en #1069)
+      olvidaLaUltimaCuenta();
+      try {
+        localStorage.removeItem('user');
+      } catch {
+        // Sin almacenamiento no hay nada que volver a leer
       }
 
       customToast.success(t('resetPassword.success'), {

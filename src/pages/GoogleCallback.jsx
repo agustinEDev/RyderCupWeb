@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
-import { verifyOAuthState, recogeLaVueltaDeGoogle } from '../utils/googleOAuth';
+import { verifyOAuthState, recogeLaVueltaDeGoogleConSuCuenta } from '../utils/googleOAuth';
 import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
 import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
@@ -66,7 +66,7 @@ const GoogleCallback = () => {
         } else {
           // Login/register flow. La vuelta se recoge siempre: lleva el token del enlace y
           // no se queda guardada aunque no se use (alta nueva o fallo)
-          const vuelta = recogeLaVueltaDeGoogle();
+          const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
           const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code);
 
           // Update auth context
@@ -85,7 +85,11 @@ const GoogleCallback = () => {
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
             // A la página de la que se vino: la que trae Google (confirmar el correo) o
             // la guardada por una redirección dura, que se gasta; si no, al panel
-            const desdeGoogle = vuelta ? new globalThis.URL(vuelta, globalThis.location.origin) : null;
+            // Con la cuenta que la apuntó: si es otra la que entra, a su panel (FE #1064)
+            const url = vuelta ? new globalThis.URL(vuelta.ruta, globalThis.location.origin) : null;
+            const desdeGoogle = url
+              ? { pathname: url.pathname, search: url.search, hash: url.hash, cuenta: vuelta.cuenta }
+              : null;
             navigate(vueltaTrasEntrar(desdeGoogle ?? undefined, { cuenta: user?.id }), { replace: true });
           }
         }

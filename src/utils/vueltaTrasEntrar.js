@@ -23,6 +23,8 @@
  * 7. La de confirmar el correo sin su token (ya usado) no se guarda ni se vuelve a ella,
  *    venga la vuelta de donde venga (`rutaDeVuelta`): diría «Este enlace no vale» con el
  *    correo ya cambiado (Agustín, 8 nov 2026).
+ * 8. La de la que venía (`state.from`) y la vuelta de Google llevan la última cuenta de
+ *    la pestaña: si entra otra, a su panel; sin cuenta apuntada, para cualquiera (FE #1064).
  */
 import { esLaPaginaDeConfirmar, rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
@@ -65,15 +67,60 @@ let cuentaDeEstaPestana;
 /** Un id de cuenta como texto, o `null` si no hay: la única forma de compararlos. */
 const aIdDeCuenta = (id) => (id == null ? null : String(id));
 
+// La ÚLTIMA cuenta que estuvo dentro de esta pestaña (FE #1064, R2): no se borra cuando la
+// sesión cae, que es justo cuando el login necesita saber de quién era la página de la que
+// venía; solo la olvida cerrar sesión a propósito (R3). `undefined` = nadie la ha anotado
+let ultimaCuenta;
+
 /** `AuthContext`: la cuenta de esta pestaña, o `null` al salir. */
 export const anotaLaCuentaDeEstaPestana = (id) => {
   cuentaDeEstaPestana = aIdDeCuenta(id);
+  if (cuentaDeEstaPestana !== null) ultimaCuenta = cuentaDeEstaPestana;
 };
 
 /** SOLO para los tests: una pestaña recién abierta, sin nada anotado. */
 export const olvidaLaCuentaDeEstaPestana = () => {
   cuentaDeEstaPestana = undefined;
+  ultimaCuenta = undefined;
 };
+
+/** Cerrar sesión a propósito: la siguiente persona no hereda nada (R3). */
+export const olvidaLaUltimaCuenta = () => {
+  ultimaCuenta = null;
+};
+
+/** El id del usuario guardado en el dispositivo, o `null`. */
+const cuentaDelUsuarioGuardado = () => {
+  try {
+    return aIdDeCuenta(JSON.parse(globalThis.localStorage.getItem('user'))?.id);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * La última cuenta que estuvo dentro de esta pestaña, o `null`: la que lleva la página de
+ * la que venía al ir al login (R1). Si nadie la anotó aún, la del usuario guardado.
+ */
+export const ultimaCuentaDeEstaPestana = () => {
+  if (ultimaCuenta !== undefined) return ultimaCuenta;
+  return cuentaDelUsuarioGuardado();
+};
+
+/**
+ * El estado con el que se va al login: la página de la que venía y la última cuenta de la
+ * pestaña (R1). La única forma de construirlo, para que ninguna redirección al login se
+ * olvide de la cuenta (revisión, FE #1064).
+ * @param {{pathname: string, search?: string, hash?: string}} location
+ */
+export const estadoParaElLogin = (location) => ({
+  from: {
+    pathname: location.pathname,
+    search: location.search ?? '',
+    hash: location.hash ?? '',
+    cuenta: ultimaCuentaDeEstaPestana(),
+  },
+});
 
 /**
  * El id de la cuenta de esta pestaña, o `null` si no se sabe: la anotada en memoria y, si
@@ -82,11 +129,7 @@ export const olvidaLaCuentaDeEstaPestana = () => {
  */
 export const quienEstaDentro = () => {
   if (cuentaDeEstaPestana !== undefined) return cuentaDeEstaPestana;
-  try {
-    return aIdDeCuenta(JSON.parse(globalThis.localStorage.getItem('user'))?.id);
-  } catch {
-    return null;
-  }
+  return cuentaDelUsuarioGuardado();
 };
 
 /**
@@ -165,6 +208,14 @@ const cuentaDeLaVuelta = () => {
  * no la entrada sin red de la aplicación instalada, que también pasa por aquí.
  */
 export const vueltaTrasEntrar = (from, { cuenta = null } = {}) => {
+  // La de la que venía, si apunta la cuenta que estaba dentro, solo para esa cuenta (FE
+  // #1064, R4-R6): otra, a su panel. Sin cuenta apuntada, para cualquiera, como siempre
+  const fromDeOtra =
+    from?.cuenta != null && (aIdDeCuenta(cuenta) === null || aIdDeCuenta(from.cuenta) !== aIdDeCuenta(cuenta));
+  if (fromDeOtra) {
+    olvidaLaVueltaTrasEntrar();
+    return '/dashboard';
+  }
   const deQuien = cuentaDeLaVuelta();
   const esSuya = deQuien === null || (aIdDeCuenta(cuenta) !== null && deQuien === aIdDeCuenta(cuenta));
   const guardada = esSuya ? leeLaVueltaTrasEntrar() : null;

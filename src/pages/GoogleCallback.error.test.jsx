@@ -34,6 +34,10 @@ vi.mock('../utils/googleOAuth', () => ({
     estado.recogidas += 1;
     return estado.vuelta;
   },
+  recogeLaVueltaDeGoogleConSuCuenta: () => {
+    estado.recogidas += 1;
+    return estado.vuelta ? { ruta: estado.vuelta, cuenta: estado.cuentaDeLaVuelta ?? null } : null;
+  },
 }));
 
 const { googleLoginUseCase, linkGoogleAccountUseCase } = await import('../composition');
@@ -201,6 +205,21 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
 
     expect(await screen.findByText('panel')).toBeInTheDocument();
     expect(screen.queryByText('completar perfil')).toBeNull();
+  });
+
+  it.each([
+    ['la misma cuenta vuelve a confirmar', 'u-1', 'confirmar el correo'],
+    ['otra cuenta va a su panel', 'u-2', 'panel'],
+  ])('R7 (FE #1064): vuelta de Google apuntada por u-1: %s', async (_caso, quien, pantalla) => {
+    estado.vuelta = '/confirm-email-change?token=abc';
+    estado.cuentaDeLaVuelta = 'u-1';
+    googleLoginUseCase.execute.mockResolvedValue({ user: { id: quien, firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+
+    abrirConRutas();
+
+    expect(await screen.findByText(pantalla)).toBeInTheDocument();
+    estado.vuelta = null;
+    estado.cuentaDeLaVuelta = null;
   });
 
   it('con la vuelta guardada, vuelve a confirmar el cambio de correo (RyderCupAm #753)', async () => {

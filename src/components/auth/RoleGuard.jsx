@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
+import { estadoParaElLogin } from '../../utils/vueltaTrasEntrar';
 
 /**
  * RoleGuard Component
@@ -60,7 +61,8 @@ const RoleGuard = ({
 
   // If no user, redirect to login (this shouldn't happen if ProtectedRoute is also used)
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Con la última cuenta de la pestaña: si entra otra, irá a su panel (FE #1064, R1)
+    return <Navigate to="/login" state={estadoParaElLogin(location)} replace />;
   }
 
   // Normalize allowedRoles to array
