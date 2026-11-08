@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { StrictMode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 
 /**
  * La página del enlace que confirma un correo nuevo (RyderCupAm #749). Va dentro de
@@ -47,11 +47,22 @@ vi.mock('../utils/stripSecretsFromAddressBar', () => ({
 const { confirmEmailChangeUseCase } = await import('../composition');
 const { default: ConfirmEmailChange } = await import('./ConfirmEmailChange');
 
+// La barra que ve el router: `state.from` sale de aquí si la sesión cae sin recargar
+const Barra = () => <output data-testid="barra">{useLocation().search}</output>;
+
 const abrir = (query, { estricto = false } = {}) => {
   const arbol = (
     <MemoryRouter initialEntries={[`/confirm-email-change${query}`]}>
       <Routes>
-        <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
+        <Route
+          path="/confirm-email-change"
+          element={
+            <>
+              <ConfirmEmailChange />
+              <Barra />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -188,4 +199,27 @@ describe('ConfirmEmailChange', () => {
     expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
     expect(secretos.olvida).not.toHaveBeenCalled();
   });
+
+  // Y la copia del router (revisiones, 8 nov 2026): `stripSecretsFromAddressBar` va por
+  // `history.replaceState` y el router seguía con `?token=` gastado; si la sesión caía sin
+  // recargar, el login volvía a él y decía «Este enlace no vale»
+  it('con respuesta final, el router tampoco guarda el token', async () => {
+    cierre.enMarcha.mockReturnValue(false);
+    confirmEmailChangeUseCase.execute.mockResolvedValue({ email: 'a@b.c' });
+    abrir('?token=tok-1');
+
+    expect(await screen.findByText('confirmEmailChange.done:a@b.c')).toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByTestId('barra').textContent).toBe(''));
+    expect(confirmEmailChangeUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('con un fallo de red, el router conserva el token para reintentar', async () => {
+    cierre.enMarcha.mockReturnValue(false);
+    confirmEmailChangeUseCase.execute.mockRejectedValue(new TypeError('Failed to fetch'));
+    abrir('?token=tok-1');
+
+    expect(await screen.findByText('confirmEmailChange.failed')).toBeInTheDocument();
+    expect(screen.getByTestId('barra').textContent).toBe('?token=tok-1');
+  });
 });
+

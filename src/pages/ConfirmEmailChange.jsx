@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import { useAuth } from '../hooks/useAuth';
@@ -31,6 +31,8 @@ const ConfirmEmailChange = () => {
   const { t } = useTranslation('profile');
   const { user, refetch } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname, hash } = useLocation();
   // Tras quitarlo de la barra, una recarga lo recupera del historial
   const token = searchParams.get('token') || readStrippedSecret('token');
   const [estado, setEstado] = useState(token ? { clave: 'confirmEmailChange.confirming' } : {
@@ -47,14 +49,22 @@ const ConfirmEmailChange = () => {
     stripSecretsFromAddressBar();
   }, []);
 
+  // Usado el token, ni el historial ni el router lo guardan: si no, una recarga, la
+  // página guardada al cerrar la sesión o la de la que venía (la sesión que cae sin
+  // recargar) lo repetirían gastado y dirían «Este enlace no vale» (revisiones, 8 nov
+  // 2026). El router aún lo tiene: la barra se limpió sin él
+  const olvidaElToken = useCallback(() => {
+    forgetStrippedSecret('token');
+    navigate({ pathname, search: '', hash }, { replace: true });
+  }, [navigate, pathname, hash]);
+
   useEffect(() => {
     if (!token || enviado.current === intento) return;
     enviado.current = intento;
     confirmEmailChangeUseCase
       .execute(token)
       .then((confirmado) => {
-        // Gastado: ni una recarga ni la vuelta tras un cierre lo repiten
-        forgetStrippedSecret('token');
+        olvidaElToken();
         setEstado({ clave: 'confirmEmailChange.done', email: confirmado?.email, bien: true });
         // La sesión, con el correo nuevo; si falla, el cambio ya está hecho
         Promise.resolve(refetch?.()).catch(() => {});
@@ -65,13 +75,13 @@ const ConfirmEmailChange = () => {
         if (seEstaCerrandoLaSesion()) return;
         // Una respuesta final (caducado, no vale, ocupado) también lo gasta; un fallo de
         // red no: «Reintentar» lo necesita
-        if (TEXTO_DEL_RECHAZO[error?.errorCode]) forgetStrippedSecret('token');
+        if (TEXTO_DEL_RECHAZO[error?.errorCode]) olvidaElToken();
         setEstado({ clave: TEXTO_DEL_RECHAZO[error?.errorCode] || FALLO });
         // Caducado u ocupado: el backend lo anuló, y Seguridad no debe seguir
         // mostrándolo pendiente
         Promise.resolve(refetch?.()).catch(() => {});
       });
-  }, [token, refetch, intento]);
+  }, [token, refetch, intento, olvidaElToken]);
 
   const reintenta = () => {
     setEstado({ clave: 'confirmEmailChange.confirming' });
