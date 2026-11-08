@@ -36,7 +36,12 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
         handicap: formData.handicap === '' ? undefined : Number(formData.handicap),
       });
     } catch (err) {
-      setError(err.message || t('editModal.error'));
+      // El correo de otra cuenta, en el idioma de la app: el texto del backend es inglés
+      setError(
+        err?.errorCode === 'EMAIL_ALREADY_IN_USE'
+          ? t('editModal.emailAlreadyInUse')
+          : err?.message || t('editModal.error')
+      );
     } finally {
       setIsSaving(false);
     }
@@ -109,6 +114,13 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
             />
+            {/* El cambio de correo queda pendiente hasta que el usuario lo confirma
+                desde esa dirección (RyderCupAm #753) */}
+            {user.pendingEmail && (
+              <p className="mt-1 text-xs text-amber-700 break-all">
+                {t('editModal.pendingEmail', { email: user.pendingEmail })}
+              </p>
+            )}
           </div>
 
           <div>

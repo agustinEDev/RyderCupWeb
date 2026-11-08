@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { buildGoogleOAuthUrl } from '../../utils/googleOAuth';
+import { useLocation } from 'react-router';
+import { buildGoogleOAuthUrl, guardaLaVueltaDeGoogle } from '../../utils/googleOAuth';
 import customToast from '../../utils/toast';
 
 const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
   const { t } = useTranslation('auth');
+  const location = useLocation();
 
   const defaultLabel = flow === 'login'
     ? t('google.continueWithGoogle')
@@ -12,6 +14,10 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
 
   const handleClick = () => {
     try {
+      // Si se vino al login desde una página que lo pide (confirmar el cambio de
+      // correo), a ella se vuelve tras Google (RyderCupAm #753). La guardada por una
+      // redirección dura no se toca aquí: la usa y la gasta la vuelta de Google
+      guardaLaVueltaDeGoogle(location.state?.from);
       window.location.href = buildGoogleOAuthUrl(flow);
     } catch (error) {
       console.error('Google OAuth URL error:', error);

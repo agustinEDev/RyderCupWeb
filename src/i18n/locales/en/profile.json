@@ -127,7 +127,15 @@
       "unlinking": "Unlinking...",
       "unlinkSuccess": "Google account unlinked successfully.",
       "unlinkError": "Failed to unlink Google account.",
-      "cannotUnlinkOnly": "Set a password first before unlinking your only sign-in method."
+      "cannotUnlinkOnly": "Set a password first before unlinking your only sign-in method.",
+      "passwordTitle": "Confirm your password",
+      "passwordExplanation": "To link Google, enter your account password. This way nobody can link it with just your open session.",
+      "currentPassword": "Current password",
+      "continue": "Continue",
+      "checking": "Checking...",
+      "cancel": "Cancel",
+      "wrongPassword": "The password is not correct.",
+      "passwordCheckFailed": "The password could not be checked. Please try again."
     }
   },
   "toasts": {
@@ -148,6 +156,8 @@
     "securityUpdated": "Security settings updated successfully!",
     "passwordReused": "Cannot reuse any of your last 5 passwords. Please choose a different password.",
     "failedToUpdateSecurity": "Failed to update security settings",
+    "tooManySecurityChanges": "Too many attempts. Wait a while and try again.",
+    "tooManyEmailChanges": "You have asked for too many email changes. Wait a while and try again.",
     "avatarUpdated": "Profile photo updated!",
     "failedToUpdateAvatar": "Failed to update profile photo",
     "avatarFileTooLarge": "That photo is too large (max 10MB).",
@@ -157,7 +167,8 @@
     "failedToLoadAvatarOptions": "Failed to load avatar options.",
     "emailChangePending": "We sent a link to {{nuevo}}. Your email stays {{actual}} until you confirm it (you have 24 hours).",
     "emailChangeCancelled": "Email change cancelled",
-    "failedToCancelEmailChange": "The email change couldn't be cancelled."
+    "failedToCancelEmailChange": "The email change couldn't be cancelled.",
+    "emailAlreadyInUse": "That email is already used by another account."
   },
   "handicapLabel": "Handicap",
   "tournamentsLabel": "Tournaments",

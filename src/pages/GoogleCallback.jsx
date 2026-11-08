@@ -3,7 +3,9 @@ import { useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
-import { verifyOAuthState } from '../utils/googleOAuth';
+import { verifyOAuthState, recogeLaVueltaDeGoogle } from '../utils/googleOAuth';
+import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
+import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -62,7 +64,9 @@ const GoogleCallback = () => {
           customToast.success(t('google.linkSuccess'));
           navigate('/profile/edit', { replace: true });
         } else {
-          // Login/register flow
+          // Login/register flow. La vuelta se recoge siempre: lleva el token del enlace y
+          // no se queda guardada aunque no se use (alta nueva o fallo)
+          const vuelta = recogeLaVueltaDeGoogle();
           const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code);
 
           // Update auth context
@@ -70,20 +74,34 @@ const GoogleCallback = () => {
           updateCsrfToken(csrfToken);
 
           if (isNewUser) {
+            // Se entró: acaba el silencio de un cierre de sesión anterior (C5). Un alta
+            // es otra cuenta y no vuelve a ninguna página: la guardada se olvida
+            vuelvenLosAvisosDeCierre();
+            olvidaLaVueltaTrasEntrar();
             customToast.info(t('google.welcomeNewUser'));
             navigate('/auth/complete-profile', { replace: true });
           } else {
+            vuelvenLosAvisosDeCierre();
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
-            navigate('/dashboard', { replace: true });
+            // A la página de la que se vino: la que trae Google (confirmar el correo) o
+            // la guardada por una redirección dura, que se gasta; si no, al panel
+            const desdeGoogle = vuelta ? new globalThis.URL(vuelta, globalThis.location.origin) : null;
+            navigate(vueltaTrasEntrar(desdeGoogle ?? undefined), { replace: true });
           }
         }
       } catch (err) {
         console.error('Google OAuth callback error:', err);
+        // La página guardada se conserva: solo una entrada con éxito la gasta, y quien
+        // entre después con contraseña vuelve a ella (Agustín, 8 nov 2026)
 
         // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
         if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {
           // Vincular Google pide el correo de la cuenta verificado (RyderCupAm #749)
           setError(t('google.linkNeedsVerifiedEmail'));
+        } else if (err.errorCode === 'REAUTHENTICATION_REQUIRED') {
+          // Vincular pide la contraseña confirmada hace menos de 5 minutos
+          // (RyderCupAm #753): caducó o no se confirmó. Desde el perfil se vuelve a pedir
+          setError(t('google.reauthRequired'));
         } else if (err.errorCode === 'GOOGLE_EMAIL_NOT_VERIFIED') {
           // Google no verificó el correo: ni alta ni vínculo (RyderCupAm, revisión
           // del registro con Google)

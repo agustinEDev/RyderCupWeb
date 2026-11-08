@@ -46,7 +46,7 @@
   },
   "privacy": {
     "title": "Política de Privacidad",
-    "lastUpdated": "Última actualización: 6 de noviembre de 2026",
+    "lastUpdated": "Última actualización: 7 de noviembre de 2026",
     "section1": {
       "title": "1. Responsable del tratamiento",
       "content": "El responsable del tratamiento de tus datos es:\n\n- Agustín Estévez Domínguez (persona física), el titular del Servicio; sus datos completos están en el Aviso Legal\n- Correo electrónico: admin@rydercupfriends.com\n\nRyderCupFriends (\"el Servicio\") es el nombre de la aplicación, no una sociedad."
@@ -73,7 +73,7 @@
     },
     "section7": {
       "title": "7. Proveedores y transferencias internacionales",
-      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos, también los mensajes del formulario de contacto (región de la UE).\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea.\n\nAdemás, al ver el mapa de un hoyo, tu navegador descarga las ortofotos directamente de los servidores públicos que las publican (IGN/PNOA, ICGC, geoEuskadi e IDENA), que reciben la dirección IP de tu dispositivo, como al visitar cualquier web."
+      "content": "Para prestar el Servicio usamos estos proveedores, que tratan datos por cuenta nuestra:\n\n- Render: alojamiento de la aplicación y de la base de datos (servidores en la UE o EE. UU. según el servicio).\n- Sentry: registro de errores y Session Replay (región de Alemania, UE).\n- Mailgun: envío de correos, también los mensajes del formulario de contacto (región de la UE).\n- Resend: envío de correos de respaldo, también los mensajes del formulario de contacto, cuando Mailgun no puede enviarlos (empresa de EE. UU.; el envío sale desde la UE).\n- Brevo: envío de respaldo, solo de avisos que no llevan enlaces de acceso ni son de seguridad y de los mensajes del formulario de contacto, cuando ni Mailgun ni Resend pueden (UE); registra las aperturas y los clics de esos avisos sin asociarlos a cada destinatario.\n- Cloudflare: red de distribución y protección frente a ataques (EE. UU.).\n- Google: inicio de sesión con Google, si lo usas (EE. UU.).\n\nCuando un proveedor trata datos fuera del Espacio Económico Europeo, la transferencia se ampara en el Marco de Privacidad de Datos UE-EE. UU. o, en su defecto, en las cláusulas contractuales tipo aprobadas por la Comisión Europea.\n\nAdemás, al ver el mapa de un hoyo, tu navegador descarga las ortofotos directamente de los servidores públicos que las publican (IGN/PNOA, ICGC, geoEuskadi e IDENA), que reciben la dirección IP de tu dispositivo, como al visitar cualquier web."
     },
     "section8": {
       "title": "8. Cookies, almacenamiento local y Session Replay",

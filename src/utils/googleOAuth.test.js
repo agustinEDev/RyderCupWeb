@@ -148,3 +148,40 @@ describe('verifyOAuthState', () => {
     expect(result.valid).toBe(false);
   });
 });
+
+describe('la vuelta tras Google (RyderCupAm #753)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('V1: guarda la página de confirmar el correo, con su token, y la devuelve una vez', async () => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogle } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle({ pathname: '/confirm-email-change', search: '?token=abc' });
+
+    expect(recogeLaVueltaDeGoogle()).toBe('/confirm-email-change?token=abc');
+    expect(recogeLaVueltaDeGoogle()).toBeNull();
+  });
+
+  it.each([
+    ['otra página', { pathname: '/admin/users' }],
+    ['un prefijo engañoso', { pathname: '/confirm-email-changes' }],
+    ['sin ruta', undefined],
+  ])('V2: %s no se guarda', async (_caso, from) => {
+    const { guardaLaVueltaDeGoogle, recogeLaVueltaDeGoogle } = await import('./googleOAuth');
+
+    guardaLaVueltaDeGoogle(from);
+
+    // Ni siquiera queda guardada a la espera
+    expect(sessionStorage.getItem('google_oauth_vuelta')).toBeNull();
+    expect(recogeLaVueltaDeGoogle()).toBeNull();
+  });
+
+  it('V3: lo escrito a mano en el almacenamiento no vale si no es una página permitida', async () => {
+    const { recogeLaVueltaDeGoogle } = await import('./googleOAuth');
+    sessionStorage.setItem('google_oauth_vuelta', 'https://evil.example');
+
+    expect(recogeLaVueltaDeGoogle()).toBeNull();
+  });
+});
+

@@ -12,6 +12,7 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout,
   clearDeviceRevocationFlag,
+  olvidaElCierreDeEstaCarga,
 } from './deviceRevocationLogout';
 import customToast from './toast';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
@@ -42,6 +43,8 @@ vi.mock('./toast', () => ({
 describe('deviceRevocationLogout utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Cada test, una carga de página nueva
+    olvidaElCierreDeEstaCarga();
     // Mock window.location.href
     delete window.location;
     window.location = { href: '', pathname: '' };
@@ -385,29 +388,162 @@ describe('deviceRevocationLogout utilities', () => {
       vi.useRealTimers();
     });
 
-    it('should not show toast if already handled and on login page', () => {
+    it.each([['true'], ['forzado'], ['propia']])('C2: ya en /login con la marca «%s», nada', (marca) => {
       localStorage.getItem.mockImplementation((key) => {
-        if (key === 'device_revocation_handled') return 'true';
+        if (key === 'device_revocation_handled') return marca;
         return null;
       });
       window.location.pathname = '/login';
 
       handleDeviceRevocationLogout();
+      vi.advanceTimersByTime(500);
 
       expect(customToast.error).not.toHaveBeenCalled();
+      expect(localStorage.removeItem).not.toHaveBeenCalled();
+      expect(window.location.href).toBe('');
     });
 
-    it('should redirect without toast if already handled but not on login page', () => {
+    it('C3: si limpiar falla tras revocar el propio dispositivo, sale igualmente a /login', () => {
+      localStorage.getItem.mockImplementation((key) => (key === 'device_revocation_handled' ? 'propia' : null));
+      localStorage.removeItem.mockImplementation(() => {
+        throw new Error('SecurityError');
+      });
+      window.location.pathname = '/dashboard';
+
+      expect(() => handleDeviceRevocationLogout()).toThrow('SecurityError');
+
+      expect(window.location.href).toBe('/login');
+    });
+
+    it('si algo falla dentro del cierre (almacenamiento lleno), sale igualmente a /login', () => {
+      localStorage.setItem.mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+      window.location.pathname = '/dashboard';
+
+      expect(() => handleDeviceRevocationLogout()).toThrow('QuotaExceededError');
+      vi.advanceTimersByTime(500);
+
+      expect(window.location.href).toBe('/login');
+      // Y la cuenta ya se limpió: lo primero, antes de la marca (CodeRabbit)
+      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+      expect(sentryHelpers.clearUserContext).toHaveBeenCalled();
+    });
+
+
+    // C4 (8 nov 2026): una marca de otra pestaña o de una carga anterior no ahorra el
+    // cierre de esta: limpia, avisa y se va, como la primera vez
+    it.each([['forzado'], ['true']])('con la marca «%s» de otra carga, el cierre completo', (marca) => {
       localStorage.getItem.mockImplementation((key) => {
-        if (key === 'device_revocation_handled') return 'true';
+        if (key === 'device_revocation_handled') return marca;
         return null;
       });
       window.location.pathname = '/dashboard';
 
       handleDeviceRevocationLogout();
+      vi.advanceTimersByTime(500);
 
-      expect(customToast.error).not.toHaveBeenCalled();
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
       expect(window.location.href).toBe('/login');
     });
+  });
+});
+
+describe('la redirección dura guarda la página para volver tras entrar (probador de la release)', () => {
+  const desdeElEnlace = () => {
+    sessionStorage.clear();
+    window.location = {
+      href: '',
+      pathname: '/confirm-email-change',
+      search: '?token=abc',
+      hash: '',
+      origin: 'http://localhost:3000',
+    };
+  };
+
+  it.each([
+    ['la primera vez: la guarda', null, '/confirm-email-change?token=abc'],
+    // Marca de otra carga, o de una versión anterior: el cierre de esta guarda (C4)
+    ['marca vieja «true»: la guarda', 'true', '/confirm-email-change?token=abc'],
+    ['marca de otra pestaña: la guarda', 'forzado', '/confirm-email-change?token=abc'],
+    // Revocó su propio dispositivo: no guarda, y borra una anterior (C3)
+    ['revocación propia: no la guarda', 'propia', null],
+  ])('desde el enlace de confirmar, con su token: %s', async (_caso, tratada, esperado) => {
+    desdeElEnlace();
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(() => tratada),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+    const { handleSessionExpiredLogout, olvidaElCierreDeEstaCarga } = await import('./deviceRevocationLogout');
+    olvidaElCierreDeEstaCarga();
+
+    handleSessionExpiredLogout({ detail: 'expired' });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(esperado);
+    vi.unstubAllGlobals();
+  });
+
+  // Un almacén de verdad: los dos avisos comparten la marca, como en el navegador
+  const conAlmacen = (inicial = {}) => {
+    const datos = { ...inicial };
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => datos[k] ?? null),
+      setItem: vi.fn((k, v) => {
+        datos[k] = String(v);
+      }),
+      removeItem: vi.fn((k) => {
+        delete datos[k];
+      }),
+    });
+    return datos;
+  };
+
+  // Una carga de página nueva: el módulo, sin el cierre de esta carga
+  const deUnaCargaNueva = async () => {
+    vi.resetModules();
+    return import('./deviceRevocationLogout');
+  };
+
+  it('C1: dos fallos en la misma carga: el segundo no hace nada (probador y /code-review, 8 nov)', async () => {
+    vi.useFakeTimers();
+    desdeElEnlace();
+    const datos = conAlmacen();
+    const { handleSessionExpiredLogout } = await deUnaCargaNueva();
+    const toast = (await import('./toast')).default;
+    toast.error.mockClear();
+
+    handleSessionExpiredLogout({ detail: 'expired' });
+    handleSessionExpiredLogout({ detail: 'expired' });
+
+    // El toast se lee: la salida espera sus 500 ms, no la adelanta el segundo
+    expect(window.location.href).toBe('');
+    vi.advanceTimersByTime(500);
+    expect(window.location.href).toBe('/login');
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/confirm-email-change?token=abc');
+    expect(datos.device_revocation_handled).toBe('forzado');
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('C3: tras revocar el propio dispositivo, el aviso que llegue limpia la cuenta y no guarda', async () => {
+    desdeElEnlace();
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    const datos = conAlmacen({ user: '{"id":"u-1"}' });
+    const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } = await deUnaCargaNueva();
+    const toast = (await import('./toast')).default;
+    toast.error.mockClear();
+
+    marcaLaRevocacionPropia();
+    handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
+
+    expect(datos.user).toBeUndefined();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(window.location.href).toBe('/login');
+    vi.unstubAllGlobals();
   });
 });

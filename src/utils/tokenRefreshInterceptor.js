@@ -34,6 +34,7 @@ import {
 
 import { RUTA_DEL_REFRESCO } from './rutasDeLaSesion';
 import { cabeceraDelModoDeLaApp } from './modoDeLaApp';
+import { usuarioDeLaPestana } from './usuarioDeLaPestana';
 
 /**
  * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios
@@ -73,6 +74,10 @@ let refrescoEnCurso = null;
 // vuelta (FE #514). Lo que no puede es esperar para siempre
 const TOPE_DEL_REFRESCO_MS = 15000;
 
+// Las rutas que piden la contraseña actual y contestan 401 si está mal: ese 401 no es
+// de la sesión, y no se refresca ni se repite (RyderCupAm #753)
+const RUTAS_CON_CONTRASENA_ACTUAL = ['/api/v1/users/security', '/api/v1/auth/reauthenticate'];
+
 // Momento del ultimo refresco con exito en esta carga de la pagina, o null si
 // todavia no ha habido ninguno. Lo consulta el refresco proactivo, que de otro
 // modo solo puede suponer la edad del token: la cookie es httpOnly y no se
@@ -91,39 +96,53 @@ let refrescosCompletados = 0;
  */
 export const getLastRefreshAt = () => lastRefreshAt;
 
+// Lo que se espera antes de repetir un refresco con `SESSION_REPLACED`: si el que
+// ganó ya está en la BD pero su `Set-Cookie` aún no ha llegado al navegador, repetir
+// en el acto volvería a mandar la cookie vieja
+const ESPERA_TRAS_SUSTITUIDA_MS = 500;
+
+const esDeOtraCuenta = (data) => {
+  const dePestana = usuarioDeLaPestana()?.id;
+  const delRefresco = data?.user?.id;
+  return Boolean(dePestana && delRefresco && dePestana !== delRefresco);
+};
+
+const anotaElRefresco = () => {
+  lastRefreshAt = Date.now();
+  refrescosCompletados += 1;
+};
+
+const esSesionSustituida = (error) => error?.errorData?.error_code === 'SESSION_REPLACED';
+
 /**
- * Refresh the access token using the refresh token cookie
- * @returns {Promise<boolean>} - True if refresh was successful
- * @throws {Error} - If refresh fails
+ * Un POST al refresco, con su tope de tiempo.
+ * @returns {Promise<object>} Lo que contestó el servidor
+ * @throws {Error} - Si falla; con `.response` y `.errorData` si contestó el servidor
  */
-export const refreshAccessToken = async () => {
+const pideElRefresco = async () => {
+  // Con tope de tiempo, y no es un adorno: desde FE #518 TODA peticion que
+  // reciba un 401 espera a este refresco. Un `fetch` que se queda colgado
+  // —lo normal en un movil con mala cobertura, donde la conexion no falla,
+  // simplemente no contesta— dejaria esperando indefinidamente a todas. Que
+  // es exactamente el fallo que aquella issue vino a cerrar, alcanzado por
+  // otro camino. Cubre tambien la lectura del cuerpo, que puede pararse igual
+  // con las cabeceras ya recibidas
+  const corte = new AbortController();
+  const temporizador = setTimeout(() => corte.abort(), TOPE_DEL_REFRESCO_MS);
+
   try {
     console.log('🔄 [TokenRefresh] Attempting to refresh access token...');
 
-    // Con tope de tiempo, y no es un adorno: desde FE #518 TODA peticion que
-    // reciba un 401 espera a este refresco. Un `fetch` que se queda colgado
-    // —lo normal en un movil con mala cobertura, donde la conexion no falla,
-    // simplemente no contesta— dejaria esperando indefinidamente a todas. Que
-    // es exactamente el fallo que aquella issue vino a cerrar, alcanzado por
-    // otro camino
-    const corte = new AbortController();
-    const temporizador = setTimeout(() => corte.abort(), TOPE_DEL_REFRESCO_MS);
-
-    let response;
-    try {
-      response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
-        method: 'POST',
-        credentials: 'include', // Critical: sends httpOnly cookies
-        headers: {
-          'Content-Type': 'application/json',
-          // El refresco también registra el dispositivo (FE #1046)
-          ...cabeceraDelModoDeLaApp(),
-        },
-        signal: corte.signal,
-      });
-    } finally {
-      clearTimeout(temporizador);
-    }
+    const response = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
+      method: 'POST',
+      credentials: 'include', // Critical: sends httpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+        // El refresco también registra el dispositivo (FE #1046)
+        ...cabeceraDelModoDeLaApp(),
+      },
+      signal: corte.signal,
+    });
 
     if (!response.ok) {
       console.error('❌ [TokenRefresh] Refresh failed:', response.status, response.statusText);
@@ -132,8 +151,10 @@ export const refreshAccessToken = async () => {
       let errorData = {};
       try {
         errorData = await response.json();
-      } catch {
-        // Ignore JSON parse errors
+      } catch (errorDelCuerpo) {
+        // Un cuerpo que no es JSON se ignora. Uno cortado, por la red o por el tope,
+        // no es una respuesta: sin saber el código, no se cierra la sesión por él
+        if (!(errorDelCuerpo instanceof SyntaxError)) throw errorDelCuerpo;
       }
 
       // Refresh token expired or invalid
@@ -162,14 +183,64 @@ export const refreshAccessToken = async () => {
     // Backend sets new access_token cookie automatically (httpOnly)
     // No need to handle token manually
 
-    lastRefreshAt = Date.now();
-    refrescosCompletados += 1;
-
-    return true;
+    return data;
   } catch (error) {
     console.error('❌ [TokenRefresh] Error refreshing token:', error);
     throw error;
+  } finally {
+    clearTimeout(temporizador);
   }
+};
+
+/**
+ * El POST al refresco, y uno más si contesta `SESSION_REPLACED`.
+ *
+ * Con `SESSION_REPLACED` (BE #734) el navegador ya tiene una sesión más nueva y el
+ * servidor no ha borrado la cookie: se repite UNA vez con la cookie nueva. Si vuelve a
+ * contestar lo mismo, no es un «no» a la sesión: sube como un fallo sin respuesta —un
+ * `TypeError` sin `.response`, igual que el de `fetch` sin red—, que todos los que
+ * esperan un refresco ya saben tratar conservando la sesión. La ventana del backend
+ * dura 5 minutos: pasados, contesta un rechazo normal y ahí sí se cierra.
+ *
+ * @returns {Promise<object>} Lo que contestó el servidor
+ */
+const pideConUnReintento = async () => {
+  try {
+    return await pideElRefresco();
+  } catch (error) {
+    if (!esSesionSustituida(error)) throw error;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, ESPERA_TRAS_SUSTITUIDA_MS));
+
+  try {
+    return await pideElRefresco();
+  } catch (error) {
+    if (!esSesionSustituida(error)) throw error;
+    throw new TypeError('The session was replaced and the new cookie has not arrived yet', { cause: error });
+  }
+};
+
+/**
+ * Refresh the access token using the refresh token cookie
+ *
+ * @returns {Promise<boolean>} - True if refresh was successful
+ * @throws {Error} - If refresh fails
+ */
+export const refreshAccessToken = async () => {
+  const data = await pideConUnReintento();
+
+  // La cookie es de otra cuenta que entró en este navegador. Lo que estaba en vuelo era
+  // de la cuenta de esta pestaña: repetirlo lo haría a nombre de la otra. No se anota el
+  // refresco, para que nada lo repita, y la pestaña recarga con la nueva. Sin bucle: al
+  // recargar, la sesión compartida aún no sabe quién es y no compara
+  if (esDeOtraCuenta(data)) {
+    globalThis.location.reload();
+    throw new TypeError('The session now belongs to another account');
+  }
+
+  anotaElRefresco();
+  return true;
 };
 
 /**
@@ -393,6 +464,13 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
       throw revocacion;
     }
 
+    // La contraseña actual mal escrita no es una sesión caducada (RyderCupAm #753):
+    // repetirla gastaba dos intentos del límite por usuario de esas dos rutas. Solo
+    // un 401 de token se refresca allí
+    if (RUTAS_CON_CONTRASENA_ACTUAL.some((ruta) => url.includes(ruta)) && !esUn401DeToken(errorData)) {
+      return response;
+    }
+
     // Special case: Don't retry login endpoint - let it fail naturally
     if (url.includes('/auth/login')) {
       console.log('🚫 [TokenRefresh] Login endpoint returned 401. Invalid credentials - not retrying.');
@@ -469,21 +547,6 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     console.error('❌ [TokenRefresh] Error in fetch interceptor:', error);
     // Re-throw to let the caller handle the error appropriately
     throw error;
-  }
-};
-
-/**
- * Check if the current session is valid by attempting a refresh
- * Useful for checking session status on app startup
- *
- * @returns {Promise<boolean>} - True if session is valid
- */
-export const isSessionValid = async () => {
-  try {
-    await refreshAccessToken();
-    return true;
-  } catch {
-    return false;
   }
 };
 

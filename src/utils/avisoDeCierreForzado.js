@@ -27,8 +27,9 @@ export const MOTIVO_DEL_CIERRE = Object.freeze({
 
 // Los `error_code` del 401 del refresco que son el final normal de una sesión. Desde
 // RyderCupAm #733 el backend solo manda SESSION_ENDED o SESSION_REJECTED (el motivo
-// exacto decía el estado de la cuenta). Los de antes siguen aquí mientras el backend
-// no se despliega: este front sale primero. Se pueden quitar después
+// exacto decía el estado de la cuenta), además de SESSION_REPLACED (#734), que no llega
+// aquí: el refresco lo reintenta. Los de antes siguen aquí mientras el backend no se
+// despliega: este front sale primero. Se pueden quitar después
 const FINAL_NORMAL = new Set([
   'SESSION_ENDED',
   'REFRESH_TOKEN_MISSING',
@@ -55,6 +56,8 @@ const DE_TOKEN = new Set([
   'credenciales de autenticación no proporcionadas',
   'token inválido o expirado',
   'token inválido: falta subject',
+  // El token de antes de BE #737, sin `did`: el refresco lo trae
+  'token inválido: falta el dispositivo',
 ]);
 
 /** Si un 401 es porque el token de acceso no llegó o no vale. */
@@ -88,11 +91,27 @@ const silenciadoAhora = () => {
   return Date.now() < Math.max(silencioHasta, guardado);
 };
 
+/** Si el usuario acaba de pedir cerrar la sesión (los avisos están callados). */
+export const seCierraLaSesionAPeticion = () => silenciadoAhora();
+
 /** El usuario pidió cerrar la sesión: nada de avisos durante un rato. */
 export const noAvisesDeCierres = () => {
   silencioHasta = Date.now() + SILENCIO_TRAS_EL_LOGOUT_MS;
   try {
     globalThis.sessionStorage?.setItem(CLAVE_DEL_SILENCIO, String(silencioHasta));
+  } catch {
+    // Sin almacenamiento, vale el de memoria
+  }
+};
+
+/**
+ * Se entró de nuevo: el silencio del cierre anterior se acaba. Si no, un cierre forzado
+ * en esos 30 s no guardaría la página para volver (probador, 8 nov 2026).
+ */
+export const vuelvenLosAvisosDeCierre = () => {
+  silencioHasta = 0;
+  try {
+    globalThis.sessionStorage?.removeItem(CLAVE_DEL_SILENCIO);
   } catch {
     // Sin almacenamiento, vale el de memoria
   }
@@ -175,6 +194,7 @@ const TRAMOS_FIJOS = new Set([
   'preset',
   'profile',
   'quick-matches',
+  'reauthenticate',
   'refresh-mine',
   'refresh-token',
   'register',

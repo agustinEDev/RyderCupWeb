@@ -15,6 +15,7 @@ import { useRedirectIfAuthenticated } from './useRedirectIfAuthenticated';
 const navigate = vi.fn();
 let locationState = null;
 
+import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 vi.mock('react-router', () => ({
   useNavigate: () => navigate,
   useLocation: () => ({ state: locationState }),
@@ -202,6 +203,30 @@ describe('useRedirectIfAuthenticated', () => {
         await waitFor(() => expect(result.current).toBe(false));
         expect(navigate).not.toHaveBeenCalled();
       });
+    });
+
+    it('C5: la sesión confirmada acaba el silencio de un cierre anterior (8 nov)', async () => {
+      noAvisesDeCierres();
+      globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+
+      renderHook(() => useRedirectIfAuthenticated());
+
+      await waitFor(() => expect(navigate).toHaveBeenCalled());
+      expect(seCierraLaSesionAPeticion()).toBe(false);
+    });
+
+    it.each([
+      ['sin red', () => globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'))],
+    ])('C5: entrar %s, sin sesión confirmada, no acaba el silencio', async (_caso, prepara) => {
+      storedUser = { id: 'u1' };
+      noAvisesDeCierres();
+      prepara();
+
+      renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+      await waitFor(() => expect(navigate).toHaveBeenCalled());
+      expect(seCierraLaSesionAPeticion()).toBe(true);
+      vuelvenLosAvisosDeCierre();
     });
 
     it('lleva al dashboard cuando el backend confirma la sesión', async () => {

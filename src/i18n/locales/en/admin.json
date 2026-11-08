@@ -112,7 +112,10 @@
     "save": "Save changes",
     "saving": "Saving…",
     "success": "User updated",
-    "error": "Failed to update user"
+    "error": "Failed to update user",
+    "pendingEmail": "Pending confirmation: {{email}}",
+    "emailPending": "Saved. The email {{email}} is pending: the user has to confirm it from that address.",
+    "emailAlreadyInUse": "That email is already used by another account."
   },
   "manageModal": {
     "title": "Manage {{name}}'s account",

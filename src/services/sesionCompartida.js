@@ -38,6 +38,7 @@
 
 import { clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
+import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
 import { olvidaLasNovedades } from './novedadesDeActividad';
 
 // Misma prioridad que el resto: la configuración de ejecución manda sobre la del
@@ -318,6 +319,9 @@ const pideAlBackend = async (miGeneracion) => {
 
 /** Lo que se sabe ahora mismo, sin tocar la red. */
 export const loQueHaySobreLaSesion = () => instantanea;
+
+// El reintento del refresco necesita saber quién es esta pestaña (BE #734)
+registraElUsuarioDeLaPestana(() => instantanea.user);
 
 /** @returns {() => void} La baja. */
 export const suscribeALaSesion = (oyente) => {

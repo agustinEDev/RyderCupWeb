@@ -148,4 +148,69 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
     expect(ruta).toBe('/api/v1/auth/register');
     expect(JSON.parse(opciones.body)).toMatchObject({ accept_terms: true });
   });
+
+  // RyderCupAm #750: el 403 de cuenta desactivada llega a la pantalla con su código
+  describe('cuenta desactivada (403 ACCOUNT_DEACTIVATED)', () => {
+    const desactivada = () =>
+      Object.assign(new Error('This account has been deactivated. Contact an administrator.'), {
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      });
+
+    it('el login lo deja pasar con su errorCode', async () => {
+      api.default.mockRejectedValue(desactivada());
+
+      await expect(
+        new ApiAuthRepository().login(
+          new Email('baja@example.com'),
+          new Password('Password123', { validateStrength: false })
+        )
+      ).rejects.toMatchObject({ status: 403, errorCode: 'ACCOUNT_DEACTIVATED' });
+    });
+
+    it('la verificación del correo también', async () => {
+      api.default.mockRejectedValue(desactivada());
+
+      await expect(new ApiAuthRepository().verifyEmail('token')).rejects.toMatchObject({
+        status: 403,
+        errorCode: 'ACCOUNT_DEACTIVATED',
+      });
+    });
+  });
+
+  describe('verificar el correo, con la respuesta de antes y la nueva (RyderCupAm #753)', () => {
+    it('el backend nuevo solo verifica: sin sesión', async () => {
+      api.default.mockResolvedValue({ message: 'Email verified. Please sign in.', email_verified: true });
+
+      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ sesionAbierta: false });
+    });
+
+    it('el de antes abre sesión, con su usuario', async () => {
+      api.default.mockResolvedValue({
+        access_token: 'acceso',
+        csrf_token: 'csrf',
+        user: { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' },
+      });
+
+      const resultado = await new ApiAuthRepository().verifyEmail('token');
+
+      expect(resultado.sesionAbierta).toBe(true);
+      expect(resultado.user).toBeInstanceOf(User);
+      expect(resultado.csrfToken).toBe('csrf');
+    });
+  });
+
+  describe('reauthenticate (RyderCupAm #753)', () => {
+    it('manda la contraseña y devuelve cuánto dura la marca', async () => {
+      api.default.mockResolvedValue({ expires_in: 300 });
+
+      const resultado = await new ApiAuthRepository().reauthenticate('Actual123!');
+
+      expect(api.default).toHaveBeenCalledWith('/api/v1/auth/reauthenticate', {
+        method: 'POST',
+        body: JSON.stringify({ password: 'Actual123!' }),
+      });
+      expect(resultado).toEqual({ expiresIn: 300 });
+    });
+  });
 });

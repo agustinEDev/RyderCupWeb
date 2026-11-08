@@ -112,7 +112,10 @@
     "save": "Guardar cambios",
     "saving": "Guardando…",
     "success": "Usuario actualizado",
-    "error": "Error al actualizar el usuario"
+    "error": "Error al actualizar el usuario",
+    "pendingEmail": "Pendiente de confirmar: {{email}}",
+    "emailPending": "Guardado. El correo {{email}} queda pendiente: el usuario tiene que confirmarlo desde esa dirección.",
+    "emailAlreadyInUse": "Ese correo ya lo usa otra cuenta."
   },
   "manageModal": {
     "title": "Gestionar cuenta de {{name}}",

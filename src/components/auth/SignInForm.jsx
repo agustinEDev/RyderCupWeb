@@ -4,7 +4,9 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import customToast from '../../utils/toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../../utils/validation';
-import { safeLog, rutaDeVuelta } from '../../utils/auth';
+import { safeLog } from '../../utils/auth';
+import { vueltaTrasEntrar } from '../../utils/vueltaTrasEntrar';
+import { vuelvenLosAvisosDeCierre } from '../../utils/avisoDeCierreForzado';
 import PasswordInput from '../ui/PasswordInput';
 import GoogleSignInButton from '../ui/GoogleSignInButton';
 import { loginUseCase } from '../../composition';
@@ -119,7 +121,9 @@ const SignInForm = () => {
         });
       }
 
-      navigate(rutaDeVuelta(location.state?.from), { replace: true });
+      // Se entró: acaba el silencio de un cierre de sesión anterior (C5)
+      vuelvenLosAvisosDeCierre();
+      navigate(vueltaTrasEntrar(location.state?.from), { replace: true });
 
     } catch (error) {
       console.error('Login error:', error);
@@ -137,6 +141,9 @@ const SignInForm = () => {
           duration: 10000, // Longer duration for important security message
           icon: '🔒',
         });
+      } else if (error.errorCode === 'ACCOUNT_DEACTIVATED') {
+        // Con su código, como la vuelta de Google: el texto, traducido (RyderCupAm #750)
+        customToast.error(t('google.accountDeactivated'), { duration: 10000 });
       } else {
         customToast.error(error.message || t('login.error'), {
           duration: 5000,

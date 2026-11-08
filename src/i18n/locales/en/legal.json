@@ -46,7 +46,7 @@
   },
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdated": "Last updated: 6 November 2026",
+    "lastUpdated": "Last updated: 7 November 2026",
     "section1": {
       "title": "1. Data controller",
       "content": "The controller of your data is:\n\n- Agustín Estévez Domínguez (private individual), the owner of the Service; the full details are in the Legal Notice\n- Email: admin@rydercupfriends.com\n\nRyderCupFriends (\"the Service\") is the name of the application, not a company."
@@ -73,7 +73,7 @@
     },
     "section7": {
       "title": "7. Providers and international transfers",
-      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery, including the messages from the contact form (EU region).\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission.\n\nIn addition, when you view a hole map, your browser downloads the orthophotos directly from the public servers that publish them (IGN/PNOA, ICGC, geoEuskadi and IDENA), which receive your device's IP address, as with any website you visit."
+      "content": "We use these providers, which process data on our behalf, to run the Service:\n\n- Render: hosting of the application and database (servers in the EU or the US depending on the service).\n- Sentry: error tracking and Session Replay (Germany region, EU).\n- Mailgun: email delivery, including the messages from the contact form (EU region).\n- Resend: backup email delivery, including the messages from the contact form, when Mailgun cannot send them (US company; sending from the EU).\n- Brevo: backup delivery, only of notices without sign-in links nor security notices and of the messages from the contact form, when neither Mailgun nor Resend can send them (EU); it records opens and clicks of those notices without linking them to each recipient.\n- Cloudflare: content delivery network and attack protection (US).\n- Google: sign-in with Google, if you use it (US).\n\nWhen a provider processes data outside the European Economic Area, the transfer relies on the EU-US Data Privacy Framework or, failing that, on the standard contractual clauses approved by the European Commission.\n\nIn addition, when you view a hole map, your browser downloads the orthophotos directly from the public servers that publish them (IGN/PNOA, ICGC, geoEuskadi and IDENA), which receive your device's IP address, as with any website you visit."
     },
     "section8": {
       "title": "8. Cookies, local storage and Session Replay",

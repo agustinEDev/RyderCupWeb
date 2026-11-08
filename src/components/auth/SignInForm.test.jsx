@@ -35,6 +35,7 @@ const ejecutarLogin = vi.fn();
 const ponerUsuario = vi.fn();
 const errorToast = vi.fn();
 
+import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from '../../utils/avisoDeCierreForzado';
 vi.mock('react-router', async () => {
   const real = await vi.importActual('react-router');
   return { ...real, useNavigate: () => navegar };
@@ -125,6 +126,55 @@ describe('SignInForm', () => {
     expect(navegar).toHaveBeenCalledWith('/dashboard', { replace: true });
   });
 
+  it('C5: entrar acaba el silencio de un cierre de sesión anterior (8 nov)', async () => {
+    noAvisesDeCierres();
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(navegar).toHaveBeenCalled());
+    expect(seCierraLaSesionAPeticion()).toBe(false);
+  });
+
+  it('C5: un acceso fallido no acaba el silencio', async () => {
+    noAvisesDeCierres();
+    ejecutarLogin.mockRejectedValue(Object.assign(new Error('Credenciales'), { status: 401 }));
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(ejecutarLogin).toHaveBeenCalled());
+    expect(seCierraLaSesionAPeticion()).toBe(true);
+    vuelvenLosAvisosDeCierre();
+  });
+
+  it('tras una redirección dura, vuelve a la página guardada (probador de la release)', async () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/confirm-email-change?token=abc');
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
+    expect(navegar).toHaveBeenCalledWith('/confirm-email-change?token=abc', { replace: true });
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
   it('deja el boton utilizable tras entrar, sin depender de que la pantalla se desmonte', async () => {
     // El camino de exito no puede dar por hecho que `navigate` desmonte el
     // formulario: en una pantalla que siguiera en pie, el boton se quedaria
@@ -174,6 +224,22 @@ describe('SignInForm', () => {
       'login.lockedFromThisNetwork',
       expect.objectContaining({ duration: 10000 })
     );
+  });
+
+  it('B2: una cuenta desactivada lo dice traducido, como Google (RyderCupAm #750)', async () => {
+    const desactivada = Object.assign(
+      new Error('This account has been deactivated. Contact an administrator.'),
+      { status: 403, errorCode: 'ACCOUNT_DEACTIVATED' }
+    );
+    ejecutarLogin.mockRejectedValue(desactivada);
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(errorToast).toHaveBeenCalled());
+    expect(errorToast).toHaveBeenCalledWith('google.accountDeactivated', expect.any(Object));
   });
 
   it('corta al sexto intento sin llamar al backend', async () => {
