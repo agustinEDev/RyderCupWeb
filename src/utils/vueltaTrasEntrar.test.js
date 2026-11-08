@@ -6,7 +6,7 @@ import {
   redirigeAlLogin,
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
-import { noAvisesDeCierres, seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
+import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from './avisoDeCierreForzado';
 
 /**
  * La vuelta tras una redirección dura a /login (probador de la release, 8 nov 2026).
@@ -23,7 +23,7 @@ import { noAvisesDeCierres, seCierraLaSesionAPeticion } from './avisoDeCierreFor
  *   V9 guardar sustituye: desde una página que no vale, la anterior se borra
  *   V10 redirigeAlLogin guarda y se va; sin guardar, la olvida y se va
  *   V2 también la gasta cuando gana state.from
- *   V11 entrar acaba el silencio de cerrar sesión: el siguiente cierre forzado guarda (probador, 8 nov)
+ *   V11 calcular a dónde volver no toca el silencio: lo acaba quien entra (C5, /code-review 8 nov)
  */
 const en = (pathname, search = '') =>
   vi.stubGlobal('location', { ...globalThis.location, pathname, search, hash: '', origin: 'http://localhost:3000' });
@@ -126,15 +126,14 @@ describe('la vuelta tras una redirección dura', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
-  it('V11: entrar acaba el silencio de cerrar sesión: el siguiente cierre forzado guarda', () => {
+  it('V11: calcular a dónde volver no toca el silencio: lo acaba quien entra de verdad', () => {
     en('/competitions/7');
     noAvisesDeCierres();
 
     vueltaTrasEntrar(undefined);
-    guardaLaVueltaTrasEntrar();
 
-    expect(seCierraLaSesionAPeticion()).toBe(false);
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(seCierraLaSesionAPeticion()).toBe(true);
+    vuelvenLosAvisosDeCierre();
   });
 });
 

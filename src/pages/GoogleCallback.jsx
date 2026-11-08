@@ -40,9 +40,6 @@ const GoogleCallback = () => {
       const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
       setFlow(parsedFlow);
 
-      // Un fallo, también cancelar en Google, gasta la página guardada (probador, 8 nov)
-      if (!valid || errorParam || !code) olvidaLaVueltaTrasEntrar();
-
       if (!valid) {
         setError(t('google.callbackError'));
         return;
@@ -77,13 +74,14 @@ const GoogleCallback = () => {
           updateCsrfToken(csrfToken);
 
           if (isNewUser) {
-            // Un alta no vuelve a ninguna página: la guardada se olvida, y el silencio de
-            // un cierre de sesión anterior se acaba, como en toda entrada
-            olvidaLaVueltaTrasEntrar();
+            // Se entró: acaba el silencio de un cierre de sesión anterior (C5). Un alta
+            // es otra cuenta y no vuelve a ninguna página: la guardada se olvida
             vuelvenLosAvisosDeCierre();
+            olvidaLaVueltaTrasEntrar();
             customToast.info(t('google.welcomeNewUser'));
             navigate('/auth/complete-profile', { replace: true });
           } else {
+            vuelvenLosAvisosDeCierre();
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
             // A la página de la que se vino: la que trae Google (confirmar el correo) o
             // la guardada por una redirección dura, que se gasta; si no, al panel
@@ -93,8 +91,8 @@ const GoogleCallback = () => {
         }
       } catch (err) {
         console.error('Google OAuth callback error:', err);
-        // Un fallo tampoco deja la página guardada para el siguiente que entre
-        olvidaLaVueltaTrasEntrar();
+        // La página guardada se conserva: solo una entrada con éxito la gasta, y quien
+        // entre después con contraseña vuelve a ella (Agustín, 8 nov 2026)
 
         // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
         if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {

@@ -35,6 +35,7 @@ const ejecutarLogin = vi.fn();
 const ponerUsuario = vi.fn();
 const errorToast = vi.fn();
 
+import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from '../../utils/avisoDeCierreForzado';
 vi.mock('react-router', async () => {
   const real = await vi.importActual('react-router');
   return { ...real, useNavigate: () => navegar };
@@ -123,6 +124,37 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(ponerUsuario).toHaveBeenCalled());
     expect(navegar).toHaveBeenCalledWith('/dashboard', { replace: true });
+  });
+
+  it('C5: entrar acaba el silencio de un cierre de sesión anterior (8 nov)', async () => {
+    noAvisesDeCierres();
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(navegar).toHaveBeenCalled());
+    expect(seCierraLaSesionAPeticion()).toBe(false);
+  });
+
+  it('C5: un acceso fallido no acaba el silencio', async () => {
+    noAvisesDeCierres();
+    ejecutarLogin.mockRejectedValue(Object.assign(new Error('Credenciales'), { status: 401 }));
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(ejecutarLogin).toHaveBeenCalled());
+    expect(seCierraLaSesionAPeticion()).toBe(true);
+    vuelvenLosAvisosDeCierre();
   });
 
   it('tras una redirección dura, vuelve a la página guardada (probador de la release)', async () => {

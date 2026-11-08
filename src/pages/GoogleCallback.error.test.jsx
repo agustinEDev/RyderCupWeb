@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router';
 
 /**
@@ -17,7 +17,7 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   G6  la cuenta está desactivada     | google.accountDeactivated, no invitar a reintentar
  *   G7  vincular sin el correo verificado | google.linkNeedsVerifiedEmail (RyderCupAm #749)
  */
-import { noAvisesDeCierres, seCierraLaSesionAPeticion } from '../utils/avisoDeCierreForzado';
+import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
@@ -53,6 +53,7 @@ const abrir = (query) => {
 
 describe('GoogleCallback · el error sale una vez (FE #776)', () => {
   afterEach(() => {
+    vuelvenLosAvisosDeCierre();
     vi.clearAllMocks();
     estado.valid = true;
     estado.flow = 'login';
@@ -69,14 +70,28 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
     ['cancela en Google', '?error=access_denied&state=x', true],
     ['el state no cuadra', '?code=abc&state=otro', false],
     ['sin code', '?state=x', true],
-  ])('G1b: %s: la página guardada se olvida (probador, 8 nov)', async (_caso, query, valido) => {
+  ])('G1b: %s: la página guardada se conserva (Agustín, 8 nov)', async (_caso, query, valido) => {
     estado.valid = valido;
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
 
     abrir(query);
 
     expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    // Solo una entrada con éxito la gasta: quien cancela Google y entra con contraseña
+    // vuelve al enlace de confirmar el correo
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    sessionStorage.clear();
+  });
+
+  it('G4b: falla el login con Google: la página guardada se conserva (Agustín, 8 nov)', async () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    googleLoginUseCase.execute.mockRejectedValue(errorDelServidor('Error interno del servidor'));
+
+    abrir('?code=abc&state=ok');
+
+    expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    sessionStorage.clear();
   });
 
   it('G2: el state no cuadra', async () => {
@@ -159,6 +174,7 @@ describe('GoogleCallback · el error sale una vez (FE #776)', () => {
  */
 describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
   afterEach(() => {
+    vuelvenLosAvisosDeCierre();
     vi.clearAllMocks();
     window.history.replaceState(null, '', '/');
   });
@@ -215,6 +231,15 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
 
     expect(await screen.findByText('completar perfil')).toBeInTheDocument();
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
+  it('C5: entrar con Google acaba el silencio de un cierre de sesión anterior (8 nov)', async () => {
+    noAvisesDeCierres();
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+
+    abrirConRutas();
+
+    await waitFor(() => expect(seCierraLaSesionAPeticion()).toBe(false));
   });
 
   it('un alta nueva acaba el silencio de un cierre de sesión anterior (revisión, 8 nov)', async () => {

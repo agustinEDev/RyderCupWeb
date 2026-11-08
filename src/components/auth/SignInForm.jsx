@@ -6,6 +6,7 @@ import customToast from '../../utils/toast';
 import { validateEmail, checkRateLimit, resetRateLimit } from '../../utils/validation';
 import { safeLog } from '../../utils/auth';
 import { vueltaTrasEntrar } from '../../utils/vueltaTrasEntrar';
+import { vuelvenLosAvisosDeCierre } from '../../utils/avisoDeCierreForzado';
 import PasswordInput from '../ui/PasswordInput';
 import GoogleSignInButton from '../ui/GoogleSignInButton';
 import { loginUseCase } from '../../composition';
@@ -120,6 +121,8 @@ const SignInForm = () => {
         });
       }
 
+      // Se entró: acaba el silencio de un cierre de sesión anterior (C5)
+      vuelvenLosAvisosDeCierre();
       navigate(vueltaTrasEntrar(location.state?.from), { replace: true });
 
     } catch (error) {
