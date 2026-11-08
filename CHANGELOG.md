@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.69.0] - 2026-11-08
+
+**Desvincular Google pide la contraseña, el cierre por CSRF sigue los mismos caminos que
+el resto, la página guardada para volver tras entrar es de la cuenta que estaba dentro y
+un cierre forzado ya no enseña avisos de error de más** (RyderCupAm #765; FE #1063,
+#1065, #1066). Va con el backend **2.54.0**, y se despliega ANTES: el backend nuevo
+responde 403 al desvincular sin la contraseña confirmada. Probado en el Kind a 360 px con
+tres baterías de punta a punta.
+
+### Added
+
+- **Contraseña antes de desvincular Google**: «Desvincular» abre el mismo diálogo que al
+  vincular, con su texto y su botón. Contraseña mal o demasiados intentos se dicen en el
+  diálogo; cerrarlo mientras comprueba no desvincula; una confirmación caducada pide la
+  contraseña otra vez. Una comprobación solo actúa en el diálogo en el que empezó: cancelar
+  «Vincular» y abrir «Desvincular» (o al revés) no hace nada que no se haya confirmado.
+
+### Changed
+
+- **Cierre por CSRF**: un solo cierre por carga de página, venga de donde venga (CSRF,
+  dispositivo revocado o sesión caducada); avisa a Sentry, limpia la cuenta (también el
+  usuario de Sentry) y va a `/login` aunque falle la limpieza.
+- **La página guardada para volver tras entrar es de la cuenta que estaba dentro**: si
+  entra otra cuenta en esa pestaña, va al panel. Cada pestaña recuerda su cuenta, así que
+  un cierre en otra pestaña no la quita ni la cambia. Si la pestaña sabe que no hay nadie
+  dentro, no se guarda nada.
+- **Confirmar el correo nuevo durante un cierre**: se queda en «Confirmando…» en vez de
+  decir «Comprueba la conexión». Si la sesión cae a mitad de confirmar, la página guardada
+  conserva el token y al volver se confirma; una vez usado, el token se olvida y no se
+  vuelve a esa página sin él (al panel, venga la vuelta por donde venga).
+- **Durante un cierre forzado** no salen los avisos de error de las pantallas, solo el del
+  propio cierre, y la ficha de una competición ya no salta a la lista.
+- **Un refresco rechazado** (dispositivo revocado, contraseña cambiada…) dice «Tu sesión
+  ha terminado» en vez de «ha expirado»; el final normal de la sesión sigue diciendo «ha
+  expirado».
+
 ## [2.68.0] - 2026-11-08
 
 **Tras un cierre de sesión se vuelve a la página en la que se estaba, vincular Google
