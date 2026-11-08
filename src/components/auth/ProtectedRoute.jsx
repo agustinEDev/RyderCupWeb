@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
-import { estadoParaElLogin } from '../../utils/vueltaTrasEntrar';
+import { anotaLaCuentaDeEstaPestana, estadoParaElLogin } from '../../utils/vueltaTrasEntrar';
 import { debeAceptarLosTerminos } from '../../domain/services/aceptacionDeTerminos';
 import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 
@@ -12,6 +13,13 @@ import { sePuedeEstarConTerminosPendientes } from '../../utils/rutasPublicas';
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
+  // La cuenta que confirma el backend es la de esta pestaña, aunque falte el usuario
+  // guardado (otra pestaña lo borró): un cierre forzado sabrá de quién es la página que
+  // guarda y avisará de que la sesión terminó (revisión de FE #1064)
+  const idDeLaSesion = user?.id;
+  useEffect(() => {
+    if (idDeLaSesion != null) anotaLaCuentaDeEstaPestana(idDeLaSesion);
+  }, [idDeLaSesion]);
 
   // Una espera sobria y no la pantalla de marca, aunque esta sea la que asoma
   // si la cortina del arranque agota su plazo (FE #485). `ProtectedRoute` se

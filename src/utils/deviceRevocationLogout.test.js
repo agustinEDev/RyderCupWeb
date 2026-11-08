@@ -429,6 +429,34 @@ describe('deviceRevocationLogout utilities', () => {
       expect(window.location.href).toBe('');
     });
 
+    it('sin ninguna cuenta conocida, un dispositivo revocado de verdad sí avisa', () => {
+      olvidaLaCuentaDeEstaPestana();
+      anotaLaCuentaDeEstaPestana(null);
+
+      handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' });
+
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('con la cuenta solo en el usuario guardado (nada anotado aún), avisa', () => {
+      olvidaLaCuentaDeEstaPestana();
+      localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
+
+      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+
+      expect(customToast.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('tras cerrar sesión a propósito, el usuario guardado no cuenta: sin aviso', async () => {
+      const { olvidaLaUltimaCuenta } = await import('./vueltaTrasEntrar');
+      olvidaLaUltimaCuenta();
+      localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
+
+      handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
+
+      expect(customToast.error).not.toHaveBeenCalled();
+    });
+
     it('sin ninguna cuenta conocida, va al login igual', () => {
       vi.useFakeTimers();
       olvidaLaCuentaDeEstaPestana();

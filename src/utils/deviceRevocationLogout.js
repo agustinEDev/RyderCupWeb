@@ -272,8 +272,9 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
 
     // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
     // Sin ninguna cuenta conocida en la pestaña no había sesión que terminara: quien abre
-    // un enlace sin haber entrado no lee «Tu sesión ha expirado» (Agustín, 8 nov 2026)
-    if (cuenta !== null) {
+    // un enlace sin haber entrado no lee «Tu sesión ha expirado» (Agustín, 8 nov 2026). Un
+    // dispositivo revocado de verdad avisa siempre: es un aviso de seguridad (code-review)
+    if (cuenta !== null || reason === 'revocation') {
       customToast.error(message, {
         duration: 8000,
         icon,

@@ -345,7 +345,7 @@ describe('el cierre guarda la página con la última cuenta de la pestaña', () 
     vi.unstubAllGlobals();
   });
 
-  it('tras salir en esta pestaña, la guarda solo para quien estaba', () => {
+  it('tras caerse la sesión en esta pestaña, la guarda solo para quien estaba', () => {
     anotaLaCuentaDeEstaPestana('u-1');
     anotaLaCuentaDeEstaPestana(null);
     en('/competitions/7');
@@ -597,6 +597,58 @@ describe('estadoParaElLogin (R1: la única forma de ir al login con la página d
 
     expect(estadoParaElLogin({ pathname: '/stats' }).from.cuenta).toBeNull();
     vi.unstubAllGlobals();
+  });
+});
+
+/**
+ * Los tres estados de la pestaña (code-review, 9 nov 2026): «no se sabe» (nada anotado: se
+ * mira el usuario guardado), «aquí no hay nadie» (arrancó sin usuario, o se cerró sesión a
+ * propósito) y «estuvo tal cuenta» (se conserva aunque la sesión caiga).
+ */
+describe('los tres estados de la última cuenta de la pestaña', () => {
+  let almacen;
+  beforeEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    almacen = {};
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k) => almacen[k] ?? null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    olvidaLaCuentaDeEstaPestana();
+    vi.unstubAllGlobals();
+  });
+
+  it('arrancó sin usuario: nadie, aunque luego otra pestaña guarde el suyo', () => {
+    anotaLaCuentaDeEstaPestana(null);
+    almacen.user = JSON.stringify({ id: 'u-otra' });
+
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
+  it('estuvo una cuenta y la sesión cae: se conserva', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    anotaLaCuentaDeEstaPestana(null);
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-1');
+  });
+
+  it('se cerró sesión a propósito: nadie, aunque otra pestaña guarde el suyo', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    olvidaLaUltimaCuenta();
+    almacen.user = JSON.stringify({ id: 'u-otra' });
+
+    expect(ultimaCuentaDeEstaPestana()).toBeNull();
+  });
+
+  it('tras cerrar sesión, entra otra cuenta: esa es la última', () => {
+    anotaLaCuentaDeEstaPestana('u-1');
+    olvidaLaUltimaCuenta();
+    anotaLaCuentaDeEstaPestana('u-2');
+
+    expect(ultimaCuentaDeEstaPestana()).toBe('u-2');
   });
 });
 

@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     return null;
   });
 
-  // La cuenta de esta pestaña, en memoria, al arrancar, al entrar y al salir: si otra
+  // La última cuenta de esta pestaña (`vueltaTrasEntrar`), al arrancar, al entrar y al salir: si otra
   // pestaña borra o pisa el usuario de `localStorage`, un cierre forzado aquí sigue
   // sabiendo de quién es la página que guarda (regla 6 de `vueltaTrasEntrar`)
   useEffect(() => {

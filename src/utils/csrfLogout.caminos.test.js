@@ -191,7 +191,7 @@ describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
   it.each([
     ['CSRF', () => handleCsrfLogout({ detail: 'CSRF token missing' })],
     ['dispositivo revocado', () => handleDeviceRevocationLogout({ detail: 'Dispositivo revocado' })],
-  ])('sin regla B: tras salir en la pestaña (%s), la guarda con la última cuenta', (_n, cierra) => {
+  ])('sin regla B: tras caerse la sesión en la pestaña (%s), la guarda con la última cuenta', (_n, cierra) => {
     anotaLaCuentaDeEstaPestana('u-7');
     anotaLaCuentaDeEstaPestana(null);
     delete almacen.user;

@@ -9,9 +9,10 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
  */
 const sesion = vi.hoisted(() => ({ user: null }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ user: sesion.user, loading: false }) }));
-const cuenta = vi.hoisted(() => ({ ultima: vi.fn(() => 'u-1') }));
+const cuenta = vi.hoisted(() => ({ ultima: vi.fn(() => 'u-1'), anota: vi.fn() }));
 vi.mock('../../utils/vueltaTrasEntrar', () => ({
   estadoParaElLogin: (location) => ({ from: { ...location, cuenta: cuenta.ultima() } }),
+  anotaLaCuentaDeEstaPestana: cuenta.anota,
 }));
 
 const { default: ProtectedRoute } = await import('./ProtectedRoute');
@@ -72,4 +73,16 @@ describe('la página de la que venía lleva su cuenta', () => {
 
     expect(screen.getByText('terminos desde /dashboard de nadie')).toBeInTheDocument();
   });
+
+  it('con la sesión que confirma el backend, apunta su cuenta como la de la pestaña (revisión)', () => {
+    // Una pestaña puede tener sesión viva sin el usuario guardado (otra pestaña lo borró):
+    // la cuenta la sabe el backend, y la puerta de las páginas protegidas la apunta
+    sesion.user = { id: 'u-7', terms_accepted: true };
+
+    abrir('/competitions/7');
+
+    expect(screen.getByText('ficha')).toBeInTheDocument();
+    expect(cuenta.anota).toHaveBeenCalledWith('u-7');
+  });
 });
+

@@ -62,23 +62,31 @@ export const olvidaLaVueltaTrasEntrar = () => {
 /** Un id de cuenta como texto, o `null` si no hay: la única forma de compararlos. */
 const aIdDeCuenta = (id) => (id == null ? null : String(id));
 
-// La ÚLTIMA cuenta que estuvo dentro de esta pestaña (FE #1064, R2): no se borra cuando la
-// sesión cae, que es justo cuando el login necesita saber de quién era la página de la que
-// venía; solo la olvida cerrar sesión a propósito (R3). `undefined` = nadie la ha anotado
+// La ÚLTIMA cuenta que estuvo dentro de esta pestaña (FE #1064, R2), con tres estados:
+// - `undefined`: no se sabe (nada anotado aún): se mira el usuario guardado;
+// - `null`: aquí no hay nadie (la pestaña arrancó sin usuario, o se cerró sesión a
+//   propósito, R3): no se mira el usuario guardado, que puede ser de otra pestaña;
+// - un id: estuvo esa cuenta; se conserva aunque la sesión caiga, que es justo cuando el
+//   login necesita saber de quién era la página.
 let ultimaCuenta;
 
-/** `AuthContext`: la cuenta de esta pestaña, o `null` al salir. */
+/**
+ * `AuthContext`, al arrancar, al entrar y al salir: una cuenta pasa a ser la última; sin
+ * cuenta, solo cambia «no se sabe» por «no hay nadie» (una sesión que cae conserva la que
+ * hubo).
+ */
 export const anotaLaCuentaDeEstaPestana = (id) => {
   const cuenta = aIdDeCuenta(id);
   if (cuenta !== null) ultimaCuenta = cuenta;
+  else if (ultimaCuenta === undefined) ultimaCuenta = null;
 };
 
-/** SOLO para los tests: una pestaña recién abierta, sin nada anotado. */
+/** SOLO para los tests: una pestaña recién abierta, en «no se sabe». */
 export const olvidaLaCuentaDeEstaPestana = () => {
   ultimaCuenta = undefined;
 };
 
-/** Cerrar sesión a propósito: la siguiente persona no hereda nada (R3). */
+/** Cerrar sesión a propósito: «no hay nadie»; quien entre después no hereda nada (R3). */
 export const olvidaLaUltimaCuenta = () => {
   ultimaCuenta = null;
 };
