@@ -40,7 +40,7 @@ const EditUserModal = ({ user, onSubmit, onCancel }) => {
       setError(
         err?.errorCode === 'EMAIL_ALREADY_IN_USE'
           ? t('editModal.emailAlreadyInUse')
-          : err.message || t('editModal.error')
+          : err?.message || t('editModal.error')
       );
     } finally {
       setIsSaving(false);

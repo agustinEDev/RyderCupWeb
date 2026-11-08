@@ -39,9 +39,8 @@ describe('GoogleSignInButton · la vuelta tras Google', () => {
     expect(google.buildGoogleOAuthUrl).toHaveBeenCalledWith('login');
   });
 
-  it('sin state.from (redirección dura), usa la página guardada y la gasta', () => {
-    const guardada = { pathname: '/confirm-email-change', search: '?token=abc', hash: '' };
-    sessionStorage.setItem('vuelta_tras_entrar', '/confirm-email-change?token=abc');
+  it('sin state.from (redirección dura), no toca la página guardada: la usa la vuelta de Google', () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
     render(
       <MemoryRouter initialEntries={['/login']}>
         <GoogleSignInButton />
@@ -50,8 +49,8 @@ describe('GoogleSignInButton · la vuelta tras Google', () => {
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(google.guardaLaVueltaDeGoogle).toHaveBeenCalledWith(guardada);
-    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+    expect(google.guardaLaVueltaDeGoogle).toHaveBeenCalledWith(undefined);
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
   });
 });
 

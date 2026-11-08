@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  gastaLaVueltaTrasEntrar,
   guardaLaVueltaTrasEntrar,
   leeLaVueltaTrasEntrar,
   olvidaLaVueltaTrasEntrar,
+  redirigeAlLogin,
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
 import { noAvisesDeCierres } from './avisoDeCierreForzado';
@@ -19,7 +19,9 @@ import { noAvisesDeCierres } from './avisoDeCierreForzado';
  * Tras las revisiones:
  *   V6 desde una página pública (portada, /start, verificar, restablecer): no se guarda
  *   V7 mientras se cierra la sesión a petición: no se guarda
- *   V8 Google la gasta al leerla; cerrar sesión la olvida
+ *   V8 cerrar sesión la olvida
+ *   V9 guardar sustituye: desde una página que no vale, la anterior se borra
+ *   V10 redirigeAlLogin guarda y se va; sin guardar, la olvida y se va
  *   V2 también la gasta cuando gana state.from
  */
 const en = (pathname, search = '') =>
@@ -81,18 +83,38 @@ describe('la vuelta tras una redirección dura', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
-  it('V8: Google la gasta al leerla, y cerrar sesión la olvida', () => {
-    en('/confirm-email-change', '?token=abc');
-    guardaLaVueltaTrasEntrar();
-
-    expect(gastaLaVueltaTrasEntrar()).toEqual({ pathname: '/confirm-email-change', search: '?token=abc', hash: '' });
-    expect(leeLaVueltaTrasEntrar()).toBeNull();
-
+  it('V8: cerrar sesión la olvida', () => {
     en('/competitions/7');
     guardaLaVueltaTrasEntrar();
+
     olvidaLaVueltaTrasEntrar();
+
     expect(leeLaVueltaTrasEntrar()).toBeNull();
   });
+
+  it('V9: guardar sustituye: desde una página que no vale, la anterior se borra', () => {
+    en('/competitions/9');
+    guardaLaVueltaTrasEntrar();
+    en('/');
+
+    guardaLaVueltaTrasEntrar();
+
+    expect(leeLaVueltaTrasEntrar()).toBeNull();
+  });
+
+  it.each([
+    ['guardando', true, '/competitions/7'],
+    ['sin guardar', false, null],
+  ])('V10: redirigeAlLogin %s', (_caso, guardar, esperado) => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
+    en('/competitions/7');
+
+    redirigeAlLogin({ guardar });
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe(esperado);
+    expect(globalThis.location.href).toBe('/login');
+  });
+
   // El último: el silencio de cerrar sesión dura 30 s en memoria del módulo
   it('V7: mientras se cierra la sesión a petición, no se guarda', () => {
     en('/competitions/7');

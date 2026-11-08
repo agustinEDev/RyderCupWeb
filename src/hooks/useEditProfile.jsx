@@ -443,7 +443,7 @@ export const useEditProfile = () => {
         TOO_MANY_SECURITY_CHANGES: 'toasts.tooManySecurityChanges',
         TOO_MANY_EMAIL_CHANGE_REQUESTS: 'toasts.tooManyEmailChanges',
         // Con su código desde el backend: su texto venía en inglés (probador de la release)
-        CURRENT_PASSWORD_INCORRECT: 'toasts.currentPasswordIncorrect',
+        CURRENT_PASSWORD_INCORRECT: 'edit.linkedAccounts.wrongPassword',
         EMAIL_ALREADY_IN_USE: 'toasts.emailAlreadyInUse',
       }[error.errorCode];
       if (porCodigo) {

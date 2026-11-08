@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
 import { verifyOAuthState, recogeLaVueltaDeGoogle } from '../utils/googleOAuth';
+import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
 import customToast from '../utils/toast';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -72,16 +73,22 @@ const GoogleCallback = () => {
           updateCsrfToken(csrfToken);
 
           if (isNewUser) {
+            // Un alta no vuelve a ninguna página: la guardada se olvida
+            olvidaLaVueltaTrasEntrar();
             customToast.info(t('google.welcomeNewUser'));
             navigate('/auth/complete-profile', { replace: true });
           } else {
             customToast.success(t('login.welcomeMessage', { name: user.firstName }));
-            // A la página de la que se vino, si lo pide (RyderCupAm #753); si no, al panel
-            navigate(vuelta ?? '/dashboard', { replace: true });
+            // A la página de la que se vino: la que trae Google (confirmar el correo) o
+            // la guardada por una redirección dura, que se gasta; si no, al panel
+            const desdeGoogle = vuelta ? new globalThis.URL(vuelta, globalThis.location.origin) : null;
+            navigate(vueltaTrasEntrar(desdeGoogle ?? undefined), { replace: true });
           }
         }
       } catch (err) {
         console.error('Google OAuth callback error:', err);
+        // Un fallo tampoco deja la página guardada para el siguiente que entre
+        olvidaLaVueltaTrasEntrar();
 
         // Sin 423: el bloqueo por fallos de contraseña no frena a Google (BE #732)
         if (err.errorCode === 'GOOGLE_LINK_NEEDS_VERIFIED_EMAIL') {

@@ -6,7 +6,14 @@
  * `/login` como documento nuevo y ese estado se pierde: quien abría sin sesión el enlace
  * de confirmar el cambio de correo acababa en el panel tras entrar, con contraseña o con
  * Google (probador de la release, 8 nov 2026). La página se guarda en `sessionStorage`
- * antes de redirigir: dura lo que la pestaña, y solo una ruta propia.
+ * antes de redirigir: dura lo que la pestaña.
+ *
+ * Las reglas, tras dos rondas de revisión:
+ * 1. Guardar SUSTITUYE: o la página de ahora o nada; nunca queda una anterior.
+ * 2. Toda redirección dura pasa por `redirigeAlLogin`: ningún camino se olvida de guardar.
+ * 3. Salir a propósito no guarda nada: cerrar sesión, o revocar el propio dispositivo.
+ * 4. Toda entrada la gasta, con contraseña o con Google, y también un alta o un fallo.
+ * 5. Solo una ruta propia, ni login ni registro ni una página pública.
  */
 import { rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
@@ -19,14 +26,26 @@ const lugarActual = () => {
   return `${pathname}${search}${hash}`;
 };
 
-/** Guarda la página en la que se está, si es propia, antes de una redirección dura. */
+/** La olvida: al cerrar sesión, al salir sin guardar y una vez usada. */
+export const olvidaLaVueltaTrasEntrar = () => {
+  try {
+    globalThis.sessionStorage.removeItem(CLAVE);
+  } catch {
+    // Nada que borrar
+  }
+};
+
+/**
+ * Guarda la página en la que se está, o nada si no vale: siempre sustituye a la anterior.
+ */
 export const guardaLaVueltaTrasEntrar = () => {
+  olvidaLaVueltaTrasEntrar();
   // Al cerrar sesión a petición no hay a dónde volver: un sondeo en vuelo que reciba un
-  // 401 en ese momento no deja la página para quien entre después (revisión)
+  // 401 en ese momento no deja la página para quien entre después
   if (seCierraLaSesionAPeticion()) return;
   const ruta = rutaPropia(lugarActual());
   // Ni login ni registro (`rutaDeVuelta` ya los descarta), ni una página pública: la
-  // portada, verificar o restablecer, que además llevan su token (revisión)
+  // portada, verificar o restablecer, que además llevan su token
   if (!ruta || rutaDeVuelta({ pathname: ruta }) === '/dashboard') return;
   if (esRutaPublica(globalThis.location?.pathname ?? '')) return;
   try {
@@ -34,6 +53,20 @@ export const guardaLaVueltaTrasEntrar = () => {
   } catch {
     // Sin almacenamiento, se vuelve al panel como siempre
   }
+};
+
+/**
+ * La redirección dura al login, la única: guarda la página (o la olvida, si se sale a
+ * propósito) y se va, al momento o tras `retraso` ms (para que se lea un aviso).
+ */
+export const redirigeAlLogin = ({ guardar = true, retraso = 0 } = {}) => {
+  if (guardar) guardaLaVueltaTrasEntrar();
+  else olvidaLaVueltaTrasEntrar();
+  const vete = () => {
+    globalThis.location.href = '/login';
+  };
+  if (retraso > 0) setTimeout(vete, retraso);
+  else vete();
 };
 
 /**
@@ -52,30 +85,12 @@ export const leeLaVueltaTrasEntrar = () => {
   return { pathname: url.pathname, search: url.search, hash: url.hash };
 };
 
-/** La olvida: al cerrar sesión a petición, y una vez usada. */
-export const olvidaLaVueltaTrasEntrar = () => {
-  try {
-    globalThis.sessionStorage.removeItem(CLAVE);
-  } catch {
-    // Nada que borrar
-  }
-};
-
 /**
- * La página guardada, y la gasta: para quien sale de la app a entrar con Google, que no
- * vuelve por `vueltaTrasEntrar` (revisión: se quedaba para el siguiente que entrara).
- */
-export const gastaLaVueltaTrasEntrar = () => {
-  const guardada = leeLaVueltaTrasEntrar();
-  olvidaLaVueltaTrasEntrar();
-  return guardada;
-};
-
-/**
- * A dónde ir tras entrar: la ruta de la que vino (`state.from`) o, si una redirección
- * dura la perdió, la guardada. La guardada se gasta: solo vale una vez.
+ * A dónde ir tras entrar: la ruta de la que vino (`state.from`, o la que trae Google) o,
+ * si una redirección dura la perdió, la guardada. La guardada se gasta siempre.
  */
 export const vueltaTrasEntrar = (from) => {
-  const guardada = gastaLaVueltaTrasEntrar();
+  const guardada = leeLaVueltaTrasEntrar();
+  olvidaLaVueltaTrasEntrar();
   return rutaDeVuelta(from ?? guardada ?? undefined);
 };

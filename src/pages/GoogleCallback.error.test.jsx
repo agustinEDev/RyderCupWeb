@@ -157,6 +157,7 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
           <Route path="/auth/complete-profile" element={<p>completar perfil</p>} />
           <Route path="/dashboard" element={<p>panel</p>} />
           <Route path="/confirm-email-change" element={<p>confirmar el correo</p>} />
+          <Route path="/competitions/7" element={<p>la competición</p>} />
         </Routes>
       </BrowserRouter>
     );
@@ -179,6 +180,26 @@ describe('GoogleCallback · a dónde va cada usuario (M1)', () => {
 
     expect(await screen.findByText('confirmar el correo')).toBeInTheDocument();
     estado.vuelta = null;
+  });
+
+  it('sin vuelta de Google, usa la página guardada por una redirección dura y la gasta', async () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: false });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('la competición')).toBeInTheDocument();
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
+  it('un alta nueva olvida la página guardada', async () => {
+    sessionStorage.setItem('vuelta_tras_entrar', '/competitions/7');
+    googleLoginUseCase.execute.mockResolvedValue({ user: { firstName: 'Ana' }, csrfToken: 't', isNewUser: true });
+
+    abrirConRutas();
+
+    expect(await screen.findByText('completar perfil')).toBeInTheDocument();
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
   it('un usuario nuevo va a completar el perfil, donde acepta los Términos', async () => {

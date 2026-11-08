@@ -72,7 +72,7 @@ describe('useEditProfile · los límites de Seguridad', () => {
     ['L1', 'TOO_MANY_SECURITY_CHANGES', 'toasts.tooManySecurityChanges'],
     ['L2', 'TOO_MANY_EMAIL_CHANGE_REQUESTS', 'toasts.tooManyEmailChanges'],
     // Salían en inglés, con el texto del backend (probador de la release)
-    ['L3', 'CURRENT_PASSWORD_INCORRECT', 'toasts.currentPasswordIncorrect'],
+    ['L3', 'CURRENT_PASSWORD_INCORRECT', 'edit.linkedAccounts.wrongPassword'],
     ['L4', 'EMAIL_ALREADY_IN_USE', 'toasts.emailAlreadyInUse'],
   ])('%s: %s dice su motivo en el idioma de la app', async (_caso, codigo, clave) => {
     const { result } = renderHook(() => useEditProfile());
