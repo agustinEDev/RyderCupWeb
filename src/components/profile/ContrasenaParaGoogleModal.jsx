@@ -14,10 +14,11 @@ import ModalShell from '../ui/ModalShell';
  * @param {boolean} props.isOpen
  * @param {Function} props.onClose
  * @param {(password: string) => Promise<string|null>} props.alConfirmar Devuelve la
- *   clave del error que enseñar, o null si fue bien
+ *   clave del error que enseñar en la ventana, o null si no hay nada que enseñar en ella
+ *   (fue bien, o el fallo ya lo avisó quien llama con un toast: D9)
  * @param {'vincular'|'desvincular'} [props.para] Para vincular, si va bien la página se va
  *   a Google y la ventana se queda; para desvincular, la página se queda y la ventana se
- *   cierra
+ *   cierra (también tras un fallo general avisado con un toast)
  */
 const ContrasenaParaGoogleModal = ({ isOpen, onClose, alConfirmar, para = 'vincular' }) => {
   const desvincular = para === 'desvincular';

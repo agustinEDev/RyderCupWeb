@@ -132,7 +132,9 @@ describe('ContrasenaParaGoogleModal', () => {
  * Para desvincular (tabla D aprobada por Agustín el 8 nov 2026):
  *   MD1 su texto y su botón («Desvincular»)
  *   MD2 si va bien, se cierra y olvida lo escrito (la página se queda)
- *   MD3 si falla, dice por qué en la ventana, como al vincular
+ *   MD3 si `alConfirmar` devuelve un error (contraseña, o la confirmación caducada), lo
+ *       dice en la ventana; un fallo general del desvincular lo avisa el hook con un toast
+ *       y devuelve null, así que la ventana se cierra (tabla D9)
  *   MD4 para vincular, si va bien, NO se cierra (la página se va a Google)
  */
 describe('ContrasenaParaGoogleModal · para desvincular', () => {
