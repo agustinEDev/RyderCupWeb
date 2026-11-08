@@ -71,7 +71,10 @@ describe('useEditProfile · los límites de Seguridad', () => {
   it.each([
     ['L1', 'TOO_MANY_SECURITY_CHANGES', 'toasts.tooManySecurityChanges'],
     ['L2', 'TOO_MANY_EMAIL_CHANGE_REQUESTS', 'toasts.tooManyEmailChanges'],
-  ])('%s: %s dice su motivo', async (_caso, codigo, clave) => {
+    // Salían en inglés, con el texto del backend (probador de la release)
+    ['L3', 'CURRENT_PASSWORD_INCORRECT', 'toasts.currentPasswordIncorrect'],
+    ['L4', 'EMAIL_ALREADY_IN_USE', 'toasts.emailAlreadyInUse'],
+  ])('%s: %s dice su motivo en el idioma de la app', async (_caso, codigo, clave) => {
     const { result } = renderHook(() => useEditProfile());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     composition.updateUserSecurityUseCase.execute.mockRejectedValue(
