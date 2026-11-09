@@ -118,6 +118,12 @@ SEGUIMIENTO_DE_NAVEGACIONES = (b"BrowserTracing", b"auto.navigation.react.reactr
 
 
 def main(argv: list[str]) -> int:
+    """Mide el JS de arranque de un dist y devuelve 0 si cabe en el presupuesto.
+
+    Con `--con-sentry=<DSN>` exige además que ese DSN exacto esté en el arranque
+    (así se mide lo que se sirve en producción) y falla si el arranque lleva el
+    seguimiento de navegaciones de Sentry. Sale con 2 si los argumentos no valen.
+    """
     dsn = None
     posicionales = []
     for arg in argv:

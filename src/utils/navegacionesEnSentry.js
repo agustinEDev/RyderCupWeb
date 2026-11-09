@@ -64,6 +64,7 @@ const nombrarLaCarga = (router, rutas, { aunqueTengaRuta = false } = {}) => {
   getCurrentScope().setTransactionName(nombre);
 };
 
+/** Ejecuta `hacer` sin dejar que un fallo del seguimiento llegue a la aplicación. */
 const sinRomper = (hacer) => {
   try {
     hacer();
@@ -72,6 +73,10 @@ const sinRomper = (hacer) => {
   }
 };
 
+/**
+ * Envuelve el router registrado si aún no lo está; sin router o ya envuelto, nada.
+ * Lo llaman el registro del router y la llegada del seguimiento, en cualquier orden.
+ */
 const intentar = () => {
   const registrado = routerRegistrado();
   if (!registrado || yaInstrumentado(registrado.router)) return;

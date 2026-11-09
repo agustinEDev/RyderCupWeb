@@ -337,6 +337,7 @@ def _presupuesto(p: dict) -> str:
 
 
 def build_ci(p: dict) -> str:
+    """Tarjeta del build del CI (el artefacto): sin presupuesto, que se mide en Render."""
     if p.get("build_outcome") not in ("success", "failure"):
         return f"Not run: an earlier step failed or the job was cancelled ({VER_LOG})."
     if p.get("build_outcome") == "failure":
@@ -354,6 +355,7 @@ def build_ci(p: dict) -> str:
 
 
 def build_render(p: dict) -> str:
+    """Tarjeta del build como Render: resultado, presupuesto del arranque y precache."""
     if p.get("build_outcome") not in ("success", "failure"):
         return f"Not run: an earlier step failed or the job was cancelled ({VER_LOG})."
     partes = []
