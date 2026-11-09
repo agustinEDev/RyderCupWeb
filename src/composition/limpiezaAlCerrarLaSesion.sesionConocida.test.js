@@ -13,6 +13,7 @@ vi.mock('../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
 
 const almacen = new Map();
+const { olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
 const locationOriginal = globalThis.window.location;
 
 describe('cierre forzado y copia para arrancar sin cobertura', () => {
@@ -27,6 +28,9 @@ describe('cierre forzado y copia para arrancar sin cobertura', () => {
     globalThis.window.location = { href: '', pathname: '/dashboard' };
   });
   afterEach(() => {
+    // El cierre de esta carga se queda puesto tras el test: otro que viniera detrás
+    // saldría por la vuelta temprana de handleLogout (CodeRabbit en #1078)
+    olvidaElCierreDeEstaCarga();
     vi.unstubAllGlobals();
     delete globalThis.window.location;
     globalThis.window.location = locationOriginal;
