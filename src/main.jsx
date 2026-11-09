@@ -12,7 +12,7 @@ import { startCapturingInstallPrompt } from './utils/installPromptCapture';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 import { instalarRecargaPorTrozoViejo, esElEcoDeLaRecarga } from './utils/recargaPorTrozoViejo';
 import { sentryScrubbing } from './utils/sentryScrubbing';
-import { sentrySampleRates } from './infrastructure/sentrySampleRates';
+import { sentrySampleRates } from './utils/sentrySampleRates';
 import { whenAddressBarIsClean } from './utils/stripSecretsFromAddressBar';
 // Solo por el efecto de módulo: anota si la aplicación arrancó en la portada
 // antes de que React navegue a ningún sitio

@@ -32,7 +32,7 @@ import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
 import { sentryScrubbing } from './utils/sentryScrubbing';
 import { instrumentarRouterEnSentry } from './utils/navegacionesEnSentry';
-import { sentrySampleRates } from './infrastructure/sentrySampleRates';
+import { sentrySampleRates } from './utils/sentrySampleRates';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO

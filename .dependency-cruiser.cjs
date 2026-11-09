@@ -76,7 +76,7 @@ module.exports = {
       comment:
         'La interfaz usa los casos de uso a través de src/composition (la composition root), nunca importando application ni infrastructure directamente.',
       severity: 'error',
-      from: { path: UI, pathNot: TEST },
+      from: { path: [UI, '^src/(App\\.jsx|main\\.jsx)$'], pathNot: TEST },
       to: { path: '^src/(application|infrastructure)/' },
     },
     // ── Reglas añadidas el 9 nov 2026 (auditoría de arquitectura) ──────────
@@ -178,6 +178,14 @@ module.exports = {
       severity: 'error',
       from: { path: '^src/(infrastructure|services)/', pathNot: TEST },
       to: { path: [UI, UI_FILE], reachable: true },
+    },
+    {
+      name: 'sentry-setup-goes-through-composition',
+      comment:
+        'src/sentry.ts es el arranque de Sentry para React: es interfaz, puede usar las librerías de UI, utils y composition, pero no la infraestructura, los casos de uso ni services directamente.',
+      severity: 'error',
+      from: { path: '^src/sentry\\.ts$' },
+      to: { path: '^src/(infrastructure|application|services)/' },
     },
     {
       name: 'no-circular',

@@ -130,8 +130,8 @@ export default [
   // `(await import(…)).apiRequest` o `.then(({ apiRequest }) => …)`). Lo que no ve:
   // guardar el módulo entero en una variable y leer `apiRequest` después
   {
-    files: ['src/{pages,components,hooks,contexts}/**/*.{js,jsx}', 'src/App.jsx', 'src/main.jsx'],
-    ignores: ['src/**/*.test.{js,jsx}'],
+    files: ['src/{pages,components,hooks,contexts}/**/*.{js,jsx,ts,tsx}', 'src/App.jsx', 'src/main.jsx'],
+    ignores: ['src/**/*.test.{js,jsx,ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -157,6 +157,11 @@ export default [
         },
         {
           selector: 'ImportExpression[source.value=/infrastructure.http.api(\\.js)?$/]',
+          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+        },
+        {
+          // El mismo, con plantilla: import(`…/infrastructure/http/api`)
+          selector: 'ImportExpression > TemplateLiteral > TemplateElement[value.raw=/infrastructure.http.api/]',
           message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
         },
         {
