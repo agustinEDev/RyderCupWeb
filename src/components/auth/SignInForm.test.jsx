@@ -348,3 +348,48 @@ describe('SignInForm', () => {
     });
   });
 });
+
+/**
+ * La contraseña mala, en el idioma de la app (antes salía «Incorrect email or
+ * password» fijo, en inglés, desde el repositorio).
+ *
+ * | Caso                                     | Aviso                                |
+ * |------------------------------------------|--------------------------------------|
+ * | 401: correo o contraseña mal             | `login.error` (es y en), 5000 ms     |
+ * | 423: bloqueada esta red                  | `login.lockedFromThisNetwork`, igual |
+ * | sin conexión (su mensaje ya traducido)   | su mensaje, igual                    |
+ */
+describe('SignInForm · contraseña mala, traducida', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const fallaCon = async (error) => {
+    ejecutarLogin.mockRejectedValue(error);
+    pintar();
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+    await waitFor(() => expect(errorToast).toHaveBeenCalled());
+  };
+
+  it('401: dice «credenciales inválidas» con la clave traducida, no un texto en inglés', async () => {
+    await fallaCon(Object.assign(new Error('Incorrect email or password'), { code: 'INVALID_CREDENTIALS' }));
+
+    expect(errorToast).toHaveBeenCalledWith('login.error', { duration: 5000 });
+  });
+
+  it('la clave existe en español y en inglés, cada una en su idioma', async () => {
+    const es = (await import('../../i18n/locales/es/auth.json')).default;
+    const en = (await import('../../i18n/locales/en/auth.json')).default;
+
+    expect(es.login.error).toBe('Credenciales inválidas. Por favor, inténtalo de nuevo.');
+    expect(en.login.error).toBe('Invalid credentials. Please try again.');
+  });
+
+  it('sin conexión sigue con su propio mensaje', async () => {
+    await fallaCon(Object.assign(new TypeError('Sin conexión'), { sinConexion: true }));
+
+    expect(errorToast).toHaveBeenCalledWith('Sin conexión', { duration: 5000 });
+  });
+});

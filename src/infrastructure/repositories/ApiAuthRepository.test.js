@@ -67,9 +67,8 @@ describe('ApiAuthRepository - Account Lockout', () => {
       error.status = 401;
       mockApiRequest.mockRejectedValue(error);
 
-      await expect(repository.login(email, password)).rejects.toThrow(
-        'Incorrect email or password'
-      );
+      // Con su código: el texto, traducido, lo pone la pantalla (como el 423)
+      await expect(repository.login(email, password)).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
     });
 
     it('should successfully login after account is unlocked', async () => {

@@ -143,6 +143,9 @@ const SignInForm = () => {
           duration: 10000, // Longer duration for important security message
           icon: '🔒',
         });
+      } else if (error.code === 'INVALID_CREDENTIALS') {
+        // Correo o contraseña mal (401), en el idioma de la app
+        customToast.error(t('login.error'), { duration: 5000 });
       } else if (error.errorCode === 'ACCOUNT_DEACTIVATED') {
         // Con su código, como la vuelta de Google: el texto, traducido (RyderCupAm #750)
         customToast.error(t('google.accountDeactivated'), { duration: 10000 });
