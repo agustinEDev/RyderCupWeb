@@ -15,6 +15,7 @@ import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
 import { captureError } from '../../utils/sentryHelpers';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../../utils/terminosPendientes';
 import { TERMINOS_NO_ACEPTADOS } from '../../domain/services/aceptacionDeTerminos';
+import { getApiBaseUrl } from './urlDeLaApi';
 import i18next from 'i18next';
 
 /**
@@ -105,16 +106,9 @@ const leeElError = async (response) => {
   }
 };
 
-// Prioridad: 1. Runtime config (globalThis.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
-// Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
-
-/**
- * Get the configured API base URL (for building direct <img>/<a> URLs that
- * don't go through apiRequest, e.g. avatar images).
- * @returns {string}
- */
-export const getApiBaseUrl = () => API_URL;
+// La URL base, en su módulo (urlDeLaApi.js); se reexporta para quien la tomaba de aquí
+export { getApiBaseUrl };
+const API_URL = getApiBaseUrl();
 
 /**
  * Make authenticated API request with httpOnly cookies and automatic token refresh

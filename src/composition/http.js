@@ -16,7 +16,7 @@
  */
 import './limpiezaAlCerrarLaSesion';
 
-export { getApiBaseUrl } from '../infrastructure/http/api';
+export { getApiBaseUrl } from '../infrastructure/http/urlDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
 export {
   handleDeviceRevocationLogout,
