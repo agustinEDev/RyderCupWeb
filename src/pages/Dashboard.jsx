@@ -15,6 +15,7 @@ import NextMatchBanner from '../components/dashboard/NextMatchBanner';
 import RecentMatches from '../components/dashboard/RecentMatches';
 import CreateQuickMatchModal from '../components/quick_match/CreateQuickMatchModal';
 import { useAuth } from '../hooks/useAuth';
+import { estadoParaElLogin } from '../utils/vueltaTrasEntrar';
 import { useEntryMotion } from '../hooks/useEntryMotion';
 import { slideUp, staggerContainer, getEntryProps } from '../utils/animations';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
@@ -493,7 +494,7 @@ const Dashboard = () => {
     // sin usuario: el token rotado entre las dos, o quedarse sin red. Como el
     // guardia sigue viendo su usuario, nadie redirigia y la pantalla se quedaba
     // vacia. La misma salida que usa el guardia, con el mismo `from`.
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={estadoParaElLogin(location)} replace />;
   }
 
   // El saludo dice el alias de quien lo tenga (FE #435). Es donde uno lee su

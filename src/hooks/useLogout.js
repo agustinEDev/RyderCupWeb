@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
 import { clearUserContext } from '../utils/sentryHelpers';
 import { noAvisesDeCierres } from '../utils/avisoDeCierreForzado';
-import { olvidaLaVueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
+import { olvidaLaUltimaCuenta, olvidaLaVueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
 import { broadcastLogout } from '../utils/broadcastAuth';
 import { logoutUseCase } from '../composition';
 import { laPaginaSeVa } from '../services/sesionCompartida';
@@ -66,6 +66,8 @@ export const useLogout = () => {
     noAvisesDeCierres();
     // Y sin página a la que volver: la siguiente persona entra al panel (revisión)
     olvidaLaVueltaTrasEntrar();
+    // Ni la última cuenta de la pestaña: quien entre después abre sus enlaces (FE #1064, R3)
+    olvidaLaUltimaCuenta();
 
     // A las demas pestañas primero: son las que no se enteran de nada, y así
     // lo saben aunque esta se cierre mientras espera al servidor
@@ -104,6 +106,9 @@ export const useLogout = () => {
 
     // Clear client-side state
     clearAuth();
+    // Otra vez tras limpiar: un guardado que llegara durante la espera la habría vuelto a
+    // anotar (revisión, FE #1064)
+    olvidaLaUltimaCuenta();
     clearUserContext();
     // El número de Actividad y el del icono son de esta cuenta (FE-1)
     olvidaLasNovedades();

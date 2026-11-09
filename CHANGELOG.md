@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.70.0] - 2026-11-09
+
+**La página a la que volver tras entrar es de la última cuenta que estuvo en la pestaña,
+venga por donde venga, y un enlace abierto sin sesión ya no se pierde** (FE #1064, #1069,
+#1070). Solo el frontend; el backend sigue en **2.54.0**. Probado en el Kind a 360 px con
+una batería final de once casos.
+
+### Changed
+
+- **La página de la que se venía y la vuelta de Google llevan la cuenta**: si la sesión
+  cae sin recargar, el login recuerda la última cuenta de la pestaña; si entra la misma,
+  vuelve a esa página; si entra otra, va a su propio panel. Toda ida al login se construye
+  igual (también la del panel), y cerrar sesión o restablecer la contraseña olvida esa
+  cuenta.
+- **Un enlace abierto sin sesión ya no se pierde** (por ejemplo el de confirmar el correo
+  en otro navegador o tras cerrar sesión): se guarda para quien entre y se vuelve a él. En
+  la 2.69.0 acababa en el panel.
+- **Sin aviso de «sesión expirada» cuando no había sesión**; un dispositivo revocado de
+  verdad sigue avisando siempre.
+- La cuenta de la pestaña solo se apunta cuando el backend confirma la sesión.
+
 ## [2.69.0] - 2026-11-08
 
 **Desvincular Google pide la contraseña, el cierre por CSRF sigue los mismos caminos que
