@@ -188,12 +188,10 @@ const SIN_LIMPIEZAS =
  * en el orden en que se apuntaron; apuntar dos veces la misma no la repite.
  *
  * @param {() => void} limpieza
- * @param {{ soloCierresForzados?: boolean }} [opciones] Solo en los cierres
- *   forzados (revocación, sesión caducada, CSRF), no en `clearAuth`
  */
-export const alCerrarLaSesion = (limpieza, { soloCierresForzados = false } = {}) => {
-  if (limpiezasAlCerrar.some((apuntada) => apuntada.limpieza === limpieza)) return;
-  limpiezasAlCerrar.push({ limpieza, soloCierresForzados });
+export const alCerrarLaSesion = (limpieza) => {
+  if (limpiezasAlCerrar.includes(limpieza)) return;
+  limpiezasAlCerrar.push(limpieza);
 };
 
 /**
@@ -201,14 +199,10 @@ export const alCerrarLaSesion = (limpieza, { soloCierresForzados = false } = {})
  * borrar «nada» sin avisar dejaría los datos de esta cuenta a la siguiente
  * persona del dispositivo. Sin capturar, como cuando se llamaban una a una: en
  * los cierres forzados, quien llama sale igualmente por su `finally`.
- *
- * @param {{ forzado?: boolean }} [opciones]
  */
-export const olvidaLoDeLaCuenta = ({ forzado = false } = {}) => {
+export const olvidaLoDeLaCuenta = () => {
   if (limpiezasAlCerrar.length === 0) throw new Error(SIN_LIMPIEZAS);
-  for (const { limpieza, soloCierresForzados } of limpiezasAlCerrar) {
-    if (forzado || !soloCierresForzados) limpieza();
-  }
+  for (const limpieza of limpiezasAlCerrar) limpieza();
 };
 
 /**
@@ -218,7 +212,7 @@ export const olvidaLoDeLaCuenta = ({ forzado = false } = {}) => {
 export const limpiaLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
-  olvidaLoDeLaCuenta({ forzado: true });
+  olvidaLoDeLaCuenta();
   // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
   // nadie y esta línea no hacía nada (25 oct 2026)
   clearUserContext();

@@ -76,27 +76,16 @@ describe('el registro de limpiezas de la cuenta', () => {
     consola.mockRestore();
   });
 
-  it('el cierre normal salta las limpiezas que son solo de cierre forzado', async () => {
-    const { alCerrarLaSesion, olvidaLoDeLaCuenta } = await cargaDeNuevo();
-    const hechas = [];
-    alCerrarLaSesion(() => hechas.push('siempre'));
-    alCerrarLaSesion(() => hechas.push('forzado'), { soloCierresForzados: true });
-
-    olvidaLoDeLaCuenta();
-
-    expect(hechas).toEqual(['siempre']);
-  });
-
-  it('un cierre forzado las hace todas, en el orden en que se registraron', async () => {
+  it('hace todas las limpiezas, en el orden en que se registraron', async () => {
     const { alCerrarLaSesion, limpiaLaCuenta } = await cargaDeNuevo();
     const hechas = [];
     alCerrarLaSesion(() => hechas.push('primera'));
-    alCerrarLaSesion(() => hechas.push('forzado'), { soloCierresForzados: true });
+    alCerrarLaSesion(() => hechas.push('segunda'));
     alCerrarLaSesion(() => hechas.push('tercera'));
 
     limpiaLaCuenta();
 
-    expect(hechas).toEqual(['primera', 'forzado', 'tercera']);
+    expect(hechas).toEqual(['primera', 'segunda', 'tercera']);
   });
 
   it('registrar la misma limpieza dos veces no la repite, y no devuelve nada', async () => {

@@ -33,7 +33,7 @@ describe('clearAuth usa el registro de limpiezas', () => {
 
     act(() => result.current.clearAuth());
 
-    expect(llamadas).toEqual(['loUltimoConocido', 'refrescoDeHandicap']);
+    expect(llamadas).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades']);
     expect(localStorage.removeItem).toHaveBeenCalledWith('user');
     expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
   });
