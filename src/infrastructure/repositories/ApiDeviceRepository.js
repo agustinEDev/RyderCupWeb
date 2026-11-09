@@ -2,15 +2,15 @@
 import Device from '../../domain/entities/Device.js';
 import IDeviceRepository from '../../domain/repositories/IDeviceRepository.js';
 import apiRequest from '../http/api.js';
+import { RUTA_DEL_USUARIO_ACTUAL } from '../../utils/rutasDeLaSesion';
 
 /**
  * API implementation of Device Repository
  * v1.13.0: Device Fingerprinting feature
  */
 const MOTIVOS_DE_UN_403 = new Set(['CSRF_VALIDATION_FAILED', 'TERMS_NOT_ACCEPTED']);
-// La ruta con sesión más ligera: el backend comprueba en ella el dispositivo del token.
-// La lista de dispositivos era la consulta más cara (FE #1046)
-const CON_SESION = '/api/v1/auth/current-user';
+// La ruta con sesión más ligera (RUTA_DEL_USUARIO_ACTUAL): el backend comprueba en
+// ella el dispositivo del token. La lista de dispositivos era la consulta más cara (FE #1046)
 
 class ApiDeviceRepository extends IDeviceRepository {
   constructor() {
@@ -59,7 +59,7 @@ class ApiDeviceRepository extends IDeviceRepository {
    * @returns {Promise<void>}
    */
   async checkDeviceStatus() {
-    await apiRequest(CON_SESION);
+    await apiRequest(RUTA_DEL_USUARIO_ACTUAL);
   }
 
   /**

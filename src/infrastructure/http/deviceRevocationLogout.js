@@ -212,13 +212,22 @@ export const olvidaLoDeLaCuenta = () => {
 };
 
 /**
+ * Lo guardado de la cuenta que no depende de la interfaz: el usuario, el token de
+ * antes y lo del registro de limpiezas. Lo borran el cierre forzado
+ * (`limpiaLaCuenta`) y el que falla cerrado sin interfaz, siempre lo mismo.
+ */
+const borraLoGuardadoDeLaCuenta = () => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('access_token'); // Legacy cleanup
+  olvidaLoDeLaCuenta();
+};
+
+/**
  * Lo de la cuenta que sale, también al revocar el propio dispositivo (C3) y en el cierre
  * por CSRF (S3): una sola limpieza para los cierres duros.
  */
 export const limpiaLaCuenta = () => {
-  localStorage.removeItem('user');
-  localStorage.removeItem('access_token'); // Legacy cleanup
-  olvidaLoDeLaCuenta();
+  borraLoGuardadoDeLaCuenta();
   // El usuario de Sentry (por sentryHelpers, en la interfaz): `window.Sentry` no
   // lo asignaba nadie y esta línea no hacía nada (25 oct 2026)
   interfaz().olvidaElUsuarioDeSentry();
@@ -234,13 +243,19 @@ export const limpiaLaCuenta = () => {
  */
 export const exigeLaInterfazDelTransporte = () => {
   if (hayInterfazDelTransporte()) return;
+  let falloAlBorrar = null;
   try {
-    localStorage.removeItem('user');
-    localStorage.removeItem('access_token'); // Legacy cleanup
-    olvidaLoDeLaCuenta();
-  } finally {
-    // Lanza «no hay interfaz del transporte registrada…», también si falló lo de arriba
+    borraLoGuardadoDeLaCuenta();
+  } catch (error) {
+    falloAlBorrar = error;
+  }
+  try {
     interfaz();
+  } catch (sinInterfaz) {
+    // Lanza «no hay interfaz del transporte registrada…»; si además falló el borrado,
+    // ese fallo va como su causa, sin taparlo
+    if (falloAlBorrar) sinInterfaz.cause = falloAlBorrar;
+    throw sinInterfaz;
   }
 };
 

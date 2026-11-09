@@ -303,6 +303,17 @@ export const conElTokenAlDia = (opciones, { siempre = false } = {}) => {
  * @param {Error & {response?: Response, errorData?: object}} refreshError
  */
 export const trataElFalloDelRefresco = (refreshError) => {
+  // «No lanza» también cuando el cierre falla (sin la interfaz registrada, que ya
+  // borra lo de la cuenta y falla cerrado, o una limpieza que falla): se anota y
+  // quien llama sigue con su error, como siempre
+  try {
+    cierraSiElServidorDijoQueNo(refreshError);
+  } catch (error) {
+    console.error('[TokenRefresh] Forced logout failed:', error);
+  }
+};
+
+const cierraSiElServidorDijoQueNo = (refreshError) => {
   // Solo el servidor puede decir que una sesión ya no vale. Un fallo de red
   // o un 5xx significan que no se ha podido preguntar, no que la respuesta
   // sea que no, y tratarlos igual echaba al jugador de la aplicación en

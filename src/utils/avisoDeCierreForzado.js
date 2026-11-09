@@ -15,8 +15,12 @@
  */
 import { captureError } from './sentryHelpers';
 
-// Los motivos y cómo se reconoce cada 401, sin Sentry: los usa también el
-// transporte (infrastructure/http), que no llega a las librerías de la interfaz
+// Los motivos y cómo se reconoce cada 401 viven en motivosDelCierre, sin Sentry:
+// los usa también el transporte (infrastructure/http), que no llega a las
+// librerías de la interfaz. Se reexportan aquí solo los que se siguen tomando de
+// este módulo: MOTIVO_DEL_CIERRE (sus tests), esFinalNormalDelRefresco y
+// esUn401DeToken (services/sondaDeSesion). motivoDelRefrescoRechazado solo lo usa
+// el transporte, y lo toma de motivosDelCierre
 export { MOTIVO_DEL_CIERRE, esFinalNormalDelRefresco, esUn401DeToken } from './motivosDelCierre';
 import { MOTIVO_DEL_CIERRE } from './motivosDelCierre';
 

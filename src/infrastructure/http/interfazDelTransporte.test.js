@@ -141,18 +141,87 @@ describe('la interfaz del transporte', () => {
     expect(interfaz().redirigeAlLogin).toBe(original);
   });
 
-  it('solo para los tests: tras reiniciar el registro se puede registrar otra', async () => {
-    const { registraLaInterfazDelTransporte, interfaz, olvidaLaInterfazDelTransporteSoloEnTests } = await import(
-      './interfazDelTransporte'
-    );
-    registraLaInterfazDelTransporte(COMPLETA());
-    olvidaLaInterfazDelTransporteSoloEnTests();
+  it('una carga nueva del módulo (vi.resetModules) empieza sin registrar', async () => {
+    const primera = await import('./interfazDelTransporte');
+    primera.registraLaInterfazDelTransporte(COMPLETA());
+    vi.resetModules();
+    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
     expect(() => interfaz()).toThrow(SIN_INTERFAZ);
     const otra = COMPLETA();
 
     registraLaInterfazDelTransporte(otra);
 
     expect(interfaz()).toBe(otra);
+  });
+
+  it('sin registrar, el fallo de un refresco no sale de trataElFalloDelRefresco: borra lo de la cuenta y lo anota', async () => {
+    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    vi.spyOn(globalThis.console, 'log').mockImplementation(() => {});
+    const { alCerrarLaSesion } = await import('./deviceRevocationLogout');
+    const limpieza = vi.fn();
+    alCerrarLaSesion(limpieza);
+    const { trataElFalloDelRefresco } = await import('./tokenRefreshInterceptor');
+    const revocado = Object.assign(new Error('refresh failed'), {
+      response: { status: 401, url: '/api/v1/auth/refresh-token' },
+      errorData: { detail: 'Dispositivo revocado. Por favor, inicia sesión nuevamente.' },
+    });
+
+    expect(() => trataElFalloDelRefresco(revocado)).not.toThrow();
+
+    expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+    expect(limpieza).toHaveBeenCalledTimes(1);
+    expect(consola).toHaveBeenCalledWith(
+      '[TokenRefresh] Forced logout failed:',
+      expect.objectContaining({ message: expect.stringMatching(SIN_INTERFAZ) })
+    );
+    consola.mockRestore();
+  });
+
+  it('sin registrar y con una limpieza que falla, el error dice que falta la interfaz y trae el de la limpieza como causa', async () => {
+    vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
+    const { alCerrarLaSesion, handleDeviceRevocationLogout } = await import('./deviceRevocationLogout');
+    const fallo = new Error('almacén lleno');
+    alCerrarLaSesion(() => {
+      throw fallo;
+    });
+
+    let lanzado;
+    try {
+      handleDeviceRevocationLogout(null);
+    } catch (error) {
+      lanzado = error;
+    }
+
+    expect(lanzado?.message).toMatch(SIN_INTERFAZ);
+    expect(lanzado?.cause).toBe(fallo);
+  });
+
+  it('sin interfaz se borra lo mismo que en un cierre forzado normal (sin Sentry)', async () => {
+    const pasos = (borrados, limpiezas) => [...borrados, `limpiezas:${limpiezas}`];
+    const almacen = () => {
+      const borrados = [];
+      vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn((k) => borrados.push(k)) });
+      return borrados;
+    };
+
+    // Con la interfaz: limpiaLaCuenta, la del cierre forzado
+    const conInterfaz = almacen();
+    const normal = await import('./deviceRevocationLogout');
+    const enNormal = vi.fn();
+    normal.alCerrarLaSesion(enNormal);
+    (await import('./interfazDelTransporte')).registraLaInterfazDelTransporte(COMPLETA());
+    normal.limpiaLaCuenta();
+
+    // Sin la interfaz: lo que borra antes de lanzar
+    vi.resetModules();
+    const sinInterfaz = almacen();
+    const cerrado = await import('./deviceRevocationLogout');
+    const enCerrado = vi.fn();
+    cerrado.alCerrarLaSesion(enCerrado);
+    expect(() => cerrado.handleDeviceRevocationLogout(null)).toThrow(SIN_INTERFAZ);
+
+    expect(pasos(sinInterfaz, enCerrado.mock.calls.length)).toEqual(pasos(conInterfaz, enNormal.mock.calls.length));
   });
 
   it.each([['toString'], ['constructor'], ['__proto__'], ['ended']])(

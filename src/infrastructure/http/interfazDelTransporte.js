@@ -62,8 +62,3 @@ export const interfaz = () => {
   if (!registrada) throw new Error(SIN_INTERFAZ);
   return registrada;
 };
-
-/** SOLO para los tests: vuelve a «sin registrar». */
-export const olvidaLaInterfazDelTransporteSoloEnTests = () => {
-  registrada = null;
-};
