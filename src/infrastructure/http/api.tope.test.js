@@ -13,15 +13,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 const TOPE_MS = 15000;
 
 const llamarAlBackend = vi.fn();
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
+vi.mock('./tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
 }));
-vi.mock('../infrastructure/http/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
+vi.mock('./csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRed, esFalloDeRedDeLaApi } = await import('../utils/sinCobertura');
-const { noLlegoAlServidor, seGuardaParaDespues } = await import('../utils/politicaDeLaCola');
+const { esFalloDeRed, esFalloDeRedDeLaApi } = await import('../../utils/sinCobertura');
+const { noLlegoAlServidor, seGuardaParaDespues } = await import('../../utils/politicaDeLaCola');
 
 // Como el `fetch` de verdad: no contesta nunca, y al abortar su señal rechaza
 // con el motivo del aborto

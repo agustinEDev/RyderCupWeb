@@ -8,14 +8,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
  */
 
 const llamarAlBackend = vi.fn();
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
+vi.mock('./tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
 }));
-vi.mock('../infrastructure/http/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
+vi.mock('./csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
-import comunEs from '../i18n/locales/es/common.json';
-import comunEn from '../i18n/locales/en/common.json';
+import comunEs from '../../i18n/locales/es/common.json';
+import comunEn from '../../i18n/locales/en/common.json';
 
 const { apiRequest } = await import('./api');
 

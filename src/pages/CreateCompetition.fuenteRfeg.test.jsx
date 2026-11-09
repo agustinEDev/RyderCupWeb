@@ -88,7 +88,7 @@ const LISTADO = {
 
 // La API es lo único falso: repositorio y caso de uso son los de verdad
 const mockApi = vi.fn();
-vi.mock('../services/api', () => ({ default: (...a) => mockApi(...a) }));
+vi.mock('../infrastructure/http/api', () => ({ default: (...a) => mockApi(...a) }));
 const { default: ApiGolfCourseRepository } = await import('../infrastructure/repositories/ApiGolfCourseRepository');
 const { default: ListGolfCoursesUseCase } = await import('../application/use_cases/golf_course/ListGolfCoursesUseCase');
 const listar = new ListGolfCoursesUseCase({ golfCourseRepository: new ApiGolfCourseRepository() });

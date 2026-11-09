@@ -1,6 +1,6 @@
 // src/infrastructure/repositories/ApiScoringRepository.js
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IScoringRepository from '../../domain/repositories/IScoringRepository.js';
 import ScoringMapper from '../mappers/ScoringMapper';

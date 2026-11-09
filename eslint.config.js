@@ -92,7 +92,7 @@ export default [
     },
   },
 
-  // Toda llamada a la API pasa por apiRequest() (src/services/api.js): lleva el
+  // Toda llamada a la API pasa por apiRequest() (src/infrastructure/http/api.js): lleva el
   // interceptor que refresca el token ante un 401 y reintenta. Un fetch directo
   // se lo salta y provoca deslogueos aparentes (CLAUDE.md). Excepciones, cada una
   // con su motivo en el propio fichero:
@@ -113,12 +113,12 @@ export default [
     rules: {
       'no-restricted-globals': [
         'error',
-        { name: 'fetch', message: 'Usa apiRequest() de src/services/api.js: lleva el refresco del token.' },
+        { name: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js: lleva el refresco del token.' },
       ],
       'no-restricted-properties': [
         'error',
-        { object: 'window', property: 'fetch', message: 'Usa apiRequest() de src/services/api.js.' },
-        { object: 'globalThis', property: 'fetch', message: 'Usa apiRequest() de src/services/api.js.' },
+        { object: 'window', property: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js.' },
+        { object: 'globalThis', property: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js.' },
       ],
     },
   },

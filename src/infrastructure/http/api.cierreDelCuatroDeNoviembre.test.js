@@ -28,23 +28,23 @@ vi.mock('@sentry/react', () => ({
 const llamarAlBackend = vi.fn();
 const refrescoCompartido = vi.fn();
 const getCsrfToken = vi.fn();
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', async (original) => ({
+vi.mock('./tokenRefreshInterceptor', async (original) => ({
   ...(await original()),
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
   refrescoCompartido: (...args) => refrescoCompartido(...args),
 }));
-vi.mock('../infrastructure/http/csrfTokenSync', () => ({
+vi.mock('./csrfTokenSync', () => ({
   getCsrfToken: () => getCsrfToken(),
   getCsrfCookie: () => getCsrfToken(),
   setCsrfTokenGlobal: () => {},
 }));
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: (clave) => clave } }));
 
 // Lo que se borra de la cuenta lo registra la composition root, como en la app:
 // sin él, `handleCsrfLogout` se tragaba el «no hay limpiezas registradas»
-await import('../composition/limpiezaAlCerrarLaSesion');
-const { olvidaLasNovedades } = await import('./novedadesDeActividad');
+await import('../../composition/limpiezaAlCerrarLaSesion');
+const { olvidaLasNovedades } = await import('../../services/novedadesDeActividad');
 const { apiRequest } = await import('./api');
 
 const csrf403 = () => ({

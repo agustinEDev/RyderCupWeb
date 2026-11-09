@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, Check } from 'lucide-react';
 import Avatar from '../ui/Avatar';
-import { getApiBaseUrl } from '../../services/api';
+import { getApiBaseUrl } from '../../composition/http';
 import BlockLoader from '../ui/BlockLoader';
 
 const AvatarPicker = ({

@@ -1,6 +1,6 @@
 // src/infrastructure/repositories/ApiTeeGroupScoringRepository.js
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 import ITeeGroupScoringRepository from '../../domain/repositories/ITeeGroupScoringRepository.js';
 import TeeGroupScoringMapper from '../mappers/TeeGroupScoringMapper';
 import ScheduleMapper from '../mappers/ScheduleMapper';

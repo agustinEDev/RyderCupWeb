@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('./api', () => ({ apiRequest: vi.fn() }));
+vi.mock('../infrastructure/http/api', () => ({ apiRequest: vi.fn() }));
 
 import { formatDateRange } from './competitions';
 

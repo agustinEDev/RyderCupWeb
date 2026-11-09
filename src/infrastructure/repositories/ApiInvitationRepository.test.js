@@ -5,11 +5,11 @@ vi.mock('../../domain/repositories/IInvitationRepository.js', () => ({
   default: class IInvitationRepository {},
 }));
 
-vi.mock('../../services/api.js', () => ({
+vi.mock('../http/api.js', () => ({
   default: vi.fn(),
 }));
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 const mockInvitationApi = {
   id: 'inv-1',

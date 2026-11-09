@@ -1,5 +1,5 @@
 import IAvatarRepository from '../../domain/repositories/IAvatarRepository';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * ApiAvatarRepository - REST API implementation

@@ -1,5 +1,5 @@
 import IAdminRepository from '../../domain/repositories/IAdminRepository.js';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * API Implementation of Admin Repository

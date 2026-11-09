@@ -4,7 +4,7 @@ import HoleReviewMapper from '../mappers/HoleReviewMapper';
 import HoleSampleMapper from '../mappers/HoleSampleMapper';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * API Implementation of Golf Course Repository

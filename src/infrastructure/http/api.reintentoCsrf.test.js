@@ -48,23 +48,23 @@ const getCsrfCookie = vi.fn();
 const trataElFalloDelRefresco = vi.fn();
 
 // `conElTokenAlDia` es el de verdad: el reintento lo usa para poner el token
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', async (original) => ({
+vi.mock('./tokenRefreshInterceptor', async (original) => ({
   ...(await original()),
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
   refrescoCompartido: (...args) => refrescoCompartido(...args),
   trataElFalloDelRefresco: (...args) => trataElFalloDelRefresco(...args),
 }));
-vi.mock('../infrastructure/http/csrfTokenSync', () => ({
+vi.mock('./csrfTokenSync', () => ({
   getCsrfToken: () => getCsrfToken(),
   getCsrfCookie: () => getCsrfCookie(),
   setCsrfTokenGlobal: () => {},
 }));
-vi.mock('../infrastructure/http/csrfLogout', () => ({ handleCsrfLogout: (...args) => handleCsrfLogout(...args) }));
-vi.mock('../utils/sentryHelpers', () => ({ captureError: (...args) => captureError(...args) }));
+vi.mock('./csrfLogout', () => ({ handleCsrfLogout: (...args) => handleCsrfLogout(...args) }));
+vi.mock('../../utils/sentryHelpers', () => ({ captureError: (...args) => captureError(...args) }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRedDeLaApi } = await import('../utils/sinCobertura');
+const { esFalloDeRedDeLaApi } = await import('../../utils/sinCobertura');
 
 const csrf403 = () => ({
   ok: false,

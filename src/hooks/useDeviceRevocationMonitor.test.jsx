@@ -10,10 +10,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { BrowserRouter } from 'react-router';
 import { useDeviceRevocationMonitor } from './useDeviceRevocationMonitor';
-import * as api from '../services/api';
+import * as api from '../infrastructure/http/api';
 
 // Mock API
-vi.mock('../services/api', () => ({
+vi.mock('../infrastructure/http/api', () => ({
   apiRequest: vi.fn(),
 }));
 

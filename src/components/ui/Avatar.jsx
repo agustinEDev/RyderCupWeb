@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
-import { getApiBaseUrl } from '../../services/api';
+import { getApiBaseUrl } from '../../composition/http';
 
 const SIZE_CLASSES = {
   sm: 'w-8 h-8',

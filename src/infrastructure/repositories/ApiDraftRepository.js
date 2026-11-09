@@ -1,6 +1,6 @@
 // src/infrastructure/repositories/ApiDraftRepository.js
 
-import { apiRequest } from '../../services/api';
+import { apiRequest } from '../http/api';
 import DraftMapper from '../mappers/DraftMapper';
 import IDraftRepository from '../../domain/repositories/IDraftRepository';
 

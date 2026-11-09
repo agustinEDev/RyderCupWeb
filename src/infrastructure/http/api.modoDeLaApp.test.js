@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   M6  desde el navegador                | ninguna la lleva
  */
 const instalada = vi.hoisted(() => ({ valor: true }));
-vi.mock('../utils/standalone', () => ({ detectStandalone: () => instalada.valor }));
+vi.mock('../../utils/standalone', () => ({ detectStandalone: () => instalada.valor }));
 
 const ok = () => ({ ok: true, status: 200, json: async () => ({ csrf_token: 't' }), headers: new globalThis.Headers(), clone() { return ok(); } });
 
@@ -31,7 +31,7 @@ describe('X-App-Mode en las peticiones', () => {
 
   it('M5: el refresco de la app instalada también', async () => {
     instalada.valor = true;
-    const { refreshAccessToken } = await import('../infrastructure/http/tokenRefreshInterceptor');
+    const { refreshAccessToken } = await import('./tokenRefreshInterceptor');
 
     await refreshAccessToken().catch(() => {});
 

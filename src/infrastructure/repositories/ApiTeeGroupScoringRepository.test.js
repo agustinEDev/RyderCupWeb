@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiTeeGroupScoringRepository from './ApiTeeGroupScoringRepository';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 
-vi.mock('../../services/api', () => ({ default: vi.fn() }));
+vi.mock('../http/api', () => ({ default: vi.fn() }));
 
 /**
  * Anotar una partida de stroke play (FE #824, PR 7; RyderCupAm#535). La vista

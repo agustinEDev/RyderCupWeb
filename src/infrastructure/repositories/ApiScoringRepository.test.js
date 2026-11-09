@@ -8,11 +8,11 @@ vi.mock('../../domain/repositories/IScoringRepository.js', () => ({
 }));
 
 // Mock api.js
-vi.mock('../../services/api.js', () => ({
+vi.mock('../http/api.js', () => ({
   default: vi.fn(),
 }));
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 describe('ApiScoringRepository', () => {
   let repo;

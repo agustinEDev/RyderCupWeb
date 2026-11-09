@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import ApiCompetitionRepository from './ApiCompetitionRepository';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 
-vi.mock('../../services/api', () => ({
+vi.mock('../http/api', () => ({
   default: vi.fn(),
 }));
 

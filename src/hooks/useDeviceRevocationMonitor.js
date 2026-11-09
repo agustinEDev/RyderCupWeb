@@ -23,7 +23,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router';
-import { apiRequest } from '../services/api';
+import { apiRequest } from '../composition/http';
 
 const FALLBACK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 // La ruta con sesión más ligera: el backend comprueba en ella el dispositivo del token
