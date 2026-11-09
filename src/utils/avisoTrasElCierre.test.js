@@ -11,11 +11,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * | sin sessionStorage (lanza al guardar)  | no se guarda (quien llama lo enseña ya)       |
  * | el aviso de cada motivo                | revocado 🔒, caducado ⏱️, otro ℹ️ (también «toString») |
  * | se enseña                              | su texto traducido, 8000 ms, su icono, `delCierre` |
+ * | pasan más de 30 s                      | caduca: no se toma                            |
+ * | se olvida (entrar, salir con el botón) | ya no está                                    |
  */
 const toast = vi.hoisted(() => ({ error: vi.fn() }));
 vi.mock('./toast', () => ({ default: toast }));
 
-const { guardaElAvisoDelCierre, tomaElAvisoDelCierre, muestraElAvisoDelCierre } = await import('./avisoTrasElCierre');
+const { guardaElAvisoDelCierre, tomaElAvisoDelCierre, muestraElAvisoDelCierre, olvidaElAvisoDelCierre } = await import(
+  './avisoTrasElCierre'
+);
 const traduce = (clave, { ns }) => `${ns}:${clave}`;
 
 describe('el aviso de un cierre forzado, para /login', () => {
@@ -33,6 +37,39 @@ describe('el aviso de un cierre forzado, para /login', () => {
 
     expect(tomaElAvisoDelCierre()).toBe('revocation');
     expect(tomaElAvisoDelCierre()).toBeNull();
+  });
+
+  it('caduca: pasados 30 s ya no se toma (un aviso viejo no sale en un /login de otro momento)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      guardaElAvisoDelCierre('revocation');
+      vi.advanceTimersByTime(30_001);
+
+      expect(tomaElAvisoDelCierre()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a los 30 s justos todavía vale', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      guardaElAvisoDelCierre('expiration');
+      vi.advanceTimersByTime(30_000);
+
+      expect(tomaElAvisoDelCierre()).toBe('expiration');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('olvidarlo lo quita sin enseñarlo', () => {
+    guardaElAvisoDelCierre('revocation');
+
+    olvidaElAvisoDelCierre();
+
+    expect(tomaElAvisoDelCierre()).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('sin guardar no hay nada que tomar', () => {

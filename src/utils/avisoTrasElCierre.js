@@ -9,8 +9,13 @@ import customToast from './toast';
  * pestaña) y /login lo enseña al cargar, una vez: mismo texto, icono, duración
  * y `delCierre`. Sin sessionStorage, quien cierra lo enseña en la página de
  * partida, como antes.
+ *
+ * Caduca a los 30 s (la redirección tarda nada), y se olvida al entrar con éxito
+ * y al cerrar sesión con el botón: un aviso que /login no llegó a enseñar no puede
+ * salir más tarde, en otro /login de otro momento.
  */
 const CLAVE = 'rydercup-aviso-del-cierre';
+const CADUCA_MS = 30_000;
 
 // El aviso de cada motivo: su texto y su icono
 const AVISO_DEL_CIERRE = Object.freeze({
@@ -26,7 +31,7 @@ const AVISO_DE_SESION_TERMINADA = Object.freeze({ clave: 'errors.sessionEnded', 
  */
 export const guardaElAvisoDelCierre = (motivo) => {
   try {
-    globalThis.sessionStorage.setItem(CLAVE, String(motivo));
+    globalThis.sessionStorage.setItem(CLAVE, JSON.stringify({ motivo: String(motivo), hora: Date.now() }));
     return true;
   } catch {
     return false;
@@ -38,12 +43,28 @@ export const guardaElAvisoDelCierre = (motivo) => {
  * @returns {string|null}
  */
 export const tomaElAvisoDelCierre = () => {
+  let guardado;
   try {
-    const motivo = globalThis.sessionStorage.getItem(CLAVE);
+    guardado = globalThis.sessionStorage.getItem(CLAVE);
     globalThis.sessionStorage.removeItem(CLAVE);
+  } catch {
+    return null;
+  }
+  try {
+    const { motivo, hora } = JSON.parse(guardado) ?? {};
+    if (typeof motivo !== 'string' || typeof hora !== 'number' || Date.now() - hora > CADUCA_MS) return null;
     return motivo;
   } catch {
     return null;
+  }
+};
+
+/** Se entró con éxito o se cerró sesión con el botón: el aviso guardado ya no vale. */
+export const olvidaElAvisoDelCierre = () => {
+  try {
+    globalThis.sessionStorage.removeItem(CLAVE);
+  } catch {
+    // Sin sessionStorage no había aviso guardado
   }
 };
 

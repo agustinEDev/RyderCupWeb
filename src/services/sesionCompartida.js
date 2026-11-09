@@ -38,6 +38,7 @@
 
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
 import { clearDeviceRevocationFlag } from '../infrastructure/http/deviceRevocationLogout';
+import { olvidaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterceptor';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
 import { olvidaLasNovedades } from './novedadesDeActividad';
@@ -242,6 +243,8 @@ const publicaSinSesion = () => {
  */
 const publicaConfirmada = (usuario) => {
   clearDeviceRevocationFlag();
+  // Con sesión, el aviso de un cierre forzado que /login no llegó a enseñar ya no vale
+  olvidaElAvisoDelCierre();
   fallosSeguidos = 0;
   // Y el reintento que quedara armado se cancela: desde que fuerza (FE #529)
   // dispararia una peticion de mas, y al forzar sube la generacion, con lo que
@@ -409,6 +412,7 @@ export const anotaLaSesion = (usuarioDelBackend) => {
   // preguntar en toda la carga de pagina, asi que la marca se quedaba puesta y
   // el siguiente cierre de sesion salia sin su aviso
   clearDeviceRevocationFlag();
+  olvidaElAvisoDelCierre();
   generacion += 1;
   enVuelo = null;
   fallosSeguidos = 0;
