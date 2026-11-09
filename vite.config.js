@@ -394,12 +394,14 @@ export default defineConfig(() => ({
       // La cifra real al empezar a contar todos los ficheros (30 sep 2026:
       // 78,53 / 78,07 / 74,13 / 74,82), con medio punto de margen como mucho:
       // el v8 del CI puede medir unas décimas distinto. El 80% de antes no era
-      // real: no contaba las páginas sin tests. Se sube al añadir tests
+      // real: no contaba las páginas sin tests. Se sube al añadir tests.
+      // 9 nov 2026: subidos a lo medido (90,82 / 90,40 / 87,16 / 87,50),
+      // redondeado hacia abajo al medio punto
       thresholds: {
-        lines: 78,
-        statements: 77.5,
-        functions: 73.5,
-        branches: 74,
+        lines: 90.5,
+        statements: 90,
+        functions: 87,
+        branches: 87,
       },
     },
     css: {
