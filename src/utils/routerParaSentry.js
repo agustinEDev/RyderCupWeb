@@ -12,6 +12,9 @@
  */
 let registrado = null;
 let instrumenta = null;
+// Los routers que el seguimiento ya envolvió. Aquí y no en navegacionesEnSentry:
+// si ese módulo se vuelve a evaluar (HMR), no envuelve otra vez el mismo router
+const instrumentados = new WeakSet();
 
 /** La aplicación, al crear su router. Si el seguimiento ya está, lo instrumenta ya. */
 export function registrarRouterParaSentry(router, rutas) {
@@ -21,6 +24,14 @@ export function registrarRouterParaSentry(router, rutas) {
 
 /** El router registrado, o null. */
 export const routerRegistrado = () => registrado;
+
+/** Si el seguimiento ya envolvió este router. */
+export const yaInstrumentado = (router) => instrumentados.has(router);
+
+/** El seguimiento acaba de envolver este router. */
+export const marcaInstrumentado = (router) => {
+  instrumentados.add(router);
+};
 
 /** `navegacionesEnSentry`, al cargar: lo que hay que hacer con cada router registrado. */
 export const alRegistrarElRouter = (hacer) => {

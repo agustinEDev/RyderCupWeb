@@ -1,6 +1,6 @@
 import { getActiveSpan, getClient, getCurrentScope, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
 import { matchRoutes } from 'react-router';
-import { alRegistrarElRouter, routerRegistrado } from './routerParaSentry';
+import { alRegistrarElRouter, marcaInstrumentado, routerRegistrado, yaInstrumentado } from './routerParaSentry';
 
 /**
  * El seguimiento de navegaciones de Sentry sobre el router de datos (FE #647).
@@ -72,11 +72,9 @@ const sinRomper = (hacer) => {
   }
 };
 
-let instrumentado = null;
-
 const intentar = () => {
   const registrado = routerRegistrado();
-  if (!registrado || instrumentado === registrado.router) return;
+  if (!registrado || yaInstrumentado(registrado.router)) return;
   // Sin su integración, el envoltorio no haría nada: se espera a que llegue
   if (!getClient()?.getIntegrationByName?.('BrowserTracing')) return;
   const { router, rutas } = registrado;
@@ -85,7 +83,7 @@ const intentar = () => {
   } catch {
     return;
   }
-  instrumentado = router;
+  marcaInstrumentado(router);
   sinRomper(() => nombrarLaCarga(router, rutas));
   // Una redirección (replace) con la carga aún abierta: Sentry no la sigue
   router.subscribe((estado) => {
@@ -99,7 +97,6 @@ const intentar = () => {
 // módulo llega con `src/sentry.ts` y desde entonces instrumenta cada uno que se
 // registre (y el que ya estuviera, en `instrumentarRouterEnSentry`)
 alRegistrarElRouter(intentar);
-export { registrarRouterParaSentry } from './routerParaSentry';
 
 /** `src/sentry.ts`, al poner el seguimiento de navegaciones. */
 export function instrumentarRouterEnSentry() {

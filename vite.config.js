@@ -452,16 +452,17 @@ export default defineConfig(() => ({
             return 'react-vendor'
           }
           // El SDK de Sentry que usa el arranque, en un trozo estable entre releases.
-          // Sin los envoltorios de routers ni el profiler: los pide src/sentry.ts ~2 s
-          // después, y metidos aquí arrastraban al arranque todo el seguimiento de
-          // navegaciones (BrowserTracing, web-vitals…), unos 17 KB gzip (9 nov
-          // 2026). @sentry/core va con el resto: si no, sus módulos caían en
+          // Sin los envoltorios de routers: los pide src/sentry.ts ~2 s después, y
+          // metidos aquí arrastraban al arranque todo el seguimiento de navegaciones
+          // (BrowserTracing, web-vitals…), unos 17 KB gzip (9 nov 2026). El
+          // profiler sí va: App.jsx usa `withProfiler` al arrancar, y fuera de aquí
+          // caía en `index`. @sentry/core va con el resto: si no, sus módulos caían en
           // `index`, que cambia en cada release. Si Sentry renombra esos ficheros,
           // vuelven a este trozo y lo nota el presupuesto del CI
           // (src/arranqueDeSentry.test.js)
           if (
             /\/node_modules\/@sentry\/(react|core|conventions)\//.test(id) &&
-            !/\/react-?router|tanstackrouter|profiler/.test(id)
+            !/\/react-?router|tanstackrouter/.test(id)
           ) {
             return 'sentry'
           }

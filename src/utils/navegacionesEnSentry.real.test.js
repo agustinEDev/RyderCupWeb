@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react';
 import { createBrowserRouter, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
-import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegacionesEnSentry';
+import { registrarRouterParaSentry } from './routerParaSentry';
+import { instrumentarRouterEnSentry } from './navegacionesEnSentry';
 
 /**
  * Con Sentry de verdad (sin enviar nada): el router se crea antes de que llegue

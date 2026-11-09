@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
  * | src/sentry.ts                             | solo por `import()` dinámico                           |
  * | App.jsx                                   | registra el router en `routerParaSentry`, sin Sentry    |
  * | routerParaSentry                          | no importa nada de Sentry                              |
- * | vite.config.js                            | trozo `sentry` sin los envoltorios de routers ni profiler |
+ * | vite.config.js                            | trozo `sentry` sin los envoltorios de routers          |
  *
  * Antes App.jsx importaba `navegacionesEnSentry`, que trae el envoltorio de React
  * Router de Sentry; y el trozo `sentry` cogía todo @sentry/react. Entre los dos,
@@ -48,9 +48,9 @@ describe('Sentry en el arranque', () => {
     expect(registro).not.toMatch(/^import /m);
   });
 
-  it('el trozo sentry deja fuera los envoltorios de routers y el profiler', () => {
+  it('el trozo sentry deja fuera los envoltorios de routers (el profiler, no: lo usa App.jsx)', () => {
     const config = fuente('vite.config.js');
 
-    expect(config).toMatch(/!\/\\\/react-\?router\|tanstackrouter\|profiler\/\.test\(id\)/);
+    expect(config).toMatch(/!\/\\\/react-\?router\|tanstackrouter\/\.test\(id\)/);
   });
 });
