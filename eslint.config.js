@@ -122,4 +122,25 @@ export default [
       ],
     },
   },
+
+  // La interfaz no llama a la API: pide un caso de uso a src/composition (F2).
+  // `getApiBaseUrl` sí puede usarlo (las URLs de los avatares)
+  {
+    files: ['src/{pages,components,hooks,contexts}/**/*.{js,jsx}'],
+    ignores: ['src/**/*.test.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/composition/http', '**/composition/http.js', '**/infrastructure/http/api', '**/infrastructure/http/api.js'],
+              importNames: ['apiRequest', 'default'],
+              message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
