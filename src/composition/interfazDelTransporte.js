@@ -38,6 +38,6 @@ registraLaInterfazDelTransporte({
   sinSesionEnRutaPublica: (ruta, hayUsuarioGuardado) => sinSesionEnRutaPublica(ruta, hayUsuarioGuardado),
   traduce: (clave) => i18next.t(clave),
   informaDelError: (error, contexto) => captureError(error, contexto),
-  llevaAAceptarLosTerminos: () => llevaAAceptarLosTerminos(),
+  llevaAAceptarLosTerminos: (peticion) => llevaAAceptarLosTerminos(peticion),
   silenciaElAviso: (mensaje) => silenciaElAviso(mensaje),
 });

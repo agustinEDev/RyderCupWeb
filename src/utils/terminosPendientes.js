@@ -1,5 +1,5 @@
 import { esRutaPublica, normalizaLaRuta, sePuedeEstarConTerminosPendientes } from './rutasPublicas';
-import { destinoDeLaNavegacion } from './navegacionEnCurso';
+import { destinoDeLaNavegacion, destinoSiLaPeticionEsSuya } from './navegacionEnCurso';
 
 /**
  * Llevar a aceptar los Términos tras un 403 `TERMS_NOT_ACCEPTED` (F4).
@@ -55,14 +55,23 @@ const apuntaLaMarca = (ruta) => {
  *   eso, el aviso del error que lo provocó se calla. Pasado un plazo sin que la
  *   página se haya ido, deja de decirlo, pero NUNCA redirige otra vez
  */
-export const llevaAAceptarLosTerminos = () => {
+export const llevaAAceptarLosTerminos = ({ inicio } = {}) => {
   if (redirigidaEn !== null) return Date.now() - redirigidaEn < PLAZO_MS;
   if (hayDesacuerdo) return false;
 
-  // La página a la que se va: con una navegación en curso, su destino (la llamada
-  // del `loader` de esa pantalla sale antes de que cambie la dirección); si no, la
-  // página en la que se está (una recarga, o una pantalla sin `loader`)
-  const { pathname: tal = '/', search = '' } = destinoDeLaNavegacion() ?? globalThis.location ?? {};
+  // Se va a una página que se puede ver con los Términos pendientes (las legales,
+  // las públicas): a leerla, sin llevar a aceptar, venga de donde venga el 403
+  const enCurso = destinoDeLaNavegacion();
+  if (enCurso) {
+    const destino = normalizaLaRuta(enCurso.pathname);
+    if (sePuedeEstarConTerminosPendientes(destino) || esRutaPublica(destino)) return false;
+  }
+
+  // La página a la que volver: la del destino si la petición es suya (empezó tras
+  // iniciarse una navegación a una pantalla con `loader`: su llamada sale antes de
+  // que cambie la dirección); si no, la página en la que se está (una recarga, una
+  // pantalla sin `loader`, o un sondeo de esta página que salió antes de navegar)
+  const { pathname: tal = '/', search = '' } = destinoSiLaPeticionEsSuya(inicio) ?? globalThis.location ?? {};
   const pathname = normalizaLaRuta(tal);
   if (sePuedeEstarConTerminosPendientes(pathname) || esRutaPublica(pathname)) return false;
 
