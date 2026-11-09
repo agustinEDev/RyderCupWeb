@@ -14,15 +14,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   RC4  uno detrás de otro (no a la vez)           | dos: no se queda pegado
  */
 
-vi.mock('../utils/csrfTokenSync', () => ({ setCsrfTokenGlobal: vi.fn() }));
-vi.mock('../utils/deviceRevocationLogout', async (original) => ({
+vi.mock('../infrastructure/http/csrfTokenSync', () => ({ setCsrfTokenGlobal: vi.fn() }));
+vi.mock('../infrastructure/http/deviceRevocationLogout', async (original) => ({
   ...(await original()),
   handleDeviceRevocationLogout: vi.fn(),
   handleSessionExpiredLogout: vi.fn(),
 }));
 
 const { preguntaLaSesionSinInterceptor } = await import('./sondaDeSesion');
-const { fetchWithTokenRefresh, refrescoCompartido } = await import('../utils/tokenRefreshInterceptor');
+const { fetchWithTokenRefresh, refrescoCompartido } = await import('../infrastructure/http/tokenRefreshInterceptor');
 
 const USUARIO = { id: 'u1' };
 const respuesta = (status, cuerpo = {}) => ({

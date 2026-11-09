@@ -25,7 +25,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 const handleSessionExpiredLogout = vi.fn();
-vi.mock('../utils/deviceRevocationLogout', async (original) => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', async (original) => ({
   ...(await original()),
   handleSessionExpiredLogout: (...args) => handleSessionExpiredLogout(...args),
 }));
@@ -59,7 +59,7 @@ describe('refresco proactivo por el compartido', () => {
     const hook = await import('./useProactiveTokenRefresh');
     useProactiveTokenRefresh = hook.default;
     PRIMERA = hook.REFRESH_BEFORE_MS;
-    ({ refrescoCompartido, getLastRefreshAt } = await import('../utils/tokenRefreshInterceptor'));
+    ({ refrescoCompartido, getLastRefreshAt } = await import('../infrastructure/http/tokenRefreshInterceptor'));
     vi.useFakeTimers();
     handleSessionExpiredLogout.mockReset();
     vi.spyOn(console, 'log').mockImplementation(() => {});

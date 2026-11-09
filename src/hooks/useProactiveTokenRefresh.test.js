@@ -20,7 +20,7 @@ const getLastRefreshAt = vi.fn();
 
 // El hook pide el refresco compartido (hotfix 2.63.1); el nombre del doble se
 // queda, que es lo que cuentan todos los tests de abajo
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: (...args) => refreshAccessToken(...args),
   // Lo que se hace con un fallo es del interceptor; aquí solo se cuenta
   trataElFalloDelRefresco: () => {},

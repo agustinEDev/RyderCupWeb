@@ -15,11 +15,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const fetchWithTokenRefresh = vi.fn();
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => fetchWithTokenRefresh(...args),
 }));
 
-vi.mock('../utils/deviceRevocationLogout', () => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   isDeviceRevoked: vi.fn(() => false),
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),

@@ -304,7 +304,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     const conPestanaDe = async (usuario) => {
-      const { registraElUsuarioDeLaPestana } = await import('./usuarioDeLaPestana');
+      const { registraElUsuarioDeLaPestana } = await import('../../utils/usuarioDeLaPestana');
       registraElUsuarioDeLaPestana(() => usuario);
     };
 
@@ -368,7 +368,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S15: la sesión compartida le dice al interceptor quién es la pestaña', async () => {
-      const { anotaLaSesion } = await import('../services/sesionCompartida');
+      const { anotaLaSesion } = await import('../../services/sesionCompartida');
       anotaLaSesion(CUENTA_A);
       conRefrescos(r401(REPLACED), OK_DE(CUENTA_B));
 
@@ -411,7 +411,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S11b: la sonda sigue con S5b y da «fallo», no «rechazada», con S9', async () => {
-      const { preguntaLaSesionSinInterceptor } = await import('../services/sondaDeSesion');
+      const { preguntaLaSesionSinInterceptor } = await import('../../services/sondaDeSesion');
       conRefrescos(r401(REPLACED), OK);
       const bien = await hastaElFinal(preguntaLaSesionSinInterceptor());
       expect(bien.valor.estado).toBe('ok');
@@ -422,7 +422,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S11c: apiRequest sigue con S5b y da falta de cobertura con S9', async () => {
-      const { default: apiRequest } = await import('../services/api');
+      const { default: apiRequest } = await import('../../services/api');
       conRefrescos(r401(REPLACED), OK);
       const bien = await hastaElFinal(apiRequest('/api/v1/users/me'));
       expect(bien.error).toBeUndefined();
@@ -434,7 +434,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S11d: el reintento tras un 403 CSRF da falta de cobertura con S9, sin cierre', async () => {
-      const { default: apiRequest } = await import('../services/api');
+      const { default: apiRequest } = await import('../../services/api');
       conRefrescos(r401(REPLACED), r401(REPLACED));
       const fetchDelRefresco = globalThis.fetch;
       vi.stubGlobal(

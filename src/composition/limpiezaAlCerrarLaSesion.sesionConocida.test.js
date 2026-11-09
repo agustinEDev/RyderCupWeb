@@ -39,7 +39,7 @@ describe('cierre forzado y copia para arrancar sin cobertura', () => {
   it('revocar el dispositivo borra la copia del usuario y lleva al login', async () => {
     almacen.set('rydercup-sesion-conocida', JSON.stringify({ id: 'u-1', email: 'a@b.c' }));
     await import('./limpiezaAlCerrarLaSesion');
-    const { handleDeviceRevocationLogout } = await import('../utils/deviceRevocationLogout');
+    const { handleDeviceRevocationLogout } = await import('../infrastructure/http/deviceRevocationLogout');
 
     vi.useFakeTimers();
     try {

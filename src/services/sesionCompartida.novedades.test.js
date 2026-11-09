@@ -6,10 +6,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * y que salió por un camino que no limpió (revisión FE-1).
  */
 const respuestas = [];
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: () => Promise.resolve(respuestas.shift()),
 }));
-vi.mock('../utils/deviceRevocationLogout', () => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   isDeviceRevoked: () => false,
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),

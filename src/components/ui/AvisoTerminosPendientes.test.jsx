@@ -26,10 +26,10 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k }),
 }));
 const fallo = { si: false };
-vi.mock('../../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: () => (fallo.si ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ ok: false, status: 401 })),
 }));
-vi.mock('../../utils/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
 
 const { anotaLaSesion, consultaLaSesion, reiniciaLaSesionCompartida } = await import('../../services/sesionCompartida');
 const { default: AvisoTerminosPendientes } = await import('./AvisoTerminosPendientes');

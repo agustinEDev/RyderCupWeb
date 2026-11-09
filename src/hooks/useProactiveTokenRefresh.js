@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { refrescoCompartido, getLastRefreshAt, trataElFalloDelRefresco } from '../utils/tokenRefreshInterceptor';
+import { refrescoCompartido, getLastRefreshAt, trataElFalloDelRefresco } from '../composition/http';
 
 /**
  * Vida util de la cookie del access token: 15 minutos.

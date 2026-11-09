@@ -42,7 +42,7 @@ describe('rutas publicas', () => {
     // El interceptor tenia la suya, escrita a mano, y se quedo dos entradas
     // atras. App.jsx tenia otra. Ahora las dos salen de aqui.
     const interceptor = readFileSync(
-      resolve(process.cwd(), 'src/utils/tokenRefreshInterceptor.js'),
+      resolve(process.cwd(), 'src/infrastructure/http/tokenRefreshInterceptor.js'),
       'utf8'
     );
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');

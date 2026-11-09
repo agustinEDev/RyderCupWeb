@@ -18,7 +18,7 @@
  * - Shows translated toast message
  * - Redirects to /login
  *
- * @see src/utils/deviceRevocationLogout.js
+ * @see src/infrastructure/http/deviceRevocationLogout.js
  */
 
 import { useEffect, useCallback, useRef } from 'react';

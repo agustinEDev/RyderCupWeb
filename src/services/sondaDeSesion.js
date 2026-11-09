@@ -18,9 +18,9 @@
  * guardado, avisar— lo decide quien llama.
  */
 
-import { refrescoCompartido } from '../utils/tokenRefreshInterceptor';
+import { refrescoCompartido } from '../infrastructure/http/tokenRefreshInterceptor';
 import { RUTA_DEL_REFRESCO, RUTA_DEL_USUARIO_ACTUAL } from '../utils/rutasDeLaSesion';
-import { isDeviceRevoked } from '../utils/deviceRevocationLogout';
+import { isDeviceRevoked } from '../infrastructure/http/deviceRevocationLogout';
 import {
   avisaDelCierreForzado,
   esFinalNormalDelRefresco,

@@ -28,12 +28,12 @@ vi.mock('@sentry/react', () => ({
 const llamarAlBackend = vi.fn();
 const refrescoCompartido = vi.fn();
 const getCsrfToken = vi.fn();
-vi.mock('../utils/tokenRefreshInterceptor', async (original) => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', async (original) => ({
   ...(await original()),
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
   refrescoCompartido: (...args) => refrescoCompartido(...args),
 }));
-vi.mock('../utils/csrfTokenSync', () => ({
+vi.mock('../infrastructure/http/csrfTokenSync', () => ({
   getCsrfToken: () => getCsrfToken(),
   getCsrfCookie: () => getCsrfToken(),
   setCsrfTokenGlobal: () => {},

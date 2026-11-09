@@ -413,7 +413,7 @@ cp .env.example .env
 
 - [Playwright Test API](https://playwright.dev/docs/api/class-test)
 - Backend API Spec (see backend repo `docs/API.md`)
-- [Token Refresh Interceptor](../src/utils/tokenRefreshInterceptor.js)
+- [Token Refresh Interceptor](../src/infrastructure/http/tokenRefreshInterceptor.js)
 - [ROADMAP Task #11](../ROADMAP.md#tarea-11)
 
 ## ✅ Result

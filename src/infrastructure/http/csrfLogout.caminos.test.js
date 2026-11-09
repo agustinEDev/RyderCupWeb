@@ -14,30 +14,30 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 const orden = vi.hoisted(() => []);
 const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn(() => orden.push('sentry fuera')) }));
-vi.mock('./sentryHelpers', () => sentryHelpers);
+vi.mock('../../utils/sentryHelpers', () => sentryHelpers);
 const aviso = vi.hoisted(() => ({ avisa: vi.fn((datos) => orden.push(`aviso ${datos.motivo}`)) }));
-vi.mock('./avisoDeCierreForzado', async (original) => ({
+vi.mock('../../utils/avisoDeCierreForzado', async (original) => ({
   ...(await original()),
   avisaDelCierreForzado: aviso.avisa,
 }));
 const cuenta = vi.hoisted(() => ({ olvida: vi.fn(() => orden.push('partidas fuera')) }));
-vi.mock('../services/loUltimoConocido', async (original) => ({
+vi.mock('../../services/loUltimoConocido', async (original) => ({
   ...(await original()),
   olvidaLoDeEstaCuenta: cuenta.olvida,
 }));
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((k) => k) } }));
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() }));
-vi.mock('./toast', () => ({ default: toast }));
+vi.mock('../../utils/toast', () => ({ default: toast }));
 
 const { handleCsrfLogout } = await import('./csrfLogout');
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
-await import('../composition/limpiezaAlCerrarLaSesion');
-const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('./vueltaTrasEntrar');
+await import('../../composition/limpiezaAlCerrarLaSesion');
+const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('../../utils/vueltaTrasEntrar');
 const {
   handleDeviceRevocationLogout,
 } = await import('./deviceRevocationLogout');
-const { olvidaElCierreDeEstaCarga, seEstaCerrandoLaSesion } = await import('./cierreDeEstaCarga');
+const { olvidaElCierreDeEstaCarga, seEstaCerrandoLaSesion } = await import('../../utils/cierreDeEstaCarga');
 
 describe('el cierre por CSRF, con los caminos del cierre forzado', () => {
   let almacen;

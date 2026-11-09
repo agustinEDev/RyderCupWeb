@@ -14,17 +14,17 @@ import {
   clearDeviceRevocationFlag,
 } from './deviceRevocationLogout';
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
-import '../composition/limpiezaAlCerrarLaSesion';
-import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
-import { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } from './vueltaTrasEntrar';
-import customToast from './toast';
-import { olvidaLasNovedades } from '../services/novedadesDeActividad';
+import '../../composition/limpiezaAlCerrarLaSesion';
+import { olvidaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
+import { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
+import customToast from '../../utils/toast';
+import { olvidaLasNovedades } from '../../services/novedadesDeActividad';
 
 // El número de Actividad y el del icono son de la cuenta que sale (FE-1)
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 // C4 (25 oct 2026): por sentryHelpers; `window.Sentry` no lo asigna nadie
 const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn() }));
-vi.mock('./sentryHelpers', () => sentryHelpers);
+vi.mock('../../utils/sentryHelpers', () => sentryHelpers);
 
 // Mock i18next
 vi.mock('i18next', () => ({
@@ -34,7 +34,7 @@ vi.mock('i18next', () => ({
 }));
 
 // Mock customToast
-vi.mock('./toast', () => ({
+vi.mock('../../utils/toast', () => ({
   default: {
     error: vi.fn(),
     success: vi.fn(),
@@ -450,7 +450,7 @@ describe('deviceRevocationLogout utilities', () => {
     });
 
     it('tras cerrar sesión a propósito, el usuario guardado no cuenta: sin aviso', async () => {
-      const { olvidaLaUltimaCuenta } = await import('./vueltaTrasEntrar');
+      const { olvidaLaUltimaCuenta } = await import('../../utils/vueltaTrasEntrar');
       olvidaLaUltimaCuenta();
       localStorage.getItem.mockImplementation((k) => (k === 'user' ? '{"id":"u-5"}' : null));
 
@@ -595,7 +595,7 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
       removeItem: vi.fn(),
     });
     const { handleSessionExpiredLogout } = await import('./deviceRevocationLogout');
-    const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
+    const { olvidaElCierreDeEstaCarga } = await import('../../utils/cierreDeEstaCarga');
     olvidaElCierreDeEstaCarga();
 
     handleSessionExpiredLogout({ detail: 'expired' });
@@ -623,7 +623,7 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
   const deUnaCargaNueva = async () => {
     vi.resetModules();
     // Como en la app: main.jsx carga primero el registro de limpiezas
-    await import('../composition/limpiezaAlCerrarLaSesion');
+    await import('../../composition/limpiezaAlCerrarLaSesion');
     return import('./deviceRevocationLogout');
   };
 
@@ -633,7 +633,7 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
     // Con sesión de antes: el usuario guardado (sin él no habría aviso que contar)
     const datos = conAlmacen({ user: JSON.stringify({ id: 'u-1' }) });
     const { handleSessionExpiredLogout } = await deUnaCargaNueva();
-    const toast = (await import('./toast')).default;
+    const toast = (await import('../../utils/toast')).default;
     toast.error.mockClear();
 
     handleSessionExpiredLogout({ detail: 'expired' });
@@ -655,7 +655,7 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
     sessionStorage.setItem('vuelta_tras_entrar', '/competitions/1');
     const datos = conAlmacen({ user: '{"id":"u-1"}' });
     const { handleDeviceRevocationLogout, marcaLaRevocacionPropia } = await deUnaCargaNueva();
-    const toast = (await import('./toast')).default;
+    const toast = (await import('../../utils/toast')).default;
     toast.error.mockClear();
 
     marcaLaRevocacionPropia();

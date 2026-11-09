@@ -29,19 +29,19 @@ vi.mock('./useAuthContext', () => ({
   useAuthContext: () => ({ user: storedUser, setUser, clearAuth }),
 }));
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: vi.fn(),
 }));
 
-vi.mock('../utils/deviceRevocationLogout', () => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   isDeviceRevoked: vi.fn(() => false),
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),
 }));
 
-const { refrescoCompartido } = await import('../utils/tokenRefreshInterceptor');
+const { refrescoCompartido } = await import('../infrastructure/http/tokenRefreshInterceptor');
 const { isDeviceRevoked, handleDeviceRevocationLogout } = await import(
-  '../utils/deviceRevocationLogout'
+  '../infrastructure/http/deviceRevocationLogout'
 );
 
 /** Forma que devuelve el backend: snake_case, la que espera la entidad User */

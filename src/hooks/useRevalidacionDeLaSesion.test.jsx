@@ -15,10 +15,10 @@ import { MemoryRouter, Routes, Route } from 'react-router';
  *   sin la vigilancia montada                     | el panel (la vigilancia es la que lo hace)
  */
 const respuestas = [];
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: () => Promise.resolve(respuestas.shift()),
 }));
-vi.mock('../utils/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
 
 const { reiniciaLaSesionCompartida, MINIMO_ENTRE_REVALIDACIONES_MS } = await import('../services/sesionCompartida');
 const { useRevalidacionDeLaSesion } = await import('./useRevalidacionDeLaSesion');

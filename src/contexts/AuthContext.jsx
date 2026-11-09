@@ -6,10 +6,9 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setCsrfTokenGlobal } from '../utils/csrfTokenSync';
+import { setCsrfTokenGlobal, olvidaLoDeLaCuenta } from '../composition/http';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
-import { olvidaLoDeLaCuenta } from '../utils/deviceRevocationLogout';
 // Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
 import '../composition/limpiezaAlCerrarLaSesion';
 import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
