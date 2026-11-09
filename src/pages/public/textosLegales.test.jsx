@@ -149,14 +149,15 @@ describe('Política de Privacidad', () => {
     expect(p).toContain('www.aepd.es');
   });
 
-  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Términos y Cookies, no
+  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Cookies, el 9 nov (dos
+  // claves más de sessionStorage); Términos, no
   it.each([
-    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026'],
-    ['en', en, '7 November 2026', '6 November 2026'],
-  ])('fecha de la última actualización (%s)', (_i, textos, privacidad, resto) => {
+    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026', '9 de noviembre de 2026'],
+    ['en', en, '7 November 2026', '6 November 2026', '9 November 2026'],
+  ])('fecha de la última actualización (%s)', (_i, textos, privacidad, terminos, cookies) => {
     expect(textos.privacy.lastUpdated).toContain(privacidad);
-    expect(textos.terms.lastUpdated).toContain(resto);
-    expect(textos.cookies.lastUpdated).toContain(resto);
+    expect(textos.terms.lastUpdated).toContain(terminos);
+    expect(textos.cookies.lastUpdated).toContain(cookies);
   });
 });
 
@@ -539,12 +540,49 @@ describe('revisión de la release', () => {
 
   // Cookies §1: todas las claves de sessionStorage
   it.each([
-    ['es', es, [/Google/, /arranque/i, /bucle/i, /recarg/i]],
-    ['en', en, [/Google/, /start-up/i, /loop/i, /reload/i]],
+    [
+      'es',
+      es,
+      [
+        /Google/,
+        /arranque/i,
+        /bucle/i,
+        /recarg/i,
+        // La vuelta tras entrar (vueltaTrasEntrar): la página y la cuenta que la dejó
+        /la página a la que volver tras entrar/,
+        /identificador interno de la cuenta/,
+        /hasta que entras o cierras la pestaña/,
+        // El aviso de un cierre forzado (avisoTrasElCierre), hasta enseñarlo en /login
+        /el motivo de un cierre de sesión forzado/,
+        /solo hasta que se muestra en la pantalla de entrar/,
+      ],
+    ],
+    [
+      'en',
+      en,
+      [
+        /Google/,
+        /start-up/i,
+        /loop/i,
+        /reload/i,
+        /the page to return to after signing in/,
+        /internal identifier of the account/,
+        /until you sign in or close the tab/,
+        /the reason for a forced sign-out/,
+        /only until it is shown on the sign-in screen/,
+      ],
+    ],
   ])('Cookies (%s): la lista de sessionStorage está completa', (_i, textos, patrones) => {
     const l = linea(textos.cookies.section1.content, /sessionStorage,/);
 
     for (const patron of patrones) expect(l).toMatch(patron);
+  });
+
+  it.each([
+    ['es', es, 'Última actualización: 9 de noviembre de 2026'],
+    ['en', en, 'Last updated: 9 November 2026'],
+  ])('Cookies (%s): fecha de la última actualización', (_i, textos, fecha) => {
+    expect(textos.cookies.lastUpdated).toBe(fecha);
   });
 });
 
