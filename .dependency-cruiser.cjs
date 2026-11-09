@@ -130,6 +130,14 @@ module.exports = {
       to: { path: '^src/services/', reachable: true },
     },
     {
+      name: 'http-stays-in-its-folder',
+      comment:
+        'El transporte de la sesión no usa el resto de la infraestructura (repositorios, mappers, Sentry): son ellos los que se apoyan en él. Al salir de utils estos módulos dejaron de estar bajo utils-does-not-reach-up, y nada lo impedía (revisión de la PR 2a).',
+      severity: 'error',
+      from: { path: '^src/infrastructure/http/', pathNot: TEST },
+      to: { path: '^src/infrastructure/', pathNot: '^src/infrastructure/http/' },
+    },
+    {
       name: 'infrastructure-and-services-do-not-reach-ui',
       comment:
         'La infraestructura y los servicios no llegan a la interfaz (carpetas o .jsx/.tsx de cualquier sitio), ni directamente ni por un camino indirecto (p. ej. services/api → utils → contexts).',
