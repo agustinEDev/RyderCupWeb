@@ -143,6 +143,38 @@ describe('SignInForm', () => {
     expect(seCierraLaSesionAPeticion()).toBe(false);
   });
 
+  it('entrar con éxito olvida el aviso de un cierre forzado que quedara guardado', async () => {
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    guardaElAvisoDelCierre('revocation');
+    ejecutarLogin.mockResolvedValue({
+      user: { firstName: 'Agustin', emailVerified: true },
+      csrfToken: 'tok',
+      needsHandicap: false,
+    });
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(navegar).toHaveBeenCalled());
+    expect(tomaElAvisoDelCierre()).toBeNull();
+  });
+
+  it('un acceso fallido no olvida el aviso guardado', async () => {
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+    guardaElAvisoDelCierre('revocation');
+    ejecutarLogin.mockRejectedValue(Object.assign(new Error('Credenciales'), { status: 401 }));
+    pintar();
+
+    escribir(campoCorreo(), 'alguien@ejemplo.com');
+    escribir(campoContrasena(), 'secreta');
+    enviar();
+
+    await waitFor(() => expect(ejecutarLogin).toHaveBeenCalled());
+    expect(tomaElAvisoDelCierre()).toBe('revocation');
+  });
+
   it('C5: un acceso fallido no acaba el silencio', async () => {
     noAvisesDeCierres();
     ejecutarLogin.mockRejectedValue(Object.assign(new Error('Credenciales'), { status: 401 }));

@@ -1,3 +1,4 @@
+import { olvidaElAvisoDelCierre } from '../../utils/avisoTrasElCierre';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
@@ -121,8 +122,10 @@ const SignInForm = () => {
         });
       }
 
-      // Se entró: acaba el silencio de un cierre de sesión anterior (C5)
+      // Se entró: acaba el silencio de un cierre de sesión anterior (C5), y el aviso
+      // de un cierre forzado que /login no llegara a enseñar ya no vale
       vuelvenLosAvisosDeCierre();
+      olvidaElAvisoDelCierre();
       navigate(vueltaTrasEntrar(location.state?.from, { cuenta: authenticatedUser.id }), {
         replace: true,
       });
