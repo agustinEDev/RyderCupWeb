@@ -27,15 +27,15 @@ const FINAL_NORMAL = new Set([
   'SESSION_IDLE',
 ]);
 
+/** Si el `error_code` del refresco es el final normal de una sesión. */
+export const esFinalNormalDelRefresco = (errorData) => FINAL_NORMAL.has(errorData?.error_code);
+
 /**
  * El motivo de un 401 del refresco según su `error_code`: el final normal de la
  * sesión, o un rechazo de verdad. Sin código, un rechazo: que se vea.
  *
  * @param {{error_code?: string}|undefined} errorData
  */
-/** Si el `error_code` del refresco es el final normal de una sesión. */
-export const esFinalNormalDelRefresco = (errorData) => FINAL_NORMAL.has(errorData?.error_code);
-
 export const motivoDelRefrescoRechazado = (errorData) =>
   esFinalNormalDelRefresco(errorData) ? MOTIVO_DEL_CIERRE.SESION_CADUCADA : MOTIVO_DEL_CIERRE.REFRESCO_RECHAZADO;
 

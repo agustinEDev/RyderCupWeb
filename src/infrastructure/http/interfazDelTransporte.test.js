@@ -10,7 +10,10 @@ import { resolve } from 'node:path';
  * |--------------------------------------------------|--------------------------------------------|
  * | sin registrar, se usa                            | lanza «no hay interfaz … registrada»       |
  * | sin registrar, un cierre forzado                 | el mismo error, en voz alta                |
- * | sin registrar, cada cierre (y la marca «propia») | lanza antes de empezar: ni «cerrándose», ni limpia, ni redirige |
+ * | sin registrar, cada cierre (y la marca «propia») | falla cerrado: borra user, access_token y las limpiezas, y lanza; ni «cerrándose» ni redirige |
+ * | se registra dos veces                            | la segunda lanza                           |
+ * | lo registrado                                    | queda congelado                            |
+ * | los tests reinician el registro                  | se puede registrar otra                    |
  * | sin registrar, un error de la API que se traduce | el mismo error, no un texto vacío          |
  * | se registra a medias                             | lanza y dice qué falta                     |
  * | se registra entera                               | `interfaz()` la devuelve                   |
@@ -61,20 +64,27 @@ describe('la interfaz del transporte', () => {
     ['dispositivo revocado, marca «propia»', 'propia', 'handleDeviceRevocationLogout'],
     ['sesión caducada', null, 'handleSessionExpiredLogout'],
     ['CSRF', null, 'handleCsrfLogout'],
-  ])('sin registrar, %s falla ANTES de empezar el cierre: la carga no queda «cerrándose» ni se redirige', async (_caso, marca, cierre) => {
+  ])('sin registrar, %s falla cerrado: borra lo de la cuenta y lanza, sin dejar la carga «cerrándose» ni redirigir', async (_caso, marca, cierre) => {
     vi.useFakeTimers();
     try {
       vi.stubGlobal('localStorage', { getItem: vi.fn(() => marca), setItem: vi.fn(), removeItem: vi.fn() });
       vi.stubGlobal('location', { href: '', pathname: '/competitions/7', search: '', hash: '' });
       const cierres = { ...(await import('./deviceRevocationLogout')), ...(await import('./csrfLogout')) };
-      cierres.alCerrarLaSesion(() => {});
+      const limpieza = vi.fn();
+      cierres.alCerrarLaSesion(limpieza);
       const { seEstaCerrandoLaSesion } = await import('../../utils/cierreDeEstaCarga');
 
       expect(() => cierres[cierre](null)).toThrow(SIN_INTERFAZ);
       vi.advanceTimersByTime(1000);
 
+      // Lo que no depende de la interfaz se borra igual: los datos de la cuenta no
+      // se quedan en el dispositivo por un registro que falta (decidido el 9 nov 2026)
+      expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
+      expect(limpieza).toHaveBeenCalledTimes(1);
+      // Y nada más: ni la carga marcada, ni la marca del cierre, ni la redirección
       expect(seEstaCerrandoLaSesion()).toBe(false);
-      expect(localStorage.removeItem).not.toHaveBeenCalled();
+      expect(localStorage.setItem).not.toHaveBeenCalled();
       expect(globalThis.location.href).toBe('');
     } finally {
       vi.useRealTimers();
@@ -106,6 +116,43 @@ describe('la interfaz del transporte', () => {
     registraLaInterfazDelTransporte(completa);
 
     expect(interfaz()).toBe(completa);
+  });
+
+  it('se registra una sola vez: la segunda lanza y sigue la primera', async () => {
+    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
+    const primera = COMPLETA();
+    registraLaInterfazDelTransporte(primera);
+
+    expect(() => registraLaInterfazDelTransporte(COMPLETA())).toThrow(
+      'La interfaz del transporte ya está registrada'
+    );
+    expect(interfaz()).toBe(primera);
+  });
+
+  it('lo registrado queda congelado: no se le cambia una pieza después', async () => {
+    const { registraLaInterfazDelTransporte, interfaz } = await import('./interfazDelTransporte');
+    registraLaInterfazDelTransporte(COMPLETA());
+    const original = interfaz().redirigeAlLogin;
+
+    expect(Object.isFrozen(interfaz())).toBe(true);
+    expect(() => {
+      interfaz().redirigeAlLogin = () => {};
+    }).toThrow(TypeError);
+    expect(interfaz().redirigeAlLogin).toBe(original);
+  });
+
+  it('solo para los tests: tras reiniciar el registro se puede registrar otra', async () => {
+    const { registraLaInterfazDelTransporte, interfaz, olvidaLaInterfazDelTransporteSoloEnTests } = await import(
+      './interfazDelTransporte'
+    );
+    registraLaInterfazDelTransporte(COMPLETA());
+    olvidaLaInterfazDelTransporteSoloEnTests();
+    expect(() => interfaz()).toThrow(SIN_INTERFAZ);
+    const otra = COMPLETA();
+
+    registraLaInterfazDelTransporte(otra);
+
+    expect(interfaz()).toBe(otra);
   });
 
   it.each([['toString'], ['constructor'], ['__proto__'], ['ended']])(

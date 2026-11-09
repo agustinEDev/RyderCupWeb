@@ -3,7 +3,7 @@
  * interfaz, sin conocerla: traducir un texto, avisar al usuario, informar a
  * Sentry, guardar la página para volver tras entrar y saber si una ruta es
  * pública. La infraestructura no llega a React, al router, a i18n ni a Sentry
- * para React (regla `infrastructure-does-not-reach-ui-libraries`): la composition
+ * para React (regla `infrastructure-only-reaches-allowed-packages`): la composition
  * root registra aquí la implementación (`composition/interfazDelTransporte`), que
  * cargan main.jsx el primero, `composition/index` y `composition/http`.
  *
@@ -37,16 +37,22 @@ const SIN_INTERFAZ =
 let registrada = null;
 
 /**
- * La composition root dice cómo responde la interfaz.
+ * La composition root dice cómo responde la interfaz. Una sola vez: otra
+ * registración después lanza (nadie puede cambiar en marcha a quién se avisa
+ * de un cierre), y lo registrado queda congelado.
  * @param {Record<string, Function>} implementacion
  */
 export const registraLaInterfazDelTransporte = (implementacion) => {
+  if (registrada) throw new Error('La interfaz del transporte ya está registrada');
   const faltan = LO_QUE_HACE_FALTA.filter((nombre) => typeof implementacion?.[nombre] !== 'function');
   if (faltan.length > 0) {
     throw new Error(`La interfaz del transporte no trae: ${faltan.join(', ')}`);
   }
-  registrada = implementacion;
+  registrada = Object.freeze(implementacion);
 };
+
+/** Si hay interfaz registrada. */
+export const hayInterfazDelTransporte = () => registrada !== null;
 
 /**
  * La implementación registrada; sin ella, lanza.
@@ -57,12 +63,7 @@ export const interfaz = () => {
   return registrada;
 };
 
-/**
- * Falla si no hay interfaz registrada, sin hacer nada más. Los cierres forzados
- * la llaman ANTES de anotar el cierre de esta carga: sin la interfaz no pueden
- * avisar ni redirigir, y una carga marcada como «cerrándose» sin salir de la
- * página se quedaría así, callando cualquier otro cierre.
- */
-export const compruebaLaInterfaz = () => {
-  interfaz();
+/** SOLO para los tests: vuelve a «sin registrar». */
+export const olvidaLaInterfazDelTransporteSoloEnTests = () => {
+  registrada = null;
 };

@@ -24,7 +24,7 @@ import { esFinalNormalDelRefresco, MOTIVO_DEL_CIERRE } from '../../utils/motivos
 // El aviso a Sentry, el usuario de Sentry, el aviso al usuario, la cuenta de la
 // pestaña y la redirección con la página guardada: de la interfaz, que la
 // composition root registra (la infraestructura no llega a sus librerías)
-import { compruebaLaInterfaz, interfaz } from './interfazDelTransporte';
+import { hayInterfazDelTransporte, interfaz } from './interfazDelTransporte';
 // El freno de un cierre por carga vive en su módulo (C1, S1)
 import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from '../../utils/cierreDeEstaCarga';
 
@@ -225,6 +225,26 @@ export const limpiaLaCuenta = () => {
 };
 
 /**
+ * Sin la interfaz registrada un cierre forzado no puede avisar ni redirigir: falla
+ * cerrado (decidido el 9 nov 2026). Borra antes lo que no depende de la interfaz
+ * —el usuario guardado y lo de la cuenta del registro de limpiezas—, para que esos
+ * datos no se queden en el dispositivo, y lanza. No anota el cierre de esta carga:
+ * una carga «cerrándose» que no sale de la página callaría el siguiente cierre.
+ * Con la interfaz registrada no hace nada.
+ */
+export const exigeLaInterfazDelTransporte = () => {
+  if (hayInterfazDelTransporte()) return;
+  try {
+    localStorage.removeItem('user');
+    localStorage.removeItem('access_token'); // Legacy cleanup
+    olvidaLoDeLaCuenta();
+  } finally {
+    // Lanza «no hay interfaz del transporte registrada…», también si falló lo de arriba
+    interfaz();
+  }
+};
+
+/**
  * Internal function to handle logout with different reasons
  *
  * Los caminos (tabla C1-C5, aprobada por Agustín el 8 nov 2026):
@@ -238,9 +258,8 @@ export const limpiaLaCuenta = () => {
  * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
  */
 const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
-  // Sin la interfaz registrada falla aquí, antes de tocar nada: ni carga «cerrándose»
-  // (que callaría el siguiente cierre), ni limpieza, ni redirección a medias
-  compruebaLaInterfaz();
+  // Sin la interfaz registrada falla cerrado aquí, antes de anotar el cierre de la carga
+  exigeLaInterfazDelTransporte();
   if (seEstaCerrandoLaSesion()) return;
   const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
 

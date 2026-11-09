@@ -41,6 +41,9 @@ const UI_FILE = '\\.(jsx|tsx)$';
 // Las únicas librerías a las que llegan el dominio y los casos de uso (9 nov
 // 2026: uuid, y nada más). Añadir una es una decisión de arquitectura
 const CORE_ALLOWED_PACKAGES = 'node_modules/(uuid)/';
+// Lo mismo para la infraestructura (9 nov 2026: uuid, por el dominio). Lo que
+// necesita de la interfaz se lo da la composition root
+const INFRASTRUCTURE_ALLOWED_PACKAGES = 'node_modules/(uuid)/';
 
 module.exports = {
   forbidden: [
@@ -123,10 +126,10 @@ module.exports = {
     {
       name: 'services-does-not-reach-up',
       comment:
-        'src/services (la sesión compartida, la cola sin conexión…) lo usa la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La única excepción es el transporte de la sesión, src/infrastructure/http, que services usa directamente (decidido con Agustín, 9 nov 2026). La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
+        'src/services (la sesión compartida, la cola sin conexión…) lo usa la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La única excepción es el transporte de la sesión, src/infrastructure/http, que services usa directamente (decidido con Agustín, 9 nov 2026), salvo el cliente de la API (api.js): services no llama a la API, la llaman los repositorios. La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
       severity: 'error',
       from: { path: '^src/services/', pathNot: TEST },
-      to: { path: '^src/(application|infrastructure)/', pathNot: '^src/infrastructure/http/' },
+      to: { path: '^src/(application|infrastructure)/', pathNot: '^src/infrastructure/http/(?!api\\.js$)' },
     },
     {
       name: 'http-does-not-reach-services',
@@ -161,15 +164,12 @@ module.exports = {
       to: { path: '^src/services/' },
     },
     {
-      name: 'infrastructure-does-not-reach-ui-libraries',
+      name: 'infrastructure-only-reaches-allowed-packages',
       comment:
-        'La infraestructura no llega a las librerías de la interfaz (React, el router, los avisos, i18n, Sentry para React, los iconos), ni por un camino indirecto (p. ej. a través de utils). Lo que necesita de la interfaz (traducir, avisar, informar a Sentry, redirigir, saber si una ruta es pública) se lo da la composition root (composition/interfazDelTransporte).',
+        'Lista de PERMITIDOS: la infraestructura solo llega, directa o indirectamente (p. ej. a través de utils), a las librerías de INFRASTRUCTURE_ALLOWED_PACKAGES. Ni React, ni el router, ni los avisos, ni i18n, ni Sentry para React, ni los iconos, ni ninguna librería de interfaz nueva. Lo que necesita de la interfaz (traducir, avisar, informar a Sentry, redirigir, saber si una ruta es pública) se lo da la composition root (composition/interfazDelTransporte).',
       severity: 'error',
       from: { path: '^src/infrastructure/', pathNot: TEST },
-      to: {
-        path: 'node_modules/(react|react-dom|react-router|react-router-dom|react-hot-toast|i18next|react-i18next|@sentry/react|lucide-react)/',
-        reachable: true,
-      },
+      to: { path: 'node_modules/', pathNot: INFRASTRUCTURE_ALLOWED_PACKAGES, reachable: true },
     },
     {
       name: 'infrastructure-and-services-do-not-reach-ui',
