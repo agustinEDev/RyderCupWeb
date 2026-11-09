@@ -24,6 +24,8 @@ vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 const { fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor');
 const { apiRequest } = await import('./api');
 const { olvidaLaRedireccionATerminos, esUnAvisoSilenciado } = await import('../../utils/terminosPendientes');
+const { apuntaElRouterDeLaAplicacion } = await import('../../utils/navegacionEnCurso');
+const { createMemoryRouter } = await import('react-router');
 
 const AVISO_DE_ACEPTAR = 't(common:terminosPendientes)';
 const NO_DISPONIBLE = 't(common:terminosNoDisponible)';
@@ -65,6 +67,26 @@ describe('apiRequest · Términos sin aceptar (F4)', () => {
     expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions%2F7%3Ftab%3Dagenda');
     expect(error).toMatchObject({ status: 403, errorCode: 'TERMS_NOT_ACCEPTED', message: AVISO_DE_ACEPTAR });
     expect(esUnAvisoSilenciado(error.message)).toBe(true);
+  });
+
+  it('la llamada del loader de la pantalla a la que se navega: vuelve a ESA pantalla (dice cuándo salió)', async () => {
+    const assign = enUna('/dashboard');
+    const router = createMemoryRouter(
+      [
+        { path: '/dashboard', element: null },
+        { path: '/competitions', element: null, loader: async () => (await falla('/api/v1/competitions'), null) },
+      ],
+      { initialEntries: ['/dashboard'] }
+    );
+    const deshacer = apuntaElRouterDeLaAplicacion(router);
+
+    try {
+      await router.navigate('/competitions');
+    } finally {
+      deshacer();
+    }
+
+    expect(assign).toHaveBeenCalledWith('/accept-terms?from=%2Fcompetitions');
   });
 
   it('varias llamadas a la vez: una sola redirección, y todas terminan', async () => {
