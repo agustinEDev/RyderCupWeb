@@ -36,6 +36,7 @@
  * aplicación abierta horas después— y lo documenta su propio fichero.
  */
 
+import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
 import { clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
 import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
@@ -80,6 +81,12 @@ const REINTENTOS_AUTOMATICOS = 3;
 const RECUERDO = 'rydercup-sesion-conocida';
 
 const apunta = (usuario) => {
+  // Con un cierre forzado en marcha en esta carga, nada vuelve a escribir la copia:
+  // la limpieza acaba de borrarla y, tras un CSRF, las cookies aún valen, así que un
+  // /current-user que conteste antes de la recarga (en vuelo, una revalidación o el
+  // reintento) devolvería el nombre y el correo de la cuenta que sale. No afecta al
+  // cierre normal (clearAuth), que no marca esta carga
+  if (seEstaCerrandoLaSesion()) return;
   try {
     localStorage.setItem(RECUERDO, JSON.stringify(usuario));
   } catch {
@@ -95,6 +102,15 @@ const olvidaElApunte = () => {
     // Nada que hacer
   }
 };
+
+/**
+ * Borra la copia del usuario que sirve para arrancar sin cobertura. La usan los
+ * cierres forzados (por el registro de limpiezas de la composition root): salen
+ * con una redirección dura y no pasan por `olvidaLaSesion`, así que sin esto el
+ * móvil sin red seguía entrando con el nombre y el correo de la cuenta revocada.
+ * Que nada la vuelva a escribir antes de la recarga lo garantiza `apunta`.
+ */
+export const olvidaLaCopiaParaArrancarSinCobertura = () => olvidaElApunte();
 
 /**
  * Sin privilegios: esto vive en el dispositivo y se puede tocar a mano. El
