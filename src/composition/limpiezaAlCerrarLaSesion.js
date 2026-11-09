@@ -13,6 +13,7 @@ import { alCerrarLaSesion } from '../utils/deviceRevocationLogout';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
+import { olvidaLaCopiaParaArrancarSinCobertura } from '../services/sesionCompartida';
 
 alCerrarLaSesion(olvidaLoDeEstaCuenta);
 alCerrarLaSesion(olvidaElRefrescoDeHandicap);
@@ -20,3 +21,7 @@ alCerrarLaSesion(olvidaElRefrescoDeHandicap);
 // número de Actividad y el del icono de la app se borran ya, no en la siguiente
 // comprobación de la sesión (decidido el 9 nov 2026)
 alCerrarLaSesion(olvidaLasNovedades);
+// La copia del usuario para arrancar sin cobertura: un cierre forzado no pasa por
+// `olvidaLaSesion`, y sin esto el móvil sin red seguía entrando con el nombre y el
+// correo de la cuenta revocada (batería del Kind, 9 nov 2026)
+alCerrarLaSesion(olvidaLaCopiaParaArrancarSinCobertura);

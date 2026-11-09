@@ -10,8 +10,9 @@ import { resolve } from 'node:path';
  *
  * Si el registro se queda sin rellenar no falla nada a la vista: la siguiente
  * persona que entre en ese móvil vería las partidas sin cobertura, el modal del
- * hándicap o el número de Actividad de la cuenta anterior. Por eso se vigila
- * aquí que main.jsx lo cargue el primero y que estén las tres.
+ * hándicap, el número de Actividad o, sin cobertura, el nombre y el correo de la
+ * cuenta anterior. Por eso se vigila aquí que main.jsx lo cargue el primero y
+ * que estén las cuatro.
  */
 
 const orden = vi.hoisted(() => []);
@@ -23,6 +24,10 @@ vi.mock('../services/refrescoDeHandicapApuntes', () => ({
 }));
 vi.mock('../services/novedadesDeActividad', () => ({
   olvidaLasNovedades: vi.fn(() => orden.push('novedades')),
+}));
+vi.mock('../services/sesionCompartida', async (original) => ({
+  ...(await original()),
+  olvidaLaCopiaParaArrancarSinCobertura: vi.fn(() => orden.push('sesionConocida')),
 }));
 vi.mock('../utils/toast', () => ({
   default: { error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() },
@@ -53,10 +58,10 @@ describe('limpiezaAlCerrarLaSesion', () => {
     expect(primerImport).toBe("import './composition/limpiezaAlCerrarLaSesion';");
   });
 
-  it('limpiaLaCuenta borra las tres cosas de la cuenta, en el orden de siempre', () => {
+  it('limpiaLaCuenta borra las cuatro cosas de la cuenta, en el orden de siempre', () => {
     limpiaLaCuenta();
 
-    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades']);
+    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida']);
   });
 
   it('un cierre forzado de verdad (dispositivo revocado) las ejecuta', () => {
@@ -67,6 +72,6 @@ describe('limpiezaAlCerrarLaSesion', () => {
       vi.useRealTimers();
     }
 
-    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades']);
+    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida']);
   });
 });

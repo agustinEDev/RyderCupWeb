@@ -97,6 +97,14 @@ const olvidaElApunte = () => {
 };
 
 /**
+ * Borra la copia del usuario que sirve para arrancar sin cobertura. La usan los
+ * cierres forzados (por el registro de limpiezas de la composition root): salen
+ * con una redirección dura y no pasan por `olvidaLaSesion`, así que sin esto el
+ * móvil sin red seguía entrando con el nombre y el correo de la cuenta revocada.
+ */
+export const olvidaLaCopiaParaArrancarSinCobertura = () => olvidaElApunte();
+
+/**
  * Sin privilegios: esto vive en el dispositivo y se puede tocar a mano. El
  * panel de administración lo defiende el backend de todas formas, pero enseñar
  * sus botones sin poder confirmar nada sobra.
