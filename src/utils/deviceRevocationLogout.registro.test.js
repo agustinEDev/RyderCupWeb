@@ -88,6 +88,19 @@ describe('el registro de limpiezas de la cuenta', () => {
     expect(hechas).toEqual(['primera', 'segunda', 'tercera']);
   });
 
+  it('si una limpieza falla, las demás se hacen igual y después sale el fallo', async () => {
+    const { alCerrarLaSesion, olvidaLoDeLaCuenta } = await cargaDeNuevo();
+    const hechas = [];
+    alCerrarLaSesion(() => {
+      throw new Error('almacenamiento lleno');
+    });
+    alCerrarLaSesion(() => hechas.push('segunda'));
+    alCerrarLaSesion(() => hechas.push('tercera'));
+
+    expect(() => olvidaLoDeLaCuenta()).toThrow('almacenamiento lleno');
+    expect(hechas).toEqual(['segunda', 'tercera']);
+  });
+
   it('registrar la misma limpieza dos veces no la repite, y no devuelve nada', async () => {
     const { alCerrarLaSesion, limpiaLaCuenta } = await cargaDeNuevo();
     const limpieza = vi.fn();

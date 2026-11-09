@@ -7,9 +7,9 @@ import { renderHook, act } from '@testing-library/react';
  * importa el cableado: AuthContext lo carga él mismo, así que un clearAuth nunca
  * se encuentra el registro vacío.
  *
- * El número de Actividad NO se olvida aquí (solo en los cierres forzados), como
- * antes: el botón de salir ya lo olvida en useLogout, y adelantarlo en los demás
- * caminos cambiaría cuándo se borra el número del icono de la aplicación.
+ * El número de Actividad (y el del icono de la aplicación) también se olvida aquí:
+ * con la sesión muerta o revocada se borra ya, no en la siguiente comprobación
+ * de la sesión (decidido el 9 nov 2026).
  */
 
 const llamadas = vi.hoisted(() => []);
@@ -28,7 +28,7 @@ describe('clearAuth usa el registro de limpiezas', () => {
     vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
   });
 
-  it('olvida las partidas sin cobertura y el hándicap pendiente, no el número de Actividad', () => {
+  it('olvida las partidas sin cobertura, el hándicap pendiente y el número de Actividad', () => {
     const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
 
     act(() => result.current.clearAuth());

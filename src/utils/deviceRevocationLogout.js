@@ -176,8 +176,8 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
 //   ese móvil podría ver sin cobertura las partidas de la cuenta revocada
 // - lo pendiente del hándicap (FE #677): el modal de la siguiente persona
 //   saldría con el hándicap de esta cuenta
-// - solo en los cierres forzados, el número de Actividad y el del icono de la
-//   aplicación (FE-1); el botón de salir lo olvida en useLogout
+// - el número de Actividad y el del icono de la aplicación (FE-1), en todos los
+//   cierres (decidido el 9 nov 2026)
 const limpiezasAlCerrar = [];
 
 const SIN_LIMPIEZAS =
@@ -197,12 +197,22 @@ export const alCerrarLaSesion = (limpieza) => {
 /**
  * Ejecuta las limpiezas registradas. Sin ninguna registrada falla en voz alta:
  * borrar «nada» sin avisar dejaría los datos de esta cuenta a la siguiente
- * persona del dispositivo. Sin capturar, como cuando se llamaban una a una: en
- * los cierres forzados, quien llama sale igualmente por su `finally`.
+ * persona del dispositivo. Si una falla, las demás se hacen igual y el primer
+ * fallo sale al final: en los cierres forzados, quien llama sale por su `finally`.
  */
 export const olvidaLoDeLaCuenta = () => {
   if (limpiezasAlCerrar.length === 0) throw new Error(SIN_LIMPIEZAS);
-  for (const limpieza of limpiezasAlCerrar) limpieza();
+  // Una que falle no puede dejar sin hacer las demás: cada una borra datos de la
+  // cuenta. El primer fallo sale al final, cuando ya se intentaron todas
+  let primerFallo = null;
+  for (const limpieza of limpiezasAlCerrar) {
+    try {
+      limpieza();
+    } catch (error) {
+      primerFallo ??= error;
+    }
+  }
+  if (primerFallo) throw primerFallo;
 };
 
 /**
