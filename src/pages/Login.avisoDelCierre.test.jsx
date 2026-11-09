@@ -15,11 +15,14 @@ import { MemoryRouter } from 'react-router';
  * | se recarga /login después                  | nada                                     |
  * | llega sin cierre (o desde otra pestaña)    | nada                                     |
  * | con StrictMode (el efecto corre dos veces) | una vez                                  |
+ * | los textos de `auth` llegan tarde          | espera a que lleguen; luego, una vez     |
  */
 const toast = vi.hoisted(() => ({ error: vi.fn() }));
+// Si los textos de `auth` ya llegaron (`useSuspense: false`: la pantalla se pinta antes)
+const textos = vi.hoisted(() => ({ listos: true }));
 vi.mock('../utils/toast', () => ({ default: toast }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k, o) => `${o?.ns ?? ''}:${k}`, i18n: { language: 'es' } }),
+  useTranslation: () => ({ t: (k, o) => `${o?.ns ?? ''}:${k}`, i18n: { language: 'es' }, ready: textos.listos }),
 }));
 vi.mock('../hooks/useRedirectIfAuthenticated', () => ({ useRedirectIfAuthenticated: () => false }));
 vi.mock('../components/auth/SignInForm', () => ({ default: () => <form /> }));
@@ -43,6 +46,25 @@ describe('Login · el aviso del cierre forzado', () => {
     cleanup();
     globalThis.sessionStorage.clear();
     toast.error.mockClear();
+    textos.listos = true;
+  });
+
+  it('si los textos de auth llegan tarde, espera a tenerlos y entonces lo enseña, una vez', () => {
+    guardaElAvisoDelCierre('revocation');
+    textos.listos = false;
+    const { rerender } = abreElLogin();
+    // Sin los textos no se toma: si no, saldría la clave en bruto y se perdería
+    expect(toast.error).not.toHaveBeenCalled();
+
+    textos.listos = true;
+    rerender(
+      <MemoryRouter initialEntries={['/login']}>
+        <Login />
+      </MemoryRouter>
+    );
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('auth:errors.deviceRevoked', { duration: 8000, icon: '🔒', delCierre: true });
   });
 
   it.each([

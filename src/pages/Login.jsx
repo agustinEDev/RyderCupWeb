@@ -9,18 +9,21 @@ import BrandMark from '../components/ui/BrandMark';
 import { muestraElAvisoDelCierre, tomaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 
 const Login = () => {
-  const { t } = useTranslation(['auth', 'common']);
+  const { t, ready } = useTranslation(['auth', 'common']);
   const location = useLocation();
   const successMessage = location.state?.message;
   const isCheckingSession = useRedirectIfAuthenticated();
 
-  // El aviso de un cierre forzado (revocado, caducado, terminado): la página de
-  // la que se venía se recargó a los 500 ms y no daba tiempo a leerlo. Una vez:
-  // se borra al tomarlo (recargar /login no lo repite; StrictMode, tampoco)
+  // El aviso de un cierre forzado (revocado, caducado, terminado), que la página
+  // de la que se venía guardó al irse. Una vez: se borra al tomarlo (recargar
+  // /login no lo repite; StrictMode, tampoco). Solo con los textos de `auth` ya
+  // cargados (`useSuspense: false`: la pantalla se pinta antes): si no, saldría la
+  // clave en bruto y el aviso ya se habría gastado
   useEffect(() => {
+    if (!ready) return;
     const motivo = tomaElAvisoDelCierre();
     if (motivo) muestraElAvisoDelCierre(motivo, t);
-  }, [t]);
+  }, [ready, t]);
 
   // Con sesión guardada por confirmar, el formulario no se pinta: quien llega
   // aquí desde el icono de la PWA se va al dashboard sin verlo (FE #305)
