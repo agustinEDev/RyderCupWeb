@@ -24,13 +24,18 @@ Tres comprobaciones:
 - Total del disco sin comprimir, la cifra de antes: solo sale en el log y avisa
   por encima de TOTAL_WARNING_KB; nunca falla.
 
-Con `--con-sentry` exige además que el arranque lleve compilado un DSN de
-Sentry (9 nov 2026). Sin VITE_SENTRY_DSN en el build, Vite quita de main.jsx el
+Con `--con-sentry=<DSN>` exige además que el arranque lleve compilado ESE DSN
+(9 nov 2026). Sin VITE_SENTRY_DSN en el build, Vite quita de main.jsx el
 arranque de Sentry y lo que se mide pesa menos que lo que se sirve: la 2c pasaba
 aquí con 381 bytes de margen y en producción se pasaba del tope por 257. El CI
-compila con un DSN ficticio, como Render.
+mide el build de la entrada «Deploy like Render», que compila con un DSN de
+prueba como Render.
 
-Uso: bundle_budget.py <dist> [--con-sentry]. Escribe en $GITHUB_OUTPUT, si existe,
+Siempre, además: el seguimiento de navegaciones de Sentry (BrowserTracing y los
+envoltorios de React Router) no puede ir en el arranque. Lo pide src/sentry.ts
+~2 s después; en el arranque eran unos 17 KB gzip (9 nov 2026).
+
+Uso: bundle_budget.py <dist> [--con-sentry=<DSN>]. Escribe en $GITHUB_OUTPUT, si existe,
 size_kb (el arranque), budget_kb, warning_kb y problems (qué falló, vacío si
 nada) para la tarjeta.
 """
@@ -107,15 +112,21 @@ def escribir_salidas(valores: dict) -> None:
         pass
 
 
-# Un DSN de Sentry tal como queda compilado: https://clave@host/proyecto
-DSN_DE_SENTRY = re.compile(rb"https://[A-Za-z0-9]+@[A-Za-z0-9.-]+/\d+")
+# Marcas del seguimiento de navegaciones de Sentry en el código compilado: el
+# nombre de su integración y el origen de los spans de React Router
+SEGUIMIENTO_DE_NAVEGACIONES = (b"BrowserTracing", b"auto.navigation.react.reactrouter", b"auto.pageload.react.reactrouter")
 
 
 def main(argv: list[str]) -> int:
-    con_sentry = "--con-sentry" in argv
-    posicionales = [a for a in argv if a != "--con-sentry"]
-    if len(posicionales) != 1:
-        print("Uso: bundle_budget.py <dist> [--con-sentry]")
+    dsn = None
+    posicionales = []
+    for arg in argv:
+        if arg.startswith("--con-sentry="):
+            dsn = arg.split("=", 1)[1]
+        else:
+            posicionales.append(arg)
+    if len(posicionales) != 1 or dsn == "":
+        print("Uso: bundle_budget.py <dist> [--con-sentry=<DSN>]")
         return 2
     dist = Path(posicionales[0]).resolve()
     assets = dist / "assets"
@@ -159,10 +170,19 @@ def main(argv: list[str]) -> int:
         del_arranque[fichero] = comprimido[fichero]
 
     arranque = sum(del_arranque.values())
-    if con_sentry and not any(DSN_DE_SENTRY.search(f.read_bytes()) for f in del_arranque):
+    contenido = {f: f.read_bytes() for f in del_arranque}
+    if dsn is not None and not any(dsn.encode() in datos for datos in contenido.values()):
         fallos.append(
-            "The startup JS has no Sentry DSN compiled in: the build ran without VITE_SENTRY_DSN, so main.jsx "
-            "drops its Sentry init and this is not what production serves. Build with a VITE_SENTRY_DSN (a dummy one is fine)"
+            f"The startup JS does not carry the Sentry DSN {dsn}: the build ran without that VITE_SENTRY_DSN, so main.jsx "
+            "drops its Sentry init and this is not what production serves. Build with the same VITE_SENTRY_DSN"
+        )
+    con_seguimiento = sorted(
+        {str(f.relative_to(dist)) for f, datos in contenido.items() if any(m in datos for m in SEGUIMIENTO_DE_NAVEGACIONES)}
+    )
+    if con_seguimiento:
+        fallos.append(
+            f"Sentry navigation tracing is in the startup JS ({', '.join(con_seguimiento)}): src/sentry.ts adds it later, "
+            "so it must not be imported from startup code nor be forced into a startup chunk (see vite.config.js)"
         )
     print("")
     print(f"🚀 Startup JS (what index.html loads): {kb(arranque)} KB gzip of {MAX_STARTUP_KB} KB, {len(del_arranque)} files")
