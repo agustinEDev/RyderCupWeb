@@ -52,7 +52,9 @@ export const tomaElAvisoDelCierre = () => {
   }
   try {
     const { motivo, hora } = JSON.parse(guardado) ?? {};
-    if (typeof motivo !== 'string' || typeof hora !== 'number' || Date.now() - hora > CADUCA_MS) return null;
+    const ahora = Date.now();
+    // Ni caducado ni con una hora futura (un reloj cambiado, un valor manipulado)
+    if (typeof motivo !== 'string' || typeof hora !== 'number' || ahora < hora || ahora - hora > CADUCA_MS) return null;
     return motivo;
   } catch {
     return null;

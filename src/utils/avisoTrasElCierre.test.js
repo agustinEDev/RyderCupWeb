@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * | el aviso de cada motivo                | revocado 🔒, caducado ⏱️, otro ℹ️ (también «toString») |
  * | se enseña                              | su texto traducido, 8000 ms, su icono, `delCierre` |
  * | pasan más de 30 s                      | caduca: no se toma                            |
+ * | la hora guardada es futura             | no se toma                                    |
  * | se olvida (entrar, salir con el botón) | ya no está                                    |
  */
 const toast = vi.hoisted(() => ({ error: vi.fn() }));
@@ -61,6 +62,12 @@ describe('el aviso de un cierre forzado, para /login', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('una hora futura no vale (reloj cambiado o un valor manipulado)', () => {
+    globalThis.sessionStorage.setItem('rydercup-aviso-del-cierre', JSON.stringify({ motivo: 'revocation', hora: Date.now() + 60_000 }));
+
+    expect(tomaElAvisoDelCierre()).toBeNull();
   });
 
   it('olvidarlo lo quita sin enseñarlo', () => {
