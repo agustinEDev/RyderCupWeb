@@ -1,7 +1,7 @@
 /**
  * Los porcentajes de muestreo de Sentry (FE #792).
  *
- * Se leían en dos sitios, `main.jsx` y `infrastructure/sentry.ts`, cada uno con
+ * Se leían en dos sitios, `main.jsx` y `src/sentry.ts`, cada uno con
  * sus valores por defecto: cambiar uno dejaba al otro desincronizado. Ahora los
  * dos leen de aquí.
  *

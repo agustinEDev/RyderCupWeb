@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 /**
  * Un 429 llegaba a la pantalla con el texto técnico del backend, en inglés:

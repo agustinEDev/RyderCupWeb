@@ -1,7 +1,9 @@
 /**
- * Lo que la interfaz usa de `infrastructure/http`: el cliente de la API
- * (`apiRequest`, `getApiBaseUrl`) y el transporte de la sesión (token CSRF,
- * refresco, cierres forzados, `olvidaLoDeLaCuenta`).
+ * Lo que la interfaz usa de `infrastructure/http`: la URL base de la API
+ * (`getApiBaseUrl`, para los avatares) y el transporte de la sesión (token CSRF,
+ * refresco, cierres forzados, `olvidaLoDeLaCuenta`). `apiRequest` no está: la
+ * interfaz no llama a la API, pide un caso de uso a `composition` (lo vigila
+ * ESLint con no-restricted-imports).
  *
  * La interfaz no importa la infraestructura directamente: pasa por la
  * composition root, como con los casos de uso. Va aparte de `composition/index`
@@ -9,12 +11,14 @@
  * carga todos los repositorios para leer el token CSRF.
  *
  * Efecto al importarlo: carga el registro de limpiezas al cerrar sesión
- * (`./limpiezaAlCerrarLaSesion`), así quien use `olvidaLoDeLaCuenta` por aquí
- * lo tiene relleno sin acordarse de un import aparte.
+ * (`./limpiezaAlCerrarLaSesion`) y la respuesta de la interfaz al transporte
+ * (`./interfazDelTransporte`), así quien use el transporte por aquí los tiene
+ * registrados sin acordarse de un import aparte.
  */
 import './limpiezaAlCerrarLaSesion';
+import './interfazDelTransporte';
 
-export { apiRequest, getApiBaseUrl } from '../infrastructure/http/api';
+export { getApiBaseUrl } from '../infrastructure/http/urlDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
 export {
   handleDeviceRevocationLogout,

@@ -12,10 +12,11 @@ import {
 import { getCsrfToken, getCsrfCookie } from './csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from './csrfLogout'; // v1.13.0: Centralized CSRF logout
 import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
-import { captureError } from '../../utils/sentryHelpers';
-import { llevaAAceptarLosTerminos, silenciaElAviso } from '../../utils/terminosPendientes';
+// Traducir, informar a Sentry y los Términos pendientes: de la interfaz, que la
+// composition root registra (la infraestructura no llega a i18n, Sentry ni al router)
+import { interfaz } from './interfazDelTransporte';
 import { TERMINOS_NO_ACEPTADOS } from '../../domain/services/aceptacionDeTerminos';
-import i18next from 'i18next';
+import { getApiBaseUrl } from './urlDeLaApi';
 
 /**
  * La llamada de red, con el aviso de «sin conexión» ya traducido (FE #685).
@@ -42,7 +43,7 @@ const llamaAlBackend = async (url, config) => {
  * medias. El original queda en `cause`.
  */
 const sinConexion = (causa) =>
-  Object.assign(new TypeError(i18next.t('common:sinConexion.mensaje'), { cause: causa }), {
+  Object.assign(new TypeError(interfaz().traduce('common:sinConexion.mensaje'), { cause: causa }), {
     sinConexion: true,
   });
 
@@ -88,7 +89,7 @@ const renuevaTrasCsrf = async () => {
     }
     const fallo = new Error(
       respuesta.status === 429
-        ? i18next.t('common:demasiadasPeticiones')
+        ? interfaz().traduce('common:demasiadasPeticiones')
         : `HTTP ${respuesta.status}: ${respuesta.statusText}`
     );
     throw Object.assign(fallo, { status: respuesta.status, statusCode: respuesta.status, errorCode: null });
@@ -105,16 +106,8 @@ const leeElError = async (response) => {
   }
 };
 
-// Prioridad: 1. Runtime config (globalThis.APP_CONFIG) 2. Build-time env 3. Empty string (relative URLs for proxy)
-// Si no hay API_URL configurado, usar '' para que las URLs sean relativas (/api/...)
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
-
-/**
- * Get the configured API base URL (for building direct <img>/<a> URLs that
- * don't go through apiRequest, e.g. avatar images).
- * @returns {string}
- */
-export const getApiBaseUrl = () => API_URL;
+// La URL base, en su módulo (urlDeLaApi.js)
+const API_URL = getApiBaseUrl();
 
 /**
  * Make authenticated API request with httpOnly cookies and automatic token refresh
@@ -222,7 +215,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       // Que se vea si pasa a menudo, pero solo lo raro: con cookie al salir y
       // aun así rechazada. Método y ruta, nunca el token
       if (cookieAlSalir !== null) {
-        captureError('CSRF token rejected with a cookie present: retried once', {
+        interfaz().informaDelError('CSRF token rejected with a cookie present: retried once', {
           level: 'warning',
           tags: { module: 'csrf' },
           extra: { method, ruta: endpoint.split('?')[0] },
@@ -241,21 +234,21 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       // desacuerdo del servidor, o una ruta desde la que no se redirige—, se
       // enseña como «no disponible»
       const terminosPendientes = response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS;
-      const seVaAAceptar = terminosPendientes && llevaAAceptarLosTerminos();
+      const seVaAAceptar = terminosPendientes && interfaz().llevaAAceptarLosTerminos();
 
       // Extract error message with proper fallback chain
       let errorMessage = '';
 
       if (seVaAAceptar) {
-        errorMessage = i18next.t('common:terminosPendientes');
-        silenciaElAviso(errorMessage);
+        errorMessage = interfaz().traduce('common:terminosPendientes');
+        interfaz().silenciaElAviso(errorMessage);
       } else if (terminosPendientes) {
-        errorMessage = i18next.t('common:terminosNoDisponible');
+        errorMessage = interfaz().traduce('common:terminosNoDisponible');
       } else if (response.status === 429) {
         // El del backend es técnico y en inglés («Rate limit exceeded: 10 per
         // 1 minute»): se dice el de la app. El `status` sigue en el error, que
         // es por lo que lo reconocen la cola y las pantallas (4 oct 2026)
-        errorMessage = i18next.t('common:demasiadasPeticiones');
+        errorMessage = interfaz().traduce('common:demasiadasPeticiones');
       } else if (errorData.detail) {
         // FastAPI returns errors in 'detail' field. On 422s it's a list of
         // Pydantic error objects ({ type, loc, msg, input, ctx }) rather than

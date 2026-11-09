@@ -16,6 +16,8 @@
  *   35 la cabecera en minúsculas (`x-csrf-token`) | una sola, con el token nuevo
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 let fetchWithTokenRefresh;
 let refrescoCompartido;
@@ -34,6 +36,7 @@ const cabeceraDe = (opciones) =>
 describe('reintento tras 401 con el token al día', () => {
   beforeEach(async () => {
     vi.resetModules();
+    await import('../../composition/interfazDelTransporte');
     ({ fetchWithTokenRefresh, refrescoCompartido } = await import('./tokenRefreshInterceptor'));
     ({ setCsrfTokenGlobal } = await import('./csrfTokenSync'));
     // Sin cookie legible: el token sale de la copia que deja el refresco

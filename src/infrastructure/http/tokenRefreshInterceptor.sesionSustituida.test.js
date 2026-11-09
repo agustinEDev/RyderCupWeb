@@ -34,6 +34,8 @@
  *        y la sesión se conserva                   | y el siguiente pide el suyo
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 const cierre = vi.hoisted(() => ({
   handleSessionExpiredLogout: vi.fn(),
@@ -102,6 +104,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
 
   beforeEach(async () => {
     vi.resetModules();
+    await import('../../composition/interfazDelTransporte');
     vi.useFakeTimers();
     cierre.handleSessionExpiredLogout.mockClear();
     cierre.handleDeviceRevocationLogout.mockClear();

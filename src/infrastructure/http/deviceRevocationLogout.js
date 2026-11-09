@@ -8,9 +8,9 @@
  * This utility:
  * - Detects device revocation from backend response (EXPLICIT revocation only)
  * - Detects session expiration (refresh token expired - separate from revocation)
- * - Clears authentication state (localStorage + Sentry)
- * - Shows user-friendly toast with i18n message
- * - Redirects to login page
+ * - Clears authentication state (localStorage + Sentry, the latter through the UI)
+ * - Asks the UI to show the message for the reason (text and icon live there)
+ * - Redirects to login page (through the UI, which saves the page to come back to)
  *
  * IMPORTANT: v2.0.4 refactor - Separated device revocation from session expiration
  * - isDeviceRevoked() now returns true ONLY for explicit device revocation
@@ -20,15 +20,11 @@
  * @see src/config/dependencies.py:576-583 (backend)
  */
 
-import i18next from 'i18next';
-import customToast from '../../utils/toast';
-import { clearUserContext } from '../../utils/sentryHelpers';
-import {
-  avisaDelCierreForzado,
-  esFinalNormalDelRefresco,
-  MOTIVO_DEL_CIERRE,
-} from '../../utils/avisoDeCierreForzado';
-import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
+import { esFinalNormalDelRefresco, MOTIVO_DEL_CIERRE } from '../../utils/motivosDelCierre';
+// El aviso a Sentry, el usuario de Sentry, el aviso al usuario, la cuenta de la
+// pestaña y la redirección con la página guardada: de la interfaz, que la
+// composition root registra (la infraestructura no llega a sus librerías)
+import { hayInterfazDelTransporte, interfaz } from './interfazDelTransporte';
 // El freno de un cierre por carga vive en su módulo (C1, S1)
 import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from '../../utils/cierreDeEstaCarga';
 
@@ -216,16 +212,51 @@ export const olvidaLoDeLaCuenta = () => {
 };
 
 /**
+ * Lo guardado de la cuenta que no depende de la interfaz: el usuario, el token de
+ * antes y lo del registro de limpiezas. Lo borran el cierre forzado
+ * (`limpiaLaCuenta`) y el que falla cerrado sin interfaz, siempre lo mismo.
+ */
+const borraLoGuardadoDeLaCuenta = () => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('access_token'); // Legacy cleanup
+  olvidaLoDeLaCuenta();
+};
+
+/**
  * Lo de la cuenta que sale, también al revocar el propio dispositivo (C3) y en el cierre
  * por CSRF (S3): una sola limpieza para los cierres duros.
  */
 export const limpiaLaCuenta = () => {
-  localStorage.removeItem('user');
-  localStorage.removeItem('access_token'); // Legacy cleanup
-  olvidaLoDeLaCuenta();
-  // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
-  // nadie y esta línea no hacía nada (25 oct 2026)
-  clearUserContext();
+  borraLoGuardadoDeLaCuenta();
+  // El usuario de Sentry (por sentryHelpers, en la interfaz): `window.Sentry` no
+  // lo asignaba nadie y esta línea no hacía nada (25 oct 2026)
+  interfaz().olvidaElUsuarioDeSentry();
+};
+
+/**
+ * Sin la interfaz registrada un cierre forzado no puede avisar ni redirigir: falla
+ * cerrado (decidido el 9 nov 2026). Borra antes lo que no depende de la interfaz
+ * —el usuario guardado y lo de la cuenta del registro de limpiezas—, para que esos
+ * datos no se queden en el dispositivo, y lanza. No anota el cierre de esta carga:
+ * una carga «cerrándose» que no sale de la página callaría el siguiente cierre.
+ * Con la interfaz registrada no hace nada.
+ */
+export const exigeLaInterfazDelTransporte = () => {
+  if (hayInterfazDelTransporte()) return;
+  let falloAlBorrar = null;
+  try {
+    borraLoGuardadoDeLaCuenta();
+  } catch (error) {
+    falloAlBorrar = error;
+  }
+  try {
+    interfaz();
+  } catch (sinInterfaz) {
+    // Lanza «no hay interfaz del transporte registrada…»; si además falló el borrado,
+    // ese fallo va como su causa, sin taparlo
+    if (falloAlBorrar) sinInterfaz.cause = falloAlBorrar;
+    throw sinInterfaz;
+  }
 };
 
 /**
@@ -242,6 +273,8 @@ export const limpiaLaCuenta = () => {
  * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
  */
 const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
+  // Sin la interfaz registrada falla cerrado aquí, antes de anotar el cierre de la carga
+  exigeLaInterfazDelTransporte();
   if (seEstaCerrandoLaSesion()) return;
   const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
 
@@ -258,14 +291,14 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
     try {
       limpiaLaCuenta();
     } finally {
-      redirigeAlLogin({ guardar: false });
+      interfaz().redirigeAlLogin({ guardar: false });
     }
     return;
   }
 
   // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (regla 6 de
   // `vueltaTrasEntrar`) y otra cuenta que entre en esta pestaña no vuelve a ella
-  const cuenta = ultimaCuentaDeEstaPestana();
+  const cuenta = interfaz().ultimaCuentaDeEstaPestana();
 
   // Pase lo que pase dentro, se sale (revisión, 8 nov): con el cierre de esta carga ya
   // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
@@ -273,7 +306,7 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   try {
     // Que se vea en Sentry (FE #1042): una vez por carga, como el aviso al usuario. Antes
     // de limpiar, que quita el usuario de Sentry y el evento saldría sin él; no lanza
-    avisaDelCierreForzado(aviso);
+    interfaz().avisaASentryDelCierre(aviso);
 
     // La cuenta antes que la marca: un almacenamiento lleno al escribirla no deja sus
     // datos en el dispositivo (CodeRabbit), y limpiar le hace sitio
@@ -292,37 +325,17 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
       }
     }
 
-    // Choose message and icon based on reason using i18n
-    let messageKey;
-    let icon;
-
-    if (reason === 'revocation') {
-      messageKey = 'errors.deviceRevoked';
-      icon = '🔒';
-    } else if (reason === 'expiration') {
-      messageKey = 'errors.sessionExpired';
-      icon = '⏱️';
-    } else {
-      messageKey = 'errors.sessionEnded';
-      icon = 'ℹ️';
-    }
-
-    const message = i18next.t(messageKey, { ns: 'auth' });
-
-    // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
-    // Sin ninguna cuenta conocida en la pestaña no había sesión que terminara: quien abre
-    // un enlace sin haber entrado no lee «Tu sesión ha expirado» (Agustín, 8 nov 2026). Un
-    // dispositivo revocado de verdad avisa siempre: es un aviso de seguridad (code-review)
+    // El aviso al usuario según el motivo (revocado, caducado o terminado): su texto y
+    // su icono los pone la interfaz. Sin ninguna cuenta conocida en la pestaña no había
+    // sesión que terminara: quien abre un enlace sin haber entrado no lee «Tu sesión ha
+    // expirado» (Agustín, 8 nov 2026). Un dispositivo revocado de verdad avisa siempre:
+    // es un aviso de seguridad
     if (cuenta !== null || reason === 'revocation') {
-      customToast.error(message, {
-        duration: 8000,
-        icon,
-        delCierre: true,
-      });
+      interfaz().avisaAlUsuarioDelCierre(reason);
     }
   } finally {
     // Redirect to login after a short delay (allow toast to be visible), con la página
     // en la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
-    redirigeAlLogin({ retraso: 500, cuenta });
+    interfaz().redirigeAlLogin({ retraso: 500, cuenta });
   }
 };

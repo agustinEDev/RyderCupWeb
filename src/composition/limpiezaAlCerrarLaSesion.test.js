@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import './interfazDelTransporte';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 

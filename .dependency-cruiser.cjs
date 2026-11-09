@@ -4,6 +4,11 @@
  * Se comprueban en el CI (job "Architecture") y en local con:
  *   npm run lint:architecture
  *
+ * Ese script pasa además los .ts/.tsx de src uno a uno: dependency-cruiser solo
+ * recorre por su cuenta las extensiones que sabe compilar, y para TypeScript pide
+ * el compilador < 7 (el del proyecto es la 7). Sin eso, un .ts que ningún .js
+ * importara se libraba de todas las reglas; pasado a mano, se analiza.
+ *
  * Describen la arquitectura que el código YA sigue (medido el 28 sep 2026: todas
  * se cumplían). Su trabajo es que siga así:
  *
@@ -36,6 +41,9 @@ const UI_FILE = '\\.(jsx|tsx)$';
 // Las únicas librerías a las que llegan el dominio y los casos de uso (9 nov
 // 2026: uuid, y nada más). Añadir una es una decisión de arquitectura
 const CORE_ALLOWED_PACKAGES = 'node_modules/(uuid)/';
+// Lo mismo para la infraestructura (9 nov 2026: uuid, por el dominio). Lo que
+// necesita de la interfaz se lo da la composition root
+const INFRASTRUCTURE_ALLOWED_PACKAGES = 'node_modules/(uuid)/';
 
 module.exports = {
   forbidden: [
@@ -68,7 +76,7 @@ module.exports = {
       comment:
         'La interfaz usa los casos de uso a través de src/composition (la composition root), nunca importando application ni infrastructure directamente.',
       severity: 'error',
-      from: { path: UI, pathNot: TEST },
+      from: { path: [UI, '^src/(App\\.jsx|main\\.jsx)$'], pathNot: TEST },
       to: { path: '^src/(application|infrastructure)/' },
     },
     // ── Reglas añadidas el 9 nov 2026 (auditoría de arquitectura) ──────────
@@ -118,10 +126,10 @@ module.exports = {
     {
       name: 'services-does-not-reach-up',
       comment:
-        'src/services (la sesión compartida, la cola sin conexión…) lo usa la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La única excepción es el transporte de la sesión, src/infrastructure/http, que services usa directamente (decidido con Agustín, 9 nov 2026). La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
+        'src/services (la sesión compartida, la cola sin conexión…) lo usa la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La única excepción es el transporte de la sesión, src/infrastructure/http, que services usa directamente (decidido con Agustín, 9 nov 2026), salvo el cliente de la API (api.js): services no llama a la API, la llaman los repositorios. La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
       severity: 'error',
       from: { path: '^src/services/', pathNot: TEST },
-      to: { path: '^src/(application|infrastructure)/', pathNot: '^src/infrastructure/http/' },
+      to: { path: '^src/(application|infrastructure)/', pathNot: '^src/infrastructure/http/(?!api\\.js$)' },
     },
     {
       name: 'http-does-not-reach-services',
@@ -156,12 +164,28 @@ module.exports = {
       to: { path: '^src/services/' },
     },
     {
+      name: 'infrastructure-only-reaches-allowed-packages',
+      comment:
+        'Lista de PERMITIDOS: la infraestructura solo llega, directa o indirectamente (p. ej. a través de utils), a las librerías de INFRASTRUCTURE_ALLOWED_PACKAGES. Ni React, ni el router, ni los avisos, ni i18n, ni Sentry para React, ni los iconos, ni ninguna librería de interfaz nueva. Lo que necesita de la interfaz (traducir, avisar, informar a Sentry, redirigir, saber si una ruta es pública) se lo da la composition root (composition/interfazDelTransporte).',
+      severity: 'error',
+      from: { path: '^src/infrastructure/', pathNot: TEST },
+      to: { path: 'node_modules/', pathNot: INFRASTRUCTURE_ALLOWED_PACKAGES, reachable: true },
+    },
+    {
       name: 'infrastructure-and-services-do-not-reach-ui',
       comment:
         'La infraestructura y los servicios no llegan a la interfaz (carpetas o .jsx/.tsx de cualquier sitio), ni directamente ni por un camino indirecto (p. ej. infrastructure/http/api → utils → contexts).',
       severity: 'error',
       from: { path: '^src/(infrastructure|services)/', pathNot: TEST },
       to: { path: [UI, UI_FILE], reachable: true },
+    },
+    {
+      name: 'sentry-setup-goes-through-composition',
+      comment:
+        'src/sentry.ts es el arranque de Sentry para React: es interfaz, puede usar las librerías de UI, utils y composition, pero no la infraestructura, los casos de uso ni services directamente.',
+      severity: 'error',
+      from: { path: '^src/sentry\\.ts$' },
+      to: { path: '^src/(infrastructure|application|services)/' },
     },
     {
       name: 'no-circular',

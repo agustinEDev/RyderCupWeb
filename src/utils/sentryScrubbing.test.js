@@ -3,7 +3,7 @@ import { scrubDeep, sentryScrubbing } from './sentryScrubbing';
 
 /**
  * Los ganchos de Sentry que tapan los secretos de las URLs, en un solo sitio
- * para las dos inicializaciones (`main.jsx` e `infrastructure/sentry.ts`).
+ * para las dos inicializaciones (`main.jsx` y `sentry.ts`).
  *
  * Por lo que se escapaban el 30 sep 2026 (revisión de lo subido ese día):
  *

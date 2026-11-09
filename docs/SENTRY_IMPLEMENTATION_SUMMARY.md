@@ -119,7 +119,7 @@
 - DSN configured with actual project value
 - Sample rates optimized for development (1.0, 0.1, 1.0)
 
-#### 3. `src/infrastructure/sentry.ts` (completely rewritten - 250 lines)
+#### 3. `src/sentry.ts` (completely rewritten - 250 lines)
 **Changes:**
 - Migrated from hardcoded configuration to environment variable based
 - Added advanced integrations:

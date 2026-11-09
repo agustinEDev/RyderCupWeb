@@ -158,6 +158,27 @@ describe('ApiDeviceRepository', () => {
     });
   });
 
+  describe('checkDeviceStatus', () => {
+    // FE #1046: la ruta con sesión más ligera; el backend comprueba en ella el
+    // dispositivo del token y su 401 lo trata el interceptor
+    it('pide /auth/current-user, sin opciones, y no devuelve nada', async () => {
+      apiRequestMock.mockResolvedValue({ id: 'u-1' });
+
+      const resultado = await repository.checkDeviceStatus();
+
+      expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/auth/current-user');
+      expect(apiRequestMock).toHaveBeenCalledTimes(1);
+      expect(resultado).toBeUndefined();
+    });
+
+    it('un fallo de la petición sale tal cual', async () => {
+      const fallo = Object.assign(new Error('Unauthorized'), { status: 401 });
+      apiRequestMock.mockRejectedValue(fallo);
+
+      await expect(repository.checkDeviceStatus()).rejects.toBe(fallo);
+    });
+  });
+
   describe('revokeDevice', () => {
     it('should revoke device successfully', async () => {
       const deviceId = 'device-123';

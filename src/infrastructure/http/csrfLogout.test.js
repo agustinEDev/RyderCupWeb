@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 import { handleCsrfLogout } from './csrfLogout';
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
 import '../../composition/limpiezaAlCerrarLaSesion';

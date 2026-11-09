@@ -122,4 +122,64 @@ export default [
       ],
     },
   },
+
+  // La interfaz no llama a la API: pide un caso de uso a src/composition (F2).
+  // `getApiBaseUrl` sí puede usarlo (las URLs de los avatares). También App.jsx y
+  // main.jsx, y los import() dinámicos: el del cliente, siempre; de los demás, si se
+  // saca `apiRequest` directamente (`const { apiRequest } = await import(…)`,
+  // `(await import(…)).apiRequest` o `.then(({ apiRequest }) => …)`). Lo que no ve:
+  // guardar el módulo entero en una variable y leer `apiRequest` después
+  {
+    files: ['src/{pages,components,hooks,contexts}/**/*.{js,jsx,ts,tsx}', 'src/App.jsx', 'src/main.jsx'],
+    ignores: ['src/**/*.test.{js,jsx,ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/infrastructure/http/api', '**/infrastructure/http/api.js'],
+              importNames: ['apiRequest', 'default'],
+              message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        // `apiRequest` por nombre desde la composition root (index o http). Con
+        // no-restricted-imports caería también `import * as composicion`, que
+        // origenesDeAnotacion usa a propósito para leer cada caso de uso al usarlo
+        {
+          selector:
+            "ImportDeclaration[source.value=/composition(.index|.http)?(\\.js)?$/] > ImportSpecifier[imported.name='apiRequest']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector: 'ImportExpression[source.value=/infrastructure.http.api(\\.js)?$/]',
+          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+        },
+        {
+          // El mismo, con plantilla: import(`…/infrastructure/http/api`)
+          selector: 'ImportExpression > TemplateLiteral > TemplateElement[value.raw=/infrastructure.http.api/]',
+          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector:
+            "VariableDeclarator[init.type='AwaitExpression'][init.argument.type='ImportExpression'] > ObjectPattern > Property[key.name='apiRequest']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector:
+            "MemberExpression[property.name='apiRequest'][object.type='AwaitExpression'][object.argument.type='ImportExpression']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='then'][callee.object.type='ImportExpression'] Property[key.name='apiRequest']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+      ],
+    },
+  },
 ];

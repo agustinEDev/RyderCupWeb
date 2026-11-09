@@ -2,12 +2,15 @@
 import Device from '../../domain/entities/Device.js';
 import IDeviceRepository from '../../domain/repositories/IDeviceRepository.js';
 import apiRequest from '../http/api.js';
+import { RUTA_DEL_USUARIO_ACTUAL } from '../../utils/rutasDeLaSesion';
 
 /**
  * API implementation of Device Repository
  * v1.13.0: Device Fingerprinting feature
  */
 const MOTIVOS_DE_UN_403 = new Set(['CSRF_VALIDATION_FAILED', 'TERMS_NOT_ACCEPTED']);
+// La ruta con sesión más ligera (RUTA_DEL_USUARIO_ACTUAL): el backend comprueba en
+// ella el dispositivo del token. La lista de dispositivos era la consulta más cara (FE #1046)
 
 class ApiDeviceRepository extends IDeviceRepository {
   constructor() {
@@ -45,6 +48,18 @@ class ApiDeviceRepository extends IDeviceRepository {
       devices,
       total_count: data.total_count,
     };
+  }
+
+  /**
+   * @override
+   * La respuesta no decide nada (FE #1046): antes, que la lista de dispositivos no
+   * trajera el actual echaba con un «revocado» falso al perderse la cookie. La
+   * revocación de verdad llega como 401 «Dispositivo revocado», que trata el
+   * interceptor
+   * @returns {Promise<void>}
+   */
+  async checkDeviceStatus() {
+    await apiRequest(RUTA_DEL_USUARIO_ACTUAL);
   }
 
   /**

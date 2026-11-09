@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 import { apiRequest } from './api';
 import * as CsrfTokenSync from './csrfTokenSync';
 import * as TokenRefreshInterceptor from './tokenRefreshInterceptor';

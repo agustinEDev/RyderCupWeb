@@ -12,6 +12,8 @@
  *   W4  otra ruta                    | cualquier 401             | se refresca, como siempre
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 vi.mock('./deviceRevocationLogout', async (original) => ({
   ...(await original()),
@@ -40,6 +42,7 @@ describe('el interceptor no repite un 401 por contraseña mal escrita', () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    await import('../../composition/interfazDelTransporte');
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
     ({ fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor'));

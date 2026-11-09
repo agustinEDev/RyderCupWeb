@@ -21,6 +21,15 @@ class IDeviceRepository {
   async revokeDevice(deviceId) {
     throw new Error('Method not implemented: revokeDevice');
   }
+
+  /**
+   * Hace una petición con sesión para que el backend compruebe el dispositivo del
+   * token. Si se revocó, el 401 lo trata el interceptor; la respuesta no se usa
+   * @returns {Promise<void>}
+   */
+  async checkDeviceStatus() {
+    throw new Error('Method not implemented: checkDeviceStatus');
+  }
 }
 
 export default IDeviceRepository;

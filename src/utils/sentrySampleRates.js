@@ -2,7 +2,7 @@
  * Los porcentajes de muestreo de Sentry, en un solo sitio (FE #792).
  *
  * Los lee el arranque mínimo de `main.jsx`, que es el que de verdad los aplica:
- * después de `init` ya no se pueden cambiar. `infrastructure/sentry.ts` los
+ * después de `init` ya no se pueden cambiar. `src/sentry.ts` los
  * muestra en su resumen. Antes cada uno tenía su copia con sus valores por
  * defecto.
  *
