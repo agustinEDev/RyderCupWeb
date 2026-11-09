@@ -11,10 +11,12 @@
  * carga todos los repositorios para leer el token CSRF.
  *
  * Efecto al importarlo: carga el registro de limpiezas al cerrar sesión
- * (`./limpiezaAlCerrarLaSesion`), así quien use `olvidaLoDeLaCuenta` por aquí
- * lo tiene relleno sin acordarse de un import aparte.
+ * (`./limpiezaAlCerrarLaSesion`) y la respuesta de la interfaz al transporte
+ * (`./interfazDelTransporte`), así quien use el transporte por aquí los tiene
+ * registrados sin acordarse de un import aparte.
  */
 import './limpiezaAlCerrarLaSesion';
+import './interfazDelTransporte';
 
 export { getApiBaseUrl } from '../infrastructure/http/urlDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';

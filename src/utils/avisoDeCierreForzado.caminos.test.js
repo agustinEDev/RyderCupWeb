@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../composition/interfazDelTransporte';
 
 /**
  * Cada camino que cierra la sesión por su cuenta avisa, con su motivo y su ruta

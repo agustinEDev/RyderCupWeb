@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 /**
  * F4: un 403 `TERMS_NOT_ACCEPTED` de cualquier llamada lleva a la pantalla de

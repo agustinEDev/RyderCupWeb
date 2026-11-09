@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import './interfazDelTransporte';
 
 /**
  * Batería del Kind (9 nov 2026): tras revocar el dispositivo, la copia del usuario

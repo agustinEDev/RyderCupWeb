@@ -5,6 +5,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 import { refreshAccessToken, fetchWithTokenRefresh } from './tokenRefreshInterceptor';
 
 // Mock deviceRevocationLogout module
@@ -382,6 +384,7 @@ describe('tokenRefreshInterceptor', () => {
 
     beforeEach(async () => {
       vi.resetModules();
+      await import('../../composition/interfazDelTransporte');
       ({ fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor'));
       ({ handleSessionExpiredLogout, handleDeviceRevocationLogout } = await import('./deviceRevocationLogout'));
       vi.clearAllMocks();
@@ -450,6 +453,7 @@ describe('un refresco, muchas peticiones (FE #518)', () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    await import('../../composition/interfazDelTransporte');
     ({ fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor'));
     vi.clearAllMocks();
   });

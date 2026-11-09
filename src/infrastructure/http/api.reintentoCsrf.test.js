@@ -38,6 +38,8 @@
  *   33 el refresco no cambia el token            | cierre, sin mandar el reintento
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 const llamarAlBackend = vi.fn();
 const refrescoCompartido = vi.fn();

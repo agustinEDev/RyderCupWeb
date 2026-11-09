@@ -161,6 +161,17 @@ module.exports = {
       to: { path: '^src/services/' },
     },
     {
+      name: 'infrastructure-does-not-reach-ui-libraries',
+      comment:
+        'La infraestructura no llega a las librerías de la interfaz (React, el router, los avisos, i18n, Sentry para React, los iconos), ni por un camino indirecto (p. ej. a través de utils). Lo que necesita de la interfaz (traducir, avisar, informar a Sentry, redirigir, saber si una ruta es pública) se lo da la composition root (composition/interfazDelTransporte).',
+      severity: 'error',
+      from: { path: '^src/infrastructure/', pathNot: TEST },
+      to: {
+        path: 'node_modules/(react|react-dom|react-router|react-router-dom|react-hot-toast|i18next|react-i18next|@sentry/react|lucide-react)/',
+        reachable: true,
+      },
+    },
+    {
       name: 'infrastructure-and-services-do-not-reach-ui',
       comment:
         'La infraestructura y los servicios no llegan a la interfaz (carpetas o .jsx/.tsx de cualquier sitio), ni directamente ni por un camino indirecto (p. ej. infrastructure/http/api → utils → contexts).',

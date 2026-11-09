@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../composition/interfazDelTransporte';
 
 /**
  * Los dos avisos que salen de la red, no de un cierre explícito (FE #1042, revisor 5 nov).

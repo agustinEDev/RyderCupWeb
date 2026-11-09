@@ -1,3 +1,6 @@
+// La respuesta de la interfaz al transporte, registrada antes que los repositorios
+// que lo usan (infrastructure/http/interfazDelTransporte)
+import './interfazDelTransporte';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';

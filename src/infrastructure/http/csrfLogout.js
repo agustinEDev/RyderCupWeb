@@ -10,10 +10,11 @@
  * @see docs/FRONTEND_INTEGRATION_v1.13.0.md - CSRF Protection section
  */
 
-import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from '../../utils/avisoDeCierreForzado';
+import { MOTIVO_DEL_CIERRE } from '../../utils/motivosDelCierre';
 import { empiezaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
 import { limpiaLaCuenta } from './deviceRevocationLogout';
-import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
+// Sentry, la cuenta de la pestaña y la redirección: de la interfaz (composition root)
+import { interfaz } from './interfazDelTransporte';
 
 /**
  * Handle CSRF validation failure
@@ -30,12 +31,12 @@ import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../../utils/vueltaTr
 export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
   if (!empiezaElCierreDeEstaCarga()) return;
   // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (3b)
-  const cuenta = ultimaCuentaDeEstaPestana();
+  const cuenta = interfaz().ultimaCuentaDeEstaPestana();
 
   try {
     // Que se vea en Sentry (FE #1042), con la ruta que no se pudo recuperar. Antes de
     // limpiar, que quita el usuario de Sentry; no lanza
-    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, ...contexto });
+    interfaz().avisaASentryDelCierre({ motivo: MOTIVO_DEL_CIERRE.CSRF_SIN_RECUPERAR, ...contexto });
 
     if (import.meta.env.DEV) {
       console.error('🔒 [CSRF] Validation failed:', errorData?.detail || 'No details provided');
@@ -53,6 +54,6 @@ export const handleCsrfLogout = (errorData = {}, contexto = {}) => {
   } finally {
     // This is intentional - CSRF failures require a complete app reset. Con la página
     // guardada y su cuenta, para volver a ella tras entrar
-    redirigeAlLogin({ cuenta });
+    interfaz().redirigeAlLogin({ cuenta });
   }
 };

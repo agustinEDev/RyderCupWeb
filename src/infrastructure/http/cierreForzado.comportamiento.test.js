@@ -5,7 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * el aviso a Sentry, la limpieza, el usuario de Sentry, la marca, el aviso al
  * usuario (texto, icono, duración, `delCierre`), el retraso y el destino de la
  * redirección y la página guardada para volver. Se escribió ANTES de sacar los
- * efectos de interfaz de la infraestructura: tiene que seguir igual después.
+ * efectos de interfaz de la infraestructura (composition/interfazDelTransporte) y
+ * pasó igual antes y después.
  *
  * | Caso                                   | Sentry          | Aviso al usuario                 | Redirección       |
  * |----------------------------------------|-----------------|----------------------------------|-------------------|
@@ -30,14 +31,9 @@ vi.mock('../../utils/sentryHelpers', () => ({
 
 const cargaUnaPaginaNueva = async ({ cuenta }) => {
   vi.resetModules();
-  // Como en la app, lo que la composition root registra antes de nada; las
+  // Como en la app, la respuesta de la interfaz registrada antes de nada; las
   // limpiezas de la cuenta, una sola de prueba que se ve en la lista
-  const interfaz = '../../composition/interfazDelTransporte';
-  try {
-    await import(/* @vite-ignore */ interfaz);
-  } catch {
-    // Antes de la inversión no existe: la infraestructura lo hacía sola
-  }
+  await import('../../composition/interfazDelTransporte');
   const registro = await import('./deviceRevocationLogout');
   registro.alCerrarLaSesion(() => efectos.push(['limpieza']));
   const { handleCsrfLogout } = await import('./csrfLogout');

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 /**
  * El cierre del 4 nov, de punta a punta hasta Sentry (FE #1042, Agustín, 5 nov).

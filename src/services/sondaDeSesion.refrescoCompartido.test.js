@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../composition/interfazDelTransporte';
 
 /**
  * Revisión final del 21 oct: la sonda refrescaba por su cuenta, saltándose el

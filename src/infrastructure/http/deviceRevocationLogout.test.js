@@ -5,6 +5,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 import {
   isDeviceRevoked,
   isSessionExpired,
@@ -622,6 +624,7 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
   // Una carga de página nueva: el módulo, sin el cierre de esta carga
   const deUnaCargaNueva = async () => {
     vi.resetModules();
+    await import('../../composition/interfazDelTransporte');
     // Como en la app: main.jsx carga primero el registro de limpiezas
     await import('../../composition/limpiezaAlCerrarLaSesion');
     return import('./deviceRevocationLogout');

@@ -14,7 +14,9 @@
  * @module tokenRefreshInterceptor
  */
 
-import { sinSesionEnRutaPublica } from '../../utils/rutasPublicas';
+// Si una ruta es pública, y el aviso a Sentry de un cierre: de la interfaz, que la
+// composition root registra (la infraestructura no llega al router ni a Sentry)
+import { interfaz } from './interfazDelTransporte';
 
 
 import { setCsrfTokenGlobal, getCsrfToken } from './csrfTokenSync'; // v1.13.0: CSRF Protection
@@ -25,12 +27,7 @@ import {
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout
 } from './deviceRevocationLogout'; // v1.13.1: Device Revocation, v2.0.4: Separated expiration
-import {
-  avisaDelCierreForzado,
-  esUn401DeToken,
-  MOTIVO_DEL_CIERRE,
-  motivoDelRefrescoRechazado,
-} from '../../utils/avisoDeCierreForzado';
+import { esUn401DeToken, MOTIVO_DEL_CIERRE, motivoDelRefrescoRechazado } from '../../utils/motivosDelCierre';
 
 import { RUTA_DEL_REFRESCO } from '../../utils/rutasDeLaSesion';
 import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
@@ -382,7 +379,7 @@ const vigilaLaRepetida = async (url, opciones, repetida) => {
     throw Object.assign(new Error('Device revoked'), { response: repetida, errorData: datos });
   }
   if (esUn401DeToken(datos)) {
-    avisaDelCierreForzado({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA, ...contexto });
+    interfaz().avisaASentryDelCierre({ motivo: MOTIVO_DEL_CIERRE.SESION_PERDIDA, ...contexto });
   }
   return repetida;
 };
@@ -482,7 +479,7 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     // La lista vive en un solo sitio: esta copia iba dos entradas por detras.
     // Y se mira tambien si hay sesion guardada: en una clasificacion compartida
     // —que es publica— un usuario con sesion SI tiene que refrescar.
-    const isPublicPage = sinSesionEnRutaPublica(currentPath, hayUsuarioGuardado());
+    const isPublicPage = interfaz().sinSesionEnRutaPublica(currentPath, hayUsuarioGuardado());
     if (isPublicPage && url.includes('/current-user')) {
       console.log('🚫 [TokenRefresh] On public page, not attempting refresh for current-user check');
       return response;

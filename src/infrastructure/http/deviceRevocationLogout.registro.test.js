@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
 
 /**
  * El registro de limpiezas de la cuenta (`alCerrarLaSesion`), SIN el cableado de
@@ -24,6 +26,7 @@ const SIN_REGISTRO = /no hay limpiezas registradas: falta importar composition\/
 /** Una carga de página nueva: el registro del módulo empieza vacío. */
 const cargaDeNuevo = async () => {
   vi.resetModules();
+  await import('../../composition/interfazDelTransporte');
   const registro = await import('./deviceRevocationLogout');
   const { handleCsrfLogout } = await import('./csrfLogout');
   const { anotaLaCuentaDeEstaPestana } = await import('../../utils/vueltaTrasEntrar');
