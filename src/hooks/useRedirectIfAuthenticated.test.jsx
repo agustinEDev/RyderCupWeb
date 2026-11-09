@@ -37,6 +37,8 @@ vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   isDeviceRevoked: vi.fn(() => false),
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),
+  // La fachada composition/http carga el registro de limpiezas al importarse
+  alCerrarLaSesion: vi.fn(),
 }));
 
 const { refrescoCompartido } = await import('../infrastructure/http/tokenRefreshInterceptor');

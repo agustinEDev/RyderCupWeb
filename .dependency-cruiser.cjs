@@ -132,7 +132,7 @@ module.exports = {
     {
       name: 'http-stays-in-its-folder',
       comment:
-        'El transporte de la sesión no usa el resto de la infraestructura (repositorios, mappers, Sentry): son ellos los que se apoyan en él. Al salir de utils estos módulos dejaron de estar bajo utils-does-not-reach-up, y nada lo impedía (revisión de la PR 2a).',
+        'El transporte de la sesión no usa el resto de la infraestructura (repositorios, mappers, Sentry). Los repositorios llegan a él a través de services/api (apiRequest, con su reintento CSRF), nunca importándolo directamente. Al salir de utils estos módulos dejaron de estar bajo utils-does-not-reach-up, y nada lo impedía (revisión de la PR 2a).',
       severity: 'error',
       from: { path: '^src/infrastructure/http/', pathNot: TEST },
       to: { path: '^src/infrastructure/', pathNot: '^src/infrastructure/http/' },

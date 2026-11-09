@@ -10,7 +10,6 @@ import { setCsrfTokenGlobal, olvidaLoDeLaCuenta } from '../composition/http';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 // Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
-import '../composition/limpiezaAlCerrarLaSesion';
 import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 
 // Create the context
