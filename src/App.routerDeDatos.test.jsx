@@ -14,7 +14,7 @@ import { textosDelError } from './components/errors/textosDelError';
  *   ---|---------------------------------------------------|----------------------------------------
  *   R1 | cada ruta de `rutasDeLaAplicacion`                 | la sirve su pantalla, no la comodín
  *   R3 | Sentry                                            | la app registra SU router para el seguimiento
- *      |                                                   | (navegacionesEnSentry; Sentry llega ~2 s después)
+ *      |                                                   | (routerParaSentry; Sentry llega ~2 s después)
  *   R3b| con StrictMode (desarrollo: crea dos routers)       | se registra el que se usa
  *   R4 | ir a otra pantalla, y volver atrás                 | arriba, como hasta ahora
  *   R5 | cambiar solo el query                              | no sube
@@ -97,7 +97,7 @@ vi.mock('@sentry/react', async (original) => ({
   withScope: (enviar) => enviar({ setTag() {}, setExtra: (clave, valor) => { enviado.extras[clave] = valor; } }),
   captureException: () => {},
 }));
-vi.mock('./utils/navegacionesEnSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
+vi.mock('./utils/routerParaSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
 
 const { default: App, rutasDeLaApp } = await import('./App');
 

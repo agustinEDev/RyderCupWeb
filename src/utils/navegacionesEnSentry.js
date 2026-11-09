@@ -1,5 +1,6 @@
 import { getActiveSpan, getClient, getCurrentScope, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
 import { matchRoutes } from 'react-router';
+import { alRegistrarElRouter, routerRegistrado } from './routerParaSentry';
 
 /**
  * El seguimiento de navegaciones de Sentry sobre el router de datos (FE #647).
@@ -71,10 +72,10 @@ const sinRomper = (hacer) => {
   }
 };
 
-let registrado = null;
 let instrumentado = null;
 
 const intentar = () => {
+  const registrado = routerRegistrado();
   if (!registrado || instrumentado === registrado.router) return;
   // Sin su integración, el envoltorio no haría nada: se espera a que llegue
   if (!getClient()?.getIntegrationByName?.('BrowserTracing')) return;
@@ -94,11 +95,11 @@ const intentar = () => {
   });
 };
 
-/** La aplicación, al crear su router. Si Sentry ya está, lo instrumenta ya. */
-export function registrarRouterParaSentry(router, rutas) {
-  registrado = { router, rutas };
-  intentar();
-}
+// El router lo registra la aplicación en `routerParaSentry`, sin cargar esto: este
+// módulo llega con `src/sentry.ts` y desde entonces instrumenta cada uno que se
+// registre (y el que ya estuviera, en `instrumentarRouterEnSentry`)
+alRegistrarElRouter(intentar);
+export { registrarRouterParaSentry } from './routerParaSentry';
 
 /** `src/sentry.ts`, al poner el seguimiento de navegaciones. */
 export function instrumentarRouterEnSentry() {

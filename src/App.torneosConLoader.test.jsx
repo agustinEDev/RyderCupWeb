@@ -41,7 +41,7 @@ vi.mock('./components/ui/AvisoSinConexion', () => ({ default: () => null }));
 vi.mock('./components/ui/FullScreenLoader', () => ({ default: () => <p>pantalla de espera</p> }));
 vi.mock('./components/layout/BottomNav', () => ({ default: () => <nav>barra inferior</nav> }));
 vi.mock('./components/auth/ProtectedRoute', () => ({ default: ({ children }) => children }));
-vi.mock('./utils/navegacionesEnSentry', () => ({ registrarRouterParaSentry: () => {} }));
+vi.mock('./utils/routerParaSentry', () => ({ registrarRouterParaSentry: () => {} }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k, i18n: { language: 'es' } }),
 }));
