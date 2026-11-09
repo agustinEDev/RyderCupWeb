@@ -100,7 +100,7 @@ export function registrarRouterParaSentry(router, rutas) {
   intentar();
 }
 
-/** `infrastructure/sentry`, al poner el seguimiento de navegaciones. */
+/** `src/sentry.ts`, al poner el seguimiento de navegaciones. */
 export function instrumentarRouterEnSentry() {
   intentar();
 }

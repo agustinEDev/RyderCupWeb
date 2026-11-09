@@ -1,7 +1,7 @@
 /**
  * Los ganchos de Sentry que tapan los secretos de las URLs (FE #385), en un
  * solo sitio para las dos inicializaciones: `main.jsx` e
- * `infrastructure/sentry.ts`.
+ * `src/sentry.ts`.
  *
  * En vez de una lista de claves donde mirar, se pasa `scrubUrl` por todo el
  * texto de lo que sale. La lista se quedaba corta cada vez que Sentry cambiaba
@@ -69,7 +69,7 @@ const scrubAll = (item) => scrubDeep(item);
 /**
  * Las migas de consola no salen hacia Sentry, en ningún entorno (25 oct 2026).
  * La app escribe en la consola datos personales y mensajes de la API, y el
- * filtro de `infrastructure/sentry.ts` que las quitaba en producción no se
+ * filtro de `src/sentry.ts` que las quitaba en producción no se
  * registraba nunca: la inicialización que cuenta es la de `main.jsx`, que usa
  * este gancho. Lo que haga falta para depurar se manda a propósito con
  * `captureError`. Las demás migas (navegación, clics, red) salen tapadas.

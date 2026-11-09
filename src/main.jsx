@@ -53,14 +53,14 @@ if (sentryDsn) {
     dsn: sentryDsn,
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
     release: `rydercup-web@${import.meta.env.VITE_APP_VERSION}`,
-    // No integrations yet - will be added by lazy-loaded infrastructure/sentry
+    // No integrations yet - will be added by lazy-loaded src/sentry.ts
     integrations: [],
     // Sample rates: no se pueden cambiar despues de init. Salen de un solo
     // sitio (FE #792): sin grabacion de sesiones al azar, todas las de error
     ...sentrySampleRates(import.meta.env),
     attachStacktrace: true,
 
-    // El saneado de URLs va AQUI y no en infrastructure/sentry.ts (FE #385).
+    // El saneado de URLs va AQUI y no en sentry.ts (FE #385).
     // Aquel fichero carga dos segundos mas tarde y para entonces ya hay
     // cliente, asi que solo ejecuta su rama de `addIntegration`: sus ganchos
     // `beforeSend`/`beforeBreadcrumb` nunca llegan a registrarse. Lo que se
@@ -98,7 +98,7 @@ const loadSentryIntegrations = () => {
   // Replay graba el href de la pagina al empezar, sin pasar por ningun gancho:
   // con un token en la barra se espera a que la pagina lo quite
   whenAddressBarIsClean(() => {
-    import('./infrastructure/sentry').catch((error) => {
+    import('./sentry').catch((error) => {
       console.warn('⚠️ Failed to load Sentry integrations:', error);
     });
   });

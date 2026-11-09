@@ -40,7 +40,7 @@ beforeAll(() => {
   registrarRouterParaSentry(router, RUTAS);
 
   // Como en la aplicación: main.jsx arranca Sentry sin el seguimiento, y
-  // infrastructure/sentry lo añade después al cliente que ya existe
+  // src/sentry.ts lo añade después al cliente que ya existe
   Sentry.init({
     dsn: 'https://public@o0.ingest.sentry.io/0',
     tracesSampleRate: 1,

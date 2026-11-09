@@ -4,6 +4,11 @@
  * Se comprueban en el CI (job "Architecture") y en local con:
  *   npm run lint:architecture
  *
+ * Ese script pasa además los .ts/.tsx de src uno a uno: dependency-cruiser solo
+ * recorre por su cuenta las extensiones que sabe compilar, y para TypeScript pide
+ * el compilador < 7 (el del proyecto es la 7). Sin eso, un .ts que ningún .js
+ * importara se libraba de todas las reglas; pasado a mano, se analiza.
+ *
  * Describen la arquitectura que el código YA sigue (medido el 28 sep 2026: todas
  * se cumplían). Su trabajo es que siga así:
  *

@@ -390,7 +390,7 @@ export default defineConfig(() => ({
       // el porcentaje (revisión del 30 sep 2026)
       include: ['src/**/*.{js,jsx,ts,tsx}'],
       // El arranque y la configuración: no son lógica de tests unitarios
-      exclude: ['src/main.jsx', 'src/infrastructure/sentry.ts', 'src/i18n/**', 'src/vite-env.d.ts'],
+      exclude: ['src/main.jsx', 'src/sentry.ts', 'src/i18n/**', 'src/vite-env.d.ts'],
       // Al empezar a contar todos los ficheros (30 sep 2026) la cifra real era
       // 78,53 / 78,07 / 74,13 / 74,82. El 80% de antes no era real: no contaba
       // las páginas sin tests. Se sube al añadir tests.

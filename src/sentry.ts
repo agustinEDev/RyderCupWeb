@@ -27,12 +27,12 @@
  */
 
 import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
-import { grabaSoloLoQueNoEsNormal } from '../utils/avisoDeCierreForzado';
+import { grabaSoloLoQueNoEsNormal } from './utils/avisoDeCierreForzado';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
-import { sentryScrubbing } from '../utils/sentryScrubbing';
-import { instrumentarRouterEnSentry } from '../utils/navegacionesEnSentry';
-import { sentrySampleRates } from './sentrySampleRates';
+import { sentryScrubbing } from './utils/sentryScrubbing';
+import { instrumentarRouterEnSentry } from './utils/navegacionesEnSentry';
+import { sentrySampleRates } from './infrastructure/sentrySampleRates';
 
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO

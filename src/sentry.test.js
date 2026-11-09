@@ -16,7 +16,7 @@ const sentry = vi.hoisted(() => ({
 }));
 
 const navegaciones = vi.hoisted(() => ({ instrumentar: vi.fn() }));
-vi.mock('../utils/navegacionesEnSentry', () => ({ instrumentarRouterEnSentry: navegaciones.instrumentar }));
+vi.mock('./utils/navegacionesEnSentry', () => ({ instrumentarRouterEnSentry: navegaciones.instrumentar }));
 
 const cliente = vi.hoisted(() => ({ hay: true }));
 vi.mock('@sentry/react', () => ({
@@ -27,7 +27,7 @@ vi.mock('@sentry/react', () => ({
   reactRouterV7BrowserTracingIntegration: sentry.reactRouterV7BrowserTracingIntegration,
 }));
 
-describe('infrastructure/sentry', () => {
+describe('sentry', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -95,7 +95,7 @@ describe('infrastructure/sentry', () => {
   // R2 (auditoría OWASP, 5 nov 2026): cada caducidad normal subía su grabación
   it('R2: la grabación no se sube por un aviso de caducidad normal, sí por los raros', async () => {
     vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'development');
-    const { grabaSoloLoQueNoEsNormal } = await import('../utils/avisoDeCierreForzado');
+    const { grabaSoloLoQueNoEsNormal } = await import('./utils/avisoDeCierreForzado');
 
     await import('./sentry');
 
