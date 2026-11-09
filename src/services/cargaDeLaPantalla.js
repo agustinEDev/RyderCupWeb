@@ -1,7 +1,7 @@
-import { consultaLaSesion, loQueHaySobreLaSesion } from '../services/sesionCompartida';
-import { guardaEnMemoria, loGuardadoEnMemoria } from '../services/memoriaDeLasListas';
+import { consultaLaSesion, loQueHaySobreLaSesion } from './sesionCompartida';
+import { guardaEnMemoria, loGuardadoEnMemoria } from './memoriaDeLasListas';
 import { debeAceptarLosTerminos } from '../domain/services/aceptacionDeTerminos';
-import { esFalloDeRed } from './sinCobertura';
+import { esFalloDeRed } from '../utils/sinCobertura';
 
 /**
  * Lo común de los `loader` de las pantallas (FE #647, fase 3; diseño aprobado

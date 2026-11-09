@@ -391,15 +391,18 @@ export default defineConfig(() => ({
       include: ['src/**/*.{js,jsx,ts,tsx}'],
       // El arranque y la configuración: no son lógica de tests unitarios
       exclude: ['src/main.jsx', 'src/infrastructure/sentry.ts', 'src/i18n/**', 'src/vite-env.d.ts'],
-      // La cifra real al empezar a contar todos los ficheros (30 sep 2026:
-      // 78,53 / 78,07 / 74,13 / 74,82), con medio punto de margen como mucho:
-      // el v8 del CI puede medir unas décimas distinto. El 80% de antes no era
-      // real: no contaba las páginas sin tests. Se sube al añadir tests
+      // Al empezar a contar todos los ficheros (30 sep 2026) la cifra real era
+      // 78,53 / 78,07 / 74,13 / 74,82. El 80% de antes no era real: no contaba
+      // las páginas sin tests. Se sube al añadir tests.
+      // 9 nov 2026: medido 90,84 / 90,42 / 87,19 / 87,53 (lines / statements /
+      // functions / branches). Cada umbral queda entre medio punto y un punto
+      // por debajo, redondeado al medio punto: el v8 del CI puede medir unas
+      // décimas distinto que en local
       thresholds: {
-        lines: 78,
-        statements: 77.5,
-        functions: 73.5,
-        branches: 74,
+        lines: 90,
+        statements: 89.5,
+        functions: 86.5,
+        branches: 86.5,
       },
     },
     css: {

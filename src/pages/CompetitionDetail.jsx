@@ -17,7 +17,7 @@ import { etiquetaDeInscripcion } from '../utils/etiquetaDeInscripcion';
 import { useAuth } from '../hooks/useAuth';
 import { useUserRoles } from '../hooks/useUserRoles';
 import { useLaMasNueva } from '../hooks/useLaMasNueva';
-import { CountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../components/ui/CountryFlag';
 import CompetitionGolfCoursesSection from '../components/competition/CompetitionGolfCoursesSection';
 import AgendaDeLaCompeticion from '../components/competition/AgendaDeLaCompeticion';
 import FranjasDeLaCompeticion from '../components/competition/FranjasDeLaCompeticion';

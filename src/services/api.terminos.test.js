@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   rutas con Términos pendientes o públicas              | no redirige
  *   otro 403                                              | el error de siempre
  */
-vi.mock('../contexts/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: vi.fn(() => 'csrf') }));
+vi.mock('../utils/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: vi.fn(() => 'csrf') }));
 vi.mock('../utils/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 

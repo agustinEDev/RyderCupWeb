@@ -1,7 +1,7 @@
 import { Eye, Edit, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import TeeColorBadge from './TeeColorBadge';
-import { CountryFlag } from '../../utils/countryUtils';
+import { CountryFlag } from '../ui/CountryFlag';
 
 /**
  * GolfCourseTable Component

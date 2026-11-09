@@ -1,4 +1,4 @@
-import { formatCountryName } from '../services/countries';
+import { formatCountryName } from './countries';
 
 /**
  * Los países de una competición, en el idioma de la aplicación.

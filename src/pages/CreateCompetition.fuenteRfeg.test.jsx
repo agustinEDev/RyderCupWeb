@@ -64,7 +64,7 @@ vi.mock('../components/ui/CountryAutocomplete', () => ({
 }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 // El listado tal como lo devuelve la API, con la procedencia en cada campo
 const resumen = (id, name, provenance) => ({

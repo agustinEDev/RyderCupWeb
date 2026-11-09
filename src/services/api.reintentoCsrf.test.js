@@ -54,7 +54,7 @@ vi.mock('../utils/tokenRefreshInterceptor', async (original) => ({
   refrescoCompartido: (...args) => refrescoCompartido(...args),
   trataElFalloDelRefresco: (...args) => trataElFalloDelRefresco(...args),
 }));
-vi.mock('../contexts/csrfTokenSync', () => ({
+vi.mock('../utils/csrfTokenSync', () => ({
   getCsrfToken: () => getCsrfToken(),
   getCsrfCookie: () => getCsrfCookie(),
   setCsrfTokenGlobal: () => {},

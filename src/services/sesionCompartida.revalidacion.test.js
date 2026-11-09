@@ -20,6 +20,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   7   la pestaña se oculta                              | no pregunta
  *   8   vuelve la red                                     | pregunta
  *   9   se cierra la sesión a media pregunta              | la respuesta no manda
+ *   9b  un cierre forzado (CSRF) a media pregunta         | la respuesta no reescribe la copia
+ *   9c  y una revalidación que empieza después            | tampoco la reescribe
+ *   9d  y una consulta forzada después (el reintento)     | tampoco la reescribe
+ *   9e  sin cierre forzado (clearAuth y volver a entrar)  | la copia se vuelve a guardar
  *   10  la copia vieja del dispositivo, sin el campo      | al volver la red se confirma con lo del servidor
  *   11  ya hay una consulta en vuelo o un reintento       | no abre otra
  *   12  mientras pregunta                                 | ni `cargando` ni `refrescando`: sin pantalla de espera
@@ -52,12 +56,14 @@ const {
   loQueHaySobreLaSesion,
   suscribeALaSesion,
   olvidaLaSesion,
+  olvidaLaCopiaParaArrancarSinCobertura,
   laPaginaSeVa,
   anotaLaSesion,
   reiniciaLaSesionCompartida,
   vigilaLaVueltaALaAplicacion,
   MINIMO_ENTRE_REVALIDACIONES_MS,
 } = await import('./sesionCompartida');
+const { empiezaElCierreDeEstaCarga, olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
 
 const ok = (cuerpo) => ({ ok: true, status: 200, json: async () => cuerpo });
 const ACEPTADOS = { id: 'u-1', terms_accepted: true };
@@ -81,6 +87,7 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
   beforeEach(async () => {
     vi.spyOn(Date, 'now').mockImplementation(() => ahora);
     reiniciaLaSesionCompartida();
+    olvidaElCierreDeEstaCarga();
     peticiones.length = 0;
     respuestas.length = 0;
     try { localStorage.removeItem(RECUERDO); } catch { /* sin almacenamiento */ }
@@ -268,6 +275,59 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
 
     expect(loQueHaySobreLaSesion().user).toBeNull();
     expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  // El caso del campo: vuelve la red, la cola falla por CSRF y la limpieza borra
+  // la copia; con las cookies aún válidas, cualquier /current-user que conteste
+  // antes de la recarga (en vuelo, una revalidación nueva o el reintento) no
+  // puede volver a escribirla (revisión y /code-review de fix/forget-known-session)
+  const cierreForzado = () => {
+    empiezaElCierreDeEstaCarga();
+    olvidaLaCopiaParaArrancarSinCobertura();
+  };
+
+  it('9b: un cierre forzado a media pregunta: la respuesta tardía no reescribe la copia', async () => {
+    await conSesion();
+    let entrega;
+    respuestas.push(() => new Promise((r) => { entrega = r; }));
+
+    vuelveAlFrente();
+    cierreForzado();
+    entrega(ok(PENDIENTES));
+    await asienta();
+
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  it('9c: tras un cierre forzado, una revalidación que empieza después no reescribe la copia', async () => {
+    await conSesion();
+    cierreForzado();
+    respuestas.push(ok(PENDIENTES));
+
+    vuelveLaRed();
+    await asienta();
+
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  it('9d: tras un cierre forzado, una consulta forzada (el reintento) no reescribe la copia', async () => {
+    await conSesion();
+    cierreForzado();
+    respuestas.push(ok(PENDIENTES));
+
+    await consultaLaSesion({ forzar: true });
+
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  it('9e: sin cierre forzado, volver a entrar guarda la copia como siempre', async () => {
+    await conSesion();
+    olvidaLaCopiaParaArrancarSinCobertura();
+    respuestas.push(ok(PENDIENTES));
+
+    await consultaLaSesion({ forzar: true });
+
+    expect(JSON.parse(localStorage.getItem(RECUERDO))).toEqual(PENDIENTES);
   });
 
   it('10: la copia vieja del dispositivo (sin el campo) se confirma al volver la red', async () => {

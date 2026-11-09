@@ -31,6 +31,8 @@ const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), info: vi.fn(
 vi.mock('./toast', () => ({ default: toast }));
 
 const { handleCsrfLogout } = await import('./csrfLogout');
+// Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
+await import('../composition/limpiezaAlCerrarLaSesion');
 const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('./vueltaTrasEntrar');
 const {
   handleDeviceRevocationLogout,

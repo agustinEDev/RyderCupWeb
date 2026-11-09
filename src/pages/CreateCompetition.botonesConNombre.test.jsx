@@ -51,7 +51,7 @@ vi.mock('../components/golf_course/GolfCourseSearchBox', () => ({
 }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 import competicionesEs from '../i18n/locales/es/competitions.json';
 import competicionesEn from '../i18n/locales/en/competitions.json';

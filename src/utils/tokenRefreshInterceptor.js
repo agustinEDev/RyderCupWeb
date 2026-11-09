@@ -17,7 +17,7 @@
 import { sinSesionEnRutaPublica } from './rutasPublicas';
 
 
-import { setCsrfTokenGlobal, getCsrfToken } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { setCsrfTokenGlobal, getCsrfToken } from './csrfTokenSync'; // v1.13.0: CSRF Protection
 
 import {
   isDeviceRevoked,

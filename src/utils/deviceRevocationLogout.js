@@ -20,9 +20,6 @@
  * @see src/config/dependencies.py:576-583 (backend)
  */
 
-import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
-import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
-import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import i18next from 'i18next';
 import customToast from './toast';
 import { clearUserContext } from './sentryHelpers';
@@ -167,6 +164,57 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
   });
 };
 
+// Lo que otros guardan de la cuenta y hay que borrar al cerrar (9 nov 2026).
+// Antes este módulo importaba los servicios que lo guardan; utils no importa
+// services, así que los registra la composition root
+// (`composition/limpiezaAlCerrarLaSesion`, que cargan main.jsx el primero y
+// AuthContext). Lo usan los cierres forzados (`limpiaLaCuenta`) y el normal
+// (`clearAuth`, por `olvidaLoDeLaCuenta`):
+// - las partidas guardadas para anotar sin cobertura (FE #524). Los cierres
+//   forzados NO pasan por `clearAuth` —salen con una redirección dura—, y una
+//   redirección no vacía el almacenamiento: sin esto, quien entrara después en
+//   ese móvil podría ver sin cobertura las partidas de la cuenta revocada
+// - lo pendiente del hándicap (FE #677): el modal de la siguiente persona
+//   saldría con el hándicap de esta cuenta
+// - el número de Actividad y el del icono de la aplicación (FE-1), en todos los
+//   cierres (decidido el 9 nov 2026)
+const limpiezasAlCerrar = [];
+
+const SIN_LIMPIEZAS =
+  'No hay limpiezas registradas: falta importar composition/limpiezaAlCerrarLaSesion';
+
+/**
+ * Apunta algo que hay que borrar de la cuenta al cerrar la sesión. Se ejecutan
+ * en el orden en que se apuntaron; apuntar dos veces la misma no la repite.
+ *
+ * @param {() => void} limpieza
+ */
+export const alCerrarLaSesion = (limpieza) => {
+  if (limpiezasAlCerrar.includes(limpieza)) return;
+  limpiezasAlCerrar.push(limpieza);
+};
+
+/**
+ * Ejecuta las limpiezas registradas. Sin ninguna registrada falla en voz alta:
+ * borrar «nada» sin avisar dejaría los datos de esta cuenta a la siguiente
+ * persona del dispositivo. Si una falla, las demás se hacen igual y el primer
+ * fallo sale al final: en los cierres forzados, quien llama sale por su `finally`.
+ */
+export const olvidaLoDeLaCuenta = () => {
+  if (limpiezasAlCerrar.length === 0) throw new Error(SIN_LIMPIEZAS);
+  // Una que falle no puede dejar sin hacer las demás: cada una borra datos de la
+  // cuenta. El primer fallo sale al final, cuando ya se intentaron todas
+  let primerFallo = null;
+  for (const limpieza of limpiezasAlCerrar) {
+    try {
+      limpieza();
+    } catch (error) {
+      primerFallo ??= error;
+    }
+  }
+  if (primerFallo) throw primerFallo;
+};
+
 /**
  * Lo de la cuenta que sale, también al revocar el propio dispositivo (C3) y en el cierre
  * por CSRF (S3): una sola limpieza para los cierres duros.
@@ -174,16 +222,7 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
 export const limpiaLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
-  // Y las partidas guardadas para anotar sin cobertura (FE #524). Este camino
-  // NO pasa por `clearAuth` —sale con una redirección dura—, y una redirección
-  // no vacía el almacenamiento: sin esto, quien entrara después en ese móvil
-  // podría ver sin cobertura las partidas de la cuenta que acaba de revocarse
-  olvidaLoDeEstaCuenta();
-  // Y lo pendiente del hándicap (FE #677): el modal de la siguiente persona
-  // saldría con el hándicap de esta cuenta
-  olvidaElRefrescoDeHandicap();
-  // Y el número de Actividad y el del icono de la aplicación (FE-1)
-  olvidaLasNovedades();
+  olvidaLoDeLaCuenta();
   // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
   // nadie y esta línea no hacía nada (25 oct 2026)
   clearUserContext();

@@ -11,7 +11,7 @@ import {
   browseExploreCompetitionsUseCase,
   requestEnrollmentUseCase,
 } from '../composition';
-import { CountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../components/ui/CountryFlag';
 import { useAuth } from '../hooks/useAuth';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
 import { mensajeDeError } from '../utils/sinCobertura';

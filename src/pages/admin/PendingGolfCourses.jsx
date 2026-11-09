@@ -8,7 +8,7 @@ import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
 import GolfCourseTable from '../../components/golf_course/GolfCourseTable';
 import TeeColorBadge from '../../components/golf_course/TeeColorBadge';
-import { CountryFlag } from '../../utils/countryUtils';
+import { CountryFlag } from '../../components/ui/CountryFlag';
 import { formatCountryName } from '../../services/countries';
 import {
   listPendingGolfCoursesUseCase,

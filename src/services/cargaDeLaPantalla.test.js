@@ -55,7 +55,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *       | le faltan los Términos                        |
  */
 const sesion = vi.hoisted(() => ({ user: { id: 'u-1' }, consulta: null, ahora: undefined }));
-vi.mock('../services/sesionCompartida', () => ({
+vi.mock('./sesionCompartida', () => ({
   consultaLaSesion: () => sesion.consulta ?? Promise.resolve(sesion.user),
   loQueHaySobreLaSesion: () => ({ user: sesion.ahora === undefined ? sesion.user : sesion.ahora }),
 }));
@@ -69,8 +69,8 @@ const {
   soloSiSePideOtraVez,
   TOPE_DE_LA_CARGA_MS,
 } = await import('./cargaDeLaPantalla');
-const { loGuardadoEnMemoria } = await import('../services/memoriaDeLasListas');
-const { olvidaTodo } = await import('../services/loUltimoConocido');
+const { loGuardadoEnMemoria } = await import('./memoriaDeLasListas');
+const { olvidaTodo } = await import('./loUltimoConocido');
 
 const sinRed = () => new TypeError('Failed to fetch');
 const delServidor = (status) => Object.assign(new Error('Rate limit exceeded'), { status });

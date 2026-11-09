@@ -11,7 +11,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../../utils/countryUtils', () => ({
+vi.mock('../ui/CountryFlag', () => ({
   CountryFlag: ({ countryCode }) => <span data-testid="bandera">{countryCode}</span>,
 }));
 

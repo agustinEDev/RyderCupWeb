@@ -31,6 +31,9 @@ vi.mock('./sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((k) => k) } }));
 vi.mock('./toast', () => ({ default: { error: vi.fn() } }));
 
+// Lo que se borra de la cuenta lo registra la composition root, como en la app
+await import('../composition/limpiezaAlCerrarLaSesion');
+const { olvidaLasNovedades } = await import('../services/novedadesDeActividad');
 const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
 const { handleDeviceRevocationLogout, handleSessionExpiredLogout } = await import(
   './deviceRevocationLogout'
@@ -73,6 +76,8 @@ describe('quién avisa de un cierre de sesión forzado', () => {
       endpoint: '/api/v1/x',
       estado: 401,
     });
+    // Y limpia lo de la cuenta (registro de la composition root)
+    expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
   });
 
   it('C1b: un revocado es siempre device_revoked, aunque el contexto traiga otro motivo', () => {
@@ -143,6 +148,7 @@ describe('quién avisa de un cierre de sesión forzado', () => {
       endpoint: '/api/v1/quick-matches/start',
       estado: 403,
     });
+    expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
   });
 
   it('C6: el refresco que dice «revocado» avisa con la ruta y el estado del refresco', () => {
