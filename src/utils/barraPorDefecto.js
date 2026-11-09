@@ -1,4 +1,4 @@
-import { NO_TEE_KEY, teeKey } from '../components/quick_match/createQuickMatchModalConstants';
+import { NO_TEE_KEY, teeKey } from './asistenteDePartidaRapida';
 import TeeColor from '../domain/value_objects/TeeColor';
 
 /**

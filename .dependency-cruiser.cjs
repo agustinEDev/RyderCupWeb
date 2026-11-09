@@ -8,7 +8,12 @@
  * se cumplían). Su trabajo es que siga así:
  *
  *   domain           ← no depende de nada del resto de src, ni de React
- *   application      ← solo domain (y utils)
+ *   application      ← solo domain (y utils); ni directa ni indirectamente
+ *                      llega a React ni a un .jsx (9 nov 2026)
+ *   utils            ← ayudas: no conocen la interfaz, ni services, ni las
+ *                      capas de arriba (9 nov 2026)
+ *   services         ← api.js, la sesión, la cola…: no conocen la interfaz;
+ *                      los casos de uso, solo por composition (9 nov 2026)
  *   infrastructure   ← implementa los repositorios de domain; habla con la API
  *   composition      ← la composition root: el único sitio que junta
  *                      casos de uso e implementaciones
@@ -65,6 +70,79 @@ module.exports = {
       severity: 'error',
       from: { path: UI, pathNot: TEST },
       to: { path: '^src/(application|infrastructure)/' },
+    },
+    // ── Reglas añadidas el 9 nov 2026 (auditoría de arquitectura) ──────────
+    // Las de arriba miran solo el import directo. Estas cierran los huecos por
+    // los que React se colaba en el núcleo a través de utils, y las carpetas
+    // (utils, services) que no tenían ninguna regla.
+    {
+      name: 'core-does-not-reach-react',
+      comment:
+        'Ni el dominio ni los casos de uso llegan a React, al router, a i18n ni a un .jsx, tampoco a través de otro módulo (utils, services…). Un import directo no basta: CompetitionAssembler llegaba a React por utils/countryUtils.',
+      severity: 'error',
+      from: { path: '^src/(domain|application)/', pathNot: TEST },
+      to: {
+        path: [
+          'node_modules/(react|react-dom|react-router|react-router-dom|react-i18next|react-hot-toast|@sentry/react)/',
+          '\\.jsx$',
+        ],
+        reachable: true,
+      },
+    },
+    {
+      name: 'utils-does-not-import-ui',
+      comment:
+        'utils son ayudas sin interfaz: no importan componentes, páginas, contextos ni hooks. Si una ayuda necesita algo de ahí, ese algo no es de la interfaz y tiene que salir de esa carpeta.',
+      severity: 'error',
+      from: { path: '^src/utils/', pathNot: TEST },
+      to: { path: `${UI}|\\.jsx$` },
+    },
+    {
+      name: 'utils-does-not-import-services',
+      comment:
+        'utils está por debajo de services (services usa utils, nunca al revés): una ayuda que necesita la sesión, la memoria o la API es un servicio y vive en src/services.',
+      severity: 'error',
+      // EXCEPCIÓN PENDIENTE DE DECIDIR (9 nov 2026): deviceRevocationLogout
+      // borra los apuntes de la cuenta (loUltimoConocido, refrescoDeHandicapApuntes,
+      // novedadesDeActividad) y lo usan csrfLogout y tokenRefreshInterceptor,
+      // también en utils. Sacarlo de aquí arrastra unos 35 ficheros: se deja
+      // fuera de la regla hasta que se decida cómo, y solo él
+      from: { path: '^src/utils/', pathNot: [TEST, '^src/utils/deviceRevocationLogout\\.js$'] },
+      to: { path: '^src/services/' },
+    },
+    {
+      name: 'utils-does-not-reach-up',
+      comment:
+        'utils no conoce los casos de uso, la infraestructura ni la composition root.',
+      severity: 'error',
+      from: { path: '^src/utils/', pathNot: TEST },
+      to: { path: '^src/(application|infrastructure|composition)/' },
+    },
+    {
+      name: 'infrastructure-does-not-import-ui',
+      comment:
+        'La infraestructura no importa nada de la interfaz, ni siquiera un .jsx suelto (infrastructure-does-not-reach-up ya cubre las carpetas; esta cubre los .jsx de cualquier sitio).',
+      severity: 'error',
+      from: { path: '^src/infrastructure/', pathNot: TEST },
+      to: { path: '\\.jsx$' },
+    },
+    {
+      name: 'services-does-not-reach-up',
+      comment:
+        'src/services (api.js, la sesión compartida, la cola sin conexión…) lo usan los repositorios y la interfaz: no conoce la interfaz, y a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí).',
+      severity: 'error',
+      from: { path: '^src/services/', pathNot: TEST },
+      to: {
+        path: [`${UI}|\\.jsx$`, '^src/(application|infrastructure)/'],
+      },
+    },
+    {
+      name: 'infrastructure-and-services-do-not-reach-ui',
+      comment:
+        'La infraestructura y los servicios no llegan a la interfaz ni por un camino indirecto (p. ej. services/api → utils → contexts).',
+      severity: 'error',
+      from: { path: '^src/(infrastructure|services)/', pathNot: TEST },
+      to: { path: [UI, '\\.jsx$'], reachable: true },
     },
     {
       name: 'no-circular',

@@ -21,7 +21,7 @@ import {
   getAdjacentCountriesUseCase,
   createGolfCourseRequestUseCase
 } from '../composition';
-import { CountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../components/ui/CountryFlag';
 import { formatCountryName, sortCountriesByName } from '../services/countries';
 import { validateCompetitionForm } from '../utils/competitionFormValidation';
 import CountryAutocomplete from '../components/ui/CountryAutocomplete';

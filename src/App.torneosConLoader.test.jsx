@@ -70,7 +70,7 @@ vi.mock('./pages/Dashboard', async () => {
 });
 // El `loader` de verdad, con lo que pide simulado
 vi.mock('./pages/Competitions.datos', async () => {
-  const { cargaDeLaPantalla } = await import('./utils/cargaDeLaPantalla');
+  const { cargaDeLaPantalla } = await import('./services/cargaDeLaPantalla');
   return {
     shouldRevalidate: () => false,
     loader: () =>
@@ -101,7 +101,7 @@ vi.mock('./pages/Competitions', async () => {
 });
 
 const { default: App, rutasDeLaApp } = await import('./App');
-const { marcaElArranque, olvidaLoQueEstaEnCamino } = await import('./utils/cargaDeLaPantalla');
+const { marcaElArranque, olvidaLoQueEstaEnCamino } = await import('./services/cargaDeLaPantalla');
 const datosDeTorneos = await import('./pages/Competitions.datos');
 
 const abrir = (ruta) => {

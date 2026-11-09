@@ -56,7 +56,7 @@ const Competitions = (await import('./Competitions')).default;
 // Con su `loader`, como en la aplicación (FE #647, fase 3: T17)
 const { loader } = await import('./Competitions.datos');
 // La carcasa ya montada, como en la aplicación tras arrancar
-(await import('../utils/cargaDeLaPantalla')).marcaElArranque(true);
+(await import('../services/cargaDeLaPantalla')).marcaElArranque(true);
 // Lo de cada prueba (la lista y sus filtros) no pasa a la siguiente
 const { olvidaTodo } = await import('../services/loUltimoConocido');
 

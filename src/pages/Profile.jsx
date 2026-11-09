@@ -15,7 +15,7 @@ import ActivitySharingToggle from '../components/profile/ActivitySharingToggle';
 import { useAuth } from '../hooks/useAuth';
 import { useStandalone } from '../hooks/useStandalone';
 import { useLogout } from '../hooks/useLogout';
-import { CountryFlag } from '../utils/countryUtils';
+import { CountryFlag } from '../components/ui/CountryFlag';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
 import { fetchCountriesUseCase, listUserCompetitionsUseCase } from '../composition';
 import FullScreenLoader from '../components/ui/FullScreenLoader';

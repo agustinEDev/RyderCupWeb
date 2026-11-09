@@ -1,4 +1,4 @@
-import { idAleatorio } from '../../utils/idAleatorio';
+import { idAleatorio } from './idAleatorio';
 
 /**
  * Los jugadores del borrador del asistente de partida rápida, con una sola

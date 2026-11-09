@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ubicacionDe } from '../utils/ubicacionDeCompeticion';
+import { ubicacionDe } from './ubicacionDeCompeticion';
 
 /**
  * La ubicación que se ve en la tarjeta de cada competición.

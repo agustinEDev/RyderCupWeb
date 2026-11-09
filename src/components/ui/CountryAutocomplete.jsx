@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useId } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { CountryFlag } from '../../utils/countryUtils';
+import { CountryFlag } from './CountryFlag';
 import { formatCountryName, sortCountriesByName } from '../../services/countries';
 
 /**

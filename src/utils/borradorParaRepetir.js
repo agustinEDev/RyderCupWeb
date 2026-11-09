@@ -7,8 +7,8 @@ import {
   oppositeTeam,
   TEAM_FORMATS,
   teeKey,
-} from '../components/quick_match/createQuickMatchModalConstants';
-import { jugadorInvitado, jugadorRegistrado } from '../components/quick_match/jugadoresDelAsistente';
+} from './asistenteDePartidaRapida';
+import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
 
 // Dónde se arregla cada cosa: el campo y tu barra, en el paso 1; los
 // jugadores, en el 2. El asistente enseña cada aviso solo en su paso

@@ -25,7 +25,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../golf_course/GolfCourseSearchBox', () => ({ default: () => null }));
 vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' }));
-vi.mock('../../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../ui/CountryFlag', () => ({ CountryFlag: () => null }));
 vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn() } }));
 
 const CompetitionGolfCoursesSection = (await import('./CompetitionGolfCoursesSection')).default;

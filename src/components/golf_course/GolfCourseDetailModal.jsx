@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MapPin, X } from 'lucide-react';
 
 import ModalShell from '../ui/ModalShell';
-import { CountryFlag } from '../../utils/countryUtils';
+import { CountryFlag } from '../ui/CountryFlag';
 import TeeColorBadge from './TeeColorBadge';
 import FuenteRfeg from './FuenteRfeg';
 import { nombreDeLaBarra } from '../../utils/nombreDeLaBarra';

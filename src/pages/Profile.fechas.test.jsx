@@ -28,7 +28,7 @@ vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../components/profile/ActivitySharingToggle', () => ({ default: () => null }));
 vi.mock('../hooks/useStandalone', () => ({ useStandalone: () => false }));
 vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 vi.mock('../composition', () => ({
   fetchCountriesUseCase: { execute: vi.fn().mockResolvedValue([]) },
   listUserCompetitionsUseCase: { execute: vi.fn().mockResolvedValue([]) },

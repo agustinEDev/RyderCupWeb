@@ -57,7 +57,7 @@ vi.mock('../composition', () => ({
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 // Lo que valida el formulario lo prueban sus tests: aquí, qué se envía
 const mockValidar = vi.fn(() => null);

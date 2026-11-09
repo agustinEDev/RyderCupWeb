@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   RC4  uno detrás de otro (no a la vez)           | dos: no se queda pegado
  */
 
-vi.mock('../contexts/csrfTokenSync', () => ({ setCsrfTokenGlobal: vi.fn() }));
+vi.mock('../utils/csrfTokenSync', () => ({ setCsrfTokenGlobal: vi.fn() }));
 vi.mock('../utils/deviceRevocationLogout', async (original) => ({
   ...(await original()),
   handleDeviceRevocationLogout: vi.fn(),

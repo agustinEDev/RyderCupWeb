@@ -181,7 +181,7 @@ vi.mock('../utils/toast', () => ({
 const Competitions = (await import('./Competitions')).default;
 const { loader, shouldRevalidate } = await import('./Competitions.datos');
 const { olvidaTodo, olvidaLoDeEstaCuenta } = await import('../services/loUltimoConocido');
-const { marcaElArranque, olvidaLoQueEstaEnCamino, pideOtraVez } = await import('../utils/cargaDeLaPantalla');
+const { marcaElArranque, olvidaLoQueEstaEnCamino, pideOtraVez } = await import('../services/cargaDeLaPantalla');
 
 // Lo que hace la carcasa de la aplicación al montarse
 const Carcasa = () => {

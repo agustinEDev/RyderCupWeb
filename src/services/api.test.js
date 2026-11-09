@@ -5,11 +5,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { apiRequest } from './api';
-import * as CsrfTokenSync from '../contexts/csrfTokenSync';
+import * as CsrfTokenSync from '../utils/csrfTokenSync';
 import * as TokenRefreshInterceptor from '../utils/tokenRefreshInterceptor';
 
 // Mock modules
-vi.mock('../contexts/csrfTokenSync', () => ({
+vi.mock('../utils/csrfTokenSync', () => ({
   getCsrfCookie: () => null,
   getCsrfToken: vi.fn(),
 }));

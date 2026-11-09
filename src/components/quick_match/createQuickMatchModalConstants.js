@@ -1,21 +1,25 @@
 // Shared constants and pure helpers for CreateQuickMatchModal and its wizard steps
 // (CourseStep, ParticipantsStep, ScorersStep, SummaryStep).
 
-// Mirrors backend MatchFormat.players_per_team() * 2 (SINGLES 1v1, FOURBALL/FOURSOMES 2v2)
-export const FORMAT_CAPACITY = { SINGLES: 2, FOURBALL: 4, FOURSOMES: 4 };
-export const TEAM_FORMATS = ['FOURBALL', 'FOURSOMES'];
+// Las reglas sin interfaz (cupos, equipos, claves de barra) viven en
+// `utils/asistenteDePartidaRapida` desde el 9 nov 2026: también las usan
+// utils/borradorParaRepetir y utils/barraPorDefecto, y utils no importa de
+// components. Se reexportan aquí para que los pasos sigan importando de un sitio
+export {
+  FORMAT_CAPACITY,
+  TEAM_FORMATS,
+  oppositeTeam,
+  MAX_SCORERS,
+  NO_TEE_KEY,
+  teeKey,
+  parseTeeKey,
+} from '../../utils/asistenteDePartidaRapida';
+
 export const FORMAT_LABEL_KEY = {
   SINGLES: 'formatSingles',
   FOURBALL: 'formatFourball',
   FOURSOMES: 'formatFoursomes',
 };
-// En un formato por equipos solo hay dos bandos, A y B, y el contrario es
-// SIEMPRE la otra letra. Preguntar por "el que no es el mío" contaba como rival
-// a un registrado sin equipo, que no está en ninguno de los dos.
-export const oppositeTeam = (team) => (team === 'A' ? 'B' : 'A');
-
-// Mirrors backend MAX_SCORERS (quick_match domain entity)
-export const MAX_SCORERS = 4;
 // Mirrors backend MAX_FREE_PLAY_PLAYERS (quick_match domain entity)
 export const FREE_PLAY_CAPACITY = 4;
 export const SCORING_FORMAT_LABEL_KEY = {
@@ -34,14 +38,6 @@ export {
 // (stroke play) conventionally sits at 90/95/100.
 export const MATCH_PLAY_ALLOWANCE_OPTIONS = [50, 90, 100];
 export const FREE_PLAY_ALLOWANCE_OPTIONS = [90, 95, 100];
-
-export const NO_TEE_KEY = '';
-export const teeKey = (category, gender) => (category ? `${category}|${gender ?? ''}` : NO_TEE_KEY);
-export const parseTeeKey = (key) => {
-  if (!key) return { color: null, teeGender: null };
-  const [category, gender] = key.split('|');
-  return { color: category, teeGender: gender || null };
-};
 
 // Estilos por color real de las barras. Antes se adivinaba el color leyendo la
 // primera palabra del identificador libre; ahora la salida trae su color, así

@@ -6,7 +6,7 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setCsrfTokenGlobal } from './csrfTokenSync';
+import { setCsrfTokenGlobal } from '../utils/csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';

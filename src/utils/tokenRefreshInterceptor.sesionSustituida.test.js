@@ -109,7 +109,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
     interceptor = await import('./tokenRefreshInterceptor');
-    ({ setCsrfTokenGlobal } = await import('../contexts/csrfTokenSync'));
+    ({ setCsrfTokenGlobal } = await import('./csrfTokenSync'));
     vi.spyOn(document, 'cookie', 'get').mockReturnValue('');
     setCsrfTokenGlobal('VIEJO');
   });
@@ -180,7 +180,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
       expect(posts()).toBe(2);
       expect(peticiones()).toBe(2);
       expect(interceptor.getLastRefreshAt()).not.toBeNull();
-      const { getCsrfToken } = await import('../contexts/csrfTokenSync');
+      const { getCsrfToken } = await import('./csrfTokenSync');
       expect(getCsrfToken()).toBe('NUEVO');
       expect(cierre.handleSessionExpiredLogout).not.toHaveBeenCalled();
     });
