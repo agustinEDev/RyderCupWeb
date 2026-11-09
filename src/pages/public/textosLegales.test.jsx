@@ -554,9 +554,9 @@ describe('revisión de la release', () => {
         /hasta que entras o cierras la pestaña/,
         // El aviso de un cierre forzado (avisoTrasElCierre), hasta enseñarlo en /login
         /el motivo de un cierre de sesión forzado/,
-        /solo hasta que se muestra en la pantalla de entrar/,
+        /hasta que se muestra en la pantalla de entrar, entras o cierras sesión \(pasados 30 segundos ya no se muestra\)/,
         // 10 nov 2026: las que faltaban (avisoDeCierreForzado, googleOAuth, el scroll)
-        /silencia los avisos de cierre de sesión durante 30 segundos/,
+        /silencia los avisos de cierre de sesión durante 30 segundos después de cerrarla con el botón, que se borra al volver a entrar/,
         /la página a la que volver tras entrar con Google/,
         /hasta que vuelves de Google/,
         /las posiciones del scroll/,
@@ -575,8 +575,8 @@ describe('revisión de la release', () => {
         /internal identifier of the account/,
         /until you sign in or close the tab/,
         /the reason for a forced sign-out/,
-        /only until it is shown on the sign-in screen/,
-        /silences sign-out notices for 30 seconds/,
+        /until it is shown on the sign-in screen, you sign in or you sign out \(after 30 seconds it is no longer shown\)/,
+        /silences sign-out notices for 30 seconds after you sign out with the button, which is cleared when you sign in again/,
         /the page to return to after signing in with Google/,
         /until you come back from Google/,
         /the scroll positions/,
