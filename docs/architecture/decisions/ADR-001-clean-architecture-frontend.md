@@ -95,7 +95,7 @@ src/
 - ❌ May seem like over-engineering for small projects
 
 ### Mitigated Risks:
-- **Complexity**: Comprehensive documentation in CLAUDE.md
+- **Complexity**: Comprehensive documentation in README.md
 - **Boilerplate**: Reusable patterns and templates
 - **Learning curve**: Clear examples and well-documented tests
 

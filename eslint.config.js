@@ -94,7 +94,7 @@ export default [
 
   // Toda llamada a la API pasa por apiRequest() (src/infrastructure/http/api.js): lleva el
   // interceptor que refresca el token ante un 401 y reintenta. Un fetch directo
-  // se lo salta y provoca deslogueos aparentes (CLAUDE.md). Excepciones, cada una
+  // se lo salta y provoca deslogueos aparentes. Excepciones, cada una
   // con su motivo en el propio fichero:
   // - tokenRefreshInterceptor.js: ES el interceptor
   // - sondaDeSesion.js: sondea la sesión SIN interceptor, para la pantalla de

@@ -7,13 +7,6 @@ import { join, resolve, relative } from 'node:path'
 import { execSync } from 'node:child_process'
 
 /**
- * Los ficheros CLAUDE.md son contexto para el asistente, no assets. Las
- * herramientas que los generan los dejan junto al código que documentan, y
- * cualquiera que caiga bajo `public/` lo copia Vite tal cual a `dist/`, con lo
- * que acabaría servido en producción. Este plugin los retira del directorio de
- * salida después del build; los del árbol de fuentes no se tocan.
- */
-/**
  * Sella cada build con lo que se está publicando de verdad: una marca `app-build`
  * en el HTML y un `version.json` junto a él.
  *
@@ -107,11 +100,19 @@ function emitVersionFile() {
   }
 }
 
-function stripAssistantDocs() {
+/**
+ * Ningún fichero Markdown es un asset: son notas y documentación que viven junto
+ * al código que describen, y cualquiera que caiga bajo `public/` lo copia Vite tal
+ * cual a `dist/`, con lo que acabaría servido en producción. Este plugin retira
+ * TODOS los `.md` del directorio de salida después del build, y es intencionado:
+ * la app no sirve ningún Markdown, así que no hay excepción que mantener. Los del
+ * árbol de fuentes no se tocan.
+ */
+function stripMarkdownDocs() {
   let outDir
 
   return {
-    name: 'strip-assistant-docs',
+    name: 'strip-markdown-docs',
     apply: 'build',
     configResolved(config) {
       outDir = resolve(config.root, config.build.outDir)
@@ -124,7 +125,7 @@ function stripAssistantDocs() {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
           const full = join(dir, entry.name)
           if (entry.isDirectory()) walk(full)
-          else if (entry.name === 'CLAUDE.md') {
+          else if (entry.name.toLowerCase().endsWith('.md')) {
             rmSync(full)
             removed.push(relative(outDir, full))
           }
@@ -133,7 +134,7 @@ function stripAssistantDocs() {
       walk(outDir)
 
       if (removed.length) {
-        console.log(`strip-assistant-docs: retirados de dist -> ${removed.join(', ')}`)
+        console.log(`strip-markdown-docs: retirados de dist -> ${removed.join(', ')}`)
       }
     },
   }
@@ -174,7 +175,7 @@ export default defineConfig(() => ({
     react(),
     // Antes de VitePWA: su service worker se genera en el mismo hook y no debe
     // llegar a ver estos ficheros
-    stripAssistantDocs(),
+    stripMarkdownDocs(),
     // También antes de VitePWA: el fichero tiene que existir cuando Workbox
     // construye el manifiesto, que es de lo que se trata
     emitVersionFile(),

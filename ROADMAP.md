@@ -5,7 +5,7 @@
 > **Status:** ✅ v2.0.0 Sprint 1 Completed | ✅ v2.0.4 Sprint 2 + Infra Completed | ✅ v2.0.5 Hotfix UI | ✅ v2.0.6 Sprint 2 Schedule COMPLETED | ✅ v2.0.9 Clean Architecture | ✅ v2.0.10 Manual Pairings | ✅ v2.0.11 Sprint 3 Invitations | ✅ v2.0.12 Sprint 4 Live Scoring COMPLETE | ✅ v2.0.13 Sprint 5 Absorbed + Post-Sprint 4 | ✅ v2.0.14 Build/CI Dependencies | ✅ v2.0.15 TeeCategory VO + Security Hotfixes | ✅ v2.0.17 Scoring Improvements | ✅ v2.0.18 Hotfix (SW cache, dates, 422 errors, match summary)
 > **Stack:** React 19 + Vite 7.3 + Tailwind CSS 4 + ESLint 9
 > **Architecture:** Subdomain (www + api) with Cloudflare Proxy (ADR-011)
-> **Note:** Some entries below (Zustand, TanStack Query, Zod) reflect early planning that was **not** implemented as written — actual state management/polling/validation is React Context + hooks with ad-hoc per-form validation. See `CLAUDE.md` for the current architecture.
+> **Note:** Some entries below (Zustand, TanStack Query, Zod) reflect early planning that was **not** implemented as written — actual state management/polling/validation is React Context + hooks with ad-hoc per-form validation. ADR-002 (useState + Context API) reflects the current architecture; ADR-009 still describes the Zustand authStore design that was never adopted.
 
 ---
 
@@ -757,7 +757,6 @@ _... (Remains the same as previous version) ..._
 ## 🔗 Documentation
 
 - **CHANGELOG.md** - Detailed change history
-- **CLAUDE.md** - AI context (project instructions)
 - **ADRs:** `docs/architecture/decisions/`
 - **Backend:** Configure `BACKEND_PATH` variable with local backend repository path
 - **API Docs:** `http://localhost:{BACKEND_PORT}/docs` (default port 8000)
