@@ -11,7 +11,12 @@
  */
 let router = null;
 
-/** `creaElRouterDeLaAplicacion`, al crearlo (y los tests). */
+/**
+ * Apunta el router de la aplicación. Solo lo llaman `creaElRouterDeLaAplicacion`
+ * (`routerDeLaAplicacion.js`), al crearlo, y los tests: otro router apuntado aquí
+ * cambiaría a qué página se vuelve tras aceptar los Términos. Lo vigila
+ * `navegacionEnCurso.test.js`.
+ */
 export const apuntaElRouterDeLaAplicacion = (elRouter) => {
   router = elRouter;
 };
