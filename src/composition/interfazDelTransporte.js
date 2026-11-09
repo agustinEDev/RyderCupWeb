@@ -8,20 +8,13 @@
  * que esté registrado antes de que nada pueda llamar a la API o cerrar la sesión.
  */
 import i18next from 'i18next';
-import customToast from '../utils/toast';
+import { guardaElAvisoDelCierre, muestraElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { captureError, clearUserContext } from '../utils/sentryHelpers';
 import { avisaDelCierreForzado } from '../utils/avisoDeCierreForzado';
 import { sinSesionEnRutaPublica } from '../utils/rutasPublicas';
 import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { registraLaInterfazDelTransporte } from '../infrastructure/http/interfazDelTransporte';
-
-// El aviso de cada cierre forzado: su texto y su icono
-const AVISO_DEL_CIERRE = Object.freeze({
-  revocation: { clave: 'errors.deviceRevoked', icono: '🔒' },
-  expiration: { clave: 'errors.sessionExpired', icono: '⏱️' },
-});
-const AVISO_DE_SESION_TERMINADA = Object.freeze({ clave: 'errors.sessionEnded', icono: 'ℹ️' });
 
 // Cada una, envuelta: se lee el módulo al llamarla y no al registrarla, como
 // cuando el transporte las importaba directamente
@@ -33,12 +26,9 @@ registraLaInterfazDelTransporte({
    *   cualquiera es una sesión que terminó
    */
   avisaAlUsuarioDelCierre: (motivo) => {
-    // `hasOwn`: un motivo como «toString» no puede sacar nada del prototipo
-    const { clave, icono } = Object.hasOwn(AVISO_DEL_CIERRE, motivo)
-      ? AVISO_DEL_CIERRE[motivo]
-      : AVISO_DE_SESION_TERMINADA;
-    // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
-    customToast.error(i18next.t(clave, { ns: 'auth' }), { duration: 8000, icon: icono, delCierre: true });
+    // Se enseña en /login: aquí la página se recarga a los 500 ms y no daba tiempo
+    // a leerlo. Sin sessionStorage, aquí, como antes
+    if (!guardaElAvisoDelCierre(motivo)) muestraElAvisoDelCierre(motivo, (clave, opciones) => i18next.t(clave, opciones));
   },
   ultimaCuentaDeEstaPestana: () => ultimaCuentaDeEstaPestana(),
   redirigeAlLogin: (opciones) => redirigeAlLogin(opciones),

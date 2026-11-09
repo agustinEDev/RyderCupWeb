@@ -29,6 +29,14 @@ const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn() }));
 vi.mock('../../utils/sentryHelpers', () => sentryHelpers);
 
 // Mock i18next
+// Qué aviso sale con cada motivo: aquí, sin guardarlo para /login, como cuando
+// no hay sessionStorage. Que se guarde y /login lo enseñe: cierreForzado.comportamiento
+// y Login.avisoDelCierre
+vi.mock('../../utils/avisoTrasElCierre', async (original) => ({
+  ...(await original()),
+  guardaElAvisoDelCierre: () => false,
+}));
+
 vi.mock('i18next', () => ({
   default: {
     t: vi.fn((key) => key),

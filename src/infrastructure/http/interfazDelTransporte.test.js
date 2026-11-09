@@ -18,7 +18,7 @@ import { resolve } from 'node:path';
  * | se registra a medias                             | lanza y dice qué falta                     |
  * | se registra entera                               | `interfaz()` la devuelve                   |
  * | la composition root la registra                  | trae todo lo que hace falta                |
- * | un motivo heredado del prototipo (toString…)     | avisa como sesión terminada                |
+ * | un motivo heredado del prototipo (toString…)     | /login lo enseña como sesión terminada     |
  * | main.jsx                                         | la carga antes que la aplicación           |
  */
 const SIN_INTERFAZ = /No hay interfaz del transporte registrada: falta importar composition\/interfazDelTransporte/;
@@ -233,7 +233,12 @@ describe('la interfaz del transporte', () => {
       await import('../../composition/interfazDelTransporte');
       const { interfaz } = await import('./interfazDelTransporte');
 
+      globalThis.sessionStorage.clear();
       interfaz().avisaAlUsuarioDelCierre(motivo);
+      // Se guarda para /login, que lo enseña como sesión terminada
+      const { tomaElAvisoDelCierre, muestraElAvisoDelCierre } = await import('../../utils/avisoTrasElCierre');
+      expect(toast.error).not.toHaveBeenCalled();
+      muestraElAvisoDelCierre(tomaElAvisoDelCierre(), (clave, { ns } = {}) => `${ns}:${clave}`);
 
       expect(toast.error).toHaveBeenCalledWith('auth:errors.sessionEnded', { duration: 8000, icon: 'ℹ️', delCierre: true });
       vi.doUnmock('../../utils/toast');

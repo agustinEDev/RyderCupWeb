@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -5,12 +6,21 @@ import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated'
 import SignInForm from '../components/auth/SignInForm';
 import FullScreenLoader from '../components/ui/FullScreenLoader';
 import BrandMark from '../components/ui/BrandMark';
+import { muestraElAvisoDelCierre, tomaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
   const location = useLocation();
   const successMessage = location.state?.message;
   const isCheckingSession = useRedirectIfAuthenticated();
+
+  // El aviso de un cierre forzado (revocado, caducado, terminado): la página de
+  // la que se venía se recargó a los 500 ms y no daba tiempo a leerlo. Una vez:
+  // se borra al tomarlo (recargar /login no lo repite; StrictMode, tampoco)
+  useEffect(() => {
+    const motivo = tomaElAvisoDelCierre();
+    if (motivo) muestraElAvisoDelCierre(motivo, t);
+  }, [t]);
 
   // Con sesión guardada por confirmar, el formulario no se pinta: quien llega
   // aquí desde el icono de la PWA se va al dashboard sin verlo (FE #305)
