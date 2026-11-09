@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.71.0] - 2026-11-09
+
+**Fase 1 del plan de la auditoría del 9 nov: la arquitectura vigilada en el CI, y lo de la
+cuenta se borra igual por todos los caminos de cierre** (FE #1077, #1078). Va con el
+backend **2.55.0**. Probado en el Kind a 360 px (23 casos más 9 de repetición).
+
+### Security
+
+- **Tras un cierre forzado** (dispositivo revocado, sesión caducada o CSRF) se borra
+  también la copia del usuario para arrancar sin cobertura, y nada la vuelve a escribir
+  antes de la recarga: abrir la app sin red ya no enseña el nombre y el correo de la
+  cuenta que salió.
+- **Lo que se borra al cerrar sesión vive en un solo registro** para todos los cierres:
+  si una limpieza falla, las demás se hacen igual y el cierre sigue; si el registro
+  estuviera vacío, falla en voz alta en vez de no borrar nada.
+
+### Changed
+
+- **El número de Actividad (y el del icono de la app) se borra en todos los cierres de
+  sesión**, también cuando la sesión caduca o se revoca, no solo con el botón de salir.
+- **Arquitectura en el CI**: el dominio y la aplicación solo pueden llegar a paquetes
+  permitidos (hoy `uuid`) y a nada de la interfaz, tampoco por caminos indirectos; `utils`,
+  `services` e infraestructura no pueden llegar a la interfaz. Cobertura mínima del CI de
+  78 % a 90 %.
+
 ## [2.70.0] - 2026-11-09
 
 **La página a la que volver tras entrar es de la última cuenta que estuvo en la pestaña,
