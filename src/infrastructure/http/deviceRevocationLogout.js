@@ -24,7 +24,7 @@ import { esFinalNormalDelRefresco, MOTIVO_DEL_CIERRE } from '../../utils/motivos
 // El aviso a Sentry, el usuario de Sentry, el aviso al usuario, la cuenta de la
 // pestaña y la redirección con la página guardada: de la interfaz, que la
 // composition root registra (la infraestructura no llega a sus librerías)
-import { interfaz } from './interfazDelTransporte';
+import { compruebaLaInterfaz, interfaz } from './interfazDelTransporte';
 // El freno de un cierre por carga vive en su módulo (C1, S1)
 import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from '../../utils/cierreDeEstaCarga';
 
@@ -238,6 +238,9 @@ export const limpiaLaCuenta = () => {
  * @param {string} reason - 'revocation' | 'expiration' | 'unknown'
  */
 const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
+  // Sin la interfaz registrada falla aquí, antes de tocar nada: ni carga «cerrándose»
+  // (que callaría el siguiente cierre), ni limpieza, ni redirección a medias
+  compruebaLaInterfaz();
   if (seEstaCerrandoLaSesion()) return;
   const marca = localStorage.getItem(REVOCATION_HANDLED_KEY);
 

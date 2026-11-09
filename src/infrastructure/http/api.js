@@ -106,8 +106,7 @@ const leeElError = async (response) => {
   }
 };
 
-// La URL base, en su módulo (urlDeLaApi.js); se reexporta para quien la tomaba de aquí
-export { getApiBaseUrl };
+// La URL base, en su módulo (urlDeLaApi.js)
 const API_URL = getApiBaseUrl();
 
 /**

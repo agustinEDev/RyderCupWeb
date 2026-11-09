@@ -17,12 +17,7 @@ import { captureError } from './sentryHelpers';
 
 // Los motivos y cómo se reconoce cada 401, sin Sentry: los usa también el
 // transporte (infrastructure/http), que no llega a las librerías de la interfaz
-export {
-  MOTIVO_DEL_CIERRE,
-  esFinalNormalDelRefresco,
-  motivoDelRefrescoRechazado,
-  esUn401DeToken,
-} from './motivosDelCierre';
+export { MOTIVO_DEL_CIERRE, esFinalNormalDelRefresco, esUn401DeToken } from './motivosDelCierre';
 import { MOTIVO_DEL_CIERRE } from './motivosDelCierre';
 
 const TITULO = Object.freeze({

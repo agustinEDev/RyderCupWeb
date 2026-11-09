@@ -10,10 +10,12 @@ import { resolve } from 'node:path';
  * |--------------------------------------------------|--------------------------------------------|
  * | sin registrar, se usa                            | lanza «no hay interfaz … registrada»       |
  * | sin registrar, un cierre forzado                 | el mismo error, en voz alta                |
+ * | sin registrar, cada cierre (y la marca «propia») | lanza antes de empezar: ni «cerrándose», ni limpia, ni redirige |
  * | sin registrar, un error de la API que se traduce | el mismo error, no un texto vacío          |
  * | se registra a medias                             | lanza y dice qué falta                     |
  * | se registra entera                               | `interfaz()` la devuelve                   |
  * | la composition root la registra                  | trae todo lo que hace falta                |
+ * | un motivo heredado del prototipo (toString…)     | avisa como sesión terminada                |
  * | main.jsx                                         | la carga antes que la aplicación           |
  */
 const SIN_INTERFAZ = /No hay interfaz del transporte registrada: falta importar composition\/interfazDelTransporte/;
@@ -54,6 +56,31 @@ describe('la interfaz del transporte', () => {
     expect(() => handleDeviceRevocationLogout(null)).toThrow(SIN_INTERFAZ);
   });
 
+  it.each([
+    ['dispositivo revocado', null, 'handleDeviceRevocationLogout'],
+    ['dispositivo revocado, marca «propia»', 'propia', 'handleDeviceRevocationLogout'],
+    ['sesión caducada', null, 'handleSessionExpiredLogout'],
+    ['CSRF', null, 'handleCsrfLogout'],
+  ])('sin registrar, %s falla ANTES de empezar el cierre: la carga no queda «cerrándose» ni se redirige', async (_caso, marca, cierre) => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('localStorage', { getItem: vi.fn(() => marca), setItem: vi.fn(), removeItem: vi.fn() });
+      vi.stubGlobal('location', { href: '', pathname: '/competitions/7', search: '', hash: '' });
+      const cierres = { ...(await import('./deviceRevocationLogout')), ...(await import('./csrfLogout')) };
+      cierres.alCerrarLaSesion(() => {});
+      const { seEstaCerrandoLaSesion } = await import('../../utils/cierreDeEstaCarga');
+
+      expect(() => cierres[cierre](null)).toThrow(SIN_INTERFAZ);
+      vi.advanceTimersByTime(1000);
+
+      expect(seEstaCerrandoLaSesion()).toBe(false);
+      expect(localStorage.removeItem).not.toHaveBeenCalled();
+      expect(globalThis.location.href).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('sin registrar, un 429 de la API no sale con un texto vacío: lanza', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 429, statusText: 'Too Many', json: async () => ({}) })));
     const { apiRequest } = await import('./api');
@@ -80,6 +107,23 @@ describe('la interfaz del transporte', () => {
 
     expect(interfaz()).toBe(completa);
   });
+
+  it.each([['toString'], ['constructor'], ['__proto__'], ['ended']])(
+    'un motivo que no es suyo (%s) avisa como sesión terminada',
+    async (motivo) => {
+      const toast = { error: vi.fn() };
+      vi.doMock('../../utils/toast', () => ({ default: toast }));
+      vi.doMock('i18next', () => ({ default: { t: (clave, { ns } = {}) => `${ns}:${clave}` } }));
+      await import('../../composition/interfazDelTransporte');
+      const { interfaz } = await import('./interfazDelTransporte');
+
+      interfaz().avisaAlUsuarioDelCierre(motivo);
+
+      expect(toast.error).toHaveBeenCalledWith('auth:errors.sessionEnded', { duration: 8000, icon: 'ℹ️', delCierre: true });
+      vi.doUnmock('../../utils/toast');
+      vi.doUnmock('i18next');
+    }
+  );
 
   it('la composition root la registra con todo', async () => {
     await import('../../composition/interfazDelTransporte');

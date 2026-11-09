@@ -56,3 +56,13 @@ export const interfaz = () => {
   if (!registrada) throw new Error(SIN_INTERFAZ);
   return registrada;
 };
+
+/**
+ * Falla si no hay interfaz registrada, sin hacer nada más. Los cierres forzados
+ * la llaman ANTES de anotar el cierre de esta carga: sin la interfaz no pueden
+ * avisar ni redirigir, y una carga marcada como «cerrándose» sin salir de la
+ * página se quedaría así, callando cualquier otro cierre.
+ */
+export const compruebaLaInterfaz = () => {
+  interfaz();
+};

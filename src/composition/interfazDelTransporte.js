@@ -33,7 +33,10 @@ registraLaInterfazDelTransporte({
    *   cualquiera es una sesión que terminó
    */
   avisaAlUsuarioDelCierre: (motivo) => {
-    const { clave, icono } = AVISO_DEL_CIERRE[motivo] ?? AVISO_DE_SESION_TERMINADA;
+    // `hasOwn`: un motivo como «toString» no puede sacar nada del prototipo
+    const { clave, icono } = Object.hasOwn(AVISO_DEL_CIERRE, motivo)
+      ? AVISO_DEL_CIERRE[motivo]
+      : AVISO_DE_SESION_TERMINADA;
     // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
     customToast.error(i18next.t(clave, { ns: 'auth' }), { duration: 8000, icon: icono, delCierre: true });
   },

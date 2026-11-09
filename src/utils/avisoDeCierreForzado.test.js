@@ -198,13 +198,15 @@ describe('avisaDelCierreForzado · lo que llega a Sentry', () => {
     ['USER_NOT_FOUND', 'refresh_rejected'],
     [undefined, 'refresh_rejected'],
   ])('A13: el refresco rechazado con %s es %s', async (codigo, motivo) => {
-    const { motivoDelRefrescoRechazado } = await cargar();
+    // Vive en motivosDelCierre: lo usa el transporte, que no llega a Sentry
+    const { motivoDelRefrescoRechazado } = await import('./motivosDelCierre');
 
     expect(motivoDelRefrescoRechazado({ detail: 'x', error_code: codigo })).toBe(motivo);
   });
 
   it('A13b: sin cuerpo, es un rechazo', async () => {
-    const { motivoDelRefrescoRechazado } = await cargar();
+    // Vive en motivosDelCierre: lo usa el transporte, que no llega a Sentry
+    const { motivoDelRefrescoRechazado } = await import('./motivosDelCierre');
 
     expect(motivoDelRefrescoRechazado(undefined)).toBe('refresh_rejected');
   });
