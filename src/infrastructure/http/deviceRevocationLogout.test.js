@@ -28,15 +28,16 @@ vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.f
 const sentryHelpers = vi.hoisted(() => ({ clearUserContext: vi.fn() }));
 vi.mock('../../utils/sentryHelpers', () => sentryHelpers);
 
-// Mock i18next
 // Qué aviso sale con cada motivo: aquí, sin guardarlo para /login, como cuando
-// no hay sessionStorage. Que se guarde y /login lo enseñe: cierreForzado.comportamiento
-// y Login.avisoDelCierre
+// no hay sessionStorage (y entonces se espera 500 ms para leerlo). Que se guarde,
+// se salga al momento y /login lo enseñe: cierreForzado.comportamiento y
+// Login.avisoDelCierre
 vi.mock('../../utils/avisoTrasElCierre', async (original) => ({
   ...(await original()),
   guardaElAvisoDelCierre: () => false,
 }));
 
+// Mock i18next
 vi.mock('i18next', () => ({
   default: {
     t: vi.fn((key) => key),
@@ -438,7 +439,8 @@ describe('deviceRevocationLogout utilities', () => {
       handleSessionExpiredLogout({ detail: 'Refresh token inválido o expirado', error_code: 'SESSION_ENDED' });
 
       expect(customToast.error).not.toHaveBeenCalled();
-      expect(window.location.href).toBe('');
+      // Sin aviso que leer, a /login al momento (10 nov 2026; antes esperaba 500 ms)
+      expect(window.location.href).toBe('/login');
     });
 
     it('sin ninguna cuenta conocida, un dispositivo revocado de verdad sí avisa', () => {

@@ -25,10 +25,13 @@ registraLaInterfazDelTransporte({
    * @param {'revocation'|'expiration'|string} motivo el del transporte; otro
    *   cualquiera es una sesión que terminó
    */
+  /** @returns {boolean} si el aviso sale en ESTA página (y hay que esperar a que se lea) */
   avisaAlUsuarioDelCierre: (motivo) => {
-    // Se enseña en /login: aquí la página se recarga a los 500 ms y no daba tiempo
-    // a leerlo. Sin sessionStorage, aquí, como antes
-    if (!guardaElAvisoDelCierre(motivo)) muestraElAvisoDelCierre(motivo, (clave, opciones) => i18next.t(clave, opciones));
+    // Se enseña en /login, donde da tiempo a leerlo. Sin sessionStorage, aquí, como
+    // antes: entonces quien cierra espera 500 ms antes de salir
+    if (guardaElAvisoDelCierre(motivo)) return false;
+    muestraElAvisoDelCierre(motivo, (clave, opciones) => i18next.t(clave, opciones));
+    return true;
   },
   ultimaCuentaDeEstaPestana: () => ultimaCuentaDeEstaPestana(),
   redirigeAlLogin: (opciones) => redirigeAlLogin(opciones),
