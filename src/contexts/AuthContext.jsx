@@ -125,12 +125,23 @@ export const AuthProvider = ({ children }) => {
     // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
     // un instante en la siguiente que entrara sin recargar (FE #502)
     olvidaLasAccionesPendientes();
+    // El usuario guardado, lo primero: si una limpieza de abajo fallara, la
+    // cuenta no puede quedarse apuntada en este dispositivo
+    localStorage.removeItem('user');
+    localStorage.removeItem('access_token'); // Legacy cleanup
     // Y lo que otros guardan de la cuenta, con el mismo registro que los cierres
     // forzados (`composition/limpiezaAlCerrarLaSesion`): las partidas guardadas
-    // para anotar sin cobertura (FE #524) y lo pendiente del hándicap (FE #677).
-    // En un móvil compartido, la siguiente persona vería la lista de la
-    // anterior, o el modal con su hándicap, y aceptarlo lo guardaría en su perfil
-    olvidaLoDeLaCuenta();
+    // para anotar sin cobertura (FE #524), lo pendiente del hándicap (FE #677) y
+    // el número de Actividad y el del icono de la app. En un móvil compartido, la
+    // siguiente persona vería la lista de la anterior, o el modal con su
+    // hándicap, y aceptarlo lo guardaría en su perfil. Si una falla, las demás se
+    // hacen igual (lo garantiza el registro) y el cierre sigue: salir no puede
+    // quedarse a medias por un almacenamiento lleno
+    try {
+      olvidaLoDeLaCuenta();
+    } catch (error) {
+      console.error('[Auth] Logout cleanup failed:', error);
+    }
     // Los avisos de golpes que no se pudieron guardar NO se tocan, ni aquí ni
     // en los cierres duros. Se intentó borrarlos y es un error: no se pueden
     // regenerar —el golpe que describen ya salió de la cola al escribirlos— y
@@ -139,8 +150,6 @@ export const AuthProvider = ({ children }) => {
     // avisos escritos milisegundos antes. La privacidad ya está resuelta sin
     // borrar nada: `golpesPerdidos.pendientes(userId)` solo devuelve los de
     // quien mira, así que la siguiente persona del móvil no los ve (FE #521)
-    localStorage.removeItem('user');
-    localStorage.removeItem('access_token'); // Legacy cleanup
   }, []);
 
   const value = {

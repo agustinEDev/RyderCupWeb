@@ -4,9 +4,9 @@
  *
  * Vive aquí, en servicios y sin React, porque lo tienen que poder olvidar los
  * caminos de salida que no pasan por la interfaz —dispositivo revocado, sesión
- * caducada, fallo de CSRF, arranque sin sesión—, y esos no pueden depender de
- * la composition root. Quien lo pide y lo vigila es
- * `hooks/useNovedadesDeActividad`.
+ * caducada, fallo de CSRF, arranque sin sesión—. A todos les llega por el
+ * registro de limpiezas que rellena `composition/limpiezaAlCerrarLaSesion`.
+ * Quien lo pide y lo vigila es `hooks/useNovedadesDeActividad`.
  */
 
 let valor = 0;

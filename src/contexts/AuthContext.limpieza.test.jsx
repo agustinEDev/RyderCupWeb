@@ -13,7 +13,13 @@ import { renderHook, act } from '@testing-library/react';
  */
 
 const llamadas = vi.hoisted(() => []);
-vi.mock('../services/loUltimoConocido', () => ({ olvidaLoDeEstaCuenta: () => llamadas.push('loUltimoConocido') }));
+const fallo = vi.hoisted(() => ({ activo: false }));
+vi.mock('../services/loUltimoConocido', () => ({
+  olvidaLoDeEstaCuenta: () => {
+    if (fallo.activo) throw new Error('almacenamiento lleno');
+    llamadas.push('loUltimoConocido');
+  },
+}));
 vi.mock('../services/refrescoDeHandicapApuntes', () => ({
   olvidaElRefrescoDeHandicap: () => llamadas.push('refrescoDeHandicap'),
 }));
@@ -25,6 +31,7 @@ const { useAuthContext } = await import('../hooks/useAuthContext');
 describe('clearAuth usa el registro de limpiezas', () => {
   beforeEach(() => {
     llamadas.length = 0;
+    fallo.activo = false;
     vi.stubGlobal('localStorage', { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn() });
   });
 
@@ -36,5 +43,18 @@ describe('clearAuth usa el registro de limpiezas', () => {
     expect(llamadas).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades']);
     expect(localStorage.removeItem).toHaveBeenCalledWith('user');
     expect(localStorage.removeItem).toHaveBeenCalledWith('access_token');
+  });
+
+  it('si una limpieza falla, borra igual el usuario guardado, hace las demás y no corta el cierre', () => {
+    fallo.activo = true;
+    const consola = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+    expect(() => act(() => result.current.clearAuth())).not.toThrow();
+
+    expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+    expect(llamadas).toEqual(['refrescoDeHandicap', 'novedades']);
+    expect(consola).toHaveBeenCalled();
+    consola.mockRestore();
   });
 });
