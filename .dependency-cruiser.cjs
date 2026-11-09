@@ -9,7 +9,7 @@
  *
  *   domain           ← no depende de nada del resto de src, ni de React
  *   application      ← solo domain (y utils); ni directa ni indirectamente
- *                      llega a React ni a un .jsx (9 nov 2026)
+ *                      llega a la interfaz ni a otra librería que uuid (9 nov 2026)
  *   utils            ← ayudas: no conocen la interfaz, ni services, ni las
  *                      capas de arriba (9 nov 2026)
  *   services         ← api.js, la sesión, la cola…: no conocen la interfaz;
@@ -26,6 +26,11 @@
 
 const UI = '^src/(pages|components|hooks|contexts)/';
 const TEST = '\\.test\\.(js|jsx|ts|tsx)$';
+// Un fichero de interfaz esté donde esté: JSX en .jsx o .tsx
+const UI_FILE = '\\.(jsx|tsx)$';
+// Las únicas librerías a las que llegan el dominio y los casos de uso (9 nov
+// 2026: uuid, y nada más). Añadir una es una decisión de arquitectura
+const CORE_ALLOWED_PACKAGES = 'node_modules/(uuid)/';
 
 module.exports = {
   forbidden: [
@@ -76,38 +81,43 @@ module.exports = {
     // los que React se colaba en el núcleo a través de utils, y las carpetas
     // (utils, services) que no tenían ninguna regla.
     {
-      name: 'core-does-not-reach-react',
+      name: 'core-only-reaches-allowed-packages',
       comment:
-        'Ni el dominio ni los casos de uso llegan a React, al router, a i18n ni a un .jsx, tampoco a través de otro módulo (utils, services…). Un import directo no basta: CompetitionAssembler llegaba a React por utils/countryUtils.',
+        'Lista de PERMITIDOS: el dominio y los casos de uso solo llegan, directa o indirectamente, a las librerías de CORE_ALLOWED_PACKAGES. Una lista de prohibidos se queda atrás con cada librería de interfaz nueva; esta no. CompetitionAssembler llegaba a React por utils/countryUtils.',
       severity: 'error',
       from: { path: '^src/(domain|application)/', pathNot: TEST },
-      to: {
-        path: [
-          'node_modules/(react|react-dom|react-router|react-router-dom|react-i18next|react-hot-toast|@sentry/react)/',
-          '\\.jsx$',
-        ],
-        reachable: true,
-      },
+      to: { path: 'node_modules/', pathNot: CORE_ALLOWED_PACKAGES, reachable: true },
+    },
+    {
+      name: 'core-does-not-reach-ui',
+      comment:
+        'Ni el dominio ni los casos de uso llegan a un fichero de interfaz (.jsx, .tsx, pages, components, hooks, contexts), tampoco a través de otro módulo.',
+      severity: 'error',
+      from: { path: '^src/(domain|application)/', pathNot: TEST },
+      to: { path: [UI, UI_FILE], reachable: true },
     },
     {
       name: 'utils-does-not-import-ui',
       comment:
-        'utils son ayudas sin interfaz: no importan componentes, páginas, contextos ni hooks. Si una ayuda necesita algo de ahí, ese algo no es de la interfaz y tiene que salir de esa carpeta.',
+        'utils son ayudas sin interfaz: no importan componentes, páginas, contextos, hooks ni un .jsx/.tsx. Si una ayuda necesita algo de ahí, ese algo no es de la interfaz y tiene que salir de esa carpeta.',
       severity: 'error',
       from: { path: '^src/utils/', pathNot: TEST },
-      to: { path: `${UI}|\\.jsx$` },
+      to: { path: [UI, UI_FILE] },
+    },
+    {
+      name: 'utils-does-not-reach-ui',
+      comment:
+        'Lo mismo que utils-does-not-import-ui, por un camino indirecto (utils → otro módulo → interfaz).',
+      severity: 'error',
+      from: { path: '^src/utils/', pathNot: TEST },
+      to: { path: [UI, UI_FILE], reachable: true },
     },
     {
       name: 'utils-does-not-import-services',
       comment:
         'utils está por debajo de services (services usa utils, nunca al revés): una ayuda que necesita la sesión, la memoria o la API es un servicio y vive en src/services.',
       severity: 'error',
-      // EXCEPCIÓN PENDIENTE DE DECIDIR (9 nov 2026): deviceRevocationLogout
-      // borra los apuntes de la cuenta (loUltimoConocido, refrescoDeHandicapApuntes,
-      // novedadesDeActividad) y lo usan csrfLogout y tokenRefreshInterceptor,
-      // también en utils. Sacarlo de aquí arrastra unos 35 ficheros: se deja
-      // fuera de la regla hasta que se decida cómo, y solo él
-      from: { path: '^src/utils/', pathNot: [TEST, '^src/utils/deviceRevocationLogout\\.js$'] },
+      from: { path: '^src/utils/', pathNot: TEST },
       to: { path: '^src/services/' },
     },
     {
@@ -121,10 +131,10 @@ module.exports = {
     {
       name: 'infrastructure-does-not-import-ui',
       comment:
-        'La infraestructura no importa nada de la interfaz, ni siquiera un .jsx suelto (infrastructure-does-not-reach-up ya cubre las carpetas; esta cubre los .jsx de cualquier sitio).',
+        'La infraestructura no importa nada de la interfaz, ni siquiera un .jsx/.tsx suelto (infrastructure-does-not-reach-up ya cubre las carpetas; esta cubre esos ficheros estén donde estén).',
       severity: 'error',
       from: { path: '^src/infrastructure/', pathNot: TEST },
-      to: { path: '\\.jsx$' },
+      to: { path: UI_FILE },
     },
     {
       name: 'services-does-not-reach-up',
@@ -133,7 +143,7 @@ module.exports = {
       severity: 'error',
       from: { path: '^src/services/', pathNot: TEST },
       to: {
-        path: [`${UI}|\\.jsx$`, '^src/(application|infrastructure)/'],
+        path: [UI, UI_FILE, '^src/(application|infrastructure)/'],
       },
     },
     {
@@ -142,7 +152,7 @@ module.exports = {
         'La infraestructura y los servicios no llegan a la interfaz ni por un camino indirecto (p. ej. services/api → utils → contexts).',
       severity: 'error',
       from: { path: '^src/(infrastructure|services)/', pathNot: TEST },
-      to: { path: [UI, '\\.jsx$'], reachable: true },
+      to: { path: [UI, UI_FILE], reachable: true },
     },
     {
       name: 'no-circular',

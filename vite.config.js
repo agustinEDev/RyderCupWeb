@@ -396,12 +396,13 @@ export default defineConfig(() => ({
       // el v8 del CI puede medir unas décimas distinto. El 80% de antes no era
       // real: no contaba las páginas sin tests. Se sube al añadir tests.
       // 9 nov 2026: subidos a lo medido (90,82 / 90,40 / 87,16 / 87,50),
-      // redondeado hacia abajo al medio punto
+      // redondeado hacia abajo al medio punto; functions y branches, medio
+      // punto más abajo para dejar margen al v8 del CI
       thresholds: {
         lines: 90.5,
         statements: 90,
-        functions: 87,
-        branches: 87,
+        functions: 86.5,
+        branches: 86.5,
       },
     },
     css: {

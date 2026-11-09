@@ -1,3 +1,6 @@
+// Lo primero: lo que se borra de la cuenta en un cierre duro (lo vigila
+// composition/limpiezaAlCerrarLaSesion.test.js)
+import './composition/limpiezaAlCerrarLaSesion';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';

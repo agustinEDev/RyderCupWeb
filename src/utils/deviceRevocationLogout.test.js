@@ -13,6 +13,8 @@ import {
   handleSessionExpiredLogout,
   clearDeviceRevocationFlag,
 } from './deviceRevocationLogout';
+// Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
+import '../composition/limpiezaAlCerrarLaSesion';
 import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
 import { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } from './vueltaTrasEntrar';
 import customToast from './toast';
