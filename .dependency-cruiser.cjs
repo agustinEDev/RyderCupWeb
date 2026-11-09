@@ -140,6 +140,14 @@ module.exports = {
       to: { path: '^src/infrastructure/', pathNot: '^src/infrastructure/http/', reachable: true },
     },
     {
+      name: 'infrastructure-reaches-http-only-through-api',
+      comment:
+        'Los repositorios y los mappers llegan al transporte solo por infrastructure/http/api.js (apiRequest, con el refresco del token y el reintento CSRF). Importar el interceptor, el token CSRF o los cierres forzados directamente se salta ese camino.',
+      severity: 'error',
+      from: { path: '^src/infrastructure/(repositories|mappers)/', pathNot: TEST },
+      to: { path: '^src/infrastructure/http/', pathNot: '^src/infrastructure/http/api\\.js$' },
+    },
+    {
       name: 'infrastructure-does-not-import-services',
       comment:
         'La infraestructura (repositorios, mappers, el transporte) no importa src/services: el cliente de la API vive en infrastructure/http y los repositorios lo usan desde ahí. services está por encima: usa infrastructure/http, no al revés.',
