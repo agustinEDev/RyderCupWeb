@@ -34,6 +34,10 @@ tamaño comprimido es el suyo más unos pocos bytes de cabecera.
 | B22  | el mismo fichero escrito de dos formas cuenta una  | 0    |
 | B23  | un trozo en una subcarpeta de assets también tiene tope | 1 |
 | B24  | un JS de otro origen no es del paquete (CodeRabbit) | 0   |
+| B25  | --con-sentry y el arranque sin el DSN de Sentry    | 1    |
+| B26  | --con-sentry y el DSN en un JS del arranque        | 0    |
+| B27  | --con-sentry y el DSN solo en un trozo diferido    | 1    |
+| B28  | el CI compila con DSN y mide con --con-sentry      | —    |
 """
 
 import io
@@ -306,6 +310,38 @@ class PresupuestoDelBundle(unittest.TestCase):
         )
         self.assertEqual(self.correr(), 0)
         self.assertEqual(self.salidas()["size_kb"], "50")
+
+    # --- Con Sentry (9 nov 2026): sin VITE_SENTRY_DSN, Vite quita el arranque de
+    # Sentry de main.jsx y el bundle medido pesa menos que el que se sirve ---
+
+    def con_dsn(self, nombre: str, kb: float) -> str:
+        """Un trozo que lleva un DSN de Sentry compilado dentro."""
+        self.trozo(nombre, kb)
+        ruta = self.dist / "assets" / nombre
+        ruta.write_bytes(ruta.read_bytes() + b'const dsn="https://public@o0.ingest.sentry.io/0";')
+        return nombre
+
+    def test_B25_con_sentry_y_sin_dsn_falla(self):
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(bundle_budget.main([str(self.dist), "--con-sentry"]), 1)
+        self.assertIn("VITE_SENTRY_DSN", self.log.getvalue())
+
+    def test_B26_con_sentry_y_con_dsn_en_el_arranque(self):
+        self.indice(("script", self.con_dsn("index.js", 100)), ("preload", self.trozo("react.js", 50)))
+        self.assertEqual(bundle_budget.main([str(self.dist), "--con-sentry"]), 0)
+
+    def test_B27_con_sentry_y_el_dsn_solo_en_un_diferido(self):
+        self.con_dsn("pantalla.js", 50)
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(bundle_budget.main([str(self.dist), "--con-sentry"]), 1)
+
+    def test_B28_el_ci_compila_con_dsn_y_mide_con_sentry(self):
+        flujo = (Path(__file__).resolve().parents[1] / "workflows" / "ci-cd.yml").read_text(encoding="utf-8")
+        compila = flujo[flujo.index("- name: Build application"):flujo.index("- name: Check bundle size")]
+        mide = flujo[flujo.index("- name: Check bundle size"):flujo.index("- name: Check service worker precache\n")]
+        self.assertRegex(compila, r"VITE_SENTRY_DSN: https://\S+@\S+/\d+")
+        self.assertIn("bundle_budget.py dist --con-sentry", mide)
+
 
 if __name__ == "__main__":
     unittest.main()
