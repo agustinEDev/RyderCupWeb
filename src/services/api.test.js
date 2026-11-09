@@ -5,11 +5,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { apiRequest } from './api';
-import * as CsrfTokenSync from '../utils/csrfTokenSync';
-import * as TokenRefreshInterceptor from '../utils/tokenRefreshInterceptor';
+import * as CsrfTokenSync from '../infrastructure/http/csrfTokenSync';
+import * as TokenRefreshInterceptor from '../infrastructure/http/tokenRefreshInterceptor';
 
 // Mock modules
-vi.mock('../utils/csrfTokenSync', () => ({
+vi.mock('../infrastructure/http/csrfTokenSync', () => ({
   getCsrfCookie: () => null,
   getCsrfToken: vi.fn(),
 }));
@@ -17,7 +17,7 @@ vi.mock('../utils/csrfTokenSync', () => ({
 // Un 403 CSRF refresca y repite una vez antes de cerrar sesión (hotfix
 // 2.63.1, `api.reintentoCsrf.test.js`): aquí el refresco va bien y el
 // reintento vuelve a dar 403, así que se sigue cerrando
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: vi.fn(),
   refrescoCompartido: vi.fn(async () => true),
 }));

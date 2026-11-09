@@ -8,7 +8,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
 
-vi.mock('../../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: vi.fn(),
   // Si alguien la usara, en una página pública con un `user` rancio acabaría en
   // «tu sesión expiró»: que conste que no se toca
@@ -29,7 +29,7 @@ vi.mock('../../hooks/useAuthContext', () => ({
   useAuthContext: () => ({ clearAuth }),
 }));
 
-const { refrescoCompartido, fetchWithTokenRefresh } = await import('../../utils/tokenRefreshInterceptor');
+const { refrescoCompartido, fetchWithTokenRefresh } = await import('../../infrastructure/http/tokenRefreshInterceptor');
 const { anotaLaSesion } = await import('../../services/sesionCompartida');
 const { clearUserContext } = await import('../../utils/sentryHelpers');
 const { default: VolverDeLoLegal } = await import('./VolverDeLoLegal');

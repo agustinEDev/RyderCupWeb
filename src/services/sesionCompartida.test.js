@@ -11,7 +11,7 @@ const peticiones = [];
 /** Donde el servicio apunta de quién es la sesión. */
 const RECUERDO = 'rydercup-sesion-conocida';
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     peticiones.push(url);
     const siguiente = respuestas.shift() ?? { ok: true, status: 200, json: async () => ({ id: 'u-1' }) };
@@ -21,7 +21,7 @@ vi.mock('../utils/tokenRefreshInterceptor', () => ({
 
 const revocado = { si: false };
 
-vi.mock('../utils/deviceRevocationLogout', () => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   isDeviceRevoked: () => revocado.si,
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),

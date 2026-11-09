@@ -36,10 +36,10 @@ await import('../composition/limpiezaAlCerrarLaSesion');
 const { olvidaLasNovedades } = await import('../services/novedadesDeActividad');
 const { olvidaElCierreDeEstaCarga } = await import('./cierreDeEstaCarga');
 const { handleDeviceRevocationLogout, handleSessionExpiredLogout } = await import(
-  './deviceRevocationLogout'
+  '../infrastructure/http/deviceRevocationLogout'
 );
-const { handleCsrfLogout } = await import('./csrfLogout');
-const { trataElFalloDelRefresco } = await import('./tokenRefreshInterceptor');
+const { handleCsrfLogout } = await import('../infrastructure/http/csrfLogout');
+const { trataElFalloDelRefresco } = await import('../infrastructure/http/tokenRefreshInterceptor');
 const { MOTIVO_DEL_CIERRE } = await import('./avisoDeCierreForzado');
 
 const REFRESCO = 'https://api.rydercupfriends.com/api/v1/auth/refresh-token';

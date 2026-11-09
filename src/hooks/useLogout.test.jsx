@@ -23,7 +23,7 @@ vi.mock('../composition', () => ({
 
 // La consulta de la sesión, de verdad, sin red: aquí se cuenta cuántas veces pregunta
 const mockPreguntas = [];
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     mockPreguntas.push(url);
     return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });

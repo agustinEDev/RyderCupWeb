@@ -13,8 +13,11 @@
  *   utils            ← ayudas: no conocen la interfaz, ni services, ni las
  *                      capas de arriba (9 nov 2026)
  *   services         ← api.js, la sesión, la cola…: no conocen la interfaz;
- *                      los casos de uso, solo por composition (9 nov 2026)
+ *                      los casos de uso, solo por composition (9 nov 2026);
+ *                      de la infraestructura, solo infrastructure/http
  *   infrastructure   ← implementa los repositorios de domain; habla con la API
+ *     /http          ← el transporte de la sesión (refresco, cierres forzados,
+ *                      token CSRF): no conoce services; services sí lo usa
  *   composition      ← la composition root: el único sitio que junta
  *                      casos de uso e implementaciones
  *   pages / components / hooks / contexts ← la interfaz: usa los casos de uso a
@@ -113,10 +116,26 @@ module.exports = {
     {
       name: 'services-does-not-reach-up',
       comment:
-        'src/services (api.js, la sesión compartida, la cola sin conexión…) lo usan los repositorios y la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
+        'src/services (api.js, la sesión compartida, la cola sin conexión…) lo usan los repositorios y la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La única excepción es el transporte de la sesión, src/infrastructure/http, que services usa directamente (decidido con Agustín, 9 nov 2026). La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
       severity: 'error',
       from: { path: '^src/services/', pathNot: TEST },
-      to: { path: '^src/(application|infrastructure)/' },
+      to: { path: '^src/(application|infrastructure)/', pathNot: '^src/infrastructure/http/' },
+    },
+    {
+      name: 'http-does-not-reach-services',
+      comment:
+        'src/infrastructure/http (el interceptor del refresco, los cierres forzados, el token CSRF) es el transporte de la sesión: lo usan services y la composition root, y no conoce services, ni directa ni indirectamente. Lo que services guarda de la cuenta se borra con el registro de limpiezas (composition/limpiezaAlCerrarLaSesion), no importándolo desde aquí.',
+      severity: 'error',
+      from: { path: '^src/infrastructure/http/', pathNot: TEST },
+      to: { path: '^src/services/', reachable: true },
+    },
+    {
+      name: 'http-stays-in-its-folder',
+      comment:
+        'El transporte de la sesión no usa el resto de la infraestructura (repositorios, mappers, Sentry). Los repositorios llegan a él a través de services/api (apiRequest, con su reintento CSRF), nunca importándolo directamente. Al salir de utils estos módulos dejaron de estar bajo utils-does-not-reach-up, y nada lo impedía (revisión de la PR 2a).',
+      severity: 'error',
+      from: { path: '^src/infrastructure/http/', pathNot: TEST },
+      to: { path: '^src/infrastructure/', pathNot: '^src/infrastructure/http/' },
     },
     {
       name: 'infrastructure-and-services-do-not-reach-ui',

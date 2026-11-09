@@ -11,7 +11,7 @@ const peticiones = [];
  *  suelte: es la única forma de mirar el estado a mitad de un refresco. */
 const retenida = { soltar: null };
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     peticiones.push(url);
     const buena = { ok: true, status: 200, json: async () => ({ id: 'u-1', first_name: 'Agustin' }) };
@@ -22,7 +22,7 @@ vi.mock('../utils/tokenRefreshInterceptor', () => ({
   },
 }));
 
-vi.mock('../utils/deviceRevocationLogout', () => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   isDeviceRevoked: () => false,
   handleDeviceRevocationLogout: vi.fn(),
   clearDeviceRevocationFlag: vi.fn(),

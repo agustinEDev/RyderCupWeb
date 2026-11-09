@@ -21,12 +21,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   S10  200 con cuerpo que no es JSON                | fallo
  */
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: vi.fn(),
   fetchWithTokenRefresh: vi.fn(),
 }));
 
-const { refrescoCompartido, fetchWithTokenRefresh } = await import('../utils/tokenRefreshInterceptor');
+const { refrescoCompartido, fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
 const { preguntaLaSesionSinInterceptor } = await import('./sondaDeSesion');
 
 const USUARIO = { id: 'u1', email: 'a@b.es', first_name: 'Ana' };

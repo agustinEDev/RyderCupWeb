@@ -16,8 +16,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
-vi.mock('./toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() } }));
-vi.mock('./sentryHelpers', () => ({ clearUserContext: vi.fn() }));
+vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn(), dismiss: vi.fn() } }));
+vi.mock('../../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 
 const SIN_REGISTRO = /no hay limpiezas registradas: falta importar composition\/limpiezaAlCerrarLaSesion/i;
 
@@ -26,7 +26,7 @@ const cargaDeNuevo = async () => {
   vi.resetModules();
   const registro = await import('./deviceRevocationLogout');
   const { handleCsrfLogout } = await import('./csrfLogout');
-  const { anotaLaCuentaDeEstaPestana } = await import('./vueltaTrasEntrar');
+  const { anotaLaCuentaDeEstaPestana } = await import('../../utils/vueltaTrasEntrar');
   anotaLaCuentaDeEstaPestana('u-1');
   return { ...registro, handleCsrfLogout };
 };

@@ -14,7 +14,7 @@
  * @module tokenRefreshInterceptor
  */
 
-import { sinSesionEnRutaPublica } from './rutasPublicas';
+import { sinSesionEnRutaPublica } from '../../utils/rutasPublicas';
 
 
 import { setCsrfTokenGlobal, getCsrfToken } from './csrfTokenSync'; // v1.13.0: CSRF Protection
@@ -30,11 +30,11 @@ import {
   esUn401DeToken,
   MOTIVO_DEL_CIERRE,
   motivoDelRefrescoRechazado,
-} from './avisoDeCierreForzado';
+} from '../../utils/avisoDeCierreForzado';
 
-import { RUTA_DEL_REFRESCO } from './rutasDeLaSesion';
-import { cabeceraDelModoDeLaApp } from './modoDeLaApp';
-import { usuarioDeLaPestana } from './usuarioDeLaPestana';
+import { RUTA_DEL_REFRESCO } from '../../utils/rutasDeLaSesion';
+import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
+import { usuarioDeLaPestana } from '../../utils/usuarioDeLaPestana';
 
 /**
  * Si queda sesion guardada. Va envuelto porque `localStorage` LANZA en varios

@@ -10,10 +10,10 @@
  * @see docs/FRONTEND_INTEGRATION_v1.13.0.md - CSRF Protection section
  */
 
-import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from './avisoDeCierreForzado';
-import { empiezaElCierreDeEstaCarga } from './cierreDeEstaCarga';
+import { avisaDelCierreForzado, MOTIVO_DEL_CIERRE } from '../../utils/avisoDeCierreForzado';
+import { empiezaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
 import { limpiaLaCuenta } from './deviceRevocationLogout';
-import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from './vueltaTrasEntrar';
+import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
 
 /**
  * Handle CSRF validation failure

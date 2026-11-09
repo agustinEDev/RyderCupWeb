@@ -37,8 +37,8 @@
  */
 
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
-import { clearDeviceRevocationFlag } from '../utils/deviceRevocationLogout';
-import { fetchWithTokenRefresh } from '../utils/tokenRefreshInterceptor';
+import { clearDeviceRevocationFlag } from '../infrastructure/http/deviceRevocationLogout';
+import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterceptor';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
 import { olvidaLasNovedades } from './novedadesDeActividad';
 

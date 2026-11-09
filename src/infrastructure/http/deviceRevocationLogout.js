@@ -21,16 +21,16 @@
  */
 
 import i18next from 'i18next';
-import customToast from './toast';
-import { clearUserContext } from './sentryHelpers';
+import customToast from '../../utils/toast';
+import { clearUserContext } from '../../utils/sentryHelpers';
 import {
   avisaDelCierreForzado,
   esFinalNormalDelRefresco,
   MOTIVO_DEL_CIERRE,
-} from './avisoDeCierreForzado';
-import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from './vueltaTrasEntrar';
+} from '../../utils/avisoDeCierreForzado';
+import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../../utils/vueltaTrasEntrar';
 // El freno de un cierre por carga vive en su módulo (C1, S1)
-import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from './cierreDeEstaCarga';
+import { empiezaElCierreDeEstaCarga, seEstaCerrandoLaSesion } from '../../utils/cierreDeEstaCarga';
 
 // localStorage key to track if we've already handled device revocation
 const REVOCATION_HANDLED_KEY = 'device_revocation_handled';
@@ -165,8 +165,8 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
 };
 
 // Lo que otros guardan de la cuenta y hay que borrar al cerrar (9 nov 2026).
-// Antes este módulo importaba los servicios que lo guardan; utils no importa
-// services, así que los registra la composition root
+// Antes este módulo importaba los servicios que lo guardan; infrastructure/http
+// no importa services, así que los registra la composition root
 // (`composition/limpiezaAlCerrarLaSesion`, que cargan main.jsx el primero y
 // AuthContext). Lo usan los cierres forzados (`limpiaLaCuenta`) y el normal
 // (`clearAuth`, por `olvidaLoDeLaCuenta`):

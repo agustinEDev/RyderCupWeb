@@ -8,9 +8,9 @@ import {
   refrescoCompartido,
   trataElFalloDelRefresco,
   conElTokenAlDia,
-} from '../utils/tokenRefreshInterceptor.js';
-import { getCsrfToken, getCsrfCookie } from '../utils/csrfTokenSync'; // v1.13.0: CSRF Protection
-import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
+} from '../infrastructure/http/tokenRefreshInterceptor.js';
+import { getCsrfToken, getCsrfCookie } from '../infrastructure/http/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { handleCsrfLogout } from '../infrastructure/http/csrfLogout'; // v1.13.0: Centralized CSRF logout
 import { cabeceraDelModoDeLaApp } from '../utils/modoDeLaApp';
 import { captureError } from '../utils/sentryHelpers';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';

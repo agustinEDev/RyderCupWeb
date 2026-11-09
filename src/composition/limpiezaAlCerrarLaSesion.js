@@ -1,15 +1,16 @@
 /**
  * Lo que se borra de la cuenta al cerrar la sesión: en un cierre duro
- * (revocación, sesión caducada, CSRF) y en `clearAuth`. `utils/deviceRevocationLogout` hace el cierre pero no conoce los
- * servicios que guardan cosas de la cuenta (utils no importa services): aquí,
- * en la composition root, se le dicen.
+ * (revocación, sesión caducada, CSRF) y en `clearAuth`.
+ * `infrastructure/http/deviceRevocationLogout` hace el cierre pero no conoce los
+ * servicios que guardan cosas de la cuenta (infrastructure/http no importa
+ * services): aquí, en la composition root, se le dicen.
  *
  * Lo importa main.jsx el primero, para que esté puesto antes de que nada pueda
  * cerrar la sesión, y AuthContext, cuyo `clearAuth` usa el mismo registro.
  * El orden es el de siempre. Lo vigila
  * `limpiezaAlCerrarLaSesion.test.js`.
  */
-import { alCerrarLaSesion } from '../utils/deviceRevocationLogout';
+import { alCerrarLaSesion } from '../infrastructure/http/deviceRevocationLogout';
 import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';

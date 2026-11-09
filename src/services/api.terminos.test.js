@@ -15,11 +15,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   rutas con Términos pendientes o públicas              | no redirige
  *   otro 403                                              | el error de siempre
  */
-vi.mock('../utils/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: vi.fn(() => 'csrf') }));
-vi.mock('../utils/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
+vi.mock('../infrastructure/http/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: vi.fn(() => 'csrf') }));
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
-const { fetchWithTokenRefresh } = await import('../utils/tokenRefreshInterceptor');
+const { fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
 const { apiRequest } = await import('./api');
 const { olvidaLaRedireccionATerminos, esUnAvisoSilenciado } = await import('../utils/terminosPendientes');
 

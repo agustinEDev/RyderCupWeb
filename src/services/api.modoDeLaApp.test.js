@@ -31,7 +31,7 @@ describe('X-App-Mode en las peticiones', () => {
 
   it('M5: el refresco de la app instalada también', async () => {
     instalada.valor = true;
-    const { refreshAccessToken } = await import('../utils/tokenRefreshInterceptor');
+    const { refreshAccessToken } = await import('../infrastructure/http/tokenRefreshInterceptor');
 
     await refreshAccessToken().catch(() => {});
 

@@ -106,7 +106,7 @@ export default [
     ignores: [
       'src/**/*.test.{js,jsx}',
       'src/setupTests.js',
-      'src/utils/tokenRefreshInterceptor.js',
+      'src/infrastructure/http/tokenRefreshInterceptor.js',
       'src/services/sondaDeSesion.js',
       'src/infrastructure/repositories/ApiSupportRepository.js',
     ],

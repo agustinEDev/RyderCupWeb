@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleCsrfLogout } from './csrfLogout';
 // Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
-import '../composition/limpiezaAlCerrarLaSesion';
-import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
-import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../services/loUltimoConocido';
-import { olvidaLasNovedades } from '../services/novedadesDeActividad';
+import '../../composition/limpiezaAlCerrarLaSesion';
+import { olvidaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
+import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../../services/loUltimoConocido';
+import { olvidaLasNovedades } from '../../services/novedadesDeActividad';
 
-vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 
 /**
  * LA TABLA — salir por un fallo de CSRF.

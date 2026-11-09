@@ -31,7 +31,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
-import { handleDeviceRevocationLogout } from '../utils/deviceRevocationLogout';
+import { handleDeviceRevocationLogout } from '../composition/http';
 // El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
 // copias de una comprobación de seguridad acaban divergiendo
 import { vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';

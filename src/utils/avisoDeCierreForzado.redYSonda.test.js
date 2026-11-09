@@ -21,7 +21,7 @@ vi.mock('./avisoDeCierreForzado', async (original) => ({
   avisaDelCierreForzado: aviso.avisaDelCierreForzado,
 }));
 const revocacion = vi.hoisted(() => ({ handleDeviceRevocationLogout: vi.fn() }));
-vi.mock('./deviceRevocationLogout', async (original) => ({
+vi.mock('../infrastructure/http/deviceRevocationLogout', async (original) => ({
   isDeviceRevoked: (await original()).isDeviceRevoked,
   isSessionExpired: vi.fn(() => false),
   handleDeviceRevocationLogout: revocacion.handleDeviceRevocationLogout,
@@ -40,7 +40,7 @@ const respuesta = (status, cuerpo = {}) => ({
   },
 });
 
-const { fetchWithTokenRefresh } = await import('./tokenRefreshInterceptor');
+const { fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
 const { preguntaLaSesionSinInterceptor } = await import('../services/sondaDeSesion');
 const { MOTIVO_DEL_CIERRE } = await import('./avisoDeCierreForzado');
 
