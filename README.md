@@ -96,7 +96,6 @@ npm run preview   # Preview locally
 
 | Document | Description |
 |----------|-------------|
-| [CLAUDE.md](CLAUDE.md) | Complete project context for AI development |
 | [ROADMAP.md](ROADMAP.md) | Sprint planning (7 weeks, 5 sprints) |
 | [CHANGELOG.md](CHANGELOG.md) | Detailed version history |
 | [ADRs](docs/architecture/decisions/) | Architecture Decision Records (11 total) |

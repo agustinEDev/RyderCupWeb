@@ -78,7 +78,8 @@ const HandicapsDeLaCompeticion = ({ competitionId, handicapUpdate, handicapUpdat
   }, [competitionId, lectura]);
 
   const enMarcha = handicapUpdate?.status === 'IN_PROGRESS';
-  // En un hook propio, como el resto de sondeos del proyecto (CLAUDE.md)
+  // En un hook propio, como el resto de sondeos del proyecto (así lo hace
+  // ADR-010 con la anotación)
   useSondeoMientras(enMarcha, onReleer, CADA);
 
   const cuando = (iso) => horaEnElCampo(iso, zona, i18n.language);

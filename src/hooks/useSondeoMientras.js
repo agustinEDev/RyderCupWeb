@@ -5,7 +5,8 @@ import { useEffect } from 'react';
  * Para cuando deja de serlo y al desmontar. `pedir` tiene que ser estable
  * (`useCallback`): si no, el reloj se rearma en cada pintada.
  *
- * Los sondeos del proyecto van en hooks propios (CLAUDE.md), no en el componente.
+ * Los sondeos del proyecto van en hooks propios, no en el componente (como hace
+ * ADR-010 con la anotación en `useScoring`).
  */
 export const useSondeoMientras = (activo, pedir, cada) => {
   useEffect(() => {

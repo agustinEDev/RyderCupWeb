@@ -101,7 +101,7 @@ const RoleGuard = ({
   // Special case: ADMIN has access to everything
   const isAdmin = userRoleNames.includes('ADMIN');
 
-  // CREATOR can access PLAYER routes (as mentioned in CLAUDE.md)
+  // CREATOR can access PLAYER routes (ADR-009: Admin > Creator > Player)
   const isCreator = userRoleNames.includes('CREATOR');
   const playerAccessGranted = rolesArray.includes('PLAYER') && (isCreator || isAdmin);
 

@@ -314,8 +314,8 @@ lsof -ti:5173 | xargs kill -9
 Once you have everything working:
 
 1. **Read documentation**:
-   - Backend: `RyderCupAm/CLAUDE.md`
-   - Frontend: `RyderCupWeb/CLAUDE.md`
+   - Backend: `RyderCupAm/README.md`
+   - Frontend: `RyderCupWeb/README.md`
    - Design: `RyderCupWeb/STITCH_PROMPT.md`
 
 2. **Explore code**:
