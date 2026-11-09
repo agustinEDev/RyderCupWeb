@@ -1,5 +1,4 @@
 import { createBrowserRouter } from 'react-router';
-import { apuntaElRouterDeLaAplicacion } from './navegacionEnCurso';
 
 /**
  * Dónde guarda `<ScrollRestoration />` las posiciones. Clave propia para poder
@@ -37,7 +36,5 @@ export const creaElRouterDeLaAplicacion = (rutas) => {
   // un número (`navigate(-1)`) el router va al historial y no mira las opciones
   router.navigate = (destino, opciones) =>
     navega(destino, { ...opciones, preventScrollReset: opciones?.preventScrollReset ?? true });
-  // A qué página se va mientras carga (la vuelta tras aceptar los Términos)
-  apuntaElRouterDeLaAplicacion(router);
   return router;
 };

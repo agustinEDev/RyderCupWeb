@@ -3,9 +3,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 /**
- * Solo `routerDeLaAplicacion.js` apunta el router (y los tests). Si otro módulo
- * lo cambiara, la vuelta tras aceptar los Términos leería la navegación de otro
- * router. Una regla de ESLint chocaría con las de `no-restricted-imports` que ya
+ * Solo App.jsx apunta el router (y los tests), en el mismo efecto que lo registra
+ * para Sentry: con StrictMode, el inicializador de `useState` crea dos routers y
+ * React se queda con el primero; apuntarlo al crearlo dejaba el descartado. Si otro
+ * módulo lo cambiara, la vuelta tras aceptar los Términos leería otra navegación. Una regla de ESLint chocaría con las de `no-restricted-imports` que ya
  * tienen las carpetas de la interfaz (la última gana), así que se vigila aquí.
  */
 const RAIZ = join(globalThis.process.cwd(), 'src');
@@ -18,12 +19,12 @@ const ficheros = (carpeta) =>
   });
 
 describe('navegacionEnCurso', () => {
-  it('solo routerDeLaAplicacion.js apunta el router de la aplicación', () => {
+  it('solo App.jsx apunta el router de la aplicación (en su efecto, con limpieza)', () => {
     const quienes = ficheros(RAIZ)
       .filter((ruta) => /apuntaElRouterDeLaAplicacion\s*\(/.test(readFileSync(ruta, 'utf8')))
       .map((ruta) => relative(RAIZ, ruta))
       .filter((ruta) => ruta !== 'utils/navegacionEnCurso.js');
 
-    expect(quienes).toEqual(['utils/routerDeLaAplicacion.js']);
+    expect(quienes).toEqual(['App.jsx']);
   });
 });

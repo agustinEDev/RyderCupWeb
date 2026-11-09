@@ -16,7 +16,7 @@ import { createMemoryRouter } from 'react-router';
  * | ir a una ruta que se puede ver con los Términos pendientes | no se lleva a aceptar      |
  * | una llamada de fondo de la página protegida da el 403 mientras se va a una pública o legal | no se lleva a aceptar: se va a leer lo legal |
  * | el destino da el 403 otra vez tras aceptar (desacuerdo)| no se redirige más             |
- * | el router de la app (creaElRouterDeLaAplicacion)       | se apunta solo                 |
+ * | el router de la app (App.jsx, en un efecto)             | lo fija App.routerDeDatos (R3c) |
  */
 const { llevaAAceptarLosTerminos, olvidaLaRedireccionATerminos } = await import('./terminosPendientes');
 const { apuntaElRouterDeLaAplicacion } = await import('./navegacionEnCurso');
@@ -132,20 +132,5 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
     await router.navigate('/competitions');
 
     expect(assign).toHaveBeenCalledTimes(1);
-  });
-
-  it('el router de la aplicación se apunta solo al crearlo', async () => {
-    const { creaElRouterDeLaAplicacion } = await import('./routerDeLaAplicacion');
-    const { destinoDeLaNavegacion } = await import('./navegacionEnCurso');
-    let visto = null;
-    const router = creaElRouterDeLaAplicacion([
-      { path: '/', element: null },
-      { path: '/competitions', element: null, loader: () => ((visto = destinoDeLaNavegacion()), null) },
-    ]);
-
-    await router.navigate('/competitions?tab=mias');
-
-    expect(visto).toEqual({ pathname: '/competitions', search: '?tab=mias' });
-    router.dispose();
   });
 });
