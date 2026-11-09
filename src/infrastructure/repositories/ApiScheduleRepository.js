@@ -1,6 +1,6 @@
 // src/infrastructure/repositories/ApiScheduleRepository.js
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 import IScheduleRepository from '../../domain/repositories/IScheduleRepository.js';
 import ScheduleMapper from '../mappers/ScheduleMapper';
 

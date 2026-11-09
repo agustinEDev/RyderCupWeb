@@ -6,10 +6,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiDeviceRepository from './ApiDeviceRepository';
 import Device from '../../domain/entities/Device';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 
 // Mock the api module
-vi.mock('../../services/api', () => ({
+vi.mock('../http/api', () => ({
   default: vi.fn(),
 }));
 

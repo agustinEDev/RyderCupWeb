@@ -1,6 +1,6 @@
 import IQuickMatchRepository from '../../domain/repositories/IQuickMatchRepository';
 import QuickMatchMapper from '../mappers/QuickMatchMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 
 /**

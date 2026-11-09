@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiScheduleRepository from './ApiScheduleRepository';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 
-vi.mock('../../services/api', () => ({ default: vi.fn() }));
+vi.mock('../http/api', () => ({ default: vi.fn() }));
 
 /**
  * Las partidas de cada franja (FE #824, PR 6; RyderCupAm#534). Toda escritura

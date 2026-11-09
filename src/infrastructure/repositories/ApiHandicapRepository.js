@@ -1,6 +1,6 @@
 import IHandicapRepository from '../../domain/repositories/IHandicapRepository.js';
 import User from '../../domain/entities/User.js';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 class ApiHandicapRepository extends IHandicapRepository {
   constructor() {

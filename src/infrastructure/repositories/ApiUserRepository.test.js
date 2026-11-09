@@ -3,12 +3,12 @@ import ApiUserRepository from './ApiUserRepository';
 import User from '../../domain/entities/User';
 
 // Mock del módulo api.js centralizado
-vi.mock('../../services/api.js', () => ({
+vi.mock('../http/api.js', () => ({
   default: vi.fn() // Mockear la función apiRequest
 }));
 
 // Importar el mock para poder usarlo en los tests
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 describe('ApiUserRepository', () => {
   let apiUserRepository;

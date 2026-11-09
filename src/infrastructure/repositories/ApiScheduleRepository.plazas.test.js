@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiScheduleRepository from './ApiScheduleRepository';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 
-vi.mock('../../services/api', () => ({ default: vi.fn() }));
+vi.mock('../http/api', () => ({ default: vi.fn() }));
 
 /**
  * D1-D2 (FE #824, PR 4): plazas, listas de espera y el aviso de plaza asignada

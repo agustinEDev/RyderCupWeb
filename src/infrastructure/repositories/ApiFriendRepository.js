@@ -1,6 +1,6 @@
 import IFriendRepository from '../../domain/repositories/IFriendRepository';
 import FriendshipMapper from '../mappers/FriendshipMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * ApiFriendRepository - REST API implementation

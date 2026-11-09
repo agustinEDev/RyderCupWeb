@@ -422,7 +422,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S11c: apiRequest sigue con S5b y da falta de cobertura con S9', async () => {
-      const { default: apiRequest } = await import('../../services/api');
+      const { default: apiRequest } = await import('./api');
       conRefrescos(r401(REPLACED), OK);
       const bien = await hastaElFinal(apiRequest('/api/v1/users/me'));
       expect(bien.error).toBeUndefined();
@@ -434,7 +434,7 @@ describe('SESSION_REPLACED: se reintenta una vez y no se cierra la sesión', () 
     });
 
     it('S11d: el reintento tras un 403 CSRF da falta de cobertura con S9, sin cierre', async () => {
-      const { default: apiRequest } = await import('../../services/api');
+      const { default: apiRequest } = await import('./api');
       conRefrescos(r401(REPLACED), r401(REPLACED));
       const fetchDelRefresco = globalThis.fetch;
       vi.stubGlobal(

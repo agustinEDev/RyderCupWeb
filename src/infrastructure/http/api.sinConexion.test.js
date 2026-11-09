@@ -8,14 +8,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
  */
 
 const llamarAlBackend = vi.fn();
-vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
+vi.mock('./tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
 }));
-vi.mock('../infrastructure/http/csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
+vi.mock('./csrfTokenSync', () => ({ getCsrfCookie: () => null, getCsrfToken: () => 'csrf' }));
 vi.mock('i18next', () => ({ default: { t: (clave) => `t(${clave})` } }));
 
 const { apiRequest } = await import('./api');
-const { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } = await import('../utils/sinCobertura');
+const { esFalloDeRed, esFalloDeRedDeLaApi, mensajeDeError } = await import('../../utils/sinCobertura');
 
 describe('apiRequest · sin conexión (FE #685)', () => {
   beforeEach(() => {

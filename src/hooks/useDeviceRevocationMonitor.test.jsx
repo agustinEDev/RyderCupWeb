@@ -10,12 +10,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { BrowserRouter } from 'react-router';
 import { useDeviceRevocationMonitor } from './useDeviceRevocationMonitor';
-import * as api from '../services/api';
+import * as api from '../composition/http';
 
-// Mock API
-vi.mock('../services/api', () => ({
-  apiRequest: vi.fn(),
-}));
+// El hook importa apiRequest de la fachada: se mockea ese módulo, el que usa
+vi.mock('../composition/http', async (original) => ({ ...(await original()), apiRequest: vi.fn() }));
 
 // Wrapper with React Router
 const wrapper = ({ children }) => (
