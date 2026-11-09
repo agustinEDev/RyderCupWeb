@@ -37,7 +37,7 @@ import { useVolverArriba } from './hooks/useVolverArriba';
 import { useRecargaAlVolverDeLaCache } from './hooks/useRecargaAlVolverDeLaCache';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import BarraDeCarga from './components/layout/BarraDeCarga';
-import { marcaElArranque } from './utils/cargaDeLaPantalla';
+import { marcaElArranque } from './services/cargaDeLaPantalla';
 import { loader as cargaDeTorneos, shouldRevalidate as cuandoVolverAPedirTorneos } from './pages/Competitions.datos';
 import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';

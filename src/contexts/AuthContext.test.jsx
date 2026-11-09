@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider } from './AuthContext';
 import { useAuthContext } from '../hooks/useAuthContext';
-import { getCsrfToken, setCsrfTokenGlobal } from './csrfTokenSync';
+import { getCsrfToken, setCsrfTokenGlobal } from '../utils/csrfTokenSync';
 import {
   olvidaLaCuentaDeEstaPestana,
   ultimaCuentaDeEstaPestana,

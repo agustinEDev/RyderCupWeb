@@ -25,7 +25,7 @@ vi.mock('../golf_course/GolfCourseSearchBox', () => ({
   default: ({ countryCode }) => <p data-testid="buscando-en">{countryCode}</p>,
 }));
 vi.mock('../../services/countries', () => ({ formatCountryName: (pais) => pais.name_es }));
-vi.mock('../../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../ui/CountryFlag', () => ({ CountryFlag: () => null }));
 vi.mock('../../utils/toast', () => ({ default: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
 
 const CompetitionGolfCoursesSection = (await import('./CompetitionGolfCoursesSection')).default;

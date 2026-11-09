@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleCsrfLogout } from './csrfLogout';
+// Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
+import '../composition/limpiezaAlCerrarLaSesion';
 import { olvidaElCierreDeEstaCarga } from './cierreDeEstaCarga';
 import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../services/loUltimoConocido';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';

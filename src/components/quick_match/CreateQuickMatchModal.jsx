@@ -35,7 +35,7 @@ import {
   formaDeAnotar,
 } from './createQuickMatchModalConstants';
 import { leeTodosLosAmigos } from './leeTodosLosAmigos';
-import { jugadorInvitado, jugadorRegistrado } from './jugadoresDelAsistente';
+import { jugadorInvitado, jugadorRegistrado } from '../../utils/jugadoresDelAsistente';
 
 // Cuánto se espera a tus partidas antes de sugerir la barra por tu género
 export const ESPERA_DE_TUS_PARTIDAS_MS = 2000;

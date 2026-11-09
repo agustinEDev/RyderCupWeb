@@ -8,7 +8,12 @@
  * se cumplían). Su trabajo es que siga así:
  *
  *   domain           ← no depende de nada del resto de src, ni de React
- *   application      ← solo domain (y utils)
+ *   application      ← solo domain (y utils); ni directa ni indirectamente
+ *                      llega a la interfaz ni a otra librería que uuid (9 nov 2026)
+ *   utils            ← ayudas: no conocen la interfaz, ni services, ni las
+ *                      capas de arriba (9 nov 2026)
+ *   services         ← api.js, la sesión, la cola…: no conocen la interfaz;
+ *                      los casos de uso, solo por composition (9 nov 2026)
  *   infrastructure   ← implementa los repositorios de domain; habla con la API
  *   composition      ← la composition root: el único sitio que junta
  *                      casos de uso e implementaciones
@@ -21,6 +26,11 @@
 
 const UI = '^src/(pages|components|hooks|contexts)/';
 const TEST = '\\.test\\.(js|jsx|ts|tsx)$';
+// Un fichero de interfaz esté donde esté: JSX en .jsx o .tsx
+const UI_FILE = '\\.(jsx|tsx)$';
+// Las únicas librerías a las que llegan el dominio y los casos de uso (9 nov
+// 2026: uuid, y nada más). Añadir una es una decisión de arquitectura
+const CORE_ALLOWED_PACKAGES = 'node_modules/(uuid)/';
 
 module.exports = {
   forbidden: [
@@ -33,30 +43,20 @@ module.exports = {
       to: { path: '^src/', pathNot: '^src/domain/' },
     },
     {
-      name: 'domain-without-frameworks',
-      comment: 'El dominio no conoce React, el router, i18n ni Sentry.',
-      severity: 'error',
-      from: { path: '^src/domain/', pathNot: TEST },
-      to: {
-        dependencyTypes: ['npm', 'npm-dev', 'npm-peer', 'npm-optional'],
-        path: 'node_modules/(react|react-dom|react-router|react-router-dom|react-i18next|i18next|@sentry/[^/]+)/',
-      },
-    },
-    {
       name: 'application-only-uses-domain',
       comment:
-        'Los casos de uso solo dependen del dominio (y de utils): nunca de la infraestructura, de los servicios, de la composition root ni de la interfaz.',
+        'Los casos de uso solo dependen del dominio (y de utils): nunca de la infraestructura, de los servicios ni de la composition root. La interfaz la vigila core-does-not-reach-ui, también por caminos indirectos.',
       severity: 'error',
       from: { path: '^src/application/', pathNot: TEST },
-      to: { path: '^src/(infrastructure|services|composition|pages|components|hooks|contexts)/' },
+      to: { path: '^src/(infrastructure|services|composition)/' },
     },
     {
       name: 'infrastructure-does-not-reach-up',
       comment:
-        'La infraestructura implementa los repositorios del dominio; no conoce los casos de uso, la composition root ni la interfaz.',
+        'La infraestructura implementa los repositorios del dominio; no conoce los casos de uso ni la composition root. La interfaz la vigila infrastructure-and-services-do-not-reach-ui, también por caminos indirectos.',
       severity: 'error',
       from: { path: '^src/infrastructure/', pathNot: TEST },
-      to: { path: '^src/(application|composition|pages|components|hooks|contexts)/' },
+      to: { path: '^src/(application|composition)/' },
     },
     {
       name: 'ui-goes-through-composition',
@@ -65,6 +65,66 @@ module.exports = {
       severity: 'error',
       from: { path: UI, pathNot: TEST },
       to: { path: '^src/(application|infrastructure)/' },
+    },
+    // ── Reglas añadidas el 9 nov 2026 (auditoría de arquitectura) ──────────
+    // Las de arriba miran solo el import directo. Estas cierran los huecos por
+    // los que React se colaba en el núcleo a través de utils, y las carpetas
+    // (utils, services) que no tenían ninguna regla.
+    {
+      name: 'core-only-reaches-allowed-packages',
+      comment:
+        'Lista de PERMITIDOS: el dominio y los casos de uso solo llegan, directa o indirectamente, a las librerías de CORE_ALLOWED_PACKAGES. Sustituye a domain-without-frameworks, que era una lista de prohibidos (React, router, i18n, Sentry) y se quedaba atrás con cada librería de interfaz nueva. CompetitionAssembler llegaba a React por utils/countryUtils.',
+      severity: 'error',
+      from: { path: '^src/(domain|application)/', pathNot: TEST },
+      to: { path: 'node_modules/', pathNot: CORE_ALLOWED_PACKAGES, reachable: true },
+    },
+    {
+      name: 'core-does-not-reach-ui',
+      comment:
+        'Ni el dominio ni los casos de uso llegan a un fichero de interfaz (.jsx, .tsx, pages, components, hooks, contexts), tampoco a través de otro módulo.',
+      severity: 'error',
+      from: { path: '^src/(domain|application)/', pathNot: TEST },
+      to: { path: [UI, UI_FILE], reachable: true },
+    },
+    {
+      name: 'utils-does-not-reach-ui',
+      comment:
+        'utils son ayudas sin interfaz: no llegan a componentes, páginas, contextos, hooks ni a un .jsx/.tsx, ni directamente ni por otro módulo. Si una ayuda necesita algo de ahí, ese algo no es de la interfaz y tiene que salir de esa carpeta.',
+      severity: 'error',
+      from: { path: '^src/utils/', pathNot: TEST },
+      to: { path: [UI, UI_FILE], reachable: true },
+    },
+    {
+      name: 'utils-does-not-import-services',
+      comment:
+        'utils está por debajo de services (services usa utils, nunca al revés): una ayuda que necesita la sesión, la memoria o la API es un servicio y vive en src/services.',
+      severity: 'error',
+      from: { path: '^src/utils/', pathNot: TEST },
+      to: { path: '^src/services/' },
+    },
+    {
+      name: 'utils-does-not-reach-up',
+      comment:
+        'utils no conoce los casos de uso, la infraestructura ni la composition root.',
+      severity: 'error',
+      from: { path: '^src/utils/', pathNot: TEST },
+      to: { path: '^src/(application|infrastructure|composition)/' },
+    },
+    {
+      name: 'services-does-not-reach-up',
+      comment:
+        'src/services (api.js, la sesión compartida, la cola sin conexión…) lo usan los repositorios y la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
+      severity: 'error',
+      from: { path: '^src/services/', pathNot: TEST },
+      to: { path: '^src/(application|infrastructure)/' },
+    },
+    {
+      name: 'infrastructure-and-services-do-not-reach-ui',
+      comment:
+        'La infraestructura y los servicios no llegan a la interfaz (carpetas o .jsx/.tsx de cualquier sitio), ni directamente ni por un camino indirecto (p. ej. services/api → utils → contexts).',
+      severity: 'error',
+      from: { path: '^src/(infrastructure|services)/', pathNot: TEST },
+      to: { path: [UI, UI_FILE], reachable: true },
     },
     {
       name: 'no-circular',

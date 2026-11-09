@@ -78,7 +78,7 @@ vi.mock('../utils/competitionFormValidation', () => ({
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 const CreateCompetition = (await import('./CreateCompetition')).default;
 

@@ -59,7 +59,7 @@ vi.mock('../components/ui/CountryAutocomplete', () => ({
 }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 // El buscador de verdad pregunta al backend. Aquí se sustituye por dos botones
 // que hacen lo único que importa para esta tabla: avisar de un campo elegido.

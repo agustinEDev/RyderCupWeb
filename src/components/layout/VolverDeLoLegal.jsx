@@ -38,7 +38,7 @@ const VolverDeLoLegal = () => {
     setComprobando(true);
     const estado = await estadoDeLaSesion();
     if (estado === ESTADO_DE_LA_SESION.MUERTA || estado === ESTADO_DE_LA_SESION.REVOCADA) {
-      // Ya olvida lo guardado para anotar sin cobertura y el hándicap pendiente
+      // Ya olvida lo guardado para anotar sin cobertura, el hándicap pendiente y el número de Actividad
       clearAuth();
     }
     // Lo único que el cierre por revocación limpia y `clearAuth` no

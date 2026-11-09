@@ -33,7 +33,7 @@ vi.mock('../utils/tokenRefreshInterceptor', async (original) => ({
   fetchWithTokenRefresh: (...args) => llamarAlBackend(...args),
   refrescoCompartido: (...args) => refrescoCompartido(...args),
 }));
-vi.mock('../contexts/csrfTokenSync', () => ({
+vi.mock('../utils/csrfTokenSync', () => ({
   getCsrfToken: () => getCsrfToken(),
   getCsrfCookie: () => getCsrfToken(),
   setCsrfTokenGlobal: () => {},
@@ -41,6 +41,10 @@ vi.mock('../contexts/csrfTokenSync', () => ({
 vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: (clave) => clave } }));
 
+// Lo que se borra de la cuenta lo registra la composition root, como en la app:
+// sin él, `handleCsrfLogout` se tragaba el «no hay limpiezas registradas»
+await import('../composition/limpiezaAlCerrarLaSesion');
+const { olvidaLasNovedades } = await import('./novedadesDeActividad');
 const { apiRequest } = await import('./api');
 
 const csrf403 = () => ({
@@ -86,6 +90,9 @@ describe('el cierre del 4 nov llega a Sentry', () => {
       'logout.route': 'POST /api/v1/quick-matches/start',
       'logout.status': '403',
     });
+    // Y la cuenta se limpió entera: sin el registro, el fallo se quedaba en la consola
+    expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
+    expect(console.error).not.toHaveBeenCalledWith('[CSRF] Logout cleanup failed:', expect.anything());
   });
 
   it('N2: si el reintento va bien, no hay cierre ni aviso de cierre', async () => {

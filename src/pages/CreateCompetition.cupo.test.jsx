@@ -38,7 +38,7 @@ vi.mock('../composition', () => ({
 vi.mock('../components/ui/CountryAutocomplete', () => ({ default: () => null }));
 vi.mock('../components/golf_course/GolfCourseRequestModal', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 
 // Pasarse del tope sin rellenar lo demás: la validación de verdad se para en el
 // nombre. Que devuelva `max: 200` lo prueba su propio test; aquí, que se pinte

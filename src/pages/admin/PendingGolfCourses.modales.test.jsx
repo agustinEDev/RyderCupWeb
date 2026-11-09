@@ -27,7 +27,7 @@ vi.mock('../../hooks/useAuth', () => {
 });
 vi.mock('../../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../../utils/toast', () => ({ default: { success: vi.fn(), error: vi.fn() } }));
-vi.mock('../../utils/countryUtils', () => ({ CountryFlag: () => null }));
+vi.mock('../../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
 vi.mock('../../services/countries', () => ({ formatCountryName: () => 'España' }));
 vi.mock('../../components/golf_course/TeeColorBadge', () => ({ default: () => null }));
 // La tabla, reducida a los dos botones que abren los modales

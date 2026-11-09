@@ -7,9 +7,11 @@
  *
  * UPDATE (Feb 2026): Replaced country-flag-icons SVG bundle (239 KB) with
  * flagcdn.com CDN images for consistent cross-browser rendering at zero bundle cost.
+ *
+ * Sin React (9 nov 2026): el componente `CountryFlag` vive en
+ * `components/ui/CountryFlag.jsx`. Aquí estaba también, y por este fichero los
+ * casos de uso (CompetitionAssembler) llegaban a React sin importarlo.
  */
-
-import React, { useState } from 'react';
 
 /**
  * Converts a country code to its flag emoji
@@ -107,58 +109,4 @@ export const canUseRFEG = (user) => {
   if (!user || typeof user !== 'object') return false;
   // Only Spanish users (ES) can use RFEG
   return Boolean(user.country_code) && user.country_code.toUpperCase() === 'ES';
-};
-
-/**
- * Get flag image component for a country code
- * Uses flagcdn.com CDN for consistent rendering across all browsers
- * (fixes Chrome/Windows issues with Unicode flag emojis)
- *
- * @param {string} countryCode - ISO 3166-1 alpha-2 code (e.g., 'ES', 'FR', 'US')
- * @param {string} className - Optional CSS class names
- * @param {Object} style - Optional inline styles
- * @param {string} title - Optional title/tooltip text
- * @returns {JSX.Element|null} - img element or null if invalid
- *
- * Examples:
- *   <CountryFlag countryCode="ES" className="w-6 h-6" />
- *   <CountryFlag countryCode="FR" style={{ width: '24px', height: 'auto' }} />
- */
-export const CountryFlag = ({ countryCode, className = '', style = {}, title = '' }) => {
-  const [fallbackCode, setFallbackCode] = useState(null);
-  const useFallback = fallbackCode === countryCode;
-
-  const isValid = countryCode && typeof countryCode === 'string' && /^[A-Z]{2}$/.test(countryCode.trim().toUpperCase());
-
-  if (!isValid) {
-    return null;
-  }
-
-  const code = countryCode.trim().toUpperCase();
-  const lowerCode = code.toLowerCase();
-
-  if (useFallback) {
-    const fallback = getCountryFlag(code);
-    if (!fallback) return null;
-    return React.createElement('span', {
-      role: 'img',
-      'aria-label': title || code,
-      title: title || undefined,
-      className,
-      style: { display: 'inline-block', verticalAlign: 'middle', ...style },
-    }, fallback);
-  }
-
-  return React.createElement('img', {
-    src: `https://flagcdn.com/w40/${lowerCode}.png`,
-    srcSet: `https://flagcdn.com/w80/${lowerCode}.png 2x`,
-    width: 40,
-    height: 30,
-    alt: title || code,
-    title: title || undefined,
-    className,
-    loading: 'lazy',
-    style: { display: 'inline-block', verticalAlign: 'middle', ...style },
-    onError: () => setFallbackCode(countryCode),
-  });
 };

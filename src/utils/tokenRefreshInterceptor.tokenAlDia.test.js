@@ -35,7 +35,7 @@ describe('reintento tras 401 con el token al día', () => {
   beforeEach(async () => {
     vi.resetModules();
     ({ fetchWithTokenRefresh, refrescoCompartido } = await import('./tokenRefreshInterceptor'));
-    ({ setCsrfTokenGlobal } = await import('../contexts/csrfTokenSync'));
+    ({ setCsrfTokenGlobal } = await import('./csrfTokenSync'));
     // Sin cookie legible: el token sale de la copia que deja el refresco
     vi.spyOn(document, 'cookie', 'get').mockReturnValue('');
     setCsrfTokenGlobal('VIEJO');

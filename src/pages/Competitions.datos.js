@@ -1,5 +1,5 @@
 import { listUserCompetitionsUseCase } from '../composition';
-import { cargaDeLaPantalla, soloSiSePideOtraVez } from '../utils/cargaDeLaPantalla';
+import { cargaDeLaPantalla, soloSiSePideOtraVez } from '../services/cargaDeLaPantalla';
 import { cargarConReintento } from '../utils/lazyWithRetry';
 
 /**

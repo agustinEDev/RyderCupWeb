@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CountryFlag } from '../../utils/countryUtils';
+import { CountryFlag } from '../ui/CountryFlag';
 import { formatCountryName } from '../../services/countries';
 import GolfCourseSearchBox from '../golf_course/GolfCourseSearchBox';
 import customToast from '../../utils/toast';

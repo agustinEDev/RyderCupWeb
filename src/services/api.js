@@ -9,7 +9,7 @@ import {
   trataElFalloDelRefresco,
   conElTokenAlDia,
 } from '../utils/tokenRefreshInterceptor.js';
-import { getCsrfToken, getCsrfCookie } from '../contexts/csrfTokenSync'; // v1.13.0: CSRF Protection
+import { getCsrfToken, getCsrfCookie } from '../utils/csrfTokenSync'; // v1.13.0: CSRF Protection
 import { handleCsrfLogout } from '../utils/csrfLogout'; // v1.13.0: Centralized CSRF logout
 import { cabeceraDelModoDeLaApp } from '../utils/modoDeLaApp';
 import { captureError } from '../utils/sentryHelpers';
