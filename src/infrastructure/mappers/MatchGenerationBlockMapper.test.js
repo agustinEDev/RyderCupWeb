@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../http/api', () => ({ apiRequest: vi.fn() }));
+vi.mock('../http/api.js', () => ({ default: vi.fn() }));
 
-import { apiRequest } from '../http/api';
+import apiRequest from '../http/api.js';
 import { aBloqueoDePartidos } from './MatchGenerationBlockMapper';
 import ScheduleMapper from './ScheduleMapper';
 import EnvelopeMapper from './EnvelopeMapper';

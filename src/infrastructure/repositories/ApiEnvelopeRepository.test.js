@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../http/api', () => ({ apiRequest: vi.fn() }));
+vi.mock('../http/api.js', () => ({ default: vi.fn() }));
 
-import { apiRequest } from '../http/api';
+import apiRequest from '../http/api.js';
 import ApiEnvelopeRepository from './ApiEnvelopeRepository';
 
 /**

@@ -1,6 +1,6 @@
 // src/infrastructure/repositories/ApiEnvelopeRepository.js
 
-import { apiRequest } from '../http/api';
+import apiRequest from '../http/api.js';
 import EnvelopeMapper from '../mappers/EnvelopeMapper';
 import IEnvelopeRepository from '../../domain/repositories/IEnvelopeRepository';
 
