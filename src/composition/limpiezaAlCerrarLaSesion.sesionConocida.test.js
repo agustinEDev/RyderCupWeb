@@ -13,6 +13,7 @@ vi.mock('../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
 
 const almacen = new Map();
+const locationOriginal = globalThis.window.location;
 
 describe('cierre forzado y copia para arrancar sin cobertura', () => {
   beforeEach(() => {
@@ -25,7 +26,11 @@ describe('cierre forzado y copia para arrancar sin cobertura', () => {
     delete globalThis.window.location;
     globalThis.window.location = { href: '', pathname: '/dashboard' };
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete globalThis.window.location;
+    globalThis.window.location = locationOriginal;
+  });
 
   it('revocar el dispositivo borra la copia del usuario y lleva al login', async () => {
     almacen.set('rydercup-sesion-conocida', JSON.stringify({ id: 'u-1', email: 'a@b.c' }));
