@@ -1,4 +1,5 @@
 import { esRutaPublica, normalizaLaRuta, sePuedeEstarConTerminosPendientes } from './rutasPublicas';
+import { destinoDeLaNavegacion } from './navegacionEnCurso';
 
 /**
  * Llevar a aceptar los Términos tras un 403 `TERMS_NOT_ACCEPTED` (F4).
@@ -58,7 +59,10 @@ export const llevaAAceptarLosTerminos = () => {
   if (redirigidaEn !== null) return Date.now() - redirigidaEn < PLAZO_MS;
   if (hayDesacuerdo) return false;
 
-  const { pathname: tal = '/', search = '' } = globalThis.location ?? {};
+  // La página a la que se va: con una navegación en curso, su destino (la llamada
+  // del `loader` de esa pantalla sale antes de que cambie la dirección); si no, la
+  // página en la que se está (una recarga, o una pantalla sin `loader`)
+  const { pathname: tal = '/', search = '' } = destinoDeLaNavegacion() ?? globalThis.location ?? {};
   const pathname = normalizaLaRuta(tal);
   if (sePuedeEstarConTerminosPendientes(pathname) || esRutaPublica(pathname)) return false;
 
