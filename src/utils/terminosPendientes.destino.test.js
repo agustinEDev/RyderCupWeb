@@ -14,6 +14,7 @@ import { createMemoryRouter } from 'react-router';
  * | desde una página pública, ir a una protegida           | la protegida (se lleva a aceptar) |
  * | recargar en una página (sin navegación en curso)       | la página recargada, como hoy  |
  * | ir a una ruta que se puede ver con los Términos pendientes | no se lleva a aceptar      |
+ * | una llamada de fondo de la página protegida da el 403 mientras se va a una pública o legal | no se lleva a aceptar: se va a leer lo legal |
  * | el destino da el 403 otra vez tras aceptar (desacuerdo)| no se redirige más             |
  * | el router de la app (creaElRouterDeLaAplicacion)       | se apunta solo                 |
  */
@@ -96,6 +97,29 @@ describe('Términos pendientes: volver a la página a la que se iba', () => {
 
     expect(assign).not.toHaveBeenCalled();
   });
+
+  it.each([['/terms'], ['/privacy'], ['/cookies'], ['/']])(
+    'una llamada de fondo de la página protegida da el 403 mientras se va a %s: no lleva a aceptar',
+    async (destino) => {
+      const assign = enUna('/competitions/7');
+      const router = createMemoryRouter(
+        [
+          { path: '/competitions/7', element: null },
+          // La página de destino, pública o legal, tarda en cargar: mientras, sigue en curso
+          { path: destino, element: null, loader: () => new Promise((listo) => setTimeout(() => listo(null), 20)) },
+        ],
+        { initialEntries: ['/competitions/7'] }
+      );
+      apuntaElRouterDeLaAplicacion(router);
+
+      const navegacion = router.navigate(destino);
+      // La llamada de fondo (un sondeo de la página protegida) da el 403 ahora
+      llevaAAceptarLosTerminos();
+      await navegacion;
+
+      expect(assign).not.toHaveBeenCalled();
+    }
+  );
 
   it('si el destino vuelve a dar el 403 tras aceptar, es un desacuerdo: no se redirige más', async () => {
     const assign = enUna('/dashboard');
