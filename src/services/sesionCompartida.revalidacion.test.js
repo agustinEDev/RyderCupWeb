@@ -20,6 +20,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *   7   la pestaña se oculta                              | no pregunta
  *   8   vuelve la red                                     | pregunta
  *   9   se cierra la sesión a media pregunta              | la respuesta no manda
+ *   9b  un cierre forzado (CSRF) a media pregunta         | la respuesta no reescribe la copia
  *   10  la copia vieja del dispositivo, sin el campo      | al volver la red se confirma con lo del servidor
  *   11  ya hay una consulta en vuelo o un reintento       | no abre otra
  *   12  mientras pregunta                                 | ni `cargando` ni `refrescando`: sin pantalla de espera
@@ -52,6 +53,7 @@ const {
   loQueHaySobreLaSesion,
   suscribeALaSesion,
   olvidaLaSesion,
+  olvidaLaCopiaParaArrancarSinCobertura,
   laPaginaSeVa,
   anotaLaSesion,
   reiniciaLaSesionCompartida,
@@ -267,6 +269,22 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     await asienta();
 
     expect(loQueHaySobreLaSesion().user).toBeNull();
+    expect(localStorage.getItem(RECUERDO)).toBeNull();
+  });
+
+  it('9b: un cierre forzado a media pregunta: la respuesta tardía no reescribe la copia', async () => {
+    // El caso del campo: vuelve la red, la cola falla por CSRF y borra la copia
+    // mientras /current-user sigue en vuelo; con las cookies aún válidas responde
+    // 200 antes de que la recarga llegue (revisión de fix/forget-known-session)
+    await conSesion();
+    let entrega;
+    respuestas.push(() => new Promise((r) => { entrega = r; }));
+
+    vuelveAlFrente();
+    olvidaLaCopiaParaArrancarSinCobertura();
+    entrega(ok(PENDIENTES));
+    await asienta();
+
     expect(localStorage.getItem(RECUERDO)).toBeNull();
   });
 

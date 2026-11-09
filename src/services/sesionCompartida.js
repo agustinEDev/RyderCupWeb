@@ -102,7 +102,15 @@ const olvidaElApunte = () => {
  * con una redirección dura y no pasan por `olvidaLaSesion`, así que sin esto el
  * móvil sin red seguía entrando con el nombre y el correo de la cuenta revocada.
  */
-export const olvidaLaCopiaParaArrancarSinCobertura = () => olvidaElApunte();
+export const olvidaLaCopiaParaArrancarSinCobertura = () => {
+  olvidaElApunte();
+  // Y lo que esté en vuelo deja de mandar: en un cierre por CSRF las cookies aún
+  // valen, y un /current-user que contestara antes de la recarga volvía a escribir
+  // la copia. No se pone `seVa`: clearAuth usa el mismo registro sin recargar, y
+  // ahí la consulta tiene que poder volver a preguntar
+  generacion += 1;
+  enVuelo = null;
+};
 
 /**
  * Sin privilegios: esto vive en el dispositivo y se puede tocar a mano. El
