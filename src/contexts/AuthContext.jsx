@@ -9,8 +9,9 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { setCsrfTokenGlobal } from '../utils/csrfTokenSync';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
-import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
-import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
+import { olvidaLoDeLaCuenta } from '../utils/deviceRevocationLogout';
+// Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
+import '../composition/limpiezaAlCerrarLaSesion';
 import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 
 // Create the context
@@ -124,14 +125,12 @@ export const AuthProvider = ({ children }) => {
     // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
     // un instante en la siguiente que entrara sin recargar (FE #502)
     olvidaLasAccionesPendientes();
-    // Y las partidas guardadas para poder anotar sin cobertura (FE #524): en un
-    // móvil compartido, la siguiente persona que entrara y se quedara sin señal
-    // vería la lista de la anterior, con sus nombres y sus resultados
-    olvidaLoDeEstaCuenta();
-    // Y lo pendiente del hándicap (FE #677): en un móvil compartido, la
-    // siguiente persona vería el modal con el hándicap de esta cuenta, y
-    // aceptarlo lo guardaría en su perfil
-    olvidaElRefrescoDeHandicap();
+    // Y lo que otros guardan de la cuenta, con el mismo registro que los cierres
+    // forzados (`composition/limpiezaAlCerrarLaSesion`): las partidas guardadas
+    // para anotar sin cobertura (FE #524) y lo pendiente del hándicap (FE #677).
+    // En un móvil compartido, la siguiente persona vería la lista de la
+    // anterior, o el modal con su hándicap, y aceptarlo lo guardaría en su perfil
+    olvidaLoDeLaCuenta();
     // Los avisos de golpes que no se pudieron guardar NO se tocan, ni aquí ni
     // en los cierres duros. Se intentó borrarlos y es un error: no se pueden
     // regenerar —el golpe que describen ya salió de la cola al escribirlos— y

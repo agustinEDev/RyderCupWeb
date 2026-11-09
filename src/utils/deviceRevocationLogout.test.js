@@ -622,6 +622,8 @@ describe('la redirección dura guarda la página para volver tras entrar (probad
   // Una carga de página nueva: el módulo, sin el cierre de esta carga
   const deUnaCargaNueva = async () => {
     vi.resetModules();
+    // Como en la app: main.jsx carga primero el registro de limpiezas
+    await import('../composition/limpiezaAlCerrarLaSesion');
     return import('./deviceRevocationLogout');
   };
 

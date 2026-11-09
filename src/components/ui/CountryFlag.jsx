@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { getCountryFlag } from '../../utils/countryUtils';
 
 // La bandera como imagen. Vivía en `utils/countryUtils.js` y se trajo aquí el
@@ -35,25 +35,31 @@ export const CountryFlag = ({ countryCode, className = '', style = {}, title = '
   if (useFallback) {
     const fallback = getCountryFlag(code);
     if (!fallback) return null;
-    return React.createElement('span', {
-      role: 'img',
-      'aria-label': title || code,
-      title: title || undefined,
-      className,
-      style: { display: 'inline-block', verticalAlign: 'middle', ...style },
-    }, fallback);
+    return (
+      <span
+        role="img"
+        aria-label={title || code}
+        title={title || undefined}
+        className={className}
+        style={{ display: 'inline-block', verticalAlign: 'middle', ...style }}
+      >
+        {fallback}
+      </span>
+    );
   }
 
-  return React.createElement('img', {
-    src: `https://flagcdn.com/w40/${lowerCode}.png`,
-    srcSet: `https://flagcdn.com/w80/${lowerCode}.png 2x`,
-    width: 40,
-    height: 30,
-    alt: title || code,
-    title: title || undefined,
-    className,
-    loading: 'lazy',
-    style: { display: 'inline-block', verticalAlign: 'middle', ...style },
-    onError: () => setFallbackCode(countryCode),
-  });
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${lowerCode}.png`}
+      srcSet={`https://flagcdn.com/w80/${lowerCode}.png 2x`}
+      width={40}
+      height={30}
+      alt={title || code}
+      title={title || undefined}
+      className={className}
+      loading="lazy"
+      style={{ display: 'inline-block', verticalAlign: 'middle', ...style }}
+      onError={() => setFallbackCode(countryCode)}
+    />
+  );
 };

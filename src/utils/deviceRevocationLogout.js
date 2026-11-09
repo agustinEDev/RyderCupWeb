@@ -165,28 +165,50 @@ export const handleSessionExpiredLogout = (errorData = null, contexto = {}) => {
 };
 
 // Lo que otros guardan de la cuenta y hay que borrar al cerrar (9 nov 2026).
-// Antes este módulo importaba los tres servicios que lo guardan; utils no
-// importa services, así que los registra la composition root
-// (`composition/limpiezaAlCerrarLaSesion`, lo primero que carga main.jsx):
-// - las partidas guardadas para anotar sin cobertura (FE #524). Este camino NO
-//   pasa por `clearAuth` —sale con una redirección dura—, y una redirección no
-//   vacía el almacenamiento: sin esto, quien entrara después en ese móvil
-//   podría ver sin cobertura las partidas de la cuenta que acaba de revocarse
+// Antes este módulo importaba los servicios que lo guardan; utils no importa
+// services, así que los registra la composition root
+// (`composition/limpiezaAlCerrarLaSesion`, que cargan main.jsx el primero y
+// AuthContext). Lo usan los cierres forzados (`limpiaLaCuenta`) y el normal
+// (`clearAuth`, por `olvidaLoDeLaCuenta`):
+// - las partidas guardadas para anotar sin cobertura (FE #524). Los cierres
+//   forzados NO pasan por `clearAuth` —salen con una redirección dura—, y una
+//   redirección no vacía el almacenamiento: sin esto, quien entrara después en
+//   ese móvil podría ver sin cobertura las partidas de la cuenta revocada
 // - lo pendiente del hándicap (FE #677): el modal de la siguiente persona
 //   saldría con el hándicap de esta cuenta
-// - el número de Actividad y el del icono de la aplicación (FE-1)
-const limpiezasAlCerrar = new Set();
+// - solo en los cierres forzados, el número de Actividad y el del icono de la
+//   aplicación (FE-1); el botón de salir lo olvida en useLogout
+const limpiezasAlCerrar = [];
+
+const SIN_LIMPIEZAS =
+  'No hay limpiezas registradas: falta importar composition/limpiezaAlCerrarLaSesion';
 
 /**
- * Apunta algo que hay que borrar de la cuenta en un cierre duro. Se ejecutan en
- * el orden en que se apuntaron; apuntar dos veces la misma no la repite.
+ * Apunta algo que hay que borrar de la cuenta al cerrar la sesión. Se ejecutan
+ * en el orden en que se apuntaron; apuntar dos veces la misma no la repite.
  *
  * @param {() => void} limpieza
- * @returns {() => void} La quita del registro
+ * @param {{ soloCierresForzados?: boolean }} [opciones] Solo en los cierres
+ *   forzados (revocación, sesión caducada, CSRF), no en `clearAuth`
  */
-export const alCerrarLaSesion = (limpieza) => {
-  limpiezasAlCerrar.add(limpieza);
-  return () => limpiezasAlCerrar.delete(limpieza);
+export const alCerrarLaSesion = (limpieza, { soloCierresForzados = false } = {}) => {
+  if (limpiezasAlCerrar.some((apuntada) => apuntada.limpieza === limpieza)) return;
+  limpiezasAlCerrar.push({ limpieza, soloCierresForzados });
+};
+
+/**
+ * Ejecuta las limpiezas registradas. Sin ninguna registrada falla en voz alta:
+ * borrar «nada» sin avisar dejaría los datos de esta cuenta a la siguiente
+ * persona del dispositivo. Sin capturar, como cuando se llamaban una a una: en
+ * los cierres forzados, quien llama sale igualmente por su `finally`.
+ *
+ * @param {{ forzado?: boolean }} [opciones]
+ */
+export const olvidaLoDeLaCuenta = ({ forzado = false } = {}) => {
+  if (limpiezasAlCerrar.length === 0) throw new Error(SIN_LIMPIEZAS);
+  for (const { limpieza, soloCierresForzados } of limpiezasAlCerrar) {
+    if (forzado || !soloCierresForzados) limpieza();
+  }
 };
 
 /**
@@ -196,9 +218,7 @@ export const alCerrarLaSesion = (limpieza) => {
 export const limpiaLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
-  // Sin capturar, como cuando se llamaban una a una: si una falla, quien llama
-  // (handleLogout) sale igualmente por su `finally`
-  for (const limpieza of limpiezasAlCerrar) limpieza();
+  olvidaLoDeLaCuenta({ forzado: true });
   // El usuario de Sentry, por sentryHelpers: `window.Sentry` no lo asignaba
   // nadie y esta línea no hacía nada (25 oct 2026)
   clearUserContext();

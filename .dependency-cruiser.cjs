@@ -43,30 +43,20 @@ module.exports = {
       to: { path: '^src/', pathNot: '^src/domain/' },
     },
     {
-      name: 'domain-without-frameworks',
-      comment: 'El dominio no conoce React, el router, i18n ni Sentry.',
-      severity: 'error',
-      from: { path: '^src/domain/', pathNot: TEST },
-      to: {
-        dependencyTypes: ['npm', 'npm-dev', 'npm-peer', 'npm-optional'],
-        path: 'node_modules/(react|react-dom|react-router|react-router-dom|react-i18next|i18next|@sentry/[^/]+)/',
-      },
-    },
-    {
       name: 'application-only-uses-domain',
       comment:
-        'Los casos de uso solo dependen del dominio (y de utils): nunca de la infraestructura, de los servicios, de la composition root ni de la interfaz.',
+        'Los casos de uso solo dependen del dominio (y de utils): nunca de la infraestructura, de los servicios ni de la composition root. La interfaz la vigila core-does-not-reach-ui, también por caminos indirectos.',
       severity: 'error',
       from: { path: '^src/application/', pathNot: TEST },
-      to: { path: '^src/(infrastructure|services|composition|pages|components|hooks|contexts)/' },
+      to: { path: '^src/(infrastructure|services|composition)/' },
     },
     {
       name: 'infrastructure-does-not-reach-up',
       comment:
-        'La infraestructura implementa los repositorios del dominio; no conoce los casos de uso, la composition root ni la interfaz.',
+        'La infraestructura implementa los repositorios del dominio; no conoce los casos de uso ni la composition root. La interfaz la vigila infrastructure-and-services-do-not-reach-ui, también por caminos indirectos.',
       severity: 'error',
       from: { path: '^src/infrastructure/', pathNot: TEST },
-      to: { path: '^src/(application|composition|pages|components|hooks|contexts)/' },
+      to: { path: '^src/(application|composition)/' },
     },
     {
       name: 'ui-goes-through-composition',
@@ -83,7 +73,7 @@ module.exports = {
     {
       name: 'core-only-reaches-allowed-packages',
       comment:
-        'Lista de PERMITIDOS: el dominio y los casos de uso solo llegan, directa o indirectamente, a las librerías de CORE_ALLOWED_PACKAGES. Una lista de prohibidos se queda atrás con cada librería de interfaz nueva; esta no. CompetitionAssembler llegaba a React por utils/countryUtils.',
+        'Lista de PERMITIDOS: el dominio y los casos de uso solo llegan, directa o indirectamente, a las librerías de CORE_ALLOWED_PACKAGES. Sustituye a domain-without-frameworks, que era una lista de prohibidos (React, router, i18n, Sentry) y se quedaba atrás con cada librería de interfaz nueva. CompetitionAssembler llegaba a React por utils/countryUtils.',
       severity: 'error',
       from: { path: '^src/(domain|application)/', pathNot: TEST },
       to: { path: 'node_modules/', pathNot: CORE_ALLOWED_PACKAGES, reachable: true },
@@ -97,17 +87,9 @@ module.exports = {
       to: { path: [UI, UI_FILE], reachable: true },
     },
     {
-      name: 'utils-does-not-import-ui',
-      comment:
-        'utils son ayudas sin interfaz: no importan componentes, páginas, contextos, hooks ni un .jsx/.tsx. Si una ayuda necesita algo de ahí, ese algo no es de la interfaz y tiene que salir de esa carpeta.',
-      severity: 'error',
-      from: { path: '^src/utils/', pathNot: TEST },
-      to: { path: [UI, UI_FILE] },
-    },
-    {
       name: 'utils-does-not-reach-ui',
       comment:
-        'Lo mismo que utils-does-not-import-ui, por un camino indirecto (utils → otro módulo → interfaz).',
+        'utils son ayudas sin interfaz: no llegan a componentes, páginas, contextos, hooks ni a un .jsx/.tsx, ni directamente ni por otro módulo. Si una ayuda necesita algo de ahí, ese algo no es de la interfaz y tiene que salir de esa carpeta.',
       severity: 'error',
       from: { path: '^src/utils/', pathNot: TEST },
       to: { path: [UI, UI_FILE], reachable: true },
@@ -129,27 +111,17 @@ module.exports = {
       to: { path: '^src/(application|infrastructure|composition)/' },
     },
     {
-      name: 'infrastructure-does-not-import-ui',
-      comment:
-        'La infraestructura no importa nada de la interfaz, ni siquiera un .jsx/.tsx suelto (infrastructure-does-not-reach-up ya cubre las carpetas; esta cubre esos ficheros estén donde estén).',
-      severity: 'error',
-      from: { path: '^src/infrastructure/', pathNot: TEST },
-      to: { path: UI_FILE },
-    },
-    {
       name: 'services-does-not-reach-up',
       comment:
-        'src/services (api.js, la sesión compartida, la cola sin conexión…) lo usan los repositorios y la interfaz: no conoce la interfaz, y a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí).',
+        'src/services (api.js, la sesión compartida, la cola sin conexión…) lo usan los repositorios y la interfaz: a los casos de uso y la infraestructura solo llega por la composition root, como la interfaz (vaciadoDeLaCola y refrescoDeHandicap lanzan casos de uso desde ahí). La interfaz la vigila infrastructure-and-services-do-not-reach-ui.',
       severity: 'error',
       from: { path: '^src/services/', pathNot: TEST },
-      to: {
-        path: [UI, UI_FILE, '^src/(application|infrastructure)/'],
-      },
+      to: { path: '^src/(application|infrastructure)/' },
     },
     {
       name: 'infrastructure-and-services-do-not-reach-ui',
       comment:
-        'La infraestructura y los servicios no llegan a la interfaz ni por un camino indirecto (p. ej. services/api → utils → contexts).',
+        'La infraestructura y los servicios no llegan a la interfaz (carpetas o .jsx/.tsx de cualquier sitio), ni directamente ni por un camino indirecto (p. ej. services/api → utils → contexts).',
       severity: 'error',
       from: { path: '^src/(infrastructure|services)/', pathNot: TEST },
       to: { path: [UI, UI_FILE], reachable: true },

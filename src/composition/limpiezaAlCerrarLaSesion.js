@@ -5,7 +5,7 @@
  * en la composition root, se le dicen.
  *
  * Lo importa main.jsx el primero, para que esté puesto antes de que nada pueda
- * cerrar la sesión. El orden es el de siempre. Lo vigila
+ * cerrar la sesión, y AuthContext, cuyo `clearAuth` usa el mismo registro. El orden es el de siempre. Lo vigila
  * `limpiezaAlCerrarLaSesion.test.js`.
  */
 import { alCerrarLaSesion } from '../utils/deviceRevocationLogout';
@@ -15,4 +15,6 @@ import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 
 alCerrarLaSesion(olvidaLoDeEstaCuenta);
 alCerrarLaSesion(olvidaElRefrescoDeHandicap);
-alCerrarLaSesion(olvidaLasNovedades);
+// Solo en los cierres forzados: el botón de salir ya lo olvida en useLogout, y
+// en los demás caminos de clearAuth (sesión muerta) se ha mantenido como estaba
+alCerrarLaSesion(olvidaLasNovedades, { soloCierresForzados: true });
