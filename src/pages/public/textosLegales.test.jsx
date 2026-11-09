@@ -149,11 +149,11 @@ describe('Política de Privacidad', () => {
     expect(p).toContain('www.aepd.es');
   });
 
-  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Cookies, el 9 nov (dos
-  // claves más de sessionStorage); Términos, no
+  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Cookies, el 10 nov (todas
+  // las claves del almacenamiento del navegador); Términos, no
   it.each([
-    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026', '9 de noviembre de 2026'],
-    ['en', en, '7 November 2026', '6 November 2026', '9 November 2026'],
+    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026', '10 de noviembre de 2026'],
+    ['en', en, '7 November 2026', '6 November 2026', '10 November 2026'],
   ])('fecha de la última actualización (%s)', (_i, textos, privacidad, terminos, cookies) => {
     expect(textos.privacy.lastUpdated).toContain(privacidad);
     expect(textos.terms.lastUpdated).toContain(terminos);
@@ -555,6 +555,12 @@ describe('revisión de la release', () => {
         // El aviso de un cierre forzado (avisoTrasElCierre), hasta enseñarlo en /login
         /el motivo de un cierre de sesión forzado/,
         /solo hasta que se muestra en la pantalla de entrar/,
+        // 10 nov 2026: las que faltaban (avisoDeCierreForzado, googleOAuth, el scroll)
+        /silencia los avisos de cierre de sesión durante 30 segundos/,
+        /la página a la que volver tras entrar con Google/,
+        /hasta que vuelves de Google/,
+        /las posiciones del scroll/,
+        /hasta que recargas la página o cierras la pestaña/,
       ],
     ],
     [
@@ -570,6 +576,11 @@ describe('revisión de la release', () => {
         /until you sign in or close the tab/,
         /the reason for a forced sign-out/,
         /only until it is shown on the sign-in screen/,
+        /silences sign-out notices for 30 seconds/,
+        /the page to return to after signing in with Google/,
+        /until you come back from Google/,
+        /the scroll positions/,
+        /until you reload the page or close the tab/,
       ],
     ],
   ])('Cookies (%s): la lista de sessionStorage está completa', (_i, textos, patrones) => {
@@ -579,10 +590,22 @@ describe('revisión de la release', () => {
   });
 
   it.each([
-    ['es', es, 'Última actualización: 9 de noviembre de 2026'],
-    ['en', en, 'Last updated: 9 November 2026'],
+    ['es', es, 'Última actualización: 10 de noviembre de 2026'],
+    ['en', en, 'Last updated: 10 November 2026'],
   ])('Cookies (%s): fecha de la última actualización', (_i, textos, fecha) => {
     expect(textos.cookies.lastUpdated).toBe(fecha);
+  });
+
+  // La marca de un cierre forzado o propio (device_revocation_handled), en
+  // localStorage: dura hasta que vuelves a entrar, no hasta cerrar la pestaña
+  it.each([
+    ['es', es, [/marca de que hubo un cierre de sesión forzado o de que revocaste tu propio dispositivo/, /se borra al volver a entrar/]],
+    ['en', en, [/marker that there was a forced sign-out or that you revoked your own device/, /cleared when you sign in again/]],
+  ])('Cookies (%s): la marca del cierre forzado, en localStorage', (_i, textos, patrones) => {
+    const l = linea(textos.cookies.section1.content, /(Datos de funcionamiento|Operational data):/);
+    const antesDeSessionStorage = l.split(/En sessionStorage|In sessionStorage/)[0];
+
+    for (const patron of patrones) expect(antesDeSessionStorage).toMatch(patron);
   });
 });
 
