@@ -673,6 +673,11 @@ jobs:
     needs: [lint, type-check, architecture, owasp-semgrep, dependency-audit, secret-scanning, license-check, dependency-review, commit-verification, outdated-dependencies]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     timeout-minutes: 15
+    env:
+      # El DSN de prueba del build de Render: el presupuesto del arranque exige que
+      # vaya compilado (bundle_budget.py --con-sentry). Sin prefijo VITE_, Vite no
+      # lo ve: el build de la entrada «Build» (el artefacto) sigue sin Sentry
+      DSN_DE_PRUEBA: https://public@o0.ingest.sentry.io/0
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -705,7 +710,7 @@ jobs:
           VITE_APP_VERSION: ci
           VITE_GOOGLE_CLIENT_ID: ci-google-client-id.apps.googleusercontent.com
           VITE_GOOGLE_REDIRECT_URI: https://www.rydercupfriends.com/auth/google/callback
-          VITE_SENTRY_DSN: https://public@o0.ingest.sentry.io/0
+          VITE_SENTRY_DSN: ${{ env.DSN_DE_PRUEBA }}
           VITE_SENTRY_ENVIRONMENT: production
           VITE_SENTRY_DEBUG: 'false'
           VITE_SENTRY_ATTACH_STACKTRACE: 'true'
@@ -732,6 +737,16 @@ jobs:
         # paso propio para que la tarjeta no culpe a `npm run build` (/code-review)
         id: render_precache
         run: python3 .github/scripts/sw_precache_check.py dist
+
+      - name: Check bundle size (Render build)
+        if: matrix.build == 'render'
+        # El presupuesto del arranque, sobre lo que se sirve (9 nov 2026): el build
+        # de Render lleva el arranque de Sentry de main.jsx, que sin VITE_SENTRY_DSN
+        # Vite quita. --con-sentry falla si no lleva ESTE DSN. Desde #374 mide lo
+        # que descarga quien abre la aplicación (los JS de index.html, gzip) y un
+        # tope por trozo; los topes y su historia, en .github/scripts/bundle_budget.py
+        id: bundle
+        run: python3 .github/scripts/bundle_budget.py dist --con-sentry="$DSN_DE_PRUEBA"
 
       - name: Serve the Render build like a static site
         if: matrix.build == 'render'
@@ -765,16 +780,6 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Check bundle size
-        if: matrix.build == 'ci'
-        # Antes en code-quality, que compilaba otra vez solo para esto (28 sep 2026)
-        id: bundle
-        # Desde #374 (25 oct 2026) mide lo que descarga quien abre la aplicación
-        # (los JS de index.html, gzip) y un tope por trozo, no la suma de todo el
-        # disco: esa cifra se subió once veces, de 1400 a 3500 KB, porque contaba
-        # pantallas diferidas como MapLibre (1 MB) y castigaba dividir el código.
-        # Los topes y su historia, en .github/scripts/bundle_budget.py
-        run: python3 .github/scripts/bundle_budget.py dist
       - name: Check service worker precache
         if: matrix.build == 'ci'
         id: precache
@@ -810,6 +815,7 @@ jobs:
           TITLE: ${{ matrix.nombre }}
           # Entrada «Build»
           VITE_OUTCOME: ${{ steps.vite.outcome }}
+          # Del presupuesto del arranque, que corre en la entrada «Deploy like Render»
           SIZE_KB: ${{ steps.bundle.outputs.size_kb }}
           BUDGET_KB: ${{ steps.bundle.outputs.budget_kb }}
           WARNING_KB: ${{ steps.bundle.outputs.warning_kb }}
@@ -837,15 +843,15 @@ jobs:
               smoke_outcome="$SMOKE_OUTCOME" smoke_resources="$SMOKE_RESOURCES" \
               smoke_integrity="$SMOKE_INTEGRITY" smoke_chunks="$SMOKE_CHUNKS" \
               smoke_failures="$SMOKE_FAILURES" smoke_version="$SMOKE_VERSION" \
-              precache_outcome="$RENDER_PRECACHE_OUTCOME")
-            WHAT="Repeats Render's build on a clean machine: the Node from .nvmrc with its bundled npm, 'npm install' and 'npm run build' with Render's variable names. Then checks that npm installed the lockfile's exact versions and serves dist/ as a static site to prove the app loads."
-            IF_FAILS="Render would ship a broken site or a different build from the one tested. A version difference: update package-lock.json with that npm. A smoke failure: a missing chunk, an integrity hash or version.json in dist/."
+              precache_outcome="$RENDER_PRECACHE_OUTCOME" \
+              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" problems="$BUNDLE_PROBLEMS")
+            WHAT="Repeats Render's build on a clean machine: the Node from .nvmrc with its bundled npm, 'npm install' and 'npm run build' with Render's variable names. Then checks that npm installed the lockfile's exact versions, what opening the app downloads (the JS index.html loads, gzip, with Sentry's startup as production has it) and each chunk against the budgets in .github/scripts/bundle_budget.py, and serves dist/ as a static site to prove the app loads."
+            IF_FAILS="Render would ship a broken site, a different build from the one tested or a startup over budget. A version difference: update package-lock.json with that npm. Over budget: lazy-load what the first screen does not need, or raise the budget in bundle_budget.py with its reason. A smoke failure: a missing chunk, an integrity hash or version.json in dist/."
           else
             RESULT=$(python3 .github/scripts/summary_results.py build-ci build_outcome="$VITE_OUTCOME" \
-              size_kb="$SIZE_KB" budget_kb="$BUDGET_KB" warning_kb="$WARNING_KB" \
-              problems="$BUNDLE_PROBLEMS" output_outcome="$DIST_OUTCOME" precache_outcome="$PRECACHE_OUTCOME")
-            WHAT="Builds the production bundle with Vite and checks what opening the app downloads (the JS index.html loads, gzip) and the size of each chunk against the budgets in .github/scripts/bundle_budget.py, and that the service worker precaches every JS/CSS file and both pages. The build is kept as the build-output artifact."
-            IF_FAILS="If the build broke, run 'npm run build' locally. If a budget was exceeded, lazy-load what the first screen does not need or split the chunk, or raise the budget in bundle_budget.py with its reason. If the precache is short, a dependency of workbox-build (glob, minimatch) changed: see sw_precache_check.py."
+              output_outcome="$DIST_OUTCOME" precache_outcome="$PRECACHE_OUTCOME")
+            WHAT="Builds the production bundle with Vite, without production's API or Sentry, and checks that the service worker precaches every JS/CSS file and both pages. The build is kept as the build-output artifact. The startup JS budget is checked on the Render build, which carries Sentry's startup as production does."
+            IF_FAILS="If the build broke, run 'npm run build' locally. If the precache is short, a dependency of workbox-build (glob, minimatch) changed: see sw_precache_check.py."
           fi
           python3 .github/scripts/summary_card.py \
             --title "$TITLE" --what "$WHAT" \

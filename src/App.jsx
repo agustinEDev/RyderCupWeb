@@ -40,7 +40,7 @@ import BarraDeCarga from './components/layout/BarraDeCarga';
 import { marcaElArranque } from './services/cargaDeLaPantalla';
 import { loader as cargaDeTorneos, shouldRevalidate as cuandoVolverAPedirTorneos } from './pages/Competitions.datos';
 import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
-import { registrarRouterParaSentry } from './utils/navegacionesEnSentry';
+import { registrarRouterParaSentry } from './utils/routerParaSentry';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
