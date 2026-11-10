@@ -54,6 +54,10 @@ describe('VerifyEmail · enlace caducado (fase 3)', () => {
 
     expect(await boton()).toBeEnabled();
     expect(screen.getByText('verifyEmail.expiredTitle')).toBeInTheDocument();
+    // Como las demás pantallas: el texto debajo y la salida a entrar o al inicio
+    expect(screen.getByText('verifyEmail.expiredMessage')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'verifyEmail.goToLogin' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'verifyEmail.goToHome' })).toHaveAttribute('href', '/');
     expect(screen.queryByText('verifyEmail.errorTitle')).not.toBeInTheDocument();
   });
 
@@ -116,5 +120,16 @@ describe('VerifyEmail · enlace caducado (fase 3)', () => {
     fireEvent.click(elBoton);
 
     await waitFor(() => expect(resendVerificationLinkUseCase.execute).toHaveBeenCalledWith('tok-caducado'));
+  });
+});
+
+describe('Textos del enlace de verificar (revisión de la fase 3)', () => {
+  it.each([
+    ['es', /caducad/i],
+    ['en', /expired/i],
+  ])('(%s) el error genérico ya no habla de caducados: tienen su pantalla', async (idioma, caducado) => {
+    const textos = (await import(`../i18n/locales/${idioma}/auth.json`)).default;
+    expect(textos.verifyEmail.errorMessage).not.toMatch(caducado);
+    expect(textos.verifyEmail.expiredMessage).toBeTruthy();
   });
 });

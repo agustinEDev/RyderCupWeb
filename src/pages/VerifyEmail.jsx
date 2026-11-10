@@ -140,6 +140,9 @@ const VerifyEmail = () => {
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
                     {t('verifyEmail.expiredTitle')}
                   </h1>
+                  <p className="text-gray-600 text-center mb-6">
+                    {t('verifyEmail.expiredMessage')}
+                  </p>
                   {reenvio !== 'idle' && reenvio !== 'sending' && (
                     <p
                       role="status"
@@ -160,6 +163,21 @@ const VerifyEmail = () => {
                   >
                     {t('verifyEmail.resendLink')}
                   </button>
+                  {/* La salida, como en la pantalla de error */}
+                  <div className="flex flex-col gap-3 items-center mt-3">
+                    <Link
+                      to="/login"
+                      className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-all"
+                    >
+                      {t('verifyEmail.goToLogin')}
+                    </Link>
+                    <Link
+                      to="/"
+                      className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-wide hover:bg-gray-200 transition-all"
+                    >
+                      {t('verifyEmail.goToHome')}
+                    </Link>
+                  </div>
                 </>
               )}
 

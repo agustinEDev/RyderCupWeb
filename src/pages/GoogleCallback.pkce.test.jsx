@@ -88,7 +88,8 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
     estado.flow = 'link';
     abrir('?code=abc&state=ok');
 
-    expect(await screen.findByText('google.missingVerifier')).toBeInTheDocument();
+    // Vinculando no se «entra»: texto propio (revisión de la fase 3)
+    expect(await screen.findByText('google.missingVerifierLink')).toBeInTheDocument();
     expect(screen.getByText('google.linkErrorTitle')).toBeInTheDocument();
     expect(linkGoogleAccountUseCase.execute).not.toHaveBeenCalled();
   });

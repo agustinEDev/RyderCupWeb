@@ -68,7 +68,7 @@ const GoogleCallback = () => {
       // Sin verifier (la vuelta llegó a otra pestaña, o el almacenamiento se vació) el
       // backend no canjearía el código: ni se le pregunta
       if (!codeVerifier) {
-        setError(t('google.missingVerifier'));
+        setError(t(parsedFlow === 'link' ? 'google.missingVerifierLink' : 'google.missingVerifier'));
         return;
       }
 
