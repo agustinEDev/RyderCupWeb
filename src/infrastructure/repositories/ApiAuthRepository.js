@@ -16,11 +16,11 @@ class ApiAuthRepository extends IAuthRepository {
         body: JSON.stringify({ email: email.getValue(), password: password.getValue() }),
       });
 
-      // v1.13.0: Backend now returns csrf_token for CSRF protection
+      // Los tokens de sesión van solo en cookies httpOnly (fase 3): del cuerpo solo se
+      // lee el csrf_token, que hace falta para POST/PUT/PATCH/DELETE
       return {
         user: new User(data.user),
-        token: data.access_token, // Legacy (httpOnly cookie is used)
-        csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
+        csrfToken: data.csrf_token,
       };
     } catch (error) {
       // HTTP 423: demasiados fallos desde esta red para esta cuenta (BE #732). Con su
