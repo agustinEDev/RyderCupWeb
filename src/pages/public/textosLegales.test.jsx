@@ -149,14 +149,15 @@ describe('Política de Privacidad', () => {
     expect(p).toContain('www.aepd.es');
   });
 
-  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Términos y Cookies, no
+  // Privacidad cambia el 7 nov 2026 (Resend y Brevo); Cookies, el 10 nov (todas
+  // las claves del almacenamiento del navegador); Términos, no
   it.each([
-    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026'],
-    ['en', en, '7 November 2026', '6 November 2026'],
-  ])('fecha de la última actualización (%s)', (_i, textos, privacidad, resto) => {
+    ['es', es, '7 de noviembre de 2026', '6 de noviembre de 2026', '10 de noviembre de 2026'],
+    ['en', en, '7 November 2026', '6 November 2026', '10 November 2026'],
+  ])('fecha de la última actualización (%s)', (_i, textos, privacidad, terminos, cookies) => {
     expect(textos.privacy.lastUpdated).toContain(privacidad);
-    expect(textos.terms.lastUpdated).toContain(resto);
-    expect(textos.cookies.lastUpdated).toContain(resto);
+    expect(textos.terms.lastUpdated).toContain(terminos);
+    expect(textos.cookies.lastUpdated).toContain(cookies);
   });
 });
 
@@ -539,12 +540,72 @@ describe('revisión de la release', () => {
 
   // Cookies §1: todas las claves de sessionStorage
   it.each([
-    ['es', es, [/Google/, /arranque/i, /bucle/i, /recarg/i]],
-    ['en', en, [/Google/, /start-up/i, /loop/i, /reload/i]],
+    [
+      'es',
+      es,
+      [
+        /Google/,
+        /arranque/i,
+        /bucle/i,
+        /recarg/i,
+        // La vuelta tras entrar (vueltaTrasEntrar): la página y la cuenta que la dejó
+        /la página a la que volver tras entrar/,
+        /identificador interno de la cuenta/,
+        /hasta que entras o cierras la pestaña/,
+        // El aviso de un cierre forzado (avisoTrasElCierre), hasta enseñarlo en /login
+        /el motivo de un cierre de sesión forzado/,
+        /hasta que se muestra en la pantalla de entrar, entras o cierras sesión \(pasados 30 segundos ya no se muestra\)/,
+        // 10 nov 2026: las que faltaban (avisoDeCierreForzado, googleOAuth, el scroll)
+        /silencia los avisos de cierre de sesión durante 30 segundos después de cerrarla con el botón, que se borra al volver a entrar/,
+        /la página a la que volver tras entrar con Google/,
+        /hasta que vuelves de Google/,
+        /las posiciones del scroll/,
+        /hasta que recargas la página o cierras la pestaña/,
+      ],
+    ],
+    [
+      'en',
+      en,
+      [
+        /Google/,
+        /start-up/i,
+        /loop/i,
+        /reload/i,
+        /the page to return to after signing in/,
+        /internal identifier of the account/,
+        /until you sign in or close the tab/,
+        /the reason for a forced sign-out/,
+        /until it is shown on the sign-in screen, you sign in or you sign out \(after 30 seconds it is no longer shown\)/,
+        /silences sign-out notices for 30 seconds after you sign out with the button, which is cleared when you sign in again/,
+        /the page to return to after signing in with Google/,
+        /until you come back from Google/,
+        /the scroll positions/,
+        /until you reload the page or close the tab/,
+      ],
+    ],
   ])('Cookies (%s): la lista de sessionStorage está completa', (_i, textos, patrones) => {
     const l = linea(textos.cookies.section1.content, /sessionStorage,/);
 
     for (const patron of patrones) expect(l).toMatch(patron);
+  });
+
+  it.each([
+    ['es', es, 'Última actualización: 10 de noviembre de 2026'],
+    ['en', en, 'Last updated: 10 November 2026'],
+  ])('Cookies (%s): fecha de la última actualización', (_i, textos, fecha) => {
+    expect(textos.cookies.lastUpdated).toBe(fecha);
+  });
+
+  // La marca de un cierre forzado o propio (device_revocation_handled), en
+  // localStorage: dura hasta que vuelves a entrar, no hasta cerrar la pestaña
+  it.each([
+    ['es', es, [/marca de que hubo un cierre de sesión forzado o de que revocaste tu propio dispositivo/, /se borra al volver a entrar/]],
+    ['en', en, [/marker that there was a forced sign-out or that you revoked your own device/, /cleared when you sign in again/]],
+  ])('Cookies (%s): la marca del cierre forzado, en localStorage', (_i, textos, patrones) => {
+    const l = linea(textos.cookies.section1.content, /(Datos de funcionamiento|Operational data):/);
+    const antesDeSessionStorage = l.split(/En sessionStorage|In sessionStorage/)[0];
+
+    for (const patron of patrones) expect(antesDeSessionStorage).toMatch(patron);
   });
 });
 

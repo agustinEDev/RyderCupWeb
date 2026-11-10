@@ -104,6 +104,17 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
   });
 
+  it('cerrar sesión con el botón olvida el aviso de un cierre forzado que quedara guardado', async () => {
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../utils/avisoTrasElCierre');
+    guardaElAvisoDelCierre('revocation');
+    logoutUseCase.execute.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+
+    expect(tomaElAvisoDelCierre()).toBeNull();
+  });
+
   it('R3 (FE #1064): cerrar sesión a propósito olvida la última cuenta de la pestaña', async () => {
     const { anotaLaCuentaDeEstaPestana, ultimaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } =
       await import('../utils/vueltaTrasEntrar');

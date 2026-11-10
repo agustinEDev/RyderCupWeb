@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
+import { olvidaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { clearUserContext } from '../utils/sentryHelpers';
 import { noAvisesDeCierres } from '../utils/avisoDeCierreForzado';
 import { olvidaLaUltimaCuenta, olvidaLaVueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
@@ -112,6 +113,8 @@ export const useLogout = () => {
     clearUserContext();
     // El número de Actividad y el del icono son de esta cuenta (FE-1)
     olvidaLasNovedades();
+    // Y el aviso de un cierre forzado que quedara guardado: no es de esta salida
+    olvidaElAvisoDelCierre();
 
     if (!recargarEn) navigate('/login', { replace: true });
   }, [navigate, clearAuth]);

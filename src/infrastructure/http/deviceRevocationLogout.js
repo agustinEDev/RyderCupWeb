@@ -299,6 +299,9 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
   // Quién estaba dentro, antes de limpiar: la página se guarda con su cuenta (regla 6 de
   // `vueltaTrasEntrar`) y otra cuenta que entre en esta pestaña no vuelve a ella
   const cuenta = interfaz().ultimaCuentaDeEstaPestana();
+  // Si el aviso sale en ESTA página (sin sessionStorage para guardarlo), se espera
+  // a que se lea antes de salir; si no, se sale al momento
+  let avisoEnEstaPagina = false;
 
   // Pase lo que pase dentro, se sale (revisión, 8 nov): con el cierre de esta carga ya
   // anotado, un fallo aquí (almacenamiento lleno, Sentry, el toast) dejaría la pestaña
@@ -331,11 +334,12 @@ const handleLogout = (errorData = null, reason = 'unknown', aviso = {}) => {
     // expirado» (Agustín, 8 nov 2026). Un dispositivo revocado de verdad avisa siempre:
     // es un aviso de seguridad
     if (cuenta !== null || reason === 'revocation') {
-      interfaz().avisaAlUsuarioDelCierre(reason);
+      avisoEnEstaPagina = interfaz().avisaAlUsuarioDelCierre(reason) === true;
     }
   } finally {
-    // Redirect to login after a short delay (allow toast to be visible), con la página
-    // en la que estaba para volver tras entrar: la redirección dura pierde el `state.from`
-    interfaz().redirigeAlLogin({ retraso: 500, cuenta });
+    // A /login, con la página en la que estaba para volver tras entrar (la redirección
+    // dura pierde el `state.from`). El aviso se enseña en /login: al momento. Solo si
+    // salió aquí, 500 ms para que se lea (10 nov 2026)
+    interfaz().redirigeAlLogin({ retraso: avisoEnEstaPagina ? 500 : 0, cuenta });
   }
 };

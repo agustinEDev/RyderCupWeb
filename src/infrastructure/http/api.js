@@ -133,6 +133,9 @@ const API_URL = getApiBaseUrl();
  * - Shares one refresh promise so multiple 401s do not each ask for a refresh
  */
 export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
+  // Cuándo salió la petición: con los Términos pendientes, decide si su 403 es de la
+  // pantalla a la que se navega o de la actual (utils/navegacionEnCurso)
+  const inicio = globalThis.performance.now();
   // FormData (file uploads): the browser must set its own Content-Type header
   // with the multipart boundary — setting it manually here would break parsing.
   const isFormData = options.body instanceof FormData;
@@ -234,7 +237,7 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
       // desacuerdo del servidor, o una ruta desde la que no se redirige—, se
       // enseña como «no disponible»
       const terminosPendientes = response.status === 403 && errorData.error_code === TERMINOS_NO_ACEPTADOS;
-      const seVaAAceptar = terminosPendientes && interfaz().llevaAAceptarLosTerminos();
+      const seVaAAceptar = terminosPendientes && interfaz().llevaAAceptarLosTerminos({ inicio });
 
       // Extract error message with proper fallback chain
       let errorMessage = '';

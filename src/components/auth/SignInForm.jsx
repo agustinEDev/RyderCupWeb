@@ -1,3 +1,4 @@
+import { olvidaElAvisoDelCierre } from '../../utils/avisoTrasElCierre';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
@@ -121,8 +122,10 @@ const SignInForm = () => {
         });
       }
 
-      // Se entró: acaba el silencio de un cierre de sesión anterior (C5)
+      // Se entró: acaba el silencio de un cierre de sesión anterior (C5), y el aviso
+      // de un cierre forzado que /login no llegara a enseñar ya no vale
       vuelvenLosAvisosDeCierre();
+      olvidaElAvisoDelCierre();
       navigate(vueltaTrasEntrar(location.state?.from, { cuenta: authenticatedUser.id }), {
         replace: true,
       });
@@ -143,6 +146,9 @@ const SignInForm = () => {
           duration: 10000, // Longer duration for important security message
           icon: '🔒',
         });
+      } else if (error.code === 'INVALID_CREDENTIALS') {
+        // Correo o contraseña mal (401), en el idioma de la app
+        customToast.error(t('login.error'), { duration: 5000 });
       } else if (error.errorCode === 'ACCOUNT_DEACTIVATED') {
         // Con su código, como la vuelta de Google: el texto, traducido (RyderCupAm #750)
         customToast.error(t('google.accountDeactivated'), { duration: 10000 });

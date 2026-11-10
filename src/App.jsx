@@ -41,6 +41,7 @@ import { marcaElArranque } from './services/cargaDeLaPantalla';
 import { loader as cargaDeTorneos, shouldRevalidate as cuandoVolverAPedirTorneos } from './pages/Competitions.datos';
 import { CLAVE_DEL_SCROLL, creaElRouterDeLaAplicacion } from './utils/routerDeLaAplicacion';
 import { registrarRouterParaSentry } from './utils/routerParaSentry';
+import { apuntaElRouterDeLaAplicacion } from './utils/navegacionEnCurso';
 
 // Pantallas diferidas, con un reintento a los 1,5 s: `utils/lazyWithRetry`
 const Landing = lazyWithRetry(() => import('./pages/Landing'));
@@ -514,9 +515,13 @@ function App() {
   // abre (los tests montan la aplicación en direcciones distintas)
   const [router] = useState(() => creaElRouterDeLaAplicacion(rutasDeLaApp));
   // Sentry sigue sus navegaciones cuando llega su seguimiento, ~2 s después
-  // (`utils/navegacionesEnSentry`). En un efecto y no al crearlo: con
-  // StrictMode React lo crea dos veces y se queda con el PRIMERO (revisor)
-  useEffect(() => registrarRouterParaSentry(router, rutasDeLaApp), [router]);
+  // (`utils/navegacionesEnSentry`), y la vuelta tras aceptar los Términos lee la
+  // navegación en curso (`utils/navegacionEnCurso`). En un efecto y no al crearlo:
+  // con StrictMode React lo crea dos veces y se queda con el PRIMERO (revisor)
+  useEffect(() => {
+    registrarRouterParaSentry(router, rutasDeLaApp);
+    return apuntaElRouterDeLaAplicacion(router);
+  }, [router]);
   return (
     <Sentry.ErrorBoundary
       fallback={ErrorFallback}

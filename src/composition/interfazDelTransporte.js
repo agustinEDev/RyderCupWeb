@@ -8,20 +8,13 @@
  * que esté registrado antes de que nada pueda llamar a la API o cerrar la sesión.
  */
 import i18next from 'i18next';
-import customToast from '../utils/toast';
+import { guardaElAvisoDelCierre, muestraElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { captureError, clearUserContext } from '../utils/sentryHelpers';
 import { avisaDelCierreForzado } from '../utils/avisoDeCierreForzado';
 import { sinSesionEnRutaPublica } from '../utils/rutasPublicas';
 import { redirigeAlLogin, ultimaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 import { llevaAAceptarLosTerminos, silenciaElAviso } from '../utils/terminosPendientes';
 import { registraLaInterfazDelTransporte } from '../infrastructure/http/interfazDelTransporte';
-
-// El aviso de cada cierre forzado: su texto y su icono
-const AVISO_DEL_CIERRE = Object.freeze({
-  revocation: { clave: 'errors.deviceRevoked', icono: '🔒' },
-  expiration: { clave: 'errors.sessionExpired', icono: '⏱️' },
-});
-const AVISO_DE_SESION_TERMINADA = Object.freeze({ clave: 'errors.sessionEnded', icono: 'ℹ️' });
 
 // Cada una, envuelta: se lee el módulo al llamarla y no al registrarla, como
 // cuando el transporte las importaba directamente
@@ -32,19 +25,19 @@ registraLaInterfazDelTransporte({
    * @param {'revocation'|'expiration'|string} motivo el del transporte; otro
    *   cualquiera es una sesión que terminó
    */
+  /** @returns {boolean} si el aviso sale en ESTA página (y hay que esperar a que se lea) */
   avisaAlUsuarioDelCierre: (motivo) => {
-    // `hasOwn`: un motivo como «toString» no puede sacar nada del prototipo
-    const { clave, icono } = Object.hasOwn(AVISO_DEL_CIERRE, motivo)
-      ? AVISO_DEL_CIERRE[motivo]
-      : AVISO_DE_SESION_TERMINADA;
-    // `delCierre`: el único aviso de error que sale con el cierre en marcha (A1)
-    customToast.error(i18next.t(clave, { ns: 'auth' }), { duration: 8000, icon: icono, delCierre: true });
+    // Se enseña en /login, donde da tiempo a leerlo. Sin sessionStorage, aquí, como
+    // antes: entonces quien cierra espera 500 ms antes de salir
+    if (guardaElAvisoDelCierre(motivo)) return false;
+    muestraElAvisoDelCierre(motivo, (clave, opciones) => i18next.t(clave, opciones));
+    return true;
   },
   ultimaCuentaDeEstaPestana: () => ultimaCuentaDeEstaPestana(),
   redirigeAlLogin: (opciones) => redirigeAlLogin(opciones),
   sinSesionEnRutaPublica: (ruta, hayUsuarioGuardado) => sinSesionEnRutaPublica(ruta, hayUsuarioGuardado),
   traduce: (clave) => i18next.t(clave),
   informaDelError: (error, contexto) => captureError(error, contexto),
-  llevaAAceptarLosTerminos: () => llevaAAceptarLosTerminos(),
+  llevaAAceptarLosTerminos: (peticion) => llevaAAceptarLosTerminos(peticion),
   silenciaElAviso: (mensaje) => silenciaElAviso(mensaje),
 });
