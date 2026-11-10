@@ -34,6 +34,42 @@ import { sentryScrubbing } from './utils/sentryScrubbing';
 import { instrumentarRouterEnSentry } from './utils/navegacionesEnSentry';
 import { sentrySampleRates } from './utils/sentrySampleRates';
 
+/**
+ * Lo que no sale nunca del cuerpo de una petición: contraseñas, tokens de sesión, los
+ * enlaces de un solo uso (verificar, restablecer) y el canje de Google con PKCE (fase 3).
+ */
+const CAMPOS_SECRETOS = ['password', 'access_token', 'refresh_token', 'token', 'code_verifier', 'authorization_code'];
+const TACHADO = '[Filtered]';
+const PATRONES_SECRETOS = CAMPOS_SECRETOS.flatMap((campo) => [
+  // JSON (también roto o cortado): "campo": "valor"
+  [new RegExp(`("${campo}"\\s*:\\s*)"(?:[^"\\\\]|\\\\.)*"`, 'g'), `$1"${TACHADO}"`],
+  // Formulario: campo=valor
+  [new RegExp(`(^|[&?\\s])(${campo}=)[^&\\s]*`, 'g'), `$1$2${TACHADO}`],
+]) as Array<[RegExp, string]>;
+
+const sinCamposSecretos = (datos: Record<string, unknown>) => {
+  const limpio = { ...datos };
+  for (const campo of CAMPOS_SECRETOS) delete limpio[campo];
+  return limpio;
+};
+
+/** El cuerpo sin secretos: objeto, texto JSON (se vuelve a serializar) u otro texto. */
+const tachaElCuerpo = (datos: unknown): unknown => {
+  if (datos && typeof datos === 'object' && !Array.isArray(datos)) {
+    return sinCamposSecretos(datos as Record<string, unknown>);
+  }
+  if (typeof datos !== 'string') return datos;
+  try {
+    const leido = JSON.parse(datos);
+    if (leido && typeof leido === 'object' && !Array.isArray(leido)) {
+      return JSON.stringify(sinCamposSecretos(leido as Record<string, unknown>));
+    }
+  } catch {
+    // No es JSON: por patrón
+  }
+  return PATRONES_SECRETOS.reduce((texto, [patron, cambio]) => texto.replace(patron, cambio), datos);
+};
+
 // ============================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO
 // ============================================
@@ -213,18 +249,9 @@ if (!SENTRY_CONFIG.dsn) {
         delete event.request.headers?.Authorization;
         delete event.request.headers?.Cookie;
 
-        // Remover datos sensibles del cuerpo
-        if (event.request.data && typeof event.request.data === 'object') {
-          const sanitized = { ...(event.request.data as Record<string, unknown>) };
-          delete sanitized.password;
-          delete sanitized.access_token;
-          delete sanitized.refresh_token;
-          // Los enlaces de un solo uso (verificar, restablecer) y el canje de Google
-          // con PKCE (fase 3)
-          delete sanitized.token;
-          delete sanitized.code_verifier;
-          delete sanitized.authorization_code;
-          event.request.data = sanitized;
+        // Remover datos sensibles del cuerpo, venga como objeto o como texto
+        if (event.request.data !== undefined) {
+          event.request.data = tachaElCuerpo(event.request.data);
         }
       }
 
