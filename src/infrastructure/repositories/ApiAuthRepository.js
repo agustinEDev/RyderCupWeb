@@ -116,8 +116,11 @@ class ApiAuthRepository extends IAuthRepository {
    * @throws {Error} On network or HTTP errors (e.g. 429 from the rate limit)
    */
   async validateResetToken(token) {
-    const data = await apiRequest(`/api/v1/auth/validate-reset-token/${token}`, {
-      method: 'GET',
+    // POST con el token en el cuerpo (fase 3): en la URL acababa en los logs de acceso
+    // y del proxy. El GET de antes desaparece en el backend 2.58.0
+    const data = await apiRequest('/api/v1/auth/validate-reset-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
     });
 
     // 200 always: `valid` says whether the token is usable
