@@ -408,6 +408,16 @@ describe('PlayerProfilePage', () => {
 
       expect(await screen.findByTestId('player-profile-not-found')).toBeInTheDocument();
     });
+
+    // Quien te ha bloqueado responde 404 (fase 3, BE-3): «No encontramos a este
+    // jugador», sin un aviso de error que diga otra cosa
+    it('someone who blocked you looks like a player that does not exist, without an error toast', async () => {
+      getProfile.mockRejectedValue(Object.assign(error(404), { message: 'User not found' }));
+      renderProfile();
+
+      expect(await screen.findByText('playerProfile:notFound.title')).toBeInTheDocument();
+      expect(customToast.error).not.toHaveBeenCalled();
+    });
   });
 
   // ─── FE-2: perfil amigo / no amigo (tabla aprobada el 22 oct) ───────────────
@@ -1224,6 +1234,19 @@ describe('PlayerProfilePage', () => {
       await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('common:errors.generic'));
       expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
       expect(customToast.success).not.toHaveBeenCalled();
+    });
+
+    // Quien te ha bloqueado responde 404 «User not found» (fase 3, BE-3): no se dice que
+    // no existe, solo que no se pudo enviar
+    it('says the request could not be sent when the player answers 404', async () => {
+      sendRequest.mockRejectedValue(Object.assign(error(404), { message: 'User not found' }));
+      renderProfile();
+
+      fireEvent.click(await screen.findByTestId('player-profile-add-friend'));
+
+      await waitFor(() => expect(customToast.error).toHaveBeenCalledWith('playerProfile:errors.requestNotSent'));
+      expect(customToast.error).not.toHaveBeenCalledWith('User not found');
+      expect(screen.getByTestId('player-profile-add-friend')).toBeEnabled();
     });
 
     it('keeps the request pending when cancelling it fails', async () => {
