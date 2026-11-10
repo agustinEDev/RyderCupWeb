@@ -173,7 +173,8 @@ describe('la sesión se vuelve a preguntar al volver a la aplicación', () => {
     // En '/', '/start' o '/login' el interceptor no refresca: sin esto, una
     // sesión muerta o una cuenta borrada seguían dándose por buenas
     await conSesion();
-    respuestas.push({ ok: false, status, json: async () => ({}) });
+    // Un 404 cuenta si es del backend, con su error_code (revisión de la fase 3)
+    respuestas.push({ ok: false, status, json: async () => ({ error_code: 'USER_NOT_FOUND' }) });
 
     vuelveAlFrente();
     await asienta();

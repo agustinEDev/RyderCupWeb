@@ -81,6 +81,9 @@ export const useRedirectIfAuthenticated = ({
   useEffect(() => {
     if (!sinSesionAlEntrar) return;
     try {
+      // Lo que diga el almacenamiento AHORA, no la foto del contexto al cargar: si otra
+      // pestaña acaba de entrar, lo guardado es de su sesión y no se toca (revisión)
+      if (globalThis.localStorage.getItem('user')) return;
       olvidaLoGuardadoDeLaCuenta();
     } catch (error) {
       console.error('[auth] cleanup on the sign-in screen failed:', error);

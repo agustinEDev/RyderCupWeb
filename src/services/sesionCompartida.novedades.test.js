@@ -27,7 +27,8 @@ describe('sesionCompartida · el número de Actividad sin sesión', () => {
   });
 
   it.each([401, 404])('the server says there is no session (%s): forgets it', async (status) => {
-    respuestas.push({ ok: false, status, json: async () => ({}) });
+    // Un 404 solo cuenta si es del backend, con su error_code (revisión de la fase 3)
+    respuestas.push({ ok: false, status, json: async () => ({ error_code: 'USER_NOT_FOUND' }) });
 
     await consultaLaSesion();
 

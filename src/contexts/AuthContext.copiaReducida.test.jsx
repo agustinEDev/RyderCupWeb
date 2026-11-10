@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 /**
@@ -7,7 +7,7 @@ import { renderHook, act } from '@testing-library/react';
  * reescribe al arrancar. Sus lectores (este contexto, `vueltaTrasEntrar` y el
  * interceptor) solo miran `id` o si hay algo.
  */
-vi.mock('../services/loUltimoConocido', () => ({ olvidaLoDeEstaCuenta: vi.fn() }));
+vi.mock('../services/loUltimoConocido', () => ({ olvidaLoDeEstaCuenta: vi.fn(), abreLoGuardadoParaLaCuenta: vi.fn() }));
 vi.mock('../services/refrescoDeHandicapApuntes', () => ({ olvidaElRefrescoDeHandicap: vi.fn() }));
 vi.mock('../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
 
@@ -51,5 +51,27 @@ describe('AuthContext · copia reducida en localStorage.user (fase 3)', () => {
     const guardado = globalThis.localStorage.getItem('user');
     for (const secreto of SECRETOS) expect(guardado).not.toContain(secreto);
     expect(result.current.user).toMatchObject({ id: 'u-1' });
+  });
+});
+
+describe('AuthContext · reescribir la copia vieja falla (revisión de la fase 3)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('con el almacenamiento lleno, se queda con la copia reducida en memoria', () => {
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const vieja = JSON.stringify(new User(DTO));
+    vi.stubGlobal('localStorage', {
+      getItem: (clave) => (clave === 'user' ? vieja : null),
+      setItem: () => {
+        throw new globalThis.DOMException('quota', 'QuotaExceededError');
+      },
+      removeItem: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+    expect(result.current.user).toMatchObject({ id: 'u-1', firstName: 'Ana' });
+    expect(JSON.stringify(result.current.user)).not.toContain('ana@example.com');
+    consola.mockRestore();
   });
 });

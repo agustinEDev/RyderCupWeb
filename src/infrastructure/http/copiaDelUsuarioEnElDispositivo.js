@@ -8,7 +8,8 @@
  * compartido o robado se leían sin sesión. En memoria el usuario sigue completo: viene
  * de la API.
  *
- * Sirve para el DTO del backend (snake_case) y para la entidad (camelCase).
+ * Sirve para el DTO del backend (snake_case) y para la entidad (camelCase). Vive en
+ * infraestructura y no en el dominio porque conoce la forma de la API (revisión).
  */
 const CAMPOS_QUE_SE_GUARDAN = [
   'id',

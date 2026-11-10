@@ -522,6 +522,16 @@ describe('useRedirectIfAuthenticated · pantalla de entrar sin sesión (fase 3)'
     expect(olvidaLoGuardadoDeLaCuenta).toHaveBeenCalledTimes(1);
   });
 
+  it('L1b: si otra pestaña acaba de entrar (hay usuario en el almacenamiento), no limpia', () => {
+    // El contexto es una foto de cuando cargó esta pestaña; el almacenamiento es lo de ahora
+    globalThis.localStorage.setItem('user', JSON.stringify({ id: 'otra-pestana' }));
+
+    renderHook(() => useRedirectIfAuthenticated());
+
+    expect(olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
+    globalThis.localStorage.removeItem('user');
+  });
+
   it('L2: desactivado no limpia nada', () => {
     renderHook(() => useRedirectIfAuthenticated({ enabled: false }));
 

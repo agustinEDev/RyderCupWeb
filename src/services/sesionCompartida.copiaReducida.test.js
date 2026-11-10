@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  *                                         | sin correo ni género (el perfil pinta «—»)
  *   S4 copia completa de antes            | se reescribe reducida al arrancar (módulo nuevo)
  *   S5 el servidor dice que no hay sesión | la misma limpieza que salir (registro único)
+ *   S5c un 404 sin error_code del backend | no es «sin sesión»: no borra nada
  *   S6 copia completa escrita tras arrancar | se lee reducida igual
  */
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
@@ -110,13 +111,34 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
     for (const campo of PROHIBIDOS) expect(user).not.toHaveProperty(campo);
   });
 
-  it.each([401, 404])('S5: sin sesión (%s) hace la misma limpieza que salir', async (status) => {
+  it.each([
+    ['401', { ok: false, status: 401, json: async () => ({}) }],
+    ['404 del backend (con error_code)', { ok: false, status: 404, json: async () => ({ detail: 'x', error_code: 'USER_NOT_FOUND' }) }],
+  ])('S5: sin sesión (%s) hace la misma limpieza que salir', async (_caso, respuesta) => {
     const { fetchWithTokenRefresh, consultaLaSesion } = await cargar();
-    fetchWithTokenRefresh.mockResolvedValueOnce({ ok: false, status, json: async () => ({}) });
+    fetchWithTokenRefresh.mockResolvedValueOnce(respuesta);
 
     await consultaLaSesion();
 
     expect(limpieza.olvidaLoGuardadoDeLaCuenta).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['sin cuerpo JSON (página del borde)', async () => { throw new SyntaxError('Unexpected token <'); }],
+    ['con JSON sin error_code', async () => ({ detail: 'Not Found' })],
+  ])('S5c: un 404 %s no es «sin sesión»: no borra nada y se queda con la copia', async (_caso, json) => {
+    const primera = await cargar();
+    primera.fetchWithTokenRefresh.mockResolvedValueOnce({ ok: true, status: 200, json: async () => COMPLETO });
+    await primera.consultaLaSesion();
+
+    const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
+    fetchWithTokenRefresh.mockResolvedValue({ ok: false, status: 404, json });
+    vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    await consultaLaSesion();
+
+    expect(limpieza.olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
+    expect(loQueHaySobreLaSesion().user).toMatchObject({ id: 'u-1' });
+    expect(copia()).toMatchObject({ id: 'u-1' });
   });
 
   it('S5b: un fallo de red NO limpia nada (anotar sin cobertura)', async () => {

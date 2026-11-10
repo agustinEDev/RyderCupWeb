@@ -44,7 +44,7 @@ import {
 import {
   copiaDelUsuarioEnElDispositivo,
   esLaCopiaReducida,
-} from '../domain/services/copiaDelUsuarioEnElDispositivo';
+} from '../infrastructure/http/copiaDelUsuarioEnElDispositivo';
 import { olvidaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterceptor';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
@@ -227,10 +227,20 @@ const programaReintento = () => {
 const DESCARTADA = Symbol('descartada');
 const SIN_SESION = Symbol('sin sesión');
 
+/** Si una respuesta de error trae el `error_code` del backend (y no es de un proxy). */
+const esDelBackend = async (respuesta) => {
+  try {
+    const cuerpo = await respuesta.json();
+    return typeof cuerpo?.error_code === 'string' && cuerpo.error_code !== '';
+  } catch {
+    return false;
+  }
+};
+
 /**
  * La pregunta a current-user, la misma para la consulta y para la revalidación
  * al volver (hotfix 2.50.1). Un fallo de red o una respuesta que no sea 200,
- * 401 ni 404 se lanza: no es una respuesta sobre la sesión.
+ * 401 ni un 404 del backend se lanza: no es una respuesta sobre la sesión.
  *
  * @param {() => boolean} sigoValiendo Si la pregunta sigue siendo la actual
  * @returns {Promise<Object|typeof DESCARTADA|typeof SIN_SESION>}
@@ -248,7 +258,11 @@ const preguntaAlServidor = async (sigoValiendo) => {
   // El dispositivo revocado NO se atiende aqui: `fetchWithTokenRefresh` lo
   // detecta antes, llama a `handleDeviceRevocationLogout` y se queda
   // esperando una promesa que no resuelve, asi que ese 401 no llega
-  if (respuesta.status === 401 || respuesta.status === 404) return SIN_SESION;
+  if (respuesta.status === 401) return SIN_SESION;
+  // Un 404 solo dice «no hay sesión» si es del backend, con su `error_code`: el de un
+  // proxy o una página del borde no es una respuesta sobre la sesión y no puede borrar
+  // lo guardado para anotar sin cobertura (revisión de la fase 3)
+  if (respuesta.status === 404 && (await esDelBackend(respuesta))) return SIN_SESION;
   if (!respuesta.ok) throw new Error(`Failed to fetch user: ${respuesta.status}`);
 
   const usuario = await respuesta.json();

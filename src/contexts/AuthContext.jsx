@@ -6,13 +6,15 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setCsrfTokenGlobal, olvidaLoGuardadoDeLaCuenta } from '../composition/http';
 import {
+  setCsrfTokenGlobal,
+  olvidaLoGuardadoDeLaCuenta,
   copiaDelUsuarioEnElDispositivo,
   esLaCopiaReducida,
-} from '../domain/services/copiaDelUsuarioEnElDispositivo';
+} from '../composition/http';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
+import { abreLoGuardadoParaLaCuenta } from '../services/loUltimoConocido';
 // Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
 import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 
@@ -47,7 +49,13 @@ export const AuthProvider = ({ children }) => {
         if (!esLaCopiaReducida(guardado)) {
           const reducida = copiaDelUsuarioEnElDispositivo(guardado);
           if (!reducida) throw new Error('Stored user is not an object');
-          localStorage.setItem('user', JSON.stringify(reducida));
+          try {
+            localStorage.setItem('user', JSON.stringify(reducida));
+          } catch (error) {
+            // Sin espacio para reescribirla: se sigue con la reducida en memoria, sin
+            // perder al usuario; se reescribe en el próximo arranque o al entrar
+            console.error('Failed to rewrite the stored user:', error);
+          }
           return reducida;
         }
         return guardado;
@@ -96,6 +104,9 @@ export const AuthProvider = ({ children }) => {
     olvidaLasAccionesPendientes();
 
     if (userData) {
+      // Entra una cuenta: lo que se guarda para anotar sin cobertura vuelve a poder
+      // escribirse, aunque una limpieza «sin sesión» de esta carga lo cerrara
+      abreLoGuardadoParaLaCuenta();
       // Solo lo permitido (fase 3, FE-06): ni correo, ni el pendiente, ni género. En
       // memoria sigue completo
       localStorage.setItem('user', JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)));
