@@ -219,6 +219,11 @@ if (!SENTRY_CONFIG.dsn) {
           delete sanitized.password;
           delete sanitized.access_token;
           delete sanitized.refresh_token;
+          // Los enlaces de un solo uso (verificar, restablecer) y el canje de Google
+          // con PKCE (fase 3)
+          delete sanitized.token;
+          delete sanitized.code_verifier;
+          delete sanitized.authorization_code;
           event.request.data = sanitized;
         }
       }
