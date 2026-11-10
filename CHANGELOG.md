@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.72.0] - 2026-11-10
+
+**Resto de la fase 1 del plan de la auditoría: el transporte de la sesión y el cliente de
+la API en la infraestructura, sin efectos de interfaz; un arranque 17 KB más ligero; y
+tres arreglos visibles** (FE #1081, #1083, #1084, #1085, #1086, #1082). Va con el backend
+**2.55.0**, sin cambios en él. Probado en el Kind a 360 px con una batería a fondo.
+
+### Fixed
+
+- **El aviso de un cierre de sesión forzado se ve en la pantalla de entrar**: antes se
+  perdía con la recarga. Revocado, caducado (con cuenta) y rechazado avisan en /login con el
+  mismo texto e icono; se sale a /login al momento. El aviso es de esa pestaña, caduca a los
+  30 s y se olvida al entrar o al cerrar sesión.
+- **La contraseña incorrecta se avisa en el idioma de la app** («Credenciales inválidas…»);
+  antes salía en inglés. El mismo texto exista o no el correo.
+- **Tras aceptar los Términos se vuelve a la página a la que se iba** (por ejemplo,
+  Torneos), no a la que se dejaba.
+- **Tras un cierre forzado nada vuelve a escribir la copia de sesión sin red** antes de la
+  recarga.
+
+### Changed
+
+- **Arranque más ligero**: el seguimiento de navegaciones de Sentry ya no entra en el JS de
+  arranque (llega ~2 s después); 276.737 → 259.602 bytes gzip en el build de producción. El
+  CI mide ahora el presupuesto sobre ese build (con DSN) y falla si el seguimiento vuelve a
+  entrar.
+- **Política de cookies** (es/en): todo lo que la app guarda en el navegador, para qué y
+  cuánto dura. Última actualización: 10 de noviembre de 2026.
+- **Arquitectura**: el transporte de la sesión y el cliente de la API viven en
+  `infrastructure/http`; los avisos, textos, Sentry y redirección de los cierres los
+  registra la composition root, una sola vez; sin registro, un cierre forzado borra la cuenta
+  y falla en voz alta. El monitor de dispositivo va por un caso de uso. Reglas nuevas: la
+  infraestructura solo llega a paquetes permitidos, la interfaz no puede usar el cliente de
+  la API y se analizan los `.ts`.
+- Comentarios y documentación apuntan a la fuente versionada de cada regla.
+
 ## [2.71.0] - 2026-11-09
 
 **Fase 1 del plan de la auditoría del 9 nov: la arquitectura vigilada en el CI, y lo de la
