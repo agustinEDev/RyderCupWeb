@@ -22,11 +22,14 @@ vi.mock('../composition', () => ({
   googleLoginUseCase: { execute: vi.fn() },
   linkGoogleAccountUseCase: { execute: vi.fn() },
 }));
-const estado = vi.hoisted(() => ({ valid: true, flow: 'login', verifier: null, recogidos: 0 }));
+const estado = vi.hoisted(() => ({ valid: true, flow: 'login', verifier: null, recogidos: 0, vueltas: 0 }));
 vi.mock('../utils/googleOAuth', () => ({
   verifyOAuthState: () => ({ flow: estado.flow, valid: estado.valid }),
   recogeLaVueltaDeGoogle: () => null,
-  recogeLaVueltaDeGoogleConSuCuenta: () => null,
+  recogeLaVueltaDeGoogleConSuCuenta: () => {
+    estado.vueltas += 1;
+    return null;
+  },
   recogeElVerificadorDeGoogle: () => {
     estado.recogidos += 1;
     return estado.verifier;
@@ -52,7 +55,7 @@ const abrir = (query) => {
 describe('GoogleCallback · PKCE (fase 3)', () => {
   afterEach(() => {
     vi.clearAllMocks();
-    Object.assign(estado, { valid: true, flow: 'login', verifier: null, recogidos: 0 });
+    Object.assign(estado, { valid: true, flow: 'login', verifier: null, recogidos: 0, vueltas: 0 });
     window.history.replaceState(null, '', '/');
   });
 
@@ -107,5 +110,22 @@ describe('GoogleCallback · PKCE (fase 3)', () => {
     expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
     expect(estado.recogidos).toBe(1);
     expect(googleLoginUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  // La página de vuelta guardada lleva el token del enlace de cambio de correo: se
+  // recoge (y borra) también cuando se sale antes de canjear (/code-review)
+  it.each([
+    ['sin verifier', '?code=abc&state=ok', true, null],
+    ['con el state que no cuadra', '?code=abc&state=otro', false, VERIFIER],
+    ['con un error de Google', '?error=access_denied&state=ok', true, VERIFIER],
+    ['sin código', '?state=ok', true, VERIFIER],
+  ])('K6: %s, la vuelta guardada se recoge igual', async (_caso, query, valido, verifier) => {
+    estado.valid = valido;
+    estado.verifier = verifier;
+
+    abrir(query);
+
+    expect(await screen.findByText('google.errorTitle')).toBeInTheDocument();
+    expect(estado.vueltas).toBe(1);
   });
 });

@@ -43,6 +43,10 @@ const GoogleCallback = () => {
       // El verifier de PKCE se recoge lo primero, y así se borra pase lo que pase: bien,
       // mal o con la vuelta rechazada (fase 3)
       const codeVerifier = recogeElVerificadorDeGoogle();
+      // Y la página de vuelta guardada (lleva el token del enlace de cambio de correo):
+      // se recoge antes de cualquier salida temprana, para que no se quede guardada
+      // (/code-review). Solo la usa la entrada; vincular no la guarda
+      const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
 
       // Verify CSRF nonce from state parameter
       const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
@@ -79,9 +83,7 @@ const GoogleCallback = () => {
           customToast.success(t('google.linkSuccess'));
           navigate('/profile/edit', { replace: true });
         } else {
-          // Login/register flow. La vuelta se recoge siempre: lleva el token del enlace y
-          // no se queda guardada aunque no se use (alta nueva o fallo)
-          const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
+          // Login/register flow. La vuelta ya se recogió arriba
           const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code, codeVerifier);
 
           // Update auth context
