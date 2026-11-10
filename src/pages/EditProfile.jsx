@@ -41,6 +41,7 @@ const EditProfile = () => {
     hasPassword,
     isUnlinkingGoogle,
     isGoingToGoogle,
+    sinConfirmar,
     handleLinkGoogle,
     handleUnlinkGoogle,
     isGooglePasswordOpen,
@@ -70,6 +71,18 @@ const EditProfile = () => {
   if (isLoading) {
     return (
       <FullScreenLoader texto={t('common:loading')} />
+    );
+  }
+
+  // Sin red (sesión sin confirmar) no hay qué editar: todo necesita el servidor
+  if (sinConfirmar) {
+    return (
+      <div className={`relative flex ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-gray-50`}>
+        <HeaderAuth user={null} />
+        <p role="status" className="px-4 py-12 text-center text-gray-700">
+          {t('common:sinConexion.mensaje')}
+        </p>
+      </div>
     );
   }
 

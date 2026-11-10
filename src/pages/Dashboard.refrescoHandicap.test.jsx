@@ -281,6 +281,23 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     expect(localStorage.getItem('pedir_handicap')).toBeNull();
   });
 
+  it('D14b: sin red (sesión sin confirmar) el modal guardado espera a la red, sin gastarse', async () => {
+    localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+    const anterior = sesion.user;
+    sesion.user = { id: 'u-1', first_name: 'Ana' };
+    sesion.sinConfirmar = true;
+    try {
+      render(<Dashboard />);
+      await panelPintado();
+      // El modal ofrece la RFEG según el país, que la copia del dispositivo no trae
+      expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
+      expect(localStorage.getItem('pedir_handicap')).not.toBeNull();
+    } finally {
+      sesion.user = anterior;
+      sesion.sinConfirmar = false;
+    }
+  });
+
   it('D12: un 4xx no se va a arreglar solo: se borra el apunte y no se reintenta', async () => {
     // Un 404 (el endpoint no existe, o el usuario ya no) repetido en cada
     // visita al panel sería un POST fallido tras otro, para nada

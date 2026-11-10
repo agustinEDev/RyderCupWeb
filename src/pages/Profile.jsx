@@ -322,7 +322,10 @@ const Profile = () => {
                   label={t('privacy.shareActivity')}
                   description={t('privacy.shareActivityHint')}
                 >
-                  <ActivitySharingToggle initialValue={user?.share_activity} />
+                  {/* Sin red la copia del dispositivo no trae `share_activity`: saldría
+                      encendido y apagarlo abriría el aviso destructivo. Se enseña al
+                      confirmarse la sesión, ya con su valor (fase 3) */}
+                  {!sinConfirmar && <ActivitySharingToggle initialValue={user?.share_activity} />}
                 </SettingsControlRow>
               </SettingsGroup>
 

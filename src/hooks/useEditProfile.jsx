@@ -23,7 +23,7 @@ const CONFLICTO = 409;
 
 export const useEditProfile = () => {
   const { t } = useTranslation(['profile', 'auth']);
-  const { user: authUser, refetch: refetchUser } = useAuth();
+  const { user: authUser, refetch: refetchUser, sinConfirmar } = useAuth();
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +56,12 @@ export const useEditProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (!authUser) {
+        // Sin red el usuario sale de la copia del dispositivo, sin correo, género ni
+        // hándicap (fase 3): editar espera a que el servidor confirme la sesión, porque
+        // todo lo de esta pantalla necesita red y un formulario con huecos invitaba a
+        // guardar datos falsos. Al confirmarse cambia `authUser` y se rellena
+        if (!authUser || sinConfirmar) {
+          setUser(null);
           setIsLoading(false);
           return;
         }
@@ -72,7 +77,7 @@ export const useEditProfile = () => {
           newPassword: '',
           confirmPassword: '',
           handicap:
-            authUser.handicap === null ? '' : authUser.handicap.toString(),
+            authUser.handicap === null || authUser.handicap === undefined ? '' : authUser.handicap.toString(),
           countryCode: authUser.country_code || '',
           gender: authUser.gender || '',
         });
@@ -84,7 +89,7 @@ export const useEditProfile = () => {
     };
 
     fetchUserData();
-  }, [authUser]);
+  }, [authUser, sinConfirmar]);
 
   // Cargar países
   useEffect(() => {
@@ -558,6 +563,7 @@ export const useEditProfile = () => {
     isRefreshing,
     isUnlinkingGoogle,
     isGoingToGoogle,
+    sinConfirmar,
     isGoogleLinked,
     hasPassword,
     countries,

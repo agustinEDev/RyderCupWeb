@@ -25,7 +25,9 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/LanguageSwitcher', () => ({ default: () => null }));
 vi.mock('../components/ui/Avatar', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../components/profile/ActivitySharingToggle', () => ({ default: () => null }));
+vi.mock('../components/profile/ActivitySharingToggle', () => ({
+  default: ({ initialValue }) => <div data-testid="compartir-actividad" data-valor={String(initialValue)} />,
+}));
 vi.mock('../hooks/useStandalone', () => ({ useStandalone: () => false }));
 vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
@@ -125,6 +127,9 @@ describe('Profile · sin conexión (fase 3)', () => {
     expect(screen.getByTestId('profile-email')).toHaveTextContent(/^—$/);
     expect(screen.getByTestId('profile-gender')).toHaveTextContent('edit.personalInfo.gender: —');
     expect(document.body.textContent).not.toMatch(/undefined|No email/);
+    // Sin `share_activity` en la copia saldría encendido y apagarlo abriría el aviso
+    // destructivo: no se enseña hasta que el servidor confirme
+    expect(screen.queryByTestId('compartir-actividad')).not.toBeInTheDocument();
     sinConfirmar = false;
   });
 
@@ -135,5 +140,6 @@ describe('Profile · sin conexión (fase 3)', () => {
 
     expect(await screen.findByTestId('profile-email')).toHaveTextContent('ana@example.com');
     expect(screen.queryByTestId('profile-gender')).not.toBeInTheDocument();
+    expect(screen.getByTestId('compartir-actividad')).toBeInTheDocument();
   });
 });

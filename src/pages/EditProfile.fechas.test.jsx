@@ -20,11 +20,13 @@ vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
 vi.mock('../hooks/useAvatar', () => ({ useAvatar: () => ({}) }));
 
 let usuario;
+let sinConfirmar = false;
 let handicapEscrito = '';
 const cambiar = vi.fn();
 vi.mock('../hooks/useEditProfile', () => ({
   useEditProfile: () => ({
     user: usuario,
+    sinConfirmar,
     formData: {
       firstName: '', lastName: '', alias: '', countryCode: '', gender: '',
       currentPassword: '', email: '', newPassword: '', confirmPassword: '', handicap: handicapEscrito,
@@ -129,5 +131,16 @@ describe('EditProfile · el «+» del hándicap a mano', () => {
     fireEvent.click(screen.getByRole('button', { name: 'handicapField.plus' }));
 
     expect(cambiar).toHaveBeenCalledWith({ target: { name: 'handicap', value: '-2' } });
+  });
+});
+
+describe('EditProfile · sin conexión (fase 3)', () => {
+  it('EP3: con la sesión sin confirmar dice que no hay conexión, sin formulario', () => {
+    usuario = null;
+    sinConfirmar = true;
+    pintar();
+
+    expect(screen.getByText('common:sinConexion.mensaje')).toBeInTheDocument();
+    sinConfirmar = false;
   });
 });
