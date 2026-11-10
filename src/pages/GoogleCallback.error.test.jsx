@@ -38,6 +38,8 @@ vi.mock('../utils/googleOAuth', () => ({
     estado.recogidas += 1;
     return estado.vuelta ? { ruta: estado.vuelta, cuenta: estado.cuentaDeLaVuelta ?? null } : null;
   },
+  // PKCE (fase 3): aquí siempre hay verifier; sin él, GoogleCallback.pkce.test.jsx
+  recogeElVerificadorDeGoogle: () => 'v'.repeat(43),
 }));
 
 const { googleLoginUseCase, linkGoogleAccountUseCase } = await import('../composition');

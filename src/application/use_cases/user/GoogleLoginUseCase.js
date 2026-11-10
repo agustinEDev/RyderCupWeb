@@ -13,14 +13,20 @@ class GoogleLoginUseCase {
   /**
    * Execute Google OAuth login/registration.
    * @param {string} authorizationCode - The authorization code from Google.
+   * @param {string} codeVerifier - El verifier de PKCE guardado al empezar la ida (fase 3).
    * @returns {Promise<{user: import('../../../domain/entities/User').default, csrfToken: string, isNewUser: boolean}>}
    */
-  async execute(authorizationCode) {
+  async execute(authorizationCode, codeVerifier) {
     if (!authorizationCode || typeof authorizationCode !== 'string' || !authorizationCode.trim()) {
       throw new Error('Authorization code is required');
     }
 
-    return await this.authRepository.googleLogin(authorizationCode.trim());
+    // Sin el verifier el backend no canjea el código (PKCE): ni se pregunta
+    if (!codeVerifier || typeof codeVerifier !== 'string') {
+      throw new Error('Code verifier is required');
+    }
+
+    return await this.authRepository.googleLogin(authorizationCode.trim(), codeVerifier);
   }
 }
 

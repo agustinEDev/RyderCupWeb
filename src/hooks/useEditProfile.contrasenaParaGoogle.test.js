@@ -101,10 +101,24 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   it('H2: sin contraseña, va directo a Google', async () => {
     const result = await monta(false);
 
-    act(() => result.current.handleLinkGoogle());
+    // La URL se espera: el reto de PKCE es asíncrono (fase 3)
+    await act(async () => result.current.handleLinkGoogle());
 
     expect(result.current.isGooglePasswordOpen).toBe(false);
     expect(globalThis.location.href).toBe('https://google/vincular');
+  });
+
+  it('H2b: sin contraseña, si no se puede montar la ida a Google, lo dice (fase 3)', async () => {
+    const toast = (await import('../utils/toast')).default;
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const result = await monta(false);
+    googleOAuth.buildGoogleOAuthUrl.mockRejectedValueOnce(new Error('sin crypto.subtle'));
+
+    await act(async () => result.current.handleLinkGoogle());
+
+    expect(toast.error).toHaveBeenCalledWith('auth:google.genericError');
+    expect(globalThis.location.href).toBe('/profile/edit');
+    consola.mockRestore();
   });
 
   it('H3: con la contraseña correcta, va a Google', async () => {

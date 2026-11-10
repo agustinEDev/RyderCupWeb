@@ -152,11 +152,12 @@ class ApiAuthRepository extends IAuthRepository {
   /**
    * @override
    */
-  async googleLogin(authorizationCode) {
+  async googleLogin(authorizationCode, codeVerifier) {
     // Sin 423 que traducir: el bloqueo por fallos de contraseña no frena a Google (BE #732)
+    // Con el verifier de PKCE: sin él, un código robado se podría canjear (fase 3)
     const data = await apiRequest('/api/v1/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ authorization_code: authorizationCode }),
+      body: JSON.stringify({ authorization_code: authorizationCode, code_verifier: codeVerifier }),
     });
 
     return {
@@ -180,10 +181,10 @@ class ApiAuthRepository extends IAuthRepository {
   /**
    * @override
    */
-  async linkGoogleAccount(authorizationCode) {
+  async linkGoogleAccount(authorizationCode, codeVerifier) {
     const data = await apiRequest('/api/v1/auth/google/link', {
       method: 'POST',
-      body: JSON.stringify({ authorization_code: authorizationCode }),
+      body: JSON.stringify({ authorization_code: authorizationCode, code_verifier: codeVerifier }),
     });
 
     return {

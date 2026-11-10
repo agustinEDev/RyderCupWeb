@@ -26,6 +26,7 @@ vi.mock('../utils/googleOAuth', () => ({
   verifyOAuthState: () => ({ flow: 'login', valid: true }),
   recogeLaVueltaDeGoogle: () => null,
   recogeLaVueltaDeGoogleConSuCuenta: () => null,
+  recogeElVerificadorDeGoogle: () => 'v'.repeat(43),
 }));
 // Pendientes: lo que importa es con qué se llaman, no lo que pasa después
 const pendiente = () => new Promise(() => {});

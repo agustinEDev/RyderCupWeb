@@ -7,7 +7,8 @@ class IAuthRepository {
    * Autentica a un usuario.
    * @param {Email} email - El email del usuario como Value Object.
    * @param {Password} password - La contraseña del usuario como Value Object. // <-- CAMBIO AQUÍ
-   * @returns {Promise<{user: import('../entities/User').default, token: string}>} Un objeto con el usuario y el token.
+   * @returns {Promise<{user: import('../entities/User').default, csrfToken: string}>} El usuario y el
+   *   token CSRF. Los tokens de sesión van solo en cookies httpOnly (fase 3).
    */
   async login(email, password) {
     throw new Error('Method not implemented: login');
@@ -29,7 +30,8 @@ class IAuthRepository {
   /**
    * Verifica el email de un usuario usando un token.
    * @param {string} token - El token de verificación.
-   * @returns {Promise<import('../entities/User').default>} El objeto User con el email verificado.
+   * @returns {Promise<{emailVerified: boolean}>} Verificar no abre sesión (RyderCupAm #753).
+   * @throws {Error} Con `errorCode` VERIFICATION_TOKEN_EXPIRED si el enlace caducó.
    */
   async verifyEmail(token) {
     throw new Error('Method not implemented: verifyEmail');
@@ -38,9 +40,10 @@ class IAuthRepository {
   /**
    * Authenticate or register a user via Google OAuth.
    * @param {string} authorizationCode - The authorization code from Google.
+   * @param {string} codeVerifier - El verifier de PKCE de la ida (fase 3).
    * @returns {Promise<{user: import('../entities/User').default, csrfToken: string, isNewUser: boolean}>}
    */
-  async googleLogin(authorizationCode) {
+  async googleLogin(authorizationCode, codeVerifier) {
     throw new Error('Method not implemented: googleLogin');
   }
 
@@ -57,9 +60,10 @@ class IAuthRepository {
   /**
    * Link a Google account to an existing authenticated user.
    * @param {string} authorizationCode - The authorization code from Google.
+   * @param {string} codeVerifier - El verifier de PKCE de la ida (fase 3).
    * @returns {Promise<{message: string, provider: string, providerEmail: string}>}
    */
-  async linkGoogleAccount(authorizationCode) {
+  async linkGoogleAccount(authorizationCode, codeVerifier) {
     throw new Error('Method not implemented: linkGoogleAccount');
   }
 
@@ -86,6 +90,16 @@ class IAuthRepository {
    */
   async resendVerificationEmail(email) {
     throw new Error('Method not implemented: resendVerificationEmail');
+  }
+
+  /**
+   * Pide otro enlace de verificación con el caducado, sin sesión (fase 3). La respuesta
+   * no dice si se envió.
+   * @param {string} token - El token del enlace caducado.
+   * @returns {Promise<void>}
+   */
+  async resendVerificationLink(token) {
+    throw new Error('Method not implemented: resendVerificationLink');
   }
 }
 

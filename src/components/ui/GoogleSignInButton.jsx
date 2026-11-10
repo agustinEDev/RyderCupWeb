@@ -12,13 +12,14 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
     ? t('google.continueWithGoogle')
     : t('google.signUpWithGoogle');
 
-  const handleClick = () => {
+  // Asíncrono: el reto de PKCE se calcula con `crypto.subtle` (fase 3)
+  const handleClick = async () => {
     try {
       // Si se vino al login desde una página que lo pide (confirmar el cambio de
       // correo), a ella se vuelve tras Google (RyderCupAm #753). La guardada por una
       // redirección dura no se toca aquí: la usa y la gasta la vuelta de Google
       guardaLaVueltaDeGoogle(location.state?.from);
-      window.location.href = buildGoogleOAuthUrl(flow);
+      window.location.href = await buildGoogleOAuthUrl(flow);
     } catch (error) {
       console.error('Google OAuth URL error:', error);
       customToast.error(t('google.genericError'));

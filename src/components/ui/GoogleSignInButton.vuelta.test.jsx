@@ -54,3 +54,25 @@ describe('GoogleSignInButton · la vuelta tras Google', () => {
   });
 });
 
+
+describe('GoogleSignInButton · ida a Google con PKCE (fase 3)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('espera a la URL (el reto se calcula aparte) y si falla lo dice', async () => {
+    const toast = (await import('../../utils/toast')).default;
+    const errorSpy = vi.spyOn(toast, 'error').mockImplementation(() => {});
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    google.buildGoogleOAuthUrl.mockRejectedValueOnce(new Error('sin crypto.subtle'));
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <GoogleSignInButton />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith('google.genericError'));
+    errorSpy.mockRestore();
+    consola.mockRestore();
+  });
+});

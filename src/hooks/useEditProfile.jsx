@@ -309,8 +309,9 @@ export const useEditProfile = () => {
     setIsGooglePasswordOpen(true);
   };
 
-  const vaAGoogle = () => {
-    globalThis.location.href = buildGoogleOAuthUrl('link');
+  // Asíncrono: el reto de PKCE se calcula con `crypto.subtle` (fase 3)
+  const vaAGoogle = async () => {
+    globalThis.location.href = await buildGoogleOAuthUrl('link');
   };
 
   const handleLinkGoogle = () => {
@@ -318,7 +319,11 @@ export const useEditProfile = () => {
       abreLaVentanaPara('vincular');
       return;
     }
-    vaAGoogle();
+    vaAGoogle().catch((error) => {
+      // Sin la configuración de Google (o sin `crypto.subtle`) no hay a dónde ir
+      console.error('Google OAuth URL error:', error);
+      customToast.error(t('auth:google.genericError'));
+    });
   };
 
   const cierraContrasenaParaGoogle = () => {
@@ -372,7 +377,7 @@ export const useEditProfile = () => {
     if (ventana.current.id !== id || !ventana.current.abierta) return null;
     if (para === 'desvincular') return desvincula();
     try {
-      vaAGoogle();
+      await vaAGoogle();
     } catch (error) {
       // Sin la configuración de Google no hay a dónde ir: que no se quede comprobando
       console.error('Google OAuth URL error:', error);
