@@ -26,6 +26,22 @@ const DTO = {
   country_code: 'ES',
   email_verified: true,
 };
+/**
+ * Un almacenamiento de prueba para simular la copia COMPLETA de antes de la fase 3 sin
+ * escribirla con `localStorage.setItem` (CodeQL: datos sensibles en claro). La copia
+ * vieja entra por `pon`, como si la hubiera dejado otra versión de la app.
+ */
+const almacenDePrueba = () => {
+  const datos = new Map();
+  return {
+    getItem: (clave) => (datos.has(clave) ? datos.get(clave) : null),
+    setItem: (clave, valor) => datos.set(clave, String(valor)),
+    removeItem: (clave) => datos.delete(clave),
+    clear: () => datos.clear(),
+    pon: (clave, texto) => datos.set(clave, texto),
+  };
+};
+
 const SECRETOS = ['ana@example.com', 'nueva@example.com', 'FEMALE', '12.4', '"ES"'];
 
 describe('AuthContext · copia reducida en localStorage.user (fase 3)', () => {
@@ -44,13 +60,16 @@ describe('AuthContext · copia reducida en localStorage.user (fase 3)', () => {
   });
 
   it('una copia completa de antes se reescribe reducida al arrancar', () => {
-    globalThis.localStorage.setItem('user', JSON.stringify(new User(DTO)));
+    const almacen = almacenDePrueba();
+    almacen.pon('user', JSON.stringify(new User(DTO)));
+    vi.stubGlobal('localStorage', almacen);
 
     const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
 
     const guardado = globalThis.localStorage.getItem('user');
     for (const secreto of SECRETOS) expect(guardado).not.toContain(secreto);
     expect(result.current.user).toMatchObject({ id: 'u-1' });
+    vi.unstubAllGlobals();
   });
 });
 

@@ -45,6 +45,22 @@ const cargar = async () => {
   return { fetchWithTokenRefresh, ...sesion };
 };
 
+/**
+ * Un almacenamiento de prueba para simular la copia COMPLETA de antes de la fase 3 sin
+ * escribirla con `localStorage.setItem` (CodeQL: datos sensibles en claro). La copia
+ * vieja entra por `pon`, como si la hubiera dejado otra versión de la app.
+ */
+const almacenDePrueba = () => {
+  const datos = new Map();
+  return {
+    getItem: (clave) => (datos.has(clave) ? datos.get(clave) : null),
+    setItem: (clave, valor) => datos.set(clave, String(valor)),
+    removeItem: (clave) => datos.delete(clave),
+    clear: () => datos.clear(),
+    pon: (clave, texto) => datos.set(clave, texto),
+  };
+};
+
 const copia = () => JSON.parse(globalThis.localStorage.getItem(RECUERDO));
 
 describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
@@ -53,7 +69,10 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
     globalThis.localStorage.clear();
   });
 
-  afterEach(() => globalThis.localStorage.clear());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    globalThis.localStorage.clear();
+  });
 
   it('S1: con sesión, la memoria lleva todo y la copia solo lo permitido', async () => {
     const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
@@ -91,7 +110,9 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
   });
 
   it('S4: una copia completa de antes se reescribe reducida al arrancar', async () => {
-    globalThis.localStorage.setItem(RECUERDO, JSON.stringify(COMPLETO));
+    const almacen = almacenDePrueba();
+    almacen.pon(RECUERDO, JSON.stringify(COMPLETO));
+    vi.stubGlobal('localStorage', almacen);
 
     await cargar();
 
@@ -100,8 +121,10 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
   });
 
   it('S6: una copia completa escrita después de arrancar (otra pestaña con la versión de antes) se lee reducida', async () => {
+    const almacen = almacenDePrueba();
+    vi.stubGlobal('localStorage', almacen);
     const { fetchWithTokenRefresh, consultaLaSesion, loQueHaySobreLaSesion } = await cargar();
-    globalThis.localStorage.setItem(RECUERDO, JSON.stringify(COMPLETO));
+    almacen.pon(RECUERDO, JSON.stringify(COMPLETO));
     fetchWithTokenRefresh.mockRejectedValue(new TypeError('Failed to fetch'));
 
     await consultaLaSesion();
