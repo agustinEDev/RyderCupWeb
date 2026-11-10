@@ -25,7 +25,11 @@ const VerifyEmail = () => {
   // Pedir otro enlace con el caducado (fase 3): idle | sending | sent | limited | failed
   const [reenvio, setReenvio] = useState('idle');
 
+  // El `disabled` llega en el siguiente render: el ref corta un segundo clic en el acto
+  const pidiendoEnlace = useRef(false);
   const pideOtroEnlace = async () => {
+    if (pidiendoEnlace.current) return;
+    pidiendoEnlace.current = true;
     setReenvio('sending');
     try {
       await resendVerificationLinkUseCase.execute(token);
@@ -37,6 +41,9 @@ const VerifyEmail = () => {
       }
       console.error('Error resending the verification link:', error);
       setReenvio('failed');
+    } finally {
+      // Enviado, el botón queda desactivado; si falló, se puede volver a pedir
+      pidiendoEnlace.current = false;
     }
   };
 

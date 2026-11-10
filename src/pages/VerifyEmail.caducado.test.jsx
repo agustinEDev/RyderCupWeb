@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router';
 
 /**
@@ -73,6 +73,20 @@ describe('VerifyEmail · enlace caducado (fase 3)', () => {
     expect(screen.getByRole('button', { name: 'verifyEmail.resendLink' })).toBeDisabled();
   });
 
+  it('X2b: dos clics seguidos (antes de que llegue el disabled) piden un solo enlace', async () => {
+    verifyEmailUseCase.execute.mockRejectedValue(caducado());
+    resendVerificationLinkUseCase.execute.mockReturnValue(new Promise(() => {}));
+    abrir();
+    const elBoton = await boton();
+
+    act(() => {
+      elBoton.click();
+      elBoton.click();
+    });
+
+    expect(resendVerificationLinkUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+
   it('X3: 429 → el texto de límite de siempre', async () => {
     verifyEmailUseCase.execute.mockRejectedValue(caducado());
     resendVerificationLinkUseCase.execute.mockRejectedValue(
@@ -96,6 +110,9 @@ describe('VerifyEmail · enlace caducado (fase 3)', () => {
 
     expect(await screen.findByText('emailVerification.failed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'verifyEmail.resendLink' })).toBeEnabled();
+    // Y se puede volver a pedir de verdad
+    fireEvent.click(screen.getByRole('button', { name: 'verifyEmail.resendLink' }));
+    await waitFor(() => expect(resendVerificationLinkUseCase.execute).toHaveBeenCalledTimes(2));
     consola.mockRestore();
   });
 

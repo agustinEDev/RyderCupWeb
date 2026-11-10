@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resendVerificationEmailUseCase } from '../composition';
 
@@ -18,7 +18,13 @@ export const useReenvioDeVerificacion = (correo) => {
   // «Failed» dejaba de funcionar en cuanto el mensaje se traducía
   const [esError, setEsError] = useState(false);
 
+  // El `disabled` del botón llega en el siguiente render: dos clics seguidos pedirían
+  // dos correos. El ref corta el segundo en el acto
+  const enCurso = useRef(false);
+
   const reenviar = async () => {
+    if (enCurso.current) return;
+    enCurso.current = true;
     setEnviando(true);
     setMensaje('');
     try {
@@ -30,6 +36,7 @@ export const useReenvioDeVerificacion = (correo) => {
       setEsError(true);
       setMensaje(t('emailVerification.failed'));
     } finally {
+      enCurso.current = false;
       setEnviando(false);
     }
   };
