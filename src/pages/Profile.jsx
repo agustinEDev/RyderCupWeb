@@ -27,7 +27,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('profile');
   const { t: tCommon } = useTranslation('common');
-  const { user, loading: isLoadingUser } = useAuth();
+  const { user, loading: isLoadingUser, sinConfirmar } = useAuth();
   const { logout } = useLogout();
   const isStandalone = useStandalone();
   // Se guarda el país, no su nombre ya traducido: así cambiar de idioma lo
@@ -106,7 +106,10 @@ const Profile = () => {
   }
 
   const fullName = `${user.first_name} ${user.last_name}`;
-  const email = user.email || 'No email';
+  // Sin conexión el usuario sale de la copia del dispositivo, que no guarda el correo
+  // ni el género (fase 3, FE-06): «—» hasta que vuelva la red
+  const SIN_DATO = '—';
+  const email = user.email || SIN_DATO;
   // Las fechas en el idioma de la app y leídas como UTC; y si hay hándicap,
   // un booleano: era el texto «Not set» el que lo decidía (FE #710)
   const tieneHandicap = user.handicap !== null && user.handicap !== undefined;
@@ -190,7 +193,7 @@ const Profile = () => {
                         direccion larga no puede partirse sola y desborda */}
                     <div className="flex items-center gap-2 text-gray-600 mb-2">
                       <Mail className="w-4 h-4 shrink-0" />
-                      <span className="min-w-0 break-all text-sm">{email}</span>
+                      <span data-testid="profile-email" className="min-w-0 break-all text-sm">{email}</span>
                     </div>
 
                     {/* Member Since */}
@@ -224,10 +227,13 @@ const Profile = () => {
                     </div>
 
                     {/* Gender */}
-                    {user.gender && (
+                    {(user.gender || sinConfirmar) && (
                       <div className="flex items-center gap-2 text-gray-600">
                         <Shield className="w-4 h-4" />
-                        <span className="text-sm">{t('edit.personalInfo.gender')}: {t(`edit.personalInfo.genderOptions.${user.gender}`)}</span>
+                        <span data-testid="profile-gender" className="text-sm">
+                          {t('edit.personalInfo.gender')}:{' '}
+                          {user.gender ? t(`edit.personalInfo.genderOptions.${user.gender}`) : SIN_DATO}
+                        </span>
                       </div>
                     )}
                   </div>

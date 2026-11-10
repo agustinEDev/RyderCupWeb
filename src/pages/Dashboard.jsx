@@ -606,8 +606,10 @@ const Dashboard = () => {
               </div>
             </motion.div>
 
-            {/* Email Verification Banner */}
-            {user && !user.email_verified && (
+            {/* Email Verification Banner. Sin conexión el usuario sale de la copia del
+                dispositivo, que no guarda el correo (fase 3, FE-06): sin él no hay qué
+                reenviar ni qué decir */}
+            {user && !user.email_verified && user.email && (
               <div className="px-4">
                 <EmailVerificationBanner userEmail={user.email} />
               </div>

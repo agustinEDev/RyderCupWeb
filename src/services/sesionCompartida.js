@@ -37,7 +37,14 @@
  */
 
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
-import { clearDeviceRevocationFlag } from '../infrastructure/http/deviceRevocationLogout';
+import {
+  clearDeviceRevocationFlag,
+  olvidaLoGuardadoDeLaCuenta,
+} from '../infrastructure/http/deviceRevocationLogout';
+import {
+  copiaDelUsuarioEnElDispositivo,
+  esLaCopiaReducida,
+} from '../domain/services/copiaDelUsuarioEnElDispositivo';
 import { olvidaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterceptor';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
@@ -89,7 +96,9 @@ const apunta = (usuario) => {
   // cierre normal (clearAuth), que no marca esta carga
   if (seEstaCerrandoLaSesion()) return;
   try {
-    localStorage.setItem(RECUERDO, JSON.stringify(usuario));
+    // Solo lo permitido (fase 3, FE-06): lo justo para arrancar sin red. Ni correo, ni
+    // el pendiente, ni género, hándicap o país; en memoria sigue completo
+    localStorage.setItem(RECUERDO, JSON.stringify(copiaDelUsuarioEnElDispositivo(usuario)));
   } catch {
     // Sin espacio, o en una ventana privada. Se seguirá echando al formulario
     // sin cobertura, que es como estaba antes: no hay nada peor que perder
@@ -122,12 +131,33 @@ const loApuntado = () => {
   try {
     const crudo = localStorage.getItem(RECUERDO);
     if (!crudo) return null;
-    const usuario = JSON.parse(crudo);
-    return usuario && typeof usuario === 'object' ? { ...usuario, is_admin: false } : null;
+    const usuario = copiaDelUsuarioEnElDispositivo(JSON.parse(crudo));
+    return usuario ? { ...usuario, is_admin: false } : null;
   } catch {
     return null;
   }
 };
+
+/**
+ * Una copia completa de antes de la fase 3 (con correo, género, hándicap…) se reescribe
+ * reducida en el siguiente arranque, sin esperar a que el servidor conteste (FE-06).
+ */
+const reduceLaCopiaGuardada = () => {
+  try {
+    const crudo = localStorage.getItem(RECUERDO);
+    if (!crudo) return;
+    const guardado = JSON.parse(crudo);
+    if (esLaCopiaReducida(guardado)) return;
+    const reducida = copiaDelUsuarioEnElDispositivo(guardado);
+    if (reducida) localStorage.setItem(RECUERDO, JSON.stringify(reducida));
+    else localStorage.removeItem(RECUERDO);
+  } catch {
+    // Ilegible: que no se quede con lo que tuviera
+    olvidaElApunte();
+  }
+};
+
+reduceLaCopiaGuardada();
 
 /** `sinConfirmar`: lo que se enseña sale del apunte del dispositivo y el
  *  servidor todavia no lo ha respaldado. Es SUYO y no se deduce de
@@ -226,12 +256,23 @@ const preguntaAlServidor = async (sigoValiendo) => {
   return sigoValiendo() ? usuario : DESCARTADA;
 };
 
-/** El servidor dice que no hay sesión: sin usuario y sin la copia del dispositivo. */
+/**
+ * El servidor dice que no hay sesión: la misma limpieza que salir (fase 3, FE-06), con
+ * el registro único: el usuario guardado, esta copia, las partidas para anotar sin
+ * cobertura, el hándicap pendiente y el número de Actividad. Solo con un 401 o un 404:
+ * un fallo de red no dice nada de la sesión y no borra nada.
+ */
 const publicaSinSesion = () => {
   olvidaElApunte();
   // El número de Actividad y el del icono pueden ser de una cuenta que salió
   // por un camino que no limpió (FE-1): sin sesión, no hay número que enseñar
   olvidaLasNovedades();
+  try {
+    olvidaLoGuardadoDeLaCuenta();
+  } catch (error) {
+    // Lo de arriba ya está hecho; lo que falle aquí no puede dejar la sesión a medias
+    console.error('[sesion] cleanup without session failed:', error);
+  }
   anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 };
 

@@ -24,6 +24,7 @@ export {
   handleDeviceRevocationLogout,
   marcaLaRevocacionPropia,
   olvidaLoDeLaCuenta,
+  olvidaLoGuardadoDeLaCuenta,
 } from '../infrastructure/http/deviceRevocationLogout';
 export {
   refrescoCompartido,

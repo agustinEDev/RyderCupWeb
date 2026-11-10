@@ -213,10 +213,14 @@ export const olvidaLoDeLaCuenta = () => {
 
 /**
  * Lo guardado de la cuenta que no depende de la interfaz: el usuario, el token de
- * antes y lo del registro de limpiezas. Lo borran el cierre forzado
- * (`limpiaLaCuenta`) y el que falla cerrado sin interfaz, siempre lo mismo.
+ * antes y lo del registro de limpiezas. La ÚNICA limpieza de todos los caminos «sin
+ * sesión» (fase 3, FE-06): el cierre forzado (`limpiaLaCuenta`), el que falla cerrado
+ * sin interfaz, salir (`clearAuth`), el servidor diciendo que no hay sesión al arrancar
+ * o al volver (`sesionCompartida`) y la pantalla de entrar sin usuario guardado.
+ * El usuario, lo primero; si una limpieza del registro falla, las demás se hacen y el
+ * primer fallo sale al final.
  */
-const borraLoGuardadoDeLaCuenta = () => {
+export const olvidaLoGuardadoDeLaCuenta = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('access_token'); // Legacy cleanup
   olvidaLoDeLaCuenta();
@@ -227,7 +231,7 @@ const borraLoGuardadoDeLaCuenta = () => {
  * por CSRF (S3): una sola limpieza para los cierres duros.
  */
 export const limpiaLaCuenta = () => {
-  borraLoGuardadoDeLaCuenta();
+  olvidaLoGuardadoDeLaCuenta();
   // El usuario de Sentry (por sentryHelpers, en la interfaz): `window.Sentry` no
   // lo asignaba nadie y esta línea no hacía nada (25 oct 2026)
   interfaz().olvidaElUsuarioDeSentry();
@@ -245,7 +249,7 @@ export const exigeLaInterfazDelTransporte = () => {
   if (hayInterfazDelTransporte()) return;
   let falloAlBorrar = null;
   try {
-    borraLoGuardadoDeLaCuenta();
+    olvidaLoGuardadoDeLaCuenta();
   } catch (error) {
     falloAlBorrar = error;
   }

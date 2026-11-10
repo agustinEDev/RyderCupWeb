@@ -84,7 +84,9 @@ describe('AuthContext', () => {
         expect(result.current.isInitialized).toBe(true);
       });
 
-      expect(result.current.user).toEqual(mockUser);
+      // La copia del dispositivo va sin correo (fase 3, FE-06): se reescribe reducida
+      expect(result.current.user).toEqual({ id: '123', firstName: 'John', lastName: 'Doe' });
+      expect(localStorage.getItem('user')).not.toContain('test@example.com');
     });
 
     it('should handle corrupted localStorage data gracefully', () => {
@@ -120,8 +122,9 @@ describe('AuthContext', () => {
         result.current.setUser(mockUser);
       });
 
+      // En memoria completo; en el dispositivo, sin correo (fase 3, FE-06)
       expect(result.current.user).toEqual(mockUser);
-      expect(JSON.parse(localStorage.getItem('user'))).toEqual(mockUser);
+      expect(JSON.parse(localStorage.getItem('user'))).toEqual({ id: '456', firstName: 'Jane', lastName: 'Smith' });
     });
 
     it('entrar olvida los avisos del panel de quien estuviera antes (BE #361)', async () => {

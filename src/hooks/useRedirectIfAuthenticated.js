@@ -31,7 +31,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuthContext } from './useAuthContext';
-import { handleDeviceRevocationLogout } from '../composition/http';
+import { handleDeviceRevocationLogout, olvidaLoGuardadoDeLaCuenta } from '../composition/http';
 // El mismo guard que usa el login manual. Compartirlo es lo que importa: dos
 // copias de una comprobación de seguridad acaban divergiendo
 import { vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
@@ -73,6 +73,19 @@ export const useRedirectIfAuthenticated = ({
     cuentaGuardada: enabled ? (user?.id ?? null) : null,
   }));
   const [isChecking, setIsChecking] = useState(hadStoredUser);
+
+  // Sin usuario guardado, la pantalla de entrar es un camino «sin sesión»: la misma
+  // limpieza que salir (fase 3, FE-06), por si una salida anterior no la hizo entera.
+  // Desactivado no: la portada en el navegador puede tener una sesión abierta
+  const [sinSesionAlEntrar] = useState(() => enabled && !user);
+  useEffect(() => {
+    if (!sinSesionAlEntrar) return;
+    try {
+      olvidaLoGuardadoDeLaCuenta();
+    } catch (error) {
+      console.error('[auth] cleanup on the sign-in screen failed:', error);
+    }
+  }, [sinSesionAlEntrar]);
 
   useEffect(() => {
     if (!hadStoredUser) return undefined;

@@ -6,7 +6,11 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setCsrfTokenGlobal, olvidaLoDeLaCuenta } from '../composition/http';
+import { setCsrfTokenGlobal, olvidaLoGuardadoDeLaCuenta } from '../composition/http';
+import {
+  copiaDelUsuarioEnElDispositivo,
+  esLaCopiaReducida,
+} from '../domain/services/copiaDelUsuarioEnElDispositivo';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
 // Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
@@ -37,7 +41,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        return JSON.parse(storedUser);
+        const guardado = JSON.parse(storedUser);
+        // Una copia completa de antes de la fase 3 (con correo, género…) se reescribe
+        // reducida: aquí solo se lee `id` y si hay usuario (FE-06)
+        if (!esLaCopiaReducida(guardado)) {
+          const reducida = copiaDelUsuarioEnElDispositivo(guardado);
+          if (!reducida) throw new Error('Stored user is not an object');
+          localStorage.setItem('user', JSON.stringify(reducida));
+          return reducida;
+        }
+        return guardado;
       }
     } catch (error) {
       console.error('Failed to parse stored user:', error);
@@ -83,7 +96,9 @@ export const AuthProvider = ({ children }) => {
     olvidaLasAccionesPendientes();
 
     if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Solo lo permitido (fase 3, FE-06): ni correo, ni el pendiente, ni género. En
+      // memoria sigue completo
+      localStorage.setItem('user', JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)));
     } else {
       localStorage.removeItem('user');
     }
@@ -123,11 +138,9 @@ export const AuthProvider = ({ children }) => {
     // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
     // un instante en la siguiente que entrara sin recargar (FE #502)
     olvidaLasAccionesPendientes();
-    // El usuario guardado, lo primero: si una limpieza de abajo fallara, la
-    // cuenta no puede quedarse apuntada en este dispositivo
-    localStorage.removeItem('user');
-    localStorage.removeItem('access_token'); // Legacy cleanup
-    // Y lo que otros guardan de la cuenta, con el mismo registro que los cierres
+    // El usuario guardado (lo primero: si una limpieza de abajo fallara, la cuenta no
+    // puede quedarse apuntada en este dispositivo), el token de antes y lo que otros
+    // guardan de la cuenta, con la MISMA función que los cierres
     // forzados (`composition/limpiezaAlCerrarLaSesion`): las partidas guardadas
     // para anotar sin cobertura (FE #524), lo pendiente del hándicap (FE #677) y
     // el número de Actividad y el del icono de la app. En un móvil compartido, la
@@ -136,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     // hacen igual (lo garantiza el registro) y el cierre sigue: salir no puede
     // quedarse a medias por un almacenamiento lleno
     try {
-      olvidaLoDeLaCuenta();
+      olvidaLoGuardadoDeLaCuenta();
     } catch (error) {
       console.error('[Auth] Logout cleanup failed:', error);
     }
