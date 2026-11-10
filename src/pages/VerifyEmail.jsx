@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { verifyEmailUseCase } from '../composition';
+import { verifyEmailUseCase, resendVerificationLinkUseCase } from '../composition';
 import BlockLoader from '../components/ui/BlockLoader';
 import { stripSecretsFromAddressBar, readStrippedSecret } from '../utils/stripSecretsFromAddressBar';
 
-
-// Lo que se espera antes de llevar al panel; el texto lo dice con el mismo número
-const SEGUNDOS_HASTA_EL_PANEL = 3;
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -22,19 +19,26 @@ const VerifyEmail = () => {
     stripSecretsFromAddressBar();
   }, []);
 
-  // verifying | success | verifiedSignIn | deactivated | error | invalid
+  // verifying | verifiedSignIn | deactivated | expired | error | invalid
   const [status, setStatus] = useState('verifying');
-  const redirectTimeoutRef = useRef(null);
   const hasVerifiedRef = useRef(false); // Usar ref para prevenir doble ejecución
+  // Pedir otro enlace con el caducado (fase 3): idle | sending | sent | limited | failed
+  const [reenvio, setReenvio] = useState('idle');
 
-  // Cleanup timeout on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
+  const pideOtroEnlace = async () => {
+    setReenvio('sending');
+    try {
+      await resendVerificationLinkUseCase.execute(token);
+      setReenvio('sent');
+    } catch (error) {
+      if (error?.status === 429) {
+        setReenvio('limited');
+        return;
       }
-    };
-  }, []);
+      console.error('Error resending the verification link:', error);
+      setReenvio('failed');
+    }
+  };
 
   useEffect(() => {
     // Prevenir ejecución múltiple usando ref (más confiable que state con React Strict Mode)
@@ -48,25 +52,20 @@ const VerifyEmail = () => {
       }
 
       try {
-        const { sesionAbierta } = await verifyEmailUseCase.execute(token);
+        await verifyEmailUseCase.execute(token);
 
         await new Promise(resolve => setTimeout(resolve, 1500));
-        // Desde RyderCupAm #753 verificar no abre sesión: se entra con la contraseña.
-        // Con una sesión ya abierta, el enlace de iniciar sesión lleva al panel
-        if (!sesionAbierta) {
-          setStatus('verifiedSignIn');
-          return;
-        }
-        // El backend de antes sí la abría (cookie httpOnly): al panel
-        setStatus('success');
-        redirectTimeoutRef.current = setTimeout(() => {
-          // Forzar recarga completa para garantizar que la cookie httpOnly esté disponible
-          window.location.href = '/dashboard';
-        }, SEGUNDOS_HASTA_EL_PANEL * 1000);
-
+        // Verificar no abre sesión (RyderCupAm #753): se entra con la contraseña. Con
+        // una sesión ya abierta, el enlace de iniciar sesión lleva al panel
+        setStatus('verifiedSignIn');
       } catch (error) {
         console.error('❌ Verification error:', error);
         await new Promise(resolve => setTimeout(resolve, 1500));
+        if (error?.errorCode === 'VERIFICATION_TOKEN_EXPIRED') {
+          // Es el de la cuenta, pero pasaron sus 48 horas: se ofrece otro (fase 3)
+          setStatus('expired');
+          return;
+        }
         // Desactivada: el correo SÍ quedó verificado, pero no entra (RyderCupAm #750)
         setStatus(error?.errorCode === 'ACCOUNT_DEACTIVATED' ? 'deactivated' : 'error');
       }
@@ -130,29 +129,37 @@ const VerifyEmail = () => {
                 </>
               )}
 
-              {/* Success state */}
-              {status === 'success' && (
+              {/* Enlace caducado: se ofrece otro, sin sesión (fase 3) */}
+              {status === 'expired' && (
                 <>
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                    <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
+                    <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <h1 className="text-gray-900 text-2xl font-bold mb-4 text-center">
-                    {t('verifyEmail.successTitle')}
+                    {t('verifyEmail.expiredTitle')}
                   </h1>
-                  <p className="text-gray-600 text-center mb-6">
-                    {t('verifyEmail.successMessage')}
-                  </p>
-                  <p className="text-gray-500 text-sm text-center">
-                    {t('verifyEmail.redirecting', { seconds: SEGUNDOS_HASTA_EL_PANEL })}
-                  </p>
-                  <Link
-                    to="/dashboard"
-                    className="mt-6 flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all"
+                  {reenvio !== 'idle' && reenvio !== 'sending' && (
+                    <p
+                      role="status"
+                      className={`text-center mb-6 ${reenvio === 'sent' ? 'text-green-700' : 'text-red-700'}`}
+                    >
+                      {reenvio === 'sent' && t('verifyEmail.resendLinkSent')}
+                      {reenvio === 'limited' && t('common:demasiadasPeticiones')}
+                      {reenvio === 'failed' && t('emailVerification.failed')}
+                    </p>
+                  )}
+                  {/* Enviado, no se vuelve a pedir: la respuesta es la misma con
+                      cualquier token y otro clic solo gastaría el límite */}
+                  <button
+                    type="button"
+                    onClick={pideOtroEnlace}
+                    disabled={reenvio === 'sending' || reenvio === 'sent'}
+                    className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t('verifyEmail.goToDashboard')}
-                  </Link>
+                    {t('verifyEmail.resendLink')}
+                  </button>
                 </>
               )}
 

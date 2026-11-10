@@ -76,17 +76,20 @@ class ApiAuthRepository extends IAuthRepository {
       body: JSON.stringify({ token }),
     });
 
-    // Desde RyderCupAm #753 verificar no abre sesión: solo { message, email_verified }.
-    // Este front sale antes y acepta también la respuesta de antes, que la abría
-    if (!data?.access_token) {
-      return { sesionAbierta: false };
-    }
-    return {
-      sesionAbierta: true,
-      user: new User(data.user),
-      token: data.access_token,
-      csrfToken: data.csrf_token, // v1.13.0: CSRF token for email verification
-    };
+    // Verificar no abre sesión (RyderCupAm #753): solo { message, email_verified }. Ni
+    // tokens ni usuario del cuerpo, aunque vinieran (fase 3)
+    return { emailVerified: data?.email_verified !== false };
+  }
+
+  /**
+   * @override
+   */
+  async resendVerificationLink(token) {
+    // Sin sesión y exenta de CSRF: la pantalla del enlace caducado (fase 3)
+    await apiRequest('/api/v1/auth/resend-verification-link', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
   }
 
   /**
