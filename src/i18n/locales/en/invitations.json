@@ -105,7 +105,8 @@
     "title": "My Invitations",
     "subtitle": "View and respond to competition invitations",
     "pendingCount_one": "{{count}} pending",
-    "pendingCount_other": "{{count}} pending"
+    "pendingCount_other": "{{count}} pending",
+    "verifyEmailNotice": "Verify your email to see the invitations sent to your address"
   },
   "inDetail": {
     "title": "You've been invited to this competition",

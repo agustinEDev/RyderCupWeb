@@ -21,9 +21,14 @@ import './interfazDelTransporte';
 export { getApiBaseUrl } from '../infrastructure/http/urlDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
 export {
+  copiaDelUsuarioEnElDispositivo,
+  esLaCopiaReducida,
+} from '../infrastructure/http/copiaDelUsuarioEnElDispositivo';
+export {
   handleDeviceRevocationLogout,
   marcaLaRevocacionPropia,
   olvidaLoDeLaCuenta,
+  olvidaLoGuardadoDeLaCuenta,
 } from '../infrastructure/http/deviceRevocationLogout';
 export {
   refrescoCompartido,

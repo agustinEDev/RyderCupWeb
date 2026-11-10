@@ -108,6 +108,7 @@
     }
   },
   "errors": {
-    "reloadFailed": "Done, but we could not refresh the profile. Open it again in a moment."
+    "reloadFailed": "Done, but we could not refresh the profile. Open it again in a moment.",
+    "requestNotSent": "The request couldn't be sent"
   }
 }

@@ -103,4 +103,48 @@ describe('sentry', () => {
       expect.objectContaining({ beforeErrorSampling: grabaSoloLoQueNoEsNormal })
     );
   });
+
+  it('el cuerpo de una petición va sin contraseña, tokens ni lo del canje de Google (fase 3)', async () => {
+    cliente.hay = false;
+    const { init } = await import('@sentry/react');
+    await import('./sentry');
+
+    const { beforeSend } = init.mock.calls[0][0];
+    const evento = beforeSend(
+      {
+        request: {
+          data: {
+            password: 'p',
+            access_token: 'a',
+            refresh_token: 'r',
+            token: 't',
+            code_verifier: 'v',
+            authorization_code: 'c',
+            otro: 'se queda',
+          },
+        },
+      },
+      {}
+    );
+
+    expect(evento.request.data).toEqual({ otro: 'se queda' });
+  });
+
+  it('con el cuerpo en texto: si es JSON se tacha igual; si no, por patrón (/code-review)', async () => {
+    cliente.hay = false;
+    const { init } = await import('@sentry/react');
+    await import('./sentry');
+    const { beforeSend } = init.mock.calls[0][0];
+    const cuerpo = (data) => beforeSend({ request: { data } }, {}).request.data;
+
+    const json = JSON.parse(cuerpo(JSON.stringify({ token: 't', code_verifier: 'v', authorization_code: 'c', password: 'p', otro: 1 })));
+    expect(json).toEqual({ otro: 1 });
+
+    const formulario = cuerpo('token=t1&code_verifier=v1&authorization_code=c1&otro=2');
+    expect(formulario).not.toMatch(/t1|v1|c1/);
+    expect(formulario).toContain('otro=2');
+
+    const roto = cuerpo('{"token": "t2", "code_verifier":"v2", "password":"p2" ...');
+    expect(roto).not.toMatch(/t2|v2|p2/);
+  });
 });

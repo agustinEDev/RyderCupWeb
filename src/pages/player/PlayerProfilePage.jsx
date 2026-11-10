@@ -278,7 +278,7 @@ const PlayerProfilePage = () => {
   // hasta ese momento llegaban en null, y bloquear las cierra. Nada cambia
   // antes de que el servidor conteste: si falla, el botón sigue como estaba
   // y lo dice un aviso.
-  const runFriendshipAction = async (action, successKey, { statusAfter, forbiddenKey } = {}) => {
+  const runFriendshipAction = async (action, successKey, { statusAfter, forbiddenKey, notFoundKey } = {}) => {
     if (isActing) return;
 
     setIsActing(true);
@@ -288,11 +288,11 @@ const PlayerProfilePage = () => {
         result = await action();
       } catch (error) {
         if (!montado.current) return;
-        customToast.error(
-          error?.status === HTTP_FORBIDDEN && forbiddenKey
-            ? t(forbiddenKey)
-            : t('common:errors.generic')
-        );
+        let clave = 'common:errors.generic';
+        if (error?.status === HTTP_FORBIDDEN && forbiddenKey) clave = forbiddenKey;
+        // Un 404 puede ser que ese jugador te bloqueó (fase 3): no se dice que no existe
+        else if (error?.status === HTTP_NOT_FOUND && notFoundKey) clave = notFoundKey;
+        customToast.error(t(clave));
         return;
       }
       if (!montado.current) return;
@@ -447,7 +447,7 @@ const PlayerProfilePage = () => {
             runFriendshipAction(
               () => sendFriendRequestUseCase.execute(profile.id),
               'playerProfile:friendship.requestSent',
-              { statusAfter: 'PENDING_SENT' }
+              { statusAfter: 'PENDING_SENT', notFoundKey: 'playerProfile:errors.requestNotSent' }
             )
           }
           onAccept={() =>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { resendVerificationEmailUseCase } from '../composition';
+import { useReenvioDeVerificacion } from '../hooks/useReenvioDeVerificacion';
 
 const EmailVerificationBanner = ({ userEmail }) => {
   // `ready` porque este banner usa el namespace `auth`, que su pantalla —el
@@ -8,33 +8,13 @@ const EmailVerificationBanner = ({ userEmail }) => {
   // las claves en crudo donde antes habia texto en ingles correcto
   const { t, ready } = useTranslation('auth');
   const [isVisible, setIsVisible] = useState(true);
-  const [isResending, setIsResending] = useState(false);
-  const [message, setMessage] = useState('');
-  // Si fue error se guarda aparte y no se deduce del texto: mirar si empieza por
-  // «Failed» dejaba de funcionar en cuanto el mensaje se traducia, y un fallo se
-  // habria pintado en verde
-  const [esError, setEsError] = useState(false);
+  // El mismo reenvío que el aviso de Mis invitaciones (fase 3)
+  const { reenviar: handleResendEmail, enviando: isResending, mensaje: message, esError } =
+    useReenvioDeVerificacion(userEmail);
 
   if (!isVisible || !ready) {
     return null;
   }
-
-  const handleResendEmail = async () => {
-    setIsResending(true);
-    setMessage('');
-
-    try {
-      await resendVerificationEmailUseCase.execute(userEmail);
-      setEsError(false);
-      setMessage(t('emailVerification.sent'));
-    } catch (error) {
-      console.error('Error resending email:', error);
-      setEsError(true);
-      setMessage(t('emailVerification.failed'));
-    } finally {
-      setIsResending(false);
-    }
-  };
 
   const handleDismiss = () => {
     setIsVisible(false);

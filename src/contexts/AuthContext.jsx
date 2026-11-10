@@ -6,9 +6,15 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setCsrfTokenGlobal, olvidaLoDeLaCuenta } from '../composition/http';
+import {
+  setCsrfTokenGlobal,
+  olvidaLoGuardadoDeLaCuenta,
+  copiaDelUsuarioEnElDispositivo,
+  esLaCopiaReducida,
+} from '../composition/http';
 import { olvidaLaSesion } from '../services/sesionCompartida';
 import { olvidaLasAccionesPendientes } from '../services/accionesPendientes';
+import { abreLoGuardadoParaLaCuenta } from '../services/loUltimoConocido';
 // Rellena el registro que usa `olvidaLoDeLaCuenta` (también lo carga main.jsx)
 import { anotaLaCuentaDeEstaPestana } from '../utils/vueltaTrasEntrar';
 
@@ -37,7 +43,22 @@ export const AuthProvider = ({ children }) => {
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
-        return JSON.parse(storedUser);
+        const guardado = JSON.parse(storedUser);
+        // Una copia completa de antes de la fase 3 (con correo, género…) se reescribe
+        // reducida: aquí solo se lee `id` y si hay usuario (FE-06)
+        if (!esLaCopiaReducida(guardado)) {
+          const reducida = copiaDelUsuarioEnElDispositivo(guardado);
+          if (!reducida) throw new Error('Stored user is not an object');
+          try {
+            localStorage.setItem('user', JSON.stringify(reducida));
+          } catch (error) {
+            // Sin espacio para reescribirla: se sigue con la reducida en memoria, sin
+            // perder al usuario; se reescribe en el próximo arranque o al entrar
+            console.error('Failed to rewrite the stored user:', error);
+          }
+          return reducida;
+        }
+        return guardado;
       }
     } catch (error) {
       console.error('Failed to parse stored user:', error);
@@ -83,9 +104,24 @@ export const AuthProvider = ({ children }) => {
     olvidaLasAccionesPendientes();
 
     if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Entra una cuenta: lo que se guarda para anotar sin cobertura vuelve a poder
+      // escribirse, aunque una limpieza «sin sesión» de esta carga lo cerrara
+      abreLoGuardadoParaLaCuenta();
+      // Solo lo permitido (fase 3, FE-06): ni correo, ni el pendiente, ni género. En
+      // memoria sigue completo
+      try {
+        localStorage.setItem('user', JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)));
+      } catch (error) {
+        // Sin espacio (o sin almacenamiento): se entra igual, con el usuario en memoria,
+        // como en el arranque. Solo se pierde poder recordarlo al recargar
+        console.error('Failed to store the user:', error);
+      }
     } else {
-      localStorage.removeItem('user');
+      try {
+        localStorage.removeItem('user');
+      } catch {
+        // Nada que borrar
+      }
     }
   }, []);
 
@@ -123,11 +159,9 @@ export const AuthProvider = ({ children }) => {
     // Y lo que el panel llegara a enseñar: son datos de ESTA cuenta, y asomarian
     // un instante en la siguiente que entrara sin recargar (FE #502)
     olvidaLasAccionesPendientes();
-    // El usuario guardado, lo primero: si una limpieza de abajo fallara, la
-    // cuenta no puede quedarse apuntada en este dispositivo
-    localStorage.removeItem('user');
-    localStorage.removeItem('access_token'); // Legacy cleanup
-    // Y lo que otros guardan de la cuenta, con el mismo registro que los cierres
+    // El usuario guardado (lo primero: si una limpieza de abajo fallara, la cuenta no
+    // puede quedarse apuntada en este dispositivo), el token de antes y lo que otros
+    // guardan de la cuenta, con la MISMA función que los cierres
     // forzados (`composition/limpiezaAlCerrarLaSesion`): las partidas guardadas
     // para anotar sin cobertura (FE #524), lo pendiente del hándicap (FE #677) y
     // el número de Actividad y el del icono de la app. En un móvil compartido, la
@@ -136,7 +170,7 @@ export const AuthProvider = ({ children }) => {
     // hacen igual (lo garantiza el registro) y el cierre sigue: salir no puede
     // quedarse a medias por un almacenamiento lleno
     try {
-      olvidaLoDeLaCuenta();
+      olvidaLoGuardadoDeLaCuenta();
     } catch (error) {
       console.error('[Auth] Logout cleanup failed:', error);
     }

@@ -101,10 +101,41 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
   it('H2: sin contraseña, va directo a Google', async () => {
     const result = await monta(false);
 
-    act(() => result.current.handleLinkGoogle());
+    // La URL se espera: el reto de PKCE es asíncrono (fase 3)
+    await act(async () => result.current.handleLinkGoogle());
 
     expect(result.current.isGooglePasswordOpen).toBe(false);
     expect(globalThis.location.href).toBe('https://google/vincular');
+  });
+
+  it('H2c: un doble clic sin contraseña no genera dos pares de PKCE (revisión de la fase 3)', async () => {
+    const result = await monta(false);
+    let termina;
+    googleOAuth.buildGoogleOAuthUrl.mockImplementationOnce(() => new Promise((r) => { termina = r; }));
+
+    act(() => {
+      result.current.handleLinkGoogle();
+      result.current.handleLinkGoogle();
+    });
+
+    expect(googleOAuth.buildGoogleOAuthUrl).toHaveBeenCalledTimes(1);
+    expect(result.current.isGoingToGoogle).toBe(true);
+    await act(async () => termina('https://google/vincular'));
+  });
+
+  it('H2b: sin contraseña, si no se puede montar la ida a Google, lo dice (fase 3)', async () => {
+    const toast = (await import('../utils/toast')).default;
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    const result = await monta(false);
+    googleOAuth.buildGoogleOAuthUrl.mockRejectedValueOnce(new Error('sin crypto.subtle'));
+
+    await act(async () => result.current.handleLinkGoogle());
+
+    expect(toast.error).toHaveBeenCalledWith('auth:google.genericError');
+    expect(globalThis.location.href).toBe('/profile/edit');
+    // Y se puede volver a intentar
+    expect(result.current.isGoingToGoogle).toBe(false);
+    consola.mockRestore();
   });
 
   it('H3: con la contraseña correcta, va a Google', async () => {

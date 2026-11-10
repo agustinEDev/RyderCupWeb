@@ -10,15 +10,15 @@ class VerifyEmailUseCase {
   /**
    * Ejecuta el caso de uso para verificar el email.
    * @param {string} token - El token de verificación.
-   * @returns {Promise<{sesionAbierta: boolean, user?: import('../../../domain/entities/User').default, token?: string}>}
-   *   Si el backend abrió sesión (el de antes de RyderCupAm #753) y, entonces, su usuario.
+   * @returns {Promise<{emailVerified: boolean}>} Verificar no abre sesión (RyderCupAm #753).
+   * @throws {Error} Con `errorCode` VERIFICATION_TOKEN_EXPIRED si el enlace caducó.
    */
   async execute(token) {
     if (!token) {
       throw new Error('Verification token is required');
     }
 
-    // El backend nuevo solo verifica; el de antes, además, abría sesión
+    // Solo verifica: se entra después con la contraseña
     const result = await this.authRepository.verifyEmail(token);
 
     return result;

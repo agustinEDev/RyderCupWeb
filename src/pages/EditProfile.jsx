@@ -40,6 +40,8 @@ const EditProfile = () => {
     isGoogleLinked,
     hasPassword,
     isUnlinkingGoogle,
+    isGoingToGoogle,
+    sinConfirmar,
     handleLinkGoogle,
     handleUnlinkGoogle,
     isGooglePasswordOpen,
@@ -69,6 +71,18 @@ const EditProfile = () => {
   if (isLoading) {
     return (
       <FullScreenLoader texto={t('common:loading')} />
+    );
+  }
+
+  // Sin red (sesión sin confirmar) no hay qué editar: todo necesita el servidor
+  if (sinConfirmar) {
+    return (
+      <div className={`relative flex ${PANTALLA_MENOS_BARRA_INFERIOR} w-full flex-col bg-gray-50`}>
+        <HeaderAuth user={null} />
+        <p role="status" className="px-4 py-12 text-center text-gray-700">
+          {t('common:sinConexion.mensaje')}
+        </p>
+      </div>
     );
   }
 
@@ -512,7 +526,8 @@ const EditProfile = () => {
                       <button
                         type="button"
                         onClick={handleLinkGoogle}
-                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors"
+                        disabled={isGoingToGoogle}
+                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t('edit.linkedAccounts.link')}
                       </button>

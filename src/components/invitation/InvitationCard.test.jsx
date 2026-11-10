@@ -429,3 +429,26 @@ describe('InvitationCard — volver a invitar (release social 2)', () => {
     expect(screen.getByTestId('reinvite-button')).toBeDisabled();
   });
 });
+
+/**
+ * Invitaciones a cuentas sin verificar: el backend las manda sin invitee_name ni
+ * invitee_user_id, solo con el correo (fase 3, BE-3). El organizador ve el correo,
+ * sin huecos ni «undefined».
+ */
+describe('InvitationCard · invitado sin nombre (fase 3)', () => {
+  const sinNombre = { ...pendingInvitation, inviteeName: undefined, inviteeUserId: null };
+
+  it('enseña el correo donde iría el nombre', () => {
+    render(<InvitationCard invitation={sinNombre} mode="creator" onWithdraw={vi.fn()} onReinvite={vi.fn()} t={mockT} />);
+
+    expect(screen.getByText('player@example.com')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/undefined|null/);
+  });
+
+  it('el botón de volver a invitar se nombra con el correo', () => {
+    const t = (key, params) => (params ? `${key}:${params.name}` : key);
+    render(<InvitationCard invitation={sinNombre} mode="creator" onReinvite={vi.fn()} t={t} />);
+
+    expect(screen.getByTestId('reinvite-button')).toHaveAttribute('aria-label', 'actions.reinviteAria:player@example.com');
+  });
+});

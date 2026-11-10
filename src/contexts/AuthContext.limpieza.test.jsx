@@ -19,6 +19,7 @@ vi.mock('../services/loUltimoConocido', () => ({
     if (fallo.activo) throw new Error('almacenamiento lleno');
     llamadas.push('loUltimoConocido');
   },
+  abreLoGuardadoParaLaCuenta: () => {},
 }));
 vi.mock('../services/refrescoDeHandicapApuntes', () => ({
   olvidaElRefrescoDeHandicap: () => llamadas.push('refrescoDeHandicap'),

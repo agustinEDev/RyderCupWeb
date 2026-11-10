@@ -3,7 +3,11 @@ import { useSearchParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { googleLoginUseCase, linkGoogleAccountUseCase } from '../composition';
-import { verifyOAuthState, recogeLaVueltaDeGoogleConSuCuenta } from '../utils/googleOAuth';
+import {
+  verifyOAuthState,
+  recogeLaVueltaDeGoogleConSuCuenta,
+  recogeElVerificadorDeGoogle,
+} from '../utils/googleOAuth';
 import { olvidaLaVueltaTrasEntrar, vueltaTrasEntrar } from '../utils/vueltaTrasEntrar';
 import { vuelvenLosAvisosDeCierre } from '../utils/avisoDeCierreForzado';
 import { stripSecretsFromAddressBar } from '../utils/stripSecretsFromAddressBar';
@@ -36,6 +40,14 @@ const GoogleCallback = () => {
     const stateParam = searchParams.get('state');
 
     const processCallback = async () => {
+      // El verifier de PKCE se recoge lo primero, y así se borra pase lo que pase: bien,
+      // mal o con la vuelta rechazada (fase 3)
+      const codeVerifier = recogeElVerificadorDeGoogle();
+      // Y la página de vuelta guardada (lleva el token del enlace de cambio de correo):
+      // se recoge antes de cualquier salida temprana, para que no se quede guardada
+      // (/code-review). Solo la usa la entrada; vincular no la guarda
+      const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
+
       // Verify CSRF nonce from state parameter
       const { flow: parsedFlow, valid } = verifyOAuthState(stateParam);
       setFlow(parsedFlow);
@@ -57,17 +69,22 @@ const GoogleCallback = () => {
         return;
       }
 
+      // Sin verifier (la vuelta llegó a otra pestaña, o el almacenamiento se vació) el
+      // backend no canjearía el código: ni se le pregunta
+      if (!codeVerifier) {
+        setError(t(parsedFlow === 'link' ? 'google.missingVerifierLink' : 'google.missingVerifier'));
+        return;
+      }
+
       try {
         if (parsedFlow === 'link') {
           // Link Google account flow
-          await linkGoogleAccountUseCase.execute(code);
+          await linkGoogleAccountUseCase.execute(code, codeVerifier);
           customToast.success(t('google.linkSuccess'));
           navigate('/profile/edit', { replace: true });
         } else {
-          // Login/register flow. La vuelta se recoge siempre: lleva el token del enlace y
-          // no se queda guardada aunque no se use (alta nueva o fallo)
-          const vuelta = recogeLaVueltaDeGoogleConSuCuenta();
-          const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code);
+          // Login/register flow. La vuelta ya se recogió arriba
+          const { user, csrfToken, isNewUser } = await googleLoginUseCase.execute(code, codeVerifier);
 
           // Update auth context
           setUser(user);

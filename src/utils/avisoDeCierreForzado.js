@@ -168,6 +168,7 @@ const TRAMOS_FIJOS = new Set([
   'request',
   'requests',
   'resend-verification',
+  'resend-verification-link',
   'reset',
   'reset-password',
   'respond',

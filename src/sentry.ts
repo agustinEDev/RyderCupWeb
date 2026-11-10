@@ -213,14 +213,7 @@ if (!SENTRY_CONFIG.dsn) {
         delete event.request.headers?.Authorization;
         delete event.request.headers?.Cookie;
 
-        // Remover datos sensibles del cuerpo
-        if (event.request.data && typeof event.request.data === 'object') {
-          const sanitized = { ...(event.request.data as Record<string, unknown>) };
-          delete sanitized.password;
-          delete sanitized.access_token;
-          delete sanitized.refresh_token;
-          event.request.data = sanitized;
-        }
+        // El cuerpo ya sale sin secretos de `sentryScrubbing.beforeSend` (arriba)
       }
 
       // 4. En desarrollo, mostrar error en consola también

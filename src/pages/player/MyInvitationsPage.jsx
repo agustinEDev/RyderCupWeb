@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import GeneroParaApuntarseModal from '../../components/profile/GeneroParaApuntarseModal';
 import { useResponderInvitacion } from '../../hooks/useResponderInvitacion';
 import InvitationCard from '../../components/invitation/InvitationCard';
+import AvisoVerificaParaVerInvitaciones from '../../components/invitation/AvisoVerificaParaVerInvitaciones';
 import { listMyInvitationsUseCase } from '../../composition';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { PANTALLA_MENOS_BARRA_INFERIOR } from '../../utils/barraInferior';
@@ -103,6 +104,9 @@ const MyInvitationsPage = () => {
           </div>
           <p className="text-sm text-gray-500 mt-1">{t('player.subtitle')}</p>
         </div>
+
+        {/* Sin el correo verificado no llegan las enviadas a su dirección (fase 3) */}
+        {user?.email_verified === false && <AvisoVerificaParaVerInvitaciones correo={user.email} />}
 
         {/* Filter */}
         <div className="mb-4">

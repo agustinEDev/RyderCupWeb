@@ -255,6 +255,18 @@ export const olvidaLoDeEstaCuenta = () => {
   cerrado = true;
 };
 
+/**
+ * Entra una cuenta en esta carga (revisión de la fase 3): el cerrojo se levanta. Los
+ * caminos «sin sesión» que no salen de la página (la pantalla de entrar, un 401 al
+ * arrancar) limpian con el mismo registro y lo dejaban puesto hasta recargar: tras
+ * entrar con contraseña, sin recarga, la anotación sin cobertura se quedaba sin
+ * partidas guardadas. En los cierres duros no entra nadie antes de la recarga, así que
+ * allí el cerrojo sigue haciendo lo suyo. No borra nada.
+ */
+export const abreLoGuardadoParaLaCuenta = () => {
+  cerrado = false;
+};
+
 /** Solo para las pruebas: borra Y levanta el cerrojo. */
 export const olvidaTodo = () => {
   borra();
