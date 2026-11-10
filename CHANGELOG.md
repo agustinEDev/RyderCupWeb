@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.73.0] - 2026-11-11
+
+**Fase 3 del plan de seguridad, release 2 (frontend)** (#1092) y dependencias al día
+(#1089). Va con el backend **2.57.0**, ya en producción (que es lo que hace falta: acepta
+el PKCE y las rutas nuevas); prepara el backend 2.58.0, que dejará de mandar los tokens en
+el cuerpo y exigirá el PKCE. Probado en el Kind a 360 px contra la 2.57.0 (Google con PKCE
+hasta la redirección, enlace caducado, restablecer, registro, sesión sin conexión y anotación
+sin cobertura).
+
+### Security
+
+- **Google con PKCE** (FE-02): un `code_verifier` aleatorio por pestaña y su reto S256;
+  `prompt=select_account` (se elige cuenta y ya no sale cada vez la pantalla de permisos) y
+  sin `access_type=offline`. Al entrar y al vincular la cuenta. Si a la vuelta falta el
+  verifier, se avisa y no se llama al backend. Los botones de Google se desactivan mientras
+  se prepara.
+- **Menos datos en el móvil** (FE-06): las copias del usuario que se guardan solo llevan id,
+  nombre, alias, versión del avatar, permisos, Términos y si el correo está verificado (ni
+  correo, ni género, ni hándicap, ni país). Todos los caminos en los que se queda sin sesión
+  limpian como el cierre de sesión, sin afectar a la anotación sin cobertura de la cuenta que
+  entra después; un fallo de red no borra nada. Sin conexión, el perfil muestra «—» y las
+  pantallas que necesitan el perfil completo esperan a la red.
+- **La sesión solo en las cookies**: el front ya no lee los tokens del cuerpo de las
+  respuestas.
+- **Sentry**: se tachan del cuerpo de las peticiones los tokens de los enlaces, el verifier y
+  el código de Google.
+
+### Changed
+
+- **Restablecer la contraseña** valida el enlace por `POST`; los textos dicen que dura 1 hora.
+- **Enlace de verificación caducado**: pantalla propia con «Enviarme otro enlace», que funciona
+  sin sesión.
+- **Registro**: desaparece el aviso de «este correo ya tiene cuenta» (el backend ya no lo dice).
+- **Mis invitaciones**: con el correo sin verificar, aviso para verificarlo y ver las
+  invitaciones enviadas a esa dirección.
+- **Solicitud de amistad** a alguien que no se encuentra: «No se ha podido enviar la
+  solicitud».
+- Dependencias al día (#1089): jsdom 31 y 15 actualizaciones menores.
+
 ## [2.72.0] - 2026-11-10
 
 **Resto de la fase 1 del plan de la auditoría: el transporte de la sesión y el cliente de
