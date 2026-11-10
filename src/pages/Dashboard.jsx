@@ -84,7 +84,10 @@ const Dashboard = () => {
   // sale de la copia del dispositivo, sin esos datos (fase 3): se dice y no se abre
   const abreSiHayRed = (abrir) => () => {
     if (sinConfirmar) {
-      customToast.error(t('common:sinConexion.mensaje'));
+      // Con red, la sesión aún no ha contestado (tarda o dio un 5xx): «sin conexión»
+      // sería falso
+      const conRed = globalThis.navigator?.onLine !== false;
+      customToast.error(t(conRed ? 'common:cargandoTuCuenta' : 'common:sinConexion.mensaje'));
       return;
     }
     abrir();

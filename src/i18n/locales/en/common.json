@@ -179,5 +179,6 @@
   "handicapField": {
     "plus": "Plus handicap",
     "outOfRange": "Between +10 and 54"
-  }
+  },
+  "cargandoTuCuenta": "Loading your account, try again in a moment"
 }

@@ -67,7 +67,10 @@ const { olvidaQueElPanelSePinto } = await import('../utils/primeraCargaDelPanel'
 const { reiniciaLaCortina } = await import('../utils/cortinaDeArranque');
 
 describe('Dashboard · lo que necesita los datos completos espera a la red (fase 3)', () => {
+  const conRed = (hay) => vi.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(hay);
+
   afterEach(() => {
+    vi.restoreAllMocks();
     cleanup();
     olvidaQueElPanelSePinto();
     reiniciaLaCortina();
@@ -76,6 +79,7 @@ describe('Dashboard · lo que necesita los datos completos espera a la red (fase
   });
 
   it('sin red, crear partida rápida dice que no hay conexión y no abre nada', async () => {
+    conRed(false);
     render(<Dashboard />);
 
     fireEvent.click(await screen.findByTestId('quick-match-card'));
@@ -85,12 +89,26 @@ describe('Dashboard · lo que necesita los datos completos espera a la red (fase
   });
 
   it('sin red, el recordatorio del hándicap tampoco abre el modal', async () => {
+    conRed(false);
     render(<Dashboard />);
 
     fireEvent.click(await screen.findByTestId('recordatorio-handicap'));
 
     expect(toast.error).toHaveBeenCalledWith('common:sinConexion.mensaje');
     expect(screen.queryByTestId('modal-handicap')).not.toBeInTheDocument();
+  });
+
+  // Con red pero la sesión aún sin confirmar (el servidor tarda o dio un 5xx): no se
+  // dice «sin conexión», que sería falso (CodeRabbit, #1092)
+  it('con red y la sesión aún sin confirmar, dice que está cargando la cuenta', async () => {
+    conRed(true);
+    render(<Dashboard />);
+
+    fireEvent.click(await screen.findByTestId('quick-match-card'));
+
+    expect(toast.error).toHaveBeenCalledWith('common:cargandoTuCuenta');
+    expect(toast.error).not.toHaveBeenCalledWith('common:sinConexion.mensaje');
+    expect(screen.queryByTestId('crear-partida-rapida')).not.toBeInTheDocument();
   });
 
   it('con red, los dos se abren como siempre', async () => {
