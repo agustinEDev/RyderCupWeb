@@ -109,9 +109,19 @@ export const AuthProvider = ({ children }) => {
       abreLoGuardadoParaLaCuenta();
       // Solo lo permitido (fase 3, FE-06): ni correo, ni el pendiente, ni género. En
       // memoria sigue completo
-      localStorage.setItem('user', JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)));
+      try {
+        localStorage.setItem('user', JSON.stringify(copiaDelUsuarioEnElDispositivo(userData)));
+      } catch (error) {
+        // Sin espacio (o sin almacenamiento): se entra igual, con el usuario en memoria,
+        // como en el arranque. Solo se pierde poder recordarlo al recargar
+        console.error('Failed to store the user:', error);
+      }
     } else {
-      localStorage.removeItem('user');
+      try {
+        localStorage.removeItem('user');
+      } catch {
+        // Nada que borrar
+      }
     }
   }, []);
 

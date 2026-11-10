@@ -120,6 +120,29 @@ describe('sesionCompartida · copia reducida del usuario (fase 3)', () => {
     expect(copia()).toMatchObject({ id: 'u-1', first_name: 'Ana' });
   });
 
+  it.each([['[]'], ['{}'], ['"texto"'], ['42'], ['null']])(
+    'S7: una copia guardada que no es un usuario (%s) se borra al arrancar',
+    async (texto) => {
+      const almacen = almacenDePrueba();
+      almacen.pon(RECUERDO, texto);
+      vi.stubGlobal('localStorage', almacen);
+
+      await cargar();
+
+      expect(almacen.getItem(RECUERDO)).toBeNull();
+    }
+  );
+
+  it.each([[null], ['texto'], [[]]])('S8: una respuesta que no es un usuario (%j) no escribe una copia', async (cuerpo) => {
+    const almacen = almacenDePrueba();
+    vi.stubGlobal('localStorage', almacen);
+    const { anotaLaSesion } = await cargar();
+
+    anotaLaSesion(cuerpo);
+
+    expect(almacen.getItem(RECUERDO)).toBeNull();
+  });
+
   it('S6: una copia completa escrita después de arrancar (otra pestaña con la versión de antes) se lee reducida', async () => {
     const almacen = almacenDePrueba();
     vi.stubGlobal('localStorage', almacen);

@@ -98,7 +98,10 @@ const apunta = (usuario) => {
   try {
     // Solo lo permitido (fase 3, FE-06): lo justo para arrancar sin red. Ni correo, ni
     // el pendiente, ni género, hándicap o país; en memoria sigue completo
-    localStorage.setItem(RECUERDO, JSON.stringify(copiaDelUsuarioEnElDispositivo(usuario)));
+    const copia = copiaDelUsuarioEnElDispositivo(usuario);
+    // Lo que no es un usuario no se guarda como copia (ni un «null» en texto)
+    if (copia) localStorage.setItem(RECUERDO, JSON.stringify(copia));
+    else localStorage.removeItem(RECUERDO);
   } catch {
     // Sin espacio, o en una ventana privada. Se seguirá echando al formulario
     // sin cobertura, que es como estaba antes: no hay nada peor que perder

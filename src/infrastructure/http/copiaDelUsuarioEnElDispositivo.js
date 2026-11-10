@@ -40,19 +40,26 @@ const CAMPOS_QUE_SE_GUARDAN = [
  * @param {unknown} usuario
  * @returns {Object|null} Solo los campos que se pueden guardar; null si no es un usuario.
  */
+const esObjeto = (valor) => Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
+
+/**
+ * @param {unknown} usuario
+ * @returns {Object|null} Solo los campos que se pueden guardar; null si no es un usuario
+ *   (no es un objeto, es una lista o no tiene `id`).
+ */
 export const copiaDelUsuarioEnElDispositivo = (usuario) => {
-  if (!usuario || typeof usuario !== 'object' || Array.isArray(usuario)) return null;
+  if (!esObjeto(usuario) || usuario.id === undefined || usuario.id === null) return null;
   return Object.fromEntries(
     CAMPOS_QUE_SE_GUARDAN.filter((campo) => Object.hasOwn(usuario, campo)).map((campo) => [campo, usuario[campo]])
   );
 };
 
 /**
- * Si una copia guardada ya está reducida: una de antes de la fase 3 se reescribe.
+ * Si una copia guardada ya está reducida: una de antes de la fase 3 se reescribe. Lo que
+ * no es un usuario (lista, objeto vacío o sin `id`, otro valor) no cuenta como copia.
  * @param {unknown} usuario
  * @returns {boolean}
  */
 export const esLaCopiaReducida = (usuario) =>
-  Boolean(usuario) &&
-  typeof usuario === 'object' &&
+  copiaDelUsuarioEnElDispositivo(usuario) !== null &&
   Object.keys(usuario).every((campo) => CAMPOS_QUE_SE_GUARDAN.includes(campo));

@@ -94,3 +94,24 @@ describe('AuthContext · reescribir la copia vieja falla (revisión de la fase 3
     consola.mockRestore();
   });
 });
+
+describe('AuthContext · guardar al entrar falla (CodeRabbit, #1092)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('con el almacenamiento lleno, entrar no falla y el usuario queda en memoria', () => {
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new globalThis.DOMException('quota', 'QuotaExceededError');
+      },
+      removeItem: vi.fn(),
+    });
+    const { result } = renderHook(() => useAuthContext(), { wrapper: AuthProvider });
+
+    expect(() => act(() => result.current.setUser(new User(DTO)))).not.toThrow();
+
+    expect(result.current.user).toMatchObject({ id: 'u-1' });
+    consola.mockRestore();
+  });
+});

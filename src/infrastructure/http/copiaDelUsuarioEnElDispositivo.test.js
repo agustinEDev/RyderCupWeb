@@ -101,3 +101,16 @@ describe('copiaDelUsuarioEnElDispositivo (fase 3)', () => {
     expect(esLaCopiaReducida(copiaDelUsuarioEnElDispositivo(DTO_COMPLETO))).toBe(true);
   });
 });
+
+describe('valores que no son un usuario (CodeRabbit, #1092)', () => {
+  it.each([[[]], [[{ id: 'u1' }]], [{}], [{ alias: 'x' }], [null], [undefined], ['texto'], [42], [true]])(
+    'esLaCopiaReducida(%j) es false',
+    (valor) => {
+      expect(esLaCopiaReducida(valor)).toBe(false);
+    }
+  );
+
+  it.each([[{}], [{ first_name: 'Ana' }], [[{ id: 'u1' }]]])('sin id no es un usuario: copia(%j) es null', (valor) => {
+    expect(copiaDelUsuarioEnElDispositivo(valor)).toBeNull();
+  });
+});
