@@ -55,7 +55,7 @@ const Dashboard = () => {
   const { t, ready: textosListos } = useTranslation('dashboard');
   const { t: tQuickMatch, ready: textosDeRapidaListos } = useTranslation('quickMatch');
   const { t: tProfile } = useTranslation('profile');
-  const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
+  const { user, loading: isLoadingUser, refetch: refetchUser, sinConfirmar } = useAuth();
   const [mostrarAlias, setMostrarAlias] = useState(false);
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
@@ -104,14 +104,16 @@ const Dashboard = () => {
     abreSiHayQuePedirlo();
     window.addEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
     window.addEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
-    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true') {
+    // Sin red la copia del dispositivo no trae el hándicap (fase 3): el «antes» sería
+    // inventado. Se lanza cuando el servidor confirme la sesión (cambia `user`)
+    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true' && !sinConfirmar) {
       lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
     }
     return () => {
       window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
       window.removeEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
     };
-  }, [user]);
+  }, [user, sinConfirmar]);
 
   const handleHandicapSaved = useCallback(async () => {
     setShowHandicapModal(false);

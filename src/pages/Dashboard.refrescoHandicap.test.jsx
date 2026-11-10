@@ -147,6 +147,24 @@ describe('Dashboard · refresco del hándicap al entrar (FE #677)', () => {
     expect(await screen.findByTestId('modal-handicap')).toHaveAttribute('data-handicap', '18');
   });
 
+  // Sin red, la copia del dispositivo no trae el hándicap (fase 3, FE-06): no se lanza
+  // el refresco con un «antes» falso; se lanza cuando el servidor confirma la sesión
+  it('D4b: sin conexión (sesión sin confirmar) no lo relanza con un hándicap de antes inventado', async () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    const anterior = sesion.user;
+    sesion.user = { id: 'u-1', first_name: 'Ana' };
+    sesion.sinConfirmar = true;
+    try {
+      render(<Dashboard />);
+      await panelPintado();
+      expect(refresco).not.toHaveBeenCalled();
+      expect(localStorage.getItem('refrescar_handicap')).toBe('true');
+    } finally {
+      sesion.user = anterior;
+      sesion.sinConfirmar = false;
+    }
+  });
+
   it('D4: sin el apunte no lo pide', async () => {
     render(<Dashboard />);
 

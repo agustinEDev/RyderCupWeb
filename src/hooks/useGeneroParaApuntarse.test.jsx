@@ -9,12 +9,13 @@ import { renderHook, act } from '@testing-library/react';
 const mockActualizar = vi.fn();
 const mockRefrescar = vi.fn();
 let usuario = { id: 'u1', gender: null };
+let sinConfirmar = false;
 
 vi.mock('../composition', () => ({
   updateUserProfileUseCase: { execute: (...a) => mockActualizar(...a) },
 }));
 vi.mock('./useAuth', () => ({
-  useAuth: () => ({ user: usuario, refetch: mockRefrescar }),
+  useAuth: () => ({ user: usuario, refetch: mockRefrescar, sinConfirmar }),
 }));
 
 const { useGeneroParaApuntarse } = await import('./useGeneroParaApuntarse');
@@ -23,6 +24,16 @@ describe('useGeneroParaApuntarse', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     usuario = { id: 'u1', gender: null };
+    sinConfirmar = false;
+  });
+
+  // Sin red, la copia del dispositivo no guarda el género (fase 3, FE-06): no se sabe,
+  // y no se puede afirmar que falta
+  it('H0: sin conexión (copia reducida, sin género) no se sabe: no falta', () => {
+    sinConfirmar = true;
+    usuario = { id: 'u1', first_name: 'Ana' };
+    const { result } = renderHook(() => useGeneroParaApuntarse());
+    expect(result.current.falta).toBe(false);
   });
 
   it('H1: sin género, falta', () => {
