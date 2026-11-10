@@ -309,9 +309,21 @@ export const useEditProfile = () => {
     setIsGooglePasswordOpen(true);
   };
 
-  // Asíncrono: el reto de PKCE se calcula con `crypto.subtle` (fase 3)
+  // Asíncrono: el reto de PKCE se calcula con `crypto.subtle` (fase 3). Una sola ida a
+  // la vez: un segundo clic generaría otro par y pisaría el verifier del primero
+  const yendoAGoogle = useRef(false);
+  const [isGoingToGoogle, setIsGoingToGoogle] = useState(false);
   const vaAGoogle = async () => {
-    globalThis.location.href = await buildGoogleOAuthUrl('link');
+    if (yendoAGoogle.current) return;
+    yendoAGoogle.current = true;
+    setIsGoingToGoogle(true);
+    try {
+      globalThis.location.href = await buildGoogleOAuthUrl('link');
+    } catch (error) {
+      yendoAGoogle.current = false;
+      setIsGoingToGoogle(false);
+      throw error;
+    }
   };
 
   const handleLinkGoogle = () => {
@@ -545,6 +557,7 @@ export const useEditProfile = () => {
     isUpdatingRFEG,
     isRefreshing,
     isUnlinkingGoogle,
+    isGoingToGoogle,
     isGoogleLinked,
     hasPassword,
     countries,

@@ -40,6 +40,7 @@ const EditProfile = () => {
     isGoogleLinked,
     hasPassword,
     isUnlinkingGoogle,
+    isGoingToGoogle,
     handleLinkGoogle,
     handleUnlinkGoogle,
     isGooglePasswordOpen,
@@ -512,7 +513,8 @@ const EditProfile = () => {
                       <button
                         type="button"
                         onClick={handleLinkGoogle}
-                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors"
+                        disabled={isGoingToGoogle}
+                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t('edit.linkedAccounts.link')}
                       </button>

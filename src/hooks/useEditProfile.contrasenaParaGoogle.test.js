@@ -108,6 +108,21 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
     expect(globalThis.location.href).toBe('https://google/vincular');
   });
 
+  it('H2c: un doble clic sin contraseña no genera dos pares de PKCE (revisión de la fase 3)', async () => {
+    const result = await monta(false);
+    let termina;
+    googleOAuth.buildGoogleOAuthUrl.mockImplementationOnce(() => new Promise((r) => { termina = r; }));
+
+    act(() => {
+      result.current.handleLinkGoogle();
+      result.current.handleLinkGoogle();
+    });
+
+    expect(googleOAuth.buildGoogleOAuthUrl).toHaveBeenCalledTimes(1);
+    expect(result.current.isGoingToGoogle).toBe(true);
+    await act(async () => termina('https://google/vincular'));
+  });
+
   it('H2b: sin contraseña, si no se puede montar la ida a Google, lo dice (fase 3)', async () => {
     const toast = (await import('../utils/toast')).default;
     const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
@@ -118,6 +133,8 @@ describe('useEditProfile · la contraseña antes de vincular Google', () => {
 
     expect(toast.error).toHaveBeenCalledWith('auth:google.genericError');
     expect(globalThis.location.href).toBe('/profile/edit');
+    // Y se puede volver a intentar
+    expect(result.current.isGoingToGoogle).toBe(false);
     consola.mockRestore();
   });
 
