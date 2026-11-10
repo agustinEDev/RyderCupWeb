@@ -15,12 +15,16 @@ Tests del «Result» de las tarjetas de licencias y Dependency Review (#777).
 | D3   | dependency-review | licencias ilegibles                        | no inventa el número               |
 | D4   | dependency-review | licencias con otro formato (una lista)     | no inventa el número               |
 | D5   | dependency-review | solo `unlicensed` (NOASSERTION, no falla)  | 0 fuera; los sin licencia, aparte  |
-| P1   | build-ci          | arranque en tope, sin problemas            | el arranque gzip y su tope         |
-| P2   | build-ci          | arranque en tope, un trozo se pasa (#374)  | empieza por el fallo, no por «OK»  |
-| P3   | build-ci          | el arranque se pasa                        | el exceso una sola vez             |
+| P1   | build-ci          | build bien                                 | OK; el presupuesto, en Render      |
 | P4   | build-ci          | el precache del SW se queda corto          | lo dice primero, sin «OK»          |
+| P7   | build-ci          | sin dist/                                  | lo dice al final                   |
 | P5   | build-render      | build bien, precache corto                 | el precache, no «npm run build»    |
-| P6   | build-ci/render   | precache entero                            | la tarjeta de siempre              |
+| P6   | build-render      | precache entero                            | la tarjeta de siempre              |
+| P8   | build-render      | arranque dentro del presupuesto            | el arranque gzip y su tope         |
+| P9   | build-render      | un trozo se pasa (#374)                    | el fallo, sin el porcentaje        |
+| P10  | build-render      | el arranque se pasa                        | el exceso una sola vez             |
+| P11  | build-render      | arranque por encima del aviso              | «Close to the budget.»             |
+| P12  | build-render      | sin medir                                  | lo dice                            |
 """
 
 import json
@@ -106,35 +110,27 @@ class TarjetaDeDependencyReview(unittest.TestCase):
 
 
 class TarjetaDelBuild(unittest.TestCase):
-    BASE = {"build_outcome": "success", "size_kb": "240", "budget_kb": "270", "warning_kb": "255", "output_outcome": "success"}
+    # El presupuesto del arranque se mide en el build de Render (9 nov 2026): el de
+    # esta entrada compila sin el DSN de Sentry y pesaría menos que lo que se sirve
+    BASE = {"build_outcome": "success", "output_outcome": "success"}
 
-    def test_P1_arranque_sin_problemas(self):
-        r = sr.build_ci({**self.BASE, "problems": ""})
-        self.assertEqual(r, "Production build OK. Startup JS 240 KB gzip of a 270 KB budget (88%; warns above 255 KB).")
-
-    def test_P2_un_trozo_se_pasa(self):
-        r = sr.build_ci({**self.BASE, "problems": "teselas.js is 330 KB gzip, over the 320 KB limit for one chunk"})
-        self.assertTrue(r.startswith("Production build done, but the bundle check failed: teselas.js is 330 KB gzip"), r)
-        self.assertNotIn("OK", r)
-
-    def test_P3_el_arranque_se_pasa(self):
-        problema = "Startup JS is 272 KB gzip, over the 270 KB budget by 2 KB"
-        r = sr.build_ci({**self.BASE, "size_kb": "272", "problems": problema})
-        self.assertEqual(r.count("by 2 KB"), 1, r)
-        self.assertNotIn("OK", r)
+    def test_P1_build_bien(self):
+        r = sr.build_ci({**self.BASE, "precache_outcome": "success"})
+        self.assertEqual(r, "Production build OK, kept as the build-output artifact. The startup JS budget is checked on the Render build.")
 
     def test_P4_el_precache_se_queda_corto(self):
-        r = sr.build_ci({**self.BASE, "problems": "", "precache_outcome": "failure"})
+        r = sr.build_ci({**self.BASE, "precache_outcome": "failure"})
         self.assertTrue(r.startswith("Production build done, but the service worker does not precache the whole app"), r)
         self.assertNotIn("OK", r)
 
-    def test_P6_precache_entero_la_tarjeta_de_siempre(self):
-        r = sr.build_ci({**self.BASE, "problems": "", "precache_outcome": "success"})
-        self.assertEqual(r, "Production build OK. Startup JS 240 KB gzip of a 270 KB budget (88%; warns above 255 KB).")
+    def test_P7_sin_dist(self):
+        r = sr.build_ci({**self.BASE, "precache_outcome": "success", "output_outcome": "failure"})
+        self.assertTrue(r.endswith("But dist/ is missing."), r)
 
 
 class TarjetaDelBuildDeRender(unittest.TestCase):
     BASE = {"build_outcome": "success", "node": "v22.1.0", "npm": "10.9.0", "lock_packages": "600", "lock_differences": "0"}
+    PRESUPUESTO = {"size_kb": "240", "budget_kb": "270", "warning_kb": "255"}
 
     def test_P5_build_bien_precache_corto(self):
         r = sr.build_render({**self.BASE, "precache_outcome": "failure"})
@@ -147,6 +143,28 @@ class TarjetaDelBuildDeRender(unittest.TestCase):
         self.assertNotIn("precache", r)
         self.assertIn("Static-site smoke passed", r)
 
+    def test_P8_arranque_dentro_del_presupuesto(self):
+        r = sr.build_render({**self.BASE, **self.PRESUPUESTO, "problems": ""})
+        self.assertIn("Startup JS 240 KB gzip of a 270 KB budget (88%; warns above 255 KB).", r)
+
+    def test_P9_un_trozo_se_pasa(self):
+        r = sr.build_render({**self.BASE, **self.PRESUPUESTO,
+                             "problems": "teselas.js is 330 KB gzip, over the 320 KB limit for one chunk"})
+        self.assertIn("The bundle check failed: teselas.js is 330 KB gzip", r)
+        self.assertNotIn("(88%", r)
+
+    def test_P10_el_arranque_se_pasa_una_vez(self):
+        problema = "Startup JS is 272 KB gzip, over the 270 KB budget by 2 KB"
+        r = sr.build_render({**self.BASE, **self.PRESUPUESTO, "size_kb": "272", "problems": problema})
+        self.assertEqual(r.count("by 2 KB"), 1, r)
+
+    def test_P11_cerca_del_tope(self):
+        r = sr.build_render({**self.BASE, **self.PRESUPUESTO, "size_kb": "260", "problems": ""})
+        self.assertIn("Close to the budget.", r)
+
+    def test_P12_sin_medir(self):
+        r = sr.build_render({**self.BASE, "problems": ""})
+        self.assertIn("no JS was measured", r)
 
 
 if __name__ == "__main__":

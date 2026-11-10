@@ -14,8 +14,10 @@ import { textosDelError } from './components/errors/textosDelError';
  *   ---|---------------------------------------------------|----------------------------------------
  *   R1 | cada ruta de `rutasDeLaAplicacion`                 | la sirve su pantalla, no la comodín
  *   R3 | Sentry                                            | la app registra SU router para el seguimiento
- *      |                                                   | (navegacionesEnSentry; Sentry llega ~2 s después)
+ *      |                                                   | (routerParaSentry; Sentry llega ~2 s después)
  *   R3b| con StrictMode (desarrollo: crea dos routers)       | se registra el que se usa
+ *   R3c| la navegación en curso (vuelta tras los Términos)  | apunta el router que se usa, también
+ *      |                                                   | con StrictMode; al desmontar, ninguno
  *   R4 | ir a otra pantalla, y volver atrás                 | arriba, como hasta ahora
  *   R5 | cambiar solo el query                              | no sube
  *   R5b| cambiar solo el # (el mapa del hoyo)               | no sube
@@ -97,7 +99,23 @@ vi.mock('@sentry/react', async (original) => ({
   withScope: (enviar) => enviar({ setTag() {}, setExtra: (clave, valor) => { enviado.extras[clave] = valor; } }),
   captureException: () => {},
 }));
-vi.mock('./utils/navegacionesEnSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
+vi.mock('./utils/routerParaSentry', () => ({ registrarRouterParaSentry: sentry.registrar }));
+// Qué router queda apuntado para la vuelta tras aceptar los Términos (navegacionEnCurso)
+const apuntado = vi.hoisted(() => ({ router: null }));
+vi.mock('./utils/navegacionEnCurso', async (original) => {
+  const real = await original();
+  return {
+    ...real,
+    apuntaElRouterDeLaAplicacion: (router) => {
+      apuntado.router = router;
+      const deshacer = real.apuntaElRouterDeLaAplicacion(router);
+      return () => {
+        if (apuntado.router === router) apuntado.router = null;
+        deshacer?.();
+      };
+    },
+  };
+});
 
 const { default: App, rutasDeLaApp } = await import('./App');
 
@@ -158,6 +176,24 @@ describe('App · router de datos (FE #647, fase 1)', () => {
     // El último registrado es el que ha navegado: el que usa RouterProvider
     const [router] = sentry.registrar.mock.calls.at(-1);
     expect(router.state.location.pathname).toBe('/friends');
+  });
+
+  it('R3c: con StrictMode, la navegación en curso apunta el router que sirve la app; al desmontar, ninguno', async () => {
+    window.history.pushState({}, '', '/dashboard');
+    const { unmount } = render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+    await screen.findByRole('heading', { name: 'panel' });
+
+    fireEvent.click(screen.getByRole('link', { name: 'a amigos' }));
+    await screen.findByRole('heading', { name: 'amigos' });
+
+    // El apuntado es el que ha navegado: el que usa RouterProvider, no el descartado
+    expect(apuntado.router?.state.location.pathname).toBe('/friends');
+    unmount();
+    expect(apuntado.router).toBeNull();
   });
 
   it('R4: ir a otra pantalla empieza arriba, y volver atrás también', async () => {

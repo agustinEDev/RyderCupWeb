@@ -1,6 +1,6 @@
 import IEnrollmentRepository from '../../domain/repositories/IEnrollmentRepository';
 import EnrollmentMapper from '../mappers/EnrollmentMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * ApiEnrollmentRepository - Implementación del repositorio con API REST

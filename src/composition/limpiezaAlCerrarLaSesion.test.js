@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import './interfazDelTransporte';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
  * Lo que se borra de la cuenta en un cierre duro (revocación, sesión caducada,
- * CSRF). `utils/deviceRevocationLogout` ya no importa los servicios que guardan
- * cosas de la cuenta (utils no importa services): tiene un registro de
- * limpiezas y este módulo de la composition root lo rellena.
+ * CSRF). `infrastructure/http/deviceRevocationLogout` no importa los servicios
+ * que guardan cosas de la cuenta (infrastructure/http no importa services):
+ * tiene un registro de limpiezas y este módulo de la composition root lo rellena.
  *
  * Si el registro se queda sin rellenar no falla nada a la vista: la siguiente
  * persona que entre en ese móvil vería las partidas sin cobertura, el modal del
@@ -36,7 +38,7 @@ vi.mock('../utils/sentryHelpers', () => ({ clearUserContext: vi.fn() }));
 vi.mock('i18next', () => ({ default: { t: vi.fn((clave) => clave) } }));
 
 await import('./limpiezaAlCerrarLaSesion');
-const { limpiaLaCuenta, handleDeviceRevocationLogout } = await import('../utils/deviceRevocationLogout');
+const { limpiaLaCuenta, handleDeviceRevocationLogout } = await import('../infrastructure/http/deviceRevocationLogout');
 const { olvidaElCierreDeEstaCarga } = await import('../utils/cierreDeEstaCarga');
 const { anotaLaCuentaDeEstaPestana, olvidaLaCuentaDeEstaPestana } = await import('../utils/vueltaTrasEntrar');
 

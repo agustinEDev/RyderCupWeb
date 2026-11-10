@@ -4,7 +4,7 @@
 
 **Implementation Date:** November 26, 2025
 **Project Version:** 1.6.0+
-**Implemented by:** Claude AI + Agustín Estévez
+**Implemented by:** Agustín Estévez
 
 ---
 
@@ -60,7 +60,7 @@
 - [x] "Try Again" option to recover from errors
 
 ### ✅ Objective 7: Documentation
-- [x] Complete documentation in CLAUDE.md
+- [x] Complete documentation (ADR-005)
 - [x] Step-by-step guide for Render (RENDER_SETUP.md)
 - [x] Detailed code comments
 - [x] Helper usage examples
@@ -119,7 +119,7 @@
 - DSN configured with actual project value
 - Sample rates optimized for development (1.0, 0.1, 1.0)
 
-#### 3. `src/infrastructure/sentry.ts` (completely rewritten - 250 lines)
+#### 3. `src/sentry.ts` (completely rewritten - 250 lines)
 **Changes:**
 - Migrated from hardcoded configuration to environment variable based
 - Added advanced integrations:
@@ -220,7 +220,7 @@ function App() {
 export default Sentry.withProfiler(App);
 ```
 
-#### 5. `CLAUDE.md` (+260 lines)
+#### 5. Project documentation (+260 lines)
 **Changes:**
 - Added complete Sentry section (after "Environment Variables")
 - Documentation of all implemented features
@@ -732,7 +732,7 @@ screen, and problems are reported through the app's own channel (FE #320).
 - [x] `.env` and `.env.example` updated
 
 ### Documentation
-- [x] `CLAUDE.md` updated with Sentry section
+- [x] Project documentation updated with Sentry section
 - [x] `RENDER_SETUP.md` created with step-by-step guide
 - [x] `SENTRY_IMPLEMENTATION_SUMMARY.md` created (this file)
 
@@ -764,7 +764,7 @@ This implementation was made possible thanks to:
 
 If you have problems with the implementation:
 
-1. **Review the documentation:** `CLAUDE.md` Sentry section
+1. **Review the documentation:** `docs/architecture/decisions/ADR-005-sentry-error-tracking.md`
 2. **Check the Render guide:** `RENDER_SETUP.md`
 3. **Review build logs:** Render Dashboard → Logs
 4. **Check Sentry Docs:** https://docs.sentry.io/

@@ -316,39 +316,46 @@ def tests(p: dict) -> str:
 # ---------------------------------------------------------------- build
 
 
+def _presupuesto(p: dict) -> str:
+    """El presupuesto del arranque (bundle_budget.py), medido en el build de Render."""
+    tam, tope, aviso = (_entero(p.get(k)) for k in ("size_kb", "budget_kb", "warning_kb"))
+    if p.get("problems"):
+        # El fallo primero: el paso está en rojo aunque el arranque quepa (#374)
+        texto = f"The bundle check failed: {p['problems']}."
+        if tam is not None and tope:
+            texto += f" Startup JS {tam} KB gzip of a {tope} KB budget."
+        return texto
+    if tam is None:
+        return f"Built, but no JS was measured — {VER_LOG}."
+    if not tope:
+        return f"Startup JS {tam} KB gzip (budget: {VER_LOG})."
+    texto = f"Startup JS {tam} KB gzip of a {tope} KB budget ({tam * 100 // tope}%"
+    texto += f"; warns above {aviso} KB)." if aviso else ")."
+    if aviso and tam > aviso:
+        texto += " Close to the budget."
+    return texto
+
+
 def build_ci(p: dict) -> str:
+    """Tarjeta del build del CI (el artefacto): sin presupuesto, que se mide en Render."""
     if p.get("build_outcome") not in ("success", "failure"):
         return f"Not run: an earlier step failed or the job was cancelled ({VER_LOG})."
     if p.get("build_outcome") == "failure":
         return f"vite build failed — {VER_LOG}."
-    tam, tope, aviso = (_entero(p.get(k)) for k in ("size_kb", "budget_kb", "warning_kb"))
-    if tam is None:
-        return f"Production build done, but no JS was measured — {VER_LOG}."
-    if p.get("problems"):
-        # El fallo primero: el paso está en rojo aunque el arranque quepa (#374)
-        texto = f"Production build done, but the bundle check failed: {p['problems']}."
-        if tope:
-            texto += f" Startup JS {tam} KB gzip of a {tope} KB budget."
-    elif p.get("precache_outcome") == "failure":
-        # Va después del presupuesto: con el precache corto, el build no está «OK» (2 nov 2026)
+    if p.get("precache_outcome") == "failure":
+        # Con el precache corto, el build no está «OK» (2 nov 2026)
         texto = f"Production build done, but the service worker does not precache the whole app — {VER_LOG}."
-        if tope:
-            texto += f" Startup JS {tam} KB gzip of a {tope} KB budget."
     else:
-        texto = f"Production build OK. Startup JS {tam} KB gzip"
-        if tope:
-            texto += f" of a {tope} KB budget ({tam * 100 // tope}%"
-            texto += f"; warns above {aviso} KB)." if aviso else ")."
-            if aviso and tam > aviso:
-                texto += " Close to the budget."
-        else:
-            texto += f" (budget: {VER_LOG})."
+        # El presupuesto del arranque se mide en el build de Render, con el DSN de
+        # Sentry: este compila sin él y pesaría menos que lo que se sirve (9 nov 2026)
+        texto = "Production build OK, kept as the build-output artifact. The startup JS budget is checked on the Render build."
     if p.get("output_outcome") == "failure":
         texto += " But dist/ is missing."
     return texto
 
 
 def build_render(p: dict) -> str:
+    """Tarjeta del build como Render: resultado, presupuesto del arranque y precache."""
     if p.get("build_outcome") not in ("success", "failure"):
         return f"Not run: an earlier step failed or the job was cancelled ({VER_LOG})."
     partes = []
@@ -367,6 +374,7 @@ def build_render(p: dict) -> str:
         return " ".join(partes)
     if p.get("precache_outcome") == "failure":
         partes.append(f"Built, but the service worker does not precache the whole app — {VER_LOG}.")
+    partes.append(_presupuesto(p))
     recursos, con_hash, trozos = (_entero(p.get(k)) for k in ("smoke_resources", "smoke_integrity", "smoke_chunks"))
     fallos = _entero(p.get("smoke_failures"))
     if p.get("smoke_outcome") not in ("success", "failure"):

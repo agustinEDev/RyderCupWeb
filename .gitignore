@@ -49,9 +49,6 @@ build
 # Visual Studio Code settings
 .vscode
 
-# Claude Code configuration (local only)
-.claude/
-CLAUDE.md
 BACKEND_API_SPEC.md
 GEMINI.md
 docs/INVITATIONS_API_CONTRACT.md

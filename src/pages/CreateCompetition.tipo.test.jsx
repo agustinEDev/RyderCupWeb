@@ -361,7 +361,7 @@ describe('CreateCompetition · elegir el tipo primero (FE #639)', () => {
   it('27: en el móvil no se pintan dos títulos de la misma pantalla', async () => {
     // La cabecera contextual ya pone el suyo; el del formulario lo repetía y se
     // comía 70 px de la primera pantalla. Además son dos `h1` para un lector
-    // de pantalla (convención del CLAUDE.md)
+    // de pantalla (convención del proyecto: un solo `h1` por pantalla)
     await abreElFormulario();
 
     const titulo = screen.getByTestId('titulo-pantalla');

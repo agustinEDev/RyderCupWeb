@@ -34,6 +34,14 @@ tamaño comprimido es el suyo más unos pocos bytes de cabecera.
 | B22  | el mismo fichero escrito de dos formas cuenta una  | 0    |
 | B23  | un trozo en una subcarpeta de assets también tiene tope | 1 |
 | B24  | un JS de otro origen no es del paquete (CodeRabbit) | 0   |
+| B25  | --con-sentry=DSN y el arranque sin ese DSN         | 1    |
+| B26  | --con-sentry=DSN y ese DSN en un JS del arranque   | 0    |
+| B27  | --con-sentry=DSN y el DSN solo en un trozo diferido | 1   |
+| B28  | el CI mide el build de Render, con su DSN          | —    |
+| B29  | --con-sentry=DSN y otro DSN distinto en el arranque | 1   |
+| B30  | --con-sentry sin el DSN                            | 2    |
+| B31  | el seguimiento de navegaciones en el arranque      | 1    |
+| B32  | el seguimiento de navegaciones solo en un diferido | 0    |
 """
 
 import io
@@ -306,6 +314,72 @@ class PresupuestoDelBundle(unittest.TestCase):
         )
         self.assertEqual(self.correr(), 0)
         self.assertEqual(self.salidas()["size_kb"], "50")
+
+    # --- Con Sentry (9 nov 2026): sin VITE_SENTRY_DSN, Vite quita el arranque de
+    # Sentry de main.jsx y el bundle medido pesa menos que el que se sirve ---
+
+    DSN = "https://public@o0.ingest.sentry.io/0"
+
+    def con(self, nombre: str, kb: float, texto: bytes) -> str:
+        """Un trozo con `texto` compilado dentro."""
+        self.trozo(nombre, kb)
+        ruta = self.dist / "assets" / nombre
+        ruta.write_bytes(ruta.read_bytes() + texto)
+        return nombre
+
+    def con_dsn(self, nombre: str, kb: float, dsn: str = DSN) -> str:
+        return self.con(nombre, kb, f'const dsn="{dsn}";'.encode())
+
+    def con_sentry(self) -> int:
+        return bundle_budget.main([str(self.dist), f"--con-sentry={self.DSN}"])
+
+    def test_B25_con_sentry_y_sin_dsn_falla(self):
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(self.con_sentry(), 1)
+        self.assertIn("VITE_SENTRY_DSN", self.log.getvalue())
+
+    def test_B26_con_sentry_y_con_dsn_en_el_arranque(self):
+        self.indice(("script", self.con_dsn("index.js", 100)), ("preload", self.trozo("react.js", 50)))
+        self.assertEqual(self.con_sentry(), 0)
+
+    def test_B27_con_sentry_y_el_dsn_solo_en_un_diferido(self):
+        self.con_dsn("pantalla.js", 50)
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(self.con_sentry(), 1)
+
+    def test_B28_el_ci_mide_el_build_de_render_con_su_dsn(self):
+        flujo = (Path(__file__).resolve().parents[1] / "workflows" / "ci-cd.yml").read_text(encoding="utf-8")
+        render = flujo[flujo.index("- name: Build like Render"):flujo.index("- name: Check service worker precache (Render build)")]
+        mide = flujo[flujo.index("- name: Check bundle size (Render build)"):flujo.index("- name: Serve the Render build")]
+        ci = flujo[flujo.index("- name: Build application"):flujo.index("- name: Check service worker precache\n")]
+        # El build de Render compila con el DSN de prueba y su presupuesto exige ESE DSN
+        self.assertIn("VITE_SENTRY_DSN: ${{ env.DSN_DE_PRUEBA }}", render)
+        self.assertIn('bundle_budget.py dist --con-sentry="$DSN_DE_PRUEBA"', mide)
+        self.assertRegex(flujo, r"DSN_DE_PRUEBA: https://\S+@\S+/\d+")
+        # El artefacto build-output no apunta a producción ni manda a Sentry
+        self.assertNotIn("VITE_SENTRY_DSN", ci)
+        self.assertNotIn("VITE_API_BASE_URL", ci)
+
+    def test_B29_con_sentry_y_otro_dsn(self):
+        self.indice(("script", self.con_dsn("index.js", 100, "https://otra@o9.ingest.sentry.io/9")))
+        self.assertEqual(self.con_sentry(), 1)
+
+    def test_B30_con_sentry_sin_el_dsn(self):
+        self.indice(("script", self.con_dsn("index.js", 100)))
+        self.assertEqual(bundle_budget.main([str(self.dist), "--con-sentry="]), 2)
+
+    def test_B31_seguimiento_de_navegaciones_en_el_arranque(self):
+        for marca in (b'name:"BrowserTracing"', b'"auto.navigation.react.reactrouter"'):
+            with self.subTest(marca=marca):
+                self.indice(("script", self.con("index.js", 100, marca)))
+                self.assertEqual(self.correr(), 1)
+                self.assertIn("navigation tracing", self.log.getvalue())
+
+    def test_B32_seguimiento_de_navegaciones_solo_en_un_diferido(self):
+        self.con("sentry-diferido.js", 50, b'name:"BrowserTracing"')
+        self.indice(("script", self.trozo("index.js", 100)))
+        self.assertEqual(self.correr(), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -92,9 +92,9 @@ export default [
     },
   },
 
-  // Toda llamada a la API pasa por apiRequest() (src/services/api.js): lleva el
+  // Toda llamada a la API pasa por apiRequest() (src/infrastructure/http/api.js): lleva el
   // interceptor que refresca el token ante un 401 y reintenta. Un fetch directo
-  // se lo salta y provoca deslogueos aparentes (CLAUDE.md). Excepciones, cada una
+  // se lo salta y provoca deslogueos aparentes. Excepciones, cada una
   // con su motivo en el propio fichero:
   // - tokenRefreshInterceptor.js: ES el interceptor
   // - sondaDeSesion.js: sondea la sesión SIN interceptor, para la pantalla de
@@ -106,19 +106,79 @@ export default [
     ignores: [
       'src/**/*.test.{js,jsx}',
       'src/setupTests.js',
-      'src/utils/tokenRefreshInterceptor.js',
+      'src/infrastructure/http/tokenRefreshInterceptor.js',
       'src/services/sondaDeSesion.js',
       'src/infrastructure/repositories/ApiSupportRepository.js',
     ],
     rules: {
       'no-restricted-globals': [
         'error',
-        { name: 'fetch', message: 'Usa apiRequest() de src/services/api.js: lleva el refresco del token.' },
+        { name: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js: lleva el refresco del token.' },
       ],
       'no-restricted-properties': [
         'error',
-        { object: 'window', property: 'fetch', message: 'Usa apiRequest() de src/services/api.js.' },
-        { object: 'globalThis', property: 'fetch', message: 'Usa apiRequest() de src/services/api.js.' },
+        { object: 'window', property: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js.' },
+        { object: 'globalThis', property: 'fetch', message: 'Usa apiRequest() de src/infrastructure/http/api.js.' },
+      ],
+    },
+  },
+
+  // La interfaz no llama a la API: pide un caso de uso a src/composition (F2).
+  // `getApiBaseUrl` sí puede usarlo (las URLs de los avatares). También App.jsx y
+  // main.jsx, y los import() dinámicos: el del cliente, siempre; de los demás, si se
+  // saca `apiRequest` directamente (`const { apiRequest } = await import(…)`,
+  // `(await import(…)).apiRequest` o `.then(({ apiRequest }) => …)`). Lo que no ve:
+  // guardar el módulo entero en una variable y leer `apiRequest` después
+  {
+    files: ['src/{pages,components,hooks,contexts}/**/*.{js,jsx,ts,tsx}', 'src/App.jsx', 'src/main.jsx'],
+    ignores: ['src/**/*.test.{js,jsx,ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/infrastructure/http/api', '**/infrastructure/http/api.js'],
+              importNames: ['apiRequest', 'default'],
+              message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        // `apiRequest` por nombre desde la composition root (index o http). Con
+        // no-restricted-imports caería también `import * as composicion`, que
+        // origenesDeAnotacion usa a propósito para leer cada caso de uso al usarlo
+        {
+          selector:
+            "ImportDeclaration[source.value=/composition(.index|.http)?(\\.js)?$/] > ImportSpecifier[imported.name='apiRequest']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector: 'ImportExpression[source.value=/infrastructure.http.api(\\.js)?$/]',
+          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+        },
+        {
+          // El mismo, con plantilla: import(`…/infrastructure/http/api`)
+          selector: 'ImportExpression > TemplateLiteral > TemplateElement[value.raw=/infrastructure.http.api/]',
+          message: 'La interfaz no carga el cliente de la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector:
+            "VariableDeclarator[init.type='AwaitExpression'][init.argument.type='ImportExpression'] > ObjectPattern > Property[key.name='apiRequest']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector:
+            "MemberExpression[property.name='apiRequest'][object.type='AwaitExpression'][object.argument.type='ImportExpression']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='then'][callee.object.type='ImportExpression'] Property[key.name='apiRequest']",
+          message: 'La interfaz no llama a la API: usa un caso de uso de src/composition.',
+        },
       ],
     },
   },

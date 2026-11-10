@@ -1,6 +1,6 @@
 import IInvitationRepository from '../../domain/repositories/IInvitationRepository';
 import InvitationMapper from '../mappers/InvitationMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * ApiInvitationRepository - REST API implementation

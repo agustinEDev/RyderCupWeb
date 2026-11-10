@@ -2,7 +2,7 @@ import IPlayerStatsRepository from '../../domain/repositories/IPlayerStatsReposi
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
 import ScoringBreakdownMapper from '../mappers/ScoringBreakdownMapper';
 import RecentMatchMapper from '../mappers/RecentMatchMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * ApiPlayerStatsRepository - REST API implementation

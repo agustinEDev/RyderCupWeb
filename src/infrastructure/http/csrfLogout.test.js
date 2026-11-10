@@ -1,0 +1,101 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// Como en la app: la respuesta de la interfaz al transporte, registrada antes de nada
+import '../../composition/interfazDelTransporte';
+import { handleCsrfLogout } from './csrfLogout';
+// Lo que se borra de la cuenta lo registra la composition root (main.jsx lo carga el primero)
+import '../../composition/limpiezaAlCerrarLaSesion';
+import { olvidaElCierreDeEstaCarga } from '../../utils/cierreDeEstaCarga';
+import { recuerda, recuerdaLaLista, loQueSeSupo, laUltimaLista, olvidaTodo } from '../../services/loUltimoConocido';
+import { olvidaLasNovedades } from '../../services/novedadesDeActividad';
+
+vi.mock('../../services/novedadesDeActividad', () => ({ olvidaLasNovedades: vi.fn() }));
+
+/**
+ * LA TABLA — salir por un fallo de CSRF.
+ *
+ *   caso                                   | qué pasa
+ *   ---------------------------------------|-----------------------------------
+ *   se cierra la sesión                     | se va lo de la cuenta anterior
+ *   y una respuesta llega después           | no lo repone
+ */
+describe('handleCsrfLogout · lo guardado sin cobertura (FE #524)', () => {
+  let href;
+
+  beforeEach(() => {
+    // Cada test, una carga de página nueva: el cierre es uno por carga (S1)
+    olvidaElCierreDeEstaCarga();
+    const guardado = new Map();
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (guardado.has(k) ? guardado.get(k) : null),
+      setItem: (k, v) => guardado.set(k, String(v)),
+      removeItem: (k) => guardado.delete(k),
+    });
+    olvidaTodo();
+    href = '';
+    delete window.location;
+    window.location = { set href(v) { href = v; }, get href() { return href; } };
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it('forgets the Activity number and the app icon badge (review FE-1)', () => {
+    olvidaLasNovedades.mockClear();
+
+    handleCsrfLogout({ detail: 'CSRF token missing' });
+
+    expect(olvidaLasNovedades).toHaveBeenCalledTimes(1);
+  });
+
+  it('se lleva las partidas guardadas de la cuenta anterior', () => {
+    // Es el cuarto camino de salida y tampoco pasa por `clearAuth`: en un móvil
+    // compartido, la siguiente persona sin señal veía la lista de la anterior
+    recuerda('m-1', { partida: { id: 'm-1' }, campo: null });
+    recuerdaLaLista([{ id: 'm-1' }]);
+
+    handleCsrfLogout({ detail: 'CSRF token missing' });
+
+    expect(loQueSeSupo('m-1')).toBeNull();
+    expect(laUltimaLista()).toBeNull();
+    expect(href).toBe('/login');
+  });
+
+  it('y una respuesta que conteste después no las repone', () => {
+    // La redirección no es instantánea, y lo repuesto sí sobrevive a ella
+    handleCsrfLogout();
+
+    recuerda('m-1', { partida: { id: 'm-1' }, campo: null });
+    recuerdaLaLista([{ id: 'm-1' }]);
+
+    expect(loQueSeSupo('m-1')).toBeNull();
+    expect(laUltimaLista()).toBeNull();
+  });
+
+  it('se lleva también lo pendiente del hándicap de esa cuenta (FE #677)', () => {
+    localStorage.setItem('refrescar_handicap', 'true');
+    localStorage.setItem('pedir_handicap', JSON.stringify({ handicap: 18 }));
+
+    handleCsrfLogout();
+
+    expect(localStorage.getItem('refrescar_handicap')).toBeNull();
+    expect(localStorage.getItem('pedir_handicap')).toBeNull();
+  });
+
+  it('guarda la página para volver a ella tras entrar (probador de la release)', () => {
+    sessionStorage.clear();
+    let destino = '';
+    window.location = {
+      pathname: '/competitions/7',
+      search: '',
+      hash: '',
+      origin: 'http://localhost:3000',
+      set href(v) { destino = v; },
+      get href() { return destino; },
+    };
+
+    handleCsrfLogout();
+
+    expect(sessionStorage.getItem('vuelta_tras_entrar')).toBe('/competitions/7');
+    expect(destino).toBe('/login');
+  });
+});
+

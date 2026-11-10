@@ -2,7 +2,7 @@ import { instanteSiEsValido } from '../../utils/instanteDeLaApi';
 import ISocialFeedRepository from '../../domain/repositories/ISocialFeedRepository';
 import ActivityEventMapper from '../mappers/ActivityEventMapper';
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * ApiSocialFeedRepository - REST API implementation

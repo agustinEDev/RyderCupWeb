@@ -1,5 +1,5 @@
 import ICountryRepository from '../../domain/repositories/ICountryRepository.js';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 class ApiCountryRepository extends ICountryRepository {
   async findAll() {

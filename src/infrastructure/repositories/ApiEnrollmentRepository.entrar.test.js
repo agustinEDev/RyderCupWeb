@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiEnrollmentRepository from './ApiEnrollmentRepository';
 
-vi.mock('../../services/api.js', () => ({ default: vi.fn() }));
+vi.mock('../http/api.js', () => ({ default: vi.fn() }));
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 /**
  * Apuntarse a una pública (release social 3, 28 oct 2026): la franja y la espera

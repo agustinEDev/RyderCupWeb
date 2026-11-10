@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react';
 import { createBrowserRouter, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
-import { registrarRouterParaSentry, instrumentarRouterEnSentry } from './navegacionesEnSentry';
+import { registrarRouterParaSentry } from './routerParaSentry';
+import { instrumentarRouterEnSentry } from './navegacionesEnSentry';
 
 /**
  * Con Sentry de verdad (sin enviar nada): el router se crea antes de que llegue
@@ -40,7 +41,7 @@ beforeAll(() => {
   registrarRouterParaSentry(router, RUTAS);
 
   // Como en la aplicación: main.jsx arranca Sentry sin el seguimiento, y
-  // infrastructure/sentry lo añade después al cliente que ya existe
+  // src/sentry.ts lo añade después al cliente que ya existe
   Sentry.init({
     dsn: 'https://public@o0.ingest.sentry.io/0',
     tracesSampleRate: 1,

@@ -3,7 +3,7 @@ import IAuthRepository from '../../domain/repositories/IAuthRepository.js';
 import User from '../../domain/entities/User.js';
 import Email from '../../domain/value_objects/Email'; // Importar Email VO para tipado
 import Password from '../../domain/value_objects/Password'; // 1. Importar Password VO
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 class ApiAuthRepository extends IAuthRepository {
   /**
@@ -31,9 +31,12 @@ class ApiAuthRepository extends IAuthRepository {
         throw bloqueo;
       }
 
-      // Standardize error message for 401
+      // HTTP 401: correo o contraseña mal. Con su código: el texto, traducido, lo pone
+      // la pantalla (antes salía este mensaje, en inglés, en cualquier idioma)
       if (error.status === 401 || error.statusCode === 401) {
-        throw new Error('Incorrect email or password');
+        const credenciales = new Error('Incorrect email or password');
+        credenciales.code = 'INVALID_CREDENTIALS';
+        throw credenciales;
       }
       throw error;
     }

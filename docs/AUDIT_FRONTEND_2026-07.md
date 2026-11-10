@@ -3,7 +3,7 @@
 **Date**: July 26, 2026
 **Scope**: Full frontend codebase (`RyderCupWeb`) — dependency security, authentication/XSS surface, and Clean-Architecture/DDD compliance as adapted for a React SPA.
 **Trigger**: Proactive audit, not a response to a known incident. Tracked as GitHub issue #237.
-**Author**: AI-assisted audit (Claude), reviewed findings verified against source before filing.
+**Author**: Automated audit, reviewed findings verified against source before filing.
 
 ---
 
@@ -13,7 +13,7 @@ No Critical or exploitable High-severity vulnerabilities were found. The codebas
 
 The one **High**-severity finding is a live, ongoing privacy issue rather than a classic vulnerability: Sentry Session Replay is configured to record **unmasked on-screen text** for 100% of error sessions and 10% of all sessions, shipping player names, emails, and handicap data to a third-party service well beyond what's needed for debugging.
 
-The architecture pass found no correctness bugs. It did find a meaningful **documentation/reality gap**: CLAUDE.md, README.md, and ROADMAP.md describe a state/validation stack (Zustand, TanStack Query, Zod) that does not exist anywhere in `package.json` or `src/` — the actual patterns (React Context + local state, ad-hoc imperative validation) are reasonable but undocumented, which risks steering future contributors (human or AI) into designing against a fictional architecture. It also found ~420 lines of dead legacy API-calling code left over from the v2.0.9 Clean Architecture remediation, and two maintainability issues in `CreateCompetition.jsx` (inline validation, multi-step orchestration living in the page instead of a use case).
+The architecture pass found no correctness bugs. It did find a meaningful **documentation/reality gap**: ROADMAP.md and ADR-009 describe a state/validation stack (Zustand, TanStack Query, Zod) that does not exist anywhere in `package.json` or `src/` — the actual patterns (React Context + local state, ad-hoc imperative validation) are reasonable but undocumented, which risks steering future contributors (human or AI) into designing against a fictional architecture. It also found ~420 lines of dead legacy API-calling code left over from the v2.0.9 Clean Architecture remediation, and two maintainability issues in `CreateCompetition.jsx` (inline validation, multi-step orchestration living in the page instead of a use case).
 
 The already-tracked 37 silenced `react-hooks/*` lint warnings (issue #239) are **not** re-reported here; sampled hook dependency arrays outside that tracked set showed no additional issues.
 
@@ -37,7 +37,7 @@ The already-tracked 37 silenced `react-hooks/*` lint warnings (issue #239) are *
 
 #### H1 — Sentry Session Replay records unmasked on-screen text in production
 
-- **File**: `src/infrastructure/sentry.ts:83-90`
+- **File**: `src/sentry.ts:83-90`
 - **Description**: `replayIntegration({ maskAllText: false, blockAllMedia: false, ... })` is configured unconditionally, with `replaysOnErrorSampleRate: 1.0` (100% of sessions that hit an error) and `replaysSessionSampleRate: 0.1` (10% of all sessions, via `VITE_SENTRY_REPLAYS_*` env vars). The code's own comment reads `// Cambiar a true en producción si hay datos sensibles` ("switch to true in production if there is sensitive data") — acknowledging the risk but shipping the permissive value regardless of environment.
 - **Risk scenario**: Any user who hits a JS error (a common, non-adversarial event) gets a full-fidelity DOM-text recording sent to Sentry's infrastructure — player names, emails, handicaps, competition details, anything visible on screen at the time. This is live in production today, not a hypothetical. It also expands the blast radius of a Sentry account/API-token compromise into a trove of session-level PII, and creates a GDPR-relevant data flow (EU personal data to a third-party processor) that isn't scoped to what's needed for error diagnosis.
 - **Suggested fix**: Set `maskAllText: true` (or mask specific selectors that aren't sensitive, e.g. static labels) and `blockAllMedia: true` for production builds; only relax masking in Sentry's own PII-safe fields if a specific debugging need arises. Re-evaluate the sample rates once masking is in place.
@@ -48,10 +48,10 @@ The already-tracked 37 silenced `react-hooks/*` lint warnings (issue #239) are *
 
 #### M1 — Documented architecture (Zustand, TanStack Query, Zod, Axios) does not match implementation
 
-- **Files**: `CLAUDE.md`, `README.md`, `ROADMAP.md` (documentation) vs. `package.json` + `src/` (implementation)
+- **Files**: `ROADMAP.md`, `docs/architecture/decisions/ADR-009-rbac-system.md` (documentation) vs. `package.json` + `src/` (implementation)
 - **Description**: `package.json` contains no `zustand`, `@tanstack/react-query`, `zod`, or `axios` dependency; `src/store/` does not exist; a full-repo grep for `zod`/`z.object` returns zero hits. Yet the docs describe Zustand stores (with code samples for `authStore`, `competitionStore`, etc.), TanStack Query data-fetching, and a "Zod frontend + Pydantic backend" double-validation layer as the current architecture. In reality state is React Context (`src/contexts/AuthContext.jsx`) + local `useState`/custom hooks, and form validation is ad-hoc imperative JS per form (see M2).
-- **Risk scenario**: A future contributor — or an AI coding agent reading CLAUDE.md as source of truth — designs a new feature against the documented Zustand/Zod pattern, either introducing an inconsistent one-off dependency or wasting time discovering the pattern doesn't exist. Documentation drift in a repo whose CLAUDE.md is explicitly used to steer AI-assisted development compounds over time.
-- **Suggested fix**: Either (a) update CLAUDE.md/README.md to describe the actual Context+hooks / ad-hoc-validation architecture, or (b) if Zod/Zustand adoption is still intended, track it as an explicit backlog item rather than documenting it as already-done.
+- **Risk scenario**: A future contributor — or a tool reading the docs as source of truth — designs a new feature against the documented Zustand/Zod pattern, either introducing an inconsistent one-off dependency or wasting time discovering the pattern doesn't exist. Documentation drift compounds over time.
+- **Suggested fix**: Either (a) update ROADMAP.md and ADR-009 to describe the actual Context+hooks / ad-hoc-validation architecture, or (b) if Zod/Zustand adoption is still intended, track it as an explicit backlog item rather than documenting it as already-done.
 
 #### M2 — Form-boundary validation is manual and duplicated instead of a shared schema
 

@@ -1,3 +1,6 @@
+// La respuesta de la interfaz al transporte, registrada antes que los repositorios
+// que lo usan (infrastructure/http/interfazDelTransporte)
+import './interfazDelTransporte';
 import ApiUserRepository from '../infrastructure/repositories/ApiUserRepository';
 // User Use Cases
 import UpdateUserProfileUseCase from '../application/use_cases/user/UpdateUserProfileUseCase';
@@ -78,6 +81,7 @@ import DeleteAdminUserUseCase from '../application/use_cases/admin/DeleteAdminUs
 import ApiDeviceRepository from '../infrastructure/repositories/ApiDeviceRepository';
 import GetActiveDevicesUseCase from '../application/use_cases/device/GetActiveDevicesUseCase';
 import RevokeDeviceUseCase from '../application/use_cases/device/RevokeDeviceUseCase';
+import CheckDeviceStatusUseCase from '../application/use_cases/device/CheckDeviceStatusUseCase';
 
 // Competition Use Cases
 import ApiCompetitionRepository from '../infrastructure/repositories/ApiCompetitionRepository';
@@ -472,6 +476,7 @@ const submitQuickMatchProxyHoleScoreUseCase = new SubmitQuickMatchProxyHoleScore
 // Device Management Use Cases (v1.13.0)
 const getActiveDevicesUseCase = new GetActiveDevicesUseCase({ deviceRepository: apiDeviceRepository });
 const revokeDeviceUseCase = new RevokeDeviceUseCase({ deviceRepository: apiDeviceRepository });
+const checkDeviceStatusUseCase = new CheckDeviceStatusUseCase({ deviceRepository: apiDeviceRepository });
 
 // Golf Course Use Cases (v2.1.0 - Sprint 1)
 const listGolfCoursesUseCase = new ListGolfCoursesUseCase({ golfCourseRepository: apiGolfCourseRepository });
@@ -621,6 +626,7 @@ export {
   // Device Management Use Cases (v1.13.0)
   getActiveDevicesUseCase,
   revokeDeviceUseCase,
+  checkDeviceStatusUseCase,
   // Golf Course Use Cases (v2.1.0 - Sprint 1)
   listGolfCoursesUseCase,
   getGolfCourseUseCase,

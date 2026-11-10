@@ -13,7 +13,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
 }));
 
-vi.mock('../../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: vi.fn(),
   fetchWithTokenRefresh: vi.fn(),
 }));

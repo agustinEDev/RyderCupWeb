@@ -6,10 +6,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiDeviceRepository from './ApiDeviceRepository';
 import Device from '../../domain/entities/Device';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 
 // Mock the api module
-vi.mock('../../services/api', () => ({
+vi.mock('../http/api', () => ({
   default: vi.fn(),
 }));
 
@@ -155,6 +155,27 @@ describe('ApiDeviceRepository', () => {
       await expect(repository.getActiveDevices()).rejects.toThrow(
         'Invalid API response: total_count must be a number'
       );
+    });
+  });
+
+  describe('checkDeviceStatus', () => {
+    // FE #1046: la ruta con sesión más ligera; el backend comprueba en ella el
+    // dispositivo del token y su 401 lo trata el interceptor
+    it('pide /auth/current-user, sin opciones, y no devuelve nada', async () => {
+      apiRequestMock.mockResolvedValue({ id: 'u-1' });
+
+      const resultado = await repository.checkDeviceStatus();
+
+      expect(apiRequestMock).toHaveBeenCalledWith('/api/v1/auth/current-user');
+      expect(apiRequestMock).toHaveBeenCalledTimes(1);
+      expect(resultado).toBeUndefined();
+    });
+
+    it('un fallo de la petición sale tal cual', async () => {
+      const fallo = Object.assign(new Error('Unauthorized'), { status: 401 });
+      apiRequestMock.mockRejectedValue(fallo);
+
+      await expect(repository.checkDeviceStatus()).rejects.toBe(fallo);
     });
   });
 

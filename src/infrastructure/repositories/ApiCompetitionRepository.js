@@ -1,6 +1,6 @@
 import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRepository';
 import CompetitionMapper from '../mappers/CompetitionMapper';
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 class ApiCompetitionRepository extends ICompetitionRepository {
   /**

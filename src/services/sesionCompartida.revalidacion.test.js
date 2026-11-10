@@ -42,14 +42,14 @@ const respuestas = [];
 const peticiones = [];
 const RECUERDO = 'rydercup-sesion-conocida';
 
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     peticiones.push(url);
     const siguiente = respuestas.shift() ?? { ok: true, status: 200, json: async () => ({ id: 'u-1' }) };
     return typeof siguiente === 'function' ? siguiente() : Promise.resolve(siguiente);
   },
 }));
-vi.mock('../utils/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
 
 const {
   consultaLaSesion,

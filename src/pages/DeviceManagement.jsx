@@ -10,7 +10,7 @@ import { useTerminosPendientes } from '../hooks/useTerminosPendientes';
 import { laPantallaEstaLista } from '../utils/cortinaDeArranque';
 import { Laptop, Smartphone, Tablet, HelpCircle } from 'lucide-react';
 import { instanteEnTexto } from '../utils/instanteDeLaApi';
-import { marcaLaRevocacionPropia } from '../utils/deviceRevocationLogout';
+import { marcaLaRevocacionPropia } from '../composition/http';
 import { toBaseLanguage } from '../services/countries';
 import { iconoDelDispositivo, nombreDelDispositivo, paisDelDispositivo } from '../utils/descripcionDelDispositivo';
 import BlockLoader from '../components/ui/BlockLoader';

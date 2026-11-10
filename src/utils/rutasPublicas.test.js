@@ -40,15 +40,18 @@ describe('rutas publicas', () => {
 
   it('ni App.jsx ni el interceptor mantienen su propia copia', () => {
     // El interceptor tenia la suya, escrita a mano, y se quedo dos entradas
-    // atras. App.jsx tenia otra. Ahora las dos salen de aqui.
+    // atras. App.jsx tenia otra. Ahora las dos salen de aqui: el interceptor, a
+    // través de la composition root, que le pasa `sinSesionEnRutaPublica`
     const interceptor = readFileSync(
-      resolve(process.cwd(), 'src/utils/tokenRefreshInterceptor.js'),
+      resolve(process.cwd(), 'src/infrastructure/http/tokenRefreshInterceptor.js'),
       'utf8'
     );
+    const interfaz = readFileSync(resolve(process.cwd(), 'src/composition/interfazDelTransporte.js'), 'utf8');
     const app = readFileSync(resolve(process.cwd(), 'src/App.jsx'), 'utf8');
 
     expect(interceptor).not.toMatch(/\['\/login', '\/register'/);
-    expect(interceptor).toMatch(/rutasPublicas/);
+    expect(interceptor).toMatch(/interfaz\(\)\.sinSesionEnRutaPublica\(/);
+    expect(interfaz).toMatch(/import \{ sinSesionEnRutaPublica \} from '\.\.\/utils\/rutasPublicas'/);
 
     expect(app).not.toMatch(/const PUBLIC_ROUTES\s*=/);
     expect(app).toMatch(/rutasPublicas/);

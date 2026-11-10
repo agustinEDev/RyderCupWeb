@@ -16,6 +16,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  *   N6 | otro montaje registra otro router                      | se instrumenta el nuevo
  *   N10| el envoltorio de Sentry lanza                          | no rompe; se reintenta al llegar otra vez
  *   N7 | el cliente existe pero sin el seguimiento de navegación | no se instrumenta
+ *   N11| el orden de producción: App registra, luego llega src/sentry.ts | se instrumenta al llegar
+ *   N12| el módulo del seguimiento se vuelve a evaluar (HMR)    | el mismo router no se envuelve dos veces
  *
  * Que Sentry nombre de verdad la carga y las navegaciones: `navegacionesEnSentry.real.test.js`.
  */
@@ -37,17 +39,21 @@ const sinSeguimiento = { getIntegrationByName: () => undefined };
 const RUTAS = [{ path: '/' }];
 
 let modulo;
+let registro;
 beforeEach(async () => {
   vi.resetModules();
   sentry.cliente = null;
   sentry.envolver.mockClear();
   sentry.falla = false;
+  // El registro, en su módulo sin Sentry (lo importa App.jsx); el seguimiento
+  // llega aparte, con src/sentry.ts
+  registro = await import('./routerParaSentry');
   modulo = await import('./navegacionesEnSentry');
 });
 
 describe('navegaciones en Sentry', () => {
   it('N1: sin Sentry cargado, registrar no instrumenta', () => {
-    modulo.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
+    registro.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
 
     expect(sentry.envolver).not.toHaveBeenCalled();
   });
@@ -56,7 +62,7 @@ describe('navegaciones en Sentry', () => {
     sentry.cliente = conSeguimiento;
     const router = { id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} };
 
-    modulo.registrarRouterParaSentry(router, RUTAS);
+    registro.registrarRouterParaSentry(router, RUTAS);
 
     expect(sentry.envolver).toHaveBeenCalledTimes(1);
     expect(sentry.envolver).toHaveBeenCalledWith(router, RUTAS);
@@ -64,7 +70,7 @@ describe('navegaciones en Sentry', () => {
 
   it('N3: si Sentry llega después, se instrumenta al llegar', () => {
     const router = { id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} };
-    modulo.registrarRouterParaSentry(router, RUTAS);
+    registro.registrarRouterParaSentry(router, RUTAS);
     sentry.cliente = conSeguimiento;
 
     modulo.instrumentarRouterEnSentry();
@@ -75,7 +81,7 @@ describe('navegaciones en Sentry', () => {
 
   it('N4: dos llegadas, o registro y llegada cruzados: una sola vez', () => {
     sentry.cliente = conSeguimiento;
-    modulo.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
+    registro.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
 
     modulo.instrumentarRouterEnSentry();
     modulo.instrumentarRouterEnSentry();
@@ -88,17 +94,17 @@ describe('navegaciones en Sentry', () => {
     modulo.instrumentarRouterEnSentry();
     expect(sentry.envolver).not.toHaveBeenCalled();
 
-    modulo.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
+    registro.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
 
     expect(sentry.envolver).toHaveBeenCalledTimes(1);
   });
 
   it('N6: otro montaje con otro router: se instrumenta el nuevo', () => {
     sentry.cliente = conSeguimiento;
-    modulo.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
+    registro.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
     const nuevo = { id: 'r2', state: { historyAction: 'POP' }, subscribe: () => () => {} };
 
-    modulo.registrarRouterParaSentry(nuevo, RUTAS);
+    registro.registrarRouterParaSentry(nuevo, RUTAS);
 
     expect(sentry.envolver).toHaveBeenCalledTimes(2);
     expect(sentry.envolver).toHaveBeenLastCalledWith(nuevo, RUTAS);
@@ -108,7 +114,7 @@ describe('navegaciones en Sentry', () => {
     sentry.cliente = conSeguimiento;
     sentry.falla = true;
 
-    expect(() => modulo.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS)).not.toThrow();
+    expect(() => registro.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS)).not.toThrow();
     sentry.falla = false;
     modulo.instrumentarRouterEnSentry();
 
@@ -118,9 +124,40 @@ describe('navegaciones en Sentry', () => {
   it('N7: con cliente pero sin el seguimiento de navegación, no', () => {
     sentry.cliente = sinSeguimiento;
 
-    modulo.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
+    registro.registrarRouterParaSentry({ id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} }, RUTAS);
     modulo.instrumentarRouterEnSentry();
 
     expect(sentry.envolver).not.toHaveBeenCalled();
+  });
+
+  it('N11: el orden de producción: App registra su router y el seguimiento llega después', async () => {
+    vi.resetModules();
+    sentry.cliente = conSeguimiento;
+    // App.jsx: solo el registro, sin cargar el seguimiento
+    const deLaApp = await import('./routerParaSentry');
+    const router = { id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} };
+    deLaApp.registrarRouterParaSentry(router, RUTAS);
+    expect(sentry.envolver).not.toHaveBeenCalled();
+
+    // src/sentry.ts, ~2 s después: carga el seguimiento y lo pone
+    const seguimiento = await import('./navegacionesEnSentry');
+    seguimiento.instrumentarRouterEnSentry();
+
+    expect(sentry.envolver).toHaveBeenCalledTimes(1);
+    expect(sentry.envolver).toHaveBeenCalledWith(router, RUTAS);
+  });
+
+  it('N12: si el seguimiento se vuelve a evaluar (HMR), el mismo router no se envuelve otra vez', async () => {
+    sentry.cliente = conSeguimiento;
+    const router = { id: 'r1', state: { historyAction: 'POP' }, subscribe: () => () => {} };
+    registro.registrarRouterParaSentry(router, RUTAS);
+    expect(sentry.envolver).toHaveBeenCalledTimes(1);
+
+    // Otra evaluación del módulo del seguimiento, con el mismo registro
+    const otraEvaluacion = await import('./navegacionesEnSentry.js?otra-evaluacion');
+    otraEvaluacion.instrumentarRouterEnSentry();
+    registro.registrarRouterParaSentry(router, RUTAS);
+
+    expect(sentry.envolver).toHaveBeenCalledTimes(1);
   });
 });

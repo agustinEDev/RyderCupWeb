@@ -7,11 +7,11 @@ vi.mock('../../domain/repositories/IQuickMatchRepository.js', () => ({
   default: class IQuickMatchRepository {},
 }));
 
-vi.mock('../../services/api.js', () => ({
+vi.mock('../http/api.js', () => ({
   default: vi.fn(),
 }));
 
-import apiRequest from '../../services/api.js';
+import apiRequest from '../http/api.js';
 
 const mockQuickMatchApi = {
   id: 'qm-1',

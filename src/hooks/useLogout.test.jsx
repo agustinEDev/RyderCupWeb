@@ -23,7 +23,7 @@ vi.mock('../composition', () => ({
 
 // La consulta de la sesión, de verdad, sin red: aquí se cuenta cuántas veces pregunta
 const mockPreguntas = [];
-vi.mock('../utils/tokenRefreshInterceptor', () => ({
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   fetchWithTokenRefresh: (url) => {
     mockPreguntas.push(url);
     return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
@@ -102,6 +102,17 @@ describe('useLogout · salir deja el dispositivo limpio (FE #531)', () => {
     await act(async () => { await result.current.logout({ recargarEn: '/' }); });
 
     expect(sessionStorage.getItem('vuelta_tras_entrar')).toBeNull();
+  });
+
+  it('cerrar sesión con el botón olvida el aviso de un cierre forzado que quedara guardado', async () => {
+    const { guardaElAvisoDelCierre, tomaElAvisoDelCierre } = await import('../utils/avisoTrasElCierre');
+    guardaElAvisoDelCierre('revocation');
+    logoutUseCase.execute.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useLogout(), { wrapper: envoltorio });
+    await act(async () => { await result.current.logout({ recargarEn: '/' }); });
+
+    expect(tomaElAvisoDelCierre()).toBeNull();
   });
 
   it('R3 (FE #1064): cerrar sesión a propósito olvida la última cuenta de la pestaña', async () => {

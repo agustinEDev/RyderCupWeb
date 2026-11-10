@@ -7,10 +7,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * —`terms_accepted: false`—, el guardia manda a aceptar, la cola de anotaciones
  * se queda apagada y aceptar necesita una red que no hay.
  */
-vi.mock('../utils/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
-vi.mock('../utils/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
+vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({ fetchWithTokenRefresh: vi.fn() }));
+vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({ clearDeviceRevocationFlag: vi.fn() }));
 
-const { fetchWithTokenRefresh } = await import('../utils/tokenRefreshInterceptor');
+const { fetchWithTokenRefresh } = await import('../infrastructure/http/tokenRefreshInterceptor');
 const { anotaLaSesion, consultaLaSesion, olvidaLaSesion, reiniciaLaSesionCompartida, loQueHaySobreLaSesion } =
   await import('./sesionCompartida');
 

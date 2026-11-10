@@ -15,7 +15,7 @@ import {
  *
  * El número vive en `services/novedadesDeActividad`, a nivel de módulo: lo
  * leen dos sitios a la vez —la barra inferior en móvil y la cabecera en
- * escritorio—, no hay store global (deliberado, ver CLAUDE.md) y lo olvidan
+ * escritorio—, no hay store global (deliberado, ver ADR-002: useState + Context API) y lo olvidan
  * también los cierres de sesión forzados. Leerlo NO lo pide: lo pide quien lo vigila, que
  * es uno solo (la barra inferior). Así las páginas que pintan la cabecera en
  * sus tests no lanzan peticiones.

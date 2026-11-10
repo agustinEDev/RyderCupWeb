@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiCompetitionRepository from './ApiCompetitionRepository';
-import * as apiModule from '../../services/api';
+import * as apiModule from '../http/api';
 import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 
-vi.mock('../../services/api', () => ({
+vi.mock('../http/api', () => ({
   default: vi.fn(),
 }));
 

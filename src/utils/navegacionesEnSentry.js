@@ -1,5 +1,6 @@
 import { getActiveSpan, getClient, getCurrentScope, getRootSpan, spanToJSON, wrapCreateBrowserRouterV7 } from '@sentry/react';
 import { matchRoutes } from 'react-router';
+import { alRegistrarElRouter, marcaInstrumentado, routerRegistrado, yaInstrumentado } from './routerParaSentry';
 
 /**
  * El seguimiento de navegaciones de Sentry sobre el router de datos (FE #647).
@@ -63,6 +64,7 @@ const nombrarLaCarga = (router, rutas, { aunqueTengaRuta = false } = {}) => {
   getCurrentScope().setTransactionName(nombre);
 };
 
+/** Ejecuta `hacer` sin dejar que un fallo del seguimiento llegue a la aplicación. */
 const sinRomper = (hacer) => {
   try {
     hacer();
@@ -71,11 +73,13 @@ const sinRomper = (hacer) => {
   }
 };
 
-let registrado = null;
-let instrumentado = null;
-
+/**
+ * Envuelve el router registrado si aún no lo está; sin router o ya envuelto, nada.
+ * Lo llaman el registro del router y la llegada del seguimiento, en cualquier orden.
+ */
 const intentar = () => {
-  if (!registrado || instrumentado === registrado.router) return;
+  const registrado = routerRegistrado();
+  if (!registrado || yaInstrumentado(registrado.router)) return;
   // Sin su integración, el envoltorio no haría nada: se espera a que llegue
   if (!getClient()?.getIntegrationByName?.('BrowserTracing')) return;
   const { router, rutas } = registrado;
@@ -84,7 +88,7 @@ const intentar = () => {
   } catch {
     return;
   }
-  instrumentado = router;
+  marcaInstrumentado(router);
   sinRomper(() => nombrarLaCarga(router, rutas));
   // Una redirección (replace) con la carga aún abierta: Sentry no la sigue
   router.subscribe((estado) => {
@@ -94,13 +98,12 @@ const intentar = () => {
   });
 };
 
-/** La aplicación, al crear su router. Si Sentry ya está, lo instrumenta ya. */
-export function registrarRouterParaSentry(router, rutas) {
-  registrado = { router, rutas };
-  intentar();
-}
+// El router lo registra la aplicación en `routerParaSentry`, sin cargar esto: este
+// módulo llega con `src/sentry.ts` y desde entonces instrumenta cada uno que se
+// registre (y el que ya estuviera, en `instrumentarRouterEnSentry`)
+alRegistrarElRouter(intentar);
 
-/** `infrastructure/sentry`, al poner el seguimiento de navegaciones. */
+/** `src/sentry.ts`, al poner el seguimiento de navegaciones. */
 export function instrumentarRouterEnSentry() {
   intentar();
 }
