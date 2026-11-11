@@ -17,6 +17,10 @@ import { cabeceraDelModoDeLaApp } from '../../utils/modoDeLaApp';
 import { interfaz } from './interfazDelTransporte';
 import { TERMINOS_NO_ACEPTADOS } from '../../domain/services/aceptacionDeTerminos';
 import { getApiBaseUrl } from './urlDeLaApi';
+import { esRutaDeLaApiSegura, rechazaLaRuta } from './rutaDeLaApi';
+
+// Para que los repositorios construyan sus rutas (FE-03): llegan a http solo por aquí
+export { segmento, RutaDeLaApiNoValida } from './rutaDeLaApi';
 
 /**
  * La llamada de red, con el aviso de «sin conexión» ya traducido (FE #685).
@@ -133,6 +137,9 @@ const API_URL = getApiBaseUrl();
  * - Shares one refresh promise so multiple 401s do not each ask for a refresh
  */
 export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
+  // Solo rutas propias de la API, sin «..» ni otro servidor (FE-03): ni las cookies ni el
+  // token CSRF salen hacia una ruta que el navegador resolvería en otra
+  if (!esRutaDeLaApiSegura(endpoint)) rechazaLaRuta((options.method || 'GET').toUpperCase());
   // Cuándo salió la petición: con los Términos pendientes, decide si su 403 es de la
   // pantalla a la que se navega o de la actual (utils/navegacionEnCurso)
   const inicio = globalThis.performance.now();
@@ -186,7 +193,8 @@ export const apiRequest = async (endpoint, { topeMs, ...options } = {}) => {
     },
   };
 
-  const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
+  // Siempre contra la API: una dirección absoluta ya no se acepta (esRutaDeLaApiSegura)
+  const url = `${API_URL}${endpoint}`;
 
   try {
     // Lo que había en la cookie al salir: si no había, el rechazo es la

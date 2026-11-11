@@ -1,0 +1,22 @@
+{
+  "_comentario": "Las cabeceras de seguridad de www.rydercupfriends.com: la única fuente. Render las sirve desde su dashboard (Static Site RyderCupWeb → Headers), que no lee este fichero; docs/SECURITY_HEADERS.md explica cómo pegarlas. Las comprueban cada día el workflow cabeceras-de-produccion.yml contra producción y src/cabecerasDeSeguridad.test.js contra las copias de Vite y del Kind. Fase 4 del plan a 9 (FE-04, FE-05), 11 nov 2026.",
+  "sentry_csp": "https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production",
+  "rutas": {
+    "/": {
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "permissions-policy": "geolocation=(self), microphone=(), camera=()",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "reporting-endpoints": "csp=\"{sentry_csp}\"",
+      "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri {sentry_csp}; report-to csp"
+    },
+    "/images/rcf-monogram-white.png": {
+      "_comentario": "El logo de los correos: lo cargan clientes de correo de otro origen, así que no puede ser same-origin",
+      "cross-origin-resource-policy": "cross-origin",
+      "x-content-type-options": "nosniff"
+    }
+  }
+}

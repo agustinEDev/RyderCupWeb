@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.75.0] - 2026-11-11
+
+**Fase 4 del plan de seguridad: el front endurecido** (#1098, #1099). Va con la 2.60.0 del
+backend, aunque también funciona con la 2.59.0. Probado en el Kind a 360 px: 47 direcciones
+preparadas sin ninguna llamada a la API y uso normal sin errores. **Tras desplegar, las
+cabeceras de Render se cambian a mano** con los valores de `docs/SECURITY_HEADERS.md`.
+
+### Security
+
+- **Las rutas de la API ya no se pueden alterar con un id o un dato del servidor** (FE-03,
+  FE-11, A01): `segmento()` codifica cada valor que entra en una ruta (137 sitios en los
+  repositorios, también las franjas de stroke play y el avatar) y rechaza `.`, `..`, `/` y
+  `\`. `apiRequest` solo manda rutas de su propia API: bajo `/api/`, sin `.`/`..` (tampoco
+  `%2e`), sin barras invertidas ni `%2F`/`%5C`, sin caracteres de control, sin otro host ni
+  fragmento, y que el navegador resolvería tal cual. Una ruta rechazada no sale; Sentry
+  recibe un aviso sin la ruta y la pantalla, el error genérico traducido.
+- Las imágenes de avatar cuya ruta viene del servidor solo se piden si es una ruta de la API.
+- Un test recorre los repositorios y falla con cualquier id interpolado sin `segmento()` o
+  con un `apiRequest` fuera de ellos.
+- **Cabeceras de producción como código** (FE-04, FE-05, FE-09, FE-10, A05):
+  `.github/scripts/cabeceras_de_produccion.json` es la fuente única. CSP sin Google Fonts ni
+  `*.ingest.sentry.io` y con informes a Sentry; `Cross-Origin-Opener-Policy: same-origin`;
+  `Cross-Origin-Resource-Policy: same-origin`, salvo `/images/` (el logo del correo se carga
+  desde fuera). Un workflow diario compara producción con el fichero y abre una issue si
+  difieren (también con una cabecera repetida); un test mantiene iguales las copias de Vite y
+  del Kind.
+- El humo del build falla si un script, modulepreload, preload o hoja de estilos de
+  `index.html` pierde el `integrity`. `vite-plugin-sri3` sustituye a `vite-plugin-sri`, sin
+  mantenimiento desde 2023: los mismos hashes sha384.
+- El service worker ya no guarda Google Fonts un año (las fuentes son propias desde el 20 oct).
+
+### Changed
+
+- Sentry: fuera la inicialización completa de `sentry.ts`, que nunca se ejecutaba (FE-07);
+  «Sentry Initialized» solo sale con cliente.
+- Un test asegura que el correo del aviso de verificación se pinta como texto (FE-08).
+
 ## [2.74.0] - 2026-11-11
 
 **Volver a la anotación si iOS cierra la app** (#1095). Sin cambios en el backend: va con la

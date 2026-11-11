@@ -3,6 +3,7 @@ import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
 import ScoringBreakdownMapper from '../mappers/ScoringBreakdownMapper';
 import RecentMatchMapper from '../mappers/RecentMatchMapper';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * ApiPlayerStatsRepository - REST API implementation
@@ -24,7 +25,7 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
   }
 
   async getRecentMatches(limit) {
-    const query = limit ? `?limit=${limit}` : '';
+    const query = limit ? `?limit=${encodeURIComponent(limit)}` : '';
     const apiData = await apiRequest(`/api/v1/users/me/matches${query}`);
     return RecentMatchMapper.toDomainList(apiData?.matches);
   }
@@ -36,7 +37,7 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
 
   async getPlayerStatsByGolfCourse(golfCourseId) {
     const apiData = await apiRequest(
-      `/api/v1/users/me/stats/golf-courses/${encodeURIComponent(golfCourseId)}`
+      `/api/v1/users/me/stats/golf-courses/${segmento(golfCourseId)}`
     );
     return PlayerStatsMapper.toDomain(apiData);
   }

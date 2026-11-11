@@ -105,4 +105,29 @@ describe('AvatarPicker', () => {
 
     expect(onUpload).toHaveBeenCalledWith(file);
   });
+
+  // FE-11 (fase 4 del plan a 9): el image_url lo manda el servidor; pegado a la base sin
+  // comprobar, «@evil.example/x» se pedía a otro servidor, con credenciales en las fotos
+  it('FE-11: una imagen cuya ruta no es de la API no se pide; las demás, sí', () => {
+    render(
+      <AvatarPicker
+        {...baseProps}
+        presets={[
+          { id: 1, image_url: '@evil.example/x' },
+          { id: 2, image_url: '/api/v1/avatar-presets/2/image' },
+        ]}
+        uploads={[
+          { id: 'u-1', created_at: '2026-07-01', is_active: false, image_url: '//evil.example/api/v1/x' },
+          { id: 'u-2', created_at: '2026-07-02', is_active: false, image_url: '/api/v1/users/me/avatar/uploads/u-2/image' },
+        ]}
+      />,
+    );
+
+    const fuentes = [...document.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+    expect(fuentes.some((f) => /evil/.test(f ?? ''))).toBe(false);
+    expect(fuentes).toContain('/api/v1/avatar-presets/2/image');
+    expect(fuentes).toContain('/api/v1/users/me/avatar/uploads/u-2/image');
+    // Los dos sin imagen siguen ahí para elegirlos
+    expect(screen.getAllByRole('button').filter((b) => b.querySelector('img'))).toHaveLength(2);
+  });
 });

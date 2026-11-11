@@ -13,7 +13,8 @@ import * as api from '../http/api.js';
  *   T3 ningún fichero de la app vuelve a leer `access_token` o `refresh_token` de una
  *      respuesta (solo se permiten los que los BORRAN: limpiezas y el filtro de Sentry)
  */
-vi.mock('../http/api.js', () => ({ default: vi.fn() }));
+vi.mock('../http/api.js', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
 
 const usuario = { id: 'u1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Pérez' };
 const email = new Email('ana@example.com');

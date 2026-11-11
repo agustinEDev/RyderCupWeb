@@ -18,20 +18,52 @@ activa sin serlo; se eliminaron para que nadie los vuelva a confundir con la rea
 
 ## Valor aplicado en producción
 
-Con `Request Path` = `/*`, para que cubra también `/assets/`:
+La fuente es **`.github/scripts/cabeceras_de_produccion.json`** (fase 4 del plan a 9, 11 nov
+2026). Cada día, el workflow **Production Security Headers** compara producción con ese
+fichero y abre una issue si algo no cuadra; `src/cabecerasDeSeguridad.test.js` exige que
+las copias de Vite y del Kind lleven lo mismo. Para cambiar una cabecera: primero el
+fichero (en una PR), después el dashboard de Render.
+
+En Render, regla con `Request Path` = `/*`, para que cubra también `/assets/`:
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;
-Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=()
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Reporting-Endpoints: csp="https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production"
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri https://o4510427294662656.ingest.de.sentry.io/api/4510427296825424/security/?sentry_key=5548cda036a3fedd1f50791b66a93354&sentry_environment=production; report-to csp
 ```
 
-Desde el 20 oct 2026 Inter y Poppins se sirven desde la propia aplicación, así que
-`style-src` y `font-src` ya no abren `fonts.googleapis.com` ni `fonts.gstatic.com`. Al
-desplegarlo hay que **quitarlos también del dashboard de Render**: dejarlos no rompe
-nada, pero la política seguiría permitiendo un origen que ya no se usa.
+Y una segunda regla, con `Request Path` = `/images/*`, que **sustituye** la de arriba para
+esa cabecera: el logo de los correos (`/images/rcf-monogram-white.png`) lo cargan clientes
+de correo desde otro origen, y con `same-origin` no lo verían:
+
+```
+Cross-Origin-Resource-Policy: cross-origin
+```
+
+Qué hace cada novedad de la fase 4:
+
+- **Sin Google Fonts ni el comodín `*.ingest.sentry.io`** (FE-04): las fuentes van con la
+  aplicación desde el 20 oct 2026, y Sentry solo necesita su servidor exacto.
+- **`report-uri` / `report-to` + `Reporting-Endpoints`** (FE-04): lo que la CSP bloquee
+  llega a Sentry, proyecto `rydercup-frontend`, como evento de seguridad.
+- **Trusted Types, aplazado a la fase 5** (FE-04, decidido el 11 nov 2026): en producción
+  saltaría en cada carga sin que hubiera ataque (el registro del service worker, los workers
+  del mapa y de Sentry, MapLibre), y mandar esos avisos a Sentry gastaría la cuota y taparía
+  los de la CSP. De momento solo va en local (Vite y el Kind), en aviso y a la consola, para
+  ver qué salta antes de escribir las políticas.
+- **`Cross-Origin-Opener-Policy: same-origin`** (FE-05): la ventana de la app no comparte
+  contexto con las que la abren o abre. La entrada con Google es una redirección de página
+  completa, sin ventanas emergentes: no le afecta.
+- **`Cross-Origin-Resource-Policy`** (FE-05): `same-origin` en general y `cross-origin` en
+  `/images/*`.
+- **Sin HSTS `preload`**, a propósito: es casi irreversible y obligaría a HTTPS a todos los
+  subdominios para siempre.
 
 ## Por qué `connect-src` lleva `https://www.ign.es` y las ortofotos de comunidad
 
@@ -63,8 +95,8 @@ inyectado no se ejecuta. Verificado: un `<script>` inline inyectado a mano es bl
 ## Cómo verificar
 
 ```bash
-curl -sI https://www.rydercupfriends.com/ | grep -iE \
-  'content-security-policy|strict-transport|x-frame|referrer-policy|permissions-policy'
+# Lo mismo que el workflow diario, directiva a directiva
+python3 .github/scripts/cabeceras_de_produccion.py https://www.rydercupfriends.com
 ```
 
 ⚠️ **El service worker cachea el HTML con sus cabeceras.** Tras cambiar una cabecera, el

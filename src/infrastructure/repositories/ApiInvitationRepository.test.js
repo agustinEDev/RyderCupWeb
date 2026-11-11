@@ -5,7 +5,8 @@ vi.mock('../../domain/repositories/IInvitationRepository.js', () => ({
   default: class IInvitationRepository {},
 }));
 
-vi.mock('../http/api.js', () => ({
+vi.mock('../http/api.js', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
   default: vi.fn(),
 }));
 

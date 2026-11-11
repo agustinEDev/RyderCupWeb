@@ -2,6 +2,7 @@ import IQuickMatchRepository from '../../domain/repositories/IQuickMatchReposito
 import QuickMatchMapper from '../mappers/QuickMatchMapper';
 import apiRequest from '../http/api.js';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
+import { segmento } from '../http/api';
 
 /**
  * ApiQuickMatchRepository - REST API implementation
@@ -79,7 +80,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async complete(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/complete`, {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/complete`, {
       method: 'POST',
       topeMs: TOPE_DE_ANOTAR_MS,
     });
@@ -88,7 +89,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async cancel(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/cancel`, {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/cancel`, {
       method: 'POST',
     });
 
@@ -96,7 +97,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async hide(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/hide`, {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/hide`, {
       method: 'POST',
     });
 
@@ -107,7 +108,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   // sigue en su historial. Es otra marca distinta de `hide`, que sí la quita de
   // la lista y no tiene vuelta atrás desde la aplicación.
   async excludeFromStats(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/stats-exclusion`, {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/stats-exclusion`, {
       method: 'POST',
     });
 
@@ -115,7 +116,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async includeInStats(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/stats-exclusion`, {
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/stats-exclusion`, {
       method: 'DELETE',
     });
 
@@ -123,7 +124,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async submitHoleScore(quickMatchId, holeNumber, score) {
-    return await apiRequest(`/api/v1/quick-matches/${quickMatchId}/holes/${holeNumber}/score`, {
+    return await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/holes/${segmento(holeNumber)}/score`, {
       method: 'POST',
       body: JSON.stringify({ score }),
       topeMs: TOPE_DE_ANOTAR_MS,
@@ -132,7 +133,7 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
 
   async submitProxyHoleScore(quickMatchId, targetParticipantId, holeNumber, score) {
     return await apiRequest(
-      `/api/v1/quick-matches/${quickMatchId}/participants/${targetParticipantId}/holes/${holeNumber}/score`,
+      `/api/v1/quick-matches/${segmento(quickMatchId)}/participants/${segmento(targetParticipantId)}/holes/${segmento(holeNumber)}/score`,
       {
         method: 'POST',
         body: JSON.stringify({ score }),
@@ -142,14 +143,14 @@ class ApiQuickMatchRepository extends IQuickMatchRepository {
   }
 
   async get(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}`, { topeMs: TOPE_DE_ANOTAR_MS });
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}`, { topeMs: TOPE_DE_ANOTAR_MS });
     return QuickMatchMapper.toDomain(apiData);
   }
 
   // La partida terminada de otro, para verla en solo lectura (K). Sin el tope
   // de anotar: aquí no se anota nada
   async getShared(quickMatchId) {
-    const apiData = await apiRequest(`/api/v1/quick-matches/${quickMatchId}/shared`);
+    const apiData = await apiRequest(`/api/v1/quick-matches/${segmento(quickMatchId)}/shared`);
     return {
       quickMatch: QuickMatchMapper.toDomain(apiData),
       readOnly: apiData.read_only ?? true,

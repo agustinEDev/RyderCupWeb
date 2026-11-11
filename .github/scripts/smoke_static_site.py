@@ -9,6 +9,8 @@ rompe la web entera sin que ningún test lo vea:
 - cada recurso que referencia `index.html` (scripts, estilos, iconos, precargas)
   existe, y si lleva `integrity`, su hash cuadra: con un hash que no cuadra el
   navegador no ejecuta el JS y la app sale en blanco;
+- los scripts, las precargas y los estilos del build llevan `integrity`: si el build
+  perdiera el SRI, nada más lo notaría (FE-09);
 - cada `assets/…` que el JS o el CSS piden después (los chunks de las páginas
   que se cargan en diferido) existe: si falta, esa página sale en blanco;
 - `version.json` dice la versión esperada;
@@ -41,6 +43,9 @@ _ATRIBUTO = re.compile(r"""(\w[\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))"
 # ./<nombre>.js|css entre chunks, relativo al que lo pide (40 de 166, 1 oct 2026)
 _ASSET_DIFERIDO = re.compile(r"assets/[\w.-]+\.(?:js|css)")
 _ASSET_RELATIVO = re.compile(r"\./([\w.-]+\.(?:js|css))")
+# Los `rel` que tienen que llevar integrity (SRI), además de los <script src>: precargas
+# de módulos y estilos
+_CON_INTEGRITY = {"modulepreload", "stylesheet"}
 # El navegador se queda con el algoritmo más fuerte y acepta si cuadra uno de él
 _FUERZA = {"sha256": 1, "sha384": 2, "sha512": 3}
 
@@ -130,6 +135,12 @@ def comprobar(dist: Path, esperada: str, cuentas: dict | None = None) -> list[st
                 fallos.append(f"{ruta} responde {estado}")
                 continue
             integrity = atributos.get("integrity", "").strip()
+            es_script = etiqueta.lower().startswith("<script")
+            rel = set(atributos.get("rel", "").lower().split())
+            # Y la precarga de un script o un estilo (`rel=preload as=script|style`)
+            precarga = "preload" in rel and atributos.get("as", "").lower() in {"script", "style"}
+            if not integrity and (es_script or precarga or rel & _CON_INTEGRITY):
+                fallos.append(f"{ruta}: sin integrity (SRI)")
             if integrity:
                 cuentas["integrity"] = cuentas.get("integrity", 0) + 1
             if integrity and (fallo := _fallo_de_integridad(ruta, integrity, contenido)):

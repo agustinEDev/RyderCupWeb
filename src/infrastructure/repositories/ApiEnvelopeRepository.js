@@ -3,6 +3,7 @@
 import apiRequest from '../http/api.js';
 import EnvelopeMapper from '../mappers/EnvelopeMapper';
 import IEnvelopeRepository from '../../domain/repositories/IEnvelopeRepository';
+import { segmento } from '../http/api';
 
 /**
  * Repositorio de sobres contra la API REST (FE #655).
@@ -15,7 +16,7 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    * que si no se podría entregar el sobre del rival.
    */
   async submitEnvelope(roundId, entries, revealWhenBothReady = false) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/envelope`, {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/envelope`, {
       method: 'PUT',
       body: JSON.stringify({ entries, reveal_when_both_ready: revealWhenBothReady }),
     });
@@ -30,7 +31,7 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    * con aspecto de normal.
    */
   async getEnvelopes(roundId) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/envelopes`);
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/envelopes`);
     return EnvelopeMapper.toEnvelopesViewDTO(data);
   }
 
@@ -39,7 +40,7 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    */
   async revealEnvelopes(roundId) {
     const data = await apiRequest(
-      `/api/v1/competitions/rounds/${roundId}/envelopes/reveal`,
+      `/api/v1/competitions/rounds/${segmento(roundId)}/envelopes/reveal`,
       { method: 'POST' }
     );
     return {
@@ -56,7 +57,7 @@ class ApiEnvelopeRepository extends IEnvelopeRepository {
    */
   async resetEnvelopes(roundId) {
     const data = await apiRequest(
-      `/api/v1/competitions/rounds/${roundId}/envelopes/reset`,
+      `/api/v1/competitions/rounds/${segmento(roundId)}/envelopes/reset`,
       { method: 'POST' }
     );
     return {

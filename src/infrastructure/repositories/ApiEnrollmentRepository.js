@@ -1,6 +1,7 @@
 import IEnrollmentRepository from '../../domain/repositories/IEnrollmentRepository';
 import EnrollmentMapper from '../mappers/EnrollmentMapper';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * ApiEnrollmentRepository - Implementación del repositorio con API REST
@@ -103,8 +104,8 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     // Si tiene ID, actualizar (PUT). Si no, crear (POST)
     const method = enrollmentId ? 'PUT' : 'POST';
     const endpoint = enrollmentId
-      ? `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}`
-      : `/api/v1/competitions/${competitionId}/enrollments`;
+      ? `/api/v1/competitions/${segmento(competitionId)}/enrollments/${segmento(enrollmentId)}`
+      : `/api/v1/competitions/${segmento(competitionId)}/enrollments`;
 
     const apiData = await this.#request(endpoint, {
       method,
@@ -124,7 +125,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
   async findById(competitionId, enrollmentId) {
     try {
       const apiData = await this.#request(
-        `/api/v1/competitions/${competitionId}/enrollments/${enrollmentId}`
+        `/api/v1/competitions/${segmento(competitionId)}/enrollments/${segmento(enrollmentId)}`
       );
 
       if (!apiData) {
@@ -157,7 +158,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
 
     const queryString = this.#buildQueryString(apiFilters);
     const apiDataArray = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments${queryString}`
+      `/api/v1/competitions/${segmento(competitionId)}/enrollments${queryString}`
     );
 
     if (!Array.isArray(apiDataArray)) {
@@ -227,7 +228,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     if (data.color) body.tee_color = data.color;
     if (data.roundId) body.round_id = data.roundId;
     if (data.waitingList) body.waiting_list = true;
-    const apiData = await this.#request(`/api/v1/competitions/${competitionId}/enrollments`, {
+    const apiData = await this.#request(`/api/v1/competitions/${segmento(competitionId)}/enrollments`, {
       method: 'POST',
       body: JSON.stringify(body),
     });
@@ -251,7 +252,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     const body = teamId ? { team_id: teamId } : {};
 
     const apiData = await this.#request(
-      `/api/v1/enrollments/${enrollmentId}/approve`,
+      `/api/v1/enrollments/${segmento(enrollmentId)}/approve`,
       {
         method: 'POST',
         body: JSON.stringify(body),
@@ -270,7 +271,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async reject(competitionId, enrollmentId) {
     const apiData = await this.#request(
-      `/api/v1/enrollments/${enrollmentId}/reject`,
+      `/api/v1/enrollments/${segmento(enrollmentId)}/reject`,
       {
         method: 'POST',
       }
@@ -289,7 +290,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async setCustomHandicap(competitionId, enrollmentId, customHandicap) {
     const apiData = await this.#request(
-      `/api/v1/enrollments/${enrollmentId}/handicap`,
+      `/api/v1/enrollments/${segmento(enrollmentId)}/handicap`,
       {
         method: 'PUT',
         body: JSON.stringify({ enrollment_id: enrollmentId, custom_handicap: customHandicap }),
@@ -308,7 +309,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async removeCustomHandicap(competitionId, enrollmentId) {
     const apiData = await this.#request(
-      `/api/v1/enrollments/${enrollmentId}/handicap`,
+      `/api/v1/enrollments/${segmento(enrollmentId)}/handicap`,
       {
         method: 'DELETE',
       }
@@ -330,7 +331,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    */
   async setNamePreference(enrollmentId, useRealName) {
     const apiData = await this.#request(
-      `/api/v1/enrollments/${enrollmentId}/name-preference`,
+      `/api/v1/enrollments/${segmento(enrollmentId)}/name-preference`,
       {
         method: 'PUT',
         body: JSON.stringify({ use_real_name: useRealName }),
@@ -358,7 +359,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
     };
 
     const apiData = await this.#request(
-      `/api/v1/competitions/${competitionId}/enrollments/direct`,
+      `/api/v1/competitions/${segmento(competitionId)}/enrollments/direct`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -375,7 +376,7 @@ class ApiEnrollmentRepository extends IEnrollmentRepository {
    * @returns {Promise<void>}
    */
   async remove(enrollmentId) {
-    await this.#request(`/api/v1/enrollments/${enrollmentId}/remove`, { method: 'POST' });
+    await this.#request(`/api/v1/enrollments/${segmento(enrollmentId)}/remove`, { method: 'POST' });
   }
 }
 

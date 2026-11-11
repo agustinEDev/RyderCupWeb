@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import sri from 'vite-plugin-sri'
+import { sri } from 'vite-plugin-sri3'
 import { VitePWA } from 'vite-plugin-pwa'
 import { readdirSync, existsSync, rmSync, readFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
@@ -149,12 +149,19 @@ const securityHeaders = {
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(self), microphone=(), camera=()',
+  // FE-05 (fase 4 del plan a 9): la ventana de la app aislada (COOP) y sus ficheros solo
+  // para su propio origen (CORP). En producción, /images/ va con cross-origin (el logo de
+  // los correos); aquí no hace falta
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  // FE-04: Trusted Types solo en aviso, a la consola
+  'Content-Security-Policy-Report-Only': "require-trusted-types-for 'script';",
   // style-src requires 'unsafe-inline': React sets inline styles and framer-motion
   // animates by writing the style attribute at runtime. Without it the whole UI is
   // unstyled — this was verified against production in #295, where the policy had
   // been strict since Dec 2025 without anyone noticing, because it never applied.
   // script-src stays strict, which is what actually stops an XSS.
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
 }
 
 // https://vitejs.dev/config/
@@ -327,23 +334,11 @@ export default defineConfig(() => ({
               ],
             },
           },
-          {
-            // Google Fonts
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
         ],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/offline\.html$/],
       },
     }),
-    // Subresource Integrity (SRI) plugin - adds integrity hashes to assets (v1.15.0)
-    // v0.0.2 uses hardcoded sha384, no config needed
-    sri(),
     // Plugin to inject security headers in dev and preview
     {
       name: 'security-headers',
@@ -352,7 +347,7 @@ export default defineConfig(() => ({
           // CSP más permisivo en desarrollo para soportar HMR de Vite
           const devHeaders = {
             ...securityHeaders,
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' ws://localhost:* https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io https://*.ingest.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data: http://localhost:8000; connect-src 'self' ws://localhost:* https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com http://localhost:8000 https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';"
           }
           for (const [key, value] of Object.entries(devHeaders)) {
             res.setHeader(key, value)
@@ -369,7 +364,13 @@ export default defineConfig(() => ({
           next()
         })
       }
-    }
+    },
+    // Subresource Integrity (FE-09, fase 4 del plan a 9): integrity en los scripts, estilos y
+    // precargas de index.html. vite-plugin-sri3 sustituye a vite-plugin-sri@0.0.2, sin
+    // mantenimiento desde 2023. El último, como pide el plugin: firma el contenido final.
+    // Los trozos diferidos no llevan integrity: son del mismo origen, y si ese origen se
+    // compromete el SRI tampoco protegería
+    sri(),
   ],
   test: {
     globals: true,
