@@ -137,7 +137,9 @@ def comprobar(dist: Path, esperada: str, cuentas: dict | None = None) -> list[st
             integrity = atributos.get("integrity", "").strip()
             es_script = etiqueta.lower().startswith("<script")
             rel = set(atributos.get("rel", "").lower().split())
-            if not integrity and (es_script or rel & _CON_INTEGRITY):
+            # Y la precarga de un script o un estilo (`rel=preload as=script|style`)
+            precarga = "preload" in rel and atributos.get("as", "").lower() in {"script", "style"}
+            if not integrity and (es_script or precarga or rel & _CON_INTEGRITY):
                 fallos.append(f"{ruta}: sin integrity (SRI)")
             if integrity:
                 cuentas["integrity"] = cuentas.get("integrity", 0) + 1

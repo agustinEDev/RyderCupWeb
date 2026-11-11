@@ -38,6 +38,8 @@ const tieneControl = (texto) => [...texto].some((c) => c.charCodeAt(0) < 0x20 ||
 
 // Las barras, aunque vayan codificadas: el servidor decodifica `%2F` antes de enrutar
 const BARRAS = /[/\\]/;
+// Y ya codificadas, en una ruta montada (el `image_url` del servidor, lo que no pase por `segmento`)
+const BARRA_CODIFICADA = /%2f|%5c/i;
 
 /**
  * Si un valor vale para un tramo de la ruta (no es `.` ni `..` ni lleva `/` o `\`), sin
@@ -84,8 +86,8 @@ export const rechazaLaRuta = (donde) => {
 
 /**
  * Si una ruta se puede pedir: empieza por `/api/`, sin fragmento ni caracteres de control,
- * y el navegador la resolvería tal cual se escribió (ni `.`, ni `..`, ni `%2e`, ni `\`, ni
- * otro servidor). La búsqueda (`?…`) va aparte: ahí un `..` es solo texto.
+ * sin `%2F` ni `%5C`, y el navegador la resolvería tal cual se escribió (ni `.`, ni `..`, ni
+ * `%2e`, ni `\`, ni otro servidor). La búsqueda (`?…`) va aparte: ahí un `..` es solo texto.
  * @param {unknown} ruta
  * @returns {boolean}
  */
@@ -97,6 +99,9 @@ export const esRutaDeLaApiSegura = (ruta) => {
   // La ruta que resolvería el navegador tiene que ser la misma que se escribió: «.», «..»,
   // «%2e%2e», «\» y cualquier otra normalización la cambian (revisor, 11 nov 2026)
   const camino = ruta.split('?')[0];
+  // Ni una barra codificada: el servidor decodifica `%2F` antes de enrutar, y el navegador
+  // la deja tal cual, así que la comprobación de abajo no la ve
+  if (BARRA_CODIFICADA.test(camino)) return false;
   return new globalThis.URL(ruta, 'http://ruta.invalid').pathname === camino;
 };
 

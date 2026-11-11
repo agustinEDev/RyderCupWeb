@@ -59,9 +59,12 @@ describe('esRutaDeLaApiSegura (C3)', () => {
     `/api/v1/competitions/${UUID}/rounds?x=1&y=%2E%2E`,
     '/api/v1/users/search?q=Jos%C3%A9',
     '/api/v1/golf-courses?name=a/b',
-    '/api/v1/users/a%2Fb/avatar',
     // En la búsqueda, «/../» es texto: no se resuelve
     '/api/v1/golf-courses?q=/../x',
+    // En la búsqueda, una barra codificada es solo texto
+    '/api/v1/golf-courses?q=a%2Fb%5Cc',
+    // Un valor «%2F» pasado por segmento: %252F, que el servidor no convierte en barra
+    '/api/v1/users/%252F/avatar',
   ])('vale %s', (ruta) => {
     expect(esRutaDeLaApiSegura(ruta)).toBe(true);
   });
@@ -85,6 +88,11 @@ describe('esRutaDeLaApiSegura (C3)', () => {
     '/api/v1/a/.\n./b',
     '/api/v1/a/\u0000/b',
     '/api/v1/a/\u007f/b',
+    // Una barra codificada en la ruta: el servidor la decodifica antes de enrutar
+    '/api/v1/users/x%2Fme%2Fdevices/avatar',
+    '/api/v1/users/x%2fy',
+    '/api/v1/users/x%5Cy',
+    '/api/v1/users/x%5cy',
     // También en la búsqueda: un salto de línea en la dirección no sale
     '/api/v1/x?q=a\nb',
     'https://evil.example/api/v1/x',
