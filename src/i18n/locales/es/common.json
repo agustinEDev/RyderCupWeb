@@ -179,5 +179,6 @@
   "handicapField": {
     "plus": "Hándicap plus",
     "outOfRange": "Entre +10 y 54"
-  }
+  },
+  "cargandoTuCuenta": "Cargando tu cuenta, inténtalo en un momento"
 }

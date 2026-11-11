@@ -23,6 +23,7 @@ import UnlinkGoogleAccountUseCase from '../application/use_cases/user/UnlinkGoog
 import ReauthenticateUseCase from '../application/use_cases/user/ReauthenticateUseCase';
 import LogoutUseCase from '../application/use_cases/user/LogoutUseCase';
 import ResendVerificationEmailUseCase from '../application/use_cases/user/ResendVerificationEmailUseCase';
+import ResendVerificationLinkUseCase from '../application/use_cases/user/ResendVerificationLinkUseCase';
 
 // Handicap Use Cases
 import ApiHandicapRepository from '../infrastructure/repositories/ApiHandicapRepository';
@@ -297,6 +298,7 @@ const unlinkGoogleAccountUseCase = new UnlinkGoogleAccountUseCase({ authReposito
 const reauthenticateUseCase = new ReauthenticateUseCase({ authRepository: apiAuthRepository });
 const logoutUseCase = new LogoutUseCase({ authRepository: apiAuthRepository });
 const resendVerificationEmailUseCase = new ResendVerificationEmailUseCase({ authRepository: apiAuthRepository });
+const resendVerificationLinkUseCase = new ResendVerificationLinkUseCase({ authRepository: apiAuthRepository });
 const createCompetitionWithGolfCoursesUseCase = new CreateCompetitionWithGolfCoursesUseCase({ competitionRepository: apiCompetitionRepository });
 const updateCompetitionUseCase = new UpdateCompetitionUseCase({ competitionRepository: apiCompetitionRepository });
 const updateStrokePlaySettingsUseCase = new UpdateStrokePlaySettingsUseCase({ competitionRepository: apiCompetitionRepository });
@@ -584,6 +586,7 @@ export {
   reauthenticateUseCase,
   logoutUseCase,
   resendVerificationEmailUseCase,
+  resendVerificationLinkUseCase,
   createCompetitionWithGolfCoursesUseCase,
   updateCompetitionUseCase,
   updateStrokePlaySettingsUseCase,

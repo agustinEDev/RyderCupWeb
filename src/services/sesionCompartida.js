@@ -37,7 +37,14 @@
  */
 
 import { seEstaCerrandoLaSesion } from '../utils/cierreDeEstaCarga';
-import { clearDeviceRevocationFlag } from '../infrastructure/http/deviceRevocationLogout';
+import {
+  clearDeviceRevocationFlag,
+  olvidaLoGuardadoDeLaCuenta,
+} from '../infrastructure/http/deviceRevocationLogout';
+import {
+  copiaDelUsuarioEnElDispositivo,
+  esLaCopiaReducida,
+} from '../infrastructure/http/copiaDelUsuarioEnElDispositivo';
 import { olvidaElAvisoDelCierre } from '../utils/avisoTrasElCierre';
 import { fetchWithTokenRefresh } from '../infrastructure/http/tokenRefreshInterceptor';
 import { registraElUsuarioDeLaPestana } from '../utils/usuarioDeLaPestana';
@@ -89,7 +96,12 @@ const apunta = (usuario) => {
   // cierre normal (clearAuth), que no marca esta carga
   if (seEstaCerrandoLaSesion()) return;
   try {
-    localStorage.setItem(RECUERDO, JSON.stringify(usuario));
+    // Solo lo permitido (fase 3, FE-06): lo justo para arrancar sin red. Ni correo, ni
+    // el pendiente, ni género, hándicap o país; en memoria sigue completo
+    const copia = copiaDelUsuarioEnElDispositivo(usuario);
+    // Lo que no es un usuario no se guarda como copia (ni un «null» en texto)
+    if (copia) localStorage.setItem(RECUERDO, JSON.stringify(copia));
+    else localStorage.removeItem(RECUERDO);
   } catch {
     // Sin espacio, o en una ventana privada. Se seguirá echando al formulario
     // sin cobertura, que es como estaba antes: no hay nada peor que perder
@@ -122,12 +134,33 @@ const loApuntado = () => {
   try {
     const crudo = localStorage.getItem(RECUERDO);
     if (!crudo) return null;
-    const usuario = JSON.parse(crudo);
-    return usuario && typeof usuario === 'object' ? { ...usuario, is_admin: false } : null;
+    const usuario = copiaDelUsuarioEnElDispositivo(JSON.parse(crudo));
+    return usuario ? { ...usuario, is_admin: false } : null;
   } catch {
     return null;
   }
 };
+
+/**
+ * Una copia completa de antes de la fase 3 (con correo, género, hándicap…) se reescribe
+ * reducida en el siguiente arranque, sin esperar a que el servidor conteste (FE-06).
+ */
+const reduceLaCopiaGuardada = () => {
+  try {
+    const crudo = localStorage.getItem(RECUERDO);
+    if (!crudo) return;
+    const guardado = JSON.parse(crudo);
+    if (esLaCopiaReducida(guardado)) return;
+    const reducida = copiaDelUsuarioEnElDispositivo(guardado);
+    if (reducida) localStorage.setItem(RECUERDO, JSON.stringify(reducida));
+    else localStorage.removeItem(RECUERDO);
+  } catch {
+    // Ilegible: que no se quede con lo que tuviera
+    olvidaElApunte();
+  }
+};
+
+reduceLaCopiaGuardada();
 
 /** `sinConfirmar`: lo que se enseña sale del apunte del dispositivo y el
  *  servidor todavia no lo ha respaldado. Es SUYO y no se deduce de
@@ -197,10 +230,20 @@ const programaReintento = () => {
 const DESCARTADA = Symbol('descartada');
 const SIN_SESION = Symbol('sin sesión');
 
+/** Si una respuesta de error trae el `error_code` del backend (y no es de un proxy). */
+const esDelBackend = async (respuesta) => {
+  try {
+    const cuerpo = await respuesta.json();
+    return typeof cuerpo?.error_code === 'string' && cuerpo.error_code !== '';
+  } catch {
+    return false;
+  }
+};
+
 /**
  * La pregunta a current-user, la misma para la consulta y para la revalidación
  * al volver (hotfix 2.50.1). Un fallo de red o una respuesta que no sea 200,
- * 401 ni 404 se lanza: no es una respuesta sobre la sesión.
+ * 401 ni un 404 del backend se lanza: no es una respuesta sobre la sesión.
  *
  * @param {() => boolean} sigoValiendo Si la pregunta sigue siendo la actual
  * @returns {Promise<Object|typeof DESCARTADA|typeof SIN_SESION>}
@@ -218,7 +261,11 @@ const preguntaAlServidor = async (sigoValiendo) => {
   // El dispositivo revocado NO se atiende aqui: `fetchWithTokenRefresh` lo
   // detecta antes, llama a `handleDeviceRevocationLogout` y se queda
   // esperando una promesa que no resuelve, asi que ese 401 no llega
-  if (respuesta.status === 401 || respuesta.status === 404) return SIN_SESION;
+  if (respuesta.status === 401) return SIN_SESION;
+  // Un 404 solo dice «no hay sesión» si es del backend, con su `error_code`: el de un
+  // proxy o una página del borde no es una respuesta sobre la sesión y no puede borrar
+  // lo guardado para anotar sin cobertura (revisión de la fase 3)
+  if (respuesta.status === 404 && (await esDelBackend(respuesta))) return SIN_SESION;
   if (!respuesta.ok) throw new Error(`Failed to fetch user: ${respuesta.status}`);
 
   const usuario = await respuesta.json();
@@ -226,12 +273,23 @@ const preguntaAlServidor = async (sigoValiendo) => {
   return sigoValiendo() ? usuario : DESCARTADA;
 };
 
-/** El servidor dice que no hay sesión: sin usuario y sin la copia del dispositivo. */
+/**
+ * El servidor dice que no hay sesión: la misma limpieza que salir (fase 3, FE-06), con
+ * el registro único: el usuario guardado, esta copia, las partidas para anotar sin
+ * cobertura, el hándicap pendiente y el número de Actividad. Solo con un 401 o un 404:
+ * un fallo de red no dice nada de la sesión y no borra nada.
+ */
 const publicaSinSesion = () => {
   olvidaElApunte();
   // El número de Actividad y el del icono pueden ser de una cuenta que salió
   // por un camino que no limpió (FE-1): sin sesión, no hay número que enseñar
   olvidaLasNovedades();
+  try {
+    olvidaLoGuardadoDeLaCuenta();
+  } catch (error) {
+    // Lo de arriba ya está hecho; lo que falle aquí no puede dejar la sesión a medias
+    console.error('[sesion] cleanup without session failed:', error);
+  }
   anota({ user: null, cargando: false, refrescando: false, error: null, resuelta: true, sinConfirmar: false });
 };
 

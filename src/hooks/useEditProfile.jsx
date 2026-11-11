@@ -23,7 +23,7 @@ const CONFLICTO = 409;
 
 export const useEditProfile = () => {
   const { t } = useTranslation(['profile', 'auth']);
-  const { user: authUser, refetch: refetchUser } = useAuth();
+  const { user: authUser, refetch: refetchUser, sinConfirmar } = useAuth();
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +56,12 @@ export const useEditProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (!authUser) {
+        // Sin red el usuario sale de la copia del dispositivo, sin correo, género ni
+        // hándicap (fase 3): editar espera a que el servidor confirme la sesión, porque
+        // todo lo de esta pantalla necesita red y un formulario con huecos invitaba a
+        // guardar datos falsos. Al confirmarse cambia `authUser` y se rellena
+        if (!authUser || sinConfirmar) {
+          setUser(null);
           setIsLoading(false);
           return;
         }
@@ -72,7 +77,7 @@ export const useEditProfile = () => {
           newPassword: '',
           confirmPassword: '',
           handicap:
-            authUser.handicap === null ? '' : authUser.handicap.toString(),
+            authUser.handicap === null || authUser.handicap === undefined ? '' : authUser.handicap.toString(),
           countryCode: authUser.country_code || '',
           gender: authUser.gender || '',
         });
@@ -84,7 +89,7 @@ export const useEditProfile = () => {
     };
 
     fetchUserData();
-  }, [authUser]);
+  }, [authUser, sinConfirmar]);
 
   // Cargar países
   useEffect(() => {
@@ -309,8 +314,21 @@ export const useEditProfile = () => {
     setIsGooglePasswordOpen(true);
   };
 
-  const vaAGoogle = () => {
-    globalThis.location.href = buildGoogleOAuthUrl('link');
+  // Asíncrono: el reto de PKCE se calcula con `crypto.subtle` (fase 3). Una sola ida a
+  // la vez: un segundo clic generaría otro par y pisaría el verifier del primero
+  const yendoAGoogle = useRef(false);
+  const [isGoingToGoogle, setIsGoingToGoogle] = useState(false);
+  const vaAGoogle = async () => {
+    if (yendoAGoogle.current) return;
+    yendoAGoogle.current = true;
+    setIsGoingToGoogle(true);
+    try {
+      globalThis.location.href = await buildGoogleOAuthUrl('link');
+    } catch (error) {
+      yendoAGoogle.current = false;
+      setIsGoingToGoogle(false);
+      throw error;
+    }
   };
 
   const handleLinkGoogle = () => {
@@ -318,7 +336,11 @@ export const useEditProfile = () => {
       abreLaVentanaPara('vincular');
       return;
     }
-    vaAGoogle();
+    vaAGoogle().catch((error) => {
+      // Sin la configuración de Google (o sin `crypto.subtle`) no hay a dónde ir
+      console.error('Google OAuth URL error:', error);
+      customToast.error(t('auth:google.genericError'));
+    });
   };
 
   const cierraContrasenaParaGoogle = () => {
@@ -372,7 +394,7 @@ export const useEditProfile = () => {
     if (ventana.current.id !== id || !ventana.current.abierta) return null;
     if (para === 'desvincular') return desvincula();
     try {
-      vaAGoogle();
+      await vaAGoogle();
     } catch (error) {
       // Sin la configuración de Google no hay a dónde ir: que no se quede comprobando
       console.error('Google OAuth URL error:', error);
@@ -540,6 +562,8 @@ export const useEditProfile = () => {
     isUpdatingRFEG,
     isRefreshing,
     isUnlinkingGoogle,
+    isGoingToGoogle,
+    sinConfirmar,
     isGoogleLinked,
     hasPassword,
     countries,

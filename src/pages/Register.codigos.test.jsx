@@ -8,10 +8,11 @@ import { MemoryRouter } from 'react-router';
  */
 const registrar = vi.fn();
 const toastError = vi.fn();
+const toastSuccess = vi.fn();
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'en' } }),
 }));
-vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: vi.fn(), info: vi.fn() } }));
+vi.mock('../utils/toast', () => ({ default: { error: (...a) => toastError(...a), success: (...a) => toastSuccess(...a), info: vi.fn() } }));
 vi.mock('../hooks/useRedirectIfAuthenticated', () => ({ useRedirectIfAuthenticated: () => false }));
 vi.mock('../composition', () => ({
   registerUseCase: { execute: (...a) => registrar(...a) },
@@ -62,31 +63,27 @@ describe('Register · el rechazo del backend en su idioma', () => {
   });
 });
 
-describe('Register · correo que ya tiene cuenta (Agustín, 8 nov 2026)', () => {
+describe('Register · sin aviso de correo con cuenta (fase 3, BE #787)', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  // Quien registró una cuenta con un correo ajeno no la pierde sola (ADR-045): el dueño
-  // la recupera entrando con Google o con «Olvidé mi contraseña», y aquí se le dice
-  it('dice cómo recuperarla, con el enlace a «Olvidé mi contraseña», sin toast', async () => {
-    registrar.mockRejectedValue(Object.assign(new Error('User already exists'), { status: 409 }));
+  // El backend responde 201 siempre (desaparece el 409): decir aquí que el correo ya
+  // tiene cuenta enumeraba usuarios. Todos acaban igual: el toast y a /login
+  it('registrarse acaba con el toast de éxito y sin ningún aviso junto al correo', async () => {
+    registrar.mockResolvedValue({ id: 'u1' });
 
     await enviar();
 
-    expect(await screen.findByText(/register.emailHasAccount$/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'register.emailHasAccountLink' })).toHaveAttribute(
-      'href',
-      '/forgot-password'
-    );
-    expect(toastError).not.toHaveBeenCalled();
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('register.success'));
+    expect(screen.queryByText(/register.emailHasAccount/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'register.emailHasAccountLink' })).not.toBeInTheDocument();
   });
 
-  it('el aviso se quita al cambiar el correo', async () => {
+  it('un 409 (de un backend anterior) ya no pinta el aviso ámbar: es un error más', async () => {
     registrar.mockRejectedValue(Object.assign(new Error('User already exists'), { status: 409 }));
+
     await enviar();
-    await screen.findByText(/register.emailHasAccount$/);
 
-    fireEvent.change(document.querySelector('[name="email"]'), { target: { name: 'email', value: 'otro@example.com' } });
-
-    expect(screen.queryByText(/register.emailHasAccount$/)).not.toBeInTheDocument();
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('User already exists'));
+    expect(screen.queryByText(/register.emailHasAccount/)).not.toBeInTheDocument();
   });
 });

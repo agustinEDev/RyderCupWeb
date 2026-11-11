@@ -1,5 +1,6 @@
 import { useAuth } from './useAuth';
 import { updateUserProfileUseCase } from '../composition';
+import { faltaElGenero } from '../utils/datosQueFaltanSinConexion';
 
 /**
  * El género para apuntarse a una competición (#710, 24 sep).
@@ -19,7 +20,7 @@ import { updateUserProfileUseCase } from '../composition';
  * }}
  */
 export const useGeneroParaApuntarse = () => {
-  const { user, refetch } = useAuth();
+  const { user, refetch, sinConfirmar } = useAuth();
 
   const guardar = async (genero) => {
     if (!genero || !user?.id) return;
@@ -29,7 +30,8 @@ export const useGeneroParaApuntarse = () => {
   // Para que no se le vuelva a preguntar
   const refrescar = () => refetch();
 
-  return { falta: Boolean(user) && !user.gender, guardar, refrescar };
+  // Sin red no se sabe (la copia del dispositivo no guarda el género): no se pregunta
+  return { falta: faltaElGenero(user, sinConfirmar), guardar, refrescar };
 };
 
 export default useGeneroParaApuntarse;

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import AliasSheet from '../components/profile/AliasSheet';
 import HeaderAuth from '../components/layout/HeaderAuth';
 import Avatar from '../components/ui/Avatar';
+import customToast from '../utils/toast';
 import HandicapRequestModal from '../components/profile/HandicapRequestModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import GolpesSinEnviar from '../components/dashboard/GolpesSinEnviar';
@@ -55,7 +56,7 @@ const Dashboard = () => {
   const { t, ready: textosListos } = useTranslation('dashboard');
   const { t: tQuickMatch, ready: textosDeRapidaListos } = useTranslation('quickMatch');
   const { t: tProfile } = useTranslation('profile');
-  const { user, loading: isLoadingUser, refetch: refetchUser } = useAuth();
+  const { user, loading: isLoadingUser, refetch: refetchUser, sinConfirmar } = useAuth();
   const [mostrarAlias, setMostrarAlias] = useState(false);
   const { animateEntry } = useEntryMotion();
   const [competitions, setCompetitions] = useState([]);
@@ -78,6 +79,20 @@ const Dashboard = () => {
   // El hándicap guardado cuando se abre el modal: decide qué dice (FE #677)
   const [handicapAlAbrir, setHandicapAlAbrir] = useState(null);
   const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
+  // Crear una partida rápida (género y hándicap de quien crea) y el modal del hándicap
+  // (el país, para la RFEG) necesitan el usuario completo y la red. Sin red el usuario
+  // sale de la copia del dispositivo, sin esos datos (fase 3): se dice y no se abre
+  const abreSiHayRed = (abrir) => () => {
+    if (sinConfirmar) {
+      // Con red, la sesión aún no ha contestado (tarda o dio un 5xx): «sin conexión»
+      // sería falso
+      const conRed = globalThis.navigator?.onLine !== false;
+      customToast.error(t(conRed ? 'common:cargandoTuCuenta' : 'common:sinConexion.mensaje'));
+      return;
+    }
+    abrir();
+  };
+  const abrePartidaRapida = abreSiHayRed(() => setShowQuickMatchModal(true));
   const [handicapPending, setHandicapPending] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem('handicap_pending') === 'true'
   );
@@ -92,6 +107,9 @@ const Dashboard = () => {
     if (!user) return undefined;
 
     const abreSiHayQuePedirlo = () => {
+      // Sin red, sin el país para ofrecer la RFEG (fase 3): se queda guardado y se abre
+      // cuando el servidor confirme la sesión (el efecto vuelve a correr)
+      if (sinConfirmar) return;
       const handicap = recogeElHandicapPorPedir();
       if (handicap === undefined) return;
       setHandicapAlAbrir(handicap);
@@ -104,14 +122,16 @@ const Dashboard = () => {
     abreSiHayQuePedirlo();
     window.addEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
     window.addEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
-    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true') {
+    // Sin red la copia del dispositivo no trae el hándicap (fase 3): el «antes» sería
+    // inventado. Se lanza cuando el servidor confirme la sesión (cambia `user`)
+    if (localStorage.getItem(APUNTE_REFRESCAR) === 'true' && !sinConfirmar) {
       lanzaElRefrescoDeHandicap({ handicapDeAntes: user.handicap ?? null });
     }
     return () => {
       window.removeEventListener(EVENTO_HANDICAP_POR_PEDIR, abreSiHayQuePedirlo);
       window.removeEventListener(EVENTO_HANDICAP_AL_DIA, retiraElRecordatorio);
     };
-  }, [user]);
+  }, [user, sinConfirmar]);
 
   const handleHandicapSaved = useCallback(async () => {
     setShowHandicapModal(false);
@@ -606,8 +626,10 @@ const Dashboard = () => {
               </div>
             </motion.div>
 
-            {/* Email Verification Banner */}
-            {user && !user.email_verified && (
+            {/* Email Verification Banner. Sin conexión el usuario sale de la copia del
+                dispositivo, que no guarda el correo (fase 3, FE-06): sin él no hay qué
+                reenviar ni qué decir */}
+            {user && !user.email_verified && user.email && (
               <div className="px-4">
                 <EmailVerificationBanner userEmail={user.email} />
               </div>
@@ -624,12 +646,12 @@ const Dashboard = () => {
               user={user}
               competitions={competitions}
               handicapPending={handicapPending}
-              onHandicapAction={() => {
+              onHandicapAction={abreSiHayRed(() => {
                 // Desde el recordatorio no hay resultado de refresco a mano: el
                 // modal tiene que saber si ya hay un hándicap guardado (FE #677)
                 setHandicapAlAbrir(user?.handicap ?? null);
                 setShowHandicapModal(true);
-              }}
+              })}
               // Los de la Ryder y las partidas de stroke play: quien solo
               // juega stroke play no veía la tarjeta (QA de la release)
               upcomingMatches={upcomingMatches.length + proximasPartidas.partidas.length}
@@ -665,7 +687,7 @@ const Dashboard = () => {
                 // De memoria, según de dónde salga el que se enseña
                 desdeMemoria={proximo?.esPartidaDeFranja ? proximasPartidas.desdeMemoria : upcomingDesdeMemoria}
                 isLoading={isLoadingUpcoming}
-                onCreateQuickMatch={() => setShowQuickMatchModal(true)}
+                onCreateQuickMatch={abrePartidaRapida}
               />
             </motion.div>
 
@@ -676,7 +698,7 @@ const Dashboard = () => {
                 matches={recentMatches}
                 isLoading={isLoadingRecent}
                 esperaSilenciosa
-                onCreateQuickMatch={() => setShowQuickMatchModal(true)}
+                onCreateQuickMatch={abrePartidaRapida}
               />
               <button
                 type="button"
@@ -703,7 +725,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Quick Match Card - primary action */}
                 <motion.button
-                  onClick={() => setShowQuickMatchModal(true)}
+                  onClick={abrePartidaRapida}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   data-testid="quick-match-card"

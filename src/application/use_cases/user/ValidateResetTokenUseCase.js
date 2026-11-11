@@ -26,7 +26,7 @@ class ValidateResetTokenUseCase {
     }
 
     // Llamada al backend para validar el token
-    // GET /api/v1/auth/validate-reset-token/:token
+    // POST /api/v1/auth/validate-reset-token { token } (fase 3: fuera de la URL)
     // Respuesta: 200 con { valid: true|false, message }. Un token inválido o
     // caducado llega como valid:false, no como error: solo un true explícito
     // es un token válido (FE #775).

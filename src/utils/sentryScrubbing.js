@@ -12,6 +12,7 @@
  * Sin dependencias pesadas a proposito: lo usa codigo del primer chunk.
  */
 import { scrubUrl } from './scrubUrl';
+import { tachaElCuerpo } from './tachaElCuerpo';
 
 /**
  * Replay solo pasa a `beforeAddRecordingEvent` sus eventos «custom» (migas,
@@ -67,6 +68,19 @@ export const scrubDeep = (value, visto = new WeakSet()) => {
 const scrubAll = (item) => scrubDeep(item);
 
 /**
+ * Un evento: los secretos de las URLs en todo su texto y, además, el cuerpo de la
+ * petición sin contraseñas ni tokens (fase 3). Por aquí pasan todos los eventos en el
+ * navegador (el procesador que registra main.jsx).
+ */
+const scrubEvent = (event) => {
+  scrubDeep(event);
+  if (event?.request && event.request.data !== undefined) {
+    event.request.data = tachaElCuerpo(event.request.data);
+  }
+  return event;
+};
+
+/**
  * Las migas de consola no salen hacia Sentry, en ningún entorno (25 oct 2026).
  * La app escribe en la consola datos personales y mensajes de la API, y el
  * filtro de `src/sentry.ts` que las quitaba en producción no se
@@ -81,12 +95,12 @@ const scrubBreadcrumb = (breadcrumb) => {
 
 export const sentryScrubbing = {
   beforeBreadcrumb: scrubBreadcrumb,
-  beforeSend: scrubAll,
+  beforeSend: scrubEvent,
   beforeSendTransaction: scrubAll,
   beforeSendSpan: scrubAll,
   // El evento de Replay no pasa por beforeSend: se registra con
   // `addEventProcessor`, que corre tambien despues de HttpContext (el Referer)
-  eventProcessor: scrubAll,
+  eventProcessor: scrubEvent,
   // La grabacion guarda sus propias URLs (migas de clic, navegaciones). Aqui
   // solo llegan los eventos «custom»; se comprueba igual para no recorrer
   // nunca una foto del DOM, que puede ser enorme

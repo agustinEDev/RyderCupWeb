@@ -170,3 +170,46 @@ describe('sentryScrubbing', () => {
     sinToken(transaccion);
   });
 });
+
+/**
+ * El cuerpo de las peticiones sale sin secretos por el camino que SÍ corre en el
+ * navegador: el procesador de eventos que registra main.jsx (el `beforeSend` de
+ * sentry.ts no llega a registrarse). Revisión de CodeRabbit en la #1092.
+ */
+describe('sentryScrubbing.eventProcessor · el cuerpo de la petición (fase 3)', () => {
+  const SECRETOS = {
+    password: 'p1',
+    access_token: 'a1',
+    refresh_token: 'r1',
+    token: 't1',
+    code_verifier: 'v1',
+    authorization_code: 'c1',
+  };
+
+  it('como objeto: se quitan los campos secretos', () => {
+    const evento = sentryScrubbing.eventProcessor({ request: { data: { ...SECRETOS, otro: 'queda' } } });
+
+    expect(evento.request.data).toEqual({ otro: 'queda' });
+  });
+
+  it('como texto JSON: se tacha y se vuelve a serializar', () => {
+    const evento = sentryScrubbing.eventProcessor({ request: { data: JSON.stringify({ ...SECRETOS, otro: 1 }) } });
+
+    expect(JSON.parse(evento.request.data)).toEqual({ otro: 1 });
+  });
+
+  it('como texto que no es JSON: por patrón', () => {
+    const evento = sentryScrubbing.eventProcessor({
+      request: { data: 'token=t1&code_verifier=v1&authorization_code=c1&otro=2' },
+    });
+
+    expect(evento.request.data).not.toMatch(/t1|v1|c1/);
+    expect(evento.request.data).toContain('otro=2');
+  });
+
+  it('sin cuerpo, el evento sigue igual', () => {
+    const evento = { message: 'x' };
+
+    expect(sentryScrubbing.eventProcessor(evento)).toBe(evento);
+  });
+});

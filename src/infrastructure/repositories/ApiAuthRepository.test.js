@@ -177,25 +177,35 @@ describe('ApiAuthRepository · register con la aceptación de los Términos', ()
     });
   });
 
-  describe('verificar el correo, con la respuesta de antes y la nueva (RyderCupAm #753)', () => {
-    it('el backend nuevo solo verifica: sin sesión', async () => {
+  describe('verificar el correo no abre sesión (RyderCupAm #753, fase 3)', () => {
+    it('solo dice que quedó verificado', async () => {
       api.default.mockResolvedValue({ message: 'Email verified. Please sign in.', email_verified: true });
 
-      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ sesionAbierta: false });
+      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ emailVerified: true });
     });
 
-    it('el de antes abre sesión, con su usuario', async () => {
+    it('aunque el cuerpo trajera tokens y usuario, no los mira', async () => {
       api.default.mockResolvedValue({
         access_token: 'acceso',
         csrf_token: 'csrf',
+        email_verified: true,
         user: { id: 'u-1', email: 'ana@example.com', first_name: 'Ana', last_name: 'Prueba' },
       });
 
-      const resultado = await new ApiAuthRepository().verifyEmail('token');
+      await expect(new ApiAuthRepository().verifyEmail('token')).resolves.toEqual({ emailVerified: true });
+    });
+  });
 
-      expect(resultado.sesionAbierta).toBe(true);
-      expect(resultado.user).toBeInstanceOf(User);
-      expect(resultado.csrfToken).toBe('csrf');
+  describe('pedir otro enlace con el caducado (fase 3)', () => {
+    it('POST sin sesión con el token del enlace', async () => {
+      api.default.mockResolvedValue({ message: 'ok' });
+
+      await new ApiAuthRepository().resendVerificationLink('caducado-1');
+
+      expect(api.default).toHaveBeenCalledWith('/api/v1/auth/resend-verification-link', {
+        method: 'POST',
+        body: JSON.stringify({ token: 'caducado-1' }),
+      });
     });
   });
 

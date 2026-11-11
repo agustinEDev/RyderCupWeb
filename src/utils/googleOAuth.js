@@ -1,4 +1,4 @@
-/* global crypto */
+/* global crypto, TextEncoder */
 // deepcode ignore HardcodedNonCryptoSecret: This is a sessionStorage key name, not a secret value. The actual secret is the cryptographically random nonce generated via crypto.getRandomValues().
 const OAUTH_STATE_KEY = 'google_oauth_state_token';
 
@@ -84,12 +84,62 @@ export function recogeLaVueltaDeGoogle() {
   return esVueltaPermitida(ruta) ? ruta : null;
 }
 
+// PKCE (RFC 7636, fase 3): el código que devuelve Google solo lo canjea quien guarda
+// este verifier, que nunca sale de la pestaña salvo en el canje. Un código robado (en
+// el historial, en un Referer, en un log) no sirve sin él
+// deepcode ignore HardcodedNonCryptoSecret: nombre de la clave, no un secreto
+const VERIFIER_KEY = 'google_oauth_code_verifier';
+const FORMA_DEL_VERIFIER = /^[A-Za-z0-9\-._~]{43,128}$/;
+
+const enBase64Url = (bytes) =>
+  btoa(String.fromCodePoint(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
+
 /**
- * Build Google OAuth 2.0 authorization URL with CSRF-safe state.
- * @param {'login'|'link'} flow - The OAuth flow type. 'login' for sign-in/register, 'link' for account linking.
- * @returns {string} The full Google OAuth authorization URL.
+ * 48 bytes aleatorios en base64url: 64 caracteres, todos del alfabeto del RFC 7636.
+ * @returns {string}
  */
-export function buildGoogleOAuthUrl(flow = 'login') {
+function generaElVerificador() {
+  const bytes = new Uint8Array(48);
+  crypto.getRandomValues(bytes);
+  return enBase64Url(bytes);
+}
+
+/**
+ * El reto S256: base64url(SHA-256(verifier)), sin relleno.
+ * @param {string} verifier
+ * @returns {Promise<string>}
+ */
+async function retoDelVerificador(verifier) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return enBase64Url(new Uint8Array(hash));
+}
+
+/**
+ * El verifier de la ida a Google, una sola vez: se borra al leerlo, valga o no.
+ * Null si no hay (la vuelta llegó a otra pestaña, o se vació el almacenamiento) o si
+ * no tiene la forma del RFC 7636.
+ * @returns {string|null}
+ */
+export function recogeElVerificadorDeGoogle() {
+  let verifier = null;
+  try {
+    verifier = sessionStorage.getItem(VERIFIER_KEY);
+    sessionStorage.removeItem(VERIFIER_KEY);
+  } catch {
+    return null;
+  }
+  return typeof verifier === 'string' && FORMA_DEL_VERIFIER.test(verifier) ? verifier : null;
+}
+
+/**
+ * Build Google OAuth 2.0 authorization URL with CSRF-safe state and PKCE (S256).
+ * @param {'login'|'link'} flow - The OAuth flow type. 'login' for sign-in/register, 'link' for account linking.
+ * @returns {Promise<string>} The full Google OAuth authorization URL.
+ */
+export async function buildGoogleOAuthUrl(flow = 'login') {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
 
@@ -100,8 +150,11 @@ export function buildGoogleOAuthUrl(flow = 'login') {
     throw new Error('VITE_GOOGLE_REDIRECT_URI environment variable is not configured');
   }
 
+  const verifier = generaElVerificador();
+  const codeChallenge = await retoDelVerificador(verifier);
   const nonce = generateNonce();
   sessionStorage.setItem(OAUTH_STATE_KEY, nonce);
+  sessionStorage.setItem(VERIFIER_KEY, verifier);
 
   const state = `${flow}:${nonce}`;
 
@@ -110,9 +163,12 @@ export function buildGoogleOAuthUrl(flow = 'login') {
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
-    access_type: 'offline',
-    prompt: 'consent',
+    // Sin `access_type: 'offline'`: el backend no usa el refresh token de Google. Y
+    // elegir cuenta en vez de forzar el consentimiento cada vez
+    prompt: 'select_account',
     state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

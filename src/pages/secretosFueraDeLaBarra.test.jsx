@@ -26,6 +26,7 @@ vi.mock('../utils/googleOAuth', () => ({
   verifyOAuthState: () => ({ flow: 'login', valid: true }),
   recogeLaVueltaDeGoogle: () => null,
   recogeLaVueltaDeGoogleConSuCuenta: () => null,
+  recogeElVerificadorDeGoogle: () => 'v'.repeat(43),
 }));
 // Pendientes: lo que importa es con qué se llaman, no lo que pasa después
 const pendiente = () => new Promise(() => {});
@@ -75,7 +76,7 @@ describe('los secretos salen de la barra', () => {
 
   it('P3: la vuelta de Google', async () => {
     abrir('/auth/google/callback?code=abc123&state=nonce456', '/auth/google/callback', GoogleCallback);
-    await waitFor(() => expect(googleLoginUseCase.execute).toHaveBeenCalledWith('abc123'));
+    await waitFor(() => expect(googleLoginUseCase.execute).toHaveBeenCalledWith('abc123', 'v'.repeat(43)));
     expect(window.location.href).not.toContain('abc123');
     expect(window.location.href).not.toContain('nonce456');
   });

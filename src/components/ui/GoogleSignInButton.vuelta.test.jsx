@@ -54,3 +54,66 @@ describe('GoogleSignInButton · la vuelta tras Google', () => {
   });
 });
 
+
+describe('GoogleSignInButton · ida a Google con PKCE (fase 3)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('espera a la URL (el reto se calcula aparte) y si falla lo dice', async () => {
+    const toast = (await import('../../utils/toast')).default;
+    const errorSpy = vi.spyOn(toast, 'error').mockImplementation(() => {});
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    google.buildGoogleOAuthUrl.mockRejectedValueOnce(new Error('sin crypto.subtle'));
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <GoogleSignInButton />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith('google.genericError'));
+    errorSpy.mockRestore();
+    consola.mockRestore();
+  });
+});
+
+describe('GoogleSignInButton · un solo par de PKCE por ida (revisión de la fase 3)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('mientras se calcula el reto, el botón está desactivado y un doble clic no genera otro', async () => {
+    let termina;
+    google.buildGoogleOAuthUrl.mockImplementationOnce(() => new Promise((r) => { termina = r; }));
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <GoogleSignInButton />
+      </MemoryRouter>
+    );
+
+    const boton = screen.getByRole('button');
+    fireEvent.click(boton);
+    fireEvent.click(boton);
+
+    expect(google.buildGoogleOAuthUrl).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(boton).toBeDisabled());
+    termina('#google');
+  });
+
+  it('si falla, vuelve a estar disponible', async () => {
+    const toast = (await import('../../utils/toast')).default;
+    const errorSpy = vi.spyOn(toast, 'error').mockImplementation(() => {});
+    const consola = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {});
+    google.buildGoogleOAuthUrl.mockRejectedValueOnce(new Error('x'));
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <GoogleSignInButton />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(screen.getByRole('button')).toBeEnabled();
+    errorSpy.mockRestore();
+    consola.mockRestore();
+  });
+});

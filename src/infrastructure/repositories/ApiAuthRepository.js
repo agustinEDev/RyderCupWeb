@@ -16,11 +16,11 @@ class ApiAuthRepository extends IAuthRepository {
         body: JSON.stringify({ email: email.getValue(), password: password.getValue() }),
       });
 
-      // v1.13.0: Backend now returns csrf_token for CSRF protection
+      // Los tokens de sesión van solo en cookies httpOnly (fase 3): del cuerpo solo se
+      // lee el csrf_token, que hace falta para POST/PUT/PATCH/DELETE
       return {
         user: new User(data.user),
-        token: data.access_token, // Legacy (httpOnly cookie is used)
-        csrfToken: data.csrf_token, // NEW: Required for POST/PUT/PATCH/DELETE requests
+        csrfToken: data.csrf_token,
       };
     } catch (error) {
       // HTTP 423: demasiados fallos desde esta red para esta cuenta (BE #732). Con su
@@ -76,17 +76,20 @@ class ApiAuthRepository extends IAuthRepository {
       body: JSON.stringify({ token }),
     });
 
-    // Desde RyderCupAm #753 verificar no abre sesión: solo { message, email_verified }.
-    // Este front sale antes y acepta también la respuesta de antes, que la abría
-    if (!data?.access_token) {
-      return { sesionAbierta: false };
-    }
-    return {
-      sesionAbierta: true,
-      user: new User(data.user),
-      token: data.access_token,
-      csrfToken: data.csrf_token, // v1.13.0: CSRF token for email verification
-    };
+    // Verificar no abre sesión (RyderCupAm #753): solo { message, email_verified }. Ni
+    // tokens ni usuario del cuerpo, aunque vinieran (fase 3)
+    return { emailVerified: data?.email_verified !== false };
+  }
+
+  /**
+   * @override
+   */
+  async resendVerificationLink(token) {
+    // Sin sesión y exenta de CSRF: la pantalla del enlace caducado (fase 3)
+    await apiRequest('/api/v1/auth/resend-verification-link', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
   }
 
   /**
@@ -116,8 +119,11 @@ class ApiAuthRepository extends IAuthRepository {
    * @throws {Error} On network or HTTP errors (e.g. 429 from the rate limit)
    */
   async validateResetToken(token) {
-    const data = await apiRequest(`/api/v1/auth/validate-reset-token/${token}`, {
-      method: 'GET',
+    // POST con el token en el cuerpo (fase 3): en la URL acababa en los logs de acceso
+    // y del proxy. El GET de antes desaparece en el backend 2.58.0
+    const data = await apiRequest('/api/v1/auth/validate-reset-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
     });
 
     // 200 always: `valid` says whether the token is usable
@@ -152,11 +158,12 @@ class ApiAuthRepository extends IAuthRepository {
   /**
    * @override
    */
-  async googleLogin(authorizationCode) {
+  async googleLogin(authorizationCode, codeVerifier) {
     // Sin 423 que traducir: el bloqueo por fallos de contraseña no frena a Google (BE #732)
+    // Con el verifier de PKCE: sin él, un código robado se podría canjear (fase 3)
     const data = await apiRequest('/api/v1/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ authorization_code: authorizationCode }),
+      body: JSON.stringify({ authorization_code: authorizationCode, code_verifier: codeVerifier }),
     });
 
     return {
@@ -180,10 +187,10 @@ class ApiAuthRepository extends IAuthRepository {
   /**
    * @override
    */
-  async linkGoogleAccount(authorizationCode) {
+  async linkGoogleAccount(authorizationCode, codeVerifier) {
     const data = await apiRequest('/api/v1/auth/google/link', {
       method: 'POST',
-      body: JSON.stringify({ authorization_code: authorizationCode }),
+      body: JSON.stringify({ authorization_code: authorizationCode, code_verifier: codeVerifier }),
     });
 
     return {

@@ -10,16 +10,14 @@ import { BrowserRouter, Routes, Route } from 'react-router';
  *   #   estado                       | se ve
  *   ----|-----------------------------|------------------------------------------
  *   E1  verificando                  | verifyEmail.verifyingTitle / verifyingBody
- *   E2  verificado                   | verifyEmail.successTitle / successMessage
  *   E3  enlace sin token             | verifyEmail.invalidTitle / invalidMessage
  *   E4  la verificación falla        | verifyEmail.errorTitle y sus dos botones
  *   E5  el backend da su mensaje     | el texto propio, no el del backend
  *   E6  en ningún estado             | ni un texto fijo en inglés (sinIngles(), en cada test)
  *
- * Desde RyderCupAm #753 verificar no abre sesión. El front sale antes que el backend
- * y acepta las dos respuestas:
- *   E8  backend nuevo (sin sesión)   | verificado, «inicia sesión» y su enlace; no va al panel
- *   E2  backend de antes (con sesión)| verificado y al panel, como hasta ahora
+ * Desde RyderCupAm #753 verificar no abre sesión (y desde la fase 3 el front ya no
+ * mira si la respuesta trae tokens):
+ *   E8  verificado                   | «inicia sesión» y su enlace; no va al panel
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (clave) => clave, i18n: { language: 'es' } }),
@@ -73,18 +71,8 @@ describe('VerifyEmail · textos traducidos (FE #776)', () => {
     sinIngles();
   });
 
-  it('E2: verificado', async () => {
-    verifyEmailUseCase.execute.mockResolvedValue({ sesionAbierta: true });
-    abrir();
-    expect(await screen.findByText('verifyEmail.successTitle', {}, { timeout: 4000 })).toBeInTheDocument();
-    expect(screen.getByText('verifyEmail.successMessage')).toBeInTheDocument();
-    expect(screen.getByText('verifyEmail.redirecting')).toBeInTheDocument();
-    expect(screen.getByText('verifyEmail.goToDashboard')).toBeInTheDocument();
-    sinIngles();
-  });
-
   it('E8: backend nuevo, sin sesión: verificado y a iniciar sesión, sin ir al panel', async () => {
-    verifyEmailUseCase.execute.mockResolvedValue({ sesionAbierta: false });
+    verifyEmailUseCase.execute.mockResolvedValue({ emailVerified: true });
     abrir();
     expect(await screen.findByText('verifyEmail.successTitle', {}, { timeout: 4000 })).toBeInTheDocument();
     expect(screen.getByText('verifyEmail.signInNow')).toBeInTheDocument();

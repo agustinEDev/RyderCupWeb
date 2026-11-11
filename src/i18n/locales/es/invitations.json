@@ -105,7 +105,8 @@
     "title": "Mis invitaciones",
     "subtitle": "Ver y responder a invitaciones de competiciones",
     "pendingCount_one": "{{count}} pendiente",
-    "pendingCount_other": "{{count}} pendientes"
+    "pendingCount_other": "{{count}} pendientes",
+    "verifyEmailNotice": "Verifica tu correo para ver las invitaciones enviadas a tu dirección"
   },
   "inDetail": {
     "title": "Te han invitado a esta competición",

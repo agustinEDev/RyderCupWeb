@@ -39,10 +39,11 @@ vi.mock('../infrastructure/http/deviceRevocationLogout', () => ({
   clearDeviceRevocationFlag: vi.fn(),
   // La fachada composition/http carga el registro de limpiezas al importarse
   alCerrarLaSesion: vi.fn(),
+  olvidaLoGuardadoDeLaCuenta: vi.fn(),
 }));
 
 const { refrescoCompartido } = await import('../infrastructure/http/tokenRefreshInterceptor');
-const { isDeviceRevoked, handleDeviceRevocationLogout } = await import(
+const { isDeviceRevoked, handleDeviceRevocationLogout, olvidaLoGuardadoDeLaCuenta } = await import(
   '../infrastructure/http/deviceRevocationLogout'
 );
 
@@ -498,5 +499,51 @@ describe('useRedirectIfAuthenticated', () => {
       expect(refrescoCompartido).not.toHaveBeenCalled();
       expect(result.current).toBe(false);
     });
+  });
+});
+
+/**
+ * La pantalla de entrar sin usuario guardado es un camino «sin sesión» (fase 3, FE-06):
+ * hace la misma limpieza que salir. Con usuario guardado espera a la respuesta (un
+ * rechazo limpia con `clearAuth`; sin red no se borra nada). Desactivado (la portada en
+ * el navegador) no toca nada: ahí puede haber una sesión abierta.
+ */
+describe('useRedirectIfAuthenticated · pantalla de entrar sin sesión (fase 3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    storedUser = null;
+    locationState = null;
+  });
+
+  it('L1: sin usuario guardado limpia lo de la cuenta, una vez', () => {
+    const { rerender } = renderHook(() => useRedirectIfAuthenticated());
+    rerender();
+
+    expect(olvidaLoGuardadoDeLaCuenta).toHaveBeenCalledTimes(1);
+  });
+
+  it('L1b: si otra pestaña acaba de entrar (hay usuario en el almacenamiento), no limpia', () => {
+    // El contexto es una foto de cuando cargó esta pestaña; el almacenamiento es lo de ahora
+    globalThis.localStorage.setItem('user', JSON.stringify({ id: 'otra-pestana' }));
+
+    renderHook(() => useRedirectIfAuthenticated());
+
+    expect(olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
+    globalThis.localStorage.removeItem('user');
+  });
+
+  it('L2: desactivado no limpia nada', () => {
+    renderHook(() => useRedirectIfAuthenticated({ enabled: false }));
+
+    expect(olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
+  });
+
+  it('L3: con usuario guardado no limpia al montar (lo decide la respuesta)', () => {
+    storedUser = { id: BACKEND_USER.id };
+    globalThis.fetch = vi.fn(() => new Promise(() => {}));
+
+    renderHook(() => useRedirectIfAuthenticated());
+
+    expect(olvidaLoGuardadoDeLaCuenta).not.toHaveBeenCalled();
   });
 });

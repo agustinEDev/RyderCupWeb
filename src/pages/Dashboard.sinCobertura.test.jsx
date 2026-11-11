@@ -50,7 +50,6 @@ for (const ruta of [
   '../components/layout/HeaderAuth',
   '../components/ui/Avatar',
   '../components/profile/HandicapRequestModal',
-  '../components/EmailVerificationBanner',
   '../components/dashboard/PlayerStatsCards',
   '../components/dashboard/RecentMatches',
   '../components/quick_match/CreateQuickMatchModal',
@@ -58,6 +57,11 @@ for (const ruta of [
 ]) {
   vi.doMock(ruta, () => ({ default: () => null }));
 }
+
+// El aviso de verificar el correo, con el correo que recibe (fase 3)
+vi.doMock('../components/EmailVerificationBanner', () => ({
+  default: ({ userEmail }) => <div data-testid="aviso-verificar" data-correo={String(userEmail)} />,
+}));
 
 // Cuántos próximos le llegan a «Requiere tu atención» (QA de la release)
 vi.doMock('../components/dashboard/PendingActionsCard', () => ({
@@ -280,5 +284,41 @@ describe('el próximo partido del panel sin cobertura', () => {
     await asienta();
 
     expect(banner()).toHaveAttribute('data-partido', 'm-1');
+  });
+});
+
+/**
+ * Sin conexión el usuario sale de la copia del dispositivo, sin correo (fase 3, FE-06):
+ * el aviso de verificar no se pinta con un correo vacío. Con red, como siempre.
+ */
+describe('el aviso de verificar el correo sin cobertura (fase 3)', () => {
+  beforeEach(() => {
+    window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} });
+    olvidaQueElPanelSePinto();
+    reiniciaLaCortina();
+    mockLee.mockResolvedValue({ matches: [], complete: true });
+    mockPartidas.mockResolvedValue({ matches: [], complete: true });
+    respuestas.competiciones = () => Promise.resolve([]);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    document.body.innerHTML = '';
+  });
+
+  it('con la copia sin correo, no se pinta', async () => {
+    sesion.user = { id: 'u-1', first_name: 'Agustin', email_verified: false };
+    render(<Dashboard />);
+    await asienta();
+
+    expect(screen.queryByTestId('aviso-verificar')).not.toBeInTheDocument();
+    sesion.user = usuario;
+  });
+
+  it('con red y sin verificar, se pinta con su correo', async () => {
+    sesion.user = { ...usuario, email_verified: false };
+    render(<Dashboard />);
+    await asienta();
+
+    expect(screen.getByTestId('aviso-verificar')).toHaveAttribute('data-correo', 'a@b.c');
+    sesion.user = usuario;
   });
 });

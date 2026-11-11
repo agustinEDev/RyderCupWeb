@@ -108,6 +108,7 @@
     }
   },
   "errors": {
-    "reloadFailed": "Hecho, pero no hemos podido actualizar el perfil. Vuelve a abrirlo en un momento."
+    "reloadFailed": "Hecho, pero no hemos podido actualizar el perfil. Vuelve a abrirlo en un momento.",
+    "requestNotSent": "No se ha podido enviar la solicitud"
   }
 }

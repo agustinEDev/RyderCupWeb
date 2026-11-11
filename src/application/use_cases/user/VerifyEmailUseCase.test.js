@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import VerifyEmailUseCase from './VerifyEmailUseCase';
-import User from '../../../domain/entities/User';
 
 describe('VerifyEmailUseCase', () => {
   let authRepository;
@@ -22,13 +21,8 @@ describe('VerifyEmailUseCase', () => {
   it('should successfully verify user email', async () => {
     // Arrange
     const token = 'mock-verification-token';
-    const mockUpdatedUserEntity = new User({
-      id: 'user-123',
-      first_name: 'Verified',
-      last_name: 'User',
-      email: 'verified@example.com',
-      email_verified: true
-    });
+    // Verificar no abre sesión (RyderCupAm #753): solo dice que quedó verificado
+    const mockUpdatedUserEntity = { emailVerified: true };
 
     // Configurar el mock del repositorio para devolver el usuario actualizado simulado
     authRepository.verifyEmail.mockResolvedValue(mockUpdatedUserEntity);
@@ -40,7 +34,7 @@ describe('VerifyEmailUseCase', () => {
     // 1. Verificar que el método verifyEmail del repositorio fue llamado con el token correcto
     expect(authRepository.verifyEmail).toHaveBeenCalledWith(token);
 
-    // 2. Verificar que el caso de uso devuelve la entidad User correcta
+    // 2. Verificar que el caso de uso devuelve lo que dice el repositorio
     expect(updatedUser).toEqual(mockUpdatedUserEntity);
     expect(updatedUser.emailVerified).toBe(true);
   });

@@ -27,6 +27,7 @@ import { sinFranja } from '../domain/services/PlazasEnFranjas';
 import { todasLasFranjasCerradas } from '../domain/services/PartidasDeLaFranja';
 import { aCamposDeLaCompeticion } from '../utils/camposDeLaCompeticion';
 import { useGeneroParaApuntarse } from '../hooks/useGeneroParaApuntarse';
+import { faltaElHandicap } from '../utils/datosQueFaltanSinConexion';
 import EnrollmentRequestModal from '../components/enrollment/EnrollmentRequestModal';
 import InvitacionEnLaFicha from '../components/invitation/InvitacionEnLaFicha';
 import {
@@ -131,7 +132,7 @@ const CompetitionDetail = () => {
   const { id } = useParams();
   const { t, i18n } = useTranslation('competitions');
   const { t: tComun } = useTranslation('common');
-  const { user, loading: isLoadingUser } = useAuth();
+  const { user, loading: isLoadingUser, sinConfirmar } = useAuth();
   // El género para apuntarse, solo a quien le falta (#710)
   const generoParaApuntarse = useGeneroParaApuntarse();
   const { isAdmin, isCreator: hasCreatorRole, isLoading: isLoadingRoles } = useUserRoles(id);
@@ -2226,8 +2227,9 @@ const CompetitionDetail = () => {
         onConfirm={handleEnroll}
         isProcessing={isProcessing}
         pideGenero={generoParaApuntarse.falta}
-        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5)
-        faltaHandicap={esStrokePlay && (user?.handicap === null || user?.handicap === undefined)}
+        // Sin hándicap no se entra en un Stableford o un Medal (FE #824, PR 5). Sin red
+        // no se sabe (la copia del dispositivo no lo guarda): no se avisa (fase 3)
+        faltaHandicap={esStrokePlay && faltaElHandicap(user, sinConfirmar)}
         // Las franjas, para elegir en el mismo paso (release social 3)
         franjas={franjasParaApuntarse}
         // Sin la agenda leída no hay franjas que elegir: no se deja enviar;

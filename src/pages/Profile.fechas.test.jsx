@@ -25,7 +25,9 @@ vi.mock('../components/layout/HeaderAuth', () => ({ default: () => null }));
 vi.mock('../components/ui/LanguageSwitcher', () => ({ default: () => null }));
 vi.mock('../components/ui/Avatar', () => ({ default: () => null }));
 vi.mock('../components/ui/FullScreenLoader', () => ({ default: () => null }));
-vi.mock('../components/profile/ActivitySharingToggle', () => ({ default: () => null }));
+vi.mock('../components/profile/ActivitySharingToggle', () => ({
+  default: ({ initialValue }) => <div data-testid="compartir-actividad" data-valor={String(initialValue)} />,
+}));
 vi.mock('../hooks/useStandalone', () => ({ useStandalone: () => false }));
 vi.mock('../hooks/useLogout', () => ({ useLogout: () => ({ logout: vi.fn() }) }));
 vi.mock('../components/ui/CountryFlag', () => ({ CountryFlag: () => null }));
@@ -34,7 +36,8 @@ vi.mock('../composition', () => ({
   listUserCompetitionsUseCase: { execute: vi.fn().mockResolvedValue([]) },
 }));
 let usuario;
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: usuario, loading: false }) }));
+let sinConfirmar = false;
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: usuario, loading: false, sinConfirmar }) }));
 
 const Profile = (await import('./Profile')).default;
 
@@ -107,5 +110,36 @@ describe('Profile · el propio correo (21 oct)', () => {
     pintar();
 
     expect((await screen.findAllByText('ana@example.com')).length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * Sin conexión el perfil sale de la copia del dispositivo, que ya no guarda el correo
+ * ni el género (fase 3, FE-06): se ve «—» en los dos, sin «undefined» ni huecos.
+ */
+describe('Profile · sin conexión (fase 3)', () => {
+  it('PR3: correo y género con «—»', async () => {
+    sinConfirmar = true;
+    usuario = { id: 'u1', first_name: 'Ana', last_name: 'Alba', updated_at: '2026-03-02T10:00:00', email_verified: true };
+    pintar();
+
+    expect(await screen.findByText('Ana Alba')).toBeInTheDocument();
+    expect(screen.getByTestId('profile-email')).toHaveTextContent(/^—$/);
+    expect(screen.getByTestId('profile-gender')).toHaveTextContent('edit.personalInfo.gender: —');
+    expect(document.body.textContent).not.toMatch(/undefined|No email/);
+    // Sin `share_activity` en la copia saldría encendido y apagarlo abriría el aviso
+    // destructivo: no se enseña hasta que el servidor confirme
+    expect(screen.queryByTestId('compartir-actividad')).not.toBeInTheDocument();
+    sinConfirmar = false;
+  });
+
+  it('PR4: con conexión y sin género, como siempre: no se enseña la fila', async () => {
+    sinConfirmar = false;
+    usuario = { ...base, gender: null };
+    pintar();
+
+    expect(await screen.findByTestId('profile-email')).toHaveTextContent('ana@example.com');
+    expect(screen.queryByTestId('profile-gender')).not.toBeInTheDocument();
+    expect(screen.getByTestId('compartir-actividad')).toBeInTheDocument();
   });
 });

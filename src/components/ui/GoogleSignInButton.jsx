@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useLocation } from 'react-router';
@@ -12,16 +13,24 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
     ? t('google.continueWithGoogle')
     : t('google.signUpWithGoogle');
 
-  const handleClick = () => {
+  // Mientras se calcula el reto y se sale a Google, el botón queda desactivado: un
+  // segundo clic generaría otro par de PKCE y pisaría el verifier del primero. React
+  // pinta el cambio antes del siguiente clic (evento discreto), así que basta el estado
+  const [yendoAGoogle, setYendoAGoogle] = useState(false);
+
+  // Asíncrono: el reto de PKCE se calcula con `crypto.subtle` (fase 3)
+  const handleClick = async () => {
+    setYendoAGoogle(true);
     try {
       // Si se vino al login desde una página que lo pide (confirmar el cambio de
       // correo), a ella se vuelve tras Google (RyderCupAm #753). La guardada por una
       // redirección dura no se toca aquí: la usa y la gasta la vuelta de Google
       guardaLaVueltaDeGoogle(location.state?.from);
-      window.location.href = buildGoogleOAuthUrl(flow);
+      window.location.href = await buildGoogleOAuthUrl(flow);
     } catch (error) {
       console.error('Google OAuth URL error:', error);
       customToast.error(t('google.genericError'));
+      setYendoAGoogle(false);
     }
   };
 
@@ -29,9 +38,9 @@ const GoogleSignInButton = ({ flow = 'login', label, disabled = false }) => {
     <motion.button
       type="button"
       onClick={handleClick}
-      disabled={disabled}
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
-      whileTap={{ scale: disabled ? 1 : 0.98 }}
+      disabled={disabled || yendoAGoogle}
+      whileHover={{ scale: disabled || yendoAGoogle ? 1 : 1.02 }}
+      whileTap={{ scale: disabled || yendoAGoogle ? 1 : 0.98 }}
       className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border-2 border-gray-200 bg-white text-gray-700 font-semibold text-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {/* Google logo SVG - official 4 colors */}
