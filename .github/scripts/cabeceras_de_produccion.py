@@ -1,0 +1,80 @@
+"""
+Comprueba las cabeceras de seguridad que sirve producción (FE-05, fase 4 del plan a 9).
+
+Render sirve las cabeceras de www.rydercupfriends.com desde su dashboard, que no lee el
+repo: entre diciembre de 2025 y agosto de 2026 faltó una sin que nadie lo notara. Este
+guion pide cada ruta de `cabeceras_de_produccion.json` y compara lo que llega con lo
+esperado. La CSP se compara directiva a directiva (el orden y los espacios dan igual).
+
+Uso: python cabeceras_de_produccion.py <origen>   (p. ej. https://www.rydercupfriends.com)
+Salidas: 0 todo como se espera · 1 falta o sobra algo (lo dice) · 2 uso incorrecto
+"""
+
+import json
+import sys
+import urllib.request
+from pathlib import Path
+
+FICHERO = Path(__file__).parent / "cabeceras_de_produccion.json"
+_CSP = {"content-security-policy", "content-security-policy-report-only"}
+
+
+def valor(esperado, texto):
+    """El valor esperado con el marcador {sentry_csp} sustituido."""
+    return texto.replace("{sentry_csp}", esperado.get("sentry_csp", ""))
+
+
+def _directivas(csp):
+    """Una CSP como conjunto de directivas normalizadas (orden y espacios aparte)."""
+    return {" ".join(d.split()) for d in csp.split(";") if d.strip()}
+
+
+def pide(url):
+    """Las cabeceras de un GET a esa dirección."""
+    peticion = urllib.request.Request(url, headers={"User-Agent": "rydercup-cabeceras/1.0"})
+    with urllib.request.urlopen(peticion, timeout=30) as respuesta:  # noqa: S310 - origen fijo del workflow
+        return dict(respuesta.headers.items())
+
+
+def compara(esperado, origen, pide_cabeceras=pide):
+    """Los fallos de cada ruta: lo que falta o no coincide. Vacío si todo cuadra."""
+    fallos = []
+    for ruta, cabeceras in esperado["rutas"].items():
+        try:
+            llegan = {k.lower(): v for k, v in pide_cabeceras(origen.rstrip("/") + ruta).items()}
+        except Exception as error:  # noqa: BLE001 - cualquier fallo de red es un fallo de la comprobación
+            fallos.append(f"{ruta}: no se pudo pedir ({error})")
+            continue
+        for nombre, texto in cabeceras.items():
+            if nombre.startswith("_"):
+                continue
+            quiere = valor(esperado, texto)
+            hay = llegan.get(nombre)
+            if hay is None:
+                fallos.append(f"{ruta}: falta {nombre} (se espera «{quiere}»)")
+            elif nombre in _CSP:
+                sobran = sorted(_directivas(hay) - _directivas(quiere))
+                faltan = sorted(_directivas(quiere) - _directivas(hay))
+                if sobran or faltan:
+                    fallos.append(f"{ruta}: {nombre} distinta; faltan {faltan or '—'}; sobran {sobran or '—'}")
+            elif " ".join(hay.split()) != " ".join(quiere.split()):
+                fallos.append(f"{ruta}: {nombre} es «{hay}», se espera «{quiere}»")
+    return fallos
+
+
+def main(argv):
+    """Compara y dice qué falla; 1 si algo falla."""
+    if len(argv) != 1:
+        print(__doc__)
+        return 2
+    esperado = json.loads(FICHERO.read_text())
+    fallos = compara(esperado, argv[0])
+    for fallo in fallos:
+        print(f"✗ {fallo}")
+    if not fallos:
+        print(f"✓ Las cabeceras de {argv[0]} son las de cabeceras_de_produccion.json")
+    return 1 if fallos else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -77,4 +77,11 @@ describe('precache de las fuentes', () => {
 
     expect(patron).not.toContain('latin-ext');
   });
+
+  it('el service worker no guarda nada de Google Fonts (FE-10)', () => {
+    // Una regla que ya no servía: si las fuentes volvieran de Google, se servirían un año
+    // desde la caché sin comprobar su integridad
+    // En cualquier forma: como dirección, como expresión regular o como nombre de caché
+    expect(leer('vite.config.js')).not.toMatch(/googleapis|gstatic|google-fonts/);
+  });
 });

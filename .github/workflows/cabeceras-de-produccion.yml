@@ -1,0 +1,53 @@
+name: Production Security Headers
+
+# Las cabeceras de seguridad de www.rydercupfriends.com viven en el dashboard de Render,
+# fuera del repo: entre diciembre de 2025 y agosto de 2026 faltó una sin que nadie lo
+# notara (FE-05, fase 4 del plan a 9). Cada día se comparan con
+# .github/scripts/cabeceras_de_produccion.json; si algo no cuadra, se abre una issue (o
+# se comenta la que ya esté abierta) con lo que falta o sobra.
+on:
+  schedule:
+    - cron: '0 7 * * *' # 08:00 en Madrid en invierno, 09:00 en verano
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-security-headers
+  cancel-in-progress: false
+
+jobs:
+  headers:
+    name: 🛡️ Production Security Headers
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout the expected headers
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Compare production headers with the expected ones
+        id: comparar
+        run: |
+          set +e
+          python3 .github/scripts/cabeceras_de_produccion.py https://www.rydercupfriends.com > informe.txt 2>&1
+          echo "salida=$?" >> "$GITHUB_OUTPUT"
+          cat informe.txt
+
+      - name: Open or update the issue when they differ
+        if: steps.comparar.outputs.salida != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TITULO="Production security headers differ from cabeceras_de_produccion.json"
+          CUERPO="$(printf 'The daily check (%s) found production headers that differ from `.github/scripts/cabeceras_de_produccion.json`. Fix them in Render (Static Site RyderCupWeb → Headers), see `docs/SECURITY_HEADERS.md`.\n\n```\n%s\n```' "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" "$(cat informe.txt)")"
+          NUMERO="$(gh issue list --state open --search "in:title \"$TITULO\"" --json number --jq '.[0].number')"
+          if [ -n "$NUMERO" ]; then
+            gh issue comment "$NUMERO" --body "$CUERPO"
+          else
+            gh issue create --title "$TITULO" --body "$CUERPO"
+          fi
+          exit 1
