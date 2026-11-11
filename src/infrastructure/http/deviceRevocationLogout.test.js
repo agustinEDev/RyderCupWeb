@@ -10,7 +10,6 @@ import '../../composition/interfazDelTransporte';
 import {
   isDeviceRevoked,
   isSessionExpired,
-  requiresReAuthentication,
   handleDeviceRevocationLogout,
   handleSessionExpiredLogout,
   clearDeviceRevocationFlag,
@@ -206,32 +205,6 @@ describe('deviceRevocationLogout utilities', () => {
       const errorData = { detail: 'Refresh token expired' };
 
       expect(isSessionExpired(response, errorData)).toBe(false);
-    });
-  });
-
-  // ============================================
-  // requiresReAuthentication - combined check
-  // ============================================
-  describe('requiresReAuthentication', () => {
-    it('should return true for device revocation', () => {
-      const response = { status: 401 };
-      const errorData = { detail: 'Dispositivo revocado' };
-
-      expect(requiresReAuthentication(response, errorData)).toBe(true);
-    });
-
-    it('should return true for session expiration', () => {
-      const response = { status: 401 };
-      const errorData = { detail: 'Refresh token expired' };
-
-      expect(requiresReAuthentication(response, errorData)).toBe(true);
-    });
-
-    it('should return false for other 401 errors', () => {
-      const response = { status: 401 };
-      const errorData = { detail: 'Invalid credentials' };
-
-      expect(requiresReAuthentication(response, errorData)).toBe(false);
     });
   });
 

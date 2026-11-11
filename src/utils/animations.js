@@ -52,18 +52,6 @@ export const staggerContainer = {
 };
 
 /**
- * Transition for siblings that are animated individually (no variants container).
- * The delay is capped so a long list never pushes the last item past ~0.3 s.
- *
- * @param {number} index Position of the element among its siblings.
- * @returns {{duration: number, delay: number}} Framer Motion transition.
- */
-export const entryTransition = (index = 0) => ({
-  duration: ENTRY_DURATION,
-  delay: Math.min(index, 4) * ENTRY_STAGGER,
-});
-
-/**
  * Props for an element that animates on mount.
  * When animations are off the element mounts directly in its final state
  * (`initial={false}`), never in the hidden variant.

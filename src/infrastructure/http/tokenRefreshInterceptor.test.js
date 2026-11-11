@@ -22,7 +22,6 @@ vi.mock('./deviceRevocationLogout', () => ({
     // Simulate immediate redirect for tests (actual implementation has 500ms delay)
     globalThis.location.href = '/login';
   }),
-  requiresReAuthentication: vi.fn(() => false),
   clearDeviceRevocationFlag: vi.fn(),
 }));
 
