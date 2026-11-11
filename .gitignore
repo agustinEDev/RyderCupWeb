@@ -59,3 +59,6 @@ scripts/movil/
 
 # Python de los scripts del CI
 __pycache__/
+
+# Captura que deja tests/debug.spec.js
+debug-login-initial.png
