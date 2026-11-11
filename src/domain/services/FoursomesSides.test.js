@@ -5,7 +5,6 @@ import {
   groupParticipantsBySide,
   sideCardHolder,
   sideEntryOf,
-  sideScoreOf,
 } from './FoursomesSides';
 
 const participants = [
@@ -59,37 +58,34 @@ describe('groupParticipantsBySide', () => {
   });
 });
 
-describe('sideScoreOf', () => {
+describe('sideEntryOf: qué anotación es la del bando', () => {
   const side = [participants[0], participants[1]];
+  const entrada = (participantId, score) => ({ participantId, holeNumber: 1, score });
 
   it('toma la del primer miembro del bando que la tenga', () => {
     // La bola se guarda a nombre del primero, así que en la práctica es la suya.
-    expect(sideScoreOf(side, (id) => (id === 'a1' ? 4 : 6))).toBe(4);
+    expect(sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 4 : 6)).score).toBe(4);
   });
 
-  it('sigue al compañero cuando el primero no tiene nota', () => {
-    expect(sideScoreOf(side, (id) => (id === 'a2' ? 5 : null))).toBe(5);
+  it('sigue al compañero cuando el primero no tiene anotación', () => {
+    expect(sideEntryOf(side, (id) => (id === 'a2' ? entrada(id, 5) : null)).score).toBe(5);
   });
 
   it('elige siempre la misma con dos anotaciones distintas del mismo hoyo', () => {
     // El desacuerdo se aclara entre las parejas, pero mientras dure las tres
     // pantallas tienen que enseñar el mismo número: recorrer el bando —y no los
     // golpes en el orden que lleguen— es lo que lo garantiza.
-    const holeScores = [
-      { participantId: 'a2', holeNumber: 1, score: 6 },
-      { participantId: 'a1', holeNumber: 1, score: 4 },
-    ];
-    const scoreAt = (id) => holeScores.find((hs) => hs.participantId === id)?.score ?? null;
+    const holeScores = [entrada('a2', 6), entrada('a1', 4)];
 
-    expect(sideScoreOf(side, scoreAt)).toBe(4);
+    expect(sideEntryOf(side, entryAtOf(holeScores)(1)).score).toBe(4);
   });
 
   it('devuelve null si el bando no ha anotado el hoyo', () => {
-    expect(sideScoreOf(side, () => null)).toBeNull();
+    expect(sideEntryOf(side, () => null)).toBeNull();
   });
 
-  it('no confunde un 0 con la falta de nota', () => {
-    expect(sideScoreOf(side, (id) => (id === 'a1' ? 0 : 5))).toBe(0);
+  it('no confunde un 0 con la falta de anotación', () => {
+    expect(sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 0 : 5)).score).toBe(0);
   });
 });
 
