@@ -14,7 +14,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 const conBase = async (base) => {
   vi.resetModules();
   vi.stubEnv('VITE_API_BASE_URL', base);
-  return import('./urlDeLaApi');
+  return import('./rutaDeLaApi');
 };
 afterEach(() => vi.unstubAllEnvs());
 

@@ -116,13 +116,16 @@ if (!SENTRY_CONFIG.dsn) {
     // El router de la aplicación ya existe: con el seguimiento puesto, Sentry
     // lo instrumenta ahora (FE #647; antes lo hacía `withSentryReactRouterV7Routing`)
     instrumentarRouterEnSentry();
+  } else {
+    // Sin cliente (main.jsx no lo creó) no hay nada a lo que añadir integraciones
+    console.warn('Sentry: no client, the heavy integrations were not added');
   }
 
   // ============================================
   // LOGS DE INICIALIZACIÓN
   // ============================================
 
-  console.log(`
+  if (existingClient) console.log(`
 ┌─────────────────────────────────────────────────────────┐
 │ 🚀 Sentry Initialized                                   │
 ├─────────────────────────────────────────────────────────┤

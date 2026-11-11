@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { segmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } from './rutaDeLaApi';
+import { segmento, valeComoSegmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } from './rutaDeLaApi';
 
 /**
  * Los ids que acaban en la ruta de la API (FE-03, fase 4 del plan a 9). Muchos salen de
@@ -7,7 +7,9 @@ import { segmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } from './rutaDeLaAp
  * que el navegador llamara a otra ruta con las cookies y el token CSRF (CSPT).
  *
  *   C1 cada id se codifica: `/`, `?`, `#`, `%` y espacios no cambian la ruta
- *   C2 un id vacío, `.` o `..` no vale: el navegador los resuelve como «aquí» y «arriba»
+ *   C2 `.` o `..` no vale: el navegador los resuelve como «aquí» y «arriba». Uno vacío,
+ *      null o undefined sale como antes (`/x//y`, `/x/undefined/y`): el servidor contesta
+ *      404 y las pantallas ya lo tratan (code-review, 11 nov 2026)
  *   C3 la ruta final: solo de la API, sin `..` ni `.` (tampoco `%2e`), sin `//` delante
  */
 const UUID = '0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d';
@@ -28,8 +30,14 @@ describe('segmento (C1, C2)', () => {
     expect(segmento(valor)).toBe(esperado);
   });
 
-  it.each([['.'], ['..'], [''], [null], [undefined]])('C2 %j no vale', (valor) => {
+  it.each([['.'], ['..']])('C2 %j no vale', (valor) => {
     expect(() => segmento(valor)).toThrow(RutaDeLaApiNoValida);
+    expect(valeComoSegmento(valor)).toBe(false);
+  });
+
+  it.each([['', ''], [null, 'null'], [undefined, 'undefined']])('C2 %j sale como antes: %j', (valor, esperado) => {
+    expect(segmento(valor)).toBe(esperado);
+    expect(valeComoSegmento(valor)).toBe(true);
   });
 });
 

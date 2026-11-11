@@ -12,11 +12,14 @@ Salidas: 0 todo como se espera · 1 falta o sobra algo (lo dice) · 2 uso incorr
 
 import json
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
 FICHERO = Path(__file__).parent / "cabeceras_de_produccion.json"
 _CSP = {"content-security-policy", "content-security-policy-report-only"}
+# Un fallo de red pasajero no abre una issue: tres intentos, con 10 s y 20 s entre ellos
+INTENTOS = 3
 
 
 def valor(esperado, texto):
@@ -37,7 +40,19 @@ def pide(url):
         return {n: respuesta.headers.get_all(n) for n in nombres}
 
 
-def compara(esperado, origen, pide_cabeceras=pide):
+def _pide_con_reintentos(pide_cabeceras, url, espera):
+    """Las cabeceras, reintentando un fallo de red; el último error si no llega nunca."""
+    for intento in range(1, INTENTOS + 1):
+        try:
+            return pide_cabeceras(url)
+        except Exception:  # noqa: BLE001 - cualquier fallo de red se reintenta
+            if intento == INTENTOS:
+                raise
+            espera(10 * intento)
+    raise AssertionError("inalcanzable")
+
+
+def compara(esperado, origen, pide_cabeceras=pide, espera=time.sleep):
     """Los fallos de cada ruta: lo que falta o no coincide. Vacío si todo cuadra."""
     fallos = []
     for ruta, cabeceras in esperado["rutas"].items():
@@ -45,10 +60,10 @@ def compara(esperado, origen, pide_cabeceras=pide):
             # Cada nombre con la lista de sus valores: una cabecera repetida se ve
             llegan = {
                 k.lower(): (v if isinstance(v, list) else [v])
-                for k, v in pide_cabeceras(origen.rstrip("/") + ruta).items()
+                for k, v in _pide_con_reintentos(pide_cabeceras, origen.rstrip("/") + ruta, espera).items()
             }
         except Exception as error:  # noqa: BLE001 - cualquier fallo de red es un fallo de la comprobación
-            fallos.append(f"{ruta}: no se pudo pedir ({error})")
+            fallos.append(f"{ruta}: no se pudo pedir tras {INTENTOS} intentos ({error})")
             continue
         for nombre, texto in cabeceras.items():
             if nombre.startswith("_"):

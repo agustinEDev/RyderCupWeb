@@ -92,8 +92,10 @@ describe('cabeceras de seguridad: las copias como producción (FE-04/FE-05)', ()
     expect(leer('nginx.conf')).toMatch(/map \$uri \$corp \{\s*~\^\/images\/\s+cross-origin;\s*default\s+same-origin;/);
   });
 
-  it('Trusted Types solo en aviso, en las copias y en producción (FE-04)', () => {
-    expect(RAIZ_DE_PRO['content-security-policy-report-only']).toMatch(/^require-trusted-types-for 'script';/);
+  it('Trusted Types solo en aviso y solo en local; en producción, aplazado a la fase 5 (FE-04)', () => {
+    // En producción saltaría en cada carga (service worker, workers, MapLibre) y gastaría la
+    // cuota de Sentry (decidido el 11 nov 2026)
+    expect(RAIZ_DE_PRO).not.toHaveProperty('content-security-policy-report-only');
     expect(VITE).toContain(`'Content-Security-Policy-Report-Only': "require-trusted-types-for 'script';"`);
     expect(NGINX).toContain(`add_header Content-Security-Policy-Report-Only "require-trusted-types-for 'script';" always;`);
   });

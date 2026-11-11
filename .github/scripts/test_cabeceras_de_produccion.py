@@ -21,6 +21,7 @@ cabeceras_de_produccion.json.
 | H8   | el fichero de verdad se puede leer y trae las dos rutas             | —    |
 | H9   | una cabecera repetida (dos CSP, dos CORP): el navegador aplica las  | 1    |
 |      | dos, así que es un fallo aunque una sea la buena                    |      |
+| H10  | un fallo de red pasajero: se reintenta y, si a la segunda llega, OK | 0    |
 """
 
 import json
@@ -96,11 +97,26 @@ class ComprobarCabeceras(unittest.TestCase):
         self.assertEqual(cp.valor(ESPERADO, "{sentry_csp}x"), SENTRY + "x")
 
     def test_h7_no_se_puede_pedir(self):
+        intentos = []
         def pide(url):
+            intentos.append(url)
             raise OSError("sin red")
-        fallos = cp.compara(ESPERADO, "https://www.example", pide)
+        fallos = cp.compara(ESPERADO, "https://www.example", pide, espera=lambda s: None)
         self.assertTrue(fallos)
         self.assertIn("sin red", fallos[0])
+        self.assertEqual(len(intentos), 2 * 3)  # dos rutas, tres intentos cada una
+
+    def test_h10_fallo_pasajero(self):
+        veces = {"n": 0}
+        buenas = respuestas(BUENAS)
+        def pide(url):
+            veces["n"] += 1
+            if veces["n"] == 1:
+                raise OSError("timeout")
+            return buenas(url)
+        esperas = []
+        self.assertEqual(cp.compara(ESPERADO, "https://www.example", pide, espera=esperas.append), [])
+        self.assertEqual(len(esperas), 1)
 
     def test_h9_cabecera_repetida(self):
         vieja = "default-src 'self'; style-src https://fonts.googleapis.com"

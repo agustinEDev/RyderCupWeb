@@ -11,8 +11,7 @@
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "reporting-endpoints": "csp=\"{sentry_csp}\"",
-      "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri {sentry_csp}; report-to csp",
-      "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri {sentry_csp}; report-to csp"
+      "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://www.ign.es https://geoserveis.icgc.cat https://www.geo.euskadi.eus https://idena.navarra.es https://api.rydercupfriends.com https://o4510427294662656.ingest.de.sentry.io; worker-src 'self' blob:; child-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests; report-uri {sentry_csp}; report-to csp"
     },
     "/images/rcf-monogram-white.png": {
       "_comentario": "El logo de los correos: lo cargan clientes de correo de otro origen, así que no puede ser same-origin",

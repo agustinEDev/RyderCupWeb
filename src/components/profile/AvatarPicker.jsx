@@ -5,8 +5,11 @@ import Avatar from '../ui/Avatar';
 import { urlDeImagenDeLaApi } from '../../composition/http';
 import BlockLoader from '../ui/BlockLoader';
 
-/** La imagen de un avatar si su ruta es de la propia API, o null (FE-11). Pura y barata. */
-const imagenDe = (avatar) => urlDeImagenDeLaApi(avatar.image_url);
+/** La imagen de un avatar, solo si su ruta es de la propia API; si no, nada (FE-11). */
+const ImagenDelAvatar = ({ ruta, ...props }) => {
+  const src = urlDeImagenDeLaApi(ruta);
+  return src ? <img src={src} {...props} /> : null;
+};
 
 const AvatarPicker = ({
   user,
@@ -76,14 +79,11 @@ const AvatarPicker = ({
                       isSelected ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
-                    {/* Solo si es una ruta de la propia API (FE-11) */}
-                    {imagenDe(preset) && (
-                      <img
-                        src={imagenDe(preset)}
-                        alt={`Preset ${preset.id}`}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
+                    <ImagenDelAvatar
+                      ruta={preset.image_url}
+                      alt={`Preset ${preset.id}`}
+                      className="w-full h-full object-cover"
+                    />
                     {isSelected && (
                       <span className="absolute inset-0 flex items-center justify-center bg-primary/20">
                         <Check className="w-5 h-5 text-white drop-shadow" />
@@ -109,15 +109,13 @@ const AvatarPicker = ({
                       upload.is_active ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
-                    {/* Solo si es una ruta de la propia API: va con credenciales (FE-11) */}
-                    {imagenDe(upload) && (
-                      <img
-                        src={imagenDe(upload)}
-                        alt=""
-                        crossOrigin="use-credentials"
-                        className="w-full h-full object-cover"
-                      />
-                    )}
+                    {/* Va con credenciales: solo a la propia API (FE-11) */}
+                    <ImagenDelAvatar
+                      ruta={upload.image_url}
+                      alt=""
+                      crossOrigin="use-credentials"
+                      className="w-full h-full object-cover"
+                    />
                     {upload.is_active && (
                       <span className="absolute inset-0 flex items-center justify-center bg-primary/20">
                         <Check className="w-4 h-4 text-white drop-shadow" />

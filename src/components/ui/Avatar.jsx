@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
-import { getApiBaseUrl, segmento } from '../../composition/http';
+import { segmento, urlDeImagenDeLaApi, valeComoSegmento } from '../../composition/http';
 
 const SIZE_CLASSES = {
   sm: 'w-8 h-8',
@@ -35,12 +35,9 @@ const ICON_SIZE_CLASSES = {
  * `..`), se pinta el icono en vez de romper la pantalla (FE-03).
  */
 const rutaDelAvatar = (userId, version) => {
-  if (!userId) return null;
-  try {
-    return `${getApiBaseUrl()}/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
-  } catch {
-    return null;
-  }
+  // Se mira antes, sin avisar: `segmento` avisaría a Sentry en cada render
+  if (!userId || !valeComoSegmento(userId)) return null;
+  return urlDeImagenDeLaApi(`/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`);
 };
 
 const Avatar = ({ userId, size = 'md', className = '', version }) => {

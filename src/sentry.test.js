@@ -75,6 +75,16 @@ describe('sentry', () => {
     expect(sentry.addIntegration).not.toHaveBeenCalled();
   });
 
+  it('N10: sin cliente no dice «Sentry Initialized»: avisa de que no añadió nada', async () => {
+    cliente.hay = false;
+    const aviso = vi.spyOn(globalThis.console, 'warn').mockImplementation(() => {});
+
+    await import('./sentry');
+
+    expect(globalThis.console.log).not.toHaveBeenCalledWith(expect.stringContaining('Sentry Initialized'));
+    expect(aviso).toHaveBeenCalledWith(expect.stringContaining('no client'));
+  });
+
   it('sigue añadiendo las trazas y la grabación de las sesiones con error', async () => {
     await import('./sentry');
 

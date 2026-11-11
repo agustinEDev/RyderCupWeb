@@ -56,4 +56,11 @@ describe('apiRequest · ruta segura (FE-03, C3)', () => {
     expect(llamarAlBackend).toHaveBeenCalledTimes(1);
     expect(informado).toHaveLength(0);
   });
+
+  it('el mensaje del error va traducido, como los demás del transporte', async () => {
+    const error = await apiRequest('/api/v1/competitions/../admin').catch((e) => e);
+
+    expect(error).toBeInstanceOf(RutaDeLaApiNoValida);
+    expect(error.message).toBe('t(common:errors.generic)');
+  });
 });

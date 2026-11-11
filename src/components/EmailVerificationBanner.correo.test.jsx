@@ -6,11 +6,12 @@ import es from '../i18n/locales/es/auth.json';
 import en from '../i18n/locales/en/auth.json';
 
 /**
- * FE-08 (fase 4 del plan a 9): con `escapeValue: false` (lo pide React, que ya escapa),
- * `<Trans>` metía el correo dentro del texto que luego analiza, así que un correo con
- * etiquetas (`<strong>…</strong>`, `<correo>…`) se convertía en marcado. Ahora el texto
- * solo lleva el hueco `<correo/>` y el correo entra como contenido del elemento: nunca
- * se analiza. Con la configuración real de i18next, no con un Trans de mentira.
+ * FE-08 (fase 4 del plan a 9), falso positivo: la auditoría temía que, con
+ * `escapeValue: false`, `<Trans>` analizara como marcado un correo con etiquetas
+ * (`<strong>…</strong>`, `<correo>…`) al interpolar `{{email}}` dentro de
+ * `<correo>…</correo>`. No pasa: react-i18next mete los valores como texto. El código y
+ * los textos no cambian; este test lo vigila con la configuración real de i18next (no
+ * con un Trans de mentira), por si una actualización de react-i18next lo cambiara.
  */
 vi.mock('../composition', () => ({ resendVerificationEmailUseCase: { execute: vi.fn() } }));
 
