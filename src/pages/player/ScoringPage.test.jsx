@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 
 // Mock dependencies
+const mockLocation = { pathname: '/player/matches/0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d/scoring', search: '', hash: '', state: null, key: 'k' };
 vi.mock('react-router', () => ({
   useParams: () => ({ matchId: 'm-1' }),
   useNavigate: () => vi.fn(),
+  // La anotación en curso (11 nov 2026) mira la ruta para apuntarla
+  useLocation: () => mockLocation,
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
 }));
 
@@ -2107,3 +2110,62 @@ describe('ScoringPage · fourball con un retirado', () => {
   });
 });
 
+
+/**
+ * La anotación en curso (11 nov 2026): la pantalla repone la pestaña y el hoyo guardados y
+ * deja de guardar con el partido cerrado. El detalle vive en `useAnotacionEnCurso`; aquí,
+ * que la pantalla le pasa lo suyo.
+ */
+describe('ScoringPage: la anotación en curso', () => {
+  const CLAVE = 'anotacion_en_curso';
+  const memoria = () => {
+    const datos = new Map();
+    return {
+      getItem: (k) => (datos.has(k) ? datos.get(k) : null),
+      setItem: (k, v) => datos.set(k, String(v)),
+      removeItem: (k) => datos.delete(k),
+      clear: () => datos.clear(),
+    };
+  };
+  const guarda = async (extra = {}) => {
+    const { guardaLaAnotacionEnCurso } = await import('../../utils/anotacionEnCurso');
+    guardaLaAnotacionEnCurso({
+      cuenta: 'u1',
+      pathname: mockLocation.pathname,
+      search: '',
+      pestana: 'scorecard',
+      hoyo: 12,
+      mapa: false,
+      ...extra,
+    });
+  };
+  const estadoOriginal = mockUseScoring.scoringView.matchStatus;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal('localStorage', memoria());
+  });
+  afterEach(() => {
+    mockUseScoring.scoringView.matchStatus = estadoOriginal;
+    vi.unstubAllGlobals();
+  });
+
+  it('E1: con su anotación guardada, abre en ese hoyo y esa pestaña', async () => {
+    await guarda();
+
+    render(<ScoringPage />);
+
+    expect(mockUseScoring.setCurrentHole).toHaveBeenCalledWith(12);
+    expect(screen.getByTestId('tab-scorecard')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('E2: con el partido cerrado, olvida la anotación', async () => {
+    await guarda();
+    mockUseScoring.scoringView.matchStatus = 'COMPLETED';
+
+    render(<ScoringPage />);
+
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+    expect(mockUseScoring.setCurrentHole).not.toHaveBeenCalled();
+  });
+});

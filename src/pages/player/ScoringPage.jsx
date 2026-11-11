@@ -29,6 +29,7 @@ import SubmitScorecardModal from '../../components/scoring/SubmitScorecardModal'
 import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 
 const TABS = ['input', 'scorecard', 'leaderboard'];
 
@@ -407,6 +408,23 @@ const ScoringPage = () => {
   const handleSessionTakeOver = () => {
     takeOverSession();
   };
+
+  // Si iOS cierra la app, al abrirla se vuelve aquí, a esta pestaña, este hoyo y el mapa
+  // (11 nov 2026). Con el partido cerrado o la tarjeta entregada ya no hay a qué volver
+  useAnotacionEnCurso({
+    cargada: Boolean(scoringView) && !isLoading,
+    terminada:
+      scoringView?.matchStatus === 'COMPLETED' ||
+      cerradoSinJugar ||
+      Boolean(user?.id && scoringView?.scorecardSubmittedBy?.includes(user.id)),
+    pestana: activeTab,
+    pestanas: TABS,
+    alCambiarDePestana: setActiveTab,
+    hoyo: currentHole,
+    totalHoyos: totalHoles,
+    alCambiarDeHoyo: setCurrentHole,
+    mapa: mapaDelHoyo,
+  });
 
   if (isLoadingUser || isLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al

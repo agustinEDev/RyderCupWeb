@@ -29,6 +29,7 @@ import BlockLoader from '../../components/ui/BlockLoader';
 import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 import { useSinConexion } from '../../hooks/useSinConexion';
+import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 
 const TABS = ['input', 'classification', 'scorecard'];
 
@@ -288,6 +289,20 @@ const QuickMatchScoringPage = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [showFinishConfirm, showCancelConfirm, isSubmitting]);
+
+  // Si iOS cierra la app, al abrirla se vuelve aquí, a esta pestaña, este hoyo y el mapa
+  // (11 nov 2026). Terminada o anulada ya no hay a qué volver
+  useAnotacionEnCurso({
+    cargada: Boolean(quickMatch) && !isLoading,
+    terminada: Boolean(quickMatch?.isCompleted || quickMatch?.isCancelled),
+    pestana: activeTab,
+    pestanas: TABS,
+    alCambiarDePestana: setActiveTab,
+    hoyo: currentHole,
+    totalHoyos: totalHoles,
+    alCambiarDeHoyo: setCurrentHole,
+    mapa: mapaDelHoyo,
+  });
 
   if (isLoadingUser || isLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al

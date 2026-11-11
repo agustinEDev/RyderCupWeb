@@ -29,6 +29,7 @@ import ClasificacionDeLaFranja from '../../components/scoring/ClasificacionDeLaF
 import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
 const PESTANAS_DEL_JUGADOR = ['input', 'standings', 'cards'];
@@ -113,6 +114,24 @@ const GroupScoringPage = () => {
     return () => clearTimeout(aviso);
   }, [aunNoAbre]);
 
+  const pestanas = isMatchPlayer ? PESTANAS_DEL_JUGADOR : PESTANAS_DE_QUIEN_MIRA;
+  const activa = pestanas.includes(pestana) ? pestana : pestanas[0];
+  // Si iOS cierra la app, al abrirla se vuelve aquí, a esta pestaña, este hoyo y el mapa
+  // (11 nov 2026). Con la partida cerrada o mi tarjeta entregada ya no hay a qué volver
+  useAnotacionEnCurso({
+    cargada: Boolean(scoringView) && !isLoading,
+    terminada:
+      scoringView?.matchStatus === 'COMPLETED' ||
+      scoringView?.strokePlay?.cards?.find((c) => c.userId === user?.id)?.cardStatus === 'ENTREGADA',
+    pestana: activa,
+    pestanas,
+    alCambiarDePestana: setPestana,
+    hoyo: currentHole,
+    totalHoyos: totalHoles,
+    alCambiarDeHoyo: setCurrentHole,
+    mapa: mapaDelHoyo,
+  });
+
   if (isLoadingUser || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -148,8 +167,6 @@ const GroupScoringPage = () => {
   const { strokePlay } = scoringView;
   // Sin competición, `useUserRoles` no sabe de quién es: no organiza
   const organiza = isCreator || isAdmin;
-  const pestanas = isMatchPlayer ? PESTANAS_DEL_JUGADOR : PESTANAS_DE_QUIEN_MIRA;
-  const activa = pestanas.includes(pestana) ? pestana : pestanas[0];
   const miTarjeta = strokePlay.cards.find((c) => c.userId === userId);
   // Solo en su partida (bajas): no marca a nadie, su golpe lo valida el organizador
   const marcoA = strokePlay.iMarkUserId;

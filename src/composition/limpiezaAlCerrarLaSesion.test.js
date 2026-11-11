@@ -21,6 +21,9 @@ const orden = vi.hoisted(() => []);
 vi.mock('../services/loUltimoConocido', () => ({
   olvidaLoDeEstaCuenta: vi.fn(() => orden.push('loUltimoConocido')),
 }));
+vi.mock('../utils/anotacionEnCurso', () => ({
+  olvidaLaAnotacionEnCurso: vi.fn(() => orden.push('anotacionEnCurso')),
+}));
 vi.mock('../services/refrescoDeHandicapApuntes', () => ({
   olvidaElRefrescoDeHandicap: vi.fn(() => orden.push('refrescoDeHandicap')),
 }));
@@ -60,10 +63,10 @@ describe('limpiezaAlCerrarLaSesion', () => {
     expect(primerImport).toBe("import './composition/limpiezaAlCerrarLaSesion';");
   });
 
-  it('limpiaLaCuenta borra las cuatro cosas de la cuenta, en el orden de siempre', () => {
+  it('limpiaLaCuenta borra las cinco cosas de la cuenta, en el orden de siempre (C1: también la anotación en curso)', () => {
     limpiaLaCuenta();
 
-    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida']);
+    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida', 'anotacionEnCurso']);
   });
 
   it('un cierre forzado de verdad (dispositivo revocado) las ejecuta', () => {
@@ -74,6 +77,6 @@ describe('limpiezaAlCerrarLaSesion', () => {
       vi.useRealTimers();
     }
 
-    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida']);
+    expect(orden).toEqual(['loUltimoConocido', 'refrescoDeHandicap', 'novedades', 'sesionConocida', 'anotacionEnCurso']);
   });
 });

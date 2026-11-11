@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 /**
@@ -20,10 +20,13 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
  */
 const mockParams = { groupId: 'g-1' };
 let mockBusqueda = new URLSearchParams('competition=c-1');
+const mockLocation = { pathname: '/player/groups/0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d/scoring', search: '', hash: '', state: null, key: 'k' };
 vi.mock('react-router', () => ({
   useParams: () => mockParams,
   useSearchParams: () => [mockBusqueda],
   useNavigate: () => vi.fn(),
+  // La anotación en curso (11 nov 2026) mira la ruta para apuntarla
+  useLocation: () => mockLocation,
   Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>,
 }));
 
@@ -731,5 +734,55 @@ describe('GroupScoringPage — sesión tomada con el mapa abierto', () => {
     render(<GroupScoringPage />);
 
     expect(mapaHoyo.args.cerrarSi).toBe(true);
+  });
+});
+
+/**
+ * La anotación en curso (11 nov 2026): la pantalla repone la pestaña y el hoyo guardados y
+ * deja de guardar con la tarjeta entregada. El detalle vive en `useAnotacionEnCurso`.
+ */
+describe('GroupScoringPage: la anotación en curso', () => {
+  const CLAVE = 'anotacion_en_curso';
+  const memoria = () => {
+    const datos = new Map();
+    return {
+      getItem: (k) => (datos.has(k) ? datos.get(k) : null),
+      setItem: (k, v) => datos.set(k, String(v)),
+      removeItem: (k) => datos.delete(k),
+      clear: () => datos.clear(),
+    };
+  };
+  const guarda = async (extra = {}) => {
+    const { guardaLaAnotacionEnCurso } = await import('../../utils/anotacionEnCurso');
+    guardaLaAnotacionEnCurso({ cuenta: 'ana', pathname: mockLocation.pathname, search: '', pestana: 'standings', hoyo: 12, mapa: false, ...extra });
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal('localStorage', memoria());
+    mockBusqueda = new URLSearchParams('competition=c-1');
+    mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
+    mockHook = hook();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('E1: con su anotación guardada, abre en ese hoyo y esa pestaña', async () => {
+    await guarda();
+
+    render(<GroupScoringPage />);
+
+    expect(mockHook.setCurrentHole).toHaveBeenCalledWith(12);
+    const [, clasificacion] = within(screen.getByRole('tablist')).getAllByRole('tab');
+    expect(clasificacion).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('E2: con mi tarjeta entregada, olvida la anotación', async () => {
+    await guarda();
+    mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });
+
+    render(<GroupScoringPage />);
+
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+    expect(mockHook.setCurrentHole).not.toHaveBeenCalled();
   });
 });
