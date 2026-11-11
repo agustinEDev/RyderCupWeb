@@ -17,7 +17,7 @@ import {
  *   (nunca más allá del último) y, ya en ese hoyo, el mapa si estaba abierto y se puede.
  * - Solo después guarda, y cada cambio de pestaña, hoyo o mapa: antes, el hoyo 1 con el
  *   que arranca la pantalla pisaría el guardado.
- * - Al pasar a segundo plano renueva la hora: las 6 horas cuentan desde ahí.
+ * - Al pasar a segundo plano y al volver renueva la hora: las 6 horas cuentan desde ahí.
  * - Terminada (o la tarjeta entregada) la olvida y deja de guardar.
  * - Al salir de la anotación (la pantalla se desmonta) la olvida: se dejó a propósito.
  *   Un cierre de iOS o una recarga no desmontan nada: lo guardado sigue.
@@ -44,29 +44,45 @@ export function useAnotacionEnCurso({
   const cuenta = user?.id ?? null;
   const { pathname, search } = useLocation();
   const [guardado] = useState(() => (cuenta ? estadoDeEstaAnotacion({ cuenta, pathname, search }) : null));
-  // Solo se leen y escriben en los efectos. Los tres efectos corren en este orden en cada
-  // pasada: reponer, abrir el mapa, guardar; así el guardado ve lo ya repuesto
+  // Solo se leen y escriben en los efectos, que corren en este orden en cada pasada:
+  // reponer, esperar a que la pantalla esté en lo repuesto, guardar
   const repuesta = useRef(false);
-  const mapaEnElHoyo = useRef(null);
+  // Lo repuesto mientras la pantalla no lo refleje: hasta entonces no se guarda, o el
+  // hoyo 1 y la pestaña con los que arranca pisarían lo guardado (revisor, 11 nov 2026)
+  const pendiente = useRef(null);
   const ultimo = useRef(null);
+  const { abierto: mapaAbierto, disponible: mapaDisponible, abrir: abrirElMapa } = mapa;
 
   useEffect(() => {
     if (repuesta.current || !cargada) return;
     repuesta.current = true;
     if (!guardado || terminada) return;
-    if (pestanas.includes(guardado.pestana)) alCambiarDePestana(guardado.pestana);
+    const pestanaRepuesta = pestanas.includes(guardado.pestana) ? guardado.pestana : null;
+    if (pestanaRepuesta) alCambiarDePestana(pestanaRepuesta);
     const enElHoyo = Math.min(guardado.hoyo, Math.max(1, totalHoyos || guardado.hoyo));
     alCambiarDeHoyo(enElHoyo);
-    if (guardado.mapa) mapaEnElHoyo.current = enElHoyo;
-  }, [cargada, guardado, terminada, pestanas, alCambiarDePestana, totalHoyos, alCambiarDeHoyo]);
+    pendiente.current = { hoyo: enElHoyo, hoyoDeAntes: hoyo, pestana: pestanaRepuesta, mapa: guardado.mapa };
+  }, [cargada, guardado, terminada, pestanas, alCambiarDePestana, totalHoyos, alCambiarDeHoyo, hoyo]);
 
-  // El mapa, ya en su hoyo: abierto en otro mostraría el hoyo equivocado
-  const { abierto: mapaAbierto, disponible: mapaDisponible, abrir: abrirElMapa } = mapa;
   useEffect(() => {
-    if (mapaEnElHoyo.current === null || hoyo !== mapaEnElHoyo.current) return;
-    mapaEnElHoyo.current = null;
-    if (mapaDisponible && !mapaAbierto) abrirElMapa();
-  }, [cargada, hoyo, mapaDisponible, mapaAbierto, abrirElMapa]);
+    const p = pendiente.current;
+    if (!p) return;
+    if (hoyo !== p.hoyo) {
+      // Se movió a otro hoyo antes de que llegara el repuesto: manda lo suyo
+      if (hoyo !== p.hoyoDeAntes) pendiente.current = null;
+      return;
+    }
+    // El mapa, ya en su hoyo: abierto en otro mostraría el hoyo equivocado
+    if (p.mapa && mapaDisponible && !mapaAbierto) {
+      if (!p.abriendo) {
+        p.abriendo = true;
+        abrirElMapa();
+      }
+      return;
+    }
+    if (p.pestana !== null && pestana !== p.pestana) return;
+    pendiente.current = null;
+  }, [cargada, hoyo, pestana, mapaDisponible, mapaAbierto, abrirElMapa]);
 
   useEffect(() => {
     if (terminada) {
@@ -74,18 +90,19 @@ export function useAnotacionEnCurso({
       olvidaLaAnotacionEnCurso();
       return;
     }
-    const listo = repuesta.current && mapaEnElHoyo.current === null && cuenta !== null;
+    const listo = repuesta.current && pendiente.current === null && cuenta !== null;
     ultimo.current = listo ? { cuenta, pathname, search, pestana, hoyo, mapa: Boolean(mapaAbierto) } : null;
     if (ultimo.current) guardaLaAnotacionEnCurso(ultimo.current);
   }, [cargada, terminada, cuenta, pathname, search, pestana, hoyo, mapaAbierto]);
 
-  // Al pasar a segundo plano, la hora de nuevo: las 6 horas cuentan desde ahí
+  // Al pasar a segundo plano y al volver, la hora de nuevo: las 6 horas cuentan desde la
+  // última vez en la anotación, también si la app sigue viva horas en segundo plano
   useEffect(() => {
-    const alOcultarse = () => {
-      if (document.visibilityState === 'hidden' && ultimo.current) guardaLaAnotacionEnCurso(ultimo.current);
+    const alCambiarDeVisibilidad = () => {
+      if (ultimo.current) guardaLaAnotacionEnCurso(ultimo.current);
     };
-    document.addEventListener('visibilitychange', alOcultarse);
-    return () => document.removeEventListener('visibilitychange', alOcultarse);
+    document.addEventListener('visibilitychange', alCambiarDeVisibilidad);
+    return () => document.removeEventListener('visibilitychange', alCambiarDeVisibilidad);
   }, []);
 
   // Salir de la anotación la olvida

@@ -724,8 +724,9 @@ describe('la vuelta a la anotación en curso', () => {
       'anotacion.tipo': 'rapida',
       'anotacion.pestana': 'input',
       'anotacion.mapa': 'si',
-      'anotacion.minutos': expect.stringMatching(/^\d+$/),
+      'anotacion.cerrada': 'menos de 15',
     });
+    expect(contexto.extra).toEqual({ minutosCerrada: expect.any(Number) });
     expect(JSON.stringify(aviso.mock.calls[0])).not.toContain(ID);
   });
 

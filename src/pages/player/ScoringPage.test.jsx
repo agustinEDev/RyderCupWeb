@@ -2159,6 +2159,24 @@ describe('ScoringPage: la anotación en curso', () => {
     expect(screen.getByTestId('tab-scorecard')).toHaveAttribute('aria-selected', 'true');
   });
 
+  it.each([
+    ['concedido', { matchStatus: 'CONCEDED' }],
+    ['por walkover', { matchStatus: 'WALKOVER' }],
+    ['con mi tarjeta entregada', { scorecardSubmittedBy: ['u1'] }],
+  ])('E2: %s, olvida la anotación', async (_caso, cambio) => {
+    await guarda();
+    const antes = { ...mockUseScoring.scoringView };
+    Object.assign(mockUseScoring.scoringView, cambio);
+
+    try {
+      render(<ScoringPage />);
+
+      expect(localStorage.getItem(CLAVE)).toBeNull();
+    } finally {
+      mockUseScoring.scoringView = antes;
+    }
+  });
+
   it('E2: con el partido cerrado, olvida la anotación', async () => {
     await guarda();
     mockUseScoring.scoringView.matchStatus = 'COMPLETED';

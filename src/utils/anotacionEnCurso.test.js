@@ -153,7 +153,7 @@ describe('la anotación en curso', () => {
 
   it.each([
     ['una ruta que no es de anotación', { ruta: '/admin' }],
-    ['una dirección de fuera', { ruta: 'https://ejemplo.com/quick-matches/x/scoring' }],
+    ['una dirección de fuera', { ruta: `https://ejemplo.com/quick-matches/${ID}/scoring` }],
     ['una ruta que empieza por //', { ruta: `//ejemplo.com/quick-matches/${ID}/scoring` }],
     ['una pestaña desconocida', { pestana: 'cualquiera' }],
     ['un hoyo imposible', { hoyo: 99 }],

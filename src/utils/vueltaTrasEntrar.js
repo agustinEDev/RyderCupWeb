@@ -216,9 +216,11 @@ export const vueltaTrasEntrar = (from, { cuenta = null, arranque = false } = {})
   olvidaLaVueltaTrasEntrar();
   if (from == null && guardada === null) {
     const anotacion = leeLaAnotacionEnCurso({ cuenta });
-    if (anotacion) {
+    // La lista cerrada ya la filtra; `rutaPropia`, por si acaso, como toda vuelta
+    const ruta = anotacion ? rutaPropia(anotacion.ruta) : null;
+    if (ruta) {
       if (arranque) avisaDeLaVueltaALaAnotacion(anotacion);
-      return anotacion.ruta;
+      return ruta;
     }
   }
   return rutaDeVuelta(from ?? guardada ?? undefined);

@@ -47,7 +47,7 @@ const guarda = (extra = {}) =>
   guardaLaAnotacionEnCurso({ cuenta: 'u-anota', pathname: RUTA, search: '', pestana: 'input', hoyo: 12, mapa: false, ...extra });
 
 /** Una pantalla de anotación de mentira: su pestaña, su hoyo y su mapa, como las de verdad. */
-const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, disponible = true } = {}) => {
+const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, disponible = true, hoyoFijo = false, pestanaFija = false } = {}) => {
   const [pestana, setPestana] = useState('input');
   const [hoyo, setHoyo] = useState(1);
   const [abierto, setAbierto] = useState(false);
@@ -57,10 +57,11 @@ const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, dispo
     terminada,
     pestana,
     pestanas: PESTANAS,
-    alCambiarDePestana: setPestana,
+    alCambiarDePestana: pestanaFija ? () => {} : setPestana,
     hoyo,
     totalHoyos,
-    alCambiarDeHoyo: setHoyo,
+    // `hoyoFijo`: una pantalla cuyo hoyo aún no ha cambiado (el estado llega en otro render)
+    alCambiarDeHoyo: hoyoFijo ? () => {} : setHoyo,
     mapa,
   });
   return { pestana, setPestana, hoyo, setHoyo, abierto, setAbierto };
@@ -101,6 +102,45 @@ describe('useAnotacionEnCurso', () => {
     monta({ cargada: false });
 
     expect(guardado().hoyo).toBe(12);
+  });
+
+  it('H2b: al reponer, mientras la pantalla no está en el hoyo guardado, no guarda el 1 inicial', () => {
+    guarda({ hoyo: 12, pestana: 'classification' });
+    const escrito = vi.spyOn(localStorage, 'setItem');
+
+    monta({ hoyoFijo: true });
+
+    expect(guardado()).toMatchObject({ hoyo: 12, pestana: 'classification' });
+    expect(escrito).not.toHaveBeenCalled();
+  });
+
+  it('H2c: al reponer no se escribe nunca el hoyo 1 ni la pestaña inicial', () => {
+    guarda({ hoyo: 12, pestana: 'classification', mapa: true });
+    const escrito = vi.spyOn(localStorage, 'setItem');
+
+    monta();
+
+    const escritos = escrito.mock.calls.map(([, v]) => JSON.parse(v));
+    expect(escritos.every((e) => e.hoyo === 12 && e.pestana === 'classification')).toBe(true);
+    expect(escritos.every((e) => e.mapa === true)).toBe(true);
+  });
+
+  it('H2e: con el hoyo ya repuesto pero la pestaña aún no, no guarda la pestaña inicial', () => {
+    guarda({ hoyo: 12, pestana: 'classification' });
+
+    monta({ pestanaFija: true });
+
+    expect(guardado()).toMatchObject({ hoyo: 12, pestana: 'classification' });
+  });
+
+  it('H2d: si el jugador cambia de hoyo antes de que se reponga, manda lo suyo y se guarda', () => {
+    guarda({ hoyo: 12, mapa: true });
+    const { result } = monta({ hoyoFijo: true });
+
+    act(() => result.current.setHoyo(3));
+
+    expect(guardado()).toMatchObject({ hoyo: 3, mapa: false });
+    expect(result.current.abierto).toBe(false);
   });
 
   it('H3: un cambio de pestaña, hoyo o mapa se guarda', () => {

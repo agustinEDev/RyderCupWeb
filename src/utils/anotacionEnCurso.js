@@ -20,7 +20,7 @@
  */
 
 const CLAVE = 'anotacion_en_curso';
-export const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
+const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
 
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const RUTAS = [

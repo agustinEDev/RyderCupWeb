@@ -754,19 +754,25 @@ describe('GroupScoringPage: la anotación en curso', () => {
   };
   const guarda = async (extra = {}) => {
     const { guardaLaAnotacionEnCurso } = await import('../../utils/anotacionEnCurso');
-    guardaLaAnotacionEnCurso({ cuenta: 'ana', pathname: mockLocation.pathname, search: '', pestana: 'standings', hoyo: 12, mapa: false, ...extra });
+    guardaLaAnotacionEnCurso({ cuenta: 'ana', pathname: mockLocation.pathname, search: mockLocation.search, pestana: 'standings', hoyo: 12, mapa: false, ...extra });
   };
+  const COMPETICION = '1c6b7d2f-3e4a-4b6c-9d8e-0f1a2b3c4d5e';
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('localStorage', memoria());
-    mockBusqueda = new URLSearchParams('competition=c-1');
+    // Como llega de verdad: la de grupo con su competición en la búsqueda
+    mockLocation.search = `?competition=${COMPETICION}`;
+    mockBusqueda = new URLSearchParams(`competition=${COMPETICION}`);
     mockRoles = { isAdmin: false, isCreator: false, isLoading: false };
     mockHook = hook();
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    mockLocation.search = '';
+    vi.unstubAllGlobals();
+  });
 
-  it('E1: con su anotación guardada, abre en ese hoyo y esa pestaña', async () => {
+  it('E1: con su anotación guardada (con su ?competition=), abre en ese hoyo y esa pestaña', async () => {
     await guarda();
 
     render(<GroupScoringPage />);
