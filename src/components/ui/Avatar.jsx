@@ -32,7 +32,7 @@ const ICON_SIZE_CLASSES = {
  */
 /**
  * La dirección de la imagen, o `null`: sin id, o con uno que no vale para una ruta (`.`,
- * `..`), se pinta el icono en vez de romper la pantalla (FE-03).
+ * `..`, o con `/` o `\`), se pinta el icono en vez de romper la pantalla (FE-03).
  */
 const rutaDelAvatar = (userId, version) => {
   // Se mira antes, sin avisar: `segmento` avisaría a Sentry en cada render

@@ -13,6 +13,7 @@ solo comprobaba los `integrity` que había (probador de la #1098, 11 nov 2026).
 | R3   | un <link rel=modulepreload> sin integrity                            | 1      |
 | R4   | un <link rel=stylesheet> sin integrity                               | 1      |
 | R5   | iconos y manifiesto sin integrity: no se les pide (no lo admiten)    | 0      |
+| R6   | rel con varios valores («preload stylesheet») sin integrity          | 1      |
 """
 
 import base64
@@ -32,7 +33,7 @@ def _sri(contenido):
     return "sha384-" + base64.b64encode(hashlib.sha384(contenido).digest()).decode()
 
 
-def _dist(raiz, *, script=True, precarga=True, estilo=True):
+def _dist(raiz, *, script=True, precarga=True, estilo=True, rel_estilo="stylesheet"):
     """Un build mínimo; cada flag dice si esa etiqueta lleva integrity."""
     d = Path(raiz)
     (d / "assets").mkdir()
@@ -48,7 +49,7 @@ def _dist(raiz, *, script=True, precarga=True, estilo=True):
         "<html><head>"
         f'<script type="module" crossorigin src="/assets/index.js"{con(JS, script)}></script>'
         f'<link rel="modulepreload" crossorigin href="/assets/vendor.js"{con(JS, precarga)}>'
-        f'<link rel="stylesheet" crossorigin href="/assets/index.css"{con(CSS, estilo)}>'
+        f'<link rel="{rel_estilo}" crossorigin href="/assets/index.css"{con(CSS, estilo)}>'
         '<link rel="icon" href="/favicon.svg"><link rel="manifest" href="/manifest.webmanifest">'
         '</head><body><div id="root"></div></body></html>'
     )
@@ -80,7 +81,16 @@ class IntegridadObligatoria(unittest.TestCase):
         self.assertIn("/assets/index.css", fallos[0])
 
     def test_r5_iconos_y_manifiesto_no_lo_necesitan(self):
-        self.assertEqual(self.fallos(), [])
+        # El build tiene icono y manifiesto sin integrity, y no salen en los fallos
+        with tempfile.TemporaryDirectory() as raiz:
+            dist = _dist(raiz)
+            self.assertIn('rel="icon"', (dist / "index.html").read_text())
+            self.assertEqual(smoke.comprobar(dist, "1.0.0"), [])
+
+    def test_r6_rel_con_varios_valores(self):
+        fallos = self.fallos(estilo=False, rel_estilo="preload stylesheet")
+        self.assertEqual(len(fallos), 1)
+        self.assertIn("/assets/index.css", fallos[0])
 
 
 if __name__ == "__main__":

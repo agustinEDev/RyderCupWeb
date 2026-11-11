@@ -6,13 +6,13 @@ import { segmento, valeComoSegmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } 
  * la dirección (`useParams`), así que un enlace preparado podría colar `..` o `/` y hacer
  * que el navegador llamara a otra ruta con las cookies y el token CSRF (CSPT).
  *
- *   C1 cada id se codifica: `/`, `?`, `#`, `%` y espacios no cambian la ruta
- *   C4 `/` o `\` en un valor no vale: el servidor (Uvicorn) decodifica `%2F` antes de
- *      enrutar, así que un id con `/` añadía tramos a la ruta (probador, 11 nov 2026)
+ *   C1 cada id se codifica: `?`, `#`, `%` y espacios no cambian la ruta
  *   C2 `.` o `..` no vale: el navegador los resuelve como «aquí» y «arriba». Uno vacío,
  *      null o undefined sale como antes (`/x//y`, `/x/undefined/y`): el servidor contesta
  *      404 y las pantallas ya lo tratan (code-review, 11 nov 2026)
  *   C3 la ruta final: solo de la API, sin `..` ni `.` (tampoco `%2e`), sin `//` delante
+ *   C4 `/` o `\` en un valor no vale: el servidor (Uvicorn) decodifica `%2F` antes de
+ *      enrutar, así que un id con `/` añadía tramos a la ruta (probador, 11 nov 2026)
  */
 const UUID = '0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d';
 

@@ -43,7 +43,8 @@ _ATRIBUTO = re.compile(r"""(\w[\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))"
 # ./<nombre>.js|css entre chunks, relativo al que lo pide (40 de 166, 1 oct 2026)
 _ASSET_DIFERIDO = re.compile(r"assets/[\w.-]+\.(?:js|css)")
 _ASSET_RELATIVO = re.compile(r"\./([\w.-]+\.(?:js|css))")
-# Las etiquetas que tienen que llevar integrity (SRI): scripts, precargas de módulos y estilos
+# Los `rel` que tienen que llevar integrity (SRI), además de los <script src>: precargas
+# de módulos y estilos
 _CON_INTEGRITY = {"modulepreload", "stylesheet"}
 # El navegador se queda con el algoritmo más fuerte y acepta si cuadra uno de él
 _FUERZA = {"sha256": 1, "sha384": 2, "sha512": 3}
@@ -135,7 +136,8 @@ def comprobar(dist: Path, esperada: str, cuentas: dict | None = None) -> list[st
                 continue
             integrity = atributos.get("integrity", "").strip()
             es_script = etiqueta.lower().startswith("<script")
-            if not integrity and (es_script or atributos.get("rel", "").lower() in _CON_INTEGRITY):
+            rel = set(atributos.get("rel", "").lower().split())
+            if not integrity and (es_script or rel & _CON_INTEGRITY):
                 fallos.append(f"{ruta}: sin integrity (SRI)")
             if integrity:
                 cuentas["integrity"] = cuentas.get("integrity", 0) + 1
