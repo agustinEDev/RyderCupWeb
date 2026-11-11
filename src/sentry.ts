@@ -26,7 +26,7 @@
  * - VITE_SENTRY_ATTACH_STACKTRACE
  */
 
-import { init, replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
+import { replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
 import { grabaSoloLoQueNoEsNormal } from './utils/avisoDeCierreForzado';
 import { useEffect } from 'react';
 import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router';
@@ -51,11 +51,6 @@ const SENTRY_CONFIG = {
 // Obtener release desde package.json
 const RELEASE = `rydercup-web@${import.meta.env.VITE_APP_VERSION}`;
 
-// Misma prioridad que el resto del codigo: runtime config primero (FE #392).
-// En un despliegue en contenedor la variable de compilacion ni siquiera existe
-// -el Dockerfile no declara build args-, asi que sin esto el origen de la API
-// no entra en las listas de Sentry y las llamadas se quedan sin traza.
-const API_URL = globalThis.APP_CONFIG?.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || '';
 
 // ============================================
 // VALIDACIÓN DE CONFIGURACIÓN
@@ -127,148 +122,19 @@ if (!SENTRY_CONFIG.dsn) {
   // INICIALIZACIÓN DE SENTRY
   // ============================================
 
-  // Check if Sentry was already initialized (minimal init in main.jsx)
+  // El cliente lo crea siempre `main.jsx` (con DSN, que es la misma condición de este
+  // bloque): aquí solo se le añaden las integraciones pesadas. Hasta la 2.74.0 había
+  // además una inicialización completa para cuando no hubiera cliente que nunca se
+  // ejecutaba: sus filtros no se aplicaban y propagaba las trazas a cualquier
+  // `*.onrender.com` (FE-07, fase 4 del plan a 9). El saneado de verdad vive en
+  // `main.jsx` (`sentryScrubbing`)
   const existingClient = getClient();
-
   if (existingClient) {
-    // Sentry is already initialized - add heavy integrations
-    console.log('📦 Adding heavy Sentry integrations to existing client...');
-
-    // Add integrations to existing client
-    integrations.forEach(integration => {
+    integrations.forEach((integration) => {
       existingClient.addIntegration(integration);
     });
     // El router de la aplicación ya existe: con el seguimiento puesto, Sentry
     // lo instrumenta ahora (FE #647; antes lo hacía `withSentryReactRouterV7Routing`)
-    instrumentarRouterEnSentry();
-
-    // Note: Sample rates are set in main.jsx early init and cannot be modified here
-    // The client will use the rates configured during initialization
-
-    console.log('✅ Heavy Sentry integrations added successfully');
-  } else {
-    // OJO: en el navegador este `else` no se ejecuta nunca. `main.jsx` llama a
-    // `Sentry.init()` en cuanto hay DSN -la misma variable que mira este
-    // fichero-, asi que al cargar esto ya hay cliente y se toma la rama de
-    // arriba. Todo lo que se configure aqui abajo es papel mojado: los ganchos
-    // que si filtran (`beforeSend`, `beforeBreadcrumb`, `beforeSendTransaction`)
-    // viven en `main.jsx`. Se conserva por si algun dia se retira aquel init.
-    // Sentry not initialized yet - do full initialization
-    init({
-    dsn: SENTRY_CONFIG.dsn,
-    environment: SENTRY_CONFIG.environment,
-    release: RELEASE,
-    debug: SENTRY_CONFIG.debug,
-
-    // Integraciones
-    integrations,
-
-    // ===== PERFORMANCE MONITORING =====
-    tracesSampleRate: SENTRY_CONFIG.tracesSampleRate,
-
-    // ===== SESSION REPLAY =====
-    replaysSessionSampleRate: SENTRY_CONFIG.replaysSessionSampleRate,
-    replaysOnErrorSampleRate: SENTRY_CONFIG.replaysOnErrorSampleRate,
-
-    // ===== CONFIGURACIÓN GENERAL =====
-    // autoSessionTracking removido en Sentry 10
-    attachStacktrace: SENTRY_CONFIG.attachStacktrace,
-
-    // Propagación de traces (movido desde browserTracingIntegration en v10)
-    tracePropagationTargets: [
-      'localhost',
-      /^\//,
-      /^https?:\/\/.*\.onrender\.com/,
-      API_URL,
-    ].filter(Boolean),
-
-    // Normalización de URLs (remover query strings con datos sensibles)
-    normalizeDepth: 5,
-
-    // ===== FILTRADO DE EVENTOS =====
-    beforeSend(event, hint) {
-      // Filtrar errores conocidos o no críticos
-
-      // 1. Ignorar errores de extensiones de navegador
-      if (event.exception) {
-        const exceptionValue = event.exception.values?.[0]?.value;
-        if (
-          exceptionValue?.includes('chrome-extension://') ||
-          exceptionValue?.includes('moz-extension://')
-        ) {
-          return null; // No enviar evento
-        }
-      }
-
-      // 2. Ignorar errores de red común (timeout)
-      if (event.message?.includes('timeout')) {
-        return null;
-      }
-
-      // 3. Sanitizar datos sensibles: los secretos de las URLs, en todo el
-      // evento (tambien el Referer), y lo que no es URL
-      sentryScrubbing.beforeSend(event);
-      if (event.request) {
-        // Remover headers sensibles
-        delete event.request.headers?.Authorization;
-        delete event.request.headers?.Cookie;
-
-        // El cuerpo ya sale sin secretos de `sentryScrubbing.beforeSend` (arriba)
-      }
-
-      // 4. En desarrollo, mostrar error en consola también
-      if (SENTRY_CONFIG.debug && hint.originalException) {
-        console.error('🐛 Sentry captured error:', hint.originalException);
-      }
-
-      return event; // Enviar evento
-    },
-
-    // Filtrar transacciones (rendimiento)
-    beforeSendTransaction(transaction) {
-      // Ignorar transacciones muy rápidas (< 50ms) para reducir ruido
-      const duration = transaction.timestamp - transaction.start_timestamp;
-      if (duration < 0.05) {
-        return null;
-      }
-
-      // Los spans HTTP llevan la URL completa en su descripción y en sus datos,
-      // asi que la query string entra por aqui igual que por los breadcrumbs
-      sentryScrubbing.beforeSendTransaction(transaction);
-
-      return transaction;
-    },
-
-    // Los spans sueltos no pasan por el gancho de arriba. Esta rama hoy no se
-    // ejecuta, pero se conserva por si se retira el init de `main.jsx`: si
-    // llegara ese dia, sin esto volveria el mismo agujero que cierra la FE #385.
-    beforeSendSpan(span) {
-      sentryScrubbing.beforeSendSpan(span);
-      return span;
-    },
-
-    // ===== OPCIONES DE TRANSPORTE =====
-    // Configurar tiempo de espera y reintentos
-    transport: undefined, // Usar transporte por defecto
-    transportOptions: {
-      // No configurar si usamos valores por defecto
-    },
-
-    // ===== CONFIGURACIÓN DE BREADCRUMBS =====
-    maxBreadcrumbs: 100, // Máximo de breadcrumbs a guardar
-    beforeBreadcrumb(breadcrumb, hint) {
-      // Filtrar breadcrumbs de consola en producción
-      if (breadcrumb.category === 'console' && SENTRY_CONFIG.environment === 'production') {
-        return null;
-      }
-
-      // Sanitizar URLs con tokens o con la posicion del usuario (FE #385),
-      // tambien el from/to de las navegaciones
-      sentryScrubbing.beforeBreadcrumb(breadcrumb);
-
-      return breadcrumb;
-    },
-  });
     instrumentarRouterEnSentry();
   }
 
