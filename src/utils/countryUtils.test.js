@@ -144,6 +144,8 @@ describe('countryUtils', () => {
   });
 });
 
+// U6 (25 oct 2026): Sentry recoge la consola como migas, y el país del usuario
+// salía en cada error de la pantalla de perfil
 describe('canUseRFEG · sin consola', () => {
   it('U6: no escribe el país del usuario en la consola', () => {
     const espias = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
