@@ -3,6 +3,7 @@ import Device from '../../domain/entities/Device.js';
 import IDeviceRepository from '../../domain/repositories/IDeviceRepository.js';
 import apiRequest from '../http/api.js';
 import { RUTA_DEL_USUARIO_ACTUAL } from '../../utils/rutasDeLaSesion';
+import { segmento } from '../http/api';
 
 /**
  * API implementation of Device Repository
@@ -75,7 +76,7 @@ class ApiDeviceRepository extends IDeviceRepository {
     }
 
     try {
-      const data = await apiRequest(`/api/v1/users/me/devices/${deviceId}`, {
+      const data = await apiRequest(`/api/v1/users/me/devices/${segmento(deviceId)}`, {
         method: 'DELETE',
       });
 

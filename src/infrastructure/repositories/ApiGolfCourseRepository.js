@@ -5,6 +5,7 @@ import HoleSampleMapper from '../mappers/HoleSampleMapper';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IGolfCourseRepository from '../../domain/repositories/IGolfCourseRepository.js';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * API Implementation of Golf Course Repository
@@ -75,7 +76,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async getById(id) {
-    const data = await apiRequest(`/api/v1/golf-courses/${id}`);
+    const data = await apiRequest(`/api/v1/golf-courses/${segmento(id)}`);
     return new GolfCourse(data);
   }
 
@@ -86,7 +87,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async getHoleMap(id) {
     try {
-      return HoleMapMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map`));
+      return HoleMapMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map`));
     } catch (error) {
       if (error?.status === 404 && error?.errorCode === 'HOLE_MAP_NOT_FOUND') return null;
       throw error;
@@ -99,7 +100,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * mala cobertura la petición no falla, se queda colgada
    */
   async getHoleSamples(id) {
-    return HoleSampleMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples`, { topeMs: TOPE_DE_ANOTAR_MS }));
+    return HoleSampleMapper.toDomain(await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map/samples`, { topeMs: TOPE_DE_ANOTAR_MS }));
   }
 
   /** @override */
@@ -109,12 +110,12 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
 
   /** @override */
   async getHoleReview(id) {
-    return HoleReviewMapper.reviewToDomain(await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reviews`));
+    return HoleReviewMapper.reviewToDomain(await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-reviews`));
   }
 
   /** @override */
   async saveHoleLine(id, holeNumber, linea) {
-    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-lines/${holeNumber}`, {
+    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-lines/${segmento(holeNumber)}`, {
       method: 'PUT',
       body: JSON.stringify(HoleReviewMapper.lineToApi(linea)),
     });
@@ -122,19 +123,19 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
 
   /** @override */
   async reopenHole(id, holeNumber) {
-    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-lines/${holeNumber}`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-lines/${segmento(holeNumber)}`, { method: 'DELETE' });
   }
 
   /** @override */
   async deleteHoleSample(id, sampleId) {
-    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-samples/${sampleId}`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-samples/${segmento(sampleId)}`, { method: 'DELETE' });
   }
 
   /**
    * @override
    */
   async discardHoleReport(id, reportId) {
-    await apiRequest(`/api/v1/golf-courses/admin/${id}/hole-reports/${reportId}`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/hole-reports/${segmento(reportId)}`, { method: 'DELETE' });
   }
 
   /**
@@ -145,7 +146,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async sendHoleSample(id, holeNumber, muestra) {
     try {
-      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/samples/${holeNumber}`, {
+      await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map/samples/${segmento(holeNumber)}`, {
         method: 'POST',
         body: JSON.stringify(HoleSampleMapper.toApi(muestra)),
         topeMs: TOPE_DE_ANOTAR_MS,
@@ -162,7 +163,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    */
   async sendHoleReport(id, holeNumber, reporte) {
     try {
-      await apiRequest(`/api/v1/golf-courses/${id}/hole-map/reports/${holeNumber}`, {
+      await apiRequest(`/api/v1/golf-courses/${segmento(id)}/hole-map/reports/${segmento(holeNumber)}`, {
         method: 'POST',
         body: JSON.stringify(HoleSampleMapper.reportToApi(reporte)),
         topeMs: TOPE_DE_ANOTAR_MS,
@@ -208,7 +209,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
   async update(id, golfCourseData) {
     const payload = this._mapToApiPayload(golfCourseData);
 
-    const data = await apiRequest(`/api/v1/golf-courses/${id}`, {
+    const data = await apiRequest(`/api/v1/golf-courses/${segmento(id)}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -231,7 +232,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async approve(id) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${id}/approve`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/approve`, {
       method: 'PUT',
     });
 
@@ -242,7 +243,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async reject(id, reason) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${id}/reject?reason=${encodeURIComponent(reason)}`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(id)}/reject?reason=${encodeURIComponent(reason)}`, {
       method: 'PUT',
     });
 
@@ -253,7 +254,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async approveUpdate(cloneId) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${cloneId}/approve-update`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(cloneId)}/approve-update`, {
       method: 'PUT',
     });
 
@@ -264,7 +265,7 @@ class ApiGolfCourseRepository extends IGolfCourseRepository {
    * @override
    */
   async rejectUpdate(cloneId) {
-    const data = await apiRequest(`/api/v1/golf-courses/admin/${cloneId}/reject-update`, {
+    const data = await apiRequest(`/api/v1/golf-courses/admin/${segmento(cloneId)}/reject-update`, {
       method: 'PUT',
     });
 

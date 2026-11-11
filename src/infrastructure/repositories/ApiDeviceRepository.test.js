@@ -9,7 +9,8 @@ import Device from '../../domain/entities/Device';
 import * as apiModule from '../http/api';
 
 // Mock the api module
-vi.mock('../http/api', () => ({
+vi.mock('../http/api', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
   default: vi.fn(),
 }));
 

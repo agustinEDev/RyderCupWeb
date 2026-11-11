@@ -1,5 +1,6 @@
 import IAdminRepository from '../../domain/repositories/IAdminRepository.js';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * API Implementation of Admin Repository
@@ -60,7 +61,7 @@ class ApiAdminRepository extends IAdminRepository {
     if (data.countryCode !== undefined) payload.country_code = data.countryCode;
     if (data.isAdmin !== undefined) payload.is_admin = data.isAdmin;
 
-    const result = await apiRequest(`/api/v1/admin/users/${userId}`, {
+    const result = await apiRequest(`/api/v1/admin/users/${segmento(userId)}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -71,7 +72,7 @@ class ApiAdminRepository extends IAdminRepository {
    * @override
    */
   async setUserActive(userId, isActive) {
-    await apiRequest(`/api/v1/admin/users/${userId}/active`, {
+    await apiRequest(`/api/v1/admin/users/${segmento(userId)}/active`, {
       method: 'PUT',
       body: JSON.stringify({ is_active: isActive }),
     });
@@ -81,7 +82,7 @@ class ApiAdminRepository extends IAdminRepository {
    * @override
    */
   async deleteUser(userId) {
-    await apiRequest(`/api/v1/admin/users/${userId}`, {
+    await apiRequest(`/api/v1/admin/users/${segmento(userId)}`, {
       method: 'DELETE',
     });
   }

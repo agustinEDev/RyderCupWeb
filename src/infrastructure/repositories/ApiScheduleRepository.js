@@ -3,6 +3,7 @@
 import apiRequest from '../http/api.js';
 import IScheduleRepository from '../../domain/repositories/IScheduleRepository.js';
 import ScheduleMapper from '../mappers/ScheduleMapper';
+import { segmento } from '../http/api';
 
 /**
  * Implementacion REST del repositorio de Schedule.
@@ -13,7 +14,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * GET /api/v1/competitions/{competitionId}/schedule
    */
   async getSchedule(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/schedule`);
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/schedule`);
     return ScheduleMapper.toScheduleDTO(data);
   }
 
@@ -21,7 +22,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * POST /api/v1/competitions/{competitionId}/schedule/configure
    */
   async configureSchedule(competitionId, config) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/schedule/configure`, {
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/schedule/configure`, {
       method: 'POST',
       body: JSON.stringify(config),
     });
@@ -32,7 +33,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * POST /api/v1/competitions/{competitionId}/teams
    */
   async assignTeams(competitionId, teamData) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/teams`, {
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/teams`, {
       method: 'POST',
       body: JSON.stringify(teamData),
     });
@@ -43,14 +44,14 @@ class ApiScheduleRepository extends IScheduleRepository {
    * DELETE /api/v1/competitions/{competitionId}/teams (30 oct 2026)
    */
   async undoTeams(competitionId) {
-    await apiRequest(`/api/v1/competitions/${competitionId}/teams`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/teams`, { method: 'DELETE' });
   }
 
   /**
    * POST /api/v1/competitions/{competitionId}/rounds
    */
   async createRound(competitionId, roundData) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/rounds`, {
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/rounds`, {
       method: 'POST',
       body: JSON.stringify(roundData),
     });
@@ -61,7 +62,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * PUT /api/v1/competitions/rounds/{roundId}
    */
   async updateRound(roundId, roundData) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}`, {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}`, {
       method: 'PUT',
       body: JSON.stringify(roundData),
     });
@@ -72,7 +73,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * DELETE /api/v1/competitions/rounds/{roundId}
    */
   async deleteRound(roundId) {
-    await apiRequest(`/api/v1/competitions/rounds/${roundId}`, {
+    await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}`, {
       method: 'DELETE',
     });
   }
@@ -84,7 +85,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * POST /api/v1/competitions/rounds/{roundId}/places
    */
   async takePlace(roundId, { userId, insteadOfRoundId } = {}) {
-    return apiRequest(`/api/v1/competitions/rounds/${roundId}/places`, {
+    return apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/places`, {
       method: 'POST',
       body: JSON.stringify({
         ...(userId ? { user_id: userId } : {}),
@@ -95,17 +96,17 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** DELETE /api/v1/competitions/rounds/{roundId}/places/{userId} */
   async releasePlace(roundId, userId) {
-    await apiRequest(`/api/v1/competitions/rounds/${roundId}/places/${userId}`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/places/${segmento(userId)}`, { method: 'DELETE' });
   }
 
   /** Esperar en una franja llena, uno mismo (RyderCupAm#512). */
   async joinWaitingList(roundId) {
-    return apiRequest(`/api/v1/competitions/rounds/${roundId}/waiting-list`, { method: 'POST' });
+    return apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/waiting-list`, { method: 'POST' });
   }
 
   /** DELETE /api/v1/competitions/rounds/{roundId}/waiting-list/{userId} */
   async leaveWaitingList(roundId, userId) {
-    await apiRequest(`/api/v1/competitions/rounds/${roundId}/waiting-list/${userId}`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/waiting-list/${segmento(userId)}`, { method: 'DELETE' });
   }
 
   /** Las plazas que me asignaron desde la espera y aún no he visto. */
@@ -124,7 +125,7 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** «Entendido»: ya la he visto. */
   async acknowledgeAssignedPlace(roundId) {
-    await apiRequest(`/api/v1/competitions/me/assigned-places/${roundId}/acknowledge`, { method: 'POST' });
+    await apiRequest(`/api/v1/competitions/me/assigned-places/${segmento(roundId)}/acknowledge`, { method: 'POST' });
   }
 
   // --- Partidas de las franjas (FE #824, PR 6; RyderCupAm#534) ---
@@ -132,12 +133,12 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** GET /api/v1/competitions/rounds/{roundId}/groups */
   async getTeeGroups(roundId) {
-    return ScheduleMapper.toTeeGroupsDTO(await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups`));
+    return ScheduleMapper.toTeeGroupsDTO(await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/groups`));
   }
 
   /** Las mías, por jornada: GET /api/v1/competitions/{competitionId}/groups/me */
   async getMyTeeGroups(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/groups/me`);
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/groups/me`);
     return (data?.groups || []).map((m) => ({
       roundId: m.round_id,
       roundDate: m.round_date,
@@ -150,7 +151,7 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** Por hándicap fijado, en ese orden: sustituye las que hubiera. */
   async generateTeeGroups(roundId, order) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups/generate`, {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/groups/generate`, {
       method: 'POST',
       body: JSON.stringify({ order }),
     });
@@ -159,7 +160,7 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** Sin `groupId`, a una partida nueva al final; con `swapWithUserId`, intercambiando. */
   async moveTeeGroupPlayer(roundId, { userId, groupId, swapWithUserId }) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups/players`, {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/groups/players`, {
       method: 'POST',
       body: JSON.stringify({
         user_id: userId,
@@ -172,7 +173,7 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** PUT .../groups/order: todas, una vez cada una. */
   async reorderTeeGroups(roundId, groupIds) {
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups/order`, {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/groups/order`, {
       method: 'PUT',
       body: JSON.stringify({ group_ids: groupIds }),
     });
@@ -181,7 +182,7 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** PUT /api/v1/competitions/groups/{groupId}/markers: la partida entera. */
   async setTeeGroupMarkers(groupId, markers) {
-    const data = await apiRequest(`/api/v1/competitions/groups/${groupId}/markers`, {
+    const data = await apiRequest(`/api/v1/competitions/groups/${segmento(groupId)}/markers`, {
       method: 'PUT',
       body: JSON.stringify({ markers: markers.map((m) => ({ user_id: m.userId, marks_user_id: m.marksUserId })) }),
     });
@@ -190,7 +191,7 @@ class ApiScheduleRepository extends IScheduleRepository {
 
   /** DELETE /api/v1/competitions/rounds/{roundId}/groups */
   async deleteTeeGroups(roundId) {
-    await apiRequest(`/api/v1/competitions/rounds/${roundId}/groups`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/groups`, { method: 'DELETE' });
   }
 
   /**
@@ -205,7 +206,7 @@ class ApiScheduleRepository extends IScheduleRepository {
         })),
       }
       : {};
-    const data = await apiRequest(`/api/v1/competitions/rounds/${roundId}/matches/generate`, {
+    const data = await apiRequest(`/api/v1/competitions/rounds/${segmento(roundId)}/matches/generate`, {
       method: 'POST',
       body: JSON.stringify(body),
     });
@@ -216,7 +217,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * GET /api/v1/competitions/matches/{matchId}
    */
   async getMatchDetail(matchId) {
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}`);
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}`);
     return ScheduleMapper.toMatchDTO(data);
   }
 
@@ -228,7 +229,7 @@ class ApiScheduleRepository extends IScheduleRepository {
     if (result) {
       body.result = result;
     }
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/status`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/status`, {
       method: 'PUT',
       body: JSON.stringify(body),
     });
@@ -239,7 +240,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * POST /api/v1/competitions/matches/{matchId}/walkover
    */
   async declareWalkover(matchId, winningTeam, reason) {
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/walkover`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/walkover`, {
       method: 'POST',
       body: JSON.stringify({
         winning_team: winningTeam,
@@ -253,7 +254,7 @@ class ApiScheduleRepository extends IScheduleRepository {
    * PUT /api/v1/competitions/matches/{matchId}/players
    */
   async reassignPlayers(matchId, teamAIds, teamBIds) {
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/players`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/players`, {
       method: 'PUT',
       body: JSON.stringify({
         team_a_player_ids: teamAIds,

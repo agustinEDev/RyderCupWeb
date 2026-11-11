@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, Check } from 'lucide-react';
 import Avatar from '../ui/Avatar';
-import { getApiBaseUrl } from '../../composition/http';
+import { urlDeImagenDeLaApi } from '../../composition/http';
 import BlockLoader from '../ui/BlockLoader';
 
 const AvatarPicker = ({
@@ -73,11 +73,14 @@ const AvatarPicker = ({
                       isSelected ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
-                    <img
-                      src={`${getApiBaseUrl()}${preset.image_url}`}
-                      alt={`Preset ${preset.id}`}
-                      className="w-full h-full object-cover"
-                    />
+                    {/* Solo si es una ruta de la propia API (FE-11) */}
+                    {urlDeImagenDeLaApi(preset.image_url) && (
+                      <img
+                        src={urlDeImagenDeLaApi(preset.image_url)}
+                        alt={`Preset ${preset.id}`}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                     {isSelected && (
                       <span className="absolute inset-0 flex items-center justify-center bg-primary/20">
                         <Check className="w-5 h-5 text-white drop-shadow" />
@@ -103,12 +106,15 @@ const AvatarPicker = ({
                       upload.is_active ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
-                    <img
-                      src={`${getApiBaseUrl()}${upload.image_url}`}
-                      alt=""
-                      crossOrigin="use-credentials"
-                      className="w-full h-full object-cover"
-                    />
+                    {/* Solo si es una ruta de la propia API: va con credenciales (FE-11) */}
+                    {urlDeImagenDeLaApi(upload.image_url) && (
+                      <img
+                        src={urlDeImagenDeLaApi(upload.image_url)}
+                        alt=""
+                        crossOrigin="use-credentials"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                     {upload.is_active && (
                       <span className="absolute inset-0 flex items-center justify-center bg-primary/20">
                         <Check className="w-4 h-4 text-white drop-shadow" />

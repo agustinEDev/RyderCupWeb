@@ -1,6 +1,7 @@
 import IFriendRepository from '../../domain/repositories/IFriendRepository';
 import FriendshipMapper from '../mappers/FriendshipMapper';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * ApiFriendRepository - REST API implementation
@@ -43,7 +44,7 @@ class ApiFriendRepository extends IFriendRepository {
   }
 
   async respondToRequest(friendshipId, action) {
-    const apiData = await apiRequest(`/api/v1/friends/requests/${friendshipId}/respond`, {
+    const apiData = await apiRequest(`/api/v1/friends/requests/${segmento(friendshipId)}/respond`, {
       method: 'POST',
       body: JSON.stringify({ action }),
     });
@@ -54,13 +55,13 @@ class ApiFriendRepository extends IFriendRepository {
   }
 
   async removeFriend(friendshipId) {
-    await apiRequest(`/api/v1/friends/${friendshipId}`, {
+    await apiRequest(`/api/v1/friends/${segmento(friendshipId)}`, {
       method: 'DELETE',
     });
   }
 
   async blockUser(userId) {
-    const apiData = await apiRequest(`/api/v1/friends/${userId}/block`, {
+    const apiData = await apiRequest(`/api/v1/friends/${segmento(userId)}/block`, {
       method: 'POST',
     });
 

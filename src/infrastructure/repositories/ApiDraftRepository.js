@@ -3,6 +3,7 @@
 import apiRequest from '../http/api.js';
 import DraftMapper from '../mappers/DraftMapper';
 import IDraftRepository from '../../domain/repositories/IDraftRepository';
+import { segmento } from '../http/api';
 
 /**
  * Repositorio de la sala de draft contra la API REST (FE #653).
@@ -12,7 +13,7 @@ class ApiDraftRepository extends IDraftRepository {
    * POST /api/v1/competitions/{competitionId}/draft
    */
   async startDraft(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/draft`, {
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/draft`, {
       method: 'POST',
     });
     return DraftMapper.toDraftDTO(data);
@@ -26,7 +27,7 @@ class ApiDraftRepository extends IDraftRepository {
    */
   async getDraft(competitionId) {
     try {
-      const data = await apiRequest(`/api/v1/competitions/${competitionId}/draft`);
+      const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/draft`);
       return DraftMapper.toDraftDTO(data);
     } catch (error) {
       if (error?.status === 404) return null;
@@ -38,7 +39,7 @@ class ApiDraftRepository extends IDraftRepository {
    * POST /api/v1/competitions/{competitionId}/draft/picks
    */
   async makePick(competitionId, playerId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/draft/picks`, {
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/draft/picks`, {
       method: 'POST',
       body: JSON.stringify({ player_id: playerId }),
     });

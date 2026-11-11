@@ -4,6 +4,7 @@ import apiRequest from '../http/api.js';
 import { TOPE_DE_ANOTAR_MS } from './topeDeAnotar';
 import IScoringRepository from '../../domain/repositories/IScoringRepository.js';
 import ScoringMapper from '../mappers/ScoringMapper';
+import { segmento } from '../http/api';
 
 /**
  * REST implementation of IScoringRepository.
@@ -15,7 +16,7 @@ class ApiScoringRepository extends IScoringRepository {
    * GET /api/v1/competitions/matches/{matchId}/scoring-view
    */
   async getScoringView(matchId) {
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scoring-view`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/scoring-view`, {
       topeMs: TOPE_DE_ANOTAR_MS,
     });
     return ScoringMapper.toScoringViewDTO(data);
@@ -30,7 +31,7 @@ class ApiScoringRepository extends IScoringRepository {
     // el hoyo— (#609, RyderCupAm#301). Lo consigue `JSON.stringify`, que tira
     // las claves con valor `undefined`; es un mecanismo invisible al leer, asi
     // que queda dicho. Quien decide que se manda es el caso de uso
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scores/holes/${holeNumber}`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/scores/holes/${segmento(holeNumber)}`, {
       topeMs: TOPE_DE_ANOTAR_MS,
       method: 'POST',
       body: JSON.stringify({
@@ -46,7 +47,7 @@ class ApiScoringRepository extends IScoringRepository {
    * POST /api/v1/competitions/matches/{matchId}/scorecard/submit
    */
   async submitScorecard(matchId) {
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/scorecard/submit`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/scorecard/submit`, {
       topeMs: TOPE_DE_ANOTAR_MS,
       method: 'POST',
       body: JSON.stringify({}),
@@ -58,7 +59,7 @@ class ApiScoringRepository extends IScoringRepository {
    * GET /api/v1/competitions/{competitionId}/leaderboard
    */
   async getLeaderboard(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/leaderboard`);
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/leaderboard`);
     return ScoringMapper.toLeaderboardDTO(data);
   }
 
@@ -72,7 +73,7 @@ class ApiScoringRepository extends IScoringRepository {
     if (reason) {
       body.reason = reason;
     }
-    const data = await apiRequest(`/api/v1/competitions/matches/${matchId}/concede`, {
+    const data = await apiRequest(`/api/v1/competitions/matches/${segmento(matchId)}/concede`, {
       topeMs: TOPE_DE_ANOTAR_MS,
       method: 'PUT',
       body: JSON.stringify(body),
@@ -97,7 +98,7 @@ class ApiScoringRepository extends IScoringRepository {
 
   async #retirada(matchId, playerId, accion) {
     const data = await apiRequest(
-      `/api/v1/competitions/matches/${matchId}/players/${playerId}/${accion}`,
+      `/api/v1/competitions/matches/${segmento(matchId)}/players/${segmento(playerId)}/${segmento(accion)}`,
       { topeMs: TOPE_DE_ANOTAR_MS, method: 'POST' }
     );
     return {

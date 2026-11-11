@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import ApiCompetitionRepository from './ApiCompetitionRepository';
 import * as apiModule from '../http/api';
 
-vi.mock('../http/api', () => ({
+vi.mock('../http/api', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
   default: vi.fn(),
 }));
 

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiEnrollmentRepository from './ApiEnrollmentRepository';
 
-vi.mock('../http/api.js', () => ({ default: vi.fn() }));
+vi.mock('../http/api.js', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
 
 import apiRequest from '../http/api.js';
 

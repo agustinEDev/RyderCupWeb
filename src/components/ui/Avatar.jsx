@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User } from 'lucide-react';
-import { getApiBaseUrl } from '../../composition/http';
+import { getApiBaseUrl, segmento } from '../../composition/http';
 
 const SIZE_CLASSES = {
   sm: 'w-8 h-8',
@@ -42,7 +42,7 @@ const Avatar = ({ userId, size = 'md', className = '', version }) => {
   const containerClass = `${sizeClass} rounded-full overflow-hidden flex items-center justify-center bg-gray-100 border border-gray-200 shrink-0 ${className}`;
 
   const src = userId
-    ? `${getApiBaseUrl()}/api/v1/users/${userId}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`
+    ? `${getApiBaseUrl()}/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`
     : null;
   const hasError = src !== null && erroredSrc === src;
 

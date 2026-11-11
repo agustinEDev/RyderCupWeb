@@ -1,6 +1,7 @@
 import { ICompetitionRepository } from '../../domain/repositories/ICompetitionRepository';
 import CompetitionMapper from '../mappers/CompetitionMapper';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 class ApiCompetitionRepository extends ICompetitionRepository {
   /**
@@ -29,7 +30,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @throws {Error} If the competition is not found or the request fails.
    */
   async findById(competitionId) {
-    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}`);
+    const apiData = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}`);
 
     // Map API response to Competition domain entity
     const competition = CompetitionMapper.toDomain(apiData);
@@ -47,7 +48,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} id, name, hasTeams, tournamentType, status, visibility y fechas.
    */
   async findSummary(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/summary`);
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/summary`);
     return {
       id: data.id,
       name: data.name,
@@ -165,7 +166,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<object>} - The association details (competition_id, golf_course_id, display_order, added_at).
    */
   async addGolfCourse(competitionId, golfCourseId) {
-    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses`, {
+    const response = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/golf-courses`, {
       method: 'POST',
       body: JSON.stringify({ golf_course_id: golfCourseId })
     });
@@ -181,7 +182,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<object>} - The removal confirmation (competition_id, golf_course_id, removed_at).
    */
   async removeGolfCourse(competitionId, golfCourseId) {
-    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses/${golfCourseId}`, {
+    const response = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/golf-courses/${segmento(golfCourseId)}`, {
       method: 'DELETE'
     });
 
@@ -196,7 +197,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<object>} - The reordered golf courses with display_order.
    */
   async reorderGolfCourses(competitionId, golfCourseIds) {
-    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses/reorder`, {
+    const response = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/golf-courses/reorder`, {
       method: 'PUT',
       body: JSON.stringify({ golf_course_ids: golfCourseIds })
     });
@@ -211,7 +212,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<object>} - Object containing competition_id and golf_courses array.
    */
   async getCompetitionGolfCourses(competitionId) {
-    const response = await apiRequest(`/api/v1/competitions/${competitionId}/golf-courses`);
+    const response = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/golf-courses`);
 
     return response;
   }
@@ -224,7 +225,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Competition>} - The updated competition entity.
    */
   async updateCompetition(competitionId, competitionData) {
-    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}`, {
+    const apiData = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}`, {
       method: 'PUT',
       body: JSON.stringify(competitionData),
     });
@@ -239,14 +240,14 @@ class ApiCompetitionRepository extends ICompetitionRepository {
   }
   /** POST /competitions/{id}/handicap-updates → 202 (RyderCupAM#509). */
   async launchHandicapUpdate(competitionId) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates`, { method: 'POST' });
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/handicap-updates`, { method: 'POST' });
     // HandicapUpdateLaunchedDTO: {id, status: IN_PROGRESS, origin, started_at, resumed}
     return { status: data?.status, resumed: data?.resumed === true };
   }
 
   /** PUT /competitions/{id}/handicap-updates/schedule (RyderCupAM#510). */
   async scheduleHandicapUpdate(competitionId, runAt) {
-    const data = await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates/schedule`, {
+    const data = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/handicap-updates/schedule`, {
       method: 'PUT',
       body: JSON.stringify({ run_at: runAt }),
     });
@@ -255,7 +256,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
 
   /** DELETE /competitions/{id}/handicap-updates/schedule → 204. */
   async cancelScheduledHandicapUpdate(competitionId) {
-    await apiRequest(`/api/v1/competitions/${competitionId}/handicap-updates/schedule`, { method: 'DELETE' });
+    await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/handicap-updates/schedule`, { method: 'DELETE' });
   }
 
   /**
@@ -275,7 +276,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
         .filter(([campo, valor]) => nombres[campo] && valor !== undefined)
         .map(([campo, valor]) => [nombres[campo], valor])
     );
-    const apiData = await apiRequest(`/api/v1/competitions/${competitionId}/stroke-play`, {
+    const apiData = await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/stroke-play`, {
       method: 'PATCH',
       body: JSON.stringify(cuerpo),
     });
@@ -289,7 +290,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async activate(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/activate`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/activate`, {
       method: 'POST'
     });
   }
@@ -301,7 +302,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async closeEnrollments(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/close-enrollments`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/close-enrollments`, {
       method: 'POST'
     });
   }
@@ -314,7 +315,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Estado, capitanes, total de inscritos y el aviso de impares
    */
   async nameCaptains(competitionId, capitanes) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/captains`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/captains`, {
       method: 'PUT',
       body: JSON.stringify(capitanes),
     });
@@ -329,7 +330,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Capitanes y subcapitanes tras el cambio
    */
   async fillTeamCaptain(competitionId, team, jugador) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/teams/${team}/captain`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/teams/${segmento(team)}/captain`, {
       method: 'PUT',
       body: JSON.stringify(jugador),
     });
@@ -342,7 +343,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async start(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/start`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/start`, {
       method: 'POST'
     });
   }
@@ -354,7 +355,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async complete(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/complete`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/complete`, {
       method: 'POST'
     });
   }
@@ -366,7 +367,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async cancel(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/cancel`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/cancel`, {
       method: 'POST'
     });
   }
@@ -378,7 +379,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<void>}
    */
   async delete(competitionId) {
-    await apiRequest(`/api/v1/competitions/${competitionId}`, {
+    await apiRequest(`/api/v1/competitions/${segmento(competitionId)}`, {
       method: 'DELETE'
     });
   }
@@ -390,7 +391,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async reopenEnrollments(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/reopen-enrollments`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/reopen-enrollments`, {
       method: 'POST'
     });
   }
@@ -402,7 +403,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async revertStatus(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/revert-status`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/revert-status`, {
       method: 'PUT'
     });
   }
@@ -414,7 +415,7 @@ class ApiCompetitionRepository extends ICompetitionRepository {
    * @returns {Promise<Object>} Updated competition data
    */
   async revertToInProgress(competitionId) {
-    return await apiRequest(`/api/v1/competitions/${competitionId}/revert-to-in-progress`, {
+    return await apiRequest(`/api/v1/competitions/${segmento(competitionId)}/revert-to-in-progress`, {
       method: 'PUT'
     });
   }

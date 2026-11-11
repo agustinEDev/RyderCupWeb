@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ApiCompetitionRepository from './ApiCompetitionRepository';
 import * as apiModule from '../http/api';
 
-vi.mock('../http/api', () => ({ default: vi.fn() }));
+vi.mock('../http/api', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
 
 /** D3 (FE #824, PR 5): las rutas de la actualización de hándicaps. */
 describe('ApiCompetitionRepository · actualizar hándicaps (FE #824)', () => {

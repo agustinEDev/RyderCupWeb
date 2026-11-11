@@ -1,5 +1,6 @@
 import IAvatarRepository from '../../domain/repositories/IAvatarRepository';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * ApiAvatarRepository - REST API implementation
@@ -39,7 +40,7 @@ class ApiAvatarRepository extends IAvatarRepository {
   }
 
   async activateUpload(uploadId) {
-    return apiRequest(`/api/v1/users/me/avatar/uploads/${uploadId}/activate`, {
+    return apiRequest(`/api/v1/users/me/avatar/uploads/${segmento(uploadId)}/activate`, {
       method: 'POST',
     });
   }

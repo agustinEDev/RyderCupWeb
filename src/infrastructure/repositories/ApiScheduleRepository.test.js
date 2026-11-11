@@ -7,7 +7,8 @@ vi.mock('../../domain/repositories/IScheduleRepository.js', () => ({
 }));
 
 // Mock api.js
-vi.mock('../http/api.js', () => ({
+vi.mock('../http/api.js', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
   default: vi.fn(),
 }));
 
