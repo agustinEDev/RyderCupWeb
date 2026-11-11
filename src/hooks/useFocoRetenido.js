@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent, useLayoutEffect } from 'react';
 // sin lo que lleva tabindex -1: una pestaña cerrada (o cualquier cosa sacada a
 // propósito del tabulador) no puede ser el primer foco ni el destino de la vuelta
 const NO_SACADO = ':not([tabindex="-1"])';
-export const ENFOCABLES = [
+const ENFOCABLES = [
   `button:not([disabled])${NO_SACADO}`,
   `[href]${NO_SACADO}`,
   `input:not([disabled])${NO_SACADO}`,

@@ -59,7 +59,7 @@ const cleanAddressBar = () => {
   return { limpia: `${ruta}${query}${hash}`, cambia: quitaQuery || quitaRuta, quitados };
 };
 
-export const addressBarHasSecrets = () => cleanAddressBar().cambia;
+const addressBarHasSecrets = () => cleanAddressBar().cambia;
 
 export const stripSecretsFromAddressBar = () => {
   const { limpia, cambia, quitados } = cleanAddressBar();

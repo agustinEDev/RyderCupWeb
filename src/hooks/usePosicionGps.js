@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { esPosicionValida } from '../domain/services/geometriaDelHoyo';
 
 // Peor que esto, las distancias al green engañan más de lo que ayudan (G1)
-export const PRECISION_MAXIMA_M = 30;
+const PRECISION_MAXIMA_M = 30;
 const PERMISO_DENEGADO = 1;
 
 /**

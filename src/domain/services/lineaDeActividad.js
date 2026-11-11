@@ -9,7 +9,7 @@
 // Los tipos que la aplicación sabe pintar. Uno que no esté aquí se ignora: el
 // backend puede estrenar un tipo antes de que llegue esta versión del cliente,
 // y una tarjeta en blanco o con el código del tipo sería peor que no verla
-export const TIPOS_DE_ACTIVIDAD = new Set([
+const TIPOS_DE_ACTIVIDAD = new Set([
   'HOLE_IN_ONE',
   'EAGLE_OR_BETTER',
   'BIRDIE',

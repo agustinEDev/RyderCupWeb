@@ -36,7 +36,7 @@ let dejaDeVigilar = null;
 export { ponLasNovedadesACero, olvidaLasNovedades };
 
 /** Vuelve a preguntar por el número. Si falla, se queda el que había. */
-export const refrescaLasNovedades = () => {
+const refrescaLasNovedades = () => {
   const deEstaGeneracion = generacionDeLasNovedades();
   if (enVuelo && generacionEnVuelo === deEstaGeneracion) return enVuelo;
   const promesa = getFeedUnseenCountUseCase

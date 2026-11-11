@@ -6,7 +6,7 @@ const clave = (golfCourseId) => `${PREFIJO}${golfCourseId}`;
 // Los campos guardados, del más reciente al más antiguo
 const INDICE = `${PREFIJO}indice`;
 // Lo que cabe sin apretar al resto (la cola de golpes sin cobertura vive aquí también)
-export const MAXIMO_DE_CAMPOS = 20;
+const MAXIMO_DE_CAMPOS = 20;
 
 const esMapaDe = (mapa, golfCourseId) =>
   Boolean(mapa) && mapa.golfCourseId === golfCourseId && typeof mapa.holes === 'object' && mapa.holes !== null;

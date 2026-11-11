@@ -559,7 +559,7 @@ const mismaRespuesta = (usuario) =>
 // Una revalidación en camino: frente y red a la vez son una sola petición
 let revalidando = false;
 
-export const revalidaLaSesion = async () => {
+const revalidaLaSesion = async () => {
   if (seVa || revalidando || !instantanea.resuelta || !instantanea.user) return;
   // Ya se está preguntando, o hay un reintento en camino: ese responde
   if (enVuelo || reintento !== null) return;

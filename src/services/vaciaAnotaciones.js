@@ -48,7 +48,7 @@ export const PARO = Object.freeze({
 export const SE_ARREGLA_ESPERANDO = new Set([PARO.NO_ES_DE_ESTA, PARO.YA_HAY_OTRO]);
 
 /** Los paros que son del almacenamiento del móvil, y hay que enseñar. */
-export const ES_DEL_ALMACENAMIENTO = new Set([PARO.NO_SE_PUDO_BORRAR, PARO.NO_SE_PUDO_ESCRIBIR]);
+const ES_DEL_ALMACENAMIENTO = new Set([PARO.NO_SE_PUDO_BORRAR, PARO.NO_SE_PUDO_ESCRIBIR]);
 
 /**
  * Qué aviso de almacenamiento queda en pantalla después de una pasada.

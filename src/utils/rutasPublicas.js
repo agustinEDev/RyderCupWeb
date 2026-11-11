@@ -9,7 +9,7 @@ import { esRutaDesconocida } from './rutasDeLaAplicacion';
  * en esa copia significa que, en esa pagina, un `401` esperable dispara el
  * refresco, falla, y echa al usuario a `/login` diciendo que su sesion expiro.
  */
-export const RUTAS_PUBLICAS = [
+const RUTAS_PUBLICAS = [
   '/',
   // La aplicacion instalada arranca aqui (FE #465), normalmente SIN sesion
   '/start',

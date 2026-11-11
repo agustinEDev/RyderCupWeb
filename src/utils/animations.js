@@ -17,7 +17,7 @@ export const ENTRY_DURATION = 0.25;
 export const ENTRY_STAGGER = 0.06;
 
 /** Vertical travel of an entry animation, in pixels. */
-export const ENTRY_OFFSET = 12;
+const ENTRY_OFFSET = 12;
 
 /**
  * Viewport config for scroll reveals: fires slightly before the element is

@@ -7,7 +7,7 @@
  * solo evita el viaje a la API para decir algo que ya se sabe aquí.
  */
 
-export const ALIAS_MIN_LENGTH = 2;
+const ALIAS_MIN_LENGTH = 2;
 export const ALIAS_MAX_LENGTH = 20;
 
 // Letras (con acentos), dígitos, espacio y `. _ -`. Se saltan a propósito los

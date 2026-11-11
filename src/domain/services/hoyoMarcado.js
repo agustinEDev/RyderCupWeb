@@ -107,7 +107,7 @@ export const conCodosDelPar = (linea, par) => {
 
 // Lo que tiene que separarse un punto de la línea para contar como codo: los
 // vértices que OSM dibuja casi en línea recta no lo son
-export const MIN_DESVIO_DE_UN_CODO_M = 15;
+const MIN_DESVIO_DE_UN_CODO_M = 15;
 
 // Metros de `p` al tramo de `a` a `b`, en un plano local (pocos cientos de metros)
 const distanciaAlTramo = (p, a, b) => proyeccionEnElTramo(p, a, b).metros;
