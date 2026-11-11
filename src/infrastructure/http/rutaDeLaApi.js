@@ -8,6 +8,8 @@
  *
  * - `segmento(valor)`: cada valor que va en la ruta se codifica, y `.` o `..` no vale,
  *   porque el navegador los resuelve como «aquí» y «arriba» aunque estén codificados.
+ *   Tampoco `/` ni `\`: el servidor (Uvicorn) decodifica `%2F` antes de enrutar, así que
+ *   un id con `/` añadía tramos a la ruta (probador de la #1098, 11 nov 2026).
  *   Uno vacío, null o undefined sale como antes: el servidor contesta 404. Lo exige un test sobre los repositorios (`rutasConSegmento.test.js`).
  * - `esRutaDeLaApiSegura(ruta)`: el guardián de `apiRequest`, para cualquier ruta que
  *   se haya colado sin `segmento`: solo rutas propias de la API, sin segmentos `.` o `..`
@@ -34,16 +36,24 @@ const PUNTOS_LITERALES = /^\.{1,2}$/;
 // Caracteres de control (U+0000-U+001F y U+007F): el navegador borra algunos de la ruta
 const tieneControl = (texto) => [...texto].some((c) => c.charCodeAt(0) < 0x20 || c.charCodeAt(0) === 0x7f);
 
+// Las barras, aunque vayan codificadas: el servidor decodifica `%2F` antes de enrutar
+const BARRAS = /[/\\]/;
+// Y ya codificadas, en una ruta montada (el `image_url` del servidor, lo que no pase por `segmento`)
+const BARRA_CODIFICADA = /%2f|%5c/i;
+
 /**
- * Si un valor vale para un tramo de la ruta (no es `.` ni `..`), sin avisar a nadie: para
- * decidir en un render sin efectos (el avatar).
+ * Si un valor vale para un tramo de la ruta (no es `.` ni `..` ni lleva `/` o `\`), sin
+ * avisar a nadie: para decidir en un render sin efectos (el avatar).
  * @param {unknown} valor
  * @returns {boolean}
  */
-export const valeComoSegmento = (valor) => !PUNTOS_LITERALES.test(String(valor));
+export const valeComoSegmento = (valor) => {
+  const texto = String(valor);
+  return !PUNTOS_LITERALES.test(texto) && !BARRAS.test(texto);
+};
 
 /**
- * Un valor para un tramo de la ruta, codificado. `.` o `..` no vale; vacío, null o
+ * Un valor para un tramo de la ruta, codificado. `.`, `..`, `/` o `\` no vale; vacío, null o
  * undefined salen como salían interpolados a pelo (`''`, `'null'`, `'undefined'`).
  * @param {unknown} valor
  * @returns {string}
@@ -76,8 +86,8 @@ export const rechazaLaRuta = (donde) => {
 
 /**
  * Si una ruta se puede pedir: empieza por `/api/`, sin fragmento ni caracteres de control,
- * y el navegador la resolvería tal cual se escribió (ni `.`, ni `..`, ni `%2e`, ni `\`, ni
- * otro servidor). La búsqueda (`?…`) va aparte: ahí un `..` es solo texto.
+ * sin `%2F` ni `%5C`, y el navegador la resolvería tal cual se escribió (ni `.`, ni `..`, ni
+ * `%2e`, ni `\`, ni otro servidor). La búsqueda (`?…`) va aparte: ahí un `..` es solo texto.
  * @param {unknown} ruta
  * @returns {boolean}
  */
@@ -89,6 +99,9 @@ export const esRutaDeLaApiSegura = (ruta) => {
   // La ruta que resolvería el navegador tiene que ser la misma que se escribió: «.», «..»,
   // «%2e%2e», «\» y cualquier otra normalización la cambian (revisor, 11 nov 2026)
   const camino = ruta.split('?')[0];
+  // Ni una barra codificada: el servidor decodifica `%2F` antes de enrutar, y el navegador
+  // la deja tal cual, así que la comprobación de abajo no la ve
+  if (BARRA_CODIFICADA.test(camino)) return false;
   return new globalThis.URL(ruta, 'http://ruta.invalid').pathname === camino;
 };
 

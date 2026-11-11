@@ -6,11 +6,13 @@ import { segmento, valeComoSegmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } 
  * la dirección (`useParams`), así que un enlace preparado podría colar `..` o `/` y hacer
  * que el navegador llamara a otra ruta con las cookies y el token CSRF (CSPT).
  *
- *   C1 cada id se codifica: `/`, `?`, `#`, `%` y espacios no cambian la ruta
+ *   C1 cada id se codifica: `?`, `#`, `%` y espacios no cambian la ruta
  *   C2 `.` o `..` no vale: el navegador los resuelve como «aquí» y «arriba». Uno vacío,
  *      null o undefined sale como antes (`/x//y`, `/x/undefined/y`): el servidor contesta
  *      404 y las pantallas ya lo tratan (code-review, 11 nov 2026)
  *   C3 la ruta final: solo de la API, sin `..` ni `.` (tampoco `%2e`), sin `//` delante
+ *   C4 `/` o `\` en un valor no vale: el servidor (Uvicorn) decodifica `%2F` antes de
+ *      enrutar, así que un id con `/` añadía tramos a la ruta (probador, 11 nov 2026)
  */
 const UUID = '0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d';
 
@@ -20,13 +22,23 @@ describe('segmento (C1, C2)', () => {
     [7, '7'],
     ['ES', 'ES'],
     ['a b', 'a%20b'],
-    ['../admin', '..%2Fadmin'],
-    ['x/y', 'x%2Fy'],
     ['x?admin=1', 'x%3Fadmin%3D1'],
     ['x#y', 'x%23y'],
     ['%2e%2e', '%252e%252e'],
     ['%2F', '%252F'],
   ])('C1 %j → %j', (valor, esperado) => {
+    expect(segmento(valor)).toBe(esperado);
+  });
+
+  it.each([['a/b'], ['a\\b'], ['/'], ['//'], ['../admin'], ['x/../../admin'], ['G/players/U/no-show?']])(
+    'C4 %j no vale: la barra, aunque vaya codificada, el servidor la toma como separador',
+    (valor) => {
+      expect(() => segmento(valor)).toThrow(RutaDeLaApiNoValida);
+      expect(valeComoSegmento(valor)).toBe(false);
+    },
+  );
+
+  it.each([['?', '%3F'], ['#', '%23'], ['%2F', '%252F'], ['%5C', '%255C']])('C4 %j sí vale: %j', (valor, esperado) => {
     expect(segmento(valor)).toBe(esperado);
   });
 
@@ -47,9 +59,12 @@ describe('esRutaDeLaApiSegura (C3)', () => {
     `/api/v1/competitions/${UUID}/rounds?x=1&y=%2E%2E`,
     '/api/v1/users/search?q=Jos%C3%A9',
     '/api/v1/golf-courses?name=a/b',
-    '/api/v1/users/a%2Fb/avatar',
     // En la búsqueda, «/../» es texto: no se resuelve
     '/api/v1/golf-courses?q=/../x',
+    // En la búsqueda, una barra codificada es solo texto
+    '/api/v1/golf-courses?q=a%2Fb%5Cc',
+    // Un valor «%2F» pasado por segmento: %252F, que el servidor no convierte en barra
+    '/api/v1/users/%252F/avatar',
   ])('vale %s', (ruta) => {
     expect(esRutaDeLaApiSegura(ruta)).toBe(true);
   });
@@ -73,6 +88,11 @@ describe('esRutaDeLaApiSegura (C3)', () => {
     '/api/v1/a/.\n./b',
     '/api/v1/a/\u0000/b',
     '/api/v1/a/\u007f/b',
+    // Una barra codificada en la ruta: el servidor la decodifica antes de enrutar
+    '/api/v1/users/x%2Fme%2Fdevices/avatar',
+    '/api/v1/users/x%2fy',
+    '/api/v1/users/x%5Cy',
+    '/api/v1/users/x%5cy',
     // También en la búsqueda: un salto de línea en la dirección no sale
     '/api/v1/x?q=a\nb',
     'https://evil.example/api/v1/x',
