@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import {
   estadoDeEstaAnotacion,
   guardaLaAnotacionEnCurso,
+  olvidaEstaAnotacionEnCurso,
   olvidaLaAnotacionEnCurso,
 } from '../utils/anotacionEnCurso';
 
@@ -20,7 +21,8 @@ import {
  *   que arranca la pantalla pisaría el guardado.
  * - Al pasar a segundo plano y al volver renueva la hora: las 6 horas cuentan desde ahí.
  * - Terminada (o la tarjeta entregada) la olvida y deja de guardar.
- * - Al salir de la anotación (la pantalla se desmonta) la olvida: se dejó a propósito.
+ * - Al salir de la anotación (la pantalla se desmonta) la olvida si lo guardado es suyo:
+ *   se dejó a propósito.
  *   Un cierre de iOS o una recarga no desmontan nada: lo guardado sigue.
  *
  * @param {{
@@ -51,7 +53,11 @@ export function useAnotacionEnCurso({
   // Lo repuesto mientras la pantalla no lo refleje: hasta entonces no se guarda, o el
   // hoyo 1 y la pestaña con los que arranca pisarían lo guardado (revisor, 11 nov 2026)
   const pendiente = useRef(null);
+  // El hoyo en el que hay que abrir el mapa cuando la pantalla lo ofrezca (sus datos
+  // pueden llegar en el siguiente sondeo): mientras, lo guardado sigue con el mapa
+  const mapaPorAbrir = useRef(null);
   const ultimo = useRef(null);
+  const aqui = useRef({ pathname, search });
   const { abierto: mapaAbierto, disponible: mapaDisponible, abrir: abrirElMapa } = mapa;
 
   // Una vez por anotación: también si la pantalla pasa de un partido a otro sin
@@ -85,14 +91,22 @@ export function useAnotacionEnCurso({
       return;
     }
     if (!enElHoyo || !enLaPestana) return;
-    // El mapa, ya en su hoyo: abierto en otro mostraría el hoyo equivocado. Si no llega
-    // a abrirse, el primer movimiento del jugador (`seMovio`) suelta el guardado; abrirlo
-    // dos veces no apila nada (`useMapaDelHoyo` lo evita)
-    if (p.mapa && mapaDisponible && !mapaAbierto) {
-      abrirElMapa();
+    // El mapa, ya en su hoyo (abierto en otro mostraría el hoyo equivocado): queda
+    // apuntado y lo abre el efecto de abajo, ahora o cuando la pantalla lo ofrezca
+    if (p.mapa && !mapaAbierto) mapaPorAbrir.current = p.hoyo;
+    pendiente.current = null;
+  }, [cargada, hoyo, pestana, mapaAbierto]);
+
+  // El mapa apuntado: se abre cuando la pantalla lo ofrece; si el jugador cambia de hoyo
+  // o el mapa ya está abierto, se olvida. Abrirlo dos veces no apila nada
+  useEffect(() => {
+    if (mapaPorAbrir.current === null) return;
+    if (hoyo !== mapaPorAbrir.current || mapaAbierto) {
+      mapaPorAbrir.current = null;
       return;
     }
-    pendiente.current = null;
+    if (mapaDisponible) abrirElMapa();
+    // Con las dependencias del efecto que lo apunta: corre siempre justo detrás de él
   }, [cargada, hoyo, pestana, mapaDisponible, mapaAbierto, abrirElMapa]);
 
   useEffect(() => {
@@ -102,7 +116,8 @@ export function useAnotacionEnCurso({
       return;
     }
     const listo = repuestaPara.current === ruta && pendiente.current === null && cuenta !== null;
-    ultimo.current = listo ? { cuenta, pathname, search, pestana, hoyo, mapa: Boolean(mapaAbierto) } : null;
+    const conMapa = Boolean(mapaAbierto) || mapaPorAbrir.current === hoyo;
+    ultimo.current = listo ? { cuenta, pathname, search, pestana, hoyo, mapa: conMapa } : null;
     if (ultimo.current) guardaLaAnotacionEnCurso(ultimo.current);
   }, [cargada, terminada, cuenta, ruta, pathname, search, pestana, hoyo, mapaAbierto]);
 
@@ -116,6 +131,9 @@ export function useAnotacionEnCurso({
     return () => document.removeEventListener('visibilitychange', alCambiarDeVisibilidad);
   }, []);
 
-  // Salir de la anotación la olvida
-  useEffect(() => () => olvidaLaAnotacionEnCurso(), []);
+  // Salir de la anotación la olvida, si lo guardado es de ella (no lo de otra pestaña)
+  useEffect(() => {
+    aqui.current = { pathname, search };
+  }, [pathname, search]);
+  useEffect(() => () => olvidaEstaAnotacionEnCurso(aqui.current), []);
 }

@@ -66,6 +66,19 @@ export const olvidaLaAnotacionEnCurso = () => {
 };
 
 /**
+ * La olvida solo si lo guardado es de esa anotación: al salir de una pantalla, sin borrar
+ * lo que otra pestaña guardó de otra (CodeRabbit, 11 nov 2026).
+ */
+export const olvidaEstaAnotacionEnCurso = ({ pathname, search = '' }) => {
+  try {
+    const guardado = JSON.parse(globalThis.localStorage.getItem(CLAVE));
+    if (guardado?.ruta === `${pathname}${search}`) olvidaLaAnotacionEnCurso();
+  } catch {
+    // Algo ilegible: lo borrará quien lo lea
+  }
+};
+
+/**
  * Apunta dónde se está anotando, con la hora: sustituye a lo anterior. Si no es una de
  * las tres anotaciones, o no hay cuenta, no apunta nada.
  */

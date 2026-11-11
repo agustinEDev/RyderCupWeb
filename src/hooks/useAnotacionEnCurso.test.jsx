@@ -174,6 +174,53 @@ describe('useAnotacionEnCurso', () => {
     expect(guardado()).toMatchObject({ ruta: OTRA, hoyo: 15, pestana: 'scorecard' });
   });
 
+  it('H2i: con el mapa sin datos todavía, lo guardado sigue con el mapa y se abre al llegar', () => {
+    guarda({ hoyo: 5, mapa: true });
+    const { result, rerender } = monta({ disponible: false });
+    expect(result.current).toMatchObject({ hoyo: 5, abierto: false });
+    expect(guardado()).toMatchObject({ hoyo: 5, mapa: true });
+
+    rerender({ disponible: true });
+
+    expect(result.current.abierto).toBe(true);
+    expect(guardado()).toMatchObject({ hoyo: 5, mapa: true });
+  });
+
+  it('H2j: con el mapa sin datos, si el jugador cambia de hoyo ya no se reabre', () => {
+    guarda({ hoyo: 5, mapa: true });
+    const { result, rerender } = monta({ disponible: false });
+
+    act(() => result.current.setHoyo(6));
+    rerender({ disponible: true });
+
+    expect(result.current.abierto).toBe(false);
+    expect(guardado()).toMatchObject({ hoyo: 6, mapa: false });
+  });
+
+  it('H5b: al salir no borra lo que otra pestaña guardó de otra anotación', () => {
+    const { unmount } = monta();
+    guardaLaAnotacionEnCurso({
+      cuenta: 'u-anota',
+      pathname: '/quick-matches/1c6b7d2f-3e4a-4b6c-9d8e-0f1a2b3c4d5e/scoring',
+      search: '',
+      pestana: 'input',
+      hoyo: 3,
+      mapa: false,
+    });
+
+    unmount();
+
+    expect(guardado()).toMatchObject({ hoyo: 3 });
+  });
+
+  it('H2k: con el hoyo ya en el guardado y solo la pestaña por reponer, el mapa se abre', () => {
+    guarda({ hoyo: 1, pestana: 'classification', mapa: true });
+
+    const { result } = monta();
+
+    expect(result.current).toMatchObject({ hoyo: 1, pestana: 'classification', abierto: true });
+  });
+
   it('H3: un cambio de pestaña, hoyo o mapa se guarda', () => {
     const { result } = monta();
 
