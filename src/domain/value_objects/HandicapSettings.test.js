@@ -1,7 +1,7 @@
 // src/domain/value_objects/HandicapSettings.test.js
 
 import { describe, it, expect } from 'vitest';
-import { HandicapSettings, PlayModeType, HandicapType, InvalidHandicapSettingsError } from './HandicapSettings';
+import { HandicapSettings, PlayModeType, InvalidHandicapSettingsError } from './HandicapSettings';
 
 describe('HandicapSettings', () => {
   describe('Constructor and Validation', () => {
@@ -29,14 +29,6 @@ describe('HandicapSettings', () => {
     it('should be frozen after construction', () => {
       const settings = new HandicapSettings(PlayModeType.SCRATCH);
       expect(Object.isFrozen(settings)).toBe(true);
-    });
-  });
-
-  describe('BackwardCompatible Alias', () => {
-    it('HandicapType should be an alias for PlayModeType', () => {
-      expect(HandicapType).toBe(PlayModeType);
-      expect(HandicapType.SCRATCH).toBe('SCRATCH');
-      expect(HandicapType.HANDICAP).toBe('HANDICAP');
     });
   });
 

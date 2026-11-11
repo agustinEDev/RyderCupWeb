@@ -43,7 +43,7 @@ export const FREE_PLAY_ALLOWANCE_OPTIONS = [90, 95, 100];
 // primera palabra del identificador libre; ahora la salida trae su color, así
 // que se usa directamente. PINK se anade porque hay campos federados con barras
 // rosas, y OTHER no tiene color propio: cae en el estilo neutro.
-export const TEE_COLOR_STYLES = {
+const TEE_COLOR_STYLES = {
   white: { dot: 'bg-white border border-gray-400', selected: 'border-gray-500 bg-gray-50 text-gray-700' },
   yellow: { dot: 'bg-yellow-400', selected: 'border-yellow-500 bg-yellow-50 text-yellow-700' },
   gold: { dot: 'bg-yellow-500', selected: 'border-yellow-600 bg-yellow-50 text-yellow-700' },

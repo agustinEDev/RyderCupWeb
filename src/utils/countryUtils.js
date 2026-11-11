@@ -49,45 +49,6 @@ export const getCountryFlag = (countryCode) => {
 };
 
 /**
- * Get country information for UI display
- * Note: This does NOT include country names - those come from the backend
- *
- * @param {string} countryCode - ISO 3166-1 alpha-2 code (e.g., 'ES')
- * @returns {Object|null} - { code, flag } or null if invalid
- */
-export const getCountryInfo = (countryCode) => {
-  if (!countryCode) return null;
-
-  const code = countryCode.trim().toUpperCase();
-  const flag = getCountryFlag(code);
-
-  if (!flag) return null;
-
-  return {
-    code,
-    flag
-  };
-};
-
-/**
- * Get multiple countries information from an array of codes
- * Filters out null/undefined/empty values
- *
- * @param {Array<string>} countryCodes - Array of country codes (e.g., ['ES', 'FR', 'IT'])
- * @returns {Array<Object>} - Array of { code, flag } objects
- */
-export const getCountriesInfo = (countryCodes) => {
-  if (!Array.isArray(countryCodes)) {
-    return [];
-  }
-
-  return countryCodes
-    .filter(code => code !== null && code !== undefined && code !== '')
-    .map(code => getCountryInfo(code))
-    .filter(info => info !== null);
-};
-
-/**
  * Check if a user can use RFEG (Real Federación Española de Golf) handicap updates
  * Only users with Spanish nationality (ES) can update their handicap from RFEG
  *

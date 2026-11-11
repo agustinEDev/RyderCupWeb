@@ -1,3 +1,5 @@
+import { MIN_JUGADORES_POR_CATEGORIA } from '../value_objects/StrokePlaySetup';
+
 /**
  * Cuántas categorías salen de las pedidas en un Stableford o un Medal, y por
  * qué salen menos (FE #824, PR 8, caso 9; reglas de la BE #536, decididas el
@@ -15,7 +17,6 @@
  */
 export const REPETIDOS = 'REPETIDOS';
 export const MENOS_DE_SEIS = 'MENOS_DE_SEIS';
-const POR_CATEGORIA = 6;
 
 /**
  * @param {{categoryCount: number|null, categoryLimits: number[]}} ajustes - Los del torneo
@@ -47,7 +48,7 @@ export const categoriasQueSalen = ({ categoryCount, categoryLimits }, categorias
   const porLimites = limites + 1;
   // n son los que se repartieron: los que tienen categoría (el backend solo
   // reparte a quien tiene hándicap; /code-review)
-  const cabian = categoryCount != null ? Math.min(categoryCount, Math.floor(asignadas.length / POR_CATEGORIA)) : pedidas;
+  const cabian = categoryCount != null ? Math.min(categoryCount, Math.floor(asignadas.length / MIN_JUGADORES_POR_CATEGORIA)) : pedidas;
   // Si además la regla de los seis fundió más, lo último que pasó es eso
   const motivo = porLimites < cabian && salen === porLimites ? REPETIDOS : MENOS_DE_SEIS;
   return { pedidas, salen, motivo };

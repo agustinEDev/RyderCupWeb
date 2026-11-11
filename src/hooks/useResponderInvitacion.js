@@ -166,5 +166,3 @@ export const useResponderInvitacion = ({ alAceptar, alCambiar, textoYaNoPendient
     },
   };
 };
-
-export default useResponderInvitacion;

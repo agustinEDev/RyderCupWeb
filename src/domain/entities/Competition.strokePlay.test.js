@@ -5,7 +5,7 @@ import { CompetitionName } from '../value_objects/CompetitionName';
 import { DateRange } from '../value_objects/DateRange';
 import { Location } from '../value_objects/Location';
 import { CountryCode } from '../value_objects/CountryCode';
-import { HandicapSettings, HandicapType } from '../value_objects/HandicapSettings';
+import { HandicapSettings, PlayModeType } from '../value_objects/HandicapSettings';
 import { TeamAssignment } from '../value_objects/TeamAssignment';
 import { StrokePlaySetup } from '../value_objects/StrokePlaySetup';
 
@@ -19,7 +19,7 @@ const props = (extra = {}) => ({
   name: new CompetitionName('Medal de octubre'),
   dates: new DateRange(new Date('2030-06-01'), new Date('2030-06-02')),
   location: new Location(new CountryCode('ES')),
-  handicapSettings: new HandicapSettings(HandicapType.HANDICAP),
+  handicapSettings: new HandicapSettings(PlayModeType.HANDICAP),
   ...extra,
 });
 

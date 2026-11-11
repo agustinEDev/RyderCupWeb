@@ -13,7 +13,7 @@
  * origen (ver `utils/geo.js`), pero "este barrio" repetido en varias sesiones
  * grabadas sigue siendo un dato que Sentry no necesita.
  */
-export const SENSITIVE_QUERY_PARAMS = [
+const SENSITIVE_QUERY_PARAMS = [
   'token',
   'access_token',
   'refresh_token',

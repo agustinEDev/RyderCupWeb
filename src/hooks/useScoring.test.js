@@ -28,7 +28,6 @@ vi.mock('../composition', () => ({
 // Mock offline queue
 vi.mock('../utils/scoringOfflineQueue', () => ({
   enqueue: vi.fn(),
-  dequeue: vi.fn(),
   getAll: vi.fn(() => []),
   // Devuelve `true` como el de verdad: con `undefined`, el vaciado creía que
   // no había podido borrar y cortaba tras el primer envío, así que la mitad de

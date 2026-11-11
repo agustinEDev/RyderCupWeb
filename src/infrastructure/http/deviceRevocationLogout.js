@@ -113,20 +113,6 @@ export const isSessionExpired = (response, errorData = {}) => {
 };
 
 /**
- * Check if a response requires re-authentication (either revocation or expiration)
- *
- * Use this when you need to know if the user needs to log in again,
- * regardless of the reason.
- *
- * @param {Object} response - Fetch response object
- * @param {Object} errorData - Parsed error data from response
- * @returns {boolean} - True if re-authentication is required
- */
-export const requiresReAuthentication = (response, errorData = {}) => {
-  return isDeviceRevoked(response, errorData) || isSessionExpired(response, errorData);
-};
-
-/**
  * Handle device revocation logout
  * Shows specific message for device revocation
  *

@@ -41,5 +41,3 @@ export function useGoBack(fallback = '/feed') {
     else navigate(fallback, { replace: true });
   }, [hasHistory, navigate, fallback]);
 }
-
-export default useGoBack;

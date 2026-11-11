@@ -50,5 +50,3 @@ i18n
       useSuspense: false, // Evita problemas con SSR
     },
   });
-
-export default i18n;

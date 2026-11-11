@@ -6,7 +6,6 @@ import {
   fadeInUp,
   slideUp,
   staggerContainer,
-  entryTransition,
   getEntryProps,
   getRevealProps,
 } from './animations';
@@ -26,12 +25,6 @@ describe('animations', () => {
     it('keeps the stagger between siblings at or below 80 ms', () => {
       expect(ENTRY_STAGGER).toBeLessThanOrEqual(MAX_STAGGER);
       expect(staggerContainer.animate.transition.staggerChildren).toBeLessThanOrEqual(MAX_STAGGER);
-    });
-
-    it('caps the accumulated delay of individually animated siblings', () => {
-      expect(entryTransition(0).delay).toBe(0);
-      expect(entryTransition(2).delay).toBeCloseTo(2 * ENTRY_STAGGER);
-      expect(entryTransition(50).delay).toBeLessThanOrEqual(MAX_DURATION);
     });
   });
 

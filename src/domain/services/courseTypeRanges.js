@@ -38,7 +38,7 @@ export const isHoleParValid = (par) => VALID_HOLE_PARS.includes(par);
 
 export const isTeeCountValid = (teeCount) => teeCount >= MIN_TEES && teeCount <= MAX_TEES;
 
-export const DEFAULT_COURSE_TYPE = 'STANDARD_18';
+const DEFAULT_COURSE_TYPE = 'STANDARD_18';
 
 export const COURSE_TYPES = ['STANDARD_18', 'PITCH_AND_PUTT', 'EXECUTIVE'];
 

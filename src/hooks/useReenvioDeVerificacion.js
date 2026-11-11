@@ -43,5 +43,3 @@ export const useReenvioDeVerificacion = (correo) => {
 
   return { reenviar, enviando, mensaje, esError };
 };
-
-export default useReenvioDeVerificacion;

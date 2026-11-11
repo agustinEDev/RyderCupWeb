@@ -94,5 +94,3 @@ export function registerServiceWorker() {
     window.addEventListener('load', registrarOActualizar, { once: true });
   }
 }
-
-export default registerServiceWorker;

@@ -14,7 +14,6 @@ vi.mock('./deviceRevocationLogout', () => ({
   isSessionExpired: () => true,
   handleDeviceRevocationLogout: vi.fn(),
   handleSessionExpiredLogout: salidas.expirada,
-  requiresReAuthentication: () => false,
   clearDeviceRevocationFlag: vi.fn(),
 }));
 

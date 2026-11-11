@@ -9,7 +9,7 @@ const claveDelResumen = (golfCourseId) => `muestrasDeHoyos:v3:${golfCourseId}`;
 const claveDeLaCola = (userId) => `muestrasPendientes:v2:${userId}`;
 const claveDeLasMias = (userId) => `muestrasMias:v1:${userId}`;
 // Las ya enviadas que se guardan para verlas: de sobra para muchos campos
-export const MAX_MIAS = 500;
+const MAX_MIAS = 500;
 
 // Lo que dejaron versiones anteriores y ya nadie lee: las marcas por jugador
 // (que no llegaron a salir), las muestras sin barra y el resumen por barra

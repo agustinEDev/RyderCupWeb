@@ -14,5 +14,3 @@ export const escucharConsulta = (consulta, avisar) => {
   consulta.addListener?.(avisar);
   return () => consulta.removeListener?.(avisar);
 };
-
-export default escucharConsulta;

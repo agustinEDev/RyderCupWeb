@@ -557,5 +557,3 @@ export const fetchWithTokenRefresh = async (url, options = {}) => {
     throw error;
   }
 };
-
-export default fetchWithTokenRefresh;

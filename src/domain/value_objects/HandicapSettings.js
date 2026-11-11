@@ -21,9 +21,6 @@ export const PlayModeType = Object.freeze({
   HANDICAP: 'HANDICAP',
 });
 
-// Backward-compatible alias
-export const HandicapType = PlayModeType;
-
 export class HandicapSettings {
   /**
    * @type {PlayModeType}
