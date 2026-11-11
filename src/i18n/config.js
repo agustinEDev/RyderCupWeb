@@ -50,4 +50,3 @@ i18n
       useSuspense: false, // Evita problemas con SSR
     },
   });
-

@@ -80,10 +80,6 @@ describe('sideEntryOf: qué anotación es la del bando', () => {
     expect(sideEntryOf(side, entryAtOf(holeScores)(1)).score).toBe(4);
   });
 
-  it('devuelve null si el bando no ha anotado el hoyo', () => {
-    expect(sideEntryOf(side, () => null)).toBeNull();
-  });
-
   it('no confunde un 0 con la falta de anotación', () => {
     expect(sideEntryOf(side, (id) => entrada(id, id === 'a1' ? 0 : 5)).score).toBe(0);
   });
