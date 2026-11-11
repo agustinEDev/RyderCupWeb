@@ -29,6 +29,9 @@ vi.mock('./useAuthContext', () => ({
   useAuthContext: () => ({ user: storedUser, setUser, clearAuth }),
 }));
 
+vi.mock('../utils/avisoDeVueltaALaAnotacion', () => ({ avisaDeLaVueltaALaAnotacion: vi.fn() }));
+const { avisaDeLaVueltaALaAnotacion } = await import('../utils/avisoDeVueltaALaAnotacion');
+
 vi.mock('../infrastructure/http/tokenRefreshInterceptor', () => ({
   refrescoCompartido: vi.fn(),
 }));
@@ -259,6 +262,72 @@ describe('useRedirectIfAuthenticated', () => {
 
       await waitFor(() => expect(navigate).toHaveBeenCalledWith(destino, { replace: true }));
       sessionStorage.clear();
+    });
+
+    describe('la anotación en curso al arrancar la app instalada (11 nov 2026)', () => {
+      const ANOTACION = '/quick-matches/0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d/scoring';
+      const memoria = () => {
+        const datos = new Map();
+        return {
+          getItem: (k) => (datos.has(k) ? datos.get(k) : null),
+          setItem: (k, v) => datos.set(k, String(v)),
+          removeItem: (k) => datos.delete(k),
+          clear: () => datos.clear(),
+        };
+      };
+      beforeEach(async () => {
+        vi.stubGlobal('localStorage', memoria());
+        const { guardaLaAnotacionEnCurso } = await import('../utils/anotacionEnCurso');
+        guardaLaAnotacionEnCurso({ cuenta: BACKEND_USER.id, pathname: ANOTACION, search: '', pestana: 'input', hoyo: 12, mapa: false });
+      });
+      afterEach(() => vi.unstubAllGlobals());
+
+      it('B1: con la sesión confirmada vuelve a la anotación de esa cuenta', async () => {
+        storedUser = { id: BACKEND_USER.id };
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+      });
+
+      it('D1: la vuelta al arrancar la app instalada se avisa a Sentry; el formulario de entrar, no', async () => {
+        storedUser = { id: BACKEND_USER.id };
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+        expect(avisaDeLaVueltaALaAnotacion).toHaveBeenCalledTimes(1);
+      });
+
+      it('D1: sin entrarSinRed (la pantalla de entrar) vuelve igual, pero sin aviso', async () => {
+        storedUser = { id: BACKEND_USER.id };
+        globalThis.fetch.mockResolvedValue(okResponse(BACKEND_USER));
+
+        renderHook(() => useRedirectIfAuthenticated());
+
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+        expect(avisaDeLaVueltaALaAnotacion).not.toHaveBeenCalled();
+      });
+
+      it('B4: sin cobertura, con la sesión guardada, también vuelve a la anotación', async () => {
+        storedUser = { id: BACKEND_USER.id, firstName: 'Ana' };
+        globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith(ANOTACION, { replace: true }));
+      });
+
+      it('B3: con la sesión de otra cuenta, al panel', async () => {
+        storedUser = { id: 'u-otra', firstName: 'Bea' };
+        globalThis.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+        renderHook(() => useRedirectIfAuthenticated({ entrarSinRed: true }));
+
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true }));
+      });
     });
 
     it('lleva al dashboard cuando el backend confirma la sesión', async () => {

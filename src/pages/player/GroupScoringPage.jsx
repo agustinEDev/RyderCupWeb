@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
-import { useParams, useSearchParams, useNavigate, Link } from 'react-router';
+import { useParams, useSearchParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -29,10 +29,16 @@ import ClasificacionDeLaFranja from '../../components/scoring/ClasificacionDeLaF
 import TarjetasDeLaPartida from '../../components/scoring/TarjetasDeLaPartida';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
+import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
+import { useGoBack } from '../../hooks/useGoBack';
+import {
+  PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA,
+  PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR,
+} from '../../utils/pestanasDeLaAnotacion';
 
 // Quien juega anota; quien no, mira las tarjetas y la clasificación (caso 13)
-const PESTANAS_DEL_JUGADOR = ['input', 'standings', 'cards'];
-const PESTANAS_DE_QUIEN_MIRA = ['cards', 'standings'];
+const PESTANAS_DEL_JUGADOR = PESTANAS_DE_LA_PARTIDA_DEL_JUGADOR;
+const PESTANAS_DE_QUIEN_MIRA = PESTANAS_DE_LA_PARTIDA_DE_QUIEN_MIRA;
 // El temporizador más largo que admite el navegador
 const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 const CLAVE_POR_ESTADO = { 403: 'errors.forbidden', 404: 'errors.notFound' };
@@ -54,7 +60,6 @@ const GroupScoringPage = () => {
   const { groupId } = useParams();
   const [busqueda] = useSearchParams();
   const competitionId = busqueda.get('competition');
-  const navigate = useNavigate();
   const { t, i18n } = useTranslation('scoring');
   const { user, loading: isLoadingUser } = useAuth();
   const { isAdmin, isCreator } = useUserRoles(competitionId);
@@ -113,6 +118,28 @@ const GroupScoringPage = () => {
     return () => clearTimeout(aviso);
   }, [aunNoAbre]);
 
+  const pestanas = isMatchPlayer ? PESTANAS_DEL_JUGADOR : PESTANAS_DE_QUIEN_MIRA;
+  const activa = pestanas.includes(pestana) ? pestana : pestanas[0];
+  // Si iOS cierra la app, al abrirla se vuelve aquí, a esta pestaña, este hoyo y el mapa
+  // (11 nov 2026). Con la partida cerrada o mi tarjeta entregada ya no hay a qué volver
+  useAnotacionEnCurso({
+    cargada: Boolean(scoringView) && !isLoading,
+    // Cerrada, o mi tarjeta ya no se juega: entregada, retirada o no presentado
+    terminada:
+      scoringView?.matchStatus === 'COMPLETED' ||
+      Boolean(scoringView?.strokePlay?.cards?.some((c) => c.userId === user?.id && c.cardStatus !== 'JUGANDO')),
+    pestana: activa,
+    pestanas,
+    alCambiarDePestana: setPestana,
+    hoyo: currentHole,
+    totalHoyos: totalHoles,
+    alCambiarDeHoyo: setCurrentHole,
+    // El mapa se repone solo donde la pantalla ofrece su botón
+    mapa: { ...mapaDelHoyo, disponible: mapaDelHoyo.disponible && !aunNoAbre },
+  });
+  // «Volver» sin una pantalla detrás (se llegó al arrancar la app): al panel
+  const volver = useGoBack('/dashboard');
+
   if (isLoadingUser || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -148,8 +175,6 @@ const GroupScoringPage = () => {
   const { strokePlay } = scoringView;
   // Sin competición, `useUserRoles` no sabe de quién es: no organiza
   const organiza = isCreator || isAdmin;
-  const pestanas = isMatchPlayer ? PESTANAS_DEL_JUGADOR : PESTANAS_DE_QUIEN_MIRA;
-  const activa = pestanas.includes(pestana) ? pestana : pestanas[0];
   const miTarjeta = strokePlay.cards.find((c) => c.userId === userId);
   // Solo en su partida (bajas): no marca a nadie, su golpe lo valida el organizador
   const marcoA = strokePlay.iMarkUserId;
@@ -460,7 +485,7 @@ const GroupScoringPage = () => {
         )}
       </div>
 
-      <SessionBlockedModal isOpen={isSessionBlocked} onTakeOver={takeOverSession} onGoBack={() => navigate(-1)} />
+      <SessionBlockedModal isOpen={isSessionBlocked} onTakeOver={takeOverSession} onGoBack={volver} />
       <SubmitScorecardModal
         isOpen={verEntrega && canSubmitScorecard}
         reopenable

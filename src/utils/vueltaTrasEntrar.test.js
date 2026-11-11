@@ -12,6 +12,11 @@ import {
   vueltaTrasEntrar,
 } from './vueltaTrasEntrar';
 import { noAvisesDeCierres, seCierraLaSesionAPeticion, vuelvenLosAvisosDeCierre } from './avisoDeCierreForzado';
+import { captureError } from './sentryHelpers';
+import { guardaLaAnotacionEnCurso } from './anotacionEnCurso';
+import { olvidaElAvisoDeLaVuelta } from './avisoDeVueltaALaAnotacion';
+
+vi.mock('./sentryHelpers', async (importOriginal) => ({ ...(await importOriginal()), captureError: vi.fn() }));
 
 /**
  * La vuelta tras una redirección dura a /login (probador de la release, 8 nov 2026).
@@ -652,3 +657,93 @@ describe('los tres estados de la última cuenta de la pestaña', () => {
   });
 });
 
+
+/**
+ * La vuelta a la anotación en curso cuando no hay otra a dónde volver (11 nov 2026): iOS
+ * cerró la app anotando y al abrirla arranca de cero.
+ *
+ *   B1 sin página de la que venía ni guardada: la anotación en curso de esa cuenta
+ *   B3 de otra cuenta: al panel
+ *   B7 la página de la que venía (un enlace) o la guardada mandan sobre la anotación
+ *   D1 al arrancar, un aviso informativo a Sentry sin ids; en otra entrada (el login), no
+ *   D2 uno por carga
+ */
+describe('la vuelta a la anotación en curso', () => {
+  const ID = '0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d';
+  const CUENTA = 'u-anota';
+  const ANOTACION = `/quick-matches/${ID}/scoring`;
+  const memoria = () => {
+    const datos = new Map();
+    return {
+      getItem: (k) => (datos.has(k) ? datos.get(k) : null),
+      setItem: (k, v) => datos.set(k, String(v)),
+      removeItem: (k) => datos.delete(k),
+      clear: () => datos.clear(),
+    };
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', memoria());
+    sessionStorage.clear();
+    olvidaLaCuentaDeEstaPestana();
+    guardaLaAnotacionEnCurso({ cuenta: CUENTA, pathname: ANOTACION, search: '', pestana: 'input', hoyo: 12, mapa: true });
+    olvidaElAvisoDeLaVuelta();
+    vi.mocked(captureError).mockClear();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('B1: sin otra página a la que volver, vuelve a la anotación de esa cuenta', () => {
+    expect(vueltaTrasEntrar(undefined, { cuenta: CUENTA })).toBe(ANOTACION);
+  });
+
+  it('B3: con otra cuenta, al panel', () => {
+    expect(vueltaTrasEntrar(undefined, { cuenta: 'u-otra' })).toBe('/dashboard');
+  });
+
+  it('B7: la página de la que venía (un enlace) manda sobre la anotación', () => {
+    expect(vueltaTrasEntrar({ pathname: '/friends', search: '', hash: '' }, { cuenta: CUENTA })).toBe('/friends');
+  });
+
+  it('B7: la página guardada en la pestaña manda sobre la anotación', () => {
+    en('/profile');
+    guardaLaVueltaTrasEntrar({ cuenta: CUENTA });
+
+    expect(vueltaTrasEntrar(undefined, { cuenta: CUENTA })).toBe('/profile');
+  });
+
+  it('D1: al arrancar avisa a Sentry, sin ids: tipo, pestaña, mapa y minutos', () => {
+    const aviso = vi.mocked(captureError);
+
+    vueltaTrasEntrar(undefined, { cuenta: CUENTA, arranque: true });
+
+    expect(aviso).toHaveBeenCalledTimes(1);
+    const [titulo, contexto] = aviso.mock.calls[0];
+    expect(titulo).toBe('Vuelta a la anotación tras arranque en frío');
+    expect(contexto.level).toBe('info');
+    expect(contexto.tags).toEqual({
+      'anotacion.tipo': 'rapida',
+      'anotacion.pestana': 'input',
+      'anotacion.mapa': 'si',
+      'anotacion.cerrada': 'menos de 15',
+    });
+    expect(contexto.extra).toEqual({ minutosCerrada: expect.any(Number) });
+    expect(JSON.stringify(aviso.mock.calls[0])).not.toContain(ID);
+  });
+
+  it('D1: entrando con el formulario (no al arrancar) no avisa', () => {
+    const aviso = vi.mocked(captureError);
+
+    vueltaTrasEntrar(undefined, { cuenta: CUENTA });
+
+    expect(aviso).not.toHaveBeenCalled();
+  });
+
+  it('D2: como mucho un aviso por carga', () => {
+    const aviso = vi.mocked(captureError);
+
+    vueltaTrasEntrar(undefined, { cuenta: CUENTA, arranque: true });
+    vueltaTrasEntrar(undefined, { cuenta: CUENTA, arranque: true });
+
+    expect(aviso).toHaveBeenCalledTimes(1);
+  });
+});
