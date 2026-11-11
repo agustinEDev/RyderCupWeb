@@ -10,7 +10,8 @@ import enAuth from '../../i18n/locales/en/auth.json';
  *   R2 un token caducado o usado sigue siendo valid:false (la pantalla «Enlace inválido»)
  *   R3 el enlace vale 1 hora: lo dicen los textos, en los dos idiomas
  */
-vi.mock('../http/api.js', () => ({ default: vi.fn() }));
+vi.mock('../http/api.js', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento, default: vi.fn() }));
 
 describe('ApiAuthRepository · validar el enlace de restablecer (fase 3)', () => {
   beforeEach(() => vi.clearAllMocks());

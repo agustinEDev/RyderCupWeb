@@ -2,6 +2,7 @@
 import User from '../../domain/entities/User.js';
 import IUserRepository from '../../domain/repositories/IUserRepository.js';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 class ApiUserRepository extends IUserRepository {
   constructor() {
@@ -95,7 +96,7 @@ class ApiUserRepository extends IUserRepository {
    * @override
    */
   async getUserRoles(competitionId) {
-    const data = await apiRequest(`/api/v1/users/me/roles/${competitionId}`);
+    const data = await apiRequest(`/api/v1/users/me/roles/${segmento(competitionId)}`);
 
     return {
       is_admin: data.is_admin,

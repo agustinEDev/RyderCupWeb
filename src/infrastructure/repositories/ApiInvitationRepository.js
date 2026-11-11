@@ -1,6 +1,7 @@
 import IInvitationRepository from '../../domain/repositories/IInvitationRepository';
 import InvitationMapper from '../mappers/InvitationMapper';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * ApiInvitationRepository - REST API implementation
@@ -40,7 +41,7 @@ class ApiInvitationRepository extends IInvitationRepository {
     }
 
     const apiData = await apiRequest(
-      `/api/v1/competitions/${competitionId}/invitations`,
+      `/api/v1/competitions/${segmento(competitionId)}/invitations`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -61,7 +62,7 @@ class ApiInvitationRepository extends IInvitationRepository {
     }
 
     const apiData = await apiRequest(
-      `/api/v1/competitions/${competitionId}/invitations/by-email`,
+      `/api/v1/competitions/${segmento(competitionId)}/invitations/by-email`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -99,12 +100,12 @@ class ApiInvitationRepository extends IInvitationRepository {
    * Retira una invitación pendiente (FE #724). El servidor contesta 204.
    */
   async cancelInvitation(invitationId) {
-    await apiRequest(`/api/v1/invitations/${invitationId}/cancel`, { method: 'POST' });
+    await apiRequest(`/api/v1/invitations/${segmento(invitationId)}/cancel`, { method: 'POST' });
   }
 
   async respondToInvitation(invitationId, action) {
     const apiData = await apiRequest(
-      `/api/v1/invitations/${invitationId}/respond`,
+      `/api/v1/invitations/${segmento(invitationId)}/respond`,
       {
         method: 'POST',
         body: JSON.stringify({ action }),
@@ -124,7 +125,7 @@ class ApiInvitationRepository extends IInvitationRepository {
 
     const queryString = this.#buildQueryString(apiFilters);
     const response = await apiRequest(
-      `/api/v1/competitions/${competitionId}/invitations${queryString}`
+      `/api/v1/competitions/${segmento(competitionId)}/invitations${queryString}`
     );
 
     const apiDataArray = response.invitations || [];

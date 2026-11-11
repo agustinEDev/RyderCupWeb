@@ -4,7 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ApiGolfCourseRepository from './ApiGolfCourseRepository';
 import apiRequest from '../http/api.js';
 
-vi.mock('../http/api.js', () => ({
+vi.mock('../http/api.js', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
   default: vi.fn(),
 }));
 

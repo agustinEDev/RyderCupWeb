@@ -3,6 +3,7 @@ import ISocialFeedRepository from '../../domain/repositories/ISocialFeedReposito
 import ActivityEventMapper from '../mappers/ActivityEventMapper';
 import PlayerStatsMapper from '../mappers/PlayerStatsMapper';
 import apiRequest from '../http/api.js';
+import { segmento } from '../http/api';
 
 /**
  * ApiSocialFeedRepository - REST API implementation
@@ -73,7 +74,7 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
   }
 
   async getPlayerProfile(userId) {
-    const data = await apiRequest(`/api/v1/users/${userId}/profile`);
+    const data = await apiRequest(`/api/v1/users/${segmento(userId)}/profile`);
 
     return {
       id: data.id,
@@ -117,13 +118,13 @@ class ApiSocialFeedRepository extends ISocialFeedRepository {
 
   async getGamesTogether(userId, { cursor = null } = {}) {
     const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
-    const data = await apiRequest(`/api/v1/users/${userId}/games-together${query}`);
+    const data = await apiRequest(`/api/v1/users/${segmento(userId)}/games-together${query}`);
     return paginaDePartidas(data);
   }
 
   async getPlayerActivity(userId, { limit = 20, cursor = null } = {}) {
     const data = await apiRequest(
-      `/api/v1/users/${userId}/activity${this.#buildQuery({ limit, cursor })}`
+      `/api/v1/users/${segmento(userId)}/activity${this.#buildQuery({ limit, cursor })}`
     );
     return ActivityEventMapper.feedToDomain(data);
   }

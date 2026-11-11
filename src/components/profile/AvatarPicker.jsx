@@ -2,8 +2,14 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, Check } from 'lucide-react';
 import Avatar from '../ui/Avatar';
-import { getApiBaseUrl } from '../../composition/http';
+import { urlDeImagenDeLaApi } from '../../composition/http';
 import BlockLoader from '../ui/BlockLoader';
+
+/** La imagen de un avatar, solo si su ruta es de la propia API; si no, nada (FE-11). */
+const ImagenDelAvatar = ({ ruta, ...props }) => {
+  const src = urlDeImagenDeLaApi(ruta);
+  return src ? <img src={src} {...props} /> : null;
+};
 
 const AvatarPicker = ({
   user,
@@ -73,8 +79,8 @@ const AvatarPicker = ({
                       isSelected ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
-                    <img
-                      src={`${getApiBaseUrl()}${preset.image_url}`}
+                    <ImagenDelAvatar
+                      ruta={preset.image_url}
                       alt={`Preset ${preset.id}`}
                       className="w-full h-full object-cover"
                     />
@@ -103,8 +109,9 @@ const AvatarPicker = ({
                       upload.is_active ? 'border-primary ring-2 ring-primary/40' : 'border-gray-200 hover:border-primary/50'
                     }`}
                   >
-                    <img
-                      src={`${getApiBaseUrl()}${upload.image_url}`}
+                    {/* Va con credenciales: solo a la propia API (FE-11) */}
+                    <ImagenDelAvatar
+                      ruta={upload.image_url}
                       alt=""
                       crossOrigin="use-credentials"
                       className="w-full h-full object-cover"

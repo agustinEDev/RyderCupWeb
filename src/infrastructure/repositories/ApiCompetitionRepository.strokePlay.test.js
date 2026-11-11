@@ -3,7 +3,8 @@ import ApiCompetitionRepository from './ApiCompetitionRepository';
 import * as apiModule from '../http/api';
 import { StrokePlaySetup } from '../../domain/value_objects/StrokePlaySetup';
 
-vi.mock('../http/api', () => ({
+vi.mock('../http/api', async () => ({
+  segmento: (await vi.importActual('../http/rutaDeLaApi')).segmento,
   default: vi.fn(),
 }));
 
