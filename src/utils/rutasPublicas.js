@@ -112,8 +112,6 @@ export const sinSesionEnRutaPublica = (ruta, hayUsuarioGuardado) => {
   return !hayUsuarioGuardado;
 };
 
-export default RUTAS_PUBLICAS;
-
 /**
  * Por donde se ENTRA a la aplicacion. Ofrecer «instala la aplicacion» aqui no
  * tiene sentido: en la portada porque tiene su propio boton, y en el arranque

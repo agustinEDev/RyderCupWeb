@@ -110,5 +110,3 @@ export function resolveScreen(pathname) {
     backByHistory: best.screen.back === 'history',
   };
 }
-
-export default resolveScreen;

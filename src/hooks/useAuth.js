@@ -70,5 +70,3 @@ export const getUserData = async () => {
   // dispositivo revocado y sin refresco proactivo el resto de la visita
   return loQueHaySobreLaSesion().user;
 };
-
-export default useAuth;

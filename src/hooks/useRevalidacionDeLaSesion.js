@@ -10,5 +10,3 @@ import { vigilaLaVueltaALaAplicacion } from '../services/sesionCompartida';
 export const useRevalidacionDeLaSesion = () => {
   useEffect(() => vigilaLaVueltaALaAplicacion(), []);
 };
-
-export default useRevalidacionDeLaSesion;

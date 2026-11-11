@@ -19,5 +19,3 @@ export const ubicacionDe = (competition, idioma) => {
 
   return nombres.length ? nombres.join(', ') : competition?.location || '';
 };
-
-export default ubicacionDe;

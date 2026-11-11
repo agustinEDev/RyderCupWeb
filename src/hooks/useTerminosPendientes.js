@@ -22,5 +22,3 @@ export const useTerminosPendientes = ({ soloConfirmados = false } = {}) => {
   if (soloConfirmados && sinConfirmar) return false;
   return debeAceptarLosTerminos(user);
 };
-
-export default useTerminosPendientes;

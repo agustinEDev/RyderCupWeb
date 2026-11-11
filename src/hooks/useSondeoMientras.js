@@ -29,5 +29,3 @@ export const useSondeoMientras = (activo, pedir, cada) => {
     };
   }, [activo, pedir, cada]);
 };
-
-export default useSondeoMientras;

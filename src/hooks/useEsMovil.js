@@ -21,5 +21,3 @@ const leer = () => hayMatchMedia() && window.matchMedia(CONSULTA).matches;
  * que vive fuera de él: sin estado propio que sincronizar a mano.
  */
 export const useEsMovil = () => useSyncExternalStore(suscribir, leer, () => false);
-
-export default useEsMovil;

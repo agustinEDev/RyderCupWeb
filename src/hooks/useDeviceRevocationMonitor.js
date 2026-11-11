@@ -138,5 +138,3 @@ export const useDeviceRevocationMonitor = ({ enabled = true } = {}) => {
     checkDeviceStatus,
   };
 };
-
-export default useDeviceRevocationMonitor;

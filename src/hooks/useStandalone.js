@@ -23,5 +23,3 @@ export function useStandalone() {
 
   return isStandalone;
 }
-
-export default useStandalone;
