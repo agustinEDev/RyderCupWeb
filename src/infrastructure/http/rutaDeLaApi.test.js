@@ -7,6 +7,8 @@ import { segmento, valeComoSegmento, RutaDeLaApiNoValida, esRutaDeLaApiSegura } 
  * que el navegador llamara a otra ruta con las cookies y el token CSRF (CSPT).
  *
  *   C1 cada id se codifica: `/`, `?`, `#`, `%` y espacios no cambian la ruta
+ *   C4 `/` o `\` en un valor no vale: el servidor (Uvicorn) decodifica `%2F` antes de
+ *      enrutar, así que un id con `/` añadía tramos a la ruta (probador, 11 nov 2026)
  *   C2 `.` o `..` no vale: el navegador los resuelve como «aquí» y «arriba». Uno vacío,
  *      null o undefined sale como antes (`/x//y`, `/x/undefined/y`): el servidor contesta
  *      404 y las pantallas ya lo tratan (code-review, 11 nov 2026)
@@ -20,13 +22,23 @@ describe('segmento (C1, C2)', () => {
     [7, '7'],
     ['ES', 'ES'],
     ['a b', 'a%20b'],
-    ['../admin', '..%2Fadmin'],
-    ['x/y', 'x%2Fy'],
     ['x?admin=1', 'x%3Fadmin%3D1'],
     ['x#y', 'x%23y'],
     ['%2e%2e', '%252e%252e'],
     ['%2F', '%252F'],
   ])('C1 %j → %j', (valor, esperado) => {
+    expect(segmento(valor)).toBe(esperado);
+  });
+
+  it.each([['a/b'], ['a\\b'], ['/'], ['//'], ['../admin'], ['x/../../admin'], ['G/players/U/no-show?']])(
+    'C4 %j no vale: la barra, aunque vaya codificada, el servidor la toma como separador',
+    (valor) => {
+      expect(() => segmento(valor)).toThrow(RutaDeLaApiNoValida);
+      expect(valeComoSegmento(valor)).toBe(false);
+    },
+  );
+
+  it.each([['?', '%3F'], ['#', '%23'], ['%2F', '%252F'], ['%5C', '%255C']])('C4 %j sí vale: %j', (valor, esperado) => {
     expect(segmento(valor)).toBe(esperado);
   });
 

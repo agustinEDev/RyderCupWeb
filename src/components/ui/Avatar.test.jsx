@@ -64,7 +64,7 @@ describe('Avatar', () => {
   });
 
   it('encodes the user id in the image path', () => {
-    const { container } = render(<Avatar userId="a/b?c" />);
-    expect(container.querySelector('img').getAttribute('src')).toContain('/api/v1/users/a%2Fb%3Fc/avatar');
+    const { container } = render(<Avatar userId="a?c#d" />);
+    expect(container.querySelector('img').getAttribute('src')).toContain('/api/v1/users/a%3Fc%23d/avatar');
   });
 });

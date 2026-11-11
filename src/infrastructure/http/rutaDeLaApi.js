@@ -8,6 +8,8 @@
  *
  * - `segmento(valor)`: cada valor que va en la ruta se codifica, y `.` o `..` no vale,
  *   porque el navegador los resuelve como «aquí» y «arriba» aunque estén codificados.
+ *   Tampoco `/` ni `\`: el servidor (Uvicorn) decodifica `%2F` antes de enrutar, así que
+ *   un id con `/` añadía tramos a la ruta (probador de la #1098, 11 nov 2026).
  *   Uno vacío, null o undefined sale como antes: el servidor contesta 404. Lo exige un test sobre los repositorios (`rutasConSegmento.test.js`).
  * - `esRutaDeLaApiSegura(ruta)`: el guardián de `apiRequest`, para cualquier ruta que
  *   se haya colado sin `segmento`: solo rutas propias de la API, sin segmentos `.` o `..`
@@ -34,16 +36,22 @@ const PUNTOS_LITERALES = /^\.{1,2}$/;
 // Caracteres de control (U+0000-U+001F y U+007F): el navegador borra algunos de la ruta
 const tieneControl = (texto) => [...texto].some((c) => c.charCodeAt(0) < 0x20 || c.charCodeAt(0) === 0x7f);
 
+// Las barras, aunque vayan codificadas: el servidor decodifica `%2F` antes de enrutar
+const BARRAS = /[/\\]/;
+
 /**
- * Si un valor vale para un tramo de la ruta (no es `.` ni `..`), sin avisar a nadie: para
- * decidir en un render sin efectos (el avatar).
+ * Si un valor vale para un tramo de la ruta (no es `.` ni `..` ni lleva `/` o `\`), sin
+ * avisar a nadie: para decidir en un render sin efectos (el avatar).
  * @param {unknown} valor
  * @returns {boolean}
  */
-export const valeComoSegmento = (valor) => !PUNTOS_LITERALES.test(String(valor));
+export const valeComoSegmento = (valor) => {
+  const texto = String(valor);
+  return !PUNTOS_LITERALES.test(texto) && !BARRAS.test(texto);
+};
 
 /**
- * Un valor para un tramo de la ruta, codificado. `.` o `..` no vale; vacío, null o
+ * Un valor para un tramo de la ruta, codificado. `.`, `..`, `/` o `\` no vale; vacío, null o
  * undefined salen como salían interpolados a pelo (`''`, `'null'`, `'undefined'`).
  * @param {unknown} valor
  * @returns {string}
