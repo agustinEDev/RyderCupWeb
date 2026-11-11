@@ -22,7 +22,8 @@ const ICON_SIZE_CLASSES = {
  * Works for ANY user (self or other) with just their id: the backend resolves
  * whether the active avatar is a preset or an uploaded photo, so this
  * component never needs to know which. Falls back to a generic placeholder
- * icon on load error (404 when the user has no avatar set, network error, etc).
+ * icon on load error: the API answers 204 with no image when there is nothing to
+ * show (no avatar, unknown user, a user who blocked you; BE #793), or the network failed.
  *
  * @param {string} userId - UUID of the user whose avatar to display
  * @param {'sm'|'md'|'lg'|'xl'} size - Preset size (default 'md')

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import QuickMatchScoringPage from './QuickMatchScoringPage';
@@ -2154,5 +2154,75 @@ describe('QuickMatchScoringPage · «Tu vuelta» mientras se anota', () => {
     } finally {
       espia.mockRestore();
     }
+  });
+});
+
+/**
+ * La anotación en curso (11 nov 2026): la pantalla repone la pestaña y el hoyo guardados y
+ * deja de guardar con la partida terminada. El detalle vive en `useAnotacionEnCurso`.
+ */
+describe('QuickMatchScoringPage: la anotación en curso', () => {
+  const CLAVE = 'anotacion_en_curso';
+  const ID = '0b5a6c1e-2d3f-4a5b-8c7d-9e0f1a2b3c4d';
+  const RUTA = `/quick-matches/${ID}/scoring`;
+  const memoria = () => {
+    const datos = new Map();
+    return {
+      getItem: (k) => (datos.has(k) ? datos.get(k) : null),
+      setItem: (k, v) => datos.set(k, String(v)),
+      removeItem: (k) => datos.delete(k),
+      clear: () => datos.clear(),
+    };
+  };
+  const guarda = async (extra = {}) => {
+    const { guardaLaAnotacionEnCurso } = await import('../../utils/anotacionEnCurso');
+    guardaLaAnotacionEnCurso({ cuenta: 'user-1', pathname: RUTA, search: '', pestana: 'classification', hoyo: 7, mapa: false, ...extra });
+  };
+  const monta = () =>
+    render(
+      <MemoryRouter initialEntries={[RUTA]}>
+        <Routes>
+          <Route path="/quick-matches/:quickMatchId/scoring" element={<QuickMatchScoringPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  const estado = (quickMatch) => ({
+    ...baseHookState,
+    quickMatch,
+    totalHoles: 18,
+    setCurrentHole: vi.fn(),
+    submitScore: vi.fn(),
+    completeMatch: vi.fn(),
+    cancelMatch: vi.fn(),
+    refetch: vi.fn(),
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal('localStorage', memoria());
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('E1: con su anotación guardada, abre en ese hoyo y esa pestaña', async () => {
+    await guarda();
+    const enJuego = estado({ ...baseQuickMatch, status: 'IN_PROGRESS', isCompleted: false });
+    mockUseQuickMatchScoring.mockReturnValue(enJuego);
+
+    monta();
+
+    expect(enJuego.setCurrentHole).toHaveBeenCalledWith(7);
+    const [, clasificacion] = within(screen.getByRole('tablist', { name: 'scoring.tabsLabel' })).getAllByRole('tab');
+    expect(clasificacion).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('E2: terminada, olvida la anotación', async () => {
+    await guarda();
+    const terminada = estado(baseQuickMatch);
+    mockUseQuickMatchScoring.mockReturnValue(terminada);
+
+    monta();
+
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+    expect(terminada.setCurrentHole).not.toHaveBeenCalled();
   });
 });

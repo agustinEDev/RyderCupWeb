@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.74.0] - 2026-11-11
+
+**Volver a la anotación si iOS cierra la app** (#1095). Sin cambios en el backend: va con la
+2.58.0 en producción y con la 2.59.0 (el avatar sin imagen da 204; aquí solo cambia su
+comentario). Probado en el Kind a 360 px en Chrome y en WebKit.
+
+### Added
+
+- **La anotación sobrevive a que iOS cierre la app.** Anotando (partido de torneo, partida de
+  stroke play o partida rápida), la app apunta la anotación, la pestaña, el hoyo y si el mapa
+  está abierto. Al abrirla de cero —también sin cobertura— vuelve a esa anotación, en ese
+  hoyo y esa pestaña y con el mapa si estaba abierto, sin pasar por el panel. Vale 6 horas
+  desde la última vez en la anotación; después, al panel como siempre. Un enlace concreto o
+  la página guardada por un cierre de sesión mandan antes.
+- Cualquier carga de la anotación (por ejemplo, una recarga por versión nueva) abre en el
+  hoyo y la pestaña en que estaba, en vez de en el hoyo 1.
+- Un aviso informativo a Sentry por cada vuelta tras un arranque en frío (tipo, pestaña, mapa
+  y cuánto estuvo cerrada, sin ids), para saber cuántas veces pasa en el campo.
+
+### Changed
+
+- Salir de la anotación, terminar la partida, entregar la tarjeta o retirarse la olvida, y
+  todos los cierres de sesión la borran (sin sesión no queda nada de la cuenta en el móvil).
+  Solo se aceptan las tres rutas de anotación con su id.
+- «Volver» en el resumen del partido y en el aviso de sesión tomada desde otro móvil va al
+  panel si no hay pantalla anterior (tras abrir la app directamente en la anotación).
+
+### Tests
+
+- 11.274 tests; 40 mutaciones, todas muertas. Kind: arranque en frío por `/start` (hoyo 5 y
+  Clasificación, sin pasar por el panel), sin cobertura, pasadas 6 h, salir a propósito y el
+  avatar con 204, en Chrome y en WebKit (8 de 8 en cada uno). JS de arranque: 259 KB de 270.
+
 ## [2.73.0] - 2026-11-11
 
 **Fase 3 del plan de seguridad, release 2 (frontend)** (#1092) y dependencias al día

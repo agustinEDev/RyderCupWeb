@@ -15,6 +15,7 @@ import { olvidaLoDeEstaCuenta } from '../services/loUltimoConocido';
 import { olvidaElRefrescoDeHandicap } from '../services/refrescoDeHandicapApuntes';
 import { olvidaLasNovedades } from '../services/novedadesDeActividad';
 import { olvidaLaCopiaParaArrancarSinCobertura } from '../services/sesionCompartida';
+import { olvidaLaAnotacionEnCurso } from '../utils/anotacionEnCurso';
 
 alCerrarLaSesion(olvidaLoDeEstaCuenta);
 alCerrarLaSesion(olvidaElRefrescoDeHandicap);
@@ -26,3 +27,7 @@ alCerrarLaSesion(olvidaLasNovedades);
 // `olvidaLaSesion`, y sin esto el móvil sin red seguía entrando con el nombre y el
 // correo de la cuenta revocada (batería del Kind, 9 nov 2026)
 alCerrarLaSesion(olvidaLaCopiaParaArrancarSinCobertura);
+// La anotación en curso, para volver a ella si iOS cierra la app: sin sesión no queda
+// nada de la cuenta en el móvil, tampoco esto (C1; manda sobre volver tras entrar,
+// Agustín, 11 nov 2026)
+alCerrarLaSesion(olvidaLaAnotacionEnCurso);

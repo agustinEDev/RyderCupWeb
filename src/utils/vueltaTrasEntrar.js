@@ -32,6 +32,8 @@ import { esLaPaginaDeConfirmar, rutaDeVuelta, rutaPropia } from './auth';
 import { esRutaPublica } from './rutasPublicas';
 import { seCierraLaSesionAPeticion } from './avisoDeCierreForzado';
 import { readStrippedSecret } from './stripSecretsFromAddressBar';
+import { leeLaAnotacionEnCurso } from './anotacionEnCurso';
+import { avisaDeLaVueltaALaAnotacion } from './avisoDeVueltaALaAnotacion';
 
 const CLAVE = 'vuelta_tras_entrar';
 const CLAVE_DE_LA_CUENTA = 'vuelta_tras_entrar_cuenta';
@@ -194,8 +196,12 @@ const cuentaDeLaVuelta = () => {
  * (`cuenta`; regla 6). La guardada se gasta siempre.
  * Solo calcula: el silencio de un cierre anterior lo acaba quien entra de verdad (C5),
  * no la entrada sin red de la aplicación instalada, que también pasa por aquí.
+ *
+ * Sin ninguna de las dos, la anotación en curso de esa cuenta (11 nov 2026): iOS cerró la
+ * app anotando y al abrirla arranca de cero. `arranque`: es el arranque de la aplicación
+ * instalada, y esa vuelta se avisa a Sentry para medir cuántas veces pasa.
  */
-export const vueltaTrasEntrar = (from, { cuenta = null } = {}) => {
+export const vueltaTrasEntrar = (from, { cuenta = null, arranque = false } = {}) => {
   // La de la que venía, si apunta la cuenta que estaba dentro, solo para esa cuenta (FE
   // #1064, R4-R6): otra, a su panel. Sin cuenta apuntada, para cualquiera, como siempre
   const fromDeOtra =
@@ -208,5 +214,14 @@ export const vueltaTrasEntrar = (from, { cuenta = null } = {}) => {
   const esSuya = deQuien === null || (aIdDeCuenta(cuenta) !== null && deQuien === aIdDeCuenta(cuenta));
   const guardada = esSuya ? leeLaVueltaTrasEntrar() : null;
   olvidaLaVueltaTrasEntrar();
+  if (from == null && guardada === null) {
+    const anotacion = leeLaAnotacionEnCurso({ cuenta });
+    // La lista cerrada ya la filtra; `rutaPropia`, por si acaso, como toda vuelta
+    const ruta = anotacion ? rutaPropia(anotacion.ruta) : null;
+    if (ruta) {
+      if (arranque) avisaDeLaVueltaALaAnotacion(anotacion);
+      return ruta;
+    }
+  }
   return rutaDeVuelta(from ?? guardada ?? undefined);
 };

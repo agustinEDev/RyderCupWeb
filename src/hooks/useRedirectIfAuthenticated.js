@@ -119,7 +119,7 @@ export const useRedirectIfAuthenticated = ({
         // rápido, se queda colgada hasta agotar el plazo. Tratarlo distinto del
         // rechazo de red dejaba el arreglo cubriendo solo el caso raro.
         settled = true;
-        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada }), { replace: true });
+        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada, arranque: entrarSinRed }), { replace: true });
         return;
       }
 
@@ -138,7 +138,7 @@ export const useRedirectIfAuthenticated = ({
         // sin conexión es el caso de uso, no un extra. La sesión no se ha
         // rechazado —solo no se ha podido preguntar—, así que se entra con la
         // que hay guardada.
-        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada }), { replace: true });
+        navigate(vueltaTrasEntrar(location.state?.from, { cuenta: cuentaGuardada, arranque: entrarSinRed }), { replace: true });
         return;
       }
 
@@ -202,7 +202,9 @@ export const useRedirectIfAuthenticated = ({
       // Sesión confirmada: acaba el silencio de un cierre anterior (C5). La entrada sin
       // red de arriba no: no se ha confirmado nada
       vuelvenLosAvisosDeCierre();
-      navigate(vueltaTrasEntrar(location.state?.from, { cuenta: currentUser.id }), { replace: true });
+      navigate(vueltaTrasEntrar(location.state?.from, { cuenta: currentUser.id, arranque: entrarSinRed }), {
+        replace: true,
+      });
       // `isChecking` se queda arriba a propósito: la página se está yendo y
       // bajarlo pintaría el formulario un instante
     };
