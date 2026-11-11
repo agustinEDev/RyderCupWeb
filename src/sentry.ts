@@ -1,29 +1,11 @@
 /**
- * Sentry Configuration - Error Tracking & Performance Monitoring
+ * Las integraciones pesadas de Sentry: las trazas de navegación y la grabación de las
+ * sesiones con error (Replay). Se cargan después del arranque (`import('./sentry')` en
+ * main.jsx), sobre el cliente que crea main.jsx, que es donde vive todo lo que filtra
+ * (`sentryScrubbing`). Este fichero no crea ningún cliente (FE-07, fase 4 del plan a 9).
  *
- * Este archivo inicializa Sentry con configuración avanzada por entorno.
- *
- * Configuración por entorno:
- * - Development: Sample rates altos (1.0), debug habilitado
- * - Production: Sample rates optimizados (0.1-0.2), debug deshabilitado
- *
- * Integraciones:
- * ✅ BrowserTracing - Monitoreo de rendimiento (navegación, requests HTTP)
- * ✅ Replay - Grabación de sesiones (normal + on error)
- * ✅ Feedback - Widget de feedback para usuarios (opcional)
- * ✅ Auto Session Tracking - Seguimiento automático de sesiones
- * ✅ Attach Stack Trace - Stack traces en todos los mensajes
- *
- * Variables de entorno requeridas (.env):
- * - VITE_SENTRY_DSN
- * - VITE_SENTRY_ENVIRONMENT
- * - VITE_SENTRY_DEBUG
- * - VITE_SENTRY_TRACES_SAMPLE_RATE
- * - VITE_SENTRY_PROFILES_SAMPLE_RATE
- * - VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE
- * - VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE
- * - VITE_SENTRY_AUTO_SESSION_TRACKING
- * - VITE_SENTRY_ATTACH_STACKTRACE
+ * Variables: VITE_SENTRY_DSN, VITE_SENTRY_ENVIRONMENT, VITE_SENTRY_DEBUG y los
+ * VITE_SENTRY_*_SAMPLE_RATE (sentrySampleRates).
  */
 
 import { replayIntegration, reactRouterV7BrowserTracingIntegration, getClient } from '@sentry/react';
@@ -44,8 +26,6 @@ const SENTRY_CONFIG = {
   debug: import.meta.env.VITE_SENTRY_DEBUG === 'true',
   // Los mismos que aplica el arranque de main.jsx, de un solo sitio (FE #792)
   ...sentrySampleRates(import.meta.env),
-  autoSessionTracking: import.meta.env.VITE_SENTRY_AUTO_SESSION_TRACKING === 'true',
-  attachStacktrace: import.meta.env.VITE_SENTRY_ATTACH_STACKTRACE === 'true',
 };
 
 // Obtener release desde package.json
@@ -155,9 +135,3 @@ if (!SENTRY_CONFIG.dsn) {
 └─────────────────────────────────────────────────────────┘
   `);
 }
-
-// ============================================
-// EXPORTS
-// ============================================
-
-export default SENTRY_CONFIG;

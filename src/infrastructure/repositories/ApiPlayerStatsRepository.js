@@ -25,7 +25,7 @@ class ApiPlayerStatsRepository extends IPlayerStatsRepository {
   }
 
   async getRecentMatches(limit) {
-    const query = limit ? `?limit=${limit}` : '';
+    const query = limit ? `?limit=${encodeURIComponent(limit)}` : '';
     const apiData = await apiRequest(`/api/v1/users/me/matches${query}`);
     return RecentMatchMapper.toDomainList(apiData?.matches);
   }

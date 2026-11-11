@@ -19,6 +19,8 @@ cabeceras_de_produccion.json.
 | H6   | el marcador {sentry_csp} se sustituye por la dirección de Sentry    | 0    |
 | H7   | no se puede pedir la página: lo dice y sale 1                       | 1    |
 | H8   | el fichero de verdad se puede leer y trae las dos rutas             | —    |
+| H9   | una cabecera repetida (dos CSP, dos CORP): el navegador aplica las  | 1    |
+|      | dos, así que es un fallo aunque una sea la buena                    |      |
 """
 
 import json
@@ -99,6 +101,15 @@ class ComprobarCabeceras(unittest.TestCase):
         fallos = cp.compara(ESPERADO, "https://www.example", pide)
         self.assertTrue(fallos)
         self.assertIn("sin red", fallos[0])
+
+    def test_h9_cabecera_repetida(self):
+        vieja = "default-src 'self'; style-src https://fonts.googleapis.com"
+        malas = {**BUENAS, "/": {**BUENAS["/"], "Content-Security-Policy": [vieja, BUENAS["/"]["Content-Security-Policy"]]}}
+        fallos = self.comprueba(malas)
+        self.assertEqual(len(fallos), 1)
+        self.assertIn("2 veces", fallos[0])
+        dos_corp = {**BUENAS, "/logo.png": {"Cross-Origin-Resource-Policy": ["same-origin", "cross-origin"]}}
+        self.assertIn("2 veces", self.comprueba(dos_corp)[0])
 
     def test_h8_el_fichero_de_verdad(self):
         esperado = json.loads((Path(__file__).parent / "cabeceras_de_produccion.json").read_text())

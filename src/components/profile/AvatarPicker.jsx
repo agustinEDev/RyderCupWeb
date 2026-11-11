@@ -5,6 +5,9 @@ import Avatar from '../ui/Avatar';
 import { urlDeImagenDeLaApi } from '../../composition/http';
 import BlockLoader from '../ui/BlockLoader';
 
+/** La imagen de un avatar si su ruta es de la propia API, o null (FE-11). Pura y barata. */
+const imagenDe = (avatar) => urlDeImagenDeLaApi(avatar.image_url);
+
 const AvatarPicker = ({
   user,
   presets,
@@ -74,9 +77,9 @@ const AvatarPicker = ({
                     }`}
                   >
                     {/* Solo si es una ruta de la propia API (FE-11) */}
-                    {urlDeImagenDeLaApi(preset.image_url) && (
+                    {imagenDe(preset) && (
                       <img
-                        src={urlDeImagenDeLaApi(preset.image_url)}
+                        src={imagenDe(preset)}
                         alt={`Preset ${preset.id}`}
                         className="w-full h-full object-cover"
                       />
@@ -107,9 +110,9 @@ const AvatarPicker = ({
                     }`}
                   >
                     {/* Solo si es una ruta de la propia API: va con credenciales (FE-11) */}
-                    {urlDeImagenDeLaApi(upload.image_url) && (
+                    {imagenDe(upload) && (
                       <img
-                        src={urlDeImagenDeLaApi(upload.image_url)}
+                        src={imagenDe(upload)}
                         alt=""
                         crossOrigin="use-credentials"
                         className="w-full h-full object-cover"

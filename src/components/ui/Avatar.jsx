@@ -30,6 +30,19 @@ const ICON_SIZE_CLASSES = {
  * @param {string} className - Extra classes merged onto the container
  * @param {string|number} version - Optional cache-busting value (e.g. user.updated_at)
  */
+/**
+ * La dirección de la imagen, o `null`: sin id, o con uno que no vale para una ruta (`.`,
+ * `..`), se pinta el icono en vez de romper la pantalla (FE-03).
+ */
+const rutaDelAvatar = (userId, version) => {
+  if (!userId) return null;
+  try {
+    return `${getApiBaseUrl()}/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`;
+  } catch {
+    return null;
+  }
+};
+
 const Avatar = ({ userId, size = 'md', className = '', version }) => {
   // Guarda el `src` concreto que falló, no un booleano: así, si userId/version
   // cambian (p.ej. tras cambiar de avatar), el `src` nuevo ya no coincide con
@@ -41,9 +54,7 @@ const Avatar = ({ userId, size = 'md', className = '', version }) => {
   const iconSizeClass = ICON_SIZE_CLASSES[size] || ICON_SIZE_CLASSES.md;
   const containerClass = `${sizeClass} rounded-full overflow-hidden flex items-center justify-center bg-gray-100 border border-gray-200 shrink-0 ${className}`;
 
-  const src = userId
-    ? `${getApiBaseUrl()}/api/v1/users/${segmento(userId)}/avatar${version ? `?v=${encodeURIComponent(version)}` : ''}`
-    : null;
+  const src = rutaDelAvatar(userId, version);
   const hasError = src !== null && erroredSrc === src;
 
   if (!src || hasError) {

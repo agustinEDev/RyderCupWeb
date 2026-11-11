@@ -58,10 +58,21 @@ describe('esRutaDeLaApiSegura (C3)', () => {
     '/\\evil.example/x',
     // El navegador trata «\\» como «/» en la ruta: esto acabaría en /api/admin
     '/api/v1/competitions\\..\\..\\admin',
+    // El navegador borra tabuladores y saltos de línea antes de resolver la ruta: «.\t.»
+    // acaba siendo «..» (revisor, 11 nov 2026)
+    '/api/v1/competitions/groups/.\t./scoring-view',
+    '/api/v1/a/%2e\r%2e/b',
+    '/api/v1/a/.\n./b',
+    '/api/v1/a/\u0000/b',
+    '/api/v1/a/\u007f/b',
+    // También en la búsqueda: un salto de línea en la dirección no sale
+    '/api/v1/x?q=a\nb',
     'https://evil.example/api/v1/x',
     'http://api.rydercupfriends.com/api/v1/x',
     'api/v1/x',
+    '/admin/users',
     '/api/v1/x#frag',
+    '/api/v1/x?q=1#frag',
     '',
   ])('no vale %s', (ruta) => {
     expect(esRutaDeLaApiSegura(ruta)).toBe(false);

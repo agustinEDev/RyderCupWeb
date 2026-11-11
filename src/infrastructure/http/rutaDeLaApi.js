@@ -24,12 +24,11 @@ export class RutaDeLaApiNoValida extends Error {
   }
 }
 
-// «Aquí» y «arriba» en una ruta ya montada, también con los puntos codificados (%2e): el
-// navegador los resuelve igual
-const PUNTOS = /^(?:\.|%2e){1,2}$/i;
 // En un valor antes de codificarlo, solo los literales: `%2e` se codifica a `%252e`, que
 // ya no es un punto para el navegador
 const PUNTOS_LITERALES = /^\.{1,2}$/;
+// Caracteres de control (U+0000-U+001F y U+007F): el navegador borra algunos de la ruta
+const tieneControl = (texto) => [...texto].some((c) => c.charCodeAt(0) < 0x20 || c.charCodeAt(0) === 0x7f);
 
 /**
  * Un valor para un tramo de la ruta, codificado. Vacío, `.` o `..` no vale.
@@ -64,15 +63,19 @@ export const rechazaLaRuta = (donde) => {
 };
 
 /**
- * Si una ruta se puede pedir: empieza por `/api/`, no lleva otro servidor (`//`, `\`,
- * `https://`), ni fragmento, ni tramos `.` o `..` en la parte de la ruta. La búsqueda
- * (`?…`) va aparte: ahí un `..` es solo texto.
+ * Si una ruta se puede pedir: empieza por `/api/`, sin fragmento ni caracteres de control,
+ * y el navegador la resolvería tal cual se escribió (ni `.`, ni `..`, ni `%2e`, ni `\`, ni
+ * otro servidor). La búsqueda (`?…`) va aparte: ahí un `..` es solo texto.
  * @param {unknown} ruta
  * @returns {boolean}
  */
 export const esRutaDeLaApiSegura = (ruta) => {
   if (typeof ruta !== 'string' || !ruta.startsWith('/api/') || ruta.includes('#')) return false;
+  // Ningún carácter de control, tampoco en la búsqueda: el navegador borra tabuladores y
+  // saltos de línea antes de resolver la ruta («.\t.» acabaría siendo «..»)
+  if (tieneControl(ruta)) return false;
+  // La ruta que resolvería el navegador tiene que ser la misma que se escribió: «.», «..»,
+  // «%2e%2e», «\» y cualquier otra normalización la cambian (revisor, 11 nov 2026)
   const camino = ruta.split('?')[0];
-  if (camino.includes('\\')) return false;
-  return camino.split('/').every((tramo) => !PUNTOS.test(tramo));
+  return new globalThis.URL(ruta, 'http://ruta.invalid').pathname === camino;
 };

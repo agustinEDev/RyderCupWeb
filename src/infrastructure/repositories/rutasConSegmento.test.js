@@ -1,42 +1,45 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 /**
- * Ningún id entra a pelo en una ruta de la API (FE-03, C4, fase 4 del plan a 9).
+ * Ningún valor entra a pelo en una ruta de la API (FE-03, C4, fase 4 del plan a 9).
  *
- * Recorre los repositorios y las demás piezas que construyen rutas de la API, busca cada
- * plantilla que empieza por `/api` y exige que todo lo que se interpola en la parte de la
- * ruta (antes del `?`) pase por `segmento(...)`. La parte de la búsqueda (`?…`) solo puede
- * venir de un constructor de búsquedas conocido. Si alguien añade una ruta con `${id}` a
- * pelo, este test falla y dice dónde.
+ * Recorre los repositorios (y las demás piezas que construyen rutas de la API) y revisa
+ * TODA plantilla que parezca una ruta: la que empieza por `/`, por `?` o por una constante
+ * de ruta (`${BASE}/…`, `${getApiBaseUrl()}/…`). Exige:
+ * - en la parte de la ruta (antes del `?`), `segmento(...)`; solo la constante del
+ *   principio y un sufijo de búsqueda al final quedan fuera;
+ * - en la parte de la búsqueda, `encodeURIComponent(...)` o un constructor conocido
+ *   (`URLSearchParams`).
+ * Y que `apiRequest` solo se llame desde los repositorios, para que no haya rutas fuera de
+ * lo que este test recorre. La primera versión solo miraba las que empezaban por `/api` y
+ * se le escapó un repositorio entero con `${BASE}` (revisor, 11 nov 2026).
  */
 const RAIZ = globalThis.process.cwd();
-const DIRECTORIOS = ['src/infrastructure/repositories'];
-const FICHEROS = ['src/components/ui/Avatar.jsx'];
+const REPOSITORIOS = 'src/infrastructure/repositories';
+const FICHEROS_EXTRA = ['src/components/ui/Avatar.jsx'];
 
-// El sufijo de búsqueda que construye el propio repositorio («?…» o nada): solo como
-// última pieza de la plantilla y sin nada detrás
-const SUFIJO_DE_BUSQUEDA = [/^queryString$/, /^query$/, /^this\.#buildQuery\(/, /^version \? `\?v=/];
-
-// Lo que puede ir en la parte de la búsqueda: lo construyen URLSearchParams o encodeURIComponent
-const BUSQUEDA_PERMITIDA = [
-  /^queryString\b/,
-  /^params\.toString\(\)$/,
-  /^queryParams\.toString\(\)/,
+// La constante con la que empieza una ruta: BASE, RUTA_…, getApiBaseUrl()
+const CONSTANTE_INICIAL = /^(?:[A-Z][A-Z0-9_]*|getApiBaseUrl\(\))$/;
+// El sufijo de búsqueda que construye el propio repositorio («?…» o nada), al final
+const SUFIJO_DE_BUSQUEDA = [
+  /^queryString$/,
+  /^query$/,
+  /^filtro$/,
   /^this\.#buildQuery\(/,
-  /^encodeURIComponent\(/,
-  /^version \?/,
+  /^version \? `\?v=/,
+  /^queryString \? `\?\$\{queryString\}` : ''$/,
+  /^queryParams\.toString\(\) \? '\?' \+ queryParams : ''$/,
 ];
+// Lo que puede ir en la parte de la búsqueda
+const EN_LA_BUSQUEDA = [/^encodeURIComponent\(/, /^queryString$/, /^params\.toString\(\)$/];
 
-/** Las plantillas `…` que empiezan por /api, con sus interpolaciones de primer nivel. */
+/** Todas las plantillas `…` con su texto y sus interpolaciones de primer nivel. */
 const plantillas = (fuente) => {
   const out = [];
   for (let i = 0; i < fuente.length; i++) {
     if (fuente[i] !== '`') continue;
-    // Solo las que abren una ruta de la API (directa, o tras la base de la API)
-    const resto = fuente.slice(i + 1);
-    const empieza = resto.startsWith('/api') || resto.startsWith('${getApiBaseUrl()}/api');
     let j = i + 1;
     let texto = '';
     const partes = [];
@@ -57,48 +60,76 @@ const plantillas = (fuente) => {
       texto += fuente[j];
       j++;
     }
-    if (empieza) out.push({ desde: i, partes });
+    out.push({ desde: i, texto, partes });
     i = j;
   }
   return out;
 };
 
-const ficheros = () => [
-  ...DIRECTORIOS.flatMap((d) =>
-    readdirSync(resolve(RAIZ, d))
-      .filter((f) => /\.(js|jsx)$/.test(f) && !f.includes('.test.'))
-      .map((f) => join(d, f)),
-  ),
-  ...FICHEROS,
-];
+/** Si una plantilla parece una ruta: empieza por `/`, por `?` o por una constante de ruta. */
+const pareceRuta = ({ texto, partes }) =>
+  texto.startsWith('/') ||
+  texto.startsWith('?') ||
+  (texto.startsWith('\u0000') && CONSTANTE_INICIAL.test(partes[0].expresion) && texto.slice(1).startsWith('/'));
 
-describe('rutas de la API con segmento (FE-03, C4)', () => {
-  it('todo lo que entra en la ruta pasa por segmento(); la búsqueda, por un constructor conocido', () => {
-    const malas = [];
-    for (const fichero of ficheros()) {
-      const fuente = readFileSync(resolve(RAIZ, fichero), 'utf8');
-      for (const { desde, partes } of plantillas(fuente)) {
-        const linea = fuente.slice(0, desde).split('\n').length;
-        for (const { expresion, antes, alFinal } of partes) {
-          if (expresion === 'getApiBaseUrl()') continue;
-          const enLaBusqueda = antes.includes('?');
-          const sufijo = alFinal && SUFIJO_DE_BUSQUEDA.some((r) => r.test(expresion));
-          const vale = enLaBusqueda
-            ? BUSQUEDA_PERMITIDA.some((r) => r.test(expresion))
-            : expresion.startsWith('segmento(') || sufijo || BUSQUEDA_PERMITIDA.some((r) => r.test(expresion) && /\?/.test(expresion));
-          if (!vale) malas.push(`${fichero}:${linea} \${${expresion}}`);
-        }
-      }
-    }
-    expect(malas).toEqual([]);
+const fuentes = (dir) =>
+  readdirSync(resolve(RAIZ, dir)).flatMap((f) => {
+    const ruta = join(dir, f);
+    if (statSync(resolve(RAIZ, ruta)).isDirectory()) return fuentes(ruta);
+    return /\.(js|jsx|ts|tsx)$/.test(f) && !/\.test\./.test(f) ? [ruta] : [];
   });
 
-  it('el analizador ve las rutas: hay decenas de segmentos en los repositorios', () => {
-    let segmentos = 0;
-    for (const fichero of ficheros()) {
-      const fuente = readFileSync(resolve(RAIZ, fichero), 'utf8');
-      for (const { partes } of plantillas(fuente)) segmentos += partes.filter((p) => p.expresion.startsWith('segmento(')).length;
+const malasDe = (ficheros) => {
+  const malas = [];
+  for (const fichero of ficheros) {
+    const fuente = readFileSync(resolve(RAIZ, fichero), 'utf8');
+    for (const plantilla of plantillas(fuente)) {
+      if (!pareceRuta(plantilla)) continue;
+      const linea = fuente.slice(0, plantilla.desde).split('\n').length;
+      plantilla.partes.forEach(({ expresion, antes, alFinal }, n) => {
+        if (n === 0 && antes === '' && CONSTANTE_INICIAL.test(expresion)) return;
+        const enLaBusqueda = plantilla.texto.startsWith('?') || antes.includes('?');
+        const vale = enLaBusqueda
+          ? EN_LA_BUSQUEDA.some((r) => r.test(expresion))
+          : expresion.startsWith('segmento(') || (alFinal && SUFIJO_DE_BUSQUEDA.some((r) => r.test(expresion)));
+        if (!vale) malas.push(`${fichero}:${linea} \${${expresion}}`);
+      });
     }
-    expect(segmentos).toBeGreaterThan(100);
+  }
+  return malas;
+};
+
+const ficherosDeRutas = () => [...fuentes(REPOSITORIOS), ...FICHEROS_EXTRA];
+
+describe('rutas de la API con segmento (FE-03, C4)', () => {
+  it('en la ruta, segmento(); en la búsqueda, encodeURIComponent o un constructor conocido', () => {
+    expect(malasDe(ficherosDeRutas())).toEqual([]);
+  });
+
+  it('el analizador ve las rutas, también las que empiezan por una constante (${BASE})', () => {
+    let segmentos = 0;
+    let conConstante = 0;
+    for (const fichero of ficherosDeRutas()) {
+      for (const p of plantillas(readFileSync(resolve(RAIZ, fichero), 'utf8')).filter(pareceRuta)) {
+        segmentos += p.partes.filter((x) => x.expresion.startsWith('segmento(')).length;
+        if (p.texto.startsWith('\u0000')) conConstante++;
+      }
+    }
+    expect(segmentos).toBeGreaterThan(140);
+    expect(conConstante).toBeGreaterThan(10);
+  });
+
+  it('el analizador caza un valor a pelo tras una constante y en la búsqueda', () => {
+    const fuente = "const BASE = '/api/v1/x';\napiRequest(`${BASE}/groups/${groupId}/a?side=${side}`);";
+    const p = plantillas(fuente).filter(pareceRuta);
+    expect(p).toHaveLength(1);
+    expect(p[0].partes.map((x) => x.expresion)).toEqual(['BASE', 'groupId', 'side']);
+  });
+
+  it('apiRequest solo se llama desde los repositorios (y su propia capa http)', () => {
+    const fuera = fuentes('src')
+      .filter((f) => !f.startsWith(REPOSITORIOS) && !f.startsWith('src/infrastructure/http'))
+      .filter((f) => /\bapiRequest\(/.test(readFileSync(resolve(RAIZ, f), 'utf8')));
+    expect(fuera).toEqual([]);
   });
 });

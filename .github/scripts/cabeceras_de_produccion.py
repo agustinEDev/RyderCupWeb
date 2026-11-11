@@ -30,10 +30,11 @@ def _directivas(csp):
 
 
 def pide(url):
-    """Las cabeceras de un GET a esa dirección."""
+    """Las cabeceras de un GET a esa dirección: cada nombre, con todos sus valores."""
     peticion = urllib.request.Request(url, headers={"User-Agent": "rydercup-cabeceras/1.0"})
     with urllib.request.urlopen(peticion, timeout=30) as respuesta:  # noqa: S310 - origen fijo del workflow
-        return dict(respuesta.headers.items())
+        nombres = {k.lower() for k in respuesta.headers.keys()}
+        return {n: respuesta.headers.get_all(n) for n in nombres}
 
 
 def compara(esperado, origen, pide_cabeceras=pide):
@@ -41,7 +42,11 @@ def compara(esperado, origen, pide_cabeceras=pide):
     fallos = []
     for ruta, cabeceras in esperado["rutas"].items():
         try:
-            llegan = {k.lower(): v for k, v in pide_cabeceras(origen.rstrip("/") + ruta).items()}
+            # Cada nombre con la lista de sus valores: una cabecera repetida se ve
+            llegan = {
+                k.lower(): (v if isinstance(v, list) else [v])
+                for k, v in pide_cabeceras(origen.rstrip("/") + ruta).items()
+            }
         except Exception as error:  # noqa: BLE001 - cualquier fallo de red es un fallo de la comprobación
             fallos.append(f"{ruta}: no se pudo pedir ({error})")
             continue
@@ -49,10 +54,16 @@ def compara(esperado, origen, pide_cabeceras=pide):
             if nombre.startswith("_"):
                 continue
             quiere = valor(esperado, texto)
-            hay = llegan.get(nombre)
-            if hay is None:
+            valores = llegan.get(nombre)
+            if not valores:
                 fallos.append(f"{ruta}: falta {nombre} (se espera «{quiere}»)")
-            elif nombre in _CSP:
+                continue
+            if len(valores) > 1:
+                # El navegador aplica las dos (dos CSP) o ninguna (dos CORP): fallo siempre
+                fallos.append(f"{ruta}: {nombre} llega {len(valores)} veces: {valores}")
+                continue
+            hay = valores[0]
+            if nombre in _CSP:
                 sobran = sorted(_directivas(hay) - _directivas(quiere))
                 faltan = sorted(_directivas(quiere) - _directivas(hay))
                 if sobran or faltan:
