@@ -1,7 +1,7 @@
 /**
- * Lo que la interfaz usa de `infrastructure/http`: la URL base de la API
- * (`getApiBaseUrl`, para los avatares) y el transporte de la sesión (token CSRF,
- * refresco, cierres forzados, `olvidaLoDeLaCuenta`). `apiRequest` no está: la
+ * Lo que la interfaz usa de `infrastructure/http`: las rutas de las imágenes de
+ * la API (`urlDeImagenDeLaApi`, para los avatares) y el transporte de la sesión
+ * (token CSRF, refresco, cierres forzados). `apiRequest` no está: la
  * interfaz no llama a la API, pide un caso de uso a `composition` (lo vigila
  * ESLint con no-restricted-imports).
  *
@@ -18,7 +18,6 @@
 import './limpiezaAlCerrarLaSesion';
 import './interfazDelTransporte';
 
-export { getApiBaseUrl } from '../infrastructure/http/urlDeLaApi';
 // El id que va en la ruta de la imagen del avatar, codificado (FE-03)
 export { segmento, valeComoSegmento, urlDeImagenDeLaApi } from '../infrastructure/http/rutaDeLaApi';
 export { setCsrfTokenGlobal } from '../infrastructure/http/csrfTokenSync';
@@ -29,7 +28,6 @@ export {
 export {
   handleDeviceRevocationLogout,
   marcaLaRevocacionPropia,
-  olvidaLoDeLaCuenta,
   olvidaLoGuardadoDeLaCuenta,
 } from '../infrastructure/http/deviceRevocationLogout';
 export {
