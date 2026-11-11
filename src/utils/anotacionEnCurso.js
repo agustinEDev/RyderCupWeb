@@ -19,6 +19,8 @@
  * - Se borra en todos los cierres de sesión, desde el registro único de limpiezas (C1).
  */
 
+import { TODAS_LAS_PESTANAS_DE_ANOTACION } from './pestanasDeLaAnotacion';
+
 const CLAVE = 'anotacion_en_curso';
 const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
 
@@ -32,8 +34,8 @@ const RUTAS = [
   },
   { tipo: 'rapida', ruta: new RegExp(`^/quick-matches/${UUID}/scoring$`, 'i'), busqueda: /^$/ },
 ];
-// Las pestañas de las tres anotaciones: ScoringPage, GroupScoringPage y QuickMatchScoringPage
-const PESTANAS = new Set(['input', 'scorecard', 'leaderboard', 'standings', 'cards', 'classification']);
+// Las pestañas de las tres anotaciones, las mismas que pintan sus pantallas
+const PESTANAS = TODAS_LAS_PESTANAS_DE_ANOTACION;
 const HOYO_MAXIMO = 36;
 
 /** El tipo de anotación de una ruta y su búsqueda, o `null` si no es una de las tres. */
@@ -82,9 +84,13 @@ export const guardaLaAnotacionEnCurso = ({ cuenta, pathname, search = '', pestan
 
 /**
  * Lo guardado si vale para esa cuenta ahora, o `null`. Lo que no vale (otra cuenta,
- * pasadas 6 h, una hora del futuro, una ruta fuera de la lista, algo corrupto) se borra.
+ * pasadas 6 h, una hora del futuro, una ruta fuera de la lista, algo corrupto) se borra;
+ * sin cuenta con la que comparar, solo no vale.
  */
 const valido = (cuenta, ahora) => {
+  // Sin saber aún de quién es la sesión (un instante en la vuelta de Google) no se puede
+  // comparar: no vale, pero tampoco se borra lo de la cuenta que está entrando
+  if (cuenta == null) return null;
   let guardado = null;
   try {
     const texto = globalThis.localStorage.getItem(CLAVE);
@@ -99,7 +105,6 @@ const valido = (cuenta, ahora) => {
   const edad = ahora - guardado?.hora;
   const vale =
     tipo !== null &&
-    cuenta != null &&
     guardado.cuenta === String(cuenta) &&
     PESTANAS.has(guardado.pestana) &&
     hoyoValido(guardado.hoyo) &&

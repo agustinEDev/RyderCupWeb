@@ -782,6 +782,15 @@ describe('GroupScoringPage: la anotación en curso', () => {
     expect(clasificacion).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('E2: retirado, olvida la anotación', async () => {
+    await guarda();
+    mockHook = hook({ scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'RETIRADO' }), jugador('bea', 'ana')]) });
+
+    render(<GroupScoringPage />);
+
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+
   it('E2: con mi tarjeta entregada, olvida la anotación', async () => {
     await guarda();
     mockHook = hook({ hasSubmitted: true, scoringView: vista({}, [jugador('ana', 'bea', { card_status: 'ENTREGADA' }), jugador('bea', 'ana')]) });

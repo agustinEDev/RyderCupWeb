@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { barraDe } from '../../domain/services/muestrasDeLaBarra';
-import { useParams, useNavigate, Link } from 'react-router';
+import { useParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import HeaderAuth from '../../components/layout/HeaderAuth';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,8 +30,10 @@ import PendientesASalvo from '../../components/scoring/PendientesASalvo';
 import BlockLoader from '../../components/ui/BlockLoader';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
+import { useGoBack } from '../../hooks/useGoBack';
+import { PESTANAS_DEL_PARTIDO } from '../../utils/pestanasDeLaAnotacion';
 
-const TABS = ['input', 'scorecard', 'leaderboard'];
+const TABS = PESTANAS_DEL_PARTIDO;
 
 // `setTimeout` no aguanta más de 2^31-1 ms: pasado eso dispara INMEDIATAMENTE y
 // en bucle. Una ronda a más de 24 días vista no necesita despertar a nadie
@@ -39,7 +41,6 @@ const MAXIMO_TEMPORIZADOR_MS = 2 ** 31 - 1;
 
 const ScoringPage = () => {
   const { matchId } = useParams();
-  const navigate = useNavigate();
   const { t, i18n } = useTranslation('scoring');
   const { t: tSchedule } = useTranslation('schedule');
   const { user, loading: isLoadingUser } = useAuth();
@@ -413,18 +414,23 @@ const ScoringPage = () => {
   // (11 nov 2026). Con el partido cerrado o la tarjeta entregada ya no hay a qué volver
   useAnotacionEnCurso({
     cargada: Boolean(scoringView) && !isLoading,
+    // Cerrado, concedido o walkover, con mi tarjeta entregada o retirado yo
     terminada:
       scoringView?.matchStatus === 'COMPLETED' ||
       cerradoSinJugar ||
-      Boolean(user?.id && scoringView?.scorecardSubmittedBy?.includes(user.id)),
+      hasSubmitted ||
+      Boolean(currentUserId && retirados.includes(currentUserId)),
     pestana: activeTab,
     pestanas: TABS,
     alCambiarDePestana: setActiveTab,
     hoyo: currentHole,
     totalHoyos: totalHoles,
     alCambiarDeHoyo: setCurrentHole,
-    mapa: mapaDelHoyo,
+    // El mapa se repone solo donde la pantalla ofrece su botón
+    mapa: { ...mapaDelHoyo, disponible: mapaDelHoyo.disponible && Boolean(currentHoleData) && !aunNoAbre && !cerradoSinJugar },
   });
+  // «Volver» sin una pantalla detrás (se llegó al arrancar la app): al panel
+  const volver = useGoBack('/dashboard');
 
   if (isLoadingUser || isLoading) {
     // La cabecera se queda puesta durante la espera: aparecer de golpe al
@@ -511,7 +517,7 @@ const ScoringPage = () => {
         <div className="max-w-lg mx-auto px-4 py-6">
           <MatchSummaryCard summary={matchSummary} winnerName={winnerName} />
           <button
-            onClick={() => navigate(-1)}
+            onClick={volver}
             className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
           >
             {t('summary.back')}
@@ -838,7 +844,7 @@ const ScoringPage = () => {
       <SessionBlockedModal
         isOpen={isSessionBlocked}
         onTakeOver={handleSessionTakeOver}
-        onGoBack={() => navigate(-1)}
+        onGoBack={volver}
       />
 
       <EarlyEndModal

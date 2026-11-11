@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useNavigate } from 'react-router';
 
 /**
  * Lo que las tres anotaciones apuntan para volver a ellas si iOS cierra la app, y lo que
@@ -47,11 +47,12 @@ const guarda = (extra = {}) =>
   guardaLaAnotacionEnCurso({ cuenta: 'u-anota', pathname: RUTA, search: '', pestana: 'input', hoyo: 12, mapa: false, ...extra });
 
 /** Una pantalla de anotación de mentira: su pestaña, su hoyo y su mapa, como las de verdad. */
-const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, disponible = true, hoyoFijo = false, pestanaFija = false } = {}) => {
+const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, disponible = true, hoyoFijo = false, pestanaFija = false, mapaNoAbre = false } = {}) => {
   const [pestana, setPestana] = useState('input');
   const [hoyo, setHoyo] = useState(1);
   const [abierto, setAbierto] = useState(false);
-  const mapa = { abierto, disponible, abrir: () => setAbierto(true) };
+  const navigate = useNavigate();
+  const mapa = { abierto, disponible, abrir: mapaNoAbre ? () => {} : () => setAbierto(true) };
   useAnotacionEnCurso({
     cargada,
     terminada,
@@ -64,7 +65,7 @@ const usePantalla = ({ cargada = true, terminada = false, totalHoyos = 18, dispo
     alCambiarDeHoyo: hoyoFijo ? () => {} : setHoyo,
     mapa,
   });
-  return { pestana, setPestana, hoyo, setHoyo, abierto, setAbierto };
+  return { pestana, setPestana, hoyo, setHoyo, abierto, setAbierto, navigate };
 };
 
 const monta = (props = {}, ruta = RUTA) =>
@@ -141,6 +142,36 @@ describe('useAnotacionEnCurso', () => {
 
     expect(guardado()).toMatchObject({ hoyo: 3, mapa: false });
     expect(result.current.abierto).toBe(false);
+  });
+
+  it('H2f: si el mapa no llega a abrirse, se sigue guardando al anotar', () => {
+    guarda({ hoyo: 5, mapa: true });
+    const { result } = monta({ mapaNoAbre: true });
+
+    act(() => result.current.setHoyo(6));
+
+    expect(guardado()).toMatchObject({ hoyo: 6, mapa: false });
+  });
+
+  it('H2g: si vuelve al hoyo del que partía antes de reponerse todo, se guarda lo suyo', () => {
+    guarda({ hoyo: 7, pestana: 'classification' });
+    const { result } = monta({ pestanaFija: true });
+
+    act(() => result.current.setHoyo(1));
+
+    expect(guardado()).toMatchObject({ hoyo: 1, pestana: 'input' });
+  });
+
+  it('H2h: al pasar a otra anotación sin desmontar, repone la de la otra', () => {
+    const OTRA = '/quick-matches/1c6b7d2f-3e4a-4b6c-9d8e-0f1a2b3c4d5e/scoring';
+    const { result } = monta();
+    act(() => result.current.setHoyo(4));
+    guardaLaAnotacionEnCurso({ cuenta: 'u-anota', pathname: OTRA, search: '', pestana: 'scorecard', hoyo: 15, mapa: false });
+
+    act(() => result.current.navigate(OTRA));
+
+    expect(result.current).toMatchObject({ hoyo: 15, pestana: 'scorecard' });
+    expect(guardado()).toMatchObject({ ruta: OTRA, hoyo: 15, pestana: 'scorecard' });
   });
 
   it('H3: un cambio de pestaña, hoyo o mapa se guarda', () => {

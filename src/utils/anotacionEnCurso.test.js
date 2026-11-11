@@ -110,14 +110,18 @@ describe('la anotación en curso', () => {
     expect(localStorage.getItem(CLAVE)).toBeNull();
   });
 
-  it.each([
-    ['otra cuenta', OTRO],
-    ['sin cuenta', null],
-  ])('B3: con %s no vale y se borra', (_caso, cuenta) => {
+  it('B3: con otra cuenta no vale y se borra', () => {
     guarda();
 
-    expect(leeLaAnotacionEnCurso({ cuenta }, T0)).toBeNull();
+    expect(leeLaAnotacionEnCurso({ cuenta: OTRO }, T0)).toBeNull();
     expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+
+  it('B3: sin saber la cuenta todavía (vuelta de Google) no vale, pero no se borra', () => {
+    guarda();
+
+    expect(leeLaAnotacionEnCurso({ cuenta: null }, T0)).toBeNull();
+    expect(localStorage.getItem(CLAVE)).not.toBeNull();
   });
 
   it.each([
@@ -223,5 +227,23 @@ describe('la anotación en curso', () => {
     expect(() => guarda()).not.toThrow();
     expect(leeLaAnotacionEnCurso({ cuenta: CUENTA }, T0)).toBeNull();
     expect(() => olvidaLaAnotacionEnCurso()).not.toThrow();
+  });
+});
+
+/**
+ * La lista cerrada copia las rutas del router: si una cambia en App.jsx y no aquí, la
+ * anotación dejaría de guardarse sin que nada fallara. Este test lo vigila.
+ */
+describe('las rutas de la lista cerrada existen en el router', () => {
+  it.each([
+    '/player/matches/:matchId/scoring',
+    '/player/groups/:groupId/scoring',
+    '/quick-matches/:quickMatchId/scoring',
+  ])('%s', async (ruta) => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const app = readFileSync(resolve(globalThis.process.cwd(), 'src/App.jsx'), 'utf8');
+
+    expect(app).toContain(`path="${ruta}"`);
   });
 });

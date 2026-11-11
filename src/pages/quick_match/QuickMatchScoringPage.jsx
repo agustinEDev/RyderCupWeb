@@ -30,8 +30,9 @@ import AnotarSinConexion from '../../components/scoring/AnotarSinConexion';
 import { GrupoDePestanas, ListaDePestanas, PanelDePestana } from '../../components/ui/Pestanas';
 import { useSinConexion } from '../../hooks/useSinConexion';
 import { useAnotacionEnCurso } from '../../hooks/useAnotacionEnCurso';
+import { PESTANAS_DE_LA_RAPIDA } from '../../utils/pestanasDeLaAnotacion';
 
-const TABS = ['input', 'classification', 'scorecard'];
+const TABS = PESTANAS_DE_LA_RAPIDA;
 
 /**
  * El `message` de un error de la API es el `detail` que escribe el backend, y

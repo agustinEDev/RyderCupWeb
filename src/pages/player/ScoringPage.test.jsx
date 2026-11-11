@@ -2150,6 +2150,39 @@ describe('ScoringPage: la anotación en curso', () => {
     vi.unstubAllGlobals();
   });
 
+  it('E3: con el mapa guardado abierto pero la anotación aún sin abrir, no lo reabre', async () => {
+    await guarda({ mapa: true, hoyo: 1 });
+    const abrir = vi.fn();
+    const antesMapa = mapaHoyo.valor;
+    const antesVista = { ...mockUseScoring.scoringView };
+    mapaHoyo.valor = { ...antesMapa, abrir };
+    Object.assign(mockUseScoring.scoringView, { matchStatus: 'SCHEDULED', scoringOpensAt: '2999-01-01T08:00:00+01:00' });
+
+    try {
+      render(<ScoringPage />);
+
+      expect(abrir).not.toHaveBeenCalled();
+    } finally {
+      mapaHoyo.valor = antesMapa;
+      mockUseScoring.scoringView = antesVista;
+    }
+  });
+
+  it('E3: con el mapa guardado abierto y la anotación abierta, lo reabre', async () => {
+    await guarda({ mapa: true, hoyo: 1 });
+    const abrir = vi.fn();
+    const antesMapa = mapaHoyo.valor;
+    mapaHoyo.valor = { ...antesMapa, abrir };
+
+    try {
+      render(<ScoringPage />);
+
+      expect(abrir).toHaveBeenCalledTimes(1);
+    } finally {
+      mapaHoyo.valor = antesMapa;
+    }
+  });
+
   it('E1: con su anotación guardada, abre en ese hoyo y esa pestaña', async () => {
     await guarda();
 
@@ -2162,7 +2195,7 @@ describe('ScoringPage: la anotación en curso', () => {
   it.each([
     ['concedido', { matchStatus: 'CONCEDED' }],
     ['por walkover', { matchStatus: 'WALKOVER' }],
-    ['con mi tarjeta entregada', { scorecardSubmittedBy: ['u1'] }],
+    ['retirado yo', { withdrawnPlayerIds: ['u1'] }],
   ])('E2: %s, olvida la anotación', async (_caso, cambio) => {
     await guarda();
     const antes = { ...mockUseScoring.scoringView };
@@ -2174,6 +2207,19 @@ describe('ScoringPage: la anotación en curso', () => {
       expect(localStorage.getItem(CLAVE)).toBeNull();
     } finally {
       mockUseScoring.scoringView = antes;
+    }
+  });
+
+  it('E2: con mi tarjeta entregada, olvida la anotación', async () => {
+    await guarda();
+    mockUseScoring.hasSubmitted = true;
+
+    try {
+      render(<ScoringPage />);
+
+      expect(localStorage.getItem(CLAVE)).toBeNull();
+    } finally {
+      mockUseScoring.hasSubmitted = false;
     }
   });
 
