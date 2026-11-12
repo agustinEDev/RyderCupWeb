@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.76.0] - 2026-11-12
+
+**Limpieza de código muerto** (#1103, fase 5 del plan de calidad). Sin cambios para el usuario.
+Va con la 2.61.0 del backend, aunque también funciona con la 2.60.0. Probado en el Kind a 360 px
+(27 sesiones): navegación, sesión, anotación sin conexión, foursomes y categorías, sin errores.
+
+### Removed
+
+- `commitlint.config.cjs`, que nada usaba, y una captura de depuración versionada (las de
+  `tests/debug.spec.js` ya se ignoran).
+- Reexportaciones que nadie importaba, funciones que solo usaban sus tests
+  (`getCountriesInfo`, `entryTransition`, `recargandoPorTrozoViejo`, `dequeue`,
+  `requiresReAuthentication`), `scoreAtOf`/`sideScoreOf` y el alias `HandicapType`.
+- 23 `export default` que nadie importaba y el `export` de 21 nombres que solo usa su fichero.
+
+### Changed
+
+- La regla de 6 jugadores por categoría vive en un solo sitio (`StrokePlaySetup`).
+
 ## [2.75.0] - 2026-11-11
 
 **Fase 4 del plan de seguridad: el front endurecido** (#1098, #1099). Va con la 2.60.0 del
