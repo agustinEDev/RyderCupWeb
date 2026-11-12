@@ -232,5 +232,3 @@ export const useRedirectIfAuthenticated = ({
 
   return isChecking;
 };
-
-export default useRedirectIfAuthenticated;

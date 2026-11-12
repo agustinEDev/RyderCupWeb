@@ -21,7 +21,7 @@ const AUTH_ROUTES = ['/login', '/register'];
  * @param {string|undefined} requestedPath - Usually `location.state?.from?.pathname`
  * @returns {string} A safe internal path
  */
-export const resolvePostAuthTarget = (requestedPath) => {
+const resolvePostAuthTarget = (requestedPath) => {
   if (!requestedPath || !requestedPath.startsWith('/') || requestedPath.startsWith('//')) {
     return '/dashboard';
   }

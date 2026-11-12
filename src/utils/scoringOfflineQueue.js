@@ -173,18 +173,6 @@ export const enqueue = (
 };
 
 /**
- * Remove and return the first entry from the queue.
- * @returns {Object|null} The first queued entry, or null if empty
- */
-export const dequeue = () => {
-  const queue = getAll();
-  if (queue.length === 0) return null;
-  const [first, ...rest] = queue;
-  if (!guarda(rest)) return null;
-  return first;
-};
-
-/**
  * Remove a specific entry from the queue.
  * @param {string} matchId
  * @param {number} holeNumber

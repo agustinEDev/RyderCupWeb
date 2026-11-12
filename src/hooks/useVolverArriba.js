@@ -42,5 +42,3 @@ export function useVolverArriba() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar de pantalla: el tipo de navegación y la ruta se leen de esa misma
   }, [pathname]);
 }
-
-export default useVolverArriba;

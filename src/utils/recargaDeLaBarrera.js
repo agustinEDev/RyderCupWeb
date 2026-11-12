@@ -18,7 +18,7 @@
  * Sin almacenamiento no se puede apuntar: no se recarga y sale el aviso, con
  * su botón (Agustín).
  */
-export const CLAVE_DE_LA_BARRERA = 'lazy_load_error_reloaded';
+const CLAVE_DE_LA_BARRERA = 'lazy_load_error_reloaded';
 // Si la recarga no llega (la aplicación se fue a segundo plano), el aviso en
 // vez de una pantalla en blanco para siempre
 export const ESPERA_A_LA_RECARGA_MS = 10_000;

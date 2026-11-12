@@ -52,6 +52,9 @@ const montar = async ({
   return { modulo, disparar, ventana, guardado, documento, cachesApi, programado };
 };
 
+// El error que deja el import() cancelado: solo se calla mientras se recarga
+const ECO = new TypeError('Importing a module script failed.');
+
 describe('recarga por un trozo viejo', () => {
   it('E1: con la página vieja y service worker, recarga y cancela el fallo', async () => {
     const { disparar, ventana, modulo } = await montar();
@@ -60,7 +63,7 @@ describe('recarga por un trozo viejo', () => {
 
     expect(evento.defaultPrevented).toBe(true);
     expect(ventana.location.reload).toHaveBeenCalledTimes(1);
-    expect(modulo.recargandoPorTrozoViejo()).toBe(true);
+    expect(modulo.esElEcoDeLaRecarga(ECO)).toBe(true);
   });
 
   it('con el build al día, un fallo de red sigue su camino: lazyWithRetry reintenta', async () => {
@@ -70,7 +73,7 @@ describe('recarga por un trozo viejo', () => {
 
     expect(evento.defaultPrevented).toBe(false);
     expect(ventana.location.reload).not.toHaveBeenCalled();
-    expect(modulo.recargandoPorTrozoViejo()).toBe(false);
+    expect(modulo.esElEcoDeLaRecarga(ECO)).toBe(false);
   });
 
   it('sin la marca en la caché no se sabe si es vieja: no recarga', async () => {
@@ -165,12 +168,12 @@ describe('recarga por un trozo viejo', () => {
   it('si la recarga no llega, la marca de recargando se apaga sola a los 10 s', async () => {
     const { disparar, programado, modulo } = await montar();
     disparar();
-    expect(modulo.recargandoPorTrozoViejo()).toBe(true);
+    expect(modulo.esElEcoDeLaRecarga(ECO)).toBe(true);
     expect(modulo.OLVIDAR_LA_RECARGA_MS).toBe(10_000);
 
     programado.forEach((fn) => fn());
 
-    expect(modulo.recargandoPorTrozoViejo()).toBe(false);
+    expect(modulo.esElEcoDeLaRecarga(ECO)).toBe(false);
   });
 });
 

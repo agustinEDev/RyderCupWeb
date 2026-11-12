@@ -24,7 +24,7 @@
  *   acabaría nunca).
  *
  * Evitado el error, el `import()` acaba sin módulo y React lanza otro antes de
- * que la recarga se lleve la página: `recargandoPorTrozoViejo()` deja a las
+ * que la recarga se lleve la página: `esElEcoDeLaRecarga()` deja a las
  * barreras de error y a Sentry no tomarlo por un fallo. Se apaga sola si la
  * recarga no llega.
  */
@@ -35,9 +35,6 @@ export const OLVIDAR_LA_RECARGA_MS = 10_000;
 const MARCA = /<meta\s+name="app-build"\s+content="([^"]*)"/i;
 
 let recargando = false;
-
-/** Si la página se está recargando por un trozo viejo: lo que falle ya no cuenta. */
-export const recargandoPorTrozoViejo = () => recargando;
 
 /** La marca del build de un HTML, o null si no la trae. */
 export const marcaDelBuild = (html) => MARCA.exec(html ?? '')?.[1] ?? null;

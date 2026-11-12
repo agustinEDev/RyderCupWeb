@@ -7,7 +7,7 @@ import { CompetitionName } from '../value_objects/CompetitionName';
 import { DateRange } from '../value_objects/DateRange';
 import { Location } from '../value_objects/Location';
 import { CountryCode } from '../value_objects/CountryCode';
-import { HandicapSettings, HandicapType } from '../value_objects/HandicapSettings';
+import { HandicapSettings, PlayModeType } from '../value_objects/HandicapSettings';
 import { TeamAssignment } from '../value_objects/TeamAssignment';
 import { CompetitionStatus } from '../value_objects/CompetitionStatus';
 
@@ -33,7 +33,7 @@ describe('Competition', () => {
     mockName = new CompetitionName('Test Competition');
     mockDates = new DateRange(new Date('2025-01-01'), new Date('2025-01-05'));
     mockLocation = new Location(new CountryCode('ES'));
-    mockHandicapSettings = new HandicapSettings(HandicapType.HANDICAP);
+    mockHandicapSettings = new HandicapSettings(PlayModeType.HANDICAP);
     mockTeamAssignment = TeamAssignment.MANUAL;
   });
 

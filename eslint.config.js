@@ -124,7 +124,7 @@ export default [
   },
 
   // La interfaz no llama a la API: pide un caso de uso a src/composition (F2).
-  // `getApiBaseUrl` sí puede usarlo (las URLs de los avatares). También App.jsx y
+  // Las URLs de los avatares llegan por composition/http. También App.jsx y
   // main.jsx, y los import() dinámicos: el del cliente, siempre; de los demás, si se
   // saca `apiRequest` directamente (`const { apiRequest } = await import(…)`,
   // `(await import(…)).apiRequest` o `.then(({ apiRequest }) => …)`). Lo que no ve:

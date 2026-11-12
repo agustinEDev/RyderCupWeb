@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueue, dequeue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe, TIPO_PARTIDA_DE_FRANJA } from './scoringOfflineQueue';
+import { enqueue, getAll, remove, clear, size, getByMatch, deQuien, resumenPorPartida, ponleNombre, marcaDesaparecida, olvidaLasDe, TIPO_PARTIDA_DE_FRANJA } from './scoringOfflineQueue';
 
 // Mock localStorage for non-jsdom environment
 const localStorageMock = (() => {
@@ -72,21 +72,6 @@ describe('scoringOfflineQueue', () => {
       enqueue('m-2', 1, { ownScore: 5, markedPlayerId: 'u3', markedScore: 5 });
 
       expect(getAll()).toHaveLength(2);
-    });
-  });
-
-  describe('dequeue', () => {
-    it('should return and remove the first entry', () => {
-      enqueue('m-1', 1, { ownScore: 4, markedPlayerId: 'u2', markedScore: 4 });
-      enqueue('m-1', 2, { ownScore: 5, markedPlayerId: 'u2', markedScore: 5 });
-
-      const entry = dequeue();
-      expect(entry.holeNumber).toBe(1);
-      expect(getAll()).toHaveLength(1);
-    });
-
-    it('should return null when queue is empty', () => {
-      expect(dequeue()).toBeNull();
     });
   });
 

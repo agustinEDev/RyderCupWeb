@@ -17,7 +17,7 @@ export const ENTRY_DURATION = 0.25;
 export const ENTRY_STAGGER = 0.06;
 
 /** Vertical travel of an entry animation, in pixels. */
-export const ENTRY_OFFSET = 12;
+const ENTRY_OFFSET = 12;
 
 /**
  * Viewport config for scroll reveals: fires slightly before the element is
@@ -50,18 +50,6 @@ export const staggerContainer = {
   initial: {},
   animate: { transition: { staggerChildren: ENTRY_STAGGER } },
 };
-
-/**
- * Transition for siblings that are animated individually (no variants container).
- * The delay is capped so a long list never pushes the last item past ~0.3 s.
- *
- * @param {number} index Position of the element among its siblings.
- * @returns {{duration: number, delay: number}} Framer Motion transition.
- */
-export const entryTransition = (index = 0) => ({
-  duration: ENTRY_DURATION,
-  delay: Math.min(index, 4) * ENTRY_STAGGER,
-});
 
 /**
  * Props for an element that animates on mount.

@@ -33,5 +33,3 @@ export const useGeneroParaApuntarse = () => {
   // Sin red no se sabe (la copia del dispositivo no guarda el género): no se pregunta
   return { falta: faltaElGenero(user, sinConfirmar), guardar, refrescar };
 };
-
-export default useGeneroParaApuntarse;

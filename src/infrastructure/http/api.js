@@ -20,7 +20,7 @@ import { getApiBaseUrl } from './urlDeLaApi';
 import { esRutaDeLaApiSegura, rechazaLaRuta } from './rutaDeLaApi';
 
 // Para que los repositorios construyan sus rutas (FE-03): llegan a http solo por aquí
-export { segmento, RutaDeLaApiNoValida } from './rutaDeLaApi';
+export { segmento } from './rutaDeLaApi';
 
 /**
  * La llamada de red, con el aviso de «sin conexión» ya traducido (FE #685).

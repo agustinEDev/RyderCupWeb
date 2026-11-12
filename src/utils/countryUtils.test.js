@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { canUseRFEG, getCountryFlag, getCountryInfo, getCountriesInfo } from './countryUtils';
+import { canUseRFEG, getCountryFlag } from './countryUtils';
 
 describe('countryUtils', () => {
   describe('canUseRFEG', () => {
@@ -140,79 +140,6 @@ describe('countryUtils', () => {
     it('should return empty string for non-string input', () => {
       const flag = getCountryFlag(123);
       expect(flag).toBe('');
-    });
-  });
-
-  describe('getCountryInfo', () => {
-    it('should return country info object for valid country code', () => {
-      const info = getCountryInfo('ES');
-      expect(info).toEqual({
-        code: 'ES',
-        flag: '🇪🇸'
-      });
-    });
-
-    it('should return null for invalid country code', () => {
-      const info = getCountryInfo('INVALID');
-      expect(info).toBe(null);
-    });
-
-    it('should return null for null country code', () => {
-      const info = getCountryInfo(null);
-      expect(info).toBe(null);
-    });
-
-    it('should return null for undefined country code', () => {
-      const info = getCountryInfo(undefined);
-      expect(info).toBe(null);
-    });
-  });
-
-  describe('getCountriesInfo', () => {
-    it('should return array of country info objects for valid country codes', () => {
-      const info = getCountriesInfo(['ES', 'FR', 'IT']);
-      expect(info).toEqual([
-        { code: 'ES', flag: '🇪🇸' },
-        { code: 'FR', flag: '🇫🇷' },
-        { code: 'IT', flag: '🇮🇹' }
-      ]);
-    });
-
-    it('should filter out null/undefined values', () => {
-      const info = getCountriesInfo(['ES', null, 'FR', undefined, 'IT']);
-      expect(info).toEqual([
-        { code: 'ES', flag: '🇪🇸' },
-        { code: 'FR', flag: '🇫🇷' },
-        { code: 'IT', flag: '🇮🇹' }
-      ]);
-    });
-
-    it('should filter out empty strings', () => {
-      const info = getCountriesInfo(['ES', '', 'FR']);
-      expect(info).toEqual([
-        { code: 'ES', flag: '🇪🇸' },
-        { code: 'FR', flag: '🇫🇷' }
-      ]);
-    });
-
-    it('should return empty array for invalid input (not an array)', () => {
-      const info = getCountriesInfo('not an array');
-      expect(info).toEqual([]);
-    });
-
-    it('should return empty array for null input', () => {
-      const info = getCountriesInfo(null);
-      expect(info).toEqual([]);
-    });
-
-    it('should return empty array for undefined input', () => {
-      const info = getCountriesInfo(undefined);
-      expect(info).toEqual([]);
-    });
-
-    it('should return empty array for empty array input', () => {
-      const info = getCountriesInfo([]);
-      expect(info).toEqual([]);
     });
   });
 });

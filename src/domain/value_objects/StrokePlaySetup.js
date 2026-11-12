@@ -21,8 +21,8 @@ const GENERALES = new Set([ACUMULADO, MEJOR_TARJETA]);
 
 // Hasta 5 categorías: 4 límites
 export const MAX_LIMITES = 4;
-export const MIN_LIMITE = -10;
-export const MAX_LIMITE = 54;
+const MIN_LIMITE = -10;
+const MAX_LIMITE = 54;
 // Pedir una sola categoría iguales es no tener categorías
 export const MIN_CATEGORIAS_IGUALES = 2;
 export const MAX_CATEGORIAS_IGUALES = 5;
